@@ -24,6 +24,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
 
 #include <mono/os/gc_wrapper.h>
@@ -1907,7 +1908,7 @@ void mono_thread_interruption_checkpoint ()
 	
 	/* The thread may already be stopping */
 	if (thread == NULL) 
-		return NULL;
+		return;
 	
 	if (thread->interruption_requested) {
 		MonoException* exc = mono_thread_execute_interruption (thread);
