@@ -50,11 +50,23 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_conv_i4 () {
+	static int test_0_conv_i () {
 		double a = 2.0;
-		int b = (int)a;
-		if (b != 2)
+		int i = (int)a;
+		if (i != 2)
 			return 1;
+		uint ui = (uint)a;
+		if (ui != 2)
+			return 2;
+		short s = (short)a;
+		if (s != 2)
+			return 3;
+		ushort us = (ushort)a;
+		if (us != 2)
+			return 4;
+		byte b = (byte)a;
+		if (b != 2)
+			return 5;
 		return 0;
 	}
 
