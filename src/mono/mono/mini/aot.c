@@ -426,7 +426,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 				mono_class_init (ji->data.klass);
 				break;
 			case MONO_PATCH_INFO_IMAGE:
-				ji->data.image = aot_module->image_table [(guint32)data [0]];
+				ji->data.image = aot_module->image_table [(guint32)data];
 				g_assert (ji->data.image);
 				break;
 			case MONO_PATCH_INFO_METHOD:
