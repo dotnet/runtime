@@ -3385,9 +3385,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			readr4 (ip, f);
 			ins->inst_p0 = f;
 
-			if (!((*f == 0.0) && (mono_signbit (*f) == 0)) || (*f == 1.0))
-				mono_get_got_var (cfg);
-
 			ip += 4;
 			*sp++ = ins;			
 			break;
@@ -3401,9 +3398,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			++ip;
 			readr8 (ip, d);
 			ins->inst_p0 = d;
-
-			if (!((*d == 0.0) && (mono_signbit (*d) == 0)) || (*d == 1.0))
-				mono_get_got_var (cfg);
 
 			ip += 8;
 			*sp++ = ins;			

@@ -2941,22 +2941,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else if (d == 1.0) {
 				x86_fld1 (code);
 			} else {
-				guint32 got_reg = X86_EAX;
-
 				if (cfg->compile_aot) {
-					if (cfg->got_var->opcode == OP_REGOFFSET)
-						x86_mov_reg_membase (code, X86_EAX, cfg->got_var->inst_basereg, cfg->got_var->inst_offset, 4);
-					else
-						got_reg = cfg->got_var->dreg;
+					guint32 *val = (guint32*)&d;
+					x86_push_imm (code, val [1]);
+					x86_push_imm (code, val [0]);
+					x86_fld_membase (code, X86_ESP, 0, TRUE);
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 				}
-
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R8, ins->inst_p0);
-				if (cfg->compile_aot) {
-					/* FIXME: Put the constant directly into the GOT entry */
-					x86_mov_reg_membase (code, X86_EAX, got_reg, 0xf0f0f0f0, 4);
-					x86_fld_membase (code, X86_EAX, 0, TRUE);
-				} else
+				else {
+					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R8, ins->inst_p0);
 					x86_fld (code, NULL, TRUE);
+				}
 			}
 			break;
 		}
@@ -2968,22 +2963,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else if (f == 1.0) {
 				x86_fld1 (code);
 			} else {
-				guint32 got_reg = X86_EAX;
-
 				if (cfg->compile_aot) {
-					if (cfg->got_var->opcode == OP_REGOFFSET)
-						x86_mov_reg_membase (code, X86_EAX, cfg->got_var->inst_basereg, cfg->got_var->inst_offset, 4);
-					else
-						got_reg = cfg->got_var->dreg;
+					guint32 val = *(guint32*)&f;
+					x86_push_imm (code, val);
+					x86_fld_membase (code, X86_ESP, 0, FALSE);
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 				}
-
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R4, ins->inst_p0);
-				if (cfg->compile_aot) {
-					/* FIXME: Put the constant directly into the GOT entry */
-					x86_mov_reg_membase (code, X86_EAX, got_reg, 0xf0f0f0f0, 4);
-					x86_fld_membase (code, X86_EAX, 0, FALSE);
-				} else
+				else {
+					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R4, ins->inst_p0);
 					x86_fld (code, NULL, FALSE);
+				}
 			}
 			break;
 		}

@@ -320,8 +320,8 @@ call_membase: dest:a src1:b len:16 clob:c
 trap:
 iconst: dest:i len:5
 i8const:
-r4const: dest:f len:15 clob:a
-r8const: dest:f len:15 clob:a
+r4const: dest:f len:15
+r8const: dest:f len:16
 regvar:
 reg:
 regoffset:
