@@ -2083,32 +2083,6 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	return 0;
 }
 
-static gint32
-ves_icall_System_String_InternalIndexOfAny (MonoString *str, MonoArray *chars, gint32 start, gint32 count)
-{
-	int i, j;
-	gunichar2 *data = mono_string_chars (str);
-
-	for (i = start; i < start + count; ++i) {
-		for (j = 0; j < mono_array_length (chars); ++j) {
-			if (data [i] == mono_array_get (chars, guint16, j))
-				return i;
-		}
-	}
-	return -1;
-}
-
-static gint32
-ves_icall_System_String_GetHashCode (MonoString *str)
-{
-	int i, h = 0;
-	gunichar2 *data = mono_string_chars (str);
-
-	for (i = 0; i < mono_string_length (str); ++i)
-		h = (h << 5) - h + data [i];
-	return h;
-}
-
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -2447,20 +2421,20 @@ static gconstpointer icall_map [] = {
 	 * System.Math
 	 */
 	"System.Math::Sin", ves_icall_System_Math_Sin,
-        "System.Math::Cos", ves_icall_System_Math_Cos,
-        "System.Math::Tan", ves_icall_System_Math_Tan,
-        "System.Math::Sinh", ves_icall_System_Math_Sinh,
-        "System.Math::Cosh", ves_icall_System_Math_Cosh,
-        "System.Math::Tanh", ves_icall_System_Math_Tanh,
-        "System.Math::Acos", ves_icall_System_Math_Acos,
-        "System.Math::Asin", ves_icall_System_Math_Asin,
-        "System.Math::Atan", ves_icall_System_Math_Atan,
-        "System.Math::Atan2", ves_icall_System_Math_Atan2,
-        "System.Math::Exp", ves_icall_System_Math_Exp,
-        "System.Math::Log", ves_icall_System_Math_Log,
-        "System.Math::Log10", ves_icall_System_Math_Log10,
-        "System.Math::Pow", ves_icall_System_Math_Pow,
-        "System.Math::Sqrt", ves_icall_System_Math_Sqrt,
+    "System.Math::Cos", ves_icall_System_Math_Cos,
+    "System.Math::Tan", ves_icall_System_Math_Tan,
+    "System.Math::Sinh", ves_icall_System_Math_Sinh,
+    "System.Math::Cosh", ves_icall_System_Math_Cosh,
+    "System.Math::Tanh", ves_icall_System_Math_Tanh,
+    "System.Math::Acos", ves_icall_System_Math_Acos,
+    "System.Math::Asin", ves_icall_System_Math_Asin,
+    "System.Math::Atan", ves_icall_System_Math_Atan,
+    "System.Math::Atan2", ves_icall_System_Math_Atan2,
+    "System.Math::Exp", ves_icall_System_Math_Exp,
+    "System.Math::Log", ves_icall_System_Math_Log,
+    "System.Math::Log10", ves_icall_System_Math_Log10,
+    "System.Math::Pow", ves_icall_System_Math_Pow,
+    "System.Math::Sqrt", ves_icall_System_Math_Sqrt,
 
 	/*
 	 * System.Environment
@@ -2501,6 +2475,20 @@ static gconstpointer icall_map [] = {
 	 */	
 	"System.Runtime.Remoting.Proxies.RealProxy::GetTransparentProxy", 
 	ves_icall_Remoting_RealProxy_GetTransparentProxy,
+
+	/*
+	 * System.Threading.Interlocked
+	 */
+	"System.Threading.Interlocked::Increment(uint&)", ves_icall_System_Threading_Interlocked_Increment_Int,
+	"System.Threading.Interlocked::Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long,
+	"System.Threading.Interlocked::Decrement(uint&)", ves_icall_System_Threading_Interlocked_Decrement_Int,
+	"System.Threading.Interlocked::Decrement(long&)", ves_icall_System_Threading_Interlocked_Decrement_Long,
+	"System.Threading.Interlocked::CompareExchange(uint&,uint,uint)", ves_icall_System_Threading_Interlocked_CompareExchange_Int,
+	"System.Threading.Interlocked::CompareExchange(object&,object,object)", ves_icall_System_Threading_Interlocked_CompareExchange_Object,
+	"System.Threading.Interlocked::CompareExchange(single&,single,single)", ves_icall_System_Threading_Interlocked_CompareExchange_Single,
+	"System.Threading.Interlocked::Exchange(uint&,uint)", ves_icall_System_Threading_Interlocked_Exchange_Int,
+	"System.Threading.Interlocked::Exchange(object&,object)", ves_icall_System_Threading_Interlocked_Exchange_Object,
+	"System.Threading.Interlocked::Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single,
 
 	/*
 	 * add other internal calls here

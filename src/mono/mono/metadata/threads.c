@@ -50,6 +50,9 @@ static guint32 current_object_key;
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
 static guint32 slothash_key;
 
+/* Spin lock for InterlockedXXX 64 bit functions */
+static CRITICAL_SECTION interlocked_mutex;
+
 static guint32 start_wrapper(void *data)
 {
 	struct StartInfo *start_info=(struct StartInfo *)data;
@@ -752,6 +755,7 @@ void mono_thread_init(MonoDomain *domain)
 
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&monitor_mutex);
+	InitializeCriticalSection(&interlocked_mutex);
 	
 	current_object_key=TlsAlloc();
 	TlsSetValue(current_object_key, main_thread);
@@ -805,4 +809,80 @@ void mono_thread_cleanup(void)
 	
 	g_ptr_array_free(threads, FALSE);
 	threads=NULL;
+}
+
+gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
+{
+	return InterlockedIncrement (location);
+}
+
+gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
+{
+	gint32 lowret;
+	gint32 highret;
+
+	EnterCriticalSection(&interlocked_mutex);
+
+	lowret = InterlockedIncrement((gint32 *) location);
+	if (0 == lowret)
+		highret = InterlockedIncrement((gint32 *) location + 1);
+	else
+		highret = *((gint32 *) location + 1);
+
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return (gint64) highret << 32 | (gint64) lowret;
+}
+
+gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *location)
+{
+	return InterlockedDecrement(location);
+}
+
+gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location)
+{
+	gint32 lowret;
+	gint32 highret;
+
+	EnterCriticalSection(&interlocked_mutex);
+
+	lowret = InterlockedDecrement((gint32 *) location);
+	if (-1 == lowret)
+		highret = InterlockedDecrement((gint32 *) location + 1);
+	else
+		highret = *((gint32 *) location + 1);
+
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return (gint64) highret << 32 | (gint64) lowret;
+}
+
+gint32 ves_icall_System_Threading_Interlocked_Exchange_Int(gint32 *location1, gint32 value)
+{
+	return InterlockedExchange(location1, value);
+}
+
+MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object(MonoObject **location1, MonoObject *value)
+{
+	return (MonoObject *) InterlockedExchangePointer((gpointer *) location1, value);
+}
+
+gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location1, gfloat value)
+{
+	return (gfloat) InterlockedExchange((gint32 *) location1, (gint32) value);
+}
+
+gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand)
+{
+	return InterlockedCompareExchange(location1, value, comparand);
+}
+
+MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location1, MonoObject *value, MonoObject *comparand)
+{
+	return (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location1, value, comparand);
+}
+
+gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand)
+{
+	return (gfloat) InterlockedCompareExchange((gint32 *) location1, (gint32) value, (gint32) comparand);
 }

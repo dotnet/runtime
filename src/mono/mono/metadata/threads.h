@@ -47,5 +47,18 @@ extern gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray
 extern gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
 extern gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext);
 
+extern gint32 ves_icall_System_Threading_Interlocked_Increment_Int(gint32 *location);
+extern gint64 ves_icall_System_Threading_Interlocked_Increment_Long(gint64 *location);
+extern gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *location);
+extern gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
+
+extern gint32 ves_icall_System_Threading_Interlocked_Exchange_Int(gint32 *location1, gint32 value);
+extern MonoObject *ves_icall_System_Threading_Interlocked_Exchange_Object(MonoObject **location1, MonoObject *value);
+extern gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location1, gfloat value);
+
+extern gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand);
+extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location1, MonoObject *value, MonoObject *comparand);
+extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand);
+
 
 #endif /* _MONO_METADATA_THREADS_H_ */

@@ -195,15 +195,20 @@ mono_string_InternalInsert (MonoString *me, gint32 sindex, MonoString *value)
 	gunichar2 *insertsrc;
 	gunichar2 *dest;
 	gint32 srclen;
+	gint32 insertlen;
 
 	src = mono_string_chars(me);
-	srclen = mono_string_length(value);
+	srclen = mono_string_length(me);
 
-	ret = mono_string_InternalAllocateStr(mono_string_length(me) + srclen - sindex);
+	insertsrc = mono_string_chars(value);
+	insertlen = mono_string_length(value);
+
+	ret = mono_string_InternalAllocateStr(mono_string_length(me) + insertlen);
 	dest = mono_string_chars(ret);
 
 	memcpy(dest, src, sindex * sizeof(gunichar2));
-	memcpy(dest + sindex, insertsrc, srclen * sizeof(gunichar2));
+	memcpy(dest + sindex, insertsrc, insertlen * sizeof(gunichar2));
+	memcpy(dest + sindex + insertlen, src + sindex, (srclen - sindex) * sizeof(gunichar2));
 
 	return ret;
 }
