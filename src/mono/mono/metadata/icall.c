@@ -3926,6 +3926,12 @@ ves_icall_System_Environment_Exit (int result)
 }
 
 static MonoString*
+ves_icall_System_Environment_GetGacPath (void)
+{
+	return mono_string_new (mono_domain_get (), MONO_ASSEMBLIES);
+}
+
+static MonoString*
 ves_icall_System_Text_Encoding_InternalCodePage (void) 
 {
 	const char *cset;
@@ -4877,6 +4883,7 @@ static gconstpointer icall_map [] = {
 	"System.Environment::get_ExitCode", mono_environment_exitcode_get,
 	"System.Environment::set_ExitCode", mono_environment_exitcode_set,
 	"System.Environment::GetMachineConfigPath",	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path,
+	"System.Environment::internalGetGacPath", ves_icall_System_Environment_GetGacPath,
 
 	/*
 	 * System.Runtime.Remoting
