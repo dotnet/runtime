@@ -8,7 +8,11 @@ bin_PROGRAMS = mono
 lib_LTLIBRARIES = libmono.la
 
 libmono_la_LIBADD = 	\
-	../metadata/libmonoruntime.la
+	../metadata/libmonoruntime.la	\
+	../metadata/libmetadata.la	\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
+	../os/libmonoos.la
 
 endif
 

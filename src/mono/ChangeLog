@@ -1,3 +1,6 @@
+2002-08-12  Dick Porter  <dick@ximian.com>
+
+	* mono.pc.in: Add $includedir to Cflags
 
 Fri Jul 19 18:38:38 CEST 2002 Paolo Molaro <lupus@ximian.com>
 

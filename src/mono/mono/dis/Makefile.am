@@ -21,6 +21,8 @@ monodis_SOURCES =	\
 monodis_LDADD = 			\
 	libmonodis.a			\
 	../metadata/libmetadata.la 	\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
 	$(GMODULE_LIBS) 		\
 	$(GLIB_LIBS) 
 

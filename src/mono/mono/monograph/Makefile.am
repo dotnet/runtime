@@ -8,6 +8,8 @@ INCLUDES = 				\
 
 monograph_LDADD = \
 	../metadata/libmetadata.la	\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

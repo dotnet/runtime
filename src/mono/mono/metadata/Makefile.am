@@ -10,9 +10,6 @@ assembliesdir = $(libdir)
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
 	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\" -DMONO_CFG_DIR=\""$(sysconfdir)"\"
 
-libmonoruntime_la_LIBADD = libmetadata.la
-libmetadata_la_LIBADD = ../io-layer/libwapi.la ../utils/libmonoutils.la ../os/libmonoos.la
-
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
 	object.c	\
@@ -100,6 +97,6 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c
 
-pedump_LDADD = libmetadata.la $(GLIB_LIBS) $(GMODULE_LIBS) -lm
+pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 
