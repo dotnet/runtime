@@ -449,6 +449,12 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
 
 	if (!gmodule) {
+		g_free (full_name);
+		full_name = g_module_build_path (".", scope);
+		gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+	}
+
+	if (!gmodule) {
 		gchar *error = g_strdup (g_module_error ());
 		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
 			g_warning ("Failed to load library %s (%s): %s", full_name, scope, error);
