@@ -4955,12 +4955,121 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
-	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
+	int pos, i;
+	guint8 *code;
+	int max_epilog_size = 16;
+	
+	if (cfg->method->save_lmf)
+		max_epilog_size += 256;
+	
+	if (mono_jit_trace_calls != NULL)
+		max_epilog_size += 50;
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		max_epilog_size += 50;
+
+	max_epilog_size += (AMD64_NREG * 2);
+
+	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
+
+	code = cfg->native_code + cfg->code_len;
+
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
+
+	/* the code restoring the registers must be kept in sync with CEE_JMP */
+	pos = 0;
+	
+	if (method->save_lmf) {
+		gint32 lmf_offset = - cfg->arch.lmf_offset;
+
+		/* Restore previous lmf */
+		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 8);
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 8);
+		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, 8);
+
+		/* Restore caller saved regs */
+		if (cfg->used_int_regs & (1 << AMD64_RBX)) {
+			amd64_mov_reg_membase (code, AMD64_RBX, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), 8);
+		}
+		if (cfg->used_int_regs & (1 << AMD64_R12)) {
+			amd64_mov_reg_membase (code, AMD64_R12, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), 8);
+		}
+		if (cfg->used_int_regs & (1 << AMD64_R13)) {
+			amd64_mov_reg_membase (code, AMD64_R13, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), 8);
+		}
+		if (cfg->used_int_regs & (1 << AMD64_R14)) {
+			amd64_mov_reg_membase (code, AMD64_R14, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), 8);
+		}
+		if (cfg->used_int_regs & (1 << AMD64_R15)) {
+			amd64_mov_reg_membase (code, AMD64_R15, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), 8);
+		}
+	} else {
+
+		for (i = 0; i < AMD64_NREG; ++i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
+				pos -= sizeof (gpointer);
+
+		if (pos) {
+			if (pos == - sizeof (gpointer)) {
+				/* Only one register, so avoid lea */
+				for (i = AMD64_NREG - 1; i > 0; --i)
+					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+						amd64_mov_reg_membase (code, i, AMD64_RBP, pos, 8);
+					}
+			}
+			else {
+				amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
+
+				/* Pop registers in reverse order */
+				for (i = AMD64_NREG - 1; i > 0; --i)
+					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+						amd64_pop_reg (code, i);
+					}
+			}
+		}
+	}
+
+	amd64_leave (code);
+	amd64_ret (code);
+
+	cfg->code_len = code - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
+
+}
+
+void
+mono_arch_emit_exceptions (MonoCompile *cfg)
+{
+	MonoMethod *method = cfg->method;
+	MonoJumpInfo *patch_info;
 	int pos, nthrows, i;
 	guint8 *code;
 	MonoClass *exc_classes [16];
 	guint8 *exc_throw_start [16], *exc_throw_end [16];
+	guint32 code_size = 0;
+
+	/* Compute needed space */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_EXC)
+			code_size += 40;
+		if (patch_info->type == MONO_PATCH_INFO_R8)
+			code_size += 8 + 7; /* sizeof (double) + alignment */
+		if (patch_info->type == MONO_PATCH_INFO_R4)
+			code_size += 4 + 7; /* sizeof (float) + alignment */
+	}
+
+	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
 
 	code = cfg->native_code + cfg->code_len;
 
@@ -5146,22 +5255,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 }
 
-/*
- * Allow tracing to work with this interface (with an optional argument)
- */
-
-/*
- * This may be needed on some archs or for debugging support.
- */
-void
-mono_arch_instrument_mem_needs (MonoMethod *method, int *stack, int *code)
-{
-	/* no stack room needed now (may be needed for FASTCALL-trace support) */
-	*stack = 0;
-	/* split prolog-epilog requirements? */
-	*code = 50; /* max bytes needed: check this number */
-}
-
 void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
@@ -5312,38 +5405,6 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	}
 
 	return code;
-}
-
-int
-mono_arch_max_epilog_size (MonoCompile *cfg)
-{
-	int max_epilog_size = 16;
-	MonoJumpInfo *patch_info;
-	
-	if (cfg->method->save_lmf)
-		max_epilog_size += 256;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		max_epilog_size += 50;
-
-	max_epilog_size += (AMD64_NREG * 2);
-
-	/* 
-	 * make sure we have enough space for exceptions
-	 */
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			max_epilog_size += 40;
-		if (patch_info->type == MONO_PATCH_INFO_R8)
-			max_epilog_size += 8 + 7; /* sizeof (double) + alignment */
-		if (patch_info->type == MONO_PATCH_INFO_R4)
-			max_epilog_size += 4 + 7; /* sizeof (float) + alignment */
-	}
-
-	return max_epilog_size;
 }
 
 void
