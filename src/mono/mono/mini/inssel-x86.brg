@@ -353,31 +353,16 @@ stmt: OP_OUTARG_VT (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: OP_LDADDR (OP_REGOFFSET) "1" {
+reg: OP_LDADDR (OP_REGOFFSET),
+reg: CEE_LDOBJ (OP_REGOFFSET) {
 	if (state->left->tree->inst_offset) {
 		tree->opcode = OP_X86_LEA_MEMBASE;
-		tree->sreg1 = state->left->tree->inst_basereg;
 		tree->inst_imm = state->left->tree->inst_offset;
-		tree->dreg = state->reg1;
-	} else {
+	} else
 		tree->opcode = OP_MOVE;
-		tree->sreg1 = state->left->tree->inst_basereg;
-		tree->dreg = state->reg1;
-	}
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: CEE_LDOBJ (OP_REGOFFSET) "1" {
-	if (state->left->tree->inst_offset) {
-		tree->opcode = OP_X86_LEA_MEMBASE;
-		tree->sreg1 = state->left->tree->inst_basereg;
-		tree->inst_imm = state->left->tree->inst_offset;
-		tree->dreg = state->reg1;
-	} else {
-		tree->opcode = OP_MOVE;
-		tree->sreg1 = state->left->tree->inst_basereg;
-		tree->dreg = state->reg1;
-	}
+	
+	tree->sreg1 = state->left->tree->inst_basereg;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
