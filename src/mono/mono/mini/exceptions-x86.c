@@ -20,6 +20,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-x86.h"
@@ -226,7 +227,7 @@ mono_arch_get_call_filter (void)
 static void
 throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
 		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
-		 unsigned long eip,  unsigned long esp)
+		 unsigned long eip,  unsigned long esp, gboolean rethrow)
 {
 	static void (*restore_context) (struct sigcontext *);
 	struct sigcontext ctx;
@@ -245,7 +246,7 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.SC_ECX = ecx;
 	ctx.SC_EAX = eax;
 
-	if (mono_debugger_throw_exception (eip - 5, esp, exc)) {
+	if (mono_debugger_throw_exception ((gpointer)(eip - 5), (gpointer)esp, exc)) {
 		/*
 		 * The debugger wants us to stop on the `throw' instruction.
 		 * By the time we get here, it already inserted a breakpoint on
@@ -262,12 +263,39 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		mono_ex->stack_trace = NULL;
+		if (!rethrow)
+			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, eip, FALSE);
+	mono_handle_exception (&ctx, exc, (gpointer)eip, FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
+}
+
+static guint8*
+get_throw_exception (gboolean rethrow)
+{
+	guint8 *start, *code;
+
+	start = code = g_malloc (64);
+
+	x86_push_reg (code, X86_ESP);
+	x86_push_membase (code, X86_ESP, 4); /* IP */
+	x86_push_membase (code, X86_ESP, 12); /* exception */
+	x86_push_reg (code, X86_EBP);
+	x86_push_reg (code, X86_EDI);
+	x86_push_reg (code, X86_ESI);
+	x86_push_reg (code, X86_EBX);
+	x86_push_reg (code, X86_EDX);
+	x86_push_reg (code, X86_ECX);
+	x86_push_reg (code, X86_EAX);
+	x86_call_code (code, throw_exception);
+	/* we should never reach this breakpoint */
+	x86_breakpoint (code);
+
+	g_assert ((code - start) < 64);
+
+	return start;
 }
 
 /**
@@ -285,31 +313,32 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [24];
+	static guint8 *start;
 	static int inited = 0;
-	guint8 *code;
 
 	if (inited)
 		return start;
 
+	start = get_throw_exception (FALSE);
+
 	inited = 1;
-	code = start;
 
-	x86_push_reg (code, X86_ESP);
-	x86_push_membase (code, X86_ESP, 4); /* IP */
-	x86_push_membase (code, X86_ESP, 12); /* exception */
-	x86_push_reg (code, X86_EBP);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDX);
-	x86_push_reg (code, X86_ECX);
-	x86_push_reg (code, X86_EAX);
-	x86_call_code (code, throw_exception);
-	/* we should never reach this breakpoint */
-	x86_breakpoint (code);
+	return start;
+}
 
-	g_assert ((code - start) < 24);
+gpointer 
+mono_arch_get_rethrow_exception (void)
+{
+	static guint8 *start;
+	static int inited = 0;
+
+	if (inited)
+		return start;
+
+	start = get_throw_exception (TRUE);
+
+	inited = 1;
+
 	return start;
 }
 

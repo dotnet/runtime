@@ -175,6 +175,7 @@ isinst:
 conv.r.un:
 unbox:
 throw: src1:i len:6
+op_rethrow: src1:i len:6
 ldfld:
 ldflda:
 stfld:
@@ -275,7 +276,6 @@ tail.:
 initobj:
 cpblk:
 initblk:
-rethrow:
 sizeof:
 refanytype:
 illegal:

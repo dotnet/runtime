@@ -2728,6 +2728,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_call_code (code, 0);
 			break;
 		}
+		case OP_RETHROW: {
+			x86_push_reg (code, ins->sreg1);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_arch_rethrow_exception");
+			x86_call_code (code, 0);
+			break;
+		}
 		case OP_CALL_HANDLER: 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			x86_call_imm (code, 0);
@@ -3385,7 +3392,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			guint8 *code = ip;
 			/* Might already been changed to a nop */
-			x86_call_imm (code, 0);
+			x86_call_code (code, 0);
 			break;
 		}
 		case MONO_PATCH_INFO_R4:
