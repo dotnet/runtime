@@ -122,9 +122,11 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	minfo->line_numbers = g_ptr_array_new ();
 
 	st_line = minfo->start_line;
-	st_address = 1;
+	st_address = 0;
 
-	record_line_number (minfo, cfg->start + st_address, st_line, FALSE);
+	/* record_line_number takes absolute memory addresses. */
+	record_line_number (minfo, minfo->method_info.code_start + st_address, st_line, FALSE);
+	/* record_il_offsets uses offsets relative to minfo->method_info.code_start. */
 	record_il_offset (il_offsets, 0, 0);
 
 	/* start lines of basic blocks */
@@ -137,7 +139,7 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 
 			if (!i && !j) {
 				st_line = minfo->first_line;
-				st_address = t->addr;
+				st_address = t->addr - 1;
 
 				minfo->frame_start_offset = st_address;
 
@@ -153,15 +155,17 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 
 				line_inc = k - lines;
 			}
-			addr_inc = t->addr - st_address;
+			addr_inc = t->addr - st_address - 1;
+
+
+			if (t->cli_addr != -1)
+				record_il_offset (il_offsets, t->cli_addr, st_address);
 
 			st_line += line_inc;
 			st_address += addr_inc;
 
-			record_line_number (minfo, cfg->start + st_address, st_line, j == 0);
-
-			if (t->cli_addr != -1)
-				record_il_offset (il_offsets, t->cli_addr, st_address + 1);
+			record_line_number (minfo, minfo->method_info.code_start + st_address,
+					    st_line, j == 0);
 		}
 	}
 
