@@ -3163,8 +3163,10 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	if (method->signature->param_count) {
 		int i;
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
-		for (i = 0; i < argc; ++i)
-			mono_array_set (args, gpointer, i, mono_string_new (domain, argv [i]));
+		for (i = 0; i < argc; ++i) {
+			MonoString *arg = mono_string_new (domain, argv [i]);
+			mono_array_set (args, gpointer, i, mono_string_intern (arg));
+		}
 	}
 	
 	return mono_runtime_exec_main (method, args);
