@@ -3048,6 +3048,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 				}
 			}
 		}
+		g_free (cinfo);
 		break;
 	}
 
