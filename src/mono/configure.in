@@ -850,6 +850,11 @@ if test x$platform_win32 = xno; then
 	]) 
 
 	dnl *********************
+	dnl * Check for scandir *
+	dnl *********************
+	AC_CHECK_FUNCS(scandir)
+
+	dnl *********************
 	dnl *** Check for AIO ***
 	dnl *********************
 	AC_CHECK_HEADERS(aio.h sys/aio.h)

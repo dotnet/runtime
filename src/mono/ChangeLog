@@ -1,3 +1,7 @@
+2004-04-29  Zoltan Varga  <vargaz@freemail.hu>
+
+	* acconfig.h configure.in: Add check for scandir.
+
 2004-04-29  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (monobins_DATA): Add gacutil.exe.
