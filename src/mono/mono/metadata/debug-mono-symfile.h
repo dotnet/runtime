@@ -63,8 +63,7 @@ struct MonoSymbolFileMethodAddress {
 	guint32 variable_table_offset;
 	guint32 type_table_offset;
 	guint32 num_line_numbers;
-	guint32 line_number_size;
-	MonoDebugLineNumberEntry *line_numbers;
+	guint32 line_number_offset;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -180,7 +179,7 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		28
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	15
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	16
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 MonoSymbolFile *

@@ -351,6 +351,8 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	MonoMethodHeader *header;
 	guint32 size, num_variables, variable_size, variable_offset;
 	guint32 type_size, type_offset, *type_index_table;
+	guint32 line_size, line_offset;
+	MonoDebugLineNumberEntry *line_table;
 	gpointer *type_table;
 	guint8 *ptr;
 	int i;
@@ -394,6 +396,12 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	type_offset = size;
 	size += type_size;
 
+	if (mep->minfo->jit->line_numbers) {
+		line_offset = size;
+		line_size = mep->minfo->jit->line_numbers->len * sizeof (MonoDebugLineNumberEntry);
+		size += line_size;
+	}
+
 	address = g_malloc0 (size);
 	ptr = (guint8 *) address;
 
@@ -407,8 +415,10 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 
 	if (mep->minfo->jit->line_numbers) {
 		address->num_line_numbers = mep->minfo->jit->line_numbers->len;
-		address->line_numbers = (MonoDebugLineNumberEntry *) mep->minfo->jit->line_numbers->data;
-		address->line_number_size = address->num_line_numbers * sizeof (MonoDebugLineNumberEntry);
+		address->line_number_offset = line_offset;
+
+		line_table = (MonoDebugLineNumberEntry *) (ptr + line_offset);
+		memcpy (line_table, mep->minfo->jit->line_numbers->data, line_size);
 	}
 
 	range = allocate_range_entry (symfile);
