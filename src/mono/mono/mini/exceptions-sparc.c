@@ -41,14 +41,14 @@
 gpointer
 mono_arch_get_restore_context (void)
 {
-	static guint32 start [32];
+	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
 
 	if (inited)
 		return start;
 
-	code = start;
+	code = start = mono_global_codeman_reserve (32 * sizeof (guint32));
 
 	sparc_ldi_imm (code, sparc_o0, G_STRUCT_OFFSET (MonoContext, ip), sparc_i7);
 	sparc_ldi_imm (code, sparc_o0, G_STRUCT_OFFSET (MonoContext, sp), sparc_i6);
@@ -76,7 +76,7 @@ mono_arch_get_restore_context (void)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint32 start [64];
+	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
 	int i;
@@ -84,7 +84,7 @@ mono_arch_get_call_filter (void)
 	if (inited)
 		return start;
 
-	code = start;
+	code = start = mono_global_codeman_reserve (64 * sizeof (guint32));
 
 	/*
 	 * There are two frames here:
@@ -182,7 +182,7 @@ get_throw_exception (gboolean rethrow)
 {
 	guint32 *start, *code;
 
-	code = start = g_malloc (16 * sizeof (guint32));
+	code = start = mono_global_codeman_reserve (16 * sizeof (guint32));
 
 	sparc_save_imm (code, sparc_sp, -512, sparc_sp);
 
@@ -249,7 +249,7 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint32 start [64];
+	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
 	int reg;
@@ -258,7 +258,7 @@ mono_arch_get_throw_exception_by_name (void)
 		return start;
 
 	inited = 1;
-	code = start;
+	code = start = mono_global_codeman_reserve (64 * sizeof (guint32));
 
 #ifdef SPARCV9
 	reg = sparc_g4;
@@ -303,7 +303,7 @@ mono_arch_get_throw_exception_by_name (void)
 gpointer 
 mono_arch_get_throw_corlib_exception (void)
 {
-	static guint32 start [64];
+	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
 	int reg;
@@ -312,7 +312,7 @@ mono_arch_get_throw_corlib_exception (void)
 		return start;
 
 	inited = 1;
-	code = start;
+	code = start = mono_global_codeman_reserve (64 * sizeof (guint32));
 
 #ifdef SPARCV9
 	reg = sparc_g4;

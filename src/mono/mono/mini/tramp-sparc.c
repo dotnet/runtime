@@ -53,7 +53,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	if (!m->signature->ret->byref && MONO_TYPE_ISSTRUCT (m->signature->ret))
 		this_pos = 8;
 	    
-	start = code = g_malloc (36);
+	start = code = mono_global_codeman_reserve (36);
 
 	/* This executes in the context of the caller, hence o0 */
 	sparc_add_imm (code, 0, sparc_o0, sizeof (MonoObject), sparc_o0);
@@ -156,7 +156,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		break;
 	}
 
-	code = buf = g_malloc (512);
+	code = buf = mono_global_codeman_reserve (512);
 
 	sparc_save_imm (code, sparc_sp, -608, sparc_sp);
 
@@ -376,7 +376,7 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 {
 	guint8 *ptr, *buf;
 
-	ptr = buf = g_malloc0 (16);
+	ptr = buf = mono_global_codeman_reserve (16);
 	if (notification_address)
 		*notification_address = buf;
 
