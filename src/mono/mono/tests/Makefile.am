@@ -174,7 +174,6 @@ PLATFORM_DISABLED_TESTS=
 endif
 
 DISABLED_TESTS=			\
-	appdomain-unload.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
