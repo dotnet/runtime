@@ -996,6 +996,16 @@ ves_icall_get_attributes (MonoReflectionType *type)
 	return klass->flags;
 }
 
+static MonoFieldInfo*
+ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *handle)
+{
+	g_assert (handle);
+
+	return (MonoFieldInfo*) mono_field_get_object (mono_domain_get (), 
+												   handle->parent,
+												   handle);
+}
+
 static void
 ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
@@ -3372,6 +3382,11 @@ static gconstpointer icall_map [] = {
 	"System.Type::Equals", ves_icall_type_Equals,
 	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
 	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,
+
+	/*
+	 * System.Reflection.FieldInfo
+	 */
+	"System.Reflection.FieldInfo::internal_from_handle", ves_icall_System_Reflection_FieldInfo_internal_from_handle,
 
 	/*
 	 * System.Runtime.CompilerServices.RuntimeHelpers
