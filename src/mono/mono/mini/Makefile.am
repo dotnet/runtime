@@ -15,7 +15,9 @@ WARN=-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations \
 
 INCLUDES = \
 	$(WARN) -fexceptions -DMONO_USE_EXC_TABLES	\
-	-I$(top_srcdir) $(MINI_CFLAGS)
+	-I$(top_srcdir) 	\
+	$(GMODULE_CFLAGS)		\
+	$(GLIB_CFLAGS)
 
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
@@ -30,7 +32,9 @@ mono_SOURCES = \
 	main.c
 
 mono_LDADD = \
-	libmono.la
+	libmono.la		\
+	$(GLIB_LIBS)		\
+	$(GMODULE_LIBS)
 
 mono_LDFLAGS = \
 	-export-dynamic
@@ -42,7 +46,8 @@ genmdesc_SOURCES = \
 
 genmdesc_LDADD = \
 	$(libs) -lgc -lm	\
-	$(MINI_LIBS)
+	$(GLIB_LIBS)		\
+	$(GMODULE_LIBS)
 
 arch_sources = \
 	mini-x86.c		\
@@ -131,12 +136,10 @@ clean:
 	rm -f mono a.out gmon.out *.o test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA= mini.pc
-DISTCLEANFILES= mini.pc
 
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h
 CLEANFILES= $(BUILT_SOURCES)
-EXTRA_DIST = mini.pc.in emullong.brg inssel-float.brg inssel-long.brg  \
+EXTRA_DIST = emullong.brg inssel-float.brg inssel-long.brg  \
 	inssel-long32.brg inssel-x86.brg inssel.brg jit-icalls.c cprop.c \
 	cpu-pentium.md cpu-g4.md
 
