@@ -1,3 +1,7 @@
+2003-10-16  Miguel de Icaza  <miguel@ximian.com>
+
+	* man/mono.1: Document new --trace options
+
 2003-10-13  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* configure.in: add hppa support (64bit only)

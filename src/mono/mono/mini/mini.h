@@ -81,9 +81,10 @@ typedef struct MonoMethodVar MonoMethodVar;
 typedef struct MonoBasicBlock MonoBasicBlock;
 typedef struct MonoLMF MonoLMF;
 typedef struct MonoSpillInfo MonoSpillInfo;
+typedef struct MonoTraceSpec MonoTraceSpec;
 
 extern guint32 mono_jit_tls_id;
-extern gboolean mono_jit_trace_calls;
+extern MonoTraceSpec *mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
@@ -709,5 +710,10 @@ void      mono_debug_open_method                (MonoCompile *cfg);
 void      mono_debug_close_method               (MonoCompile *cfg);
 void      mono_debug_open_block                 (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address);
 void      mono_debug_record_line_number         (MonoCompile *cfg, MonoInst *ins, guint32 address);
+
+
+/* Tracing */
+MonoTraceSpec *mono_trace_parse_options         (MonoAssembly *assembly, char *options);
+gboolean       mono_trace_eval                  (MonoMethod *method);
 
 #endif /* __MONO_MINI_H__ */  

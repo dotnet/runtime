@@ -510,7 +510,7 @@ mini_usage (void)
 		"    --ncompile N           Number of times to compile METHOD (default: 1)\n"
 		"    --regression           Runs the regression test contained in the assembly\n"
 		"    --print-vtable         Print the vtable of all used classes\n"
-		"    --trace                Enable tracing\n"
+		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
 		"    --compile-all          Compiles all the methods in the assembly\n"
 		"    --breakonex            Inserts a breakpoint on exceptions\n"
 		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
@@ -540,8 +540,27 @@ mini_usage (void)
 		fprintf (stderr, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
 }
 
+static void
+mini_trace_usage (void)
+{
+	fprintf (stderr,
+		 "Tracing options:\n"
+		 "   --trace[=EXPR]        Trace every call, optional EXPR controls the scope\n"
+		 "\n"
+		 "EXPR is composed of:\n"
+		 "    all                  All assemblies\n"
+		 "    none                 No assemblies\n"
+		 "    program              Entry point assembly\n"
+		 "    assembly             Specifies an assembly\n"
+		 "    M:Type:Method        Specifies a method\n"
+		 "    T:Type               Specifies a type\n"
+		 "    +EXPR                Includes expression\n"
+		 "    -EXPR                Excludes expression\n");
+}
+
 int
-mono_main (int argc, char* argv[]) {
+mono_main (int argc, char* argv[])
+{
 	MainThreadArgs main_args;
 	MonoAssembly *assembly;
 	MonoMethodDesc *desc;
@@ -555,6 +574,7 @@ mono_main (int argc, char* argv[]) {
 	guint32 opt, action = DO_EXEC;
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
+	char *trace_options = NULL;
 
 	setlocale (LC_ALL, "");
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
@@ -575,6 +595,9 @@ mono_main (int argc, char* argv[]) {
 		} else if (strcmp (argv [i], "--help") == 0 || strcmp (argv [i], "-h") == 0) {
 			mini_usage ();
 			return 0;
+		} else if (strcmp (argv [i], "--help-trace") == 0){
+			mini_trace_usage ();
+			return 0;
 		} else if (strncmp (argv [i], "--statfile", 10) == 0) {
 			mini_stats_fd = fopen (argv [++i], "w+");
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
@@ -587,7 +610,9 @@ mono_main (int argc, char* argv[]) {
 			count = atoi (argv [++i]);
 			action = DO_BENCH;
 		} else if (strcmp (argv [i], "--trace") == 0) {
-			mono_jit_trace_calls = TRUE;
+			trace_options = "";
+		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
+			trace_options = &argv [i][8];
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
 			mono_break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--break") == 0) {
@@ -635,7 +660,7 @@ mono_main (int argc, char* argv[]) {
 
 	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i]);
-
+	
 	switch (action) {
 	case DO_REGRESSION:
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
@@ -687,6 +712,12 @@ mono_main (int argc, char* argv[]) {
 		fprintf (stderr, "cannot open assembly %s\n", aname);
 		mini_cleanup (domain);
 		return 2;
+	}
+
+	if (trace_options != NULL){
+		mono_jit_trace_calls = mono_trace_parse_options (assembly, trace_options);
+		if (mono_jit_trace_calls == NULL)
+			exit (1);
 	}
 
 	if (enable_debugging)

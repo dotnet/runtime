@@ -2696,7 +2696,7 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
 	
-	if (mono_jit_trace_calls)
+	if (mono_jit_trace_calls != NULL)
 		max_epilog_size += 50;
 
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
@@ -2810,7 +2810,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	if (mono_jit_trace_calls)
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 
 	/* load arguments allocated to register from the stack */
@@ -2850,7 +2850,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	code = cfg->native_code + cfg->code_len;
 
-	if (mono_jit_trace_calls)
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
 
 	

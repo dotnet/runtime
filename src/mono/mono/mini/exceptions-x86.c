@@ -993,7 +993,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	if (!test_only) {
 		MonoContext ctx_cp = *ctx;
-		if (mono_jit_trace_calls)
+		if (mono_jit_trace_calls != NULL)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
 		if (!mono_arch_handle_exception (&ctx_cp, obj, TRUE)) {
 			if (mono_break_on_exc)
@@ -1061,7 +1061,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 								g_free (trace);
 								return TRUE;
 							}
-							if (mono_jit_trace_calls)
+							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
@@ -1071,7 +1071,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
-							if (mono_jit_trace_calls)
+							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							call_filter (ctx, ei->handler_start);
 						}

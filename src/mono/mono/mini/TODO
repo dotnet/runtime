@@ -40,3 +40,13 @@ Other Ideas:
   callee saved registers are saved, even when the icall is marked with
   MONO_ARCH_SAVE_REGS. This forces the runtime to generate wrapper functions
   for all icalls, slowing things down greatly.
+
+Usability
+---------
+
+* Remove the various optimization list of flags description, have an 
+  extra --help-optimizations flag.
+
+* Remove the various graph options, have a separate --help-graph for 
+  that list.
+

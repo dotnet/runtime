@@ -83,6 +83,8 @@ sparc_sources = \
 common_sources = \
 	mini.c		\
 	mini.h		\
+	trace.c		\
+	trace.h		\
 	mini-ops.h	\
 	mini-arch.h	\
 	dominators.c	\
