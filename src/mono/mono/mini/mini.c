@@ -201,6 +201,33 @@ print_method_from_ip (void *ip)
 
 }
 
+/* 
+ * mono_method_same_domain:
+ *
+ * Determine whenever two compiled methods are in the same domain, thus
+ * the address of the callee can be embedded in the caller.
+ */
+gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
+{
+	if (!caller || !callee)
+		return FALSE;
+
+	/*
+	 * If the call was made from domain-neutral to domain-specific 
+	 * code, we can't patch the call site.
+	 */
+	if (caller->domain_neutral && !callee->domain_neutral)
+		return FALSE;
+
+	if ((caller->method->klass == mono_defaults.appdomain_class) &&
+		(strstr (caller->method->name, "InvokeInDomain"))) {
+		 /* The InvokeInDomain methods change the current appdomain */
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 MonoJumpInfoToken *
 mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 {
