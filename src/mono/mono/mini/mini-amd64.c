@@ -434,8 +434,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 static CallInfo*
 get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint32 i, gr, fr, simpletype;
-	MonoType *ret_type;
+	guint32 i, gr, fr;
+	MonoType *ret_type, *original_ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
@@ -447,10 +447,9 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	/* return value */
 	{
-		ret_type = sig->ret;
+		original_ret_type = ret_type = sig->ret;
 enum_retvalue:
-		simpletype = ret_type->type;
-		switch (simpletype) {
+		switch (ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -488,10 +487,11 @@ enum_retvalue:
 
 			if (ret_type->data.klass->enumtype) {
 				ret_type = ret_type->data.klass->enum_basetype;
+				original_ret_type = ret_type;
 				goto enum_retvalue;
 			}
 
-			add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (sig, &cinfo->ret, original_ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack)
 				/* The caller passes the address where the value is stored */
 				add_general (&gr, &stack_size, &cinfo->ret);
