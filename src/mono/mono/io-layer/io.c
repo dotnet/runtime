@@ -2688,7 +2688,7 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	if (attrs & FILE_ATTRIBUTE_READONLY) {
 		result = chmod (utf8_name, buf.st_mode & ~(S_IWRITE | S_IWOTH | S_IWGRP));
 	} else {
-		result = chmod (utf8_name, buf.st_mode | S_IWRITE | S_IWOTH | S_IWGRP);
+		result = chmod (utf8_name, buf.st_mode | S_IWRITE);
 	}
 
 	/* Ignore the other attributes for now */
