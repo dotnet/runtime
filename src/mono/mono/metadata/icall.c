@@ -2402,15 +2402,15 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 		if (mono_field_is_deleted (field))
 			continue;
 		mono_array_set (info->names, gpointer, j, mono_string_new (domain, field->name));
-		if (!field->def_value) {
-			field->def_value = g_new0 (MonoConstant, 1);
+
+		if (!field->data) {
 			crow = mono_metadata_get_constant_index (enumc->image, MONO_TOKEN_FIELD_DEF | (i+enumc->field.first+1), crow + 1);
-			field->def_value->type = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_TYPE);
+			field->def_type = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_TYPE);
 			crow = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_VALUE);
-			field->def_value->value = (gpointer)mono_metadata_blob_heap (enumc->image, crow);
+			field->data = (gpointer)mono_metadata_blob_heap (enumc->image, crow);
 		}
 
-		p = field->def_value->value;
+		p = field->data;
 		len = mono_metadata_decode_blob_size (p, &p);
 		switch (enumc->enum_basetype->type) {
 		case MONO_TYPE_U1:

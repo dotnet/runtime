@@ -690,7 +690,7 @@ mono_class_layout_fields (MonoClass *class)
 		int size, align;
 		field = &class->fields [i];
 			
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC) || field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;

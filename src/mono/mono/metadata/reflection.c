@@ -7206,14 +7206,13 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 	if (fb->def_value) {
 		MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
 		field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
-		field->def_value = g_new0 (MonoConstant, 1);
-		idx = encode_constant (assembly, fb->def_value, &field->def_value->type);
+		idx = encode_constant (assembly, fb->def_value, &field->def_type);
 		/* Copy the data from the blob since it might get realloc-ed */
 		p = assembly->blob.data + idx;
 		len = mono_metadata_decode_blob_size (p, &p2);
 		len += p2 - p;
-		field->def_value->value = g_malloc (len);
-		memcpy (field->def_value->value, p, len);
+		field->data = g_malloc (len);
+		memcpy (field->data, p, len);
 	}
 
 	return field;
@@ -7708,14 +7707,13 @@ typebuilder_setup_fields (MonoClass *klass)
 		if (fb->def_value) {
 			MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
 			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
-			field->def_value = g_new0 (MonoConstant, 1);
-			idx = encode_constant (assembly, fb->def_value, &field->def_value->type);
+			idx = encode_constant (assembly, fb->def_value, &field->def_type);
 			/* Copy the data from the blob since it might get realloc-ed */
 			p = assembly->blob.data + idx;
 			len = mono_metadata_decode_blob_size (p, &p2);
 			len += p2 - p;
-			field->def_value->value = g_malloc (len);
-			memcpy (field->def_value->value, p, len);
+			field->data = g_malloc (len);
+			memcpy (field->data, p, len);
 		}
 	}
 	mono_class_layout_fields (klass);

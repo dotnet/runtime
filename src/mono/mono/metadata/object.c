@@ -41,6 +41,12 @@
 #define CREATION_SPEEDUP 1
 #endif
 
+static void
+get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value);
+
+static MonoString*
+mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig);
+
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -478,9 +484,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
 	MonoVTable *vt = NULL;
 	MonoClassField *field;
-	const char *p;
 	char *t;
-	int i, len;
+	int i;
 	guint32 vtable_size;
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
@@ -564,6 +569,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 		if ((field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
 			MonoClass *fklass = mono_class_from_mono_type (field->type);
+			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
 			t = (char*)vt->data + field->offset;
 			if (fklass->valuetype) {
 				memcpy (t, field->data, mono_class_value_size (fklass, NULL));
@@ -577,77 +583,19 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 			continue;
 
-		if (!field->def_value) {
+		
+		if (!field->data) {
 			cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1), cindex + 1);
 			g_assert (cindex);
+			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
 
 			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
-			field->def_value = g_new0 (MonoConstant, 1);
-			field->def_value->type = constant_cols [MONO_CONSTANT_TYPE];
-			field->def_value->value = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
+			field->def_type = constant_cols [MONO_CONSTANT_TYPE];
+			field->data = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
 		}
-
-		p = field->def_value->value;
-		len = mono_metadata_decode_blob_size (p, &p);
-		t = (char*)vt->data + field->offset;
-		/* should we check that the type matches? */
-		switch (field->def_value->type) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-			*t = *p;
-			break;
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2: {
-			guint16 *val = (guint16*)t;
-			*val = read16 (p);
-			break;
-		}
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4: {
-			guint32 *val = (guint32*)t;
-			*val = read32 (p);
-			break;
-		}
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8: {
-			guint64 *val = (guint64*)t;
-			*val = read64 (p);
-			break;
-		}
-		case MONO_TYPE_R4: {
-			float *val = (float*)t;
-			readr4 (p, val);
-			break;
-		}
-		case MONO_TYPE_R8: {
-			double *val = (double*)t;
-			readr8 (p, val);
-			break;
-		}
-		case MONO_TYPE_STRING: {
-			gpointer *val = (gpointer*)t;
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-			gunichar2 *copy = g_malloc (len);
-			int j;
-			for (j = 0; j < len/2; j++) {
-				copy [j] = read16 (p);
-				p += 2;
-			}
-			*val = mono_string_new_utf16 (domain, copy, len/2);
-			g_free (copy);
-#else
-			*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);
-#endif
-			break;
-		}
-		case MONO_TYPE_CLASS:
-			/* nothing to do, we malloc0 the data and the value can be 0 only */
-			break;
-		default:
-			g_warning ("type 0x%02x should not be in constant table", field->def_value->type);
-		}
+		
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
+			get_default_field_value (domain, field, (char*)vt->data + field->offset);
 	}
 
 	vt->max_interface_id = class->max_interface_id;
@@ -1096,7 +1044,9 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 	void *dest;
 
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
-
+	/* you cant set a constant! */
+	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
+	
 	dest = (char*)vt->data + field->offset;
 	set_value (field->type, dest, value, FALSE);
 }
@@ -1182,6 +1132,49 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	return o;
 }
 
+static void
+get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
+{
+	const char *p = field->data;
+	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
+		
+	mono_metadata_decode_blob_size (p, &p);
+
+	switch (field->def_type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+		*(guint8 *) value = *p;
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		*(guint16*) value = read16 (p);
+		break;
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+		*(guint32*) value = read32 (p);
+		break;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		*(guint64*) value = read64 (p);
+		break;
+	case MONO_TYPE_R4:
+		readr4 (p, (float*) value);
+		break;
+	case MONO_TYPE_R8:
+		readr8 (p, (double*) value);
+		break;
+	case MONO_TYPE_STRING:
+		*(gpointer*) value = mono_ldstr_metdata_sig (domain, field->data);
+		break;
+	case MONO_TYPE_CLASS:
+		*(gpointer*) value = NULL;
+		break;
+	default:
+		g_warning ("type 0x%02x should not be in constant table", field->def_type);
+	}
+}
 
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
@@ -1189,6 +1182,11 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 	void *src;
 
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	
+	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
+		get_default_field_value (vt->domain, field, value);
+		return;
+	}
 
 	src = (char*)vt->data + field->offset;
 	set_value (field->type, value, src, TRUE);
@@ -2436,17 +2434,28 @@ mono_string_intern (MonoString *str)
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
-	const char *str, *sig;
-	MonoString *o;
-	size_t len2;
-
 	MONO_ARCH_SAVE_REGS;
 
 	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx);
 	else
-		sig = str = mono_metadata_user_string (image, idx);
+		return mono_ldstr_metdata_sig (domain, mono_metadata_user_string (image, idx));
+}
 
+/*
+ * mono_ldstr_metdata_sig
+ * @domain: the domain for the string
+ * @sig: the signature of a metadata string
+ *
+ * returns a MonoString for a string stored in the metadata
+ */
+static MonoString*
+mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
+{
+	const char *str = sig;
+	MonoString *o;
+	size_t len2;
+	
 	mono_domain_lock (domain);
 	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig))) {
 		mono_domain_unlock (domain);

@@ -80,11 +80,6 @@ struct _MonoMethodPInvoke {
 };
 
 typedef struct {
-	MonoTypeEnum type;
-	gpointer value;
-} MonoConstant;
-
-typedef struct {
 	MonoType *generic_type;
 	gpointer reflection_info;
 } MonoInflatedField;
@@ -116,8 +111,10 @@ struct _MonoClassField {
 	const char      *name;
 
 	/*
-	 * Pointer to the data (from the RVA address, valid only for
-	 * fields with the has rva flag).
+	 * If the field is constant, pointer to the metadata constant
+	 * value.
+	 * If the field has an RVA flag, pointer to the data.
+	 * Else, invalid.
 	 */
 	const char      *data;
 
@@ -125,10 +122,9 @@ struct _MonoClassField {
 	MonoClass       *parent;
 
 	/*
-	 * If the field is constant, pointer to the metadata where the
-	 * constant value can be loaded. Initialized lazily during vtable creation.
+	 * If the field is constant, the type of the constant.
 	 */
-	MonoConstant    *def_value;
+	MonoTypeEnum     def_type;
 };
 
 /* a field is ignored if it's named "_Deleted" and it has the specialname and rtspecialname flags set */
