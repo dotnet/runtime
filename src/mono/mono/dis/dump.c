@@ -23,7 +23,7 @@ dump_table_assembly (metadata_t *m)
 	const char *ptr;
 	int len;
 
-	expand (t, 0, cols, CSIZE (cols));
+	mono_metadata_decode_row (t, 0, cols, CSIZE (cols));
 	fprintf (output, "Assembly Table\n");
 
 	fprintf (output, "Name:          %s\n", mono_metadata_string_heap (m, cols [7]));
@@ -33,7 +33,7 @@ dump_table_assembly (metadata_t *m)
 	fprintf (output, "PublicKey:     BlobPtr (0x%08x)\n", cols [6]);
 
 	ptr = mono_metadata_blob_heap (m, cols [6]);
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 	if (len > 0){
 		fprintf (output, "\tDump:");
 		hex_dump (ptr, 0, len);
@@ -74,7 +74,7 @@ dump_table_typedef (metadata_t *m)
 		char *s = get_typedef (m, i);
 		guint32 cols [6];
 
-		expand (&m->tables [META_TABLE_TYPEDEF], i - 1, cols, CSIZE (cols));
+		mono_metadata_decode_row (&m->tables [META_TABLE_TYPEDEF], i - 1, cols, CSIZE (cols));
 
 		fprintf (output, "%d: %s (flist=%d, mlist=%d)\n", i, s, cols [4], cols [5]);
 		g_free (s);
@@ -95,12 +95,12 @@ dump_table_assemblyref (metadata_t *m)
 		int len;
 		guint32 cols [9];
 
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		fprintf (output, "%d: Version=%d.%d.%d.%d\n\tName=%s\n", i,
 			 cols [0], cols [1], cols [2], cols [3],
 			 mono_metadata_string_heap (m, cols [6]));
 		ptr = mono_metadata_blob_heap (m, cols [6]);
-		ptr = get_encoded_value (ptr, &len);
+		ptr = mono_metadata_decode_value (ptr, &len);
 		if (len > 0){
 			fprintf (output, "\tPublic Key:");
 			hex_dump (ptr, 0, len);
@@ -123,7 +123,7 @@ dump_table_param (metadata_t *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [3];
 
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		fprintf (output, "%d: 0x%04x %d %s\n",
 			 i,
 			 cols [0], cols [1], 
@@ -144,7 +144,7 @@ dump_table_field (metadata_t *m)
 		guint32 cols [3];
 		char *sig, *flags;
 
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		sig = get_field_signature (m, cols [2]);
 		flags = field_flags (cols [0]);
 		fprintf (output, "%d: %s %s: %s\n",
@@ -170,7 +170,7 @@ dump_table_memberref (metadata_t *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [3];
 
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		
 		kind = cols [0] & 7;
 		idx = cols [0] >> 3;
@@ -218,7 +218,7 @@ dump_table_class_layout (metadata_t *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [3];
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		fprintf (output, "%d: PackingSize=%d  ClassSize=%d  Parent=%s\n",
 			 i, cols [0], cols [1], get_typedef (m, cols [2]));
@@ -235,7 +235,7 @@ dump_table_constant (metadata_t *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [4];
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		fprintf (output, "%d: Parent=0x%08x %s\n",
 			 i, cols [2], get_constant (m, (ElementTypeEnum) cols [0], cols [3]));
@@ -258,7 +258,7 @@ dump_table_property (metadata_t *m)
 		char *type;
 		int bsize;
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		flags [0] = 0;
 		if (cols [0] & 0x0200)
 			strcat (flags, "special ");
@@ -268,12 +268,12 @@ dump_table_property (metadata_t *m)
 			strcat (flags, "hasdefault ");
 
 		ptr = mono_metadata_blob_heap (m, cols [2]);
-		ptr = get_blob_encoded_size (ptr, &bsize);
+		ptr = mono_metadata_decode_blob_size (ptr, &bsize);
 		/* ECMA claims 0x08 ... */
 		if (*ptr != 0x28 && *ptr != 0x08)
 				g_warning("incorrect signature in propert blob: 0x%x", *ptr);
 		ptr++;
-		ptr = get_encoded_value (ptr, &pcount);
+		ptr = mono_metadata_decode_value (ptr, &pcount);
 		ptr = get_type (m, ptr, &type);
 		fprintf (output, "%d: %s %s (",
 			 i, type, mono_metadata_string_heap (m, cols [1]));
@@ -300,7 +300,7 @@ dump_table_event (metadata_t *m)
 		const char *name;
 		char *type;
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		name = mono_metadata_string_heap (m, cols [1]);
 		type = get_typedef_or_ref (m, cols [2]);
@@ -322,7 +322,7 @@ dump_table_file (metadata_t *m)
 		guint32 cols [3];
 		const char *name;
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		name = mono_metadata_string_heap (m, cols[1]);
 		fprintf (output, "%d: %s %s\n", i, name, cols[2]&0x1?"nometadata":"containsmetadata");
@@ -341,7 +341,7 @@ dump_table_moduleref (metadata_t *m)
 		guint32 cols [1];
 		const char *name;
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		name = mono_metadata_string_heap (m, cols[0]);
 		fprintf (output, "%d: %s\n", i, name);
@@ -360,7 +360,7 @@ dump_table_method (metadata_t *m)
 		guint32 cols [6];
 		const char *name;
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		name = mono_metadata_string_heap (m, cols[3]);
 		fprintf (output, "%d: %s\n", i, name);

@@ -4,7 +4,7 @@
 
 #include <glib.h>
 
-#include "eltype.h"
+#include <mono/metadata/eltype.h>
 
 typedef struct {
 	guint32  sh_offset;
@@ -74,6 +74,11 @@ typedef struct {
 	 */
 	guint32   size_bitfield;
 } metadata_tableinfo_t;
+
+void         mono_metadata_decode_row (metadata_tableinfo_t  *t,
+				       int                    idx,
+				       guint32               *res,
+				       int                    res_size);
 
 /*
  * This macro is used to extract the size of the table encoded in
@@ -174,21 +179,20 @@ MonoMetaTable *mono_metadata_get_table    (MetaTableEnum table);
 /*
  *
  */
-char          *mono_metadata_locate       (metadata_t *meta, int table, int idx);
-char          *mono_metadata_locate_token (metadata_t *meta, guint32 token);
+char          *mono_metadata_locate        (metadata_t *meta, int table, int idx);
+char          *mono_metadata_locate_token  (metadata_t *meta, guint32 token);
+					   
+const char    *mono_metadata_string_heap   (metadata_t *meta, guint32 index);
+const char    *mono_metadata_blob_heap     (metadata_t *meta, guint32 index);
+const char    *mono_metadata_user_string   (metadata_t *meta, guint32 index);
 
-const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);
-const char    *mono_metadata_blob_heap    (metadata_t *meta, guint32 index);
-const char    *mono_metadata_user_string  (metadata_t *meta, guint32 index);
-
+/*
+ * Functions to extract information from the Blobs
+ */
 const char  *mono_metadata_decode_value     (const char            *ptr,
                                              guint32               *len);
 const char  *mono_metadata_decode_blob_size (const char            *xptr,
                                              int                   *size);
-void         mono_metadata_decode_row       (metadata_tableinfo_t  *t,
-                                             int                    idx,
-                                             guint32               *res,
-                                             int                    res_size);
 
 typedef enum {
 	MONO_META_EXCEPTION_CLAUSE_NONE,

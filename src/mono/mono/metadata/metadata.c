@@ -784,7 +784,15 @@ parse_exception_handler (const char *ptr, gboolean is_fat)
 	return eh;
 }
 
-/* cut and paste from expand: remove that one later */
+/**
+ * mono_metadata_decode_row:
+ * @t: table to extract information from.
+ * @idx: index in table.
+ * @res: array of @res_size cols to store the results in
+ *
+ * This decompresses the metadata element @idx in table @t
+ * into the guint32 @res array that has res_size elements
+ */
 void
 mono_metadata_decode_row (metadata_tableinfo_t *t, int idx, guint32 *res, int res_size)
 {
@@ -813,6 +821,16 @@ mono_metadata_decode_row (metadata_tableinfo_t *t, int idx, guint32 *res, int re
 	}
 }
 
+/**
+ * mono_metadata_decode_blob_size:
+ * @ptr: pointer to a blob object
+ * @size: where we return the size of the object
+ *
+ * This decodes a compressed size as described by 23.1.4
+ *
+ * Returns: the position to start decoding a blob or user string object
+ * from. 
+ */
 const char *
 mono_metadata_decode_blob_size (const char *xptr, int *size)
 {
@@ -835,7 +853,17 @@ mono_metadata_decode_blob_size (const char *xptr, int *size)
 	return (char *) ptr;
 }
 
-/* cut and paste from get_encode_val */
+
+/**
+ * mono_metadata_decode_value:
+ * @ptr: pointer to decode from
+ * @len: result value is stored here.
+ *
+ * This routine decompresses 32-bit values as specified in the "Blob and
+ * Signature" section (22.2)
+ *
+ * Returns: updated pointer location
+ */
 const char *
 mono_metadata_decode_value (const char *_ptr, guint32 *len)
 {
@@ -1120,54 +1148,6 @@ mono_metadata_free_type (MonoType *type)
 		break;
 	}
 	g_free (type);
-}
-
-MonoMethod *
-mono_get_method (cli_image_info_t *iinfo, guint32 token)
-{
-	MonoMethod *result = g_new0 (MonoMethod, 1);
-	int table = mono_metadata_token_table (token);
-	int index = mono_metadata_token_index (token);
-	metadata_tableinfo_t *tables = iinfo->cli_metadata.tables;
-	const char *loc;
-	const char *sig = NULL;
-	int size;
-	guint32 cols[6];
-
-	/*
-	 * We need a context with cli_image_info_t for this module and the assemblies
-	 * loaded later to support method refs...
-	 */
-	if (table != META_TABLE_METHOD) {
-		g_assert (table == META_TABLE_MEMBERREF);
-		mono_metadata_decode_row (&tables [table], index, cols, 3);
-		g_assert ((cols [0] & 0x07) != 3);
-		table = META_TABLE_METHOD;
-		index = cols [0] >> 3;
-		sig = mono_metadata_blob_heap (&iinfo->cli_metadata, cols [2]);
-		result->name = cols [1];
-	}
-	
-	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
-	result->name = cols [3];
-	/* if this is a methodref from another module/assembly, this fails */
-	loc = cli_rva_map (iinfo, cols [0]);
-	g_assert (loc);
-	result->header = mono_metadata_parse_mh (&iinfo->cli_metadata, loc);
-	if (!sig) /* already taken from the methodref */
-		sig = mono_metadata_blob_heap (&iinfo->cli_metadata, cols [4]);
-	sig = mono_metadata_decode_blob_size (sig, &size);
-	result->signature = mono_metadata_parse_method_signature (&iinfo->cli_metadata, 0, sig, NULL);
-
-	return result;
-}
-
-void
-mono_free_method  (MonoMethod *method)
-{
-	mono_metadata_free_method_signature (method->signature);
-	mono_metadata_free_mh (method->header);
-	g_free (method);
 }
 
 /** 

@@ -49,7 +49,7 @@ dis_directive_assembly (metadata_t *m)
 	if (t->base == NULL)
 		return;
 
-	expand (t, 0, cols, CSIZE (cols));
+	mono_metadata_decode_row (t, 0, cols, CSIZE (cols));
 	
 	fprintf (output,
 		 ".assembly %s\n"
@@ -80,7 +80,7 @@ dis_directive_assemblyref (metadata_t *m)
 		return;
 
 	for (i = 0; i < t->rows; i++){
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		fprintf (output,
 			 ".assembly extern %s\n"
@@ -172,7 +172,7 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 	for (i = start; i < end; i++){
 		char *sig, *flags;
 		
-		expand (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		sig = get_field_signature (m, cols [2]);
 		flags = field_flags (cols [0]);
 		
@@ -294,24 +294,24 @@ dis_locals (metadata_t *m, guint32 token)
 	guint32 cols[1];
 	int len=0, i, bsize;
 
-	expand (t, (token&0xffffff)-1, cols, CSIZE(cols));
+	mono_metadata_decode_row (t, (token&0xffffff)-1, cols, CSIZE(cols));
 	ptr = mono_metadata_blob_heap (m, cols[0]);
-	ptr = get_blob_encoded_size (ptr, &bsize);
+	ptr = mono_metadata_decode_blob_size (ptr, &bsize);
 	if (*ptr != 0x07)
 			g_warning("wrong signature for locals blob");
 	ptr++;
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 	fprintf(output, "\t.locals ( // %d\n", len);
 	for (i=0; i < len; ++i) {
 		int val;
 		char * desc = NULL;
 		const char *p = ptr;
 		MonoType *type;
-		ptr = get_encoded_value (ptr, &val);
+		ptr = mono_metadata_decode_value (ptr, &val);
 		if (val == ELEMENT_TYPE_PINNED) {
 			fprintf(output, "//pinned\n");
 			p = ptr;
-			ptr = get_encoded_value (ptr, &val);
+			ptr = mono_metadata_decode_value (ptr, &val);
 		}
 		if (val == ELEMENT_TYPE_BYREF) {
 			fprintf(output, "// byref\n");
@@ -383,14 +383,14 @@ parse_method_signature (metadata_t *m, guint32 blob_signature)
 	MethodSignature *ms = g_new0 (MethodSignature, 1);
 	int i, len;
 
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 	fprintf (output, "     // SIG: ");
 	hex_dump (ptr, 0, -len);
 	fprintf (output, "\n");
 	
 	ms->flags = *ptr++;
 
-	ptr = get_encoded_value (ptr, &ms->param_count);
+	ptr = mono_metadata_decode_value (ptr, &ms->param_count);
 	ptr = get_ret_type (m, ptr, &ms->ret_type);
 	ms->param = g_new (char *, ms->param_count);
 	
@@ -440,8 +440,8 @@ dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end
 		MethodSignature *ms;
 		char *flags, *impl_flags;
 		
-		expand (t, i, cols, CSIZE (cols));
-		expand (t, i + 1, cols_next, CSIZE (cols_next));
+		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i + 1, cols_next, CSIZE (cols_next));
 
 		flags = method_flags (cols [2]);
 		impl_flags = method_impl_flags (cols [1]);
@@ -462,7 +462,7 @@ dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end
 			for (i = 0; i < ms->param_count; i++){
 				char *pf;
 				
-				expand (p, i, param_cols, CSIZE (param_cols));
+				mono_metadata_decode_row (p, i, param_cols, CSIZE (param_cols));
 				pf = param_flags (param_cols [0]);
 				fprintf (
 					output, "\t\t%s %s %s%s", pf, ms->param [i],
@@ -501,10 +501,10 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	const char *name;
 	gboolean next_is_valid, last;
 	
-	expand (t, n, cols, CSIZE (cols));
+	mono_metadata_decode_row (t, n, cols, CSIZE (cols));
 
 	if (t->rows > n+1){
-		expand (t, n + 1, cols_next, CSIZE (cols_next));
+		mono_metadata_decode_row (t, n + 1, cols_next, CSIZE (cols_next));
 		next_is_valid = 1;
 	} else
 		next_is_valid = 0;
@@ -632,7 +632,18 @@ disassemble_file (const char *file)
 static void
 usage (void)
 {
-	fprintf (stderr, "Usage is: monodis [--typeref][--typedef][--assemblyref][--param][--fields][--memberref] file ..\n");
+	GString *args = g_string_new ("");
+	int i;
+	
+	for (i = 0; table_list [i].name != NULL; i++){
+		g_string_append (args, "[");
+		g_string_append (args, table_list [i].name);
+		g_string_append (args, "] ");
+		if ((i % 4) == 0)
+			g_string_append_c (args, '\n');
+	}
+	fprintf (stderr,
+		 "Usage is: monodis %s file ..\n", args);
 	exit (1);
 }
 

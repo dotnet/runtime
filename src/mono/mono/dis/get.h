@@ -50,7 +50,4 @@ const char *get_param                  (metadata_t *m, const char *ptr,
 					char **retval);
 const char *get_blob_encoded_size      (const char *ptr, int *size);
 
-void expand (metadata_tableinfo_t *t, int idx, guint32 *res, int res_size);
-
-
 ElementTypeEnum get_field_literal_type (metadata_t *m, guint32 blob_signature);

@@ -59,6 +59,7 @@ static int count = 0;
  * Don't look at these macros, it hurts...
  */
 #define GOTO_LABEL
+#undef GOTO_LABEL
 #ifdef GOTO_LABEL
 #define SWITCH(a) goto *goto_map [(a)];
 #define BREAK SWITCH(*ip)
@@ -106,6 +107,14 @@ static int count = 0;
 #define CASE(l)	case l:
 #define SUB_SWITCH case 0xFE:
 #endif
+
+void
+ves_abort (cli_image_info_t *iinfo, MonoMethod *mh, unsigned char *ip, stackval *stack)
+{
+	printf ("In method: %s\n", 
+	printf ("Aborted execution");
+	abort (1);
+}
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -157,10 +166,10 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 #ifdef GOTO_LABEL
 		START:
 #endif
-		/*g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
+		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
 		if (sp > stack)
 				printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
-		*/
+		
 		SWITCH (*ip) {
 		CASE (CEE_NOP) 
 			++ip;

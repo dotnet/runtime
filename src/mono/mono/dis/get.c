@@ -16,81 +16,12 @@
 #include "util.h"
 #include "get.h"
 
-/**
- * expand:
- * @t: table to extract information from.
- * @idx: index in table.
- * @res: array of @res_size cols to store the results in
- *
- * This decompresses the metadata element @idx in table @t
- * into the guint32 @res array that has res_size elements
- */
-void
-expand (metadata_tableinfo_t *t, int idx, guint32 *res, int res_size)
-
-{
-	guint32 bitfield = t->size_bitfield;
-	int i, count = meta_table_count (bitfield);
-	char *data = t->base + idx * t->row_size;
-	
-	g_assert (res_size == count);
-	
-	for (i = 0; i < count; i++){
-		int n = meta_table_size (bitfield, i);
-
-		switch (n){
-		case 1:
-			res [i] = *data; break;
-		case 2:
-			res [i] = read16 (data); break;
-			
-		case 4:
-			res [i] = read32 (data); break;
-			
-		default:
-			g_assert_not_reached ();
-		}
-		data += n;
-	}
-}
-
-/**
- * get_encoded_value:
- * @ptr: pointer to decode from
- * @len: result value is stored here.
- *
- * This routine decompresses 32-bit values as specified in the "Blob and
- * Signature" section (22.2)
- *
- * Returns: updated pointer location
- */
-const char *
-get_encoded_value (const char *_ptr, guint32 *len)
-{
-	const unsigned char *ptr = (unsigned char *) _ptr;
-	unsigned char b = *ptr;
-	
-	if ((b & 0x80) == 0){
-		*len = b;
-		return ptr+1;
-	} else if ((b & 0x40) == 0){
-		*len = ((b & 0x3f) << 8 | ptr [1]);
-		return ptr + 2;
-	}
-	*len = ((b & 0x1f) << 24) |
-		(ptr [1] << 16) |
-		(ptr [2] << 8) |
-		ptr [3];
-	
-	return ptr + 4;
-}
-
 char *
 get_typedef (metadata_t *m, int idx)
 {
 	guint32 cols [6];
 
-	expand (&m->tables [META_TABLE_TYPEDEF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [META_TABLE_TYPEDEF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup_printf (
 		"%s.%s",
@@ -108,7 +39,7 @@ get_module (metadata_t *m, int idx)
 	 */
 	g_assert (idx == 1);
 	    
-	expand (&m->tables [META_TABLE_MODULEREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [META_TABLE_MODULEREF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup (mono_metadata_string_heap (m, cols [6]));
 }
@@ -118,7 +49,7 @@ get_assemblyref (metadata_t *m, int idx)
 {
 	guint32 cols [9];
 	
-	expand (&m->tables [META_TABLE_ASSEMBLYREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [META_TABLE_ASSEMBLYREF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup (mono_metadata_string_heap (m, cols [6]));
 }
@@ -136,21 +67,21 @@ get_array_shape (metadata_t *m, const char *ptr, char **result)
 	int i, r;
 	char buffer [80];
 	
-	ptr = get_encoded_value (ptr, &rank);
-	ptr = get_encoded_value (ptr, &num_sizes);
+	ptr = mono_metadata_decode_value (ptr, &rank);
+	ptr = mono_metadata_decode_value (ptr, &num_sizes);
 
 	if (num_sizes > 0)
 		sizes = g_new (guint32, num_sizes);
 	
 	for (i = 0; i < num_sizes; i++)
-		ptr = get_encoded_value (ptr, &(sizes [i]));
+		ptr = mono_metadata_decode_value (ptr, &(sizes [i]));
 
-	ptr = get_encoded_value (ptr, &num_lo_bounds);
+	ptr = mono_metadata_decode_value (ptr, &num_lo_bounds);
 	if (num_lo_bounds > 0)
 		lo_bounds = g_new (guint32, num_lo_bounds);
 	
 	for (i = 0; i < num_lo_bounds; i++)
-		ptr = get_encoded_value (ptr, &(lo_bounds [i]));
+		ptr = mono_metadata_decode_value (ptr, &(lo_bounds [i]));
 
 	for (r = 0; r < rank; r++){
 		if (r < num_sizes){
@@ -196,9 +127,9 @@ get_typespec (metadata_t *m, guint32 idx)
 	GString *res = g_string_new ("");
 	int len;
 
-	expand (&m->tables [META_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [META_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
 	ptr = mono_metadata_blob_heap (m, cols [0]);
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 	
 	switch (*ptr++){
 	case ELEMENT_TYPE_PTR:
@@ -266,7 +197,7 @@ get_typeref (metadata_t *m, int idx)
 	char *x, *ret;
 	guint32 rs_idx, table;
 	
-	expand (&m->tables [META_TABLE_TYPEREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [META_TABLE_TYPEREF], idx - 1, cols, CSIZE (cols));
 
 	t = mono_metadata_string_heap (m, cols [1]);
 	s = mono_metadata_string_heap (m, cols [2]);
@@ -373,7 +304,7 @@ get_encoded_typedef_or_ref (metadata_t *m, const char *ptr, char **result)
 {
 	guint32 token;
 	
-	ptr = get_encoded_value (ptr, &token);
+	ptr = mono_metadata_decode_value (ptr, &token);
 
 	*result = get_typedef_or_ref (m, token);
 
@@ -404,26 +335,6 @@ get_custom_mod (metadata_t *m, const char *ptr, char **return_value)
 	return ptr;
 }
 
-
-/**
- * methoddefref_signature:
- * @m: metadata context 
- * @ptr: location to decode from.
- * @result: pointer to string where resulting decoded string is stored
- *
- * This routine decodes into a string a MethodDef or a MethodRef.
- *
- * result will point to a g_malloc()ed string.
- *
- * Returns: the new ptr to continue decoding
- */
-static const char *
-methoddefref_signature (metadata_t *m, const char *ptr, char **result)
-{
-	*result = g_strdup ("method-def-or-ref");
-	
-	return ptr;
-}
 
 static map_t element_type_map [] = {
 	{ ELEMENT_TYPE_END        , "end" },
@@ -690,7 +601,7 @@ get_field_signature (metadata_t *m, guint32 blob_signature)
 	char *res;
 	int len;
 	
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 	base = ptr;
 	/* FIELD is 0x06 */
 	g_assert (*ptr == 0x06);
@@ -720,7 +631,7 @@ get_field_literal_type (metadata_t *m, guint32 blob_signature)
 	int len;
 	char *allocated_modifier_string;
 	
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 
 	/* FIELD is 0x06 */
 	g_assert (*ptr == 0x06);
@@ -891,38 +802,6 @@ field_flags (guint32 f)
 }
 
 /**
- * get_blob_encoded_size:
- * @ptr: pointer to a blob object
- * @size: where we return the size of the object
- *
- * This decodes a compressed size as described by 23.1.4
- *
- * Returns: the position to start decoding a blob or user string object
- * from. 
- */
-const char *
-get_blob_encoded_size (const char *xptr, int *size)
-{
-	const unsigned char *ptr = xptr;
-	
-	if ((*ptr & 0x80) == 0){
-		*size = ptr [0] & 0x7f;
-		ptr++;
-	} else if ((*ptr & 0x40) == 0){
-		*size = ((ptr [0] & 0x3f) << 8) + ptr [1];
-		ptr += 2;
-	} else {
-		*size = ((ptr [0] & 0x1f) << 24) +
-			(ptr [1] << 16) +
-			(ptr [2] << 8) +
-			ptr [3];
-		ptr += 4;
-	}
-
-	return (char *) ptr;
-}
-
-/**
  * Returns a stringifed representation of a MethodRefSig (22.2.2)
  */
 char *
@@ -935,7 +814,7 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fanc
 	int param_count, signature_len;
 	int i;
 	
-	ptr = get_encoded_value (ptr, &signature_len);
+	ptr = mono_metadata_decode_value (ptr, &signature_len);
 
 	if (*ptr & 0x20){
 		if (*ptr & 0x40)
@@ -948,7 +827,7 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fanc
 		seen_vararg = 1;
 
 	ptr++;
-	ptr = get_encoded_value (ptr, &param_count);
+	ptr = mono_metadata_decode_value (ptr, &param_count);
 	ptr = get_ret_type (m, ptr, &allocated_ret_type);
 
 	g_string_append (res, allocated_ret_type);
@@ -1010,7 +889,7 @@ typedef_locator (const void *a, const void *b)
 	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
 	guint32 cols [6], cols_next [6];
 
-	expand (loc->t, typedef_index, cols, CSIZE (cols));
+	mono_metadata_decode_row (loc->t, typedef_index, cols, CSIZE (cols));
 
 	if (loc->idx < cols [4])
 		return -1;
@@ -1019,7 +898,7 @@ typedef_locator (const void *a, const void *b)
 	 * Need to check that the next row is valid.
 	 */
 	if (typedef_index + 1 < loc->t->rows) {
-		expand (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
+		mono_metadata_decode_row (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
 		if (loc->idx >= cols_next [4])
 			return 1;
 
@@ -1059,7 +938,7 @@ get_field (metadata_t *m, guint32 token)
 	}
 	g_assert (mono_metadata_token_code (token) == TOKEN_TYPE_FIELD_DEF);
 
-	expand (&m->tables [META_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [META_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
 	sig = get_field_signature (m, cols [2]);
 
 	/*
@@ -1136,11 +1015,14 @@ get_method (metadata_t *m, guint32 token)
 	case TOKEN_TYPE_MEMBER_REF: {
 		char *sig;
 		
-		expand (&m->tables [META_TABLE_MEMBERREF], idx - 1, member_cols, CSIZE (member_cols));
+		mono_metadata_decode_row (&m->tables [META_TABLE_MEMBERREF],
+					  idx - 1, member_cols,
+					  CSIZE (member_cols));
 		class = get_memberref_parent (m, member_cols [0]);
-		fancy_name = g_strconcat (class, "::",
-					  mono_metadata_string_heap (m, member_cols [1]),
-					  NULL);
+		fancy_name = g_strconcat (
+			class, "::",
+			mono_metadata_string_heap (m, member_cols [1]),
+			NULL);
 		
 		sig = get_methodref_signature (
 			m, member_cols [2], fancy_name);
@@ -1171,7 +1053,7 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 	const char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
 	
-	ptr = get_encoded_value (ptr, &len);
+	ptr = mono_metadata_decode_value (ptr, &len);
 	
 	switch (t){
 	case ELEMENT_TYPE_BOOLEAN:
