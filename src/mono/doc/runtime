@@ -1,4 +1,4 @@
-* The MonoNet runtime
+ The MonoNet runtime
 
 	The MonoNet runtime will implement the JIT engine (and a byte
 	code interpreter for quickly porting to new systems), the
@@ -57,11 +57,14 @@
 	href="http://www.gnu.org/software/lightning/">GNU
 	Lightning</a>, and <a
 	href="http://www.eecs.harvard.edu/~nr/toolkit/">NJ Machine
-	Toolkit</a>.
+	Toolkit</a>.).
 
 	We have not made a decision yet, but we might want to use a
 	Code Generator Generator for the Common Intermediate Language,
-	as that is likely going to allow us to create better code.
+	as that is likely going to allow us to create better code
+	(There are a couple of books that deal with this technique: "A
+	Retargetable C Compiler" and "Advanced Compiler Design and
+	Implementation"). 
 
 ** Garbage Collection
 

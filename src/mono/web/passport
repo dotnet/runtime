@@ -114,7 +114,7 @@
 
 		* <b>Allow for multiple registrars:</b> Users should
 		be able to choose a registrar (their banks, local
-		phone company, service provider, Swizz bank, or any
+		phone company, service provider, Swiss bank, or any
 		other entity they trust.
 
 		* <b>Mandate good security measures:</b> As a
@@ -158,6 +158,11 @@
 	figure out the details and the possible insecure pieces of a
 	proposal like this.
 
+** Implementation: In short
+
+	To keep it short: <b>DNS, JXTA, xmlStorage.</b>
+
+
 ** Deploying it
 
 	The implementation of such a system should be a pretty
@@ -174,7 +179,7 @@
 		laws to be passed in the US that eliminated most of
 		the rights people had.  
 
-		* <b>The industry will move way to slow:</b>
+		* <b>The industry will move way too slow:</b>
 		Microsoft's implementation is out in the open now: it
 		is being deployed, and soon it will be insinuated to
 		many, many users.  The industry needs to get together
@@ -212,8 +217,18 @@
 	The views of this page are not a statement from my employer
 	(Ximian, Inc).
 
+	This is not part of Mono.  We are not trying to deal with this
+	problem. 
+
 	Nat Friedman (Ximian's co-founder) has his own ideas on how a
 	competing system to Passport could be designed, but I will let
-	<a href="http://www.nat.org">him</a> post his own story.
+	<a href="http://www.nat.org/gym">him</a> post his own story.
 
-Send comments to me: Miguel de Icaza (<a href="mailto:miguel@ximian.com">miguel@ximian.com</a>)
+** Other Alternatives
+
+	Some people have pointed out <a
+	href="http://www.xns.org">XNS</a>
+
+Send comments to me: Miguel de Icaza (<a
+	href="mailto:miguel@ximian.com">miguel@ximian.com</a>)
+
