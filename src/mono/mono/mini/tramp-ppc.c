@@ -85,9 +85,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	gpointer addr;
 	int reg;
 
-	EnterCriticalSection(metadata_section);
 	addr = mono_compile_method(method);
-	LeaveCriticalSection(metadata_section);
 	g_assert(addr);
 
 	/* Locate the address of the method-specific trampoline. The call using
@@ -496,9 +494,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	char *o;
 	gpointer addr;
 
-	EnterCriticalSection (metadata_section);
 	addr = mono_compile_method (m);
-	LeaveCriticalSection (metadata_section);
 	g_assert (addr);
 
 	/* go to the start of the call instruction

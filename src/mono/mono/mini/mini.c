@@ -7228,8 +7228,6 @@ mono_jit_create_remoting_trampoline (MonoMethod *method)
 	return addr;
 }
 
-static CRITICAL_SECTION ms;
-
 MonoDomain *
 mini_init (const char *filename)
 {
@@ -7238,9 +7236,6 @@ mini_init (const char *filename)
 	mono_arch_cpu_init ();
 
 	g_thread_init (NULL);
-
-	metadata_section = &ms;
-	InitializeCriticalSection (metadata_section);
 
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, NULL);
@@ -7414,7 +7409,6 @@ mini_cleanup (MonoDomain *domain)
 	mono_domain_unload (domain, TRUE);
 
 	print_jit_stats ();
-	DeleteCriticalSection (metadata_section);
 }
 
 void

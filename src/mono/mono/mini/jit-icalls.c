@@ -17,9 +17,7 @@ mono_ldftn (MonoMethod *method)
 
 	MONO_ARCH_SAVE_REGS;
 
-	EnterCriticalSection (metadata_section);
 	addr = mono_compile_method (method);
-	LeaveCriticalSection (metadata_section);
 
 	return addr;
 }

@@ -87,9 +87,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	char *o;
 	gpointer addr;
 
-	EnterCriticalSection (metadata_section);
 	addr = mono_compile_method (m);
-	LeaveCriticalSection (metadata_section);
 	g_assert (addr);
 
 	/* the method was jumped to */
