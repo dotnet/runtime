@@ -2506,6 +2506,67 @@ threading_classes_to_check [] = {
 	{NULL, NULL}
 };
 
+static const FieldDesc
+cinfo_fields[] = {
+	{"datetime_format", G_STRUCT_OFFSET (MonoCultureInfo, datetime_format)},
+	{"number_format", G_STRUCT_OFFSET (MonoCultureInfo, number_format)},
+	{"textinfo", G_STRUCT_OFFSET (MonoCultureInfo, textinfo)},
+	{"name", G_STRUCT_OFFSET (MonoCultureInfo, name)},
+	{"displayname", G_STRUCT_OFFSET (MonoCultureInfo, displayname)},
+	{"englishname", G_STRUCT_OFFSET (MonoCultureInfo, englishname)},
+	{"nativename", G_STRUCT_OFFSET (MonoCultureInfo, nativename)},
+	{"iso3lang", G_STRUCT_OFFSET (MonoCultureInfo, iso3lang)},
+	{"iso2lang", G_STRUCT_OFFSET (MonoCultureInfo, iso2lang)},
+	{"icu_name", G_STRUCT_OFFSET (MonoCultureInfo, icu_name)},
+	{"win3lang", G_STRUCT_OFFSET (MonoCultureInfo, win3lang)},
+	{"compareinfo", G_STRUCT_OFFSET (MonoCultureInfo, compareinfo)},
+	{NULL, 0}
+};
+
+static const FieldDesc
+dtfinfo_fields[] = {
+	{"_AMDesignator", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, AMDesignator)},
+	{"_PMDesignator", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, PMDesignator)},
+	{"_DayNames", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, DayNames)},
+	{"_MonthNames", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, MonthNames)},
+	{NULL, 0}
+};
+
+static const FieldDesc
+nfinfo_fields[] = {
+	{"decimalFormats", G_STRUCT_OFFSET (MonoNumberFormatInfo, decimalFormats)},
+	{"currencySymbol", G_STRUCT_OFFSET (MonoNumberFormatInfo, currencySymbol)},
+	{"percentSymbol", G_STRUCT_OFFSET (MonoNumberFormatInfo, percentSymbol)},
+	{"positiveSign", G_STRUCT_OFFSET (MonoNumberFormatInfo, positiveSign)},
+	{NULL, 0}
+};
+
+static const FieldDesc
+compinfo_fields[] = {
+	{"lcid", G_STRUCT_OFFSET (MonoCompareInfo, lcid)},
+	{"ICU_collator", G_STRUCT_OFFSET (MonoCompareInfo, ICU_collator)},
+	{NULL, 0}
+};
+
+static const FieldDesc
+sortkey_fields[] = {
+	{"str", G_STRUCT_OFFSET (MonoSortKey, str)},
+	{"options", G_STRUCT_OFFSET (MonoSortKey, options)},
+	{"key", G_STRUCT_OFFSET (MonoSortKey, key)},
+	{"lcid", G_STRUCT_OFFSET (MonoSortKey, lcid)},
+	{NULL, 0}
+};
+
+static const ClassDesc
+globalization_classes_to_check [] = {
+	{"CultureInfo", cinfo_fields},
+	{"DateTimeFormatInfo", dtfinfo_fields},
+	{"NumberFormatInfo", nfinfo_fields},
+	{"CompareInfo", compinfo_fields},
+	{"SortKey", sortkey_fields},
+	{NULL, NULL}
+};
+
 typedef struct {
 	const char *name;
 	const ClassDesc *types;
@@ -2520,6 +2581,7 @@ namespaces_to_check[] = {
 	{"System.Threading", threading_classes_to_check},
 	{"System.Diagnostics", system_diagnostics_classes_to_check},
 	{"System", system_classes_to_check},
+	{"System.Globalization", globalization_classes_to_check},
 	{NULL, NULL}
 };
 

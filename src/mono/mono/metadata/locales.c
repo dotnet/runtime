@@ -23,7 +23,9 @@
 
 static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 					     gint32 options);
-static gint32 string_invariant_compare (MonoString *str1, MonoString *str2,
+static gint32 string_invariant_compare (MonoString *str1, gint32 off1,
+					gint32 len1, MonoString *str2,
+					gint32 off2, gint32 len2,
 					gint32 options);
 static MonoString *string_invariant_replace (MonoString *me,
 					     MonoString *oldValue,
@@ -31,125 +33,34 @@ static MonoString *string_invariant_replace (MonoString *me,
 static gint32 string_invariant_indexof (MonoString *source, gint32 sindex,
 					gint32 count, MonoString *value,
 					MonoBoolean first);
+static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
+					     gint32 count, gunichar2 value,
+					     MonoBoolean first);
 static MonoString *string_invariant_tolower (MonoString *this);
 static MonoString *string_invariant_toupper (MonoString *this);
-
-static void set_field_by_name (MonoObject *obj, const guchar *fieldname,
-			       gpointer value)
-{
-	MonoClassField *field;
-
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
-	if(field!=NULL) {
-		mono_field_set_value (obj, field, value);
-	} else {
-		g_warning (G_GNUC_PRETTY_FUNCTION ": Runtime mismatch with class lib! (Looking for field [%s] in %s.%s)", fieldname, mono_object_class (obj)->name_space, mono_object_class (obj)->name);
-	}
-}
-
-static gpointer get_field_by_name (MonoObject *obj, const guchar *fieldname)
-{
-	MonoClassField *field;
-	gpointer ret;
-	
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
-
-	if(field==NULL) {
-		g_warning (G_GNUC_PRETTY_FUNCTION ": Runtime mismatch with class lib! (Looking for field [%s] in %s.%s)", fieldname, mono_object_class (obj)->name_space, mono_object_class (obj)->name);
-		return(NULL);
-	}
-	
-	mono_field_get_value (obj, field, &ret);
-	return(ret);
-}
 
 #ifdef HAVE_ICU
 
 #include <unicode/utypes.h>
 #include <unicode/ustring.h>
 #include <unicode/ures.h>
-#include <unicode/ucnv.h>
 #include <unicode/ucol.h>
 #include <unicode/usearch.h>
 
-static MonoString *monostring_from_UChars (const UChar *res_str,
-					   UConverter *conv)
+static MonoString *monostring_from_resource_index (const UResourceBundle *bundle, int32_t idx)
 {
-	MonoString *str;
-	UErrorCode ec;
-	char *utf16_str;
-	int32_t ret, utf16_strlen;
-	
-	utf16_strlen=u_strlen (res_str)*ucnv_getMaxCharSize (conv)+2;
-	utf16_str=(char *)g_malloc0 (sizeof(char)*utf16_strlen);
-	
-	ec=U_ZERO_ERROR;
-	ret=ucnv_fromUChars (conv, utf16_str, utf16_strlen, res_str, -1, &ec);
-	if(ec==U_BUFFER_OVERFLOW_ERROR ||
-	   ec==U_STRING_NOT_TERMINATED_WARNING) {
-		/* This should never happen, cos we gave ourselves the
-		 * maximum length needed above
-		 */
-		g_assert_not_reached ();
-	}
-	
-	str=mono_string_from_utf16 ((gunichar2 *)utf16_str);
-	
-	g_free (utf16_str);
-	
-	return(str);
-}
-
-static UChar *monostring_to_UChars (const MonoString *str, gint32 sindex,
-				    gint32 count, UConverter *conv)
-{
-	UErrorCode ec;
-	UChar *dest;
-	int32_t ret;
-	
-	if(count<0) {
-		count=mono_string_length (str);
-	}
-	if(sindex<0) {
-		sindex=0;
-	}
-	if(sindex+count > mono_string_length (str)) {
-		count=mono_string_length (str)-sindex;
-	}
-	
-
-	/* Add 1 for the trailing NULL */
-	dest=(UChar *)g_malloc0 (sizeof(UChar)*(count+1));
-	
-	/* count*2 because its counting bytes not chars */
-	ec=U_ZERO_ERROR;
-	ret=ucnv_toUChars (conv, dest, count+1, (const char *)(mono_string_chars (str)+sindex), count*2, &ec);
-	if(ec==U_BUFFER_OVERFLOW_ERROR ||
-	   ec==U_STRING_NOT_TERMINATED_WARNING) {
-		/* This should never happen, cos we gave ourselves the
-		 * length needed above
-		 */
-		g_assert_not_reached ();
-	}
-	
-	return(dest);
-}
-
-static MonoString *monostring_from_resource_index (const UResourceBundle *bundle, UConverter *conv, int32_t idx)
-{
-	const UChar *res_str;
+	gunichar2 *res_str;
 	int32_t res_strlen;
 	UErrorCode ec;
 	
 	ec=U_ZERO_ERROR;
-	res_str=ures_getStringByIndex (bundle, idx, &res_strlen, &ec);
+	res_str=(gunichar2 *)ures_getStringByIndex (bundle, idx, &res_strlen,
+						   &ec);
 	if(U_FAILURE (ec)) {
 		return(NULL);
 	}
 
-	return(monostring_from_UChars (res_str, conv));
+	return(mono_string_from_utf16 (res_str));
 }
 
 static UResourceBundle *open_subbundle (const UResourceBundle *bundle,
@@ -182,11 +93,10 @@ static UResourceBundle *open_subbundle (const UResourceBundle *bundle,
 	return(subbundle);
 }
 
-static void set_array (MonoObject *obj, const guchar *fieldname,
-		       const UResourceBundle *bundle, const char *resname,
-		       int32_t req_count, UConverter *conv)
+static MonoArray *build_array (const UResourceBundle *bundle,
+			       const char *resname, int32_t req_count)
 {
-	MonoArray *arr;
+	MonoArray *arr=NULL;
 	UResourceBundle *subbundle;
 	int i;
 	
@@ -196,37 +106,31 @@ static void set_array (MonoObject *obj, const guchar *fieldname,
 				   mono_defaults.string_class, req_count);
 		
 		for(i=0; i<req_count; i++) {
-			mono_array_set(arr, MonoString *, i, monostring_from_resource_index (subbundle, conv, i));
+			mono_array_set(arr, MonoString *, i, monostring_from_resource_index (subbundle, i));
 		}
-		set_field_by_name (obj, fieldname, arr);
 
 		ures_close (subbundle);
 	}
+
+	return(arr);
 }
 
-
-static MonoObject *create_DateTimeFormat (const char *locale)
+static MonoDateTimeFormatInfo *create_DateTimeFormat (const char *locale)
 {
-	MonoObject *new_dtf;
+	MonoDateTimeFormatInfo *new_dtf;
 	MonoClass *class;
-	UConverter *conv;
 	UResourceBundle *bundle, *subbundle;
 	UErrorCode ec;
 	
 	class=mono_class_from_name (mono_defaults.corlib,
 				    "System.Globalization",
 				    "DateTimeFormatInfo");
-	new_dtf=mono_object_new (mono_domain_get (), class);
-	mono_runtime_object_init (new_dtf);
+	new_dtf=(MonoDateTimeFormatInfo *)mono_object_new (mono_domain_get (),
+							   class);
+	mono_runtime_object_init ((MonoObject *)new_dtf);
 	
 	ec=U_ZERO_ERROR;
 
-	/* Plain "UTF-16" adds a BOM, which confuses other stuff */
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		goto error0;
-	}
-	
 	bundle=ures_open (NULL, locale, &ec);
 	if(U_FAILURE (ec)) {
 		goto error1;
@@ -235,12 +139,8 @@ static MonoObject *create_DateTimeFormat (const char *locale)
 	/* AM/PM markers */
 	subbundle=open_subbundle (bundle, "AmPmMarkers", 2);
 	if(subbundle!=NULL) {
-		set_field_by_name (new_dtf, "_AMDesignator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 0));
-		set_field_by_name (new_dtf, "_PMDesignator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 1));
+		new_dtf->AMDesignator=monostring_from_resource_index (subbundle, 0);
+		new_dtf->PMDesignator=monostring_from_resource_index (subbundle, 1);
 		
 		ures_close (subbundle);
 	}
@@ -251,18 +151,10 @@ static MonoObject *create_DateTimeFormat (const char *locale)
 	 */
 	subbundle=open_subbundle (bundle, "DateTimePatterns", 9);
 	if(subbundle!=NULL) {
-		set_field_by_name (new_dtf, "_ShortDatePattern",
-				   monostring_from_resource_index (subbundle,
-								   conv, 7));
-		set_field_by_name (new_dtf, "_LongDatePattern",
-				   monostring_from_resource_index (subbundle,
-								   conv, 5));
-		set_field_by_name (new_dtf, "_ShortTimePattern",
-				   monostring_from_resource_index (subbundle,
-								   conv, 3));
-		set_field_by_name (new_dtf, "_LongTimePattern",
-				   monostring_from_resource_index (subbundle,
-								   conv, 2));
+		new_dtf->ShortDatePattern=monostring_from_resource_index (subbundle, 7);
+		new_dtf->LongDatePattern=monostring_from_resource_index (subbundle, 5);
+		new_dtf->ShortTimePattern=monostring_from_resource_index (subbundle, 3);
+		new_dtf->LongTimePattern=monostring_from_resource_index (subbundle, 2);
 
 		/* RFC1123Pattern, SortableDateTimePattern and
 		 * UniversalSortableDateTimePattern all seem to be
@@ -284,35 +176,32 @@ static MonoObject *create_DateTimeFormat (const char *locale)
 #endif
 
 	/* Day names.  Luckily both ICU and .net start Sunday at index 0 */
-	set_array (new_dtf, "_DayNames", bundle, "DayNames", 7, conv);
+	new_dtf->DayNames=build_array (bundle, "DayNames", 7);
 
 	/* Abbreviated day names */
-	set_array (new_dtf, "_AbbreviatedDayNames", bundle,
-		   "DayAbbreviations", 7, conv);
+	new_dtf->AbbreviatedDayNames=build_array (bundle, "DayAbbreviations",
+						  7);
 
 	/* Month names */
-	set_array (new_dtf, "_MonthNames", bundle, "MonthNames", 12, conv);
+	new_dtf->MonthNames=build_array (bundle, "MonthNames", 12);
 	
 	/* Abbreviated month names */
-	set_array (new_dtf, "_AbbreviatedMonthNames", bundle,
-		   "MonthAbbreviations", 12, conv);
+	new_dtf->AbbreviatedMonthNames=build_array (bundle,
+						    "MonthAbbreviations", 12);
 
 	/* TODO: DayOfWeek _FirstDayOfWeek, Calendar _Calendar, CalendarWeekRule _CalendarWeekRule */
 
 	ures_close (bundle);
 error1:
-	ucnv_close (conv);
-error0:
 	return(new_dtf);
 }
 
-static MonoObject *create_NumberFormat (const char *locale)
+static MonoNumberFormatInfo *create_NumberFormat (const char *locale)
 {
-	MonoObject *new_nf;
+	MonoNumberFormatInfo *new_nf;
 	MonoClass *class;
 	MonoMethodDesc* methodDesc;
 	MonoMethod *method;
-	UConverter *conv;
 	UResourceBundle *bundle, *subbundle, *table_entries;
 	UErrorCode ec;
 	int32_t count;
@@ -323,14 +212,11 @@ static MonoObject *create_NumberFormat (const char *locale)
 	class=mono_class_from_name (mono_defaults.corlib,
 				    "System.Globalization",
 				    "NumberFormatInfo");
-	new_nf=mono_object_new (mono_domain_get (), class);
-	mono_runtime_object_init (new_nf);
+	new_nf=(MonoNumberFormatInfo *)mono_object_new (mono_domain_get (),
+							class);
+	mono_runtime_object_init ((MonoObject *)new_nf);
 
 	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		goto error0;
-	}
 
 	bundle=ures_open (NULL, locale, &ec);
 	if(U_FAILURE (ec)) {
@@ -353,49 +239,21 @@ static MonoObject *create_NumberFormat (const char *locale)
 	}
 
 	if(subbundle!=NULL) {
-		set_field_by_name (new_nf, "numberDecimalSeparator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 0));
-		set_field_by_name (new_nf, "numberGroupSeparator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 1));
-		set_field_by_name (new_nf, "percentDecimalSeparator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 0));
-		set_field_by_name (new_nf, "percentGroupSeparator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 1));
-		set_field_by_name (new_nf, "percentSymbol",
-				   monostring_from_resource_index (subbundle,
-								   conv, 3));
-		set_field_by_name (new_nf, "zeroPattern",
-				   monostring_from_resource_index (subbundle,
-								   conv, 4));
-		set_field_by_name (new_nf, "digitPattern",
-				   monostring_from_resource_index (subbundle,
-								   conv, 5));
-		set_field_by_name (new_nf, "negativeSign",
-				   monostring_from_resource_index (subbundle,
-								   conv, 6));
-		set_field_by_name (new_nf, "perMilleSymbol",
-				   monostring_from_resource_index (subbundle,
-								   conv, 8));
-		set_field_by_name (new_nf, "positiveInfinitySymbol",
-				   monostring_from_resource_index (subbundle,
-								   conv, 9));
+		new_nf->numberDecimalSeparator=monostring_from_resource_index (subbundle, 0);
+		new_nf->numberGroupSeparator=monostring_from_resource_index (subbundle, 1);
+		new_nf->percentDecimalSeparator=monostring_from_resource_index (subbundle, 0);
+		new_nf->percentGroupSeparator=monostring_from_resource_index (subbundle, 1);
+		new_nf->percentSymbol=monostring_from_resource_index (subbundle, 3);
+		new_nf->zeroPattern=monostring_from_resource_index (subbundle, 4);
+		new_nf->digitPattern=monostring_from_resource_index (subbundle, 5);
+		new_nf->negativeSign=monostring_from_resource_index (subbundle, 6);
+		new_nf->perMilleSymbol=monostring_from_resource_index (subbundle, 8);
+		new_nf->positiveInfinitySymbol=monostring_from_resource_index (subbundle, 9);
 		/* we dont have this in CLDR, so copy it from positiveInfinitySymbol */
-		set_field_by_name (new_nf, "negativeInfinitySymbol",
-				   monostring_from_resource_index (subbundle,
-								   conv, 9));
-		set_field_by_name (new_nf, "naNSymbol",
-				   monostring_from_resource_index (subbundle,
-								   conv, 10)); 
-		set_field_by_name (new_nf, "currencyDecimalSeparator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 0));
-		set_field_by_name (new_nf, "currencyGroupSeparator",
-				   monostring_from_resource_index (subbundle,
-								   conv, 1));
+		new_nf->negativeInfinitySymbol=monostring_from_resource_index (subbundle, 9);
+		new_nf->naNSymbol=monostring_from_resource_index (subbundle, 10);
+		new_nf->currencyDecimalSeparator=monostring_from_resource_index (subbundle, 0);
+		new_nf->currencyGroupSeparator=monostring_from_resource_index (subbundle, 1);
 
 		ures_close (subbundle);
 	}
@@ -437,9 +295,7 @@ static MonoObject *create_NumberFormat (const char *locale)
 							if (U_SUCCESS (ec)) {
 								/* get the first string only, 
 								 * the second is international currency symbol (not used)*/
-								set_field_by_name (new_nf, "currencySymbol",
-										   monostring_from_resource_index (table_entries,
-														   conv, 0));
+								new_nf->currencySymbol=monostring_from_resource_index (table_entries, 0);
 								ures_close (table_entries);
 							}
 							ures_close (subbundle);
@@ -452,15 +308,9 @@ static MonoObject *create_NumberFormat (const char *locale)
 
 	subbundle=open_subbundle (bundle, "NumberPatterns", 4);
 	if(subbundle!=NULL) {
-		set_field_by_name (new_nf, "decimalFormats",
-				   monostring_from_resource_index (subbundle,
-								   conv, 0));
-		set_field_by_name (new_nf, "currencyFormats",
-				   monostring_from_resource_index (subbundle,
-								   conv, 1));
-		set_field_by_name (new_nf, "percentFormats",
-				   monostring_from_resource_index (subbundle,
-								   conv, 2));			
+		new_nf->decimalFormats=monostring_from_resource_index (subbundle, 0);
+		new_nf->currencyFormats=monostring_from_resource_index (subbundle, 1);
+		new_nf->percentFormats=monostring_from_resource_index (subbundle, 2);
 		ures_close (subbundle);
 		
 		/* calls InitPatterns to parse the patterns
@@ -478,8 +328,6 @@ static MonoObject *create_NumberFormat (const char *locale)
 
 	ures_close (bundle);
 error1:
-	ucnv_close (conv);
-error0:
 	return(new_nf);
 }
 
@@ -504,9 +352,8 @@ static char *mono_string_to_icu_locale (MonoString *locale)
 	return(icu_locale);
 }
 
-void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoObject *this, MonoString *locale)
+void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale)
 {
-	UConverter *conv;
 	UChar *ustr;
 	char *str;
 	UErrorCode ec;
@@ -522,14 +369,6 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 		return;
 	}
 	
-	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		g_free (icu_locale);
-		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
-		return;
-	}
-	
 	/* Fill in the static fields */
 
 	/* TODO: Calendar, InstalledUICulture, OptionalCalendars,
@@ -540,46 +379,40 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	str=(char *)g_malloc0 (sizeof(char)*str_len);
 	ustr=(UChar *)g_malloc0 (sizeof(UChar)*str_len);
 	
+	ec=U_ZERO_ERROR;
+	
 	ret=uloc_getDisplayName (icu_locale, "en", ustr, str_len, &ec);
 	if(U_SUCCESS (ec) && ret<str_len) {
-		set_field_by_name (this, "englishname",
-				   monostring_from_UChars (ustr, conv));
+		this->englishname=mono_string_from_utf16 ((gunichar2 *)ustr);
 	}
 	
 	ret=uloc_getDisplayName (icu_locale, uloc_getDefault (), ustr, str_len,
 				 &ec);
 	if(U_SUCCESS (ec) && ret<str_len) {
-		set_field_by_name (this, "displayname",
-				   monostring_from_UChars (ustr, conv));
+		this->displayname=mono_string_from_utf16 ((gunichar2 *)ustr);
 	}
 	
 	ret=uloc_getDisplayName (icu_locale, icu_locale, ustr, str_len, &ec);
 	if(U_SUCCESS (ec) && ret<str_len) {
-		set_field_by_name (this, "nativename",
-				   monostring_from_UChars (ustr, conv));
+		this->nativename=mono_string_from_utf16 ((gunichar2 *)ustr);
 	}
 
-	set_field_by_name (this, "iso3lang", mono_string_new_wrapper (uloc_getISO3Language (icu_locale)));
+	this->iso3lang=mono_string_new_wrapper (uloc_getISO3Language (icu_locale));
 
 	ret=uloc_getLanguage (icu_locale, str, str_len, &ec);
 	if(U_SUCCESS (ec) && ret<str_len) {
-		set_field_by_name (this, "iso2lang",
-				   mono_string_new_wrapper (str));
+		this->iso2lang=mono_string_new_wrapper (str);
 	}
 
-	set_field_by_name (this, "datetime_format",
-			   create_DateTimeFormat (icu_locale));
-	
-	set_field_by_name (this, "number_format",
-			   create_NumberFormat (icu_locale));
+	this->datetime_format=create_DateTimeFormat (icu_locale);
+	this->number_format=create_NumberFormat (icu_locale);
  
 	g_free (str);
 	g_free (ustr);
 	g_free (icu_locale);
-	ucnv_close (conv);
 }
 
-void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoObject *comp, MonoString *locale)
+void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale)
 {
 	UCollator *coll;
 	UErrorCode ec;
@@ -601,7 +434,9 @@ void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoObjec
 	ec=U_ZERO_ERROR;
 	coll=ucol_open (icu_locale, &ec);
 	if(U_SUCCESS (ec)) {
-		set_field_by_name (comp, "ICU_collator", &coll);
+		comp->ICU_collator=coll;
+	} else {
+		comp->ICU_collator=NULL;
 	}
 
 	g_free (icu_locale);
@@ -691,14 +526,10 @@ static void set_collator_options (UCollator *coll, gint32 options)
 	}
 }
 
-gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *this, MonoString *str1, MonoString *str2, gint32 options)
+gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options)
 {
-	UConverter *conv;
 	UCollator *coll;
-	UChar *ustr1, *ustr2;
 	UCollationResult result;
-	UErrorCode ec;
-	guint32 coll_lcid;
 	
 	MONO_ARCH_SAVE_REGS;
 	
@@ -706,43 +537,30 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *
 	g_message (G_GNUC_PRETTY_FUNCTION ": Comparing [%s] and [%s]", mono_string_to_utf8 (str1), mono_string_to_utf8 (str2));
 #endif
 
-	coll=get_field_by_name (this, "ICU_collator");
-	coll_lcid=GPOINTER_TO_UINT (get_field_by_name (this, "lcid"));
+	coll=this->ICU_collator;
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", coll_lcid);
+	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", this->lcid);
 #endif
 	
-	if(coll==NULL || coll_lcid==0x007F ||
+	if(coll==NULL || this->lcid==0x007F ||
 	   options & CompareOptions_Ordinal) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": No collator or invariant, using shortcut");
 #endif
 
-		return(string_invariant_compare (str1, str2, options));
+		return(string_invariant_compare (str1, off1, len1, str2, off2,
+						 len2, options));
 	}
 	
-	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		return(0);
-	}
-	
-	ustr1=monostring_to_UChars (str1, -1, -1, conv);
-	ustr2=monostring_to_UChars (str2, -1, -1, conv);
-	
-	ucnv_close (conv);
-	
-	mono_monitor_try_enter (this, INFINITE);
+	mono_monitor_try_enter ((MonoObject *)this, INFINITE);
 	
 	set_collator_options (coll, options);
 			
-	result=ucol_strcoll (coll, ustr1, -1, ustr2, -1);
+	result=ucol_strcoll (coll, mono_string_chars (str1)+off1, len1,
+			     mono_string_chars (str2)+off2, len2);
 
-	mono_monitor_exit (this);
-	
-	g_free (ustr1);
-	g_free (ustr2);
+	mono_monitor_exit ((MonoObject *)this);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Comparison of [%s] and [%s] returning %d", mono_string_to_utf8 (str1), mono_string_to_utf8 (str2), result);
@@ -751,54 +569,42 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *
 	return(result);
 }
 
-void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoObject *this)
+void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this)
 {
 	UCollator *coll;
 	
 	MONO_ARCH_SAVE_REGS;
 	
-	coll=get_field_by_name (this, "ICU_collator");
+	coll=this->ICU_collator;
 	if(coll!=NULL) {
 		ucol_close (coll);
 	}
 }
 
-void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this, MonoObject *key, MonoString *source, gint32 options)
+void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo *this, MonoSortKey *key, MonoString *source, gint32 options)
 {
 	UCollator *coll;
-	UConverter *conv;
-	UChar *ustr;
-	UErrorCode ec;
 	MonoArray *arr;
 	char *keybuf;
 	int32_t keylen, i;
 	
 	MONO_ARCH_SAVE_REGS;
 	
-	coll=get_field_by_name (this, "ICU_collator");
+	coll=this->ICU_collator;
 	if(coll==NULL) {
 		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
 		return;
 	}
 	
-	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
-		return;
-	}
-	ustr=monostring_to_UChars (source, -1, -1, conv);
-	ucnv_close (conv);
-	
-	mono_monitor_try_enter (this, INFINITE);
+	mono_monitor_try_enter ((MonoObject *)this, INFINITE);
 	
 	set_collator_options (coll, options);
 
-	keylen=ucol_getSortKey (coll, ustr, -1, NULL, 0);
+	keylen=ucol_getSortKey (coll, mono_string_chars (source), -1, NULL, 0);
 	keybuf=g_malloc (sizeof(char)* keylen);
-	ucol_getSortKey (coll, ustr, -1, keybuf, keylen);
+	ucol_getSortKey (coll, mono_string_chars (source), -1, keybuf, keylen);
 
-	mono_monitor_exit (this);
+	mono_monitor_exit ((MonoObject *)this);
 	
 	arr=mono_array_new (mono_domain_get (), mono_defaults.byte_class,
 			    keylen);
@@ -806,20 +612,17 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this
 		mono_array_set (arr, guint8, i, keybuf[i]);
 	}
 	
-	set_field_by_name (key, "key", arr);
+	key->key=arr;
 
-	g_free (ustr);
 	g_free (keybuf);
 }
 
-int ves_icall_System_Globalization_CompareInfo_internal_index (MonoObject *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first)
+int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first)
 {
-	UConverter *conv;
 	UCollator *coll;
-	UChar *usrcstr, *uvalstr;
+	UChar *usrcstr;
 	UErrorCode ec;
 	UStringSearch *search;
-	guint32 coll_lcid;
 	int32_t pos= -1;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -828,14 +631,13 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoObject *this,
 	g_message (G_GNUC_PRETTY_FUNCTION ": Finding %s [%s] in [%s] (sindex %d,count %d)", first?"first":"last", mono_string_to_utf8 (value), mono_string_to_utf8 (source), sindex, count);
 #endif
 
-	coll=get_field_by_name (this, "ICU_collator");
-	coll_lcid=GPOINTER_TO_UINT (get_field_by_name (this, "lcid"));
+	coll=this->ICU_collator;
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", coll_lcid);
+	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", this->lcid);
 #endif
 	
-	if(coll==NULL || coll_lcid==0x007F ||
+	if(coll==NULL || this->lcid==0x007F ||
 	   options & CompareOptions_Ordinal) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": No collator or invariant, using shortcut");
@@ -845,23 +647,116 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoObject *this,
 						 first));
 	}
 	
-	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		return(-1);
-	}
-	
+	usrcstr=g_malloc0 (sizeof(UChar)*(count+1));
 	if(first) {
-		usrcstr=monostring_to_UChars (source, sindex, count, conv);
+		memcpy (usrcstr, mono_string_chars (source)+sindex,
+			sizeof(UChar)*count);
 	} else {
-		usrcstr=monostring_to_UChars (source, sindex-count+1, count,
-					       conv);
+		memcpy (usrcstr, mono_string_chars (source)+sindex-count+1,
+			sizeof(UChar)*count);
 	}
-	uvalstr=monostring_to_UChars (value, -1, -1, conv);
-
-	ucnv_close (conv);
 	
-	mono_monitor_try_enter (this, INFINITE);
+	mono_monitor_try_enter ((MonoObject *)this, INFINITE);
+	
+	ec=U_ZERO_ERROR;
+	
+	/* Need to set the collator to a fairly weak level, so that it
+	 * treats characters that can be written differently as
+	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * that this means that the search string and the original
+	 * text might have differing lengths.
+	 */
+	ucol_setAttribute (coll, UCOL_STRENGTH, UCOL_PRIMARY, &ec);
+
+	/* Still notice case differences though (normally a tertiary
+	 * difference)
+	 */
+	ucol_setAttribute (coll, UCOL_CASE_LEVEL, UCOL_ON, &ec);
+
+	/* Don't ignore some codepoints */
+	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
+			   &ec);
+			
+	search=usearch_openFromCollator (mono_string_chars (value), -1, usrcstr, -1, coll, NULL,
+					 &ec);
+	if(U_SUCCESS (ec)) {
+		if(first) {
+			pos=usearch_first (search, &ec);
+		} else {
+			pos=usearch_last (search, &ec);
+		}
+
+		if(pos!=USEARCH_DONE) {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Got match at %d (sindex %d) len %d", pos,
+				   sindex, usearch_getMatchedLength (search));
+#endif
+			if(sindex>0) {
+				if(first) {
+					pos+=sindex;
+				} else {
+					pos+=(sindex-count+1);
+				}
+			}
+		}
+	} else {
+		g_message (G_GNUC_PRETTY_FUNCTION ": usearch_open error: %s",
+			   u_errorName (ec));
+	}
+
+	usearch_close (search);
+	
+	mono_monitor_exit ((MonoObject *)this);
+	
+	g_free (usrcstr);
+
+	return(pos);
+}
+
+int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, gunichar2 value, gint32 options, MonoBoolean first)
+{
+	UCollator *coll;
+	UChar *usrcstr, uvalstr[2]={0, 0};
+	UErrorCode ec;
+	UStringSearch *search;
+	int32_t pos= -1;
+	
+	MONO_ARCH_SAVE_REGS;
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Finding %s 0x%0x in [%s] (sindex %d,count %d)", first?"first":"last", value, mono_string_to_utf8 (source), sindex, count);
+#endif
+
+	coll=this->ICU_collator;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", this->lcid);
+#endif
+	
+	if(coll==NULL || this->lcid==0x007F ||
+	   options & CompareOptions_Ordinal) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": No collator or invariant, using shortcut");
+#endif
+
+		return(string_invariant_indexof_char (source, sindex, count,
+						      value, first));
+	}
+	
+	usrcstr=g_malloc0 (sizeof(UChar)*(count+1));
+	if(first) {
+		memcpy (usrcstr, mono_string_chars (source)+sindex,
+			sizeof(UChar)*count);
+	} else {
+		memcpy (usrcstr, mono_string_chars (source)+sindex-count+1,
+			sizeof(UChar)*count);
+	}
+	uvalstr[0]=value;
+	
+	mono_monitor_try_enter ((MonoObject *)this, INFINITE);
+	
+	ec=U_ZERO_ERROR;
 	
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
@@ -910,9 +805,8 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoObject *this,
 
 	usearch_close (search);
 	
-	mono_monitor_exit (this);
+	mono_monitor_exit ((MonoObject *)this);
 	
-	g_free (usrcstr);
 	g_free (uvalstr);
 
 	return(pos);
@@ -925,15 +819,12 @@ int ves_icall_System_Threading_Thread_current_lcid (void)
 	return(uloc_getLCID (uloc_getDefault ()));
 }
 
-MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, MonoString *old, MonoString *new, MonoObject *comp)
+MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, MonoString *old, MonoString *new, MonoCompareInfo *comp)
 {
 	MonoString *ret=NULL;
-	UConverter *conv;
 	UCollator *coll;
-	UChar *utgtstr, *uoldstr, *unewstr;
 	UErrorCode ec;
 	UStringSearch *search;
-	guint32 coll_lcid;
 	
 	MONO_ARCH_SAVE_REGS;
 	
@@ -941,14 +832,13 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	g_message (G_GNUC_PRETTY_FUNCTION ": Replacing [%s] with [%s] in [%s]", mono_string_to_utf8 (old), mono_string_to_utf8 (new), mono_string_to_utf8 (this));
 #endif
 
-	coll=get_field_by_name (comp, "ICU_collator");
-	coll_lcid=GPOINTER_TO_UINT (get_field_by_name (comp, "lcid"));
+	coll=comp->ICU_collator;
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", coll_lcid);
+	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", comp->lcid);
 #endif
 	
-	if(coll==NULL || coll_lcid==0x007F) {
+	if(coll==NULL || comp->lcid==0x007F) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": No collator or invariant, using shortcut");
 #endif
@@ -956,17 +846,9 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 		return(string_invariant_replace (this, old, new));
 	}
 	
+	mono_monitor_try_enter ((MonoObject *)comp, INFINITE);
+	
 	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		return(NULL);
-	}
-	
-	utgtstr=monostring_to_UChars (this, -1, -1, conv);
-	uoldstr=monostring_to_UChars (old, -1, -1, conv);
-	unewstr=monostring_to_UChars (new, -1, -1, conv);
-	
-	mono_monitor_try_enter (comp, INFINITE);
 	
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
@@ -985,11 +867,12 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
 			   &ec);
 			
-	search=usearch_openFromCollator (uoldstr, -1, utgtstr, -1, coll, NULL,
-					 &ec);
+	search=usearch_openFromCollator (mono_string_chars (old), -1,
+					 mono_string_chars (this), -1, coll,
+					 NULL, &ec);
 	if(U_SUCCESS (ec)) {
 		int pos, oldpos, len_delta=0;
-		int32_t newstr_len=u_strlen (unewstr);
+		int32_t newstr_len=mono_string_length (new);
 		UChar *uret;
 		
 		for(pos=usearch_first (search, &ec);
@@ -1016,30 +899,26 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 		    pos!=USEARCH_DONE;
 		    pos=usearch_next (search, &ec)) {
 			/* Add the unmatched text */
-			u_strncat (uret, utgtstr+oldpos, pos-oldpos);
+			u_strncat (uret, mono_string_chars (this)+oldpos,
+				   pos-oldpos);
 			/* Then the replacement */
-			u_strcat (uret, unewstr);
+			u_strcat (uret, mono_string_chars (new));
 			oldpos=pos+usearch_getMatchedLength (search);
 		}
 		
 		/* Finish off with the trailing unmatched text */
-		u_strcat (uret, utgtstr+oldpos);
+		u_strcat (uret, mono_string_chars (this)+oldpos);
 
-		ret=monostring_from_UChars (uret, conv);
+		ret=mono_string_from_utf16 ((gunichar2 *)uret);
 	} else {
 		g_message (G_GNUC_PRETTY_FUNCTION ": usearch_open error: %s",
 			   u_errorName (ec));
 	}
 
 	usearch_close (search);
-	ucnv_close (conv);
 	
-	mono_monitor_exit (comp);
+	mono_monitor_exit ((MonoObject *)comp);
 	
-	g_free (utgtstr);
-	g_free (uoldstr);
-	g_free (unewstr);
-
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Replacing [%s] with [%s] in [%s] returns [%s]", mono_string_to_utf8 (old), mono_string_to_utf8 (new), mono_string_to_utf8 (this), mono_string_to_utf8 (ret));
 #endif
@@ -1047,15 +926,12 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	return(ret);
 }
 
-MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this,
-							  MonoObject *cult)
+MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, MonoCultureInfo *cult)
 {
-	MonoString *locale, *ret;
-	UConverter *conv;
-	UChar *usrc, *udest;
+	MonoString *ret;
+	UChar *udest;
 	UErrorCode ec;
 	char *icu_loc;
-	guint32 lcid;
 	int32_t len;
 	
 #ifdef DEBUG
@@ -1063,13 +939,11 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this,
 		   mono_string_to_utf8 (this));
 #endif
 
-	lcid=GPOINTER_TO_UINT (get_field_by_name (cult, "lcid"));
-
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", lcid);
+	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", cult->lcid);
 #endif
 
-	if(lcid==0x007F) {
+	if(cult->lcid==0x007F) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Invariant, using shortcut");
@@ -1078,48 +952,39 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this,
 		return(string_invariant_tolower (this));
 	}
 
-	locale=get_field_by_name (cult, "icu_name");
-	icu_loc=mono_string_to_icu_locale (locale);
+	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
 		return(NULL);
 	}
-
-	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
-		return(NULL);
-	}
 	
-	usrc=monostring_to_UChars (this, -1, -1, conv);
 	udest=(UChar *)g_malloc0 (sizeof(UChar)*(mono_string_length (this)+1));
 	
 	/* According to the docs, this might result in a longer or
 	 * shorter string than we started with...
 	 */
-	len=u_strToLower (udest, mono_string_length (this)+1, usrc, -1,
-			  icu_loc, &ec);
+
+	ec=U_ZERO_ERROR;
+	len=u_strToLower (udest, mono_string_length (this)+1,
+			  mono_string_chars (this), -1, icu_loc, &ec);
 	if(ec==U_BUFFER_OVERFLOW_ERROR ||
 	   ec==U_STRING_NOT_TERMINATED_WARNING) {
 		g_free (udest);
 		udest=(UChar *)g_malloc0 (sizeof(UChar)*(len+1));
-		len=u_strToLower (udest, len+1, usrc, -1, icu_loc, &ec);
+		len=u_strToLower (udest, len+1, mono_string_chars (this), -1,
+				  icu_loc, &ec);
 	}
 
 	if(U_SUCCESS (ec)) {
-		ret=monostring_from_UChars (udest, conv);
+		ret=mono_string_from_utf16 ((gunichar2 *)udest);
 	} else {
 		g_message (G_GNUC_PRETTY_FUNCTION ": u_strToLower error: %s",
 			   u_errorName (ec));
 		/* return something */
 		ret=this;
 	}
-
-	ucnv_close (conv);
 	
 	g_free (icu_loc);
-	g_free (usrc);
 	g_free (udest);
 	
 #ifdef DEBUG
@@ -1130,15 +995,12 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this,
 	return(ret);
 }
 
-MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this,
-							  MonoObject *cult)
+MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, MonoCultureInfo *cult)
 {
-	MonoString *locale, *ret;
-	UConverter *conv;
-	UChar *usrc, *udest;
+	MonoString *ret;
+	UChar *udest;
 	UErrorCode ec;
 	char *icu_loc;
-	guint32 lcid;
 	int32_t len;
 	
 #ifdef DEBUG
@@ -1146,13 +1008,11 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this,
 		   mono_string_to_utf8 (this));
 #endif
 
-	lcid=GPOINTER_TO_UINT (get_field_by_name (cult, "lcid"));
-
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", lcid);
+	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", cult->lcid);
 #endif
 
-	if(lcid==0x007F) {
+	if(cult->lcid==0x007F) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Invariant, using shortcut");
@@ -1161,48 +1021,39 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this,
 		return(string_invariant_toupper (this));
 	}
 
-	locale=get_field_by_name (cult, "icu_name");
-	icu_loc=mono_string_to_icu_locale (locale);
+	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
 		return(NULL);
 	}
-
-	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
-	if(U_FAILURE (ec)) {
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
-		return(NULL);
-	}
 	
-	usrc=monostring_to_UChars (this, -1, -1, conv);
 	udest=(UChar *)g_malloc0 (sizeof(UChar)*(mono_string_length (this)+1));
 	
 	/* According to the docs, this might result in a longer or
 	 * shorter string than we started with...
 	 */
-	len=u_strToUpper (udest, mono_string_length (this)+1, usrc, -1,
-			  icu_loc, &ec);
+
+	ec=U_ZERO_ERROR;
+	len=u_strToUpper (udest, mono_string_length (this)+1,
+			  mono_string_chars (this), -1, icu_loc, &ec);
 	if(ec==U_BUFFER_OVERFLOW_ERROR ||
 	   ec==U_STRING_NOT_TERMINATED_WARNING) {
 		g_free (udest);
 		udest=(UChar *)g_malloc0 (sizeof(UChar)*(len+1));
-		len=u_strToUpper (udest, len+1, usrc, -1, icu_loc, &ec);
+		len=u_strToUpper (udest, len+1, mono_string_chars (this), -1,
+				  icu_loc, &ec);
 	}
 
 	if(U_SUCCESS (ec)) {
-		ret=monostring_from_UChars (udest, conv);
+		ret=mono_string_from_utf16 ((gunichar2 *)udest);
 	} else {
 		g_message (G_GNUC_PRETTY_FUNCTION ": u_strToUpper error: %s",
 			   u_errorName (ec));
 		/* return something */
 		ret=this;
 	}
-
-	ucnv_close (conv);
 	
 	g_free (icu_loc);
-	g_free (usrc);
 	g_free (udest);
 	
 #ifdef DEBUG
@@ -1214,7 +1065,7 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this,
 }
 
 #else /* HAVE_ICU */
-void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoObject *this, MonoString *locale)
+void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale)
 {
 	MONO_ARCH_SAVE_REGS;
 	
@@ -1224,27 +1075,28 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "ArgumentException"));
 }
 
-void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoObject *comp, MonoString *locale)
+void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale)
 {
 	/* Nothing to do here */
 }
 
-int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *this, MonoString *str1, MonoString *str2, gint32 options)
+int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options)
 {
 	MONO_ARCH_SAVE_REGS;
 	
 	/* Do a normal ascii string compare, as we only know the
 	 * invariant locale if we dont have ICU
 	 */
-	return(string_invariant_compare (str1, str2, options));
+	return(string_invariant_compare (str1, off1, len1, str2, off2, len2,
+					 options));
 }
 
-void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoObject *this)
+void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this)
 {
 	/* Nothing to do here */
 }
 
-void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this, MonoObject *key, MonoString *source, gint32 options)
+void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo *this, MonoSortKey *key, MonoString *source, gint32 options)
 {
 	MonoArray *arr;
 	gint32 keylen, i;
@@ -1259,14 +1111,22 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this
 		mono_array_set (arr, guint8, i, mono_string_chars (source)[i]);
 	}
 	
-	set_field_by_name (key, "key", arr);
+	key->key=arr;
 }
 
-int ves_icall_System_Globalization_CompareInfo_internal_index (MonoObject *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first)
+int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first)
 {
 	MONO_ARCH_SAVE_REGS;
 	
 	return(string_invariant_indexof (source, sindex, count, value, first));
+}
+
+int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, gunichar2 value, gint32 options, MonoBoolean first)
+{
+	MONO_ARCH_SAVE_REGS;
+	
+	return(string_invariant_indexof_char (source, sindex, count, value,
+					      first));
 }
 
 int ves_icall_System_Threading_Thread_current_lcid (void)
@@ -1277,7 +1137,7 @@ int ves_icall_System_Threading_Thread_current_lcid (void)
 	return(0x007F);
 }
 
-MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, MonoString *old, MonoString *new, MonoObject *comp)
+MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, MonoString *old, MonoString *new, MonoCompareInfo *comp)
 {
 	MONO_ARCH_SAVE_REGS;
 	
@@ -1287,16 +1147,14 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	return(string_invariant_replace (this, old, new));
 }
 
-MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this,
-							  MonoObject *cult)
+MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, MonoCultureInfo *cult)
 {
 	MONO_ARCH_SAVE_REGS;
 	
 	return(string_invariant_tolower (this));
 }
 
-MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this,
-							  MonoObject *cult)
+MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, MonoCultureInfo *cult)
 {
 	MONO_ARCH_SAVE_REGS;
 	
@@ -1339,34 +1197,31 @@ static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 	return ((result < 0) ? -1 : (result > 0) ? 1 : 0);
 }
 
-static gint32 string_invariant_compare (MonoString *str1, MonoString *str2,
+static gint32 string_invariant_compare (MonoString *str1, gint32 off1,
+					gint32 len1, MonoString *str2,
+					gint32 off2, gint32 len2,
 					gint32 options)
 {
 	/* c translation of C# code from old string.cs.. :) */
-	gint32 lenstr1;
-	gint32 lenstr2;
 	gint32 length;
 	gint32 charcmp;
 	gunichar2 *ustr1;
 	gunichar2 *ustr2;
 	gint32 pos;
 
-	lenstr1 = mono_string_length(str1);
-	lenstr2 = mono_string_length(str2);
-
-	if(lenstr1 >= lenstr2) {
-		length=lenstr1;
+	if(len1 >= len2) {
+		length=len1;
 	} else {
-		length=lenstr2;
+		length=len2;
 	}
 
-	ustr1 = mono_string_chars(str1);
-	ustr2 = mono_string_chars(str2);
+	ustr1 = mono_string_chars(str1)+off1;
+	ustr2 = mono_string_chars(str2)+off2;
 
 	pos = 0;
 
 	for (pos = 0; pos != length; pos++) {
-		if (pos >= lenstr1 || pos >= lenstr2)
+		if (pos >= len1 || pos >= len2)
 			break;
 
 		charcmp = string_invariant_compare_char(ustr1[pos], ustr2[pos],
@@ -1385,13 +1240,13 @@ static gint32 string_invariant_compare (MonoString *str1, MonoString *str2,
 	}
 
 	/* Test if one of the strings has been compared to the end */
-	if (pos >= lenstr1) {
-		if (pos >= lenstr2) {
+	if (pos >= len1) {
+		if (pos >= len2) {
 			return(0);
 		} else {
 			return(-1);
 		}
-	} else if (pos >= lenstr2) {
+	} else if (pos >= len2) {
 		return(1);
 	}
 
@@ -1475,33 +1330,60 @@ static gint32 string_invariant_indexof (MonoString *source, gint32 sindex,
 	gint32 lencmpstr;
 	gunichar2 *src;
 	gunichar2 *cmpstr;
-
+	gint32 pos,i;
+	
 	lencmpstr = mono_string_length(value);
 	
 	src = mono_string_chars(source);
 	cmpstr = mono_string_chars(value);
 
 	if(first) {
-		while(count >= lencmpstr) {
-			if(memcmp (src+sindex, cmpstr,
-				   lencmpstr * sizeof(gunichar2))==0) {
-				return(sindex);
+		count -= lencmpstr;
+		for(pos=sindex;pos <= sindex+count;pos++) {
+			for(i=0;src[pos+i]==cmpstr[i];) {
+				if(++i==lencmpstr) {
+					return(pos);
+				}
 			}
-			sindex++;
-			count--;
 		}
+		
+		return(-1);
 	} else {
-		while(count >= lencmpstr) {
-			if(memcmp (src+(sindex-lencmpstr+1), cmpstr,
-				   lencmpstr * sizeof(gunichar2))==0) {
-				return(sindex-lencmpstr+1);
+		for(pos=sindex-lencmpstr+1;pos>sindex-count;pos--) {
+			if(memcmp (src+pos, cmpstr,
+				   lencmpstr*sizeof(gunichar2))==0) {
+				return(pos);
 			}
-			sindex--;
-			count--;
 		}
+		
+		return(-1);
 	}
-	
-	return(-1);
+}
+
+static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
+					     gint32 count, gunichar2 value,
+					     MonoBoolean first)
+{
+	gint32 pos;
+	gunichar2 *src;
+
+	src = mono_string_chars(source);
+	if(first) {
+		for (pos = sindex; pos != count + sindex; pos++) {
+			if (src [pos] == value) {
+				return(pos);
+			}
+		}
+
+		return(-1);
+	} else {
+		for (pos = sindex; pos > sindex - count; pos--) {
+			if (src [pos] == value)
+				return(pos);
+		}
+
+		return(-1);
+	}
 }
 
 static MonoString *string_invariant_tolower (MonoString *this)

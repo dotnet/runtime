@@ -258,6 +258,101 @@ typedef struct {
 	MonoObject *additional;
 } MonoStreamingContext;
 
+typedef struct {
+	MonoObject obj;
+	MonoBoolean readOnly;
+	MonoString *AMDesignator;
+	MonoString *PMDesignator;
+	MonoString *DateSeparator;
+	MonoString *TimeSeparator;
+	MonoString *ShortDatePattern;
+	MonoString *LongDatePattern;
+	MonoString *ShortTimePattern;
+	MonoString *LongTimePattern;
+	MonoString *MonthDayPattern;
+	MonoString *YearMonthPattern;
+	MonoString *FullDateTimePattern;
+	MonoString *RFC1123Pattern;
+	MonoString *SortableDateTimePattern;
+	MonoString *UniversalSortableDateTimePattern;
+	guint32 FirstDayOfWeek;
+	MonoObject *Calendar;
+	guint32 CalendarWeekRule;
+	MonoArray *AbbreviatedDayNames;
+	MonoArray *DayNames;
+	MonoArray *MonthNames;
+	MonoArray *AbbreviatedMonthNames;
+} MonoDateTimeFormatInfo;
+
+typedef struct 
+{
+	MonoObject obj;
+	MonoBoolean readOnly;
+	MonoString *decimalFormats;
+	MonoString *currencyFormats;
+	MonoString *percentFormats;
+	MonoString *digitPattern;
+	MonoString *zeroPattern;
+	gint32 currencyDecimalDigits;
+	MonoString *currencyDecimalSeparator;
+	MonoString *currencyGroupSeparator;
+	MonoArray *currencyGroupSizes;
+	gint32 currencyNegativePattern;
+	gint32 currencyPositivePattern;
+	MonoString *currencySymbol;
+	MonoString *naNSymbol;
+	MonoString *negativeInfinitySymbol;
+	MonoString *negativeSign;
+	guint32 numberDecimalDigits;
+	MonoString *numberDecimalSeparator;
+	MonoString *numberGroupSeparator;
+	MonoArray *numberGroupSizes;
+	gint32 numberNegativePattern;
+	gint32 percentDecimalDigits;
+	MonoString *percentDecimalSeparator;
+	MonoString *percentGroupSeparator;
+	MonoArray *percentGroupSizes;
+	gint32 percentNegativePattern;
+	gint32 percentPositivePattern;
+	MonoString *percentSymbol;
+	MonoString *perMilleSymbol;
+	MonoString *positiveInfinitySymbol;
+	MonoString *positiveSign;
+} MonoNumberFormatInfo;
+
+typedef struct {
+	MonoObject obj;
+	gint32 lcid;
+	gpointer ICU_collator;
+} MonoCompareInfo;
+
+typedef struct {
+	MonoObject obj;
+	MonoBoolean is_read_only;
+	gint32 lcid;
+	MonoBoolean use_user_override;
+	MonoNumberFormatInfo *number_format;
+	MonoDateTimeFormatInfo *datetime_format;
+	MonoObject *textinfo;
+	MonoString *name;
+	MonoString *displayname;
+	MonoString *englishname;
+	MonoString *nativename;
+	MonoString *iso3lang;
+	MonoString *iso2lang;
+	MonoString *icu_name;
+	MonoString *win3lang;
+	MonoCompareInfo *compareinfo;
+} MonoCultureInfo;
+
+typedef struct {
+	MonoObject obj;
+	MonoString *str;
+	gint32 options;
+	MonoArray *key;
+	gint32 lcid;
+} MonoSortKey;
+
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
 typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);

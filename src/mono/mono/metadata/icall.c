@@ -4967,10 +4967,11 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Globalization.CultureInfo::construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale,
 	"System.Globalization.CompareInfo::construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo,
-	"System.Globalization.CompareInfo::internal_compare(string,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare,
+	"System.Globalization.CompareInfo::internal_compare(string,int,int,string,int,int,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare,
 	"System.Globalization.CompareInfo::free_internal_collator()", ves_icall_System_Globalization_CompareInfo_free_internal_collator,
 	"System.Globalization.CompareInfo::assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey,
 	"System.Globalization.CompareInfo::internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index,
+	"System.Globalization.CompareInfo::internal_index(string,int,int,char,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index_char,
 	"System.String::InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp,
 	"System.String::InternalToLower(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToLower_Comp,
 	"System.String::InternalToUpper(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToUpper_Comp,
