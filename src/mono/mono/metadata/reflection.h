@@ -31,6 +31,7 @@ typedef struct {
 struct _MonoReflectionMethod {
 	MonoObject object;
 	MonoMethod *method;
+	MonoString *name;
 };
 
 typedef struct {
@@ -91,7 +92,6 @@ typedef struct {
 typedef struct {
 	MonoReflectionType *parent;
 	MonoReflectionType *ret;
-	MonoString *name;
 	guint32 attrs;
 	guint32 implattrs;
 } MonoMethodInfo;

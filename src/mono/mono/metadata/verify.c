@@ -1852,7 +1852,6 @@ static const FieldDesc
 monomethodinfo_fields[] = {
 	{"parent", G_STRUCT_OFFSET (MonoMethodInfo, parent)},
 	{"ret", G_STRUCT_OFFSET (MonoMethodInfo, ret)},
-	{"name", G_STRUCT_OFFSET (MonoMethodInfo, name)},
 	{"attrs", G_STRUCT_OFFSET (MonoMethodInfo, attrs)},
 	{"iattrs", G_STRUCT_OFFSET (MonoMethodInfo, implattrs)},
 	{NULL, 0}

@@ -2146,6 +2146,7 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 
 	ret = (MonoReflectionMethod*)mono_object_new (domain, klass);
 	ret->method = method;
+	ret->name = mono_string_new (domain, method->name);
 	CACHE_OBJECT (method, ret);
 	return ret;
 }
