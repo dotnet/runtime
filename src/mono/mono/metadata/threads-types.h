@@ -68,12 +68,27 @@ extern gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *locat
 extern gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
 
 extern gint32 ves_icall_System_Threading_Interlocked_Exchange_Int(gint32 *location1, gint32 value);
+extern gint64 ves_icall_System_Threading_Interlocked_Exchange_Long(gint64 *location1, gint64 value);
 extern MonoObject *ves_icall_System_Threading_Interlocked_Exchange_Object(MonoObject **location1, MonoObject *value);
 extern gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location1, gfloat value);
+extern gdouble ves_icall_System_Threading_Interlocked_Exchange_Double(gdouble *location1, gdouble value);
 
 extern gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand);
+extern gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *location1, gint64 value, gint64 comparand);
 extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location1, MonoObject *value, MonoObject *comparand);
 extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand);
+extern gdouble ves_icall_System_Threading_Interlocked_CompareExchange_Double(gdouble *location1, gdouble value, gdouble comparand);
+
+extern gint32 ves_icall_System_Threading_Interlocked_Add_Int(gint32 *location1, gint32 value);
+extern gint64 ves_icall_System_Threading_Interlocked_Add_Long(gint64 *location1, gint64 value);
+extern gint64 ves_icall_System_Threading_Interlocked_Read_Long(gint64 *location1);
+
+extern gint32 ves_icall_System_Threading_Interlocked_Increment_Int(gint32 *location);
+extern gint64 ves_icall_System_Threading_Interlocked_Increment_Long(gint64 *location);
+
+extern gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *location);
+extern gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
+
 extern void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state);
 extern void ves_icall_System_Threading_Thread_ResetAbort (void);
 extern void ves_icall_System_Threading_Thread_Suspend (MonoThread *thread);

@@ -6429,16 +6429,25 @@ static const IcallEntry monitor_icalls [] = {
 };
 
 static const IcallEntry interlocked_icalls [] = {
+    {"Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int},
+	{"Add(long&,long)", ves_icall_System_Threading_Interlocked_Add_Long},
+    {"CompareExchange(double&,double,double)", ves_icall_System_Threading_Interlocked_CompareExchange_Double},
 	{"CompareExchange(int&,int,int)", ves_icall_System_Threading_Interlocked_CompareExchange_Int},
+	{"CompareExchange(intptr&,intptr,intptr)", ves_icall_System_Threading_Interlocked_CompareExchange_Object},
+	{"CompareExchange(long&,long,long)", ves_icall_System_Threading_Interlocked_CompareExchange_Long},
 	{"CompareExchange(object&,object,object)", ves_icall_System_Threading_Interlocked_CompareExchange_Object},
 	{"CompareExchange(single&,single,single)", ves_icall_System_Threading_Interlocked_CompareExchange_Single},
 	{"Decrement(int&)", ves_icall_System_Threading_Interlocked_Decrement_Int},
 	{"Decrement(long&)", ves_icall_System_Threading_Interlocked_Decrement_Long},
+	{"Exchange(double&,double)", ves_icall_System_Threading_Interlocked_Exchange_Double},
 	{"Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int},
+	{"Exchange(intptr&,intptr)", ves_icall_System_Threading_Interlocked_Exchange_Object},
+	{"Exchange(long&,long)", ves_icall_System_Threading_Interlocked_Exchange_Long},
 	{"Exchange(object&,object)", ves_icall_System_Threading_Interlocked_Exchange_Object},
 	{"Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single},
 	{"Increment(int&)", ves_icall_System_Threading_Interlocked_Increment_Int},
-	{"Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long}
+	{"Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long},
+	{"Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long}
 };
 
 static const IcallEntry mutex_icalls [] = {

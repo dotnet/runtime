@@ -219,7 +219,7 @@ static guint32 start_wrapper(void *data)
 	guint32 tid;
 	MonoThread *thread=start_info->obj;
 	MonoObject *start_delegate = start_info->delegate;
-	
+
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper", GetCurrentThreadId ()));
 	
 	/* We can be sure start_info->obj->tid and
@@ -303,7 +303,7 @@ static guint32 start_wrapper(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
-	
+
 	thread_cleanup (thread);
 
 	return(0);
@@ -1127,6 +1127,52 @@ gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location1
 	return ret.fval;
 }
 
+gint64 
+ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location1, gint64 value)
+{
+#if SIZEOF_VOID_P == 8
+	return (gint64) InterlockedExchangePointer((gpointer *) location1, (gpointer)value);
+#else
+	gint64 res;
+
+	/* 
+	 * According to MSDN, this function is only atomic with regards to the 
+	 * other Interlocked functions on 32 bit platforms.
+	 */
+	EnterCriticalSection(&interlocked_mutex);
+	res = *location;
+	*location = value;
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return res;
+#endif
+}
+
+gdouble 
+ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location1, gdouble value)
+{
+#if SIZEOF_VOID_P == 8
+	gint64 *val = (gint64*)&value;
+	gint64 res;
+	
+	res = (gint64)InterlockedExchangePointer((gpointer *) location1, (gpointer)(*val));
+	return *(gdouble*)&res;
+#else
+	gdouble res;
+
+	/* 
+	 * According to MSDN, this function is only atomic with regards to the 
+	 * other Interlocked functions on 32 bit platforms.
+	 */
+	EnterCriticalSection(&interlocked_mutex);
+	res = *location;
+	*location = value;
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return res;
+#endif
+}
+
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -1152,6 +1198,102 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 	ret.ival = InterlockedCompareExchange((gint32 *) location1, val.ival, cmp.ival);
 
 	return ret.fval;
+}
+
+gdouble
+ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location1, gdouble value, gdouble comparand)
+{
+#if SIZEOF_VOID_P == 8
+	gint64 *val = (gint64*)&value;
+	gint64 *comp = (gint64*)&comparand;
+	gint64 res;
+	
+	res = (gint64)InterlockedCompareExchangePointer((gpointer *) location1, (gpointer)(*val), (gpointer)(*comp));
+	return *(gdouble*)&res;
+#else
+	gdouble old;
+
+	EnterCriticalSection(&interlocked_mutex);
+	old = *location1;
+	if (old == comparand)
+		*location1 = value;
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return old;
+#endif
+}
+
+gint64 
+ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location1, gint64 value, gint64 comparand)
+{
+#if SIZEOF_VOID_P == 8
+	return (gint64)InterlockedCompareExchangePointer((gpointer *) location1, (gpointer)value, (gpointer)comparand);
+#else
+	gint64 old;
+
+	EnterCriticalSection(&interlocked_mutex);
+	old = *location1;
+	if (old == comparand)
+		*location1 = value;
+	LeaveCriticalSection(&interlocked_mutex);
+	
+	return old;
+#endif
+}
+
+gint32 
+ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location1, gint32 value)
+{
+#if SIZEOF_VOID_P == 8
+	/* Should be implemented as a JIT intrinsic */
+	mono_raise_exception (mono_get_exception_not_implemented (NULL));
+	return 0;
+#else
+	gint32 orig;
+
+	EnterCriticalSection(&interlocked_mutex);
+	orig = *location;
+	*location = orig + value;
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return orig;
+#endif
+}
+
+gint64 
+ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location1, gint64 value)
+{
+#if SIZEOF_VOID_P == 8
+	/* Should be implemented as a JIT intrinsic */
+	mono_raise_exception (mono_get_exception_not_implemented (NULL));
+	return 0;
+#else
+	gint64 orig;
+
+	EnterCriticalSection(&interlocked_mutex);
+	orig = *location;
+	*location = orig + value;
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return orig;
+#endif
+}
+
+gint64 
+ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location1)
+{
+#if SIZEOF_VOID_P == 8
+	/* 64 bit reads are already atomic */
+	return *location1;
+#else
+	gint64 res;
+
+	EnterCriticalSection(&interlocked_mutex);
+	res = *location1;
+	LeaveCriticalSection(&interlocked_mutex);
+
+	return res;
+#endif
 }
 
 int  
