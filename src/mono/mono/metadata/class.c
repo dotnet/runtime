@@ -1841,7 +1841,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 			klass->interfaces [i - pos] = param->constraints [i];
 	}
 
-	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
+	g_assert (param->name);
+
+	klass->name = param->name;
 	klass->name_space = "";
 	klass->image = image;
 	klass->cast_class = klass->element_class = klass;
