@@ -120,7 +120,6 @@ class_compute_field_layout (metadata_t *m, MonoClass *class)
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	metadata_tableinfo_t *t = &m->tables [META_TABLE_FIELD];
-	int instance_size = sizeof (MonoObject);
 	int i;
 	
 	/*
@@ -148,29 +147,21 @@ class_compute_field_layout (metadata_t *m, MonoClass *class)
 	 */
 	switch (layout){
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
-		for (i = 0; i < top; i++){
-			int size;
-			
-			class->fields [i].offset = instance_size;
-			
-			size = mono_field_type_size (class->fields [i].type);
-			size += (size % 4);
-			instance_size += size;
-		}
-		break;
-		
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
 		for (i = 0; i < top; i++){
 			int size;
 			
-			class->fields [i].offset = instance_size;
-			
 			size = mono_field_type_size (class->fields [i].type);
 			size += (size % 4);
-			instance_size += size;
+			if (class->fields [i].flags & FIELD_ATTRIBUTE_STATIC) {
+				class->fields [i].offset = class->class_size;
+				class->class_size += size;
+			} else {
+				class->fields [i].offset = class->instance_size;
+				class->instance_size += size;
+			}
 		}
 		break;
-		
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 		g_error ("TODO: Explicit layout not supported yet");
 	}
@@ -185,7 +176,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 {
 	metadata_t *m = &image->metadata;
 	metadata_tableinfo_t *tt = &m->tables [META_TABLE_TYPEDEF];
-	MonoClass *class;
+	MonoClass stack_class;
+	MonoClass *class = &stack_class;
 	guint32 cols [6], parent_token;
 	guint tidx = type_token & 0xffffff;
 	const char *name;
@@ -193,8 +185,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
 	name = mono_metadata_string_heap (m, cols[1]);
 	/*g_print ("Init class %s\n", name);*/
-
-	class = g_new0 (MonoClass, 1);
 
 	/*
 	 * If root of the hierarchy
@@ -211,6 +201,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->image = image;
 	class->type_token = tidx;
 	class->flags = cols [0];
+	class->class_size = sizeof (MonoClass);
 	
 	/*
 	 * Compute the field and method lists
@@ -247,6 +238,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class_compute_field_layout (m, class);
 	}
 
+	class = g_malloc0 (class->class_size);
+	*class = stack_class;
 	return class;
 }
 

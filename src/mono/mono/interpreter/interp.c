@@ -283,16 +283,13 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 static void 
 ves_exec_method (MonoMethod *mh, stackval *args)
 {
-	/*
-	 * with alloca we get the expected huge performance gain
-	 * stackval *stack = g_new0(stackval, mh->max_stack);
-	 */
+#if DEBUG_INTERP
+	static int level = 0;
+#endif
 	MonoMetaMethodHeader *header;
 	stackval *stack;
 	register const unsigned char *ip;
 	register stackval *sp;
-	/* FIXME: remove this hack */
-	static int fake_field = 42;
 	stackval *locals;
 	GOTO_LABEL_VARS;
 
@@ -308,6 +305,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	level++;
 #endif
 
+	/*
+	 * with alloca we get the expected huge performance gain
+	 * stackval *stack = g_new0(stackval, mh->max_stack);
+	 */
 	/* We allocate one more stack val and increase stack temporarily to handle
 	 * passing this to instance methods: this needs to be removed when we'll
 	 * use a different argument passing mechanism.
@@ -970,20 +971,43 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			stackval_to_data (field->type->type, &sp [1], (char*)obj, field->offset);
 			BREAK;
 		}
-		CASE (CEE_LDSFLD)
-			/* FIXME: get the real field here */
-			ip += 5;
-			sp->type = VAL_I32;
-			sp->data.i = fake_field;
+		CASE (CEE_LDSFLD) {
+			MonoClass *klass;
+			MonoClassField *field;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			
+			/* need to handle fieldrefs */
+			klass = mono_class_get (mh->image, 
+				TOKEN_TYPE_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
+			field = mono_class_get_field (klass, token);
+			g_assert (field);
+			*sp = stackval_from_data (field->type->type, (char*)klass, field->offset);
 			++sp;
 			BREAK;
+		}
 		CASE (CEE_LDSFLDA) ves_abort(); BREAK;
-		CASE (CEE_STSFLD)
-			/* FIXME: get the real field here */
-			ip += 5;
+		CASE (CEE_STSFLD) {
+			MonoClass *klass;
+			MonoClassField *field;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
 			--sp;
-			fake_field = sp->data.i;
+
+			/* need to handle fieldrefs */
+			klass = mono_class_get (mh->image, 
+				TOKEN_TYPE_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
+			field = mono_class_get_field (klass, token);
+			g_assert (field);
+			stackval_to_data (field->type->type, sp, (char*)klass, field->offset);
 			BREAK;
+		}
 		CASE (CEE_STOBJ) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I1_UN) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I2_UN) ves_abort(); BREAK;

@@ -22,6 +22,7 @@ struct _MonoClass {
 	 * Computed object instance size, total.
 	 */
 	int        instance_size;
+	int        class_size;
 
 
 	/*
@@ -37,6 +38,9 @@ struct _MonoClass {
 	 * Field information: Type and location from object base
 	 */
 	MonoClassField *fields;
+	/*
+	 * After the fields, there is room for the static fields...
+	 */
 };
 
 MonoClass *mono_class_get       (MonoImage *image, guint32 type_token);
