@@ -101,6 +101,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 {
 	char *o = NULL;
 	gpointer addr;
+        MonoJitInfo *ji, *target_ji;
 	int reg, offset = 0;
 
 	addr = mono_compile_method(method);
@@ -110,6 +111,12 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	if (!code){
 		return addr;
 	}
+
+	/* We can't trampoline across domains */
+	ji = mono_jit_info_table_find (mono_domain_get (), code);
+	target_ji = mono_jit_info_table_find (mono_domain_get (), addr);
+	if (!mono_method_same_domain (ji, target_ji))
+		return addr;
 
 	/* Locate the address of the method-specific trampoline. The call using
 	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
