@@ -167,6 +167,7 @@ static char sccsid[] = "@(#)strtod.c	8.1 (Berkeley) 6/4/93";
 
 #else
 #define IEEE_MC68k
+#define Long long
 #endif
 
 #define ULong unsigned Long
