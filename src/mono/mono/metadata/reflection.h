@@ -124,13 +124,11 @@ typedef struct {
 typedef struct {
 	MonoString *name;
 	MonoString *name_space;
-	MonoReflectionType *parent;
 	MonoReflectionType *etype;
 	MonoReflectionType *nested_in;
 	MonoReflectionAssembly *assembly;
-	guint32 attrs;
 	guint32 rank;
-	MonoBoolean isbyref, ispointer, isprimitive;
+	MonoBoolean isprimitive;
 } MonoTypeInfo;
 
 typedef struct {

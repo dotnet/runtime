@@ -1086,17 +1086,34 @@ ves_icall_MonoType_GetElementType (MonoReflectionType *type)
 		return NULL;
 }
 
+static MonoReflectionType*
+ves_icall_get_type_parent (MonoReflectionType *type)
+{
+	MonoClass *class = mono_class_from_mono_type (type->type);
+	return class->parent ? mono_type_get_object (mono_object_domain (type), &class->parent->byval_arg): NULL;
+}
+
+static MonoBoolean
+ves_icall_type_ispointer (MonoReflectionType *type)
+{
+	return type->type->type == MONO_TYPE_PTR;
+}
+
+static MonoBoolean
+ves_icall_type_isbyref (MonoReflectionType *type)
+{
+	return type->type->byref;
+}
+
 static void
 ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *class = mono_class_from_mono_type (type);
 
-	info->parent = class->parent ? mono_type_get_object (domain, &class->parent->byval_arg): NULL;
 	info->nested_in = class->nested_in ? mono_type_get_object (domain, &class->nested_in->byval_arg): NULL;
 	info->name = mono_string_new (domain, class->name);
 	info->name_space = mono_string_new (domain, class->name_space);
-	info->attrs = class->flags;
 	info->rank = class->rank;
 	info->assembly = mono_assembly_get_object (domain, class->image->assembly);
 	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
@@ -1106,8 +1123,6 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	else
 		info->etype = NULL;
 
-	info->isbyref = type->byref;
-	info->ispointer = type->type == MONO_TYPE_PTR;
 	info->isprimitive = (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8);
 }
 
@@ -2879,6 +2894,9 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 	"System.MonoType::GetElementType", ves_icall_MonoType_GetElementType,
 	"System.MonoType::get_type_info", ves_icall_get_type_info,
+	"System.MonoType::get_BaseType", ves_icall_get_type_parent,
+	"System.MonoType::IsPointerImpl", ves_icall_type_ispointer,
+	"System.MonoType::IsByRefImpl", ves_icall_type_isbyref,
 	"System.MonoType::GetField", ves_icall_Type_GetField,
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,
 	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
