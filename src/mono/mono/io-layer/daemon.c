@@ -845,8 +845,7 @@ static void process_new (GIOChannel *channel, ChannelData *channel_data,
 	guint32 handle;
 	WapiHandleResponse resp={0};
 	
-	handle=_wapi_handle_new_internal (type);
-	if(handle==0) {
+	while ((handle = _wapi_handle_new_internal (type)) == 0) {
 		/* Try and allocate a new shared segment, and have
 		 * another go
 		 */
@@ -871,8 +870,6 @@ static void process_new (GIOChannel *channel, ChannelData *channel_data,
 					channels[i].open_handles=_wapi_g_renew0 (channels[i].open_handles, old_len, new_len);
 				}
 			}
-
-			handle=_wapi_handle_new_internal (type);
 		} else {
 			/* Map failed.  Just return 0 meaning "out of
 			 * handles"

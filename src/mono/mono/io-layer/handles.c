@@ -250,6 +250,7 @@ guint32 _wapi_handle_new_internal (WapiHandleType type)
 	guint32 i, j;
 	static guint32 last=1;
 	int thr_ret;
+	guint32 num_segments = _wapi_handle_get_shared_segment (0)->num_segments;
 	
 	/* A linear scan should be fast enough.  Start from the last
 	 * allocation, assuming that handles are allocated more often
@@ -260,8 +261,7 @@ guint32 _wapi_handle_new_internal (WapiHandleType type)
 #endif
 again:
 	_wapi_handle_segment (GUINT_TO_POINTER (last), &segment, &idx);
-	for(i=segment; i<_wapi_handle_get_shared_segment (0)->num_segments;
-	    i++) {
+	for(i=segment; i < num_segments; i++) {
 		if(i!=segment) {
 			idx=0;
 		}
@@ -272,8 +272,17 @@ again:
 			/* Make sure we dont try and assign the
 			 * handles that would clash with fds
 			 */
-			if (i==0 && j < _wapi_fd_offset_table_size) {
-				j = _wapi_fd_offset_table_size;
+			if ((i * _WAPI_HANDLES_PER_SEGMENT + j) < _wapi_fd_offset_table_size) {
+				i = _wapi_fd_offset_table_size / _WAPI_HANDLES_PER_SEGMENT;
+				j = _wapi_fd_offset_table_size - (i * _WAPI_HANDLES_PER_SEGMENT);
+				
+				if (i >= num_segments) {
+					/* Need to get the caller to
+					 * add more shared segments
+					 */
+					return(0);
+				}
+				
 				continue;
 			}
 			
@@ -349,8 +358,7 @@ again:
 		thr_ret = pthread_mutex_lock (&scan_mutex);
 		g_assert (thr_ret == 0);
 		
-		handle_idx=_wapi_handle_new_internal (type);
-		if(handle_idx==0) {
+		while ((handle_idx = _wapi_handle_new_internal (type)) == 0) {
 			/* Try and get a new segment, and have another go */
 			segment=_wapi_handle_get_shared_segment (0)->num_segments;
 			_wapi_handle_ensure_mapped (segment);
@@ -358,7 +366,6 @@ again:
 			if(_wapi_handle_get_shared_segment (segment)!=NULL) {
 				/* Got a new segment */
 				_wapi_handle_get_shared_segment (0)->num_segments++;
-				handle_idx=_wapi_handle_new_internal (type);
 			} else {
 				/* Map failed.  Just return 0 meaning
 				 * "out of handles"
