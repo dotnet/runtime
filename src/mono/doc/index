@@ -23,6 +23,16 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 26, 2001
+
+	More progress: more opcodes are working (Paolo); The compiler
+	runs up to a point in Mint (Paolo); operator overloading works
+	(both unary and binary) all over the place (Miguel); Completed decimal
+	type conversions (Miguel); New build system in place based on
+	Ant (Sean and Sergey);  Refactored and documented the
+	internals of the JIT engine (Dietmar);  StatementExpressions
+	handled correctly (Miguel).
+
 ** Sep 21, 2001
 
 	A couple of news-worthy items: Dick got the initial thread
