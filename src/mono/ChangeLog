@@ -1,3 +1,7 @@
+2004-02-03  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Applied patch from Adrian Bunk (bunk@fs.tum.de). Fix
+	message for failed gethostbyname2_r check.
 
 Fri Jan 23 16:07:05 EST 2004 Paolo Molaro <lupus@ximian.com>
 

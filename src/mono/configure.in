@@ -469,6 +469,8 @@ if test x$platform_win32 = xno; then
 		# Yes, we have it...
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_GETHOSTBYNAME2_R)
+	], [
+		AC_MSG_RESULT(no)
 	])
 
 	dnl *****************************
