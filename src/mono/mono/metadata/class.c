@@ -980,7 +980,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		if (cm->slot < 0)
 			cm->slot = cur_slot++;
 
-		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT))
+		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT) && !cm->signature->generic_param_count)
 			vtable [cm->slot] = cm;
 	}
 
