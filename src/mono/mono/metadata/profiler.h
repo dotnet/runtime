@@ -20,7 +20,8 @@ typedef enum {
 	MONO_PROFILE_TRANSITIONS      = 1 << 11,
 	MONO_PROFILE_ENTER_LEAVE      = 1 << 12,
 	MONO_PROFILE_COVERAGE         = 1 << 13,
-	MONO_PROFILE_INS_COVERAGE     = 1 << 14
+	MONO_PROFILE_INS_COVERAGE     = 1 << 14,
+	MONO_PROFILE_STATISTICAL      = 1 << 15
 } MonoProfileFlags;
 
 typedef enum {
@@ -62,6 +63,7 @@ typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *par
 
 typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, guint32 tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
+typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, guchar *ip, void *context);
 
 typedef gboolean (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMethod *method);
 
@@ -89,6 +91,7 @@ void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfile
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
 void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
+void mono_profiler_install_statistical (MonoProfileStatFunc callback);
 void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 

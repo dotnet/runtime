@@ -14,6 +14,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-logger.h>
@@ -189,6 +190,8 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	DomainFinalizationReq *req;
 	guint32 res;
 	HANDLE done_event;
+
+	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
 
 	/* 
 	 * No need to create another thread 'cause the finalizer thread

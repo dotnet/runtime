@@ -4,9 +4,14 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/class-internals.h"
+#include "mono/metadata/domain-internals.h"
 #include "mono/io-layer/io-layer.h"
 #include <string.h>
+#include <sys/time.h>
 #include <gmodule.h>
+#ifdef HAVE_BACKTRACE_SYMBOLS
+#include <execinfo.h>
+#endif
 
 static MonoProfiler * current_profiler = NULL;
 
@@ -34,6 +39,7 @@ static MonoProfileMethodFunc   jit_start;
 static MonoProfileMethodResult jit_end;
 static MonoProfileMethodResult man_unman_transition;
 static MonoProfileAllocFunc    allocation_cb;
+static MonoProfileStatFunc     statistical_cb;
 static MonoProfileMethodFunc   method_enter;
 static MonoProfileMethodFunc   method_leave;
 
@@ -102,6 +108,12 @@ void
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
 	allocation_cb = callback;
+}
+
+void 
+mono_profiler_install_statistical (MonoProfileStatFunc callback)
+{
+	statistical_cb = callback;
 }
 
 void 
@@ -191,6 +203,13 @@ mono_profiler_allocation (MonoObject *obj, MonoClass *klass)
 {
 	if ((mono_profiler_events & MONO_PROFILE_ALLOCATIONS) && allocation_cb)
 		allocation_cb (current_profiler, obj, klass);
+}
+
+void
+mono_profiler_stat_hit (guchar *ip, void *context)
+{
+	if ((mono_profiler_events & MONO_PROFILE_STATISTICAL) && statistical_cb)
+		statistical_cb (current_profiler, ip, context);
 }
 
 void
@@ -1022,6 +1041,168 @@ simple_method_end_jit (MonoProfiler *prof, MonoMethod *method, int result)
 	}
 }
 
+/* about 10 minutes of samples */
+#define MAX_PROF_SAMPLES (1000*60*10)
+static int prof_counts = 0;
+static int prof_ucounts = 0;
+static gpointer* prof_addresses = NULL;
+static GHashTable *prof_table = NULL;
+
+static void
+simple_stat_hit (MonoProfiler *prof, guchar *ip, void *context)
+{
+	int pos;
+
+	if (prof_counts >= MAX_PROF_SAMPLES)
+		return;
+	pos = InterlockedIncrement (&prof_counts);
+	prof_addresses [pos - 1] = ip;
+}
+
+static int
+compare_methods_prof (gconstpointer a, gconstpointer b)
+{
+	int ca = GPOINTER_TO_UINT (g_hash_table_lookup (prof_table, a));
+	int cb = GPOINTER_TO_UINT (g_hash_table_lookup (prof_table, b));
+	return cb-ca;
+}
+
+static void
+prof_foreach (char *method, gpointer c, gpointer data)
+{
+	GList **list = data;
+	*list = g_list_insert_sorted (*list, method, compare_methods_prof);
+}
+
+typedef struct Addr2LineData Addr2LineData;
+
+struct Addr2LineData {
+	Addr2LineData *next;
+	FILE *pipein;
+	FILE *pipeout;
+	char *binary;
+	GPid child_pid;
+};
+
+static Addr2LineData *addr2line_pipes = NULL;
+
+static char*
+try_addr2line (const char* binary, gpointer ip)
+{
+	char buf [1024];
+	char *res;
+	Addr2LineData *addr2line;
+
+	for (addr2line = addr2line_pipes; addr2line; addr2line = addr2line->next) {
+		if (strcmp (binary, addr2line->binary) == 0)
+			break;
+	}
+	if (!addr2line) {
+		const char *addr_argv[] = {"addr2line", "-f", "-e", binary, NULL};
+		GPid child_pid;
+		int ch_in, ch_out;
+		if (!g_spawn_async_with_pipes (NULL, (char**)addr_argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
+				&child_pid, &ch_in, &ch_out, NULL, NULL)) {
+			return g_strdup (binary);
+		}
+		addr2line = g_new0 (Addr2LineData, 1);
+		addr2line->child_pid = child_pid;
+		addr2line->binary = g_strdup (binary);
+		addr2line->pipein = fdopen (ch_in, "w");
+		addr2line->pipeout = fdopen (ch_out, "r");
+		addr2line->next = addr2line_pipes;
+		addr2line_pipes = addr2line;
+	}
+	fprintf (addr2line->pipein, "%p\n", ip);
+	fflush (addr2line->pipein);
+	/* we first get the func name and then file:lineno in a second line */
+	if (fgets (buf, sizeof (buf), addr2line->pipeout) && buf [0] != '?') {
+		char *end = strchr (buf, '\n');
+		if (end)
+			*end = 0;
+		res = g_strdup_printf ("%s(%s", binary, buf);
+		/* discard the filename/line info */
+		fgets (buf, sizeof (buf), addr2line->pipeout);
+	} else {
+		res = g_strdup (binary);
+	}
+	return res;
+}
+
+static void
+stat_prof_report (void)
+{
+	MonoJitInfo *ji;
+	int count = prof_counts;
+	int i, c;
+	char *mn;
+	gpointer ip;
+	GList *tmp, *sorted = NULL;
+
+	prof_counts ++;
+	for (i = 0; i < count; ++i) {
+		ip = prof_addresses [i];
+		ji = mono_jit_info_table_find (mono_domain_get (), ip);
+		if (ji) {
+			mn = mono_method_full_name (ji->method, TRUE);
+		} else {
+#ifdef HAVE_BACKTRACE_SYMBOLS
+			char **names;
+			char *send;
+			int no_func;
+			prof_ucounts++;
+			names = backtrace_symbols (&ip, 1);
+			send = strchr (names [0], '+');
+			if (send) {
+				*send = 0;
+				no_func = 0;
+			} else {
+				no_func = 1;
+			}
+			send = strchr (names [0], '[');
+			if (send)
+				*send = 0;
+			if (no_func && names [0][0]) {
+				char *endp = strchr (names [0], 0);
+				while (--endp >= names [0] && g_ascii_isspace (*endp))
+					*endp = 0;
+				mn = try_addr2line (names [0], ip);
+			} else {
+				mn = g_strdup (names [0]);
+			}
+			free (names);
+#else
+			prof_ucounts++;
+			mn = g_strdup_printf ("unmanaged [%p]", ip);
+#endif
+		}
+		c = GPOINTER_TO_UINT (g_hash_table_lookup (prof_table, mn));
+		c++;
+		g_hash_table_insert (prof_table, mn, GUINT_TO_POINTER (c));
+		if (c > 1)
+			g_free (mn);
+	}
+	g_print ("prof counts: total/unmanaged: %d/%d\n", prof_counts, prof_ucounts);
+	g_hash_table_foreach (prof_table, (GHFunc)prof_foreach, &sorted);
+	for (tmp = sorted; tmp; tmp = tmp->next) {
+		double perc;
+		c = GPOINTER_TO_UINT (g_hash_table_lookup (prof_table, tmp->data));
+		perc = c*100.0/count;
+		g_print ("%7d\t%5.2f %% %s\n", c, perc, (char*)tmp->data);
+	}
+	g_list_free (sorted);
+}
+
+static void
+simple_appdomain_unload (MonoProfiler *prof, MonoDomain *domain)
+{
+	/* FIXME: we should actually record partial data for each domain, 
+	 * since the ip->ji->method mappings are going away at domain unload time.
+	 */
+	if (domain == mono_get_root_domain ())
+		stat_prof_report ();
+}
+
 static void
 simple_shutdown (MonoProfiler *prof)
 {
@@ -1049,6 +1230,9 @@ simple_shutdown (MonoProfiler *prof)
 	g_hash_table_foreach (prof->methods, (GHFunc)build_newobj_profile, &profile);
 	output_newobj_profile (profile);
 	g_list_free (profile);
+
+	g_free (prof_addresses);
+	g_hash_table_destroy (prof_table);
 }
 
 static void
@@ -1056,7 +1240,7 @@ mono_profiler_install_simple (const char *desc)
 {
 	MonoProfiler *prof;
 	gchar **args, **ptr;
-	MonoProfileFlags flags = MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_ALLOCATIONS;
+	MonoProfileFlags flags = MONO_PROFILE_JIT_COMPILATION;
 
 	MONO_TIMER_STARTUP;
 
@@ -1065,21 +1249,22 @@ mono_profiler_install_simple (const char *desc)
 		if (strstr (desc, ":"))
 			desc = strstr (desc, ":") + 1;
 		else
-			desc = NULL;
-		args = g_strsplit (desc ? desc : "", ",", -1);
+			desc = "alloc,time";
+		args = g_strsplit (desc, ",", -1);
 
 		for (ptr = args; ptr && *ptr; ptr++) {
 			const char *arg = *ptr;
 
-			if (!strcmp (arg, "-time"))
-				flags &= ~MONO_PROFILE_ENTER_LEAVE;
-			else
-			   if (!strcmp (arg, "-alloc"))
-				   flags &= ~MONO_PROFILE_ALLOCATIONS;
-			   else {
-				   fprintf (stderr, "profiler : Unknown argument '%s'.\n", arg);
-				   return;
-			   }
+			if (!strcmp (arg, "time"))
+				flags |= MONO_PROFILE_ENTER_LEAVE;
+			else if (!strcmp (arg, "alloc"))
+				flags |= MONO_PROFILE_ALLOCATIONS;
+			else if (!strcmp (arg, "stat"))
+				flags |= MONO_PROFILE_STATISTICAL | MONO_PROFILE_APPDOMAIN_EVENTS;
+			else {
+				fprintf (stderr, "profiler : Unknown argument '%s'.\n", arg);
+				return;
+			}
 		}
 	}
 
@@ -1087,11 +1272,16 @@ mono_profiler_install_simple (const char *desc)
 	ALLOC_PROFILER ();
 	SET_PROFILER (prof);
 
+	/* statistical profiler data */
+	prof_addresses = g_new0 (gpointer, MAX_PROF_SAMPLES);
+	prof_table = g_hash_table_new (g_str_hash, g_str_equal);
+
 	mono_profiler_install (prof, simple_shutdown);
-	/* later do also object creation */
 	mono_profiler_install_enter_leave (simple_method_enter, simple_method_leave);
 	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
 	mono_profiler_install_allocation (simple_allocation);
+	mono_profiler_install_appdomain (NULL, NULL, simple_appdomain_unload, NULL);
+	mono_profiler_install_statistical (simple_stat_hit);
 	mono_profiler_set_events (flags);
 }
 
