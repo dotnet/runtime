@@ -91,9 +91,8 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 }
 
 static void
-ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint32 pos)
+ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32 pos)
 {
-	MonoArray *ao;
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
 	gpointer *ea, *va;
@@ -107,12 +106,11 @@ ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint3
 	else
 		vc = NULL;
 
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)ao->obj.vtable->klass;
+	ac = this->obj.vtable->klass;
 	ec = ac->element_class;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+	ea = (gpointer*)((char*)this->vector + (pos * esize));
 	va = (gpointer*)((char*)value + sizeof (MonoObject));
 
 	if (!value) {
@@ -355,35 +353,31 @@ ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint3
 }
 
 static void 
-ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
-				 MonoObject *idxs)
+ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
+				 MonoArray *idxs)
 {
-	MonoArray *ao, *io;
 	MonoClass *ac, *ic;
 	gint32 i, pos, *ind;
 
 	MONO_CHECK_ARG_NULL (idxs);
 
-	io = (MonoArray *)idxs;
-	ic = (MonoClass *)io->obj.vtable->klass;
-	
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)ao->obj.vtable->klass;
+	ic = idxs->obj.vtable->klass;
+	ac = this->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	if (io->bounds [0].length != ac->rank)
+	if (idxs->bounds [0].length != ac->rank)
 		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
 
-	ind = (guint32 *)io->vector;
+	ind = (guint32 *)idxs->vector;
 	for (i = 0; i < ac->rank; i++)
-		if ((ind [i] < ao->bounds [i].lower_bound) ||
-		    (ind [i] >= ao->bounds [i].length + ao->bounds [i].lower_bound))
+		if ((ind [i] < this->bounds [i].lower_bound) ||
+		    (ind [i] >= this->bounds [i].length + this->bounds [i].lower_bound))
 			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
-	pos = ind [0] - ao->bounds [0].lower_bound;
+	pos = ind [0] - this->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
-		pos = pos*ao->bounds [i].length + ind [i] - 
-			ao->bounds [i].lower_bound;
+		pos = pos * this->bounds [i].length + ind [i] - 
+			this->bounds [i].lower_bound;
 
 	ves_icall_System_Array_SetValueImpl (this, value, pos);
 }
