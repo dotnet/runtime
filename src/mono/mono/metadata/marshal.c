@@ -1210,7 +1210,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	GHashTable *cache;
 	MonoClass *klass;
 	gboolean pinvoke = FALSE;
-	int i, argnum, *tmp_locals, sigsize;
+	int i, argnum, *tmp_locals;
+	int type, sigsize;
 
 	g_assert (method != NULL);
 
@@ -1409,7 +1410,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	/* call the native method */
 	mono_mb_emit_native_call (mb, csig, method->addr);
 
-	switch (sig->ret->type) {
+	type = sig->ret->type;
+handle_enum:
+	switch (type) {
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -1428,6 +1431,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		break;
 	case MONO_TYPE_BOOLEAN:
 		/* maybe we need to make sure that it fits within 8 bits */
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (sig->ret->data.klass->enumtype) {
+			type = sig->ret->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			g_warning ("generic valutype %s not handled", sig->ret->data.klass->name);
+			g_assert_not_reached ();
+		}
 		break;
 	case MONO_TYPE_STRING:
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
