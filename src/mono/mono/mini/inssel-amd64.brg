@@ -187,24 +187,47 @@ stmt: OP_OUTARG (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG_REG (base,reg) {
-/*
+stmt: OP_OUTARG_REG (reg) {	
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint64 regpair;
+
 	tree->opcode = OP_SETREG;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
-*/
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, state->left->tree->inst_basereg, state->left->tree->inst_offset, state->right->reg1);
+
+	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
+	call->out_reg_args = g_slist_append (call->out_reg_args, (gpointer)(regpair));
 }
 
-stmt: OP_OUTARG_REG (base,OP_ICONST) {
-/*
-	tree->opcode = OP_SETREG;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
+stmt: OP_OUTARG_REG (OP_ICONST) {	
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint64 regpair;
+
+	tree->opcode = OP_ICONST;
+	tree->inst_c0 = state->left->tree->inst_c0;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
-*/
-	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, state->left->tree->inst_basereg, state->left->tree->inst_offset, state->right->tree->inst_c0);
+
+	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
+	call->out_reg_args = g_slist_append (call->out_reg_args, (gpointer)(regpair));
+}
+
+stmt: OP_OUTARG_REG (CEE_LDIND_I (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I8 (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I4 (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U4 (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_REF (OP_REGVAR)) {	
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint64 regpair;
+
+	tree->opcode = OP_SETREG;
+	tree->sreg1 = state->left->left->tree->dreg;
+	tree->dreg = mono_regstate_next_int (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
+	call->out_reg_args = g_slist_append (call->out_reg_args, (gpointer)(regpair));
 }
 
 # we need to reduce this code duplication with some burg syntax extension

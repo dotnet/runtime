@@ -907,20 +907,11 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 {
 	switch (storage) {
 	case ArgInIReg:
-		/*
-		 * Since the registers used to pass parameters are volatile,
-		 * and they are used in local reg allocation, we store the
-		 * arguments to local variables and load them into the
-		 * registers when emitting the call opcode.
-		 * FIXME: Optimize this.
-		 */
 		arg->opcode = OP_OUTARG_REG;
-		arg->inst_left = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-		arg->inst_right = tree;
-		//arg->ssa_op = MONO_SSA_STORE;
+		arg->inst_left = tree;
+		arg->inst_right = (MonoInst*)call;
 		arg->unused = reg;
 		call->used_iregs |= 1 << reg;
-		call->out_reg_args = g_slist_append (call->out_reg_args, arg);
 		break;
 	case ArgInFloatSSEReg:
 		/* FIXME: These are volatile as well */
@@ -1062,7 +1053,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						/* Reg1 */
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
 						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
-						//load->ssa_op = MONO_SSA_LOAD;
 
 						NEW_ICONST (cfg, offset_ins, 0);
 						MONO_INST_NEW (cfg, load2, CEE_ADD);
@@ -1077,7 +1067,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						/* Reg2 */
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
 						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
-						//load->ssa_op = MONO_SSA_LOAD;
 
 						NEW_ICONST (cfg, offset_ins, 8);
 						MONO_INST_NEW (cfg, load2, CEE_ADD);
@@ -1102,7 +1091,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						arg->inst_left = vtaddr;
 						arg->inst_right = in;
 						arg->type = in->type;
-						//arg->ssa_op = MONO_SSA_STORE;
+
 						/* prepend, so they get reversed */
 						arg->next = call->out_args;
 						call->out_args = arg;
@@ -2013,6 +2002,30 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->dreg = -1;
 		}
 
+		if (spec [MONO_INST_CLOB] == 'c') {
+			/* A call instruction implicitly uses all registers in call->out_reg_args */
+
+			MonoCallInst *call = (MonoCallInst*)ins;
+			GSList *list;
+
+			list = call->out_reg_args;
+			if (list) {
+				while (list) {
+					guint64 regpair;
+					int reg, hreg;
+
+					regpair = (guint64) (list->data);
+					hreg = regpair >> 32;
+					reg = regpair & 0xffffffff;
+
+					reginfo [reg].prev_use = reginfo [reg].last_use;
+					reginfo [reg].last_use = i;
+
+					list = g_slist_next (list);
+				}
+			}
+		}
+
 		reversed = inst_list_prepend (cfg->mempool, reversed, ins);
 		++i;
 		ins = ins->next;
@@ -2497,14 +2510,44 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if (spec [MONO_INST_CLOB] == 'c') {
 			int j, s;
+			MonoCallInst *call = (MonoCallInst*)ins;
+			GSList *list;
 			guint32 clob_mask = AMD64_CALLEE_REGS;
+
 			for (j = 0; j < MONO_MAX_IREGS; ++j) {
 				s = 1 << j;
 				if ((clob_mask & s) && !(rs->ifree_mask & s) && j != ins->sreg1) {
+					get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [j]);
+					mono_regstate_free_int (rs, j);
 					//g_warning ("register %s busy at call site\n", mono_arch_regname (j));
 				}
 			}
+
+			/* 
+			 * Assign all registers in call->out_reg_args to the proper 
+			 * argument registers.
+			 */
+
+			list = call->out_reg_args;
+			if (list) {
+				while (list) {
+					guint64 regpair;
+					int reg, hreg;
+
+					regpair = (guint64) (list->data);
+					hreg = regpair >> 32;
+					reg = regpair & 0xffffffff;
+
+					rs->iassign [reg] = hreg;
+					rs->isymbolic [hreg] = reg;
+					rs->ifree_mask &= ~ (1 << hreg);
+
+					list = g_slist_next (list);
+				}
+				g_slist_free (call->out_reg_args);
+			}
 		}
+
 		/*if (reg_is_freeable (ins->sreg1) && prev_sreg1 >= 0 && reginfo [prev_sreg1].born_in >= i) {
 			DEBUG (g_print ("freeable %s\n", mono_arch_regname (ins->sreg1)));
 			mono_regstate_free_int (rs, ins->sreg1);
@@ -2749,29 +2792,6 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	}
 
 	g_free (cinfo);
-
-	return code;
-}
-
-/*
- * emit_load_arguments:
- *
- *   Load arguments into the proper registers before a call.
- */
-static guint8*
-emit_load_arguments (MonoCompile *cfg, MonoCallInst *call, guint8 *code)
-{
-	GSList *list;
-
-	list = call->out_reg_args;
-	if (list) {
-		while (list) {
-			MonoInst *arg = (MonoInst*)(list->data);
-			amd64_mov_reg_membase (code, arg->unused, AMD64_RBP, arg->inst_left->inst_offset, 8);
-			list = g_slist_next (list);
-		}
-		g_slist_free (call->out_reg_args);
-	}
 
 	return code;
 }
@@ -3431,8 +3451,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke))
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 
-			code = emit_load_arguments (cfg, call, code);
-
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
 			else
@@ -3452,8 +3470,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_reg (code, AMD64_R11, ins->sreg1, 8);
 				ins->sreg1 = AMD64_R11;
 			}
-
-			code = emit_load_arguments (cfg, call, code);
 
 			/*
 			 * The AMD64 ABI forces callers to know about varargs.
@@ -3481,8 +3497,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_reg (code, AMD64_R11, ins->sreg1, 8);
 				ins->sreg1 = AMD64_R11;
 			}
-
-			code = emit_load_arguments (cfg, call, code);
 
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))

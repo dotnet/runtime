@@ -620,5 +620,25 @@ class Tests {
 			return 1;
 		return 2;
 	}
+
+	static int llmult (int a, int b, int c, int d) {
+		return a + b + c + d;
+	}
+
+	/* 
+	 * Test that evaluation of complex arguments does not overwrite the
+	 * arguments already in outgoing registers.
+	 */
+	static int test_155_regalloc () {
+		int a = 10;
+		int b = 10;
+
+		int c = 0;
+		int d = 0;
+		int[] arr = new int [5];
+
+		return llmult (arr [c + d], 150, 5, 0);
+	}
+
 }
 
