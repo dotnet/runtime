@@ -33,6 +33,7 @@
 	              <li><a href="archive/mono-0.23.tar.gz">Mono Runtime</a>
 		      <li><a href="archive/gc6.1.tar.gz">Boehm GC 6.1</a>
  		      <li><a href="archive/xsp-0.3.tar.gz">XSP web server (0.3)</a>
+		      <li><a href="archive/mono-debugger-0.2.2.tar.gz">Mono Debugger 0.2.2</a>
 	            </ul>
 		  </td>
 	        </tr>
@@ -101,7 +102,24 @@
  			<li><a href="archive/suse-80-i386/mono-devel-0.23-1.i386.rpm">mono-devel-0.23-1.i386.rpm</a> 
  		    </ul>
  	          </td>
+                  <td bgcolor="#999999">
+                    <b>Red Hat 8.0/x86</b>
+                    <ul>
+                        <li><a href="archive/redhat-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
+                        <li><a href="archive/redhat-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
+                        <li><a href="archive/redhat-80-i386/mono-0.23-1.i386.rpm">mono-0.23-1.i386.rpm</a>
+                        <li><a href="archive/redhat-80-i386/mono-devel-0.23-1.i386.rpm">mono-devel-0.23-1.i386.rpm</a>
+                    </ul>
+                  </td>
 	        </tr>
+  		<tr> 
+  		  <td bgcolor="#999999">
+ 		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+ 		    <ul>
+ 	              <li><a href="archive/mono-0.23-win32-2.exe">Mono-Setup</a>
+ 	            </ul>
+  	          </td>
+  		</tr>
 	      </table>
 	    </td>
 	  </tr>
