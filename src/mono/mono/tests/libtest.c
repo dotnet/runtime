@@ -1372,3 +1372,153 @@ mono_test_stdcall_name_mangling (int a, int b, int c)
 {
         return a + b + c;
 }
+
+/*
+ * PASSING AND RETURNING SMALL STRUCTURES FROM DELEGATES TESTS
+ */
+
+typedef struct {
+	int i;
+} SmallStruct1;
+	
+typedef SmallStruct1 (STDCALL *SmallStructDelegate1) (SmallStruct1 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate1 (SmallStructDelegate1 delegate)
+{
+	SmallStruct1 ss, res;
+
+	ss.i = 1;
+
+	res = delegate (ss);
+	if (! (res.i == -1))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	gint16 i, j;
+} SmallStruct2;
+	
+typedef SmallStruct2 (STDCALL *SmallStructDelegate2) (SmallStruct2 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate2 (SmallStructDelegate2 delegate)
+{
+	SmallStruct2 ss, res;
+
+	ss.i = 2;
+	ss.j = 3;
+
+	res = delegate (ss);
+	if (! ((res.i == -2) && (res.j == -3)))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	gint16 i;
+	gint8 j;
+} SmallStruct3;
+	
+typedef SmallStruct3 (STDCALL *SmallStructDelegate3) (SmallStruct3 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate3 (SmallStructDelegate3 delegate)
+{
+	SmallStruct3 ss, res;
+
+	ss.i = 1;
+	ss.j = 2;
+
+	res = delegate (ss);
+	if (! ((res.i == -1) && (res.j == -2)))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	gint16 i;
+} SmallStruct4;
+	
+typedef SmallStruct4 (STDCALL *SmallStructDelegate4) (SmallStruct4 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate4 (SmallStructDelegate4 delegate)
+{
+	SmallStruct4 ss, res;
+
+	ss.i = 1;
+
+	res = delegate (ss);
+	if (! (res.i == -1))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	gint64 i;
+} SmallStruct5;
+	
+typedef SmallStruct5 (STDCALL *SmallStructDelegate5) (SmallStruct5 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate5 (SmallStructDelegate5 delegate)
+{
+	SmallStruct5 ss, res;
+
+	ss.i = 5;
+
+	res = delegate (ss);
+	if (! (res.i == -5))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	int i, j;
+} SmallStruct6;
+	
+typedef SmallStruct6 (STDCALL *SmallStructDelegate6) (SmallStruct6 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate6 (SmallStructDelegate6 delegate)
+{
+	SmallStruct6 ss, res;
+
+	ss.i = 1;
+	ss.j = 2;
+
+	res = delegate (ss);
+	if (! ((res.i == -1) && (res.j == -2)))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	int i;
+	gint16 j;
+} SmallStruct7;
+	
+typedef SmallStruct7 (STDCALL *SmallStructDelegate7) (SmallStruct7 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate7 (SmallStructDelegate7 delegate)
+{
+	SmallStruct7 ss, res;
+
+	ss.i = 1;
+	ss.j = 2;
+
+	res = delegate (ss);
+	if (! ((res.i == -1) && (res.j == -2)))
+		return 1;
+
+	return 0;
+}

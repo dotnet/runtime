@@ -355,4 +355,184 @@ public class Tests {
 	static int test_0_marshal_blittable_struct_delegate () {
 		return mono_test_marshal_blittable_struct_delegate (new SimpleDelegate10 (delegate_test_blittable_struct));
 	}
+
+	/*
+	 * Passing and returning small structs
+	 */
+
+	/* TEST 1: 4 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct1 {
+		public int i;
+	}
+
+	public static SmallStruct1 delegate_test_struct (SmallStruct1 ss) {
+		SmallStruct1 res;
+
+		res.i = -ss.i;
+		
+		return res;
+	}
+
+	public delegate SmallStruct1 SmallStructDelegate1 (SmallStruct1 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate1")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate1 d);
+
+	static int test_0_marshal_small_struct_delegate1 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate1 (delegate_test_struct));
+	}
+
+	/* TEST 2: 2+2 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct2 {
+		public short i, j;
+	}
+
+	public static SmallStruct2 delegate_test_struct (SmallStruct2 ss) {
+		SmallStruct2 res;
+
+		res.i = (short)-ss.i;
+		res.j = (short)-ss.j;
+		
+		return res;
+	}
+
+	public delegate SmallStruct2 SmallStructDelegate2 (SmallStruct2 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate2")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate2 d);
+
+	static int test_0_marshal_small_struct_delegate2 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate2 (delegate_test_struct));
+	}
+
+	/* TEST 3: 2+1 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct3 {
+		public short i;
+		public byte j;
+	}
+
+	public static SmallStruct3 delegate_test_struct (SmallStruct3 ss) {
+		SmallStruct3 res;
+
+		res.i = (short)-ss.i;
+		res.j = (byte)-ss.j;
+		
+		return res;
+	}
+
+	public delegate SmallStruct3 SmallStructDelegate3 (SmallStruct3 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate3")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate3 d);
+
+	static int test_0_marshal_small_struct_delegate3 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate3 (delegate_test_struct));
+	}
+
+	/* TEST 4: 2 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct4 {
+		public short i;
+	}
+
+	public static SmallStruct4 delegate_test_struct (SmallStruct4 ss) {
+		SmallStruct4 res;
+
+		res.i = (short)-ss.i;
+		
+		return res;
+	}
+
+	public delegate SmallStruct4 SmallStructDelegate4 (SmallStruct4 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate4")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate4 d);
+
+	static int test_0_marshal_small_struct_delegate4 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate4 (delegate_test_struct));
+	}
+
+	/* TEST 5: 8 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct5 {
+		public long l;
+	}
+
+	public static SmallStruct5 delegate_test_struct (SmallStruct5 ss) {
+		SmallStruct5 res;
+
+		res.l = -ss.l;
+		
+		return res;
+	}
+
+	public delegate SmallStruct5 SmallStructDelegate5 (SmallStruct5 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate5")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate5 d);
+
+	static int test_0_marshal_small_struct_delegate5 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate5 (delegate_test_struct));
+	}
+
+	/* TEST 6: 4+4 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct6 {
+		public int i, j;
+	}
+
+	public static SmallStruct6 delegate_test_struct (SmallStruct6 ss) {
+		SmallStruct6 res;
+
+		res.i = -ss.i;
+		res.j = -ss.j;
+		
+		return res;
+	}
+
+	public delegate SmallStruct6 SmallStructDelegate6 (SmallStruct6 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate6")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate6 d);
+
+	static int test_0_marshal_small_struct_delegate6 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate6 (delegate_test_struct));
+	}
+
+	/* TEST 7: 4+2 byte long INTEGER struct */
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SmallStruct7 {
+		public int i;
+		public short j;
+	}
+
+	public static SmallStruct7 delegate_test_struct (SmallStruct7 ss) {
+		SmallStruct7 res;
+
+		res.i = -ss.i;
+		res.j = (short)-ss.j;
+		
+		return res;
+	}
+
+	public delegate SmallStruct7 SmallStructDelegate7 (SmallStruct7 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate7")]
+	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate7 d);
+
+	static int test_0_marshal_small_struct_delegate7 () {
+		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate7 (delegate_test_struct));
+	}
+
+
 }
