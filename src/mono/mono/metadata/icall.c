@@ -2841,9 +2841,11 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 	/* 
 	 * no info is better than crashing: we'll need our own tz data to make 
-	 * this work properly, anyway.
+	 * this work properly, anyway. The range is reduced to 1970 .. 2037 because
+	 * that is what mktime is guaranteed to support (we get into an infinite loop 
+	 * otherwise).
 	 */
-	if ((year < 1900) || (year > 2100)) {
+	if ((year < 1970) || (year > 2037)) {
 		t = time (NULL);
 		tt = *localtime (&t);
 		strftime (tzone, sizeof (tzone), "%Z", &tt);
