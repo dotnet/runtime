@@ -23,6 +23,7 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/marshal.h>
 
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
@@ -60,6 +61,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *class;
+
+	mono_marshal_init ();
 	
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);

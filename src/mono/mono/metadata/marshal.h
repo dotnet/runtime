@@ -21,6 +21,9 @@ typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
 /* marshaling helper functions */
 
+void
+mono_marshal_init (void);
+
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align);
 

@@ -76,6 +76,15 @@ static MonoDisHelper marshal_dh = {
 };
 #endif 
 
+/* This mutex protects the various marshalling related caches in MonoImage */
+static CRITICAL_SECTION marshal_mutex;
+
+void
+mono_marshal_init (void)
+{
+	InitializeCriticalSection (&marshal_mutex);
+}
+
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
@@ -408,7 +417,7 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str)
 {
-        mono_mb_emit_byte (mb, CEE_LDSTR);
+	mono_mb_emit_byte (mb, CEE_LDSTR);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, str));
 }
 
@@ -752,10 +761,10 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 			g_assert_not_reached ();
 		}
 
-               if (eclass->valuetype)
-                       esize = mono_class_native_size (eclass, NULL);
-               else
-                       esize = sizeof (gpointer);
+		if (eclass->valuetype)
+			esize = mono_class_native_size (eclass, NULL);
+		else
+			esize = sizeof (gpointer);
 
 		if (!usize) 
 			break;
@@ -1081,6 +1090,40 @@ mono_signature_to_name (MonoMethodSignature *sig, const char *prefix)
 	return result;
 }
 
+static inline MonoMethod*
+mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
+{
+	MonoMethod *res;
+
+	EnterCriticalSection (&marshal_mutex);
+	res = g_hash_table_lookup (cache, key);
+	LeaveCriticalSection (&marshal_mutex);
+	return res;
+}
+
+/* Create the method from the builder and place it in the cache */
+static inline MonoMethod*
+mono_mb_create_and_cache (GHashTable *cache, gpointer key,
+							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
+							   int max_stack)
+{
+	MonoMethod *res;
+
+	EnterCriticalSection (&marshal_mutex);
+	res = g_hash_table_lookup (cache, key);
+	if (!res) {
+		/* This does not acquire any locks */
+		res = mono_mb_create_method (mb, sig, max_stack);
+		g_hash_table_insert (cache, key, res);
+	}
+	else
+		/* Somebody created it before us */
+		;
+	LeaveCriticalSection (&marshal_mutex);
+
+	return res;
+}		
+
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
@@ -1098,7 +1141,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	sig = method->signature;
 
 	cache = method->klass->image->delegate_begin_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
+	if ((res = mono_marshal_find_in_cache (cache, sig)))
 		return res;
 
 	g_assert (sig->hasthis);
@@ -1127,9 +1170,8 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	mono_mb_emit_native_call (mb, csig, mono_delegate_begin_invoke);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
-	g_hash_table_insert (cache, sig, res);
 	return res;
 }
 
@@ -1303,7 +1345,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	sig = method->signature;
 
 	cache = method->klass->image->delegate_end_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
+	if ((res = mono_marshal_find_in_cache (cache, sig)))
 		return res;
 
 	g_assert (sig->hasthis);
@@ -1337,9 +1379,9 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	} else
 		mono_mb_emit_restore_result (mb, sig->ret);
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, sig,
+										 mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
-	g_hash_table_insert (cache, sig, res);
 
 	return res;
 }
@@ -1416,7 +1458,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		return method;
 
 	cache = method->klass->image->remoting_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
 	if (!csig) {
@@ -1445,9 +1487,9 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		 mono_mb_emit_restore_result (mb, sig->ret);
 	}
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
-	g_hash_table_insert (cache, method, res);
+
 	return res;
 }
 
@@ -1471,7 +1513,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	g_assert (sig->hasthis);
 
 	cache = method->klass->image->remoting_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, (char *)method + 1)))
+	if ((res = mono_marshal_find_in_cache (cache, (char *)method + 1)))
 		return res;
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK);
@@ -1495,9 +1537,10 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	mono_mb_emit_managed_call (mb, method, method->signature);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, (char*)method + 1,
+										 mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
-	g_hash_table_insert (cache, (char *)method + 1, res);
+
 	return res;
 }
 
@@ -1521,7 +1564,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	sig = method->signature;
 
 	cache = method->klass->image->delegate_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
+	if ((res = mono_marshal_find_in_cache (cache, sig)))
 		return res;
 
 	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
@@ -1608,10 +1651,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_patch_addr (mb, pos1, mb->pos - (pos1 + 4));
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, sig,
+										 mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
-
-	g_hash_table_insert (cache, sig, res);
 
 	return res;	
 }
@@ -1637,7 +1679,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	g_assert (method);
 
 	cache = method->klass->image->runtime_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 	
 	/* to make it work with our special string constructors */
@@ -1850,14 +1892,13 @@ handle_enum:
 	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte (mb, CEE_RET);
 	
-	res = mono_mb_create_method (mb, csig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, method,
+										 mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	header = ((MonoMethodNormal *)res)->header;
 	header->num_clauses = 1;
 	header->clauses = clause;
-
-	g_hash_table_insert (cache, method, res);
 
 	return res;	
 }
@@ -1879,7 +1920,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	g_assert (!method->signature->pinvoke);
 
 	cache = method->klass->image->managed_wrapper_cache;
-	if (!this && (res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+	if (!this && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
 	if (this) {
@@ -2165,11 +2206,12 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		mono_mb_emit_byte (mb, CEE_RET);
 	}
 
-	res = mono_mb_create_method (mb, csig, sig->param_count + 16);
-	mono_mb_free (mb);
-
 	if (!this)
-		g_hash_table_insert (cache, method, res);
+		res = mono_mb_create_and_cache (cache, method,
+											 mb, csig, sig->param_count + 16);
+	else
+		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
+	mono_mb_free (mb);
 
 	return res;
 }
@@ -2192,10 +2234,6 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	static GHashTable *ldfld_hash = NULL; 
 	char *name;
 	int t, pos0, pos1;
-
-	if (!ldfld_hash) 
-		ldfld_hash = g_hash_table_new (NULL, NULL);
-
 
 	t = type->type;
 
@@ -2220,7 +2258,12 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	if ((res = g_hash_table_lookup (ldfld_hash, klass)))
+	EnterCriticalSection (&marshal_mutex);
+	if (!ldfld_hash) 
+		ldfld_hash = g_hash_table_new (NULL, NULL);
+	res = g_hash_table_lookup (ldfld_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
 		return res;
 
 	name = g_strdup_printf ("__ldfld_wrapper_%s.%s", klass->name_space, klass->name); 
@@ -2322,11 +2365,10 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (ldfld_hash, klass,
+										 mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
-	g_hash_table_insert (ldfld_hash, klass, res);
-
 	return res;
 }
 
@@ -2348,9 +2390,6 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	static GHashTable *stfld_hash = NULL; 
 	char *name;
 	int t, pos;
-
-	if (!stfld_hash) 
-		stfld_hash = g_hash_table_new (NULL, NULL);
 
 	t = type->type;
 
@@ -2375,7 +2414,12 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	if ((res = g_hash_table_lookup (stfld_hash, klass)))
+	EnterCriticalSection (&marshal_mutex);
+	if (!stfld_hash) 
+		stfld_hash = g_hash_table_new (NULL, NULL);
+	res = g_hash_table_lookup (stfld_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
 		return res;
 
 	name = g_strdup_printf ("__stfld_wrapper_%s.%s", klass->name_space, klass->name); 
@@ -2474,11 +2518,10 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (stfld_hash, klass,
+									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
-	g_hash_table_insert (stfld_hash, klass, res);
-
 	return res;
 }
 
@@ -2524,7 +2567,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 
 /*
  * generates IL code for the pinvoke wrapper (the generated method
- * calls the unamnage code in method->addr)
+ * calls the unmanaged code in method->addr)
  */
 MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method)
@@ -2544,7 +2587,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	g_assert (method->signature->pinvoke);
 
 	cache = method->klass->image->native_wrapper_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
 	sig = method->signature;
@@ -2567,9 +2610,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		mono_mb_emit_exception (mb);
 		csig = g_memdup (sig, sigsize);
 		csig->pinvoke = 0;
-		res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+		res = mono_mb_create_and_cache (cache, method,
+										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
-		g_hash_table_insert (cache, method, res);
 		return res;
 	}
 
@@ -2596,9 +2639,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		csig = g_memdup (csig, sigsize);
 		csig->pinvoke = 0;
-		res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+		res = mono_mb_create_and_cache (cache, method,
+										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
-		g_hash_table_insert (cache, method, res);
 		return res;
 	}
 
@@ -3270,10 +3313,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	csig = g_memdup (sig, sigsize);
 	csig->pinvoke = 0;
-	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, method,
+									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
-
-	g_hash_table_insert (cache, method, res);
 
 	for (i = sig->param_count; i >= 0; i--)
 		g_free (mspecs [i]);
@@ -3433,7 +3475,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		return method;
 
 	cache = method->klass->image->synchronized_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
 	sig = method->signature;
@@ -3518,14 +3560,13 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_mb_emit_ldloc (mb, ret_local);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, method,
+									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	header = ((MonoMethodNormal *)res)->header;
 	header->num_clauses = 1;
 	header->clauses = clause;
-
-	g_hash_table_insert (cache, method, res);
 
 	return res;	
 }
@@ -4039,6 +4080,12 @@ mono_marshal_load_type_info (MonoClass* klass)
 						  NULL, NULL, &info->fields [j].mspec);
 
 		info->fields [j].field = &klass->fields [i];
+
+		if ((klass->field.count == 1) && (klass->instance_size == sizeof (MonoObject)) &&
+			(strcmp (klass->fields [i].name, "$PRIVATE$") == 0)) {
+			/* This field is a hack inserted by MCS to empty structures */
+			continue;
+		}
 
 		switch (layout) {
 		case TYPE_ATTRIBUTE_AUTO_LAYOUT:
