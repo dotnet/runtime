@@ -177,5 +177,10 @@ MonoReflectionMethod *
 ves_icall_MonoDebugger_GetMethod   (MonoReflectionAssembly   *assembly,
 				    guint32                   token);
 
+MonoReflectionType *
+ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly,
+						  MonoArray              *signature);
+
+
 #endif /* __MONO_SYMFILE_H__ */
 

@@ -794,3 +794,28 @@ ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 toke
 
 	return mono_method_get_object (mono_domain_get (), method, NULL);
 }
+
+MonoReflectionType *
+ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly, MonoArray *signature)
+{
+	MonoDomain *domain; 
+	MonoImage *image;
+	MonoType *type;
+	const char *ptr;
+	int len = 0;
+
+	MONO_CHECK_ARG_NULL (assembly);
+	MONO_CHECK_ARG_NULL (signature);
+
+	domain = mono_domain_get();
+	image = assembly->assembly->image;
+
+	ptr = mono_array_addr (signature, char, 0);
+	g_assert (*ptr++ == 0x07);
+	len = mono_metadata_decode_value (ptr, &ptr);
+	g_assert (len == 1);
+
+	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
+
+	return mono_type_get_object (domain, type);
+}

@@ -3116,6 +3116,9 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::MonoDebugger_GetMethod",
 	ves_icall_MonoDebugger_GetMethod,
 
+	"System.Reflection.Assembly::MonoDebugger_GetLocalTypeFromSignature",
+	ves_icall_MonoDebugger_GetLocalTypeFromSignature,
+
 	/*
 	 * add other internal calls here
 	 */
