@@ -1,3 +1,8 @@
+2004-04-26  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* configure.in: move setting of NO_VERSION_SCRIPT
+	until after checking for GNU ld
+
 2004-04-22  Urs C Muff <umuff@quark.com>
 
 	move .net assemblies from $prefix/bin/*.exe to $prefix/lib/*.exe on windows/cygwin
