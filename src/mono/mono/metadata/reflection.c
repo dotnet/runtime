@@ -926,10 +926,35 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 static guint32
 resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 {
-	if (image != mono_defaults.corlib)
-		g_error ("multiple assemblyref not yet supported");
-	/* first row in assemblyref */
-	return (1 << RESOLTION_SCOPE_BITS) | RESOLTION_SCOPE_ASSEMBLYREF;
+	MonoDynamicTable *table;
+	guint32 token;
+	guint32 *values;
+	guint32 cols [MONO_ASSEMBLY_SIZE];
+
+	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, image))))
+		return token;
+
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
+
+	table = &assembly->tables [MONO_TABLE_ASSEMBLYREF];
+	token = table->next_idx ++;
+	table->rows ++;
+	alloc_table (table, table->rows);
+	values = table->values + token * MONO_ASSEMBLYREF_SIZE;
+	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
+	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = cols [MONO_ASSEMBLY_MAJOR_VERSION];
+	values [MONO_ASSEMBLYREF_MINOR_VERSION] = cols [MONO_ASSEMBLY_MINOR_VERSION];
+	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = cols [MONO_ASSEMBLY_BUILD_NUMBER];
+	values [MONO_ASSEMBLYREF_REV_NUMBER] = cols [MONO_ASSEMBLY_REV_NUMBER];
+	values [MONO_ASSEMBLYREF_FLAGS] = 0;
+	values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
+	values [MONO_ASSEMBLYREF_CULTURE] = 0;
+	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
+
+	token <<= RESOLTION_SCOPE_BITS;
+	token |= RESOLTION_SCOPE_ASSEMBLYREF;
+	g_hash_table_insert (assembly->typeref, image, GUINT_TO_POINTER (token));
+	return token;
 }
 
 static guint32
@@ -1427,11 +1452,19 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->tables [MONO_TABLE_TYPEDEF].rows = 1; /* .<Module> */
 	assembly->tables [MONO_TABLE_TYPEDEF].next_idx++;
 
-	len = mono_array_length (assemblyb->modules);
-	table = &assembly->tables [MONO_TABLE_MODULE];
-	alloc_table (table, len);
-	for (i = 0; i < len; ++i)
-		mono_image_fill_module_table (domain, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i), assembly);
+	if (assemblyb->modules) {
+		len = mono_array_length (assemblyb->modules);
+		table = &assembly->tables [MONO_TABLE_MODULE];
+		alloc_table (table, len);
+		for (i = 0; i < len; ++i)
+			mono_image_fill_module_table (domain, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i), assembly);
+	} else {
+		table = &assembly->tables [MONO_TABLE_MODULE];
+		table->rows++;
+		alloc_table (table, table->rows);
+		table->values [table->next_idx * MONO_MODULE_SIZE + MONO_MODULE_NAME] = string_heap_insert (&assembly->sheap, "RefEmit_YouForgotToDefineAModule");
+		table->next_idx ++;
+	}
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	/* 
@@ -1448,20 +1481,6 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_TYPEDEF_EXTENDS] = 0;
 	values [MONO_TYPEDEF_FIELD_LIST] = 1;
 	values [MONO_TYPEDEF_METHOD_LIST] = 1;
-
-	/* later include all the assemblies referenced */
-	table = &assembly->tables [MONO_TABLE_ASSEMBLYREF];
-	alloc_table (table, 1);
-	values = table->values + table->columns;
-	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, "corlib");
-	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = 0;
-	values [MONO_ASSEMBLYREF_MINOR_VERSION] = 0;
-	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = 0;
-	values [MONO_ASSEMBLYREF_REV_NUMBER] = 0;
-	values [MONO_ASSEMBLYREF_FLAGS] = 0;
-	values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
-	values [MONO_ASSEMBLYREF_CULTURE] = 0;
-	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
 
 	build_compressed_metadata (assembly);
 }

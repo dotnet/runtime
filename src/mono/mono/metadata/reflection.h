@@ -122,6 +122,7 @@ typedef struct {
 	MonoArray *handlers;
 	gint32 start;
 	gint32 len;
+	gint32 label;
 } MonoILExceptionInfo;
 
 typedef struct {

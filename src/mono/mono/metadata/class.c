@@ -271,7 +271,6 @@ mono_get_unique_iid (MonoClass *class)
 		++iid;
 	}
 
-	g_free (str);
 	return iid - 1;
 }
 
