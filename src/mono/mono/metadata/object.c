@@ -1532,15 +1532,29 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 void
 mono_print_unhandled_exception (MonoObject *exc)
 {
-	char *message = g_strdup ("");
-	char *trace = g_strdup ("");
+	char *message = "";
+	char *trace = "";
 	MonoString *str; 
+	MonoProperty *property;
+	gboolean free_message = FALSE;
+	gboolean free_trace = FALSE;
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
-		if ((str = ((MonoException *)exc)->message))
+		property = mono_class_get_property_from_name (exc->vtable->klass, "Message");
+
+		g_assert (property);
+		g_assert (property->get);
+
+		str = (MonoString *) mono_runtime_invoke (property->get, exc, NULL, NULL);
+		if (str) {
 			message = mono_string_to_utf8 (str);
-		if ((str = ((MonoException *)exc)->stack_trace))
+			free_message = TRUE;
+		}
+		
+		if ((str = ((MonoException *)exc)->stack_trace)) {
 			trace = mono_string_to_utf8 (str);
+			free_trace = TRUE;
+		}
 	}				
 
 	g_warning ("unhandled exception %s.%s: \"%s\"", exc->vtable->klass->name_space, 
@@ -1551,8 +1565,11 @@ mono_print_unhandled_exception (MonoObject *exc)
 		g_printerr ("\n");
 	}
 
-	g_free (message);
-	g_free (trace);
+	if (free_message)
+		g_free (message);
+
+	if (free_trace)
+		g_free (trace);
 }
 
 /**
