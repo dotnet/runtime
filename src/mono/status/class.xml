@@ -81,10 +81,10 @@
 		</maintainers>
 	</class>
 	<class name="System.Byte">
-		<last-activity>Jul-19-2001</last-activity>
+		<last-activity>Dec-21-2001</last-activity>
 		<implementation>no</implementation>
 		<test-suite>yes</test-suite>
-		<completion>?</completion>
+		<completion>80</completion>
 		<maintainers>
 			<maintainer>dholden@draper.com</maintainer>
 		</maintainers>
@@ -1336,19 +1336,19 @@
 		</maintainers>
 	</class>
 	<class name="System.Int16">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>80</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Int32">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>80</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
@@ -2866,28 +2866,28 @@
 		</maintainers>
 	</class>
 	<class name="System.UInt16">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>80</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.UInt32">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>80</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.UInt64">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>80</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
@@ -4042,6 +4042,142 @@
 		<completion>?</completion>
 		<maintainers>
 			<maintainer>jason@injektilo.org</maintainer>
+		</maintainers>
+	</class>
+
+	<class name="System.Security.IStackWalk">
+		<last-activity>Dec-21-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>miguel@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.IPermission">
+		<last-activity>Dec-21-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>miguel@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.CodeAccessPermission">
+		<last-activity>Dec-21-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>miguel@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.SecurityElement">
+		<last-activity>Dec-21-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>80</completion>
+		<maintainers>
+			<maintainer>miguel@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.IResourceReader">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.IResourceWriter">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.MissingManifestResourceException">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.NeutralResourceLanguageAttribute">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.ResourceManager">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.ResourceReader">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.ResourceSet">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.ResourceWriter">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.ResXFileRef">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.ResXResourceReader">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Resources.SatelliteContractVersionAttribute">
+		<last-activity>Dec-20-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>duncan@ximian.com</maintainer>
 		</maintainers>
 	</class>
 </classes>
