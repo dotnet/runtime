@@ -74,6 +74,8 @@ mono_get_method (MonoImage *image, guint32 token)
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	result->signature = mono_metadata_parse_method_signature (&image->metadata, 0, sig, NULL);
 
+	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+
 	return result;
 }
 
