@@ -2,7 +2,7 @@
 
 	Anonymous access to the Mono is available currently from three
 	servers (anoncvs-spain-1.go-mono.com,
-	anoncvs-spain-2.go-mono.com and anoncvs-us-1.go-mono.com).
+	anoncvs-spain-2.go-mono.com and us-anoncvs.go-mono.com).
 
 	You can also use `anoncvs.go-mono.com', and that will pick a
 	server automatically for you.
@@ -42,6 +42,9 @@
 
 	Special thanks to Jesus Climent, Rodrigo Moya, Juantomás
 	García and Ismael Olea for making this happen.
+
+	Thanks to Matt Liotta of MontaraSoftware for hosting our
+	US-based AnonCVS server.
 
 <a name="#mirror">
 ** Becoming an AnonCVS mirror
