@@ -2801,6 +2801,15 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 	return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 }
 
+static MonoBoolean
+ves_icall_Type_IsArrayImpl (MonoReflectionType *t)
+{
+	MonoType *type = t->type;
+	MonoBoolean res = !type->byref && (type->type == MONO_TYPE_ARRAY || type->type == MONO_TYPE_SZARRAY);
+	
+	return res;
+}
+
 static MonoObject *
 ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
 						   MonoReflectionMethod *info)
@@ -3847,6 +3856,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::Equals", ves_icall_type_Equals,
 	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
 	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,
+	"System.Type::IsArrayImpl", ves_icall_Type_IsArrayImpl,
 
 	/*
 	 * System.Reflection.FieldInfo
