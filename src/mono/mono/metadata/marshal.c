@@ -3941,8 +3941,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		case MONO_TYPE_VALUETYPE:
 			klass = sig->ret->data.klass;
 			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable || klass->enumtype)
+			    klass->blittable || klass->enumtype) {
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
 				break;
+			}
 			
 			/* load pointer to returned value type */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
