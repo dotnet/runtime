@@ -2581,14 +2581,14 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Threading.Interlocked
 	 */
-	"System.Threading.Interlocked::Increment(uint&)", ves_icall_System_Threading_Interlocked_Increment_Int,
+	"System.Threading.Interlocked::Increment(int&)", ves_icall_System_Threading_Interlocked_Increment_Int,
 	"System.Threading.Interlocked::Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long,
-	"System.Threading.Interlocked::Decrement(uint&)", ves_icall_System_Threading_Interlocked_Decrement_Int,
+	"System.Threading.Interlocked::Decrement(int&)", ves_icall_System_Threading_Interlocked_Decrement_Int,
 	"System.Threading.Interlocked::Decrement(long&)", ves_icall_System_Threading_Interlocked_Decrement_Long,
-	"System.Threading.Interlocked::CompareExchange(uint&,uint,uint)", ves_icall_System_Threading_Interlocked_CompareExchange_Int,
+	"System.Threading.Interlocked::CompareExchange(int&,int,int)", ves_icall_System_Threading_Interlocked_CompareExchange_Int,
 	"System.Threading.Interlocked::CompareExchange(object&,object,object)", ves_icall_System_Threading_Interlocked_CompareExchange_Object,
 	"System.Threading.Interlocked::CompareExchange(single&,single,single)", ves_icall_System_Threading_Interlocked_CompareExchange_Single,
-	"System.Threading.Interlocked::Exchange(uint&,uint)", ves_icall_System_Threading_Interlocked_Exchange_Int,
+	"System.Threading.Interlocked::Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int,
 	"System.Threading.Interlocked::Exchange(object&,object)", ves_icall_System_Threading_Interlocked_Exchange_Object,
 	"System.Threading.Interlocked::Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single,
 
