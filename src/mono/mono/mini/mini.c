@@ -2470,7 +2470,7 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 }
 
 static int
-handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, const guchar *ip)
+handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboolean for_box, const guchar *ip)
 {
 	MonoInst *iargs [2];
 	void *alloc_ftn;
@@ -2484,7 +2484,7 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, const 
 		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
 		gboolean pass_lw;
 		
-		alloc_ftn = mono_class_get_allocation_ftn (vtable, &pass_lw);
+		alloc_ftn = mono_class_get_allocation_ftn (vtable, for_box, &pass_lw);
 		if (pass_lw) {
 			guint32 lw = vtable->klass->instance_size;
 			lw = ((lw + (sizeof (gpointer) - 1)) & ~(sizeof (gpointer) - 1)) / sizeof (gpointer);
@@ -2504,7 +2504,7 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 	MonoInst *dest, *vtoffset, *add, *vstore;
 	int temp;
 
-	temp = handle_alloc (cfg, bblock, klass, ip);
+	temp = handle_alloc (cfg, bblock, klass, TRUE, ip);
 	NEW_TEMPLOAD (cfg, dest, temp);
 	NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
 	MONO_INST_NEW (cfg, add, OP_PADD);
@@ -4542,7 +4542,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					temp = iargs [0]->inst_c0;
 					NEW_TEMPLOADA (cfg, *sp, temp);
 				} else {
-					temp = handle_alloc (cfg, bblock, cmethod->klass, ip);
+					temp = handle_alloc (cfg, bblock, cmethod->klass, FALSE, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
