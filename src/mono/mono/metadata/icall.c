@@ -1988,6 +1988,39 @@ ves_icall_MonoGenericInst_GetProperties (MonoReflectionGenericInst *type,
 	return res;
 }
 
+static MonoArray*
+ves_icall_MonoGenericInst_GetEvents (MonoReflectionGenericInst *type,
+				     MonoReflectionType *reflected_type)
+{
+	static MonoClass *System_Reflection_EventInfo;
+	MonoGenericInst *ginst;
+	MonoDynamicGenericInst *dginst;
+	MonoDomain *domain;
+	MonoClass *refclass;
+	MonoArray *res;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!System_Reflection_EventInfo)
+		System_Reflection_EventInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "EventInfo");
+
+	ginst = type->type.type->data.generic_inst;
+	g_assert ((dginst = ginst->dynamic_info) != NULL);
+
+	refclass = mono_class_from_mono_type (reflected_type->type);
+
+	domain = mono_object_domain (type);
+	res = mono_array_new (domain, System_Reflection_EventInfo, dginst->count_events);
+
+	for (i = 0; i < dginst->count_events; i++)
+		mono_array_set (res, gpointer, i,
+				mono_event_get_object (domain, refclass, &dginst->events [i]));
+
+	return res;
+}
+
 static void
 ves_icall_MonoGenericParam_initialize (MonoReflectionGenericParam *gparam)
 {
@@ -5089,6 +5122,7 @@ static const IcallEntry monofield_icalls [] = {
 
 static const IcallEntry monogenericinst_icalls [] = {
 	{"GetConstructors_internal", ves_icall_MonoGenericInst_GetConstructors},
+	{"GetEvents_internal", ves_icall_MonoGenericInst_GetEvents},
 	{"GetFields_internal", ves_icall_MonoGenericInst_GetFields},
 	{"GetInterfaces_internal", ves_icall_MonoGenericInst_GetInterfaces},
 	{"GetMethods_internal", ves_icall_MonoGenericInst_GetMethods},
@@ -5193,6 +5227,7 @@ static const IcallEntry typebuilder_icalls [] = {
 	{"create_runtime_class", mono_reflection_create_runtime_class},
 	{"define_generic_parameter", ves_icall_TypeBuilder_define_generic_parameter},
 	{"get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter},
+	{"get_event_info", mono_reflection_event_builder_get_event_info},
 	{"setup_generic_class", mono_reflection_setup_generic_class},
 	{"setup_internal_class", mono_reflection_setup_internal_class}
 };

@@ -7178,7 +7178,8 @@ inflate_method (MonoReflectionGenericInst *type, MonoObject *obj)
 void
 mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 					 MonoArray *methods, MonoArray *ctors,
-					 MonoArray *fields, MonoArray *properties)
+					 MonoArray *fields, MonoArray *properties,
+					 MonoArray *events)
 {
 	MonoGenericInst *ginst;
 	MonoDynamicGenericInst *dginst;
@@ -7209,11 +7210,13 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 	dginst->count_ctors = ctors ? mono_array_length (ctors) : 0;
 	dginst->count_fields = fields ? mono_array_length (fields) : 0;
 	dginst->count_properties = properties ? mono_array_length (properties) : 0;
+	dginst->count_events = events ? mono_array_length (events) : 0;
 
 	dginst->methods = g_new0 (MonoMethod *, dginst->count_methods);
 	dginst->ctors = g_new0 (MonoMethod *, dginst->count_ctors);
 	dginst->fields = g_new0 (MonoClassField, dginst->count_fields);
 	dginst->properties = g_new0 (MonoProperty, dginst->count_properties);
+	dginst->events = g_new0 (MonoEvent, dginst->count_events);
 
 	for (i = 0; i < dginst->count_methods; i++) {
 		MonoObject *obj = mono_array_get (methods, gpointer, i);
@@ -7264,6 +7267,31 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 				property->get = inflate_mono_method (type, property->get, NULL);
 			if (property->set)
 				property->set = inflate_mono_method (type, property->set, NULL);
+		} else
+			g_assert_not_reached ();
+	}
+
+	for (i = 0; i < dginst->count_events; i++) {
+		MonoObject *obj = mono_array_get (events, gpointer, i);
+		MonoEvent *event = &dginst->events [i];
+
+		if (!strcmp (obj->vtable->klass->name, "EventBuilder")) {
+			MonoReflectionEventBuilder *eb = (MonoReflectionEventBuilder *) obj;
+
+			event->parent = klass;
+			event->attrs = eb->attrs;
+			event->name = mono_string_to_utf8 (eb->name);
+			if (eb->add_method)
+				event->add = inflate_method (type, (MonoObject *) eb->add_method);
+			if (eb->remove_method)
+				event->remove = inflate_method (type, (MonoObject *) eb->remove_method);
+		} else if (!strcmp (obj->vtable->klass->name, "MonoEvent")) {
+			*event = *((MonoReflectionEvent *) obj)->event;
+
+			if (event->add)
+				event->add = inflate_mono_method (type, event->add, NULL);
+			if (event->remove)
+				event->remove = inflate_mono_method (type, event->remove, NULL);
 		} else
 			g_assert_not_reached ();
 	}
@@ -7420,6 +7448,38 @@ typebuilder_setup_properties (MonoClass *klass)
 		if (pb->set_method)
 			klass->properties [i].set = pb->set_method->mhandle;
 	}
+}
+
+MonoReflectionEvent *
+mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb)
+{
+	MonoEvent *event = g_new0 (MonoEvent, 1);
+	MonoClass *klass;
+	int j;
+
+	klass = my_mono_class_from_mono_type (tb->type.type);
+
+	event->parent = klass;
+	event->attrs = eb->attrs;
+	event->name = mono_string_to_utf8 (eb->name);
+	if (eb->add_method)
+		event->add = eb->add_method->mhandle;
+	if (eb->remove_method)
+		event->remove = eb->remove_method->mhandle;
+	if (eb->raise_method)
+		event->raise = eb->raise_method->mhandle;
+
+	if (eb->other_methods) {
+		event->other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods));
+		for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
+			MonoReflectionMethodBuilder *mb = 
+				mono_array_get (eb->other_methods,
+						MonoReflectionMethodBuilder*, j);
+			event->other [j] = mb->mhandle;
+		}
+	}
+
+	return mono_event_get_object (mono_object_domain (tb), klass, event);
 }
 
 static void

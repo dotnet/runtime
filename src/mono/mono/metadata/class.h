@@ -250,6 +250,8 @@ struct _MonoDynamicGenericInst {
 	MonoClassField *fields;
 	int count_properties;
 	MonoProperty *properties;
+	int count_events;
+	MonoEvent *events;
 };
 
 struct _MonoGenericMethod {

@@ -611,7 +611,10 @@ mono_reflection_generic_inst_get_nested_types (MonoReflectionGenericInst *type);
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 void
-mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties);
+mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events);
+MonoReflectionEvent *
+mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
+
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 
