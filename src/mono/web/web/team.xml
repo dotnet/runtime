@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="iso-8859-1" ?>
+﻿<?xml version="1.0" encoding="iso-8859-1" ?>
 <contributors xmlns="http://go-mono.org/team.xsd">
 	<contributor>
 		<name>
@@ -375,7 +375,7 @@
 		</name>
 		<e-mail>bmaurer@users.sf.net</e-mail>
 		<image>none.png</image>
-		<location>Austria</location>
+		<location>USA</location>
 		<organization>N/A</organization>
 		<description>Mono hacker</description>
 		<tasks>
