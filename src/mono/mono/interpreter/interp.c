@@ -3648,7 +3648,11 @@ array_constructed:
 		MINT_IN_CASE(MINT_STARG_P) STARG(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STARG_VT) 
-			g_assert_not_reached ();
+			i32 = READ32(ip + 2);
+			--sp;
+			memcpy(frame->args + * (guint16 *)(ip + 1), sp->data.p, i32);
+			vt_sp -= (i32 + 7) & ~7;
+			ip += 4;
 			MINT_IN_BREAK;
 
 #define STINARG(datamem, argtype) \

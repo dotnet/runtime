@@ -477,12 +477,25 @@ store_arg(TransformData *td, int n)
 	if (n == 0 && td->method->signature->hasthis)
 		ADD_CODE(td, MINT_STTHIS);
 	else {
+		MonoType *type;
 		n -= td->method->signature->hasthis;
-		mt = mint_type (td->method->signature->params [n]);
-		/* FIX value types */
-		g_assert(mt != MINT_TYPE_VT);
-		ADD_CODE(td, MINT_STARG_I1 + (mt - MINT_TYPE_I1));
-		ADD_CODE(td, td->rtm->arg_offsets [n]);
+		type = td->method->signature->params [n];
+		mt = mint_type (type);
+		if (mt == MINT_TYPE_VT) {
+			gint32 size;
+			if (td->method->signature->pinvoke)
+				size = mono_class_native_size (type->data.klass, NULL);
+			else
+				size = mono_class_value_size (type->data.klass, NULL);
+			ADD_CODE(td, MINT_STARG_VT);
+			ADD_CODE(td, n);
+			WRITE32(td, &size);
+			if (td->sp [-1].type == STACK_TYPE_VT)
+				POP_VT(td, size);
+		} else {
+			ADD_CODE(td, MINT_STARG_I1 + (mt - MINT_TYPE_I1));
+			ADD_CODE(td, td->rtm->arg_offsets [n]);
+		}
 	}
 	--td->sp;
 }
