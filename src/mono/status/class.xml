@@ -2140,7 +2140,7 @@
         </maintainers>
     </class>
     <class name="System.Web.UI.Control">
-        <last-activity>Aug-17-2001</last-activity>
+        <last-activity>Aug-22-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
@@ -2191,6 +2191,33 @@
         <completion>?</completion>
         <maintainers>
             <maintainer>cpodurgiel@msn.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Web.UI.HtmlControlls.HtmlControl">
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Web.UI.HtmlControlls.HtmlContainerControl">
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Web.UI.HtmlControlls.HtmlGenericControl">
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
     </class>
 </classes>
