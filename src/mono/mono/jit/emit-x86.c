@@ -617,13 +617,6 @@ tree_allocate_regs (MonoFlowGraph *cfg, MBTree *tree, int goal, MonoRegSet *rs,
 		/* chain rule */
 		if (!tree_allocate_regs (cfg, kids [0], nts [0], rs, exclude_mask, spillcount))
 			return FALSE;
-		/* special case reg: coni4 */
-		if (goal == MB_NTERM_reg) {
-			if (tree->reg1 == -1)
-				tree->reg1 = mono_regset_alloc_reg (rs, -1, exclude_mask);
-			if (tree->reg1 == -1)
-				return FALSE;
-		}
 		return TRUE;
 	}
 

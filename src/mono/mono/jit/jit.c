@@ -86,6 +86,20 @@ case CEE_##name: {                                                            \
 	break;                                                                \
 }
 
+#if 0
+#define MAKE_SPILLED_BI_ALU1(name, s1, s2) {                                  \
+	t1 = mono_ctree_new (mp, MB_TERM_##name, s1, s2);                     \
+	PUSH_TREE (t1, s1->svt); }                                            
+#else
+#define MAKE_SPILLED_BI_ALU1(name, s1, s2)                                    \
+	t1 = mono_ctree_new (mp, MB_TERM_##name, s1, s2);                     \
+        t1->svt = s1->svt;                                                    \
+        t1 = mono_store_tree (cfg, -1, t1, &t2);                              \
+        g_assert (t1);                                                        \
+        ADD_TREE (t1, cli_addr);                                              \
+	PUSH_TREE (t2, t2->svt);                                              
+#endif
+
 #define MAKE_CMP(cname)                                                       \
 case CEE_##cname: {                                                           \
 	++ip;                                                                 \
@@ -101,12 +115,7 @@ case CEE_##cname: {                                                           \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
-        t1->svt = sp [0]->svt;                                                \
-        t1 = mono_store_tree (cfg, -1, t1, &t2);                              \
-        g_assert (t1);                                                        \
-        ADD_TREE (t1, cli_addr);                                              \
-	PUSH_TREE (t2, t2->svt);                                              \
+	MAKE_SPILLED_BI_ALU1 (name, sp [0], sp [1])                           \
 	break;                                                                \
 }
 
@@ -248,6 +257,14 @@ mono_alloc_static0 (int size)
 
 typedef void (*MonoCCtor) (void);
 
+
+inline static MBTree *
+mono_ctree_new_icon4 (MonoMemPool *mp, gint32 data)
+{
+	MBTree *t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+	t1->data.i = data;
+	return t1;
+}
 
 static int
 map_store_svt_type (int svt)
@@ -2004,7 +2021,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_LDLEN: {
 			ip++;
 			sp--;
-			
+
 			t1 = mono_ctree_new (mp, MB_TERM_LDLEN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
@@ -2835,24 +2852,129 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			break;
 		}
 
-		MAKE_BI_ALU (ADD)
+		case CEE_ADD: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i + sp [1]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], sp [1]);
+			PUSH_TREE (t1, sp [0]->svt);
+			break;                        
+		}
+
+		case CEE_SUB: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i - sp [1]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_SUB, sp [0], sp [1]);
+			PUSH_TREE (t1, sp [0]->svt);
+			break;                        
+		}
+
+		case CEE_AND: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i & sp [1]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_AND, sp [0], sp [1]);
+			PUSH_TREE (t1, sp [0]->svt);
+			break;                        
+		}
+
+		case CEE_OR: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i | sp [1]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_OR, sp [0], sp [1]);
+			PUSH_TREE (t1, sp [0]->svt);
+			break;                        
+		}
+
+		case CEE_XOR: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i ^ sp [1]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_XOR, sp [0], sp [1]);
+			PUSH_TREE (t1, sp [0]->svt);
+			break;                        
+		}
+
+		case CEE_MUL: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4) {
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i * sp [1]->data.i);
+				PUSH_TREE (t1, sp [0]->svt);
+			} else {
+				MAKE_SPILLED_BI_ALU1 (MUL, sp [0], sp [1])
+			}
+			break;                        
+		}
+
+		case CEE_DIV: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4) {
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i / sp [1]->data.i);
+				PUSH_TREE (t1, sp [0]->svt);
+			} else {
+				MAKE_SPILLED_BI_ALU1 (DIV, sp [0], sp [1])
+			}
+			break;                        
+		}
+
+		case CEE_REM: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4) {
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i % sp [1]->data.i);
+				PUSH_TREE (t1, sp [0]->svt);
+			} else {
+				MAKE_SPILLED_BI_ALU1 (REM, sp [0], sp [1])
+			}
+			break;                        
+		}
+
+		case CEE_SHL: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4) {
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i << sp [1]->data.i);
+				PUSH_TREE (t1, sp [0]->svt);
+			} else {
+				MAKE_SPILLED_BI_ALU1 (SHL, sp [0], sp [1])
+			}
+			break;                        
+		}
+
+		case CEE_SHR: {
+			++ip;
+			sp -= 2;
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4) {
+				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i >> sp [1]->data.i);
+				PUSH_TREE (t1, sp [0]->svt);
+			} else {
+				MAKE_SPILLED_BI_ALU1 (SHR, sp [0], sp [1])
+			}
+			break;                        
+		}
+
 		MAKE_BI_ALU (ADD_OVF)
 		MAKE_BI_ALU (ADD_OVF_UN)
-		MAKE_BI_ALU (SUB)
 		MAKE_BI_ALU (SUB_OVF)
 		MAKE_BI_ALU (SUB_OVF_UN)
-		MAKE_BI_ALU (AND)
-		MAKE_BI_ALU (OR)
-		MAKE_BI_ALU (XOR)
-		MAKE_SPILLED_BI_ALU (SHL)
-		MAKE_SPILLED_BI_ALU (SHR)
 		MAKE_SPILLED_BI_ALU (SHR_UN)
-		MAKE_SPILLED_BI_ALU (MUL)
 		MAKE_SPILLED_BI_ALU (MUL_OVF)
 		MAKE_SPILLED_BI_ALU (MUL_OVF_UN)
-		MAKE_SPILLED_BI_ALU (DIV)
 		MAKE_SPILLED_BI_ALU (DIV_UN)
-		MAKE_SPILLED_BI_ALU (REM)
 		MAKE_SPILLED_BI_ALU (REM_UN)
 
 		MAKE_LDIND (LDIND_I1,  MB_TERM_LDIND_I1, VAL_I32)
@@ -2900,14 +3022,20 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_NEG: {
 			ip++;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_NEG, sp [0], NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, -sp [0]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_NEG, sp [0], NULL);
 			PUSH_TREE (t1, sp [0]->svt);		
 			break;
 		}
 		case CEE_NOT: {
 			ip++;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_NOT, sp [0], NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, ~sp [0]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_NOT, sp [0], NULL);
 			PUSH_TREE (t1, sp [0]->svt);
 			break;
 		}
@@ -3184,39 +3312,57 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_CONV_U1: 
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_U1, *sp, NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, (guint8)sp [0]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_CONV_U1, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_I1:
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_I1, *sp, NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, (gint8)sp [0]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_CONV_I1, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_U2: 
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_U2, *sp, NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, (guint16)sp [0]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_CONV_U2, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_I2:
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_I2, *sp, NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = mono_ctree_new_icon4 (mp, (gint16)sp [0]->data.i);
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_CONV_I2, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_I: 
 		case CEE_CONV_I4:
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = *sp;
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_U: 
 		case CEE_CONV_U4: 
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_U4, *sp, NULL);
+			if (sp [0]->op == MB_TERM_CONST_I4)
+				t1 = *sp;
+			else
+				t1 = mono_ctree_new (mp, MB_TERM_CONV_U4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_I8:
