@@ -3069,8 +3069,10 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	image = mono_image_open (filename, &status);
 	
 	if (!image){
+		MonoException *exc;
+
 		g_free (filename);
-		MonoException *exc = mono_get_exception_file_not_found (fname);
+		exc = mono_get_exception_file_not_found (fname);
 		mono_raise_exception (exc);
 	}
 
