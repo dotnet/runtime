@@ -20,6 +20,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/opcodes.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
@@ -1138,6 +1139,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	MonoBytecodeInfo *bcinfo;
 	MonoExceptionClause *clause;
 	MonoBBlock *bblocks, *bb;
+	const MonoOpcode *opcode;
 	gboolean block_end;
 	int i, block_count;
 
@@ -1168,221 +1170,67 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			block_end = FALSE;
 		}
 
-		switch (*ip) {
+		if (*ip == 0xfe) {
+			++ip;
+			i = *ip + 256;
+		} else {
+			i = *ip;
+		}
 
-		case CEE_THROW:
-			ip++;
+		opcode = &mono_opcodes [i];
+
+		switch (opcode->flow_type) {
+		case MONO_FLOW_RETURN:
+		case MONO_FLOW_ERROR:
 			block_end = 1;
 			break;
-		case CEE_NOP: 
-		case CEE_BREAK:
-		case CEE_LDC_I4_M1:
-		case CEE_LDC_I4_0:
-		case CEE_LDC_I4_1:
-		case CEE_LDC_I4_2:
-		case CEE_LDC_I4_3:
-		case CEE_LDC_I4_4:
-		case CEE_LDC_I4_5:
-		case CEE_LDC_I4_6:
-		case CEE_LDC_I4_7:
-		case CEE_LDC_I4_8:
-		case CEE_LDNULL:
-		case CEE_LDLOC_0:
-		case CEE_LDLOC_1:
-		case CEE_LDLOC_2:
-		case CEE_LDLOC_3:
-		case CEE_STLOC_0:
-		case CEE_STLOC_1:
-		case CEE_STLOC_2:
-		case CEE_STLOC_3: 
-		case CEE_LDARG_0:
-		case CEE_LDARG_1:
-		case CEE_LDARG_2:
-		case CEE_LDARG_3:
-		case CEE_NEG:
-		case CEE_NOT:
-		case CEE_DUP:
-		case CEE_POP:
-		case CEE_ADD:
-		case CEE_ADD_OVF:
-		case CEE_ADD_OVF_UN:
-		case CEE_SUB:
-		case CEE_SUB_OVF:
-		case CEE_SUB_OVF_UN:
-		case CEE_AND:
-		case CEE_OR:
-		case CEE_XOR:
-		case CEE_SHL:
-		case CEE_SHR:
-		case CEE_SHR_UN:
-		case CEE_MUL:
-		case CEE_MUL_OVF:
-		case CEE_MUL_OVF_UN:
-		case CEE_DIV:
-		case CEE_DIV_UN:
-		case CEE_REM:
-		case CEE_REM_UN:
-		case CEE_LDIND_I1:
-		case CEE_LDIND_U1:
-		case CEE_LDIND_I2:
-		case CEE_LDIND_U2:
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_REF:
-		case CEE_LDIND_U4:
-		case CEE_LDIND_I8:
-		case CEE_LDIND_R4:
-		case CEE_LDIND_R8:
-		case CEE_STIND_I1:
-		case CEE_STIND_I2:
-		case CEE_STIND_I:
-		case CEE_STIND_I4:
-		case CEE_STIND_I8:
-		case CEE_STIND_R4:
-		case CEE_STIND_R8:
-		case CEE_STIND_REF:
-		case CEE_STELEM_I:
-		case CEE_STELEM_I1:
-		case CEE_STELEM_I2:
-		case CEE_STELEM_I4:
-		case CEE_STELEM_I8:
-		case CEE_STELEM_R4:
-		case CEE_STELEM_R8:
-		case CEE_STELEM_REF:
-		case CEE_LDLEN:
-		case CEE_LDELEM_I1:
-		case CEE_LDELEM_U1:
-		case CEE_LDELEM_I2:
-		case CEE_LDELEM_U2:
-		case CEE_LDELEM_I4:
-		case CEE_LDELEM_U4:
-		case CEE_LDELEM_I8:
-		case CEE_LDELEM_I:
-		case CEE_LDELEM_R4:
-		case CEE_LDELEM_R8:
-		case CEE_LDELEM_REF:
-		case CEE_CONV_OVF_I_UN:
-		case CEE_CONV_OVF_U_UN:
-		case CEE_CONV_OVF_I1_UN:
-		case CEE_CONV_OVF_U1_UN:
-		case CEE_CONV_OVF_I2_UN:
-		case CEE_CONV_OVF_U2_UN:
-		case CEE_CONV_OVF_I4_UN:
-		case CEE_CONV_OVF_U4_UN:
-		case CEE_CONV_OVF_I8_UN:
-		case CEE_CONV_OVF_U8_UN:
-		case CEE_CONV_OVF_I:
-		case CEE_CONV_OVF_U:
-		case CEE_CONV_OVF_I1:
-		case CEE_CONV_OVF_U1:
-		case CEE_CONV_OVF_I2:
-		case CEE_CONV_OVF_U2:
-		case CEE_CONV_OVF_I4:
-		case CEE_CONV_OVF_U4:
-		case CEE_CONV_OVF_I8:
-		case CEE_CONV_OVF_U8:
-		case CEE_CONV_I1:
-		case CEE_CONV_U1:
-		case CEE_CONV_I2:
-		case CEE_CONV_U2:
-		case CEE_CONV_I:
-		case CEE_CONV_U:
-		case CEE_CONV_I4:
-		case CEE_CONV_U4:
-		case CEE_CONV_I8:
-		case CEE_CONV_U8:
-		case CEE_CONV_R4:
-		case CEE_CONV_R8:
-			ip++;
+		case MONO_FLOW_BRANCH: /* we handle branch when checking the argument type */
+		case MONO_FLOW_COND_BRANCH:
+		case MONO_FLOW_CALL:
+		case MONO_FLOW_NEXT:
+		case MONO_FLOW_META:
 			break;
-		case CEE_RET:
-		case CEE_ENDFINALLY:
-			ip++;
-			block_end = 1;
+		default:
+			g_assert_not_reached ();
+		}
+
+		switch (opcode->argument) {
+		case MonoInlineNone:
+			++ip;
 			break;
-		case CEE_BOX:
-		case CEE_UNBOX:
-		case CEE_LDOBJ:
-		case CEE_LDSTR:
-		case CEE_LDSFLD:
-		case CEE_LDSFLDA:
-		case CEE_LDFLD:
-		case CEE_LDFLDA:
-		case CEE_STSFLD: 
-		case CEE_STFLD:
-		case CEE_STOBJ:
-		case CEE_LDELEMA:
-		case CEE_NEWOBJ:
-		case CEE_CPOBJ:
-		case CEE_NEWARR:
-		case CEE_LDTOKEN:
-		case CEE_CALL:
-		case CEE_CALLVIRT:
-		case CEE_ISINST:
-		case CEE_CASTCLASS:
-		case CEE_LDC_I4:
-		case CEE_LDC_R4:
+		case MonoInlineType:
+		case MonoInlineField:
+		case MonoInlineMethod:
+		case MonoInlineTok:
+		case MonoInlineString:
+		case MonoInlineSig:
+		case MonoShortInlineR:
+		case MonoInlineI:
 			ip += 5;
 			break;
-		case CEE_BR:
-		case CEE_LEAVE:
-		case CEE_BRTRUE:
-		case CEE_BRFALSE:
-		case CEE_BGT:
-		case CEE_BGT_UN:
-		case CEE_BLT:
-		case CEE_BLT_UN:
-		case CEE_BNE_UN:
-		case CEE_BEQ:
-		case CEE_BGE:
-		case CEE_BGE_UN:
-		case CEE_BLE:
-		case CEE_BLE_UN: {
-			gint32 offset;
-			ip++;
-			offset = read32 (ip);
-			ip += 4;
-			CREATE_BLOCK (cli_addr + 5 + offset);
-			block_end = 1;
+		case MonoInlineVar:
+			ip += 3;
 			break;
-		}
-		case CEE_LDC_I8:
-		case CEE_LDC_R8:
-			ip += 9;
-			break;
-		case CEE_LDC_I4_S:
-		case CEE_LDLOC_S:
-		case CEE_LDLOCA_S:
-		case CEE_STLOC_S:
-		case CEE_LDARG_S: 
-		case CEE_LDARGA_S: 
-		case CEE_STARG_S:
+		case MonoShortInlineVar:
+		case MonoShortInlineI:
 			ip += 2;
 			break;
-		case CEE_BR_S:
-		case CEE_LEAVE_S:
-		case CEE_BRTRUE_S:
-		case CEE_BRFALSE_S:
-		case CEE_BGT_S:
-		case CEE_BGT_UN_S:
-		case CEE_BLT_S:
-		case CEE_BLT_UN_S:
-		case CEE_BNE_UN_S:
-		case CEE_BEQ_S:
-		case CEE_BGE_S:
-		case CEE_BGE_UN_S:
-		case CEE_BLE_S:
-		case CEE_BLE_UN_S: {
-			gint32 offset;
+		case MonoShortInlineBrTarget:
 			ip++;
-			offset = (signed char)*ip;
+			i = (signed char)*ip;
 			ip++;
-			CREATE_BLOCK (cli_addr + 2 + offset);
+			CREATE_BLOCK (cli_addr + 2 + i);
 			block_end = 1;
 			break;
-		}
-		case CEE_SWITCH: {
-			gint32 i, st, target, n;
+		case MonoInlineBrTarget:
+			ip++;
+			i = read32 (ip);
+			ip += 4;
+			CREATE_BLOCK (cli_addr + 5 + i);
+			block_end = 1;
+			break;
+		case MonoInlineSwitch: {
+			gint32 st, target, n;
 			++ip;
 			n = read32 (ip);
 			ip += 4;
@@ -1394,50 +1242,17 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 				ip += 4;
 				CREATE_BLOCK (target);			
 			}
+			/*
+			 * Note: the code didn't set block_end in switch.
+			 */
 			break;
 		}
-		case 0xFE: {
-			++ip;			
-			switch (*ip) {
-				
-			case CEE_STLOC:
-			case CEE_LDLOC:
-			case CEE_LDLOCA:
-				ip += 3;
-				break;
-			case CEE_CEQ:
-			case CEE_CLT:
-			case CEE_CLT_UN:
-			case CEE_CGT:
-			case CEE_CGT_UN:
-			case CEE_UNALIGNED_:
-			case CEE_VOLATILE_:
-				ip++;
-				break;
-			case CEE_LDARG:
-			case CEE_INITOBJ:
-			case CEE_LDFTN:
-			case CEE_LDVIRTFTN:
-				ip +=5;
-				break;
-			case CEE_ENDFILTER:
-			case CEE_RETHROW:
-				ip++;
-				block_end = 1;
-				break;
-			default:
-				g_error ("Unimplemented opcode at IL_%04x "
-					 "0xFE %02x", ip - header->code, *ip);
-			}
+		case MonoInlineR:
+		case MonoInlineI8:
+			ip += 9;
 			break;
-		}
-
 		default:
-			g_warning ("unknown instruction `%s' at IL_%04X", 
-				   opcode_names [*ip], ip - header->code);
-			//g_assert_not_reached ();
-			cfg->invalid = 1;
-			return;
+			g_assert_not_reached ();
 		}
 	}
 
