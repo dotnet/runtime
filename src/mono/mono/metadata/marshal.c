@@ -6485,6 +6485,7 @@ mono_marshal_get_stelemref ()
 	guint32 b1, b2, b3, b4;
 	guint32 copy_pos;
 	int aklass, vklass;
+	int array_slot_addr;
 	
 	if (ret)
 		return ret;
@@ -6496,16 +6497,17 @@ mono_marshal_get_stelemref ()
 
 	/* void stelemref (void* array, int idx, void* value) */
 	sig->ret = &mono_defaults.void_class->byval_arg;
-	sig->params [0] = &mono_defaults.int_class->byval_arg;
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg; /* this is a natural sized int */
-	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.object_class->byval_arg;
 		
 	aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
 	
 	/*
 	the method:
-	<check ABC>
+	<ldelema (bound check)>
 	if (!value)
 		goto store;
 	
@@ -6519,7 +6521,7 @@ mono_marshal_get_stelemref ()
 		goto long;
 	
 	store:
-		array [idx] = value;
+		*array_slot_addr = value;
 		return;
 	
 	long:
@@ -6529,12 +6531,12 @@ mono_marshal_get_stelemref ()
 		throw new ArrayTypeMismatchException ();
 	*/
 	
-	/* ABC */
+	/* ldelema (implicit bound check) */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_byte (mb, CEE_LDELEMA);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.int_class));
-	mono_mb_emit_byte (mb, CEE_POP);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.object_class));
+	mono_mb_emit_stloc (mb, array_slot_addr);
 		
 	/* if (!value) goto do_store */
 	mono_mb_emit_ldarg (mb, 2);
@@ -6591,10 +6593,9 @@ mono_marshal_get_stelemref ()
 	copy_pos = mb->pos;
 	/* do_store */
 	mono_mb_patch_addr (mb, b1, mb->pos - (b1 + 4));
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldloc (mb, array_slot_addr);
 	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_byte (mb, CEE_STELEM_I);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
 	
 	mono_mb_emit_byte (mb, CEE_RET);
 	
