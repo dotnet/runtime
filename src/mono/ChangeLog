@@ -1,3 +1,8 @@
+2002-09-27  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Check for semaphore.h.  Patch for BSD from
+	jmmv@hispabsd.org (Julio Merino).
+
 2002-09-20  Duncan Mak  <duncan@ximian.com>
 
 	* data/config.in: Added reference to libxslt.

@@ -10,7 +10,9 @@
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
+#ifdef HAVE_SEMAPHORE_H
 #include <semaphore.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <sys/time.h>

@@ -70,7 +70,7 @@ AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
-AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h)
+AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h)
 
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
