@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/assembly.h>
@@ -322,8 +323,25 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 			need_update = TRUE;
 
 		if (need_update) {
+			struct sigaction act, oldact;
+			sigset_t old_set;
+			int ret;
+
+			act.sa_handler = SIG_IGN;
+			act.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+			sigemptyset (&act.sa_mask);
+			sigaddset (&act.sa_mask, SIGCHLD);
+			sigprocmask (SIG_BLOCK, &act.sa_mask, &old_set);
+			sigaction (SIGCHLD, &act, &oldact);
+			
 			g_print ("Recreating %s from %s.\n", info->ilfile, info->image->name);
-			if (system (command)) {
+
+			ret = system (command);
+
+			sigaction (SIGCHLD, &oldact, NULL);
+			sigprocmask (SIG_SETMASK, &old_set, NULL);
+
+			if (ret) {
 				g_warning ("cannot create IL assembly file (%s): %s",
 					   command, g_strerror (errno));
 				g_free (command);
