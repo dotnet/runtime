@@ -193,7 +193,7 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 
 				address = (char *)ip - (char *)ji->code_start;
 
-				source_location = mono_debug_source_location_from_address (m, address);
+				source_location = mono_debug_source_location_from_address (m, address, NULL);
 				iloffset = mono_debug_il_offset_from_address (m, address);
 
 				if (iloffset < 0)
@@ -321,9 +321,14 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset);
 
 		if (need_file_info) {
-			sf->filename = mono_string_new (domain, ji->method->klass->image->name);
-			sf->line = 0; // fixme:
-			sf->column = 0; // fixme:
+			gchar *filename;
+
+			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line);
+
+			sf->filename = mono_string_new (domain, filename);
+			sf->column = 0;
+
+			g_free (filename);
 		}
 
 		mono_array_set (res, gpointer, i, sf);
@@ -380,9 +385,14 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	*native_offset = addr;
 
 	if (need_file_info) {
-		*file = mono_string_new (domain, m->klass->image->name);
-		*column = 0; // fixme
-		*line = 0; // fixme
+		gchar *filename;
+
+		filename = mono_debug_source_location_from_address (m, addr, line);
+
+		*file = mono_string_new (domain, filename);
+		*column = 0;
+
+		g_free (filename);
 	}
 
 	return TRUE;

@@ -757,7 +757,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 }
 
 gchar *
-mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
+mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number)
 {
 	MonoDebugHandle *debug;
 	DebugMethodInfo *minfo = NULL;
@@ -779,7 +779,7 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
 		if (offset < 0)
 			return NULL;
 
-		return mono_debug_find_source_location (minfo->info->symfile, method, offset);
+		return mono_debug_find_source_location (minfo->info->symfile, method, offset, line_number);
 	}
 
 	if (!minfo->line_numbers)
@@ -791,7 +791,11 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
 		if ((gchar *)lni->address > minfo->method_info.code_start + address) {
 			gchar *source_file = g_ptr_array_index (debug->source_files, lni->source_file);
 
-			return g_strdup_printf ("%s:%d", source_file, lni->line);
+			if (line_number) {
+				*line_number = lni->line;
+				return g_strdup (source_file);
+			} else
+				return g_strdup_printf ("%s:%d", source_file, lni->line);
 		}
 	}
 
