@@ -259,7 +259,20 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
-/* GC handles support */
+/* GC handles support 
+ *
+ * A handle can be created to refer to a managed object and either prevent it
+ * from being garbage collected or moved or to be able to know if it has been 
+ * collected or not (weak references).
+ * mono_gchandle_new () is used to prevent an object from being garbage collected
+ * until mono_gchandle_free() is called. Use a TRUE value for the pinned argument to
+ * prevent the object from being moved (this should be avoided as much as possible 
+ * and this should be used only for shorts periods of time or performance will suffer).
+ * To create a weakref use mono_gchandle_new_weakref (): track_resurrection should
+ * usually be false (see the GC docs for more details).
+ * mono_gchandle_get_target () can be used to get the object referenced by both kinds
+ * of handle: for a weakref handle, if an object has been collected, it will return NULL.
+ */
 guint32      mono_gchandle_new         (MonoObject *obj, gboolean pinned);
 guint32      mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection);
 MonoObject*  mono_gchandle_get_target  (guint32 gchandle);
