@@ -989,7 +989,7 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
 		if (!dest)
 			dest = &local;
 		dest->required = *ptr == MONO_TYPE_CMOD_REQD ? 1 : 0;
-		dest->token = mono_metadata_parse_typedef_or_ref (m, ptr + 1, &ptr);
+		dest->token = mono_metadata_parse_typedef_or_ref (m, ptr + 1, rptr);
 		return TRUE;
 	}
 	return FALSE;
