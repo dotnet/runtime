@@ -127,6 +127,7 @@ add_builtin_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 	} else
 		info->token = klass->type_token;
 	info->type_info = write_class (mono_debugger_symbol_table, klass);
+
 	return info;
 }
 
@@ -189,7 +190,7 @@ mono_debugger_add_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 		cinfo->rank = klass->rank;
 	} else
 		cinfo->token = klass->type_token;
-	cinfo->type_info = write_type (mono_debugger_symbol_table, &klass->this_arg);
+	cinfo->type_info = write_class (mono_debugger_symbol_table, klass);
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_TYPE_ADDED, NULL, 0);
 	mono_debugger_unlock ();
@@ -464,7 +465,7 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	method_slots = g_hash_table_new (NULL, NULL);
 	methods = g_ptr_array_new ();
 
-	for (i = klass->method.count - 1; i >= 0; i--) {
+	for (i = 0; i < klass->method.count; i++) {
 		MonoMethod *method = klass->methods [i];
 
 		if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
@@ -856,4 +857,13 @@ void
 mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 {
 	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, method, index);
+}
+
+MonoObject *
+mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+{
+	if (method->klass->valuetype)
+		obj = mono_value_box (mono_debugger_symbol_table->domain, method->klass, obj);
+
+	return mono_runtime_invoke (method, obj, params, exc);
 }

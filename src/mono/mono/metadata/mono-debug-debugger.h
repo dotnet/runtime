@@ -214,6 +214,9 @@ void            mono_debugger_breakpoint_callback         (MonoMethod *method, g
 
 gpointer        mono_debugger_create_notification_function (gpointer *notification_address);
 
+MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, void *obj,
+							   void **params, MonoObject **exc);
+
 MonoReflectionMethod *
 ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token);
 
