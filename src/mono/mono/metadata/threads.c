@@ -1689,6 +1689,36 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	return TRUE;
 }
 
+static void
+clear_cached_culture (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoThread *thread = (MonoThread*)value;
+	MonoDomain *domain = (MonoDomain*)user_data;
+	MonoObject *culture;
+
+	/* No locking needed here, since culture_info is just a cache */
+	culture = thread->culture_info;
+	if (culture && culture->vtable->domain == domain)
+		thread->culture_info = NULL;
+	culture = thread->ui_culture_info;
+	if (culture && culture->vtable->domain == domain)
+		thread->ui_culture_info = NULL;
+}
+	
+/*
+ * mono_threads_clear_cached_culture:
+ *
+ *   Clear the cached_current_culture from all threads if it is in the
+ * given appdomain.
+ */
+void
+mono_threads_clear_cached_culture (MonoDomain *domain)
+{
+	EnterCriticalSection (&threads_mutex);
+	mono_g_hash_table_foreach (threads, clear_cached_culture, domain);
+	LeaveCriticalSection (&threads_mutex);
+}
+
 /*
  * mono_thread_get_pending_exception:
  *

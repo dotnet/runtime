@@ -30,6 +30,7 @@ extern gboolean mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *d
 extern MonoException * mono_thread_get_pending_exception (void);
 
 extern gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
+extern void mono_threads_clear_cached_culture (MonoDomain *domain);
 
 extern MonoThread *mono_thread_current (void);
 
