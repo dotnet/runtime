@@ -1,10 +1,10 @@
-* Mono Books
+* Mono
 
   <a href="http://www.amazon.de/exec/obidos/ASIN/3827264928/qid=1050051051/sr=2-1/ref=sr_2_3_1/028-2755135-1623712">
   Mono: .NET-kompatible Anwendungen mit dem Open Source-Framework
   </a>
 
-* C# Books
+* C#
 
    A Programmer's Introduction to C# - Second Edition: Eric Gunnerson
 
@@ -16,8 +16,21 @@
 
 * Remoting
 
-   <a href="http://www.dotnetremoting.cc/book/AdvancedDotNetRemoting.asp">
-   Advanced .NET Remoting: Ingo Rammer</a>
+   <a href="http://www.dotnetremoting.cc/book/AdvancedDotNetRemoting.asp">Advanced .NET Remoting: Ingo Rammer</a>
+
+* Threading
+
+   .NET Multithreading: Alan L. Dennis (ISBN 1-930110-54-5)
+
+* Web Services
+
+   Web Services: Architecture and Implementation with .NET: Keith Ballinger
+
+* ASP.NET
+
+   Essential ASP.NET with Examples in C# by Fritz Onion
+   ASP.NET in a Nutshell by G. Andrew Duthie & Matthew MacDonald
+   Programming ASP.NET by Jessy Liberty & Dan Hurtwitz
 
 * Compiler Implementation
 
@@ -30,10 +43,6 @@
 
    A Retargetable C Compiler - Design and Implementation: C. Fraser, David
    Hanson
-
-* Threading
-
-   .NET Multithreading: Alan L. Dennis (ISBN 1-930110-54-5)
 
 * Reference Manuals
 
