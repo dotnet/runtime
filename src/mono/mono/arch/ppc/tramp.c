@@ -78,7 +78,7 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 	} else {
 		if (*gr >= GENERAL_REGS - 1) {
 			*stack_size += 8 + (*stack_size % 8);
-			*code_size += 16;   /* 2x load from stack, save to stack */
+			*code_size += 16;   /* 2x load from stack, 2x save to stack */
 		} else {
 			*code_size += 16;   /* 2x load from stack */
 		}
@@ -255,7 +255,7 @@ emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
 		ppc_mr   (p, ppc_r12, ppc_r6);                        /* keep "arguments" in register */
 		ppc_mr   (p, ppc_r0, ppc_r3);                         /* keep "callme" in register */
 	}
-	ppc_stw  (p, ppc_r4, 8, ppc_r31);                             /* preserve "retval", sp[+8] */
+	ppc_stw  (p, ppc_r4, stack_size - 12, ppc_r31);               /* preserve "retval", sp[+8] */
 
 	return p;
 }
@@ -266,33 +266,22 @@ emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
 				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
 				gr ++; \
 			} else { \
-				NOT_IMPLEMENTED("save on stack"); \
-			}
-#define SAVE_2_IN_GENERIC_REGISTER \
-			if (gr < GENERAL_REGS) { \
-				ppc_lhz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
-				gr ++; \
-			} else { \
-				NOT_IMPLEMENTED("save on stack"); \
-			}
-#define SAVE_1_IN_GENERIC_REGISTER \
-			if (gr < GENERAL_REGS) { \
-				ppc_lbz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
-				gr ++; \
-			} else { \
-				NOT_IMPLEMENTED("save on stack"); \
+				ppc_lwz  (p, ppc_r11, i*16, ARG_BASE); \
+				ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
+                                stack_par_pos += 4; \
 			}
 
 inline static guint8*
 emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gint runtime)
 {
 	MonoMethodSignature *sig;
-	guint i, fr, gr, act_strs;
+	guint i, fr, gr, act_strs, stack_par_pos;
 	guint32 simpletype;
 
 	fr = gr = 0;
 	act_strs = 0;
 	sig = method->signature;
+	stack_par_pos = 8;
 
 	if (strings) {
 		for (i = 0; i < sig->param_count; ++i) {
@@ -303,7 +292,7 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) mono_string_to_utf8 & 0xffff);
 				ppc_mtlr (p, ppc_r0);
 				ppc_blrl (p);
-				ppc_stw  (p, ppc_r3, stack_size - 20 - act_strs, ppc_r31);
+				ppc_stw  (p, ppc_r3, stack_size - 24 - act_strs, ppc_r31);
 				act_strs += 4;
 			}
 		}
@@ -326,13 +315,9 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			SAVE_1_IN_GENERIC_REGISTER;
-			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
-			SAVE_2_IN_GENERIC_REGISTER;
-			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -364,7 +349,7 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 				SAVE_4_IN_GENERIC_REGISTER;
 			} else {
 				if (gr < 8) {
-					ppc_lwz (p, ppc_r3 + gr, stack_size - 20 - act_strs, ppc_r31);
+					ppc_lwz (p, ppc_r3 + gr, stack_size - 24 - act_strs, ppc_r31);
 					gr ++;
 					act_strs += 4;
 				} else
@@ -433,7 +418,7 @@ mono_string_new_wrapper (const char *text)
 }
 
 static inline guint8 *
-emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint strings, gint runtime)
+emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gint runtime)
 {
 	MonoMethodSignature *sig = method->signature;
 	guint32 simpletype;
@@ -444,8 +429,8 @@ emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint strings, gint r
 
 	/* get return value */
 	if (sig->ret->byref) {
-		ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-		ppc_stw  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
+		ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+		ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
 	} else {
 		simpletype = sig->ret->type;
 enum_retvalue:
@@ -453,15 +438,9 @@ enum_retvalue:
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_stb  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
-			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_sth  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
-			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -470,8 +449,8 @@ enum_retvalue:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_stw  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
 			break;
 		case MONO_TYPE_STRING:
 			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !runtime) {
@@ -481,23 +460,23 @@ enum_retvalue:
 				ppc_blrl (p);
 			}
 
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_stw  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
 
 			break;
 		case MONO_TYPE_R4:
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_stfs (p, ppc_f1, 0, ppc_r9);         /* save return value (f1) to "retval" */
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_stfs (p, ppc_f1, 0, ppc_r9);                       /* save return value (f1) to "retval" */
 			break;
 		case MONO_TYPE_R8:
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_stfd (p, ppc_f1, 0, ppc_r9);         /* save return value (f1) to "retval" */
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_stfd (p, ppc_f1, 0, ppc_r9);                       /* save return value (f1) to "retval" */
 			break;
 		case MONO_TYPE_I8:
 			g_warning ("check endianess");
-			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
-			ppc_stw  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
-			ppc_stw  (p, ppc_r4, 4, ppc_r9);         /* save return value (r3) to "retval" */
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
+			ppc_stw  (p, ppc_r4, 4, ppc_r9);                       /* save return value (r3) to "retval" */
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->ret->data.klass->enumtype) {
@@ -529,7 +508,7 @@ emit_epilog (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gbo
 			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING
 			    && !((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)) {
 				ppc_lis  (p, ppc_r0,     (guint32) g_free >> 16);
-				ppc_lwz  (p, ppc_r3, stack_size - 20 - act_strs, ppc_r31);
+				ppc_lwz  (p, ppc_r3, stack_size - 24 - act_strs, ppc_r31);
 				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) g_free & 0xffff);
 				ppc_mtlr (p, ppc_r0);
 				ppc_blrl (p);
@@ -568,7 +547,7 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	p = code_buffer = alloc_code_memory (code_size);
 	p = emit_prolog (p, method, stack_size, strings);
 	p = emit_save_parameters (p, method, stack_size, strings, runtime);
-	p = emit_call_and_store_retval (p, method, strings, runtime);
+	p = emit_call_and_store_retval (p, method, stack_size, strings, runtime);
 	p = emit_epilog (p, method, stack_size, strings, runtime);
 
 	/* {
