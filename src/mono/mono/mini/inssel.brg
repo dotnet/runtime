@@ -1661,6 +1661,9 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		return;
 	}
 
+	/* Initialize method->slot */
+	mono_class_setup_vtable (method->klass);
+
 	vtable_reg = mono_regstate_next_int (cfg->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
