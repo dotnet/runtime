@@ -1304,7 +1304,71 @@
         <completion>?</completion>
         <maintainers>
             <maintainer>dholden@draper.com</maintainer>
-        </maintainers>
-    </class>
+    </maintainers>
+
+    <class name="System.Security.Criptography.HashAlgorithm">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.MD5">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.MD5CryptoServiceProvider">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.SHA1">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.SHA1CryptoServiceProvider">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.SHA256">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.SHA384">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
+    <class name="System.Security.Criptography.SHA512">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+    </maintainers>
 </classes>
 
