@@ -241,7 +241,7 @@ mono_trace_set_mask_string (char *value)
 }
 
 /*
- * mono_trace_visible:
+ * mono_trace_is_traced:
  *
  *   Returns whenever a message with @level and @mask will be printed or not.
  */
