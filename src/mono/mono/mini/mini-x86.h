@@ -43,6 +43,10 @@ typedef struct MonoCompileArch {
 
 #ifdef HAVE_WORKING_SIGALTSTACK
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+/* NetBSD doesn't define SA_STACK */
+#ifndef SA_STACK
+#define SA_STACK SA_ONSTACK
+#endif
 #endif
 
 #endif
