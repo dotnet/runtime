@@ -158,7 +158,8 @@
 	(which shipped in Mono 0.25).  This works using our ASP.NET
 	runtime, so it works with either XSP or the Apache module. The
 	new Web Services work from Lluis added the missing bits:
-	routing and Soap extensions.
+	routing and Soap extensions (Our XSP module contains samples
+	of various Soap extensions being used).
 
 	This missing piece in our ASP.NET implementation is now
 	completed, and we will start testing and debugging.  
