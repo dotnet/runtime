@@ -1296,8 +1296,6 @@ ves_exec_method (MonoInvocation *frame)
 			if (!mono_lookup_pinvoke_call (frame->method)) {
 				frame->ex = (MonoException*)mono_get_exception_missing_method ();
 				goto handle_exception;
-				DEBUG_LEAVE ();
-				return;
 			}
 		}
 		ves_pinvoke_method (frame, frame->method->signature, frame->method->addr, 
