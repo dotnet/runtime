@@ -398,6 +398,27 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 }
 
 /*
+ * Used by the exception code to get a source location from an IL offset.
+ *
+ * Returns a textual representation of the specified address which is suitable to be displayed to
+ * the user (for instance "/home/martin/monocvs/debugger/test/Y.cs:8").
+ *
+ * If the optional @line_number argument is not NULL, the line number is stored there and just the
+ * source file is returned (ie. it'd return "/home/martin/monocvs/debugger/test/Y.cs" and store the
+ * line number 8 in the variable pointed to by @line_number).
+ */
+gchar *
+mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset, guint32 *line_number)
+{
+	MonoDebugMethodInfo *minfo = _mono_debug_lookup_method (method);
+
+	if (!minfo || !minfo->symfile)
+		return NULL;
+
+	return mono_debug_find_source_location (minfo->symfile, method, offset, line_number);
+}
+
+/*
  * Returns the IL offset corresponding to machine address @address which is an offset
  * relative to the beginning of the method @method.
  */
