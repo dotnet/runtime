@@ -114,7 +114,7 @@ dup_type (MonoType* t, const MonoType *original)
 }
 
 static void
-mono_type_get_name_recurse (MonoType *type, GString *str)
+mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed)
 {
 	MonoClass *klass;
 	
@@ -122,7 +122,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
 	case MONO_TYPE_ARRAY: {
 		int i, rank = type->data.array->rank;
 
-		mono_type_get_name_recurse (&type->data.array->eklass->byval_arg, str);
+		mono_type_get_name_recurse (&type->data.array->eklass->byval_arg, str, FALSE);
 		g_string_append_c (str, '[');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
@@ -130,17 +130,17 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
 		break;
 	}
 	case MONO_TYPE_SZARRAY:
-		mono_type_get_name_recurse (&type->data.klass->byval_arg, str);
+		mono_type_get_name_recurse (&type->data.klass->byval_arg, str, FALSE);
 		g_string_append (str, "[]");
 		break;
 	case MONO_TYPE_PTR:
-		mono_type_get_name_recurse (type->data.type, str);
+		mono_type_get_name_recurse (type->data.type, str, FALSE);
 		g_string_append_c (str, '*');
 		break;
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
-			mono_type_get_name_recurse (&klass->nested_in->byval_arg, str);
+			mono_type_get_name_recurse (&klass->nested_in->byval_arg, str, TRUE);
 			g_string_append_c (str, '+');
 		}
 		if (*klass->name_space) {
@@ -148,6 +148,30 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
 			g_string_append_c (str, '.');
 		}
 		g_string_append (str, klass->name);
+		if (is_recursed)
+			break;
+		if (klass->generic_inst) {
+			MonoGenericInst *ginst = klass->generic_inst;
+			int i;
+
+			g_string_append_c (str, '[');
+			for (i = 0; i < ginst->type_argc; i++) {
+				if (i)
+					g_string_append_c (str, ',');
+				mono_type_get_name_recurse (ginst->type_argv [i], str, FALSE);
+			}
+			g_string_append_c (str, ']');
+		} else if (klass->gen_params) {
+			int i;
+
+			g_string_append_c (str, '[');
+			for (i = 0; i < klass->num_gen_params; i++) {
+				if (i)
+					g_string_append_c (str, ',');
+				g_string_append (str, klass->gen_params [i].name);
+			}
+			g_string_append_c (str, ']');
+		}
 		break;
 	}
 }
@@ -163,7 +187,7 @@ char*
 mono_type_get_name (MonoType *type)
 {
 	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (type, result);
+	mono_type_get_name_recurse (type, result, FALSE);
 
 	if (type->byref)
 		g_string_append_c (result, '&');
@@ -220,17 +244,11 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 			return NULL;
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
-		MonoClass *nclass;
-		MonoType *nt;
-		if ((eclass->byval_arg.type == MONO_TYPE_MVAR) &&
-		    context->gmethod && context->gmethod->mtype_argv) {
-			nclass = mono_class_from_mono_type (context->gmethod->mtype_argv [eclass->byval_arg.data.generic_param->num]);
-		} else if ((eclass->byval_arg.type == MONO_TYPE_VAR) && context->ginst) {
-			nclass = mono_class_from_mono_type (context->ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
-		} else
+		MonoType *nt, *inflated = inflate_generic_type (&eclass->byval_arg, context);
+		if (!inflated)
 			return NULL;
 		nt = dup_type (type, type);
-		nt->data.klass = nclass;
+		nt->data.klass = mono_class_from_mono_type (inflated);
 		return nt;
 	}
 	case MONO_TYPE_GENERICINST: {
@@ -387,70 +405,6 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 		result->declaring = method;
 
 	return (MonoMethod *) result;
-}
-
-static MonoType *
-bind_generic_parameters (MonoClass *parent, MonoClass *nested)
-{
-	MonoGenericInst *nginst;
-	MonoType *nt;
-	int i;
-
-	g_assert (nested->gen_params);
-	g_assert (nested->num_gen_params >= parent->generic_inst->type_argc);
-
-	nginst = g_new0 (MonoGenericInst, 1);
-	nginst->generic_type = &nested->byval_arg;
-	nginst->nested_in = &parent->byval_arg;
-
-	nginst->type_argc = nested->num_gen_params;
-	nginst->type_argv = g_new0 (MonoType *, nested->num_gen_params);
-
-	for (i = 0; i < parent->generic_inst->type_argc; i++) {
-		nginst->type_argv [i] = mono_class_inflate_generic_type (
-			parent->generic_inst->type_argv [i], parent->generic_inst->context);
-
-		if (!nginst->is_open)
-			nginst->is_open = mono_class_is_open_constructed_type (
-				nginst->type_argv [i]);
-	}
-
-	for (i = parent->generic_inst->type_argc; i < nested->num_gen_params; i++) {
-		MonoType *t = g_new0 (MonoType, 1);
-
-		t->type = MONO_TYPE_VAR;
-		t->data.generic_param = &nested->gen_params [i];
-
-		nginst->type_argv [i] = t;
-		nginst->is_open = TRUE;
-	}
-
-	nginst->context = g_new0 (MonoGenericContext, 1);
-	nginst->context->ginst = nginst;
-
-	mono_loader_lock ();
-	nt = g_hash_table_lookup (nested->image->generic_inst_cache, nginst);
-
-	if (nt) {
-		g_free (nginst->type_argv);
-		g_free (nginst);
-		mono_loader_unlock ();
-		return nt;
-	}
-
-	mono_class_create_generic (nginst);
-
-	mono_stats.generic_instance_count++;
-	mono_stats.generics_metadata_size += sizeof (MonoGenericInst) +
-		sizeof (MonoGenericContext) +
-		nginst->type_argc * sizeof (MonoType);
-
-	nt = g_new0 (MonoType, 1);
-	nt->type = MONO_TYPE_GENERICINST;
-	nt->data.generic_inst = nginst;
-	g_hash_table_insert (nested->image->generic_inst_cache, nginst, nt);
-	mono_loader_unlock ();
-	return nt;
 }
 
 /** 
@@ -1401,16 +1355,9 @@ mono_class_init (MonoClass *class)
 			mono_class_init (class->interfaces [i]);
 		}
 
-		for (list = gklass->nested_classes; list; list = list->next) {
-			MonoClass *nested, *nc = list->data;
-			MonoType *nt;
-
-			nt = bind_generic_parameters (class, nc);
-			nested = mono_class_from_mono_type (nt);
-
+		for (list = gklass->nested_classes; list; list = list->next)
 			class->nested_classes = g_list_append (
-				class->nested_classes, nested);
-		}
+				class->nested_classes, list->data);
 	}
 
 	if (class->parent && !class->parent->inited)
@@ -1880,30 +1827,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
-char*
-_mono_class_get_instantiation_name (const char *name, MonoGenericInst *ginst, int offset)
-{
-	GString *res = g_string_new (name);
-	int count, i, p;
-	MonoClass *argclass;
-	
-	p = strcspn (name, "<!");
-	count = ginst->type_argc - offset;
-	if (p)
-		g_string_truncate (res, p);
-	if (count)
-		g_string_append_c (res, '<');
-	for (i = offset; i < ginst->type_argc; ++i) {
-		if (i > offset)
-			g_string_append_c (res, ',');
-		argclass = mono_class_from_mono_type (ginst->type_argv [i]);
-		g_string_append (res, argclass->name);
-	}
-	if (count)
-		g_string_append_c (res, '>');
-	return g_string_free (res, FALSE);
-}
-
 MonoClass*
 mono_class_create_generic (MonoGenericInst *ginst)
 {
@@ -1915,16 +1838,9 @@ mono_class_create_generic (MonoGenericInst *ginst)
 
 	gklass = mono_class_from_mono_type (ginst->generic_type);
 
-	if (ginst->nested_in) {
-		MonoGenericInst *nginst = ginst->nested_in->data.generic_inst;
-		int offset = nginst->type_argc;
+	klass->nested_in = gklass->nested_in;
 
-		klass->nested_in = nginst->klass;
-		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst, nginst->type_argc);
-	} else if (!ginst->init_pending)
-		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst, 0);
-	else
-		klass->name = gklass->name;
+	klass->name = gklass->name;
 	klass->name_space = gklass->name_space;
 	klass->image = gklass->image;
 	klass->flags = gklass->flags;

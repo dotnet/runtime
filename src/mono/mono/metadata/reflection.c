@@ -7007,7 +7007,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 
 static MonoType*
 do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc,
-					    MonoType **types, MonoType *nested_in)
+					    MonoType **types)
 {
 	MonoClass *klass;
 	MonoReflectionTypeBuilder *tb = NULL;
@@ -7104,8 +7104,6 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 			ginst->ifaces [i] = itype->type;
 	}
 
-	ginst->nested_in = nested_in;
-
 	mono_class_create_generic (ginst);
 
 	g_hash_table_insert (klass->image->generic_inst_cache, ginst, geninst);
@@ -7118,9 +7116,9 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types)
 {
-	MonoClass *klass, *pklass = NULL, *oklass = NULL;
-	MonoReflectionType *parent = NULL, *outer = NULL;
-	MonoType *geninst, *nested_in = NULL;
+	MonoClass *klass, *pklass = NULL;
+	MonoReflectionType *parent = NULL;
+	MonoType *geninst;
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericInst *ginst;
 	MonoDomain *domain;
@@ -7135,23 +7133,13 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 			parent = tb->parent;
 			pklass = mono_class_from_mono_type (parent->type);
 		}
-		if (tb->nesting_type) {
-			outer = tb->nesting_type;
-			oklass = mono_class_from_mono_type (outer->type);
-		}
 	} else {
 		pklass = klass->parent;
 		if (pklass)
 			parent = mono_type_get_object (domain, &pklass->byval_arg);
-		oklass = klass->nested_in;
-		if (oklass)
-			outer = mono_type_get_object (domain, &oklass->byval_arg);
 	}
 
-	if (oklass)
-		nested_in = mono_reflection_bind_generic_parameters (outer, oklass->num_gen_params, types);
-
-	geninst = do_mono_reflection_bind_generic_parameters (type, type_argc, types, nested_in);
+	geninst = do_mono_reflection_bind_generic_parameters (type, type_argc, types);
 	if (!geninst)
 		return NULL;
 
@@ -7161,57 +7149,6 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		ginst->parent = mono_reflection_bind_generic_parameters (parent, type_argc, types);
 
 	return geninst;
-}
-
-void
-mono_reflection_generic_inst_get_nested_types (MonoReflectionGenericInst *type)
-{
-	MonoReflectionTypeBuilder *tb;
-	MonoGenericInst *ginst;
-	int i;
-
-	ginst = type->type.type->data.generic_inst;
-	if (ginst->nested)
-		return;
-
-	if (strcmp (((MonoObject *) type->generic_type)->vtable->klass->name, "TypeBuilder"))
-		return;
-
-	tb = (MonoReflectionTypeBuilder *) type->generic_type;
-
-	ginst->count_nested = tb->subtypes ? mono_array_length (tb->subtypes) : 0;
-	ginst->nested = g_new0 (MonoType *, ginst->count_nested);
-
-	for (i = 0; i < ginst->count_nested; i++) {
-		MonoReflectionTypeBuilder *ntype;
-		MonoType **ntypes;
-		int ntype_argc, j;
-
-		ntype = mono_array_get (tb->subtypes, gpointer, i);
-		ntype_argc = ntype->generic_params ? mono_array_length (ntype->generic_params) : 0;
-
-		if (ntype_argc > ginst->type_argc) {
-			ntypes = g_new0 (MonoType *, ntype_argc);
-
-			for (j = 0; j < ginst->type_argc; j++)
-				ntypes [j] = ginst->type_argv [j];
-
-			for (j = ginst->type_argc; j < ntype_argc; j++) {
-				MonoReflectionGenericParam *ngparam;
-				MonoType *pt = g_new0 (MonoType, 1);
-
-				ngparam = mono_array_get (ntype->generic_params, gpointer, j);
-
-				pt->type = MONO_TYPE_VAR;
-				pt->data.generic_param = ngparam->type.type->data.generic_param;
-
-				ntypes [j] = pt;
-			}
-		} else
-			ntypes = ginst->type_argv;
-
-		ginst->nested [i] = mono_reflection_bind_generic_parameters ((MonoReflectionType *) ntype, ntype_argc, ntypes);
-	}
 }
 
 MonoReflectionMethod*
@@ -7264,11 +7201,23 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method, MonoOb
 	MonoGenericMethod *gmethod;
 	MonoGenericInst *ginst;
 	MonoGenericContext *context;
+	int i;
 
 	ginst = type->type.type->data.generic_inst;
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->reflection_info = obj;
+
+	gmethod->mtype_argc = method->signature->generic_param_count;
+	gmethod->mtype_argv = g_new0 (MonoType *, gmethod->mtype_argc);
+
+	for (i = 0; i < gmethod->mtype_argc; i++) {
+		MonoMethodNormal *mn = (MonoMethodNormal *) method;
+		MonoGenericParam *gparam = &mn->header->gen_params [i];
+
+		g_assert (gparam->pklass);
+		gmethod->mtype_argv [i] = &gparam->pklass->byval_arg;
+	}
 
 	context = g_new0 (MonoGenericContext, 1);
 	context->ginst = ginst;

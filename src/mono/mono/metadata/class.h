@@ -229,9 +229,6 @@ struct _MonoGenericInst {
 	MonoType *parent;
 	int count_ifaces;
 	MonoType **ifaces;
-	MonoType *nested_in;
-	int count_nested;
-	MonoType **nested;
 	MonoType *generic_type;
 	MonoDynamicGenericInst *dynamic_info;
 	int type_argc;
@@ -348,9 +345,6 @@ mono_class_is_open_constructed_type (MonoType *t);
 
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);
-
-char*
-_mono_class_get_instantiation_name (const char *name, MonoGenericInst *ginst, int offset);
 
 MonoClass*
 mono_class_create_generic  (MonoGenericInst *ginst);

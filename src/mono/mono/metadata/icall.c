@@ -1777,25 +1777,6 @@ ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *m
 }
 
 static MonoReflectionType*
-ves_icall_MonoGenericInst_GetDeclaringType (MonoReflectionGenericInst *type)
-{
-	MonoGenericInst *ginst;
-	MonoClass *klass;
-
-	MONO_ARCH_SAVE_REGS;
-
-	ginst = type->type.type->data.generic_inst;
-	if (!ginst || !ginst->nested_in || (ginst->nested_in->type != MONO_TYPE_GENERICINST))
-		return NULL;
-
-	klass = mono_class_from_mono_type (ginst->nested_in);
-	if (!klass->generic_inst && !klass->gen_params)
-		return NULL;
-
-	return mono_type_get_object (mono_object_domain (type), ginst->nested_in);
-}
-
-static MonoReflectionType*
 ves_icall_MonoGenericInst_GetParentType (MonoReflectionGenericInst *type)
 {
 	MonoGenericInst *ginst;
@@ -1846,41 +1827,6 @@ ves_icall_MonoGenericInst_GetInterfaces (MonoReflectionGenericInst *type)
 		MonoReflectionType *iface = mono_type_get_object (domain, ginst->ifaces [i]);
 
 		mono_array_set (res, gpointer, i, iface);
-	}
-
-	return res;
-}
-
-static MonoArray*
-ves_icall_MonoGenericInst_GetNestedTypes (MonoReflectionGenericInst *type)
-{
-	static MonoClass *System_Reflection_MonoGenericInst;
-	MonoGenericInst *ginst;
-	MonoDomain *domain;
-	MonoArray *res;
-	int i;
-
-	MONO_ARCH_SAVE_REGS;
-
-	if (!System_Reflection_MonoGenericInst) {
-		System_Reflection_MonoGenericInst = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "MonoGenericInst");
-		g_assert (System_Reflection_MonoGenericInst);
-	}
-
-	domain = mono_object_domain (type);
-
-	ginst = type->type.type->data.generic_inst;
-	mono_reflection_generic_inst_get_nested_types (type);
-
-	res = mono_array_new (domain, System_Reflection_MonoGenericInst, ginst->count_nested);
-	for (i = 0; i < ginst->count_nested; i++) {
-		MonoClass *nc = mono_class_from_mono_type (ginst->nested [i]);
-		MonoReflectionType *type;
-
-		mono_class_init (nc);
-		type = mono_type_get_object (domain, ginst->nested [i]);
-		mono_array_set (res, gpointer, i, type);
 	}
 
 	return res;
@@ -2126,25 +2072,48 @@ ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 }
 
 static MonoArray*
-ves_icall_MonoMethod_GetGenericParameters (MonoReflectionMethod *method)
+ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 {
-	MonoMethodNormal *mn;
 	MonoArray *res;
+	MonoDomain *domain;
+	MonoMethodNormal *mn;
 	int count, i;
 	MONO_ARCH_SAVE_REGS;
 
+	domain = mono_object_domain (method);
+
 	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return mono_array_new (mono_object_domain (method), mono_defaults.monotype_class, 0);
+		return mono_array_new (domain, mono_defaults.monotype_class, 0);
+
+	if (method->method->signature->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method->method;
+		MonoGenericMethod *gmethod = imethod->context->gmethod;
+
+		if (gmethod) {
+			count = gmethod->mtype_argc;
+			res = mono_array_new (domain, mono_defaults.monotype_class, count);
+
+			for (i = 0; i < count; i++) {
+				MonoType *t = gmethod->mtype_argv [i];
+				mono_array_set (
+					res, gpointer, i, mono_type_get_object (domain, t));
+			}
+
+			return res;
+		}
+	}
 
 	mn = (MonoMethodNormal *) method->method;
 	count = method->method->signature->generic_param_count;
-	res = mono_array_new (mono_object_domain (method), mono_defaults.monotype_class, count);
+	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 	for (i = 0; i < count; i++) {
 		MonoGenericParam *param = &mn->header->gen_params [i];
-		MonoClass *pklass = mono_class_from_generic_parameter (param, method->method->klass->image, TRUE);
-		mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (method), &pklass->byval_arg));
+		MonoClass *pklass = mono_class_from_generic_parameter (
+			param, method->method->klass->image, TRUE);
+		mono_array_set (res, gpointer, i,
+				mono_type_get_object (domain, &pklass->byval_arg));
 	}
 
 	return res;
@@ -5162,12 +5131,10 @@ static const IcallEntry monofield_icalls [] = {
 
 static const IcallEntry monogenericinst_icalls [] = {
 	{"GetConstructors_internal", ves_icall_MonoGenericInst_GetConstructors},
-	{"GetDeclaringType", ves_icall_MonoGenericInst_GetDeclaringType},
 	{"GetEvents_internal", ves_icall_MonoGenericInst_GetEvents},
 	{"GetFields_internal", ves_icall_MonoGenericInst_GetFields},
 	{"GetInterfaces_internal", ves_icall_MonoGenericInst_GetInterfaces},
 	{"GetMethods_internal", ves_icall_MonoGenericInst_GetMethods},
-	{"GetNestedTypes_internal", ves_icall_MonoGenericInst_GetNestedTypes},
 	{"GetParentType", ves_icall_MonoGenericInst_GetParentType},
 	{"GetProperties_internal", ves_icall_MonoGenericInst_GetProperties},
 	{"initialize", mono_reflection_generic_inst_initialize}
@@ -5179,8 +5146,8 @@ static const IcallEntry monogenericparam_icalls [] = {
 
 static const IcallEntry monomethod_icalls [] = {
 	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters},
+	{"GetGenericArguments", ves_icall_MonoMethod_GetGenericArguments},
   	{"GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition},
-	{"GetGenericParameters", ves_icall_MonoMethod_GetGenericParameters},
 	{"InternalInvoke", ves_icall_InternalInvoke},
 	{"get_HasGenericParameters", ves_icall_MonoMethod_get_HasGenericParameters},
 	{"get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition},
