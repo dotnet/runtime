@@ -1,3 +1,7 @@
+2004-11-22  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (bootstrap): Add a transitional target.
+
 2004-11-19  Raja R Harinath  <rharinath@novell.com>
 
 	Integrate bootstrap build into 'make all'.  Most of the bootstrap
