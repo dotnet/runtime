@@ -52,7 +52,7 @@ static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *de
 
 static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 		   int locals_offset, MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
-		   guint inline_offset);
+		   guint inline_offset, gboolean is_virtual_call);
 
 extern guint8 mono_burg_arity [];
 /* helper methods signature */
@@ -2042,7 +2042,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	ebblock->block_num = cfg->num_bblocks++;
 	ebblock->real_offset = real_offset;
 	
-	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset);
+	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
 	
 	if (costs >= 0 && costs < 60) {
 		if (cfg->verbose_level > 2)
@@ -2110,7 +2110,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 static int
 mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 		   int locals_offset, MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
-		   guint inline_offset)
+		   guint inline_offset, gboolean is_virtual_call)
 {
 	MonoInst *zero_int32, *zero_int64, *zero_ptr, *zero_obj, *zero_r8;
 	MonoInst *ins, **sp, **stack_start;
@@ -2265,7 +2265,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	zero_r8->inst_p0 = &r8_0;
 
 	/* add a check for this != NULL to inlined methods */
-	if (cfg->method != method && sig->hasthis) {
+	if (is_virtual_call) {
 		MONO_INST_NEW (cfg, ins, OP_CHECK_THIS);
 		NEW_ARGLOAD (cfg, ins->inst_left, 0);
 		ins->cil_code = ip;
@@ -5649,7 +5649,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	if (cfg->verbose_level > 2)
 		g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
 
-	if ((i = mono_method_to_ir (cfg, method, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0)) < 0) {
+	if ((i = mono_method_to_ir (cfg, method, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE)) < 0) {
 		mono_destroy_compile (cfg);
 		if (mono_jit_profile)
 			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
