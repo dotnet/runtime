@@ -15,7 +15,7 @@ class T {
 				Console.WriteLine ("got value: {0}", val);
 				if (val != 1)
 					return 2;
-			} else if (attr.obj.GetType () == typeof(int)) {
+			} else if (attr.obj.GetType () == typeof(TypeCode)) {
 				int val = (int)attr.obj;
 				if (val != (int)TypeCode.Empty)
 					return 3;

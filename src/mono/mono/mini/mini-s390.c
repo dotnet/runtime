@@ -247,6 +247,8 @@ static int indent_level = 0;
 
 static const char*const * ins_spec = s390;
 
+static gboolean tls_offset_inited = FALSE;
+
 /*====================== End of Global Variables ===================*/
 
 /*------------------------------------------------------------------*/
@@ -4734,7 +4736,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
-	cfg->code_size   = 256;
+	cfg->code_size   = 512;
 	cfg->native_code = code = g_malloc (cfg->code_size);
 
 	if (cfg->flags & MONO_CFG_HAS_TAIL) {
@@ -5090,6 +5092,50 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	pthread_t 	self = pthread_self();
+	pthread_attr_t 	attr;
+	void 		*stAddr = NULL;
+	size_t 		stSize  = 0;
+	struct sigaltstack sa;
+#endif
+
+	if (!tls_offset_inited) {
+		tls_offset_inited = TRUE;
+
+//		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
+//		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
+//		thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
+	}		
+
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+	/*----------------------------------------------------------*/
+	/* Determine stack boundaries 				    */
+	/*----------------------------------------------------------*/
+	if (!mono_running_on_valgrind ()) {
+#ifdef HAVE_PTHREAD_GETATTR_NP
+		pthread_getattr_np( self, &attr );
+#elif HAVE_PTHREAD_ATTR_GET_NP
+		pthread_attr_get_np( self, &attr );
+#endif
+		pthread_attr_getstack( &attr, &stAddr, &stSize );
+	}
+
+
+	/*----------------------------------------------------------*/
+	/* Setup an alternate signal stack 			    */
+	/*----------------------------------------------------------*/
+	tls->stack_size	       = stSize;
+	tls->signal_stack      = g_malloc (SIGNAL_STACK_SIZE);
+	tls->signal_stack_size = SIGNAL_STACK_SIZE;
+
+	sa.ss_sp    = tls->signal_stack;
+	sa.ss_size  = SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_ONSTACK;
+	sigaltstack (&sa, NULL);
+#endif
+
 }
 
 /*========================= End of Function ========================*/
@@ -5105,6 +5151,18 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	struct sigaltstack sa;
+
+	sa.ss_sp    = tls->signal_stack;
+	sa.ss_size  = SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_DISABLE;
+	sigaltstack (&sa, NULL);
+
+	if (tls->signal_stack)
+		g_free (tls->signal_stack);
+#endif
+
 }
 
 /*========================= End of Function ========================*/
@@ -5233,12 +5291,36 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 /*========================= End of Function ========================*/
 
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_domain_intrinsic                    */
+/*                                                                  */
+/* Function	- 						    */
+/*		                               			    */
+/* Returns	-     						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 {
 	return NULL;
 }
 
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_thread_intrinsic                    */
+/*                                                                  */
+/* Function	- 						    */
+/*		                               			    */
+/* Returns	-     						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
 	return NULL;
 }
+
+/*========================= End of Function ========================*/
