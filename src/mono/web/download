@@ -17,6 +17,76 @@
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
 	    <td>
+	      <b>Release 0.30.2</b><br>
+	      <a href="archive/mono-0.30.1.html">Release notes</a><br>
+	       Feb 27th, 2004
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	 	      <li><a href="archive/mcs-0.30.2.tar.gz">Mono Class Libraries and C# Compiler 0.30.2</a>
+	              <li><a href="archive/mono-0.30.2.tar.gz">Mono Runtime 0.30.2</a>
+ 		      <li><a href="archive/monodoc-0.11.tar.gz">MonoDoc 0.11</a>
+	            </ul>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30.2/redhat-9-i386">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Fedora Core 1/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30.2/fedora-1-i386">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SUSE 9/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30.2/suse-90-i586/">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/debian-36.gif"><b>Debian Packages</b><br>
+		  </td>
+  		  <td>
+		    <a href="http://pkg-mono.alioth.debian.org/">Packages (third party provider)</a>
+		  </td>
+	        </tr>
+		<tr>
+		  <td bgcolor="#999999">
+                    <img src="images/windows-36.gif"><b>Windows installer</b>
+		  </td>
+		  <td>
+ 		    No Windows Installer for 0.30.2 exist yet, you can download 
+		    version 0.30.0 for now:
+
+		    <a href="archive/0.30/windows/mono-0.30-win32-2.exe">Mono Setup</a>
+		    <a href="archive/0.30/windows/mono-0.30-gtksharp-0.15-win32-1.exe">Gtk# Setup</a>
+		  </td>
+		</tr>
+             </table>
+            </td>
+	</table>
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
 	      <b>Release 0.30.1</b><br>
 	      <a href="archive/mono-0.30.1.html">Release notes</a><br>
 	       Feb 13th, 2004
