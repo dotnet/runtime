@@ -134,7 +134,7 @@ static guint32 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMa
 static guint32 encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type);
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    ensure_runtime_vtable (MonoClass *klass);
-static gpointer resolve_object (MonoImage *image, MonoObject *obj);
+static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf);
 static guint32 type_get_signature_size (MonoType *type);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs);
@@ -8872,8 +8872,9 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 	rmb.nrefs = mb->nrefs;
 	rmb.refs = g_new0 (gpointer, mb->nrefs + 1);
 	for (i = 0; i < mb->nrefs; ++i) {
+		MonoClass *handle_class;
 		gpointer ref = resolve_object (mb->module->image, 
-					       mono_array_get (mb->refs, MonoObject*, i));
+					       mono_array_get (mb->refs, MonoObject*, i), &handle_class);
 		if (!ref) {
 			g_free (rmb.refs);
 			mono_raise_exception (mono_get_exception_type_load (NULL));
@@ -8895,10 +8896,11 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
  * mono_reflection_lookup_dynamic_token:
  *
  * Finish the Builder object pointed to by TOKEN and return the corresponding
- * runtime structure.
+ * runtime structure. HANDLE_CLASS is set to the class required by 
+ * mono_ldtoken.
  */
 gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class)
 {
 	MonoDynamicImage *assembly = (MonoDynamicImage*)image;
 	MonoObject *obj;
@@ -8906,26 +8908,30 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	obj = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 	g_assert (obj);
 
-	return resolve_object (image, obj);
+	return resolve_object (image, obj, handle_class);
 }
 
 static gpointer
-resolve_object (MonoImage *image, MonoObject *obj)
+resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class)
 {
 	gpointer result = NULL;
 
 	if (strcmp (obj->vtable->klass->name, "String") == 0) {
 		result = mono_string_intern ((MonoString*)obj);
+		*handle_class = NULL;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType*)obj;
 		result = mono_class_from_mono_type (tb->type);
+		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0) {
 		result = ((MonoReflectionMethod*)obj)->method;
+		*handle_class = mono_defaults.methodhandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoCMethod") == 0) {
 		result = ((MonoReflectionMethod*)obj)->method;
+		*handle_class = mono_defaults.methodhandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder*)obj;
@@ -8946,6 +8952,7 @@ resolve_object (MonoImage *image, MonoObject *obj)
 			 */
 			result = mb->mhandle;
 		}
+		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "ConstructorBuilder") == 0) {
 		MonoReflectionCtorBuilder *cb = (MonoReflectionCtorBuilder*)obj;
 
@@ -8956,8 +8963,10 @@ resolve_object (MonoImage *image, MonoObject *obj)
 			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = cb->mhandle;
 		}
+		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
 		result = ((MonoReflectionField*)obj)->field;
+		*handle_class = mono_defaults.fieldhandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder*)obj;
@@ -8969,6 +8978,7 @@ resolve_object (MonoImage *image, MonoObject *obj)
 			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = fb->handle;
 		}
+		*handle_class = mono_defaults.fieldhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)obj;
 		MonoClass *klass;
@@ -8983,6 +8993,7 @@ resolve_object (MonoImage *image, MonoObject *obj)
 			result = tb->type.type->data.klass;
 			g_assert (result);
 		}
+		*handle_class = mono_defaults.typehandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "SignatureHelper") == 0) {
 		MonoReflectionSigHelper *helper = (MonoReflectionSigHelper*)obj;
 		MonoMethodSignature *sig;
@@ -9014,6 +9025,7 @@ resolve_object (MonoImage *image, MonoObject *obj)
 		}
 
 		result = sig;
+		*handle_class = NULL;
 	} else {
 		g_print (obj->vtable->klass->name);
 		g_assert_not_reached ();

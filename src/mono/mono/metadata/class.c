@@ -3496,26 +3496,17 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	      MonoGenericContext *context)
 {
 	if (image->dynamic) {
-		gpointer obj = mono_lookup_dynamic_token (image, token);
+		MonoClass *tmp_handle_class;
+		gpointer obj = mono_lookup_dynamic_token_class (image, token, &tmp_handle_class);
 
-		switch (token & 0xff000000) {
-		case MONO_TOKEN_TYPE_DEF:
-		case MONO_TOKEN_TYPE_REF:
-		case MONO_TOKEN_TYPE_SPEC:
-			if (handle_class)
-				*handle_class = mono_defaults.typehandle_class;
+		g_assert (tmp_handle_class);
+		if (handle_class)
+			*handle_class = tmp_handle_class;
+
+		if (tmp_handle_class == mono_defaults.typehandle_class)
 			return &((MonoClass*)obj)->byval_arg;
-		case MONO_TOKEN_METHOD_DEF:
-			if (handle_class)
-				*handle_class = mono_defaults.methodhandle_class;
+		else
 			return obj;
-		case MONO_TOKEN_FIELD_DEF:
-			if (handle_class)
-				*handle_class = mono_defaults.fieldhandle_class;
-			return obj;
-		default:
-			g_assert_not_reached ();
-		}
 	}
 
 	switch (token & 0xff000000) {
@@ -3596,7 +3587,15 @@ mono_install_lookup_dynamic_token (MonoLookupDynamicToken func)
 gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token)
 {
-	return lookup_dynamic (image, token);
+	MonoClass *handle_class;
+
+	return lookup_dynamic (image, token, &handle_class);
+}
+
+gpointer
+mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class)
+{
+	return lookup_dynamic (image, token, handle_class);
 }
 
 static MonoGetCachedClassInfo get_cached_class_info = NULL;
