@@ -1394,7 +1394,12 @@ mono_method_verify (MonoMethod *method, int level)
 			cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			if (!cmethod)
 				ADD_INVALID (list, g_strdup_printf ("Method 0x%08x not found at 0x%04x", token, ip_offset));
-			csig = cmethod->signature;
+			if (cmethod->signature->pinvoke) {
+				csig = cmethod->signature;
+			} else {
+				csig = mono_method_get_signature (cmethod, image, token);
+			}
+
 			CHECK_STACK_UNDERFLOW (csig->param_count + csig->hasthis);
 			cur_stack -= csig->param_count + csig->hasthis;
 			if (csig->ret->type != MONO_TYPE_VOID) {
