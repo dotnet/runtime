@@ -263,7 +263,7 @@ void
 mono_raise_exception        (MonoException *ex);
 
 void
-mono_runtime_object_init    (MonoObject *this);
+mono_runtime_object_init    (MonoObject *this_obj);
 
 void
 mono_runtime_class_init     (MonoClass *klass);
@@ -308,7 +308,7 @@ MonoWaitHandle *
 mono_wait_handle_new        (MonoDomain *domain, HANDLE handle);
 
 void
-mono_message_init           (MonoDomain *domain, MonoMethodMessage *this, 
+mono_message_init           (MonoDomain *domain, MonoMethodMessage *this_obj, 
 			     MonoReflectionMethod *method, MonoArray *out_args);
 
 MonoObject *
@@ -324,10 +324,10 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 			      MonoDelegate **cb, MonoObject **state);
 
 gpointer
-mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res);
+mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res);
 
 void
-mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
+mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer val);
 
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);
@@ -339,7 +339,7 @@ void
 mono_print_unhandled_exception (MonoObject *exc);
 
 void
-mono_delegate_ctor          (MonoObject *this, MonoObject *target, gpointer addr);
+mono_delegate_ctor          (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
 gpointer 
 mono_compile_method        (MonoMethod *method);

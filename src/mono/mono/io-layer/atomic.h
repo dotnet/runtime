@@ -74,25 +74,25 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
  * http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
  * for the reasons for using cmpxchg and a loop here.
  */
-static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new)
+static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {
 	gint32 ret;
 	
 	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
-			      : "r" (new), "m" (*val), "a" (*val));
+			      : "r" (new_val), "m" (*val), "a" (*val));
 
 	return(ret);
 }
 
 static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
-						  gpointer new)
+						  gpointer new_val)
 {
 	gpointer ret;
 	
 	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
-			      : "r" (new), "m" (*val), "a" (*val));
+			      : "r" (new_val), "m" (*val), "a" (*val));
 
 	return(ret);
 }
