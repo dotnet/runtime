@@ -3319,7 +3319,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
 			info->assembly = mono_assembly_get_object (mono_domain_get (), assembly->assembly->image->references [i - 1]);
 
-			// Obtain info recursively
+			/* Obtain info recursively */
 			ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (info->assembly, name, info);
 			info->location |= RESOURCE_LOCATION_ANOTHER_ASSEMBLY;
 			break;
@@ -4171,7 +4171,8 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 
 	MONO_ARCH_SAVE_REGS;
 
-	if ((src_offset + count > mono_array_get_byte_length (src)) || (dest_offset + count > mono_array_get_byte_length (dest)))
+	/* watch out for integer overflow */
+	if ((src_offset > mono_array_get_byte_length (src) - count) || (dest_offset > mono_array_get_byte_length (dest) - count))
 		return FALSE;
 
 	src_buf = (gint8 *)src->vector + src_offset;
@@ -4596,7 +4597,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 		g_assert (klass->rank == 1);
 		return (MonoObject *) mono_array_new (domain, klass->element_class, 0);
 	} else {
-		// Bypass remoting object creation check
+		/* Bypass remoting object creation check */
 		return mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
 	}
 }
@@ -4778,7 +4779,7 @@ mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 	iter->args = start? start: argsp + sizeof (gpointer);
 	iter->num_args = iter->sig->param_count - iter->sig->sentinelpos;
 
-	// g_print ("sig %p, param_count: %d, sent: %d\n", iter->sig, iter->sig->param_count, iter->sig->sentinelpos);
+	/* g_print ("sig %p, param_count: %d, sent: %d\n", iter->sig, iter->sig->param_count, iter->sig->sentinelpos); */
 }
 
 static MonoTypedRef
