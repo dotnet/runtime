@@ -19,6 +19,9 @@
 		the virtual machine.
 
 		<li><a href="#aspnet"><b>ASP.NET tests</b></a>: ASP.NET tests.
+
+		<li><a href="#ws"><b>Web Services tests</b></a>: Web Services 
+		client/server tests.
 	</ul>
 
 <a name="unit"></a>
@@ -228,3 +231,39 @@
 	nunit-console standalone-tests.dll
 </pre>
 
+<a name="ws"></a>
+* Web Services tests
+
+	The Test directory for the System.Web.Services assembly contains a
+	standalone test suite for testing web services. It tests:
+
+	<ul>
+	<li>Proxy generation using the wsdl tool</li>
+	<li>Access to web services using the generated client proxies</li>
+	<li>Execution of web services in the server</li>
+	</ul>
+
+	This suite not only tests web services running on XSP, but it can also test
+	services running on other platforms and that are available in internet. This
+	will help track down interoperability issues.
+
+	To build the test suite, just run:
+	
+<pre>
+	cd mcs/class/System.Web.Services/Test/standalone
+	xsp --root server
+</pre>
+	
+	And from another terminal:
+<pre>
+	cd mcs/class/System.Web.Services/Test/standalone
+	make
+	nunit-console testclient.dll
+</pre>
+	
+	This will download the wsdl documents, generate the proxies, build a dll with
+	the proxies, and build the nunit tests. Then you can use nunit-console or
+	gnunit to run the tests (the nunit dll is testclient.dll).
+
+	Read the README file in mcs/class/System.Web.Services/Test/standalone for
+	more info.
