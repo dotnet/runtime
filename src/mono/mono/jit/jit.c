@@ -3195,7 +3195,7 @@ usage (char *name)
 		 "--dump-asm       dumps the assembly code generated\n"
 		 "--dump-forest    dumps the reconstructed forest\n"
 		 "--trace-calls    printf function call trace\n"
-		 "--scode          force jit to produce shared code\n"
+		 "--share-code     force jit to produce shared code\n"
 		 "--stabs          write stabs debug information\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
@@ -3296,7 +3296,7 @@ main (int argc, char *argv [])
 			mono_jit_dump_forest = TRUE;
 		else if (strcmp (argv [i], "--trace-calls") == 0)
 			mono_jit_trace_calls = TRUE;
-		else if (strcmp (argv [i], "--scode") == 0)
+		else if (strcmp (argv [i], "--share-code") == 0)
 			mono_jit_share_code = TRUE;
 		else if (strcmp (argv [i], "--debug") == 0) {
 			mono_debug_methods = g_list_append (mono_debug_methods, argv [++i]);
