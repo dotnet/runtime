@@ -99,8 +99,11 @@ mono_init (const char *filename)
 
 	/* find the corlib */
 	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
-	g_assert (status == MONO_IMAGE_OK);
-	g_assert (ass != NULL);
+	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
+		g_print ("The assembly corlib.dll was not found or could not be loaded.\n");
+		g_print ("It should have been installed in the `%s' directory.\n", MONO_ASSEMBLIES);
+		exit (0);
+	}
 	mono_defaults.corlib = ass->image;
 
 	mono_defaults.object_class = mono_class_from_name (
