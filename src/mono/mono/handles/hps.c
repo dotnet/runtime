@@ -56,21 +56,32 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 
 int main (int argc, char **argv)
 {
-	guint32 idx;
+	guint32 handle_idx;
 	gboolean success;
 	
-	_wapi_shared_data=_wapi_shm_attach (&success);
+	_wapi_shared_data=g_new0 (struct _WapiHandleShared_list *, 1);
+	_wapi_shared_scratch=g_new0 (struct _WapiHandleScratch, 1);
+	
+	success=_wapi_shm_attach (&_wapi_shared_data[0],
+				  &_wapi_shared_scratch);
 	if(success==FALSE) {
 		g_error ("Failed to attach shared memory!");
 		exit (-1);
 	}
 	
 	/* Make sure index 0 is actually unused */
-	for(idx=0; idx<_WAPI_MAX_HANDLES; idx++) {
-		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[idx];
+	for(handle_idx=0; handle_idx<_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT; handle_idx++) {
+		guint32 segment, idx;
+		struct _WapiHandleShared *shared;
+
+		_wapi_handle_segment (GUINT_TO_POINTER (handle_idx), &segment,
+				      &idx);
+		_wapi_handle_ensure_mapped (segment);
+		
+		shared=&_wapi_shared_data[segment]->handles[idx];
 		
 		if(shared->type!=WAPI_HANDLE_UNUSED) {
-			g_print ("%4x [%7s] %4u %s (%s)\n", idx,
+			g_print ("%6x [%7s] %4u %s (%s)\n", handle_idx,
 				 typename[shared->type], shared->ref,
 				 shared->signalled?"Sg":"Un",
 				 details[shared->type](shared));
@@ -91,7 +102,7 @@ static const guchar *file_details (struct _WapiHandleShared *handle)
 	guchar *name;
 	struct _WapiHandle_file *file=&handle->u.file;
 	
-	name=_wapi_handle_scratch_lookup_as_string (file->filename);
+	name=_wapi_handle_scratch_lookup (file->filename);
 	
 	g_snprintf (buf, sizeof(buf),
 		    "[%20s] acc: %c%c%c, shr: %c%c%c, attrs: %5u",
@@ -145,7 +156,7 @@ static const guchar *mutex_details (struct _WapiHandleShared *handle)
 	guchar *name;
 	struct _WapiHandle_mutex *mut=&handle->u.mutex;
 	
-	name=_wapi_handle_scratch_lookup_as_string (mut->name);
+	name=_wapi_handle_scratch_lookup (mut->name);
 	
 	g_snprintf (buf, sizeof(buf), "[%20s] own: %5d:%5ld, count: %5u",
 		    name==NULL?(guchar *)"":name, mut->pid, mut->tid,
@@ -192,7 +203,7 @@ static const guchar *process_details (struct _WapiHandleShared *handle)
 	guchar *name;
 	struct _WapiHandle_process *proc=&handle->u.process;
 	
-	name=_wapi_handle_scratch_lookup_as_string (proc->proc_name);
+	name=_wapi_handle_scratch_lookup (proc->proc_name);
 	
 	g_snprintf (buf, sizeof(buf), "[%20s] pid: %5u",
 		    name==NULL?(guchar *)"":name, proc->id);

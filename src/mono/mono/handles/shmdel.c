@@ -1,6 +1,8 @@
 #include <config.h>
 #include <glib.h>
 
+#include <mono/io-layer/io-layer.h>
+
 /* We're digging into handle internals here... */
 #include <mono/io-layer/shared.h>
 
