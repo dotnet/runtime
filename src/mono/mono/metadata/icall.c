@@ -1338,68 +1338,6 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	}
 }
 
-static MonoMethod*
-search_method (MonoReflectionType *type, const char *name, guint32 flags, MonoArray *args)
-{
-	MonoClass *klass, *start_class;
-	MonoMethod *m;
-	MonoReflectionType *paramt;
-	int i, j;
-
-	start_class = klass = mono_class_from_mono_type (type->type);
-	while (klass) {
-		for (i = 0; i < klass->method.count; ++i) {
-			m = klass->methods [i];
-			if (!((m->flags & flags) == flags))
-				continue;
-			if (strcmp(m->name, name))
-				continue;
-			if (!args)
-				return m;
-			if (m->signature->param_count != mono_array_length (args))
-				continue;
-			for (j = 0; j < m->signature->param_count; ++j) {
-				paramt = mono_array_get (args, MonoReflectionType*, j);
-				if (!mono_metadata_type_equal (paramt->type, m->signature->params [j]))
-					break;
-			}
-			if (j == m->signature->param_count)
-				return m;
-		}
-		klass = klass->parent;
-	}
-	//g_print ("Method %s.%s::%s (%d) not found\n", start_class->name_space, start_class->name, name, mono_array_length (args));
-	return NULL;
-}
-
-static MonoReflectionMethod*
-ves_icall_get_constructor (MonoReflectionType *type, MonoArray *args)
-{
-	MonoDomain *domain = mono_domain_get (); 
-	MonoMethod *m;
-	MonoClass *refc = mono_class_from_mono_type (type->type);
-
-	m = search_method (type, ".ctor", METHOD_ATTRIBUTE_RT_SPECIAL_NAME, args);
-	if (m)
-		return mono_method_get_object (domain, m, refc);
-	return NULL;
-}
-
-static MonoReflectionMethod*
-ves_icall_get_method (MonoReflectionType *type, MonoString *name, MonoArray *args)
-{
-	MonoDomain *domain = mono_domain_get (); 
-	MonoMethod *m;
-	MonoClass *refc = mono_class_from_mono_type (type->type);
-	char *n = mono_string_to_utf8 (name);
-
-	m = search_method (type, n, 0, args);
-	g_free (n);
-	if (m)
-		return mono_method_get_object (domain, m, refc);
-	return NULL;
-}
-
 static MonoProperty*
 search_property (MonoClass *klass, char* name, MonoArray *args) {
 	int i;
@@ -2591,6 +2529,14 @@ static MonoString*
 ves_icall_System_Text_Encoding_InternalCodePage (void) {
 	const char *cset;
 	g_get_charset (&cset);
+	/* g_print ("charset: %s\n", cset); */
+	/* handle some common aliases */
+	switch (*cset) {
+	case 'A':
+		if (strcmp (cset, "ANSI_X3.4-1968") == 0)
+			cset = "us-ascii";
+		break;
+	}
 	return mono_string_new (mono_domain_get (), cset);
 }
 
@@ -2640,6 +2586,12 @@ static MonoString *
 ves_icall_System_IO_get_temp_path (void)
 {
 	return mono_string_new (mono_domain_get (), g_get_tmp_dir ());
+}
+
+static gpointer
+ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
+{
+	return mono_compile_method (method);
 }
 
 /* icall map */
@@ -2791,6 +2743,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.SignatureHelper::get_signature_local", mono_reflection_sighelper_get_signature_local,
 	"System.Reflection.Emit.SignatureHelper::get_signature_field", mono_reflection_sighelper_get_signature_field,
 
+	"System.RuntimeMethodHandle::GetFunctionPointer", ves_icall_RuntimeMethod_GetFunctionPointer,
 	
 	/* System.Enum */
 
@@ -2814,9 +2767,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Type::internal_from_name", ves_icall_type_from_name,
 	"System.Type::internal_from_handle", ves_icall_type_from_handle,
-	"System.Type::get_constructor", ves_icall_get_constructor,
 	"System.Type::get_property", ves_icall_get_property,
-	"System.MonoType::get_method", ves_icall_get_method,
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::Equals", ves_icall_type_Equals,
