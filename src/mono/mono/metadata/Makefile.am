@@ -8,6 +8,7 @@ confdir = `cygpath -m "${sysconfdir}"`
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
+PLATFORM_LIB = ../os/libmonoos.la
 else
 assembliesdir = $(libdir)
 confdir = $(sysconfdir)
@@ -23,16 +24,23 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $
 
 if WITH_BUNDLE
 bundle_srcs = mono-bundle.s mono-bundle.h
-mono-bundle.s mono-bundle.h: $(BUNDLE_FILE) $(srcdir)/make-bundle.pl
+bundle_obj = mono-bundle.o
+#BUILT_SOURCES = $(bundle_srcs)
+
+$(bundle_obj): $(bundle_srcs)
+$(bundle_srcs): mono-bundle.stamp
+	@if test -f $@; then :; else rm -f mono-bundle.stamp; $(MAKE) mono-bundle.stamp; fi
+mono-bundle.stamp: $(BUNDLE_FILE) $(srcdir)/make-bundle.pl
+	echo stamp > $@t
 	perl $(srcdir)/make-bundle.pl $(BUNDLE_FILE) mono-bundle.h mono-bundle.s
-else
-bundle_srcs =
+	mv $@t $@
+
 endif
 
-if PLATFORM_WIN32
-libmonoruntime_la_LIBADD = ../os/libmonoos.la
-libmetadata_la_LIBADD = ../os/libmonoos.la
-endif
+CLEANFILES = mono-bundle.stamp
+
+libmonoruntime_la_LIBADD = $(PLATFORM_LIB)
+libmetadata_la_LIBADD = $(bundle_obj) $(PLATFORM_LIB)
 
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
@@ -109,7 +117,6 @@ libmetadata_la_SOURCES = \
 	loader.c	\
 	class.c		\
 	mempool.c	\
-	$(bundle_srcs)	\
 	debug-helpers.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
@@ -147,8 +154,6 @@ pedump_SOURCES =		\
 
 pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
-
-BUILT_SOURCES = $(bundle_srcs) libmetadata.la
 
 EXTRA_DIST = make-bundle.pl sample-bundle
 
