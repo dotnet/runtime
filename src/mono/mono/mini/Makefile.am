@@ -47,12 +47,12 @@ mono_SOURCES = \
 	main.c
 
 mono_LDADD = \
-	libmono.la		\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS) -lm	\
 	$(ICU_LIBS)
 
 mono_LDFLAGS = \
+	-static libmono.la	\
 	-export-dynamic
 
 genmdesc_SOURCES = \
