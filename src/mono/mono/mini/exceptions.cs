@@ -1857,5 +1857,31 @@ class Tests {
 
 		return i;
 	}
+
+	static void rethrow1 () {
+		throw new Exception ();
+	}
+
+	static void rethrow2 () {
+		rethrow1 ();
+	}
+
+	static int test_0_rethrow_stacktrace () {
+		// Check that rethrowing an exception preserves the original stack trace
+		try {
+			try {
+				rethrow2 ();
+			}
+			catch (Exception ex) {
+				throw;
+			}
+		}
+		catch (Exception ex) {
+			if (ex.StackTrace.IndexOf ("rethrow2") != -1)
+				return 0;
+		}
+
+		return 1;
+	}			
 }
 
