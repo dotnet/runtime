@@ -966,6 +966,16 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				continue;
 			}
 			break;
+			
+		case OP_X86_PUSH_MEMBASE:
+			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG ||
+				         last_ins->opcode == OP_STORE_MEMBASE_REG) &&
+			    ins->inst_basereg == last_ins->inst_destbasereg &&
+			    ins->inst_offset == last_ins->inst_offset) {
+				    ins->opcode = OP_X86_PUSH;
+				    ins->sreg1 = last_ins->sreg1;
+			}
+			break;
 		}
 		last_ins = ins;
 		ins = ins->next;
