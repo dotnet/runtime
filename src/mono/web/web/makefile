@@ -1,102 +1,107 @@
+
+MCSDIR=../../../mcs
+PROFILE=default
+
 ifeq ($(findstring CYGWIN,$(shell uname)),)
-CSC=mcs
-RUN_MONO=mono --debug
+CSC=gmcs
+RUN_MONO=MONO_PATH=$(MCSDIR)/class/lib/$(PROFILE) mono --debug
 else
-CSC=csc /nologo
+CSC=gmcs /nologo
+RUN_MONO=MONO_PATH=$(MCSDIR)/class/lib/$(PROFILE) mono --debug
 endif
 
-CORCOMPARE=../../../mcs/tools/corcompare
+CORCOMPARE=$(MCSDIR)/tools/corcompare
 
-OBJECTS=									\
-	deploy/ado-net.html							\
-	deploy/anoncvs.html							\
-	deploy/asp-net.html							\
-	deploy/beta1-press.html							\
-	deploy/blogs.html							\
-	deploy/books.html							\
-	deploy/bugs.html							\
-	deploy/contributing.html						\
-	deploy/contact.html							\
-	deploy/c-sharp.html							\
-	deploy/ccvs.html							\
-	deploy/delegate.html							\
-	deploy/documentation.html						\
-	deploy/download.html							\
-	deploy/drawing.html							\
-	deploy/compiling.html							\
-	deploy/crypto.html							\
-	deploy/embedded-api.html						\
-	deploy/faq.html								\
-	deploy/firebird.html							\
-	deploy/forge.html							\
-	deploy/gcc-frontend.html						\
-	deploy/gtk-sharp.html							\
-	deploy/hackers.html							\
-	deploy/ideas.html							\
-	deploy/ibmdb2.html							\
-	deploy/index.html							\
-	deploy/issues.html							\
-	deploy/oldnews.html							\
-	deploy/java.html							\
-	deploy/jit-debug.html							\
-	deploy/languages.html							\
-	deploy/mailing-lists.html						\
-	deploy/mbas.html							\
-	deploy/mono-beginning.html						\
-	deploy/mono-contribution-howto.html					\
-	deploy/mono-todo.html							\
-	deploy/monodoc-xml.html							\
-	deploy/mysql.html							\
-	deploy/odbc.html							\
-	deploy/oledb.html							\
-	deploy/oracle.html							\
-	deploy/other.html							\
-	deploy/papers.html							\
-	deploy/passport.html							\
-	deploy/performance.html							\
-	deploy/plans.html							\
-	deploy/porting.html							\
-	deploy/postgresql.html							\
-	deploy/ppc.html								\
-	deploy/provider-factory.html						\
-	deploy/rationale.html							\
-	deploy/resources.html							\
-	deploy/runtime.html							\
-	deploy/screenshots.html							\
-	deploy/sqlclient.html							\
-	deploy/sqlite.html							\
-	deploy/status.html							\
-	deploy/sybase.html							\
-	deploy/tdsclient.html							\
-	deploy/team.html							\
-	deploy/testing.html							\
-	deploy/tools.html							\
-	deploy/remap.html							\
-	deploy/winforms.html							\
-	deploy/xml-classes.html							\
-	deploy/class-library.html						\
-	deploy/classlib-doc.html 						\
-	deploy/class-status.html	 					\
-	deploy/class-status-corlib.html 					\
-	deploy/class-status-System.html 					\
-	deploy/class-status-System.Xml.html 					\
-	deploy/class-status-System.Configuration.Install.html			\
-	deploy/class-status-System.Data.html 					\
-	deploy/class-status-System.Data.OracleClient.html			\
-	deploy/class-status-System.Design.html					\
-	deploy/class-status-System.Management.html				\
-	deploy/class-status-System.Messaging.html				\
-	deploy/class-status-System.Security.html				\
-	deploy/class-status-System.Web.html 					\
-	deploy/class-status-System.Web.Services.html				\
-	deploy/class-status-System.Drawing.html					\
-	deploy/class-status-System.Drawing.Design.html				\
-	deploy/class-status-Microsoft.VisualBasic.html				\
-	deploy/class-status-System.Windows.Forms.html				\
-	deploy/class-status-System.DirectoryServices.html			\
-	deploy/class-status-System.EnterpriseServices.html			\
-	deploy/class-status-System.Runtime.Remoting.html			\
-	deploy/class-status-cscompmgd.html					\
+OBJECTS=					\
+	deploy/ado-net.html			\
+	deploy/anoncvs.html			\
+	deploy/asp-net.html			\
+	deploy/beta1-press.html			\
+	deploy/blogs.html			\
+	deploy/books.html			\
+	deploy/bugs.html			\
+	deploy/contributing.html		\
+	deploy/contact.html			\
+	deploy/c-sharp.html			\
+	deploy/ccvs.html			\
+	deploy/delegate.html			\
+	deploy/documentation.html		\
+	deploy/download.html			\
+	deploy/drawing.html			\
+	deploy/compiling.html			\
+	deploy/crypto.html			\
+	deploy/embedded-api.html		\
+	deploy/faq.html				\
+	deploy/firebird.html			\
+	deploy/forge.html			\
+	deploy/gcc-frontend.html		\
+	deploy/gtk-sharp.html			\
+	deploy/hackers.html			\
+	deploy/ideas.html			\
+	deploy/ibmdb2.html			\
+	deploy/index.html			\
+	deploy/issues.html			\
+	deploy/oldnews.html			\
+	deploy/java.html			\
+	deploy/jit-debug.html			\
+	deploy/languages.html			\
+	deploy/mailing-lists.html		\
+	deploy/mbas.html			\
+	deploy/mono-beginning.html		\
+	deploy/mono-contribution-howto.html	\
+	deploy/mono-todo.html			\
+	deploy/monodoc-xml.html			\
+	deploy/mysql.html			\
+	deploy/odbc.html			\
+	deploy/oledb.html			\
+	deploy/oracle.html			\
+	deploy/other.html			\
+	deploy/papers.html			\
+	deploy/passport.html			\
+	deploy/performance.html			\
+	deploy/plans.html			\
+	deploy/porting.html			\
+	deploy/postgresql.html			\
+	deploy/ppc.html				\
+	deploy/provider-factory.html		\
+	deploy/rationale.html			\
+	deploy/resources.html			\
+	deploy/runtime.html			\
+	deploy/screenshots.html			\
+	deploy/sqlclient.html			\
+	deploy/sqlite.html			\
+	deploy/status.html			\
+	deploy/sybase.html			\
+	deploy/tdsclient.html			\
+	deploy/team.html			\
+	deploy/testing.html			\
+	deploy/tools.html			\
+	deploy/remap.html			\
+	deploy/winforms.html			\
+	deploy/xml-classes.html			\
+	deploy/class-library.html		\
+	deploy/classlib-doc.html 		\
+	deploy/class-status.html	 	\
+	deploy/class-status-mscorlib.html 			\
+	deploy/class-status-System.html 			\
+	deploy/class-status-System.Xml.html 			\
+	deploy/class-status-System.Configuration.Install.html	\
+	deploy/class-status-System.Data.html 			\
+	deploy/class-status-System.Data.OracleClient.html	\
+	deploy/class-status-System.Design.html			\
+	deploy/class-status-System.Management.html		\
+	deploy/class-status-System.Messaging.html		\
+	deploy/class-status-System.Security.html		\
+	deploy/class-status-System.Web.html 			\
+	deploy/class-status-System.Web.Services.html		\
+	deploy/class-status-System.Drawing.html			\
+	deploy/class-status-System.Drawing.Design.html		\
+	deploy/class-status-Microsoft.VisualBasic.html		\
+	deploy/class-status-System.Windows.Forms.html		\
+	deploy/class-status-System.DirectoryServices.html	\
+	deploy/class-status-System.EnterpriseServices.html	\
+	deploy/class-status-System.Runtime.Remoting.html	\
+	deploy/class-status-cscompmgd.html			\
 	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html
 
 HTML_SOURCES = ../mono-roadmap.html
@@ -157,8 +162,6 @@ push2:
 
 $(OBJECTS): $(patsubst deploy/%.html,src/%.src, $(OBJECTS))
 
-#.PRECIOUS: $(patsubst deploy/%.html,src/%.src, $(OBJECTS))
-
 transform.exe: transform.cs
 	$(CSC) transform.cs
 
@@ -179,35 +182,11 @@ src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/mono-api.xsl
 
 .PRECIOUS: infos/%.xml
 infos/%.xml: ../../../mcs/class/lib/default/%.dll $(CORCOMPARE)/mono-api-info.exe
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $< > $@ || (rm -f $@ && exit 1)
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
 .PRECIOUS: src/%.xml
 src/%.xml: infos/%.xml $(CORCOMPARE)/mono-api-diff.exe 
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/$(notdir $<) $< > $@ || (rm -f $@ && exit 1)
-
-# corlib, corlib...
-infos/mscorlib.xml: ../../../mcs/class/lib/default/mscorlib.dll $(CORCOMPARE)/mono-api-info.exe
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
-
-src/corlib.xml: infos/mscorlib.xml $(CORCOMPARE)/mono-api-diff.exe 
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/mscorlib.xml $< > $@ || (rm -f $@ && exit 1)
-
-# System
-infos/System.xml: ../../../mcs/class/lib/default/System.dll $(CORCOMPARE)/mono-api-info.exe
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
-
-src/System.xml: infos/System.xml $(CORCOMPARE)/mono-api-diff.exe 
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.xml $< > $@ || (rm -f $@ && exit 1)
-
-# System.Xml
-infos/System.Xml.xml: ../../../mcs/class/lib/default/System.Xml.dll $(CORCOMPARE)/mono-api-info.exe
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
-
-src/System.Xml.xml: infos/System.Xml.xml $(CORCOMPARE)/mono-api-diff.exe 
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.Xml.xml $< > $@ || (rm -f $@ && exit 1)
-
-src/System.DirectoryServices.xml: infos/System.DirectoryServices.xml $(CORCOMPARE)/mono-api-diff.exe 
-	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.DirectoryServices.xml $< > $@ || (rm -f $@ && exit 1)
 
 ../class-status: ../class-status.in
 	cp -f $< $@

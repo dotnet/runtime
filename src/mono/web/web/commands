@@ -65,7 +65,7 @@
 1,Windows.Forms,winforms.html,winforms.src
 1,XML Classes,xml-classes.html,xml-classes.src
 0,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
-1,corlib,class-status-corlib.html,class-status-corlib.src,cm/cormissing.css,cm/cormissing.js
+1,mscorlib,class-status-mscorlib.html,class-status-mscorlib.src,cm/cormissing.css,cm/cormissing.js
 1,System,class-status-System.html,class-status-System.src,cm/cormissing.css,cm/cormissing.js
 1,Xml,class-status-System.Xml.html,class-status-System.Xml.src,cm/cormissing.css,cm/cormissing.js
 1,Configuration.Install,class-status-System.Configuration.Install.html,class-status-System.Configuration.Install.src,cm/cormissing.css,cm/cormissing.js

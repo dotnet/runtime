@@ -4,40 +4,40 @@
 
 	Here is the status of the different assemblies:
 	<ul>
-		<li><a href="http://www.go-mono.com/class-status-corlib.html">corlib</a>: The core library.
-		<li><a href="http://www.go-mono.com/class-status-cscompmgd.html">cscompmgd</a>:
+		<li><a href="class-status-mscorlib.html">mscorlib</a>: The core library.
+		<li><a href="class-status-cscompmgd.html">cscompmgd</a>:
 		Managed interface for C# compiler.
-		<li><a href="http://www.go-mono.com/class-status-System.html">System</a>: Extra modules
-		<li><a href="http://www.go-mono.com/class-status-System.Xml.html">System.Xml</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Configuration.Install.html">System.Configuration.Install</a>.
+		<li><a href="class-status-System.html">System</a>: Extra modules
+		<li><a href="class-status-System.Xml.html">System.Xml</a>.
+		<li><a href="class-status-System.Configuration.Install.html">System.Configuration.Install</a>.
 		<li><a
-		href="http://www.go-mono.com/class-status-System.Data.html">System.Data</a>:
+		href="class-status-System.Data.html">System.Data</a>:
 		Database access functionality (also check the <a href="ado-net.html">Mono ADO.NET status</a> pages).
-		<li><a href="http://www.go-mono.com/class-status-System.Data.OracleClient.html">System.Data.OracleClient</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Design.html">System.Design</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Drawing.html">System.Drawing</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Drawing.Design.html">System.Drawing.Design</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.DirectoryServices.html">System.DirectoryServices</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Management.html">System.Management</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Messaging.html">System.Messaging</a>.
+		<li><a href="class-status-System.Data.OracleClient.html">System.Data.OracleClient</a>.
+		<li><a href="class-status-System.Design.html">System.Design</a>.
+		<li><a href="class-status-System.Drawing.html">System.Drawing</a>.
+		<li><a href="class-status-System.Drawing.Design.html">System.Drawing.Design</a>.
+		<li><a href="class-status-System.DirectoryServices.html">System.DirectoryServices</a>.
+		<li><a href="class-status-System.Management.html">System.Management</a>.
+		<li><a href="class-status-System.Messaging.html">System.Messaging</a>.
 		<li><a
-		href="http://www.go-mono.com/class-status-System.Web.html">System.Web</a>:
+		href="class-status-System.Web.html">System.Web</a>:
 		ASP.NET classes, also check the <a href="asp-net.html">Mono ASP.NET status pages</a>
-		<li><a href="http://www.go-mono.com/class-status-System.Web.Services.html">System.Web.Services</a>.
+		<li><a href="class-status-System.Web.Services.html">System.Web.Services</a>.
 		<li><a
-		href="http://www.go-mono.com/class-status-Microsoft.VisualBasic.html">Microsoft.VisualBasic</a>:
+		href="class-status-Microsoft.VisualBasic.html">Microsoft.VisualBasic</a>:
 		Support runtime for Visual Basic applications
-		<li><a href="http://www.go-mono.com/class-status-System.EnterpriseServices.html">System.EnterpriseServices</a>.
-		<li><a href="http://www.go-mono.com/class-status-System.Runtime.Remoting.html">System.Runtime.Remoting</a>.
+		<li><a href="class-status-System.EnterpriseServices.html">System.EnterpriseServices</a>.
+		<li><a href="class-status-System.Runtime.Remoting.html">System.Runtime.Remoting</a>.
 		<li><a
-		href="http://www.go-mono.com/class-status-System.Windows.Forms.html">Windows.Forms</a>:
+		href="class-status-System.Windows.Forms.html">Windows.Forms</a>:
 		there is also a <a
 		href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mailing
 		list available</a>
 		<li><a
-		href="http://www.go-mono.com/class-status-System.Runtime.Serialization.Formatters.Soap.html">System.Runtime.Serialization.Formatters.Soap</a>.
+		href="class-status-System.Runtime.Serialization.Formatters.Soap.html">System.Runtime.Serialization.Formatters.Soap</a>.
 		<li><a
-		href="http://www.go-mono.com/class-status-System.Security.html">System.Security</a>:
+		href="class-status-System.Security.html">System.Security</a>:
 		Xml Signature Security classes, also check the <a href="crypto.html">Cryptography status pages</a>
 		
 	</ul>
