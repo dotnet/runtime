@@ -64,9 +64,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 			ac->msg->exc = exc;
 	}
 
-	g_hash_table_remove (ares_htable, ares);
-	/* it work as long as we do not release the wait handle */
-	// g_hash_table_insert (ares_htable, ares->handle, ares->handle);
+	mono_g_hash_table_remove (ares_htable, ares);
 }
 
 MonoAsyncResult *
