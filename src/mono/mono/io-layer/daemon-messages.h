@@ -13,6 +13,7 @@
 #include <mono/io-layer/wapi-private.h>
 
 typedef enum {
+	WapiHandleRequestType_Error,
 	WapiHandleRequestType_New,
 	WapiHandleRequestType_Open,
 	WapiHandleRequestType_Close,

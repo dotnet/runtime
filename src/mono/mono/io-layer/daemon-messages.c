@@ -22,7 +22,7 @@
 
 /* Send request on fd, wait for response (called by applications, not
  * the daemon)
-*/
+ */
 void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 				    WapiHandleResponse *resp)
 {
@@ -46,7 +46,7 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 #endif
 	if(ret!=sizeof(WapiHandleRequest)) {
 		if(errno==EPIPE) {
-			g_warning (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
+			g_critical (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
 			exit (-1);
 		} else {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": Send error: %s",
@@ -63,7 +63,7 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 #endif
 	if(ret==-1) {
 		if(errno==EPIPE) {
-			g_warning (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
+			g_critical (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
 			exit (-1);
 		} else {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": Send error: %s",
@@ -85,7 +85,10 @@ void _wapi_daemon_request (int fd, WapiHandleRequest *req)
 #else
 	ret=recv (fd, req, sizeof(WapiHandleRequest), 0);
 #endif
-	if(ret==-1) {
+	if(ret==-1 || ret!= sizeof(WapiHandleRequest)) {
+		/* Make sure we dont do anything with this response */
+		req->type=WapiHandleRequestType_Error;
+		
 #ifdef DEBUG
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Recv error: %s",
 			   strerror (errno));
@@ -104,11 +107,11 @@ void _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 #else
 	ret=send (fd, resp, sizeof(WapiHandleResponse), 0);
 #endif
-	if(ret==-1) {
 #ifdef DEBUG
+	if(ret==-1 || ret != sizeof(WapiHandleResponse)) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Send error: %s",
 			   strerror (errno));
-#endif
 		/* The next loop around poll() should tidy up */
 	}
+#endif
 }

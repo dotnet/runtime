@@ -159,6 +159,13 @@ attach_again:
 #endif
 }
 
+/*
+ * _wapi_handle_new_internal:
+ * @type: Init handle to this type
+ *
+ * Search for a free handle and initialize it. Return the handle on
+ * succes and 0 on failure.
+ */
 guint32 _wapi_handle_new_internal (WapiHandleType type)
 {
 	guint32 i;
@@ -173,7 +180,7 @@ again:
 		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
 		
 		if(shared->type==WAPI_HANDLE_UNUSED) {
-			last=i;
+			last=i+1;
 			shared->type=type;
 			shared->signalled=FALSE;
 			mono_mutex_init (&_wapi_shared_data->handles[i].signal_mutex, &mutex_shared_attr);
@@ -188,7 +195,6 @@ again:
 		last=1;
 		goto again;
 	}
-	
 
 	return(0);
 }
@@ -412,6 +418,13 @@ void _wapi_handle_unref (gpointer handle)
 
 #define HDRSIZE sizeof(struct _WapiScratchHeader)
 
+/*
+ * _wapi_handle_scratch_store_internal:
+ * @bytes: Allocate no. bytes
+ *
+ * Like malloc(3) except its for the shared memory segment's scratch
+ * part. Memory block returned is zeroed out.
+ */
 guint32 _wapi_handle_scratch_store_internal (guint32 bytes)
 {
 	guint32 idx=0, last_idx=0;
@@ -462,6 +475,10 @@ guint32 _wapi_handle_scratch_store_internal (guint32 bytes)
 			g_message (G_GNUC_PRETTY_FUNCTION ": new header at %d, length %d", idx+bytes, hdr->length);
 #endif
 			
+			/*
+			 * It was memset(0..) when free/made so no need to do it here
+			 */
+
 			return(idx);
 		} else if(hdr->flags & WAPI_SHM_SCRATCH_FREE &&
 			  last_was_free == FALSE) {
@@ -578,6 +595,13 @@ guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx)
 	return(str);
 }
 
+/*
+ * _wapi_handle_scratch_delete_internal:
+ * @idx: Index to free block
+ *
+ * Like free(3) except its for the shared memory segment's scratch
+ * part.
+ */
 void _wapi_handle_scratch_delete_internal (guint32 idx)
 {
 	struct _WapiScratchHeader *hdr;

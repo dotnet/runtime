@@ -13,15 +13,16 @@
 #include <config.h>
 #include <glib.h>
 
-#include "mono/io-layer/handles.h"
-#include "mono/io-layer/io.h"
+#include <mono/io-layer/handles.h>
+#include <mono/io-layer/io.h>
+#include <mono/io-layer/daemon-private.h>
 
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  *
  * If this ever reaches 255, we have problems :-(
  */
-#define _WAPI_HANDLE_VERSION 3
+#define _WAPI_HANDLE_VERSION 4
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -104,7 +105,7 @@ struct _WapiHandleShared_list
 	 * header file
 	 */
 	guchar daemon[108];
-	guint32 daemon_running;
+	_wapi_daemon_status daemon_running;
 	
 #ifdef _POSIX_THREAD_PROCESS_SHARED
 	mono_mutex_t signal_mutex;

@@ -57,6 +57,17 @@
 
 #undef DEBUG
 
+/*
+ * _wapi_shm_attach:
+ * @daemon: Is it the daemon trying to attach to the segment
+ * @success: Was it a success
+ * @shm_id: The ID of the segment created/attached to
+ *
+ * Attach to the shared memory segment or create it if it did not
+ * exist. If it was created and daemon was FALSE a new daemon is
+ * forked into existence. Returns the memory area the segment was
+ * attached to.
+ */
 gpointer _wapi_shm_attach (gboolean daemon, gboolean *success, int *shm_id)
 {
 	gpointer shm_seg;
@@ -100,8 +111,8 @@ try_again:
 		 */
 	} else {
 		/* Some error other than EEXIST */
-		g_message (G_GNUC_PRETTY_FUNCTION ": shmget error: %s",
-			   strerror (errno));
+		g_critical (G_GNUC_PRETTY_FUNCTION ": shmget error: %s",
+			    strerror (errno));
 		exit (-1);
 	}
 	
@@ -111,8 +122,8 @@ try_again:
 	 */
 	shm_seg=shmat (*shm_id, NULL, 0);
 	if(shm_seg==(gpointer)-1) {
-		g_message (G_GNUC_PRETTY_FUNCTION ": shmat error: %s",
-			   strerror (errno));
+		g_critical (G_GNUC_PRETTY_FUNCTION ": shmat error: %s",
+			    strerror (errno));
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
 		}
@@ -132,8 +143,8 @@ try_again:
 			
 		pid=fork ();
 		if(pid==-1) {
-			g_message (G_GNUC_PRETTY_FUNCTION ": fork error: %s",
-				   strerror (errno));
+			g_critical (G_GNUC_PRETTY_FUNCTION ": fork error: %s",
+				    strerror (errno));
 			_wapi_shm_destroy ();
 			exit (-1);
 		} else if (pid==0) {
@@ -151,7 +162,7 @@ try_again:
 			_wapi_daemon_main ();
 			
 			/* But just in case... */
-			data->daemon_running=2;
+			data->daemon_running=DAEMON_DIED_AT_STARTUP;
 			exit (-1);
 		}
 		/* parent carries on */
@@ -162,8 +173,9 @@ try_again:
 		/* Do some sanity checking on the shared memory we
 		 * attached
 		 */
-		if(!(data->daemon_running==0 || data->daemon_running==1 ||
-		     data->daemon_running==2) ||
+		if(!(data->daemon_running==DAEMON_STARTING || 
+		     data->daemon_running==DAEMON_RUNNING ||
+		     data->daemon_running==DAEMON_DIED_AT_STARTUP) ||
 		   (strncmp (data->daemon+1, "mono-handle-daemon-", 19)!=0)) {
 			g_warning ("Shared memory sanity check failed.");
 			*success=FALSE;
@@ -171,7 +183,8 @@ try_again:
 		}
 	}
 		
-	for(tries=0; data->daemon_running==0 && tries < 100; tries++) {
+	for(tries=0; data->daemon_running==DAEMON_STARTING && tries < 100;
+	    tries++) {
 		/* wait for the daemon to sort itself out.  To be
 		 * completely safe, we should have a timeout before
 		 * giving up.
@@ -183,7 +196,7 @@ try_again:
 			
 		nanosleep (&sleepytime, NULL);
 	}
-	if(tries==100 && data->daemon_running==0) {
+	if(tries==100 && data->daemon_running==DAEMON_STARTING) {
 		/* Daemon didnt get going */
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
@@ -193,7 +206,7 @@ try_again:
 		return(NULL);
 	}
 	
-	if(data->daemon_running==2) {
+	if(data->daemon_running==DAEMON_DIED_AT_STARTUP) {
 		/* Oh dear, the daemon had an error starting up */
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
