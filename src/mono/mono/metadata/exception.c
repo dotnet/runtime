@@ -49,6 +49,32 @@ mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 	return (MonoException *)o;
 }
 
+
+/**
+ * mono_exception_from_token:
+ * @image: the Mono image where to look for the class
+ * @token: The type token of the class
+ *
+ * Creates an exception of the type given by @token.
+ *
+ * Returns: the initialized exception instance.
+ */
+MonoException *
+mono_exception_from_token (MonoImage *image, guint32 token)
+{
+	MonoClass *klass;
+	MonoObject *o;
+
+	klass = mono_class_get (image, token);
+
+	o = mono_object_new (mono_domain_get (), klass);
+	g_assert (o != NULL);
+	
+	mono_runtime_object_init (o);
+
+	return (MonoException *)o;
+}
+
 /**
  * mono_exception_from_name_two_strings:
  * @image: the Mono image where to look for the class
