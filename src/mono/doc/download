@@ -24,6 +24,14 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 	we make the first tarball release.
 
 	<ul>
+		<a name="july-19">
+		<b>July 19th, 2001</b>
+		<ul>
+		* <a href="archive/mcs-19-Jul-2001.tar.gz">mcs-19-Jul-2001.tar.gz</a>: CVS snapshot.
+		* <a href="archive/mcs-Jul-17-Jul-19-2001.tar.gz">Differences since 15</a>: CVS snapshot.
+		* <a href="archive/mcs-19">Release Notes</a>
+		</ul>
+
 		<a name="july-17">
 		<b>July 17th, 2001</b>
 		<ul>
