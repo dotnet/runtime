@@ -40,6 +40,7 @@ struct _AssemblyDebugInfo {
 	GHashTable *type_hash;
 	int next_klass_idx;
 	GPtrArray *source_files;
+	gpointer _priv;
 };
 
 struct _MonoDebugHandle {

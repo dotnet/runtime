@@ -161,7 +161,7 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 			record_line_number (minfo, cfg->start + st_address, st_line, j == 0);
 
 			if (t->cli_addr != -1)
-				record_il_offset (il_offsets, t->cli_addr, st_address);
+				record_il_offset (il_offsets, t->cli_addr, st_address + 1);
 		}
 	}
 
