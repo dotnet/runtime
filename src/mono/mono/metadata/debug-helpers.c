@@ -111,7 +111,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 		append_class_name (res, type->data.klass, include_namespace);
 		break;
 	case MONO_TYPE_GENERICINST:
-		mono_type_get_desc (res, type->data.generic_class->generic_type, include_namespace);
+		mono_type_get_desc (res, &type->data.generic_class->container_class->byval_arg, include_namespace);
 		break;
 	default:
 		break;

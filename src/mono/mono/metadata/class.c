@@ -222,7 +222,7 @@ mono_type_get_underlying_type (MonoType *type)
 			return type->data.klass->enum_basetype;
 		break;
 	case MONO_TYPE_GENERICINST:
-		return mono_type_get_underlying_type (type->data.generic_class->generic_type);
+		return mono_type_get_underlying_type (&type->data.generic_class->container_class->byval_arg);
 	default:
 		break;
 	}
@@ -247,7 +247,7 @@ mono_class_is_open_constructed_type (MonoType *t)
 		MonoGenericClass *gclass = t->data.generic_class;
 		int i;
 
-		if (mono_class_is_open_constructed_type (gclass->generic_type))
+		if (mono_class_is_open_constructed_type (&gclass->container_class->byval_arg))
 			return TRUE;
 		for (i = 0; i < gclass->inst->type_argc; i++)
 			if (mono_class_is_open_constructed_type (gclass->inst->type_argv [i]))
@@ -292,7 +292,12 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		MonoType *nt;
 		int i;
 
-		ngclass = g_new0 (MonoGenericClass, 1);
+		if (ogclass->is_dynamic) {
+			MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+			ngclass = &dgclass->generic_class;
+		} else
+			ngclass = g_new0 (MonoGenericClass, 1);
+
 		*ngclass = *ogclass;
 
 		ngclass->inst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
@@ -300,10 +305,9 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		ngclass->klass = NULL;
 
 		ngclass->context = g_new0 (MonoGenericContext, 1);
-		ngclass->context->container = ngclass->container;
+		ngclass->context->container = ngclass->container_class->generic_container;
 		ngclass->context->gclass = ngclass;
 
-		ngclass->dynamic_info = NULL;
 		ngclass->initialized = FALSE;
 
 		mono_loader_lock ();
@@ -526,8 +530,8 @@ class_compute_field_layout (MonoClass *class)
 		if (class->generic_container)
 			container = class->generic_container;
 		else if (class->generic_class) {
-			g_assert (class->generic_class->container);
-			container = class->generic_class->container;
+			container = class->generic_class->container_class->generic_container;
+			g_assert (container);
 		}
 		field->type = mono_metadata_parse_type_full (
 			m, (MonoGenericContext *) container, MONO_PARSE_FIELD,
@@ -1101,7 +1105,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					continue;
 
 				if (ic->generic_class) {
-					MonoClass *the_ic = mono_class_from_mono_type (ic->generic_class->generic_type);
+					MonoClass *the_ic = ic->generic_class->container_class;
 					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, FALSE, TRUE);
 					cname = the_cname;
 				} else {
@@ -1272,7 +1276,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 
 	if (class->generic_class) {
-		MonoClass *gklass = mono_class_from_mono_type (class->generic_class->generic_type);
+		MonoClass *gklass = class->generic_class->container_class;
 
 		mono_class_init (gklass);
 		class->vtable_size = gklass->vtable_size;
@@ -1377,9 +1381,8 @@ mono_class_init (MonoClass *class)
 
 	if (class->generic_class && !class->generic_class->is_dynamic) {
 		MonoGenericClass *gclass = class->generic_class;
-		MonoClass *gklass;
+		MonoClass *gklass = gclass->container_class;
 
-		gklass = mono_class_from_mono_type (gclass->generic_type);
 		mono_class_init (gklass);
 
 		if (MONO_CLASS_IS_INTERFACE (class))
@@ -1939,7 +1942,7 @@ mono_class_create_generic (MonoGenericClass *gclass)
 		gclass->klass = g_malloc0 (sizeof (MonoClass));
 	klass = gclass->klass;
 
-	gklass = mono_class_from_mono_type (gclass->generic_type);
+	gklass = gclass->container_class;
 
 	klass->nested_in = gklass->nested_in;
 
@@ -1979,7 +1982,7 @@ mono_class_create_generic_2 (MonoGenericClass *gclass)
 		return;
 
 	klass = gclass->klass;
-	gklass = mono_class_from_mono_type (gclass->generic_type);
+	gklass = gclass->container_class;
 
 	klass->method = gklass->method;
 	klass->field = gklass->field;
@@ -2977,7 +2980,7 @@ handle_enum:
 		}
 		return mono_class_instance_size (klass) - sizeof (MonoObject);
 	case MONO_TYPE_GENERICINST:
-		type = type->data.generic_class->generic_type;
+		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in mono_class_array_element_size", type->type);

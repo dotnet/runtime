@@ -1211,7 +1211,7 @@ static guint
 mono_generic_class_hash (gconstpointer data)
 {
 	const MonoGenericClass *gclass = (const MonoGenericClass *) data;
-	return mono_metadata_type_hash (gclass->generic_type);
+	return mono_metadata_type_hash (&gclass->container_class->byval_arg);
 }
 
 static gboolean
@@ -1670,6 +1670,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	MonoGenericClass *cached;
 	MonoGenericInst *ginst;
 	MonoClass *gklass;
+	MonoType *gtype;
 	int i, count;
 
 	type->data.generic_class = gclass;
@@ -1679,10 +1680,10 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	gclass->klass = g_new0 (MonoClass, 1);
 
-	gclass->generic_type = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	gtype = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
 
-	gklass = mono_class_from_mono_type (gclass->generic_type);
-	g_assert ((gclass->context->container = gclass->container = gklass->generic_container) != NULL);
+	g_assert ((gclass->context->container = gklass->generic_container) != NULL);
 
 	count = mono_metadata_decode_value (ptr, &ptr);
 
@@ -2696,11 +2697,9 @@ mono_type_size (MonoType *t, gint *align)
 
 		g_assert (!gclass->inst->is_open && !gclass->klass->generic_container);
 
-		if (MONO_TYPE_ISSTRUCT (gclass->generic_type)) {
-			MonoClass *gklass = mono_class_from_mono_type (gclass->generic_type);
-
-			if (gklass->enumtype)
-				return mono_type_size (gklass->enum_basetype, align);
+		if (gclass->container_class->valuetype) {
+			if (gclass->container_class->enumtype)
+				return mono_type_size (gclass->container_class->enum_basetype, align);
 			else
 				return mono_class_value_size (gclass->klass, align);
 		} else {
@@ -2795,11 +2794,9 @@ mono_type_stack_size (MonoType *t, gint *align)
 
 		g_assert (!gclass->inst->is_open && !gclass->klass->generic_container);
 
-		if (MONO_TYPE_ISSTRUCT (gclass->generic_type)) {
-			MonoClass *gklass = mono_class_from_mono_type (gclass->generic_type);
-
-			if (gklass->enumtype)
-				return mono_type_stack_size (gklass->enum_basetype, align);
+		if (gclass->container_class->valuetype) {
+			if (gclass->container_class->enumtype)
+				return mono_type_stack_size (gclass->container_class->enum_basetype, align);
 			else {
 				guint32 size = mono_class_value_size (gclass->klass, align);
 
@@ -2825,7 +2822,7 @@ mono_type_stack_size (MonoType *t, gint *align)
 gboolean
 mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 {
-	return MONO_TYPE_ISSTRUCT (gclass->generic_type);
+	return gclass->container_class->valuetype;
 }
 
 static gboolean
@@ -2835,7 +2832,7 @@ _mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2, 
 
 	if (g1->inst->type_argc != g2->inst->type_argc)
 		return FALSE;
-	if (!do_mono_metadata_type_equal (g1->generic_type, g2->generic_type, signature_only))
+	if (!do_mono_metadata_type_equal (&g1->container_class->byval_arg, &g2->container_class->byval_arg, signature_only))
 		return FALSE;
 	for (i = 0; i < g1->inst->type_argc; ++i) {
 		if (!do_mono_metadata_type_equal (g1->inst->type_argv [i], g2->inst->type_argv [i], signature_only))

@@ -223,13 +223,11 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 	}
 
 	if (sclass->generic_class) {
-		MonoClass *gclass;
 		MonoMethod *res;
 
-		gclass = mono_class_from_mono_type (sclass->generic_class->generic_type);
-		mono_class_init (gclass);
+		mono_class_init (sclass->generic_class->container_class);
 
-		res = find_method (gclass, ic, name, sig);
+		res = find_method (sclass->generic_class->container_class, ic, name, sig);
 		if (!res)
 			return NULL;
 		for (i = 0; i < res->klass->method.count; ++i) {
@@ -349,8 +347,8 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	if (klass->generic_container)
 		container = klass->generic_container;
 	else if (klass->generic_class) {
-		g_assert (klass->generic_class->container);
-		container = klass->generic_class->container;
+		container = klass->generic_class->container_class->generic_container;
+		g_assert (container);
 	}
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);

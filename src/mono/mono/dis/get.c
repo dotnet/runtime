@@ -890,7 +890,8 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 	case MONO_TYPE_GENERICINST: {
 		GString *str = g_string_new ("");
 		int i;
-		char *generic_type = dis_stringify_type (m, type->data.generic_class->generic_type, is_def);
+		char *generic_type = dis_stringify_type (
+			m, &type->data.generic_class->container_class->byval_arg, is_def);
 
 		for (i = 0; i < type->data.generic_class->inst->type_argc; i++){
 			char *t = dis_stringify_type (m, type->data.generic_class->inst->type_argv [i], is_def);

@@ -1778,13 +1778,12 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 		return type; /* check this one */
 	}
 	if (klass->generic_class) {
-		MonoType *generic_type = klass->generic_class->generic_type;
-		MonoClass *generic_class = mono_class_from_mono_type (generic_type);
+		MonoClass *generic_class = klass->generic_class->container_class;
 
 		if (generic_class->wastypebuilder && generic_class->reflection_info)
 			return generic_class->reflection_info;
 		else
-			return mono_type_get_object (mono_object_domain (type), generic_type);
+			return mono_type_get_object (mono_object_domain (type), &generic_class->byval_arg);
 	}
 	return NULL;
 }
@@ -1944,7 +1943,7 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 	if (!gclass || !gclass->ifaces)
 		return mono_array_new (domain, System_Reflection_MonoGenericClass, 0);
 
-	klass = mono_class_from_mono_type (gclass->generic_type);
+	klass = gclass->container_class;
 
 	res = mono_array_new (domain, System_Reflection_MonoGenericClass, gclass->count_ifaces);
 
@@ -1971,7 +1970,8 @@ ves_icall_MonoGenericClass_GetMethods (MonoReflectionGenericClass *type,
 	MONO_ARCH_SAVE_REGS;
 
 	gclass = type->type.type->data.generic_class;
-	g_assert ((dgclass = gclass->dynamic_info) != NULL);
+	g_assert (gclass->is_dynamic);
+	dgclass = (MonoDynamicGenericClass *) gclass;
 
 	refclass = mono_class_from_mono_type (reflected_type->type);
 
@@ -2004,7 +2004,8 @@ ves_icall_MonoGenericClass_GetConstructors (MonoReflectionGenericClass *type,
 			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
 
 	gclass = type->type.type->data.generic_class;
-	g_assert ((dgclass = gclass->dynamic_info) != NULL);
+	g_assert (gclass->is_dynamic);
+	dgclass = (MonoDynamicGenericClass *) gclass;
 
 	refclass = mono_class_from_mono_type (reflected_type->type);
 
@@ -2032,7 +2033,8 @@ ves_icall_MonoGenericClass_GetFields (MonoReflectionGenericClass *type,
 	MONO_ARCH_SAVE_REGS;
 
 	gclass = type->type.type->data.generic_class;
-	g_assert ((dgclass = gclass->dynamic_info) != NULL);
+	g_assert (gclass->is_dynamic);
+	dgclass = (MonoDynamicGenericClass *) gclass;
 
 	refclass = mono_class_from_mono_type (reflected_type->type);
 
@@ -2065,7 +2067,8 @@ ves_icall_MonoGenericClass_GetProperties (MonoReflectionGenericClass *type,
 			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
 
 	gclass = type->type.type->data.generic_class;
-	g_assert ((dgclass = gclass->dynamic_info) != NULL);
+	g_assert (gclass->is_dynamic);
+	dgclass = (MonoDynamicGenericClass *) gclass;
 
 	refclass = mono_class_from_mono_type (reflected_type->type);
 
@@ -2098,7 +2101,8 @@ ves_icall_MonoGenericClass_GetEvents (MonoReflectionGenericClass *type,
 			mono_defaults.corlib, "System.Reflection", "EventInfo");
 
 	gclass = type->type.type->data.generic_class;
-	g_assert ((dgclass = gclass->dynamic_info) != NULL);
+	g_assert (gclass->is_dynamic);
+	dgclass = (MonoDynamicGenericClass *) gclass;
 
 	refclass = mono_class_from_mono_type (reflected_type->type);
 
@@ -5387,7 +5391,7 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 		return m;
 
 	if (klass->generic_class)
-		klass = mono_class_from_mono_type (klass->generic_class->generic_type);
+		klass = klass->generic_class->container_class;
 
 	while (result == NULL && klass != NULL && (klass->vtable_size > method->slot))
 	{

@@ -311,20 +311,19 @@ struct _MonoGenericInst {
 
 struct _MonoGenericClass {
 	MonoGenericInst *inst;
-	MonoGenericContainer *container;
+	MonoClass *container_class;
 	MonoGenericContext *context;
 	MonoClass *klass;
 	MonoType *parent;
-	int count_ifaces;
+	guint count_ifaces  : 29;
+	guint initialized   :  1;
+	guint init_pending  :  1;
+	guint is_dynamic    :  1;
 	MonoType **ifaces;
-	MonoType *generic_type;
-	MonoDynamicGenericClass *dynamic_info;
-	guint initialized   : 1;
-	guint init_pending  : 1;
-	guint is_dynamic    : 1;
 };
 
 struct _MonoDynamicGenericClass {
+	MonoGenericClass generic_class;
 	int count_methods;
 	MonoMethod **methods;
 	int count_ctors;
