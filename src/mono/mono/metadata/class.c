@@ -3006,7 +3006,10 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericCon
 		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
-		return g_strdup_printf ("%s.%s", nspace, name);
+		if (strlen (nspace) == 0)
+			return g_strdup_printf ("%s", name);
+		else
+			return g_strdup_printf ("%s.%s", nspace, name);
 	}
 
 	case MONO_TOKEN_TYPE_REF: {
@@ -3016,7 +3019,10 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericCon
 		mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-		return g_strdup_printf ("%s.%s", nspace, name);
+		if (strlen (nspace) == 0)
+			return g_strdup_printf ("%s", name);
+		else
+			return g_strdup_printf ("%s.%s", nspace, name);
 	}
 		
 	case MONO_TOKEN_TYPE_SPEC:
@@ -3061,7 +3067,7 @@ _mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContext *conte
 
 	if (!class){
 		char *name = mono_class_name_from_token (image, type_token, context);
-		g_warning ("Could not load class from %s (token 0x%08x) in %s", name, type_token, image->name);
+		g_warning ("The class %s could not be loaded, used in %s (token 0x%08x)", name, image->name, type_token);
 		g_free (name);
 	}
 
