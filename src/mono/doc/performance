@@ -1,0 +1,96 @@
+* Writing performant .NET and Mono applications
+
+	The following document contains a few hints on how to improve
+	the performance of your Mono/.NET applications.
+
+	These are just guidelines, and you should still profile your
+	code to find the actual performance problems in your
+	application.
+
+** Using the Mono profiler
+
+	To obtain memory consumption and measure the time spent on
+	functions and the number of times a function is called in
+	Mono, you can invoke the runtime with the --profile flag, like this:
+
+<pre>
+	mono --profile program.exe
+</pre>
+
+	The above will instruct Mono to instrument your application
+	for profiling.  The default Mono profiler will record the time
+	spent on a routine, the number of times the routine called,
+	the memory consumed by each method broken down by invoker, and
+	the total amount of memory consumed, this is what it looks
+	like:
+<pre>
+Total time spent compiling 227 methods (sec): 0.07154
+Slowest method to compile (sec): 0.01893: System.Console::.cctor()
+Time(ms) Count   P/call(ms) Method name
+########################
+  91.681       1   91.681   .DebugOne::Main()
+  Callers (with count) that contribute at least for 1%:
+           1  100 % .DebugOne::Main(object,intptr,intptr)
+...
+Total number of calls: 3741
+...
+Allocation profiler
+Total mem Method
+########################
+     406 KB .DebugOne::Main()
+         406 KB     1000 System.Int32[]                                  
+  Callers (with count) that contribute at least for 1%:
+           1  100 % .DebugOne::Main(object,intptr,intptr)
+Total memory allocated: 448 KB
+</pre>
+
+	You might want to keep a close eye on the memory consumption
+	and on the method invocation counts.   A lot of the
+	performance gains in MCS for example came from reducing its
+	memory usage, as opposed to changes in the execution path. 
+
+** Memory Management in the .NET/Mono world.
+
+	Since Mono and .NET offer automatic garbage collection, the
+	programmer is freed from having to track and dispose the
+	objects it consumes (except for IDispose-like classes).   This
+	is a great productivity gain, but if you create thousands of
+	objects, that will make the garbage collector do more work,
+	and it might slow down your application.
+
+** foreach
+
+	The <tt>foreach</tt> C# statement handles various kinds of
+	different constructs (about seven different code patterns are
+	generated).   Typically foreach generates more efficient code
+	than loops constructed manually, and also ensures that objects
+	which implement IDispose are properly released.
+
+	But foreach sometimes might generate code that under stress
+	performs badly.  Foreach performs badly when its used in tight
+	loops, and its use leads to the creation of many enumerators.
+	Although technically obtaining an enumerator for some objects
+	like ArrayList is more efficient than using the ArrayList
+	indexer, the pressure introduced due to the extra memory
+	requirements and the demands on the garbage collector make it
+	more inneficient.
+
+	There is no straight-forward rule on when to use foreach, and
+	when to use a manual loop.  The best thing to do is to always
+	use foreach, and only when profile shows a problem, replace
+	foreach with for loops.
+
+*** Using structs instead of classes for small objects
+
+	For small objects, you might want to consider using value
+	types (structs)	instead of object (classes).
+
+** Assisting the Garbage Collector
+
+	Although the Garbage Collector will do the right thing in
+	terms of releasing and finalizing objects on time, you can
+	assist the garbage collector by clearing the fields that
+	points to objects.  This means that some objects might be
+	elegible for collection earlier than they would, this can help
+	reduce the memory consumption and reduce the work that the GC
+	has to do.
