@@ -30,7 +30,6 @@
 		
 #define _WAPI_HANDLE_COLLECTION_SAFE				\
 		_wapi_thr_ret = _wapi_timestamp_release (&_wapi_shared_layout->master_timestamp, _wapi_save_start); \
-		g_assert (_wapi_thr_ret == 0);				\
 	}
 	
 

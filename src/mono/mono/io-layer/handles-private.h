@@ -329,28 +329,27 @@ static inline void _wapi_handle_spin (guint32 ms)
 
 static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
 {
-	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
+	guint32 now;
 	int thr_ret;
 	
 	g_assert (info->handle_refs > 0);
 	
-	/* Marking this as COLLECTION_UNSAFE prevents entries from
-	 * expiring under us if we remove this one
-	 */
-	_WAPI_HANDLE_COLLECTION_UNSAFE;
-	
 	/* Prevent new entries racing with us */
-	thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
-	g_assert (thr_ret == 0);
+	do {
+		now = (guint32)(time(NULL) & 0xFFFFFFFF);
+		
+		thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
+		if (thr_ret == EBUSY) {
+			_wapi_handle_spin (100);
+		}
+	} while (thr_ret == EBUSY);
+	g_assert(thr_ret == 0);
 
 	if (InterlockedDecrement (&info->handle_refs) == 0) {
 		memset (info, '\0', sizeof(struct _WapiFileShare));
 	}
 
 	thr_ret = _wapi_timestamp_release (&_wapi_fileshare_layout->share_check, now);
-	g_assert (thr_ret == 0);
-
-	_WAPI_HANDLE_COLLECTION_SAFE;
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */

@@ -173,12 +173,12 @@ static guint32 _wapi_handle_new_shared_offset (guint32 offset)
 	
 again:
 	/* FIXME: expandable array */
-	/* FIXME: leave a few slots at the end so that there's always
-	 * space to move a handle.  (Leave the space in the offset
-	 * table too, so we don't have to keep track of inter-segment
+	/* leave a few slots at the end so that there's always space
+	 * to move a handle.  (We leave the space in the offset table
+	 * too, so we don't have to keep track of inter-segment
 	 * offsets.)
 	 */
-	for(i = last; i <_WAPI_HANDLE_INITIAL_COUNT; i++) {
+	for(i = last; i <_WAPI_HANDLE_INITIAL_COUNT - _WAPI_HEADROOM; i++) {
 		struct _WapiHandleSharedMetadata *meta = &_wapi_shared_layout->metadata[i];
 		
 		if(meta->offset == 0) {
@@ -222,10 +222,11 @@ static guint32 _wapi_handle_new_shared (WapiHandleType type,
 	/* Leave the first slot empty as a guard */
 again:
 	/* FIXME: expandable array */
-	/* FIXME: leave a few slots at the end so that there's always
-	 * space to move a handle
+	/* Leave a few slots at the end so that there's always space
+	 * to move a handle
 	 */
-	for(offset = last; offset <_WAPI_HANDLE_INITIAL_COUNT; offset++) {
+	for(offset = last; offset <_WAPI_HANDLE_INITIAL_COUNT - _WAPI_HEADROOM;
+	    offset++) {
 		struct _WapiHandleShared *handle = &_wapi_shared_layout->handles[offset];
 		
 		if(handle->type == WAPI_HANDLE_UNUSED) {
@@ -491,25 +492,30 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 
 	handle_data = &_wapi_private_handles[handle_idx];
 	
-	if(handle_data->type != type) {
+	if (handle_data->type != type) {
 		return(FALSE);
 	}
 
-	if(handle_specific == NULL) {
+	if (handle_specific == NULL) {
 		return(FALSE);
 	}
 	
 	if (_WAPI_SHARED_HANDLE(type)) {
-		struct _WapiHandle_shared_ref *ref = &handle_data->u.shared;
+		struct _WapiHandle_shared_ref *ref;
 		struct _WapiHandleShared *shared_handle_data;
 		struct _WapiHandleSharedMetadata *shared_meta;
+		guint32 offset;
+		
+		do {
+			ref = &handle_data->u.shared;
+			shared_meta = &_wapi_shared_layout->metadata[ref->offset];
+			offset = shared_meta->offset;
+			shared_handle_data = &_wapi_shared_layout->handles[offset];
+		
+			g_assert(shared_handle_data->type == type);
 
-		shared_meta = &_wapi_shared_layout->metadata[ref->offset];
-		shared_handle_data = &_wapi_shared_layout->handles[shared_meta->offset];
-		
-		g_assert(shared_handle_data->type == type);
-		
-		*handle_specific = &shared_handle_data->u;
+			*handle_specific = &shared_handle_data->u;
+		} while (offset != shared_meta->offset);
 	} else {
 		*handle_specific = &handle_data->u;
 	}
@@ -553,8 +559,6 @@ gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,
 		return(FALSE);
 	}
 	
-	_WAPI_HANDLE_COLLECTION_UNSAFE;
-	
 	do {
 		ref = &handle_data->u.shared;
 		shared_meta = &_wapi_shared_layout->metadata[ref->offset];
@@ -566,8 +570,6 @@ gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,
 		memcpy(handle_specific, shared_handle_data,
 		       sizeof(struct _WapiHandleShared));
 	} while (offset != shared_meta->offset);
-	
-	_WAPI_HANDLE_COLLECTION_SAFE;
 	
 #ifdef DEBUG
 	g_message ("%s: OK", __func__);
@@ -700,40 +702,61 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			      gpointer *handle_specific)
 {
 	struct _WapiHandleUnshared *handle_data = NULL;
+	gpointer ret = NULL;
 	guint32 i;
+
+	/* Unsafe, because we don't want the handle to vanish while
+	 * we're checking it
+	 */
+	_WAPI_HANDLE_COLLECTION_UNSAFE;
 
 	for(i = 0; i < _wapi_private_handle_count; i++) {
 		handle_data = &_wapi_private_handles[i];
 		
 		if(handle_data->type == type) {
-			if(check (GUINT_TO_POINTER (i), user_data) == TRUE) {
+			ret = GUINT_TO_POINTER (i);
+			if(check (ret, user_data) == TRUE) {
 				break;
 			}
 		}
 	}
 
 	if(i == _wapi_private_handle_count) {
-		return(GUINT_TO_POINTER (0));
+		goto done;
 	}
 	
 	if(handle_specific != NULL) {
 		if (_WAPI_SHARED_HANDLE(type)) {
-			struct _WapiHandle_shared_ref *ref = &handle_data->u.shared;
+			struct _WapiHandle_shared_ref *ref ;
 			struct _WapiHandleShared *shared_handle_data;
 			struct _WapiHandleSharedMetadata *shared_meta;
+			guint32 offset, now;
 			
-			shared_meta = &_wapi_shared_layout->metadata[ref->offset];
-			shared_handle_data = &_wapi_shared_layout->handles[shared_meta->offset];
+			do {
+				ref = &handle_data->u.shared;
+				shared_meta = &_wapi_shared_layout->metadata[ref->offset];
+				offset = shared_meta->offset;
+				shared_handle_data = &_wapi_shared_layout->handles[offset];
 			
-			g_assert(shared_handle_data->type == type);
+				g_assert(shared_handle_data->type == type);
 			
-			*handle_specific = &shared_handle_data->u;
+				*handle_specific = &shared_handle_data->u;
+			} while (offset != shared_meta->offset);
+
+			/* Make sure this handle doesn't vanish in the
+			 * next collection
+			 */
+			now = (guint32)(time (NULL) & 0xFFFFFFFF);
+			InterlockedExchange (&shared_meta->timestamp, now);
 		} else {
 			*handle_specific = &handle_data->u;
 		}
 	}
+
+done:
+	_WAPI_HANDLE_COLLECTION_SAFE;
 	
-	return(GUINT_TO_POINTER (i));
+	return(ret);
 }
 
 /* This signature makes it easier to use in pthread cleanup handlers */
@@ -752,7 +775,9 @@ int _wapi_namespace_timestamp (guint32 now)
 	do {
 		ret = _wapi_timestamp_exclusion (&_wapi_shared_layout->namespace_check, now);
 		/* sleep for a bit */
-		_wapi_handle_spin (100);
+		if (ret == EBUSY) {
+			_wapi_handle_spin (100);
+		}
 	} while (ret == EBUSY);
 	
 	return(ret);
@@ -831,7 +856,6 @@ void _wapi_handle_ref (gpointer handle)
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	
 	InterlockedIncrement (&_wapi_private_handles[idx].ref);
-	/* Do shared part */
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: handle %p ref now %d", __func__, handle,
@@ -890,7 +914,7 @@ void _wapi_handle_unref (gpointer handle)
 void _wapi_handle_register_capabilities (WapiHandleType type,
 					 WapiHandleCapability caps)
 {
-	handle_caps[type]=caps;
+	handle_caps[type] = caps;
 }
 
 gboolean _wapi_handle_test_capabilities (gpointer handle,
@@ -975,10 +999,6 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
  */
 gboolean CloseHandle(gpointer handle)
 {
-	if (handle == NULL) {
-		return(FALSE);
-	}
-
 	_wapi_handle_unref (handle);
 	
 	return(TRUE);
@@ -1238,6 +1258,20 @@ int _wapi_handle_timedwait_signal_poll_share (struct timespec *timeout)
 			ret = mono_cond_timedwait (&_wapi_global_signal_cond,
 						   &_wapi_global_signal_mutex,
 						   timeout);
+			/* If this times out, it will compare the
+			 * shared signal counter and then if that
+			 * hasn't increased will fall out of the
+			 * do-while loop.
+			 */
+			if (ret != ETIMEDOUT) {
+				/* Either a private handle was
+				 * signalled, or an error.
+				 */
+#ifdef DEBUG
+				g_message ("%s: returning: %d", __func__, ret);
+#endif
+				return (ret);
+			}
 		} else {
 			ret = mono_cond_timedwait (&_wapi_global_signal_cond,
 						   &_wapi_global_signal_mutex,
@@ -1249,20 +1283,20 @@ int _wapi_handle_timedwait_signal_poll_share (struct timespec *timeout)
 			 */
 			if (ret == ETIMEDOUT) {
 				ret = 0;
+			} else {
+				/* Either a private handle was
+				 * signalled, or an error
+				 */
+#ifdef DEBUG
+				g_message ("%s: returning: %d", __func__, ret);
+#endif
+				return (ret);
 			}
 		}
 
-		if (ret != ETIMEDOUT) {
-			/* Either a private handle was signalled, or
-			 * an error
-			 */
-#ifdef DEBUG
-			g_message ("%s: returning: %d", __func__, ret);
-#endif
-			return (ret);
-		}
-
-		/* Check the shared signal counter */
+		/* No private handle was signalled, so check the
+		 * shared signal counter
+		 */
 		if (signal_count != _wapi_shared_layout->signal_count) {
 #ifdef DEBUG
 				g_message ("%s: A shared handle was signalled",
@@ -1484,7 +1518,14 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 	_WAPI_HANDLE_COLLECTION_UNSAFE;
 	
 	/* Prevent new entries racing with us */
-	thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
+	do {
+		now = (guint32)(time(NULL) & 0xFFFFFFFF);
+
+		thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
+		if (thr_ret == EBUSY) {
+			_wapi_handle_spin (100);
+		}
+	} while (thr_ret == EBUSY);
 	g_assert (thr_ret == 0);
 	
 	/* If a linear scan gets too slow we'll have to fit a hash
@@ -1545,7 +1586,6 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 	}
 	
 	thr_ret = _wapi_timestamp_release (&_wapi_fileshare_layout->share_check, now);
-	g_assert (thr_ret == 0);
 
 	_WAPI_HANDLE_COLLECTION_SAFE;
 
@@ -1580,7 +1620,14 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info)
 	_WAPI_HANDLE_COLLECTION_UNSAFE;
 	
 	/* Prevent new entries racing with us */
-	thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
+	do {
+		now = (guint32)(time(NULL) & 0xFFFFFFFF);
+
+		thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
+		if (thr_ret == EBUSY) {
+			_wapi_handle_spin (100);
+		}
+	} while (thr_ret == EBUSY);
 	g_assert (thr_ret == 0);
 
 	while ((proc_entry = readdir (proc_dir)) != NULL) {
@@ -1643,7 +1690,6 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info)
 	}
 
 	thr_ret = _wapi_timestamp_release (&_wapi_fileshare_layout->share_check, now);
-	g_assert (thr_ret == 0);
 
 	_WAPI_HANDLE_COLLECTION_SAFE;
 }

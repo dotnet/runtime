@@ -104,6 +104,7 @@ struct _WapiHandle_shared_ref
 };
 
 #define _WAPI_HANDLE_INITIAL_COUNT 4096
+#define _WAPI_HEADROOM 16
 
 struct _WapiHandleUnshared
 {
