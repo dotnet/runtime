@@ -3740,6 +3740,8 @@ match_debug_method (MonoMethod* method)
 	GList *tmp = mono_debug_methods;
 
 	for (; tmp; tmp = tmp->next) {
+		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)
+			continue;
 		if (mono_method_desc_full_match (tmp->data, method))
 			return 1;
 	}
