@@ -455,6 +455,10 @@ method_flags (guint32 f)
 static dis_map_t pinvoke_flags_map [] = {
 	{ PINVOKE_ATTRIBUTE_NO_MANGLE ,            "nomangle " },
 	{ PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR,   "lasterr " },
+	{ PINVOKE_ATTRIBUTE_BEST_FIT_ENABLED,      "bestfit:on" },
+	{ PINVOKE_ATTRIBUTE_BEST_FIT_DISABLED,      "bestfit:off" },
+	{ PINVOKE_ATTRIBUTE_THROW_ON_UNMAPPABLE_ENABLED, "charmaperror:on" },
+	{ PINVOKE_ATTRIBUTE_THROW_ON_UNMAPPABLE_DISABLED, "charmaperror:off" },
 	{ 0, NULL }
 };
 
