@@ -1545,6 +1545,7 @@ ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
 		
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	len = 0;
 
 handle_parent:
 	for (i = 0; i < klass->method.count; ++i) {
@@ -1579,10 +1580,10 @@ handle_parent:
 		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
 		
 		l = g_slist_prepend (l, member);
+		len++;
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
-	len = g_slist_length (l);
 	if (!System_Reflection_MethodInfo)
 		System_Reflection_MethodInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "MethodInfo");
@@ -1666,7 +1667,9 @@ ves_icall_Type_GetProperties (MonoReflectionType *type, guint32 bflags)
 	MonoArray *res;
 	MonoMethod *method;
 	MonoProperty *prop;
-	int i, len, match;
+	int i, match;
+	int len = 0;
+	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
@@ -1699,11 +1702,16 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
+
+		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
+			continue;
+		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
+
 		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
+		len++;
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
 		goto handle_parent;
-	len = g_slist_length (l);
 	if (!System_Reflection_PropertyInfo)
 		System_Reflection_PropertyInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
@@ -1713,6 +1721,7 @@ handle_parent:
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
+	g_hash_table_destroy (method_slots);
 	return res;
 }
 
