@@ -6450,7 +6450,7 @@ mono_thread_abort (MonoObject *obj)
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
 
-	ExitThread (-1);
+	mono_thread_exit ();
 }
 
 static void*
