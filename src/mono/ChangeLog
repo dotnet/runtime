@@ -1,6 +1,8 @@
 2004-06-11  Jackson Harper  <jackson@ximian.com>
 
 	* man/mono.1: Add documentation for MONO_GAC_PREFIX.
+	* runtime/net_2_0/Makefile.am: 
+	* runtime/net_1_1/Makefile.am: Sign assemblies before installing
 	
 2004-06-11  Raja R Harinath  <rharinath@novell.com>
 
