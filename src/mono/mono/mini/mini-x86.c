@@ -3015,19 +3015,15 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP: {
 			MonoJitInfo *jit_info;
+			GSList *list;
 
 			/* get the trampoline to the method from the domain */
-			if (!(jit_info = g_hash_table_lookup (domain->jit_code_hash, patch_info->data.method))) {
-				GSList *list;
-				target = mono_arch_create_jump_trampoline (patch_info->data.method);
-				if (!domain->jump_target_hash)
-					domain->jump_target_hash = g_hash_table_new (NULL, NULL);
-				list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
-				list = g_slist_prepend (list, ip);
-				g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
-			}
-			else
-				target = jit_info->code_start;
+			target = mono_arch_create_jump_trampoline (patch_info->data.method);
+			if (!domain->jump_target_hash)
+				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
+			list = g_slist_prepend (list, ip);
+			g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD:

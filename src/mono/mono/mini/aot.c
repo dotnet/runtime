@@ -68,7 +68,7 @@ static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
-static guint32 mono_aot_verbose = 1;
+static guint32 mono_aot_verbose = 0;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
@@ -461,7 +461,8 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 				g_assert (ji->data.image);
 				break;
 			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_METHODCONST: {
+			case MONO_PATCH_INFO_METHODCONST:
+			case MONO_PATCH_INFO_METHOD_JUMP: {
 				guint32 image_index, token;
 
 				image_index = (guint32)data >> 24;
@@ -794,7 +795,8 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_METHOD: {
+		case MONO_PATCH_INFO_METHOD:
+		case MONO_PATCH_INFO_METHOD_JUMP: {
 			/*
 			 * The majority of patches are for methods, so we emit
 			 * them inline instead of defining a label for them to
@@ -950,6 +952,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_METHODCONST:
 			case MONO_PATCH_INFO_METHOD:
+			case MONO_PATCH_INFO_METHOD_JUMP:
 			case MONO_PATCH_INFO_CLASS:
 			case MONO_PATCH_INFO_IID:
 			case MONO_PATCH_INFO_FIELD:
