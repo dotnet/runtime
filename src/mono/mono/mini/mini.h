@@ -355,7 +355,8 @@ typedef enum {
 	MONO_PATCH_INFO_R4,
 	MONO_PATCH_INFO_R8,
 	MONO_PATCH_INFO_IP,
-	MONO_PATCH_INFO_IID
+	MONO_PATCH_INFO_IID,
+	MONO_PATCH_INFO_WRAPPER
 } MonoJumpInfoType;
 
 typedef struct MonoJumpInfo MonoJumpInfo;

@@ -30,6 +30,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/marshal.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -475,6 +476,24 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 				break;
 			}
+			case MONO_PATCH_INFO_WRAPPER: {
+				guint32 image_index, token;
+				guint32 wrapper_type;
+
+				wrapper_type = (guint32)data[0];
+				image_index = (guint32)data[1] >> 24;
+				token = MONO_TOKEN_METHOD_DEF | ((guint32)data[1] & 0xffffff);
+
+				image = aot_module->image_table [image_index];
+				ji->data.method = mono_get_method (image, token, NULL);
+				g_assert (ji->data.method);
+				mono_class_init (ji->data.method->klass);
+
+				g_assert (wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK);
+				ji->type = MONO_PATCH_INFO_METHOD;
+				ji->data.method = mono_marshal_get_remoting_invoke_with_check (ji->data.method);
+				break;
+			}
 			case MONO_PATCH_INFO_FIELD:
 			case MONO_PATCH_INFO_SFLDA: {
 				MonoClass *klass = decode_class_info (aot_module, data [1]);
@@ -812,6 +831,24 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			j++;
 			break;
 		}
+		case MONO_PATCH_INFO_WRAPPER: {
+			MonoMethod *m;
+			guint32 image_index;
+			guint32 token;
+
+			m = mono_marshal_method_from_wrapper (patch_info->data.method);
+			image_index = get_image_index (acfg, m->klass->image);
+			token = m->token;
+			g_assert (image_index < 256);
+			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+
+			fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
+			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
+			fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
+			fprintf (tmpfp, "\t.long %d\n", (image_index << 24) + (mono_metadata_token_index (token)));
+			j++;
+			break;
+		}
 		case MONO_PATCH_INFO_FIELD:
 			patch_info->data.name = cond_emit_field_label (acfg, patch_info);
 			j++;
@@ -972,6 +1009,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			case MONO_PATCH_INFO_LDSTR:
 			case MONO_PATCH_INFO_LDTOKEN:
 			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+			case MONO_PATCH_INFO_WRAPPER:
 				fprintf (tmpfp, "\t.long %s_p_%d\n", mname, j);
 				j++;
 				break;
@@ -1087,6 +1125,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 		if (skip) {
 			abscount++;
 			continue;
+		}
+
+		/* remoting-invoke-with-check wrappers are very common */
+		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+			if ((patch_info->type == MONO_PATCH_INFO_METHOD) &&
+				((patch_info->data.method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)))
+				patch_info->type = MONO_PATCH_INFO_WRAPPER;
 		}
 
 		skip = FALSE;
