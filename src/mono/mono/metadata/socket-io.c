@@ -560,27 +560,7 @@ static gint32 get_family_hint(void)
 }
 #endif
 
-static MonoException *get_socket_exception(guint32 error_code)
-{
-	/* Don't cache this exception, because we need the object
-	 * constructor to set up the message from the sockets error code.
-	 */
-	MonoException *ex;
-	
-	/* This is a bit of a kludge.  The SocketException 0-arg
-	 * constructor calls WSAGetLastError() to find the error code
-	 * to use.  Until we can init objects with parameters, this
-	 * will have to do.
-	 */
-	WSASetLastError(error_code);
-	
-	ex=(MonoException *)mono_exception_from_name(system_assembly,
-						     "System.Net.Sockets",
-						     "SocketException");
-	return(ex);
-}
-
-gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto)
+gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error)
 {
 	SOCKET sock;
 	gint32 sock_family;
@@ -593,27 +573,29 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 
 	STASH_SYS_ASS(this);
 	
+	*error = 0;
+	
 	sock_family=convert_family(family);
 	if(sock_family==-1) {
-		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
+		*error = WSAEAFNOSUPPORT;
 		return(NULL);
 	}
 
 	sock_proto=convert_proto(proto);
 	if(sock_proto==-1) {
-		mono_raise_exception(get_socket_exception(WSAEPROTONOSUPPORT));
+		*error = WSAEPROTONOSUPPORT;
 		return(NULL);
 	}
 	
 	sock_type=convert_type(type);
 	if(sock_type==-1) {
-		mono_raise_exception(get_socket_exception(WSAESOCKTNOSUPPORT));
+		*error = WSAESOCKTNOSUPPORT;
 		return(NULL);
 	}
 	
 	sock = _wapi_socket (sock_family, sock_type, sock_proto);
 	if(sock==INVALID_SOCKET) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 		return(NULL);
 	}
 
@@ -627,15 +609,28 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	}
 #endif
 
+#ifndef PLATFORM_WIN32
 	/* .net seems to set this by default for SOCK_STREAM,
 	 * not for SOCK_DGRAM (see bug #36322)
+	 *
+	 * It seems winsock has a rather different idea of what
+	 * SO_REUSEADDR means.  If it's set, then a new socket can be
+	 * bound over an existing listening socket.  There's a new
+	 * windows-specific option called SO_EXCLUSIVEADDRUSE but
+	 * using that means the socket MUST be closed properly, or a
+	 * denial of service can occur.  Luckily for us, winsock
+	 * behaves as though any other system would when SO_REUSEADDR
+	 * is true, so we don't need to do anything else here.  See
+	 * bug 53992.
 	 */
 	ret = _wapi_setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof (true));
 	if(ret==SOCKET_ERROR) {
+		*error = WSAGetLastError ();
+		
 		closesocket(sock);
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 		return(NULL);
 	}
+#endif
 	
 	return(GUINT_TO_POINTER (sock));
 }
@@ -643,7 +638,8 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 /* FIXME: the SOCKET parameter (here and in other functions in this
  * file) is really an IntPtr which needs to be converted to a guint32.
  */
-void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
+void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock,
+							gint32 *error)
 {
 	MONO_ARCH_SAVE_REGS;
 
@@ -651,6 +647,8 @@ void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
 	g_message (G_GNUC_PRETTY_FUNCTION ": closing 0x%x", sock);
 #endif
 
+	*error = 0;
+	
 	closesocket(sock);
 }
 
@@ -665,15 +663,18 @@ gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(voi
 	return(WSAGetLastError());
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock)
+gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock,
+							      gint32 *error)
 {
 	int ret, amount;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	ret=ioctlsocket(sock, FIONREAD, &amount);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 		return(0);
 	}
 	
@@ -681,27 +682,33 @@ gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock)
 }
 
 void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
-							   gboolean block)
+							   gboolean block,
+							   gint32 *error)
 {
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	ret=ioctlsocket(sock, FIONBIO, &block);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
 }
 
-gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
+gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
+							     gint32 *error)
 {
 	SOCKET newsock;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	newsock = _wapi_accept (sock, NULL, 0);
 	if(newsock==INVALID_SOCKET) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 		return(NULL);
 	}
 	
@@ -709,20 +716,23 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 }
 
 void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
-							 guint32 backlog)
+							 guint32 backlog,
+							 gint32 *error)
 {
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	ret = _wapi_listen (sock, backlog);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
 }
 
 static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
-					       int sa_size)
+					       int sa_size, gint32 *error)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoObject *sockaddr_obj;
@@ -750,7 +760,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		
 	family=convert_to_mono_family(saddr->sa_family);
 	if(family==AddressFamily_Unknown) {
-		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
+		*error = WSAEAFNOSUPPORT;
 		return(NULL);
 	}
 
@@ -820,12 +830,12 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		return sockaddr_obj;
 #endif
 	} else {
-		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
+		*error = WSAEAFNOSUPPORT;
 		return(NULL);
 	}
 }
 
-extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock)
+extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock, gint32 *error)
 {
 	gchar sa[32];	/// sockaddr in not big enough for sockaddr_in6
 	int salen;
@@ -833,21 +843,25 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	salen=sizeof(sa);
 	ret = _wapi_getsockname (sock, (struct sockaddr *)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
+		return(NULL);
 	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": bound to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
-	return(create_object_from_sockaddr((struct sockaddr *)sa, salen));
+	return(create_object_from_sockaddr((struct sockaddr *)sa, salen,
+					   error));
 }
 
-extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock)
+extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock, gint32 *error)
 {
 	gchar sa[32];	/// sockaddr in not big enough for sockaddr_in6
 	int salen;
@@ -855,22 +869,27 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	salen=sizeof(sa);
 	ret = _wapi_getpeername (sock, (struct sockaddr *)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
+		return(NULL);
 	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": connected to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
-	return(create_object_from_sockaddr((struct sockaddr *)sa, salen));
+	return(create_object_from_sockaddr((struct sockaddr *)sa, salen,
+					   error));
 }
 
 static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
-						    int *sa_size)
+						    int *sa_size,
+						    gint32 *error)
 {
 	MonoClassField *field;
 	MonoArray *data;
@@ -951,12 +970,12 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		return (struct sockaddr *)sock_un;
 #endif
 	} else {
-		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
+		*error = WSAEAFNOSUPPORT;
 		return(0);
 	}
 }
 
-extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoObject *sockaddr)
+extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoObject *sockaddr, gint32 *error)
 {
 	struct sockaddr *sa;
 	int sa_size;
@@ -964,21 +983,26 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 	
 	MONO_ARCH_SAVE_REGS;
 
-	sa=create_sockaddr_from_object(sockaddr, &sa_size);
+	*error = 0;
+	
+	sa=create_sockaddr_from_object(sockaddr, &sa_size, error);
+	if (*error != 0) {
+		return;
+	}
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
 #endif
 
 	ret = _wapi_bind (sock, sa, sa_size);
-	g_free(sa);
-	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
+
+	g_free(sa);
 }
 
-extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, MonoObject *sockaddr)
+extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, MonoObject *sockaddr, gint32 *error)
 {
 	struct sockaddr *sa;
 	int sa_size;
@@ -986,21 +1010,26 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 	
 	MONO_ARCH_SAVE_REGS;
 
-	sa=create_sockaddr_from_object(sockaddr, &sa_size);
+	*error = 0;
+	
+	sa=create_sockaddr_from_object(sockaddr, &sa_size, error);
+	if (*error != 0) {
+		return;
+	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": connecting to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
 #endif
 
 	ret = _wapi_connect (sock, sa, sa_size);
-	g_free(sa);
-	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
+	
+	g_free(sa);
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags)
+gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, gint32 *error)
 {
 	int ret;
 	guchar *buf;
@@ -1009,6 +1038,8 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	alen=mono_array_length(buffer);
 	if(offset+count>alen) {
 		return(0);
@@ -1018,13 +1049,14 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 	
 	ret = _wapi_recv (sock, buf, count, recvflags);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
+		return(0);
 	}
 	
 	return(ret);
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr)
+gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *error)
 {
 	int ret;
 	guchar *buf;
@@ -1035,29 +1067,34 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	alen=mono_array_length(buffer);
 	if(offset+count>alen) {
 		return(0);
 	}
 
-	sa=create_sockaddr_from_object(*sockaddr, &sa_size);
+	sa=create_sockaddr_from_object(*sockaddr, &sa_size, error);
+	if (*error != 0) {
+		return(0);
+	}
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 	
 	ret = _wapi_recvfrom (sock, buf, count, recvflags, sa, &sa_size);
-	
 	if(ret==SOCKET_ERROR) {
 		g_free(sa);
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
+		return(0);
 	}
 
-	*sockaddr=create_object_from_sockaddr(sa, sa_size);
+	*sockaddr=create_object_from_sockaddr(sa, sa_size, error);
 	g_free(sa);
 	
 	return(ret);
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags)
+gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, gint32 *error)
 {
 	int ret;
 	guchar *buf;
@@ -1066,6 +1103,8 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	alen=mono_array_length(buffer);
 	if(offset+count>alen) {
 		return(0);
@@ -1083,13 +1122,14 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 
 	ret = _wapi_send (sock, buf, count, sendflags);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
+		return(0);
 	}
 	
 	return(ret);
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject *sockaddr)
+gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject *sockaddr, gint32 *error)
 {
 	int ret;
 	guchar *buf;
@@ -1100,12 +1140,17 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	alen=mono_array_length(buffer);
 	if(offset+count>alen) {
 		return(0);
 	}
 
-	sa=create_sockaddr_from_object(sockaddr, &sa_size);
+	sa=create_sockaddr_from_object(sockaddr, &sa_size, error);
+	if(*error != 0) {
+		return(0);
+	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": alen: %d", alen);
@@ -1118,11 +1163,11 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 #endif
 
 	ret = _wapi_sendto (sock, buf, count, sendflags, sa, sa_size);
-	g_free(sa);
-	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
+
+	g_free(sa);
 	
 	return(ret);
 }
@@ -1138,7 +1183,7 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 	return(sock);
 }
 
-void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout)
+void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout, gint32 *error)
 {
 	fd_set readfds, writefds, errfds;
 	fd_set *readptr = NULL, *writeptr = NULL, *errptr = NULL;
@@ -1158,8 +1203,10 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 	if (*read_socks)
 		readarrsize=mono_array_length(*read_socks);
 
+	*error = 0;
+	
 	if(readarrsize>FD_SETSIZE) {
-		mono_raise_exception(get_socket_exception(WSAEFAULT));
+		*error = WSAEFAULT;
 		return;
 	}
 	
@@ -1176,7 +1223,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		writearrsize=mono_array_length(*write_socks);
 
 	if(writearrsize>FD_SETSIZE) {
-		mono_raise_exception(get_socket_exception(WSAEFAULT));
+		*error = WSAEFAULT;
 		return;
 	}
 	
@@ -1193,7 +1240,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		errarrsize=mono_array_length(*err_socks);
 
 	if(errarrsize>FD_SETSIZE) {
-		mono_raise_exception(get_socket_exception(WSAEFAULT));
+		*error = WSAEFAULT;
 		return;
 	}
 	
@@ -1224,7 +1271,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 	} while ((ret==SOCKET_ERROR) && (WSAGetLastError() == WSAEINTR));
 	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 		return;
 	}
 
@@ -1310,7 +1357,7 @@ static MonoObject* int_to_object (MonoDomain *domain, int val)
 }
 
 
-void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val)
+void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val, gint32 *error)
 {
 	int system_level;
 	int system_name;
@@ -1328,10 +1375,12 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	ret=convert_sockopt_level_and_name(level, name, &system_level,
 					   &system_name);
 	if(ret==-1) {
-		mono_raise_exception(get_socket_exception(WSAENOPROTOOPT));
+		*error = WSAENOPROTOOPT;
 		return;
 	}
 	
@@ -1358,7 +1407,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	}
 	
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 		return;
 	}
 	
@@ -1398,7 +1447,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	*obj_val=obj;
 }
 
-void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET sock, gint32 level, gint32 name, MonoArray **byte_val)
+void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET sock, gint32 level, gint32 name, MonoArray **byte_val, gint32 *error)
 {
 	int system_level;
 	int system_name;
@@ -1408,10 +1457,12 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	ret=convert_sockopt_level_and_name(level, name, &system_level,
 					   &system_name);
 	if(ret==-1) {
-		mono_raise_exception(get_socket_exception(WSAENOPROTOOPT));
+		*error = WSAENOPROTOOPT;
 		return;
 	}
 
@@ -1420,7 +1471,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 	
 	ret = _wapi_getsockopt (sock, system_level, system_name, buf, &valsize);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
 }
 
@@ -1467,7 +1518,7 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 }
 #endif /* AF_INET6 */
 
-void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val)
+void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
 	int system_level;
 	int system_name;
@@ -1476,6 +1527,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	int sol_ip;
 	int sol_ipv6;
 
+	*error = 0;
+	
 #ifdef HAVE_SOL_IPV6
 	sol_ipv6 = SOL_IPV6;
 #else
@@ -1502,7 +1555,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	ret=convert_sockopt_level_and_name(level, name, &system_level,
 					   &system_name);
 	if(ret==-1) {
-		mono_raise_exception(get_socket_exception(WSAENOPROTOOPT));
+		*error = WSAENOPROTOOPT;
 		return;
 	}
 
@@ -1517,8 +1570,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			linger.l_onoff=0;
 			linger.l_linger=0;
 			valsize=sizeof(linger);
-			ret = _wapi_setsockopt (sock, system_level, system_name,
-				       &linger, valsize);
+			ret = _wapi_setsockopt (sock, system_level,
+						system_name, &linger, valsize);
 			break;
 			
 		case SocketOptionName_Linger:
@@ -1531,8 +1584,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			linger.l_linger=*(guint32 *)(((char *)obj_val)+field->offset);
 			
 			valsize=sizeof(linger);
-			ret = _wapi_setsockopt (sock, system_level, system_name,
-				       &linger, valsize);
+			ret = _wapi_setsockopt (sock, system_level,
+						system_name, &linger, valsize);
 			break;
 		case SocketOptionName_AddMembership:
 		case SocketOptionName_DropMembership:
@@ -1558,8 +1611,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
 
 				ret = _wapi_setsockopt (sock, system_level,
-						  system_name, &mreq6,
-						  sizeof (mreq6));
+							system_name, &mreq6,
+							sizeof (mreq6));
 			} else if(system_level == sol_ip)
 #endif /* AF_INET6 */
 			{
@@ -1596,15 +1649,16 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
 				ret = _wapi_setsockopt (sock, system_level,
-						  system_name, &mreq,
-						  sizeof (mreq));
+							system_name, &mreq,
+							sizeof (mreq));
 			}
 			break;
 		}
 #endif /* HAVE_STRUCT_IP_MREQN || HAVE_STRUCT_IP_MREQ */
 		default:
-			/* Throw an exception */
-			mono_raise_exception(get_socket_exception(WSAEINVAL));
+			/* Cause an exception to be thrown */
+			*error = WSAEINVAL;
+			return;
 		}
 	} else if (byte_val!=NULL) {
 		int valsize=mono_array_length(byte_val);
@@ -1612,7 +1666,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	
 		ret = _wapi_setsockopt (sock, system_level, system_name, buf, valsize);
 		if(ret==SOCKET_ERROR) {
-			mono_raise_exception(get_socket_exception(WSAGetLastError()));
+			*error = WSAGetLastError ();
+			return;
 		}
 	} else {
 		switch(name) {
@@ -1631,29 +1686,33 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	}
 
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
 }
 
 void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
-							   gint32 how)
+							   gint32 how,
+							   gint32 *error)
 {
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	/* Currently, the values for how (recv=0, send=1, both=2) match
 	 * the BSD API
 	 */
 	ret = _wapi_shutdown (sock, how);
 	if(ret==SOCKET_ERROR) {
-		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		*error = WSAGetLastError ();
 	}
 }
 
 gint
 ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
-					      MonoArray *input, MonoArray *output)
+					      MonoArray *input,
+					      MonoArray *output, gint32 *error)
 {
 	gint output_bytes = 0;
 	gchar *i_buffer, *o_buffer;
@@ -1662,6 +1721,8 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 
 	MONO_ARCH_SAVE_REGS;
 
+	*error = 0;
+	
 	if (code == FIONBIO) {
 		/* Invalid command. Must use Socket.Blocking */
 		return -1;
@@ -1684,8 +1745,10 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 	}
 
 	ret = WSAIoctl (sock, code, i_buffer, i_len, o_buffer, o_len, &output_bytes, NULL, NULL);
-	if (ret == SOCKET_ERROR)
-		mono_raise_exception (get_socket_exception (WSAGetLastError()));
+	if (ret == SOCKET_ERROR) {
+		*error = WSAGetLastError ();
+		return(-1);
+	}
 
 	return output_bytes;
 }

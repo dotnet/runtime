@@ -5158,26 +5158,26 @@ static const IcallEntry dns_icalls [] = {
 };
 
 static const IcallEntry socket_icalls [] = {
-	{"Accept_internal", ves_icall_System_Net_Sockets_Socket_Accept_internal},
-	{"Available_internal", ves_icall_System_Net_Sockets_Socket_Available_internal},
-	{"Bind_internal", ves_icall_System_Net_Sockets_Socket_Bind_internal},
-	{"Blocking_internal", ves_icall_System_Net_Sockets_Socket_Blocking_internal},
-	{"Close_internal", ves_icall_System_Net_Sockets_Socket_Close_internal},
-	{"Connect_internal", ves_icall_System_Net_Sockets_Socket_Connect_internal},
-	{"GetSocketOption_arr_internal", ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal},
-	{"GetSocketOption_obj_internal", ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal},
-	{"Listen_internal", ves_icall_System_Net_Sockets_Socket_Listen_internal},
-	{"LocalEndPoint_internal", ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal},
-	{"Receive_internal", ves_icall_System_Net_Sockets_Socket_Receive_internal},
-	{"RecvFrom_internal", ves_icall_System_Net_Sockets_Socket_RecvFrom_internal},
-	{"RemoteEndPoint_internal", ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal},
-	{"Select_internal", ves_icall_System_Net_Sockets_Socket_Select_internal},
-	{"SendTo_internal", ves_icall_System_Net_Sockets_Socket_SendTo_internal},
-	{"Send_internal", ves_icall_System_Net_Sockets_Socket_Send_internal},
-	{"SetSocketOption_internal", ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal},
-	{"Shutdown_internal", ves_icall_System_Net_Sockets_Socket_Shutdown_internal},
-	{"Socket_internal", ves_icall_System_Net_Sockets_Socket_Socket_internal},
-	{"WSAIoctl", ves_icall_System_Net_Sockets_Socket_WSAIoctl}
+	{"Accept_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Accept_internal},
+	{"Available_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Available_internal},
+	{"Bind_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Bind_internal},
+	{"Blocking_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Blocking_internal},
+	{"Close_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Close_internal},
+	{"Connect_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Connect_internal},
+	{"GetSocketOption_arr_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,byte[]&,int&)", ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal},
+	{"GetSocketOption_obj_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,object&,int&)", ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal},
+	{"Listen_internal(intptr,int,int&)", ves_icall_System_Net_Sockets_Socket_Listen_internal},
+	{"LocalEndPoint_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal},
+	{"Receive_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&)", ves_icall_System_Net_Sockets_Socket_Receive_internal},
+	{"RecvFrom_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress&,int&)", ves_icall_System_Net_Sockets_Socket_RecvFrom_internal},
+	{"RemoteEndPoint_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal},
+	{"Select_internal(System.Net.Sockets.Socket[]&,System.Net.Sockets.Socket[]&,System.Net.Sockets.Socket[]&,int,int&)", ves_icall_System_Net_Sockets_Socket_Select_internal},
+	{"SendTo_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_SendTo_internal},
+	{"Send_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&)", ves_icall_System_Net_Sockets_Socket_Send_internal},
+	{"SetSocketOption_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,object,byte[],int,int&)", ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal},
+	{"Shutdown_internal(intptr,System.Net.Sockets.SocketShutdown,int&)", ves_icall_System_Net_Sockets_Socket_Shutdown_internal},
+	{"Socket_internal(System.Net.Sockets.AddressFamily,System.Net.Sockets.SocketType,System.Net.Sockets.ProtocolType,int&)", ves_icall_System_Net_Sockets_Socket_Socket_internal},
+	{"WSAIoctl(intptr,int,byte[],byte[],int&)", ves_icall_System_Net_Sockets_Socket_WSAIoctl}
 };
 
 static const IcallEntry socketex_icalls [] = {
