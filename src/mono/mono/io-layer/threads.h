@@ -48,6 +48,7 @@ extern guint32 GetCurrentThreadId(void);
 extern gpointer GetCurrentThread(void);
 extern guint32 ResumeThread(gpointer handle);
 extern guint32 SuspendThread(gpointer handle);
+extern guint32 mono_pthread_key_for_tls (guint32 idx);
 extern guint32 TlsAlloc(void);
 extern gboolean TlsFree(guint32 idx);
 extern gpointer TlsGetValue(guint32 idx);

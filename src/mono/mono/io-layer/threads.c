@@ -709,6 +709,12 @@ static pthread_key_t TLS_keys[TLS_MINIMUM_AVAILABLE];
 static gboolean TLS_used[TLS_MINIMUM_AVAILABLE]={FALSE};
 static guint32 TLS_spinlock=0;
 
+guint32
+mono_pthread_key_for_tls (guint32 idx)
+{
+	return (guint32)TLS_keys [idx];
+}
+
 /**
  * TlsAlloc:
  *
