@@ -609,10 +609,13 @@ mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 		clause = &header->clauses [i];
 		if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->token_or_filter) &&
 		    (offset < (clause->token_or_filter + filter_lengths [i])))
-			return (i << 8) | 128 | clause->flags;
+			return (i << 8) | MONO_REGION_FILTER | clause->flags;
 			   
 		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
-			return (i << 8) | 64 | clause->flags;
+			if (clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)
+				return (i << 8) | MONO_REGION_FINALLY | clause->flags;
+			else
+				return (i << 8) | MONO_REGION_CATCH | clause->flags;
 		}
 	}
 

@@ -392,6 +392,11 @@ enum {
 	MONO_OPT_LEAF     = 1 << 15
 };
 
+#define MONO_REGION_FINALLY  16
+#define MONO_REGION_CATCH    32
+#define MONO_REGION_FAULT    64
+#define MONO_REGION_FILTER  128
+
 /*
  * Control Flow Graph and compilation unit information
  */

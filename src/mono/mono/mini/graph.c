@@ -81,10 +81,26 @@ cfg_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 		fprintf (fp, "label=\"loop_%d\"\n", h->block_num);
 	} 
 
-	for (i = 1; i < cfg->num_bblocks; ++i) {
-		bb = cfg->bblocks [i];
+	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+		if (bb->region != -1) {
+			switch (bb->region & (MONO_REGION_FINALLY|MONO_REGION_CATCH|MONO_REGION_FAULT|MONO_REGION_FILTER)) {
+			case MONO_REGION_CATCH:
+				fprintf (fp, "BB%d [color=blue];\n", bb->block_num);;
+				break;
+			case MONO_REGION_FINALLY:
+				fprintf (fp, "BB%d [color=green];\n", bb->block_num);;
+				break;
+			case MONO_REGION_FAULT:
+			case MONO_REGION_FILTER:
+				fprintf (fp, "BB%d [color=yellow];\n", bb->block_num);;
+				break;
+			default:
+				break;
+			}
+		}
 
 		if (!h || (g_list_find (h->loop_blocks, bb) && bb != h)) {
+
 			if (bb->nesting == level) {
 				for (j = 0; j < bb->in_count; j++) 
 					fprintf (fp, "BB%d -> BB%d;\n", bb->in_bb [j]->block_num, bb->block_num);
