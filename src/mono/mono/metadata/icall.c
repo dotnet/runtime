@@ -3004,10 +3004,11 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 				/* Append the new types to the end of the array */
 				if (mono_array_length (res2) > 0) {
 					guint32 len1, len2;
+					MonoArray *res3;
 
 					len1 = mono_array_length (res);
 					len2 = mono_array_length (res2);
-					MonoArray *res3 = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+					res3 = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
 					memcpy (mono_array_addr (res3, MonoReflectionType*, 0),
 							mono_array_addr (res, MonoReflectionType*, 0),
 							len1 * sizeof (MonoReflectionType*));
