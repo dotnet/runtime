@@ -1964,7 +1964,12 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	param = gparam->type.type->data.generic_param;
 
 	values [MONO_GENERICPARAM_OWNER] = owner;
-	values [MONO_GENERICPARAM_FLAGS] = param->flags;
+	if (gparam->has_value_type)
+		values [MONO_GENERICPARAM_FLAGS] = 0x18;
+	else if (gparam->has_reference_type)
+		values [MONO_GENERICPARAM_FLAGS] = 0x04;
+	else
+		values [MONO_GENERICPARAM_FLAGS] = 0x00;
 	values [MONO_GENERICPARAM_NUMBER] = param->num;
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 	values [MONO_GENERICPARAM_KIND] = 0;

@@ -438,6 +438,8 @@ typedef struct {
 	MonoReflectionType *base_type;
 	MonoArray *iface_constraints;
 	MonoBoolean has_ctor_constraint;
+	MonoBoolean has_reference_type;
+	MonoBoolean has_value_type;
 } MonoReflectionGenericParam;
 
 typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;
