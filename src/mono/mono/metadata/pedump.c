@@ -21,6 +21,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include "mono/utils/mono-digest.h"
 
 gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
@@ -120,6 +121,45 @@ static void
 dent (const char *label, MonoPEDirEntry de)
 {
 	printf ("\t%s: 0x%08x [0x%08x]\n", label, de.rva, de.size);
+}
+
+static void
+dump_blob (const char *desc, const char* p, guint32 size)
+{
+	int i;
+
+	printf ("%s", desc);
+	if (!p) {
+		printf (" none\n");
+		return;
+	}
+
+	for (i = 0; i < size; ++i) {
+		if (!(i % 16))
+			printf ("\n\t");
+		printf (" %02X", p [i] & 0xFF);
+	}
+	printf ("\n");
+}
+
+static void
+dump_public_key (MonoImage *m)
+{
+	guint32 size;
+	const char *p;
+
+	p = mono_image_get_public_key (m, &size);
+	dump_blob ("\nPublic key:", p, size);
+}
+
+static void
+dump_strong_name (MonoImage *m)
+{
+	guint32 size;
+	const char *p;
+
+	p = mono_image_get_strong_name (m, &size);
+	dump_blob ("\nStrong name:", p, size);
 }
 
 static void
@@ -269,6 +309,8 @@ dump_dotnet_iinfo (MonoImage *image)
 	dump_dotnet_header (&iinfo->cli_header);
 	dump_sections (iinfo);
 	dump_cli_header (&iinfo->cli_cli_header);
+	dump_strong_name (image);
+	dump_public_key (image);
 	dump_metadata (image);
 
 	dump_methoddef (image, iinfo->cli_cli_header.ch_entry_point);

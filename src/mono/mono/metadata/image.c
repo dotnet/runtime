@@ -848,3 +848,37 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 	return data;
 }
 
+const char*
+mono_image_get_strong_name (MonoImage *image, guint32 *size)
+{
+	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
+	const char* data;
+
+	if (!de->size || !de->rva)
+		return NULL;
+	data = mono_cli_rva_map (iinfo, de->rva);
+	if (!data)
+		return NULL;
+	if (size)
+		*size = de->size;
+	return data;
+}
+
+const char*
+mono_image_get_public_key (MonoImage *image, guint32 *size)
+{
+	const char *pubkey;
+	guint32 len, tok;
+	if (image->tables [MONO_TABLE_ASSEMBLY].rows != 1)
+		return NULL;
+	tok = mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY], 0, MONO_ASSEMBLY_PUBLIC_KEY);
+	if (!tok)
+		return NULL;
+	pubkey = mono_metadata_blob_heap (image, tok);
+	len = mono_metadata_decode_blob_size (pubkey, &pubkey);
+	if (size)
+		*size = len;
+	return pubkey;
+}
+
