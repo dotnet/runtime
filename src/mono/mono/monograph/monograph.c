@@ -655,10 +655,10 @@ link_bblock (MonoBasicBlock *from, MonoBasicBlock* to)
 }
 
 static int
-compare_bblock (void *a, void *b)
+compare_bblock (const void *a, const void *b)
 {
-	MonoBasicBlock **ab = a;
-	MonoBasicBlock **bb = b;
+	MonoBasicBlock * const *ab = a;
+	MonoBasicBlock * const *bb = b;
 
 	return (*ab)->cil_code - (*bb)->cil_code;
 }
@@ -795,7 +795,7 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 					target = g_new0 (MonoBasicBlock, 1);
 					target->cil_code = itarget;
 					g_ptr_array_add (result, target);
-					g_hash_table_insert (table, itarget, target);
+					g_hash_table_insert (table, (gpointer) itarget, target);
 				}
 				link_bblock (bb, target);
 			}
