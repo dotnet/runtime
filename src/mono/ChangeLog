@@ -1,3 +1,9 @@
+
+Mon Dec 6 15:00:53 CET 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: add option to disable some features of
+	the runtime to create a smaller binary.
+
 2004-12-03  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (ENABLE_NUNIT_TESTS): New.

@@ -372,6 +372,39 @@ fi
 
 AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
 
+AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
+  LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, reflection_emit.],
+[
+	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
+		eval "mono_feature_disable_$feature='yes'"
+		AC_MSG_NOTICE([Disabled support for feature: $feature])
+	done
+],[])
+
+if test "x$mono_feature_disable_aot" = "xyes"; then
+	AC_DEFINE(DISABLE_AOT, 1, [Disable AOT support])
+fi
+
+if test "x$mono_feature_disable_profiler" = "xyes"; then
+	AC_DEFINE(DISABLE_PROFILER, 1, [Disable default profiler support])
+fi
+
+if test "x$mono_feature_disable_decimal" = "xyes"; then
+	AC_DEFINE(DISABLE_DECIMAL, 1, [Disable System.Decimal support])
+fi
+
+if test "x$mono_feature_disable_pinvoke" = "xyes"; then
+	AC_DEFINE(DISABLE_PINVOKE, 1, [Disable P/Invoke support])
+fi
+
+if test "x$mono_feature_disable_debug" = "xyes"; then
+	AC_DEFINE(DISABLE_DEBUG, 1, [Disable runtime debugging support])
+fi
+
+if test "x$mono_feature_disable_reflection_emit" = "xyes"; then
+	AC_DEFINE(DISABLE_REFLECTION_EMIT, 1, [Disable reflection emit support])
+fi
+
 LIBGC_CFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=
@@ -1577,5 +1610,6 @@ echo "
 	Engine:      $jit_status
 	2.0 Alpha:   $PREVIEW
 	JNI support: $jdk_headers_found
+	Disabled:    $enable_minimal
 
 "
