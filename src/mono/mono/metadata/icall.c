@@ -2155,6 +2155,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	static MonoClass *System_Reflection_AssemblyName;
 	MonoArray *result;
 	MonoAssembly **ptr;
+	MonoDomain *domain = mono_object_domain (assembly);
 	int i, count = 0;
 
 	MONO_ARCH_SAVE_REGS;
@@ -2171,16 +2172,20 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	for (i = 0; i < count; i++) {
 		MonoAssembly *assem = assembly->assembly->image->references [i];
 		MonoReflectionAssemblyName *aname;
+		char *codebase;
 
 		aname = (MonoReflectionAssemblyName *) mono_object_new (
-			mono_object_domain (assembly), System_Reflection_AssemblyName);
+			domain, System_Reflection_AssemblyName);
 
 		if (strcmp (assem->aname.name, "corlib") == 0)
-			aname->name = mono_string_new (mono_object_domain (assembly), "mscorlib");
+			aname->name = mono_string_new (domain, "mscorlib");
 		else
-			aname->name = mono_string_new (mono_object_domain (assembly), assem->aname.name);
+			aname->name = mono_string_new (domain, assem->aname.name);
 		aname->major = assem->aname.major;
 
+		codebase = g_strconcat ("file://", assembly->assembly->image->references [i]->image->name, NULL);
+		aname->codebase = mono_string_new (domain, codebase);
+		g_free (codebase);
 		mono_array_set (result, gpointer, i, aname);
 	}
 	return result;
