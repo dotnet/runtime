@@ -81,8 +81,7 @@ This is Mono.
 		make
 
 	This will automatically go into the mcs/ tree and build the
-	binaries there, and copy them into the appropriate
-	sub-directories of  mono/runtime/.
+	binaries there.
 
 	This assumes that you have a working mono installation, and that
 	there's a C# compiler named 'mcs', and a corresponding IL
@@ -90,7 +89,7 @@ This is Mono.
 	EXTERNAL_MCS and EXTERNAL_RUNTIME to override these.  e.g., you
 	can say
 
-	  make EXTERNAL_MCS=/foo/bar/mcs EXTERNAL_MONO=/somewhere/else/mono
+	  make EXTERNAL_MCS=/foo/bar/mcs EXTERNAL_RUNTIME=/somewhere/else/mono
 	
 	If you don't have a working Mono installation
 	---------------------------------------------
