@@ -192,7 +192,7 @@ const char    *mono_metadata_guid_heap     (MonoImage *meta, guint32 table_index
 guint32 mono_metadata_typedef_from_field  (MonoImage *meta, guint32 table_index);
 guint32 mono_metadata_typedef_from_method (MonoImage *meta, guint32 table_index);
 guint32 mono_metadata_nested_in_typedef   (MonoImage *meta, guint32 table_index);
-guint32 mono_metadata_nesting_typedef     (MonoImage *meta, guint32 table_index);
+guint32 mono_metadata_nesting_typedef     (MonoImage *meta, guint32 table_index, guint32 start_index);
 
 MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 table_index, guint *count);
 

@@ -884,16 +884,15 @@ mono_class_init (MonoClass *class)
 	init_properties (class);
 	init_events (class);
 
-	i = mono_metadata_nesting_typedef (class->image, class->type_token);
+	i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
 	while (i) {
 		MonoClass* nclass;
 		guint32 cols [MONO_NESTED_CLASS_SIZE];
 		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-		if (cols [MONO_NESTED_CLASS_ENCLOSING] != mono_metadata_token_index (class->type_token))
-			break;
 		nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
 		class->nested_classes = g_list_prepend (class->nested_classes, nclass);
-		++i;
+
+		i = mono_metadata_nesting_typedef (class->image, class->type_token, i + 1);
 	}
 
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {

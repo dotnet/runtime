@@ -1974,37 +1974,32 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
  * @index: typedef token
  * 
  * Returns: the 1-based index into the TypeDef table of the first type
- * that is nested inside the type described by @index.
- * Retruns 0 if @index doesn't have nested types.
+ * that is nested inside the type described by @index. The search starts at
+ * @start_index.
+ * Returns 0 if no such type is found.
  */
 guint32
-mono_metadata_nesting_typedef (MonoImage *meta, guint32 index)
+mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
-	locator_t loc;
 	guint32 start;
 	
 	if (!tdef->base)
 		return 0;
 
-	loc.idx = mono_metadata_token_index (index);
-	loc.col_idx = MONO_NESTED_CLASS_ENCLOSING;
-	loc.t = tdef;
+	start = start_index;
 
-	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return 0;
-
-	start = loc.result;
-
-	while (start > 0) {
-		if (loc.idx == mono_metadata_decode_row_col (tdef, start - 1, MONO_NESTED_CLASS_ENCLOSING))
-			start--;
-		else
+	while (start <= tdef->rows) {
+		if (index == mono_metadata_decode_row_col (tdef, start - 1, MONO_NESTED_CLASS_ENCLOSING))
 			break;
+		else
+			start++;
 	}
 
-	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
-	return start + 1;
+	if (start > tdef->rows)
+		return 0;
+	else
+		return start;
 }
 
 /*
