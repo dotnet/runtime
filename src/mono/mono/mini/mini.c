@@ -1699,7 +1699,6 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		while (bindex < bb->out_count) {
 			outb = bb->out_bb [bindex];
 			if (outb->in_stack != locals) {
-				printf ("FOO: %s\n", mono_method_full_name (cfg->method, TRUE));
 				/* 
 				 * Instead of storing sp [i] to locals [i], we need to store
 				 * locals [i] to <new locals>[i], since the sp [i] tree can't
