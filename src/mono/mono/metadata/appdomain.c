@@ -273,14 +273,41 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 	return res;
 }
 
+MonoReflectionAssembly *
+ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
+{
+	MonoDomain *domain = mono_domain_get ();
+	char *name, *filename;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoAssembly *ass;
+
+	name = filename = mono_string_to_utf8 (fname);
+
+	/* FIXME: move uri handling to mono_assembly_open */
+	if (strncmp (filename, "file://", 7) == 0)
+		filename += 7;
+
+	ass = mono_assembly_open (filename, &status);
+	
+	g_free (name);
+
+	if (!ass)
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System.IO", "FileNotFoundException"));
+
+	return mono_assembly_get_object (domain, ass);
+}
+
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssemblyName *assRef, MonoObject *evidence)
 {
 	MonoDomain *domain = ad->data; 
-	char *name, *filename;
+	char *name;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
+	MonoAssemblyName aname;
+
+	memset (&aname, 0, sizeof (aname));
 
 	/* FIXME : examine evidence? */
 
@@ -289,12 +316,9 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 
 	/* FIXME : examine version, culture info */
 
-	name = filename = mono_string_to_utf8 (assRef->name);
+	name = aname.name = mono_string_to_utf8 (assRef->name);
 
-	if (strncmp (filename, "file://", 7) == 0)
-		filename += 7;
-
-	ass = mono_assembly_open (filename, NULL, &status);
+	ass = mono_assembly_load (&aname, NULL, &status);
 	
 	g_free (name);
 
@@ -326,7 +350,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	mono_domain_set (ad->data);
 
 	filename = mono_string_to_utf8 (file);
-	assembly = mono_assembly_open (filename, NULL, NULL);
+	assembly = mono_assembly_open (filename, NULL);
 	g_free (filename);
 
 	if (!assembly) {

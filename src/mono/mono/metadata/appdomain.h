@@ -139,6 +139,9 @@ MonoArray *
 ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomain *ad);
 
 MonoReflectionAssembly *
+ves_icall_System_Reflection_Assembly_LoadFrom      (MonoString *fname);
+
+MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad, 
 						    MonoReflectionAssemblyName *assRef,
 						    MonoObject    *evidence);

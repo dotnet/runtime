@@ -7,8 +7,18 @@
 typedef struct _MonoImage MonoImage;
 
 typedef struct {
+	const char *name;
+	const char *culture;
+	const char *hash_value;
+	guint32 hash_len;
+	guint32 flags;
+	gint16 major, minor, build, revision;
+} MonoAssemblyName;
+
+typedef struct {
 	int   ref_count;
-	char *name;
+	char *basedir;
+	MonoAssemblyName aname;
 	
 	MonoImage *image;
 	MonoImage **modules;

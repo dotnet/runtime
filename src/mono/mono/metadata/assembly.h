@@ -5,12 +5,11 @@
 
 #define CORLIB_NAME "corlib.dll"
 
-typedef char * (*MonoAssemblyResolverFn)(const char *base_dir, const char *name);
-
-MonoAssembly *mono_assembly_open     (const char *fname,
-				      MonoAssemblyResolverFn resolver,
+MonoAssembly *mono_assembly_open     (const char *filename,
+				      MonoImageOpenStatus *status);
+MonoAssembly* mono_assembly_load     (MonoAssemblyName *aname, 
+                                      const char       *basedir, 
 				      MonoImageOpenStatus *status);
 void          mono_assembly_close    (MonoAssembly *assembly);
 
-GHashTable   *mono_get_assemblies    (void);
 #endif

@@ -14,17 +14,63 @@
 #include <glib.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 #include "assembly.h"
 #include "image.h"
 #include "cil-coff.h"
 #include "rawbuffer.h"
 
-#define CSIZE(x) (sizeof (x) / 4)
+/* the default search path is just MONO_ASSEMBLIES */
+static const char*
+default_path [] = {
+	MONO_ASSEMBLIES,
+	NULL
+};
+
+static char **assemblies_path = NULL;
+static int env_checked = 0;
+
+static void
+check_env (void) {
+	const char *path;
+	char **splitted;
+	
+	if (env_checked)
+		return;
+	env_checked = 1;
+
+	path = getenv ("MONO_PATH");
+	if (!path)
+		return;
+	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
+	if (assemblies_path)
+		g_strfreev (assemblies_path);
+	assemblies_path = splitted;
+}
 
 /*
  * keeps track of loaded assemblies
  */
-static GHashTable *assemblies;
+static GList *loaded_assemblies = NULL;
+static MonoAssembly *corlib;
+
+static MonoAssembly*
+search_loaded (MonoAssemblyName* aname)
+{
+	GList *tmp;
+	MonoAssembly *ass;
+	
+	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
+		ass = tmp->data;
+		/* we just compare the name, but later we'll do all the checks */
+		/* g_print ("compare %s %s\n", aname->name, ass->aname.name); */
+		if (strcmp (aname->name, ass->aname.name))
+			continue;
+		/* g_print ("success\n"); */
+		return ass;
+	}
+	return NULL;
+}
 
 /**
  * g_concat_dir_and_file:
@@ -50,52 +96,26 @@ g_concat_dir_and_file (const char *dir, const char *file)
 		return g_strconcat (dir, file, NULL);
 }
 
-static char *
-default_assembly_name_resolver (const char *base_dir, const char *name)
+static MonoAssembly *
+load_in_path (const char *basename, char** search_path, MonoImageOpenStatus *status)
 {
-	char *file, *path;
+	int i;
+	char *fullpath;
+	MonoAssembly *result;
 
-	if ((strcmp (name, "mscorlib") == 0) ||
-			(strcmp (name, "mscorlib.dll") == 0) ||
-			(strcmp (name, "corlib.dll") == 0) ||
-			(strcmp (name, "corlib") == 0))
-	{
-		return g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
+	for (i = 0; search_path [i]; ++i) {
+		fullpath = g_concat_dir_and_file (search_path [i], basename);
+		result = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+		if (result)
+			return result;
 	}
-
-	/* Full name already supplied */
-	path = g_strdup (name);
-	if (g_file_test (name, G_FILE_TEST_IS_REGULAR))
-		return path;
-
-	g_free (path);
-	path = g_concat_dir_and_file (base_dir, name);
-	if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
-		return path;
-
-	file = path;
-	path = g_strconcat (file, ".dll", NULL);
-	g_free (file);
-	if (g_file_test (path, G_FILE_TEST_EXISTS))
-		return path;
-	g_free (path);
-	
-	path = g_concat_dir_and_file (MONO_ASSEMBLIES, name);
-	if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
-		return path;
-	g_free (path);
-
-	file = g_strconcat (name, ".dll", NULL);
-	path = g_concat_dir_and_file (MONO_ASSEMBLIES, file);
-	g_free (file);
-
-	return path;
+	return NULL;
 }
 
 /**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
- * @resolver: A user provided function to resolve assembly references
  * @status: where a status code can be returned
  *
  * mono_assembly_open opens the PE-image pointed by @filename, and
@@ -105,92 +125,86 @@ default_assembly_name_resolver (const char *base_dir, const char *name)
  * it. 
  */
 MonoAssembly *
-mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
-		    MonoImageOpenStatus *status)
+mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
-	MonoAssembly *ass;
+	MonoAssembly *ass, *ass2;
 	MonoImage *image;
 	MonoTableInfo *t;
+	guint32 cols [MONO_ASSEMBLY_SIZE];
 	int i;
-	char *fullname, *base_dir;
-	const char *base_name = strrchr (filename, G_DIR_SEPARATOR);
-	static MonoAssembly *corlib;
+	char *base_dir;
+	const char *hash;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 
-	if (assemblies == NULL)
-		assemblies = g_hash_table_new (g_str_hash, g_str_equal);
-
-	if ((ass = g_hash_table_lookup (assemblies, filename)) != NULL){
-		ass->ref_count++;
-		return ass;
-	}
-	
-	if (base_name == NULL)
-		base_name = filename;
-	else
-		base_name++;
-
-	if (resolver == NULL)
-		resolver = default_assembly_name_resolver;
-
-	base_dir = g_path_get_dirname (filename);
-	
-	fullname = resolver (base_dir, filename);
-	image = mono_image_open (fullname, status);
+	/* g_print ("file loading %s\n", filename); */
+	image = mono_image_open (filename, status);
 
 	if (!image){
 		if (status)
 			*status = MONO_IMAGE_ERROR_ERRNO;
-		g_free (fullname);
-		g_free (base_dir);
 		return NULL;
 	}
+
+	base_dir = g_path_get_dirname (filename);
+	
+	/*
+	 * Create assembly struct, and enter it into the assembly cache
+	 */
+	ass = g_new0 (MonoAssembly, 1);
+	ass->basedir = base_dir;
+	ass->image = image;
+
+	image->assembly = ass;
+
+	t = &image->tables [MONO_TABLE_ASSEMBLY];
+	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
+		
+	ass->aname.hash_len = 0;
+	ass->aname.hash_value = NULL;
+	ass->aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
+	ass->aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
+	ass->aname.flags = cols [MONO_ASSEMBLY_FLAGS];
+	ass->aname.major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
+	ass->aname.minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
+	ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
+	ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
+
+	/* avoid loading the same assembly twixe for now... */
+	if ((ass2 = search_loaded (&ass->aname))) {
+		g_free (ass);
+		if (status)
+			*status = MONO_IMAGE_OK;
+		return ass2;
+	}
+
+	/* register right away to prevent loops */
+	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
 	image->references = g_new0 (MonoAssembly *, t->rows + 1);
 
 	/*
-	 * Create assembly struct, and enter it into the assembly cache
-	 */
-	ass = g_new0 (MonoAssembly, 1);
-	ass->name = fullname;
-	ass->image = image;
-
-	image->assembly = ass;
-
-	g_hash_table_insert (assemblies, image->name, ass);
-	g_hash_table_insert (assemblies, ass->name, ass);
-	
-	/*
 	 * Load any assemblies this image references
 	 */
 	for (i = 0; i < t->rows; i++){
-		char *assembly_ref;
-		const char *name;
-		guint32 cols [MONO_ASSEMBLYREF_SIZE];
+		MonoAssemblyName aname;
 
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
-		name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
-
-		/*
-		 * Special case until we have a passable corlib:
-		 *
-		 * ie, references to mscorlib from corlib.dll are ignored 
-		 * and we do not load corlib twice.
-		 */
-		if (strcmp (base_name, CORLIB_NAME) == 0){
-			if (corlib == NULL)
-				corlib = ass;
-			
-			if (strcmp (name, "mscorlib") == 0)
-				continue;
-		}
+		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 		
-		assembly_ref = (*resolver) (base_dir, name);
+		hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
+		aname.hash_len = mono_metadata_decode_blob_size (hash, &hash);
+		aname.hash_value = hash;
+		aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
+		aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
+		aname.flags = cols [MONO_ASSEMBLYREF_FLAGS];
+		aname.major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
+		aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
+		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
+		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
 
-		image->references [i] = mono_assembly_open (assembly_ref, resolver, status);
+		image->references [i] = mono_assembly_load (&aname, base_dir, status);
 
 		if (image->references [i] == NULL){
 			int j;
@@ -200,15 +214,14 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 			g_free (image->references);
 			mono_image_close (image);
 
-			g_warning ("Could not find assembly %s %s", name, assembly_ref);
-			g_free (assembly_ref);
+			g_warning ("Could not find assembly %s", aname.name);
 			if (status)
 				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
 			g_free (ass);
+			loaded_assemblies = g_list_remove (loaded_assemblies, ass);
 			g_free (base_dir);
 			return NULL;
 		}
-		g_free (assembly_ref);
 	}
 	image->references [i] = NULL;
 
@@ -230,6 +243,61 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	return ass;
 }
 
+MonoAssembly*
+mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
+{
+	MonoAssembly *result;
+	char *fullpath, *filename;
+
+	check_env ();
+
+	/* g_print ("loading %s\n", aname->name); */
+	/* special case corlib */
+	if ((strcmp (aname->name, "mscorlib") == 0) || (strcmp (aname->name, "corlib") == 0)) {
+		if (corlib) {
+			/* g_print ("corlib already loaded\n"); */
+			return corlib;
+		}
+		/* g_print ("corlib load\n"); */
+		if (assemblies_path) {
+			corlib = load_in_path (CORLIB_NAME, assemblies_path, status);
+			if (corlib)
+				return corlib;
+		}
+		fullpath = g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
+		corlib = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+		return corlib;
+	}
+	result = search_loaded (aname);
+	if (result)
+		return result;
+	/* g_print ("%s not found in cache\n", aname->name); */
+	if (strstr (aname->name, ".dll"))
+		filename = g_strdup (aname->name);
+	else
+		filename = g_strconcat (aname->name, ".dll", NULL);
+	if (basedir) {
+		fullpath = g_concat_dir_and_file (basedir, filename);
+		result = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+		if (result) {
+			g_free (filename);
+			return result;
+		}
+	}
+	if (assemblies_path) {
+		result = load_in_path (filename, assemblies_path, status);
+		if (result) {
+			g_free (filename);
+			return result;
+		}
+	}
+	result = load_in_path (filename, default_path, status);
+	g_free (filename);
+	return result;
+}
+
 void
 mono_assembly_close (MonoAssembly *assembly)
 {
@@ -241,24 +309,15 @@ mono_assembly_close (MonoAssembly *assembly)
 	if (--assembly->ref_count != 0)
 		return;
 	
+	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
 	image = assembly->image;
 	for (i = 0; image->references [i] != NULL; i++)
 		mono_image_close (image->references [i]->image);
 	g_free (image->references);
 	     
-	g_hash_table_remove (assemblies, assembly->name);
-			     
 	mono_image_close (assembly->image);
 
-	g_free (assembly->name);
+	g_free (assembly->basedir);
 	g_free (assembly);
 }
 
-/*
- * Temporary hack until we get AppDomains
- */
-GHashTable *
-mono_get_assemblies ()
-{
-	return assemblies;
-}

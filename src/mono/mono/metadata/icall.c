@@ -1648,6 +1648,18 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object)
 	return res;
 }
 
+static void
+ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
+{
+	MonoAssemblyName *name = &assembly->assembly->aname;
+
+	if (strcmp (name->name, "corlib") == 0)
+		aname->name = mono_string_new (mono_object_domain (assembly), "mscorlib");
+	else
+		aname->name = mono_string_new (mono_object_domain (assembly), name->name);
+	aname->major = name->major;
+}
+
 static MonoArray*
 ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
 {
@@ -2318,8 +2330,10 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
 	"System.Runtime.InteropServices.Marshal::GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error,
 
+	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
 	"System.Reflection.Assembly::GetTypes", ves_icall_System_Reflection_Assembly_GetTypes,
+	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 
 	/*

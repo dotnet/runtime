@@ -301,7 +301,8 @@ typedef struct {
 	MonoObject  obj;
 	MonoString *name;
 	MonoString *codebase;
-	MonoObject *version;
+	gint32 major, minor, build, revision;
+	/* FIXME: add missing stuff */
 } MonoReflectionAssemblyName;
 
 typedef struct {
