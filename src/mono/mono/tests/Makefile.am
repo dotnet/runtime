@@ -3,6 +3,9 @@ TEST_PROG=../interpreter/mint
 JITTEST_PROG=../mini/mono
 RUNTIME_ARGS=--config tests-config --optimize=all
 
+# Some of the shell commands below require bash
+SHELL=bash
+
 #CSC=csc /unsafe
 CSC=mcs --unsafe -nowarn:0162
 
@@ -185,8 +188,8 @@ TEST_IL_SRC=			\
 	initblkTest.il		\
 	qt-instance.il		\
 	vararg.il			\
-	bug-29859.il
-#	even-odd.il
+	bug-29859.il		\
+	even-odd.il
 
 
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
