@@ -4,6 +4,7 @@
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Patrik Torstensson
  *
  * (C) 2003 Ximian, Inc.
  */
@@ -1251,7 +1252,7 @@ typedef struct {
 	int killed_in;
 	int last_use;
 	int prev_use;
-	int fpflags;	/* used to track if we spill/load */
+	int flags;		/* used to track fp spill/load */
 } RegTrack;
 
 static const char*const * ins_spec = pentium_desc;
@@ -1494,10 +1495,10 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 }
 #endif
 
-/* flags used in reginfo->fpflags */
-#define MONO_X86_FP_NEEDS_LOAD_SPILL	32
-#define MONO_X86_FP_NEEDS_SPILL	64
-#define MONO_X86_FP_NEEDS_LOAD		128
+/* flags used in reginfo->flags */
+#define MONO_X86_FP_NEEDS_LOAD_SPILL	1
+#define MONO_X86_FP_NEEDS_SPILL			2
+#define MONO_X86_FP_NEEDS_LOAD			4
 
 /*#include "cprop.c"*/
 
@@ -1551,7 +1552,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				spill = g_list_first (fspill_list);
 				if (spill && fpcount < MONO_MAX_FREGS) {
-					reginfo1 [ins->sreg1].fpflags |= MONO_X86_FP_NEEDS_LOAD;
+					reginfo1 [ins->sreg1].flags |= MONO_X86_FP_NEEDS_LOAD;
 					fspill_list = g_list_remove (fspill_list, spill->data);
 				} else
 					fpcount--;
@@ -1569,12 +1570,12 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				reginfo2 = reginfof;
 				spill = g_list_first (fspill_list);
 				if (spill) {
-					reginfo2 [ins->sreg2].fpflags |= MONO_X86_FP_NEEDS_LOAD;
+					reginfo2 [ins->sreg2].flags |= MONO_X86_FP_NEEDS_LOAD;
 					fspill_list = g_list_remove (fspill_list, spill->data);
 					if (fpcount >= MONO_MAX_FREGS) {
 						fspill++;
 						fspill_list = g_list_prepend (fspill_list, GINT_TO_POINTER(fspill));
-						reginfo2 [ins->sreg2].fpflags |= MONO_X86_FP_NEEDS_LOAD_SPILL;
+						reginfo2 [ins->sreg2].flags |= MONO_X86_FP_NEEDS_LOAD_SPILL;
 					}
 				} else
 					fpcount--;
@@ -1590,7 +1591,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (spec [MONO_INST_DEST] == 'f') {
 				reginfod = reginfof;
 				if (fpcount >= MONO_MAX_FREGS) {
-					reginfod [ins->dreg].fpflags |= MONO_X86_FP_NEEDS_SPILL;
+					reginfod [ins->dreg].flags |= MONO_X86_FP_NEEDS_SPILL;
 					fspill++;
 					fspill_list = g_list_prepend (fspill_list, GINT_TO_POINTER(fspill));
 					fpcount--;
@@ -1771,7 +1772,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Track dreg */
 		if (spec [MONO_INST_DEST] == 'f') {
-			if (reginfof [ins->dreg].fpflags & MONO_X86_FP_NEEDS_SPILL) {
+			if (reginfof [ins->dreg].flags & MONO_X86_FP_NEEDS_SPILL) {
 				GList *spill_node;
 				MonoInst *store;
 				spill_node = g_list_first (fspill_list);
@@ -1873,11 +1874,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Track sreg1 */
 		if (spec [MONO_INST_SRC1] == 'f') {
-			if (reginfof [ins->sreg1].fpflags & MONO_X86_FP_NEEDS_LOAD) {
+			if (reginfof [ins->sreg1].flags & MONO_X86_FP_NEEDS_LOAD) {
 				MonoInst *load;
 				MonoInst *store = NULL;
 
-				if (reginfof [ins->sreg1].fpflags & MONO_X86_FP_NEEDS_LOAD_SPILL) {
+				if (reginfof [ins->sreg1].flags & MONO_X86_FP_NEEDS_LOAD_SPILL) {
 					GList *spill_node;
 					spill_node = g_list_first (fspill_list);
 					g_assert (spill_node);
@@ -1951,16 +1952,16 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		/* track sreg2 */
 		if (spec [MONO_INST_SRC2] == 'f') {
-			if (reginfof [ins->sreg2].fpflags & MONO_X86_FP_NEEDS_LOAD) {
+			if (reginfof [ins->sreg2].flags & MONO_X86_FP_NEEDS_LOAD) {
 				MonoInst *load;
 				MonoInst *store = NULL;
 
-				if (reginfof [ins->sreg2].fpflags & MONO_X86_FP_NEEDS_LOAD_SPILL) {
+				if (reginfof [ins->sreg2].flags & MONO_X86_FP_NEEDS_LOAD_SPILL) {
 					GList *spill_node;
 
 					spill_node = g_list_first (fspill_list);
 					g_assert (spill_node);
-					if (spec [MONO_INST_SRC1] == 'f' && (reginfof [ins->sreg1].fpflags & MONO_X86_FP_NEEDS_LOAD_SPILL))
+					if (spec [MONO_INST_SRC1] == 'f' && (reginfof [ins->sreg1].flags & MONO_X86_FP_NEEDS_LOAD_SPILL))
 						spill_node = g_list_next (spill_node);
 	
 					store = create_spilled_store_float (cfg, GPOINTER_TO_INT (spill_node->data), ins->sreg2, ins);
