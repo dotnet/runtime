@@ -1532,7 +1532,8 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		class = mono_class_create_from_typedef (image, type_token);
 		break;		
 	case MONO_TOKEN_TYPE_REF:
-		return mono_class_create_from_typeref (image, type_token);
+		class = mono_class_create_from_typeref (image, type_token);
+		break;
 	case MONO_TOKEN_TYPE_SPEC:
 		class = mono_class_create_from_typespec (image, type_token);
 		break;
@@ -1541,6 +1542,8 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		g_assert_not_reached ();
 	}
 
+	if (!class)
+		g_warning ("Could not load class from token 0x%08x", type_token);
 	return class;
 }
 
