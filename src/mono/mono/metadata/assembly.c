@@ -334,7 +334,7 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			}
 			if (references [i] != NULL){
 				if (getenv ("MONO_SILENT_WARNING") == NULL)
-					g_print ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
+					g_printerr ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
 						 image->name, aname.name);
 				
 			} else {
