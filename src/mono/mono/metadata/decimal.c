@@ -26,28 +26,8 @@
 #define LIT_GUINT64(x) x##L
 
 
-#ifndef _MSC_VER
-
 /* we need a UInt64 type => guint64 */
 #include <glib.h>
-
-
-#else /* #ifndef _MSC_VER */
-
-/* Microsoft Compiler for testing */
-
-typedef short gint16; /* that's normally defined in glib */
-typedef unsigned short guint16; /* that's normally defined in glib */
-typedef int gint32; /* that's normally defined in glib */
-typedef unsigned int guint32; /* that's normally defined in glib */
-typedef __int64 gint64; /* that's normally defined in glib */
-typedef unsigned __int64 guint64; /* that's normally defined in glib */
-
-#ifndef _M_IX86
-#error this platform is not supported
-#endif
-
-#endif
 
 #include "decimal.h"
 
