@@ -15,6 +15,7 @@ typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
+typedef struct MonoDebugRangeInfo		MonoDebugRangeInfo;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -55,6 +56,7 @@ struct MonoSymbolFileLineNumberEntry {
 struct MonoDebugMethodInfo {
 	MonoMethod *method;
 	MonoSymbolFile *symfile;
+	guint32 file_offset;
 	guint32 num_il_offsets;
 	MonoSymbolFileLineNumberEntry *il_offsets;
 	MonoDebugMethodJitInfo *jit;
@@ -102,6 +104,12 @@ struct MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
+struct MonoDebugRangeInfo {
+	guint64 start_address;
+	guint64 end_address;
+	guint32 file_offset;
+};
+
 struct MonoSymbolFile {
 	guint64 magic;
 	guint32 version;
@@ -113,11 +121,14 @@ struct MonoSymbolFile {
 	/* Pointer to the malloced address table. */
 	char *address_table;
 	guint32 address_table_size;
+	/* Pointer to the malloced range table. */
+	MonoDebugRangeInfo *range_table;
+	guint32 range_table_size;
 	/* Private. */
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		18
+#define MONO_SYMBOL_FILE_VERSION		19
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 MonoSymbolFile *

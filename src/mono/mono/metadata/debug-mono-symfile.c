@@ -24,6 +24,7 @@ struct MonoSymbolFilePriv
 	GHashTable *method_table;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
+	GPtrArray *range_table;
 };
 
 typedef struct
@@ -94,6 +95,7 @@ load_symfile (MonoSymbolFile *symfile)
 			continue;
 
 		minfo = g_new0 (MonoDebugMethodInfo, 1);
+		minfo->file_offset = ((const char *) me) - start;
 		minfo->method = method;
 		minfo->symfile = symfile;
 		minfo->num_il_offsets = me->num_line_numbers;
@@ -332,6 +334,7 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
 	MonoSymbolFileMethodAddress *address;
 	MonoSymbolFileLineNumberEntry *lne;
+	MonoDebugRangeInfo *range;
 	int i;
 
 	if (!mep->minfo) {
@@ -349,6 +352,13 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	address->is_valid = TRUE;
 	address->start_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start);
 	address->end_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start + mep->minfo->jit->code_size);
+
+	range = g_new0 (MonoDebugRangeInfo, 1);
+	range->start_address = address->start_address;
+	range->end_address = address->end_address;
+	range->file_offset = mep->minfo->file_offset;
+
+	g_ptr_array_add (symfile->_priv->range_table, range);
 
 	lne = (MonoSymbolFileLineNumberEntry *)
 		(symfile->raw_contents + mep->entry->line_number_table_offset);
@@ -377,17 +387,48 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	}
 }
 
+static gint
+range_table_compare_func (gconstpointer a, gconstpointer b)
+{
+	const MonoDebugRangeInfo *r1 = (const MonoDebugRangeInfo *) a;
+	const MonoDebugRangeInfo *r2 = (const MonoDebugRangeInfo *) b;
+
+	if (r1->start_address < r2->start_address)
+		return -1;
+	else if (r1->start_address > r2->start_address)
+		return 1;
+	else
+		return 0;
+}	
+
 void
 mono_debug_update_mono_symbol_file (MonoSymbolFile *symfile)
 {
-	g_message (G_STRLOC);
+	int i;
 
-	if (symfile->_priv->method_table) {
-		if (!symfile->address_table)
-			symfile->address_table = g_malloc0 (symfile->address_table_size);
+	if (!symfile->_priv->method_table)
+		return;
 
-		g_hash_table_foreach (symfile->_priv->method_table, update_method_func, symfile);
+	symfile->_priv->range_table = g_ptr_array_new ();
+
+	if (!symfile->address_table)
+		symfile->address_table = g_malloc0 (symfile->address_table_size);
+
+	g_hash_table_foreach (symfile->_priv->method_table, update_method_func, symfile);
+
+	symfile->range_table_size = symfile->_priv->range_table->len * sizeof (MonoDebugRangeInfo);
+	symfile->range_table = g_malloc0 (symfile->range_table_size);
+
+	g_ptr_array_sort (symfile->_priv->range_table, range_table_compare_func);
+
+	for (i = 0; i < symfile->_priv->range_table->len; i++) {
+		MonoDebugRangeInfo *range = g_ptr_array_index (symfile->_priv->range_table, i);
+
+		symfile->range_table [i] = *range;
 	}
+
+	g_ptr_array_free (symfile->_priv->range_table, TRUE);
+	symfile->_priv->range_table = NULL;
 }
 
 static void
@@ -431,6 +472,8 @@ write_method (gpointer key, gpointer value, gpointer user_data)
 
 	if (symfile->_priv->error)
 		return;
+
+	mep->minfo->file_offset = lseek (symfile->_priv->fd, 0, SEEK_CUR);
 
 	if (write (symfile->_priv->fd, mep->entry, sizeof (MonoSymbolFileMethodEntry)) < 0) {
 		symfile->_priv->error = TRUE;
