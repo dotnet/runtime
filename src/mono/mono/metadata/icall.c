@@ -37,6 +37,7 @@
 #include <mono/metadata/debug-symfile.h>
 #include <mono/metadata/string-icalls.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/strtod.h>
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
@@ -50,6 +51,15 @@ mono_double_ToStringImpl (double value)
 	const gchar *retVal;
 	retVal = g_strdup_printf ("%f", value);
 	return mono_string_new (mono_domain_get (), retVal);
+}
+
+/*
+ * We expect a pointer to a char, not a string
+ */
+static double
+mono_double_ParseImpl (char *ptr)
+{
+	return bsd_strtod (ptr, NULL);
 }
 
 static MonoString *
@@ -2246,6 +2256,7 @@ static gconstpointer icall_map [] = {
 	 * System.Double
 	 */
 	"System.Double::ToStringImpl", mono_double_ToStringImpl,
+	"System.Double::ParseImpl",    mono_double_ParseImpl,
 
 	/*
 	 * System.Single
