@@ -854,15 +854,15 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	memset (&aname, 0, sizeof (MonoAssemblyName));
 	aname.name = name;
 
+	res = mono_assembly_loaded (&aname);
+	if (res)
+		return res;
+
 	res = invoke_assembly_preload_hook (&aname, assemblies_path);
 	if (res) {
 		res->in_gac = FALSE;
 		return res;
 	}
-
-	res = mono_assembly_loaded (&aname);
-	if (res)
-		return res;
 
 	fullname = g_strdup_printf ("%s.dll", name);
 
@@ -972,15 +972,15 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	MonoAssembly *result;
 	char *fullpath, *filename;
 
+	result = mono_assembly_loaded (aname);
+	if (result)
+		return result;
+
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
 	if (result) {
 		result->in_gac = FALSE;
 		return result;
 	}
-
-	result = mono_assembly_loaded (aname);
-	if (result)
-		return result;
 
 	/* g_print ("loading %s\n", aname->name); */
 	/* special case corlib */
