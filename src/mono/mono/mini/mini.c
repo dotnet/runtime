@@ -2942,7 +2942,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		goto unverified;
 	}
 
-	mono_debug_init_method (cfg, bblock, breakpoint_id);
+	if (cfg->method == method)
+		mono_debug_init_method (cfg, bblock, breakpoint_id);
 
 	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * num_args);
 	if (sig->hasthis)
