@@ -384,6 +384,18 @@ mono_test_marshal_struct_array (simplestruct2 *ss)
 	return 0;
 }
 
+typedef struct long_align_struct {
+	gint32 a;
+	gint64 b;
+	gint64 c;
+} long_align_struct;
+
+int
+mono_test_marshal_long_align_struct_array (long_align_struct *ss)
+{
+	return ss[0].a + ss[0].b + ss[0].c + ss[1].a + ss[1].b + ss[1].c;
+}
+
 simplestruct2 *
 mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 {

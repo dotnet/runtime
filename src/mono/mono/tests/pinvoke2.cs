@@ -74,6 +74,13 @@ public class Tests {
 	public class EmptyClass {
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	public struct LongAlignStruct {
+		public int a;
+		public long b;
+		public long c;
+	}
+
 	[DllImport ("libnot-found", EntryPoint="not_found")]
 	public static extern int mono_library_not_found ();
 
@@ -130,6 +137,9 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct_array")]
 	public static extern int mono_test_marshal_struct_array (SimpleStruct2[] ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_long_align_struct_array")]
+	public static extern int mono_test_marshal_long_align_struct_array (LongAlignStruct[] ss);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_class")]
 	public static extern SimpleClass mono_test_marshal_class (int i, int j, int k, SimpleClass ss, int l);
@@ -278,6 +288,25 @@ public class Tests {
 		ss_arr [1] = ss2;
 
 		return mono_test_marshal_struct_array (ss_arr);
+	}
+
+	static int test_105_marshal_long_align_struct_array () {
+		LongAlignStruct[] ss_arr = new LongAlignStruct [2];
+
+		LongAlignStruct ss = new LongAlignStruct ();
+		ss.a = 5;
+		ss.b = 10;
+		ss.c = 15;
+
+		ss_arr [0] = ss;
+
+		ss.a = 20;
+		ss.b = 25;
+		ss.c = 30;
+
+		ss_arr [1] = ss;
+
+		return mono_test_marshal_long_align_struct_array (ss_arr);
 	}
 
 	/* Test classes as arguments and return values */
