@@ -1849,11 +1849,20 @@ get_token (MonoImage *m, guint32 token, MonoGenericContext *context)
 		g_free (temp);
 		return result;
 	case MONO_TOKEN_TYPE_DEF:
-		return get_typedef (m, idx);
+		temp = get_typedef (m, idx);
+		result = get_escaped_name (temp);
+		g_free (temp);
+		return result;
 	case MONO_TOKEN_TYPE_REF:
-		return get_typeref (m, idx);
+		temp = get_typeref (m, idx);
+		result = get_escaped_name (temp);
+		g_free (temp);
+		return result;
 	case MONO_TOKEN_TYPE_SPEC:
-		return get_typespec (m, idx, context);
+		temp = get_typespec (m, idx, context);
+		result = get_escaped_name (temp);
+		g_free (temp);
+		return result;
 	case MONO_TOKEN_MEMBER_REF: {
 		guint32 cols [MONO_MEMBERREF_SIZE];
 		const char *sig;
