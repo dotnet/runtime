@@ -135,12 +135,6 @@ mono_wrapper_readdir (gpointer dir)
 
 	p = readdir((DIR*)dir);
 
-	/*
-	if (p)
-		return p->d_name;
-	else 
-		return NULL;
-	*/
 	return p != NULL ? p->d_name : NULL;
 }
 

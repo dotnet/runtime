@@ -53,6 +53,25 @@ class X {
 		z = Enum.ToObject (et, 1);
 		if (!y.Equals(z))
 			return num;
+
+		num++;
+		z = Enum.Parse (et, "Bye");
+		if (!y.Equals(z))
+			return num;
+		
+		num++;
+		try {
+			z = Enum.Parse (et, "bye");
+		} catch {
+			z = null;
+		}
+		if (z != null)
+			return num;
+
+		num++;
+		z = Enum.Parse (et, "bye", true);
+		if (!y.Equals(z))
+			return num;
 		
 		return 0;
 	}
