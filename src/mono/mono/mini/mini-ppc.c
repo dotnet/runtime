@@ -149,6 +149,7 @@ static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
+	t = mono_type_get_underlying_type (t);
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -358,7 +359,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			n++;
 			continue;
 		}
-		simpletype = sig->params [i]->type;
+		simpletype = mono_type_get_underlying_type (sig->params [i])->type;
 	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
@@ -512,7 +513,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
 
 	{
-		simpletype = sig->ret->type;
+		simpletype = mono_type_get_underlying_type (sig->ret)->type;
 enum_retvalue:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
@@ -615,7 +616,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		m->ret->inst_c0 = ppc_r3;
 	} else {
 		/* FIXME: handle long and FP values */
-		switch (sig->ret->type) {
+		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -874,7 +875,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	int rtype = method->signature->ret->type;
+	int rtype = mono_type_get_underlying_type (method->signature->ret)->type;
 	int save_offset = PPC_STACK_PARAM_OFFSET + cfg->param_area;
 	save_offset += 15;
 	save_offset &= ~15;
