@@ -67,6 +67,10 @@ mono_is_power_of_two (guint32 val)
 		} \
                 return;
 
+/* 
+ * We can't let this cause a division by zero exception since the division 
+ * might not be executed during runtime.
+ */
 #define FOLD_BINOPZ(name,op,cast)	\
 	case name:	\
 		if (inst->inst_i1->opcode == OP_ICONST && inst->opcode == CEE_REM_UN && inst->inst_i1->inst_c0 == 2) {	\
@@ -75,9 +79,10 @@ mono_is_power_of_two (guint32 val)
 			return;	\
 		}	\
 		if (inst->inst_i1->opcode == OP_ICONST) {	\
-			/* let the runtime throw the exception. */	\
 			if (!inst->inst_i1->inst_c0) return;	\
 			if (inst->inst_i0->opcode == OP_ICONST) {	\
+                if ((inst->inst_i0->inst_c0 == G_MININT32) && (inst->inst_i1->inst_c0 == -1)) \
+                    return; \
 				inst->inst_c0 = (cast)inst->inst_i0->inst_c0 op (cast)inst->inst_i1->inst_c0;	\
 				inst->opcode = OP_ICONST;	\
 			} else {	\
