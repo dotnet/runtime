@@ -143,15 +143,11 @@ grow_code (TransformData *td)
 				stack_size, n, (td)->ip - (td)->il_code); \
 	} while (0)
 
-#if SIZEOF_VOID_P == 4
-#define ENSURE_I4(td, sp_off)
-#else
 #define ENSURE_I4(td, sp_off) \
 	do { \
 		if ((td)->sp [-sp_off].type == STACK_TYPE_I8) \
 			ADD_CODE(td, sp_off == 1 ? MINT_CONV_I4_I8 : MINT_CONV_I4_I8_SP); \
 	} while (0)
-#endif
 
 static void 
 handle_branch(TransformData *td, int short_op, int long_op, int offset) 
@@ -2698,7 +2694,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	if (mono_interp_traceopt) {
 		const guint16 *p = td.new_code;
 		printf("Runtime method: %p, VT stack size: %d\n", rtm, td.max_vt_sp);
-		printf("Caculated stack size: %d, stated size: %d\n", td.max_stack_height, header->max_stack);
+		printf("Calculated stack size: %d, stated size: %d\n", td.max_stack_height, header->max_stack);
 		while (p < td.new_ip) {
 			p = mono_interp_dis_mintop(td.new_code, p);
 			printf("\n");
@@ -2822,6 +2818,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			}
 		}
 		if (nm == NULL) {
+			runtime_method->stack_size = sizeof (stackval); /* for tracing */
+			runtime_method->alloca_size = runtime_method->stack_size;
 			runtime_method->transformed = TRUE;
 			LeaveCriticalSection(&calc_section);
 			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
