@@ -8,6 +8,7 @@ int  yylex   (void);
 
 extern FILE *inputfd;
 extern FILE *outputfd;
+extern GHashTable *definedvars;
 
 typedef struct _Rule Rule;
 

@@ -23,6 +23,7 @@ static GList *prefix_list;
 
 FILE *inputfd;
 FILE *outputfd;
+GHashTable *definedvars;
 static FILE *deffd;
 static FILE *cfd;
 
@@ -975,6 +976,7 @@ main (int argc, char *argv [])
 	GList *infiles = NULL;
 	int i;
 
+        definedvars = g_hash_table_new (g_str_hash, g_str_equal);
 	g_log_set_handler (NULL, G_LOG_LEVEL_WARNING, warning_handler, stderr);
 
 	for (i = 1; i < argc; i++){
@@ -991,6 +993,9 @@ main (int argc, char *argv [])
 				cfile = argv [++i];
 			} else if (argv [i][1] == 'c') {
 				default_cost = atoi (argv [++i]);
+			} else if (argv [i][1] == 'D') {
+                                g_hash_table_insert (definedvars, &argv [i][2],
+                                                     GUINT_TO_POINTER (1));
 			} else {
 				usage ();
 			}

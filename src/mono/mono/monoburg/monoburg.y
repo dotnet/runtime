@@ -107,6 +107,64 @@ reset_parser ()
   state = 0;
 }
 
+struct pplist {
+  struct pplist *next;
+  gboolean ignore;
+};
+
+static struct pplist *pp = NULL;
+
+static char*
+getvar (const char *input)
+{
+    char *var = g_strchug (g_strdup (input));
+    char *ptr;
+
+    for (ptr = var; *ptr && *ptr != '\n'; ++ptr) {
+        if (g_ascii_isspace (*ptr)) {
+            break;
+        }
+    }
+    *ptr = '\0';
+
+    return var;
+}
+
+static void
+push_if (char *input, gboolean flip)
+{
+  struct pplist *new_pp = g_new (struct pplist, 1);
+  char *var = getvar (input);
+
+  new_pp->ignore = (g_hash_table_lookup (definedvars, var) == NULL) ^ flip;
+  new_pp->next = pp;
+
+  new_pp->ignore |= (pp ? pp->ignore : 0);
+  pp = new_pp;
+  g_free (var);
+}
+
+static void
+flip_if ()
+{
+  if (!pp)
+      yyerror ("%%else without %%if");
+
+  pp->ignore = !pp->ignore | (pp->next ? pp->next->ignore : 0);
+}
+
+static void
+pop_if ()
+{
+  struct pplist *prev_pp = pp;
+
+  if (!pp)
+      yyerror ("%%endif without %%if");
+
+  pp = pp->next;
+  g_free (prev_pp);
+}
+
 static char
 nextchar ()
 {
@@ -122,6 +180,35 @@ nextchar ()
 
 	ll = (input [0] == '%' && input [1] == '%');
 	next_state = state;
+
+        if (state == 1) {
+          if (!ll && input [0] == '%') {
+            if (!strncmp (&input [1], "ifdef", 5)) {
+              push_if (&input [6], FALSE);
+              ll = TRUE;
+              continue;
+            }
+            else if (!strncmp (&input [1], "ifndef", 6)) {
+              push_if (&input [7], TRUE);
+              ll = TRUE;
+              continue;
+            }
+            else if (!strncmp (&input [1], "else", 4)) {
+              flip_if ();
+              ll = TRUE;
+              continue;
+            }
+            else if (!strncmp (&input [1], "endif", 5)) {
+              pop_if ();
+              ll = TRUE;
+              continue;
+            }
+          }
+          if (pp && pp->ignore) {
+            ll = TRUE;
+            continue;
+          }
+        }
 
 	switch (state) {
 	case 0:
