@@ -356,7 +356,13 @@ guint32
 mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee)
 {
 	guint32 violation = MONO_JIT_SECURITY_OK;
-	/* first, the special (implied) linkdemand */
+
+	/* short-circuit corlib as it is fully trusted (within itself)
+	 * and because this cause major recursion headaches */
+	if ((caller->klass->image == mono_defaults.corlib) && (callee->klass->image == mono_defaults.corlib))
+		return violation;
+
+	/* next, the special (implied) linkdemand */
 
 	if (callee->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		/* restrict internal calls into the runtime */
