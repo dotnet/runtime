@@ -366,7 +366,7 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 		}
 	}
 
-	code = addr = g_malloc (64 + arg_size);
+	code = addr = g_malloc (64 + arg_size * 2);
 	
 	/* load the this pointer */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
@@ -442,7 +442,7 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 	
 	x86_ret (code);
 	
-	g_assert ((code - addr) < (64 + arg_size));
+	g_assert ((code - addr) < (64 + arg_size * 2));
 
 	if (size)
 		*size = code - addr;
