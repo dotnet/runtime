@@ -3530,6 +3530,12 @@ ves_icall_GetCurrentMethod (void)
 	return mono_method_get_object (mono_domain_get (), m, NULL);
 }
 
+static MonoReflectionMethod*
+ves_icall_System_Reflection_MethodBase_GetMethodFromHandle (MonoMethod *method)
+{
+	return mono_method_get_object (mono_domain_get (), method, NULL);
+}
+
 static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_GetExecutingAssembly (void)
 {
@@ -5396,7 +5402,8 @@ static const IcallEntry assembly_icalls [] = {
 };
 
 static const IcallEntry methodbase_icalls [] = {
-	{"GetCurrentMethod", ves_icall_GetCurrentMethod}
+	{"GetCurrentMethod", ves_icall_GetCurrentMethod},
+	{"GetMethodFromHandle", ves_icall_System_Reflection_MethodBase_GetMethodFromHandle}
 };
 
 static const IcallEntry module_icalls [] = {
