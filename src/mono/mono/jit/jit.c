@@ -2421,12 +2421,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 									  ii->arg_map [0], NULL);
 					ADD_TREE (ii->arg_map [0], cli_addr);
 				}
-
-				inline_list = g_list_prepend (inline_list, ii);
-				ip = ((MonoMethodNormal *)ii->method)->header->code;
-				ii->end = ip + ii->method->inline_count;
-				arg_map = ii->arg_map;
-				image = cm->klass->image;
+				
+				if (cm->inline_count) {
+					inline_list = g_list_prepend (inline_list, ii);
+					ip = ((MonoMethodNormal *)cm)->header->code;
+					ii->end = ip + cm->inline_count;
+					arg_map = ii->arg_map;
+					image = cm->klass->image;
+				}
 				continue;
 			}
 			
@@ -3053,21 +3055,30 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int vnum;
 
 			++ip; 
-			sp--;
 
-			vnum = mono_allocate_intvar (cfg, sp - stack, sp [0]->svt);
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
-			t1->data.i = vnum;
+			/* fixme: maybe we should add more of these optimisations */
+			if (sp [-1]->op == MB_TERM_CONST_I4) {
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.i = sp [-1]->data.i;
+				PUSH_TREE (t1, VAL_I32);
+			      
+			} else {
+				sp--;
+
+				vnum = mono_allocate_intvar (cfg, sp - stack, sp [0]->svt);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = vnum;
 		       
-			t2 = mono_ctree_new (mp, map_store_svt_type (sp [0]->svt), t1, sp [0]);
-			t2->svt = sp [0]->svt;
-			ADD_TREE (t2, cli_addr);
+				t2 = mono_ctree_new (mp, map_store_svt_type (sp [0]->svt), t1, sp [0]);
+				t2->svt = sp [0]->svt;
+				ADD_TREE (t2, cli_addr);
 
-			t1 = ctree_create_dup (mp, t2);		
-			PUSH_TREE (t1, t1->svt);
-			t1 = ctree_create_dup (mp, t1);		
-			PUSH_TREE (t1, t1->svt);
-
+				t1 = ctree_create_dup (mp, t2);		
+				PUSH_TREE (t1, t1->svt);
+				t1 = ctree_create_dup (mp, t1);		
+				PUSH_TREE (t1, t1->svt);
+			}
 			break;
 		}
 		case CEE_POP: {
