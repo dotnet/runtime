@@ -331,7 +331,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 	default:
 		g_assert_not_reached ();
 	}
-	return -1;
+	return 0;
 }
 
 void
@@ -485,7 +485,7 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 
 	unlock_handles (handles);
 	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
-	return (slot << 2) | handles->type;
+	return (slot << 3) | (handles->type + 1);
 }
 
 guint32
@@ -504,9 +504,12 @@ mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 MonoObject*
 mono_gchandle_get_target (guint32 gchandle)
 {
-	guint slot = gchandle >> 2;
-	HandleData *handles = &gc_handles [gchandle & 3];
+	guint slot = gchandle >> 3;
+	guint type = (gchandle & 7) - 1;
+	HandleData *handles = &gc_handles [type];
 	MonoObject *obj = NULL;
+	if (type > 3)
+		return NULL;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
@@ -525,8 +528,11 @@ mono_gchandle_get_target (guint32 gchandle)
 static void
 mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 {
-	guint slot = gchandle >> 2;
-	HandleData *handles = &gc_handles [gchandle & 3];
+	guint slot = gchandle >> 3;
+	guint type = (gchandle & 7) - 1;
+	HandleData *handles = &gc_handles [type];
+	if (type > 3)
+		return;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
@@ -538,16 +544,19 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	} else {
 		/* print a warning? */
 	}
-	/*g_print ("changed entry %d of type %d to object %p (in slot: %p)\n", slot, gchandle & 3, obj, handles->entries [slot]);*/
+	/*g_print ("changed entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
 	unlock_handles (handles);
 }
 
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 {
-	guint slot = gchandle >> 2;
-	HandleData *handles = &gc_handles [gchandle & 3];
+	guint slot = gchandle >> 3;
+	guint type = (gchandle & 7) - 1;
+	HandleData *handles = &gc_handles [type];
 	gboolean result = FALSE;
+	if (type > 3)
+		return FALSE;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
@@ -567,8 +576,11 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 void
 mono_gchandle_free (guint32 gchandle)
 {
-	guint slot = gchandle >> 2;
-	HandleData *handles = &gc_handles [gchandle & 3];
+	guint slot = gchandle >> 3;
+	guint type = (gchandle & 7) - 1;
+	HandleData *handles = &gc_handles [type];
+	if (type > 3)
+		return;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK)
@@ -578,7 +590,7 @@ mono_gchandle_free (guint32 gchandle)
 	} else {
 		/* print a warning? */
 	}
-	/*g_print ("freed entry %d of type %d\n", slot, gchandle & 3);*/
+	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
 }
 
