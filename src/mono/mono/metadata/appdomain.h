@@ -18,7 +18,8 @@
 #include <mono/utils/mono-hash.h>
 #include <mono/io-layer/io-layer.h>
 
-typedef void (*MonoThreadStartCB) (gpointer stack_start);
+typedef void (*MonoThreadStartCB) (MonoThread *thread, gpointer stack_start, gpointer func);
+typedef void (*MonoThreadAttachCB) (MonoThread *thread, gpointer stack_start);
 
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
@@ -105,7 +106,7 @@ mono_init                  (const char *filename);
 
 void
 mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb,
-			    MonoThreadStartCB attach_cb);
+			    MonoThreadAttachCB attach_cb);
 
 void
 mono_runtime_cleanup       (MonoDomain *domain);

@@ -50,7 +50,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
  */
 void
 mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
-		   MonoThreadStartCB attach_cb)
+		   MonoThreadAttachCB attach_cb)
 {
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;

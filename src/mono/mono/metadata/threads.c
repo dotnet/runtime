@@ -67,7 +67,10 @@ static guint32 current_object_key;
 static MonoThreadStartCB mono_thread_start_cb = NULL;
 
 /* function called at thread attach */
-static MonoThreadStartCB mono_thread_attach_cb = NULL;
+static MonoThreadAttachCB mono_thread_attach_cb = NULL;
+
+/* function called when a new thread has been created */
+static MonoThreadCallbacks *mono_thread_callbacks = NULL;
 
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
 static guint32 slothash_key;
@@ -168,7 +171,7 @@ static guint32 start_wrapper(void *data)
 
 	mono_profiler_thread_start (tid);
 
-	mono_new_thread_init (start_info->obj, &tid);
+	mono_new_thread_init (start_info->obj, &tid, start_func);
 
 	g_free (start_info);
 
@@ -188,7 +191,7 @@ static guint32 start_wrapper(void *data)
 	return(0);
 }
 
-void mono_new_thread_init (MonoThread *thread_object, gpointer stack_start)
+void mono_new_thread_init (MonoThread *thread_object, gpointer stack_start, gpointer func)
 {
 	/* FIXME: GC problem here with recorded object
 	 * pointer!
@@ -199,7 +202,7 @@ void mono_new_thread_init (MonoThread *thread_object, gpointer stack_start)
 	TlsSetValue (current_object_key, thread_object);
 
 	if (mono_thread_start_cb) {
-		mono_thread_start_cb (stack_start);
+		mono_thread_start_cb (thread_object, stack_start, func);
 	}
 }
 
@@ -245,7 +248,7 @@ mono_thread_attach (MonoDomain *domain)
 	if ((thread = mono_thread_current ())) {
 		g_warning ("mono_thread_attach called for an already attached thread");
 		if (mono_thread_attach_cb) {
-			mono_thread_attach_cb (&tid);
+			mono_thread_attach_cb (thread, &tid);
 		}
 		return thread;
 	}
@@ -272,7 +275,7 @@ mono_thread_attach (MonoDomain *domain)
 	mono_domain_set (domain);
 
 	if (mono_thread_attach_cb) {
-		mono_thread_attach_cb (&tid);
+		mono_thread_attach_cb (thread, &tid);
 	}
 
 	return(thread);
@@ -297,7 +300,10 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 #endif
 	
 	im = mono_get_delegate_invoke (start->vtable->klass);
-	start_func = mono_compile_method (im);
+	if (mono_thread_callbacks)
+		start_func = (* mono_thread_callbacks->thread_start_compile_func) (im);
+	else
+		start_func = mono_compile_method (im);
 
 	if(start_func==NULL) {
 		g_warning(G_GNUC_PRETTY_FUNCTION
@@ -332,7 +338,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": Started thread ID %d (handle %p)", tid, thread);
 #endif
-		
+
 		return(thread);
 	}
 }
@@ -365,7 +371,13 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 	 */
 	handle_store(this);
 
+	if (mono_thread_callbacks)
+		(* mono_thread_callbacks->start_resume) (this);
+
 	ResumeThread(thread);
+
+	if (mono_thread_callbacks)
+		(* mono_thread_callbacks->end_resume) (this);
 }
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
@@ -1181,8 +1193,7 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	}
 }
 
-void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
-		       MonoThreadStartCB attach_cb)
+void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb)
 {
 	/* Build a System.Threading.Thread object instance to return
 	 * for the main line's Thread.CurrentThread property.
@@ -1228,6 +1239,11 @@ void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	 * anything up.
 	 */
 	GetCurrentProcess ();
+}
+
+void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks)
+{
+	mono_thread_callbacks = callbacks;
 }
 
 #ifdef THREAD_DEBUG

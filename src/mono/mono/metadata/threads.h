@@ -19,12 +19,21 @@
 extern int  mono_thread_get_abort_signal (void);
 
 extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
-			      MonoThreadStartCB attach_cb);
+			      MonoThreadAttachCB attach_cb);
 extern void mono_thread_cleanup(void);
 extern MonoThread *mono_thread_current (void);
 
+typedef struct {
+	gpointer (* thread_start_compile_func) (MonoMethod *delegate);
+	void (* start_resume) (MonoThread *thread);
+	void (* end_resume) (MonoThread *thread);
+} MonoThreadCallbacks;
+
+extern void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks);
+
 extern void mono_new_thread_init (MonoThread *thread_object,
-				  gpointer stack_start);
+				  gpointer stack_start,
+				  gpointer func);
 extern MonoThread *mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);

@@ -415,7 +415,7 @@ static guint32 finalizer_thread (gpointer unused)
 {
 	guint32 stack_start;
 	
-	mono_new_thread_init (NULL, &stack_start);
+	mono_new_thread_init (NULL, &stack_start, NULL);
 	
 	while(!finished) {
 		/* Wait to be notified that there's at least one
