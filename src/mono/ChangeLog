@@ -1,3 +1,8 @@
+2003-11-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* autogen.sh: Applied patch from Peter Teichman (peter@ximian.com). 
+	Use 'glibtool' instead of 'libtool' on OSX. 
+
 2003-11-06  Zoltan Varga  <zovarga@ws-zovarga2>
 
 	* mono/benchmark/pinvoke.cs: New benchmark for testing the performance
