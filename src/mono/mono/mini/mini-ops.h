@@ -387,6 +387,8 @@ MINI_OP(OP_MEMSET, "memset")
 /* type check that support custom remoting types */
 MINI_OP(OP_CISINST, "cisinst")
 MINI_OP(OP_CCASTCLASS, "ccastclass")
+MINI_OP(OP_SAVE_LMF, "save_lmf")
+MINI_OP(OP_RESTORE_LMF, "restore_lmf")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")
