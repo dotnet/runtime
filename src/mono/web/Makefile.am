@@ -17,8 +17,8 @@ all-docs: $(WEB_FILES)
 	runtime documentation download faq contributing \
 	resources status > all-docs
 
-class-status: class-status.in pending-classes Makefile.am
-	cat class-status.in pending-classes > class-status
+class-status: class-status.in Makefile.am
+	cat class-status.in > class-status
 
 pending-classes:
 
