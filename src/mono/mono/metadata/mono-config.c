@@ -231,6 +231,7 @@ mono_config_parse_file (const char *filename)
 		g_markup_parse_context_end_parse (context, NULL);
 	}
 	g_markup_parse_context_free (context);
+	g_free (text);
 }
 
 /*
