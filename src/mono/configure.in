@@ -38,6 +38,8 @@ mono/Makefile
 mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
+mono/arch/Makefile
+mono/arch/x86/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile

@@ -12,6 +12,7 @@ mint_SOURCES =		\
 	interp.c	
 
 mint_LDADD =				\
+	../arch/x86/libmonoarch.a	\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\

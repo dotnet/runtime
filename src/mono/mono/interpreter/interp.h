@@ -57,3 +57,10 @@ struct _MonoInvocation {
 
 void mono_init_icall (void);
 
+typedef void (*MonoFunc) ();
+typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
+
+/*
+ * defined in an arch specific file.
+ */
+MonoPIFunc mono_create_trampoline (MonoMethod *method);

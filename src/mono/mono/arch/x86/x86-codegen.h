@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.5 2001/08/27 03:43:09 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.6 2001/09/06 09:46:03 lupus Exp $
 */
 
 #ifndef X86_H
@@ -237,6 +237,12 @@ typedef union {
  */
 
 #define x86_prefix(inst,p) do { *(inst)++ =(unsigned char) (p); } while (0)
+
+#define x86_rdtsc(inst) \
+	do {	\
+		*(inst)++ = 0x0f;	\
+		*(inst)++ = 0x31;	\
+	} while (0)
 
 #define x86_cmpxchg_reg_reg(inst,dreg,reg)	\
 	do {	\
@@ -719,7 +725,7 @@ typedef union {
 			*(inst)++ = (unsigned char)0xc6;	\
 			x86_mem_emit ((inst), 0, (mem));	\
 			x86_imm_emit8 ((inst), (imm));	\
-		} else if ((size) == 4) {	\
+		} else if ((size) == 2) {	\
 			*(inst)++ = (unsigned char)0x66;	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_mem_emit ((inst), 0, (mem));	\

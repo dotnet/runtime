@@ -364,6 +364,8 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		return;
 	}
 	switch (type->type) {
+	case MONO_TYPE_VOID:
+		return;
 	case MONO_TYPE_I1:
 		result->type = VAL_I32;
 		result->data.i = *(gint8*)data;
@@ -550,172 +552,13 @@ ves_array_get (MonoInvocation *frame)
 	stackval_from_data (mt, frame->retval, ea);
 }
 
-static char *
-mono_get_ansi_string (MonoObject *o)
-{
-	MonoStringObject *s = (MonoStringObject *)o;
-	char *as, *vector;
-	int i;
-
-	g_assert (o != NULL);
-
-	if (!s->length)
-		return g_strdup ("");
-
-	vector = s->c_str->vector;
-
-	g_assert (vector != NULL);
-
-	as = g_malloc (s->length + 1);
-
-	/* fixme: replace with a real unicode/ansi conversion */
-	for (i = 0; i < s->length; i++) {
-		as [i] = vector [i*2];
-	}
-
-	as [i] = '\0';
-
-	return as;
-}
-
 static void 
 ves_pinvoke_method (MonoInvocation *frame)
 {
-	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)frame->method;
-	MonoMethodSignature *sig = frame->method->signature;
-	stackval *sp = frame->stack_args;
-	int hasthis = sig->hasthis;
-	char *tmp_string;
-	int i, acount;
-	GSList *t, *l = NULL;
-	guint8 *p;
- 
-	acount = sig->param_count;
-
-	(gpointer)piinfo->code = p = alloca ((acount+hasthis)*32);
-
-	x86_enter (p, 0);
-
-	/* fixme: only works on little endian machines */
-
-	for (i = acount - 1; i >= 0; i--) {
-
-		switch (sig->params [i]->type) {
-
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I: /* FIXME: not 64 bit clean */
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-			x86_push_imm (p, sp [i].data.i);
-			break;
-		case MONO_TYPE_R4:
-			x86_fld (p, &sp [i].data.f, FALSE);
-			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 4);
-			x86_fst_membase (p, X86_ESP, 0, FALSE, TRUE);
-			break;
-		case MONO_TYPE_R8:
-			x86_fld (p, &sp [i].data.f, TRUE);
-			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 8);
-			x86_fst_membase (p, X86_ESP, 0, TRUE, TRUE);
-			break;
-		case MONO_TYPE_I8:
-			x86_push_imm (p, sp [i].data.i);
-			x86_push_imm (p, *(&sp [i].data.i+1));
-			break;
-		case MONO_TYPE_STRING:
-			g_assert (sp [i].type == VAL_OBJ);
-
-			if (frame->method->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI && sp [i].data.p) {
-				tmp_string = mono_get_ansi_string (sp [i].data.p);
-				l = g_slist_prepend (l, tmp_string);
-				x86_push_imm (p, tmp_string);
-			} else {
-				x86_push_imm (p, sp [i].data.p);
-			}
-			
-			break;
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_SZARRAY:
-			x86_push_imm (p, sp [i].data.p);
-			break;
- 		default:
-			g_warning ("not implemented %02x", sig->params [i]->type);
-			g_assert_not_reached ();
-		}
-
-	}
-
-	if (hasthis) 
-		x86_push_imm (p, frame->obj);
-
-	x86_call_code (p, (unsigned char*)frame->method->addr);
-
-	switch (sig->ret->type) {
-
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
-	case MONO_TYPE_U:
-		frame->retval->type = VAL_I32;
-		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
-		x86_mov_regp_reg (p, X86_EDX, X86_EAX, 4);
-		break;
-	case MONO_TYPE_I8:
-		frame->retval->type = VAL_I64;
-		x86_mov_mem_reg (p, &frame->retval->data.i, X86_EAX, 4);
-		x86_mov_mem_reg (p, &frame->retval->data.i + 1, X86_EDX, 4);
-		break;
-	case MONO_TYPE_R4:
-		frame->retval->type = VAL_DOUBLE;
-		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
-		x86_fst_membase (p, X86_EDX, 0, FALSE, TRUE);
-		break;
-	case MONO_TYPE_R8:
-		frame->retval->type = VAL_DOUBLE;
-		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
-		x86_fst_membase (p, X86_EDX, 0, TRUE, TRUE);
-		break;
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-		frame->retval->type = VAL_OBJ;
-		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
-		x86_mov_regp_reg (p, X86_EDX, X86_EAX, 4);
-		break;
-	case MONO_TYPE_VOID:
-		break;
-	default:
-		g_warning ("not implemented %02x", sig->ret->type);
-		g_assert_not_reached ();
-	}
-
-	x86_leave (p);
-	x86_ret (p);
-
-	piinfo->code ();
-
-	t = l;
-	while (t) {
-		g_free (t->data);
-		t = t->next;
-	}
-
-	g_slist_free (l);
+	MonoPIFunc func = mono_create_trampoline (frame->method);
+	func (frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
+	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
+	g_free (func);
 }
 
 static void
@@ -2898,18 +2741,16 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
 	if (method->signature->param_count) {
-		g_warning ("Main () with arguments not yet supported");
-		exit (1);
-		/*
 		int i;
 		stackval argv_array;
-		MonoObject *arr = mono_new_szarray (mono_defaults.corlib, mono_defaults.string_token, argc);
+		MonoArrayObject *arr = (MonoArrayObject*)mono_new_szarray (mono_defaults.string_class, argc);
 		argv_array.type = VAL_OBJ;
 		argv_array.data.p = arr;
+		argv_array.data.vt.klass = NULL;
 		for (i=0; i < argc; ++i) {
+			((gpointer *)arr->vector)[i] = mono_new_string (argv [i]);
 		}
-		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
-		*/
+		INIT_FRAME (&call, NULL, NULL, &argv_array, &result, method);
 	} else {
 		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
 	}
@@ -2981,7 +2822,11 @@ main (int argc, char *argv [])
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
 #else
-	retval = ves_exec (assembly, argc, argv);
+	/*
+	 * skip the program name from the args.
+	 */
+	++i;
+	retval = ves_exec (assembly, argc - i, argv + i);
 #endif
 	mono_assembly_close (assembly);
 
