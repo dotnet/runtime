@@ -1,3 +1,7 @@
+2004-04-30  Duncan Mak  <duncan@ximian.com>
+
+	* runtime/Makefile.am ($(monobins_DATA)): Add sn.exe and sn.
+
 2004-04-29  Duncan Mak  <duncan@ximian.com>
 
 	* scripts/gmcs.in: New file.
