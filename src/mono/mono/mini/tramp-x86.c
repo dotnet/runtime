@@ -173,7 +173,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	o += disp;
 
-	if (m->klass->valuetype)
+	if (m->klass->valuetype && !mono_aot_is_got_entry (code, o))
 		addr = get_unbox_trampoline (m, addr);
 
 	*((gpointer *)o) = addr;
@@ -232,12 +232,14 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			//VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
 #endif
 		}
-	}
-	else
-		if (code [0] == 0x90 || code [0] == 0xeb)
-			/* Already changed by another thread */
-			;
-		else {
+	} else if (code [0] == 0x90 || code [0] == 0xeb) {
+		/* Already changed by another thread */
+		;
+	} else if ((code [-1] == 0xff) && (x86_modrm_reg (code [0]) == 0x2)) {
+		/* call *<OFFSET>(<REG>) -> Call made from AOT code */
+		/* FIXME: Patch up the trampoline */
+		;
+	} else {
 			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
 			g_assert_not_reached ();

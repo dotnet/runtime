@@ -72,6 +72,7 @@ typedef struct MonoAotModule {
 	MonoGHashTable *methods;
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
+	guint32 got_size;
 	char **icall_table;
 	MonoAssemblyName *image_names;
 	char **image_guids;
@@ -129,28 +130,15 @@ is_got_patch (MonoJumpInfoType patch_type)
 #ifdef __x86_64__
 	return TRUE;
 #elif defined(__i386__)
-	switch (patch_type) {
-	case MONO_PATCH_INFO_METHOD_REL:
-	case MONO_PATCH_INFO_SWITCH:
-	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_CLASS:
-	case MONO_PATCH_INFO_IMAGE:
-	case MONO_PATCH_INFO_FIELD:
-	case MONO_PATCH_INFO_VTABLE:
-	case MONO_PATCH_INFO_SFLDA:
-	case MONO_PATCH_INFO_EXC_NAME:
-	case MONO_PATCH_INFO_LDSTR:
-	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-	case MONO_PATCH_INFO_LDTOKEN:
-		return TRUE;
-	default:
-		return FALSE;
-	}
+	return TRUE;
 #else
 	return FALSE;
 #endif
 }
+
+/*****************************************************/
+/*                 AOT RUNTIME                       */
+/*****************************************************/
 
 static MonoImage *
 load_image (MonoAotModule *module, int index)
@@ -362,6 +350,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	gpointer *got_addr = NULL;
 	gpointer *got = NULL;
+	guint32 *got_size_ptr = NULL;
 #endif
 
 	if (mono_compile_aot)
@@ -411,6 +400,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_assert (got_addr);
 	got = (gpointer*)*got_addr;
 	g_assert (got);
+	g_module_symbol (assembly->aot_module, "got_size", (gpointer *)&got_size_ptr);
+	g_assert (got_size_ptr);
 #endif
 
 	/*
@@ -426,6 +417,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	info->methods = mono_g_hash_table_new (NULL, NULL);
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	info->got = got;
+	info->got_size = *got_size_ptr;
 #endif
 	sscanf (opt_flags, "%d", &info->opts);
 
@@ -703,7 +695,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		while (*info) {
 			MonoJumpInfo *ji = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
 
-#if defined(MONO_ARCH_HAVE_PIC_AOT) && defined(__x86_64__)
+#if defined(MONO_ARCH_HAVE_PIC_AOT)
 			ji->type = *(guint8*)info;
 			info ++;
 #else
@@ -990,6 +982,32 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 }
 
+gboolean
+mono_aot_is_got_entry (guint8 *code, guint8 *addr)
+{
+	MonoJitInfo *ji;
+	MonoAssembly *ass;
+	MonoAotModule *aot_module;
+
+	ji = mono_jit_info_table_find (mono_domain_get (), code);
+	if (!ji)
+		return FALSE;
+
+	ass = ji->method->klass->image->assembly;
+
+	if (!aot_modules)
+		return FALSE;
+	aot_module = (MonoAotModule*)mono_g_hash_table_lookup (aot_modules, ass);
+	if (!aot_module || !aot_module->got)
+		return FALSE;
+
+	return ((addr >= (guint8*)(aot_module->got)) && (addr < (guint8*)(aot_module->got + aot_module->got_size)));
+}
+
+/*****************************************************/
+/*                 AOT COMPILER                      */
+/*****************************************************/
+
 static void
 emit_section_change (FILE *fp, const char *section_name, int subsection_index)
 {
@@ -1212,6 +1230,9 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_global(tmpfp, mname, TRUE);
 	emit_label(tmpfp, mname);
 
+	if (cfg->verbose_level > 0)
+		g_print ("Emitted as %s\n", mname);
+
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
@@ -1233,6 +1254,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_LABEL:
 			case MONO_PATCH_INFO_BB:
+			case MONO_PATCH_INFO_NONE:
 				break;
 			case MONO_PATCH_INFO_GOT_OFFSET: {
 				guint32 offset = mono_arch_get_patch_offset (code + i);
@@ -1337,7 +1359,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		offset = patch_info->ip.i - last_offset;
 		last_offset = patch_info->ip.i;
 
-#if defined(MONO_ARCH_HAVE_PIC_AOT) && defined(__x86_64__)
+#if defined(MONO_ARCH_HAVE_PIC_AOT)
 		/* Only the type is needed */
 		fprintf (tmpfp, "\t.byte %d\n", patch_info->type);
 #else
@@ -1582,7 +1604,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	write_string_symbol (tmpfp, "mono_aot_opt_flags", opts_str);
 	g_free (opts_str);
 
-	emitted = g_new0 (gboolean, image->tables [MONO_TABLE_METHOD].rows);
+	emitted = g_new0 (gboolean, image->tables [MONO_TABLE_METHOD].rows + 32);
 
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoJumpInfo *patch_info;
@@ -1614,7 +1636,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/*
 		 * Since these methods are the only ones which are compiled with
 		 * AOT support, and they are not used by runtime startup/shutdown code,
-		 * the runtime will not see AOT methods during AOT compilation, so it
+		 * the runtime will not see AOT methods during AOT compilation,so it
 		 * does not need to support them by creating a fake GOT etc.
 		 */
 		cfg = mini_method_compile (method, opts, mono_get_root_domain (), FALSE, TRUE, 0);
@@ -1805,6 +1827,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_alignment (tmpfp, 8);
 	emit_label(tmpfp, symbol);
 	emit_pointer (tmpfp, "got");
+
+	symbol = g_strdup_printf ("got_size");
+	emit_section_change (tmpfp, ".data", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+	fprintf (tmpfp, ".long %d\n", acfg->got_offset * sizeof (gpointer));
 #endif
 
 	fclose (tmpfp);
@@ -1883,6 +1912,12 @@ MonoJitInfo*
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
 	return NULL;
+}
+
+gboolean
+mono_aot_is_got_entry (guint8 *code, guint8 *addr)
+{
+	return FALSE;
 }
 
 int

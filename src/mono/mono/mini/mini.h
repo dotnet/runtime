@@ -36,7 +36,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "11"
+#define MONO_AOT_FILE_VERSION "12"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -550,6 +550,7 @@ typedef struct {
 	gboolean         run_cctors;
 	gboolean         need_lmf_area;
 	gboolean         compile_aot;
+	gboolean         got_var_allocated;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
@@ -738,6 +739,7 @@ void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
 											 MonoMethod *method);
+gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 gboolean  mono_method_blittable             (MonoMethod *method);
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
