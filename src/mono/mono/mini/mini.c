@@ -7232,6 +7232,8 @@ mini_init (const char *filename)
 
 	mono_arch_cpu_init ();
 
+	g_thread_init (NULL);
+
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
 
