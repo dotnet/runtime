@@ -61,7 +61,7 @@ static double
 mono_double_ParseImpl (char *ptr)
 {
 	gchar *endptr = NULL;
-	gdouble result;
+	gdouble result = 0.0;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -156,9 +156,9 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	gint32 esize, vsize;
 	gpointer *ea, *va;
 
-	guint64 u64;
-	gint64 i64;
-	gdouble r64;
+	guint64 u64 = 0;
+	gint64 i64 = 0;
+	gdouble r64 = 0;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1229,6 +1229,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return NULL;
 	}
 
+	vtable = NULL;
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
 		vtable = mono_class_vtable (domain, field->klass);
@@ -1478,27 +1479,77 @@ ves_icall_MonoType_get_Module (MonoReflectionType *type)
 	return mono_module_get_object (mono_object_domain (type), class->image);
 }
 
-static void
-ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
+static MonoReflectionAssembly*
+ves_icall_MonoType_get_Assembly (MonoReflectionType *type)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *class = mono_class_from_mono_type (type);
+	MonoClass *class = mono_class_from_mono_type (type->type);
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->nested_in = class->nested_in ? mono_type_get_object (domain, &class->nested_in->byval_arg): NULL;
-	info->name = mono_string_new (domain, class->name);
-	info->name_space = mono_string_new (domain, class->name_space);
-	info->rank = class->rank;
-	info->assembly = mono_assembly_get_object (domain, class->image->assembly);
-	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
-		info->etype = mono_type_get_object (domain, class->enum_basetype);
-	else if (class->element_class)
-		info->etype = mono_type_get_object (domain, &class->element_class->byval_arg);
-	else
-		info->etype = NULL;
+	return mono_assembly_get_object (domain, class->image->assembly);
+}
 
-	info->isprimitive = (!type->byref && (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8));
+static MonoReflectionType*
+ves_icall_MonoType_get_DeclaringType (MonoReflectionType *type)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *class = mono_class_from_mono_type (type->type);
+
+	MONO_ARCH_SAVE_REGS;
+
+	return class->nested_in ? mono_type_get_object (domain, &class->nested_in->byval_arg) : NULL;
+}
+
+static MonoReflectionType*
+ves_icall_MonoType_get_UnderlyingSystemType (MonoReflectionType *type)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *class = mono_class_from_mono_type (type->type);
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (class->enumtype && class->enum_basetype) /* types that are modified typebuilders may not have enum_basetype set */
+		return mono_type_get_object (domain, class->enum_basetype);
+	else if (class->element_class)
+		return mono_type_get_object (domain, &class->element_class->byval_arg);
+	else
+		return NULL;
+}
+
+static MonoString*
+ves_icall_MonoType_get_Name (MonoReflectionType *type)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *class = mono_class_from_mono_type (type->type);
+
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_string_new (domain, class->name);
+}
+
+static MonoString*
+ves_icall_MonoType_get_Namespace (MonoReflectionType *type)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *class = mono_class_from_mono_type (type->type);
+
+	MONO_ARCH_SAVE_REGS;
+
+	while (class->nested_in)
+		class = class->nested_in;
+
+	return mono_string_new (domain, class->name_space);
+}
+
+static gint32
+ves_icall_MonoType_GetArrayRank (MonoReflectionType *type)
+{
+	MonoClass *class = mono_class_from_mono_type (type->type);
+
+	MONO_ARCH_SAVE_REGS;
+
+	return class->rank;
 }
 
 static MonoArray*
@@ -1950,13 +2001,14 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	info->names = mono_array_new (domain, mono_defaults.string_class, nvalues);
 	info->values = mono_array_new (domain, enumc, nvalues);
 	
+	crow = -1;
 	for (i = 0, j = 0; i < enumc->field.count; ++i) {
 		field = &enumc->fields [i];
 		if (strcmp ("value__", field->name) == 0)
 			continue;
 		mono_array_set (info->names, gpointer, j, mono_string_new (domain, field->name));
 		if (!field->data) {
-			crow = mono_metadata_get_constant_index (enumc->image, MONO_TOKEN_FIELD_DEF | (i+enumc->field.first+1));
+			crow = mono_metadata_get_constant_index (enumc->image, MONO_TOKEN_FIELD_DEF | (i+enumc->field.first+1), crow + 1);
 			crow = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_VALUE);
 			/* 1 is the length of the blob */
 			field->data = 1 + mono_metadata_blob_heap (enumc->image, crow);
@@ -2508,7 +2560,7 @@ static MonoReflectionType*
 ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *assembly, MonoReflectionModule *module, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
 	gchar *str;
-	MonoType *type;
+	MonoType *type = NULL;
 	MonoTypeNameParse info;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3320,7 +3372,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
  * Magic number to convert a time which is relative to
  * Jan 1, 1970 into a value which is relative to Jan 1, 0001.
  */
-#define	EPOCH_ADJUST	((guint64)62135596800L)
+#define	EPOCH_ADJUST	((guint64)62135596800LL)
 
 /*
  * Magic number to convert FILETIME base Jan 1, 1601 to DateTime - base Jan, 1, 0001
@@ -4603,9 +4655,14 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::getFullName", ves_icall_System_MonoType_getFullName,
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 	"System.MonoType::GetElementType", ves_icall_MonoType_GetElementType,
-	"System.MonoType::get_type_info", ves_icall_get_type_info,
+	"System.MonoType::GetArrayRank", ves_icall_MonoType_GetArrayRank,
 	"System.MonoType::get_BaseType", ves_icall_get_type_parent,
 	"System.MonoType::get_Module", ves_icall_MonoType_get_Module,
+	"System.MonoType::get_Assembly", ves_icall_MonoType_get_Assembly,
+	"System.MonoType::get_DeclaringType", ves_icall_MonoType_get_DeclaringType,
+	"System.MonoType::get_UnderlyingSystemType", ves_icall_MonoType_get_UnderlyingSystemType,
+	"System.MonoType::get_Name", ves_icall_MonoType_get_Name,
+	"System.MonoType::get_Namespace", ves_icall_MonoType_get_Namespace,
 	"System.MonoType::IsPointerImpl", ves_icall_type_ispointer,
 	"System.MonoType::IsPrimitiveImpl", ves_icall_type_isprimitive,
 	"System.MonoType::IsByRefImpl", ves_icall_type_isbyref,
