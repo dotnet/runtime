@@ -1246,4 +1246,13 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 	return res;
 }
 
+#ifdef WIN32
+__declspec(dllexport) 
+#endif
+STDCALL int
+mono_test_stdcall_name_mangling (int a, int b, int c)
+{
+        return a + b + c;
+}
+
 
