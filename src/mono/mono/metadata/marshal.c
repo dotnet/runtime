@@ -628,7 +628,7 @@ mono_mb_emit_proxy_check (MonoMethodBuilder *mb, int branch_code)
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
 	mono_mb_emit_byte (mb, branch_code);
 	pos = mb->pos;
@@ -1341,7 +1341,7 @@ emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 	/* Call DestroyStructure */
 	/* FIXME: Only do this if needed */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 	mono_mb_emit_ldloc (mb, struct_var);
 	mono_mb_emit_icall (mb, mono_struct_delete_old);
@@ -3652,7 +3652,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			if (klass->delegate) {
 				g_assert (!t->byref);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+				mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 				mono_mb_emit_ldarg (mb, i);
 				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
@@ -5138,7 +5138,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			g_assert (!t->byref);
 			mono_mb_emit_byte (mb, CEE_STLOC_0);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+			mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 			mono_mb_emit_byte (mb, CEE_LDLOC_0);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
