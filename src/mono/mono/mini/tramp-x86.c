@@ -458,6 +458,16 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	return code;
 }
 
+void
+mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
+{
+	/* FIXME: This is not thread safe */
+	guint8 *code = ji->code_start;
+
+	x86_push_imm (code, func_arg);
+	x86_call_code (code, (guint8*)func);
+}
+
 /*
  * This method is only called when running in the Mono Debugger.
  */

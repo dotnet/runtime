@@ -8010,6 +8010,12 @@ mono_jit_compile_method (MonoMethod *method)
 	return mono_jit_compile_method_with_opt (method, default_opt);
 }
 
+static void
+invalidated_delegate_trampoline (MonoClass *klass)
+{
+	g_error ("Unmanaged code called delegate of type %s which was already garbage collected.\n See http://blogs.msdn.com/adam_nathan/archive/2003/06/01/56693.aspx for an explanation and ways to fix this.", mono_type_full_name (&klass->byval_arg));
+}
+
 /*
  * mono_jit_free_method:
  *
@@ -8021,6 +8027,21 @@ mono_jit_free_method (MonoMethod *method)
 	MonoJitDynamicMethodInfo *ji;
 
 	g_assert (method->dynamic);
+
+#ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/*
+		 * Instead of freeing the code, change it to call an error routine
+		 * so people can fix their code.
+		 */
+		EnterCriticalSection (&jit_mutex);
+		ji = g_hash_table_lookup (dynamic_code_hash, method);
+		LeaveCriticalSection (&jit_mutex);
+		if (ji)
+			mono_arch_invalidate_method (ji->ji, invalidated_delegate_trampoline, method->klass);
+		return;
+	}
+#endif
 
 	EnterCriticalSection (&jit_mutex);
 	ji = g_hash_table_lookup (dynamic_code_hash, method);
