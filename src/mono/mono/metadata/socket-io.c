@@ -515,6 +515,10 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
  */
 void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
 {
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": closing 0x%x", sock);
+#endif
+
 	closesocket(sock);
 }
 
@@ -650,7 +654,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 	}
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": bound to %s port %d", inet_ntoa((struct sockaddr_in)sa.sin_addr), ntohs((struct sockaddr_in)sa.sin_port));
+	g_message(G_GNUC_PRETTY_FUNCTION ": bound to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
 	return(create_object_from_sockaddr(&sa, salen));
@@ -670,7 +674,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 	}
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": connected to %s port %d", inet_ntoa((struct sockaddr_in)sa.sin_addr), ntohs((struct sockaddr_in)sa.sin_port));
+	g_message(G_GNUC_PRETTY_FUNCTION ": connected to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
 	return(create_object_from_sockaddr(&sa, salen));
@@ -730,7 +734,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 	sa=create_sockaddr_from_object(sockaddr, &sa_size);
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(sa.sin_addr), port);
+	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
 	ret=bind(sock, sa, sa_size);
@@ -750,7 +754,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 	sa=create_sockaddr_from_object(sockaddr, &sa_size);
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": connecting to %s port %d", inet_ntoa(sa.sin_addr), port);
+	g_message(G_GNUC_PRETTY_FUNCTION ": connecting to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
 	ret=connect(sock, sa, sa_size);

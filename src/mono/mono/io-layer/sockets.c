@@ -157,6 +157,11 @@ int closesocket(guint32 handle)
 	gboolean ok;
 	int ret;
 	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": closing socket handle 0x%x",
+		   handle);
+#endif
+
 	if(startup_count==0) {
 		WSASetLastError(WSANOTINITIALISED);
 		return(SOCKET_ERROR);
