@@ -699,12 +699,30 @@ dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method)
 	return retval;
 }
 
+static char *
+get_class_name (MonoClass *c)
+{
+	if (c->nested_in){
+		char *part_a = get_class_name (c->nested_in);
+		char *result;
+
+		result = g_strdup_printf ("%s/%s", part_a, c->name);
+		g_free (part_a);
+		return result;
+	}
+	if (*c->name_space)
+		return g_strdup_printf ("%s.%s", c->name_space, c->name);
+	else
+		return g_strdup (c->name);
+}
+
 char *
 dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype" : "class" ;
 	char *assemblyref = NULL, *result, *esname, *generic = NULL;
+	
 	if (m != c->image) {
 		if (c->image->assembly_name) {
 			/* we cheat */
@@ -721,14 +739,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 		}
 	}
 
-	if (c->nested_in) {
-		result = g_strdup_printf ("%s%s%s/%s", c->nested_in->name_space, 
-				*c->nested_in->name_space?".":"", c->nested_in->name,
-				c->name);
-	} else {
-		result = g_strdup_printf ("%s%s%s", c->name_space, 
-				*c->name_space?".":"", c->name);
-	}
+	result = get_class_name (c);
 	
 	esname = get_escaped_name (result);
 	g_free (result);
@@ -1153,7 +1164,7 @@ param_flags (guint32 f)
 }
 
 static dis_map_t field_access_map [] = {
-	{ FIELD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
+	{ FIELD_ATTRIBUTE_COMPILER_CONTROLLED, "privatescope " },
 	{ FIELD_ATTRIBUTE_PRIVATE,             "private " },
 	{ FIELD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem " },
 	{ FIELD_ATTRIBUTE_ASSEMBLY,            "assembly " },

@@ -413,7 +413,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 }
 
 static dis_map_t method_access_map [] = {
-	{ METHOD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
+	{ METHOD_ATTRIBUTE_COMPILER_CONTROLLED, "privatescope " },
 	{ METHOD_ATTRIBUTE_PRIVATE,             "private " },
 	{ METHOD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem " },
 	{ METHOD_ATTRIBUTE_ASSEM,               "assembly " },
