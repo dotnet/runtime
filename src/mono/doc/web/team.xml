@@ -468,4 +468,18 @@
       <task>XML</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Ravi</first-name>
+      <last-name>Pratap M</last-name>
+    </name>
+    <e-mail>ravi@ximian.com</e-mail>
+    <image>rpratap.png</image>
+    <location>St. Louis</location>
+    <organization>Ximian (formerly)</organization>
+    <description>Ximian hacker</description>
+    <tasks>
+      <task>MCS Compiler</task>
+    </tasks>
+  </contributor>
 </contributors>
