@@ -1,3 +1,8 @@
+2004-05-04  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: check for SIGEV_THREAD being defined before checking
+	for AIO support. Fixes compilation under FreeBSD.
+
 2004-05-04  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/net_1_1/Makefile.am (mono_runtime): Use USE_JIT, not
