@@ -12,6 +12,7 @@ INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	\
 
 libmetadata_a_SOURCES = \
 	assembly.c	\
+	opcodes.c	\
 	image.c		\
 	metadata.c	\
 	verify.c	\
@@ -43,6 +44,7 @@ libmetadataincludedir = $(includedir)/mono/metadata
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
+	opcodes.h	\
 	blob.h		\
 	cil-coff.h	\
 	mono-endian.h	\

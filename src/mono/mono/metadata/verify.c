@@ -1,6 +1,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/verify.h>
+#include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/mono-endian.h>
 #include <string.h>
@@ -49,7 +50,7 @@ mono_free_verify_list (GSList *list)
 		(list) = g_slist_prepend ((list), vinfo);	\
 	} while (0)
 
-static const char*
+static const char* const
 valid_cultures[] = {
 	"ar-SA", "ar-IQ", "ar-EG", "ar-LY",
 	"ar-DZ", "ar-MA", "ar-TN", "ar-OM",
@@ -880,7 +881,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	while (ip < end) {
 		ip_offset = ip - header->code;
-		g_print ("IL_%04x: %02x\n", ip_offset, *ip);
+		g_print ("IL_%04x: %02x %s\n", ip_offset, *ip, mono_opcode_names [*ip]);
 		if (start || !(code [ip_offset].flags & CODE_SEEN)) {
 			if (start) {
 				code [ip_offset].stack_count = 0;
