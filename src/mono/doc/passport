@@ -1,5 +1,12 @@
 * Updates
 
+	<b>Sep 20, 2001:</b> Microsoft has just announced some changes
+	to passport that are rather interesting.  This document
+	reflects the Passport system without taking into account the
+	new changes.
+
+	Read about it <a href="http://www.microsoft.com/presspass/features/2001/sep01/09-20passport.asp">here</a>.
+
 	For an analysis of security problems with passport, check <a
 	href="http://avirubin.com/passport.html">http://avirubin.com/passport.html</a>.
 	The bottom line is that you should not put any sensitive

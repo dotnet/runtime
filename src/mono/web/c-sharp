@@ -1,19 +1,20 @@
 * MCS: The Ximian C# compiler
 
 	MCS began as an experiment to learn the features of C# by
-	writing a large C# program.  MCS is currently able to parse C#
-	programs and create an internal tree representation of the
-	program.  MCS can parse itself.  
+	writing a large C# program.  MCS is currently able to compile
+	small C# programs.  
 
-	MCS now does type checking at the class, interface and struct
-	levels and can resolve the class hierarchy and as of last week
-	can generate interface code. 
+	All type, field, method, delegates definitions are now emitted
+	and the body of constructors and methods is being generated
+	for a subset of the language.  Although MCS can parse itself,
+	it cant not yet compile itself.  Most statements are generated
+	correctly and about 60% of the C# expressions are supported.
 
 	Work is progressing quickly on various fronts in the C#
-	compiler.  Recently I started using the System.Reflection API
-	to load system type definitions and avoid self-population of
-	types in the compiler and dropped my internal Type
-	representation in favor of using the CLI's System.Type.  
+	compiler.
+
+	A test suite is being built currently to track the progress of
+	the compiler.
 
 ** Phases of the compiler
 
@@ -59,13 +60,9 @@
 	Simple tasks:
 
 	<ul>
-		* Array declarations are currently being ignored, 
-
 		* PInvoke declarations are not supported.
 
 		* Pre-processing is not supported.
-
-		* Attribute declarations and passing currently ignored.
 
 		* Compiler does not pass around line/col information from tokenizer for error reporting.
 
