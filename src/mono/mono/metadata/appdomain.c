@@ -77,7 +77,7 @@ MonoDomain *mono_root_domain = NULL;
  * Returns: the initial domain.
  */
 MonoDomain *
-mono_init ()
+mono_init (const char *filename)
 {
 	static MonoDomain *domain = NULL;
 	MonoAppDomainSetup *setup;
@@ -208,7 +208,7 @@ mono_init ()
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
 	ves_icall_System_AppDomainSetup_InitAppDomainSetup (setup);
 
-	name = mono_string_new (domain, "Default Domain");
+	name = mono_string_new (domain, g_path_get_basename (filename));
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 	ad = (MonoAppDomain *) mono_object_new (domain, class);

@@ -56,7 +56,7 @@ struct _MonoAppDomain {
 extern MonoDomain *mono_root_domain;
 
 MonoDomain *
-mono_init (void);
+mono_init (const char *filename);
 
 inline MonoDomain *
 mono_domain_get (void);
