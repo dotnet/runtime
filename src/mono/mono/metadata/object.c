@@ -1422,7 +1422,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		if (!obj) {
 			obj = mono_object_new (mono_domain_get (), method->klass);
 			if (mono_object_class(obj) == mono_defaults.transparent_proxy_class) {
-				method = mono_marshal_get_remoting_invoke (method->klass->vtable [method->slot]);
+				method = mono_marshal_get_remoting_invoke (method->slot == -1 ? method : method->klass->vtable [method->slot]);
 			}
 		}
 		mono_runtime_invoke (method, obj, pa, exc);

@@ -653,9 +653,12 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 
 		if (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME)
 			continue;
-		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
-			continue;
-		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
+		
+		if (method->slot != -1) {
+			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
+				continue;
+			g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
+		}
 
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 			++num_static_methods;

@@ -1058,8 +1058,19 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		MonoMethod *cm;
 	       
 		cm = class->methods [i];
-
-		if (!(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT) && (cm->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		
+		/*
+		 * Non-virtual method have no place in the vtable.
+		 * This also catches static methods (since they are not virtual).
+		 */
+		if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
+			continue;
+		
+		/*
+		 * If the method is REUSE_SLOT, we must check in the
+		 * base class for a method to override.
+		 */
+		if (!(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT)) {
 			int slot = -1;
 			for (k = class->parent; k ; k = k->parent) {
 				int j;
