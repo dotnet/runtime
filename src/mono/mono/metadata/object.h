@@ -176,9 +176,6 @@ typedef struct {
 	MonoBoolean  sync_completed;
 	MonoBoolean  completed;
 	MonoBoolean  endinvoke_called;
-	MonoArray   *remoting_args;
-	MonoObject  *remoting_rval;
-	MonoObject  *remoting_exc;
 } MonoAsyncResult;
 
 typedef struct {
@@ -200,6 +197,14 @@ typedef struct {
 	MonoClass     *klass; 
 } MonoTransparentProxy;
 
+/* This is a copy of System.Runtime.Remoting.Messaging.CallType */
+typedef enum {
+	CallType_Sync = 0,
+	CallType_BeginInvoke = 1,
+	CallType_EndInvoke = 2,
+	CallType_OneWay = 3
+} MonoCallType;
+
 typedef struct {
 	MonoObject obj;
 	MonoReflectionMethod *method;
@@ -210,6 +215,7 @@ typedef struct {
 	MonoObject *rval;
 	MonoObject *exc;
 	MonoAsyncResult *async_result;
+	guint32     call_type;
 } MonoMethodMessage;
 
 typedef struct {

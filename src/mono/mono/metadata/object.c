@@ -2051,6 +2051,8 @@ mono_message_init (MonoDomain *domain,
 
 	this->args = mono_array_new (domain, mono_defaults.object_class, sig->param_count);
 	this->arg_types = mono_array_new (domain, mono_defaults.byte_class, sig->param_count);
+	this->async_result = NULL;
+	this->call_type = CallType_Sync;
 
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method->method, (const char **) names);
@@ -2310,7 +2312,6 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		*state = *((MonoObject **)params [i]);
 	}
 
-	msg->async_result = NULL;
 	return msg;
 }
 

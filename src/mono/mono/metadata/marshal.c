@@ -990,6 +990,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			ares = mono_async_result_new (mono_domain_get (), handle, state, handle);
 			ares->async_delegate = (MonoObject *)async_callback;
 			msg->async_result = ares;
+			msg->call_type = CallType_BeginInvoke;
 
 			mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
 			return ares;
@@ -1170,11 +1171,12 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	g_assert (ares);
 
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
-		/* wait until we are really finished */
-		WaitForSingleObject ((HANDLE)ares->data, INFINITE);
-		out_args = ares->remoting_args;
-		res = ares->remoting_rval;
-		exc = ares->remoting_exc;
+		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
+		msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
+		mono_message_init (domain, msg, delegate->method_info, NULL);
+		msg->call_type = CallType_EndInvoke;
+		msg->async_result = ares;
+		res = mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
 	}
 	else
 		res = mono_thread_pool_finish (ares, &out_args, &exc);
