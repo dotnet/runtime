@@ -209,14 +209,9 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 		else
 			return type;
 	case MONO_TYPE_VAR:
-		if (ginst) {
-			MonoType *t = ginst->type_argv [type->data.generic_param->num];
-
-			if ((t->type == MONO_TYPE_VAR) || (t->type == MONO_TYPE_MVAR))
-				return type;
-			else
-				return dup_type (t);
-		} else
+		if (ginst)
+			return dup_type (ginst->type_argv [type->data.generic_param->num]);
+		else
 			return type;
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
@@ -242,12 +237,19 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 		nginst = g_new0 (MonoGenericInst, 1);
 		*nginst = *oginst;
 
+		nginst->is_open = FALSE;
+
 		nginst->type_argv = g_new0 (MonoType *, oginst->type_argc);
 
 		for (i = 0; i < oginst->type_argc; i++) {
 			MonoType *t = oginst->type_argv [i];
 			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst, gmethod);
+
+			if (!nginst->is_open)
+				nginst->is_open = mono_class_is_open_constructed_type (nginst->type_argv [i]);
 		};
+
+		nginst->klass = NULL;
 
 		mono_loader_lock ();
 		nt = g_hash_table_lookup (oginst->klass->image->generic_inst_cache, nginst);
@@ -1231,6 +1233,9 @@ mono_class_init (MonoClass *class)
 
 		mono_class_setup_parent (class, class->parent);
 
+		if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+			class->interface_id = mono_get_unique_iid (class);
+
 		class->method = gklass->method;
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 
@@ -1260,6 +1265,15 @@ mono_class_init (MonoClass *class)
 				prop->get = inflate_method (ginst, prop->get);
 			if (prop->set)
 				prop->set = inflate_method (ginst, prop->set);
+		}
+
+		class->interface_count = gklass->interface_count;
+		class->interfaces = g_new0 (MonoClass *, class->interface_count);
+		for (i = 0; i < class->interface_count; i++) {
+			MonoType *it = &gklass->interfaces [i]->byval_arg;
+			MonoType *inflated = mono_class_inflate_generic_type (it, ginst, NULL);
+			class->interfaces [i] = mono_class_from_mono_type (inflated);
+			mono_class_init (class->interfaces [i]);
 		}
 	}
 

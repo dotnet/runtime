@@ -3659,6 +3659,11 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref (assembly, tb->type));
 	}
+	else if (strcmp (klass->name, "MonoGenericInst") == 0) {
+		MonoReflectionType *tb = (MonoReflectionType *)obj;
+		token = mono_metadata_token_from_dor (
+			mono_image_typedef_or_ref (assembly, tb->type));
+	}
 	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;

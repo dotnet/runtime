@@ -1451,8 +1451,13 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 
 	mono_class_create_generic (ginst);
 
-	for (i = 0; i < ginst->type_argc; i++)
-		ginst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	for (i = 0; i < ginst->type_argc; i++) {
+		MonoType *t = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+
+		ginst->type_argv [i] = t;
+		if (!ginst->is_open)
+			ginst->is_open = mono_class_is_open_constructed_type (t);
+	}
 
 	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst);
 
@@ -2392,7 +2397,8 @@ mono_type_stack_size (MonoType *t, gint *align)
 		}
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoClass *iclass = mono_class_from_mono_type (t);
+		MonoGenericInst *ginst = t->data.generic_inst;
+		MonoClass *iclass = mono_class_from_mono_type (ginst->generic_type);
 		return mono_type_stack_size (&iclass->byval_arg, align);
 	}
 	default:
