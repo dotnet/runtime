@@ -407,6 +407,8 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		last_offset = 0;
 		while (*info) {
 			MonoJumpInfo *ji = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
+			gpointer *data;
+
 			guint8 b1, b2;
 
 			b1 = *(guint8*)info;
@@ -427,7 +429,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			last_offset = ji->ip.i;
 			//printf ("T: %d O: %d.\n", ji->type, ji->ip.i);
 
-			gpointer *data = *((gpointer **)info);
+			data = *((gpointer **)info);
 
 			switch (ji->type) {
 			case MONO_PATCH_INFO_CLASS:
