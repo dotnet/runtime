@@ -2365,8 +2365,13 @@ mono_type_size (MonoType *t, gint *align)
 		return mono_class_value_size (mono_defaults.typed_reference_class, align);
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericInst *ginst = t->data.generic_inst;
-		MonoClass *iclass = mono_class_from_mono_type (ginst->generic_type);
-		return mono_type_size (&iclass->byval_arg, align);
+
+		if (MONO_TYPE_ISSTRUCT (ginst->generic_type))
+			return mono_class_value_size (ginst->klass, align);
+		else {
+			*align = __alignof__(gpointer);
+			return sizeof (gpointer);
+		}
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
