@@ -2711,3 +2711,55 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	/*g_print ("setup %s as %s (%p)\n", klass->name, ((MonoObject*)tb)->vtable->klass->name, tb);*/
 }
 
+MonoArray *
+mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
+{
+	MonoDynamicAssembly *assembly = sig->module->assemblyb->dynamic_assembly;
+	guint32 na = mono_array_length (sig->arguments);
+	guint32 buflen, i;
+	MonoArray *result;
+	char *buf, *p;
+
+	p = buf = g_malloc (10 + na * 10);
+
+	mono_metadata_encode_value (0x07, p, &p);
+	mono_metadata_encode_value (na, p, &p);
+	for (i = 0; i < na; ++i) {
+		MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType *, i);
+		encode_reflection_type (assembly, type, p, &p);
+	}
+
+	buflen = p - buf;
+	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
+	p = mono_array_addr (result, char, 0);
+	memcpy (p, buf, buflen);
+	g_free (buf);
+
+	return result;
+}
+
+MonoArray *
+mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
+{
+	MonoDynamicAssembly *assembly = sig->module->assemblyb->dynamic_assembly;
+	guint32 na = mono_array_length (sig->arguments);
+	guint32 buflen, i;
+	MonoArray *result;
+	char *buf, *p;
+
+	p = buf = g_malloc (10 + na * 10);
+
+	mono_metadata_encode_value (0x06, p, &p);
+	for (i = 0; i < na; ++i) {
+		MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType *, i);
+		encode_reflection_type (assembly, type, p, &p);
+	}
+
+	buflen = p - buf;
+	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
+	p = mono_array_addr (result, char, 0);
+	memcpy (p, buf, buflen);
+	g_free (buf);
+
+	return result;
+}

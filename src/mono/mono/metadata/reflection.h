@@ -341,6 +341,15 @@ typedef struct {
 	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
 } MonoTypeNameParse;
 
+typedef struct {
+	MonoObject object;
+	MonoReflectionModuleBuilder *module;
+	MonoArray *arguments;
+	guint32 type;
+} MonoReflectionSigHelper;
+
+
+
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
 
@@ -369,6 +378,10 @@ MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
 void        mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb);
+
+MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
+
+MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

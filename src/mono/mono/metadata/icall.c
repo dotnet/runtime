@@ -1823,6 +1823,9 @@ static gpointer icall_map [] = {
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
 	"System.Reflection.MonoField::GetValue", ves_icall_MonoField_GetValue,
+	"System.Reflection.Emit.SignatureHelper::get_signature_local", mono_reflection_sighelper_get_signature_local,
+	"System.Reflection.Emit.SignatureHelper::get_signature_field", mono_reflection_sighelper_get_signature_field,
+
 	
 	/* System.Enum */
 
