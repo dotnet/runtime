@@ -1030,6 +1030,18 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		obj = (MonoObject *)ex;
 	} 
 
+	/*
+	 * Allocate a new exception object instead of the preconstructed ones.
+	 * We can't do this in sigsegv_signal_handler, since GC is not yet
+	 * disabled.
+	 */
+	if (obj == domain->stack_overflow_ex) {
+		obj = mono_get_exception_stack_overflow ();
+	}
+	else if (obj == domain->null_reference_ex) {
+		obj = mono_get_exception_null_reference ();
+	}
+
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
 		mono_ex->stack_trace = NULL;
