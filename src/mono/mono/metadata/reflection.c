@@ -8628,7 +8628,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 /**
  * mono_reflection_lookup_dynamic_token:
  *
- *  Finish the Builder object pointed to by TOKEN and return the corresponding
+ * Finish the Builder object pointed to by TOKEN and return the corresponding
  * runtime structure.
  */
 gpointer
@@ -8674,7 +8674,7 @@ resolve_object (MonoImage *image, MonoObject *obj)
 			 * Hopefully this has been filled in by calling CreateType() on the
 			 * TypeBuilder.
 			 */
-			/**
+			/*
 			 * TODO: This won't work if the application finishes another 
 			 * TypeBuilder instance instead of this one.
 			 */

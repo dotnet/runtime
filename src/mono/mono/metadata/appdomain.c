@@ -55,7 +55,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass);
 static void
 mono_domain_unload (MonoDomain *domain);
 
-/*
+/**
  * mono_runtime_init:
  * @domain: domain returned by mono_init ()
  *
@@ -188,7 +188,7 @@ mono_runtime_cleanup (MonoDomain *domain)
 static MonoDomainFunc quit_function = NULL;
 
 void
-mono_runtime_install_cleanup (MonoDomainFunc func)
+mono_install_runtime_cleanup (MonoDomainFunc func)
 {
 	quit_function = func;
 }

@@ -1,11 +1,15 @@
 #!/usr/bin/perl
 
+if ($ARGV[0] eq "-h"){
+    $html = 1;
+    shift @ARGV;
+}
 
-while (<>){
+while (<ARGV>){
 	if (/\/\*\* *\n/){
 		&process_doc;
 	} else {
-		# print "IGNORING: $_";
+		#print "IGNORING: $_";
 	}
 }
 

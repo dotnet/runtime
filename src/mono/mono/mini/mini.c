@@ -3641,8 +3641,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				}
 			}
-			if (sp != stack_start)
-				goto unverified;
+			//if (sp != stack_start)
+			//		goto unverified;
 			MONO_INST_NEW (cfg, ins, CEE_BR);
 			ins->cil_code = ip++;
 			ins->inst_target_bb = end_bblock;
@@ -8542,7 +8542,7 @@ mini_init (const char *filename)
 
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
-	mono_runtime_install_cleanup ((MonoDomainFunc)mini_cleanup);
+	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
 	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
 #endif
 

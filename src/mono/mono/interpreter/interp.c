@@ -4396,7 +4396,7 @@ mono_interp_init(const char *file)
 
 	mono_install_handler (interp_ex_handler);
 	mono_install_stack_walk (interp_walk_stack);
-	mono_runtime_install_cleanup (quit_function);
+	mono_install_runtime_cleanup (quit_function);
 	abort_requested = mono_thread_interruption_request_flag ();
 
 	domain = mono_init_from_assembly (file, file);
