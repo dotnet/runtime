@@ -26,9 +26,9 @@
 ** Current Status
 
 <ul>  
-	<li>Current stable version: 1.0</li>
+	<li>Current stable version: 1.5</li>
 	
-	<li>Current developement version: 1.5</li>
+	<li>Current developement version: 1.6</li>
 	
 	<li>The new data provider/driver is written in C# and provides a high-performance native
         implementation of the GDS32/API functions. This means that .Net developers
@@ -41,26 +41,10 @@
         questions that you may have about the provider</li>           
 </ul>   
 
-** New features & enhancements in 1.5 version
+** New features & enhancements in 1.6 version
 
 <ul>
-	<li>Better fit to ADO.NET</li>
-	
-	<li>New GDS implementation</li>
-	
-	<li>Implicit transaction support</li>
-	
-	<li>Array datatype support</li>
-			
-	<li>Firebird services API support</li>
-	
-	<li>Firebird events API support</li>
-				
-	<li>Stored procedure calls using Sql Server style</li>
-	
-	<li>Support for retrieve database schema information ( FbConnection.GetDbSchema )</li>
-		
-	<li>Improved Commandbuilder implementation</li>
+	<li>Firebird Embedded Server support</li>
 </ul>
    
 ** Testing
