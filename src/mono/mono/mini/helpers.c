@@ -74,7 +74,11 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
 
 	fclose (ofd);
-
-	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o"); 
+#ifdef __APPLE__
+#define DIS_CMD "otool -V -v -t"
+#else
+#define DIS_CMD "objdump -d"
+#endif
+	system ("as /tmp/test.s -o /tmp/test.o;" DIS_CMD " /tmp/test.o"); 
 }
 
