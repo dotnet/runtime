@@ -759,8 +759,14 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb)
 			num_exception = method_count_clauses (mb->ilgen);
 	} else {
 		code = mb->code;
-		if (code == NULL)
-			mono_raise_exception (mono_get_exception_argument (NULL, "a method does not have any IL associated"));
+		if (code == NULL){
+			char *name = mono_string_to_utf8 (mb->name);
+			char *str = g_strdup_printf ("Method %s does not have any IL associated", name);
+			MonoException *exception = mono_get_exception_argument (NULL, "a method does not have any IL associated");
+			g_free (str);
+			g_free (name);
+			mono_raise_exception (exception);
+		}
 
 		code_size = mono_array_length (code);
 		max_stack = 8; /* we probably need to run a verifier on the code... */
