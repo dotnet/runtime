@@ -1179,7 +1179,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	guint32 token;
+	guint32 token, scope, enclosing;
 	MonoClass *klass;
 
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
@@ -1197,10 +1197,18 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 		return TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
 	}
 
+	if (klass->nested_in) {
+		enclosing = mono_image_typedef_or_ref (assembly, &klass->nested_in->byval_arg);
+		/* get the typeref idx of the enclosing type */
+		enclosing >>= TYPEDEFORREF_BITS;
+		scope = (enclosing << RESOLTION_SCOPE_BITS) | RESOLTION_SCOPE_TYPEREF;
+	} else {
+		scope = resolution_scope_from_image (assembly, klass->image);
+	}
 	table = &assembly->tables [MONO_TABLE_TYPEREF];
 	alloc_table (table, table->rows + 1);
 	values = table->values + table->next_idx * MONO_TYPEREF_SIZE;
-	values [MONO_TYPEREF_SCOPE] = resolution_scope_from_image (assembly, klass->image);
+	values [MONO_TYPEREF_SCOPE] = scope;
 	values [MONO_TYPEREF_NAME] = string_heap_insert (&assembly->sheap, klass->name);
 	values [MONO_TYPEREF_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
 	token = TYPEDEFORREF_TYPEREF | (table->next_idx << TYPEDEFORREF_BITS); /* typeref */
