@@ -118,16 +118,14 @@
 	<b>On Linux</b>
 
 	<ul>
-		* update your mono and mcs sources.
+		* update your mono sources. Be sure you have latest mcs.exe
+		  and .dll's, since there have been many fixes needed for
+		  compilation on Linux.
 
-		* get the files from mcs/class/lib/*.dll and mcs/mcs/mcs* 
-		  built on windows, and put them on your
-		  linux machine at, for example,  ~/mono/install/bin and 
-		  ~/mono/install/lib
+		* compile System.Data.dll:
 
-		* compile the test program along with the System.Data,
-		  System.Data.Common, System.Data.SqlClient, and
-		  System.Data.SqlTypes.  The test program to use is PostgreTest.cs
+			cd mcs/class/System.Data
+			mcs --target library -o System.Data.dll @list
 	</ul>
 
 * Testing
