@@ -2223,6 +2223,38 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	return result;
 }
 
+typedef struct {
+	MonoArray *res;
+	int idx;
+} NameSpaceInfo;
+
+static void
+foreach_namespace (const char* key, gconstpointer val, NameSpaceInfo *info)
+{
+	MonoString *name = mono_string_new (mono_object_domain (info->res), key);
+
+	mono_array_set (info->res, gpointer, info->idx, name);
+	info->idx++;
+}
+
+static MonoArray*
+ves_icall_System_Reflection_Assembly_GetNamespaces (MonoReflectionAssembly *assembly) 
+{
+	MonoImage *img = assembly->assembly->image;
+	int n;
+	MonoArray *res;
+	NameSpaceInfo info;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	n = g_hash_table_size (img->name_cache);
+	res = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, n);
+	info.res = res;
+	info.idx = 0;
+	g_hash_table_foreach (img->name_cache, (GHFunc)foreach_namespace, &info);
+	return res;
+}
+
 /* move this in some file in mono/util/ */
 static char *
 g_concat_dir_and_file (const char *dir, const char *file)
@@ -3512,6 +3544,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal,
 	"System.Reflection.Assembly::GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal,
 	"System.Reflection.Assembly::GetReferencedAssemblies", ves_icall_System_Reflection_Assembly_GetReferencedAssemblies,
+	"System.Reflection.Assembly::GetNamespaces", ves_icall_System_Reflection_Assembly_GetNamespaces,
 
 	/*
 	 * System.MonoType.
