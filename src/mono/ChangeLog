@@ -1,5 +1,13 @@
 2005-02-04  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am (wrapper-config): Elevated from being a test
+	support file called $(tmpinst)/config.
+	($(tmpinst)/bin/mono): Simplify.
+	(mcs-do-compiler-tests,mcs-compileall): Update.
+	* runtime/mono-wrapper.in: Use wrapper-config.
+	
+	* Makefile.am (DIST_SUBDIRS): Sync with $(SUBDIRS).
+
 	* runtime/Makefile.am (verify_profiles): Remove.
 	(mcs-compileall): Use $(build_profiles) directly.  It now works on
 	the net_2_0 profile too.
