@@ -2024,7 +2024,7 @@ ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assem
 {
 	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoString *res;
-	char *name = g_strconcat (
+	char *name = g_build_filename (
 		assembly->assembly->basedir,
 		assembly->assembly->image->module_name, NULL);
 
