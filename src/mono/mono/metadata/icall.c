@@ -1301,6 +1301,8 @@ ves_icall_MonoType_GetElementType (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (type->type->byref)
+		return mono_type_get_object (mono_object_domain (type), &class->byval_arg);
 	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
 		return mono_type_get_object (mono_object_domain (type), class->enum_basetype);
 	else if (class->element_class)
@@ -3480,6 +3482,7 @@ mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
 	g_assert (i < iter->sig->param_count);
 
 	res.type = iter->sig->params [i];
+	/* FIXME: endianess issue... */
 	res.value = iter->args;
 	arg_size = mono_type_stack_size (res.type, &align);
 	iter->args = (char*)iter->args + arg_size;
@@ -3505,6 +3508,7 @@ mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
 		if (!mono_metadata_type_equal (type, iter->sig->params [i]))
 			continue;
 		res.type = iter->sig->params [i];
+		/* FIXME: endianess issue... */
 		res.value = iter->args;
 		arg_size = mono_type_stack_size (res.type, &align);
 		iter->args = (char*)iter->args + arg_size;
@@ -3544,7 +3548,6 @@ mono_TypedReference_ToObject (MonoTypedRef tref)
 	}
 	klass = mono_class_from_mono_type (tref.type);
 
-	/* FIXME: endianess issue... */
 	return mono_value_box (mono_domain_get (), klass, tref.value);
 }
 
