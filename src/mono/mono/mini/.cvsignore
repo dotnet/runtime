@@ -11,3 +11,6 @@ genmdesc
 inssel.c inssel.h
 mini.pc
 cpu-pentium.h
+cpu-g4.h
+mono
+cpu-sparc.h
