@@ -154,6 +154,9 @@ mono_runtime_install_cleanup (MonoDomainFunc func);
 void
 mono_runtime_quit (void);
 
+const char*
+mono_check_corlib_version (void);
+
 MonoDomain *
 mono_domain_create         (void);
 

@@ -25,6 +25,8 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 
+#define MONO_CORLIB_VERSION 1
+
 CRITICAL_SECTION mono_delegate_section;
 
 static gunichar2 process_guid [36];
@@ -97,6 +99,34 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_network_init ();
 
 	return;
+}
+
+static int
+mono_get_corlib_version (void)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	MonoObject *value;
+
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "Environment");
+	mono_class_init (klass);
+	field = mono_class_get_field_from_name (klass, "mono_corlib_version");
+	if (!field)
+		return -1;
+	if (! (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		return -1;
+	value = mono_field_get_value_object (mono_domain_get (), field, NULL);
+	return *(gint32*)((gchar*)value + sizeof (MonoObject));
+}
+
+const char*
+mono_check_corlib_version (void)
+{
+	int version = mono_get_corlib_version ();
+	if (version != MONO_CORLIB_VERSION)
+		return g_strdup_printf ("expected corlib version %d, found %d.", MONO_CORLIB_VERSION, version);
+	else
+		return NULL;
 }
 
 void
@@ -441,6 +471,9 @@ static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
 {
 	gint i;
+
+	if (!ass->aname.name)
+		return;
 
 	mono_domain_lock (domain);
 
