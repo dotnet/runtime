@@ -1,3 +1,8 @@
+2001-08-16  Alex Graveley  <alex@ximian.com>
+
+	* configure.in: Replace AM_PROG_LIBTOOL with AC_PROG_RANLIB. This
+	removes libtool dependency on all of Mono.
+
 2001-08-10  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/array.cs: more array tests

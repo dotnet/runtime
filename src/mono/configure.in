@@ -9,7 +9,7 @@ AC_PROG_INSTALL
 
 # Set STDC_HEADERS
 AC_HEADER_STDC
-AM_PROG_LIBTOOL
+AC_PROG_RANLIB
 
 dnl ***************************
 dnl *** Checks for glib 1.2 ***
