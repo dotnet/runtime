@@ -4946,23 +4946,18 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_BB:
-printf("1. %016llx %p ",patch_info->data.bb->native_offset+code,ip);
 			target = S390_RELATIVE((patch_info->data.bb->native_offset+code),
 					       ip);
-printf("%016llx\n",target);
 			ip    += 2;	/* Skip over op-code */
 			break;
 		case MONO_PATCH_INFO_ABS:
-printf("2. %016llx %p\n",patch_info->data.target,ip);
 			*((gpointer *)(ip)) = patch_info->data.target;
 			break;
 		case MONO_PATCH_INFO_LABEL:
 			target = S390_RELATIVE((patch_info->data.inst->inst_c0+code),ip);
-printf("3. %016llx %p %016llx\n",patch_info->data.inst->inst_c0+code,ip,target);
 			ip    += 2;	/* Skip over op-code */
 			break;
 		case MONO_PATCH_INFO_IP:
-printf("4. %p\n",ip);
 			target = ip;
 			continue;
 		case MONO_PATCH_INFO_METHOD_REL:
@@ -4976,7 +4971,6 @@ printf("4. %p\n",ip);
 				g_assert_not_reached ();
 			}
 			*((gpointer *)(ip)) = mono_icall_get_wrapper (mi);
-printf("5. %016llx %p %016llx\n",mono_icall_get_wrapper(mi),ip,target);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP: {
@@ -4990,7 +4984,6 @@ printf("5. %016llx %p %016llx\n",mono_icall_get_wrapper(mi),ip,target);
 						      patch_info->data.method, 
 						      TRUE);
 			
-printf("6. %p\n",(void *)(*ip));
 			
 			list = g_hash_table_lookup (domain->jump_target_hash, 
 						    patch_info->data.method);
@@ -5002,11 +4995,9 @@ printf("6. %p\n",(void *)(*ip));
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				*((gpointer *)(ip)) = code;
-printf("7. %p %p\n",code,ip);
 			} else {
 				/* get the trampoline to the method from the domain */
 				*((gpointer *)(ip)) = mono_arch_create_jit_trampoline(patch_info->data.method);
-printf("7. %p\n",(void *) (*ip));
 			}
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
@@ -5028,7 +5019,6 @@ printf("7. %p\n",(void *) (*ip));
 		case MONO_PATCH_INFO_IMAGE:
 		case MONO_PATCH_INFO_FIELD:
 			target = S390_RELATIVE(patch_info->data.target, ip);
-printf("8. %016llx %p %p\n",patch_info->data.target, ip, target);
 			continue;
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
@@ -5058,7 +5048,6 @@ printf("8. %016llx %p %p\n",patch_info->data.target, ip, target);
 			}
 			target = S390_RELATIVE((char*)vtable->data + patch_info->data.field->offset, ip);
 			ip += 2;
-printf("10. %016llx %p %p\n",vtable->data,ip, target);
 			continue;
 		}
 		case MONO_PATCH_INFO_EXC_NAME:
