@@ -1281,6 +1281,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		if (bcinfo [i].is_block_start) {
 			bb->cli_addr = i;
 			bb->num = block_count;
+			bb->forest = g_ptr_array_new ();
 			if (block_count)
 				bb [-1].length = i - bb [-1].cli_addr; 
 			bcinfo [i].block_id = block_count;
@@ -1935,7 +1936,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					ip = header->code + bb->cli_addr;
 					end = ip + bb->length;
 
-					bb->forest = forest = g_ptr_array_new ();
+					forest = bb->forest;
 				
 					superblock_end = FALSE;
 
