@@ -149,6 +149,8 @@ src/%.xml: ../../../mcs/class/lib/%.dll $(CORCOMPARE)/CorCompare.exe
 src/corlib.xml: ../../../mcs/class/lib/corlib_cmp.dll $(CORCOMPARE)/CorCompare.exe
 	$(CORCOMPARE)/CorCompare.exe -f corlib -ms mscorlib -x $@ $<
 
+src/System.Security.xml: ../../../mcs/class/lib/System.Security_cmp.dll $(CORCOMPARE)/CorCompare.exe
+	$(CORCOMPARE)/CorCompare.exe -f System.Security -ms System.Security -x $@ $<
 
 ../class-status: ../class-status.in
 	cp -f $< $@
