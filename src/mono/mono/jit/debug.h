@@ -94,7 +94,7 @@ void           mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpoi
 
 gpointer       mono_debug_create_notification_function (gpointer *notification_address);
 
-void           mono_debug_init (void);
+void           mono_debug_init (int running_in_the_mono_debugger);
 void           mono_debug_lock (void);
 void           mono_debug_unlock (void);
 int            mono_debug_update_symbol_file_table (void);

@@ -54,6 +54,7 @@ static void mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 static void mono_debug_close_assembly (AssemblyDebugInfo* info);
 static AssemblyDebugInfo *mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image);
 
+static int running_in_the_mono_debugger = FALSE;
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2) = NULL;
 
 #ifndef PLATFORM_WIN32
@@ -74,13 +75,14 @@ mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpointer data2)
 }
 
 void
-mono_debug_init (void)
+mono_debug_init (int in_the_debugger)
 {
 	if (mono_debug_initialized)
 		return;
 
 	InitializeCriticalSection (&debugger_lock_mutex);
 	mono_debug_initialized = TRUE;
+	running_in_the_mono_debugger = in_the_debugger;
 }
 
 gpointer
@@ -163,8 +165,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	const char **ptr;
 
 	g_assert (!mono_debug_handle);
-
-	mono_debug_init ();
 
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (assembly->image->name);
@@ -761,7 +761,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		info->filename = replace_suffix (image->name, "dbg");
 		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
 			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
-		else if (mono_debugger_event_handler != NULL)
+		else if (running_in_the_mono_debugger)
 			info->symfile = mono_debug_create_mono_symbol_file (info->image);
 		mono_debugger_symbol_file_table_generation++;
 		break;
@@ -1350,7 +1350,7 @@ mono_insert_breakpoint (const gchar *method_name, gboolean include_namespace)
 	if (!desc)
 		return 0;
 
-	return mono_insert_breakpoint_full (desc, mono_debugger_event_handler != NULL);
+	return mono_insert_breakpoint_full (desc, running_in_the_mono_debugger);
 }
 
 int

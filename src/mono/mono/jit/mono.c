@@ -219,6 +219,7 @@ static void main_thread_handler (gpointer user_data)
 
 		args = g_strsplit (main_args->debug_args ?
 				   main_args->debug_args : "", ",", -1);
+		mono_debug_init (FALSE);
 		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
 		g_strfreev (args);
 	}
