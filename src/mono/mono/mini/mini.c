@@ -5740,10 +5740,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		for (i = 0; i < header->num_locals; ++i) {
 			MonoType *ptype = header->locals [i];
 			int t = ptype->type;
-			if (t == MONO_TYPE_GENERICINST) {
-				ptype = ptype->data.generic_inst->generic_type;
-				t = ptype->type;
-			}
 			if (t == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype)
 				t = ptype->data.klass->enum_basetype->type;
 			/* FIXME: use initobj for valuetypes, handle pointers, long, float. */
@@ -5763,7 +5759,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_p0 = (void*)&r8_0;
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
-			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF)) {
+			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
+				   (t == MONO_TYPE_GENERICINST)) {
 				NEW_LOCLOADA (cfg, ins, i);
 				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (ptype), NULL, NULL);
 				break;
