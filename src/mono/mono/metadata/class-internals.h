@@ -27,6 +27,8 @@ typedef enum {
 	MONO_WRAPPER_MANAGED_TO_NATIVE,
 	MONO_WRAPPER_REMOTING_INVOKE,
 	MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK,
+	MONO_WRAPPER_XDOMAIN_INVOKE,
+	MONO_WRAPPER_XDOMAIN_DISPATCH,
 	MONO_WRAPPER_LDFLD,
 	MONO_WRAPPER_STFLD,
 	MONO_WRAPPER_SYNCHRONIZED,
@@ -37,6 +39,11 @@ typedef enum {
 	MONO_WRAPPER_STELEMREF,
 	MONO_WRAPPER_UNKNOWN
 } MonoWrapperType;
+
+typedef enum {
+	MONO_REMOTING_TARGET_UNKNOWN,
+	MONO_REMOTING_TARGET_APPDOMAIN
+} MonoRemotingTarget;
 
 struct _MonoMethod {
 	guint16 flags;  /* method flags */
@@ -382,6 +389,7 @@ typedef struct {
 extern MonoStats mono_stats;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
+typedef gpointer (*MonoRemotingTrampoline)       (MonoMethod *method, MonoRemotingTarget target);
 
 typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token);
 
@@ -419,7 +427,7 @@ void
 mono_install_trampoline (MonoTrampoline func);
 
 void
-mono_install_remoting_trampoline (MonoTrampoline func);
+mono_install_remoting_trampoline (MonoRemotingTrampoline func);
 
 gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token);

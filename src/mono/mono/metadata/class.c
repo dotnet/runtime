@@ -3683,3 +3683,30 @@ mono_event_get_flags (MonoEvent *event)
 	return event->attrs;
 }
 
+/**
+ * mono_find_method_by_name:
+ * @klass: where to look for the method
+ * @name_space: name of the method
+ * @param_count: number of parameters. -1 for any number.
+ *
+ * Obtains a MonoMethod with a given name and number of parameters.
+ * It only works if there are no multiple signatures for any given method name.
+ */
+MonoMethod *
+mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count)
+{
+	MonoMethod *res = NULL;
+	int i;
+
+	mono_class_init (klass);
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == name [0] && 
+		    !strcmp (name, klass->methods [i]->name) &&
+		    (param_count == -1 || klass->methods [i]->signature->param_count == param_count)) {
+			res = klass->methods [i];
+			break;
+		}
+	}
+	return res;
+}

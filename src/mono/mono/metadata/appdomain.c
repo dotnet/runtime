@@ -52,9 +52,6 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass);
 
-static MonoMethod *
-look_for_method_by_name (MonoClass *klass, const gchar *name);
-
 static void
 mono_domain_unload (MonoDomain *domain);
 
@@ -242,7 +239,7 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 		klass = domain->domain->mbr.obj.vtable->klass;
 		g_assert (klass);
 
-		method = look_for_method_by_name (klass, "DoTypeResolve");
+		method = mono_class_get_method_from_name (klass, "DoTypeResolve", -1);
 		if (method == NULL) {
 			g_warning ("Method AppDomain.DoTypeResolve not found.\n");
 			return NULL;
@@ -469,25 +466,6 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 	return res;
 }
 
-/*
- * Used to find methods in AppDomain class.
- * It only works if there are no multiple signatures for any given method name
- */
-static MonoMethod *
-look_for_method_by_name (MonoClass *klass, const gchar *name)
-{
-	gint i;
-	MonoMethod *method;
-
-	for (i = 0; i < klass->method.count; i++) {
-		method = klass->methods [i];
-		if (!strcmp (method->name, name))
-			return method;
-	}
-
-	return NULL;
-}
-
 static MonoReflectionAssembly *
 try_assembly_resolve (MonoDomain *domain, MonoString *fname)
 {
@@ -500,7 +478,7 @@ try_assembly_resolve (MonoDomain *domain, MonoString *fname)
 	klass = domain->domain->mbr.obj.vtable->klass;
 	g_assert (klass);
 	
-	method = look_for_method_by_name (klass, "DoAssemblyResolve");
+	method = mono_class_get_method_from_name (klass, "DoAssemblyResolve", -1);
 	if (method == NULL) {
 		g_warning ("Method AppDomain.DoAssemblyResolve not found.\n");
 		return NULL;
@@ -545,7 +523,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 
 	klass = domain->domain->mbr.obj.vtable->klass;
 
-	method = look_for_method_by_name (klass, "DoAssemblyLoad");
+	method = mono_class_get_method_from_name (klass, "DoAssemblyLoad", -1);
 	if (method == NULL) {
 		g_warning ("Method AppDomain.DoAssemblyLoad not found.\n");
 		return;
@@ -1316,7 +1294,7 @@ mono_domain_unload (MonoDomain *domain)
 
 	mono_domain_set (domain, FALSE);
 	/* Notify OnDomainUnload listeners */
-	method = look_for_method_by_name (domain->domain->mbr.obj.vtable->klass, "DoDomainUnload");	
+	method = mono_class_get_method_from_name (domain->domain->mbr.obj.vtable->klass, "DoDomainUnload", -1);	
 	g_assert (method);
 
 	exc = NULL;

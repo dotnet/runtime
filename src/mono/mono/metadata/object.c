@@ -297,14 +297,14 @@ default_trampoline (MonoMethod *method)
 }
 
 static gpointer
-default_remoting_trampoline (MonoMethod *method)
+default_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
 {
 	g_error ("remoting not installed");
 	return NULL;
 }
 
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
-static MonoTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
+static MonoRemotingTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
 
 void
 mono_install_trampoline (MonoTrampoline func) 
@@ -313,7 +313,7 @@ mono_install_trampoline (MonoTrampoline func)
 }
 
 void
-mono_install_remoting_trampoline (MonoTrampoline func) 
+mono_install_remoting_trampoline (MonoRemotingTrampoline func) 
 {
 	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
 }
@@ -718,7 +718,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
  * vtable->klass points to the transparent proxy class, and not to @class.
  */
 static MonoVTable *
-mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class)
+mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRemotingTarget target_type)
 {
 	MonoVTable *vt, *pvt;
 	int i, j, vtsize, max_interface_id, extra_interface_vtsize = 0;
@@ -757,7 +757,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class)
 		MonoMethod *cm;
 		    
 		if ((cm = class->vtable [i]))
-			pvt->vtable [i] = arch_create_remoting_trampoline (cm);
+			pvt->vtable [i] = arch_create_remoting_trampoline (cm, target_type);
 	}
 
 	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT)
@@ -767,7 +767,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class)
 			for (i = 0; i < k->method.count; i++) {
 				int slot = k->methods [i]->slot;
 				if (!pvt->vtable [slot]) 
-					pvt->vtable [slot] = arch_create_remoting_trampoline (k->methods[i]);
+					pvt->vtable [slot] = arch_create_remoting_trampoline (k->methods[i], target_type);
 			}
 		}
 	}
@@ -804,7 +804,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class)
 	
 				for (j = 0; j < interf->method.count; ++j) {
 					MonoMethod *cm = interf->methods [j];
-					pvt->vtable [slot + j] = arch_create_remoting_trampoline (cm);
+					pvt->vtable [slot + j] = arch_create_remoting_trampoline (cm, target_type);
 				}
 				slot += interf->method.count;
 				if (++i < iclass->interface_count) interf = iclass->interfaces[i];
@@ -839,7 +839,8 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	}
 
 	rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass));
-	rc->vtable = NULL;
+	rc->default_vtable = NULL;
+	rc->xdomain_vtable = NULL;
 	rc->interface_count = 0;
 	rc->interfaces = NULL;
 	rc->proxy_class = mono_defaults.marshalbyrefobject_class;
@@ -847,9 +848,6 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 
 	mono_g_hash_table_insert (domain->proxy_vtable_hash, class_name, rc);
 	mono_upgrade_remote_class (domain, rc, proxy_class);
-
-	if (rc->vtable == NULL)
-		rc->vtable = mono_class_proxy_vtable (domain, rc);
 
 	mono_domain_unlock (domain);
 
@@ -874,6 +872,20 @@ extend_interface_array (MonoDomain *domain, MonoRemoteClass *remote_class, int a
 		
 		remote_class->interfaces = new_array;
 	}
+}
+
+gpointer
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *rp)
+{
+	if (rp->target_domain_id != -1) {
+		if (remote_class->xdomain_vtable == NULL)
+			remote_class->xdomain_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_APPDOMAIN);
+		return remote_class->xdomain_vtable;
+	}
+	if (remote_class->default_vtable == NULL)
+		remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_UNKNOWN);
+	
+	return remote_class->default_vtable;
 }
 
 
@@ -909,8 +921,10 @@ void mono_upgrade_remote_class (MonoDomain *domain, MonoRemoteClass *remote_clas
 		remote_class->proxy_class = klass;
 	}
 
-	if (redo_vtable)
-		remote_class->vtable = mono_class_proxy_vtable (domain, remote_class);
+	if (redo_vtable) {
+		remote_class->default_vtable = NULL;
+		remote_class->xdomain_vtable = NULL;
+	}
 /*
 	int n;
 	printf ("remote class upgrade - class:%s num-interfaces:%d\n", remote_class->proxy_class_name, remote_class->interface_count);
@@ -1916,14 +1930,28 @@ mono_object_clone (MonoObject *obj)
 	return o;
 }
 
-/**
- * mono_array_clone:
- * @array: the array to clone
- *
- * Returns: A newly created array who is a shallow copy of @array
+/** 
+ * mono_array_full_copy
+ * Copies the content of one array to another with exactly the same type and size.
  */
+void
+mono_array_full_copy (MonoArray *src, MonoArray *dest)
+{
+	int size, i;
+	MonoClass *klass = src->obj.vtable->klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	g_assert (klass == dest->obj.vtable->klass);
+
+	size = mono_array_length (src);
+	g_assert (size == mono_array_length (dest));
+	size *= mono_array_element_size (klass);
+	memcpy (&dest->vector, &src->vector, size);
+}
+
 MonoArray*
-mono_array_clone (MonoArray *array)
+mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 {
 	MonoArray *o;
 	int size, i;
@@ -1934,12 +1962,10 @@ mono_array_clone (MonoArray *array)
 
 	if (array->bounds == NULL) {
 		size = mono_array_length (array);
-		o = mono_array_new_full (((MonoObject *)array)->vtable->domain,
-					 klass, &size, NULL);
+		o = mono_array_new_full (domain, klass, &size, NULL);
 
 		size *= mono_array_element_size (klass);
-		memcpy (o, array, sizeof (MonoArray) + size);
-
+		memcpy (&o->vector, &array->vector, size);
 		return o;
 	}
 	
@@ -1950,11 +1976,22 @@ mono_array_clone (MonoArray *array)
 		size *= array->bounds [i].length;
 		sizes [i + klass->rank] = array->bounds [i].lower_bound;
 	}
-	o = mono_array_new_full (((MonoObject *)array)->vtable->domain, 
-				 klass, sizes, sizes + klass->rank);
-	memcpy (o, array, sizeof(MonoArray) + size);
+	o = mono_array_new_full (domain, klass, sizes, sizes + klass->rank);
+	memcpy (&o->vector, &array->vector, size);
 
 	return o;
+}
+
+/**
+ * mono_array_clone:
+ * @array: the array to clone
+ *
+ * Returns: A newly created array who is a shallow copy of @array
+ */
+MonoArray*
+mono_array_clone (MonoArray *array)
+{
+	return mono_array_clone_in_domain (((MonoObject *)array)->vtable->domain, array);
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */
@@ -2398,7 +2435,7 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		if (*(MonoBoolean *) mono_object_unbox(res)) {
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
 			mono_upgrade_remote_class (domain, ((MonoTransparentProxy *)obj)->remote_class, klass);
-			obj->vtable = ((MonoTransparentProxy *)obj)->remote_class->vtable;
+			obj->vtable = mono_remote_class_vtable (domain, ((MonoTransparentProxy *)obj)->remote_class, (MonoRealProxy *)rp);
 			return obj;
 		}
 	}

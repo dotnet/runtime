@@ -165,6 +165,12 @@ MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method);
 
 MonoMethod *
+mono_marshal_get_xappdomain_invoke (MonoMethod *method);
+
+MonoMethod *
+mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type);
+
+MonoMethod *
 mono_marshal_get_remoting_invoke_with_check (MonoMethod *method);
 
 MonoMethod *

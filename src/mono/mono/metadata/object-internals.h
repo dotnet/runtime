@@ -177,6 +177,8 @@ typedef struct {
 	MonoReflectionType *class_to_proxy;	
 	MonoObject *context;
 	MonoObject *unwrapped_server;
+	gint32      target_domain_id;
+	MonoString *target_uri;
 } MonoRealProxy;
 
 typedef struct {
@@ -961,6 +963,15 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 
 void
 mono_release_type_locks (MonoThread *thread);
+
+MonoArray*
+mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array);
+
+void
+mono_array_full_copy (MonoArray *src, MonoArray *dest);
+
+gpointer
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

@@ -12,7 +12,8 @@ typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
 typedef struct {
-	MonoVTable *vtable;
+	MonoVTable *default_vtable;
+	MonoVTable *xdomain_vtable;
 	MonoClass *proxy_class;
 	guint interface_count;
 	MonoClass **interfaces;
@@ -243,5 +244,7 @@ mono_event_get_parent        (MonoEvent *event);
 guint32
 mono_event_get_flags         (MonoEvent *event);
 
+MonoMethod *
+mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count);
 
 #endif /* _MONO_CLI_CLASS_H_ */

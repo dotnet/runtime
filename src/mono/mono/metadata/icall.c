@@ -4887,8 +4887,8 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this, MonoString *
 
 	tp->custom_type_info = (mono_object_isinst (this, mono_defaults.iremotingtypeinfo_class) != NULL);
 	tp->remote_class = mono_remote_class (domain, class_name, klass);
-	res->vtable = tp->remote_class->vtable;
 
+	res->vtable = mono_remote_class_vtable (domain, tp->remote_class, rp);
 	return res;
 }
 
