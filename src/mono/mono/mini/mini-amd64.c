@@ -788,7 +788,9 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	MonoInst *inst;
-	int i, offset, size, align, curinst;
+	int i, offset;
+	guint32 locals_stack_size, locals_stack_align;
+	gint32 *offsets;
 	CallInfo *cinfo;
 
 	header = mono_method_get_header (m->method);
@@ -844,39 +846,24 @@ mono_arch_allocate_vars (MonoCompile *m)
 		m->ret->dreg = m->ret->inst_c0;
 	}
 
-	curinst = m->locals_start;
-	for (i = curinst; i < m->num_varinfo; ++i) {
-		inst = m->varinfo [i];
 
-		if (inst->opcode == OP_REGVAR) {
-			//g_print ("allocating local %d to %s\n", i, mono_arch_regname (inst->dreg));
-			continue;
-		}
-
-		if (inst->flags & MONO_INST_IS_DEAD)
-			continue;
-
-		/* inst->unused indicates native sized value types, this is used by the
-		* pinvoke wrappers when they call functions returning structure */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
-		else
-			size = mono_type_stack_size (inst->inst_vtype, &align);
-
-		/*
-		 * variables are accessed as negative offsets from %fp, so increase
-		 * the offset before assigning it to a variable
-		 */
-		offset += size;
-
-		offset += align - 1;
-		offset &= ~(align - 1);
-		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = AMD64_RBP;
-		inst->inst_offset = - offset;
-
-		//g_print ("allocating local %d to [%s - %d]\n", i, mono_arch_regname (inst->inst_basereg), - inst->inst_offset);
+	/* Allocate locals */
+	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
+	if (locals_stack_align) {
+		offset += (locals_stack_align - 1);
+		offset &= ~(locals_stack_align - 1);
 	}
+	for (i = m->locals_start; i < m->num_varinfo; i++) {
+		if (offsets [i] != -1) {
+			MonoInst *inst = m->varinfo [i];
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_basereg = AMD64_RBP;
+			inst->inst_offset = - (offset + offsets [i]);
+			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
+		}
+	}
+	g_free (offsets);
+	offset += locals_stack_size;
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG)) {
 		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
