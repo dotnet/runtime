@@ -4,6 +4,7 @@
 <a href="#gui">Building GUI applications with Mono</a><br>
 <a href="#msft">Mono and Microsoft</a><br>
 <a href="#platforms">Mono platforms</a><br>
+<a href="#compatibility">Compatibility</a></br>
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
 <a href="#asp">Mono and ASP.NET</a><br>
@@ -287,7 +288,7 @@ A: There are several reasons for this.
   
    Next is compatibility.  It is not possible to implement 
    System.Windows.Forms on top of Gtk+/Qt and have 100% compatibility, 
-   because System.Windows.Forms exposes <i>lots</i> of Win32-isms, such as the 
+   because System.Windows.Forms exposes some Win32-isms, such as the 
    Win32 message loop.  In order to maintain compatibility, Wine must be used, 
    and this is being done; see the 
    <a href="/winforms.html">System.Windows.Forms effort page</a>.
@@ -489,6 +490,44 @@ A: Mono requires Unicode versions of Win32 APIs to run,
    Win32 libs. This is achieved by inserting -lunimono before
    -lkerner32/user32 in the linker's specs file.
 
+<a name="compatibility"></a>
+** Compatibility
+
+Q: Can Mono run applications developed with the Microsoft.NET fraemwork?
+
+A: Yes, Mono can run applications developed with the Microsft .NET Framework
+   on Unix.  There are a few caveats to keep in mind: Mono has not
+   been completed yet, so a few API calls might be missing; And in
+   some cases the Mono behavior *might* be incorrect.
+
+Q: Will missing API entry points be implemented?
+
+A: Yes, the goal of Mono is to implement precisely the .NET Framework
+   API (as well as compile-time selectable subsets, for those
+   interested in a lighter version of Mono).
+
+Q: If the behavior of an API call is different, will you fix it?
+
+A: Yes, we will.  But we will need your assistance for this.  If you find a bug
+   in the Mono implementation, please fill a bug report in <a
+   href="http://bugzilla.ximian.com">http://bugzilla.ximian.com</a>.
+   Do not assume we know about the problem, we might not, and using the bug tracking
+   system helps us organize the development process.
+
+Q: Can I develop my applications on Windows, and deploy on a supported
+   Mono platform (like Linux)?
+
+A: Yes, you can.  
+
+   As of today, Mono is not 100% finished, so it is sometimes useful
+   to compile the code with Mono, to find out if your application
+   depends on unimplemented functionality. 
+
+Q: Will applications run out the box with Mono?
+
+A: Sometimes they will.  But sometimes a .NET application might invoke
+   Win32 API calls, or assume certain patterns that are not correct
+   for cross-platform applications.
 
 <a name="pnpproject"></a>
 ** Mono and Portable.NET
@@ -553,6 +592,19 @@ A: Most of Mono is being written using C#, with only
      <li> We have a great community of developers, without which Mono
           would not be possible.
    </ul>
+
+   In general, Mono is more mature and complete since it has been used
+   to develop itself, which is a big motivator for stability and
+   correctness, while Portable.NET remains pretty much an untested
+   platform.
+
+Q: I hear Mono keeps changing the P/Invoke API, why?
+
+A: We are just fixing our implementation to be compatible with the
+   Microsoft implementation.  In other words, the Mono P/Invoke API is
+   more complete when compared to the Portable.NET version, hence
+   various pieces of software that depend on this extended
+   functionality fail to work properly with Portable.NET.
 
 <a name="webservices"></a>
 ** Web Services
