@@ -890,6 +890,8 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb)
 		max_stack = 8; /* we probably need to run a verifier on the code... */
 	}
 
+	stream_data_align (&assembly->code);
+
 	/* check for exceptions, maxstack, locals */
 	maybe_small = (max_stack <= 8) && (!num_locals) && (!num_exception);
 	if (maybe_small) {
