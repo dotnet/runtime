@@ -5647,13 +5647,14 @@ mono_reflection_get_type_internal (MonoImage* image, MonoTypeNameParse *info, gb
  * @image: a metadata context
  * @info: type description structure
  * @ignorecase: flag for case-insensitive string compares
+ * @type_resolve: whenever type resolve was already tried
  *
  * Build a MonoType from the type description in @info.
  * 
  */
 
 MonoType*
-mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
+mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
 {
 	MonoType *type;
 	MonoReflectionAssembly *assembly;
@@ -5665,6 +5666,13 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 		return type;
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
 		return NULL;
+
+	if (type_resolve) {
+		if (*type_resolve) 
+			return NULL;
+		else
+			*type_resolve = TRUE;
+	}
 	
 	/* Reconstruct the type name */
 	fullName = g_string_new ("");
@@ -5729,6 +5737,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	MonoTypeNameParse info;
 	MonoAssembly *assembly;
 	char *tmp;
+	gboolean type_resolve = FALSE;
 
 	/* Make a copy since parse_type modifies its argument */
 	tmp = g_strdup (name);
@@ -5758,10 +5767,10 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 		image = mono_defaults.corlib;
 	}
 
-	type = mono_reflection_get_type (image, &info, FALSE);
+	type = mono_reflection_get_type (image, &info, FALSE, &type_resolve);
 	if (type == NULL && !info.assembly.name && image != mono_defaults.corlib) {
 		image = mono_defaults.corlib;
-		type = mono_reflection_get_type (image, &info, FALSE);
+		type = mono_reflection_get_type (image, &info, FALSE, &type_resolve);
 	}
 
 	g_free (tmp);

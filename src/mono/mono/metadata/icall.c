@@ -958,6 +958,7 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 	MonoAssembly *assembly;
 	MonoTypeNameParse info;
 	char *temp_str = g_strdup (str);
+	gboolean type_resolve = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -979,10 +980,10 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 	}
 
 	if (assembly)
-		type = mono_reflection_get_type (assembly->image, &info, ignoreCase);
+		type = mono_reflection_get_type (assembly->image, &info, ignoreCase, &type_resolve);
 	
 	if (!info.assembly.name && !type) /* try mscorlib */
-		type = mono_reflection_get_type (NULL, &info, ignoreCase);
+		type = mono_reflection_get_type (NULL, &info, ignoreCase, &type_resolve);
 
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
@@ -3043,6 +3044,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	gchar *str;
 	MonoType *type = NULL;
 	MonoTypeNameParse info;
+	gboolean type_resolve = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3060,7 +3062,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 
 	if (module != NULL) {
 		if (module->image)
-			type = mono_reflection_get_type (module->image, &info, ignoreCase);
+			type = mono_reflection_get_type (module->image, &info, ignoreCase, &type_resolve);
 		else
 			type = NULL;
 	}
@@ -3074,7 +3076,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			if (abuilder->modules) {
 				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
 					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-					type = mono_reflection_get_type (&mb->dynamic_image->image, &info, ignoreCase);
+					type = mono_reflection_get_type (&mb->dynamic_image->image, &info, ignoreCase, &type_resolve);
 					if (type)
 						break;
 				}
@@ -3083,14 +3085,14 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			if (!type && abuilder->loaded_modules) {
 				for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
 					MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-					type = mono_reflection_get_type (mod->image, &info, ignoreCase);
+					type = mono_reflection_get_type (mod->image, &info, ignoreCase, &type_resolve);
 					if (type)
 						break;
 				}
 			}
 		}
 		else
-			type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
+			type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase, &type_resolve);
 	g_free (str);
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
