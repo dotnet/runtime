@@ -1,6 +1,7 @@
 #ifndef __MONO_MINI_H__
 #define __MONO_MINI_H__
 
+#include "config.h"
 #include <glib.h>
 #include <signal.h>
 #include <mono/metadata/loader.h>
@@ -16,6 +17,19 @@
 #include "regalloc.h"
 
 #define MONO_USE_AOT_COMPILER
+
+/* for 32 bit systems */
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define MINI_LS_WORD_OFFSET 0
+#define MINI_MS_WORD_OFFSET 4
+#define inst_ls_word data.op[0].const_val
+#define inst_ms_word data.op[1].const_val
+#else
+#define MINI_LS_WORD_OFFSET 4
+#define MINI_MS_WORD_OFFSET 0
+#define inst_ls_word data.op[1].const_val
+#define inst_ms_word data.op[0].const_val
+#endif
 
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "6"

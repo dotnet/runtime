@@ -21,18 +21,18 @@ stmt: CEE_POP (lreg) {
 i8con: CEE_CONV_I8 (OP_ICONST) "0" {
        int data = state->left->tree->inst_c0;
 	tree->opcode = OP_I8CONST;
-	tree->inst_c0 = data;
+	tree->inst_ls_word = data;
 	if (data < 0)
-		tree->inst_c1 = -1;
+		tree->inst_ms_word = -1;
 	else
-		tree->inst_c1 = 0;
+		tree->inst_ms_word = 0;
 }
 
 i8con: CEE_CONV_U8 (OP_ICONST) "0" {
 	int data = state->left->tree->inst_c0;
 	tree->opcode = OP_I8CONST;
-	tree->inst_c0 = data;
-	tree->inst_c1 = 0;
+	tree->inst_ls_word = data;
+	tree->inst_ms_word = 0;
 }
 
 i8con: OP_I8CONST "0"
@@ -49,29 +49,29 @@ lreg: OP_ICONST {
 }
 
 lreg: OP_I8CONST {
-	MONO_EMIT_NEW_ICONST (s, state->reg1, tree->inst_c0);
-	MONO_EMIT_NEW_ICONST (s, state->reg2, tree->inst_c1);
+	MONO_EMIT_NEW_ICONST (s, state->reg1, tree->inst_ls_word);
+	MONO_EMIT_NEW_ICONST (s, state->reg2, tree->inst_ms_word);
 }
 
 lreg: CEE_LDIND_I8 (base) {
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
-				       state->left->tree->inst_basereg, state->left->tree->inst_offset);
+				       state->left->tree->inst_basereg, state->left->tree->inst_offset + MINI_LS_WORD_OFFSET);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg2, 
-				       state->left->tree->inst_basereg, state->left->tree->inst_offset + 4);
+				       state->left->tree->inst_basereg, state->left->tree->inst_offset + MINI_MS_WORD_OFFSET);
 }
 
 stmt: CEE_STIND_I8 (base, lreg) {
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, state->left->tree->inst_basereg,
-				     state->left->tree->inst_offset + 4, state->right->reg2);
+				     state->left->tree->inst_offset + MINI_MS_WORD_OFFSET, state->right->reg2);
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, state->left->tree->inst_basereg,
-				     state->left->tree->inst_offset, state->right->reg1);
+				     state->left->tree->inst_offset + MINI_LS_WORD_OFFSET, state->right->reg1);
 }
 
 stmt: CEE_STIND_I8 (base, i8con) {
 	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STOREI4_MEMBASE_IMM, state->left->tree->inst_basereg,
-					 state->left->tree->inst_offset + 4, state->right->tree->inst_c1);
+					 state->left->tree->inst_offset + MINI_MS_WORD_OFFSET, state->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STOREI4_MEMBASE_IMM, state->left->tree->inst_basereg,
-					 state->left->tree->inst_offset, state->right->tree->inst_c0);
+					 state->left->tree->inst_offset + MINI_LS_WORD_OFFSET, state->right->tree->inst_ls_word);
 }
 
 lreg: OP_BIGMUL (reg, reg) {
@@ -102,8 +102,8 @@ lreg: OP_LADD_OVF_UN (lreg, lreg) {
 }
 
 lreg: OP_LADD (lreg, i8con) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-	MONO_EMIT_BIALU_IMM (s, tree, OP_ADC_IMM, state->reg2, state->left->reg2, state->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_ADC_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 
 lreg: OP_LSUB (lreg, lreg) {
@@ -112,8 +112,8 @@ lreg: OP_LSUB (lreg, lreg) {
 }
 
 lreg: OP_LSUB (lreg, i8con) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SBB_IMM, state->reg2, state->left->reg2, state->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SBB_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 
 lreg: OP_LSUB_OVF (lreg, lreg) {
@@ -136,8 +136,8 @@ lreg: OP_LAND (lreg, lreg) {
 }
 
 lreg: OP_LAND (lreg, i8con) {	
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_AND_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg2, state->left->reg2, state->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_AND_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 
 lreg: OP_LOR (lreg, lreg) {
@@ -146,8 +146,8 @@ lreg: OP_LOR (lreg, lreg) {
 }
 
 lreg: OP_LOR (lreg, i8con) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_OR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-	MONO_EMIT_BIALU_IMM (s, tree, OP_OR_IMM, state->reg2, state->left->reg2, state->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_OR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_OR_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 
 lreg: OP_LXOR (lreg, lreg) {
@@ -156,8 +156,8 @@ lreg: OP_LXOR (lreg, lreg) {
 }
 
 lreg: OP_LXOR (lreg, i8con) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_XOR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-	MONO_EMIT_BIALU_IMM (s, tree, OP_XOR_IMM, state->reg2, state->left->reg2, state->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_XOR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_XOR_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 
 lreg: OP_LNOT (lreg) {
@@ -263,9 +263,9 @@ stmt: CEE_BNE_UN (OP_COMPARE (lreg, lreg)) {
 }
 
 stmt: CEE_BNE_UN (OP_COMPARE (lreg, i8con)) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_true_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -279,9 +279,9 @@ stmt: CEE_BEQ (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BEQ (OP_COMPARE (lreg, i8con)) {
 	
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -296,10 +296,10 @@ stmt: CEE_BLE (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BLE (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLT, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLE_UN, tree->inst_true_bb);
 }
 
@@ -314,10 +314,10 @@ stmt: CEE_BLE_UN (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BLE_UN (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLT_UN, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLE_UN, tree->inst_true_bb);
 }
 
@@ -332,10 +332,10 @@ stmt: CEE_BGE (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BGE (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGT, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGE_UN, tree->inst_true_bb);
 }
 
@@ -350,10 +350,10 @@ stmt: CEE_BGE_UN (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BGE_UN (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGT_UN, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGE_UN, tree->inst_true_bb);
 }
 
@@ -368,10 +368,10 @@ stmt: CEE_BLT (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BLT (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLT, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLT_UN, tree->inst_true_bb);
 }
 
@@ -386,10 +386,10 @@ stmt: CEE_BLT_UN (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BLT_UN (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLT_UN, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BLT_UN, tree->inst_true_bb);
 }
 
@@ -404,10 +404,10 @@ stmt: CEE_BGT (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BGT (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGT, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGT_UN, tree->inst_true_bb);
 }
 
@@ -422,10 +422,10 @@ stmt: CEE_BGT_UN (OP_COMPARE (lreg, lreg)) {
 
 stmt: CEE_BGT_UN (OP_COMPARE (lreg, i8con)) {
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_c1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg2, state->left->right->tree->inst_ms_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGT_UN, tree->inst_true_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BNE_UN, tree->inst_false_bb);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_c0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->left->reg1, state->left->right->tree->inst_ls_word);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGT_UN, tree->inst_true_bb);
 }
 
@@ -511,7 +511,7 @@ lreg: OP_FCONV_TO_U8 (freg) {
 }
 
 reg: OP_LCONV_TO_I4 (i8con) {
-     	MONO_EMIT_NEW_ICONST (s, state->reg1, state->left->tree->inst_c0);
+     	MONO_EMIT_NEW_ICONST (s, state->reg1, state->left->tree->inst_ls_word);
 }
 
 reg: OP_LCONV_TO_I4 (lreg) {
