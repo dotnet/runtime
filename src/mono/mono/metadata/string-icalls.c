@@ -536,6 +536,8 @@ ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 t
 	}
 
 	newlen = srclen - lenfirst - lenlast;
+	if (newlen == srclen)
+		return me;
 
 	ret = mono_string_new_size( mono_domain_get (), newlen);
 	dest = mono_string_chars(ret);
