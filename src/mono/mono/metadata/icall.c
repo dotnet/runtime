@@ -3121,9 +3121,11 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	TIME_ZONE_INFORMATION tz_info;
 	FILETIME ft;
 	int i;
-	int err;
+	int err, tz_id;
 	
-	GetTimeZoneInformation (&tz_info);
+	tz_id = GetTimeZoneInformation (&tz_info);
+	if (tz_id == TIME_ZONE_ID_INVALID)
+		return 0;
 
 	MONO_CHECK_ARG_NULL (data);
 	MONO_CHECK_ARG_NULL (names);
@@ -3139,6 +3141,19 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 		if (!tz_info.StandardName [i])
 			break;
 	mono_array_set ((*names), gpointer, 0, mono_string_new_utf16 (domain, tz_info.StandardName, i));
+
+	if ((year <= 1601) || (year > 30827)) {
+		/*
+		 * According to MSDN, the MS time functions can't handle dates outside
+		 * this interval.
+		 */
+		return 1;
+	}
+
+	if (tz_id == TIME_ZONE_ID_UNKNOWN) {
+		/* No daylight saving in this time zone */
+		return 1;
+	}
 
 	tz_info.StandardDate.wYear = year;
 	err = SystemTimeToFileTime (&tz_info.StandardDate, &ft);
