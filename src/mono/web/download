@@ -57,7 +57,7 @@
 
 		<tr>
                   <td bgcolor="#999999">
-                    <b>Red Hat 9.0/x86</b>
+                    <b>Red Hat 9.0/x86</b><img align="rigth" src="images/redhat.gif">
                     <ul>
                         <li><a href="archive/redhat-90-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
                         <li><a href="archive/redhat-90-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
@@ -71,7 +71,7 @@
                     </ul>
                   </td>
                   <td bgcolor="#999999">
-                    <b>Red Hat 8.0/x86</b>
+                    <b>Red Hat 8.0/x86</b><img align="rigth" src="images/redhat.gif">
                     <ul>
                         <li><a href="archive/redhat-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
                         <li><a href="archive/redhat-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
@@ -86,7 +86,7 @@
 
   		<tr> 
                   <td bgcolor="#999999">
-                    <b>Debian</b>
+                    <b>Debian</b><img align="rigth" src="images/deb.png">
                     <ul>
                         <li><a href="http://www.atoker.com/mono/">Debian Packages here.</a>
                     </ul>
@@ -101,7 +101,7 @@
 
 		<tr>
 		  <td bgcolor="#999999">
-		    <b>Red Hat 7.3/x86</b>
+		    <b>Red Hat 7.3/x86</b><img align="rigth" src="images/redhat.gif">
                     <ul>
 			<li><a href="archive/redhat-73-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-73-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
