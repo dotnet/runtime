@@ -907,8 +907,26 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 
 	size = size - sizeof (MonoObject);
 
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	memcpy ((char *)res + sizeof (MonoObject), value, size);
-
+#else
+	switch (size) {
+	case 1:
+		*(guint8 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *)value;
+		break;
+	case 2:
+		*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *)value;
+		break;
+	case 4:
+		*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *)value;
+		break;
+	case 8:
+		*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *)value;
+		break;
+	default:
+		memcpy ((char *)res + sizeof (MonoObject), value, size);
+	}
+#endif
 	if (class->has_finalize)
 		mono_object_register_finalizer (res);
 	return res;
