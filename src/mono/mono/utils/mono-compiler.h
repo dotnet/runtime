@@ -8,7 +8,13 @@
 
 #ifdef HAVE_KW_THREAD
 #if HAVE_TLS_MODEL_ATTR
+
+#if defined(PIC) && defined(__x86_64__)
+#define MONO_TLS_FAST 
+#else
 #define MONO_TLS_FAST __attribute__((tls_model("local-exec")))
+#endif
+
 #else
 #define MONO_TLS_FAST 
 #endif
