@@ -1313,6 +1313,32 @@ class Tests {
 		if (failed)
 			return 2;
 
+		try {
+			failed = true;
+			q = -1;
+			d = Int32.MinValue;
+			val = d / q;
+		} catch (ArithmeticException) {
+			failed = false;
+		} catch (DivideByZeroException) {
+			/* wrong exception */
+		}
+		if (failed)
+			return 3;
+
+		try {
+			failed = true;
+			q = -1;
+			d = Int32.MinValue;
+			val = d % q;
+		} catch (ArithmeticException) {
+			failed = false;
+		} catch (DivideByZeroException) {
+			/* wrong exception */
+		}
+		if (failed)
+			return 4;
+
 		return 0;
 	}
 
@@ -1366,6 +1392,32 @@ class Tests {
 		}
 		if (failed)
 			return 2;
+
+		try {
+			failed = true;
+			q = -1;
+			d = Int64.MinValue;
+			val = d / q;
+		} catch (ArithmeticException) {
+			failed = false;
+		} catch (DivideByZeroException) {
+			/* wrong exception */
+		}
+		if (failed)
+			return 3;
+
+		try {
+			failed = true;
+			q = -1;
+			d = Int64.MinValue;
+			val = d % q;
+		} catch (ArithmeticException) {
+			failed = false;
+		} catch (DivideByZeroException) {
+			/* wrong exception */
+		}
+		if (failed)
+			return 4;
 
 		return 0;
 	}
