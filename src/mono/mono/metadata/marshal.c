@@ -829,6 +829,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			switch (t) {
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
+#if SIZEOF_VOID_P == 4
+			case MONO_TYPE_PTR:
+#endif
 				mono_mb_emit_byte (mb, CEE_LDLOC_1);
 				mono_mb_emit_byte (mb, CEE_LDLOC_0);
 				mono_mb_emit_byte (mb, CEE_LDIND_I4);
@@ -851,6 +854,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				break;
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
+#if SIZEOF_VOID_P == 8
+			case MONO_TYPE_PTR:
+#endif
 				mono_mb_emit_byte (mb, CEE_LDLOC_1);
 				mono_mb_emit_byte (mb, CEE_LDLOC_0);
 				mono_mb_emit_byte (mb, CEE_LDIND_I8);
