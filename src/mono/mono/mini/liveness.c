@@ -72,7 +72,7 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 		int idx = inst->inst_i0->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 		g_assert (idx < max_vars);
-		if (bb->region != -1) {
+		if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
 			/*
 			 * Variables used in exception regions can't be allocated to 
 			 * registers.
@@ -83,12 +83,13 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 		if (!mono_bitset_test (bb->kill_set, idx))
 			mono_bitset_set (bb->gen_set, idx);
 		vi->spill_costs += 1 + (bb->nesting * 2);
-	} else if (inst->ssa_op == MONO_SSA_STORE) {
+	} else if ((inst->ssa_op == MONO_SSA_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
 		int idx = inst->inst_i0->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 		g_assert (idx < max_vars);
-		g_assert (inst->inst_i1->opcode != OP_PHI);
-		if (bb->region != -1) {
+		if (arity > 0)
+			g_assert (inst->inst_i1->opcode != OP_PHI);
+		if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
 			/*
 			 * Variables used in exception regions can't be allocated to 
 			 * registers.
@@ -156,9 +157,12 @@ handle_exception_clauses (MonoCompile *cfg)
 	 * so make them volatile. See bug #42136. This will not be neccessary when
 	 * the back ends could guarantee that the variables will be in the
 	 * correct registers when a handler is called.
+	 * This includes try blocks too, since a variable in a try block might be
+	 * accessed after an exception handler has been run.
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->region == -1)
+
+		if (bb->region == -1 || MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY))
 			continue;
 
 		visit_bb (cfg, bb, &visited);
@@ -212,7 +216,9 @@ mono_analyze_liveness (MonoCompile *cfg)
 		int tree_num;
 
 		for (tree_num = 0, inst = bb->code; inst; inst = inst->next, tree_num++) {
-			//mono_print_tree (inst); printf ("\n");
+#ifdef DEBUG_LIVENESS
+			mono_print_tree (inst); printf ("\n");
+#endif
 			update_gen_kill_set (cfg, bb, inst, tree_num);
 		}
 

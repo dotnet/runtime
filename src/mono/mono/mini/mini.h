@@ -492,10 +492,13 @@ enum {
 };
 
 /* Bit-fields in the MonoBasicBlock.region */
+#define MONO_REGION_TRY       0
 #define MONO_REGION_FINALLY  16
 #define MONO_REGION_CATCH    32
 #define MONO_REGION_FAULT    64         /* Currently unused */
 #define MONO_REGION_FILTER  128
+
+#define MONO_BBLOCK_IS_IN_REGION(bblock, regtype) (((bblock)->region & (0xf << 4)) == (regtype))
 
 /*
  * Control Flow Graph and compilation unit information
@@ -795,6 +798,7 @@ gpointer          mono_create_jit_trampoline (MonoMethod *method);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
+gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align);
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);

@@ -407,6 +407,7 @@ MINI_OP(OP_TLS_GET,            "tls_get")
 
 MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr")
 MINI_OP(OP_DUMMY_USE, "dummy_use")
+MINI_OP(OP_DUMMY_STORE, "dummy_store")
 
 
 /* Atomic specific

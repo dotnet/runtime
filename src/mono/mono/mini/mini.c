@@ -546,6 +546,13 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->inst_left = (load); \
     } while (0)
 
+#define NEW_DUMMY_STORE(cfg,dest,num) do { \
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
+		(dest)->opcode = OP_DUMMY_STORE; \
+		(dest)->klass = (dest)->inst_i0->klass;	\
+	} while (0)
+
 #define ADD_BINOP(op) do {	\
 		MONO_INST_NEW (cfg, ins, (op));	\
 		ins->cil_code = ip;	\
@@ -2093,7 +2100,17 @@ mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, M
 		temp->flags |= MONO_INST_IS_TEMP;
 
 		if (MONO_TYPE_ISSTRUCT (ret)) {
-			MonoInst *loada;
+			MonoInst *loada, *dummy_store;
+
+			/* 
+			 * Emit a dummy store to the local holding the result so the
+			 * liveness info remains correct.
+			 */
+			NEW_DUMMY_STORE (cfg, dummy_store, temp->inst_c0);
+			if (to_end)
+				mono_add_ins_to_end (bblock, dummy_store);
+			else
+				MONO_ADD_INS (bblock, dummy_store);
 
 			/* we use this to allocate native sized structs */
 			temp->unused = sig->pinvoke;
@@ -2384,6 +2401,11 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 
 	if ((cfg->opt & MONO_OPT_INTRINS) && !to_end && n <= sizeof (gpointer) * 5) {
 		MonoInst *inst;
+		if (dest->opcode == OP_LDADDR) {
+			/* Keep liveness info correct */
+			NEW_DUMMY_STORE (cfg, inst, dest->inst_i0->inst_c0);
+			MONO_ADD_INS (bblock, inst);
+		}
 		MONO_INST_NEW (cfg, inst, OP_MEMCPY);
 		inst->inst_left = dest;
 		inst->inst_right = src;
@@ -3140,11 +3162,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* catch and filter blocks get the exception object on the stack */
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE ||
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+				MonoInst *load, *dummy_use;
+
 				/* mostly like handle_stack_args (), but just sets the input args */
 				/* g_print ("handling clause at IL_%04x\n", clause->handler_offset); */
 				tblock->in_scount = 1;
 				tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 				tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
+
+				/* 
+				 * Add a dummy use for the exvar so its liveness info will be
+				 * correct.
+				 */
+				NEW_TEMPLOAD (cfg, load, tblock->in_stack [0]->inst_c0);
+				NEW_DUMMY_USE (cfg, dummy_use, load);
+				MONO_ADD_INS (tblock, dummy_use);
 				
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					GET_BBLOCK (cfg, bbhash, tblock, ip + clause->data.filter_offset);
@@ -6781,6 +6813,158 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 	return res;
 }
 
+typedef struct {
+	MonoClass *vtype;
+	GList *active;
+	GList *slots;
+} StackSlotInfo;
+
+/*
+ * mono_allocate_stack_slots:
+ *
+ *  Allocate stack slots for all non register allocated variables using a
+ * linear scan algorithm.
+ * Returns: an array of stack offsets which the caller should free.
+ * STACK_SIZE is set to the amount of stack space needed.
+ * STACK_ALIGN is set to the alignment needed by the locals area.
+ */
+gint32*
+mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_align)
+{
+	int i, slot, offset, size, align;
+	MonoMethodVar *vmv;
+	MonoInst *inst;
+	gint32 *offsets;
+	GList *vars = NULL, *l;
+	StackSlotInfo *scalar_stack_slots, *vtype_stack_slots, *slot_info;
+	MonoType *t;
+	int nvtypes;
+
+	scalar_stack_slots = g_new0 (StackSlotInfo, MONO_TYPE_PINNED);
+	vtype_stack_slots = g_new0 (StackSlotInfo, 256);
+	nvtypes = 0;
+
+	offsets = g_new (guint32, m->num_varinfo);
+	for (i = 0; i < m->num_varinfo; ++i)
+		offsets [i] = -1;
+
+	for (i = m->locals_start; i < m->num_varinfo; i++) {
+		inst = m->varinfo [i];
+		vmv = MONO_VARINFO (m, i);
+
+		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR || inst->opcode == OP_REGOFFSET)
+			continue;
+
+		vars = g_list_prepend (vars, vmv);
+	}
+
+	vars = mono_varlist_sort (m, vars, 0);
+	offset = 0;
+	*stack_align = 0;
+	for (l = vars; l; l = l->next) {
+		vmv = l->data;
+		inst = m->varinfo [vmv->idx];
+
+		/* inst->unused indicates native sized value types, this is used by the
+		* pinvoke wrappers when they call functions returning structures */
+		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
+			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
+		else
+			size = mono_type_size (inst->inst_vtype, &align);
+
+		t = mono_type_get_underlying_type (inst->inst_vtype);
+		switch (t->type) {
+		case MONO_TYPE_VALUETYPE:
+			for (i = 0; i < nvtypes; ++i)
+				if (t->data.klass == vtype_stack_slots [i].vtype)
+					break;
+			if (i < nvtypes)
+				slot_info = &vtype_stack_slots [i];
+			else {
+				g_assert (nvtypes < 256);
+				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				slot_info = &vtype_stack_slots [nvtypes];
+				nvtypes ++;
+			}
+			break;
+		default:
+			slot_info = &scalar_stack_slots [t->type];
+		}
+
+		slot = 0xffffff;
+		if (m->comp_done & MONO_COMP_LIVENESS) {
+			//printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
+			
+			/* expire old intervals in active */
+			while (slot_info->active) {
+				MonoMethodVar *amv = (MonoMethodVar *)slot_info->active->data;
+
+				if (amv->range.last_use.abs_pos > vmv->range.first_use.abs_pos)
+					break;
+
+				//printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
+
+				slot_info->active = g_list_delete_link (slot_info->active, slot_info->active);
+				slot_info->slots = g_list_prepend (slot_info->slots, GINT_TO_POINTER (offsets [amv->idx]));
+			}
+
+			/* 
+			 * This also handles the case when the variable is used in an
+			 * exception region, as liveness info is not computed there.
+			 */
+			if (! (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
+				if (slot_info->slots) {
+					slot = (int)slot_info->slots->data;
+
+					slot_info->slots = g_list_delete_link (slot_info->slots, slot_info->slots);
+				}
+
+				slot_info->active = mono_varlist_insert_sorted (m, slot_info->active, vmv, TRUE);
+			}
+		}
+
+		{
+			static int count = 0;
+			count ++;
+
+			/*
+			if (count == atoi (getenv ("COUNT")))
+				printf ("LAST: %s\n", mono_method_full_name (m->method, TRUE));
+			if (count > atoi (getenv ("COUNT")))
+				slot = 0xffffff;
+			else {
+				mono_print_tree_nl (inst);
+				}
+			*/
+		}
+		if (slot == 0xffffff) {
+			offset += size;
+			offset += align - 1;
+			offset &= ~(align - 1);
+			slot = offset;
+
+			if (*stack_align == 0)
+				*stack_align = align;
+		}
+
+		offsets [vmv->idx] = slot;
+	}
+	g_list_free (vars);
+	for (i = 0; i < MONO_TYPE_PINNED; ++i) {
+		g_list_free (scalar_stack_slots [i].active);
+		g_list_free (scalar_stack_slots [i].slots);
+	}
+	for (i = 0; i < nvtypes; ++i) {
+		g_list_free (vtype_stack_slots [i].active);
+		g_list_free (vtype_stack_slots [i].slots);
+	}
+	g_free (scalar_stack_slots);
+	g_free (vtype_stack_slots);
+
+	*stack_size = offset;
+	return offsets;
+}
+
 void
 mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func, gboolean no_throw)
 {
@@ -8583,7 +8767,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.basic_blocks += cfg->num_bblocks;
 	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
 
-	if (cfg->num_varinfo > 2000) {
+	if ((cfg->num_varinfo > 2000) && !mono_compile_aot) {
 		/* 
 		 * we disable some optimizations if there are too many variables
 		 * because JIT time may become too expensive. The actual number needs 
@@ -8592,6 +8776,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->opt &= ~ (MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP);
 		cfg->disable_ssa = TRUE;
 	}
+
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
 	if (cfg->opt & MONO_OPT_BRANCH)
@@ -8735,7 +8920,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	//mono_print_code (cfg);
 
-       //print_dfn (cfg);
+    //print_dfn (cfg);
 	
 	/* variables are allocated after decompose, since decompose could create temps */
 	mono_arch_allocate_vars (cfg);
