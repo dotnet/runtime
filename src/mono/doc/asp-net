@@ -12,8 +12,8 @@
 	programs can be run using the Mono runtime and the XSP page
 	parser.
 
-	We are now working HttpRuntime and related classes to make our
-	implementation mostly compatible with MS.
+	We are now working bug fixing and adding missing features
+	after making the whole pipeline compatible with MS.
 
 	Tim started work on the Web Services.  Although we have a
 	SoapFormatter as part of the remoting infrastructure already
@@ -65,25 +65,19 @@
 
 ** XSP
 
-	This is where initial development of the .aspx compiler to C#
-	took place. That compiler is now integrated in System.Web classes
+	This is where initial development of the .aspx/.ascx/.asax compiler 
+	to C# took place. That compiler is now integrated in System.Web classes
 	mostly under System.Web.Compilation namespace.
 
-	We still keep the compiler and the initial web server used to debug
-	HtmlControls and WebControls under xsp/src directory. This will
-	stop working some time soon in favor of a new server, that is also
-	compatible with MS runtime.
+	We added a new web server that works with mono and MS runtime and is
+	being used to debug our classes.  It resides in xsp/server. A couple of
+	classes of this new server can be reused/extended to make an apache
+	module/cgi using mono (MonoWorkerRequest and MonoApplicationHost).
 
 	There is also a bunch of .aspx pages to test the server along with
 	a few user controls under xsp/test.
 
-	We added a new web server that works with MS runtime and is being
-	used to debug our classes. Currently it does not work with mono
-	runtime, but will do :-). It resides in xsp/server. A couple of
-	classes of this new server can be reused/extended to make an apache
-	module/cgi using mono (MonoWorkerRequest and MonoApplicationHost).
-
-	The C# code generator has been moved to System.Web.Compilation 
+	You can check it out from CVS and run 'make install' to test it.
 
 ** Controls
 
@@ -125,24 +119,26 @@
 	using HttpRuntime).
 
         6. Finish HttpRuntime.
-	<b>We are here</b>.
 	
         7. Running our sample code with our classes with our runtime.
 
+	8. Debug and add missing features.
+
+	We are in step 8. Among the missing features: server side includes,
+	better caching, some configuration stuff, more validators...
+	
 ** How to Help
 
         Testing and fixing HtmlControls, WebControls and validators is an
 	easy way to help.
 
-        In the CVS module XSP you can find the aspx to C# page parser,
-        a little web server used for testing and a directory containing
-        sample aspx pages.
+        In the CVS module XSP you can find a small web server used for
+	testing and a directory containing sample aspx pages.
 
         You have some documentation under doc directory and in the README
         file of each directory. They explain how to test our System.Web.
         Testing is really easy!
 
-	We will soon get the new server working with our runtime. This way
-	we'll have a server that runs on both MS and mono runtime and will
-	make it easier to check the functionally against both runtimes.
+	As the server also works with MS runtime, you can use it to check
+	what the expected results are.
 
