@@ -126,11 +126,30 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 	g_free (symfile);
 }
 
+static int
+read_leb128 (const char *ptr, const char **rptr)
+{
+	int ret = 0;
+	int shift = 0;
+	char b;
+
+	do {
+		b = *ptr++;
+				
+		ret = ret | ((b & 0x7f) << shift);
+		shift += 7;
+	} while ((b & 0x80) == 0x80);
+
+	if (rptr)
+		*rptr = ptr;
+
+	return ret;
+}
+
 static gchar *
 read_string (const char *ptr)
 {
-	int len = read32 (ptr);
-	ptr += sizeof(guint32);
+	int len = read_leb128 (ptr, &ptr);
 	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
 }
 
