@@ -34,7 +34,12 @@ GetUserName (gchar *buffer, gint32 *size)
 
 	uid = getuid ();
 #ifdef HAVE_GETPWUID_R
+#ifdef _SC_GETPW_R_SIZE_MAX
 	fbufsize = (size_t) sysconf (_SC_GETPW_R_SIZE_MAX);
+#else
+	fbufsize = (size_t) 1024;
+#endif
+	
 	fbuf = g_malloc0 (fbufsize);
 	pbuf = g_new0 (struct passwd, 1);
 	getpwuid_r (uid, pbuf, fbuf, fbufsize, &p);
