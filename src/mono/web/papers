@@ -11,6 +11,11 @@
   Dependence Graph: Ron Cytron, Jeanne Ferrante</a> 
 
   <a
+  href="http://citeseer.nj.nec.com/rd/71659407%2C494602%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/23816/http%253AzSzzSzwww.cs.rice.eduzSz%257EgrosulzSz612s01zSzspe98-ssa.pdf/briggs98practical.pdf">
+  Practical Improvements to the Construction and Destruction of Static Single Assignment Form: Preston Briggs,
+  Keith Cooper, Timothy Harvey, Taylor Simpson</a>
+
+  <a
   href="http://citeseer.nj.nec.com/rd/14269422%2C217684%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/9476/http%253AzSzzSzwww.cs.ucsb.eduzSzconferenceszSzjava98zSzpaperszSzcacao.pdf/krall98monitors.pdf">
   Monitors and Exceptions - How to implement Java efficiently: Andreas Krall,
   Mark Probst</a> 
@@ -37,6 +42,10 @@
   Effective Code Generation in a Just-In-Time Java Compiler: Ali-Reza
   Adl-Tabatabai Guei-Yuan Lueh, Vishesh M. Parikh, James M. Stichnoth...</a>
 
+  <a
+  href="http://citeseer.nj.nec.com/rd/50003313%2C437274%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/21332/http%253AzSzzSzwww.research.ibm.comzSzjalapenozSzpaperszSzABCD.pdf/bodik00abcd.pdf">
+  ABCD: Eliminating Array-Bounds Checks on Demand: Rastislav Bodik, Rajiv Gupta, Vivek Sarkar</a>
+
 * Register Allocation
 
   <a
@@ -55,6 +64,17 @@
   vmgen-A Generator of Efficient Virtual Machine Interpreters: M. Anton
   Ertl, David Gregg, Andreas Krall, Bernd Paysan</a>
 
+* Garbage Collection
 
+  <a
+  href="http://citeseer.nj.nec.com/rd/71659407%2C89086%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/5548/http%253AzSzzSzwww.mbhl.comzSz%257EdhudekzSz.zSzdocszSzgcSurvey.pdf/wilson92uniprocessor.pdf">
+  Uniprocessor Garbage Collection Techniques: Paul Wilson</a>
 
+  <a
+  href="http://citeseer.nj.nec.com/rd/71659407%2C41666%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/564/ftp%253AzSzzSzftp.cs.umass.eduzSzpubzSzoslzSzpaperszSztr9147.pdf/a-language-independent-garbage.pdf">
+  A Language-Independent Garbage Collector Toolkit: Richard Hudson, Eliot Moss, Amer Diwan, Christopher Weight</a>
+  
+  <a
+  href="http://citeseer.nj.nec.com/rd/71659407%2C48431%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/3175/ftp%253AzSzzSzibis.cs.umass.eduzSzpubzSzpaperszSziwmm92.pdf/hudson92incremental.pdf">
+  Incremental Collection of Mature Objects: Richard Hudson, Eliot Moss</a>
 
