@@ -181,7 +181,7 @@ mono_domain_finalize (MonoDomain *domain)
 	/* FIXME: finalize objects in todo... */
 	g_hash_table_destroy (todo);
 
-	return(0);
+	return;
 }
 
 void
