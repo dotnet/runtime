@@ -21,15 +21,11 @@
 ** To start contributing
 
 	To start developing classes or to contribute to the compiler,
-	you only need Windows and the .NET Beta 2 SDK.  Please notice
+	you only need Windows and the .NET Framework 1.0 SDK.  Please notice
 	that you do not need Visual Studio (although you can use it if
 	you want).  
 
 	You can get it <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
-
-	Alternatively you can use the <a
-	href="#compile-service">compilation service</a> that was setup by
-	Derek.
 
 ** Bug reporting
 
@@ -54,24 +50,6 @@
 		  them (this is pretty straight forward code, and simple,
 	  	  but there is a lot to be done here).
 	</ul>
-
-<a name="compile-service">
-* C# Compilation Service
-
-	If you are working on a class for the Mono project, but do not
-	have a C# compiler available or a Windows machine to run the
-	.NET SDK, you can use the compilation service that Derek
-	Holden setup in the following URL: <a
-	href="http://toilet.2y.net:8080/">http://toilet.2y.net:8080/</a>
-
-	The service will let you compile a source file and get back a
-	list of errors in the class file.  You will not be able to run
-	the code, but at least you can get some code written that will
-	help us further down the line.
-
-	You can contact (and thank) Derek for this service by sending
-	him nice email at <a
-	href="mailto:derek@Draper.Com">derek@draper.com</a>
 
 * Books on C# and DotNet.
 
