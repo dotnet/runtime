@@ -968,15 +968,15 @@ reg: CEE_ISINST (reg) {
 		int klass_reg = mono_regstate_next_int (s->rs);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 
 		if (klass->rank) {
 			int rank_reg = mono_regstate_next_int (s->rs);
 			int eclass_reg = mono_regstate_next_int (s->rs);
 
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 			MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
+			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
 			if (klass->cast_class == mono_defaults.object_class) {
 				int parent_reg = mono_regstate_next_int (s->rs);
@@ -1042,6 +1042,7 @@ reg: CEE_ISINST (reg) {
 				mini_emit_isninst_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			}
 		} else {
+			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 			/* the object_is_null target simply copies the input register to the output */
 			mini_emit_isninst_cast (s, klass_reg, klass, false_label, object_is_null);
 		}
@@ -1145,9 +1146,7 @@ reg: OP_UNBOXCAST (reg) {
 	int rank_reg = mono_regstate_next_int (s->rs);
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 
 	/* FIXME: generics */
 	g_assert (klass->rank == 0);
@@ -1156,12 +1155,14 @@ reg: OP_UNBOXCAST (reg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, 0);
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+
 	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass->element_class);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
-	}
-	else {
+	} else {
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, klass->element_class);
 	}
 	
@@ -1193,7 +1194,7 @@ reg: CEE_CASTCLASS (reg) {
 			int rank_reg = mono_regstate_next_int (s->rs);
 			int eclass_reg = mono_regstate_next_int (s->rs);
 
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 			MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
@@ -1423,13 +1424,10 @@ reg: CEE_LDLEN (reg) {
 
 reg: OP_ARRAY_RANK (reg) {	
 	int vtable_reg = mono_regstate_next_int (s->rs);
-	int class_reg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, vtable_reg, 
 				       state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, class_reg, 
-				       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
-				       class_reg, G_STRUCT_OFFSET (MonoClass, rank));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, state->reg1, 
+				       vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 }
 
 reg: OP_CHECK_ARRAY_TYPE (reg) {
@@ -1552,7 +1550,7 @@ mini_emit_max_iid_check_vtable (MonoCompile *s, int vtable_reg, MonoClass *klass
 {
 	int max_iid_reg = mono_regstate_next_int (s->rs);
 		
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU2_MEMBASE, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
 	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
 }
 
@@ -1563,7 +1561,7 @@ mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
 {
 	int max_iid_reg = mono_regstate_next_int (s->rs);
 
- 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));		
+ 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU2_MEMBASE, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));		
 	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
 }
 
@@ -1662,7 +1660,7 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 	int stype = mono_regstate_next_int (s->rs);
 
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, idepth_reg, klass->idepth);
 		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
 	}
@@ -1714,7 +1712,7 @@ mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 	int stype = mono_regstate_next_int (s->rs);
 
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, idepth_reg, klass->idepth);
 		MONO_EMIT_NEW_COND_EXC (s, LT_UN, "InvalidCastException");
 	}
