@@ -77,8 +77,8 @@
                   <td bgcolor="#999999">
                     <img src="images/redhat-36.gif"><b>Red Hat 8.0/x86</b>
                     <ul>
-                      <li><a href="archive/redhat-80-i386/mono-0.26-1.ximian.5.1.i386.rpm">mono-0.26-1.ximian.5.1.i386.rpm</a>
-                      <li><a href="archive/redhat-80-i386/mono-devel-0.26-1.ximian.5.1.i386.rpm">mono-devel-0.26-1.ximian.5.1.i386.rpm</a>
+                      <li><a href="archive/redhat-80-i386/mono-0.26-2.ximian.5.1.i386.rpm">mono-0.26-2.ximian.5.1.i386.rpm</a>
+                      <li><a href="archive/redhat-80-i386/mono-devel-0.26-2.ximian.5.1.i386.rpm">mono-devel-0.26-.ximian.5.1.i386.rpm</a>
 	 	      <br>
                       <li><a href="archive/redhat-80-i386/monodoc-0.5-1.ximian.5.1.i386.rpm">monodoc-0.5-1.ximian.5.1.i386.rpm</a> (To be used only with CVS gtk-sharp)
                       <li><a href="archive/mono-wine-20030318-1.ximian.5.2.i386.rpm">mono-wine-20030318-1.ximian.5.2.i386.rpm</a>
@@ -102,6 +102,21 @@
 		    </ul>
 		  </td>
   		</tr>
+                <tr>
+                  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SuSE 8.2</b>
+                      <ul>
+                        <li><a href="archive/suse-82-i586/mono-0.26-2.ximian.7.1.i586.rpm">mono-0.26-2.ximian.7.1.i586.rpm</a>
+                        <li><a href="archive/suse-82-i586/mono-devel-0.26-2.ximian.7.1.i586.rpm">mono-devel-0.26-2.ximian.7.1.i586.rpm</a>
+                     </ul>
+                   </td>
+                  <td bgcolor="#999999">
+                    <img src="images/windows-36.gif"><b>Windows installer</b>
+                      <ul>
+                        <li><a href="archive/mono-0.26-win32-2.exe">mono-0.26-win32-2.exe</a>
+                     </ul>
+                   </td>
+                 </tr>
              </table>
             </td>                    
 	<table>
