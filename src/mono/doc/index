@@ -23,6 +23,11 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 19, 2001
+
+	Paolo has written a section on <a href="porting.html">Porting
+	Mono</a> to othre architectures.
+
 ** Sep 18, 2001
 
 	<A a href="download.html#sep-18">Mono 0.7</a> has been
