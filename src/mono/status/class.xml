@@ -505,33 +505,6 @@
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
 	</class>
-	<class name="System.Configuration.Assemblies.AssemblyHash">
-		<last-activity>Jul-17-2001</last-activity>
-		<implementation>yes</implementation>
-		<test-suite>no</test-suite>
-		<completion>?</completion>
-		<maintainers>
-			<maintainer>tomasr@mvps.org</maintainer>
-		</maintainers>
-	</class>
-	<class name="System.Configuration.Assemblies.AssemblyHashAlgorithm">
-		<last-activity>Jul-17-2001</last-activity>
-		<implementation>yes</implementation>
-		<test-suite>no</test-suite>
-		<completion>?</completion>
-		<maintainers>
-			<maintainer>tomasr@mvps.org</maintainer>
-		</maintainers>
-	</class>
-	<class name="System.Configuration.Assemblies.AssemblyVersionCompatibility">
-		<last-activity>Jul-17-2001</last-activity>
-		<implementation>yes</implementation>
-		<test-suite>no</test-suite>
-		<completion>?</completion>
-		<maintainers>
-			<maintainer>tomasr@mvps.org</maintainer>
-		</maintainers>
-	</class>
 	<class name="System.Configuration.ConfigurationException">
 		<last-activity>Aug-28-2001</last-activity>
 		<implementation>yes</implementation>
@@ -2507,15 +2480,6 @@
 			<maintainer>dholden@draper.com</maintainer>
 		</maintainers>
 	</class>
-	<class name="System.Security">
-		<last-activity>Jul-17-2001</last-activity>
-		<implementation>no</implementation>
-		<test-suite>no</test-suite>
-		<completion>?</completion>
-		<maintainers>
-			<maintainer>tomasr@mvps.org</maintainer>
-		</maintainers>
-	</class>
 	<class name="System.Security.CodeAccessPermission">
 		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
@@ -2964,15 +2928,6 @@
 		<completion>1</completion>
 		<maintainers>
 			<maintainer>ndrochak@gol.com</maintainer>
-		</maintainers>
-	</class>
-	<class name="System.Security.Policy">
-		<last-activity>Jul-17-2001</last-activity>
-		<implementation>no</implementation>
-		<test-suite>no</test-suite>
-		<completion>?</completion>
-		<maintainers>
-			<maintainer>tomasr@mvps.org</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Security.Policy.ApplicationDirectoryMembershipCondition">
