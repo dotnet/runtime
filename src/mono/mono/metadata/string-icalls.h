@@ -107,10 +107,7 @@ MonoString *
 ves_icall_System_String_InternalIsInterned (MonoString *str);
 
 gint32 
-ves_icall_System_String_InternalCompareStr (MonoString *s1, MonoString *s2, MonoBoolean inCase);
-
-gint32 
-ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, MonoBoolean inCase);
+ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, gint32 mode);
 
 gint32
 ves_icall_System_String_GetHashCode (MonoString *me);

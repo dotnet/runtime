@@ -3175,7 +3175,7 @@ static gconstpointer icall_map [] = {
 	"System.String::InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN,
 	"System.String::InternalIntern", ves_icall_System_String_InternalIntern,
 	"System.String::InternalIsInterned", ves_icall_System_String_InternalIsInterned,
-	"System.String::InternalCompare(string,int,string,int,int,bool)", ves_icall_System_String_InternalCompareStr_N,
+	"System.String::InternalCompare(string,int,string,int,int,int)", ves_icall_System_String_InternalCompareStr_N,
 	"System.String::GetHashCode", ves_icall_System_String_GetHashCode,
 	"System.String::get_Chars", ves_icall_System_String_get_Chars,
 

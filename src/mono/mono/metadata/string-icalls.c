@@ -26,7 +26,7 @@ static gboolean
 string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr);
 
 static gint32
-string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode);
+string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint32 mode);
 
 MonoString *
 ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
@@ -783,7 +783,7 @@ ves_icall_System_String_InternalIsInterned (MonoString *str)
 }
 
 gint32
-ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, MonoBoolean inCase)
+ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, gint32 mode)
 {
 	/* c translation of C# code from old string.cs.. :) */
 	gint32 lenstr1;
@@ -793,14 +793,8 @@ ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoStr
 	gunichar2 *str2;
 
 	gint32 pos;
-	gint16 mode;
 	
 	MONO_ARCH_SAVE_REGS;
-
-	if (inCase)
-		mode = 1;
-	else
-		mode = 0;
 
 	lenstr1 = mono_string_length(s1);
 	lenstr2 = mono_string_length(s2);
@@ -864,7 +858,7 @@ ves_icall_System_String_get_Chars (MonoString *me, gint32 idx)
 			2 = StringCompareModeOrdinal
 */
 static gint32 
-string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode)
+string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint32 mode)
 {
 	gint32 result;
 	GUnicodeType c1type, c2type;
@@ -888,8 +882,8 @@ string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode)
 				  (c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
 		break;
 	case 2:
-		result = (gint32) c1 - c2;
-		break;
+		// Rotor/ms return the full value just not -1 and 1
+		return (gint32) c1 - c2; break;
 	}
 
 	return ((result < 0) ? -1 : (result > 0) ? 1 : 0);
