@@ -8,6 +8,7 @@
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/appdomain.h" /* mono_init */
 #include "mono/metadata/debug-helpers.h"
+#include "mono/utils/mono-compiler.h"
 
 static FILE *output;
 static int include_namespace = 0;
@@ -1050,12 +1051,14 @@ main (int argc, char *argv[]) {
 		aname = argv [i];
 	if (argc > i + 1)
 		cname = argv [i + 1];
-	if (!aname)
-		aname = "mscorlib";
+	if (aname) {
+		assembly = mono_assembly_open (aname, NULL);
+	} else {
+		assembly = mono_image_get_assembly (mono_get_corlib ());
+	}
 	if (!cname && (graphtype == GRAPH_TYPES))
 		cname = "System.Object";
 
-	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {
 		g_print ("cannot open assembly %s\n", aname);
 		exit (1);
