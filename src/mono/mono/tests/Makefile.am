@@ -107,7 +107,8 @@ TESTSRC=			\
 	static-ctor.cs		\
 	inctest.cs		\
 	bound.cs		\
-	array-invoke.cs
+	array-invoke.cs		\
+	decimal.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)

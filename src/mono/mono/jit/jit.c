@@ -3211,7 +3211,8 @@ mono_cfg_new (MonoMethod *method)
 
 	/* reserve space for caller saved registers */
 	/* fixme: this is arch dependent */
-	cfg->locals_size = 12;
+	/* we save EAX, EDX, ECX - and ESP if we call finally handlers */
+	cfg->locals_size = 16;
 
 	/* fixme: we should also consider loader optimisation attributes */
 	cfg->share_code = mono_jit_share_code;

@@ -118,6 +118,8 @@ arch_get_call_finally (void)
 	x86_push_reg (code, X86_EBP);
 	/* set new EBP */
 	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
+	/* save the ESP - this is used by endfinally */
+	x86_mov_membase_reg (code, X86_EBP, -16, X86_ESP, 4);
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
 	/* restore EBP */

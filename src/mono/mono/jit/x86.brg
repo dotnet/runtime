@@ -372,11 +372,17 @@ stmt: RETHROW {
 }
 
 stmt: HANDLER {
+	/* save ESP (used by ENDFINALLY) */
+	x86_mov_membase_reg (s->code, X86_EBP, -16, X86_ESP, 4);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_call_imm (s->code, 0); 
 }
 
 stmt: ENDFINALLY {
+	/* restore ESP - which an be modified when we allocate value types
+	 * in the finally handler */
+	x86_mov_reg_membase (s->code, X86_ESP, X86_EBP, -16, 4);
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
 	x86_ret (s->code);
 }
 
