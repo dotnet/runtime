@@ -59,14 +59,7 @@ void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGet
        mono_raise_exception (mono_get_exception_execution_engine ("Failed to generate random bytes from CryptAPI"));
 }
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes(MonoObject *self, MonoArray *arry)
-{
-   mono_raise_exception (mono_get_exception_not_implemented());
-}
-
-#else
-
-#if defined (NAME_DEV_RANDOM) && defined (HAVE_CRYPT_RNG)
+#elif defined (NAME_DEV_RANDOM) && defined (HAVE_CRYPT_RNG)
 
 #ifndef NAME_DEV_URANDOM
 #define NAME_DEV_URANDOM "/dev/urandom"
@@ -110,42 +103,6 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
     close(file);
 }
 
-void 
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes (MonoObject *self, MonoArray *arry)
-{
-    guint32 len;
-    gint file, i;
-    gint err;
-    guchar byte = 0;
-
-    len = mono_array_length(arry);
-
-    file = open(NAME_DEV_RANDOM, O_RDONLY);
-
-    if (file < 0) {
-        g_warning("Entropy problem! Can't open %s", NAME_DEV_RANDOM);
-
-        /* This needs to be a crypto exception */
-        mono_raise_exception (mono_get_exception_execution_engine ("Failed to open /dev/random device"));
-    }
-
-    for (i = 0; i < len; i++) {
-
-        do {
-            err = read(file, &byte, 1);
-        } while (byte == 0);
-
-        if (err < 0) {
-            g_warning("Entropy error! Error in read.");
-            mono_raise_exception (mono_get_exception_execution_engine ("Failed to read a random byte from /dev/urandom or /dev/random device"));
-        }
-
-        mono_array_set(arry, guchar, i, byte);
-    }
-
-    close(file);
-}
-
 #else
 
 void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry)
@@ -153,11 +110,4 @@ void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGet
     mono_raise_exception(mono_get_exception_not_implemented());
 }
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes(MonoObject *self, MonoArray *arry)
-{
-    mono_raise_exception(mono_get_exception_not_implemented());
-}
-
-#endif // #if defined (NAME_DEV_RANDOM) && defined (HAVE_CRYPT_RNG)
-
-#endif // #if defined (PLATFORM_WIN32)
+#endif /* OS definition */

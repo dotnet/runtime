@@ -14,6 +14,5 @@
 #include <mono/metadata/object.h>
 
 void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry);
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes(MonoObject *self, MonoArray *arry);
 
 #endif
