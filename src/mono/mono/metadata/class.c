@@ -135,6 +135,7 @@ class_compute_field_layout (MonoClass *class)
 	int i, blittable = TRUE, real_size = 0;
 	guint32 rva;
 	guint32 packing_size = 0;
+	gboolean explicit_size;
 
 	if (class->size_inited)
 		return;
@@ -151,12 +152,18 @@ class_compute_field_layout (MonoClass *class)
 	}
 
 	/* Get the real size */
-	mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &real_size);
+	explicit_size = mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &real_size);
 
 	g_assert ((packing_size & 0xfffffff0) == 0);
 	class->packing_size = packing_size;
 
 	if (!top) {
+		if (explicit_size && real_size) {
+			if (class->parent)
+				real_size += class->parent->instance_size;
+
+			class->instance_size = MAX (real_size, class->instance_size);
+		}
 		class->size_inited = 1;
 		return;
 	}
@@ -238,11 +245,11 @@ class_compute_field_layout (MonoClass *class)
 	}
 	mono_class_layout_fields (class);
 
-	if(real_size) {
-		if(class->parent)
+	if (explicit_size && real_size) {
+		if (class->parent)
 			real_size += class->parent->instance_size;
 
-		class->instance_size = MAX(real_size, class->instance_size);
+		class->instance_size = MAX (real_size, class->instance_size);
 	}
 }
 
@@ -349,42 +356,17 @@ mono_class_layout_fields (MonoClass *class)
 	/*
 	 * Compute static field layout and size
 	 */
-	switch (layout) {
-	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
-	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
-		for (i = 0; i < top; i++){
-			int size, align;
+	for (i = 0; i < top; i++){
+		int size, align;
 			
-			if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
-				continue;
+		if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
 			
-			size = mono_type_size (class->fields [i].type, &align);
-			class->fields [i].offset = class->class_size;
-			class->fields [i].offset += align - 1;
-			class->fields [i].offset &= ~(align - 1);
-			class->class_size = class->fields [i].offset + size;
-
-		}
-		break;
-	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
-		for (i = 0; i < top; i++){
-			int size, align;
-
-			/*
-			 * There must be info about all the fields in a type if it
-			 * uses explicit layout.
-			 */
-			
-			if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
-				continue;
-
-			size = mono_type_size (class->fields [i].type, &align);
-			class->fields [i].offset = class->class_size;
-			class->fields [i].offset += align - 1;
-			class->fields [i].offset &= ~(align - 1);
-			class->class_size = class->fields [i].offset + size;
-		}
-		break;
+		size = mono_type_size (class->fields [i].type, &align);
+		class->fields [i].offset = class->class_size;
+		class->fields [i].offset += align - 1;
+		class->fields [i].offset &= ~(align - 1);
+		class->class_size = class->fields [i].offset + size;
 	}
 }
 
