@@ -27,6 +27,7 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/marshal.h"
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>

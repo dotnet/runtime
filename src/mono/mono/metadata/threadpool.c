@@ -20,6 +20,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/monitor.h>
