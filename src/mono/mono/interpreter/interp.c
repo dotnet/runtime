@@ -35,7 +35,7 @@
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
-//#include <mono/cli/types.h>
+/*#include <mono/cli/types.h>*/
 #include "interp.h"
 #include "hacks.h"
 
@@ -352,7 +352,7 @@ get_exception_invalid_cast ()
 	return ex;
 }
 
-static void
+static void inline
 stackval_from_data (MonoType *type, stackval *result, const char *data)
 {
 	if (type->byref) {
@@ -361,9 +361,9 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		else
 			result->type = VAL_OBJ;
 		result->data.p = *(gpointer*)data;
+		result->data.vt.klass = mono_class_from_mono_type (type);
 		return;
 	}
-	result->data.vt.klass = mono_class_from_mono_type (type);
 	switch (type->type) {
 	case MONO_TYPE_I1:
 		result->type = VAL_I32;
@@ -413,11 +413,13 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 	case MONO_TYPE_PTR:
 		result->type = VAL_OBJ;
 		result->data.p = *(gpointer*)data;
+		result->data.vt.klass = mono_class_from_mono_type (type);
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
 			result->type = VAL_I32;
 			result->data.i = *(guint32*)data;
+			result->data.vt.klass = mono_class_from_mono_type (type);
 		} else {
 			result->type = VAL_VALUET;
 			result->data.vt.klass = type->data.klass;
@@ -430,7 +432,7 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 	}
 }
 
-static void
+static void inline
 stackval_to_data (MonoType *type, stackval *val, char *data)
 {
 	if (type->byref) {
@@ -441,29 +443,29 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 		*(guint8*)data = val->data.i;
-		break;
+		return;
 	case MONO_TYPE_BOOLEAN:
 		*(guint8*)data = (val->data.i != 0);
-		break;
+		return;
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 		*(guint16*)data = val->data.i;
-		break;
+		return;
 	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
 	case MONO_TYPE_U: /* FIXME: not 64 bit clean */
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*(gint32*)data = val->data.i;
-		break;
+		return;
 	case MONO_TYPE_I8:
 		*(gint64*)data = val->data.l;
-		break;
+		return;
 	case MONO_TYPE_R4:
 		*(float*)data = val->data.f;
-		break;
+		return;
 	case MONO_TYPE_R8:
 		*(double*)data = val->data.f;
-		break;
+		return;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
@@ -471,14 +473,14 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
 		*(gpointer*)data = val->data.p;
-		break;
+		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
 			*(gint32*)data = val->data.i;
 		} else {
 			memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
 		}
-		break;
+		return;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
@@ -624,6 +626,8 @@ dump_stack (stackval *stack, stackval *sp)
 
 #define DEBUG_INTERP 1
 #if DEBUG_INTERP
+
+unsigned long opcode_count = 0;
 
 static void
 output_indent (void)
@@ -817,6 +821,7 @@ ves_exec_method (MonoInvocation *frame)
 	main_loop:
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
+		opcode_count++;
 		if (tracing){
 			output_indent ();
 			g_print ("stack: ");
@@ -1169,13 +1174,13 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i == GET_NATI (sp [1]);
+				result = sp [0].data.i == (gint)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l == sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f == sp [1].data.f;
 			else
-				result = GET_NATI (sp [0]) == GET_NATI (sp [1]);
+				result = (gint)GET_NATI (sp [0]) == (gint)GET_NATI (sp [1]);
 			if (result) {
 				if (near_jump)
 					ip += (signed char)*ip;
@@ -1192,13 +1197,13 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i >= GET_NATI (sp [1]);
+				result = sp [0].data.i >= (gint)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l >= sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f >= sp [1].data.f;
 			else
-				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
+				result = (gint)GET_NATI (sp [0]) >= (gint)GET_NATI (sp [1]);
 			if (result) {
 				if (near_jump)
 					ip += (signed char)*ip;
@@ -1215,13 +1220,13 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i > GET_NATI (sp [1]);
+				result = sp [0].data.i > (gint)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l > sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f > sp [1].data.f;
 			else
-				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
+				result = (gint)GET_NATI (sp [0]) > (gint)GET_NATI (sp [1]);
 			if (result) {
 				if (near_jump)
 					ip += (signed char)*ip;
@@ -1238,13 +1243,13 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp[0].data.i < GET_NATI(sp[1]);
+				result = sp[0].data.i < (gint)GET_NATI(sp[1]);
 			else if (sp->type == VAL_I64)
 				result = sp[0].data.l < sp[1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp[0].data.f < sp[1].data.f;
 			else
-				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
+				result = (gint)GET_NATI(sp[0]) < (gint)GET_NATI(sp[1]);
 			if (result) {
 				if (near_jump)
 					ip += (signed char)*ip;
@@ -1262,7 +1267,7 @@ ves_exec_method (MonoInvocation *frame)
 			sp -= 2;
 
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i <= GET_NATI (sp [1]);
+				result = sp [0].data.i <= (gint)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l <= sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
@@ -1273,7 +1278,7 @@ ves_exec_method (MonoInvocation *frame)
 				 * _will_ be wrong when we change the macro to work on 64 buts 
 				 * systems.
 				 */
-				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
+				result = (gint)GET_NATI (sp [0]) <= (gint)GET_NATI (sp [1]);
 			}
 			if (result) {
 				if (near_jump)
@@ -1541,7 +1546,7 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp [-1].data.i *= GET_NATI (sp [0]);
+				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
 				sp [-1].data.l *= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
@@ -1553,7 +1558,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp->type == VAL_I32) {
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
-				sp [-1].data.i /= GET_NATI (sp [0]);
+				sp [-1].data.i /= (gint)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
@@ -1586,7 +1591,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp->type == VAL_I32) {
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
-				sp [-1].data.i %= GET_NATI (sp [0]);
+				sp [-1].data.i %= (gint)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
@@ -1597,7 +1602,7 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
-				GET_NATI (sp [-1]) %= GET_NATI (sp [0]);
+				(gint)GET_NATI (sp [-1]) %= (gint)GET_NATI (sp [0]);
 			}
 			BREAK;
 		CASE (CEE_REM_UN) ves_abort(); BREAK;
@@ -1649,7 +1654,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_I64)
 				sp [-1].data.l >>= GET_NATI (sp [0]);
 			else
-				GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
+				(gint)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SHR_UN) ves_abort(); BREAK;
 		CASE (CEE_NEG)
@@ -1672,7 +1677,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_NATI)
 				sp->data.p = (gpointer)(~ (int)sp->data.p);
 			BREAK;
-		CASE (CEE_CONV_U1) // fall through
+		CASE (CEE_CONV_U1) /* fall through */
 		CASE (CEE_CONV_I1) {
 			++ip;
 			switch (sp [-1].type) {
@@ -1694,7 +1699,7 @@ ves_exec_method (MonoInvocation *frame)
 			sp [-1].type = VAL_I32;
 			BREAK;
 		}
-		CASE (CEE_CONV_U2) // fall through
+		CASE (CEE_CONV_U2) /* fall through */
 		CASE (CEE_CONV_I2) {
 			++ip;
 			switch (sp [-1].type) {
@@ -1968,7 +1973,7 @@ ves_exec_method (MonoInvocation *frame)
 				field = mono_class_get_field (obj->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
-				//g_assert (sp [-1].type == VAL_VALUETA);
+				/*g_assert (sp [-1].type == VAL_VALUETA); */
 				obj = sp [-1].data.vt.vt;
 				field = mono_class_get_field (sp [-1].data.vt.klass, token);
 				offset = field->offset - sizeof (MonoObject);
@@ -2000,7 +2005,7 @@ ves_exec_method (MonoInvocation *frame)
 				field = mono_class_get_field (obj->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
-				//g_assert (sp->type == VAL_VALUETA);
+				/*g_assert (sp->type == VAL_VALUETA); */
 				obj = sp [0].data.vt.vt;
 				field = mono_class_get_field (sp [0].data.vt.klass, token);
 				offset = field->offset - sizeof (MonoObject);
@@ -2283,7 +2288,7 @@ ves_exec_method (MonoInvocation *frame)
 			
 				v = sp [2].data.p;
 
-				//fixme: what about type conversions ?
+				/*fixme: what about type conversions ? */
 				g_assert (v->klass == ac->element_class);
 
 				((gpointer *)o->vector)[sp [1].data.i] = 
@@ -2351,7 +2356,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED66) 
 		CASE (CEE_UNUSED67) ves_abort(); BREAK;
 		CASE (CEE_LDTOKEN)
-		//CASE (CEE_CONV_I) ves_abort(); BREAK;
+		/*CASE (CEE_CONV_I) ves_abort(); BREAK; */
 		CASE (CEE_CONV_OVF_I) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
@@ -2440,7 +2445,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp -= 2;
 
 				if (sp->type == VAL_I32)
-					result = sp [0].data.i == GET_NATI (sp [1]);
+					result = sp [0].data.i == (gint)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l == sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE)
@@ -2451,12 +2456,47 @@ ves_exec_method (MonoInvocation *frame)
 				sp->data.i = result;
 
 				sp++;
-						
 				break;
 			}
-			case CEE_CGT: ves_abort(); break;
+			case CEE_CGT: {
+				gint32 result;
+				++ip;
+				sp -= 2;
+
+				if (sp->type == VAL_I32)
+					result = sp [0].data.i > (gint)GET_NATI (sp [1]);
+				else if (sp->type == VAL_I64)
+					result = sp [0].data.l > sp [1].data.l;
+				else if (sp->type == VAL_DOUBLE)
+					result = sp [0].data.f > sp [1].data.f;
+				else
+					result = (gint)GET_NATI (sp [0]) > (gint)GET_NATI (sp [1]);
+				sp->type = VAL_I32;
+				sp->data.i = result;
+
+				sp++;
+				break;
+			}
 			case CEE_CGT_UN: ves_abort(); break;
-			case CEE_CLT: ves_abort(); break;
+			case CEE_CLT: {
+				gint32 result;
+				++ip;
+				sp -= 2;
+
+				if (sp->type == VAL_I32)
+					result = sp [0].data.i < (gint)GET_NATI (sp [1]);
+				else if (sp->type == VAL_I64)
+					result = sp [0].data.l < sp [1].data.l;
+				else if (sp->type == VAL_DOUBLE)
+					result = sp [0].data.f < sp [1].data.f;
+				else
+					result = (gint)GET_NATI (sp [0]) < (gint)GET_NATI (sp [1]);
+				sp->type = VAL_I32;
+				sp->data.i = result;
+
+				sp++;
+				break;
+			}
 			case CEE_CLT_UN: ves_abort(); break;
 			case CEE_LDFTN: ves_abort(); break;
 			case CEE_LDVIRTFTN: ves_abort(); break;
@@ -2662,9 +2702,6 @@ ves_exec_method (MonoInvocation *frame)
 		for (inv = frame, i = 0; inv; inv = inv->parent, ++i) {
 			MonoClass *k = inv->method->klass;
 			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
-			/*
-			 * FIXME: print out also the arguments passed to the func.
-			 */
 			g_print ("#%d: 0x%05x in %s.%s::%s (", i, inv->ip - hd->code, 
 							k->name_space, k->name, inv->method->name);
 			dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
@@ -2796,7 +2833,7 @@ int
 main (int argc, char *argv [])
 {
 	MonoAssembly *assembly;
-	int retval = 0, i;
+	int retval = 0, i, ocount = 0;
 	char *file;
 
 	if (argc < 2)
@@ -2805,6 +2842,8 @@ main (int argc, char *argv [])
 	for (i = 1; argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
 			tracing = 1;
+		if (strcmp (argv [i], "--opcode-count") == 0)
+			ocount = 1;
 	}
 	
 	file = argv [i];
@@ -2825,6 +2864,10 @@ main (int argc, char *argv [])
 #endif
 	mono_assembly_close (assembly);
 
+#if DEBUG_INTERP
+	if (ocount)
+		fprintf (stderr, "opcode count: %ld\n", opcode_count);
+#endif
 	return retval;
 }
 
