@@ -175,7 +175,6 @@ write_builtin_type (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebugg
 		*ptr++ = MONO_DEBUGGER_TYPE_KIND_STRING;
 		WRITE_UINT32 (ptr, klass->instance_size);
 		ptr += 4;
-		ptr += sizeof (gpointer);
 		*ptr++ = (guint8*)&string.length - (guint8*)&string;
 		*ptr++ = sizeof (string.length);
 		*ptr++ = (guint8*)&string.chars - (guint8*)&string;
@@ -302,9 +301,6 @@ mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile)
 	add_builtin_type_2 (types->enum_type);
 	add_builtin_type_2 (types->array_type);
 	add_builtin_type_2 (types->exception_type);
-
-	* (gpointer *) (types->string_type->type_data + 9) = mono_class_vtable
-		(mono_debugger_symbol_table->domain, mono_defaults.string_class);
 
 	return types;
 }
