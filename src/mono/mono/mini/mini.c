@@ -8209,7 +8209,7 @@ mini_init (const char *filename)
 #endif
 	mono_install_stack_walk (mono_jit_walk_stack);
 
-	domain = mono_init (filename);
+	domain = mono_init_from_assembly (filename, filename);
 	mono_init_icall ();
 
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
