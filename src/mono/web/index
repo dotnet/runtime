@@ -60,8 +60,17 @@
 	      <b><center>In the news</center></b>
 	    </td>
 	  </tr>
-	  <tr>
-
+	
+	<tr>
+		<td>
+			<b>Beta 1 Press Coverage</b>
+		</td>
+		<td>
+			<a href="http://www.go-mono.com/MonoBeta1PressCoverage.htm" target="blank">May 2004</a>: Mono Beta 1 rallies the press
+		</td>
+	</tr>
+ 	 <tr>
+	
 	    <td>
 	      <b>Linux Planet</b>
 	    </td>
@@ -69,6 +78,7 @@
 	      <a href="http://www.linuxplanet.com/linuxplanet/reports/5375/4/">May 3rd, 2004</a>: And then there's Mono
 	    </td>
 	  </tr>
+
 	  <tr>
 	    <td>
 	      <b>DevChannel</b>
@@ -163,6 +173,11 @@
 	<a href="http://www.nullenvoid.com/mono/wiki">Mono
 	</a> Wikis.
 </p>
+@item May 17th, 2005: Huge press response for Mono 1.0 Beta 1
+
+	Two weeks after the release of Mono 1.0 Beta 1, we take a
+	look at the <a href="http://www.go-mono.com/MonoBeta1PressCoverage.htm" target='_blank'>press coverage</a>that followed the
+	beta release.
 
 @item May 10th, 2004: The Mono Hackers Hall of Fame welcomes Todd Berman
 
