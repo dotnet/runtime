@@ -2421,6 +2421,16 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	char *b = blob_size;
 	int count, i;
 
+	/*
+	 * We're creating a TypeSpec for the TypeBuilder of a generic type declaration,
+	 * ie. what we'd normally use as the generic type in a TypeSpec signature.
+	 * Because of this, we must not insert it into the `typeref' hash table.
+	 */
+
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typespec, tb->type.type));
+	if (token)
+		return token;
+
 	g_assert (tb->generic_params);
 	klass = mono_class_from_mono_type (tb->type.type);
 
@@ -2448,7 +2458,7 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	}
 
 	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
-	g_hash_table_insert (assembly->typeref, tb->type.type, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->typespec, tb->type.type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
 }
@@ -3940,6 +3950,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	image->method_aux_hash = mono_g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
 	image->tokens = mono_g_hash_table_new (NULL, NULL);
+	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = mono_g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 

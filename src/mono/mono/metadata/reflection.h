@@ -281,6 +281,7 @@ typedef struct {
 		guint32 offset;
 		guint32 attrs;
 	} sections [MONO_SECTION_MAX];
+	GHashTable *typespec;
 	GHashTable *typeref;
 	GHashTable *handleref;
 	MonoGHashTable *tokens;
