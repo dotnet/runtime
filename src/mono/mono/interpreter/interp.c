@@ -1164,7 +1164,7 @@ handle_enum:
 		}
 	}
 
-	if (method->klass->valuetype)
+	if (method->klass->valuetype && obj)
 		/* Unbox the instance, since valuetype methods expect an interior pointer. */
 		obj = mono_object_unbox (obj);
 
