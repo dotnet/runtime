@@ -191,12 +191,7 @@ typedef struct {
 
 #ifdef HAVE_WORKING_SIGALTSTACK
 
-/*
- * FIXME: For some reason, when sigaltstack is enabled, the uc_mcontext member
- * in ucontext_t is not at the offset indicated by the definition of ucontext_t.
- */
-
-//#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
 /* NetBSD doesn't define SA_STACK */
 #ifndef SA_STACK

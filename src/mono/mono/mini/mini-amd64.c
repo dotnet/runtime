@@ -13,6 +13,7 @@
 #include "mini.h"
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -5816,51 +5817,51 @@ read_tls_offset_from_method (void* method)
 	return -1;
 }
 
-void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
-{
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+static void
+setup_stack (MonoJitTlsData *tls)
+{
 	pthread_t self = pthread_self();
 	pthread_attr_t attr;
-	void *staddr = NULL;
 	size_t stsize = 0;
 	struct sigaltstack sa;
-#endif
+	guint8 *staddr = NULL;
+	guint8 *current = (guint8*)&staddr;
 
-	if (!tls_offset_inited) {
-		tls_offset_inited = TRUE;
-
-		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
-		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
-		//thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
-	}		
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	if (mono_running_on_valgrind ())
+		return;
 
 	/* Determine stack boundaries */
-	if (!mono_running_on_valgrind ()) {
 #ifdef HAVE_PTHREAD_GETATTR_NP
-		pthread_getattr_np( self, &attr );
+	pthread_getattr_np( self, &attr );
 #else
 #ifdef HAVE_PTHREAD_ATTR_GET_NP
-		pthread_attr_get_np( self, &attr );
+	pthread_attr_get_np( self, &attr );
 #elif defined(sun)
-		pthread_attr_init( &attr );
-		pthread_attr_getstacksize( &attr, &stsize );
+	pthread_attr_init( &attr );
+	pthread_attr_getstacksize( &attr, &stsize );
 #else
 #error "Not implemented"
 #endif
 #endif
 #ifndef sun
-		pthread_attr_getstack( &attr, &staddr, &stsize );
+	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
 #endif
-	}
 
-	/* 
-	 * staddr seems to be wrong for the main thread, so we keep the value in
-	 * tls->end_of_stack
+	g_assert (staddr);
+
+	g_assert ((current > staddr) && (current < staddr + stsize));
+
+	tls->end_of_stack = staddr + stsize;
+
+	/*
+	 * threads created by nptl does not seem to have a guard page, and
+	 * since the main thread is not created by us, we can't even set one.
+	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
+	 * is a stack overflow exception.
 	 */
-	tls->stack_size = stsize;
+	tls->stack_size = stsize + getpagesize ();
 
 	/* Setup an alternate signal stack */
 	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE);
@@ -5870,6 +5871,23 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	sa.ss_size = SIGNAL_STACK_SIZE;
 	sa.ss_flags = SS_ONSTACK;
 	sigaltstack (&sa, NULL);
+}
+
+#endif
+
+void
+mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+{
+	if (!tls_offset_inited) {
+		tls_offset_inited = TRUE;
+
+		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
+		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
+		//thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
+	}		
+
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	setup_stack (tls);
 #endif
 }
 

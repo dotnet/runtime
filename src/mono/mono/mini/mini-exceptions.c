@@ -553,6 +553,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	 */
 	if (obj == domain->stack_overflow_ex) {
 		obj = mono_get_exception_stack_overflow ();
+		stack_overflow = TRUE;
 	}
 	else if (obj == domain->null_reference_ex) {
 		obj = mono_get_exception_null_reference ();
@@ -564,9 +565,6 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	} else {
 		mono_ex = NULL;
 	}
-
-	if (obj == domain->stack_overflow_ex)
-		stack_overflow = TRUE;
 
 	if (!call_filter)
 		call_filter = mono_arch_get_call_filter ();
@@ -658,7 +656,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						/* catch block */
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
-							/* store the exception object int cfg->excvar */
+							/* store the exception object in cfg->excvar */
 							g_assert (ei->exvar_offset);
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
 						}

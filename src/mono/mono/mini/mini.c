@@ -9535,7 +9535,7 @@ sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 {
 	MonoException *exc;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	struct sigcontext *ctx = (struct sigcontext *)&(((ucontext_t*)context)->uc_mcontext);
+	GET_CONTEXT
 
 	/* Can't allocate memory using Boehm GC on altstack */
 	if (jit_tls->stack_size && 
