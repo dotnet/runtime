@@ -600,10 +600,12 @@ mono_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	guint8 *p, *code_buffer;
-	guint code_size, stack_size, stackval_arg_pos;
+	guint i, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param;
+	guint32 simpletype;
 
 	code_size = 512;
 	stack_size = 512;
+	stack_param = 0;
 
 	sig = method->signature;
 
@@ -639,9 +641,18 @@ mono_create_method_pointer (MonoMethod *method)
 	ppc_ori  (p, ppc_r0, ppc_r0, (guint32) method & 0xffff);
 	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)), ppc_r31);
 
+	local_start = local_pos = MINV_POS + sizeof (MonoInvocation) + (sig->param_count + 1) * sizeof (stackval);
+
 	if (sig->hasthis) {
 		ppc_stw  (p, ppc_r3, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)), ppc_r31);
+		reg_param = 1;
+	} else {
+		ppc_stw  (p, ppc_r3, local_pos, ppc_r31);
+		local_pos += 4;
+		reg_param = 0;
 	}
+	ppc_stw (p, ppc_r4, local_pos, ppc_r31); local_pos += 4;
+	ppc_stw (p, ppc_r5, local_pos, ppc_r31); local_pos += 4;
 
 	/* set MonoInvocation::stack_args */
 	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
@@ -649,38 +660,71 @@ mono_create_method_pointer (MonoMethod *method)
 	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)), ppc_r31);
 
 	/* add stackval arguments */
-	/* for (i = 0; i < sig->param_count; ++i) {
+	for (i = 0; i < sig->param_count; ++i) {
+#define CALL_STACKVAL_FROM_DATA \
+		ppc_lis  (p, ppc_r0, (guint32) stackval_from_data >> 16); \
+		ppc_ori  (p, ppc_r0, ppc_r0, (guint32) stackval_from_data & 0xffff); \
+		ppc_mtlr (p, ppc_r0); \
+		ppc_blrl (p)
+#define CALL_SIZE_4 \
+			if (reg_param < 3 - (sig->hasthis ? 1 : 0)) { \
+				ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - (sig->hasthis ? 1 : 0))*4); \
+				reg_param ++; \
+			} else if (reg_param < 8) { \
+				ppc_stw  (p, ppc_r3 + reg_param, local_pos, ppc_r31); \
+				ppc_addi (p, ppc_r5, ppc_r31, local_pos); \
+				reg_param ++; \
+			} else { \
+				ppc_addi (p, ppc_r5, stack_size + 8 + stack_param, ppc_r31); \
+				stack_param ++; \
+			} \
+			ppc_lis  (p, ppc_r3, (guint32) sig->params [i] >> 16); \
+			ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos); \
+			stackval_arg_pos ++; \
+			ppc_ori  (p, ppc_r3, ppc_r3, (guint32) sig->params [i] & 0xffff); \
+\
+			CALL_STACKVAL_FROM_DATA
 
-		
-
-		ppc_lis  (p, ppc_r0,     (guint32) stackval_from_data >> 16);
-		ppc_ori  (p, ppc_r0, ppc_r0, (guint32) stackval_from_data & 0xffff);
-		ppc_mtlr (p, ppc_r0);
-		ppc_blrl (p);
-		
-		x86_mov_reg_imm (p, X86_ECX, stackval_from_data);
-		x86_lea_membase (p, X86_EDX, X86_EBP, arg_pos);
-		x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
-		x86_push_reg (p, X86_EDX);
-		x86_push_reg (p, X86_EAX);
-		x86_push_imm (p, sig->params [i]);
-		x86_call_reg (p, X86_ECX);
-		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 12);
-		stackval_pos += sizeof (stackval);
-		arg_pos += 4;
-		if (!sig->params [i]->byref) {
-			switch (sig->params [i]->type) {
-			case MONO_TYPE_I8:
-			case MONO_TYPE_R8:
-				arg_pos += 4;
-				break;
-			case MONO_TYPE_VALUETYPE:
-				g_assert_not_reached (); Not implemented yet.
-			default:
-				break;
-			}
+		if (sig->params [i]->byref) {
+			CALL_SIZE_4;
+			continue;
 		}
-	} */
+		simpletype = sig->params [i]->type;
+	enum_calc_size:
+		switch (simpletype) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+			CALL_SIZE_4;
+			break;
+		case MONO_TYPE_VALUETYPE:
+			NOT_IMPLEMENTED ("value type");
+			break;
+		case MONO_TYPE_I8:
+			NOT_IMPLEMENTED ("i8");
+			break;
+		case MONO_TYPE_R4:
+			NOT_IMPLEMENTED ("r4");
+			break;
+		case MONO_TYPE_R8:
+			NOT_IMPLEMENTED ("r8");
+			break;
+		default:
+			g_error ("Can't delegate 0x%x type", sig->params [i]->type);
+		}
+	}
 
 	/* return value storage */
 	if (sig->param_count) {
@@ -696,7 +740,41 @@ mono_create_method_pointer (MonoMethod *method)
 	ppc_blrl (p);
 
 	/* move retval from stackval to proper place (r3/r4/...) */
-	/* TODO */
+	if (sig->ret->byref) {
+		ppc_lwz (p, ppc_r3, stackval_arg_pos, ppc_r31);
+	} else {
+		switch (sig->ret->type) {
+		case MONO_TYPE_VOID:
+			break;
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:
+			ppc_lwz (p, ppc_r3, stackval_arg_pos, ppc_r31);
+			break;
+		case MONO_TYPE_I8:
+			ppc_lwz (p, ppc_r3, stackval_arg_pos, ppc_r31);
+			ppc_lwz (p, ppc_r4, stackval_arg_pos + 1, ppc_r31);
+			break;
+		case MONO_TYPE_R4:
+			ppc_lfs (p, ppc_f1, stackval_arg_pos, ppc_r31);
+			break;
+		case MONO_TYPE_R8:
+			ppc_lfd (p, ppc_f1, stackval_arg_pos, ppc_r31);
+			break;
+		default:
+			g_error ("Type 0x%x not handled yet in thunk creation", sig->ret->type);
+			break;
+		}
+	}
 
 	/* epilog */
 	ppc_lwz  (p, ppc_r11, 0,  ppc_r1);        /* r11     <--- sp[0]   load backchain from caller's function */
