@@ -606,6 +606,27 @@ ves_delegate_createdelegate (MonoReflectionMethod *info)
 	return mono_create_method_pointer (info->method);
 }
 
+static void
+interp_walk_stack (MonoStackWalk func, gpointer user_data)
+{
+	MonoInvocation *frame = TlsGetValue (frame_thread_id);
+	int il_offset;
+	MonoMethodHeader *hd;
+
+	while (frame) {
+		if ((frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || 
+				(frame->method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
+			il_offset = -1;
+		else {
+			hd = ((MonoMethodNormal*)frame->method)->header;
+			il_offset = frame->ip - hd->code;
+		}
+		if (func (frame->method, -1, il_offset, user_data))
+			return;
+		frame = frame->parent;
+	}
+}
+
 static void 
 ves_pinvoke_method (MonoInvocation *frame)
 {
@@ -4242,6 +4263,7 @@ main (int argc, char *argv [])
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 
 	mono_install_handler (interp_ex_handler);
+	mono_install_stack_walk (interp_walk_stack);
 
 	InitializeCriticalSection (&metadata_lock);
 	domain = mono_init (file);
