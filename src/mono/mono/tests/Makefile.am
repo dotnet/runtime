@@ -49,7 +49,10 @@ JITTESTSRC=			\
 	fib.cs			\
 	nested-loops.cs		\
 	random.cs		\
-	pop.cs
+	pop.cs			\
+	enum.cs			\
+	outparm.cs		\
+	switch.cs
 
 TESTS=$(TESTSRC:.cs=.exe)
 JITTESTS=$(JITTESTSRC:.cs=.exe)

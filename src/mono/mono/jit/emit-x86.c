@@ -187,7 +187,9 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	
 	mono_burg_kids (tree, ern, kids);
 
-	if (goal == MB_NTERM_reg || (goal == MB_NTERM_lreg)) {
+	switch (goal) {
+	case MB_NTERM_reg:
+	case MB_NTERM_lreg: {
 		switch (tree->op) {
 		case MB_TERM_SHL:
 		case MB_TERM_SHR:
@@ -216,16 +218,21 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			}
 			break;
 		default:
-			/* do nothing */
+			break;
 		}
 	}
+	default:
+		break;
+	}
 
-	for (i = 0; nts [i]; i++) 
+	for (i = 0; nts [i]; i++)
 		tree_allocate_regs (kids [i], nts [i], rs);
 
 	for (i = 0; nts [i]; i++) {
-		mono_regset_free_reg (rs, kids [i]->reg1);
-		mono_regset_free_reg (rs, kids [i]->reg2);
+		if (kids [i] != tree) { /* we do not free register for chain rules */
+			mono_regset_free_reg (rs, kids [i]->reg1);
+			mono_regset_free_reg (rs, kids [i]->reg2);
+		}
 	}
 
 	switch (goal) {
@@ -252,12 +259,28 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		/* fixme: allocate floating point registers */
 		break;
 
+	case MB_NTERM_addr:
+		if (tree->op == MB_TERM_ADD) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
+		}
+		break;
+	case MB_NTERM_base:
+		if (tree->op == MB_TERM_ADD) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+		}
+		break;
+	case MB_NTERM_index:
+		if (tree->op == MB_TERM_SHL ||
+		    tree->op == MB_TERM_MUL) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+		}
+		break;
 	default:
 		/* do nothing */
 	}
 
 	tree->emit = mono_burg_func [ern];
-
 }
 
 static void
@@ -275,17 +298,22 @@ forest_allocate_regs (MBCodeGenStatus *s)
 }
 
 static void
-tree_emit (MBCodeGenStatus *s, MBTree *tree) 
+tree_emit (int goal, MBCodeGenStatus *s, MBTree *tree) 
 {
-	if (tree->left)
-		tree_emit (s, tree->left);
-	if (tree->right)
-		tree_emit (s, tree->right);
+	MBTree *kids[10];
+	int i, ern = mono_burg_rule (tree->state, goal);
+	guint16 *nts = mono_burg_nts [ern];
+	MBEmitFunc emit;
+
+	mono_burg_kids (tree, ern, kids);
+
+	for (i = 0; nts [i]; i++) 
+		tree_emit (nts [i], s, kids [i]);
 
 	tree->addr = s->code - s->start;
 
-	if (tree->emit)
-		((MBEmitFunc)tree->emit) (tree, s);
+	if ((emit = mono_burg_func [ern]))
+		emit (tree, s);
 }
 
 static void
@@ -298,7 +326,7 @@ forest_emit (MBCodeGenStatus *s)
 	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 		t1->first_addr = s->code - s->start;
-		tree_emit (s, t1);
+		tree_emit (1, s, t1);
 	}
 
 	s->epilog = s->code - s->start;
@@ -357,18 +385,46 @@ compute_branches (MBCodeGenStatus *s)
 				t2->jump_target = 1;
 			}
 
-			if (t1->data.i >= 0) {
+			switch (t1->op) {
+			case MB_TERM_SWITCH: {
+				guint32 *jt = (guint32 *)t1->data.p;
+				int j, m;
+
+				m = jt [0] + 1;
+				for (j = 1; j <= m; j++) {
+					addr = get_address (forest, jt [j], 0, forest->len);
+					if (addr == -1) {
+						g_error ("address 0x%x not found at IL_%04x",
+							 jt [j], t1->cli_addr);
+					}
+
+					if (j < m) /* register jumps needs absolute address */
+						jt [j] = (int)(addr + s->start);
+					else /* branch needs relative address */
+						jt [j] = addr - t1->addr;
+				}
+				break;
+			}
+			case MB_TERM_RET:
+			case MB_TERM_RETV: {
+				addr = s->epilog;
+				t1->data.i = addr - t1->addr;
+				break;
+			}
+			default:
 				addr = get_address (forest, t1->data.i, 0, forest->len);
 				if (addr == -1) {
 					g_error ("address 0x%x not found at IL_%04x",
 						 t1->data.i, t1->cli_addr);
 				}
-			} else
-				addr = s->epilog;
+				t1->data.i = addr - t1->addr;
+				break;
+			}
 
-			t1->data.i = addr - t1->addr;
+			/* emit the jump instruction again to update addresses */
 			s->code = s->start + t1->addr;
 			((MBEmitFunc)t1->emit) (t1, s);
+
 		}
 	}
 

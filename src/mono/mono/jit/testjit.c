@@ -67,6 +67,26 @@ case CEE_##name: {                                                            \
 	PUSH_TREE (t1);                                                       \
 	break;                                                                \
 }
+
+#define MAKE_LDIND(name, op)                                                  \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp--;                                                                 \
+	t1 = mono_ctree_new (mp, op, *sp, NULL);                              \
+	t1->cli_addr = sp [0]->cli_addr;                                      \
+	PUSH_TREE (t1);                                                       \
+	break;                                                                \
+}
+	
+#define MAKE_STIND(name, op)                                                  \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 2;                                                              \
+	t1 = mono_ctree_new (mp, op, sp [0], sp [1]);                         \
+	t1->cli_addr = sp [0]->cli_addr;                                      \
+	ADD_TREE (t1);                                                        \
+	break;                                                                \
+}
 	
 /* Whether to dump the assembly code after genreating it */
 gboolean mono_jit_dump_asm = FALSE;
@@ -76,21 +96,33 @@ gboolean mono_jit_dump_forest = FALSE;
 
 /* 
  * We sometimes need static data, for example the forest generator need it to
- * store constants or class data. We use a global memory pool for that purpose.
+ * store constants or class data.
  */
-MonoMemPool *mono_jit_static_mp;
+inline static gpointer
+mono_alloc_static (int size)
+{
+	return g_malloc (size);
+} 
+inline static gpointer
+mono_alloc_static0 (int size)
+{
+	return g_malloc0 (size);
+} 
 
 /**
  * map_stind_type:
  * @type: the type to map
  *
- * Translates the MonoTypeEnum @type into the corresponding store opcode 
+ * Translates the MonoType @type into the corresponding store opcode 
  * for the code generator.
  */
 static int
-map_stind_type (MonoTypeEnum type)
+map_stind_type (MonoType *type)
 {
-	switch (type) {
+	if (type->byref) 
+		return MB_TERM_STIND_I4;
+
+	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -113,8 +145,13 @@ map_stind_type (MonoTypeEnum type)
 		return MB_TERM_STIND_R4;
 	case MONO_TYPE_R8:
 		return MB_TERM_STIND_R8;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype)
+			return MB_TERM_STIND_I4;
+
+		return -1;
 	default:
-		g_warning ("unknown type %02x", type);
+		g_warning ("unknown type %02x", type->type);
 		g_assert_not_reached ();
 	}
 
@@ -125,13 +162,16 @@ map_stind_type (MonoTypeEnum type)
  * map_ldind_type:
  * @type: the type to map
  *
- * Translates the MonoTypeEnum @type into the corresponding load opcode 
+ * Translates the MonoType @type into the corresponding load opcode 
  * for the code generator.
  */
 static int
-map_ldind_type (MonoTypeEnum type)
+map_ldind_type (MonoType *type)
 {
-	switch (type) {
+	if (type->byref)
+		return MB_TERM_LDIND_I4;
+       
+	switch (type->type) {
 	case MONO_TYPE_I1:
 		return MB_TERM_LDIND_I1;
 	case MONO_TYPE_U1:
@@ -156,9 +196,13 @@ map_ldind_type (MonoTypeEnum type)
 		return MB_TERM_LDIND_R4;
 	case MONO_TYPE_R8:
 		return MB_TERM_LDIND_R8;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype)
+			return MB_TERM_LDIND_I4;
 
+		return -1;
 	default:
-		g_warning ("unknown type %02x", type);
+		g_warning ("unknown type %02x", type->type);
 		g_assert_not_reached ();
 	}
 
@@ -169,13 +213,13 @@ map_ldind_type (MonoTypeEnum type)
  * map_call_type:
  * @type: the type to map
  *
- * Translates the MonoTypeEnum @type into the corresponding call opcode 
+ * Translates the MonoType @type into the corresponding call opcode 
  * for the code generator.
  */
 static int
-map_call_type (MonoTypeEnum type)
+map_call_type (MonoType *type)
 {
-	switch (type) {
+	switch (type->type) {
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -197,7 +241,7 @@ map_call_type (MonoTypeEnum type)
 	case MONO_TYPE_R8:
 		return MB_TERM_CALL_R8;
 	default:
-		g_warning ("unknown type %02x", type);
+		g_warning ("unknown type %02x", type->type);
 		g_assert_not_reached ();
 	}
 
@@ -287,7 +331,7 @@ mono_disassemble_code (guint8 *code, int size)
  * Creates a tree to load the value at address @addr.
  */
 inline static MBTree *
-ctree_create_load (MonoMemPool *mp, int addr_type, MonoTypeEnum type, gpointer addr)
+ctree_create_load (MonoMemPool *mp, int addr_type, MonoType *type, gpointer addr)
 {
 	int ldind = map_ldind_type (type);
 	MBTree *t;
@@ -310,7 +354,7 @@ ctree_create_load (MonoMemPool *mp, int addr_type, MonoTypeEnum type, gpointer a
  * Creates a tree to store the value @s at address @addr.
  */
 inline static MBTree *
-ctree_create_store (MonoMemPool *mp, int addr_type, MBTree *s, MonoTypeEnum type, gpointer addr)
+ctree_create_store (MonoMemPool *mp, int addr_type, MBTree *s, MonoType *type, gpointer addr)
 {
 	int stind = map_stind_type (type);
 	MBTree *t;
@@ -408,7 +452,7 @@ mono_jit_init_class (MonoClass *klass)
 	
 	klass->inited = 1;
 
-	klass->data = mono_mempool_alloc0 (mono_jit_static_mp, klass->class_size);
+	klass->data = mono_alloc_static0 (klass->class_size);
 
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
@@ -538,7 +582,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t1->data.p = addr;
 			} else {
-				t1 = ctree_create_load (mp, MB_TERM_ADDR_G, field->type->type, addr);
+				t1 = ctree_create_load (mp, MB_TERM_ADDR_G, field->type, addr);
 			}
 
 			t1->cli_addr = cli_addr;
@@ -567,7 +611,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			g_assert (field);
 
 			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
-			t1 = ctree_create_store (mp, MB_TERM_ADDR_G, *sp, field->type->type, addr);
+			t1 = ctree_create_store (mp, MB_TERM_ADDR_G, *sp, field->type, addr);
 			ADD_TREE (t1);
 			break;
 		}
@@ -581,27 +625,30 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1->cli_addr = cli_addr;
 			ADD_TREE (t1);
 			break;
-		}
-/*
-		case CEE_SWITCH:
-			guint32 n;
-			const unsigned char *st;
+		} 
+		case CEE_SWITCH: {
+			guint32 i, n, *jt;
+			gint32 st;
+
 			++ip;
 			n = read32 (ip);
 			ip += 4;
-			st = ip + 4 * n;
 			--sp;
-			if ((guint32)sp->data.i < n) {
-				gint offset;
-				ip += 4 * (guint32)sp->data.i;
-				offset = read32 (ip);
-				ip = st + offset;
-			} else {
-				ip = st;
+
+			t1 = mono_ctree_new (mp, MB_TERM_SWITCH, *sp, NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			jt = t1->data.p = mono_alloc_static (4 * (n + 2));
+			st = jt [n + 1] = cli_addr + 5 + 4 * n;
+			
+			jt [0] = n;
+			for (i = 1; i <= n; i++) {
+				jt [i] = read32 (ip) + st; 
+				ip += 4;
 			}
+
+			ADD_TREE (t1);
 			break;
 		}
-*/
 		case CEE_CALL: {
 			MonoMethodSignature *csig;
 			MonoMethod *cm;
@@ -641,7 +688,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			cm->addr = arch_create_jit_trampoline (cm);
 			
-			t1 = mono_ctree_new_leaf (mp, map_call_type (csig->ret->type));
+			t1 = mono_ctree_new_leaf (mp, map_call_type (csig->ret));
 			t1->data.p = cm;
 			t1->size = offset;
 			
@@ -651,7 +698,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				local_offset &= ~(align - 1);
 				local_offset += size;
 
-				t2 = ctree_create_store (mp, MB_TERM_ADDR_L, t1, csig->ret->type, 
+				t2 = ctree_create_store (mp, MB_TERM_ADDR_L, t1, csig->ret, 
 							 (gpointer)-local_offset);
 				t2->cli_addr = fa;
 				ADD_TREE (t2);
@@ -718,7 +765,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			break;
 		}
 		case CEE_LDC_R4: {
-			float *f = mono_mempool_alloc (mono_jit_static_mp, sizeof (float));
+			float *f = mono_alloc_static (sizeof (float));
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R4);
 			readr4 (ip, f);
@@ -729,7 +776,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			break;
 		}
 		case CEE_LDC_R8: { 
-			double *d = mono_mempool_alloc (mono_jit_static_mp, sizeof (double));
+			double *d = mono_alloc_static (sizeof (double));
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R8);
 			readr8 (ip, d);
@@ -746,7 +793,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			int n = (*ip) - CEE_LDLOC_0;
 			++ip;
 
-			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, LOCAL_TYPE (n)->type, 
+			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, LOCAL_TYPE (n), 
 						(gpointer)LOCAL_POS (n));
 			t1->cli_addr = cli_addr;
 
@@ -756,12 +803,22 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 		case CEE_LDLOC_S: {
 			++ip;
 			
-			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, LOCAL_TYPE (*ip)->type, 
+			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, LOCAL_TYPE (*ip), 
 						(gpointer)LOCAL_POS (*ip));
 			t1->cli_addr = cli_addr;
 			++ip;
 
 			PUSH_TREE (t1);
+			break;
+		}
+		case CEE_LDLOCA_S: {
+			++ip;
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+			t1->data.p = (gpointer)LOCAL_POS (*ip);
+			t1->cli_addr = cli_addr;
+			++ip;
+			PUSH_TREE (t1);			
 			break;
 		}
 		case CEE_STLOC_0:
@@ -772,7 +829,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 			--sp;
 
-			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (n)->type, 
+			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (n), 
 						 (gpointer)LOCAL_POS (n));
 			t1->cli_addr = sp [0]->cli_addr;
 
@@ -783,7 +840,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 			--sp;
 
-			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (*ip)->type, 
+			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (*ip), 
 						 (gpointer)LOCAL_POS (*ip));
 			t1->cli_addr = sp [0]->cli_addr;
 			++ip;
@@ -805,6 +862,27 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 		MAKE_BI_ALU (DIV_UN)
 		MAKE_BI_ALU (REM)
 		MAKE_BI_ALU (REM_UN)
+
+		MAKE_LDIND (LDIND_I1,  MB_TERM_LDIND_I1)
+		MAKE_LDIND (LDIND_U1,  MB_TERM_LDIND_U1)
+		MAKE_LDIND (LDIND_I2,  MB_TERM_LDIND_I2)
+		MAKE_LDIND (LDIND_U2,  MB_TERM_LDIND_U2)
+		MAKE_LDIND (LDIND_I,   MB_TERM_LDIND_I4)
+		MAKE_LDIND (LDIND_I4,  MB_TERM_LDIND_I4)
+		MAKE_LDIND (LDIND_REF, MB_TERM_LDIND_U4)
+		MAKE_LDIND (LDIND_U4,  MB_TERM_LDIND_U4)
+		MAKE_LDIND (LDIND_I8,  MB_TERM_LDIND_I8)
+		MAKE_LDIND (LDIND_R4,  MB_TERM_LDIND_R4)
+		MAKE_LDIND (LDIND_R8,  MB_TERM_LDIND_R8)
+
+		MAKE_STIND (STIND_I1,  MB_TERM_STIND_I1)
+		MAKE_STIND (STIND_I2,  MB_TERM_STIND_I2)
+		MAKE_STIND (STIND_I,   MB_TERM_STIND_I4)
+		MAKE_STIND (STIND_I4,  MB_TERM_STIND_I4)
+		MAKE_STIND (STIND_I8,  MB_TERM_STIND_I8)
+		MAKE_STIND (STIND_R4,  MB_TERM_STIND_R4)
+		MAKE_STIND (STIND_R8,  MB_TERM_STIND_R8)
+		MAKE_STIND (STIND_REF, MB_TERM_STIND_I4)
 
 		case CEE_NEG: {
 			ip++;
@@ -900,7 +978,6 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				t1->cli_addr = cli_addr;
 			}
 
-			t1->data.i = -1;
 			t1->last_instr = (ip == end);
 
 			ADD_TREE (t1);
@@ -917,7 +994,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			int n = (*ip) - CEE_LDARG_0;
 			++ip;
 
-			t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (n)->type, 
+			t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (n), 
 						(gpointer)ARG_POS (n));
 			t1->cli_addr = cli_addr;
 			PUSH_TREE (t1);
@@ -926,7 +1003,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 		case CEE_LDARG_S: {
 			++ip;
 
-			t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (*ip)->type, 
+			t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (*ip), 
 						(gpointer)ARG_POS (*ip));
 			t1->cli_addr = cli_addr;
 			PUSH_TREE (t1);
@@ -1003,7 +1080,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				n = read32 (ip);
 				ip += 4;
 
-				t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (n)->type, 
+				t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (n), 
 							(gpointer)ARG_POS (n));
 				t1->cli_addr = cli_addr;
 				PUSH_TREE (t1);
@@ -1144,8 +1221,6 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
-	mono_jit_static_mp = mono_mempool_new ();
-
 	if (testjit) {
 		mono_jit_assembly (assembly);
 	} else {
@@ -1154,9 +1229,6 @@ main (int argc, char *argv [])
 	}
 
 	mono_assembly_close (assembly);
-
-	/* this is not really needed, since we exit anyway */
-	mono_mempool_destroy (mono_jit_static_mp);
 
 	return retval;
 }
