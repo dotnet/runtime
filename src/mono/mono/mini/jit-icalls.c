@@ -442,7 +442,6 @@ mono_ldtoken_wrapper (MonoImage *image, int token)
 static guint64
 mono_fconv_u8 (double v)
 {
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return (guint64)v;
 }
 
@@ -462,25 +461,16 @@ mono_fconv_u4 (double v)
 	return (guint32)v;
 }
 
-#if 0
-#ifndef HAVE_TRUNCL
-
+#ifndef HAVE_TRUNC
+/* Solaris doesn't have trunc */
 #ifdef HAVE_AINTL
 extern long double aintl (long double);
-#define truncl aintl
+#define trunc aintl
 #else
-/* should mostly work */
-static double 
-truncl (double x)
-{
-	if (x < 0)
-		x += 1.0;
-	return floor (x);
-}
-#endif /* HAVE_AINTL */
-
-#endif /* HAVE_TRUNCL */
+/* FIXME: This means we will never throw overflow exceptions */
+#define trunc
 #endif
+#endif /* HAVE_TRUNC */
 
 static gint64
 mono_fconv_ovf_i8 (double v)
