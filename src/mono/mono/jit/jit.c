@@ -4058,6 +4058,11 @@ mono_runtime_install_handlers (void)
 	win32_seh_set_handler(SIGILL, sigill_signal_handler);
 	win32_seh_set_handler(SIGSEGV, sigsegv_signal_handler);
 #else /* !PLATFORM_WIN32 */
+
+	/* libpthreads has its own implementation of sigaction(),
+	 * but we want be able to handle everything. So we directly
+	 * use syscall instead of sigaction */
+	
 	/* catch SIGFPE */
 	sa.sa_handler = sigfpe_signal_handler;
 	sigemptyset (&sa.sa_mask);
