@@ -646,7 +646,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					for (j = 0; j < class->method.count; ++j) {
 						MonoMethod *cm = class->methods [j];
 						if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-						    !(cm->flags & METHOD_ATTRIBUTE_PUBLIC) ||
+						    !((cm->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) ||
 						    !(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT))
 							continue;
 						if (!strcmp(cm->name, im->name) && 
