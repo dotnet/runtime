@@ -18,8 +18,10 @@
 static CRITICAL_SECTION debugger_lock_mutex;
 static gboolean mono_debugger_initialized = FALSE;
 
+static GHashTable *images = NULL;
 static GHashTable *type_table = NULL;
 static GHashTable *class_table = NULL;
+static GHashTable *class_info_table = NULL;
 
 static MonoDebuggerRangeInfo *allocate_range_entry (MonoDebuggerSymbolFile *symfile);
 static MonoDebuggerClassInfo *allocate_class_entry (MonoDebuggerSymbolFile *symfile);
@@ -29,6 +31,16 @@ static guint32 write_class (MonoDebuggerSymbolTable *table, MonoClass *klass);
 
 MonoDebuggerSymbolTable *mono_debugger_symbol_table = NULL;
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg) = NULL;
+
+#define WRITE_UINT32(ptr,value) G_STMT_START {	\
+	* ((guint32 *) ptr) = value;		\
+	ptr += 4;				\
+} G_STMT_END
+
+#define WRITE_POINTER(ptr,value) G_STMT_START {	\
+	* ((gpointer *) ptr) = value;		\
+	ptr += sizeof (gpointer);		\
+} G_STMT_END
 
 #ifndef PLATFORM_WIN32
 
@@ -69,6 +81,7 @@ allocate_symbol_file_entry (MonoDebuggerSymbolTable *table)
 	}
 
 	symfile = g_new0 (MonoDebuggerSymbolFile, 1);
+	symfile->index = table->num_symbol_files;
 	table->symbol_files [table->num_symbol_files++] = symfile;
 	return symfile;
 }
@@ -91,6 +104,11 @@ mono_debugger_initialize (MonoDomain *domain)
 
 	symbol_table->domain = domain;
 
+	images = g_hash_table_new (g_direct_hash, g_direct_equal);
+	type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+	class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+	class_info_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+
 	mono_debugger_symbol_table = symbol_table;
 	mono_debugger_initialized = TRUE;
 
@@ -104,31 +122,131 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 
 	g_assert (mono_debugger_initialized);
 
+	info = g_hash_table_lookup (images, handle->image);
+	if (info)
+		return info;
+
 	info = allocate_symbol_file_entry (mono_debugger_symbol_table);
 	info->symfile = handle->symfile;
 	info->image = handle->image;
 	info->image_file = handle->image_file;
 
-	mono_debugger_add_type (info, mono_defaults.object_class);
+	g_hash_table_insert (images, handle->image, info);
 
 	return info;
 }
 
-static MonoDebuggerClassInfo *
+static void
+write_builtin_type (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerBuiltinTypeInfo *info)
+{
+	guint8 buffer [BUFSIZ], *ptr = buffer;
+	guint32 size;
+
+	g_assert (!klass->init_pending);
+	mono_class_init (klass);
+
+	switch (klass->byval_arg.type) {
+	case MONO_TYPE_VOID:
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_UNKNOWN;
+		WRITE_UINT32 (ptr, 0);
+		ptr += 4;
+		break;
+
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL;
+		WRITE_UINT32 (ptr, klass->instance_size - sizeof (MonoObject));
+		ptr += 4;
+		break;
+
+	case MONO_TYPE_STRING: {
+		MonoString string;
+
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_STRING;
+		WRITE_UINT32 (ptr, klass->instance_size);
+		ptr += 4;
+		ptr += sizeof (gpointer);
+		*ptr++ = (guint8*)&string.length - (guint8*)&string;
+		*ptr++ = sizeof (string.length);
+		*ptr++ = (guint8*)&string.chars - (guint8*)&string;
+
+		break;
+	}
+
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL;
+		WRITE_UINT32 (ptr, sizeof (void *));
+		ptr += 4;
+		break;
+
+	case MONO_TYPE_VALUETYPE:
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_STRUCT;
+		WRITE_UINT32 (ptr, klass->instance_size);
+		ptr += 4;
+		break;
+
+	case MONO_TYPE_CLASS:
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_CLASS;
+		WRITE_UINT32 (ptr, klass->instance_size);
+		ptr += 4;
+		break;
+
+	case MONO_TYPE_OBJECT:
+		g_assert (klass == mono_defaults.object_class);
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_OBJECT;
+		WRITE_UINT32 (ptr, klass->instance_size);
+		ptr += 4;
+		break;
+
+	default:
+		g_error (G_STRLOC ": Unknown builtin type %s.%s - %d", klass->name_space, klass->name, klass->byval_arg.type);
+	}
+
+	size = ptr - buffer;
+	info->cinfo->type_info = info->type_info = allocate_type_entry (table, size, &info->type_data);
+	memcpy (info->type_data, buffer, size);
+}
+
+static MonoDebuggerBuiltinTypeInfo *
 add_builtin_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 {
-	MonoDebuggerClassInfo *info;
+	MonoDebuggerClassInfo *cinfo;
+	MonoDebuggerBuiltinTypeInfo *info;
 
-	info = allocate_class_entry (symfile);
-	info->klass = klass;
+	cinfo = g_new0 (MonoDebuggerClassInfo, 1);
+	cinfo->klass = klass;
 	if (klass->rank) {
-		info->token = klass->element_class->type_token;
-		info->rank = klass->rank;
+		cinfo->token = klass->element_class->type_token;
+		cinfo->rank = klass->rank;
 	} else
-		info->token = klass->type_token;
-	info->type_info = write_class (mono_debugger_symbol_table, klass);
+		cinfo->token = klass->type_token;
 
+	g_hash_table_insert (class_info_table, klass, cinfo);
+
+	info = g_new0 (MonoDebuggerBuiltinTypeInfo, 1);
+	info->klass = klass;
+	info->cinfo = cinfo;
+
+	write_builtin_type (mono_debugger_symbol_table, klass, info);
 	return info;
+}
+
+static void
+add_builtin_type_2 (MonoDebuggerBuiltinTypeInfo *info)
+{
+	info->class_info = write_class (mono_debugger_symbol_table, info->klass);
+	* (guint32 *) (info->type_data + 5) = info->class_info;
 }
 
 MonoDebuggerBuiltinTypes *
@@ -136,29 +254,57 @@ mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile)
 {
 	MonoDebuggerBuiltinTypes *types = g_new0 (MonoDebuggerBuiltinTypes, 1);
 
-	types->total_size = sizeof (MonoDebuggerBuiltinTypes);
-	types->object_class = add_builtin_type (symfile, mono_defaults.object_class);
-	types->byte_class = add_builtin_type (symfile, mono_defaults.byte_class);
-	types->void_class = add_builtin_type (symfile, mono_defaults.void_class);
-	types->boolean_class = add_builtin_type (symfile, mono_defaults.boolean_class);
-	types->sbyte_class = add_builtin_type (symfile, mono_defaults.sbyte_class);
-	types->int16_class = add_builtin_type (symfile, mono_defaults.int16_class);
-	types->uint16_class = add_builtin_type (symfile, mono_defaults.uint16_class);
-	types->int32_class = add_builtin_type (symfile, mono_defaults.int32_class);
-	types->uint32_class = add_builtin_type (symfile, mono_defaults.uint32_class);
-	types->int_class = add_builtin_type (symfile, mono_defaults.int_class);
-	types->uint_class = add_builtin_type (symfile, mono_defaults.uint_class);
-	types->int64_class = add_builtin_type (symfile, mono_defaults.int64_class);
-	types->uint64_class = add_builtin_type (symfile, mono_defaults.uint64_class);
-	types->single_class = add_builtin_type (symfile, mono_defaults.single_class);
-	types->double_class = add_builtin_type (symfile, mono_defaults.double_class);
-	types->char_class = add_builtin_type (symfile, mono_defaults.char_class);
-	types->string_class = add_builtin_type (symfile, mono_defaults.string_class);
-	types->enum_class = add_builtin_type (symfile, mono_defaults.enum_class);
-	types->array_class = add_builtin_type (symfile, mono_defaults.array_class);
-
 	mono_debugger_symbol_table->corlib = symfile;
 	mono_debugger_symbol_table->builtin_types = types;
+
+	types->total_size = sizeof (MonoDebuggerBuiltinTypes);
+	types->type_info_size = sizeof (MonoDebuggerBuiltinTypeInfo);
+
+	types->object_type = add_builtin_type (symfile, mono_defaults.object_class);
+	types->byte_type = add_builtin_type (symfile, mono_defaults.byte_class);
+	types->void_type = add_builtin_type (symfile, mono_defaults.void_class);
+	types->boolean_type = add_builtin_type (symfile, mono_defaults.boolean_class);
+	types->sbyte_type = add_builtin_type (symfile, mono_defaults.sbyte_class);
+	types->int16_type = add_builtin_type (symfile, mono_defaults.int16_class);
+	types->uint16_type = add_builtin_type (symfile, mono_defaults.uint16_class);
+	types->int32_type = add_builtin_type (symfile, mono_defaults.int32_class);
+	types->uint32_type = add_builtin_type (symfile, mono_defaults.uint32_class);
+	types->int_type = add_builtin_type (symfile, mono_defaults.int_class);
+	types->uint_type = add_builtin_type (symfile, mono_defaults.uint_class);
+	types->int64_type = add_builtin_type (symfile, mono_defaults.int64_class);
+	types->uint64_type = add_builtin_type (symfile, mono_defaults.uint64_class);
+	types->single_type = add_builtin_type (symfile, mono_defaults.single_class);
+	types->double_type = add_builtin_type (symfile, mono_defaults.double_class);
+	types->char_type = add_builtin_type (symfile, mono_defaults.char_class);
+	types->string_type = add_builtin_type (symfile, mono_defaults.string_class);
+
+	types->enum_type = add_builtin_type (symfile, mono_defaults.enum_class);
+	types->array_type = add_builtin_type (symfile, mono_defaults.array_class);
+	types->exception_type = add_builtin_type (symfile, mono_defaults.exception_class);
+
+	add_builtin_type_2 (types->object_type);
+	add_builtin_type_2 (types->byte_type);
+	add_builtin_type_2 (types->void_type);
+	add_builtin_type_2 (types->boolean_type);
+	add_builtin_type_2 (types->sbyte_type);
+	add_builtin_type_2 (types->int16_type);
+	add_builtin_type_2 (types->uint16_type);
+	add_builtin_type_2 (types->int32_type);
+	add_builtin_type_2 (types->uint32_type);
+	add_builtin_type_2 (types->int_type);
+	add_builtin_type_2 (types->uint_type);
+	add_builtin_type_2 (types->int64_type);
+	add_builtin_type_2 (types->uint64_type);
+	add_builtin_type_2 (types->single_type);
+	add_builtin_type_2 (types->double_type);
+	add_builtin_type_2 (types->char_type);
+	add_builtin_type_2 (types->string_type);
+	add_builtin_type_2 (types->enum_type);
+	add_builtin_type_2 (types->array_type);
+	add_builtin_type_2 (types->exception_type);
+
+	* (gpointer *) (types->string_type->type_data + 9) = mono_class_vtable
+		(mono_debugger_symbol_table->domain, mono_defaults.string_class);
 
 	return types;
 }
@@ -166,17 +312,12 @@ mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile)
 void
 mono_debugger_add_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 {
-	guint32 info;
 	MonoDebuggerClassInfo *cinfo;
 
 	mono_debugger_lock ();
 
-	if (!class_table)
-		class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-	/* We write typeof (object) into each symbol file's type table. */
-	info = GPOINTER_TO_UINT (g_hash_table_lookup (class_table, klass));
-	if ((info != 0) && (klass != mono_defaults.object_class)) {
+	cinfo = g_hash_table_lookup (class_info_table, klass);
+	if (cinfo) {
 		mono_debugger_unlock ();
 		return;
 	}
@@ -190,6 +331,8 @@ mono_debugger_add_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 		cinfo->rank = klass->rank;
 	} else
 		cinfo->token = klass->type_token;
+	g_hash_table_insert (class_info_table, klass, cinfo);
+
 	cinfo->type_info = write_class (mono_debugger_symbol_table, klass);
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_TYPE_ADDED, NULL, 0);
@@ -436,6 +579,18 @@ allocate_type_entry (MonoDebuggerSymbolTable *table, guint32 size, guint8 **ptr)
 	goto again;
 }
 
+static gboolean
+property_is_static (MonoProperty *prop)
+{
+	MonoMethod *method;
+
+	method = prop->get;
+	if (!method)
+		method = prop->set;
+
+	return method->flags & METHOD_ATTRIBUTE_STATIC;
+}
+
 static guint32
 write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 {
@@ -454,12 +609,23 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	if (offset)
 		return offset;
 
+	if (klass->enumtype) {
+		offset = allocate_type_entry (table, 13, &ptr);
+		g_hash_table_insert (class_table, klass, GUINT_TO_POINTER (offset));
+
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_ENUM;
+		WRITE_UINT32 (ptr, klass->instance_size);
+		WRITE_UINT32 (ptr, table->builtin_types->enum_type->type_info);
+		WRITE_UINT32 (ptr, write_type (table, klass->enum_basetype));
+		return offset;
+	}
+
 	for (i = 0; i < klass->field.count; i++)
 		if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
 			++num_fields;
 
 	for (i = 0; i < klass->property.count; i++)
-		if (!(klass->properties [i].attrs & FIELD_ATTRIBUTE_STATIC))
+		if (!property_is_static (&klass->properties [i]))
 			++num_properties;
 
 	method_slots = g_hash_table_new (NULL, NULL);
@@ -501,57 +667,55 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	if (klass->valuetype)
 		base_offset = - sizeof (MonoObject);
 
-	*((gpointer *) ptr)++ = klass;
-	*((guint32 *) ptr)++ = klass->instance_size + base_offset;
+	WRITE_UINT32 (ptr, klass->instance_size + base_offset);
 	*ptr++ = klass->valuetype;
-	*((guint32 *) ptr)++ = num_fields;
-	*((guint32 *) ptr)++ = num_fields * (4 + sizeof (gpointer));
-	*((guint32 *) ptr)++ = num_properties;
-	*((guint32 *) ptr)++ = num_properties * 3 * sizeof (gpointer);
-	*((guint32 *) ptr)++ = num_methods;
-	*((guint32 *) ptr)++ = num_methods * (4 + 2 * sizeof (gpointer)) +
-		num_params * sizeof (gpointer);
+	WRITE_POINTER (ptr, klass);
+	WRITE_UINT32 (ptr, num_fields);
+	WRITE_UINT32 (ptr, num_fields * (4 + sizeof (gpointer)));
+	WRITE_UINT32 (ptr, num_properties);
+	WRITE_UINT32 (ptr, num_properties * 3 * sizeof (gpointer));
+	WRITE_UINT32 (ptr, num_methods);
+	WRITE_UINT32 (ptr, num_methods * (4 + 2 * sizeof (gpointer)) + num_params * sizeof (gpointer));
 	for (i = 0; i < klass->field.count; i++) {
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 
-		*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
-		*((guint32 *) ptr)++ = write_type (table, klass->fields [i].type);
+		WRITE_UINT32 (ptr, klass->fields [i].offset + base_offset);
+		WRITE_UINT32 (ptr, write_type (table, klass->fields [i].type));
 	}
 
 	for (i = 0; i < klass->property.count; i++) {
-		if (klass->properties [i].attrs & FIELD_ATTRIBUTE_STATIC)
+		if (property_is_static (&klass->properties [i]))
 			continue;
 
 		if (klass->properties [i].get)
-			*((guint32 *) ptr)++ = write_type
-				(table, klass->properties [i].get->signature->ret);
+			WRITE_UINT32 (ptr, write_type (table, klass->properties [i].get->signature->ret));
 		else
-			*((guint32 *) ptr)++ = 0;
-		*((gpointer *) ptr)++ = klass->properties [i].get;
-		*((gpointer *) ptr)++ = klass->properties [i].set;
+			WRITE_UINT32 (ptr, 0);
+		WRITE_POINTER (ptr, klass->properties [i].get);
+		WRITE_POINTER (ptr, klass->properties [i].set);
 	}
 
 	for (i = 0; i < methods->len; i++) {
 		MonoMethod *method = g_ptr_array_index (methods, i);
 		int j;
 
-		*((gpointer *) ptr)++ = method;
+		WRITE_POINTER (ptr, method);
 		if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
-			*((guint32 *) ptr)++ = write_type (table, method->signature->ret);
+			WRITE_UINT32 (ptr, write_type (table, method->signature->ret));
 		else
-			*((guint32 *) ptr)++ = 0;
-		*((guint32 *) ptr)++ = method->signature->param_count;
+			WRITE_UINT32 (ptr, 0);
+		WRITE_UINT32 (ptr, method->signature->param_count);
 		for (j = 0; j < method->signature->param_count; j++)
-			*((guint32 *) ptr)++ = write_type (table, method->signature->params [j]);
+			WRITE_UINT32 (ptr, write_type (table, method->signature->params [j]));
 	}
 
 	g_ptr_array_free (methods, FALSE);
 
 	if (klass->parent && (klass->parent != mono_defaults.object_class))
-		*((guint32 *) ptr)++ = write_class (table, klass->parent);
+		WRITE_UINT32 (ptr, write_class (table, klass->parent));
 	else
-		*((guint32 *) ptr)++ = 0;
+		WRITE_UINT32 (ptr, 0);
 
 	if (ptr - old_ptr != data_size) {
 		g_warning (G_STRLOC ": %d,%d,%d", ptr - old_ptr, data_size, sizeof (gpointer));
@@ -573,9 +737,6 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 	guint32 size, offset;
 	MonoClass *klass;
 
-	if (!type_table)
-		type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
-
 	offset = GPOINTER_TO_UINT (g_hash_table_lookup (type_table, type));
 	if (offset)
 		return offset;
@@ -587,54 +748,64 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 
 	switch (type->type) {
 	case MONO_TYPE_VOID:
-		*ptr++ = MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL;
-		*((gpointer *) ptr)++ = klass;
-		*((gint32 *) ptr)++ = 0;
-		break;
+		return table->builtin_types->void_type->type_info;
 
 	case MONO_TYPE_BOOLEAN:
+		return table->builtin_types->boolean_type->type_info;
+
 	case MONO_TYPE_I1:
+		return table->builtin_types->sbyte_type->type_info;
+
 	case MONO_TYPE_U1:
+		return table->builtin_types->byte_type->type_info;
+
 	case MONO_TYPE_CHAR:
+		return table->builtin_types->char_type->type_info;
+
 	case MONO_TYPE_I2:
+		return table->builtin_types->int16_type->type_info;
+
 	case MONO_TYPE_U2:
+		return table->builtin_types->uint16_type->type_info;
+
 	case MONO_TYPE_I4:
+		return table->builtin_types->int32_type->type_info;
+
 	case MONO_TYPE_U4:
-	case MONO_TYPE_R4:
+		return table->builtin_types->uint32_type->type_info;
+
 	case MONO_TYPE_I8:
+		return table->builtin_types->int64_type->type_info;
+
 	case MONO_TYPE_U8:
+		return table->builtin_types->uint64_type->type_info;
+
+	case MONO_TYPE_R4:
+		return table->builtin_types->single_type->type_info;
+
 	case MONO_TYPE_R8:
-		*ptr++ = MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL;
-		*((gpointer *) ptr)++ = klass;
-		*((gint32 *) ptr)++ = klass->instance_size;
-		*((guint32 *) ptr)++ = write_class (table, klass);
-		break;
+		return table->builtin_types->double_type->type_info;
 
-	case MONO_TYPE_STRING: {
-		MonoString string;
+	case MONO_TYPE_STRING:
+		return table->builtin_types->string_type->type_info;
 
-		*ptr++ = MONO_DEBUGGER_TYPE_KIND_STRING;
-		*((gpointer *) ptr)++ = klass;
-		*((guint32 *) ptr)++ = klass->instance_size;
-		*((guint32 *) ptr)++ = write_class (table, klass);
-		*((gpointer *) ptr)++ = mono_class_vtable (table->domain, klass);
-		*ptr++ = (guint8*)&string.length - (guint8*)&string;
-		*ptr++ = sizeof (string.length);
-		*ptr++ = (guint8*)&string.chars - (guint8*)&string;
+	case MONO_TYPE_I:
+		return table->builtin_types->int_type->type_info;
 
-		break;
-	}
+	case MONO_TYPE_U:
+		return table->builtin_types->uint_type->type_info;
 
 	case MONO_TYPE_SZARRAY: {
 		MonoArray array;
 
 		*ptr++ = MONO_DEBUGGER_TYPE_KIND_SZARRAY;
-		*((gpointer *) ptr)++ = klass;
-		*((guint32 *) ptr)++ = sizeof (MonoArray);
+		WRITE_UINT32 (ptr, sizeof (MonoArray));
+		g_assert (table->builtin_types->array_type->type_info != 0);
+		WRITE_UINT32 (ptr, table->builtin_types->array_type->type_info);
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
-		*((guint32 *) ptr)++ = write_type (table, &type->data.klass->byval_arg);
+		WRITE_UINT32 (ptr, write_type (table, &type->data.klass->byval_arg));
 		break;
 	}
 
@@ -643,61 +814,45 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		MonoArrayBounds bounds;
 
 		*ptr++ = MONO_DEBUGGER_TYPE_KIND_ARRAY;
-		*((gpointer *) ptr)++ = klass;
-		*((guint32 *) ptr)++ = sizeof (MonoArray);
+		WRITE_UINT32 (ptr, sizeof (MonoArray));
+		g_assert (table->builtin_types->array_type->type_info != 0);
+		WRITE_UINT32 (ptr, table->builtin_types->array_type->type_info);
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
-		*ptr++ = type->data.array->rank;
+		*ptr++ = klass->rank;
 		*ptr++ = (guint8*)&array.bounds - (guint8*)&array;
 		*ptr++ = sizeof (MonoArrayBounds);
 		*ptr++ = (guint8*)&bounds.lower_bound - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.lower_bound);
 		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.length);
-		*((guint32 *) ptr)++ = write_type (table, &type->data.array->eklass->byval_arg);
+		WRITE_UINT32 (ptr, write_type (table, &type->data.array->eklass->byval_arg));
 		break;
 	}
-
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-		*ptr++ = MONO_DEBUGGER_TYPE_KIND_POINTER;
-		*((gpointer *) ptr)++ = klass;
-		*((gint32 *) ptr)++ = sizeof (void *);
-		break;
 
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		if (klass->enumtype) {
-			*ptr++ = MONO_DEBUGGER_TYPE_KIND_ENUM;
-			*((gpointer *) ptr)++ = klass;
-			*((guint32 *) ptr)++ = klass->instance_size;
-			*((guint32 *) ptr)++ = write_class (table, klass);
-			*((guint32 *) ptr)++ = write_type (table, klass->enum_basetype);
-			break;
-		}
+	case MONO_TYPE_OBJECT:
+		return write_class (table, klass);
 
-		if (type->type == MONO_TYPE_OBJECT)
-			*ptr++ = MONO_DEBUGGER_TYPE_KIND_OBJECT;
-		else if (type->type == MONO_TYPE_CLASS)
-			*ptr++ = MONO_DEBUGGER_TYPE_KIND_CLASS;
-		else
-			*ptr++ = MONO_DEBUGGER_TYPE_KIND_STRUCT;
-
-		*((gpointer *) ptr)++ = klass;
-		*((guint32 *) ptr)++ = klass->instance_size;
-		*((guint32 *) ptr)++ = write_class (table, klass);
+	case MONO_TYPE_PTR:
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_POINTER;
+		WRITE_UINT32 (ptr, sizeof (gpointer));
+		WRITE_UINT32 (ptr, write_type (table, type->data.type));
 		break;
 
 	default:
-		return 0;
+		g_message (G_STRLOC ": %s.%s - %p - %d", klass->name_space, klass->name, klass, type->type);
+		*ptr++ = MONO_DEBUGGER_TYPE_KIND_UNKNOWN;
+		WRITE_UINT32 (ptr, klass->instance_size);
+		WRITE_UINT32 (ptr, write_class (table, klass));
+		break;
 	}
 
 	size = ptr - buffer;
-	offset = allocate_type_entry (table, size, &ptr);
+	offset = allocate_type_entry (mono_debugger_symbol_table, size, &ptr);
 	memcpy (ptr, buffer, size);
-
-	g_hash_table_insert (type_table, type, GUINT_TO_POINTER (offset));
 
 	return offset;
 }
@@ -859,11 +1014,62 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, method, index);
 }
 
+static gchar *
+get_exception_message (MonoObject *exc)
+{
+	char *message = NULL;
+	MonoString *str; 
+	MonoMethod *method;
+	MonoClass *klass;
+	gint i;
+
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		klass = exc->vtable->klass;
+		method = NULL;
+		while (klass && method == NULL) {
+			for (i = 0; i < klass->method.count; ++i) {
+				method = klass->methods [i];
+				if (!strcmp ("ToString", method->name) &&
+				    method->signature->param_count == 0 &&
+				    method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
+				    method->flags & METHOD_ATTRIBUTE_PUBLIC) {
+					break;
+				}
+				method = NULL;
+			}
+			
+			if (method == NULL)
+				klass = klass->parent;
+		}
+
+		g_assert (method);
+
+		str = (MonoString *) mono_runtime_invoke (method, exc, NULL, NULL);
+		if (str)
+			message = mono_string_to_utf8 (str);
+	}
+
+	return message;
+}
+
 MonoObject *
 mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
-	if (method->klass->valuetype)
-		obj = mono_value_box (mono_debugger_symbol_table->domain, method->klass, obj);
+	MonoObject *retval;
+	gchar *message;
 
-	return mono_runtime_invoke (method, obj, params, exc);
+	if (method->klass->valuetype)
+		obj = mono_value_box (mono_domain_get (), method->klass, obj);
+
+	retval = mono_runtime_invoke (method, obj, params, exc);
+	if (*exc == NULL)
+		return retval;
+
+	message = get_exception_message (*exc);
+	if (message) {
+		*exc = (MonoObject *) mono_string_new_wrapper (message);
+		g_free (message);
+	}
+
+	return retval;
 }

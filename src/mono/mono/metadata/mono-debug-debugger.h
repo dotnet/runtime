@@ -7,6 +7,7 @@
 #include <mono/io-layer/io-layer.h>
 
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
+typedef struct _MonoDebuggerBuiltinTypeInfo	MonoDebuggerBuiltinTypeInfo;
 typedef struct _MonoDebuggerBuiltinTypes	MonoDebuggerBuiltinTypes;
 typedef struct _MonoDebuggerSymbolTable		MonoDebuggerSymbolTable;
 typedef struct _MonoDebuggerSymbolFile		MonoDebuggerSymbolFile;
@@ -22,7 +23,8 @@ typedef enum {
 } MonoDebuggerEvent;
 
 typedef enum {
-	MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL = 1,
+	MONO_DEBUGGER_TYPE_KIND_UNKNOWN = 1,
+	MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL,
 	MONO_DEBUGGER_TYPE_KIND_STRING,
 	MONO_DEBUGGER_TYPE_KIND_SZARRAY,
 	MONO_DEBUGGER_TYPE_KIND_ARRAY,
@@ -39,27 +41,38 @@ struct _MonoDebuggerBreakpointInfo {
 	MonoMethodDesc *desc;
 };
 
+struct _MonoDebuggerBuiltinTypeInfo
+{
+	MonoClass *klass;
+	MonoDebuggerClassInfo *cinfo;
+	guint32 type_info;
+	guint32 class_info;
+	guint8 *type_data;
+};
+
 struct _MonoDebuggerBuiltinTypes {
 	guint32 total_size;
-	MonoDebuggerClassInfo *object_class;
-	MonoDebuggerClassInfo *byte_class;
-	MonoDebuggerClassInfo *void_class;
-	MonoDebuggerClassInfo *boolean_class;
-	MonoDebuggerClassInfo *sbyte_class;
-	MonoDebuggerClassInfo *int16_class;
-	MonoDebuggerClassInfo *uint16_class;
-	MonoDebuggerClassInfo *int32_class;
-	MonoDebuggerClassInfo *uint32_class;
-	MonoDebuggerClassInfo *int_class;
-	MonoDebuggerClassInfo *uint_class;
-	MonoDebuggerClassInfo *int64_class;
-	MonoDebuggerClassInfo *uint64_class;
-	MonoDebuggerClassInfo *single_class;
-	MonoDebuggerClassInfo *double_class;
-	MonoDebuggerClassInfo *char_class;
-	MonoDebuggerClassInfo *string_class;
-	MonoDebuggerClassInfo *enum_class;
-	MonoDebuggerClassInfo *array_class;
+	guint32 type_info_size;
+	MonoDebuggerBuiltinTypeInfo *object_type;
+	MonoDebuggerBuiltinTypeInfo *byte_type;
+	MonoDebuggerBuiltinTypeInfo *void_type;
+	MonoDebuggerBuiltinTypeInfo *boolean_type;
+	MonoDebuggerBuiltinTypeInfo *sbyte_type;
+	MonoDebuggerBuiltinTypeInfo *int16_type;
+	MonoDebuggerBuiltinTypeInfo *uint16_type;
+	MonoDebuggerBuiltinTypeInfo *int32_type;
+	MonoDebuggerBuiltinTypeInfo *uint32_type;
+	MonoDebuggerBuiltinTypeInfo *int_type;
+	MonoDebuggerBuiltinTypeInfo *uint_type;
+	MonoDebuggerBuiltinTypeInfo *int64_type;
+	MonoDebuggerBuiltinTypeInfo *uint64_type;
+	MonoDebuggerBuiltinTypeInfo *single_type;
+	MonoDebuggerBuiltinTypeInfo *double_type;
+	MonoDebuggerBuiltinTypeInfo *char_type;
+	MonoDebuggerBuiltinTypeInfo *string_type;
+	MonoDebuggerBuiltinTypeInfo *enum_type;
+	MonoDebuggerBuiltinTypeInfo *array_type;
+	MonoDebuggerBuiltinTypeInfo *exception_type;
 };
 
 struct _MonoDebuggerSymbolTable {
@@ -116,6 +129,7 @@ struct _MonoDebuggerSymbolTable {
 };
 
 struct _MonoDebuggerSymbolFile {
+	guint32 index;
 	MonoSymbolFile *symfile;
 	MonoImage *image;
 	const char *image_file;
