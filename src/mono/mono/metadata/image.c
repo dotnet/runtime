@@ -517,8 +517,21 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	if (header->pesig[0] != 'P' || header->pesig[1] != 'E' || header->pe.pe_magic != 0x10B)
 		goto invalid_image;
 
+#if 0
+	/*
+	 * The spec says that this field should contain 6.0, but Visual Studio includes a new compiler,
+	 * which produces binaries with 7.0.  From Sergey:
+	 *
+	 * The reason is that MSVC7 uses traditional compile/link
+	 * sequence for CIL executables, and VS.NET (and Framework
+	 * SDK) includes linker version 7, that puts 7.0 in this
+	 * field.  That's why it's currently not possible to load VC
+	 * binaries with Mono.  This field is pretty much meaningless
+	 * anyway (what linker?).
+	 */
 	if (header->pe.pe_major != 6 || header->pe.pe_minor != 0)
 		goto invalid_image;
+#endif
 
 	/*
 	 * FIXME: byte swap all addresses here for header.
