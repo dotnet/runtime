@@ -71,16 +71,20 @@ guchar *_wapi_shm_file (_wapi_shm_t type, guint32 segment)
 {
 	static guchar file[_POSIX_PATH_MAX];
 	guchar *name, *filename, *dir, *wapi_dir;
+	gchar machine_name[256];
+
+	if (gethostname(machine_name, sizeof(machine_name)) != 0)
+		machine_name[0] = '\0';
 	
 	/* Change the filename whenever the format of the contents
 	 * changes
 	 */
 	if(type==WAPI_SHM_DATA) {
-		name=g_strdup_printf ("shared_data-%d-%d",
-				      _WAPI_HANDLE_VERSION, segment);
+		name=g_strdup_printf ("shared_data-%s-%d-%d",
+				      machine_name, _WAPI_HANDLE_VERSION, segment);
 	} else if (type==WAPI_SHM_SCRATCH) {
-		name=g_strdup_printf ("shared_scratch-%d-%d",
-				      _WAPI_HANDLE_VERSION, segment);
+		name=g_strdup_printf ("shared_scratch-%s-%d-%d",
+				      machine_name, _WAPI_HANDLE_VERSION, segment);
 	} else {
 		g_assert_not_reached ();
 	}
