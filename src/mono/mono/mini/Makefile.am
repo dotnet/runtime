@@ -31,8 +31,9 @@ static_libs=	\
 	$(libgc_static_libs) \
 	$(ICU_LIBS)
 
-MCS=mcs
-RUNTIME=mono
+RUNTIME = $(LIBTOOL) --mode=execute ./mono
+MCS = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(RUNTIME) --config $(top_builddir)/data/config $(top_srcdir)/runtime/mcs.exe --unsafe -nowarn:0162
+ILASM = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(RUNTIME) --config ../../data/config $(top_srcdir)/runtime/ilasm.exe
 
 INCLUDES = \
 	-I$(top_srcdir) 	\
@@ -257,7 +258,7 @@ libmono_la_LIBADD = \
 	$(MCS) /out:$*.exe /unsafe $< /r:TestDriver.dll
 
 %.exe: %.il
-	ilasm /output=$*.exe $<
+	$(ILASM) /output=$*.exe $<
 
 TestDriver.dll: $(srcdir)/TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library $(srcdir)/TestDriver.cs
@@ -318,6 +319,8 @@ stat3: mono bench.exe
 
 docu: mini.sgm
 	docbook2txt mini.sgm
+
+check-local: rcheck
 
 clean-local:
 	rm -f mono a.out gmon.out *.o test.exe
