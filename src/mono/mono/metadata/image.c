@@ -669,6 +669,13 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->array_cache);
 	g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
 	g_hash_table_destroy (image->name_cache);
+	g_hash_table_destroy (image->native_wrapper_cache);
+	g_hash_table_destroy (image->managed_wrapper_cache);
+	g_hash_table_destroy (image->delegate_begin_invoke_cache);
+	g_hash_table_destroy (image->delegate_end_invoke_cache);
+	g_hash_table_destroy (image->delegate_invoke_cache);
+	g_hash_table_destroy (image->remoting_invoke_cache);
+	g_hash_table_destroy (image->runtime_invoke_cache);
 	
 	if (image->raw_metadata != NULL)
 		mono_raw_buffer_free (image->raw_metadata);

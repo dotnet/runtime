@@ -754,7 +754,7 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 
 	dll = g_strconcat (aname->name, ".dll", NULL);
 	exe = g_strdup (dll);
-	strcpy (exe + strlen (exe) - 5, ".exe");
+	strcpy (exe + strlen (exe) - 4, ".exe");
 
 	if (domain->search_path && domain->search_path [0] != NULL) {
 		/* TODO: should also search in name/name.dll and name/name.exe from appbase */
@@ -822,12 +822,140 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 	return mono_assembly_get_object (domain, ass);
 }
 
+static void
+free_assembly_name (MonoAssemblyName *aname)
+{
+	if (aname == NULL)
+		return;
+
+	g_free ((void *) aname->name);
+	g_free ((void *) aname->culture);
+	g_free ((void *) aname->hash_value);
+}
+
+static gboolean
+get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyName *aname)
+{
+	gchar *name;
+	gchar *value;
+	gchar **parts;
+	gchar **tmp;
+	gint major, minor, build, revision;
+
+	memset (aname, 0, sizeof (MonoAssemblyName));
+
+	name = mono_string_to_utf8 (assRef->name);
+	parts = tmp = g_strsplit (name, ",", 4);
+	g_free (name);
+	if (!tmp || !*tmp) {
+		g_strfreev (tmp);
+		return FALSE;
+	}
+
+	value = g_strstrip (*tmp);
+	/* g_print ("Assembly name: %s\n", value); */
+	aname->name = g_strdup (value);
+	tmp++;
+	if (!*tmp) {
+		g_strfreev (parts);
+		return TRUE;
+	}
+
+	value = g_strstrip (*tmp);
+	if (strncmp (value, "Version=", 8)) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+	
+	if (sscanf (value + 8, "%u.%u.%u.%u", &major, &minor, &build, &revision) != 4) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+
+	/* g_print ("Version: %u.%u.%u.%u\n", major, minor, build, revision); */
+	aname->major = major;
+	aname->minor = minor;
+	aname->build = build;
+	aname->revision = revision;
+	tmp++;
+
+	if (!*tmp) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+
+	value = g_strstrip (*tmp);
+	if (strncmp (value, "Culture=", 8)) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+
+	/* g_print ("Culture: %s\n", aname->culture); */
+	aname->culture = g_strstrip (g_strdup (value + 8));
+	tmp++;
+
+	if (!*tmp) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+
+	value = g_strstrip (*tmp);
+	if (strncmp (value, "PublicKeyToken=", 15)) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+
+	value += 15;
+	if (*value && strcmp (value, "null")) {
+		gint i, len;
+		gchar h, l;
+		gchar *result;
+		
+		value = g_strstrip (g_strdup (value));
+		len = strlen (value);
+		if (len % 2) {
+			g_strfreev (parts);
+			return FALSE;
+		}
+		
+		aname->hash_len = len / 2;
+		aname->hash_value = g_malloc0 (aname->hash_len);
+		result = (gchar *) aname->hash_value;
+		
+		for (i = 0; i < len; i++) {
+			if (i % 2) {
+				l = g_ascii_xdigit_value (value [i]);
+				if (l == -1) {
+					g_strfreev (parts);
+					return FALSE;
+				}
+				result [i / 2] = (h * 16) + l;
+			} else {
+				h = g_ascii_xdigit_value (value [i]);
+				if (h == -1) {
+					g_strfreev (parts);
+					return FALSE;
+				}
+			}
+		}
+
+		/*
+		g_print ("PublicKeyToken: ");
+		for (i = 0; i < aname->hash_len; i++) {
+			g_print ("%x", 0x00FF & aname->hash_value [i]); 
+		}
+		g_print ("\n");
+		*/
+	}
+
+	g_strfreev (parts);
+	return TRUE;
+}
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssemblyName *assRef, MonoObject *evidence)
 {
 	MonoDomain *domain = ad->data; 
-	char *name;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
 	MonoAssemblyName aname;
@@ -842,13 +970,15 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 	g_assert (assRef != NULL);
 	g_assert (assRef->name != NULL);
 
-	/* FIXME : examine version, culture info */
-
-	aname.name = name = mono_string_to_utf8 (assRef->name);
+	if (!get_info_from_assembly_name (assRef, &aname)) {
+		free_assembly_name (&aname);
+		/* This is a parse error... */
+		MonoException *exc = mono_get_exception_file_not_found (assRef->name);
+		mono_raise_exception (exc);
+	}
 
 	ass = mono_assembly_load (&aname, NULL, &status);
-	
-	g_free (name);
+	free_assembly_name (&aname);
 
 	if (!ass && (refass = try_assembly_resolve (domain, assRef->name)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
