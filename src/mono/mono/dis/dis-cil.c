@@ -19,6 +19,26 @@
 #include "dis-cil.h"
 #include "mono/metadata/opcodes.h"
 
+#ifndef HAVE_ISINF
+#ifdef HAVE_IEEEFP_H
+int
+isinf (double num)
+{
+	fpclass_t klass;
+
+	klass = fpclass (num);
+	if (klass == FP_NINF)
+		return -1;
+
+	if (klass == FP_PINF)
+		return 1;
+
+	return 0;
+}
+#else
+#error "Don't know how to implement isinf for this platform."
+#endif
+#endif
 /*
  * Strings on the US heap are encoded using UTF-16.  Poor man's
  * UTF-16 to UTF-8.  I know its broken, use libunicode later.

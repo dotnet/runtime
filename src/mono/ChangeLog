@@ -1,3 +1,7 @@
+2004-12-15 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: check for ieeefp.h and isinf.
+
 2004-12-15  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in ($mcsdir/build/config.make): Use $mcsdir relative

@@ -251,6 +251,8 @@ AC_CHECK_HEADERS(elf.h)
 
 # for mono/dis
 AC_CHECK_HEADERS(wchar.h)
+AC_CHECK_FUNCS(isinf)
+AC_CHECK_HEADERS(ieeefp.h)
 
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
