@@ -42,6 +42,23 @@ struct _MonoMethodBuilder {
 static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
+static MonoMethod *
+mono_find_method_by_name (MonoClass *klass, const char *name, int param_count)
+{
+	MonoMethod *res = NULL;
+	int i;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == name [0] && 
+		    !strcmp (name, klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == param_count) {
+			res = klass->methods [i];
+			break;
+		}
+	}
+	return res;
+}
+
 #ifdef DEBUG_RUNTIME_CODE
 static char*
 indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)
@@ -62,8 +79,10 @@ static MonoDisHelper marshal_dh = {
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
-	MonoMethod *method, *wrapper;
+	MonoMethod *method, *wrapper, *invoke;
+	MonoMarshalSpec **mspecs;
 	MonoClass *klass;
+	int i;
 
 	if (!delegate)
 		return NULL;
@@ -73,9 +92,19 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	klass = ((MonoObject *)delegate)->vtable->klass;
 	g_assert (klass->delegate);
-	
+
+
 	method = delegate->method_info->method;
-	wrapper = mono_marshal_get_managed_wrapper (method, delegate->target);
+	invoke = mono_find_method_by_name (klass, "Invoke", method->signature->param_count);
+
+	mspecs = g_new (MonoMarshalSpec*, invoke->signature->param_count + 1);
+	mono_method_get_marshal_info (invoke, mspecs);
+
+	wrapper = mono_marshal_get_managed_wrapper (method, delegate->target, mspecs);
+
+	for (i = invoke->signature->param_count; i >= 0; i--)
+		g_free (mspecs [i]);
+	g_free (mspecs);
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);
 
@@ -199,25 +228,6 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 
 	*((char *)dst + size - 1) = 0;
 	*((char *)dst + size - 2) = 0;
-}
-
-
-static MonoMethod *
-mono_find_method_by_name (MonoClass *klass, const char *name, int param_count)
-{
-	MonoMethod *res = NULL;
-	int i;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (/* (klass->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && */
-		    klass->methods [i]->name[0] == name [0] && 
-		    !strcmp (name, klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == param_count) {
-			res = klass->methods [i];
-			break;
-		}
-	}
-	return res;
 }
 
 void
@@ -1827,7 +1837,7 @@ handle_enum:
  * generates IL code to call managed methods from unmanaged code 
  */
 MonoMethod *
-mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMarshalSpec **mspecs)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
@@ -1887,9 +1897,57 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
+		MonoMarshalSpec *spec = mspecs [i + 1];
 
 		tmp_locals [i] = 0;
 		
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
+			MonoType *mtype;
+			MonoClass *mklass;
+			MonoMethod *marshal_native_to_managed;
+			MonoMethod *get_instance;
+
+			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
+			g_assert (mtype != NULL);
+			mklass = mono_class_from_mono_type (mtype);
+			g_assert (mklass != NULL);
+
+			marshal_native_to_managed = mono_find_method_by_name (mklass, "MarshalNativeToManaged", 1);
+			g_assert (marshal_native_to_managed);
+			get_instance = mono_find_method_by_name (mklass, "GetInstance", 1);
+			g_assert (get_instance);
+			
+			switch (t->type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				if (t->byref)
+					break;
+
+				tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+
+				mono_mb_emit_byte (mb, CEE_CALL);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+				mono_mb_emit_ldarg (mb, i);
+				
+				mono_mb_emit_byte (mb, CEE_CALLVIRT);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+				
+				mono_mb_emit_stloc (mb, tmp_locals [i]);
+				break;
+			default:
+				g_warning ("custom marshalling of type %x is currently not supported", t->type);
+				g_assert_not_reached ();
+				break;
+			}
+			continue;
+		}
+
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:
 			
@@ -1983,8 +2041,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
-			/* fixme: conversions ? */
-			mono_mb_emit_ldarg (mb, i);
+			if (tmp_locals [i])
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+			else
+				mono_mb_emit_ldarg (mb, i);
 			break;
 		case MONO_TYPE_VALUETYPE:
 			klass = sig->params [i]->data.klass;
@@ -2550,7 +2610,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		argnum = i + sig->hasthis;
 		tmp_locals [i] = 0;
 
-		if (spec->native == MONO_NATIVE_CUSTOM) {
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
 			MonoType *mtype;
 			MonoClass *mklass;
 			MonoMethod *marshal_managed_to_native;
@@ -2569,6 +2629,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			switch (t->type) {
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
 				if (t->byref)
 					break;
 
