@@ -190,5 +190,106 @@ Happy hacking!
 		<td>not assigned
 	</tr>
 
+	<tr>
+		<td>Tools
+		<td>Write an implementation of the MSBuild compilation tool available in .NET 1.2
+		<td>Medium
+		<td>4-6 months
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>Build tools.
+		<td>Currently it is easy for people doing daily
+		updates from CVS to break their installation.  Design a mechanism by
+		which Mono never fails to compile.
+		<td>Easy
+		<td>1-2 weeks
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>Documentation.
+		<td>Editorial review of the Monkeyguide: The monkeyguide is known to contain outdated
+		statements, it needs to be reviewed and it needs an
+		editor to take control over it.  Some simple tasks
+		include flattening out the Monkeyguide, since it is
+		too nested today. 
+		<td>Easy
+		<td>Ongoing work.
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>Documentation
+		<td>GNOME.NET Chapter should probably be separated
+		from the Monkeyguide.  This is probably the most
+		complete chapter, but it is burried  in various nested
+		levels of stuff, and because of this, it is not being
+		updated.  Write a chapter on custom control
+		authoring and common patterns of app development. 
+		<td>Easy
+		<td>Ongoing work.
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>Documentation Tools
+		<td>The Monodoc collaborative service needs a better
+		administration tool than it has today;  Someone needs
+		to redo the UI and streamline its process.
+		<td>Easy
+		<td>2-3 months.
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>Comment Service API
+		<td>Design a full system for comments and ratings so
+		people can annotate the documentation in Monodoc. 
+		<td>Easy
+		<td>2-3 months.
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>POSIX bindings.
+		<td>The Mono.POSIX assembly is a project to create a binding to
+	the various low-level calls in Unix which are not available
+	thought he regular assemblies in .NET.
+		
+	The work should be done in two steps: one step is doing the
+	low-level binding for the system call, and another possibly is
+	to expose .NET-level objects like Streams for common patterns:
+	for example Streams for socketpairs. 
+
+	<ul>
+		<li>Complete the bindings for all POSIX calls.
+
+		<li>Design a glue layer, because the various low-level
+		structures and values differ from operating system to
+		operating system, so we must do the translation from
+		our own set of definitions to the OS definitions.
+
+		The details are availble on bug <a
+	href="http://bugzilla.ximian.com/show_bug.cgi?id=51849">51849</a>
+	for details.
+	</ul>
+
+		<td>Medium
+		<td>2-3 months + QA.
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>System.Drawing CODECs
+		<td>Complete the JPEG and PNG codecs to be fully
+		finished; Implement EXIF data loading; Implement the missing image codecs. 
+		<td>Medium
+		<td>2-3 months.
+		<td>not assigned
+	</tr>
+	<tr>
+		<td>System.Data updates
+		<td>.NET 1.2 introduced many new updates to the
+		System.Data namespace: MARS and ObjectSpaces are the
+		big ones. 
+		<td>Medium
+		<td>6-9 months.
+		<td>Work with the mono-devel-list to keep track of things.
+	</tr>
 </table>
 
