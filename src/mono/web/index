@@ -91,9 +91,17 @@
   </tr>
 </table>
 
-@item Jan, 15th: DB2 provider
+@item Jan, 17th: DB2 provider, MacOS X
 
 	Christopher Bockner has contributed a DB2 System.Data client. 
+
+	MacOS X support on the runtime has been integrated into the
+	distribution, and MCS works with it.
+
+	Zoltan has managed to get <a
+	href="http://radio.weblogs.com/0109845/">IKVM</a> (a Java VM
+	for .NET) to run with Mono.  The HelloWorld.class runs with
+	the Mono runtime.
 
 @item Jan, 13th, 2003: Mono 0.18 released
 
