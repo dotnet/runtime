@@ -526,7 +526,7 @@ enum_retvalue:
 
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
-		MonoType *ptype;
+		MonoType *ptype, *original_ptype;
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
@@ -545,7 +545,7 @@ enum_retvalue:
 			add_general (&gr, &stack_size, ainfo);
 			continue;
 		}
-		ptype = sig->params [i];
+		original_ptype = ptype = sig->params [i];
 	handle_enum:
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
@@ -574,11 +574,11 @@ enum_retvalue:
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (ptype->data.klass->enumtype) {
-				ptype = ptype->data.klass->enum_basetype;
+				original_ptype = ptype = ptype->data.klass->enum_basetype;
 				goto handle_enum;
 			}
 
-			add_valuetype (sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
+			add_valuetype (sig, ainfo, original_ptype, FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
 			stack_size += sizeof (MonoTypedRef);
