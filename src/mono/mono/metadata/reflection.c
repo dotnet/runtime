@@ -9125,6 +9125,13 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 	if (!image->tables [MONO_TABLE_DECLSECURITY].rows)
 		return FALSE;
 
+	/* we want the original as the wrapper is "free" of the security informations */
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		method = mono_marshal_method_from_wrapper (method);
+		if (!method)
+			return FALSE;
+	}
+
 	/* First we look for method-level attributes */
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
 		mono_class_init (method->klass);
