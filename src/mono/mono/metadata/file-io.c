@@ -933,10 +933,15 @@ ves_icall_System_IO_MonoIO_GetSupportsAsync (void)
 	return FALSE;	
 	/* return (g_getenv ("MONO_DISABLE_AIO") == NULL && WINVER >= 0x500); */
 #elif defined(USE_AIO)
+	return FALSE;
+	/* Disabled. See bug 73718. We can enable this again if we have
+	 * a thread that handles socket/file IO
+	 *
 	if (aio_cancel (-1, NULL) == -1 && errno == ENOSYS)
 		return FALSE;
 
 	return (g_getenv ("MONO_DISABLE_AIO") == NULL);
+	*/
 #else
 	return FALSE;
 #endif
