@@ -35,7 +35,7 @@ MonoPIFunc
 mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	unsigned char *p, *code_buffer;
-	guint32 local_size = 0, stack_size = 0, code_size = 50;
+	guint32 stack_size = 0, code_size = 50;
 	guint32 arg_pos, simpletype;
 	int i, stringp;
 	static GHashTable *cache = NULL;
@@ -62,7 +62,6 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 		if (sig->params [i]->byref) {
 			stack_size += sizeof (gpointer);
 			code_size += 20;
-			local_size++;
 			continue;
 		}
 		simpletype = sig->params [i]->type;
@@ -83,6 +82,7 @@ enum_calc_size:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
 			stack_size += 4;
 			code_size += i < 10 ? 5 : 8;
 			break;
@@ -102,11 +102,6 @@ enum_calc_size:
 			}
 			break;
 		}
-		case MONO_TYPE_STRING:
-			stack_size += 4;
-			code_size += 20;
-			local_size++;
-			break;
 		case MONO_TYPE_I8:
 			stack_size += 8;
 			code_size += i < 10 ? 5 : 8;
@@ -131,15 +126,11 @@ enum_calc_size:
 	x86_push_reg (p, X86_EBP);
 	x86_mov_reg_reg (p, X86_EBP, X86_ESP, 4);
 	/*
-	 * We store some local vars here to handle string pointers.
 	 * and align to 16 byte boundary...
 	 */
-	if (local_size) {
-		x86_alu_reg_imm (p, X86_SUB, X86_ESP, local_size * 4);
-		stack_size = (stack_size * local_size * 4) % 16;
-	} else {
-		stack_size = stack_size % 16;
-	}
+	stack_size += 15;
+	stack_size &= ~15;
+
 	if (stack_size)
 		x86_alu_reg_imm (p, X86_SUB, X86_ESP, stack_size);
 
@@ -173,6 +164,7 @@ enum_marshal:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
 			x86_push_membase (p, X86_EDX, arg_pos);
 			break;
 		case MONO_TYPE_R4:
@@ -212,9 +204,6 @@ enum_marshal:
 				simpletype = sig->params [i - 1]->data.klass->enum_basetype->type;
 				goto enum_marshal;
 			}
-			break;
-		case MONO_TYPE_STRING:
-			x86_push_membase (p, X86_EDX, arg_pos);
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:

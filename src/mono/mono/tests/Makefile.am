@@ -180,7 +180,7 @@ testb: $(TEST_PROG) $(TESTBS)
 		./test-driver $(TEST_PROG) $$ii $(RUNTIME_ARGS);	\
 	done
 
-testjit: $(JITTEST_PROG) $(TESTSI) $(TESTBS)
+testjit: $(JITTEST_PROG) $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
 	@failed=0; \
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
