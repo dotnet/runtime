@@ -12,7 +12,7 @@ mono_runtime = $(top_builddir)/mono/interpreter/mint
 endif
 
 CSC = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/mcs.exe --unsafe -nowarn:0162
-ILASM = $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/ilasm.exe
+ILASM = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
