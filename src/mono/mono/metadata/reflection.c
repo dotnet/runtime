@@ -1785,7 +1785,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 					break;
 				++p;
 			}
-			if (*p != ']')
+			if (*p++ != ']')
 				return 0;
 			break;
 		case ',':
