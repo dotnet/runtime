@@ -683,7 +683,7 @@ dis_event_methods (MonoImage *m, guint32 event)
 	start = mono_metadata_methods_from_event (m, event, &end);
 	while (start < end) {
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], FALSE);
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], TRUE);
 		switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 		case METHOD_SEMANTIC_OTHER:
 			type = ".other"; break;
