@@ -189,7 +189,6 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int i, tmpr;
 	if (size < 0) { 
 		size = -size;
-printf("OP_OUTARG_VT (CEE_LDOBJ (base)) src: %d\n",vt->inst_basereg);
 		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm,
 				  vt->inst_basereg, soffset, size, 0);
 		if (start_reg != STK_BASE) {
@@ -206,7 +205,6 @@ printf("OP_OUTARG_VT (CEE_LDOBJ (base)) src: %d\n",vt->inst_basereg);
 				soffset += sizeof (gpointer);
 			}
 		} else {
-printf("OP_OUTARG_VT (CEELDOBJ (base)) src: %d\n",vt->inst_basereg);
 			mini_emit_memcpy (s, s->frame_reg, tree->inst_imm, 
 				 	  vt->inst_basereg, soffset, size, 0);
 		}	
@@ -246,9 +244,8 @@ stmt: OP_OUTARG_VT (reg) {
 	} else {
 		int tmpr;
 		tmpr = mono_regstate_next_int (s->rs);
-//		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
-//					s->stack_offset);
-printf("OP_OUTARG_VT (reg) size: %d\n",size);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+					s->stack_offset);
 		mini_emit_memcpy (s, s->frame_reg, soffset, tmpr, 
 				  tree->sreg1, size, 0);
 	}
@@ -434,7 +431,6 @@ reg: CEE_LDOBJ (OP_S390_ARGPTR) "1" {
 }
 
 reg: CEE_LDOBJ (OP_S390_STKARG) "1" {
-printf("CEE_LDOBJ (OP_S390_STKARG) 1\n");
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg,
 				 (s->stack_offset + state->left->tree->unused));
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1,
@@ -445,7 +441,6 @@ printf("CEE_LDOBJ (OP_S390_STKARG) 1\n");
 
 base: CEE_LDOBJ (OP_S390_ARGPTR) "0" {
 	int tmpr;
-printf("CEE_LDOBJ (OP_S390_ARGPTR) 0\n");
 	tmpr = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
 				    state->left->tree->inst_offset);
@@ -455,7 +450,6 @@ printf("CEE_LDOBJ (OP_S390_ARGPTR) 0\n");
 
 base: CEE_LDOBJ (OP_S390_STKARG) "0" {
 	int tmpr;
-printf("CEE_LDOBJ (OP_S390_STKARG) 0\n");
 	tmpr = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg,
 				 (s->stack_offset + state->left->tree->unused));
