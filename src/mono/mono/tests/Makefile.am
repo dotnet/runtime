@@ -155,7 +155,8 @@ TEST_CS_SRC=			\
 	float-pop.cs		\
 	interfacecast.cs	\
 	array3.cs		\
-	classinit.cs    \
+	classinit.cs		\
+	classinit2.cs		\
 	synchronized.cs		\
 	vararg.cs
 
