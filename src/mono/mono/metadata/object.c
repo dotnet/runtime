@@ -198,9 +198,8 @@ vtable_finalizer (void *obj, void *data) {
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 
 /*
- * The vtable is assumed to be reachable by other roots, since vtables
- * are currently never freed. That might change in the future, but
- * for now, this is a correct (and worthwhile) optimization.
+ * The vtables in the root appdomain are assumed to be reachable by other 
+ * roots, and we don't use typed allocation in the other domains.
  */
 
 #define GC_HEADER_BITMAP (1 << (G_STRUCT_OFFSET (MonoObject,synchronisation) / sizeof(gpointer)))
@@ -380,25 +379,29 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 	vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
-#if CREATION_SPEEDUP
-	if (domain != mono_root_domain) {
-		/*
-		 * We can't allocate vtables in the mempool, since they contain
-		 * GC descriptors, which is needed by the collector even after the
-		 * mempool is destroyed during domain unloading.
-		 */
-		vt = GC_MALLOC (vtable_size);
-	}
-#endif
-	if (!vt)
-		vt = mono_mempool_alloc0 (domain->mp,  vtable_size);
+	vt = mono_mempool_alloc0 (domain->mp,  vtable_size);
 
 	vt->klass = class;
 	vt->domain = domain;
 
 #if CREATION_SPEEDUP
 	mono_class_compute_gc_descriptor (class);
-	vt->gc_descr = class->gc_descr;
+	if (domain != mono_root_domain)
+		/*
+		 * We can't use typed allocation in the non-root domains, since the
+		 * collector needs the GC descriptor stored in the vtable even after
+		 * the mempool containing the vtable is destroyed when the domain is
+		 * unloaded. An alternative might be to allocate vtables in the GC
+		 * heap, but this does not seem to work (it leads to crashes inside
+		 * libgc). If that approach is tried, two gc descriptors need to be
+		 * allocated for each class: one for the root domain, and one for all
+		 * other domains. The second descriptor should contain a bit for the
+		 * vtable field in MonoObject, since we can no longer assume the 
+		 * vtable is reachable by other roots after the appdomain is unloaded.
+		 */
+		vt->gc_descr = GC_NO_DESCRIPTOR;
+	else
+		vt->gc_descr = class->gc_descr;
 #endif
 
 	if (class->class_size) {
@@ -1612,7 +1615,12 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 
 #if CREATION_SPEEDUP
-	s = mono_object_allocate_spec (sizeof (MonoString) + ((len + 1) * 2), vtable);
+	if (vtable->gc_descr != GC_NO_DESCRIPTOR)
+		s = mono_object_allocate_spec (sizeof (MonoString) + ((len + 1) * 2), vtable);
+	else {
+		s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
+		s->object.vtable = vtable;
+	}
 #else
 	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
 	s->object.vtable = vtable;
