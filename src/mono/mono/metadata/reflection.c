@@ -4729,6 +4729,34 @@ mymono_metadata_type_hash (MonoType *t1)
 	return hash;
 }
 
+static MonoReflectionGenericInst*
+mono_generic_inst_get_object (MonoDomain *domain, MonoType *geninst)
+{
+	static MonoClass *System_Reflection_MonoGenericInst;
+	MonoReflectionGenericInst *res;
+	MonoGenericInst *ginst;
+	MonoClass *gklass;
+
+	if (!System_Reflection_MonoGenericInst) {
+		System_Reflection_MonoGenericInst = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoGenericInst");
+		g_assert (System_Reflection_MonoGenericInst);
+	}
+
+	ginst = geninst->data.generic_inst;
+	gklass = mono_class_from_mono_type (ginst->generic_type);
+
+	res = (MonoReflectionGenericInst *) mono_object_new (domain, System_Reflection_MonoGenericInst);
+
+	res->type.type = geninst;
+	if (gklass->wastypebuilder && gklass->reflection_info)
+		res->generic_type = gklass->reflection_info;
+	else
+		res->generic_type = mono_type_get_object (domain, ginst->generic_type);
+
+	return res;
+}
+
 /*
  * mono_type_get_object:
  * @domain: an app domain
@@ -4747,6 +4775,11 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		domain->type_hash = mono_g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
 				(GCompareFunc)mymono_metadata_type_equal);
 	if ((res = mono_g_hash_table_lookup (domain->type_hash, type))) {
+		mono_domain_unlock (domain);
+		return res;
+	}
+	if (type->type == MONO_TYPE_GENERICINST) {
+		res = (MonoReflectionType *)mono_generic_inst_get_object (domain, type);
 		mono_domain_unlock (domain);
 		return res;
 	}
@@ -6769,14 +6802,15 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 }
 
 static MonoReflectionInflatedMethod*
-inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflectionMethod *declaring,
-			    MonoGenericInst *ginst)
+inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass,
+			    MonoReflectionMethod *declaring, MonoGenericInst *ginst)
 {
 	const char *cname;
-	MonoClass *klass, *refclass;
+	MonoClass *klass;
 	MonoReflectionInflatedMethod *ret;
 
-	refclass = method->klass;
+	if (!refclass)
+		refclass = method->klass;
 
 	CHECK_OBJECT (MonoReflectionInflatedMethod *, method, refclass);
 	if (*method->name == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
@@ -6943,7 +6977,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
 	return inflated_method_get_object (
-		mono_object_domain (rmethod), inflated, declaring, ginst);
+		mono_object_domain (rmethod), inflated, NULL, declaring, ginst);
 }
 
 MonoReflectionInflatedMethod*
@@ -6955,12 +6989,13 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	MonoMethod *method = NULL, *inflated;
 	MonoReflectionInflatedMethod *res;
 	MonoReflectionMethod *declaring;
-	MonoClass *klass;
+	MonoClass *klass, *refclass;
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = mono_class_from_mono_type (reflected_type->type.type);
-	type_ginst = reflected_type->type.type->data.generic_inst;
+	klass = mono_class_from_mono_type (declaring_type->type.type);
+	refclass = mono_class_from_mono_type (reflected_type->type.type);
+	type_ginst = declaring_type->type.type->data.generic_inst;
 
 	if (!strcmp (obj->vtable->klass->name, "MethodBuilder")) {
 		method = methodbuilder_to_mono_method (klass, (MonoReflectionMethodBuilder *) obj);
@@ -6981,7 +7016,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->generic_method = method;
-	ginst->generic_type = reflected_type->type.type;
+	ginst->generic_type = declaring_type->type.type;
 	ginst->type_argc = type_ginst->type_argc;
 	ginst->type_argv = type_ginst->type_argv;
 	ginst->is_open = type_ginst->is_open;
@@ -6991,10 +7026,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
 	res = inflated_method_get_object (
-		mono_object_domain (reflected_type), inflated, declaring, ginst);
-
-	res->declaring_type = declaring_type;
-	res->reflected_type = reflected_type;
+		mono_object_domain (declaring_type), inflated, refclass, declaring, ginst);
 
 	return res;
 }

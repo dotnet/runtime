@@ -457,8 +457,6 @@ struct _MonoReflectionGenericInst {
 typedef struct {
 	MonoReflectionMethod rmethod;
 	MonoReflectionMethod *declaring;
-	MonoReflectionGenericInst *declaring_type;
-	MonoReflectionGenericInst *reflected_type;
 	MonoGenericInst *ginst;
 } MonoReflectionInflatedMethod;
 
