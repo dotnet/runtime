@@ -847,6 +847,7 @@ reg: REMOTE_LDFLDA (reg) {
 
 reg: ADDR_L 5 {
 	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;  
+
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
 	
 	PRINT_REG ("ADDR_L",  tree->reg1);
@@ -1438,27 +1439,7 @@ stmt: INITOBJ (reg) {
 	i = tree->data.i;
 
 	if (i == 1 || i == 2 || i == 4) {
-		int t = X86_ECX;
-
-		if (tree->left->reg1 != X86_EAX) 
-			t = X86_EAX;
-
-		x86_push_reg (s->code, t);
-		x86_alu_reg_reg (s->code, X86_XOR, t, t);
-
-		switch (tree->data.i) {
-		case 4:
-			x86_mov_regp_reg (s->code, tree->left->reg1, t, 4);
-			break;
-		case 2:
-			x86_mov_regp_reg (s->code, tree->left->reg1, t, 4);
-			break;
-		case 1:
-			x86_mov_regp_reg (s->code, tree->left->reg1, t, 4);
-			break;
-		}
-		x86_pop_reg (s->code, t);
-
+		x86_mov_membase_imm (s->code, tree->left->reg1, 0, 0, i);
 		return;
 	}
 
@@ -1480,11 +1461,17 @@ stmt: INITOBJ (reg) {
 		x86_prefix (s->code, X86_REP_PREFIX);
 		x86_stosl (s->code);
 		x86_pop_reg (s->code, X86_ECX);
+
+		for (i = 0; i < j; i++)
+			x86_stosb (s->code);
+
+	} else {
+		g_assert (j == 3);
+		x86_mov_membase_imm (s->code, X86_EDI, 0, 0, 2);
+		x86_mov_membase_imm (s->code, X86_EDI, 2, 0, 1);
 	}
 
 
-	for (i = 0; i < j; i++)
-		x86_stosb (s->code);
 
 	if (tree->left->reg1 != X86_EDI)
 		x86_pop_reg (s->code, X86_EDI);

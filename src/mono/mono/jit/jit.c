@@ -1065,7 +1065,7 @@ mono_cfg_free (MonoFlowGraph *cfg)
 
 	if (cfg->bblocks)
 		g_free (cfg->bblocks);
-
+		
 	g_array_free (cfg->varinfo, TRUE);
 }
 
@@ -1424,7 +1424,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 	if (header->num_locals) {
 		int size, align;
-
+		
 		for (i = 0; i < header->num_locals; ++i) {
 			size = mono_type_size (header->locals [i], &align);
 			varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, VAL_UNKNOWN);
@@ -1519,6 +1519,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					bb->forest = forest = g_ptr_array_new ();
 				
 					superblock_end = FALSE;
+
 
         while (ip < end) {
 		guint32 cli_addr = ip - header->code;

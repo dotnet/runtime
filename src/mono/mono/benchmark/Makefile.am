@@ -1,0 +1,38 @@
+TEST_PROG=../jit/mono
+
+CSC=mcs
+
+
+TESTSRC=			\
+	fib.cs 
+
+TESTSI=$(TESTSRC:.cs=.exe)
+TESTBS=$(BENCHSRC:.cs=.exe)
+
+EXTRA_DIST=test-driver $(TESTSRC)
+
+%.exe: %.cs
+	$(CSC) $<
+
+test: $(TEST_PROG) $(TESTSI)
+	@failed=0; \
+	passed=0; \
+	for i in $(TESTSI); do	\
+		if ./test-driver $(TEST_PROG) $$i; \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			failed=`expr $${failed} + 1`; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) failed."
+
+
+testjitspeed: $(JITTEST_PROG) $(TESTBS)
+	for i in $(TESTBS); do	\
+		echo $$i;	\
+		time $(JITTEST_PROG) $$i;	\
+	done
+
+check:
+	@echo no check yet

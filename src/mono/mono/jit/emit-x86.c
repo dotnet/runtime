@@ -236,6 +236,10 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 static void
 arch_emit_prologue (MonoFlowGraph *cfg)
 {
+	MonoMethod *method = cfg->method;
+	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+	int i, j;
+
 	x86_push_reg (cfg->code, X86_EBP);
 	x86_mov_reg_reg (cfg->code, X86_EBP, X86_ESP, 4);
 
@@ -257,6 +261,69 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 		x86_mov_reg_imm (cfg->code, X86_EAX, enter_method);
 		x86_call_reg (cfg->code, X86_EAX);
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
+	}
+
+	/* initialize local vars */
+	if (header->num_locals) {
+
+		if (header->init_locals) {
+			int offset = g_array_index (cfg->varinfo, MonoVarInfo, 
+						    cfg->locals_start_index + header->num_locals - 1).offset;  
+			int size = - offset;
+
+			if (size == 1 || size == 2 || size == 4) {
+				x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, size);
+				return;
+			}
+			
+			i = size / 4;
+			j = size % 4;
+	
+			if (i) {
+				if (!mono_regset_reg_used (cfg->rs, X86_EDI)) 
+					x86_push_reg (cfg->code, X86_EDI);
+				x86_lea_membase (cfg->code, X86_EDI, X86_EBP, offset);
+				x86_alu_reg_reg (cfg->code, X86_XOR, X86_EAX, X86_EAX);
+				x86_mov_reg_imm (cfg->code, X86_ECX, i);
+				x86_cld (cfg->code);
+				x86_prefix (cfg->code, X86_REP_PREFIX);
+				x86_stosl (cfg->code);
+				for (i = 0; i < j; i++)
+					x86_stosb (cfg->code);
+				if (!mono_regset_reg_used (cfg->rs, X86_EDI)) 
+					x86_pop_reg (cfg->code, X86_EDI);
+			} else {
+
+				g_assert (j == 3);
+				x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 2);
+				x86_mov_membase_imm (cfg->code, X86_EBP, offset + 2, 0, 1);
+			}
+			
+		} else {
+
+			/* we always need to initialize object pointers */
+
+			for (i = 0; i < header->num_locals; ++i) {
+				MonoType *t = header->locals [i];
+				int offset = g_array_index (cfg->varinfo, MonoVarInfo, cfg->locals_start_index + i).offset;  
+
+				if (t->byref) {
+					x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 4);
+					continue;
+				}
+
+				switch (t->type) {
+				case MONO_TYPE_STRING:
+				case MONO_TYPE_CLASS:
+				case MONO_TYPE_ARRAY:
+				case MONO_TYPE_SZARRAY:
+				case MONO_TYPE_OBJECT:
+					x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 4);
+					break;
+				}
+
+			}
+		}
 	}
 }
 
@@ -301,7 +368,7 @@ static void
 mono_label_cfg (MonoFlowGraph *cfg)
 {
 	int i, j;
-	
+
 	for (i = 0; i < cfg->block_count; i++) {
 		GPtrArray *forest = cfg->bblocks [i].forest;
 		int top;

@@ -476,6 +476,7 @@ mono/arch/sparc/Makefile
 mono/arch/arm/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
+mono/benchmark/Makefile
 mono/monoburg/Makefile
 mono/monograph/Makefile
 mono/jit/Makefile
