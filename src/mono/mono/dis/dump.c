@@ -594,7 +594,7 @@ has_cattr_get_table (MonoImage *m, guint32 val)
 static char*
 custom_attr_params (MonoImage *m, MonoMethodSignature* sig, const char* value)
 {
-	int len, i, slen;
+	int len, i, slen, type;
 	GString *res;
 	char *s;
 	const char *p = value;
@@ -603,29 +603,78 @@ custom_attr_params (MonoImage *m, MonoMethodSignature* sig, const char* value)
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
 		return g_strdup ("");
 
+	/* skip prolog */
+	p += 2;
 	res = g_string_new ("");
 	for (i = 0; i < sig->param_count; ++i) {
-		if (read16 (p) != 0x0001)
-			g_warning ("no prolog in custom attr");
-		p += 2;
 		if (i != 0)
 			g_string_append (res, ", ");
-		switch (sig->params [i]->type) {
+		type = sig->params [i]->type;
+handle_enum:
+		switch (type) {
+		case MONO_TYPE_U1:
+			g_string_sprintfa (res, "%d", (unsigned int)*p);
+			++p;
+			break;
+		case MONO_TYPE_I1:
+			g_string_sprintfa (res, "%d", *p);
+			++p;
+			break;
 		case MONO_TYPE_BOOLEAN:
 			g_string_sprintfa (res, "%s", *p?"true":"false");
 			++p;
 			break;
+		case MONO_TYPE_CHAR:
+			g_string_sprintfa (res, "'%c'", read16 (p));
+			p += 2;
+			break;
+		case MONO_TYPE_U2:
+			g_string_sprintfa (res, "%d", read16 (p));
+			p += 2;
+			break;
+		case MONO_TYPE_I2:
+			g_string_sprintfa (res, "%d", (gint16)read16 (p));
+			p += 2;
+			break;
+		case MONO_TYPE_U4:
+			g_string_sprintfa (res, "%d", read32 (p));
+			p += 4;
+			break;
+		case MONO_TYPE_I4:
+			g_string_sprintfa (res, "%d", (gint32)read32 (p));
+			p += 4;
+			break;
+		case MONO_TYPE_U8:
+			g_string_sprintfa (res, "%lld", read64 (p));
+			p += 8;
+			break;
+		case MONO_TYPE_I8:
+			g_string_sprintfa (res, "%lld", (gint64)read64 (p));
+			p += 8;
+			break;
+		case MONO_TYPE_R4: {
+			float val;
+			readr4 (p, &val);
+			g_string_sprintfa (res, "%g", val);
+			p += 4;
+			break;
+		}
+		case MONO_TYPE_R8: {
+			double val;
+			readr8 (p, &val);
+			g_string_sprintfa (res, "%g", val);
+			p += 8;
+			break;
+		}
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
-				/*
-				 * FIXME: we should check the unrelying eum type...
-				 */
-				g_string_sprintfa (res, "0x%x", read32 (p));
-				p += 4;
+				type = sig->params [i]->data.klass->enum_basetype->type;
+				goto handle_enum;
 			} else {
 				g_warning ("generic valutype not handled in custom attr value decoding");
 			}
 			break;
+		case MONO_TYPE_CLASS: /* It must be a Type: check? */
 		case MONO_TYPE_STRING:
 			slen = mono_metadata_decode_value (p, &p);
 			g_string_append_c (res, '"');
