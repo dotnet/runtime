@@ -3265,6 +3265,7 @@ main (int argc, char *argv [])
 
 #if HAVE_BOEHM_GC
 	{
+#if 0
 		static GMemVTable boehm_table = {
 			GC_malloc,
 			GC_realloc,
@@ -3274,6 +3275,7 @@ main (int argc, char *argv [])
 			GC_realloc,
 		};
 		g_mem_set_vtable (&boehm_table);
+#endif
 	}
 #endif
 
