@@ -15,10 +15,16 @@
 #define ABBREV_FORMAL_PARAMETER		5
 #define ABBREV_PARAMETER		6
 #define ABBREV_LOCAL_VARIABLE		7
+#define ABBREV_STRUCT_TYPE		8
+#define ABBREV_STRUCT_MEMBER		9
+#define ABBREV_STRUCT_ACCESS		10
 
 // The following constants are defined in the DWARF 2 specification
 #define DW_TAG_formal_parameter		0x05
+#define DW_TAG_member			0x0d
 #define DW_TAG_compile_unit		0x11
+#define DW_TAG_structure_type		0x13
+#define DW_TAG_access_declaration	0x23
 #define DW_TAG_base_type		0x24
 #define DW_TAG_subprogram		0x2e
 #define DW_TAG_variable			0x34
@@ -35,7 +41,9 @@
 #define DW_AT_language			0x13
 #define DW_AT_producer			0x25
 #define DW_AT_start_scope		0x2c
+#define DW_AT_accessibility		0x32
 #define DW_AT_calling_convention	0x36
+#define DW_AT_data_member_location	0x38
 #define DW_AT_encoding			0x3e
 #define DW_AT_external			0x3f
 #define DW_AT_type			0x49
@@ -60,11 +68,17 @@
 #define DW_ATE_unsigned			0x07
 #define DW_ATE_unsigned_char		0x08
 
+#define DW_OP_constu			0x10
+#define DW_OP_consts			0x11
 #define DW_OP_fbreg			0x91
 
 #define DW_CC_normal			1
 #define DW_CC_program			2
 #define DW_CC_nocall			3
+
+#define DW_ACCESS_public		1
+#define DW_ACCESS_protected		2
+#define DW_ACCESS_private		3
 
 #define DW_LANG_C_plus_plus		0x04
 #define DW_LANG_Java			0x0b
@@ -254,31 +268,80 @@ static void
 dwarf2_write_class (AssemblyDebugInfo *info, MonoClass *klass, int index)
 {
 	char buffer [BUFSIZ];
+	int print = 0;
+
+	if (!strncmp (klass->name, "My", 2)) {
+		g_message (G_STRLOC ": %s - %s - %x", klass->name_space, klass->name, klass->flags);
+		print = 1;
+		// G_BREAKPOINT ();
+	}
 
 	sprintf (buffer, "TYPE_%u", index);
 	dwarf2_write_label (info->f, buffer);
-	// DW_TAG_basic_type
-	dwarf2_write_byte (info->f, ABBREV_BASE_TYPE);
-	dwarf2_write_string (info->f, "<unknown>");
-	dwarf2_write_byte (info->f, DW_ATE_address);
-	dwarf2_write_byte (info->f, sizeof (gpointer));
-}
 
-static void
-write_base_types (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
-{
-	dwarf2_write_base_type (info, MONO_TYPE_BOOLEAN, DW_ATE_boolean, 1, "Boolean");
-	dwarf2_write_base_type (info, MONO_TYPE_CHAR, DW_ATE_unsigned_char, 2, "Char");
-	dwarf2_write_base_type (info, MONO_TYPE_I1, DW_ATE_signed, 1, "SByte");
-	dwarf2_write_base_type (info, MONO_TYPE_U1, DW_ATE_unsigned, 1, "Byte");
-	dwarf2_write_base_type (info, MONO_TYPE_I2, DW_ATE_signed, 2, "Int16");
-	dwarf2_write_base_type (info, MONO_TYPE_U2, DW_ATE_unsigned, 2, "UInt16");
-	dwarf2_write_base_type (info, MONO_TYPE_I4, DW_ATE_signed, 4, "Int32");
-	dwarf2_write_base_type (info, MONO_TYPE_U4, DW_ATE_unsigned, 4, "UInt32");
-	dwarf2_write_base_type (info, MONO_TYPE_I8, DW_ATE_signed, 8, "Int64");
-	dwarf2_write_base_type (info, MONO_TYPE_U8, DW_ATE_unsigned, 8, "UInt64");
-	dwarf2_write_base_type (info, MONO_TYPE_R4, DW_ATE_signed, 4, "Float");
-	dwarf2_write_base_type (info, MONO_TYPE_R8, DW_ATE_unsigned, 8, "Double");
+	if (!klass->enumtype && klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
+		guint32 *idxs;
+		int i;
+
+		idxs = g_new0 (guint32, klass->field.last - klass->field.first + 1);
+		for (i = 0; i < klass->field.count; i++) {
+			MonoClass *subclass = mono_class_from_mono_type (klass->fields [i].type);
+			idxs [i] = mono_debug_get_type (info, subclass);
+		}
+
+		// DW_TAG_structure_type
+		dwarf2_write_byte (info->f, ABBREV_STRUCT_TYPE);
+		dwarf2_write_string (info->f, klass->name);
+		dwarf2_write_long (info->f, klass->instance_size);
+
+		for (i = 0; i < klass->field.count; i++) {
+			MonoClass *subclass = mono_class_from_mono_type (klass->fields [i].type);
+			char start [BUFSIZ], end [BUFSIZ];
+			static long label_index = 0;
+
+			if (print)
+				g_message (G_STRLOC ": %s - %x - %d - %d", klass->fields [i].name,
+					   klass->fields [i].type->attrs, klass->fields [i].offset,
+					   subclass->instance_size - sizeof (MonoObject));
+
+			sprintf (start, "DSF1_%ld", ++label_index);
+			sprintf (end, "DSF2_%ld", label_index);
+
+			// DW_TAG_member
+			dwarf2_write_byte (info->f, ABBREV_STRUCT_MEMBER);
+			dwarf2_write_string (info->f, klass->fields [i].name);
+			dwarf2_write_type_ref (info->f, idxs [i]);
+
+			dwarf2_write_section_size (info->f, start, end);
+			dwarf2_write_label (info->f, start);
+			dwarf2_write_byte (info->f, DW_OP_constu);
+			dwarf2_write_uleb128 (info->f, klass->fields [i].offset - sizeof (MonoObject));
+			dwarf2_write_label (info->f, end);
+
+			dwarf2_write_long (info->f, subclass->instance_size - sizeof (MonoObject));
+
+			// DW_TAG_access_declaration
+			dwarf2_write_byte (info->f, ABBREV_STRUCT_ACCESS);
+			dwarf2_write_string (info->f, klass->fields [i].name);
+			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_PRIVATE)
+				dwarf2_write_byte (info->f, DW_ACCESS_private);
+			else if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_FAMILY)
+				dwarf2_write_byte (info->f, DW_ACCESS_private);
+			else
+				dwarf2_write_byte (info->f, DW_ACCESS_public);
+		}
+
+		dwarf2_write_byte (info->f, 0);
+		// DW_TAG_structure_type ends here
+
+		g_free (idxs);
+	} else {
+		// DW_TAG_basic_type
+		dwarf2_write_byte (info->f, ABBREV_BASE_TYPE);
+		dwarf2_write_string (info->f, "<unknown>");
+		dwarf2_write_byte (info->f, DW_ATE_address);
+		dwarf2_write_byte (info->f, sizeof (gpointer));
+	}
 }
 
 static void
@@ -478,10 +541,10 @@ write_class_dwarf2 (AssemblyDebugInfo *info, MonoClass *klass, guint index)
 		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 8, "UInt64");
 		break;
 	case MONO_TYPE_R4:
-		dwarf2_write_base_type (info, index, DW_ATE_signed, 4, "Float");
+		dwarf2_write_base_type (info, index, DW_ATE_float, 4, "Float");
 		break;
 	case MONO_TYPE_R8:
-		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 8, "Double");
+		dwarf2_write_base_type (info, index, DW_ATE_float, 8, "Double");
 		break;
 	default:
 		dwarf2_write_class (info, klass, index);
@@ -518,7 +581,6 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	if (ret_type) {
 		MonoClass *klass = mono_class_from_mono_type (ret_type);
 		int type_index = mono_debug_get_type (info, klass);
-		g_message (G_STRLOC ": %s - %d", minfo->name, type_index);
 		dwarf2_write_type_ref (info->f, type_index);
 	}
 
@@ -628,6 +690,29 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_pair (info->f, DW_AT_start_scope, DW_FORM_data4);
 	dwarf2_write_pair (info->f, 0, 0);
 
+	dwarf2_write_byte (info->f, ABBREV_STRUCT_TYPE);
+	dwarf2_write_byte (info->f, DW_TAG_structure_type);
+	dwarf2_write_byte (info->f, DW_CHILDREN_yes);
+	dwarf2_write_pair (info->f, DW_AT_name, DW_FORM_string);
+	dwarf2_write_pair (info->f, DW_AT_byte_size, DW_FORM_data4);
+	dwarf2_write_pair (info->f, 0, 0);
+
+	dwarf2_write_byte (info->f, ABBREV_STRUCT_MEMBER);
+	dwarf2_write_byte (info->f, DW_TAG_member);
+	dwarf2_write_byte (info->f, DW_CHILDREN_no);
+	dwarf2_write_pair (info->f, DW_AT_name, DW_FORM_string);
+	dwarf2_write_pair (info->f, DW_AT_type, DW_FORM_ref4);
+	dwarf2_write_pair (info->f, DW_AT_data_member_location, DW_FORM_block4);
+	dwarf2_write_pair (info->f, DW_AT_byte_size, DW_FORM_data4);
+	dwarf2_write_pair (info->f, 0, 0);
+
+	dwarf2_write_byte (info->f, ABBREV_STRUCT_ACCESS);
+	dwarf2_write_byte (info->f, DW_TAG_access_declaration);
+	dwarf2_write_byte (info->f, DW_CHILDREN_no);
+	dwarf2_write_pair (info->f, DW_AT_name, DW_FORM_string);
+	dwarf2_write_pair (info->f, DW_AT_accessibility, DW_FORM_data1);
+	dwarf2_write_pair (info->f, 0, 0);
+
 	dwarf2_write_label (info->f, "debug_abbrev_e");
 	dwarf2_write_section_end (info->f);
 
@@ -649,9 +734,6 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_2byte (info->f, DW_LANG_C_sharp);
 	dwarf2_write_string (info->f, info->producer_name);
 	dwarf2_write_ref4 (info->f, "debug_lines_b");
-
-	// Base types
-	// write_base_types (info, NULL);
 
 	// Methods
 	g_hash_table_foreach (info->methods, write_method_func, info);

@@ -295,6 +295,15 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 	if (index)
 		return index;
 
+	if (!klass->enumtype && klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
+		int i;
+
+		for (i = 0; i < klass->field.count; i++) {
+			MonoClass *subclass = mono_class_from_mono_type (klass->fields [i].type);
+			mono_debug_get_type (info, subclass);
+		}
+	}
+
 	index = ++info->next_klass_idx;
 	g_hash_table_insert (info->type_hash, klass, GINT_TO_POINTER (index));
 
