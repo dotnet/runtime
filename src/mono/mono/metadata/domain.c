@@ -1218,7 +1218,7 @@ get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
 
 
 /**
- * mono_get_framework_assembly_version:
+ * mono_get_runtime_info:
  *
  * Returns: the version of the current runtime instance.
  */
