@@ -2195,6 +2195,9 @@ mono_get_param_info (MonoMethodSignature *sig, int param_num, int *size, int *al
 	
 	if (sig->pinvoke && MONO_TYPE_ISSTRUCT (type)) {
 		*size = mono_class_native_size (type->data.klass);
+		*align = type->data.klass->min_align;
+		*align = *align + __alignof__(gpointer) - 1;
+		*align &= ~(__alignof__(gpointer) - 1);
 	} else {
 		*size = mono_type_stack_size (type, align);
 	}
