@@ -437,6 +437,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	result->klass = klass;
 	result->flags = cols [2];
 	result->iflags = cols [1];
+	result->token = token;
 	result->name = mono_metadata_string_heap (image, cols [3]);
 
 	if (!sig) /* already taken from the methodref */

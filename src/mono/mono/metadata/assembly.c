@@ -290,7 +290,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 	int i;
-	char *base_dir;
+	char *base_dir, *aot_name;
 	MonoImageOpenStatus def_status;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
@@ -329,6 +329,13 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
 	ass->image = image;
+
+	/* load aot compiled module */
+	aot_name = g_strdup_printf ("%s.so", filename);
+	ass->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
+	g_free (aot_name);
+	/* fixme: we need to check if we have the right version here */
+
 
 	t = &image->tables [MONO_TABLE_ASSEMBLY];
 	if (t->rows) {

@@ -19,6 +19,7 @@ typedef enum {
 typedef struct {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
+	guint32 token;
 	MonoClass *klass;
 	MonoMethodSignature *signature;
 	gpointer addr;

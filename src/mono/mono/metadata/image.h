@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <glib.h>
+#include <gmodule.h>
 
 typedef struct _MonoImage MonoImage;
 
@@ -19,7 +20,7 @@ typedef struct {
 	int   ref_count;
 	char *basedir;
 	MonoAssemblyName aname;
-
+	GModule *aot_module;
 	MonoImage *image;
 	MonoImage **modules;
 	/* Load files here */
