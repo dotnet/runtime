@@ -97,24 +97,28 @@ static void socket_close_private (gpointer handle)
 
 	g_ptr_array_remove_fast(sockets, GUINT_TO_POINTER (handle));
 
-	/* Blank out the mapping, to make catching errors easier */
-	_wapi_handle_fd_offset_store (socket_private_handle->fd, NULL);
+	if (socket_private_handle->fd_mapped.assigned == TRUE) {
+		/* Blank out the mapping, to make catching errors easier */
+		_wapi_handle_fd_offset_store (socket_private_handle->fd_mapped.fd, NULL);
 
-	do {
-		ret=close(socket_private_handle->fd);
-	}
-	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+		do {
+			ret=close(socket_private_handle->fd_mapped.fd);
+		}
+		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 	
-	if(ret==-1) {
-		gint errnum = errno;
+		if(ret==-1) {
+			gint errnum = errno;
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": close error: %s",
-			  strerror(errno));
+			g_message(G_GNUC_PRETTY_FUNCTION ": close error: %s",
+				  strerror(errno));
 #endif
-		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
-		WSASetLastError (errnum);
+			errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+			WSASetLastError (errnum);
 
-		return;
+			return;
+		}
+	} else {
+		WSASetLastError(WSAENOTSOCK);
 	}
 }
 
@@ -298,12 +302,13 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	_wapi_handle_fd_offset_store (new_fd, new_handle);
 	ret = new_fd;
 	
-	new_socket_private_handle->fd=new_fd;
+	new_socket_private_handle->fd_mapped.fd = new_fd;
+	new_socket_private_handle->fd_mapped.assigned = TRUE;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": returning newly accepted socket handle %p with fd %d",
-		  new_handle, new_socket_private_handle->fd);
+		  new_handle, new_socket_private_handle->fd_mapped.fd);
 #endif
 
 cleanup:
@@ -814,12 +819,13 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused, guint32 u
 	_wapi_handle_fd_offset_store (fd, handle);
 	ret = fd;
 	
-	socket_private_handle->fd=fd;
+	socket_private_handle->fd_mapped.fd = fd;
+	socket_private_handle->fd_mapped.assigned = TRUE;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": returning socket handle %p with fd %d", handle,
-		  socket_private_handle->fd);
+		  socket_private_handle->fd_mapped.fd);
 #endif
 
 cleanup:

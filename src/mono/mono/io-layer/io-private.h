@@ -34,13 +34,9 @@ struct _WapiHandle_file
 	ino_t inode;
 };
 
-/* The boolean is for distinguishing between a zeroed struct being not
- * as yet assigned, and one containing a valid fd 0
- */
 struct _WapiHandlePrivate_file
 {
-	int fd;
-	gboolean assigned;
+	WapiFDMapped fd_mapped;
 	gboolean async;
 	WapiOverlappedCB callback;
 };
