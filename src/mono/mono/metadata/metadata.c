@@ -1446,7 +1446,7 @@ static void
 do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *ptr, const char **rptr)
 {
 	MonoGenericInst *ginst = g_new0 (MonoGenericInst, 1);
-	MonoType *cached;
+	MonoGenericInst *cached;
 	int i, count;
 
 	type->data.generic_inst = ginst;
@@ -1502,14 +1502,10 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 		g_free (ginst->type_argv);
 		g_free (ginst);
 
-		type->data.generic_inst = cached->data.generic_inst;
+		type->data.generic_inst = cached;
 		return;
 	} else {
-		cached = g_new0 (MonoType, 1);
-		cached->type = MONO_TYPE_GENERICINST;
-		cached->data.generic_inst = ginst;
-
-		g_hash_table_insert (m->generic_inst_cache, ginst, cached);
+		g_hash_table_insert (m->generic_inst_cache, ginst, ginst);
 
 		mono_stats.generic_instance_count++;
 		mono_stats.generics_metadata_size += sizeof (MonoGenericInst) +

@@ -276,7 +276,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	}
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericInst *oginst = type->data.generic_inst;
-		MonoGenericInst *nginst;
+		MonoGenericInst *nginst, *cached;
 		MonoType *nt;
 		int i;
 
@@ -301,13 +301,16 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		nginst->context->ginst = nginst;
 
 		mono_loader_lock ();
-		nt = g_hash_table_lookup (oginst->klass->image->generic_inst_cache, nginst);
+		cached = g_hash_table_lookup (oginst->klass->image->generic_inst_cache, nginst);
 
-		if (nt) {
+		if (cached) {
 			g_free (nginst->type_argv);
 			g_free (nginst);
 			mono_loader_unlock ();
-			return dup_type (nt, type);
+
+			nt = dup_type (type, type);
+			nt->data.generic_inst = cached;
+			return nt;
 		}
 
 		nginst->dynamic_info = NULL;
@@ -322,7 +325,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 
 		nt = dup_type (type, type);
 		nt->data.generic_inst = nginst;
-		g_hash_table_insert (oginst->klass->image->generic_inst_cache, nginst, nt);
+		g_hash_table_insert (oginst->klass->image->generic_inst_cache, nginst, nginst);
 		mono_loader_unlock ();
 		return nt;
 	}

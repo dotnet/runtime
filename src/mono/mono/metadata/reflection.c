@@ -7221,7 +7221,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 {
 	MonoClass *klass;
 	MonoReflectionTypeBuilder *tb = NULL;
-	MonoGenericInst *ginst;
+	MonoGenericInst *ginst, *cached;
 	MonoDomain *domain;
 	MonoType *geninst;
 	int icount, i;
@@ -7268,19 +7268,21 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		ginst->generic_type = kginst->generic_type;
 	}
 
-	geninst = g_hash_table_lookup (klass->image->generic_inst_cache, ginst);
-	if (geninst) {
+	geninst = g_new0 (MonoType, 1);
+	geninst->type = MONO_TYPE_GENERICINST;
+
+	cached = g_hash_table_lookup (klass->image->generic_inst_cache, ginst);
+	if (cached) {
 		g_free (ginst);
 		mono_loader_unlock ();
+		geninst->data.generic_inst = cached;
 		return geninst;
 	}
 
+	geninst->data.generic_inst = ginst;
+
 	ginst->context = g_new0 (MonoGenericContext, 1);
 	ginst->context->ginst = ginst;
-
-	geninst = g_new0 (MonoType, 1);
-	geninst->type = MONO_TYPE_GENERICINST;
-	geninst->data.generic_inst = ginst;
 
 	if (!strcmp (((MonoObject *) type)->vtable->klass->name, "TypeBuilder")) {
 		tb = (MonoReflectionTypeBuilder *) type;
@@ -7316,7 +7318,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 	mono_class_create_generic (ginst);
 
-	g_hash_table_insert (klass->image->generic_inst_cache, ginst, geninst);
+	g_hash_table_insert (klass->image->generic_inst_cache, ginst, ginst);
 
 	mono_loader_unlock ();
 
