@@ -1640,7 +1640,7 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 	MONO_ARCH_SAVE_REGS;
 
 	if (!name)
-		return NULL;
+		mono_raise_exception (mono_get_exception_argument_null ("name"));
 
 handle_parent:	
 	for (i = 0; i < klass->field.count; ++i) {
