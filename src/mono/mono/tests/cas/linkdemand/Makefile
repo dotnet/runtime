@@ -1,6 +1,14 @@
 RUNTIME = mono --debug --security
-CSCOMPILE = mcs --debug
 PROFILE = net_1_1
+
+compiler_defines = -d:NET_1_1
+
+ifeq ($(PROFILE), net_2_0)
+CSCOMPILE = gmcs --debug
+compiler_defines += -d:NET_2_0
+else
+CSCOMPILE = mcs --debug
+endif
 
 all:	icall1.exe icall2.exe icall3.exe icall4.exe icall5.exe icall6.exe \
 	aptc1a.exe aptc1b.exe aptc2a.exe aptc2b.exe aptclib.dll \
@@ -75,25 +83,25 @@ aptc.snk:
 	sn -k aptc.snk
 
 %a.exe: %.cs
-	$(CSCOMPILE) $^ /out:$@
+	$(CSCOMPILE) $^ /out:$@ $(compiler_defines)
 
 %b.exe: %.cs
-	$(CSCOMPILE) $^ /out:$@ /keyfile:ecma.pub /delaysign+
+	$(CSCOMPILE) $^ /out:$@ /keyfile:ecma.pub /delaysign+ $(compiler_defines)
 
 aptc1b.exe: aptc1.cs aptc.snk
-	$(CSCOMPILE) aptc1.cs /out:$@ /keyfile:aptc.snk
+	$(CSCOMPILE) aptc1.cs /out:$@ /keyfile:aptc.snk $(compiler_defines)
 
 aptc2a.exe: aptc2.cs aptclib.dll
-	$(CSCOMPILE) aptc2.cs /out:$@ /r:aptclib.dll
+	$(CSCOMPILE) aptc2.cs /out:$@ /r:aptclib.dll $(compiler_defines)
 
 aptc2b.exe: aptc2.cs aptclib.dll
-	$(CSCOMPILE) aptc2.cs /out:$@ /keyfile:aptc.snk /r:aptclib.dll
+	$(CSCOMPILE) aptc2.cs /out:$@ /keyfile:aptc.snk /r:aptclib.dll $(compiler_defines)
 
 aptclib.dll: aptclib.cs aptc.snk
-	$(CSCOMPILE) aptclib.cs /out:$@ /target:library /keyfile:aptc.snk
+	$(CSCOMPILE) aptclib.cs /out:$@ /target:library /keyfile:aptc.snk $(compiler_defines)
 
 %.exe: %.cs
-	$(CSCOMPILE) $^ /out:$@
+	$(CSCOMPILE) $^ /out:$@ $(compiler_defines)
 
 %.exe.so: %.exe
 	$(RUNTIME) --aot $^

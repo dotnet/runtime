@@ -21,6 +21,8 @@ public class Program {
 			icall = "internalGetGacPath";
 			mi = typeof (System.Environment).GetMethod (icall, BindingFlags.Static | BindingFlags.NonPublic);
 		} else {
+			// private internal call for MS runtime
+			// http://msdn.microsoft.com/msdnmag/issues/04/11/NETMatters/
 			icall = "CompleteGuid";
 			mi = typeof (System.Guid).GetMethod (icall, BindingFlags.Instance | BindingFlags.NonPublic);
 		}
@@ -36,7 +38,12 @@ public class Program {
 				result = (string) mi.Invoke (null, null);
 			} else {
 				System.Guid g = new System.Guid ();
+#if NET_2_0
+				mi.Invoke (g, null);
+				result = "completed";
+#else
 				result = ((bool) mi.Invoke (g, null)).ToString ();
+#endif
 			}
 			Console.WriteLine ("*0* [Reflected]{0}: {1}", icall, result);
 			return 0;

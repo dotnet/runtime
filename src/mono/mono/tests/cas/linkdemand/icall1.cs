@@ -8,7 +8,7 @@ namespace System {
 	public class Environment {
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		internal extern static string internalGetGacPath ();
+		public extern static string internalGetGacPath ();
 	}
 
 	// private internal call for MS runtime
@@ -20,7 +20,11 @@ namespace System {
 		}
 
 		[MethodImpl (MethodImplOptions.InternalCall)]
-		internal extern bool CompleteGuid ();
+#if NET_2_0
+		public extern void CompleteGuid ();
+#else
+		public extern bool CompleteGuid ();
+#endif
 	}
 }
 
@@ -41,14 +45,28 @@ public class Program {
 				result = Environment.internalGetGacPath ();
 			} else {
 				System.Guid g = new System.Guid ();
+#if NET_2_0
+				g.CompleteGuid ();
+				result = "completed";
+#else
 				result = g.CompleteGuid ().ToString ();
+#endif
 			}
-			Console.WriteLine ("*1* Unexcepted internal call: {0}", result);
-			return 1;
+#if NET_2_0
+			Console.WriteLine ("*0* Excepted internal call: {0}", result);
+#else
+			Console.WriteLine ("*0* Unexcepted (1.x) but accepted (like 2.x) internal call: {0}", result);
+#endif
+			return 0;
 		}
 		catch (SecurityException se) {
-			Console.WriteLine ("*0* Expected SecurityException\n{0}", se);
+#if NET_2_0
+			Console.WriteLine ("*1* Unexpected SecurityException\n{0}", se);
+			return 1;
+#else
+			Console.WriteLine ("*0* Expected (1.x) SecurityException\n{0}", se);
 			return 0;
+#endif
 		}
 		catch (Exception e) {
 			Console.WriteLine ("*2* Unexpected exception\n{0}", e);
