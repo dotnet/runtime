@@ -80,7 +80,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				43
+#define MONO_DEBUGGER_VERSION				44
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoDebugFormat mono_debug_format;
@@ -90,7 +90,8 @@ void mono_debug_init (MonoDomain *domain, MonoDebugFormat format);
 void mono_debug_init_2 (MonoAssembly *assembly);
 void mono_debug_cleanup (void);
 MonoDebugDomainData *mono_debug_get_domain_data (MonoDebugHandle *handle, MonoDomain *domain);
-void mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method, MonoDomain *domain);
+void mono_debug_add_wrapper (MonoMethod *method, gpointer wrapper, MonoDomain *domain);
+
 void mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);
 gchar *mono_debug_source_location_from_address (MonoMethod *method, guint32 address,
 						guint32 *line_number, MonoDomain *domain);

@@ -210,46 +210,28 @@ _mono_debug_lookup_method (MonoMethod *method)
  * wrapper method.
  */
 void
-mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method, MonoDomain *domain)
+mono_debug_add_wrapper (MonoMethod *method, gpointer wrapper, MonoDomain *domain)
 {
-	MonoClass *klass = mono_method_get_class (method);
-	MonoDebugHandle *handle;
-	MonoDebugMethodInfo *minfo;
-	MonoDebugMethodJitInfo *jit;
+	MonoClass *klass = method->klass;
 	MonoDebugDomainData *domain_data;
-	guint32 iflags;
+	MonoDebugHandle *handle;
+	MonoDebugMethodJitInfo *jit;
 
-	mono_method_get_flags (method, &iflags);
-	if (!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return;
+	mono_debugger_lock ();
 
 	mono_class_init (klass);
 
 	handle = _mono_debug_get_image (klass->image);
-	g_assert (handle);
-
-	minfo = _mono_debug_lookup_method (method);
-	if (!minfo)
-		return;
-
-	domain_data = mono_debug_get_domain_data (handle, domain);
-	if (domain_data->jit [minfo->index]) {
-		/* FIXME FIXME FIXME
-		// This is bug #48591.
-		*/
+	if (!handle) {
+		mono_debugger_unlock ();
 		return;
 	}
 
-	jit = g_hash_table_lookup (domain_data->_priv->wrapper_info, wrapper_method);
+	domain_data = mono_debug_get_domain_data (handle, domain);
+	jit = g_hash_table_lookup (domain_data->_priv->wrapper_info, method);
 	g_assert (jit);
 
-	mono_debugger_lock ();
-
-	domain_data->jit [minfo->index] = jit;
-	jit->wrapper_addr = method->addr;
-
-	if (handle->_priv->debugger_info && (domain == mono_get_root_domain ()))
-		mono_debugger_add_method (handle->_priv->debugger_info, minfo, jit);
+	mono_debugger_add_wrapper (method, jit, wrapper);
 
 	mono_debugger_unlock ();
 }
@@ -284,23 +266,23 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		return;
 	}
 
+	domain_data = mono_debug_get_domain_data (handle, domain);
+	if (method->wrapper_type != MONO_WRAPPER_NONE) {
+		g_hash_table_insert (domain_data->_priv->wrapper_info, method, jit);
+		mono_debugger_unlock ();
+		return;
+	}
+
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo) {
 		mono_debugger_unlock ();
 		return;
 	}
 
-	domain_data = mono_debug_get_domain_data (handle, domain);
 	if (domain_data->jit [minfo->index]) {
 		/* FIXME FIXME FIXME
 		// This is bug #48591.
 		*/
-		mono_debugger_unlock ();
-		return;
-	}
-
-	if (method->wrapper_type != MONO_WRAPPER_NONE) {
-		g_hash_table_insert (domain_data->_priv->wrapper_info, method, jit);
 		mono_debugger_unlock ();
 		return;
 	}

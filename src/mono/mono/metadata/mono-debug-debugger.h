@@ -131,6 +131,17 @@ struct _MonoDebuggerSymbolTable {
 	 */
 	guint32 type_table_offset;
 	guint32 type_table_start;
+
+	/*
+	 * New in version 44.
+	 */
+	guint32 num_misc_tables;
+	guint32 misc_table_chunk_size;
+	gpointer *misc_tables;
+	gpointer current_misc_table;
+	guint32 misc_table_size;
+	guint32 misc_table_offset;
+	guint32 misc_table_start;
 };
 
 struct _MonoDebuggerSymbolFile {
@@ -165,6 +176,11 @@ struct _MonoDebuggerClassInfo {
 	guint32 rank;
 	guint32 token;
 	guint32 type_info;
+};
+
+enum {
+	MONO_DEBUGGER_MISC_ENTRY_TYPE_UNKNOWN	= 0,
+	MONO_DEBUGGER_MISC_ENTRY_TYPE_WRAPPER
 };
 
 extern MonoDebuggerSymbolTable *mono_debugger_symbol_table;
@@ -225,6 +241,11 @@ MonoDebuggerBuiltinTypes *mono_debugger_add_builtin_types (MonoDebuggerSymbolFil
 void            mono_debugger_add_method                  (MonoDebuggerSymbolFile *symfile,
 						           MonoDebugMethodInfo *minfo,
 						           MonoDebugMethodJitInfo *jit);
+
+void            mono_debugger_add_wrapper                 (MonoMethod *wrapper,
+							   MonoDebugMethodJitInfo *jit,
+							   gpointer addr);
+
 
 int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
 int             mono_debugger_remove_breakpoint           (int breakpoint_id);

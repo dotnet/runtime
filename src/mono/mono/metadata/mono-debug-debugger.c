@@ -19,6 +19,8 @@
 #define CLASS_TABLE_CHUNK_SIZE		256
 #define TYPE_TABLE_PTR_CHUNK_SIZE	256
 #define TYPE_TABLE_CHUNK_SIZE		65536
+#define MISC_TABLE_PTR_CHUNK_SIZE	256
+#define MISC_TABLE_CHUNK_SIZE		65536
 
 static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
@@ -29,6 +31,7 @@ static gboolean must_reload_symtabs = FALSE;
 
 static GHashTable *images = NULL;
 static GHashTable *type_table = NULL;
+static GHashTable *misc_table = NULL;
 static GHashTable *class_table = NULL;
 static GHashTable *class_info_table = NULL;
 
@@ -49,6 +52,11 @@ void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gui
 #define WRITE_POINTER(ptr,value) G_STMT_START {	\
 	* ((gpointer *) ptr) = value;		\
 	ptr += sizeof (gpointer);		\
+} G_STMT_END
+
+#define WRITE_STRING(ptr,value) G_STMT_START {	\
+	memcpy (ptr, value, strlen (value)+1);	\
+	ptr += strlen (value)+1;		\
 } G_STMT_END
 
 #ifndef PLATFORM_WIN32
@@ -138,6 +146,7 @@ mono_debugger_initialize (MonoDomain *domain)
 
 	images = g_hash_table_new (g_direct_hash, g_direct_equal);
 	type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+	misc_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 	class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 	class_info_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 
@@ -624,6 +633,63 @@ allocate_type_entry (MonoDebuggerSymbolTable *table, guint32 size, guint8 **ptr)
 	table->current_type_table = g_malloc0 (TYPE_TABLE_CHUNK_SIZE);
 	table->type_table_start = table->type_table_offset = table->type_table_size;
 	table->type_table_size += TYPE_TABLE_CHUNK_SIZE;
+
+	goto again;
+}
+
+/*
+ * Allocate a new entry of size `size' in the misc table.
+ * Returns the global offset which is to be used to reference this entry and
+ * a pointer (in the `ptr' argument) which is to be used to write the entry.
+ */
+static guint32
+allocate_misc_entry (MonoDebuggerSymbolTable *table, guint32 size, guint8 **ptr)
+{
+	guint32 retval;
+	guint8 *data;
+
+	g_assert (size + 4 < MISC_TABLE_CHUNK_SIZE);
+	g_assert (ptr != NULL);
+
+	/* Initialize things if necessary. */
+	if (!table->current_misc_table) {
+		table->current_misc_table = g_malloc0 (MISC_TABLE_CHUNK_SIZE);
+		table->misc_table_size = MISC_TABLE_CHUNK_SIZE;
+		table->misc_table_chunk_size = MISC_TABLE_CHUNK_SIZE;
+		table->misc_table_offset = 1;
+	}
+
+ again:
+	/* First let's check whether there's still enough room in the current_misc_table. */
+	if (table->misc_table_offset + size + 4 < table->misc_table_size) {
+		retval = table->misc_table_offset;
+		table->misc_table_offset += size + 4;
+		data = ((guint8 *) table->current_misc_table) + retval - table->misc_table_start;
+		*(gint32 *) data = size;
+		data += sizeof(gint32);
+		*ptr = data;
+		return retval;
+	}
+
+	/* Add the current_misc_table to the misc_tables vector and ... */
+	if (!table->misc_tables) {
+		guint32 tsize = sizeof (gpointer) * MISC_TABLE_PTR_CHUNK_SIZE;
+		table->misc_tables = g_malloc0 (tsize);
+	}
+
+	if (!((table->num_misc_tables + 1) % MISC_TABLE_PTR_CHUNK_SIZE)) {
+		guint32 chunks = (table->num_misc_tables + 1) / MISC_TABLE_PTR_CHUNK_SIZE;
+		guint32 tsize = sizeof (gpointer) * MISC_TABLE_PTR_CHUNK_SIZE * (chunks + 1);
+
+		table->misc_tables = g_realloc (table->misc_tables, tsize);
+	}
+
+	table->misc_tables [table->num_misc_tables++] = table->current_misc_table;
+
+	/* .... allocate a new current_misc_table. */
+	table->current_misc_table = g_malloc0 (MISC_TABLE_CHUNK_SIZE);
+	table->misc_table_start = table->misc_table_offset = table->misc_table_size;
+	table->misc_table_size += MISC_TABLE_CHUNK_SIZE;
 
 	goto again;
 }
@@ -1308,4 +1374,26 @@ mono_debugger_lookup_assembly (const gchar *name)
 
 	must_reload_symtabs = TRUE;
 	goto again;
+}
+
+void
+mono_debugger_add_wrapper (MonoMethod *wrapper, MonoDebugMethodJitInfo *jit, gpointer addr)
+{
+	guint32 size, offset;
+	guint8 *ptr;
+
+	if (!mono_debugger_symbol_table)
+		return;
+
+	size = strlen (wrapper->name) + 5 + 5 * sizeof (gpointer);
+
+	offset = allocate_misc_entry (mono_debugger_symbol_table, size, &ptr);
+
+	WRITE_UINT32 (ptr, MONO_DEBUGGER_MISC_ENTRY_TYPE_WRAPPER);
+	WRITE_STRING (ptr, wrapper->name);
+	WRITE_POINTER (ptr, jit->code_start);
+	WRITE_POINTER (ptr, jit->code_start + jit->code_size);
+	WRITE_POINTER (ptr, addr);
+	WRITE_POINTER (ptr, jit->code_start + jit->prologue_end);
+	WRITE_POINTER (ptr, jit->code_start + jit->epilogue_begin);
 }
