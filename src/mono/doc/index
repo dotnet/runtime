@@ -106,7 +106,7 @@
 
 	Sebastien has made all symetric ciphers functional on all
 	supported modes; All the classes in Security.Cryptography are
-	ready and the X590 certificates are now in too.  Jackson has
+	present and the X590 certificates are now in too.  Jackson has
 	been working on the Security classes.
 
 	Many bug fixes all over the place: class libraries (Dick,

@@ -22,6 +22,7 @@ OBJECTS=	\
 	deploy/class-status-Microsoft.VisualBasic.html		\
 	deploy/class-status-System.EnterpriseServices.html	\
 	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html	\
+	deploy/class-status-System.Windows.Forms.html		\
 	deploy/class-library.html				\
 	deploy/classlib-doc.html				\
 	deploy/contact.html					\
