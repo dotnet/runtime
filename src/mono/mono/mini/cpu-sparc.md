@@ -162,11 +162,11 @@ not: dest:i src1:i len:4
 conv.i1: dest:i src1:i len:8
 conv.i2: dest:i src1:i len:8
 conv.i4: dest:i src1:i len:4
-conv.i8:
+conv.i8: dest:i src1:i len:4
 conv.r4: dest:f src1:i len:64
 conv.r8: dest:f src1:i len:64
 conv.u4: dest:i src1:i len:
-conv.u8:
+conv.u8: dest:i src1:i len:4
 callvirt:
 cpobj:
 ldobj:
