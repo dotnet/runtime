@@ -46,6 +46,7 @@ typedef struct {
 	MonoClass *string_class;
 	MonoClass *enum_class;
 	MonoClass *array_class;
+	MonoClass *delegate_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

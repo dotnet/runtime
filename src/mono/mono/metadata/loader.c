@@ -145,6 +145,10 @@ mono_init (void)
 	mono_defaults.array_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Array");
 	g_assert (mono_defaults.array_class != 0);
+
+	mono_defaults.delegate_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Delegate");
+	g_assert (mono_defaults.delegate_class != 0);
 }
 
 static GHashTable *icall_hash = NULL;
@@ -438,7 +442,8 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
 
-		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+					!(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 			g_assert (loc);
 			((MonoMethodNormal *)result)->header = mono_metadata_parse_mh (image, loc);
 		}
