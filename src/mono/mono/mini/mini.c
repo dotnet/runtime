@@ -2598,28 +2598,31 @@ unverified:
 }
 
 static MonoClassField *
-get_generic_field_inst (MonoClassField *field, MonoClass *klass, MonoClass **retclass)
-{
-	int i;
-	for (i = 0; i < field->parent->field.count; ++i) {
-		if (field == &field->parent->fields [i]) {
-			*retclass = klass;
-			return &klass->fields [i];
-		}
-	}
-	return NULL;
-}
-
-static MonoClassField *
-inflate_generic_field (MonoClassField *field, MonoClass *klass, MonoClass **retclass)
+inflate_generic_field (MonoClassField *field, MonoMethod *method, MonoClass **retclass)
 {
 	MonoGenericInst *ginst;
+	MonoGenericMethod *gmethod;
 	MonoClassField *res;
+	MonoClass *klass;
+
+	ginst = method->klass->generic_inst;
+	gmethod = method->signature->gen_method;
 
 	res = g_new0 (MonoClassField, 1);
 	*res = *field;
-	ginst = klass->generic_inst;
-	res->type = mono_class_inflate_generic_type (field->type, ginst, NULL);
+	if (ginst) {
+		*retclass = ginst->klass;
+		res->type = mono_class_inflate_generic_type (field->type, ginst, gmethod);
+	} else if (gmethod) {
+		MonoType *declaring;
+
+		res->type = mono_class_inflate_generic_type (field->type, ginst, gmethod);
+		declaring = mono_class_inflate_generic_type (
+			&field->parent->byval_arg, ginst, gmethod);
+		*retclass = mono_class_from_mono_type (declaring);
+	} else
+		g_assert_not_reached ();
+
 	return res;
 }
 
@@ -4245,10 +4248,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			field = mono_field_from_token (image, token, &klass);
-			if (field->parent->gen_params)
-				field = get_generic_field_inst (field, method->klass, &klass);
-			else if (field->parent->generic_inst && method->klass->generic_inst)
-				field = inflate_generic_field (field, method->klass, &klass);
+			g_assert (!field->parent->gen_params);
+			if (field->parent->generic_inst && field->parent->generic_inst->is_open)
+				field = inflate_generic_field (field, method, &klass);
 			mono_class_init (klass);
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
@@ -4392,10 +4394,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 
 			field = mono_field_from_token (image, token, &klass);
-			if (field->parent->gen_params)
-				field = get_generic_field_inst (field, method->klass, &klass);
-			else if (field->parent->generic_inst && method->klass->generic_inst)
-				field = inflate_generic_field (field, method->klass, &klass);
+			g_assert (!field->parent->gen_params);
+			if (field->parent->generic_inst && field->parent->generic_inst->is_open)
+				field = inflate_generic_field (field, method, &klass);
 			mono_class_init (klass);
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
