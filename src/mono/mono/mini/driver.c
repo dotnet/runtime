@@ -40,6 +40,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "inssel.h"
+#include <locale.h>
 
 static FILE *mini_stats_fd = NULL;
 
@@ -521,6 +522,8 @@ mono_main (int argc, char* argv[]) {
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
 
+	setlocale (LC_ALL, "");
+	
 	opt = parse_optimizations (NULL);
 
 	for (i = 1; i < argc; ++i) {
