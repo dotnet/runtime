@@ -936,7 +936,7 @@ check_result ()
 	for (l = nonterm_list; l; l = l->next) {
 		NonTerm *n = (NonTerm *)l->data;
 		if (!n->reached)
-			g_error ("unreachable nonterm \"%s\"", n->name);
+			g_warning ("unreachable nonterm \"%s\"", n->name);
 	}
 }
 
