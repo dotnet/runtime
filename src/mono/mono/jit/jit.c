@@ -123,6 +123,17 @@ case CEE_##name: {                                                            \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
+        t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
+        t1->data.i = s;                                                       \
+        t1 = mono_ctree_new (mp, op, t1, NULL);                               \
+	PUSH_TREE (t1, svt);                                                  \
+	break;                                                                \
+}
+
+#define MAKE_LDELEM_OLD(name, op, svt, s)                                     \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 2;                                                              \
         t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);                      \
         t1->data.i = s;                                                       \
         t1 = mono_ctree_new (mp, MB_TERM_MUL, sp [1], t1);                    \
@@ -145,6 +156,17 @@ case CEE_##name: {                                                            \
 }
 
 #define MAKE_STELEM(name, op, s)                                              \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 3;                                                              \
+        t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
+        t1->data.i = s;                                                       \
+	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
+	ADD_TREE (t1, cli_addr);                                              \
+	break;                                                                \
+}
+	
+#define MAKE_STELEM_OLD(name, op, s)                                          \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 3;                                                              \

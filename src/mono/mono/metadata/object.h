@@ -39,6 +39,8 @@ typedef struct {
 typedef struct {
 	MonoObject obj;
 	MonoArrayBounds *bounds;
+	/* used by single dimensional arrays to speed up bound checking */
+	guint32 max_length; 
 	/* we use double to ensure proper alignment on platforms that need it */
 	double vector [MONO_ZERO_LEN_ARRAY];
 } MonoArray;

@@ -161,7 +161,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 # constatnts
 %term CONST_I4 CONST_I8 CONST_R4 CONST_R8
 %term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_REF LDIND_I8 LDIND_R4 LDIND_R8
-%term LDIND_U4 LDIND_OBJ
+%term LDIND_U4 LDIND_OBJ 
 %term STIND_I1 STIND_I2 STIND_I4 STIND_REF STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
@@ -176,7 +176,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
-%term LDLEN LDFTN TOSTRING
+%term LDLEN LDELEMA LDFTN TOSTRING
 
 #
 # we start at stmt
@@ -1042,11 +1042,22 @@ reg: LDLEN (reg) {
 			     G_STRUCT_OFFSET (MonoArrayBounds, length), 4);
 }
 
-#reg: LDELEMA (reg, reg) {
-#	x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->data.i);
-#	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
-#	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, G_STRUCT_OFFSET (MonoArray, vector));
-#}
+reg: LDELEMA (reg, reg) {
+	x86_alu_reg_membase (s->code, X86_CMP, tree->right->reg1, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
+	EMIT_COND_EXCEPTION (X86_CC_LT, FALSE, mono_get_exception_index_out_of_range ());
+
+	if (tree->data.i == 1 || tree->data.i == 2 || 
+	    tree->data.i == 4 || tree->data.i == 8) {
+		static int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
+		x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 
+				  G_STRUCT_OFFSET (MonoArray, vector), tree->right->reg1, 
+				  fast_log2 [tree->data.i]);
+	} else {
+		x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->data.i);
+		x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
+		x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, G_STRUCT_OFFSET (MonoArray, vector));
+	}
+}
 
 reg: TOSTRING (reg) {
 	guint8 *start = s->code, *l1, *le;

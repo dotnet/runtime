@@ -170,6 +170,8 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
 	array = (MonoArray*)o;
 
 	array->bounds = bounds;
+	array->max_length = bounds [0].length;
+
 	return array;
 }
 
