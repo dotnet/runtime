@@ -12,6 +12,7 @@
 #endif
 
 #include <unistd.h>
+#include <errno.h>
 #ifdef USE_WIN32_API
 #include <windows.h>
 #include <io.h>
@@ -146,6 +147,16 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 
 	if (ptr == (void *) -1)
 		return 0;
+
+	/* 
+	 * This seems to prevent segmentation faults on Fedora Linux, no
+	 * idea why :). See
+	 * http://bugzilla.ximian.com/show_bug.cgi?id=49499
+	 * for more info.
+	 */
+	if (mprotect (ptr, end - start, prot | PROT_EXEC) != 0)
+		g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": mprotect failed: %s", g_strerror (errno));
 	
 	EnterCriticalSection (&mmap_mutex);
 	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (size));
