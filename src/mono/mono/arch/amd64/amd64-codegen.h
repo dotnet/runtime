@@ -742,11 +742,9 @@ typedef union {
 //#define amd64_padding_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_padding((inst),(size)); } while (0)
 #define amd64_prolog_size(inst,frame_size,reg_mask,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_prolog((inst),(frame_size),(reg_mask)); } while (0)
 #define amd64_epilog_size(inst,reg_mask,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_epilog((inst),(reg_mask)); } while (0)
-
-
-
-
-
+#define amd64_xadd_reg_reg_size(inst,dreg,reg,size) do { amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_xadd_reg_reg ((inst), (dreg), (reg), (size)); } while (0)
+#define amd64_xadd_mem_reg_size(inst,mem,reg,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_xadd_mem_reg((inst),(mem),((reg)&0x7), (size)); } while (0)
+#define amd64_xadd_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_xadd_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7),(size)); } while (0)
 
 
 
@@ -767,6 +765,9 @@ typedef union {
 #define amd64_xchg_reg_reg(inst,dreg,reg,size) amd64_xchg_reg_reg_size(inst,dreg,reg,size)
 #define amd64_xchg_mem_reg(inst,mem,reg,size) amd64_xchg_mem_reg_size(inst,mem,reg,size)
 #define amd64_xchg_membase_reg(inst,basereg,disp,reg,size) amd64_xchg_membase_reg_size(inst,basereg,disp,reg,size)
+#define amd64_xadd_reg_reg(inst,dreg,reg,size) amd64_xadd_reg_reg_size(inst,dreg,reg,size)
+#define amd64_xadd_mem_reg(inst,mem,reg,size) amd64_xadd_mem_reg_size(inst,mem,reg,size)
+#define amd64_xadd_membase_reg(inst,basereg,disp,reg,size) amd64_xadd_membase_reg_size(inst,basereg,disp,reg,size)
 #define amd64_inc_mem(inst,mem) amd64_inc_mem_size(inst,mem,8)
 #define amd64_inc_membase(inst,basereg,disp) amd64_inc_membase_size(inst,basereg,disp,8)
 #define amd64_inc_reg(inst,reg) amd64_inc_reg_size(inst,reg,8)
