@@ -3693,6 +3693,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				n = fsig->param_count + fsig->hasthis;
 
+				if (mono_use_security_manager) {
+					/* LinkDemand, NonCasLinkDemand, LinkDemandChoice and other special cases */
+					guint32 result = mono_declsec_linkdemand (cfg->domain, method, cmethod);
+					if (result == MONO_JIT_LINKDEMAND_ECMA) {
+						/* Generate code to throw a SecurityException before the actual call/link */
+						MonoAssembly *assembly = mono_image_get_assembly (method->klass->image);
+						MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (cfg->domain, assembly);
+						MonoSecurityManager* secman = mono_security_manager_get_methods ();
+						MonoInst *args [3];
+
+						NEW_ICONST (cfg, args [0], 4);
+						NEW_PCONST (cfg, args [1], refass);
+						NEW_PCONST (cfg, args [2], method);
+						mono_emit_method_call_spilled (cfg, bblock, secman->linkdemandsecurityexception, mono_method_signature (secman->linkdemandsecurityexception), args, ip, NULL);
+					} else if ((result != MONO_JIT_SECURITY_OK) && (cfg->exception_type == MONO_EXCEPTION_NONE)) {
+						 /* don't hide previous results */
+						cfg->exception_type = MONO_EXCEPTION_SECURITY;
+						cfg->exception_data = result;
+					}
+				}
+
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
 				    cmethod->klass->parent == mono_defaults.array_class) {
 					array_rank = cmethod->klass->rank;
@@ -9009,6 +9030,23 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+
+	/* this can only be set if the security manager is active */
+	if (cfg->exception_type == MONO_EXCEPTION_SECURITY) {
+		MonoSecurityManager* secman = mono_security_manager_get_methods ();
+		MonoObject *exc = NULL;
+		gpointer args [3];
+
+		args [0] = &cfg->exception_data;
+		args [1] = mono_assembly_get_object (domain, mono_image_get_assembly (method->klass->image));
+		args [2] = method;
+		mono_runtime_invoke (secman->linkdemandsecurityexception, NULL, args, &exc);
+
+		mono_destroy_compile (cfg);
+		cfg = NULL;
+
+		mono_raise_exception ((MonoException*)exc);
+	}
 
 	return cfg;
 }

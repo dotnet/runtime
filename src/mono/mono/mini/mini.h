@@ -500,6 +500,12 @@ enum {
 
 #define MONO_BBLOCK_IS_IN_REGION(bblock, regtype) (((bblock)->region & (0xf << 4)) == (regtype))
 
+enum {
+	MONO_EXCEPTION_NONE = 0,
+	MONO_EXCEPTION_SECURITY = 1
+	/* add other exception type */
+};
+
 /*
  * Control Flow Graph and compilation unit information
  */
@@ -573,6 +579,9 @@ typedef struct {
 	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
 	MonoCompileArch  arch;
+	guint32          exception_type;	/* MONO_EXCEPTION_* */
+	guint32          exception_data;
+	char*            exception_message;
 #ifdef __ia64
 	guint8           ins, locals, outs; /* reg stack region sizes */
 #endif /* __ia64 */
