@@ -5619,6 +5619,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		info->local_type = mono_type_get_object (domain, header->locals [i]);
 		info->is_pinned = header->locals [i]->pinned;
 		info->local_index = i;
+		mono_array_set (ret->locals, MonoReflectionLocalVariableInfo*, i, info);
 	}
 		
 	CACHE_OBJECT (method, ret, NULL);

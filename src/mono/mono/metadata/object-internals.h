@@ -592,7 +592,7 @@ typedef struct {
 	MonoObject object;
 	MonoReflectionType *local_type;
 	MonoBoolean is_pinned;
-	int local_index;
+	guint16 local_index;
 } MonoReflectionLocalVariableInfo;
 
 typedef struct {
