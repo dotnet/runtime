@@ -18,7 +18,7 @@ static_libs=	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
-	$(LIBGC_LIBS)	\
+	$(LIBGC_STATIC_LIBS)	\
 	$(ICU_LIBS)
 
 MCS=mcs
