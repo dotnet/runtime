@@ -8,7 +8,7 @@ bin_PROGRAMS = mono
 lib_LIBRARIES = libmono.a
 endif
 
-libmono_a_SOURCES =			\
+libmono_a_SOURCES =		\
 	win32-exception.c	\
 	win32-exception.h	\
 	codegen.h		\
@@ -39,6 +39,7 @@ mono_LDADD =				\
 	../metadata/libmetadata.a	\
 	../io-layer/libwapi.a		\
 	../utils/libmonoutils.a 	\
+	../os/libmonoos.a		\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

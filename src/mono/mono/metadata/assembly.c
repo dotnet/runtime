@@ -114,6 +114,24 @@ load_in_path (const char *basename, char** search_path, MonoImageOpenStatus *sta
 }
 
 /**
+ * mono_assembly_setrootdir:
+ * @root_dir: The pathname of the root directory where we will locate assemblies
+ *
+ * This routine sets the internal default root directory for looking up
+ * assemblies.  This is used by Windows installations to compute dynamically
+ * the place where the Mono assemblies are located.
+ *
+ */
+void
+mono_assembly_setrootdir (const char *root_dir)
+{
+	/*
+	 * Override the MONO_ASSEMBLIES directory configured at compile time.
+	 */
+	default_path [0] = g_strdup (root_dir);
+}
+
+/**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
  * @status: where a status code can be returned

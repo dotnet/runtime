@@ -11,10 +11,11 @@ mint_SOURCES =		\
 	interp.c	
 
 mint_LDADD =				\
-	../arch/libmonoarch.la	\
+	../arch/libmonoarch.la		\
+	../os/libmonoos.a		\
 	../metadata/libmonoruntime.a	\
 	../metadata/libmetadata.a	\
-	../io-layer/libwapi.a	\
+	../io-layer/libwapi.a		\
 	../utils/libmonoutils.a 	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\

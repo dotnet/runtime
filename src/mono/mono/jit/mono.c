@@ -1,4 +1,11 @@
-
+/*
+ * mono.c: Main driver for the Mono JIT engine
+ *
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc (http://www.ximian.com)
+ */
 #include "jit.h"
 #include "regset.h"
 #include "codegen.h"
@@ -47,27 +54,46 @@ usage (char *name)
 		 "Usage is: %s [options] executable args...\n", name,  VERSION, name);
 	fprintf (stderr,
 		 "Valid Options are:\n"
-		 "-d               debug the jit, show disassembler output.\n"
-		 "--dump-asm       dumps the assembly code generated\n"
-		 "--dump-forest    dumps the reconstructed forest\n"
-		 "--trace          printf function call trace\n"
-		 "--profile        record and dump profile info\n"
-		 "--share-code     force jit to produce shared code\n"
-		 "--print-vtable   print the VTable of all used classes\n"
-		 "--workers n      maximum number of worker threads\n"
-		 "--stabs          write stabs debug information\n"
-		 "--dwarf          write dwarf2 debug information\n"
-		 "--dwarf-plus     write extended dwarf2 debug information\n"
-		 "--stats          print statistics about the jit operations\n"
-		 "--noinline       do not inline code\n"
-		 "--nols           disable linear scan register allocation\n"
-		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
-		 "--ncompile num   compile methods num times (default: 1000)\n"
-		 "--debug name     insert a breakpoint at the start of method name\n"
-		 "--help           print this help message\n");
+		 "Runtime Debugging:\n"
+		 "    -d               debug the jit, show disassembler output.\n"
+		 "    --dump-asm       dumps the assembly code generated\n"
+		 "    --dump-forest    dumps the reconstructed forest\n"
+		 "    --print-vtable   print the VTable of all used classes\n"
+		 "    --stats          print statistics about the jit operations\n"
+		 "    --trace          printf function call trace\n"
+		 "    --compile cname  compile methods in given class\n"
+		 "                     format: (namespace.name[:methodname])\n"
+		 "    --ncompile num   compile methods num times (default: 1000)\n"
+		 "\n"
+		 "Development:"
+		 "    --dwarf          write dwarf2 debug information\n"
+		 "    --dwarf-plus     write extended dwarf2 debug information\n"
+		 "    --profile        record and dump profile info\n"
+		 "    --stabs          write stabs debug information\n"
+		 "    --debug name     insert a breakpoint at the start of method name\n"
+		 "\n"
+		 "Runtime:"
+		 "    --fast-iconv     Use fast floating point integer conversion\n"
+		 "    --noinline       Disable code inliner\n"
+		 "    --nols           disable linear scan register allocation\n"
+		 "    --share-code     force jit to produce shared code\n"
+		 "    --workers n      maximum number of worker threads\n"
+		);
 	exit (1);
 }
 
+#ifdef PLATFORM_WIN32
+set_rootdir (const char *base)
+{
+	char *dir = g_dirname (base);
+	char *root = g_strconcat (dir, "/lib");
+
+	mono_assembly_setrootdir (root);
+	g_free (root);
+	g_free (dir);
+}
+#else
+#endif
 
 int 
 main (int argc, char *argv [])
@@ -154,6 +180,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage (argv [0]);
 
+	set_rootdir (argv [0]);
 	domain = mono_jit_init (file);
 
 	error = mono_verify_corlib ();
