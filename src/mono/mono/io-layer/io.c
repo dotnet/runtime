@@ -2608,7 +2608,35 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 {
 	/* FIXME: think of something clever to do on unix */
-	
+	gchar *utf8_name;
+	struct stat buf;
+	int result;
+
+	/*
+	 * Currently we only handle one *internal* case, with a value that is
+	 * not standard: 0x80000000, which means `set executable bit'
+	 */
+
+	utf8_name = _wapi_unicode_to_utf8 (name);
+	result = stat (utf8_name, &buf);
+	if (result != 0) {
+		g_free (utf8_name);
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		return FALSE;
+	}
+
+	if (attrs == 0x80000000){
+		result = chmod (utf8_name, buf.st_mode | S_IEXEC | S_IXOTH | S_IXGRP);
+		g_free (utf8_name);
+		if (result != 0) {
+			g_free (utf8_name);
+			SetLastError (ERROR_FILE_NOT_FOUND);
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
 	SetLastError (ERROR_INVALID_FUNCTION);
 	return FALSE;
 }
