@@ -1753,7 +1753,6 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		return FALSE;
 	}
 
-	g_print ("failed\n");
 	return FALSE;
 }
 
