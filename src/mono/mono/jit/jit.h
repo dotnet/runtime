@@ -38,7 +38,7 @@ typedef enum {
 	VAL_I32,
 	VAL_I64,
 	VAL_POINTER,
-	VAL_DOUBLE, // must be the last - do not reorder
+	VAL_DOUBLE, /* must be the last - do not reorder */
 } MonoValueType;
 
 typedef enum {

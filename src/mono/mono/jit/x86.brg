@@ -190,7 +190,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT CLT_UN CGT CGT_UN
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8 CONV_R_UN
-%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ NEWSTRUCT CPOBJ POP INITOBJ
+%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWARR_SPEC NEWOBJ NEWOBJ_SPEC NEWSTRUCT CPOBJ POP INITOBJ
 %term ISINST CASTCLASS UNBOX
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
@@ -1429,6 +1429,28 @@ reg: NEWARR (reg) {
 	PRINT_REG ("NEWARR", tree->reg1);
 }
 
+reg: NEWARR_SPEC (reg) {
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_push_imm (s->code, tree->data.p);
+	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, mono_array_new_specific);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer) + 4);
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
+
+	PRINT_REG ("NEWARR_SPEC", tree->reg1);
+}
+
 reg: NEWOBJ {
 	if (tree->reg1 != X86_EAX)
 		x86_push_reg (s->code, X86_EAX);
@@ -1447,6 +1469,26 @@ reg: NEWOBJ {
 		x86_pop_reg (s->code, X86_EAX);
 	}
 	PRINT_REG ("NEWOBJ", tree->reg1);
+}
+
+reg: NEWOBJ_SPEC {
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_imm (s->code, tree->data.p);
+	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, mono_object_new_specific);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
+	PRINT_REG ("NEWOBJ_SPEC", tree->reg1);
 }
 
 reg: NEWSTRUCT {

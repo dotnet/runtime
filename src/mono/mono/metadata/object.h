@@ -180,6 +180,9 @@ MonoObject *
 mono_object_new             (MonoDomain *domain, MonoClass *klass);
 
 MonoObject *
+mono_object_new_specific    (MonoVTable *vtable);
+
+MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
 
 MonoArray*
@@ -188,6 +191,9 @@ mono_array_new              (MonoDomain *domain, MonoClass *eclass, guint32 n);
 MonoArray*
 mono_array_new_full         (MonoDomain *domain, MonoClass *array_class,
 			     guint32 *lengths, guint32 *lower_bounds);
+
+MonoArray *
+mono_array_new_specific     (MonoVTable *vtable, guint32 n);
 
 MonoArray*
 mono_array_clone            (MonoArray *array);

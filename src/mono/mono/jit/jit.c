@@ -2224,10 +2224,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			class = mono_class_get (image, token);
 			ip += 4;
 
-			t1 = mono_ctree_new (mp, MB_TERM_NEWARR, *sp, NULL);
-			t1->data.p = class;
-			PUSH_TREE (t1, VAL_POINTER);
+			if (cfg->share_code) {
+				t1 = mono_ctree_new (mp, MB_TERM_NEWARR, *sp, NULL);
+				t1->data.p = class;
+			}
+			else {
+				MonoClass  *ac = mono_array_class_get (&class->byval_arg, 1);
+				MonoVTable *vt = mono_class_vtable (cfg->domain, ac);
 
+				t1 = mono_ctree_new (mp, MB_TERM_NEWARR_SPEC, *sp, NULL);
+				t1->data.p = vt;
+			}
+
+			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
 		case CEE_CPOBJ: {
@@ -2283,9 +2292,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				if (cm->klass->valuetype) {
 					this = mono_ctree_new_leaf (mp, MB_TERM_NEWSTRUCT);
 					this->data.i =  mono_class_value_size (cm->klass, NULL);
-				} else {
+				} else if (cfg->share_code) {
 					this = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
 					this->data.klass = cm->klass;
+				} else {
+					MonoVTable *vt = mono_class_vtable (cfg->domain, cm->klass);
+					this = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ_SPEC);
+					this->data.p = vt;
 				}
 
 				this->svt = VAL_POINTER;

@@ -23,6 +23,9 @@
 
 MonoStats mono_stats;
 
+/* next object id for object hashcode */
+static guint32 uoid = 0;
+
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -426,24 +429,33 @@ mono_object_free (MonoObject *o)
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
-	static guint32 uoid = 0;
+	return mono_object_new_specific (mono_class_vtable (domain, klass));
+}
+
+/**
+ * mono_object_new_specific:
+ * @vtable: the vtable of the object that we want to create
+ *
+ * Returns: A newly created object with class and domain specified
+ * by @vtable
+ */
+MonoObject *
+mono_object_new_specific (MonoVTable *vtable)
+{
 	MonoObject *o;
 
-	mono_stats.new_object_count++;
+	mono_stats.new_object_count++;		/* thread safe? */
 
-	if (!klass->inited)
-		mono_class_init (klass);
-
-	if (klass->ghcimpl) {
-		o = mono_object_allocate (klass->instance_size);
-	} else {
+	if (vtable->klass->ghcimpl)
+		o = mono_object_allocate (vtable->klass->instance_size);
+	else {
 		guint32 *t;
-		t = mono_object_allocate (klass->instance_size + 4);
+		t = mono_object_allocate (vtable->klass->instance_size + 4);
 		*t = ++uoid;
 		o = (MonoObject *)(++t);
 	}
-	o->vtable = mono_class_vtable (domain, klass);
-
+	o->vtable = vtable;
+	
 	return o;
 }
 
@@ -604,7 +616,35 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
 	ac = mono_array_class_get (&eclass->byval_arg, 1);
 	g_assert (ac != NULL);
 
-	return mono_array_new_full (domain, ac, &n, NULL);
+	return mono_array_new_specific (mono_class_vtable (domain, ac), n);
+}
+
+/*
+ * mono_array_new_specific:
+ * @vtable: a vtable in the appropriate domain for an initialized class
+ * @n: number of array elements
+ *
+ * This routine is a fast alternative to mono_array_new() for code which
+ * can be sure about the domain it operates in.
+ */
+MonoArray *
+mono_array_new_specific (MonoVTable *vtable, guint32 n)
+{
+	MonoObject *o;
+	MonoArray *ao;
+	gsize byte_len;
+
+	byte_len = n * mono_array_element_size (vtable->klass);
+	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	if (!o)
+		G_BREAKPOINT ();
+	o->vtable = vtable;
+
+	ao = (MonoArray *)o;
+	ao->bounds = NULL;
+	ao->max_length = n;
+
+	return ao;
 }
 
 /**
