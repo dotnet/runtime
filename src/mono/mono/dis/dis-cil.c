@@ -275,7 +275,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		case ShortInlineVar: {
 			signed char x = *ptr;
 
-			fprintf (output, "V_%d", (int) x);
+			fprintf (output, "%d", (int) x);
 			ptr++;
 			break;
 		}

@@ -226,7 +226,7 @@ get_typeref (MonoMetadata *m, int idx)
 		 * me like it is 2 (tokens are prefixed with 0x23)
 		 */
 		x = get_assemblyref (m, rs_idx);
-		ret = g_strdup_printf ("[%s] %s.%s", x, s, t);
+		ret = g_strdup_printf ("[%s]%s.%s", x, s, t);
 		g_free (x);
 		break;
 		
@@ -342,8 +342,8 @@ static map_t element_type_map [] = {
 	{ MONO_TYPE_VOID       , "void" },
 	{ MONO_TYPE_BOOLEAN    , "bool" },
 	{ MONO_TYPE_CHAR       , "char" }, 
-	{ MONO_TYPE_I1         , "sbyte" },
-	{ MONO_TYPE_U1         , "byte" }, 
+	{ MONO_TYPE_I1         , "int8" },
+	{ MONO_TYPE_U1         , "unsigned int8" }, 
 	{ MONO_TYPE_I2         , "int16" },
 	{ MONO_TYPE_U2         , "uint16" },
 	{ MONO_TYPE_I4         , "int32" },
@@ -470,7 +470,7 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 	if (method->hasthis)
 		g_string_append (result, "instance ");
 	g_string_append (result, map (method->call_convention, call_conv_type_map));
-	g_string_sprintfa (result, " %s %s (", retval, name);
+	g_string_sprintfa (result, " %s %s(", retval, name);
 	g_free (retval);
 	for (i = 0; i < method->param_count; ++i) {
 		if (param_index) {
@@ -495,6 +495,25 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 	g_string_free (result, FALSE);
 
 	return retval;
+}
+
+char *
+dis_stringify_object (MonoMetadata *m, MonoType *type)
+{
+	char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
+	char *assemblyref = NULL;
+	MonoClass *c = type->data.klass;
+	if (m != c->image) {
+		/* we cheat */
+		if (!strcmp ("corlib", c->image->assembly_name))
+			assemblyref = g_strdup_printf ("[%s]", "mscorlib");
+		else
+			assemblyref = g_strdup_printf ("[%s]", c->image->assembly_name);
+	}
+	otype = g_strdup_printf ("%s %s%s%s%s", otype, assemblyref?assemblyref:"", c->name_space, 
+				*c->name_space?".":"", c->name);
+	g_free (assemblyref);
+	return otype;
 }
 
 char*
@@ -530,7 +549,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		bare = dis_stringify_token (type->data.klass->image, type->data.klass->type_token);
+		bare = dis_stringify_object (m, type);
 		break;
 		
 	case MONO_TYPE_FNPTR:
@@ -837,7 +856,7 @@ get_methodref_signature (MonoMetadata *m, guint32 blob_signature, const char *fa
 		g_string_append (res, fancy_name);
 	}
 	
-	g_string_append (res, " (");
+	g_string_append (res, "(");
 	
 	/*
 	 * param_count describes parameters *before* and *after*
@@ -907,7 +926,7 @@ get_field (MonoMetadata *m, guint32 token)
 	type_idx = mono_metadata_typedef_from_field (m, idx);
 
 	type = get_typedef (m, type_idx);
-	res = g_strdup_printf ("%s %s.%s",
+	res = g_strdup_printf ("%s %s::%s",
 			       sig, type,
 			       mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
 	g_free (type);

@@ -53,7 +53,7 @@ dis_directive_assembly (MonoMetadata *m)
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 	
 	fprintf (output,
-		 ".assembly %s\n"
+		 ".assembly '%s'\n"
 		 "{\n"
 		 "  .hash algorithm 0x%08x\n"
 		 "  .ver  %d:%d:%d:%d"
@@ -343,12 +343,14 @@ dis_locals (MonoMetadata *m, MonoMethodHeader *mh)
 	fprintf(output, "\t.locals %s(\n", mh->init_locals ? "init " : "");
 	for (i=0; i < mh->num_locals; ++i) {
 		char * desc;
+		if (i)
+			fprintf(output, ",\n");
 		/* print also byref and pinned attributes */
 		desc = dis_stringify_type (m, mh->locals[i]);
-		fprintf(output, "\t\t%s\tV_%d\n", desc, i);
+		fprintf(output, "\t\t%s\tV_%d", desc, i);
 		g_free(desc);
 	}
-	fprintf(output, "\t)\n");
+	fprintf(output, ")\n");
 }
 
 static void
@@ -369,10 +371,8 @@ dis_code (MonoMetadata *m, guint32 rva)
 			fprintf (output, "\t.entrypoint\n");
 	}
 	
+	fprintf (output, "\t// Code size %d (0x%x)\n", mh->code_size, mh->code_size);
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
-	fprintf (output, "\t// Code size=%d (0x%x)\n", mh->code_size, mh->code_size);
-	printf ("\t// Values Code Size=%d/0x%x\n\n",
-		mh->code_size, mh->code_size);
 	if (mh->num_locals)
 		dis_locals (m, mh);
 	dissasemble_cil (m, mh);
@@ -622,6 +622,43 @@ dis_property_list (MonoMetadata *m, guint32 typedef_row)
 	}
 }
 
+static void
+dis_interfaces (MonoMetadata *m, guint32 typedef_row)
+{
+	plocator_t loc;
+	guint start;
+	guint32 cols [MONO_INTERFACEIMPL_SIZE];
+	char *intf;
+	MonoTableInfo *table = &m->tables [MONO_TABLE_INTERFACEIMPL];
+	
+	loc.t = table;
+	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
+	loc.idx = typedef_row;
+
+	if (!bsearch (&loc, table->base, table->rows, table->row_size, table_locator))
+		return;
+
+	start = loc.result;
+	/*
+	 * We may end up in the middle of the rows... 
+	 */
+	while (start > 0) {
+		if (loc.idx == mono_metadata_decode_row_col (table, start - 1, MONO_INTERFACEIMPL_CLASS))
+			start--;
+		else
+			break;
+	}
+	while (start < table->rows) {
+		mono_metadata_decode_row (table, start, cols, MONO_INTERFACEIMPL_SIZE);
+		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
+			break;
+		intf = get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE]);
+		fprintf (output, "  \timplements %s\n", intf);
+		g_free (intf);
+		++start;
+	}
+}
+
 /**
  * dis_type:
  * @m: metadata context
@@ -646,18 +683,20 @@ dis_type (MonoMetadata *m, int n)
 	} else
 		next_is_valid = 0;
 
-	fprintf (output, ".namespace %s\n{\n", mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]));
-	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
+	if (*nspace)
+		fprintf (output, ".namespace %s\n{\n", nspace);
+	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
 		char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
-		fprintf (output, "  .class %s%s.%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), nspace, name);
+		fprintf (output, "  .class %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
 		fprintf (output, "  \textends %s\n", base);
 		g_free (base);
 	} else
-		fprintf (output, "  .class interface %s%s.%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), nspace, name);
+		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
 	
+	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");
 
 	/*
@@ -683,8 +722,11 @@ dis_type (MonoMetadata *m, int n)
 		dis_method_list (m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
 
 	dis_property_list (m, n);
-	
-	fprintf (output, "  }\n}\n\n");
+
+	fprintf (output, "  }\n");
+	if (*nspace)
+		fprintf (output, "}\n");
+	fprintf (output, "\n");
 }
 
 /**
@@ -715,6 +757,7 @@ struct {
 	{ "--param",       MONO_TABLE_PARAM,       dump_table_param },
 	{ "--typedef",     MONO_TABLE_TYPEDEF,     dump_table_typedef },
 	{ "--typeref",     MONO_TABLE_TYPEREF,     dump_table_typeref },
+	{ "--interface",   MONO_TABLE_INTERFACEIMPL,     dump_table_interfaceimpl },
 	{ "--classlayout", MONO_TABLE_CLASSLAYOUT, dump_table_class_layout },
 	{ "--constant",    MONO_TABLE_CONSTANT,    dump_table_constant },
 	{ "--property",    MONO_TABLE_PROPERTY,    dump_table_property },
