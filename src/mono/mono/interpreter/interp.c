@@ -2454,7 +2454,27 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp [-1].type = VAL_I64;
 			BREAK;
-		CASE (CEE_CONV_R4) /* Fall through */
+		CASE (CEE_CONV_R4) {
+			++ip;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.f = (float)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				sp [-1].data.f = (float)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.f = (float)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.f = (float)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_DOUBLE;
+			BREAK;
+		}
 		CASE (CEE_CONV_R8) {
 			++ip;
 			switch (sp [-1].type) {
@@ -3038,9 +3058,7 @@ array_constructed:
 			if (class->byval_arg.type == MONO_TYPE_VALUETYPE && !class->enumtype) 
 				sp [-1].data.p = mono_value_box (domain, class, sp [-1].data.p);
 			else {
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
 				stackval_to_data (&class->byval_arg, &sp [-1], (char*)&sp [-1]);
-#endif
 				sp [-1].data.p = mono_value_box (domain, class, &sp [-1]);
 			}
 			/* need to vt_free (sp); */
