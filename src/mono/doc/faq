@@ -2,6 +2,7 @@
 <a href="#ximian">The Ximian Role in the Mono project</a><br>
 <a href="#gnome">Mono and GNOME</a><br>
 <a href="#gui">Building GUI applications with Mono</a><br>
+<a href="#winforms">Mono and WinForms</a><br>
 <a href="#msft">Mono and Microsoft</a><br>
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
@@ -274,6 +275,40 @@ A: Try: mcs --unsafe -o HelloWorld.exe -r glib-sharp -r pango-sharp -r
         atk-sharp -r gdk-sharp -r gtk-sharp -r gdk-imaging-sharp
         HelloWorld.cs
 
+<a name="winforms"></a>
+** Mono and WinForms
+
+Q: Can you tell me why aren't you implementing WinForms?. 
+
+A: (This is based in an original mail to mono-list written by Miguel de
+   Icaza. You should read it for completion, but the core part is here).
+   
+   First, Windows.Forms is packed with quirks and is not that great of a 
+   toolkit in the first place. Up to the point of the unconfirmed rumor 
+   that Microsoft is working on a replacement for it. 
+
+   Once the runtime is done, we will very likely start contributing to
+   the Gtk# project ourselves, and we will likely start doing feasibility
+   work on getting Mono used by Gnome developers: full gnome apps and
+   extending existing applications.
+
+   Those interested in hacking on Windows.Forms are welcome to do so,
+   but Ximian will not likely look at it in the near future; if there is
+   enough demand, or I can be convinced that Windows.Forms is useful for
+   something Ximian might re-evaluate our resource allocation for this
+   task.
+
+   By doing native ports, we could use the same API on all those systems. 
+   Also, Gtk is mature enough, we know this because we have built an entire
+   desktop (and all sorts of very window system-specific hacks), and we
+   have built a bunch of productivity applications with it. 
+
+Q: What about VCL?.
+
+   Someone mentioned VCL.  The only problem with the VCL is that it can
+   only be used for GPL applications (or I guess you could license it from
+   Borland for your app), and would have to be ported from Delphi to C# 
+   (or someone would have to write a CIL compiler for it).
 
 <a name="msft"></a>
 ** Mono and Microsoft
@@ -541,6 +576,19 @@ A: The webserver turned out to be very simple compared to the rest of the
    You can try to help in the final touches to the System.Web classes and
    writing regression tests for the widgets we have.
 
+Q: Is there any way I can develop the class libraries using linux yet?
+
+A: Yes. Some class libraries can be developed on Linux. Search for
+   Paolo's post (he lists which classes can be compiled fine now).
+
+Q: Is there any way I can install a known working copy of mono in /usr, 
+   and an experimental copy somewhere else, and have both copies use 
+   their own libraries? (I'm still not very good at library paths in 
+   linux)
+
+A: Yes. Just use two installation prefixes.
+
+
 <a name="asp">
 ** Mono and ASP.NET
 
@@ -552,12 +600,7 @@ A: Yes. The development of the support for ASP.NET comes in various stages,
    output with the real Microsoft runtime but using our generated page. 4. 
    Running the sample with our classes with the .NET runtime. 5. Running 
    our sample code with our classes with our runtime. This is the process 
-   we are following. Currently Gonzalo has reached point 3.
-
-Q: I have heard that their is a webserver developed with Mono. Is it true?.
-
-A: Yes. You can find it <a href="http://home.adelphia.net/~aljames/webserver.htm">here</a>
-   Read the README for more info.
+   we are following. Currently Gonzalo has reached point 5.
 
 <a name="java">
 ** Mono and Java
@@ -649,7 +692,20 @@ A: Embracing a good technology is good.  Extending technologies in
 
    If you have innovative ideas, and want to create new classes, we 
    encourage you to make those classes operate correctly well in both
-   Mono and .NET
+   Mono and .NET.
+
+Q: Is there any way I can develop the class libraries using linux yet?
+
+A: Yes. Some class libraries can be developed on Linux. Search for
+   Paolo's post (he lists which classes can be compiled fine now).
+
+Q: Is there any way I can install a known working copy of mono in /usr, 
+   and an experimental copy somewhere else, and have both copies use 
+   their own libraries? (I'm still not very good at library paths in 
+   linux)
+
+A: Yes. Just use two installation prefixes.
+
 
 <a name="portability"></a>
 ** Portability
@@ -697,6 +753,17 @@ A: It will depend only if you are using a particular assembly (for
    in Mono for implementing a `Hello World Enterprise P2P Web
    Service', you will not need any GNOME components.
 
+Q: Is anyone working on porting Mono to IA-64?
+
+A: Nobody is working on such port.
+
+Q: If I were about to start a Mono port to IA-64,would the same lburg code 
+   generator work for IA-64 also? or anything else need to be used for code 
+   generation(as the processor architecture is totally different from IA32)
+
+A: The lburg approach can be use for any processor architecture. But you might
+   think in another better approach.
+
 <a name="reuse"></a>
 ** Reusing Existing Code
 
@@ -723,6 +790,36 @@ Q: What about using GNU Lightning?
 A: We are not using GNU Lightning.  Our JIT is using an instruction
    selector based on tree-pattern matching, and a code generation
    interface that is very tied to the current architecture.
+
+Q: Will I be able to use Microsoft SQL Server 2000 or will I need to switch
+   to a specific Open Source Database.  Will I need to recode?
+
+A: There should not be any need to recode.
+
+Q: What do I need to watch out for when programming in VB.NET so that I'm
+   sure to be able to run those apps on Linux?
+
+A: Not making any PInvoke or DLL calls should and not using anything in
+   the Microsoft.* namespaces should suffice. Also do not use any 
+   Methods/Classes marked as "This type/method supports the .NET Framework 
+   infrastructure and is not intended to be used directly from your code." 
+   even if you know what these classes/methods do.
+
+Q: Will built-in reporting be supported for crystal reports?  This is a
+   heavily used part of our system.
+
+A: Probably not. Crystal Reports are propriety. Someone may try to emulate
+   the behaviour, but no-one has yet volunteered.
+
+Q: Who about writing to the registry? As I understand it, Linux does not have
+   a counterpart to the registry.  Should I avoid relying on that feature?
+
+A: Try to avoid it. Although there would be a emulation for registry in
+   Mono too. GNOME does have a registry like mechanism for configuration. But
+   Even if gnome has a configuration system similar to the registry, the keys 
+   will not be equal, so you will probably end up having to do some runtime 
+   detection, and depending on this load an assembly that has your 
+   platform-specific hacks.
 
 <a name="gcc"></a>
 ** Mono and GCC
