@@ -1,6 +1,8 @@
 #ifndef __INTERPRETER_MINTOPS_H
 #define __INTERPRETER_MINTOPS_H
 
+#include <glib.h>
+
 typedef enum
 {
 	MintOpNoArgs,
@@ -29,11 +31,19 @@ enum {
 #undef OPDEF
 
 #if NO_UNALIGNED_ACCESS
+#  if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define READ32(x) (((guint16 *)(x)) [0] | ((guint16 *)(x)) [1] << 16)
+#define READ64(x) ((guint64)((guint16 *)(x)) [0] | \
+                   (guint64)((guint16 *)(x)) [1] << 16 | \
+                   (guint64)((guint16 *)(x)) [2] << 32 | \
+                   (guint64)((guint16 *)(x)) [3] << 48)
+#  else
 #define READ32(x) (((guint16 *)(x)) [0] << 16 | ((guint16 *)(x)) [1])
 #define READ64(x) ((guint64)((guint16 *)(x)) [0] << 48 | \
                    (guint64)((guint16 *)(x)) [1] << 32 | \
                    (guint64)((guint16 *)(x)) [2] << 16 | \
                    (guint64)((guint16 *)(x)) [3])
+#  endif
 #else /* unaligned access OK */
 #define READ32(x) (*(guint32 *)(x))
 #define READ64(x) (*(guint64 *)(x))
