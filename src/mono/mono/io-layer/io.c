@@ -1991,6 +1991,7 @@ extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 	if (utf16_path == NULL)
 		return 0;
 
+	ptr = utf16_path;
 	while (*ptr)
 		*buffer ++ = *ptr ++;
 	
