@@ -637,29 +637,67 @@ set_domain_search_path (MonoDomain *domain)
 	g_strfreev (pvt_split);
 }
 
-static MonoAssembly *
-real_load (gchar **search_path, const gchar *culture, gchar *filename)
+static gboolean
+try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
+					const gchar *path3, const gchar *path4)
 {
-	MonoAssembly *result;
-	gchar **path;
 	gchar *fullpath;
+
+	*assembly = NULL;
+	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
+	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR))
+		*assembly = mono_assembly_open (fullpath, NULL);
+
+	g_free (fullpath);
+	return (*assembly != NULL);
+}
+
+static MonoAssembly *
+real_load (gchar **search_path, const gchar *culture, const gchar *name)
+{
+	MonoAssembly *result = NULL;
+	gchar **path;
+	gchar *filename;
+	const gchar *local_culture;
+	gint len;
+
+	if (!culture || *culture == '\0') {
+		local_culture = "";
+	} else {
+		local_culture = culture;
+	}
+
+	filename =  g_strconcat (name, ".dll", NULL);
+	len = strlen (filename);
 
 	for (path = search_path; *path; path++) {
 		if (**path == '\0')
 			continue; /* Ignore empty ApplicationBase */
 
-		if (culture && *culture != '\0') /* !neutral */
-			fullpath = g_build_filename (*path, culture, filename, NULL);
-		else
-			fullpath = g_build_filename (*path, filename, NULL);
+		/* See test cases in bug #58992 and bug #57710 */
+		/* 1st try: [culture]/[name].dll (culture may be empty) */
+		strcpy (filename + len - 4, ".dll");
+		if (try_load_from (&result, *path, local_culture, "", filename))
+			break;
 
-		result = mono_assembly_open (fullpath, NULL);
-		g_free (fullpath);
-		if (result)
-			return result;
+		/* 2nd try: [culture]/[name].exe (culture may be empty) */
+		strcpy (filename + len - 4, ".exe");
+		if (try_load_from (&result, *path, local_culture, "", filename))
+			break;
+
+		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
+		strcpy (filename + len - 4, ".dll");
+		if (try_load_from (&result, *path, local_culture, name, filename))
+			break;
+
+		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
+		strcpy (filename + len - 4, ".exe");
+		if (try_load_from (&result, *path, local_culture, name, filename))
+			break;
 	}
 
-	return NULL;
+	g_free (filename);
+	return result;
 }
 
 /*
@@ -672,50 +710,18 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gpointer user_data)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoAssembly *result;
-	gchar *dll, *exe;
+	MonoAssembly *result = NULL;
 
 	set_domain_search_path (domain);
 
-	dll = g_strconcat (aname->name, ".dll", NULL);
-	exe = g_strdup (dll);
-	strcpy (exe + strlen (exe) - 4, ".exe");
-
 	if (domain->search_path && domain->search_path [0] != NULL) {
-		/* TODO: should also search in name/name.dll and name/name.exe from appbase */
-		result = real_load (domain->search_path, aname->culture, dll);
-		if (result) {
-			g_free (dll);
-			g_free (exe);
-			return result;
-		}
-
-		result = real_load (domain->search_path, aname->culture, exe);
-		if (result) {
-			g_free (dll);
-			g_free (exe);
-			return result;
-		}
+		result = real_load (domain->search_path, aname->culture, aname->name);
 	}
 
-	if (assemblies_path && assemblies_path [0] != NULL) {
-		result = real_load (assemblies_path, aname->culture, dll);
-		if (result) {
-			g_free (dll);
-			g_free (exe);
-			return result;
-		}
-
-		result = real_load (assemblies_path, aname->culture, exe);
-		if (result) {
-			g_free (dll);
-			g_free (exe);
-			return result;
-		}
+	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
+		result = real_load (assemblies_path, aname->culture, aname->name);
 	}
 	
-	g_free (dll);
-	g_free (exe);
 	return NULL;
 }
 
