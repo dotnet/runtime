@@ -257,4 +257,20 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Jackson </first-name>
+      <last-name>Harper</last-name>
+    </name>
+    <e-mail>jackson@latitudegeo.com</e-mail>
+    <image>none.png</image>
+    <location>Victoria, Canada</location>
+    <description>Hacker</description>
+    <tasks>
+      <task>Misc Bug fixes</task>
+      <task>Cscompmgd</task>
+      <task>IL Assembler</task>
+    </tasks>
+  </contributor>
+
 </contributors>
