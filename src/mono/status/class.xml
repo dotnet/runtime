@@ -2622,8 +2622,44 @@
 			<maintainer>ndrochak@gol.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Security.Permissions.CodeAccessSecurityAttribute">
+		<last-activity>Jan-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.Permissions.FileIOPermission">
+		<last-activity>Jan-14-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>yes</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Security.Permissions.IUnrestrictedPermission">
 		<last-activity>Jan-02-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.Permissions.SecurityAttribute">
+		<last-activity>Jan-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.Permissions.SecurityPermissionAttribute">
+		<last-activity>Jan-08-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
 		<completion>100</completion>
