@@ -453,7 +453,7 @@ typedef struct {
 	StrongNameKeyPair keypair;
 	AssemblyVersionCompatibility versioncompat;*/
 	MonoObject  *cultureInfo;
-	MonoObject  *flags;
+	guint32     flags;
 	guint32     hashalg;
 	MonoObject  *keypair;
 	MonoArray   *publicKey;
