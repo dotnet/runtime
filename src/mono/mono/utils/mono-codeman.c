@@ -15,6 +15,10 @@
 
 #include "mono-codeman.h"
 
+#ifdef PLATFORM_WIN32
+#define FORCE_MALLOC
+#endif
+
 #define MIN_PAGES 8
 #define MIN_ALIGN 8
 /* if a chunk has less than this amount of free space it's considered full */
@@ -65,8 +69,7 @@ free_chunklist (CodeChunk *chunk)
 		dead = chunk;
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
-#ifdef PLATFORM_WIN32
-#else
+#ifndef FORCE_MALLOC
 			munmap (dead->data, dead->size);
 #endif
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
@@ -127,7 +130,7 @@ query_pagesize (void)
  * we should reduce it and make MIN_PAGES bigger for such systems
  */
 #if defined(__ppc__) || defined(__powerpc__)
-#define BIND_ROOM 16
+#define BIND_ROOM 8
 #endif
 
 static CodeChunk*
@@ -157,7 +160,7 @@ new_codechunk (int size)
 	}
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef FORCE_MALLOC
 	/* does it make sense to use the mmap-like API? */
 	ptr = malloc (chunk_size);
 	if (!ptr)
@@ -184,7 +187,7 @@ new_codechunk (int size)
 	if (!chunk) {
 		if (flags == CODE_FLAG_MALLOC)
 			free (ptr);
-#ifndef PLATFORM_WIN32
+#ifndef FORCE_MALLOC
 		else
 			munmap (ptr, chunk_size);
 #endif
