@@ -1,3 +1,10 @@
+2002-04-12  Rodrigo Moya <rodrigo@ximian.com>
+
+	* status/maintainers.xml: added danmorg and myself for System.Data.*
+	classes.
+
+	* status/class.xml: added System.Data.* classes.
+
 2002-04-08  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Set -mno-cygwin here rather than in the build script

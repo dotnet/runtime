@@ -640,6 +640,206 @@
 			<maintainer>swildermuth@adoguy.com</maintainer>
 		</maintainers>
 	</class>
+        <class name="System.Data.Common.DataAdapter">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DataColumnMapping">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DataColumnMappingCollection">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DataTableMapping">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DataTableMappingCollection">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DbDataAdapter">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DbDataPermission">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DbDataPermissionAttribute">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DbDataRecord">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.DbEnumerator">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.RowUpdatedEventArgs">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.Common.RowUpdatingEventArgs">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlCommand">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+                        <maintainer>rodrigo@ximian.com</maintainer>
+			<maintainer>danmorg@sc.rr.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlConnection">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+                        <maintainer>rodrigo@ximian.com</maintainer>
+			<maintainer>danmorg@sc.rr.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlDataAdapter">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlDataReader">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlError">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlErrorCollection">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlException">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlParameter">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlParameterCollection">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
+        <class name="System.Data.SqlClient.SqlTransaction">
+		<last-activity>Apr-12-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>rodrigo@ximian.com</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.DateTime">
 		<last-activity>Jul-23-2001</last-activity>
 		<implementation>yes</implementation>
