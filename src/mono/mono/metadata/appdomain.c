@@ -633,6 +633,8 @@ set_domain_search_path (MonoDomain *domain)
 
 	if ((domain->search_path != NULL) && !domain->setup->path_changed)
 		return;
+	if (!domain->setup)
+		return;
 
 	setup = domain->setup;
 	if (!setup->application_base)
