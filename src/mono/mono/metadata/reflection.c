@@ -1984,7 +1984,7 @@ mono_image_get_methodspec_token (MonoDynamicAssembly *assembly, MonoMethod *meth
 }
 
 static guint32
-create_generic_typespec (MonoDynamicAssembly *assembly, MonoType *type)
+create_generic_typespec (MonoDynamicAssembly *assembly, MonoReflectionTypeBuilder *tb)
 {
 	MonoDynamicTable *table;
 	MonoClass *klass;
@@ -1994,19 +1994,24 @@ create_generic_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	char *p = sig;
 	char blob_size [6];
 	char *b = blob_size;
-	int i;
+	int count, i;
 
-	g_assert ((type->type == MONO_TYPE_CLASS) || (type->type == MONO_TYPE_VALUETYPE));
-	klass = mono_class_from_mono_type (type);
+	g_assert (tb->generic_params);
+	klass = mono_class_from_mono_type (tb->type.type);
 
 	mono_metadata_encode_value (MONO_TYPE_GENERICINST, p, &p);
 	encode_type (assembly, &klass->byval_arg, p, &p);
-	mono_metadata_encode_value (klass->num_gen_params, p, &p);
-	for (i = 0; i < klass->num_gen_params; i++) {
+
+	count = mono_array_length (tb->generic_params);
+	mono_metadata_encode_value (count, p, &p);
+	for (i = 0; i < count; i++) {
+		MonoReflectionGenericParam *gparam;
 		MonoType t;
 
+		gparam = mono_array_get (tb->generic_params, MonoReflectionGenericParam *, i);
+
 		t.type = MONO_TYPE_VAR;
-		t.data.generic_param = &klass->gen_params [i];
+		t.data.generic_param = gparam->param;
 
 		encode_type (assembly, &t, p, &p);
 	}
@@ -2022,7 +2027,7 @@ create_generic_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	}
 
 	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
-	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->typeref, tb->type.type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
 }
@@ -2041,7 +2046,7 @@ mono_image_get_generic_field_token (MonoDynamicAssembly *assembly, MonoReflectio
 
 	sig = fieldref_encode_signature (assembly, fb->type->type);
 
-	parent = create_generic_typespec (assembly, fb->typeb->type);
+	parent = create_generic_typespec (assembly, (MonoReflectionTypeBuilder *) fb->typeb);
 	g_assert ((parent & TYPEDEFORREF_MASK) == TYPEDEFORREF_TYPESPEC);
 	
 	pclass = MEMBERREF_PARENT_TYPESPEC;
