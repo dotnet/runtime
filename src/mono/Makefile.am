@@ -34,3 +34,6 @@ mcs-rest:
 
 remove-binaries:
 	rm ../mcs/class/lib/corlib.dll ../mcs/mcs/mcs.exe runtime/*dll runtime/*.exe >& /dev/null; echo
+
+win32setup:
+	makensis /DMILESTONE=@VERSION@ /DSOURCE_INSTALL_DIR=`cygpath -a -w @prefix@`\\* monowiz.win32.nsi
