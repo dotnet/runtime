@@ -5,7 +5,7 @@ for file in $*;
 do
 	perl $dir/exdoc $file | grep ^Function:  | sed -e 's/Function: //' -e 's/://' > documented
 	nm `dirname $file`/.libs/`basename $file .c`.o | grep ' T ' | sed 's/.* T //' > public
-	for i in `cat public`; do
+	for i in `cat public | grep -v $dir/ignore`; do
 		if grep $i documented > /dev/null; then
 			true
 		else

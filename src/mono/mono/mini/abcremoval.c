@@ -207,7 +207,7 @@ print_evaluation_area_contexts (MonoVariableRelationsEvaluationArea *area) {
 }
 #endif
 
-/**
+/*
  * Given a MonoInst, if it is a store to a variable return the MonoInst that
  * represents the stored value.
  * If anything goes wrong, return NULL.
@@ -250,7 +250,7 @@ get_variable_value_from_store_instruction (MonoInst *store, int expected_variabl
 	}
 }
 
-/**
+/*
  * Given a MonoInst representing a value, store it in "summarized" form.
  * result: the "summarized" value
  */
@@ -374,7 +374,7 @@ get_relation_from_branch_instruction (int opcode) {
 	}
 }
 
-/**
+/*
  * Given a BB, find its entry condition and put its relations in a
  * "MonoAdditionalVariableRelationsForBB" structure.
  * bb: the BB
@@ -449,7 +449,7 @@ get_relations_from_previous_bb (MonoBasicBlock *bb, MonoAdditionalVariableRelati
 }
 
 
-/**
+/*
  * Add the given relations to the evaluation area.
  * area: the evaluation area
  * change: the relations that must be added
@@ -469,7 +469,7 @@ apply_change_to_evaluation_area (MonoVariableRelationsEvaluationArea *area, Mono
 	}
 }
 
-/**
+/*
  * Remove the given relation from the evaluation area.
  * change: the relation that must be removed
  */
@@ -491,7 +491,7 @@ clean_contexts (MonoRelationsEvaluationContext *contexts, int number) {
 }
 
 
-/**
+/*
  * Perform the intersection of a range and a constant value (taking into
  * account the relation that the value has with the range).
  * range: the range that will be intersected with the value
@@ -532,7 +532,7 @@ intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelati
 }
 
 
-/**
+/*
  * Perform the intersection of two pairs of ranges (taking into account the
  * relation between the ranges and a given delta).
  * ranges: the ranges that will be intersected
@@ -582,7 +582,7 @@ intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluation
 	}
 }
 
-/**
+/*
  * Recursive method that traverses the relation graph to evaluate the
  * relation between two variables.
  * At the end of the execution, the resulting ranges are in the context of
@@ -871,7 +871,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 }
 
 
-/**
+/*
  * Attempt the removal of bounds checks from a MonoInst.
  * inst: the MonoInst
  * area: the current evaluation area (it contains the relation graph and
@@ -945,7 +945,7 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 	}
 }
 
-/**
+/*
  * Recursively scan a tree of MonoInst looking for array accesses.
  * inst: the root of the MonoInst tree
  * area: the current evaluation area (it contains the relation graph and
@@ -972,7 +972,7 @@ process_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area) {
 
 
 
-/**
+/*
  * Process a BB removing bounds checks from array accesses.
  * It does the following (in sequence):
  * - Get the BB entry condition
@@ -1041,6 +1041,9 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 
 
 /**
+ * mono_perform_abc_removal:
+ * @cfg: Control Flow Graph
+ *
  * Performs the ABC removal from a cfg in SSA form.
  * It does the following:
  * - Prepare the evaluation area

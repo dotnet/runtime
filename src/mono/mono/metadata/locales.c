@@ -270,7 +270,7 @@ culture_info_entry_from_lcid (int lcid)
 	return ci;
 }
 
-/**
+/*
  * The following two methods are modified from the ICU source code. (http://oss.software.ibm.com/icu)
  * Copyright (c) 1995-2003 International Business Machines Corporation and others
  * All rights reserved.
@@ -293,7 +293,7 @@ get_posix_locale (void)
 
 	if ((strcmp ("C", posix_locale) == 0) || (strchr (posix_locale, ' ') != NULL)
 			|| (strchr (posix_locale, '/') != NULL)) {
-		/**
+		/*
 		 * HPUX returns 'C C C C C C C'
 		 * Solaris can return /en_US/C/C/C/C/C on the second try.
 		 * Maybe we got some garbage.
@@ -335,7 +335,7 @@ get_current_locale_name (void)
 	/* Note that we scan the *uncorrected* ID. */
 	if ((p = strrchr (locale, '@')) != NULL) {
 
-		/**
+		/*
 		 * In Mono we dont handle the '@' modifier because we do
 		 * not have any cultures that use it. We just trim it
 		 * off of the end of the name.
@@ -480,6 +480,8 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 }
 
 /**
+ * ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral:
+ * 
  * Set is_neutral and return TRUE if the culture is found. If it is not found return FALSE.
  */
 MonoBoolean

@@ -924,7 +924,13 @@ gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
     return pack128toDecimal(pA, alo, ahi, scale, sign);
 }
 
-/** 
+/**
+ * mono_string2decimal:
+ * @decimal_repr:
+ * @str:
+ * @decrDecimal:
+ * @sign:
+ *
  * converts a digit string to decimal
  * The significant digits must be passed as an integer in buf !
  *
@@ -1031,6 +1037,8 @@ gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 de
 }
 
 /**
+ * mono_decimal2string:
+ * @
  * returns minimal number of digit string to represent decimal
  * No leading or trailing zeros !
  * Examples:
@@ -1051,7 +1059,6 @@ gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 de
  *    pDecPos    receives insert position of decimal point relative to start of buffer
  *    pSign      receives sign
  */
-
 gint32 mono_decimal2string(/*[In]*/decimal_repr* pA, gint32 digits, gint32 decimals,
                                    MonoArray* pArray, gint32 bufSize, gint32* pDecPos, gint32* pSign)
 {
@@ -1147,6 +1154,9 @@ gint32 mono_decimal2string(/*[In]*/decimal_repr* pA, gint32 digits, gint32 decim
 }
 
 /**
+ * mono_decimal2UInt64:
+ * @pA
+ * @pResult
  * converts a decimal to an UInt64 without rounding
  */
 gint32 mono_decimal2UInt64(/*[In]*/decimal_repr* pA, guint64* pResult)
@@ -1170,6 +1180,9 @@ gint32 mono_decimal2UInt64(/*[In]*/decimal_repr* pA, guint64* pResult)
 }
 
 /**
+ * mono_decimal2Int64:
+ * @pA:
+ * pResult:
  * converts a decimal to an Int64 without rounding
  */
 gint32 mono_decimal2Int64(/*[In]*/decimal_repr* pA, gint64* pResult)

@@ -23,7 +23,7 @@ sub process_doc {
 
 	# Process arguments
 	while (<>){
-		if (/^ \*\//){
+		if (/^ \*\*?\//){
 			print "$body\n";
 			return;
 		}

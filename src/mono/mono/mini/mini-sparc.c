@@ -2307,7 +2307,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_regstate_free_int (rs, ins->dreg);
 		}
 
-		/**
+		/*
 		 * SRC1
 		 */
 		if (spec [MONO_INST_SRC1] == 'f') {
