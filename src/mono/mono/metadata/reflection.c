@@ -5415,7 +5415,7 @@ static void
 get_default_param_value_blobs (MonoMethod *method, char **blobs)
 {
 	guint32 param_index, i, lastp, crow = 0;
-	guint32 param_cols [MONO_PARAM_SIZE], const_cols [MONO_CONSTANT_SIZE];;
+	guint32 param_cols [MONO_PARAM_SIZE], const_cols [MONO_CONSTANT_SIZE];
 	gint32 idx = -1;
 
 	MonoClass *klass = method->klass;
