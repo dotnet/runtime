@@ -68,6 +68,70 @@ dump_cattrs (MonoImage *m, guint32 token, const char *indent)
 	dump_cattrs_list (list, indent);
 }
 
+static const char*
+get_il_security_action (int val) 
+{
+	static char buf [32];
+
+	switch (val) {
+	case SECURITY_ACTION_DEMAND:
+		return "demand";
+	case SECURITY_ACTION_ASSERT:
+		return "assert";
+	case SECURITY_ACTION_DENY:
+		return "deny";
+	case SECURITY_ACTION_PERMITONLY:
+		return "permitonly";
+	case SECURITY_ACTION_LINKDEMAND:
+		return "linkcheck";
+	case SECURITY_ACTION_INHERITDEMAND:
+		return "inheritcheck";
+	case SECURITY_ACTION_REQMIN:
+		return "reqmin";
+	case SECURITY_ACTION_REQOPT:
+		return "reqopt";
+	case SECURITY_ACTION_REQREFUSE:
+		return "reqrefuse";
+	/* Fx 2.0 actions */
+	case SECURITY_ACTION_LINKDEMANDCHOICE:
+		return "linkdemandor";
+	case SECURITY_ACTION_INHERITDEMANDCHOICE:
+		return "inheritancedemandor";
+	case SECURITY_ACTION_DEMANDCHOICE:
+		return "demandor";
+	default:
+		g_snprintf (buf, sizeof (buf), "0x%04X", val);
+		return buf;
+	}
+}
+
+#define OBJECT_TYPE_TYPEDEF	0
+#define OBJECT_TYPE_METHODDEF	1
+#define OBJECT_TYPE_ASSEMBLYDEF	2
+
+static void
+dump_declarative_security (MonoImage *m, guint32 objectType, guint32 token, const char *indent)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_DECLSECURITY];
+	guint32 cols [MONO_DECL_SECURITY_SIZE];
+	int i, len;
+	guint32 idx;
+	const char *blob, *action;
+	
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_DECL_SECURITY_SIZE);
+		blob = mono_metadata_blob_heap (m, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
+		len = mono_metadata_decode_blob_size (blob, &blob);
+		action = get_il_security_action (cols [MONO_DECL_SECURITY_ACTION]);
+		idx = cols [MONO_DECL_SECURITY_PARENT];
+		if (((idx & MONO_HAS_DECL_SECURITY_MASK) == objectType) && ((idx >> MONO_HAS_DECL_SECURITY_BITS) == token)) {
+			char *dump = data_dump (blob, len, indent);
+			fprintf (output, "%s.permissionset %s = %s", indent, action, dump);
+			g_free (dump);
+		}
+	}
+}
+
 static void
 dis_directive_assembly (MonoImage *m)
 {
@@ -82,6 +146,7 @@ dis_directive_assembly (MonoImage *m)
 	fprintf (output, ".assembly '%s'\n{\n",
 		 mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]));
 	dump_cattrs (m, MONO_TOKEN_ASSEMBLY | 1, "  ");
+	dump_declarative_security (m, OBJECT_TYPE_ASSEMBLYDEF, 1, "  ");
 	fprintf (output,
 		 "  .hash algorithm 0x%08x\n"
 		 "  .ver  %d:%d:%d:%d\n",
@@ -346,7 +411,8 @@ static dis_map_t method_flags_map [] = {
 	{ METHOD_ATTRIBUTE_SPECIAL_NAME,        "specialname " },
 	{ METHOD_ATTRIBUTE_RT_SPECIAL_NAME,     "rtspecialname " },
 	{ METHOD_ATTRIBUTE_UNMANAGED_EXPORT,    "export " },
-	{ METHOD_ATTRIBUTE_HAS_SECURITY,        "hassecurity" },
+/* MS ilasm doesn't compile this statement - is must be added automagically when permissionset are present */
+/*	{ METHOD_ATTRIBUTE_HAS_SECURITY,        "hassecurity" }, */
 	{ METHOD_ATTRIBUTE_REQUIRE_SEC_OBJECT,  "requiresecobj" },
 	{ METHOD_ATTRIBUTE_PINVOKE_IMPL,        "pinvokeimpl " }, 
 	{ 0, NULL }
@@ -682,6 +748,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		dump_cattrs_for_method_params (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
+		dump_declarative_security (m, OBJECT_TYPE_METHODDEF, i + 1, "        ");
 		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
 			fprintf (output, "          // Disassembly of native methods is not supported\n");
 		else
@@ -1043,6 +1110,7 @@ dis_type (MonoImage *m, int n)
                 g_string_free (cnst_block, TRUE);
         }
 	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
+	dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
 
 	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {
 		fprintf (output, "    .pack %d\n", packing_size);

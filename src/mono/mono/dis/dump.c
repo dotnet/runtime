@@ -1001,6 +1001,13 @@ get_security_action (int val) {
 		return "RequestOptional";
 	case SECURITY_ACTION_REQREFUSE:
 		return "RequestRefuse";
+	/* Fx 2.0 actions */
+	case SECURITY_ACTION_LINKDEMANDCHOICE:
+		return "LinkDemandChoice";
+	case SECURITY_ACTION_INHERITDEMANDCHOICE:
+		return "InheritanceDemandChoice";
+	case SECURITY_ACTION_DEMANDCHOICE:
+		return "DemandChoice";
 	default:
 		g_snprintf (buf, sizeof (buf), "0x%04X", val);
 		return buf;
