@@ -85,6 +85,8 @@ OBJECTS=									\
 	deploy/class-status-Microsoft.VisualBasic.html				\
 	deploy/class-status-System.Windows.Forms.html				\
 	deploy/class-status-System.DirectoryServices.html			\
+	deploy/class-status-System.EnterpriseServices.html			\
+	deploy/class-status-System.Runtime.Remoting.html			\
 	deploy/class-status-Cscompmgd.html					\
 	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html
 

@@ -72,6 +72,8 @@
 1,Microsoft.VisualBasic,class-status-Microsoft.VisualBasic.html,class-status-Microsoft.VisualBasic.src,cm/cormissing.css,cm/cormissing.js
 1,Windows.Forms,class-status-System.Windows.Forms.html,class-status-System.Windows.Forms.src,cm/cormissing.css,cm/cormissing.js
 1,DirectoryServices,class-status-System.DirectoryServices.html,class-status-System.DirectoryServices.src,cm/cormissing.css,cm/cormissing.js
+1,EnterpriseSvcs,class-status-System.EnterpriseServices.html,class-status-System.EnterpriseServices.src,cm/cormissing.css,cm/cormissing.js
+1,Remoting,class-status-System.Runtime.Remoting.html,class-status-System.Runtime.Remoting.src,cm/cormissing.css,cm/cormissing.js
 1,Formatters.Soap,class-status-System.Runtime.Serialization.Formatters.Soap.html,class-status-System.Runtime.Serialization.Formatters.Soap.src,cm/cormissing.css,cm/cormissing.js
 1,Cscompmgd,class-status-Cscompmgd.html,class-status-Cscompmgd.src,cm/cormissing.css,cm/cormissing.js
 1,System.Security,class-status-System.Security.html,class-status-System.Security.src,cm/cormissing.css,cm/cormissing.js
