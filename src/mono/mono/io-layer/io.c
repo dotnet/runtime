@@ -617,6 +617,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(INVALID_SET_FILE_POINTER);
 	}
 	
@@ -627,6 +628,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(INVALID_SET_FILE_POINTER);
 	}
 
@@ -646,6 +648,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 			  method);
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(INVALID_SET_FILE_POINTER);
 	}
 
@@ -658,7 +661,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 			  movedistance);
 #endif
 	} else {
-		offset=((gint64) *highmovedistance << 32) | movedistance;
+		offset=((gint64) *highmovedistance << 32) | (unsigned long)movedistance;
 		
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": setting offset to %lld 0x%llx (high %d 0x%x, low %d 0x%x)", offset, offset, *highmovedistance, *highmovedistance, movedistance, movedistance);
@@ -688,6 +691,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 			  handle, file_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(INVALID_SET_FILE_POINTER);
 	}
 
