@@ -597,8 +597,13 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
 
-		if ((cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (cols [MONO_METHOD_RVA] == 0))
-			fprintf (output, "%s", pinvoke_info (m, i));
+		if ((cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (cols [MONO_METHOD_RVA] == 0)) {
+			gchar *pi = pinvoke_info (m, i);
+			if (pi) {
+				fprintf (output, "%s", pi);
+				g_free (pi);
+			}
+		}
 
 		fprintf (output, "\n           %s", sig_str);
 		fprintf (output, " %s\n", impl_flags);
