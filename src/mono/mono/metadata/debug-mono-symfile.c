@@ -896,6 +896,29 @@ write_type (MonoSymbolFile *symfile, int index, MonoType *type)
 			*((guint32 *) ptr)++ = 8;
 			break;
 
+		case MONO_TYPE_STRING: {
+			MonoString string;
+
+			*((guint32 *) ptr)++ = -5;
+			*ptr++ = 1;
+			*ptr++ = sizeof (MonoString);
+			*ptr++ = (guint8*)&string.length - (guint8*)&string;
+			*ptr++ = sizeof (string.length);
+			*ptr++ = (guint8*)&string.chars - (guint8*)&string;
+			break;
+		}
+
+		case MONO_TYPE_ARRAY: {
+			MonoArray array;
+
+			*((guint32 *) ptr)++ = -4;
+			*ptr++ = 2;
+			*ptr++ = sizeof (MonoArray);
+			*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
+			*ptr++ = sizeof (array.max_length);
+			break;
+		}
+
 		default:
 			g_message (G_STRLOC ": %d - %p - %x,%x,%x", index, type, type->attrs,
 				   type->type, type->byref);
