@@ -195,7 +195,7 @@ mono_domain_create (void)
 	domain->search_path = NULL;
 
 	domain->mp = mono_mempool_new ();
-	domain->code_mp = mono_mempool_new ();
+	domain->code_mp = mono_code_manager_new ();
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
@@ -612,10 +612,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_jit_info_table_free (domain->jit_info_table);
 #ifdef DEBUG_DOMAIN_UNLOAD
 	mono_mempool_invalidate (domain->mp);
-	mono_mempool_invalidate (domain->code_mp);
+	mono_code_manager_invalidate (domain->code_mp);
 #else
 	mono_mempool_destroy (domain->mp);
-	mono_mempool_destroy (domain->code_mp);
+	mono_code_manager_destroy (domain->code_mp);
 #endif	
 	if (domain->jump_target_hash) {
 		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);

@@ -16,6 +16,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 #include <mono/utils/mono-hash.h>
+#include <mono/utils/mono-codeman.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef void (*MonoThreadStartCB) (guint32 tid, gpointer stack_start,
@@ -86,7 +87,7 @@ struct _MonoDomain {
 	MonoAppDomain      *domain;
 	CRITICAL_SECTION    lock;
 	MonoMemPool        *mp;
-	MonoMemPool        *code_mp;
+	MonoCodeManager    *code_mp;
 	MonoGHashTable     *env;
 	GHashTable         *assemblies;
 	MonoAssembly       *entry_assembly;
