@@ -1,0 +1,34 @@
+AC_INIT(README)
+AM_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE(mononet, 0.1)
+AM_MAINTAINER_MODE
+
+AC_PROG_CC
+AM_PROG_CC_STDC
+AC_PROG_INSTALL
+
+# Set STDC_HEADERS
+AC_HEADER_STDC
+AM_PROG_LIBTOOL
+
+dnl ***************************
+dnl *** Checks for glib 1.2 ***
+dnl ***************************
+AM_PATH_GLIB(1.2.0,,
+             AC_MSG_ERROR([Cannot find GLIB: Is glib-config in path?]))
+
+GLIB_CFLAGS=`glib-config --cflags glib`
+GLIB_LIBS=`glib-config --libs glib`
+
+AC_SUBST(GLIB_CFLAGS)
+AC_SUBST(GLIB_LIBS)
+
+CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
+AC_SUBST(CFLAGS)
+
+AC_OUTPUT([
+Makefile
+mono/Makefile
+mono/metadata/Makefile
+mono/dis/Makefile
+])
