@@ -5125,6 +5125,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				case MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY:
 					func = mono_marshal_string_array;
 					break;
+				case MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY:
+					func = mono_marshal_string_array_to_unicode;
+					break;
 				default:
 					g_warning ("unknown conversion %d\n", ip [2]);
 					g_assert_not_reached ();
@@ -8420,6 +8423,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_array_to_lparray, "mono_array_to_lparray", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_marshal_string_array, "mono_marshal_string_array", helper_sig_ptr_obj, FALSE);
+	mono_register_jit_icall (mono_marshal_string_array_to_unicode, "mono_marshal_string_array_to_unicode", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", helper_sig_void_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", helper_sig_void_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_marshal_free_array, "mono_marshal_free_array", helper_sig_void_ptr_ptr, FALSE);
