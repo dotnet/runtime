@@ -1529,7 +1529,7 @@ mono_runtime_get_main_args (void)
 	res = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, num_main_args);
 
 	for (i = 0; i < num_main_args; ++i)
-		mono_array_set (res, gpointer, 0, mono_string_new (domain, main_args [i]));
+		mono_array_set (res, gpointer, i, mono_string_new (domain, main_args [i]));
 
 	return res;
 }
