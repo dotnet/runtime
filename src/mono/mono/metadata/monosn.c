@@ -466,6 +466,10 @@ get_digest (const char *from, const char *outfile)
 		mono_image_close (image);
 		return 2;
 	}
+	/* 
+	 * FIXME: we may need to set the STRONGNAMESIGNED flag in the cli header 
+	 * before taking the sha1 digest of the image.
+	 */
 	mono_sha1_init (&sha1);
 	mono_sha1_update (&sha1, ass, snpos);
 	mono_sha1_update (&sha1, ass + snpos + snsize, len - snsize - snpos);

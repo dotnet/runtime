@@ -236,10 +236,11 @@ dump_cli_header (MonoCLIHeader *ch)
 	printf ("\n");
 	printf ("          CLI header size: %d\n", ch->ch_size);
 	printf ("         Runtime required: %d.%d\n", ch->ch_runtime_major, ch->ch_runtime_minor);
-	printf ("                    Flags: %s, %s, %s\n",
+	printf ("                    Flags: %s, %s, %s, %s\n",
 		(ch->ch_flags & CLI_FLAGS_ILONLY ? "ilonly" : "contains native"),
 		(ch->ch_flags & CLI_FLAGS_32BITREQUIRED ? "32bits" : "32/64"),
-		(ch->ch_flags & CLI_FLAGS_ILONLY ? "trackdebug" : "no-trackdebug"));
+		(ch->ch_flags & CLI_FLAGS_ILONLY ? "trackdebug" : "no-trackdebug"),
+		(ch->ch_flags & CLI_FLAGS_STRONGNAMESIGNED ? "strongnamesigned" : "notsigned"));
 	dent   ("         Metadata", ch->ch_metadata);
 	hex32  ("Entry Point Token", ch->ch_entry_point);
 	dent   ("     Resources at", ch->ch_resources);

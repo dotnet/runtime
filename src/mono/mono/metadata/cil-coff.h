@@ -224,6 +224,7 @@ typedef struct {
 
 #define CLI_FLAGS_ILONLY         0x01
 #define CLI_FLAGS_32BITREQUIRED  0x02
+#define CLI_FLAGS_STRONGNAMESIGNED 0x8
 #define CLI_FLAGS_TRACKDEBUGDATA 0x00010000
 	guint32        ch_flags;
 
