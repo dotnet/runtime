@@ -89,6 +89,34 @@
         </maintainers>
     </class>
 
+    <class name="System.FlagsAttribute">
+        <last-activity>Aug-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.CLSCompliantAttribute">
+        <last-activity>Aug-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.ContextStaticAttribute">
+        <last-activity>Aug-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.DivideByZeroException">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
