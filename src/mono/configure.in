@@ -502,6 +502,18 @@ dnl
 
 if test x$platform_win32 = xno; then
 
+	dnl ******************************************************************
+	dnl *** Checks for the IKVM JNI interface library                  ***
+	dnl ******************************************************************
+	AC_ARG_WITH(ikvm-native, [  --with-ikvm-native=yes,no  build the IKVM JNI interface library],[with_ikvm_native=$withval],[with_ikvm_native=yes])
+
+	ikvm_native_dir=
+	if test x$with_ikvm_native = xyes; then
+		ikvm_native_dir=ikvm-native
+	fi
+
+	AC_SUBST(ikvm_native_dir)
+
 	AC_CHECK_FUNCS(getgrgid_r)
 	AC_CHECK_FUNCS(getgrnam_r)
 	AC_CHECK_FUNCS(getpwnam_r)
@@ -1592,6 +1604,7 @@ mono/io-layer/Makefile
 mono/handles/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
+ikvm-native/Makefile
 scripts/Makefile
 man/Makefile
 web/Makefile
