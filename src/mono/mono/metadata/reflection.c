@@ -3205,6 +3205,15 @@ compare_genericparam (const void *a, const void *b)
 	return (*a_entry)->owner - (*b_entry)->owner;
 }
 
+static int
+compare_declsecurity_attrs (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
+
+	return a_values [MONO_DECL_SECURITY_PARENT] - b_values [MONO_DECL_SECURITY_PARENT];
+}
+
 static void
 pad_heap (MonoDynamicStream *sh)
 {
@@ -3394,7 +3403,10 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	table = &assembly->tables [MONO_TABLE_NESTEDCLASS];
 	if (table->rows)
 		qsort (table->values + MONO_NESTED_CLASS_SIZE, table->rows, sizeof (guint32) * MONO_NESTED_CLASS_SIZE, compare_nested);
-
+	/* Section 21.11 DeclSecurity in Partition II doesn't specify this to be sorted by MS implementation requires it */
+	table = &assembly->tables [MONO_TABLE_DECLSECURITY];
+	if (table->rows)
+		qsort (table->values + MONO_DECL_SECURITY_SIZE, table->rows, sizeof (guint32) * MONO_DECL_SECURITY_SIZE, compare_declsecurity_attrs);
 
 	/* compress the tables */
 	for (i = 0; i < 64; i++){
