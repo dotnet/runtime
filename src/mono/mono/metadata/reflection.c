@@ -2591,7 +2591,27 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	size += VIRT_ALIGN - 1;
 	size &= ~(VIRT_ALIGN - 1);
 	header->nt.pe_image_size = GUINT32_FROM_LE (size);
-	header->nt.pe_subsys_required = GUINT16_FROM_LE (assemblyb->pekind); /* 3 -> cmdline app, 2 -> GUI app */
+
+	//
+	// Translate the PEFileKind value to the value expected by the Windows loader
+	//
+	{
+		short kind = assemblyb->pekind;
+
+		//
+		// PEFileKinds.ConsoleApplication == 2
+		// PEFileKinds.WindowApplication == 3
+		//
+		// need to get:
+		//     IMAGE_SUBSYSTEM_WINDOWS_GUI 2 // Image runs in the Windows GUI subsystem.
+                //     IMAGE_SUBSYSTEM_WINDOWS_CUI 3 // Image runs in the Windows character subsystem.
+		if (kind == 2)
+			kind = 3;
+		else if (kind == 3)
+			kind = 2;
+		
+		header->nt.pe_subsys_required = GUINT16_FROM_LE (kind);
+	}    
 	header->nt.pe_stack_reserve = GUINT32_FROM_LE (0x00100000);
 	header->nt.pe_stack_commit = GUINT32_FROM_LE (0x00001000);
 	header->nt.pe_heap_reserve = GUINT32_FROM_LE (0x00100000);
