@@ -66,7 +66,7 @@
 			<b>Beta 1 Press Coverage</b>
 		</td>
 		<td>
-			<a href="http://www.go-mono.com/MonoBeta1PressCoverage.htm" target="blank">May 2004</a>: Mono Beta 1 rallies the press
+			<a href="http://www.go-mono.com/beta1-press.html" target="blank">May 2004</a>: Mono Beta 1 rallies the press
 		</td>
 	</tr>
  	 <tr>
@@ -173,6 +173,21 @@
 	<a href="http://www.nullenvoid.com/mono/wiki">Mono
 	</a> Wikis.
 </p>
+
+@item Jun 1st, 2004: Mono Beta 2 has been released
+
+	<table>
+	<tr>
+	  <td>
+	    <img
+	    src="http://www.go-mono.com/images/beta2.gif"></td>
+	  <td>Mono Beta 2 has been released.  See our <a
+	   href="http://www.go-mono.com/archive/beta2/beta2.html">Release
+	   Notes</a>, or go directly to the <a href="download.html">download</a> page. 
+	  </td>
+	</tr>
+	</table>
+
 @item May 17th, 2004: Huge press response for Mono 1.0 Beta 1
 
 	Two weeks after the release of Mono 1.0 Beta 1, we take a
@@ -360,7 +375,7 @@
 	well.  Expect to see Todd Berman from MonoDevelop as well.
 
 	If you are coming, please notify <a
-	href="edasque@ximian.com">edasque@ximian.com</a> about it, so
+	href="mailto:edasque@ximian.com">edasque@ximian.com</a> about it, so
 	we can add you to the security list, and use the `open house
 	confirmation' subject in your email.
 
