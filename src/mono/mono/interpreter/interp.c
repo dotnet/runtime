@@ -448,55 +448,73 @@ static void inline
 stackval_to_data (MonoType *type, stackval *val, char *data)
 {
 	if (type->byref) {
-		*(gpointer*)data = val->data.p;
+		gpointer *p = (gpointer*)data;
+		*p = val->data.p;
 		return;
 	}
 	switch (type->type) {
 	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		*(guint8*)data = val->data.i;
+	case MONO_TYPE_U1: {
+		guint8 *p = (guint8*)data;
+		*p = val->data.i;
 		return;
-	case MONO_TYPE_BOOLEAN:
-		*(guint8*)data = (val->data.i != 0);
+	}
+	case MONO_TYPE_BOOLEAN: {
+		guint8 *p = (guint8*)data;
+		*p = (val->data.i != 0);
 		return;
+	}
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		*(guint16*)data = val->data.i;
+	case MONO_TYPE_CHAR: {
+		guint16 *p = (guint16*)data;
+		*p = val->data.i;
 		return;
+	}
 #if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #endif
 	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		*(gint32*)data = val->data.i;
+	case MONO_TYPE_U4: {
+		gint32 *p = (gint32*)data;
+		*p = val->data.i;
 		return;
+	}
 #if SIZEOF_VOID_P == 8
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #endif
 	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		*(gint64*)data = val->data.l;
+	case MONO_TYPE_U8: {
+		gint64 *p = (gint64*)data;
+		*p = val->data.l;
 		return;
-	case MONO_TYPE_R4:
-		*(float*)data = val->data.f;
+	}
+	case MONO_TYPE_R4: {
+		float *p = (float*)data;
+		*p = val->data.f;
 		return;
-	case MONO_TYPE_R8:
-		*(double*)data = val->data.f;
+	}
+	case MONO_TYPE_R8: {
+		double *p = (double*)data;
+		*p = val->data.f;
 		return;
+	}
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_PTR:
-		*(gpointer*)data = val->data.p;
+	case MONO_TYPE_PTR: {
+		gpointer *p = (gpointer*)data;
+		*p = val->data.p;
 		return;
+	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			*(gint32*)data = val->data.i;
+			gint32 *p = (gint32*)data;
+			*p = val->data.i;
 		} else {
 			memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
 		}
@@ -536,7 +554,7 @@ ves_array_set (MonoInvocation *frame)
 	}
 
 	esize = mono_array_element_size (ac);
-	ea = ao->vector + (pos * esize);
+	ea = (char*)ao->vector + (pos * esize);
 
 	mt = frame->method->signature->params [ac->rank];
 	stackval_to_data (mt, &sp [ac->rank], ea);
@@ -565,7 +583,7 @@ ves_array_get (MonoInvocation *frame)
 			ao->bounds [i].lower_bound;
 
 	esize = mono_array_element_size (ac);
-	ea = ao->vector + (pos * esize);
+	ea = (char*)ao->vector + (pos * esize);
 
 	mt = frame->method->signature->ret;
 	stackval_from_data (mt, frame->retval, ea);
@@ -575,9 +593,9 @@ static void
 ves_pinvoke_method (MonoInvocation *frame)
 {
 	MonoPIFunc func = mono_create_trampoline (frame->method);
-	func (frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
+	func ((MonoFunc)frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
 	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
-	g_free (func);
+	g_free ((void*)func);
 }
 
 /*
@@ -611,17 +629,20 @@ ves_runtime_method (MonoInvocation *frame)
 	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
-		*(gpointer*)(((char*)obj) + target_offset) = frame->stack_args[0].data.p;
-		*(gpointer*)(((char*)obj) + method_offset) = frame->stack_args[1].data.p;
+		gpointer *p;
+		p = (gpointer*)(((char*)obj) + target_offset);
+		*p = frame->stack_args[0].data.p;
+		p = (gpointer*)(((char*)obj) + method_offset);
+		*p = frame->stack_args[1].data.p;
 		return;
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
 		MonoPIFunc func = mono_create_trampoline (frame->method);
 		void* faddr = *(gpointer*)(((char*)obj) + method_offset);
-		func (faddr, &frame->retval->data.p, frame->obj, frame->stack_args);
+		func ((MonoFunc)faddr, &frame->retval->data.p, frame->obj, frame->stack_args);
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
-		g_free (func);
+		g_free ((void*)func);
 		return;
 	}
 	g_error ("Don't know how to exec runtime method %s.%s::%s", 
@@ -730,7 +751,7 @@ struct _vtallocation {
 #define vt_alloc(vtype,sp)	\
 	if ((vtype)->type == MONO_TYPE_VALUETYPE && !(vtype)->data.klass->enumtype) {	\
 		if (!(vtype)->byref) {	\
-			int align;	\
+			guint32 align;	\
 			guint32 size = mono_class_value_size ((vtype)->data.klass, &align);	\
 			if (!vtalloc || vtalloc->size < size) {	\
 				vtalloc = alloca (sizeof (vtallocation) + size);	\
@@ -793,7 +814,7 @@ ves_exec_method (MonoInvocation *frame)
 		if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 			ves_pinvoke_method (frame);
 		} else {
-			ICallMethod icall = frame->method->addr;
+			ICallMethod icall = (ICallMethod)frame->method->addr;
 			icall (frame);
 		}
 		DEBUG_LEAVE ();
@@ -856,8 +877,9 @@ ves_exec_method (MonoInvocation *frame)
 		frame->args = alloca (signature->params_size);
 		args_pointers = alloca (sizeof(void*) * (signature->param_count + has_this));
 		if (has_this) {
-			args_pointers [0] = frame->args;
-			*(gpointer*) frame->args = frame->obj;
+			gpointer *this_arg;
+			this_arg = args_pointers [0] = frame->args;
+			*this_arg = frame->obj;
 			offset += sizeof (gpointer);
 		}
 		for (i = 0; i < signature->param_count; ++i) {
@@ -940,7 +962,8 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			--sp;
 			if ((LOCAL_TYPE (header, n))->type == MONO_TYPE_I4) {
-				*(gint32*)LOCAL_POS (n) = sp->data.i;
+				gint32 *p = (gint32*)LOCAL_POS (n);
+				*p = sp->data.i;
 			} else {
 				stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
 				vt_free (sp);
@@ -1566,46 +1589,70 @@ ves_exec_method (MonoInvocation *frame)
 			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
 			sp[-1].data.vt.klass = NULL;
 			BREAK;
-		CASE (CEE_STIND_REF)
+		CASE (CEE_STIND_REF) {
+			gpointer *p;
 			++ip;
 			sp -= 2;
-			*(gpointer*)sp->data.p = sp[1].data.p;
+			p = sp->data.p;
+			*p = sp[1].data.p;
 			BREAK;
-		CASE (CEE_STIND_I1)
+		}
+		CASE (CEE_STIND_I1) {
+			gint8 *p;
 			++ip;
 			sp -= 2;
-			*(gint8*)sp->data.p = (gint8)sp[1].data.i;
+			p = sp->data.p;
+			*p = (gint8)sp[1].data.i;
 			BREAK;
-		CASE (CEE_STIND_I2)
+		}
+		CASE (CEE_STIND_I2) {
+			gint16 *p;
 			++ip;
 			sp -= 2;
-			*(gint16*)sp->data.p = (gint16)sp[1].data.i;
+			p = sp->data.p;
+			*p = (gint16)sp[1].data.i;
 			BREAK;
-		CASE (CEE_STIND_I4)
+		}
+		CASE (CEE_STIND_I4) {
+			gint32 *p;
 			++ip;
 			sp -= 2;
-			*(gint32*)sp->data.p = sp[1].data.i;
+			p = sp->data.p;
+			*p = sp[1].data.i;
 			BREAK;
-		CASE (CEE_STIND_I)
+		}
+		CASE (CEE_STIND_I) {
+			mono_i *p;
 			++ip;
 			sp -= 2;
-			*(gint64*)sp->data.p = sp[1].data.l;
+			p = sp->data.p;
+			*p = (mono_i)sp[1].data.p;
 			BREAK;
-		CASE (CEE_STIND_I8)
+		}
+		CASE (CEE_STIND_I8) {
+			gint64 *p;
 			++ip;
 			sp -= 2;
-			*(gint64*)sp->data.p = sp[1].data.l;
+			p = sp->data.p;
+			*p = sp[1].data.l;
 			BREAK;
-		CASE (CEE_STIND_R4)
+		}
+		CASE (CEE_STIND_R4) {
+			float *p;
 			++ip;
 			sp -= 2;
-			*(gfloat*)sp->data.p = (gfloat)sp[1].data.f;
+			p = sp->data.p;
+			*p = (gfloat)sp[1].data.f;
 			BREAK;
-		CASE (CEE_STIND_R8)
+		}
+		CASE (CEE_STIND_R8) {
+			double *p;
 			++ip;
 			sp -= 2;
-			*(gdouble*)sp->data.p = sp[1].data.f;
+			p = sp->data.p;
+			*p = sp[1].data.f;
 			BREAK;
+		}
 		CASE (CEE_ADD)
 			++ip;
 			--sp;
@@ -1616,8 +1663,11 @@ ves_exec_method (MonoInvocation *frame)
 				sp [-1].data.l += sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f += sp [0].data.f;
-			else
-				(char*)sp [-1].data.p += GET_NATI (sp [0]);
+			else {
+				char *p = sp [-1].data.p;
+				p += GET_NATI (sp [0]);
+				sp [-1].data.p = p;
+			}
 			BREAK;
 		CASE (CEE_SUB)
 			++ip;
@@ -1629,8 +1679,11 @@ ves_exec_method (MonoInvocation *frame)
 				sp [-1].data.l -= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f -= sp [0].data.f;
-			else
-				(char*)sp [-1].data.p -= GET_NATI (sp [0]);
+			else {
+				char *p = sp [-1].data.p;
+				p -= GET_NATI (sp [0]);
+				sp [-1].data.p = p;
+			}
 			BREAK;
 		CASE (CEE_MUL)
 			++ip;
@@ -1662,17 +1715,26 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32) {
+				guint32 val;
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
-				(guint32)sp [-1].data.i /= (guint32)GET_NATI (sp [0]);
+				val = sp [-1].data.i;
+				val /= (guint32)GET_NATI (sp [0]);
+				sp [-1].data.i = val;
 			} else if (sp->type == VAL_I64) {
+				guint64 val;
 				if (sp [0].data.l == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
-				(guint64)sp [-1].data.l /= (guint64)sp [0].data.l;
+				val = sp [-1].data.l;
+				val /= (guint64)sp [0].data.l;
+				sp [-1].data.l = val;
 			} else if (sp->type == VAL_NATI) {
+				mono_u val;
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
-				(gulong)sp [-1].data.p /= (gulong)sp [0].data.p;
+				val = (mono_u)sp [-1].data.p;
+				val /= (gulong)sp [0].data.p;
+				sp [-1].data.p = (gpointer)val;
 			}
 			BREAK;
 		CASE (CEE_REM)
@@ -2193,11 +2255,11 @@ ves_exec_method (MonoInvocation *frame)
 			g_assert (field);
 			if (load_addr) {
 				sp->type = VAL_TP;
-				sp->data.p = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
+				sp->data.p = (char*)MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
 				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, sp);
-				stackval_from_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+				stackval_from_data (field->type, sp, (char*)MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			}
 			++sp;
 			BREAK;
@@ -2219,7 +2281,7 @@ ves_exec_method (MonoInvocation *frame)
 				init_class (klass);
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			stackval_to_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+			stackval_to_data (field->type, sp, (char*)MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			vt_free (sp);
 			BREAK;
 		}
@@ -2438,7 +2500,7 @@ ves_exec_method (MonoInvocation *frame)
 			esize = mono_array_element_size ((MonoArrayClass *)o->obj.klass);
 			
 			sp->type = VAL_MP;
-			sp->data.p = ((MonoArrayObject *)o)->vector + (sp [1].data.i * esize);
+			sp->data.p = (char*)((MonoArrayObject *)o)->vector + (sp [1].data.i * esize);
 			sp->data.vt.klass = ((MonoArrayClass *)o->obj.klass)->element_class;
 			++sp;
 			BREAK;
@@ -3260,8 +3322,10 @@ main (int argc, char *argv [])
 			ocount = 1;
 		if (strcmp (argv [i], "--help") == 0)
 			usage ();
+#if DEBUG_INTERP
 		if (strcmp (argv [i], "--debug") == 0)
 			db_methods = g_list_append (db_methods, argv [++i]);
+#endif
 	}
 	
 	file = argv [i];
