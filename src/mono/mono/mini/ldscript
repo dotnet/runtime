@@ -1,0 +1,6 @@
+VER_1 {
+      global: 
+              mono_*;
+      local:
+              *;
+};

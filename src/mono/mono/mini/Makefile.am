@@ -24,6 +24,8 @@ genmdesc_CFLAGS = $(AM_CFLAGS)
 
 regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
 
+libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
+
 bin_PROGRAMS = mono genmdesc
 
 lib_LTLIBRARIES = libmono.la
@@ -142,6 +144,6 @@ BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = emullong.brg inssel-float.brg inssel-long.brg  \
 	inssel-long32.brg inssel-x86.brg inssel.brg jit-icalls.c cprop.c \
-	cpu-pentium.md cpu-g4.md
+	cpu-pentium.md cpu-g4.md ldscript
 
 
