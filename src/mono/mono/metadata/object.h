@@ -176,6 +176,17 @@ typedef struct {
 	MonoObject *abort_state;
 } MonoThread;
 
+typedef struct {
+	MonoString *name;
+	MonoReflectionType *type;
+	MonoObject *value;
+} MonoSerializationEntry;
+
+typedef struct {
+	guint32 state;
+	MonoObject *additional;
+} MonoStreamingContext;
+
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
 

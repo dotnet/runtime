@@ -95,6 +95,9 @@ typedef struct {
 	MonoClass *stack_frame_class;
 	MonoClass *stack_trace_class;
 	MonoClass *marshal_class;
+	MonoClass *iserializeable_class;
+	MonoClass *serializationinfo_class;
+	MonoClass *streamingcontext_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

@@ -102,6 +102,7 @@ TEST_CS_SRC=			\
 	time.cs			\
 	appdomain.cs		\
 	appdomain1.cs		\
+	appdomain2.cs		\
 	appdomain-client.cs	\
 	pointer.cs		\
 	vararg.cs		\

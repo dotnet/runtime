@@ -151,6 +151,23 @@ mono_get_exception_execution_engine (const guchar *msg)
 }
 
 MonoException *
+mono_get_exception_serialization (const guchar *msg)
+{
+	MonoException *ex;
+	MonoDomain *domain;
+
+	ex = mono_exception_from_name (mono_defaults.corlib, "System.Runtime.Serialization",
+				       "SerializationException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
+
+	if (msg)
+		ex->message = mono_string_new (domain, msg);
+
+	return ex;
+}
+
+MonoException *
 mono_get_exception_invalid_cast ()
 {
 	return mono_exception_from_name (mono_defaults.corlib, "System",

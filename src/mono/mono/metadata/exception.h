@@ -41,6 +41,9 @@ MonoException *
 mono_get_exception_thread_state        (const guchar *msg);
 
 MonoException *
+mono_get_exception_serialization       (const guchar *msg);
+
+MonoException *
 mono_get_exception_invalid_cast        (void);
 
 MonoException *

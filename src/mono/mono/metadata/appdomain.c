@@ -21,10 +21,14 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/socket-io.h>
+#include <mono/metadata/tabledefs.h>
 
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
 int mono_runtime_shutdown = 0;
+
+static MonoObject *
+mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj);
 
 /*
  * mono_runtime_init:
@@ -84,6 +88,84 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 	/* FIXME: implement me */
 }
 
+/*
+ * invokes a method in a specific domain.
+ */
+static MonoObject*
+mono_runtime_invoke_in_domain (MonoDomain *domain, MonoMethod *method, void *obj, 
+			       void **params, MonoObject **exc)
+{
+	MonoDomain *cur = mono_domain_get ();
+	MonoObject **real_exc, *default_exc;
+	MonoObject *res;
+
+	if (domain == cur)
+		return mono_runtime_invoke (method, obj, params, exc);
+
+	if (!exc)
+		real_exc = &default_exc;
+	else
+		real_exc = exc;
+
+	*real_exc = NULL;
+	mono_domain_set (domain);
+	res = mono_runtime_invoke (method, obj, params, real_exc);
+	mono_domain_set (cur);
+
+	if (*real_exc && !exc)
+		mono_raise_exception ((MonoException *)*real_exc);
+
+	return res;
+}
+
+static MonoObject *
+mono_domain_transfer_array (MonoDomain *src, MonoDomain *dst, MonoArray *ao)
+{
+	MonoObject *res = NULL;
+	MonoClass *klass;
+	int esize, ecount, i;
+	guint32 *sizes;
+		
+	klass = ao->obj.vtable->klass;
+
+	esize = mono_array_element_size (klass);
+	if (ao->bounds == NULL) {
+		ecount = mono_array_length (ao);
+		res = (MonoObject *)mono_array_new_full (dst, klass, &ecount, NULL);
+	} else {
+		sizes = alloca (klass->rank * sizeof(guint32) * 2);
+		ecount = 1;
+		for (i = 0; i < klass->rank; ++i) {
+			sizes [i] = ao->bounds [i].length;
+			ecount *= ao->bounds [i].length;
+			sizes [i + klass->rank] = ao->bounds [i].lower_bound;
+		}
+		res = (MonoObject *)mono_array_new_full (dst, klass, sizes, sizes + klass->rank);
+	}
+	if (klass->element_class->valuetype) {
+		if (klass->element_class->blittable) {
+			memcpy (((MonoArray *)res)->vector, ao->vector, esize * ecount);
+		} else {
+			for (i = 0; i < ecount; i++) {
+				MonoObject *s, *d;
+				gpointer *src_ea = (gpointer *)mono_array_addr_with_size (ao, esize, i);
+				gpointer *dst_ea = (gpointer *)mono_array_addr_with_size ((MonoArray *)res, esize, i);
+				s = mono_value_box (src, klass->element_class, src_ea);
+				d = mono_domain_transfer_object (src, dst, s);
+				memcpy (dst_ea, (char *)d + sizeof(MonoObject), esize);
+			}
+		}
+	} else {
+		g_assert (esize == sizeof (gpointer));
+		for (i = 0; i < ecount; i++) {
+			gpointer *src_ea = (gpointer *)mono_array_addr_with_size (ao, esize, i);
+			gpointer *dst_ea = (gpointer *)mono_array_addr_with_size ((MonoArray *)res, esize, i);
+			*dst_ea = mono_domain_transfer_object (src, dst, *src_ea);
+		}
+	}
+	return res;
+}
+
 /**
  * mono_domain_transfer_object:
  * @src: the source domain
@@ -96,60 +178,214 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 static MonoObject *
 mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 {
+	MonoClass *sic = mono_defaults.serializationinfo_class;
 	MonoClass *klass;
-	MonoObject *res;	
+	MonoObject *res = NULL;	
+	int i;
 
 	if (!obj)
 		return NULL;
 
 	g_assert (obj->vtable->domain == src);
 
-	/* fixme: transfer an object from one domain into another */
-
 	klass = obj->vtable->klass;
 
-	if (MONO_CLASS_IS_ARRAY (klass)) {
-		MonoArray *ao = (MonoArray *)obj;
-		int esize, ecount, i;
-		guint32 *sizes;
-		
-		esize = mono_array_element_size (klass);
-		if (ao->bounds == NULL) {
-			ecount = mono_array_length (ao);
-			res = (MonoObject *)mono_array_new_full (dst, klass, &ecount, NULL);
-		}
-		else {
-			sizes = alloca (klass->rank * sizeof(guint32) * 2);
-			ecount = 1;
-			for (i = 0; i < klass->rank; ++i) {
-				sizes [i] = ao->bounds [i].length;
-				ecount *= ao->bounds [i].length;
-				sizes [i + klass->rank] = ao->bounds [i].lower_bound;
-			}
-			res = (MonoObject *)mono_array_new_full (dst, klass, sizes, sizes + klass->rank);
-		}
-		if (klass->element_class->valuetype) {
-			memcpy (((MonoArray *)res)->vector, ao->vector, esize * ecount);
-		} else {
-			g_assert (esize == sizeof (gpointer));
-			for (i = 0; i < ecount; i++) {
-				gpointer *src_ea = (gpointer *)mono_array_addr_with_size (ao, esize, i);
-				gpointer *dst_ea = (gpointer *)mono_array_addr_with_size ((MonoArray *)res, esize, i);
-
-				*dst_ea = mono_domain_transfer_object (src, dst, *src_ea);
-			}
-		}
-	} else if (klass->valuetype) {
-		res = mono_value_box (dst, klass, (char *)obj + sizeof (MonoObject));
-	} else if (klass == mono_defaults.string_class) {
+	/* some special cases */
+	if (klass == mono_defaults.string_class) {
 		MonoString *str = (MonoString *)obj;
-		res = (MonoObject *)mono_string_new_utf16 (dst, 
+		return (MonoObject *)mono_string_new_utf16 (dst, 
 		        (const guint16 *)mono_string_chars (str), str->length); 
-	} else {
-		/* FIXME: we need generic marshalling code here */
-		g_assert_not_reached ();
+	} 
+
+	if (klass == mono_defaults.monotype_class)
+		return (MonoObject *) mono_type_get_object (dst, ((MonoReflectionType *)obj)->type);	
+
+	if (MONO_CLASS_IS_ARRAY (klass))
+		return mono_domain_transfer_array (src, dst, (MonoArray *)obj); 
+
+	if (mono_object_isinst (obj, mono_defaults.iserializeable_class)) {
+		static MonoMethod *serinfo_ctor1 = NULL, *serinfo_ctor2 = NULL, *get_entries = NULL;
+		MonoMethod *get_object_data, *ser_ctor;
+		MonoObject *src_serinfo, *dst_serinfo;
+		void *pa [2];
+		MonoStreamingContext ctx;
+		MonoArray *entries, *trans_entries;
+		int len;
+
+		/* get a pointer to the GetObjectData method */ 
+		get_object_data = klass->vtable [klass->interface_offsets [mono_defaults.iserializeable_class->interface_id]];
+		g_assert (get_object_data);
+
+		src_serinfo = mono_object_new (src, sic);
+
+		if (!serinfo_ctor1) {
+			for (i = 0; i < sic->method.count; ++i) {
+				if (!strcmp (".ctor", sic->methods [i]->name) &&
+				    sic->methods [i]->signature->param_count == 1) {
+					serinfo_ctor1 = sic->methods [i];
+					break;
+				}
+			}
+			g_assert (serinfo_ctor1);
+		}
+		
+		if (!serinfo_ctor2) {
+			for (i = 0; i < sic->method.count; ++i) {
+				if (!strcmp (".ctor", sic->methods [i]->name) &&
+				    sic->methods [i]->signature->param_count == 2 &&
+				    sic->methods [i]->signature->params [1]->type == MONO_TYPE_SZARRAY) {
+					serinfo_ctor2 = sic->methods [i];
+					break;
+				}
+			}
+			g_assert (serinfo_ctor2);
+		}
+		
+		if (!get_entries) {
+			for (i = 0; i < sic->method.count; ++i) {
+				if (!strcmp ("get_entries", sic->methods [i]->name) &&
+				    sic->methods [i]->signature->param_count == 0) {
+					get_entries = sic->methods [i];
+					break;
+				}
+			}
+			g_assert (get_entries);
+		}
+
+		pa [0] = mono_type_get_object (src, &klass->byval_arg);
+		mono_runtime_invoke_in_domain (src, serinfo_ctor1, src_serinfo, pa, NULL);
+
+		ctx.additional = NULL;
+		ctx.state = 128; /* CrossAppDomain */
+		pa [0] = src_serinfo;
+		pa [1] = &ctx;
+		mono_runtime_invoke_in_domain (src, get_object_data, obj, pa, NULL);
+
+		entries = (MonoArray *)mono_runtime_invoke_in_domain (src, get_entries, src_serinfo, NULL, NULL);
+
+		g_assert (src_serinfo->vtable->domain == src);
+		g_assert (entries->obj.vtable->domain == src);
+
+		/* transfer all SerializationEntry objects */
+		len = mono_array_length ((MonoArray*)entries);
+		trans_entries = mono_array_new (dst, entries->obj.vtable->klass->element_class, len);
+
+		for (i = 0; i < len; i++) {
+			MonoSerializationEntry *s, *d;
+			s = (MonoSerializationEntry *)mono_array_addr_with_size (entries, 
+			        sizeof (MonoSerializationEntry), i);
+			d = (MonoSerializationEntry *)mono_array_addr_with_size (trans_entries, 
+                                sizeof (MonoSerializationEntry), i);
+			d->name = (MonoString *)mono_domain_transfer_object (src, dst, (MonoObject *)s->name);
+			d->value = mono_domain_transfer_object (src, dst, s->value);
+			d->type = (MonoReflectionType *)mono_domain_transfer_object (src, dst, (MonoObject *)s->type);
+		}
+
+		dst_serinfo = mono_object_new (dst, sic);
+
+		pa [0] = mono_type_get_object (dst, &klass->byval_arg);
+		pa [1] = trans_entries;
+		mono_runtime_invoke_in_domain (dst, serinfo_ctor2, dst_serinfo, pa, NULL);
+
+		ser_ctor = NULL;
+		for (i = 0; i < klass->method.count; i++) {
+			MonoMethod *t = klass->methods [i];
+			if (!strcmp (t->name, ".ctor") && t->signature->param_count == 2 &&
+			    mono_metadata_type_equal (t->signature->params [0], 
+						      &mono_defaults.serializationinfo_class->byval_arg) &&
+			    mono_metadata_type_equal (t->signature->params [1], 
+						      &mono_defaults.streamingcontext_class->byval_arg))
+				ser_ctor = t;
+		}
+		g_assert (ser_ctor);
+
+		res = mono_object_new (dst, klass);
+
+		ctx.additional = NULL;
+		ctx.state = 128; /* CrossAppDomain */
+		pa [0] = dst_serinfo;
+		pa [1] = &ctx;
+		mono_runtime_invoke_in_domain (dst, ser_ctor, res, pa, NULL);
+
+		return res;
 	}
-	
+
+	if (!(klass->flags & TYPE_ATTRIBUTE_SERIALIZABLE)) {
+		MonoException *exc = NULL;
+		char *msg;
+
+		msg = g_strdup_printf ("klass \"%s.%s\" is not serializable", 
+				       klass->name_space, klass->name);
+		exc = mono_get_exception_serialization (msg);
+		g_free (msg);
+
+		mono_raise_exception (exc);
+	}
+
+	res = mono_object_new (dst, klass);
+
+	for (i = 0; i < klass->field.count; i++) {
+		MonoClassField *field = &klass->fields [i];
+		MonoType *type = field->type;
+		int size, align;
+		char *src_ptr, *dst_ptr;
+		int simple_type;
+
+		if (type->attrs & FIELD_ATTRIBUTE_STATIC ||
+		    type->attrs & FIELD_ATTRIBUTE_NOT_SERIALIZED)
+			continue;
+
+		size = mono_type_size (type, &align);
+
+		dst_ptr = (char*)res + field->offset;
+		src_ptr = (char *)obj + field->offset;
+
+		g_assert (!type->byref);
+		
+		simple_type = type->type;
+	handle_enum:
+		switch (simple_type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR: 
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8: 
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			memcpy (dst_ptr, src_ptr, size);
+			break;
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_STRING: {
+			*(MonoObject **)dst_ptr = mono_domain_transfer_object (src, dst, *(MonoObject **)src_ptr);
+			break;
+		}
+		case MONO_TYPE_VALUETYPE: {
+			MonoObject *boxed_src, *tmp;
+
+			if (type->data.klass->enumtype) {
+				simple_type = type->data.klass->enum_basetype->type;
+				goto handle_enum;
+			}
+			boxed_src = mono_value_box (src, type->data.klass, src_ptr);
+			tmp = mono_domain_transfer_object (src, dst, boxed_src);
+			memcpy (dst_ptr, (char *)tmp + sizeof (MonoObject), size);
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
 	return res;
 }
 
@@ -210,7 +446,7 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 	o = mono_domain_transfer_object (cur, add, data);
 
 	mono_domain_lock (add);
-	g_hash_table_insert (add->env, name, o);
+	mono_g_hash_table_insert (add->env, name, o);
 
 	mono_domain_unlock (add);
 }

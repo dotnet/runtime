@@ -261,6 +261,9 @@ class_compute_field_layout (MonoClass *class)
 		}
 	}
 
+	if (class == mono_defaults.string_class)
+		blittable = FALSE;
+
 	class->blittable = blittable;
 
 	if (class->enumtype && !class->enum_basetype) {

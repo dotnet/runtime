@@ -1493,6 +1493,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, string_dummy));
 		} else {
 			mono_mb_emit_ldarg (mb, 0);
+			if (method->klass->valuetype) {
+				mono_mb_emit_byte (mb, CEE_UNBOX);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method->klass));
+			} 
 		}
 	}
 
@@ -1583,6 +1587,7 @@ handle_enum:
 		/* fixme: */
 		g_assert_not_reached ();
 	}
+
 
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
