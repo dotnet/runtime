@@ -8,6 +8,9 @@
  */
 
 #include <config.h>
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -3289,6 +3292,20 @@ mono_jit_abort (MonoObject *obj)
 	exit (1);
 }
 
+#if HAVE_BOEHM_GC
+static void
+my_GC_free (void *p)
+{
+	/* do nothing */
+}
+
+static void*
+my_GC_calloc (gsize n_blocks, gsize n_block_bytes)
+{
+	return GC_malloc (n_block_bytes * n_blocks);
+}
+#endif
+
 int 
 main (int argc, char *argv [])
 {
@@ -3307,6 +3324,20 @@ main (int argc, char *argv [])
 
 	if (argc < 2)
 		usage (argv [0]);
+
+#if HAVE_BOEHM_GC
+	{
+		static GMemVTable boehm_table = {
+			GC_malloc,
+			GC_realloc,
+			my_GC_free,
+			my_GC_calloc,
+			GC_malloc, /* try variants */
+			GC_realloc,
+		};
+		g_mem_set_vtable (&boehm_table);
+	}
+#endif
 
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--help") == 0) {
@@ -3362,11 +3393,13 @@ main (int argc, char *argv [])
 	sa.sa_flags = 0;
 	g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
 
+#ifndef HAVE_BOEHM_GC
 	/* catch SIGSEGV */
 	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+#endif
 
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
