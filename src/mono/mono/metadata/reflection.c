@@ -5306,6 +5306,8 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
 		klass->gen_params [i] = *gparam->param;
 	}
+
+	ensure_runtime_vtable (klass);
 }
 
 /*

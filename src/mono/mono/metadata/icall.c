@@ -1543,6 +1543,18 @@ ves_icall_MonoType_get_HasUnboundGenericParameters (MonoReflectionType *type)
 	return FALSE;
 }
 
+static MonoBoolean
+ves_icall_TypeBuilder_get_IsUnboundGenericParameter (MonoReflectionTypeBuilder *tb)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (tb->type.type->byref)
+		return FALSE;
+	if (tb->type.type->type == MONO_TYPE_VAR || tb->type.type->type == MONO_TYPE_MVAR)
+		return TRUE;
+	return FALSE;
+}
+
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
@@ -3985,6 +3997,11 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.TypeBuilder::create_runtime_class", mono_reflection_create_runtime_class,
 	"System.Reflection.Emit.TypeBuilder::setup_generic_class", mono_reflection_setup_generic_class,
 	"System.Reflection.Emit.TypeBuilder::define_generic_parameter", mono_reflection_define_generic_parameter,
+
+	/*
+	 * TypeBuilder generics icalls.
+	 */
+	"System.Reflection.Emit.TypeBuilder::get_IsUnboundGenericParameter", ves_icall_TypeBuilder_get_IsUnboundGenericParameter,
 	
 	/*
 	 * MethodBuilder
