@@ -137,7 +137,7 @@ dump_table_param (MonoImage *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_PARAM_SIZE];
 
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_PARAM_SIZE);
 		fprintf (output, "%d: 0x%04x %d %s\n",
 			 i + 1,
 			 cols [MONO_PARAM_FLAGS], cols [MONO_PARAM_SEQUENCE], 
@@ -271,7 +271,7 @@ dump_table_class_layout (MonoImage *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_CLASS_LAYOUT_SIZE];
 		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_CLASS_LAYOUT_SIZE);
 
 		fprintf (output, "%d: PackingSize=%d  ClassSize=%d  Parent=%s\n",
 			 i + 1, cols [MONO_CLASS_LAYOUT_PACKING_SIZE], 
