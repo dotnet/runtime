@@ -399,6 +399,9 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 			  strerror(errnum));
 #endif
 		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		if (errnum == WSAEINPROGRESS)
+			errnum = WSAEWOULDBLOCK; /* see bug #73053 */
+
 		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
