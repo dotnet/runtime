@@ -32,7 +32,6 @@
 #undef DEBUG
 #undef TLS_DEBUG
 #undef TLS_PTHREAD_MUTEX
-#undef VALGRINDING
 
 
 /* Hash threads with tids. I thought of using TLS for this, but that
@@ -93,7 +92,9 @@ static void thread_close_private (gpointer handle)
 		  thread_handle->thread->id);
 #endif
 
-	thread_handle->thread=NULL;
+	if(thread_handle->thread!=NULL) {
+		_wapi_timed_thread_destroy (thread_handle->thread);
+	}
 }
 
 static void thread_own (gpointer handle)
@@ -231,7 +232,6 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	 */
 	mono_mutex_lock(&thread_hash_mutex);
 	
-#ifndef VALGRINDING
 	/* Set a 2M stack size.  This is the default on Linux, but BSD
 	 * needs it.  (The original bug report from Martin Dvorak <md@9ll.cz>
 	 * set the size to 2M-4k.  I don't know why it's short by 4k, so
@@ -243,12 +243,6 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	ret=_wapi_timed_thread_create(&thread_private_handle->thread, &attr,
 				      create, start, thread_exit, param,
 				      handle);
-#else
-	ret=_wapi_timed_thread_create(&thread_private_handle->thread, NULL,
-				      create, start, thread_exit, param,
-				      handle);
-#endif
-
 	if(ret!=0) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Thread create error: %s",
@@ -540,10 +534,6 @@ guint32 ResumeThread(gpointer handle)
 		return(0xFFFFFFFF);
 	}
 
-	if(thread_private_handle->thread==NULL) {
-		return(0xFFFFFFFF);
-	}
-	
 #ifdef WITH_INCLUDED_LIBGC
 	if (thread_private_handle->thread->suspend_count <= 1)
 		_wapi_timed_thread_resume (thread_private_handle->thread);
@@ -586,10 +576,6 @@ guint32 SuspendThread(gpointer handle)
 		return(0xFFFFFFFF);
 	}
 
-	if(thread_private_handle->thread==NULL) {
-		return(0xFFFFFFFF);
-	}
-	
 	if (!thread_private_handle->thread->suspend_count) {
 		if (handle == current)
 			_wapi_timed_thread_suspend (thread_private_handle->thread);

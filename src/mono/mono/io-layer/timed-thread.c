@@ -68,8 +68,6 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 	
 	pthread_cond_signal(&thread->exit_cond);
 	mono_mutex_unlock(&thread->join_mutex);
-
-	_wapi_timed_thread_destroy (thread);
 	
 	/* Call pthread_exit() to call destructors and really exit the
 	 * thread.
