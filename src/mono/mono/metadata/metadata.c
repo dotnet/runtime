@@ -1247,7 +1247,7 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 /*
  * mono_metadata_parse_method_signature:
  * @m: metadata context
- * @def: use #TRUE when parsing MethodDef, #FALSE with MethodRef signatures.
+ * @def: the MethodDef index or 0 for Ref signatures.
  * @ptr: pointer to the signature metadata representation
  * @rptr: pointer updated to match the end of the decoded stream
  *
@@ -1259,7 +1259,7 @@ MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
-	int i;
+	int i, ret_attrs = 0, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 
 	if (*ptr & 0x20)
@@ -1269,13 +1269,32 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	call_convention = *ptr & 0x0F;
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
+	pattrs = g_new0 (int, param_count);
 
+	if (def) {
+		MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
+		MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
+		guint32 cols [MONO_PARAM_SIZE];
+		guint lastp, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
+
+		if (def < methodt->rows)
+			lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
+		else
+			lastp = paramt->rows;
+		for (i = param_index; i < lastp; ++i) {
+			mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
+			if (!cols [MONO_PARAM_SEQUENCE])
+				ret_attrs = cols [MONO_PARAM_FLAGS];
+			else
+				pattrs [cols [MONO_PARAM_SEQUENCE] - 1] = cols [MONO_PARAM_FLAGS];
+		}
+	}
 	method = g_malloc0 (sizeof (MonoMethodSignature) + (param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 	method->param_count = param_count;
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
 	method->call_convention = call_convention;
-	method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, 0, ptr, &ptr);
+	method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
 
 	if (method->param_count) {
 		method->sentinelpos = -1;
@@ -1287,9 +1306,10 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 				method->sentinelpos = i;
 				ptr++;
 			}
-			method->params [i] = mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, &ptr);
+			method->params [i] = mono_metadata_parse_type (m, MONO_PARSE_PARAM, pattrs [i], ptr, &ptr);
 		}
 	}
+	g_free (pattrs);
 
 	if (rptr)
 		*rptr = ptr;

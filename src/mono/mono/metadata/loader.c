@@ -442,7 +442,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	result->signature = mono_metadata_parse_method_signature (image, 0, sig, NULL);
+	result->signature = mono_metadata_parse_method_signature (image, idx, sig, NULL);
 
 	if (!result->klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
