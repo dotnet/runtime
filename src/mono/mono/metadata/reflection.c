@@ -19,6 +19,7 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/exception.h>
+#include <mono/metadata/marshal.h>
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
