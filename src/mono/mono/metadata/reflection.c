@@ -1205,9 +1205,9 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 					name = mono_string_to_utf8 (pb->name);
 					values [MONO_PARAM_NAME] = string_heap_insert (&assembly->sheap, name);
 					g_free (name);
-				}
-				else
+				} else {
 					values [MONO_PARAM_NAME] = 0;
+				}
 				values += MONO_PARAM_SIZE;
 				if (pb->marshal_info) {
 					mtable->rows++;
@@ -1217,6 +1217,17 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info);
 				}
 				pb->table_idx = table->next_idx++;
+				if (pb->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) {
+					guint32 field_type = 0;
+					mtable = &assembly->tables [MONO_TABLE_CONSTANT];
+					mtable->rows ++;
+					alloc_table (mtable, mtable->rows);
+					mvalues = mtable->values + mtable->rows * MONO_CONSTANT_SIZE;
+					mvalues [MONO_CONSTANT_PARENT] = MONO_HASCONSTANT_PARAM | (pb->table_idx << MONO_HASCONSTANT_BITS);
+					mvalues [MONO_CONSTANT_VALUE] = encode_constant (assembly, pb->def_value, &field_type);
+					mvalues [MONO_CONSTANT_TYPE] = field_type;
+					mvalues [MONO_CONSTANT_PADDING] = 0;
+				}
 			}
 		}
 	}

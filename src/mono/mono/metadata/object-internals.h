@@ -562,6 +562,7 @@ typedef struct {
 	guint32 attrs;
 	int position;
 	guint32 table_idx;
+	MonoObject *def_value;
 } MonoReflectionParamBuilder;
 
 typedef struct {
