@@ -13,10 +13,10 @@ test_lpwstr_marshal (unsigned short* chars, long length)
 
 	res = malloc (2 * (length + 1));
 
-	printf("test_lpwstr_marshal()\n");
+	// printf("test_lpwstr_marshal()\n");
 	
 	while ( i < length ) {
-		printf("X|%u|\n", chars[i]);
+		// printf("X|%u|\n", chars[i]);
 		res [i] = chars[i];
 		i++;
 	}
@@ -33,12 +33,12 @@ typedef struct {
 } union_test_1_type;
 
 int mono_union_test_1 (union_test_1_type u1) {
-	printf ("Got values %d %d %d\n", u1.b, u1.a, u1.c);
+	// printf ("Got values %d %d %d\n", u1.b, u1.a, u1.c);
 	return u1.a + u1.b + u1.c;
 }
 
 int mono_return_int (int a) {
-	printf ("Got value %d\n", a);
+	// printf ("Got value %d\n", a);
 	return a;
 }
 
@@ -48,12 +48,12 @@ struct ss
 };
 
 int mono_return_int_ss (struct ss a) {
-	printf ("Got value %d\n", a.i);
+	// printf ("Got value %d\n", a.i);
 	return a.i;
 }
 
 struct ss mono_return_ss (struct ss a) {
-	printf ("Got value %d\n", a.i);
+	// printf ("Got value %d\n", a.i);
 	a.i++;
 	return a;
 }
@@ -64,7 +64,7 @@ struct sc1
 };
 
 struct sc1 mono_return_sc1 (struct sc1 a) {
-	printf ("Got value %d\n", a.c[0]);
+	// printf ("Got value %d\n", a.c[0]);
 	a.c[0]++;
 	return a;
 }
@@ -76,7 +76,7 @@ struct sc3
 };
 
 struct sc3 mono_return_sc3 (struct sc3 a) {
-	printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2]);
+	// printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2]);
 	a.c[0]++;
 	a.c[1] += 2;
 	a.c[2] += 3;
@@ -89,7 +89,7 @@ struct sc5
 };
 
 struct sc5 mono_return_sc5 (struct sc5 a) {
-	printf ("Got values %d %d %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
+	// printf ("Got values %d %d %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
 	a.c[0]++;
 	a.c[1] += 2;
 	a.c[2] += 3;
@@ -105,7 +105,7 @@ union su
 };
 
 int mono_return_int_su (union su a) {
-	printf ("Got value %d\n", a.i1);
+	// printf ("Got value %d\n", a.i1);
 	return a.i1;
 }
 
@@ -155,7 +155,7 @@ mono_test_split_double_arguments (double a, double b, float c, double d, double 
 int
 mono_test_puts_static (char *s)
 {
-	printf ("TEST %s\n", s);
+	// printf ("TEST %s\n", s);
 	return 1;
 }
 
@@ -166,11 +166,11 @@ mono_invoke_delegate (SimpleDelegate3 delegate)
 {
 	int res;
 
-	printf ("start invoke %p\n", delegate);
+	// printf ("start invoke %p\n", delegate);
 
 	res = delegate (2, 3);
 
-	printf ("end invoke\n");
+	// printf ("end invoke\n");
 
 	return res;
 }
@@ -274,7 +274,7 @@ mono_test_return_vtype (int i)
 void
 mono_test_delegate_struct (void)
 {
-	printf ("TEST\n");
+	// printf ("TEST\n");
 }
 
 typedef char* (*ReturnStringDelegate) (const char *s);
@@ -284,11 +284,11 @@ mono_test_return_string (ReturnStringDelegate func)
 {
 	char *res;
 
-	printf ("mono_test_return_string\n");
+	// printf ("mono_test_return_string\n");
 
 	res = func ("TEST");
 
-	printf ("got string: %s\n", res);
+	// printf ("got string: %s\n", res);
 	return res;
 }
 
@@ -431,6 +431,7 @@ mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 
 	res = g_new0 (simplestruct2, 1);
 	memcpy (res, ss, sizeof (simplestruct2));
+	res->d = g_strdup ("TEST");
 	return res;
 }
 
@@ -447,7 +448,7 @@ mono_test_marshal_byref_class (simplestruct2 **ssp)
 
 	res = g_new0 (simplestruct2, 1);
 	memcpy (res, ss, sizeof (simplestruct2));
-	res->d = (char*)"TEST-RES";
+	res->d = g_strdup ("TEST-RES");
 
 	*ssp = res;
 	return 0;
@@ -735,19 +736,27 @@ mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 {
 	GError *error = NULL;
 	char *s;
-
+	
 	s = g_utf16_to_utf8 (array [0], -1, NULL, NULL, &error);
-	if (strcmp (s, "ABC"))
+	if (strcmp (s, "ABC")) {
+		g_free (s);
 		return 1;
+	}
+	else
+		g_free (s);
 
 	s = g_utf16_to_utf8 (array [1], -1, NULL, NULL, &error);
-	if (strcmp (s, "DEF"))
+	if (strcmp (s, "DEF")) {
+		g_free (s);
 		return 2;
+	}
+	else
+		g_free (s);
 
 	if (strcmp (array2 [0], "ABC"))
 		return 3;
 
-	if (strcmp (array2 [1], "DEF"))
+	if (strcmp (array2 [1], "DEF")) 
 		return 4;
 
 	return 0;
@@ -757,7 +766,7 @@ mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
-	printf ("mono_test_empty_struct %d %d\n", a, b);
+	// printf ("mono_test_empty_struct %d %d\n", a, b);
 
 	if (a == 1 && b == 2)
 		return 0;
@@ -786,8 +795,8 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 	int ret;
 
 	ret = strcmp(data->a, correctString);
-	printf ("T1: %s\n", data->a);
-	printf ("T2: %s\n", correctString);
+	// printf ("T1: %s\n", data->a);
+	// printf ("T2: %s\n", correctString);
 
 	g_free(data);
 	return (ret != 0);
@@ -866,7 +875,7 @@ typedef struct {
 int
 class_marshal_test0 (SimpleObj *obj1)
 {
-	printf ("class_marshal_test0 %s %d\n", obj1->str, obj1->i);
+	// printf ("class_marshal_test0 %s %d\n", obj1->str, obj1->i);
 
 	if (strcmp(obj1->str, "T1"))
 		return -1;
@@ -890,7 +899,7 @@ class_marshal_test1 (SimpleObj **obj1)
 {
 	SimpleObj *res = malloc (sizeof (SimpleObj));
 
-	res->str = "ABC";
+	res->str = g_strdup ("ABC");
 	res->i = 5;
 
 	*obj1 = res;
@@ -899,7 +908,7 @@ class_marshal_test1 (SimpleObj **obj1)
 int
 class_marshal_test2 (SimpleObj **obj1)
 {
-	printf ("class_marshal_test2 %s %d\n", (*obj1)->str, (*obj1)->i);
+	// printf ("class_marshal_test2 %s %d\n", (*obj1)->str, (*obj1)->i);
 
 	if (strcmp((*obj1)->str, "ABC"))
 		return -1;
@@ -927,7 +936,7 @@ string_marshal_test1 (const char **str)
 int
 string_marshal_test2 (char **str)
 {
-	printf ("string_marshal_test2 %s\n", *str);
+	// printf ("string_marshal_test2 %s\n", *str);
 
 	if (strcmp (*str, "TEST1"))
 		return -1;
@@ -952,12 +961,17 @@ typedef struct {
 
 VectorList* TestVectorList (VectorList *vl)
 {
-	printf ("TestVectorList %d %d\n", vl->a, vl->b);
+	VectorList *res;
+
+	// printf ("TestVectorList %d %d\n", vl->a, vl->b);
 
 	vl->a++;
 	vl->b++;
 
-	return vl;
+	res = g_new0 (VectorList, 1);
+	memcpy (res, vl, sizeof (VectorList));
+
+	return res;
 }
 
 
@@ -971,7 +985,7 @@ int
 GetVersionEx (OSVERSIONINFO *osvi)
 {
 
-	printf ("GOT %d %d\n", osvi->a, osvi->b);
+	// printf ("GOT %d %d\n", osvi->a, osvi->b);
 
 	osvi->a += 1;
 	osvi->b += 1;
@@ -983,7 +997,7 @@ int
 BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO *osvi)
 {
 
-	printf ("GOT %d %d\n", osvi->a, osvi->b);
+	// printf ("GOT %d %d\n", osvi->a, osvi->b);
 
 	osvi->a += 1;
 	osvi->b += 1;
@@ -999,7 +1013,7 @@ typedef struct {
 int
 mono_test_marshal_point (point pt)
 {
-	printf("point %g %g\n", pt.x, pt.y);
+	// printf("point %g %g\n", pt.x, pt.y);
 	if (pt.x == 1.25 && pt.y == 3.5)
 		return 0;
 
@@ -1014,7 +1028,7 @@ typedef struct {
 int
 mono_test_marshal_mixed_point (mixed_point pt)
 {
-	printf("mixed point %d %g\n", pt.x, pt.y);
+	// printf("mixed point %d %g\n", pt.x, pt.y);
 	if (pt.x == 5 && pt.y == 6.75)
 		return 0;
 
@@ -1114,10 +1128,14 @@ mono_test_asany (void *ptr, int what)
 		char *s;
 
 		s = g_utf16_to_utf8 (ptr, -1, NULL, NULL, &error);
-		if (!strcmp (s, "ABC"))
+		if (!strcmp (s, "ABC")) {
+			g_free (s);
 			return 0;
-		else
+		}
+		else {
+			g_free (s);
 			return 1;
+		}
 	}
 	default:
 		g_assert_not_reached ();

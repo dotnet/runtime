@@ -50,7 +50,6 @@ TEST_CS_SRC=			\
 	pinvoke10.cs		\
 	pinvoke11.cs		\
 	pinvoke13.cs		\
-	pinvoke14.cs		\
 	pinvoke15.cs		\
 	pinvoke17.cs		\
 	pinvoke18.cs		\

@@ -88,6 +88,13 @@ public class Tests {
 		public int b = 2;
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	class SimpleObj
+	{
+		public string str;
+		public int i;
+	}
+
 	[DllImport ("libnot-found", EntryPoint="not_found")]
 	public static extern int mono_library_not_found ();
 
@@ -181,10 +188,22 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_asany", CharSet=CharSet.Unicode)]
 	public static extern int mono_test_asany_unicode ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
 
+	[DllImport ("libtest")]
+        static extern int class_marshal_test0 (SimpleObj obj);
+
+	[DllImport ("libtest")]
+        static extern void class_marshal_test1 (out SimpleObj obj);
+	
+	[DllImport ("libtest")]
+        static extern int class_marshal_test2 (ref SimpleObj obj);
+
+	[DllImport ("libtest")]
+        static extern int class_marshal_test4 (SimpleObj obj);
+
 	public delegate int SimpleDelegate (int a);
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 
 	static int test_0_marshal_char () {
@@ -681,6 +700,38 @@ public class Tests {
 		if (v2.a != 2 || v2.b != 3)
 			return 2;
 		
+		return 0;
+	}
+
+	static int test_0_marshal_byval_class () {
+		SimpleObj obj0 = new SimpleObj ();
+		obj0.str = "T1";
+		obj0.i = 4;
+		
+		if (class_marshal_test0 (obj0) != 0)
+			return 1;
+
+		return 0;
+	}
+
+	static int test_0_marshal_byval_class_null () {
+		if (class_marshal_test4 (null) != 0)
+			return 1;
+
+		return 0;
+	}
+
+	static int test_0_marshal_out_class () {
+		SimpleObj obj1;
+
+		class_marshal_test1 (out obj1);
+
+		if (obj1.str != "ABC")
+			return 1;
+
+		if (obj1.i != 5)
+			return 2;
+
 		return 0;
 	}
 }
