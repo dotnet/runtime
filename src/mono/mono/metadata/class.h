@@ -50,6 +50,9 @@ struct _MonoClass {
 
 	MonoMethod **methods;
 
+	/* used as the type of the this argument */
+	MonoType this_arg;
+	
 	/* 
 	 * Static class data 
 	 */

@@ -198,6 +198,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	class = g_malloc0 (sizeof (MonoClass));
 
+	class->this_arg.byref = 1;
+	class->this_arg.data.klass = class;
+	class->this_arg.type = MONO_TYPE_CLASS;
+
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
 	class->name = name = mono_metadata_string_heap (image, cols[1]);
 	class->name_space = nspace = mono_metadata_string_heap (image, cols[2]);
@@ -222,8 +226,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	if (!strcmp (nspace, "System") && 
-	    (!strcmp (name, "ValueType") || !strcmp (name, "Enum")))
+	    (!strcmp (name, "ValueType") || !strcmp (name, "Enum"))) {
 		class->valuetype = 1;
+	}
+	if (class->valuetype)
+		class->this_arg.type = MONO_TYPE_VALUETYPE;
 	
 	/*
 	 * Compute the field and method lists
@@ -451,8 +458,12 @@ mono_class_value_size      (MonoClass *klass, guint32 *align)
 
 	size = mono_class_instance_size (klass) - sizeof (MonoObject);
 
-	/* fixme: don't know how o align that */
-	*align = size;
+	if (align) {
+		if (size <= 4)
+			*align = 4;
+		else
+			*align = 8;
+	}
 
 	return size;
 }

@@ -295,7 +295,10 @@ static void
 stackval_from_data (MonoType *type, stackval *result, const char *data)
 {
 	if (type->byref) {
-		result->type = VAL_OBJ;
+		if (type->type == MONO_TYPE_VALUETYPE)
+			result->type = VAL_VALUETA;
+		else
+			result->type = VAL_OBJ;
 		result->data.p = *(gpointer*)data;
 		return;
 	}
@@ -343,6 +346,11 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->type = VAL_OBJ;
 		result->data.p = *(gpointer*)data;
 		return;
+	case MONO_TYPE_VALUETYPE:
+		result->type = VAL_VALUET;
+		result->data.vt.klass = type->data.klass;
+		memcpy (result->data.vt.vt, data, mono_class_value_size (type->data.klass, NULL));
+		return;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
@@ -385,6 +393,9 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
 		*(gpointer*)data = val->data.p;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
 		break;
 	default:
 		g_warning ("got type %x", type->type);
@@ -537,6 +548,7 @@ dump_stack (stackval *stack, stackval *sp)
 		case VAL_I32: g_print ("[%d] ", s->data.i); break;
 		case VAL_I64: g_print ("[%lld] ", s->data.l); break;
 		case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
+		case VAL_VALUET: g_print ("[vt: %p] ", s->data.vt.vt); break;
 		default: g_print ("[%p] ", s->data.p); break;
 		}
 		++s;
@@ -565,22 +577,12 @@ dump_stack (stackval *stack, stackval *sp)
 
 #endif
 
-static MonoType 
-method_this = {
-	{NULL}, /* data */
-	0, /* attrs */
-	MONO_TYPE_CLASS, 
-	0, /* num_mods */
-	1, /* byref */
-	0 /* pinned */
-};
-
 #define LOCAL_POS(n)            (locals_pointers [(n)])
 #define LOCAL_TYPE(header, n)   ((header)->locals [(n)])
 
 #define ARG_POS(n)              (args_pointers [(n)])
 #define ARG_TYPE(sig, n)        ((n) ? (sig)->params [(n) - (sig)->hasthis] : \
-				(sig)->hasthis ? &method_this: (sig)->params [(0)])
+				(sig)->hasthis ? &frame->method->klass->this_arg: (sig)->params [(0)])
 
 #define THROW_EX(exception,ex_ip)	\
 		do {\
@@ -588,6 +590,40 @@ method_this = {
 			frame->ex = (exception);	\
 			goto handle_exception;	\
 		} while (0)
+
+typedef struct _vtallocation vtallocation;
+
+struct _vtallocation {
+	vtallocation *next;
+	guint32 size;
+	char data [MONO_ZERO_LEN_ARRAY];
+};
+
+/*
+ * we don't use vtallocation->next, yet
+ */
+#define vt_alloc(vtype,sp)	\
+	if ((vtype)->type == MONO_TYPE_VALUETYPE) {	\
+		if (!(vtype)->byref) {	\
+			int align;	\
+			guint32 size = mono_class_value_size ((vtype)->data.klass, &align);	\
+			if (!vtalloc || vtalloc->size < size) {	\
+				vtalloc = alloca (sizeof (vtallocation) + size);	\
+				vtalloc->size = size;	\
+			}	\
+			(sp)->data.vt.vt = vtalloc->data;	\
+			vtalloc = NULL;	\
+		} else {	\
+			(sp)->data.vt.klass = (vtype)->data.klass;	\
+		}	\
+	}
+
+#define vt_free(sp)	\
+	do {	\
+		if ((sp)->type == VAL_VALUET) {	\
+			vtalloc = (vtallocation*)(((char*)(sp)->data.vt.vt) - G_STRUCT_OFFSET (vtallocation, data));	\
+		}	\
+	} while (0)
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -615,6 +651,7 @@ ves_exec_method (MonoInvocation *frame)
 	unsigned char tail_recursion = 0;
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
+	vtallocation *vtalloc = NULL;
 	GOTO_LABEL_VARS;
 
 	if (!frame->method->klass->inited)
@@ -720,6 +757,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDARG_3) {
 			int n = (*ip)-CEE_LDARG_0;
 			++ip;
+			vt_alloc (ARG_TYPE (signature, n), sp);
 			stackval_from_data (ARG_TYPE (signature, n), sp, ARG_POS (n));
 			++sp;
 			BREAK;
@@ -730,6 +768,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDLOC_3) {
 			int n = (*ip)-CEE_LDLOC_0;
 			++ip;
+			vt_alloc (LOCAL_TYPE (header, n), sp);
 			stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
 			++sp;
 			BREAK;
@@ -742,39 +781,61 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			--sp;
 			stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
+			vt_free (sp);
 			BREAK;
 		}
 		CASE (CEE_LDARG_S)
 			++ip;
+			vt_alloc (ARG_TYPE (signature, *ip), sp);
 			stackval_from_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip));
 			++sp;
 			++ip;
 			BREAK;
-		CASE (CEE_LDARGA_S)
+		CASE (CEE_LDARGA_S) {
+			MonoType *t;
 			++ip;
-			sp->type = VAL_TP;
-			sp->data.p = ARG_POS (*ip);
+			t = ARG_TYPE (signature, *ip);
+			if (t->type == MONO_TYPE_VALUETYPE) {
+				sp->type = VAL_VALUETA;
+				sp->data.vt.vt = ARG_POS (*ip);
+				sp->data.vt.klass = t->data.klass;
+			} else {
+				sp->type = VAL_TP;
+				sp->data.p = ARG_POS (*ip);
+			}
 			++sp;
 			++ip;
 			BREAK;
+		}
 		CASE (CEE_STARG_S) ves_abort(); BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
+			vt_alloc (LOCAL_TYPE (header, *ip), sp);
 			stackval_from_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip));
 			++ip;
 			++sp;
 			BREAK;
-		CASE (CEE_LDLOCA_S)
+		CASE (CEE_LDLOCA_S) {
+			MonoType *t;
 			++ip;
-			sp->type = VAL_TP;
-			sp->data.p = LOCAL_POS (*ip);
+			t = LOCAL_TYPE (header, *ip);
+			if (t->type == MONO_TYPE_VALUETYPE) {
+				sp->type = VAL_VALUETA;
+				sp->data.vt.vt = LOCAL_POS (*ip);
+				sp->data.vt.klass = t->data.klass;
+			} else {
+				sp->type = VAL_TP;
+				sp->data.p = LOCAL_POS (*ip);
+			}
 			++sp;
 			++ip;
 			BREAK;
+		}
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
 			stackval_to_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip));
+			vt_free (sp);
 			++ip;
 			BREAK;
 		CASE (CEE_LDNULL) 
@@ -842,13 +903,22 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_UNUSED99) ves_abort (); BREAK;
 		CASE (CEE_DUP) 
-			*sp = sp [-1]; 
+			if (sp [-1].type == VAL_VALUET) {
+				/* kludge alert! */
+				MonoType t = sp [-1].data.vt.klass->this_arg;
+				t.byref = 0;
+				vt_alloc (&t, sp);
+				stackval_from_data (&t, sp, sp [-1].data.vt.vt);
+			} else {
+				*sp = sp [-1]; 
+			}
 			++sp; 
 			++ip; 
 			BREAK;
 		CASE (CEE_POP)
 			++ip;
 			--sp;
+			vt_free (sp);
 			BREAK;
 		CASE (CEE_JMP) ves_abort(); BREAK;
 		CASE (CEE_CALLVIRT) /* Fall through */
@@ -885,13 +955,13 @@ ves_exec_method (MonoInvocation *frame)
 			if (csignature->hasthis) {
 				g_assert (sp >= frame->stack);
 				--sp;
-				g_assert (sp->type == VAL_OBJ);
+				g_assert (sp->type == VAL_OBJ || sp->type == VAL_VALUETA);
 				child_frame.obj = sp->data.p;
 			} else {
 				child_frame.obj = NULL;
 			}
 			if (csignature->ret->type != MONO_TYPE_VOID) {
-				/* FIXME: handle valuetype */
+				vt_alloc (csignature->ret, &retval);
 				child_frame.retval = &retval;
 			} else {
 				child_frame.retval = NULL;
@@ -909,6 +979,8 @@ ves_exec_method (MonoInvocation *frame)
 				frame->ex = child_frame.ex;
 				goto handle_finally;
 			}
+			/*
+			 * need to vt_free () arguments ... */
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -921,7 +993,13 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_RET)
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				--sp;
-				*frame->retval = *sp;
+				if (sp->type == VAL_VALUET) {
+					/* the caller has already allocated the memory */
+					stackval_from_data (signature->ret, frame->retval, sp->data.vt.vt);
+					vt_free (sp);
+				} else {
+					*frame->retval = *sp;
+				}
 			}
 			if (sp > frame->stack)
 				g_warning ("more values on stack: %d", sp-frame->stack);
@@ -1679,29 +1757,36 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDFLD) {
 			MonoObject *obj;
 			MonoClassField *field;
-			guint32 token;
+			guint32 token, offset;
 			int load_addr = *ip == CEE_LDFLDA;
 
 			++ip;
 			token = read32 (ip);
 			ip += 4;
 			
-			g_assert (sp [-1].type == VAL_OBJ);
-			obj = sp [-1].data.p;
-			field = mono_class_get_field (obj->klass, token);
-			g_assert (field);
+			if (sp [-1].type == VAL_OBJ) {
+				obj = sp [-1].data.p;
+				field = mono_class_get_field (obj->klass, token);
+				offset = field->offset;
+			} else { /* valuetype */
+				g_assert (sp [-1].type == VAL_VALUETA);
+				obj = sp [-1].data.vt.vt;
+				field = mono_class_get_field (sp [-1].data.vt.klass, token);
+				offset = field->offset - sizeof (MonoObject);
+			}
 			if (load_addr) {
 				sp->type = VAL_TP;
-				sp->data.p = (char*)obj + field->offset;
+				sp->data.p = (char*)obj + offset;
 			} else {
-				stackval_from_data (field->type, &sp [-1], (char*)obj + field->offset);
+				vt_alloc (field->type, &sp [-1]);
+				stackval_from_data (field->type, &sp [-1], (char*)obj + offset);
 			}
 			BREAK;
 		}
 		CASE (CEE_STFLD) {
 			MonoObject *obj;
 			MonoClassField *field;
-			guint32 token;
+			guint32 token, offset;
 
 			++ip;
 			token = read32 (ip);
@@ -1709,11 +1794,18 @@ ves_exec_method (MonoInvocation *frame)
 			
 			sp -= 2;
 			
-			g_assert (sp [0].type == VAL_OBJ);
-			obj = sp [0].data.p;
-			field = mono_class_get_field (obj->klass, token);
-			g_assert (field);
-			stackval_to_data (field->type, &sp [1], (char*)obj + field->offset);
+			if (sp [0].type == VAL_OBJ) {
+				obj = sp [0].data.p;
+				field = mono_class_get_field (obj->klass, token);
+				offset = field->offset;
+			} else { /* valuetype */
+				g_assert (sp->type == VAL_VALUETA);
+				obj = sp [0].data.vt.vt;
+				field = mono_class_get_field (sp [0].data.vt.klass, token);
+				offset = field->offset - sizeof (MonoObject);
+			}
+			stackval_to_data (field->type, &sp [1], (char*)obj + offset);
+			vt_free (&sp [1]);
 			BREAK;
 		}
 		CASE (CEE_LDSFLD) /* Fall through */
@@ -1738,6 +1830,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp->type = VAL_TP;
 				sp->data.p = (char*)klass + field->offset;
 			} else {
+				vt_alloc (field->type, sp);
 				stackval_from_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			}
 			++sp;
@@ -1761,6 +1854,7 @@ ves_exec_method (MonoInvocation *frame)
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			stackval_to_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+			vt_free (sp);
 			BREAK;
 		}
 		CASE (CEE_STOBJ) ves_abort(); BREAK;
@@ -1786,6 +1880,7 @@ ves_exec_method (MonoInvocation *frame)
 
 			sp [-1].type = VAL_OBJ;
 			sp [-1].data.p = mono_value_box (class, &sp [-1]);
+			/* need to vt_free (sp); */
 
 			ip += 4;
 
