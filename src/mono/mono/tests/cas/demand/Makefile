@@ -3,13 +3,16 @@ CSCOMPILE = mcs --debug
 PROFILE = net_1_1
 
 all:	pinvoke1.exe pinvoke2.exe pinvoke3.exe \
-	sucs1.exe sucs2.exe sucs3.exe sucs4.exe 
+	sucs1.exe sucs2.exe sucs3.exe sucs4.exe \
+	selfassert.exe selfdeny.exe selfpermit.exe
 
 aot:	pinvoke1.exe.so pinvoke2.exe.so pinvoke3.exe.so \
-	sucs1.exe.so sucs2.exe.so sucs3.exe.so sucs4.exe.so 
+	sucs1.exe.so sucs2.exe.so sucs3.exe.so sucs4.exe.so \
+	selfassert.exe.so selfdeny.exe.so selfpermit.exe.so
 
 FULLTRUST_TEST_FILES = pinvoke1 pinvoke2 pinvoke3 \
-	sucs1 sucs2 sucs3 sucs4
+	sucs1 sucs2 sucs3 sucs4 \
+	selfassert selfdeny selfpermit
 
 UNHANDLED_TEST_FILES = 
 

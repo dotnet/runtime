@@ -27,3 +27,17 @@ sucs4.cs	Call native code with [SUCS] attributes at both class and
 Notes
 - With Mono runtime the native function getuid is called in libc
 - With MS runtime the native function GetTickCount is called in kernel32.dll
+
+
+** Self
+
+Stack walk starts at the caller frame - i.e. the current frame is ignored. The
+self*.cs tests ensure that the walk starts at the right frame (or at least 
+that it ignore the caller frame).
+
+selfassert.cs	Deny on caller, Assert and Demand on callee. Assert is 
+		ignored, Demand is executed and fail on caller's Deny.
+selfdeny.cs	Deny and Demand on the same frame. Deny is ignored. Demand is
+		executed (stack walk).
+selfpermit.cs	PermitOnly Unmanaged, Demand ControlAppDomain. PermitOnly is
+		ignored and Demand (for ControlAppDomain) succeed.
