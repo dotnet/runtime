@@ -435,7 +435,8 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				break;
 			case MONO_TABLE_EXPORTEDTYPE:
 				g_assert (i == 1);
-				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+				/* the index is in another metadata file, so it must be 4 */
+				field_size = 4; break;
 			case MONO_TABLE_FIELDLAYOUT:
 				g_assert (i == 1);
 				field_size = idx_size (MONO_TABLE_FIELD); break;
@@ -473,7 +474,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			default:
 				g_assert_not_reached ();
 			}
-			if (field_size != idx_size (tableindex))
+			if (tableindex != MONO_TABLE_EXPORTEDTYPE && field_size != idx_size (tableindex))
 				g_warning ("size changed (%d to %d)", idx_size (tableindex), field_size);
 			
 			break;
