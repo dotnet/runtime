@@ -152,6 +152,8 @@ typedef struct {
 typedef struct {
 	guint32 native_size;
 	guint32 num_fields;
+	MonoMethod *ptr_to_str;
+	MonoMethod *str_to_ptr;
 	MonoMarshalField fields [MONO_ZERO_LEN_ARRAY];
 } MonoMarshalType;
 
@@ -275,9 +277,6 @@ struct _MonoClass {
 
 	void *gc_descr;
 	guint64 gc_bitmap;
-
-	MonoMethod *ptr_to_str;
-	MonoMethod *str_to_ptr;
 
 	MonoVTable *cached_vtable;
         MonoMethod **vtable;	

@@ -6216,8 +6216,8 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mono_marshal_load_type_info (klass);
 
-	if (klass->str_to_ptr)
-		return klass->str_to_ptr;
+	if (klass->marshal_info->str_to_ptr)
+		return klass->marshal_info->str_to_ptr;
 
 	if (!stoptr) 
 		stoptr = mono_class_get_method_from_name (mono_defaults.marshal_class, "StructureToPtr", 3);
@@ -6260,7 +6260,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	res = mono_mb_create_method (mb, stoptr->signature, 0);
 	mono_mb_free (mb);
 
-	klass->str_to_ptr = res;
+	klass->marshal_info->str_to_ptr = res;
 	return res;
 }
 
@@ -6281,8 +6281,8 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mono_marshal_load_type_info (klass);
 
-	if (klass->ptr_to_str)
-		return klass->ptr_to_str;
+	if (klass->marshal_info->ptr_to_str)
+		return klass->marshal_info->ptr_to_str;
 
 	if (!ptostr) 
 		ptostr = mono_class_get_method_from_name (mono_defaults.marshal_class, "PtrToStructure", 2);
@@ -6321,7 +6321,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	res = mono_mb_create_method (mb, ptostr->signature, 0);
 	mono_mb_free (mb);
 
-	klass->ptr_to_str = res;
+	klass->marshal_info->ptr_to_str = res;
 	return res;
 }
 
