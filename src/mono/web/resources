@@ -58,10 +58,18 @@
 
 ** Related Technologies
 
-	XML specification.
-	XML Namespaces.
-	XML Schemas.
-	SOAP Specification.
+	<ul>
+
+		* The CLI allows people to create Web Services using the SOAP
+		  protocol.  SOAP is based on XML, XML schemas an the HTTP
+		  protocol.
+		  <ul>
+		* XML specification.
+		* XML Namespaces.
+		* XML Schemas.
+		* SOAP Specification.
+		  </ul>
+	</ul>
 
 ** Compiler Information
 		GCC

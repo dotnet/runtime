@@ -1,1 +1,29 @@
-* Better Web Development Tools
+* Ideas
+
+	Here are a few ideas of tools, classes and projects that you
+	could start.
+
+<a name="classes">
+** Classes
+
+	Implement a JXTA protocol implementation:
+		<a href="http://www.jxta.org">http://www.jxta.org</a>
+
+	Implement a Mail API, similar to Camel or JavaMail (Camel has
+	significant architecture features that are required on a real
+	mailer)
+		<a href="http://cvs.gnome.org/bonsai/rview.cgi?dir=evolution%2Fcamel">
+		Camel implementation</a>
+
+** Projects
+
+	Here are some projects you might be interested in working on:
+
+	Implement an xmlStorageSystem for the CLI:
+		<a href="http://www.soapware.org/xmlStorageSystem">
+		http://www.soapware.org/xmlStorageSystem</a>
+
+** Better Web Infrastructure
+
+	
+	
