@@ -209,7 +209,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 	guchar *buf = mono_array_addr (arry, guchar, 0);
 
 	if (egd) {
-		const char *socket_path = getenv ("MONO_EGD_SOCKET");
+		const char *socket_path = g_getenv ("MONO_EGD_SOCKET");
 		/* exception will be thrown in managed code */
 		if (socket_path == NULL)
 			return NULL; 
