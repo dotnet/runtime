@@ -63,6 +63,11 @@ void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gui
 	ptr += strlen (value)+1;		\
 } G_STMT_END
 
+typedef struct {
+	gpointer stack_pointer;
+	MonoObject *exception_obj;
+} MonoDebuggerExceptionInfo;
+
 #ifndef PLATFORM_WIN32
 
 MonoDebuggerIOLayer mono_debugger_io_layer = {
@@ -1404,12 +1409,18 @@ mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *ex
 void
 mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
+	MonoDebuggerExceptionInfo info;
+
 	if (!mono_debugger_initialized)
 		return;
 
 	// Prevent the object from being finalized.
 	last_exception = exc;
-	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, stack, addr);
+
+	info.stack_pointer = stack;
+	info.exception_obj = exc;
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, &info, addr);
 }
 
 static gchar *
