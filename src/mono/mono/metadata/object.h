@@ -62,6 +62,10 @@ typedef struct {
 } MonoObject;
 
 typedef struct {
+	MonoObject obj;
+} MonoMarshalByRefObject;
+
+typedef struct {
 	guint32 length;
 	guint32 lower_bound;
 } MonoArrayBounds;
@@ -129,7 +133,8 @@ typedef struct {
 } MonoAsyncResult;
 
 typedef struct {
-	MonoObject   object;
+	MonoMarshalByRefObject object;
+	
 	gpointer     handle;
 	MonoBoolean  disposed;
 } MonoWaitHandle;
