@@ -1345,7 +1345,7 @@ typedef union {
 	
 #define x86_push_imm(inst,imm)	\
 	do {	\
-		int _imm = (int) imm;	\
+		int _imm = (int) (imm);	\
 		if (x86_is_imm8 (_imm)) {	\
 			*(inst)++ = (unsigned char)0x6A;	\
 			x86_imm_emit8 ((inst), (_imm));	\
