@@ -2164,6 +2164,13 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 #endif
 		else
 			return NULL;
+	} else if (cmethod->klass == mono_defaults.array_class) {
+		if (strcmp (cmethod->name, "get_Rank") == 0)
+			op = OP_ARRAY_RANK;
+		else if (strcmp (cmethod->name, "get_Length") == 0)
+			op = CEE_LDLEN;
+		else
+			return NULL;
 	} else {
 		return NULL;
 	}

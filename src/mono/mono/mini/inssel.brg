@@ -1536,6 +1536,17 @@ reg: CEE_LDLEN (reg) {
 				   state->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
 }
 
+reg: OP_ARRAY_RANK (reg) {	
+	int vtable_reg = mono_regstate_next_int (s->rs);
+	int class_reg = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, vtable_reg, 
+				       state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, class_reg, 
+				       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
+				       class_reg, G_STRUCT_OFFSET (MonoClass, rank));
+}
+
 reg: OP_CHECK_ARRAY_TYPE (reg) {
 	int vtable_reg = mono_regstate_next_int (s->rs);
 	int class_reg = mono_regstate_next_int (s->rs);
