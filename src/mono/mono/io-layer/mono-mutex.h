@@ -162,6 +162,7 @@ typedef pthread_mutexattr_t mono_mutexattr_t;
 /* This is a function so it can be passed to pthread_cleanup_push -
  * that is a macro and giving it a macro as a parameter breaks.
  */
+G_GNUC_UNUSED
 static inline int mono_mutex_unlock_in_cleanup (mono_mutex_t *mutex)
 {
 	return(mono_mutex_unlock (mutex));

@@ -159,6 +159,7 @@ static inline void begin_spin(volatile unsigned char *lock)
 
 extern volatile unsigned char _wapi_sparc_lock;
 
+G_GNUC_UNUSED 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp)
 {
 	int tmp;
@@ -176,6 +177,7 @@ static inline gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 ex
 	return(old);
 }
 
+G_GNUC_UNUSED 
 static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
 {
         int tmp;
@@ -193,6 +195,7 @@ static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest
         return(old);
 }
 
+G_GNUC_UNUSED 
 static inline gint32 InterlockedIncrement(volatile gint32 *dest)
 {
         int tmp;
@@ -208,6 +211,7 @@ static inline gint32 InterlockedIncrement(volatile gint32 *dest)
         return(ret);
 }
 
+G_GNUC_UNUSED 
 static inline gint32 InterlockedDecrement(volatile gint32 *dest)
 {
         int tmp;
@@ -223,6 +227,7 @@ static inline gint32 InterlockedDecrement(volatile gint32 *dest)
         return(ret);
 }
 
+G_GNUC_UNUSED
 static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 {
         int tmp;
@@ -238,6 +243,7 @@ static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
         return(ret);
 }
 
+G_GNUC_UNUSED
 static inline gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
 {
         int tmp;
@@ -253,6 +259,7 @@ static inline gpointer InterlockedExchangePointer(volatile gpointer *dest, gpoin
         return(ret);
 }
 
+G_GNUC_UNUSED
 static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
         int tmp;
