@@ -1,3 +1,7 @@
+2002-04-30  Jeffrey Stedfast  <fejj@ximian.com>
+
+	* configure.in: Added checks for timezone stuff.
+
 2002-04-30  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h:
