@@ -215,36 +215,7 @@ init_frame_state_for (void)
 gboolean
 mono_arch_has_unwind_info (gconstpointer addr)
 {
-#if 0
-	struct frame_state state_in;
-	struct frame_state *res;
-
-	if (!inited) 
-		init_frame_state_for ();
-	
-	if (!frame_state_for)
-		return FALSE;
-
-	g_assert (method->addr);
-
-	memset (&state_in, 0, sizeof (state_in));
-
-	/* offset 10 is just a guess, but it works for all methods tested */
-	if ((res = frame_state_for ((char *)method->addr + 10, &state_in))) {
-
-		if (res->saved [X86_EBX] != 1 ||
-		    res->saved [X86_EDI] != 1 ||
-		    res->saved [X86_EBP] != 1 ||
-		    res->saved [X86_ESI] != 1) {
-			return FALSE;
-		}
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-#else
 	return FALSE;
-#endif
 }
 
 /*========================= End of Function ========================*/

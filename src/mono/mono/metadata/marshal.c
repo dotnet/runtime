@@ -453,7 +453,6 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 	m->klass = klass;
 	m->name = g_strdup (name);
 	m->inline_info = 1;
-	m->inline_count = -1;
 	m->wrapper_type = type;
 
 	mb->code_size = 256;
@@ -4576,14 +4575,14 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
  * @method: The MonoMethod to wrap.
  *
  * generates IL code for the pinvoke wrapper (the generated method
- * calls the unmanaged code in method->addr)
+ * calls the unmanaged code in piinfo->addr)
  */
 MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *sig, *csig;
-	MonoMethodPInvoke *piinfo;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
 	MonoMethodBuilder *mb;
 	MonoMarshalSpec **mspecs;
 	MonoMethod *res;
@@ -4608,20 +4607,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		pinvoke = TRUE;
 
-	if (!method->addr) {
+	if (!piinfo->addr) {
 		if (pinvoke)
 			mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 		else
-			method->addr = mono_lookup_internal_call (method);
+			piinfo->addr = mono_lookup_internal_call (method);
 	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
-
-	piinfo = (MonoMethodPInvoke *)method;
-
-	if (!method->addr) {
+	
+	if (!piinfo->addr) {
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
 		csig = mono_metadata_signature_dup (sig);
 		csig->pinvoke = 0;
@@ -4650,8 +4647,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		for (i = 0; i < sig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-		g_assert (method->addr);
-		mono_mb_emit_native_call (mb, csig, method->addr);
+		g_assert (piinfo->addr);
+		mono_mb_emit_native_call (mb, csig, piinfo->addr);
 		emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
 
@@ -4776,7 +4773,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	}			
 
 	/* call the native method */
-	mono_mb_emit_native_call (mb, csig, method->addr);
+	mono_mb_emit_native_call (mb, csig, piinfo->addr);
 
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {

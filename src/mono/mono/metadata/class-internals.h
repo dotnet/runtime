@@ -44,9 +44,7 @@ struct _MonoMethod {
 	guint32 token;
 	MonoClass *klass;
 	MonoMethodSignature *signature;
-	gpointer addr;
 	gpointer info; /* runtime info */
-	gint slot;
 	/* name is useful mostly for debugging */
 	const char *name;
 	/* this is used by the inlining algorithm */
@@ -56,7 +54,7 @@ struct _MonoMethod {
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	unsigned int dynamic:1; /* created & destroyed during runtime */
-	gint16 inline_count;
+	gint slot : 22;
 };
 
 struct _MonoMethodNormal {
@@ -78,7 +76,7 @@ struct _MonoMethodInflated {
 
 struct _MonoMethodPInvoke {
 	MonoMethod method;
-	void  (*code) (void);
+	gpointer addr;
 	/* add marshal info */
 	guint16 piflags;  /* pinvoke flags */
 	guint16 implmap_idx;  /* index into IMPLMAP */

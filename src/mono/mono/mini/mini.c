@@ -7933,10 +7933,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm;
+		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
 
-		if (!method->addr) {
+		if (!piinfo->addr) {
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-				method->addr = mono_lookup_internal_call (method);
+				piinfo->addr = mono_lookup_internal_call (method);
 			else
 				if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 					mono_lookup_pinvoke_call (method, NULL, NULL);

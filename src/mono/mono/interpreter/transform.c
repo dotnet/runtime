@@ -2849,8 +2849,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			(!method->signature->hasthis || method->klass->rank == 0)) {
 			runtime_method->code = g_malloc(sizeof(short));
 			runtime_method->code[0] = MINT_CALLINT;
-			if (method->addr == NULL)
-				method->addr = mono_lookup_internal_call (method);
+			if (((MonoMethodPInvoke*) method)->addr == NULL)
+				((MonoMethodPInvoke*) method)->addr = mono_lookup_internal_call (method);
 			runtime_method->func = mono_arch_create_trampoline (method->signature, method->string_ctor);
 		} else {
 			const char *name = method->name;

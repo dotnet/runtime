@@ -381,7 +381,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 
 		if (!strcmp (mname, ".ctor")) {
 			/* we special-case this in the runtime. */
-			result->addr = NULL;
 			return result;
 		}
 		
@@ -389,7 +388,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank + 1 == sig->param_count);
 			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
-			result->addr = NULL;
 			return result;
 		}
 
@@ -397,7 +395,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank == sig->param_count);
 			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
-			result->addr = NULL;
 			return result;
 		}
 
@@ -405,7 +402,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank == sig->param_count);
 			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
-			result->addr = NULL;
 			return result;
 		}
 
@@ -600,8 +596,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
-	if (method->addr)
-		return method->addr;
+	if (piinfo->addr)
+		return piinfo->addr;
 
 	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
@@ -718,58 +714,58 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	}
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
-		g_module_symbol (gmodule, import, &method->addr); 
+		g_module_symbol (gmodule, import, &piinfo->addr); 
 	} else {
 		char *mangled_name;
 
 		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
 		case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 			mangled_name = g_strconcat (import, "W", NULL);
-			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
 
-			if (!method->addr)
-				g_module_symbol (gmodule, import, &method->addr); 
+			if (!piinfo->addr)
+				g_module_symbol (gmodule, import, &piinfo->addr); 
 			break;
 		case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-			g_module_symbol (gmodule, import, &method->addr); 
+			g_module_symbol (gmodule, import, &piinfo->addr); 
 			break;
 		case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
 		default:
 			mangled_name = g_strconcat (import, "A", NULL);
-			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
 
-			if (!method->addr)
-				g_module_symbol (gmodule, import, &method->addr); 
+			if (!piinfo->addr)
+				g_module_symbol (gmodule, import, &piinfo->addr); 
 			       
 			break;					
 		}
 
 #ifdef PLATFORM_WIN32
 		/* Try the stdcall mangled name */
-		if (!method->addr) {
+		if (!piinfo->addr) {
 			/* FIX: Compute this correctly */
 			mangled_name = g_strdup_printf ("%s@%d", import, method->signature->param_count * sizeof (gpointer));
-			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
 		}
-		if (!method->addr) {
+		if (!piinfo->addr) {
 			mangled_name = g_strdup_printf ("_%s@%d", import, method->signature->param_count * sizeof (gpointer));
-			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
 		}
 #endif
 	}
 
-	if (!method->addr) {
+	if (!piinfo->addr) {
 		if (exc_class) {
 			*exc_class = "EntryPointNotFoundException";
 			*exc_arg = import;
 		}
 		return NULL;
 	}
-	return method->addr;
+	return piinfo->addr;
 }
 
 static MonoMethod *
@@ -976,10 +972,7 @@ void
 mono_free_method  (MonoMethod *method)
 {
 	mono_metadata_free_method_signature (method->signature);
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
-		g_free (piinfo->code);
-	} else if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
+	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
 		mono_metadata_free_mh (((MonoMethodNormal *)method)->header);
 	}
 

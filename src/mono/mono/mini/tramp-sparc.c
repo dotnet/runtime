@@ -113,8 +113,7 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
 			MonoJitInfo *target_ji = 
 				mono_jit_info_table_find (mono_domain_get (), addr);
 
-			/* The first part of the condition means an icall without a wrapper */
-			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
+			if (mono_method_same_domain (ji, target_ji)) {
 				sparc_call_simple (code, (guint8*)addr - (guint8*)code);
 			}
 		}

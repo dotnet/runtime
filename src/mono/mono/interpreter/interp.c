@@ -1321,15 +1321,13 @@ mono_create_method_pointer (MonoMethod *method)
 	 * If it is a static P/Invoke method, we can just return the pointer
 	 * to the method implementation.
 	 */
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && ((MonoMethodPInvoke*) method)->addr) {
 		ji = g_new0 (MonoJitInfo, 1);
 		ji->method = method;
 		ji->code_size = 1;
-		ji->code_start = method->addr;
+		ji->code_start = addr = ((MonoMethodPInvoke*) method)->addr;
 
 		mono_jit_info_table_add (mono_get_root_domain (), ji);
-		
-		addr = method->addr;
 	}		
 	else
 		addr = mono_arch_create_method_pointer (method);
@@ -1860,7 +1858,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLINT)
-			ves_pinvoke_method (frame, frame->runtime_method->method->signature, frame->runtime_method->method->addr, 
+			ves_pinvoke_method (frame, frame->runtime_method->method->signature, ((MonoMethodPInvoke*) frame->runtime_method->method)->addr, 
 				    frame->runtime_method->method->string_ctor, context);
 			if (frame->ex) {
 				rtm = NULL;

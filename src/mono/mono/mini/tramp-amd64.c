@@ -113,8 +113,7 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			MonoJitInfo *target_ji = 
 				mono_jit_info_table_find (mono_domain_get (), addr);
 
-			/* The first part of the condition means an icall without a wrapper */
-			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
+			if (mono_method_same_domain (ji, target_ji)) {
 				InterlockedExchangePointer ((gpointer*)(code - 11), addr);
 			}
 		}
