@@ -42,7 +42,7 @@ static CRITICAL_SECTION finalizer_mutex;
 
 static GSList *domains_to_finalize= NULL;
 
-static HANDLE gc_thread;
+static MonoThread *gc_thread;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
@@ -50,6 +50,7 @@ static void object_register_finalizer (MonoObject *obj, void (*callback)(void *,
 static void finalize_notify (void);
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;
+static HANDLE thread_started_event;
 #endif
 
 /* 
@@ -511,8 +512,10 @@ static guint32 finalizer_thread (gpointer unused)
 {
 	guint32 stack_start;
 	
-	mono_thread_new_init (GetCurrentThreadId (), &stack_start, NULL);
-	
+	gc_thread = mono_thread_current ();
+
+	SetEvent (thread_started_event);
+
 	while(!finished) {
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
@@ -613,21 +616,20 @@ void mono_gc_init (void)
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	shutdown_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL) {
+	thread_started_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL || thread_started_event == NULL) {
 		g_assert_not_reached ();
 	}
 
 	GC_finalize_on_demand = 1;
 	GC_finalizer_notifier = finalize_notify;
-	
-	/* Don't use mono_thread_create here, because we don't want
-	 * the runtime to wait for this thread to exit when it's
-	 * cleaning up.
+
+	mono_thread_create (mono_domain_get (), finalizer_thread, NULL);
+	/*
+	 * Wait until the finalizer thread sets gc_thread since its value is needed
+	 * by mono_thread_attach ()
 	 */
-	gc_thread = CreateThread (NULL, mono_threads_get_default_stacksize (), finalizer_thread, NULL, 0, NULL);
-	if (gc_thread == NULL) {
-		g_assert_not_reached ();
-	}
+	WaitForSingleObject (thread_started_event, INFINITE);
 #endif
 }
 
@@ -667,4 +669,11 @@ void mono_gc_cleanup (void)
 }
 
 #endif
+
+gboolean
+mono_gc_is_finalizer_thread (MonoThread *thread)
+{
+	return thread == gc_thread;
+}
+
 

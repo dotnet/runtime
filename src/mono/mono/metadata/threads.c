@@ -22,6 +22,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/io-layer/io-layer.h>
 
 #include <mono/os/gc_wrapper.h>
@@ -126,7 +127,8 @@ static void handle_remove(guint32 tid)
 
 	EnterCriticalSection(&threads_mutex);
 
-	mono_g_hash_table_remove (threads, GUINT_TO_POINTER(tid));
+	if (threads)
+		mono_g_hash_table_remove (threads, GUINT_TO_POINTER(tid));
 	
 	LeaveCriticalSection(&threads_mutex);
 
@@ -1116,6 +1118,9 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		if (thread->state & ThreadState_Background)
 			return; /* just leave, ignore */
 		
+		if (mono_gc_is_finalizer_thread (thread))
+			return;
+
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;
@@ -1162,9 +1167,13 @@ void mono_thread_manage (void)
 	} while(wait->num>0);
 	
 	g_free (wait);
-	
+
+	EnterCriticalSection(&threads_mutex);
+
 	mono_g_hash_table_destroy(threads);
 	threads=NULL;
+
+	LeaveCriticalSection(&threads_mutex);
 }
 
 static void terminate_thread (gpointer key, gpointer value, gpointer user)
