@@ -474,6 +474,12 @@ lreg: CEE_CONV_OVF_U8 (reg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
+lreg: CEE_CONV_OVF_I8 (reg) {
+	/* a signed 32 bit num always fits in a signed 64 bit one */
+	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
+}
+
 lreg: CEE_CONV_OVF_I8_UN (reg) {
 	/* an unsigned 32 bit num always fits in a signed 64 bit one */
 	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
