@@ -26,6 +26,7 @@ struct _MonoClass {
 	guint metadata_inited : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
+	guint min_align       : 4;
 
 	MonoClass  *parent;
 	GList      *subclasses; /* list of all subclasses */

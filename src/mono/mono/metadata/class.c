@@ -131,6 +131,7 @@ class_compute_field_layout (MonoClass *class)
 			int size, align;
 			
 			size = mono_type_size (class->fields [i].type, &align);
+			class->min_align = MAX (align, class->min_align);
 			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
 				class->class_size += (class->class_size % align);
@@ -140,6 +141,10 @@ class_compute_field_layout (MonoClass *class)
 				class->instance_size += (class->instance_size % align);
 				class->instance_size += size;
 			}
+		}
+		if (class->instance_size & (class->min_align - 1)) {
+			class->instance_size += class->min_align - 1;
+			class->instance_size &= ~(class->min_align - 1);
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
@@ -188,16 +193,16 @@ mono_class_metadata_init (MonoClass *class)
 
 	if (class->metadata_inited)
 		return;
+	class->metadata_inited = 1;
 
 	if (class->parent) {
 		if (!class->parent->metadata_inited)
 			mono_class_metadata_init (class->parent);
 		class->instance_size += class->parent->instance_size;
 		class->class_size += class->parent->class_size;
+		class->min_align = class->parent->min_align;
 		cur_slot = class->parent->vtable_size;
 	}
-
-	class->metadata_inited = 1;
 
 	/*
 	 * Computes the size used by the fields, and their locations
