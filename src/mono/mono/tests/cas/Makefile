@@ -2,7 +2,7 @@ RUNTIME = mono --debug --security
 CSCOMPILE = mcs --debug
 PROFILE = net_1_1
 
-SUBDIRS = assembly linkdemand inheritance
+SUBDIRS = assembly linkdemand inheritance demand
 
 test:
 	@failed=0;	\
