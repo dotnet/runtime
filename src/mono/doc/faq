@@ -271,6 +271,30 @@ A: Gtk# is a set of bindings for the Gtk+ toolkit for C# (and other
    CIL-enabled languages).  System.Windows.Forms is an API defined
    by Microsoft to build GUI applications.
 
+Q: Why not implement System.Windows.Forms on top of Gtk# or Qt#?
+
+A: There are several reasons for this.
+
+   First of all, Gtk+ and Qt are standard toolkits on Linux, and their
+   proponents want to use their favorite toolkits when writing
+   applications.
+  
+   Related to this is the idea that System.Windows.Forms is 
+   brain-dead in certain areas, such as internationalization.  
+   System.Windows.Forms uses explicit sizes for all controls, as opposed 
+   to Gtk+ and Qt which use a box/packing model, which can better deal with 
+   the different string lengths different languages will have.
+  
+   Next is compatibility.  It is not possible to implement 
+   System.Windows.Forms on top of Gtk+/Qt and have 100% compatibility, 
+   because System.Windows.Forms exposes <i>lots</i> of Win32-isms, such as the 
+   Win32 message loop.  In order to maintain compatibility, Wine must be used, 
+   and this is being done; see the 
+   <a href="/winforms.html">System.Windows.Forms effort page</a>.
+  
+   Additionally, Wine apps don't currently fit in -- visually -- with 
+   Gtk+ or Qt apps.
+
 Q: Will I be able to run my smart clients on systems powered by Mono?
 
 A: As long as your applications are 100% .NET and do not make use
