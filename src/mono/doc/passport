@@ -1,5 +1,10 @@
 * Updates
 
+	For an analysis of security problems with passport, check <a
+	href="http://avirubin.com/passport.html">http://avirubin.com/passport.html</a>.
+	The bottom line is that you should not put any sensitive
+	information on passport.
+
 	I have received many comments from people, and I have updated
 	the page accordingly.  From removing incorrect statements, to
 	fixing typos, to include mentions to other software pieces.
@@ -265,6 +270,11 @@
 	Nat Friedman (Ximian's co-founder) has his own ideas on how a
 	competing system to Passport could be designed, but I will let
 	<a href="http://www.nat.org/">him</a> post his own story.
+
+** Other Passport Comments
+
+	An interesting study on the security of passport is available at: <a
+	href="http://avirubin.com/passport.html">http://avirubin.com/passport.html</a>
 
 ** Other Alternatives
 
