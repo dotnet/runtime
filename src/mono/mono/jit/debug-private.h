@@ -5,13 +5,6 @@
 
 #include "debug.h"
 
-typedef struct {
-	const guint8 *address;
-	guint32 line;
-	int is_basic_block;
-	int source_file;
-} DebugLineNumberInfo;
-
 typedef struct _AssemblyDebugInfo AssemblyDebugInfo;
 
 typedef enum {
@@ -42,7 +35,6 @@ typedef struct {
 	guint32 start_line;
 	guint32 first_line;
 	guint32 last_line;
-	GPtrArray *line_numbers;
 } DebugMethodInfo;
 
 struct _AssemblyDebugInfo {

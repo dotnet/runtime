@@ -97,16 +97,16 @@ write_method_stabs (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 			 i, debug->next_idx++, header->locals [i]->type, priv->start_line, stack_offset);
 	}
 
-	if (priv->line_numbers) {
+	if (minfo->jit->line_numbers) {
 		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->start_line, 0);
 		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->first_line,
 			 minfo->jit->prologue_end);
 
-		for (i = 1; i < priv->line_numbers->len; i++) {
-			DebugLineNumberInfo *lni = g_ptr_array_index (priv->line_numbers, i);
+		for (i = 1; i < minfo->jit->line_numbers->len; i++) {
+			MonoDebugLineNumberEntry lne = g_array_index (
+				minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
 
-			fprintf (debug->f, ".stabn 68,0,%d,%d\n", lni->line,
-				 lni->address - minfo->jit->code_start);
+			fprintf (debug->f, ".stabn 68,0,%d,%d\n", lne.line, lne.address);
 		}
 
 		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->last_line,

@@ -11,6 +11,7 @@
 #include <mono/jit/debug.h>
 
 #include "debug-private.h"
+#include "helpers.h"
 
 /* This is incremented each time the symbol table is modified.
  * The debugger looks at this variable and if it has a higher value than its current
@@ -59,15 +60,12 @@ free_method_info (MonoDebugMethodInfo *minfo)
 	DebugMethodInfo *priv = minfo->user_data;
 
 	if (priv) {
-		if (priv->line_numbers)
-			g_ptr_array_free (priv->line_numbers, TRUE);
-
 		g_free (priv->name);
 		g_free (priv);
 	}
 
 	if (minfo->jit) {
-		g_free (minfo->jit->il_addresses);
+		g_array_free (minfo->jit->line_numbers, TRUE);
 		g_free (minfo->jit->this_var);
 		g_free (minfo->jit->params);
 		g_free (minfo->jit->locals);
@@ -299,9 +297,7 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 
 		/* If the stat() failed or the file is older. */
 		if (stat (info->ilfile, &statb)) {
-			/* Don't create any new *.il files if the user told us not to do so. */
-			if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES))
-				need_update = TRUE;
+			need_update = TRUE;
 		} else if (statb.st_mtime < stata.st_mtime)
 			need_update = TRUE;
 
@@ -389,16 +385,15 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 }
 
 static void
-record_line_number (DebugMethodInfo *priv, gconstpointer address, guint32 line, int is_basic_block)
+record_line_number (MonoDebugMethodInfo *minfo, guint32 address, guint32 offset, guint32 line)
 {
-	DebugLineNumberInfo *lni = g_new0 (DebugLineNumberInfo, 1);
+	MonoDebugLineNumberEntry *lne = g_new0 (MonoDebugLineNumberEntry, 1);
 
-	lni->address = address;
-	lni->line = line;
-	lni->is_basic_block = is_basic_block;
-	lni->source_file = priv->source_file;
+	lne->address = address;
+	lne->offset = offset;
+	lne->line = line;
 
-	g_ptr_array_add (priv->line_numbers, lni);
+	g_array_append_val (minfo->jit->line_numbers, *lne);
 }
 
 static void
@@ -408,19 +403,16 @@ debug_generate_method_lines (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo
 	DebugMethodInfo *priv = minfo->user_data;
 	int i;
 
-	if (!priv)
+	if (!priv || !info->moffsets)
 		return;
 
-	priv->line_numbers = g_ptr_array_new ();
+	minfo->jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 
 	st_line = priv->first_line;
 	st_address = minfo->jit->prologue_end;
 
-	/* record_line_number takes absolute memory addresses. */
-	record_line_number (priv, minfo->jit->code_start, priv->start_line, FALSE);
-
 	/* This is the first actual code line of the method. */
-	record_line_number (priv, minfo->jit->code_start + st_address, st_line, TRUE);
+	record_line_number (minfo, st_address, 0, st_line);
 
 	/* start lines of basic blocks */
 	for (i = 0; i < cfg->block_count; ++i) {
@@ -433,15 +425,10 @@ debug_generate_method_lines (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo
 			if (!i && !j) {
 				st_line = priv->first_line;
 				st_address = t->addr;
-
-				record_line_number (priv, cfg->start + st_address, st_line, TRUE);
 			}
 
 			addr_inc = t->addr - st_address;
 			st_address += addr_inc;
-
-			if (!info->moffsets)
-				continue;
 
 			if (t->cli_addr != -1) {
 				int *lines = info->moffsets + st_line;
@@ -455,27 +442,74 @@ debug_generate_method_lines (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo
 
 			st_line += line_inc;
 
-			record_line_number (priv, minfo->jit->code_start + st_address,
-					    st_line, j == 0);
+			if (t->cli_addr != -1)
+				record_line_number (minfo, st_address, t->cli_addr, st_line);
 		}
+	}
+}
+
+static void
+generate_line_number (MonoDebugMethodInfo *minfo, guint32 address, guint32 offset)
+{
+	int i;
+
+	for (i = minfo->num_il_offsets - 1; i >= 0; i--) {
+		MonoDebugLineNumberEntry *lne;
+
+		if (minfo->il_offsets [i].offset > offset)
+			continue;
+
+		if (minfo->jit->line_numbers->len) {
+			MonoDebugLineNumberEntry last = g_array_index (
+				minfo->jit->line_numbers, MonoDebugLineNumberEntry,
+				minfo->jit->line_numbers->len - 1);
+
+			if (minfo->il_offsets [i].row <= last.line)
+				continue;
+		}
+
+		lne = g_new0 (MonoDebugLineNumberEntry, 1);
+		lne->address = address;
+		lne->offset = offset;
+		lne->line = minfo->il_offsets [i].row;
+
+		g_array_append_val (minfo->jit->line_numbers, *lne);
+		return;
 	}
 }
 
 static void
 debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, MonoFlowGraph* cfg)
 {
-	guint32 old_address, st_address;
-	int index, i;
+	guint32 address, offset;
+	int debug = 0;
+	int i;
 
-	minfo->jit->il_addresses = g_new0 (guint32, minfo->num_il_offsets);
-	if (minfo->num_il_offsets < 2)
+	g_assert (info->symfile);
+	if (info->symfile->is_dynamic)
 		return;
 
-	st_address = old_address = minfo->jit->prologue_end;
+	g_assert (!minfo->jit->line_numbers);
+	minfo->jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 
-	minfo->jit->il_addresses [0] = 0;
-	minfo->jit->il_addresses [1] = st_address;
-	index = 2;
+	address = minfo->jit->prologue_end;
+	offset = 0;
+
+#if 0
+	if (!strcmp (minfo->method->name, "Main")) {
+		MonoMethodHeader *header = ((MonoMethodNormal*)minfo->method)->header;
+
+		debug = 1;
+		mono_disassemble_code (minfo->jit->code_start, minfo->jit->code_size,
+				       minfo->method->name);
+
+		printf ("\nDisassembly:\n%s\n", mono_disasm_code (
+			NULL, minfo->method, header->code, header->code + header->code_size));
+		g_message (G_STRLOC ": %x - %x", minfo->jit->prologue_end, minfo->jit->epilogue_begin);
+	}
+#endif
+
+	generate_line_number (minfo, address, offset);
 
 	/* start lines of basic blocks */
 	for (i = 0; i < cfg->block_count; ++i) {
@@ -483,30 +517,28 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 
 		for (j = 0; cfg->bblocks [i].forest && (j < cfg->bblocks [i].forest->len); ++j) {
 			MBTree *t = (MBTree *) g_ptr_array_index (cfg->bblocks [i].forest, j);
-			gint32 addr_inc;
 
-			if (!i && !j)
-				st_address = t->addr;
-
-			addr_inc = t->addr - st_address;
-			st_address += addr_inc;
-
-			if (t->cli_addr == -1)
+			if ((t->cli_addr == -1) || (t->cli_addr == offset) || (t->addr == address))
 				continue;
 
-			while (minfo->il_offsets [index].offset < t->cli_addr) {
-				minfo->jit->il_addresses [index] = old_address;
-				if (++index >= minfo->num_il_offsets)
-					return;
-			}
+			offset = t->cli_addr;
+			address = t->addr;
 
-			minfo->jit->il_addresses [index] = st_address;
-			old_address = st_address;
+			generate_line_number (minfo, address, offset);
 		}
 	}
 
-	while (index < minfo->num_il_offsets)
-		minfo->jit->il_addresses [index++] = minfo->jit->epilogue_begin;
+	if (address < minfo->jit->epilogue_begin)
+		generate_line_number (minfo, minfo->jit->epilogue_begin, offset);
+
+	if (debug) {
+		for (i = 0; i < minfo->jit->line_numbers->len; i++) {
+			MonoDebugLineNumberEntry lne = g_array_index (
+				minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
+
+			g_message (G_STRLOC ": %x,%x,%d", lne.address, lne.offset, lne.line);
+		}
+	}
 }
 
 static AssemblyDebugInfo *
@@ -570,8 +602,13 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		info->filename = replace_suffix (image->name, "dbg");
 		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
 			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
-		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER)
-			info->symfile = mono_debug_create_mono_symbol_file (info->image);
+		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER) {
+			info->ilfile = g_strdup_printf ("%s.il", info->name);
+			info->always_create_il = TRUE;
+			debug_load_method_lines (info);
+			g_assert (info->methods);
+			info->symfile = mono_debug_create_mono_symbol_file (info->image, info->methods);
+		}
 		debugger_symbol_file_table_generation++;
 		break;
 
@@ -767,12 +804,16 @@ il_offset_from_address (MonoDebugMethodInfo *minfo, guint32 address)
 {
 	int i;
 
-	if (!minfo->jit)
+	if (!minfo->jit || !minfo->jit->line_numbers)
 		return -1;
 
-	for (i = 0; i < minfo->num_il_offsets; i++)
-		if (minfo->jit->il_addresses [i] > address)
-			return minfo->il_offsets [i].offset;
+	for (i = minfo->jit->line_numbers->len - 1; i >= 0; i--) {
+		MonoDebugLineNumberEntry lne = g_array_index (
+			minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
+
+		if (lne.address <= address)
+			return lne.offset;
+	}
 
 	return -1;
 }
@@ -782,12 +823,16 @@ address_from_il_offset (MonoDebugMethodInfo *minfo, guint32 il_offset)
 {
 	int i;
 
-	if (!minfo->jit)
+	if (!minfo->jit || !minfo->jit->line_numbers)
 		return -1;
 
-	for (i = 0; i < minfo->num_il_offsets; i++)
-		if (minfo->il_offsets [i].offset > il_offset)
-			return minfo->jit->il_addresses [i];
+	for (i = minfo->jit->line_numbers->len - 1; i >= 0; i--) {
+		MonoDebugLineNumberEntry lne = g_array_index (
+			minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
+
+		if (lne.offset <= il_offset)
+			return lne.address;
+	}
 
 	return -1;
 }
@@ -945,7 +990,8 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	}
 
 	debug_generate_method_lines (info, minfo, cfg);
-	debug_update_il_offsets (info, minfo, cfg);
+	if (debug->format == MONO_DEBUG_FORMAT_MONO)
+		debug_update_il_offsets (info, minfo, cfg);
 
 	if (!method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;

@@ -176,7 +176,7 @@ dwarf2_write_long (FILE *f, unsigned long value)
 static void
 dwarf2_write_address (FILE *f, const void *address)
 {
-	fprintf (f, "\t.long 0x%lx\n", address);
+	fprintf (f, "\t.long 0x%lx\n", (long) address);
 }
 
 static void
@@ -901,7 +901,7 @@ write_method_lines_dwarf2 (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 	DebugMethodInfo *priv = minfo->user_data;
 	int i;
 
-	if (!priv->line_numbers)
+	if (!minfo->jit->line_numbers)
 		return;
 
 	// Start of statement program
@@ -912,18 +912,19 @@ write_method_lines_dwarf2 (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 	dwarf2_write_dw_lns_copy (debug->f);
 
 	st_line = priv->start_line;
-	st_address = minfo->jit->code_start;
+	st_address = 0;
 
-	for (i = 1; i < priv->line_numbers->len; i++) {
-		DebugLineNumberInfo *lni = g_ptr_array_index (priv->line_numbers, i);
+	for (i = 1; i < minfo->jit->line_numbers->len; i++) {
+		MonoDebugLineNumberEntry lne = g_array_index (
+			minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
 		gint32 line_inc, addr_inc, opcode;
 		int used_standard_opcode = 0;
 
-		line_inc = lni->line - st_line;
-		addr_inc = (char *)lni->address - (char *)st_address;
+		line_inc = lne.line - st_line;
+		addr_inc = (char *)lne.address - (char *)st_address;
 
 		if (addr_inc < 0) {
-			dwarf2_write_dw_lne_set_address (debug->f, lni->address);
+			dwarf2_write_dw_lne_set_address (debug->f, lne.address + minfo->jit->code_start);
 			used_standard_opcode = 1;
 		} else if (addr_inc && !line_inc) {
 			dwarf2_write_dw_lns_advance_pc (debug->f, addr_inc);
