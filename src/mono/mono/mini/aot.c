@@ -284,7 +284,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		else {
 			/* Create a copy of the original method and apply relocations */
 
-			code = mono_mempool_alloc (domain->code_mp, minfo->info->code_size);
+			code = mono_code_manager_reserve (domain->code_mp, minfo->info->code_size);
 			memcpy (code, minfo->info->code_start, minfo->info->code_size);
 
 			if (mono_aot_verbose > 1)
@@ -294,6 +294,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			LeaveCriticalSection (&aot_mutex);
 			mono_arch_patch_code (method, domain, code, minfo->patch_info, TRUE);
 			EnterCriticalSection (&aot_mutex);
+			mono_arch_flush_icache (code, minfo->info->code_size);
 
 			/* Relocate jinfo */
 			jinfo->code_start = code;
@@ -359,8 +360,9 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 	if (!use_loaded_code) {
 		guint8 *code2;
-		code2 = mono_mempool_alloc (domain->code_mp, code_len);
+		code2 = mono_code_manager_reserve (domain->code_mp, code_len);
 		memcpy (code2, code, code_len);
+		mono_arch_flush_icache (code2, code_len);
 		code = code2;
 	}
 

@@ -3275,7 +3275,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				target = mono_arch_create_jit_trampoline (patch_info->data.method);
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *jump_table = mono_mempool_alloc (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+			gpointer *jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			int i;
 
 			*((gconstpointer *)(ip + 2)) = jump_table;

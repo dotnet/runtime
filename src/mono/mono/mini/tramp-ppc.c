@@ -60,7 +60,10 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	ppc_mtctr (code, ppc_r0);
 	ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
 	ppc_bcctr (code, 20, 0);
+	mono_arch_flush_icache (start, code - start);
 	g_assert ((code - start) <= 20);
+	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
+	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
 	return start;
 }
@@ -90,9 +93,10 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 {
 	char *o, *start;
 	gpointer addr;
-	int reg;
+	int reg, offset = 0;
 
 	addr = mono_compile_method(method);
+	/*g_print ("method code at %p for %s:%s\n", addr, method->klass->name, method->name);*/
 	g_assert(addr);
 
 	/* Locate the address of the method-specific trampoline. The call using
@@ -122,6 +126,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	 * Note that methods are called also with the bl opcode.
 	 */
 	if (((*code) >> 26) == 18) {
+		/*g_print ("direct patching\n");*/
 		ppc_patch (code, addr);
 		mono_arch_flush_icache (code, 4);
 		return addr;
@@ -134,31 +139,49 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	till we get to a 'mtlr rA' */
 	for(; --code;) {
 		if((*code & 0x7c0803a6) == 0x7c0803a6) {
+			gint16 soff;
 			/* Here we are: we reached the 'mtlr rA'.
 			Extract the register from the instruction */
 			reg = (*code & 0x03e00000) >> 21;
+			--code;
+			/* ok, this is a lwz reg, offset (vtreg) 
+			 * it is emitted with:
+			 * ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
+			 */
+			soff = (*code & 0xffff);
+			offset = soff;
+			reg = (*code >> 16) & 0x1f;
+			/*g_print ("patching reg is %d\n", reg);*/
 			switch(reg) {
 				case 0 : o = *((int *) (sp + STACK - 8));   break;
-				case 11: o = *((int *) (sp + STACK - 24));  break;
-				case 12: o = *((int *) (sp + STACK - 28));  break;
-				case 13: o = *((int *) (sp + STACK - 32));  break;
-				case 14: o = *((int *) (sp + STACK - 36));  break;
-				case 15: o = *((int *) (sp + STACK - 40));  break;
-				case 16: o = *((int *) (sp + STACK - 44));  break;
-				case 17: o = *((int *) (sp + STACK - 48));  break;
-				case 18: o = *((int *) (sp + STACK - 52));  break;
-				case 19: o = *((int *) (sp + STACK - 56));  break;
-				case 20: o = *((int *) (sp + STACK - 60));  break;
-				case 21: o = *((int *) (sp + STACK - 64));  break;
-				case 22: o = *((int *) (sp + STACK - 68));  break;
-				case 23: o = *((int *) (sp + STACK - 72));  break;
-				case 24: o = *((int *) (sp + STACK - 76));  break;
-				case 25: o = *((int *) (sp + STACK - 80));  break;
-				case 26: o = *((int *) (sp + STACK - 84));  break;
-				case 27: o = *((int *) (sp + STACK - 88));  break;
-				case 28: o = *((int *) (sp + STACK - 92));  break;
-				case 29: o = *((int *) (sp + STACK - 96));  break;
-				case 30: o = *((int *) (sp + STACK - 100)); break;
+				case 3 : o = *((int *) (sp + STACK - 12));   break;
+				case 4 : o = *((int *) (sp + STACK - 16));   break;
+				case 5 : o = *((int *) (sp + STACK - 20));   break;
+				case 6 : o = *((int *) (sp + STACK - 24));   break;
+				case 7 : o = *((int *) (sp + STACK - 28));   break;
+				case 8 : o = *((int *) (sp + STACK - 32));   break;
+				case 9 : o = *((int *) (sp + STACK - 36));   break;
+				case 10: o = *((int *) (sp + STACK - 40));   break;
+				case 11: o = *((int *) (sp + STACK - 44));  break;
+				case 12: o = *((int *) (sp + STACK - 48));  break;
+				case 13: o = *((int *) (sp + STACK - 52));  break;
+				case 14: o = *((int *) (sp + STACK - 56));  break;
+				case 15: o = *((int *) (sp + STACK - 60));  break;
+				case 16: o = *((int *) (sp + STACK - 64));  break;
+				case 17: o = *((int *) (sp + STACK - 68));  break;
+				case 18: o = *((int *) (sp + STACK - 72));  break;
+				case 19: o = *((int *) (sp + STACK - 76));  break;
+				case 20: o = *((int *) (sp + STACK - 80));  break;
+				case 21: o = *((int *) (sp + STACK - 84));  break;
+				case 22: o = *((int *) (sp + STACK - 88));  break;
+				case 23: o = *((int *) (sp + STACK - 92));  break;
+				case 24: o = *((int *) (sp + STACK - 96));  break;
+				case 25: o = *((int *) (sp + STACK - 100));  break;
+				case 26: o = *((int *) (sp + STACK - 104));  break;
+				case 27: o = *((int *) (sp + STACK - 108));  break;
+				case 28: o = *((int *) (sp + STACK - 112));  break;
+				case 29: o = *((int *) (sp + STACK - 116));  break;
+				case 30: o = *((int *) (sp + STACK - 120)); break;
 				case 31: o = *((int *) (sp + STACK - 4));   break;
 				default:
 					printf("%s: Unexpected register %d\n",
@@ -175,7 +198,10 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	 */
 	if (method->klass->valuetype)
 		addr = get_unbox_trampoline (method, addr);
-	
+
+	o += offset;
+	*((gpointer *)o) = addr;
+	return addr;
 	/* Finally, replace the method-specific trampoline code (which called
 	the generic trampoline code) with a fragment that calls directly the
 	compiled method */
@@ -185,6 +211,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	/* FIXME: make the patching thread safe */
 	ppc_b (o, 0);
 	ppc_patch (o - 4, addr);
+	/*g_print ("patching at %p to %p\n", o, addr);*/
 #else
 	ppc_stwu (o, ppc_r1, -16, ppc_r1);
 	ppc_mflr (o, ppc_r0);
@@ -482,9 +509,9 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 MonoJitInfo*
 mono_arch_create_jump_trampoline (MonoMethod *method)
 {
-	g_assert_not_reached ();
-
-	return NULL;
+	void *code = mono_compile_method (method);
+	/*g_print ("called jump trampoline for %s:%s\n", method->klass->name, method->name);*/
+	return mono_jit_info_table_find (mono_domain_get (), code);
 }
 
 /**
@@ -526,7 +553,9 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	use r11 to keep that value, for instance. However, the generic part of
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
-	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	//code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	// FIXME: should pass the domain down tot his function
+	code = buf = mono_code_manager_reserve (mono_domain_get ()->code_mp, METHOD_TRAMPOLINE_SIZE);
 
 	/* Save r11. There's nothing magic in the '44', its just an arbitrary
 	position - see above */
@@ -788,7 +817,8 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	use r11 to keep that value, for instance. However, the generic part of
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
-	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	//code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
 
 #if 1
 	ppc_mflr (buf, ppc_r4);

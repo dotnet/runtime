@@ -7071,7 +7071,7 @@ mono_codegen (MonoCompile *cfg)
 	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
-	code = mono_mempool_alloc (cfg->domain->code_mp, cfg->code_size);
+	code = mono_code_manager_reserve (cfg->domain->code_mp, cfg->code_size);
 	memcpy (code, cfg->native_code, cfg->code_len);
 	g_free (cfg->native_code);
 	cfg->native_code = code;
@@ -7116,7 +7116,7 @@ mono_codegen (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = mono_mempool_alloc (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+			gpointer *table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->table_size; i++) {
 				table [i] = (gpointer)patch_info->data.table [i]->native_offset;
@@ -7137,6 +7137,7 @@ mono_codegen (MonoCompile *cfg)
 
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
+	mono_code_manager_commit (cfg->domain->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
 	mono_debug_close_method (cfg);

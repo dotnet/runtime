@@ -2249,6 +2249,75 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 	return code;
 }
 
+typedef struct {
+	guchar *code;
+	guchar *target;
+	int absolute;
+	int found;
+} PatchData;
+
+static int
+search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
+	PatchData *pdata = (PatchData*)user_data;
+	guchar *code = data;
+	guint32 *thunks = data;
+	guint32 *endthunks = (guint32*)(code + bsize);
+	guint32 load [2];
+	guchar *templ;
+	int i;
+	
+	templ = (guchar*)load;
+	ppc_lis (templ, ppc_r0, (guint32)(pdata->target) >> 16);
+	ppc_ori (templ, ppc_r0, ppc_r0, (guint32)(pdata->target) & 0xffff);
+
+	//g_print ("thunk nentries: %d\n", ((char*)endthunks - (char*)thunks)/16);
+	if ((pdata->found == 2) || (pdata->code >= code && pdata->code <= code + csize)) {
+		while (thunks < endthunks) {
+			//g_print ("looking for target: %p at %p (%08x-%08x)\n", pdata->target, thunks, thunks [0], thunks [1]);
+			if ((thunks [0] == load [0]) && (thunks [1] == load [1])) {
+				ppc_patch (pdata->code, (guchar*)thunks);
+				pdata->found = 1;
+				return 1;
+			} else if ((thunks [0] == 0) && (thunks [1] == 0)) {
+				/* found a free slot instead: emit thunk */
+				code = (guchar*)thunks;
+				ppc_lis (code, ppc_r0, (guint32)(pdata->target) >> 16);
+				ppc_ori (code, ppc_r0, ppc_r0, (guint32)(pdata->target) & 0xffff);
+				ppc_mtctr (code, ppc_r0);
+				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+				
+				ppc_patch (pdata->code, (guchar*)thunks);
+				pdata->found = 1;
+				return 1;
+			}
+			/* skip 16 bytes, the size of the thunk */
+			thunks += 4;
+		}
+	}
+	return 0;
+}
+
+static void
+handle_thunk (int absolute, guchar *code, guchar *target) {
+	MonoDomain *domain = mono_domain_get ();
+	PatchData pdata;
+
+	pdata.code = code;
+	pdata.target = target;
+	pdata.absolute = absolute;
+	pdata.found = 0;
+
+	mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+	if (!pdata.found) {
+		/* this uses the first available slot */
+		pdata.found = 2;
+		mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+	}
+	if (pdata.found != 1)
+		g_print ("thunk failed for %p from %p\n", target, code);
+	g_assert (pdata.found == 1);
+}
+
 void
 ppc_patch (guchar *code, guchar *target)
 {
@@ -2260,17 +2329,23 @@ ppc_patch (guchar *code, guchar *target)
 	if (prim == 18) {
 		// absolute address
 		if (ins & 2) {
-			guint32 li = (guint32)target;
-			ovf = li & 0xfc000000;
-			if ((li & 3) || ovf)
-				g_assert_not_reached ();
+			gint diff = (gint)target;
+			ovf = diff & 0xfc000000;
+			if ((diff & 3) || (ovf != 0 && ovf != 0xfc000000)) {
+				handle_thunk (TRUE, code, target);
+				return;
+			}
 			ins = prim << 26 | (ins & 3);
-			ins |= li;
+			diff &= ~3;
+			diff &= ~(63 << 26);
+			ins |= diff;
 		} else {
 			gint diff = target - code;
 			ovf = diff & 0xfc000000;
-			if ((diff & 3) || (ovf != 0 && ovf != 0xfc000000))
-				g_assert_not_reached ();
+			if ((diff & 3) || (ovf != 0 && ovf != 0xfc000000)) {
+				handle_thunk (FALSE, code, target);
+				return;
+			}
 			ins = prim << 26 | (ins & 3);
 			diff &= ~3;
 			diff &= ~(63 << 26);
@@ -2709,10 +2784,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_blr (code);
 			break;
 		case CEE_THROW: {
-			ppc_mr (code, ppc_r3, ins->sreg1);
+			ppc_break (code);
+			/*ppc_mr (code, ppc_r3, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
-			ppc_bl (code, 0);
+			ppc_bl (code, 0);*/
 			break;
 		}
 		case OP_START_HANDLER:
