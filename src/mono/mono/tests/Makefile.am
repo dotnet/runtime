@@ -82,9 +82,10 @@ EXTRA_DIST=test-driver $(TESTSRC)
 %.exe: %.cs
 	$(CSC) $<
 
-test: $(TEST_PROG) $(TESTSI)
+test: $(TEST_PROG) $(TESTSI) libtest.la
 	@failed=0; \
 	passed=0; \
+	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI); do	\
 		if ./test-driver $(TEST_PROG) $$i; \
 		then \
@@ -113,3 +114,8 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 
 check:
 	@echo no check yet
+
+noinst_LTLIBRARIES = libtest.la
+
+libtest_la_LDFLAGS = -rpath `pwd`
+libtest_la_SOURCES = libtest.c

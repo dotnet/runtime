@@ -1,11 +1,17 @@
 2002-02-18  Radek Doulik  <rodo@ximian.com>
 
+	* mono/tests/Makefile.am: added small test library for pinvoke
+	testing
+
+	* mono/tests/libtest.c (mono_test_many_int_arguments): new file,
+	new function to test pinvoke
+
 	* mono/tests/pinvoke.cs (Test): added pinvoked method with 10 int
 	arguments
 
-2002-02-18  Radek Doulik  <rodo@ximian.com>
-
 	* mono/tests/Makefile.am: display # of passing tests too
+	added simple shared library libtest with testing function for
+	pinvoke
 
 2002-02-17  Radek Doulik  <rodo@ximian.com>
 
