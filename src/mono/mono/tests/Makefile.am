@@ -50,6 +50,8 @@ TEST_CS_SRC=			\
 	pinvoke8.cs		\
 	pinvoke9.cs		\
 	invoke.cs		\
+	invoke2.cs		\
+	reinit.cs		\
 	box.cs			\
 	array.cs		\
 	enum.cs			\
