@@ -1,5 +1,9 @@
 2005-01-03  Jonathan Pryor  <jonpryor@vt.edu>
 
+	* configure.in: Add checks for getdomainname and setdomainname.
+
+2005-01-03  Jonathan Pryor  <jonpryor@vt.edu>
+
 	* configure.in: Add checks for <fstab.h> and <sys/vfstab.h>.
 
 2005-01-02  Zoltan Varga  <vargaz@freemail.hu>
