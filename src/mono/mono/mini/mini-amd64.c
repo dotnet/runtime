@@ -1275,9 +1275,16 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 		 * guaranteed to be at a 32 bit offset.
 		 */
 
-		if (patch_type != MONO_PATCH_INFO_ABS)
+		if (patch_type != MONO_PATCH_INFO_ABS) {
 			/* The target is in memory allocated using the code manager */
 			near_call = TRUE;
+
+			if ((patch_type == MONO_PATCH_INFO_METHOD) || (patch_type == MONO_PATCH_INFO_METHOD_JUMP)) {
+				if (((MonoMethod*)data)->klass->image->assembly->aot_module)
+					/* The callee might be an AOT method */
+					near_call = FALSE;
+			}
+		}
 		else {
 			if (mono_find_class_init_trampoline_by_addr (data))
 				near_call = TRUE;
