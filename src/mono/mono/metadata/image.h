@@ -95,18 +95,18 @@ struct _MonoImage {
 	void *user_info;
 };
 
-enum MonoImageOpenStatus {
+typedef enum {
 	MONO_IMAGE_OK,
 	MONO_IMAGE_ERROR_ERRNO,
 	MONO_IMAGE_MISSING_ASSEMBLYREF,
 	MONO_IMAGE_IMAGE_INVALID
-};
+} MonoImageOpenStatus;
 
 MonoImage    *mono_image_open     (const char *fname,
-				   enum MonoImageOpenStatus *status);
+				   MonoImageOpenStatus *status);
 MonoImage    *mono_image_loaded   (const char *name);
 void          mono_image_close    (MonoImage *image);
-const char   *mono_image_strerror (enum MonoImageOpenStatus status);
+const char   *mono_image_strerror (MonoImageOpenStatus status);
 
 int           mono_image_ensure_section     (MonoImage *image,
 					     const char *section);

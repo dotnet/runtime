@@ -173,7 +173,7 @@ mono_init (const char *filename)
 	MonoAssembly *ass;
 	MonoClass *class;
 	MonoString *name;
-	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
 
 	if (domain)
 		g_assert_not_reached ();
@@ -589,7 +589,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 {
 	MonoDomain *domain = ad->data; 
 	char *name, *filename;
-	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
 
 	/* FIXME : examine evidence? */

@@ -104,7 +104,7 @@ default_assembly_name_resolver (const char *base_dir, const char *name)
  */
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
-		    enum MonoImageOpenStatus *status)
+		    MonoImageOpenStatus *status)
 {
 	MonoAssembly *ass;
 	MonoImage *image;

@@ -75,7 +75,7 @@ void
 mono_free_method           (MonoMethod *method);
 
 MonoImage *
-mono_load_image            (const char *fname, enum MonoImageOpenStatus *status);
+mono_load_image            (const char *fname, MonoImageOpenStatus *status);
 
 void
 mono_add_internal_call     (const char *name, gconstpointer method);

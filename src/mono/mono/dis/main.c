@@ -830,7 +830,7 @@ static void
 disassemble_file (const char *file)
 {
 	MonoAssembly *ass;
-	enum MonoImageOpenStatus status;
+	MonoImageOpenStatus status;
 	MonoImage *img;
 
 	ass = mono_assembly_open (file, NULL, &status);

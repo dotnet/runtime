@@ -376,7 +376,7 @@ load_class_names (MonoImage *image)
 }
 
 static MonoImage *
-do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
+do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
@@ -545,7 +545,7 @@ mono_image_loaded (const char *name) {
  * if NULL, then check the value of @status for details on the error
  */
 MonoImage *
-mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
+mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
 	MonoImage *image;
 	
@@ -634,7 +634,7 @@ mono_image_close (MonoImage *image)
  * Returns: a string describing the error
  */
 const char *
-mono_image_strerror (enum MonoImageOpenStatus status)
+mono_image_strerror (MonoImageOpenStatus status)
 {
 	switch (status){
 	case MONO_IMAGE_OK:
