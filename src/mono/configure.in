@@ -708,14 +708,13 @@ if test ${TARGET} = ARM; then
 	dnl ******************************************
 	AC_MSG_CHECKING(which FPU to use)
 
-	echo "double foo () { return 0.0; } \
-		int main () { double d = foo(); }" > conftest.c
-	${CC} -S conftest.c -o conftest.s
-
-	if test -n "`grep f0 conftest.s`"; then fpu=FPA
-	else if test -n "`grep d0 conftest.s`"; then fpu=VFP
-	else fpu=NONE
-	fi fi
+	AC_TRY_COMPILE([], [
+		__asm__ ("ldfd f0, [r0]");
+		], fpu=FPA, [
+			AC_TRY_COMPILE([], [
+				__asm__ ("fldd d0, [r0]");
+			], fpu=VFP, fpu=NONE)
+		])
 
 	AC_MSG_RESULT($fpu)
 	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu"
