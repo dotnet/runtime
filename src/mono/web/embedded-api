@@ -120,6 +120,10 @@
 	layer, so in each file where you use pthread.h you should
 	include the &lt;gc/gc.h&gt; file.  
 
+	If you can not do this for any reasons, just remember that you
+	can not store pointers to Mono Objects on the stack, you can
+	store them safely in the heap, or in global variables though
+
 * Exposing C code to the CIL universe
 
 	The Mono runtime provides two mechanisms to expose C code to
