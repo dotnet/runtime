@@ -2624,7 +2624,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
 			guint32 *p = (guint32*)ip;
-			gpointer *jump_table = mono_mempool_alloc (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+			gpointer *jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			int i;
 
 			target = jump_table;

@@ -206,7 +206,10 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type)
 MonoJitInfo*
 mono_arch_create_jump_trampoline (MonoMethod *method)
 {
-	return create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC);
+	MonoJitInfo *ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC);
+
+	ji->method = method;
+	return ji;
 }
 
 /**
