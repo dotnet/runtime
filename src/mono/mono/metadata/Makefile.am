@@ -63,6 +63,8 @@ libmonoruntime_la_SOURCES = \
 	profiler-private.h	\
 	rand.h		\
 	rand.c		\
+	security.c	\
+	security.h	\
 	string-icalls.c \
 	string-icalls.h \
 	sysmath.h	\

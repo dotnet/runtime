@@ -4937,6 +4937,7 @@ static const IcallEntry environment_icalls [] = {
 	{"get_NewLine", ves_icall_System_Environment_get_NewLine},
 	{"get_Platform", ves_icall_System_Environment_get_Platform},
 	{"get_TickCount", ves_icall_System_Environment_get_TickCount},
+	{"get_UserName", ves_icall_System_Environment_get_UserName},
 	{"internalGetGacPath", ves_icall_System_Environment_GetGacPath},
 	{"set_ExitCode", mono_environment_exitcode_set}
 };
