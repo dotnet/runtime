@@ -8,6 +8,7 @@ libmonoutils_la_SOURCES = \
 	mono-sha1.c	\
 	mono-logger.c	\
 	monobitset.c	\
+	mono-math.c  \
 	strtod.h	\
 	strtod.c	\
 	strenc.h	\
@@ -19,7 +20,8 @@ libmonoutilsinclude_HEADERS = \
 	monobitset.h	\
 	mono-digest.h	\
 	mono-logger.h	\
-	mono-hash.h
+	mono-hash.h		\
+	mono-math.h
 
 EXTRA_DIST = ChangeLog
 
