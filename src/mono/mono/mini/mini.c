@@ -166,7 +166,7 @@ print_method_from_ip (void *ip)
 	method = mono_method_full_name (ji->method, TRUE);
 	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
 
-	g_print ("IP %p at offset 0x%x of method %s (%p %p)\n", ip, (char*)ip - (char*)ji->code_start, method, ji->code_start, (char*)ji->code_start + ji->code_size);
+	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (char*)ip - (char*)ji->code_start, method, ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
 	if (source)
 		g_print ("%s\n", source);
@@ -6283,6 +6283,8 @@ mono_create_jit_trampoline (MonoMethod *method)
 	if (domain == mono_get_root_domain ())
 		method->info = tramp;
 
+	mono_jit_stats.method_trampolines++;
+
 	return tramp;
 }	
 
@@ -8315,7 +8317,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	
 	exc = mono_thread_request_interruption (running_managed); 
 	if (!exc) return;
-	
+
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
@@ -8499,6 +8501,7 @@ mini_init (const char *filename)
 				 helper_sig_void_ptr, TRUE);
 	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);
 	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", helper_sig_void_void, FALSE);
+	mono_register_jit_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", helper_sig_void_void, FALSE);
 	mono_register_jit_icall (mono_load_remote_field_new, "mono_load_remote_field_new", helper_sig_obj_obj_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_store_remote_field_new, "mono_store_remote_field_new", helper_sig_void_obj_ptr_ptr_obj, FALSE);
 
