@@ -101,7 +101,7 @@
 	Screenshots: <a
 	href="http://modgb.sourceforge.net/monobasic_snap.png">in
 	Windows doing Windows.Forms</a> and in Linux doing <a
-	ref="images/gtk-vb.png">VB with Gtk#</a> (courtesy of Alp).
+	href="images/gtk-vb.png">VB with Gtk#</a> (courtesy of Alp).
 
 	Daniel Morgan has checked in his Oracle provider to the CVS
 	repository as well.
