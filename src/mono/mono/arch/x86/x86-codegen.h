@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.7 2001/09/07 12:53:34 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.8 2001/09/17 07:18:11 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -417,7 +417,7 @@ typedef union {
 #define x86_alu_reg_reg(inst,opc,dreg,reg)	\
 	do {	\
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 3;	\
-		x86_reg_emit ((inst), (reg), (dreg));	\
+		x86_reg_emit ((inst), (dreg), (reg));	\
 	} while (0)
 
 #define x86_alu_reg_mem(inst,opc,reg,mem)	\
