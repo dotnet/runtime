@@ -414,7 +414,7 @@ ves_icall_iconv_get_bytes (gpointer converter, MonoArray *chars, gint32 charInde
 	g_assert (mono_array_length (bytes) > byteIndex);
 	g_assert (mono_array_length (chars) >= (byteIndex + charCount));
 
-	if (!(len = (mono_array_length (chars) - charIndex) * 2))
+	if (!(len = (charCount - charIndex) * 2))
 		return 0;
 
 	src =  mono_array_addr (chars, guint16, charIndex);
