@@ -2678,6 +2678,17 @@ ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModule *module)
 	return mono_type_get_object (domain, &klass->byval_arg);
 }
 
+static MonoString*
+ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module)
+{
+	MonoDomain *domain = mono_object_domain (module); 
+
+	MONO_ARCH_SAVE_REGS;
+
+	g_assert (module->image);
+	return mono_string_new (domain, module->image->guid);
+}
+
 static MonoReflectionType*
 ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, MonoString *smodifiers)
 {
@@ -3841,6 +3852,7 @@ static gconstpointer icall_map [] = {
 	 * System.Reflection.Module
 	 */
 	"System.Reflection.Module::GetGlobalType", ves_icall_System_Reflection_Module_GetGlobalType,
+	"System.Reflection.Module::GetGuidInternal", ves_icall_System_Reflection_Module_GetGuidInternal,
 
 	/*
 	 * System.MonoType.
