@@ -573,6 +573,36 @@ mono_debug_handle_from_class (MonoClass *klass)
 	return NULL;
 }
 
+static gint32
+il_offset_from_address (DebugMethodInfo *minfo, guint32 address)
+{
+	int i;
+
+	for (i = 0; i < minfo->method_info.num_il_offsets; i++) {
+		MonoDebugILOffsetInfo *ilo = &minfo->method_info.il_offsets [i];
+
+		if (ilo->address > address)
+			return ilo->offset;
+	}
+
+	return -1;
+}
+
+static gint32
+address_from_il_offset (DebugMethodInfo *minfo, guint32 il_offset)
+{
+	int i;
+
+	for (i = 0; i < minfo->method_info.num_il_offsets; i++) {
+		MonoDebugILOffsetInfo *ilo = &minfo->method_info.il_offsets [i];
+
+		if (ilo->offset > il_offset)
+			return ilo->address;
+	}
+
+	return -1;
+}
+
 void
 mono_debug_add_type (MonoClass *klass)
 {
@@ -581,6 +611,24 @@ mono_debug_add_type (MonoClass *klass)
 	g_assert (debug != NULL);
 
 	mono_debug_get_type (debug, klass);
+}
+
+static guint32
+il_offset_from_position (MonoFlowGraph *cfg, MonoPosition *pos)
+{
+	MonoBBlock *bblock;
+	MBTree *tree;
+
+	if (pos->pos.bid >= cfg->block_count)
+		return -1;
+
+	bblock = &cfg->bblocks [pos->pos.bid];
+	if (pos->pos.tid >= bblock->forest->len)
+		return -1;
+
+	tree = (MBTree *) g_ptr_array_index (bblock->forest, pos->pos.tid);
+
+	return tree->cli_addr;
 }
 
 void
@@ -666,37 +714,43 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 		minfo->method_info.params [i].offset = ptr [i].offset;
 	}
 
+	debug_generate_method_lines (info, minfo, cfg);
+
 	if (!method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
 		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->locals_start_index;
+		MonoDebugVarInfo *locals;
+
+		locals = g_new0 (MonoDebugVarInfo, header->num_locals);
+		for (i = 0; i < header->num_locals; i++) {
+			gint32 begin_scope, end_scope;
+
+			if (ptr [i].reg >= 0) {
+				locals [i].index = ptr [i].reg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
+				locals [i].offset = 0;
+			} else
+				locals [i].offset = ptr [i].offset;
+
+			begin_scope = address_from_il_offset
+				(minfo, il_offset_from_position (cfg, &ptr [i].range.first_use));
+			end_scope = address_from_il_offset
+				(minfo, il_offset_from_position (cfg, &ptr [i].range.last_use) + 1);
+
+			if (begin_scope > 0)
+				locals [i].begin_scope = begin_scope;
+			else
+				locals [i].begin_scope = minfo->method_info.prologue_end;
+			if (end_scope > 0)
+				locals [i].end_scope = end_scope;
+			else
+				locals [i].end_scope = minfo->method_info.epilogue_begin;
+		}
 
 		minfo->method_info.num_locals = header->num_locals;
-		minfo->method_info.locals = g_new0 (MonoDebugVarInfo, header->num_locals);
-		for (i = 0; i < minfo->method_info.num_locals; i++) {
-			minfo->method_info.locals [i].offset = ptr [i].offset;
-			minfo->method_info.locals [i].begin_scope = minfo->method_info.prologue_end;
-			minfo->method_info.locals [i].end_scope = minfo->method_info.epilogue_begin;
-		}
+		minfo->method_info.locals = locals;
 	}
-
-	debug_generate_method_lines (info, minfo, cfg);
 
 	g_hash_table_insert (debug->methods, method, minfo);
-}
-
-static gint32
-il_offset_from_address (DebugMethodInfo *minfo, guint32 address)
-{
-	int i;
-
-	for (i = 0; i < minfo->method_info.num_il_offsets; i++) {
-		MonoDebugILOffsetInfo *ilo = &minfo->method_info.il_offsets [i];
-
-		if (ilo->address > address)
-			return ilo->offset;
-	}
-
-	return -1;
 }
 
 gchar *
@@ -745,8 +799,7 @@ gint32
 mono_debug_il_offset_from_address (MonoMethod *method, guint32 address)
 {
 	MonoDebugHandle *debug;
-	MonoDebugMethodInfo *minfo = NULL;
-	int i;
+	DebugMethodInfo *minfo = NULL;
 
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
 		minfo = g_hash_table_lookup (debug->methods, method);
@@ -755,15 +808,27 @@ mono_debug_il_offset_from_address (MonoMethod *method, guint32 address)
 			break;
 	}
 
-	if (!minfo || !minfo->il_offsets)
+	if (!minfo || !minfo->method_info.il_offsets)
 		return -1;
 
-	for (i = 0; i < minfo->num_il_offsets; i++) {
-		MonoDebugILOffsetInfo *ilo = &minfo->il_offsets [i];
-		
-		if (ilo->address > address)
-			return ilo->offset;
+	return il_offset_from_address (minfo, address);
+}
+
+gint32
+mono_debug_address_from_il_offset (MonoMethod *method, guint32 il_offset)
+{
+	MonoDebugHandle *debug;
+	DebugMethodInfo *minfo = NULL;
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		minfo = g_hash_table_lookup (debug->methods, method);
+
+		if (minfo)
+			break;
 	}
 
-	return -1;
+	if (!minfo || !minfo->method_info.il_offsets)
+		return -1;
+
+	return address_from_il_offset (minfo, il_offset);
 }

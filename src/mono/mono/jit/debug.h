@@ -72,6 +72,8 @@ gchar *        mono_debug_source_location_from_address (MonoMethod *method, guin
 
 gint32         mono_debug_il_offset_from_address (MonoMethod *method, guint32 address);
 
+gint32         mono_debug_address_from_il_offset (MonoMethod *method, guint32 il_offset);
+
 /* DEBUGGER PUBLIC FUNCTION:
  *
  * This is a public function which is supposed to be called from within a debugger
