@@ -153,7 +153,6 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	klass = ((MonoObject *)delegate)->vtable->klass;
 	g_assert (klass->delegate);
 
-
 	method = delegate->method_info->method;
 	invoke = mono_find_method_by_name (klass, "Invoke", method->signature->param_count);
 
@@ -163,7 +162,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	wrapper = mono_marshal_get_managed_wrapper (method, delegate->target, mspecs);
 
 	for (i = invoke->signature->param_count; i >= 0; i--)
-		g_free (mspecs [i]);
+		mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);

@@ -235,6 +235,8 @@ guint32     mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 catt
 
 MonoMarshalSpec *mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr);
 
+void mono_metadata_free_marshal_spec (MonoMarshalSpec *spec);
+
 guint32     mono_metadata_implmap_from_method     (MonoImage *meta, guint32 method_idx);
 
 void        mono_metadata_field_info (MonoImage *meta, 

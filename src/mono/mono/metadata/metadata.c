@@ -3100,6 +3100,16 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 	return res;
 }
 
+void 
+mono_metadata_free_marshal_spec (MonoMarshalSpec *spec)
+{
+	if (spec->native == MONO_NATIVE_CUSTOM) {
+		g_free (spec->data.custom_data.custom_name);
+		g_free (spec->data.custom_data.cookie);
+	}
+	g_free (spec);
+}
+	
 guint32
 mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_field,
 			gboolean unicode, MonoMarshalConv *conv) 
