@@ -682,7 +682,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
-			g_print ("Mono JIT compiler version %s, (C) 2002-2004 Novell, Inc and Contributors. www.go-mono.com\n", VERSION);
+			g_print ("Mono JIT compiler version %s, (C) 2002-2005 Novell, Inc and Contributors. www.mono-project.com\n", VERSION);
 			g_print (info);
 			if (mini_verbose) {
 				const guchar *cerror;
