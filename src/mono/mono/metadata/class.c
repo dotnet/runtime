@@ -4068,48 +4068,6 @@ mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_c
 {
 	return mono_class_get_method_from_name_flags (klass, name, param_count, 0);
 }
-MonoMethod *
-mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int param_count, int flags)
-{
-	MonoMethod *res = NULL;
-	int i;
-
-	mono_class_init (klass);
-
-	if (klass->methods) {
-		mono_class_setup_methods (klass);
-		for (i = 0; i < klass->method.count; ++i) {
-			MonoMethod *method = klass->methods [i];
-
-			if (method->name[0] == name [0] && 
-				!strcmp (name, method->name) &&
-				(param_count == -1 || mono_method_signature (method)->param_count == param_count) &&
-				((method->flags & flags) == flags)) {
-				res = method;
-				break;
-			}
-		}
-	}
-	else {
-		/* Search directly in the metadata to avoid calling setup_methods () */
-		for (i = 0; i < klass->method.count; ++i) {
-			guint32 cols [MONO_METHOD_SIZE];
-			MonoMethod *method;
-
-			mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_METHOD], klass->method.first + i, cols, MONO_METHOD_SIZE);
-
-			if (!strcmp (mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]), name)) {
-				method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
-				if ((param_count == -1) || mono_method_signature (method)->param_count == param_count) {
-					res = method;
-					break;
-				}
-			}
-		}
-	}
-
-	return res;
-}
 
 /**
  * mono_class_get_method_from_name_flags:
