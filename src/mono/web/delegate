@@ -6,7 +6,7 @@
 	collected.
 
 	This means that the the delegate is no longer valid, but the
-	unmanaged library or code tried to call it.
+	unmanaged library or unmanaged code tried to call it.
 
 	To fix this problem make sure that you keep a handle to the
 	delegate that you are passing into the unmanaged world.

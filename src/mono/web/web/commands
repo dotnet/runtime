@@ -61,6 +61,7 @@
 1,Known Issues,issues.html,issues.src
 1,Crypto,crypto.html,crypto.src
 1,Java,java.html,java.src
+1,Delegates,delegate.html,delegate.src
 1,Windows.Forms,winforms.html,winforms.src
 1,XML Classes,xml-classes.html,xml-classes.src
 0,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js

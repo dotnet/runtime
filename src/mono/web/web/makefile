@@ -19,6 +19,7 @@ OBJECTS=									\
 	deploy/contact.html							\
 	deploy/c-sharp.html							\
 	deploy/ccvs.html							\
+	deploy/delegate.html							\
 	deploy/documentation.html						\
 	deploy/download.html							\
 	deploy/drawing.html							\
@@ -148,8 +149,7 @@ push:
 	cp -f $(NON_HTML_SOURCES) deploy
 	cp ../mono-roadmap.html deploy
 	#echo scp -P 2200 -r deploy/* www@www.go-mono.com:/web/cvsmodules/mono
-	#(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . www@www.go-mono.com:/web/cvsmodules/mono )
-	(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . mono-web@www.go-mono.com:/web/cvsmodules/mono )
+	(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . mono-web@www.go-mono.com:go-mono)
 
 
 push2: 

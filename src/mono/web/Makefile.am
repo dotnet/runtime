@@ -6,7 +6,7 @@ WEB_FILES=														\
 	passport plans porting postgresql ppc projects rationale							\
 	resources roadmap runtime sqlclient sqlite sybase tdsclient							\
 	tds-providers status testing thanks tools								\
-	porting anoncvs monodoc-xml winforms
+	porting anoncvs monodoc-xml winforms delegate
 
 OTHERS= pending resources-pending todo mono-build.sh mono-build-w32.sh print-stack
 
