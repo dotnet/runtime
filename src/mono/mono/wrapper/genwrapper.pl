@@ -64,6 +64,13 @@ create_func ($lib, "", "open", "IntPtr",
 create_func ($lib, "", "close", "int",
 	     "IntPtr", "fd");
 
+create_func ($lib, "", "stat", "int",
+	     "string", "path",
+	     "stat *", "buf");
+
+create_func ($lib, "", "unlink", "int",
+	     "string", "path");
+
 map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "SEEK_CUR",
 	   "int", "%d", "SEEK_END",

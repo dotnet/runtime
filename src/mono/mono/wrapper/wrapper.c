@@ -66,3 +66,30 @@ mono_wrapper_close (int fd)
 	return close (fd);
 }
 
+gint32
+mono_wrapper_stat (const char * path, MonoWrapperStat* buf)
+{
+	struct stat fs;
+
+	if (stat (path, &fs) != 0)
+		return errno;
+
+	buf->st_dev = fs.st_dev;
+	buf->st_mode = fs.st_mode;
+	buf->st_nlink = fs.st_nlink;
+	buf->st_uid = fs.st_uid;
+	buf->st_gid = fs.st_gid;
+	buf->st_size = fs.st_size;
+	buf->st_atime = fs.st_atime;
+	buf->st_mtime = fs.st_ctime;
+	buf->st_ctime = fs.st_ctime;
+
+	return 0;
+}
+
+gint32
+mono_wrapper_unlink (const char * path)
+{
+	return unlink(path);
+}
+
