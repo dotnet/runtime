@@ -524,7 +524,7 @@ arch_get_call_filter (void)
 
 	ppc_mflr (code, ppc_r0);
 	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 19 + sizeof (gdouble) * 18);
+	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * MONO_SAVED_GREGS + sizeof (gdouble) * MONO_SAVED_FREGS);
 	// align to PPC_STACK_ALIGNMENT bytes
 	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
 		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
@@ -533,7 +533,9 @@ arch_get_call_filter (void)
 	/* save all the regs on the stack */
 	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_stmw (code, ppc_r13, ppc_sp, pos);
-	pos += sizeof (gulong) * 19;
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
+	pos += 7;
+	pos &= ~7;
 	for (i = 14; i < 32; ++i) {
 		ppc_stfd (code, i, pos, ppc_sp);
 		pos += sizeof (gdouble);
@@ -548,7 +550,9 @@ arch_get_call_filter (void)
 	/* restore all the regs from the stack */
 	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_lmw (code, ppc_r13, ppc_sp, pos);
-	pos += sizeof (gulong) * 19;
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
+	pos += 7;
+	pos &= ~7;
 	for (i = 14; i < 32; ++i) {
 		ppc_lfd (code, i, pos, ppc_sp);
 		pos += sizeof (gdouble);
@@ -579,7 +583,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
-	memcpy (&ctx.regs, int_regs, sizeof (gulong) * 19);
+	memcpy (&ctx.regs, int_regs, sizeof (gulong) * MONO_SAVED_GREGS);
 
 	arch_handle_exception (&ctx, exc, FALSE);
 	restore_context (&ctx);
@@ -606,7 +610,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 
 	ppc_mflr (code, ppc_r0);
 	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 19 + sizeof (gdouble) * 18);
+	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * MONO_SAVED_GREGS + sizeof (gdouble) * MONO_SAVED_FREGS);
 	// align to PPC_STACK_ALIGNMENT bytes
 	if (alloc_size & (PPC_STACK_ALIGNMENT - 1)) {
 		alloc_size += PPC_STACK_ALIGNMENT - 1;
@@ -626,7 +630,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 	/* save all the regs on the stack */
 	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_stmw (code, ppc_r13, ppc_sp, pos);
-	pos += sizeof (gulong) * 19;
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
 	/* align for doubles */
 	pos += 7;
 	pos &= ~7;
@@ -646,7 +650,10 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	/* pointer to the saved fp regs */
-	pos += sizeof (gulong) * 19;
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
+	/* align for doubles */
+	pos += 7;
+	pos &= ~7;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);
 	ppc_bl (code, 0);
 	ppc_patch (code - 4, throw_exception);
@@ -879,7 +886,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);*/
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
-		memcpy (&new_ctx->regs, (*lmf)->iregs, sizeof (gulong) * 19);
+		memcpy (&new_ctx->regs, (*lmf)->iregs, sizeof (gulong) * MONO_SAVED_GREGS);
 		*lmf = (*lmf)->previous_lmf;
 
 		return res;
@@ -956,7 +963,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
@@ -990,7 +997,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 
 		ctx = new_ctx;
 		
@@ -1037,8 +1044,8 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	
 	mctx.sc_ir = uc->uc_mcontext->ss.srr0;
 	mctx.sc_sp = uc->uc_mcontext->ss.r1;
-	memcpy (&mctx.regs, &uc->uc_mcontext->ss.r13, sizeof (gulong) * 19);
-	memcpy (&mctx.fregs, &uc->uc_mcontext->fs.fpregs [14], sizeof (double) * 20);
+	memcpy (&mctx.regs, &uc->uc_mcontext->ss.r13, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx.fregs, &uc->uc_mcontext->fs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
 
 	result = arch_handle_exception (&mctx, obj, test_only);
 	/* restore the context so that returning from the signal handler will invoke
@@ -1046,8 +1053,8 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	 */
 	uc->uc_mcontext->ss.srr0 = mctx.sc_ir;
 	uc->uc_mcontext->ss.r1 = mctx.sc_sp;
-	memcpy (&uc->uc_mcontext->ss.r13, &mctx.regs, sizeof (gulong) * 19);
-	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx.fregs, sizeof (double) * 20);
+	memcpy (&uc->uc_mcontext->ss.r13, &mctx.regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);
 	return result;
 }
 #else
@@ -1061,8 +1068,8 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	
 	mctx.sc_ir = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
 	mctx.sc_sp = uc->uc_mcontext.uc_regs->gregs [PT_R1];
-	memcpy (&mctx.regs, &uc->uc_mcontext.uc_regs->gregs [PT_R13], sizeof (gulong) * 19);
-	memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * 20);
+	memcpy (&mctx.regs, &uc->uc_mcontext.uc_regs->gregs [PT_R13], sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
 
 	result = arch_handle_exception (&mctx, obj, test_only);
 	/* restore the context so that returning from the signal handler will invoke
@@ -1070,8 +1077,8 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	 */
 	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = mctx.sc_ir;
 	uc->uc_mcontext.uc_regs->gregs [PT_R1] = mctx.sc_sp;
-	memcpy (&uc->uc_mcontext.uc_regs->gregs [PT_R13], &mctx.regs, sizeof (gulong) * 19);
-	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * 20);
+	memcpy (&uc->uc_mcontext.uc_regs->gregs [PT_R13], &mctx.regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);
 	return result;
 }
 #endif
@@ -1129,6 +1136,8 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			mono_unhandled_exception (obj);
 		}
 	}
+
+	memset (&rji, 0, sizeof (rji));
 
 	while (1) {
 		MonoContext new_ctx;

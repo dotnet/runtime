@@ -7,6 +7,9 @@
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
+#define MONO_SAVED_GREGS 19
+#define MONO_SAVED_FREGS 18
+
 #define MONO_ARCH_FRAME_ALIGNMENT 4
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
@@ -21,8 +24,8 @@ struct MonoLMF {
 	MonoMethod *method;
 	gulong     ebp;
 	gulong     eip;
-	gulong     iregs [19]; /* 13..31 */
-	gdouble    fregs [20]; /* 14..31 */
+	gulong     iregs [MONO_SAVED_GREGS]; /* 13..31 */
+	gdouble    fregs [MONO_SAVED_FREGS]; /* 14..31 */
 };
 
 /* we define our own structure and we'll copy the data
@@ -34,8 +37,8 @@ struct MonoLMF {
 typedef struct {
 	gulong sc_ir;          // pc 
 	gulong sc_sp;          // r1
-	gulong regs [19];
-	double fregs [20];
+	gulong regs [MONO_SAVED_GREGS];
+	double fregs [MONO_SAVED_FREGS];
 } MonoContext;
 
 typedef struct MonoCompileArch {

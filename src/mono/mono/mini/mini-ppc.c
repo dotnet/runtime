@@ -571,6 +571,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	int frame_reg = ppc_sp;
 
+	/* allow room for the vararg method args: void* and long/double */
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
+		m->param_area = MAX (m->param_area, 16);
+
 	/* 
 	 * FIXME: we'll use the frame register also for any method that has
 	 * filter clauses. This way, when the handlers are called,
@@ -619,9 +623,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset += 16 - 1;
 	offset &= ~(16 - 1);
 
-	/* FIXME: check how to handle this stuff... reserve space to save LMF and caller saved registers */
-	if (m->method->save_lmf)
-		offset += sizeof (MonoLMF);
+	/* the MonoLMF structure is stored just below the stack pointer */
 
 #if 0
 	/* this stuff should not be needed on ppc and the new jit,
@@ -2711,15 +2713,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_OUTARG:
 			g_assert_not_reached ();
 			break;
-		case OP_LOCALLOC:
+		case OP_LOCALLOC: {
 			/* keep alignment */
-			ppc_addi (code, ppc_r0, ins->sreg1, PPC_STACK_ALIGNMENT-1);
-			ppc_rlwinm (code, ppc_r0, ppc_r0, 0, 0, 27);
-			ppc_lwz (code, ppc_r11, 0, ppc_sp);
-			ppc_neg (code, ppc_r0, ppc_r0);
-			ppc_stwux (code, ppc_r11, ppc_r0, ppc_sp);
-			ppc_addi (code, ins->dreg, ppc_sp, PPC_STACK_PARAM_OFFSET);
+			int alloca_waste = PPC_STACK_PARAM_OFFSET + cfg->param_area + 15;
+			ppc_addi (code, ppc_r11, ins->sreg1, alloca_waste);
+			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 0, 27);
+			ppc_lwz (code, ppc_r0, 0, ppc_sp);
+			ppc_neg (code, ppc_r11, ppc_r11);
+			ppc_stwux (code, ppc_r0, ppc_r11, ppc_sp);
+			ppc_addi (code, ins->dreg, ppc_sp, PPC_STACK_PARAM_OFFSET + cfg->param_area);
 			break;
+		}
 		case CEE_RET:
 			ppc_blr (code);
 			break;
@@ -3237,6 +3241,22 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 	return max_epilog_size;
 }
 
+/*
+ * Stack frame layout:
+ * 
+ *   ------------------- sp
+ *   	optional 8 bytes for tracing (later use a proper local variable?)
+ *   -------------------
+ *   	MonoLMF structure or saved registers
+ *   -------------------
+ *   	locals
+ *   -------------------
+ *   	param area
+ *   -------------------
+ *   	linkage area
+ *   ------------------- sp
+ *   	red zone
+ */
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -3248,6 +3268,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint8 *code;
 	CallInfo *cinfo;
 	int tracing = 0;
+	int lmf_offset = 0;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -3283,6 +3304,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				ppc_stfd (code, i, -pos, ppc_sp);
 			}
 		}*/
+	} else {
+		int ofs;
+		pos += sizeof (MonoLMF);
+		lmf_offset = pos;
+		ofs = -pos + G_STRUCT_OFFSET(MonoLMF, iregs);
+		ppc_stmw (code, ppc_r13, ppc_r1, ofs);
+		for (i = 14; i < 32; i++) {
+			ppc_stfd (code, i, (-pos + G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble))), ppc_r1);
+		}
 	}
 	alloc_size += pos;
 	// align to PPC_STACK_ALIGNMENT bytes
@@ -3418,13 +3448,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				     (gpointer)"mono_get_lmf_addr");
 		ppc_bl (code, 0);
 		/* we build the MonoLMF structure on the stack - see mini-ppc.h */
-		pos = PPC_MINIMAL_STACK_SIZE + cfg->param_area;
-		pos += 16-1;
-		pos &= ~(16-1);
-		ppc_addi (code, ppc_r11, ppc_sp, pos);
+		/* lmf_offset is the offset from the previous stack pointer,
+		 * alloc_size is the total stack space allocated, so the offset
+		 * of MonoLMF from the current stack ptr is alloc_size - lmf_offset.
+		 * The pointer to the struct is put in ppc_r11.
+		 */
+		ppc_addi (code, ppc_r11, ppc_sp, alloc_size - lmf_offset);
 		ppc_stw (code, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
 		/* new_lmf->previous_lmf = *lmf_addr */
-		ppc_lwz (code, ppc_r0, 0, ppc_r3);
+		ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
 		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
 		/* *(lmf_addr) = r11 */
 		ppc_stw (code, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
@@ -3436,10 +3468,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		ppc_load (code, ppc_r0, 0x01010101);
 		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
-		ppc_stmw (code, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
-		for (i = 14; i < 32; i++) {
-			ppc_stfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
-		}
 	}
 
 	if (tracing)
@@ -3470,12 +3498,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	} else {
 		pos = 0;
 	}
-	
+
 	if (method->save_lmf) {
-		int ofst = PPC_MINIMAL_STACK_SIZE + cfg->param_area;
-		ofst += 16-1;
-		ofst &= ~(16-1);
-		ppc_addi (code, ppc_r11, cfg->frame_reg, ofst);
+		int lmf_offset;
+		pos +=  sizeof (MonoLMF);
+		lmf_offset = pos;
+		/* save the frame reg in r8 */
+		ppc_mr (code, ppc_r8, cfg->frame_reg);
+		ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage - lmf_offset);
 		/* r5 = previous_lmf */
 		ppc_lwz (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
 		/* r6 = lmf_addr */
@@ -3488,14 +3518,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		for (i = 14; i < 32; i++) {
 			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
 		}
-	}
+		/* use the saved copy of the frame reg in r8 */
+		if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
+			ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, ppc_r8);
+			ppc_mtlr (code, ppc_r0);
+		}
+		ppc_addic (code, ppc_sp, ppc_r8, cfg->stack_usage);
+	} else {
+		if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
+			ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, cfg->frame_reg);
+			ppc_mtlr (code, ppc_r0);
+		}
+		ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
 
-	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-		ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, cfg->frame_reg);
-		ppc_mtlr (code, ppc_r0);
-	}
-	ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
-	if (!method->save_lmf) {
 		for (i = 13; i < 32; ++i) {
 			if (cfg->used_int_regs & (1 << i)) {
 				pos += 4;
