@@ -63,6 +63,11 @@ typedef struct {
 	gpointer *refs;
 } ReflectionMethodBuilder;
 
+typedef struct {
+	guint32 owner;
+	MonoReflectionGenericParam *gparam;
+} GenericParamTableEntry;
+
 const unsigned char table_sizes [64] = {
 	MONO_MODULE_SIZE,
 	MONO_TYPEREF_SIZE,
@@ -1997,6 +2002,25 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 static void
 mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
 {
+	GenericParamTableEntry *entry;
+
+	/*
+	 * The GenericParam table must be sorted according to the `owner' field.
+	 * We need to do this sorting prior to writing the GenericParamConstraint
+	 * table, since we have to use the final GenericParam table indices there
+	 * and they must also be sorted.
+	 */
+
+	entry = g_new0 (GenericParamTableEntry, 1);
+	entry->owner = owner;
+	entry->gparam = gparam;
+
+	g_ptr_array_add (assembly->gen_params, entry);
+}
+
+static void
+write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *entry)
+{
 	MonoDynamicTable *table;
 	MonoGenericParam *param;
 	guint32 *values;
@@ -2006,12 +2030,12 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	table_idx = table->next_idx ++;
 	values = table->values + table_idx * MONO_GENERICPARAM_SIZE;
 
-	param = gparam->type.type->data.generic_param;
+	param = entry->gparam->type.type->data.generic_param;
 
-	values [MONO_GENERICPARAM_OWNER] = owner;
-	if (gparam->has_value_type)
+	values [MONO_GENERICPARAM_OWNER] = entry->owner;
+	if (entry->gparam->has_value_type)
 		values [MONO_GENERICPARAM_FLAGS] = 0x18;
-	else if (gparam->has_reference_type)
+	else if (entry->gparam->has_reference_type)
 		values [MONO_GENERICPARAM_FLAGS] = 0x04;
 	else
 		values [MONO_GENERICPARAM_FLAGS] = 0x00;
@@ -2019,7 +2043,7 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 	values [MONO_GENERICPARAM_KIND] = 0;
 
-	encode_constraints (gparam, table_idx, assembly);
+	encode_constraints (entry->gparam, table_idx, assembly);
 }
 
 static guint32
@@ -3153,10 +3177,10 @@ compare_nested (const void *a, const void *b)
 static int
 compare_genericparam (const void *a, const void *b)
 {
-	const guint32 *a_values = a;
-	const guint32 *b_values = b;
+	const GenericParamTableEntry **a_entry = (const GenericParamTableEntry **) a;
+	const GenericParamTableEntry **b_entry = (const GenericParamTableEntry **) b;
 
-	return a_values [MONO_GENERICPARAM_OWNER] - b_values [MONO_GENERICPARAM_OWNER];
+	return (*a_entry)->owner - (*b_entry)->owner;
 }
 
 static void
@@ -3191,6 +3215,12 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
+
+	qsort (assembly->gen_params->pdata, assembly->gen_params->len, sizeof (gpointer), compare_genericparam);
+	for (i = 0; i < assembly->gen_params->len; i++){
+		GenericParamTableEntry *entry = g_ptr_array_index (assembly->gen_params, i);
+		write_generic_param_entry (assembly, entry);
+	}
 
 	struct StreamDesc {
 		const char *name;
@@ -3341,9 +3371,6 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	table = &assembly->tables [MONO_TABLE_NESTEDCLASS];
 	if (table->rows)
 		qsort (table->values + MONO_NESTED_CLASS_SIZE, table->rows, sizeof (guint32) * MONO_NESTED_CLASS_SIZE, compare_nested);
-	table = &assembly->tables [MONO_TABLE_GENERICPARAM];
-	if (table->rows)
-		qsort (table->values + MONO_GENERICPARAM_SIZE, table->rows, sizeof (guint32) * MONO_GENERICPARAM_SIZE, compare_genericparam);
 
 
 	/* compress the tables */
@@ -4132,6 +4159,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = mono_g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
+	image->gen_params = g_ptr_array_new ();
 
 	string_heap_init (&image->sheap);
 	mono_image_add_stream_data (&image->us, "", 1);

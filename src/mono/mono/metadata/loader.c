@@ -801,6 +801,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		}	
 		result->signature->call_convention = conv;
 	} else {
+		MonoMethodNormal *mn = (MonoMethodNormal *) result;
 		MonoGenericParam *gen_params = NULL;
 
 		/* if this is a methodref from another module/assembly, this fails */
@@ -833,13 +834,12 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		}
 
 		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
-					!(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
-			MonoMethodNormal *mn = (MonoMethodNormal *) result;
-
+		    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 			g_assert (loc);
 			mn->header = mono_metadata_parse_mh (image, loc);
-			mn->gen_params = gen_params;
 		}
+
+		mn->gen_params = gen_params;
 	}
 
 	return result;

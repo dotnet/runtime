@@ -202,6 +202,7 @@ struct _MonoDynamicImage {
 	MonoGHashTable *tokens;
 	MonoGHashTable *blob_cache;
 	GList *array_methods;
+	GPtrArray *gen_params;
 	MonoGHashTable *token_fixups;
 	MonoGHashTable *method_to_table_idx;
 	MonoGHashTable *field_to_table_idx;
