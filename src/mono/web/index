@@ -141,6 +141,13 @@
   </tr>
 </table>
 
+@item Nov 14th: Gtk# 0.13 released.
+
+	Mike Kestner has <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-November/016943.html">announced</a>
+	the release of the <a href="http://gtk-sharp.sf.net">Gtk#</a>
+	GUI toolkit for .NET and Mono.
+
 @item Nov 13th: Managed LDAP binding for Mono and .NET
 
 	Sunil Kumar at Novell has <a
