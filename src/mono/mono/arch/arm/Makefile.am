@@ -11,8 +11,7 @@ libmonoarch_arm_la_SOURCES = $(BUILT_SOURCES) \
 	arm-codegen.c \
 	arm-codegen.h \
 	arm-dis.c \
-	arm-dis.h \
-	#
+	arm-dis.h
 
 arm_dpimacros.h: dpiops.sh mov_macros.th dpi_macros.th cmp_macros.th
 	bash ./dpiops.sh

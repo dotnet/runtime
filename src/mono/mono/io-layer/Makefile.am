@@ -4,8 +4,7 @@ INCLUDES = \
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
 	-D_WAPI_BUILDING=1	\
-	-I$(top_srcdir)		\
-	#
+	-I$(top_srcdir)	
 
 libwapiincludedir = $(includedir)/mono/io-layer
 
@@ -29,8 +28,7 @@ OTHER_H = \
 	types.h		\
 	uglify.h	\
 	wait.h		\
-	wapi.h		\
-	#
+	wapi.h	
 
 OTHER_SRC = \
 	atomic.c		\
@@ -77,17 +75,14 @@ OTHER_SRC = \
 	wait.h			\
 	wait-private.h		\
 	wapi.h			\
-	wapi-private.h		\
-	#
+	wapi-private.h
 
 WINDOWS_H = \
-	io-layer.h		\
-	#
+	io-layer.h
 
 WINDOWS_SRC = \
 	io-layer.h		\
-	io-layer-dummy.c	\
-	#
+	io-layer-dummy.c
 
 if PLATFORM_WIN32
 libwapi_a_SOURCES = $(WINDOWS_SRC)
@@ -99,7 +94,6 @@ endif
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\
-	$(OTHER_SRC)	\
-	#
+	$(OTHER_SRC)
 
 
