@@ -1,5 +1,9 @@
 2004-12-07  Raja R Harinath  <rharinath@novell.com>
 
+	* configure.in: Set 'tar-pax' option for automake-1.9.
+
+2004-12-07  Raja R Harinath  <rharinath@novell.com>
+
 	* runtime/Makefile.am (uninstall): New.
 
 2004-12-06  Zoltan Varga  <vargaz@freemail.hu>

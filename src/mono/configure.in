@@ -1,5 +1,10 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
+
+# Gross hack to enable 'make dist' on automake 1.9+tar 1.14.
+# The extra brackets are to foil regex-based scans.
+m4_ifdef([_A][M_PROG_TAR],[_A][M_SET_OPTION([tar-pax])])
+
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono,1.1.2.99)
 AM_MAINTAINER_MODE
