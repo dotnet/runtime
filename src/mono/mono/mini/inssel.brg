@@ -274,6 +274,8 @@ void mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *
 void mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soffset, int size, int align);
 void mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, int align);
 
+int ldind_to_load_membase (int opcode);
+
 %%
 
 %termprefix OP_ CEE_
@@ -2085,4 +2087,32 @@ mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, in
 		size -= 1;
 	}
 }
+
+int
+ldind_to_load_membase (int opcode)
+{
+	switch (opcode) {
+	case CEE_LDIND_I1:
+		return OP_LOADI1_MEMBASE;
+	case CEE_LDIND_U1:
+		return OP_LOADU1_MEMBASE;
+	case CEE_LDIND_I2:
+		return OP_LOADI2_MEMBASE;
+	case CEE_LDIND_U2:
+		return OP_LOADU2_MEMBASE;
+	case CEE_LDIND_I4:
+		return OP_LOADI4_MEMBASE;
+	case CEE_LDIND_U4:
+		return OP_LOADU4_MEMBASE;
+	case CEE_LDIND_I:
+		return OP_LOAD_MEMBASE;
+	case CEE_LDIND_REF:
+		return OP_LOAD_MEMBASE;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}
+
 
