@@ -12,13 +12,10 @@ if [ -n "$MONO_PATH" ]; then
 	# to -> /mono /another/mono
 	for i in `echo ${MONO_PATH} | tr ":" " "`; do
 		i=`dirname ${i}`
-		echo "i es $i"
 		if [ -n "{i}" -a -d "${i}/share/aclocal" ]; then
-			echo "añado $i/share/local"
 			ACLOCAL_FLAGS="-I ${i}/share/aclocal $ACLOCAL_FLAGS"
 		fi
 		if [ -n "{i}" -a -d "${i}/bin" ]; then
-			echo "añado $i/bin"
 			PATH="${i}/bin:$PATH"
 		fi
 	done
