@@ -1044,6 +1044,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							if (test_only) {
 								((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 								g_list_free (trace_ips);
+								g_free (trace);
 								return TRUE;
 							}
 							if (mono_jit_trace_calls)
@@ -1051,6 +1052,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;
+							g_free (trace);
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
