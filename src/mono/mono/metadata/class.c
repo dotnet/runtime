@@ -54,12 +54,12 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	const char *name, *nspace;
 	MonoClass *res;
 	MonoAssembly **references;
-
+	
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-	
+
 	idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
 	switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
 	case MONO_RESOLTION_SCOPE_MODULE:
@@ -434,7 +434,6 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 				   MonoClass *klass)
 {
 	MonoMethodInflated *result;
-	MonoClass *rklass;
 
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
@@ -2715,6 +2714,40 @@ mono_class_get_property_token (MonoProperty *prop)
 	return 0;
 }
 
+static char *
+mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+{
+	const char *name, *nspace;
+	if (image->dynamic)
+		return g_strdup_printf ("DynamicType 0x%08x", type_token);
+	
+	switch (type_token & 0xff000000){
+	case MONO_TOKEN_TYPE_DEF: {
+		guint32 cols [MONO_TYPEDEF_SIZE];
+		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
+		guint tidx = mono_metadata_token_index (type_token);
+
+		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
+		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
+		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+		return g_strdup_printf ("%s.%s", nspace, name);
+	}
+
+	case MONO_TOKEN_TYPE_REF: {
+		guint32 cols [MONO_TYPEREF_SIZE];
+		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
+
+		mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+		return g_strdup_printf ("%s.%s", nspace, name);
+	}
+		
+	case MONO_TOKEN_TYPE_SPEC:
+		return g_strdup_printf ("Typespec 0x%08x", type_token);
+	}
+}
+
 /**
  * mono_class_get:
  * @image: the image where the class resides
@@ -2746,8 +2779,11 @@ _mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContext *conte
 		g_assert_not_reached ();
 	}
 
-	if (!class)
-		g_warning ("Could not load class from token 0x%08x in %s", type_token, image->name);
+	if (!class){
+		char *name = mono_class_name_from_token (image, type_token, context);
+		g_warning ("Could not load class from %s (token 0x%08x) in %s", name, type_token, image->name);
+		g_free (name);
+	}
 
 	return class;
 }

@@ -878,9 +878,8 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars ()
 	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_domain_get ();
-	chars = mono_array_new (domain, mono_defaults.char_class, 15);
-
 	n = sizeof (invalid_path_chars) / sizeof (gunichar2);
+	chars = mono_array_new (domain, mono_defaults.char_class, n);
 
 	for (i = 0; i < n; ++ i)
 		mono_array_set (chars, gunichar2, i, invalid_path_chars [i]);
