@@ -406,8 +406,8 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	MonoObject *retval;
 	gchar *message;
 
-	g_message (G_STRLOC ": %p - %p - %p - %p", method, obj, params, exc);
-	g_message (G_STRLOC ": %s.%s", method->klass->name, method->name);
+	//	g_message (G_STRLOC ": %p - %p - %p - %p", method, obj, params, exc);
+	//	g_message (G_STRLOC ": %s.%s", method->klass->name, method->name);
 
 	if (!strcmp (method->name, ".ctor")) {
 		retval = obj = mono_object_new (mono_domain_get (), method->klass);
