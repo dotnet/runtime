@@ -135,6 +135,8 @@ class_compute_field_layout (MonoClass *class)
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC))
 			class->enum_basetype = class->fields [i].type;
 	}
+	if (class->enumtype && !class->enum_basetype)
+		G_BREAKPOINT ();
 	/*
 	 * Compute field layout and total size.
 	 */
@@ -520,6 +522,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		vtsize = 0;
 
 	class = g_malloc0 (sizeof (MonoClass) + vtsize * sizeof (gpointer));
+	
+	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
 	class->parent = parent;
 	class->interfaces = interfaces;
@@ -665,6 +669,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->interface_id = interface_id++;
 
 	//class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count);
+
+	if (class->enumtype)
+		mono_class_init (class);
 	
 	return class;
 }
@@ -983,8 +990,6 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		g_warning ("unknown token type %x", type_token & 0xff000000);
 		g_assert_not_reached ();
 	}
-	
-	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
 	return class;
 }

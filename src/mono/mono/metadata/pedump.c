@@ -15,10 +15,11 @@
 #include "cil-coff.h"
 #include "private.h"
 #include "mono-endian.h"
+#include "verify.h"
 #include <mono/metadata/class.h>
 
 gboolean dump_data = TRUE;
-gboolean dump_tables = FALSE;
+gboolean verify_pe = FALSE;
 
 static void
 hex_dump (char *buffer, int base, int count)
@@ -223,12 +224,6 @@ dump_metadata_ptrs (MonoMetadata *meta)
 }
 
 static void
-dump_table (MonoMetadata *meta, int table)
-{
-	
-}
-
-static void
 dump_metadata (MonoMetadata *meta)
 {
 	int table;
@@ -245,8 +240,6 @@ dump_metadata (MonoMetadata *meta)
 			meta->tables [table].row_size,
 			meta->tables [table].base
 			);
-		if (dump_tables)
-			dump_table (meta, table);
 	}
 }
 
@@ -276,9 +269,26 @@ dump_dotnet_iinfo (MonoImage *image)
 }
 
 static void
+dump_verify_info (MonoImage *image, int flags)
+{
+	GSList *errors, *tmp;
+	const char* desc [] = {
+		"Ok", "Error", "Warning", NULL, "CLS"
+	};
+
+	errors = mono_image_verify_tables (image, flags);
+
+	for (tmp = errors; tmp; tmp = tmp->next) {
+		MonoVerifyInfo *info = tmp->data;
+		g_print ("%s: %s\n", desc [info->status], info->message);
+	}
+	mono_free_verify_list (errors);
+}
+
+static void
 usage (void)
 {
-	printf ("Usage is: pedump [--tables] file.exe\n");
+	printf ("Usage is: pedump [--verify error,warn,cls,all] file.exe\n");
 	exit (1);
 }
 
@@ -287,18 +297,26 @@ main (int argc, char *argv [])
 {
 	MonoImage *image;
 	char *file = NULL;
+	char *flags = NULL;
+	char *flag_desc [] = {"error", "warn", "cls", "all", NULL};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL};
 	int i;
 	
 	for (i = 1; i < argc; i++){
 		if (argv [i][0] != '-'){
-			file = argv [1];
+			file = argv [i];
 			continue;
 		}
 
 		if (strcmp (argv [i], "--help") == 0)
 			usage ();
-		if (strcmp (argv [i], "--tables") == 0)
-			dump_tables = 1;
+		else if (strcmp (argv [i], "--verify") == 0) {
+			verify_pe = 1;
+			++i;
+			flags = argv [i];
+		} else {
+			usage ();
+		}
 	}
 	
 	if (!file)
@@ -312,6 +330,22 @@ main (int argc, char *argv [])
 
 	if (dump_data)
 		dump_dotnet_iinfo (image);
+	if (verify_pe) {
+		int f = 0;
+		char *tok = strtok (flags, ",");
+		while (tok) {
+			for (i = 0; flag_desc [i]; ++i) {
+				if (strcmp (tok, flag_desc [i]) == 0) {
+					f |= flag_vals [i];
+					break;
+				}
+			}
+			if (!flag_desc [i])
+				g_print ("Unknown verify flag %s\n", tok);
+			tok = strtok (NULL, ",");
+		}
+		dump_verify_info (image, f);
+	}
 	
 	mono_image_close (image);
 	

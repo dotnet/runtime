@@ -14,6 +14,7 @@ libmetadata_a_SOURCES = \
 	assembly.c	\
 	image.c		\
 	metadata.c	\
+	verify.c	\
 	mono-endian.c	\
 	private.h	\
 	rawbuffer.c	\
@@ -40,6 +41,7 @@ libmetadatainclude_HEADERS = \
 	mono-endian.h	\
 	image.h		\
 	metadata.h	\
+	verify.h	\
 	rawbuffer.h	\
 	reflection.h	\
 	row-indexes.h	\

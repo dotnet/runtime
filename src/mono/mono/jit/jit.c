@@ -3209,7 +3209,6 @@ main (int argc, char *argv [])
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 
-	mono_init ();
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
@@ -3218,6 +3217,7 @@ main (int argc, char *argv [])
 
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
+	mono_init ();
 
 	/*
 	 * This doesn't seem to work... :-(

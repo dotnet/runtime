@@ -13,6 +13,24 @@
 #ifndef _MONO_METADATA_TABLEDEFS_H_
 #define _MONO_METADATA_TABLEDEFS_H_
 
+/*
+ * 22.1.1  Values for AssemblyHashAlgorithm 
+ */
+
+enum {
+	ASSEMBLY_HASH_NONE,
+	ASSEMBLY_HASH_MD5  = 0x8003,
+	ASSEMBLY_HASH_SHA1 = 0x8004
+};
+
+/*
+ * 22.1.4 Flags for Event.EventAttributes
+ */
+
+enum {
+	EVENT_SPECIALNAME   = 0x0200,
+	EVENT_RTSPECIALNAME = 0x0400
+};
 
 /*
  * Field Attributes (21.1.5).

@@ -3429,18 +3429,16 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
-	mono_init ();
 	mono_init_icall ();
+	mono_add_internal_call ("__array_Set", ves_array_set);
+	mono_add_internal_call ("__array_Get", ves_array_get);
 
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
 
 	mono_install_handler (interp_ex_handler);
 
-	//mono_exception_install_handlers(init_class, interp_ex_obj_init);
-	
-	mono_add_internal_call ("__array_Set", ves_array_set);
-	mono_add_internal_call ("__array_Get", ves_array_get);
+	mono_init ();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){
