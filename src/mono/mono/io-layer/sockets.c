@@ -6,6 +6,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>     /* defines FIONBIO and FIONREAD */
+#endif
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>    /* defines SIOCATMARK */
+#endif
 #include <unistd.h>
 
 #include "mono/io-layer/wapi.h"
