@@ -562,12 +562,18 @@ A: I would love if someone does, and we would love to help anyone that
    personally to work on C# on a C# compiler, which has an intrinsic
    beauty.
 
+   We can provide help and assistance to anyone who would like to work
+   on this task.
+
 Q: Should someone make a GCC backend that will generate CIL images?
 
 A: I would love to see a backend to GCC that generates CIL images.  It
    would provide a ton of free compilers that would generate CIL
    code.  This is something that people would want to look into
    anyways for Windows interoperation in the future.
+
+   Again, we would love to provide help and assistance to anyone
+   interested in working in such a project.
 
 Q: What about making a front-end to GCC that takes CIL images and
    generates native code?
@@ -582,6 +588,9 @@ A: I would love to see this, specially since GCC supports this same
    library that could be linked with your application as its runtime
    support. 
 
+   Again, we would love to provide help and assistance to anyone
+   interested in working in such a project.
+   
 Q: But would this work around the GPL in the GCC compiler and allow
    people to work on non-free front-ends?
 

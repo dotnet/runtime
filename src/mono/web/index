@@ -1,8 +1,6 @@
 	<a href="http://www.ximian.com">Ximian</a> announced the
-	launch of the Mono project, an effort to create a <a
-	href="http://www.gnu.org/philosophy/free-sw.html">Free
-	Software</a> (sometimes called open source) implementation of
-	the .NET Development Framework.
+	launch of the Mono project, an effort to create an Open Source
+	implementation of the .NET Development Framework.
 
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
