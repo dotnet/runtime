@@ -2253,6 +2253,8 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 			return FALSE;
 	}
 
+	if (!mono_metadata_type_equal (sig1->ret, sig2->ret))
+		return FALSE;
 	return TRUE;
 }
 
