@@ -197,12 +197,14 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	res = WaitForSingleObject (done_event, timeout);
 
-	CloseHandle (done_event);
-	//printf ("WAIT RES: %d.\n", res);
-	if (res == WAIT_TIMEOUT)
+	/* printf ("WAIT RES: %d.\n", res); */
+	if (res == WAIT_TIMEOUT) {
+		/* We leak the handle here */
 		return FALSE;
-	else
-		return TRUE;
+	}
+
+	CloseHandle (done_event);
+	return TRUE;
 #else
 	/* We don't support domain finalization without a GC */
 	return FALSE;
@@ -508,10 +510,10 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		g_ptr_array_free (objs, TRUE);
 	}
 
-	//printf ("DONE.\n");
+	/* printf ("DONE.\n"); */
 	SetEvent (req->done_event);
 
-	/* FIXME: How to delete the event ? */
+	/* The event is closed in mono_domain_finalize if we get here */
 	g_free (req);
 }
 
