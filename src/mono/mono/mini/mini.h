@@ -193,6 +193,12 @@ struct MonoBasicBlock {
 	gint8  nesting;
 	gint8  loop_body_start;
 
+	/* 
+	 * Whenever the bblock is rarely executed so it should be emitted after
+	 * the function epilog.
+	 */
+	gboolean out_of_line;
+
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;
 	MonoBitSet *kill_set;
@@ -224,12 +230,6 @@ struct MonoBasicBlock {
 
 	/* The current symbolic register number, used in local register allocation. */
 	guint32 max_ireg, max_freg;
-
-	/* 
-	 * Whenever the bblock is rarely executed so it should be emitted after
-	 * the function epilog.
-	 */
-	gboolean out_of_line;
 };
 
 /* BBlock flags */

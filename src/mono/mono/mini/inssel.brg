@@ -396,6 +396,9 @@ stmt: OP_DUMMY_USE (CEE_LDIND_REF (OP_REGOFFSET)) {
 stmt: OP_DUMMY_STORE {
 }
 
+stmt: OP_NOT_REACHED {
+}
+
 #
 # load/store operations
 #

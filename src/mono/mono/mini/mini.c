@@ -4929,6 +4929,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip++;
 			bblock->out_of_line = TRUE;
 			MONO_ADD_INS (bblock, ins);
+			MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);
+			ins->cil_code = ip - 1;
+			MONO_ADD_INS (bblock, ins);
 			sp = stack_start;
 			link_bblock (cfg, bblock, end_bblock);
 			start_new_bblock = 1;
@@ -5948,6 +5951,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = ins;
 				ip += 6;
 				inline_costs += 10 * num_calls++;
+				break;
+			case CEE_MONO_NOT_TAKEN:
+				bblock->out_of_line = TRUE;
+				ip += 2;
 				break;
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
@@ -7875,7 +7882,9 @@ merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn)
 static void
 move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoBasicBlock *bbn;
+	MonoBasicBlock *bbn, *next;
+
+	next = bb->next_bb;
 
 	/* Find the previous */
 	for (bbn = cfg->bb_entry; bbn->next_bb && bbn->next_bb != bb; bbn = bbn->next_bb)
@@ -7889,6 +7898,16 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 		;
 	bbn->next_bb = bb;
 	bb->next_bb = NULL;
+
+	/* Add a branch */
+	if (next && (!bb->last_ins || (bb->last_ins == OP_NOT_REACHED))) {
+		MonoInst *ins;
+
+		MONO_INST_NEW (cfg, ins, CEE_BR);
+		MONO_ADD_INS (bb, ins);
+		link_bblock (cfg, bb, next);
+		ins->inst_target_bb = next;
+	}		
 }
 
 /*
