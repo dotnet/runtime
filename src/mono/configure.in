@@ -1637,8 +1637,17 @@ tools/locale-builder/Makefile
 runtime/Makefile
 ])
 
-echo "prefix=$prefix" > $mcsdir/build/config.make
-echo "MCS_FLAGS = \$(PLATFORM_DEBUG_FLAGS)" >> $mcsdir/build/config.make
+(
+  case $prefix in
+  NONE) prefix=/usr/local ;;
+  esac
+  case $exec_prefix in
+  NONE | '${prefix}') exec_prefix=$prefix ;;
+  esac
+
+  echo "prefix=$exec_prefix" > $srcdir/$mcsdir/build/config.make
+  echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
+)
 
 echo "
         mcs source:  $mcs_topdir

@@ -1,3 +1,8 @@
+2004-12-15  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in ($mcsdir/build/config.make): Use $mcsdir relative
+	to the $srcdir.  Fix definition of 'prefix'.
+
 2004-12-14  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/mono-wrapper.in (MONO_SHARED_DIR): Set.  Ensures that
