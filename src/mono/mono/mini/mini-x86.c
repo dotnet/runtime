@@ -1133,7 +1133,8 @@ create_spilled_load_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
 	return load;
 }
 
-#define reg_is_freeable(r) ((r) >= 0 && (r) <= 7 && X86_IS_CALLEE ((r)))
+#define is_global_ireg(r) ((r) >= 0 && (r) < MONO_MAX_IREGS && !X86_IS_CALLEE ((r)))
+#define reg_is_freeable(r) ((r) >= 0 && (r) < MONO_MAX_IREGS && X86_IS_CALLEE ((r)))
 
 typedef struct {
 	int born_in;
@@ -1427,6 +1428,17 @@ mono_x86_alloc_int_reg (MonoCompile *cfg, InstList *tmp, MonoInst *ins, guint32 
 	return val;
 }
 
+static inline void
+assign_ireg (MonoRegState *rs, int reg, int hreg)
+{
+	g_assert (reg >= MONO_MAX_IREGS);
+	g_assert (hreg < MONO_MAX_IREGS);
+	g_assert (! is_global_ireg (hreg));
+
+	rs->iassign [reg] = hreg;
+	rs->isymbolic [hreg] = reg;
+	rs->ifree_mask &= ~ (1 << hreg);
+}
 
 /*#include "cprop.c"*/
 
@@ -1592,12 +1604,19 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
 		if (spec [MONO_INST_CLOB] == 's') {
+			/*
+			 * Shift opcodes, SREG2 must be RCX
+			 */
 			if (rs->ifree_mask & (1 << X86_ECX)) {
-				DEBUG (g_print ("\tshortcut assignment of R%d to ECX\n", ins->sreg2));
-				rs->iassign [ins->sreg2] = X86_ECX;
-				rs->isymbolic [X86_ECX] = ins->sreg2;
-				ins->sreg2 = X86_ECX;
-				rs->ifree_mask &= ~ (1 << X86_ECX);
+				if (ins->sreg2 < MONO_MAX_IREGS) {
+					/* Argument already in hard reg, need to copy */
+					MonoInst *copy = create_copy_ins (cfg, X86_ECX, ins->sreg2, NULL);
+					insert_before_ins (ins, tmp, copy);
+				}
+				else {
+					DEBUG (g_print ("\tshortcut assignment of R%d to ECX\n", ins->sreg2));
+					assign_ireg (rs, ins->sreg2, X86_ECX);
+				}
 			} else {
 				int need_ecx_spill = TRUE;
 				/* 
@@ -1631,47 +1650,49 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					rs->isymbolic [val] = prev_dreg;
 					ins->dreg = val;*/
 				}
-				val = rs->iassign [ins->sreg1];
-				if (val == X86_ECX) {
-					g_assert_not_reached ();
-				} else if (val >= 0) {
-					/* 
-					 * the first src reg was already assigned to a register,
-					 * we need to copy it to the dest register because the 
-					 * shift instruction clobbers the first operand.
-					 */
-					MonoInst *copy = create_copy_ins (cfg, ins->dreg, val, NULL);
-					DEBUG (g_print ("\tclob:s moved sreg1 from R%d to R%d\n", val, ins->dreg));
+				if (is_global_ireg (ins->sreg2)) {
+					MonoInst *copy = create_copy_ins (cfg, X86_ECX, ins->sreg2, NULL);
 					insert_before_ins (ins, tmp, copy);
 				}
-				val = rs->iassign [ins->sreg2];
-				if (val >= 0 && val != X86_ECX) {
-					MonoInst *move = create_copy_ins (cfg, X86_ECX, val, NULL);
-					DEBUG (g_print ("\tmoved arg from R%d (%d) to ECX\n", val, ins->sreg2));
-					move->next = ins;
-					g_assert_not_reached ();
-					/* FIXME: where is move connected to the instruction list? */
-					//tmp->prev->data->next = move;
+				else {
+					val = rs->iassign [ins->sreg2];
+					if (val >= 0 && val != X86_ECX) {
+						MonoInst *move = create_copy_ins (cfg, X86_ECX, val, NULL);
+						DEBUG (g_print ("\tmoved arg from R%d (%d) to ECX\n", val, ins->sreg2));
+						move->next = ins;
+						g_assert_not_reached ();
+						/* FIXME: where is move connected to the instruction list? */
+						//tmp->prev->data->next = move;
+					}
+					else {
+						if (val == X86_ECX)
+						need_ecx_spill = FALSE;
+					}
 				}
 				if (need_ecx_spill && !(rs->ifree_mask & (1 << X86_ECX))) {
 					DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [X86_ECX]));
 					get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [X86_ECX]);
 					mono_regstate_free_int (rs, X86_ECX);
 				}
-				/* force-set sreg2 */
-				rs->iassign [ins->sreg2] = X86_ECX;
-				rs->isymbolic [X86_ECX] = ins->sreg2;
-				ins->sreg2 = X86_ECX;
-				rs->ifree_mask &= ~ (1 << X86_ECX);
+				if (!is_global_ireg (ins->sreg2))
+					/* force-set sreg2 */
+					assign_ireg (rs, ins->sreg2, X86_ECX);
 			}
-		} else if (spec [MONO_INST_CLOB] == 'd') { /* division */
+			ins->sreg2 = X86_ECX;
+		} else if (spec [MONO_INST_CLOB] == 'd') {
+			/*
+			 * DIVISION/REMAINER
+			 */
 			int dest_reg = X86_EAX;
 			int clob_reg = X86_EDX;
 			if (spec [MONO_INST_DEST] == 'd') {
 				dest_reg = X86_EDX; /* reminder */
 				clob_reg = X86_EAX;
 			}
-			val = rs->iassign [ins->dreg];
+			if (is_global_ireg (ins->dreg))
+				val = ins->dreg;
+			else
+				val = rs->iassign [ins->dreg];
 			if (0 && val >= 0 && val != dest_reg && !(rs->ifree_mask & (1 << dest_reg))) {
 				DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [dest_reg]);
@@ -1698,10 +1719,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					DEBUG (g_print ("\tshortcut assignment of R%d to %s\n", ins->dreg, mono_arch_regname (dest_reg)));
 					prev_dreg = ins->dreg;
-					rs->iassign [ins->dreg] = dest_reg;
-					rs->isymbolic [dest_reg] = ins->dreg;
+					assign_ireg (rs, ins->dreg, dest_reg);
 					ins->dreg = dest_reg;
-					rs->ifree_mask &= ~ (1 << dest_reg);
 				}
 			} else {
 				//DEBUG (g_print ("dest reg in div assigned: %s\n", mono_arch_regname (val)));
@@ -1746,7 +1765,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 
-		/* Track dreg */
+		/*
+		 * TRACK DREG
+		 */
 		if (spec [MONO_INST_DEST] == 'f') {
 			if (reginfof [ins->dreg].flags & MONO_X86_FP_NEEDS_SPILL) {
 				GList *spill_node;
@@ -1902,14 +1923,20 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [X86_EAX]);
 				mono_regstate_free_int (rs, X86_EAX);
 			}
-			/* force-set sreg1 */
-			rs->iassign [ins->sreg1] = X86_EAX;
-			rs->isymbolic [X86_EAX] = ins->sreg1;
+			if (ins->sreg1 < MONO_MAX_IREGS) {
+				/* The argument is already in a hard reg, need to copy */
+				MonoInst *copy = create_copy_ins (cfg, X86_EAX, ins->sreg1, NULL);
+				insert_before_ins (ins, tmp, copy);
+			}
+			else
+				/* force-set sreg1 */
+				assign_ireg (rs, ins->sreg1, X86_EAX);
 			ins->sreg1 = X86_EAX;
-			rs->ifree_mask &= ~ (1 << X86_EAX);
 		}
 
-		/* Track sreg1 */
+		/*
+		 * TRACK SREG1
+		 */
 		if (spec [MONO_INST_SRC1] == 'f') {
 			if (reginfof [ins->sreg1].flags & MONO_X86_FP_NEEDS_LOAD) {
 				MonoInst *load;
@@ -1933,10 +1960,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		} else if ((spec [MONO_INST_DEST] == 'L') && (spec [MONO_INST_SRC1] == 'L')) {
 			/* force source to be same as dest */
-			rs->iassign [ins->sreg1] = ins->dreg;
-			rs->iassign [ins->sreg1 + 1] = ins->unused;
-			rs->isymbolic [ins->dreg] = ins->sreg1;
-			rs->isymbolic [ins->unused] = ins->sreg1 + 1;
+			assign_ireg (rs, ins->sreg1, ins->dreg);
+			assign_ireg (rs, ins->sreg1 + 1, ins->unused);
 
 			DEBUG (g_print ("\tassigned sreg1 (long) %s to sreg1 R%d\n", mono_arch_regname (ins->dreg), ins->sreg1));
 			DEBUG (g_print ("\tassigned sreg1 (long-high) %s to sreg1 R%d\n", mono_arch_regname (ins->unused), ins->sreg1 + 1));
@@ -1946,10 +1971,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * No need for saving the reg, we know that src1=dest in this cases
 			 * ins->inst_c0 = ins->unused;
 			 */
-
-			/* make sure that we remove them from free mask */
-			rs->ifree_mask &= ~ (1 << ins->dreg);
-			rs->ifree_mask &= ~ (1 << ins->unused);
 		}
 		else if (ins->sreg1 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg1];
@@ -1991,20 +2012,39 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		/* handle clobbering of sreg1 */
 		if ((spec [MONO_INST_CLOB] == '1' || spec [MONO_INST_CLOB] == 's') && ins->dreg != ins->sreg1) {
+			MonoInst *sreg2_copy = NULL;
+
+			if (ins->dreg == ins->sreg2) {
+				/* 
+				 * copying sreg1 to dreg could clobber sreg2, so allocate a new
+				 * register for it.
+				 */
+				int reg2 = 0;
+
+				reg2 = mono_x86_alloc_int_reg (cfg, tmp, ins, dest_mask, ins->sreg2, 0);
+
+				DEBUG (g_print ("\tneed to copy sreg2 %s to reg %s\n", mono_arch_regname (ins->sreg2), mono_arch_regname (reg2)));
+				sreg2_copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL);
+				prev_sreg2 = ins->sreg2 = reg2;
+
+				mono_regstate_free_int (rs, reg2);
+			}
+
 			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_arch_regname (ins->sreg1), mono_arch_regname (ins->dreg)));
-			if (ins->sreg2 == -1 || spec [MONO_INST_CLOB] == 's') {
-				/* note: the copy is inserted before the current instruction! */
-				insert_before_ins (ins, tmp, copy);
-				/* we set sreg1 to dest as well */
-				prev_sreg1 = ins->sreg1 = ins->dreg;
-			} else {
-				/* inserted after the operation */
-				copy->next = ins->next;
-				ins->next = copy;
-			}
+			insert_before_ins (ins, tmp, copy);
+
+			if (sreg2_copy)
+				insert_before_ins (copy, tmp, sreg2_copy);
+
+			/* we set sreg1 to dest as well */
+			prev_sreg1 = ins->sreg1 = ins->dreg;
+			src2_mask &= ~ (1 << ins->dreg);
 		}
-		/* track sreg2 */
+
+		/*
+		 * TRACK SREG2
+		 */
 		if (spec [MONO_INST_SRC2] == 'f') {
 			if (reginfof [ins->sreg2].flags & MONO_X86_FP_NEEDS_LOAD) {
 				MonoInst *load;
