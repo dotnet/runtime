@@ -186,6 +186,11 @@ print_bb_info (MonoSsapreBBInfo *bb_info, gboolean print_occurrences) {
 	if (bb_info->next_interesting_bb != NULL) {
 		printf (", NEXT %d [ID %d]", bb_info->next_interesting_bb->cfg_dfn, bb_info->next_interesting_bb->bb->block_num);
 	}
+	if (bb_info->dt_covered_by_interesting_BBs) {
+		printf (" (COVERED)");
+	} else {
+		printf (" (NEVER DOWN SAFE)");
+	}	
 	printf ("\n");
 	if (bb_info->has_phi) {
 		printf (" PHI, class %d [ ", bb_info->phi_redundancy_class);
@@ -796,7 +801,7 @@ process_inst (MonoSsapreWorkArea *area, MonoInst* inst, MonoInst* previous_inst,
  * (with all the info that comes from the MonoBasicBlock).
  */
 static void
-process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *upper_descendants) {
+process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *upper_descendants, int current_depth) {
 	MonoSsapreBBInfo *bb_info;
 	int descendants;
 	GList *dominated_bb;
@@ -863,9 +868,12 @@ process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *uppe
 		current_inst = current_inst->next;
 	}
 	
+	if (current_depth > area->dt_depth) {
+		area->dt_depth = current_depth;
+	}
 	descendants = 0;
 	for (dominated_bb = g_list_first (bb->dominated); dominated_bb != NULL; dominated_bb = g_list_next (dominated_bb)) {
-		process_bb (area, (MonoBasicBlock*) (dominated_bb->data), dt_dfn, &descendants);
+		process_bb (area, (MonoBasicBlock*) (dominated_bb->data), dt_dfn, &descendants, current_depth + 1);
 	}
 	bb_info->dt_descendants = descendants;
 	*upper_descendants += (descendants + 1);
@@ -879,6 +887,7 @@ clean_bb_infos (MonoSsapreWorkArea *area) {
 	int i;
 	for (i = 0; i < area->num_bblocks; i++) {
 		MonoSsapreBBInfo *bb_info = &(area->bb_infos [i]);
+		bb_info->dt_covered_by_interesting_BBs = FALSE;
 		bb_info->has_phi = FALSE;
 		bb_info->phi_defines_a_real_occurrence = FALSE;
 		bb_info->phi_is_down_safe = FALSE;
@@ -957,6 +966,18 @@ compute_combined_iterated_dfrontier (MonoSsapreWorkArea *area, MonoBitSet *resul
 }
 
 /*
+ * See paper, section 5.1, definition of "Dominate"
+ */
+static gboolean
+dominates (MonoSsapreBBInfo *dominator, MonoSsapreBBInfo *dominated) {
+	if ((dominator->dt_dfn <= dominated->dt_dfn) && (dominated->dt_dfn <= (dominator->dt_dfn + dominator->dt_descendants))) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
+/*
  * See paper, figure 18, function Set_var_phis
  */
 static void process_phi_variable_in_phi_insertion (MonoSsapreWorkArea *area, gssize variable, MonoBitSet *phi_bbs) {
@@ -984,6 +1005,9 @@ phi_insertion (MonoSsapreWorkArea *area, MonoSsapreExpression *expression) {
 	MonoSsapreBBInfo *current_bb = NULL;
 	MonoSsapreBBInfo *previous_interesting_bb = NULL;
 	int i, j, current_bb_dt_dfn;
+	int top;
+	MonoSsapreBBInfo **stack;
+	gboolean *interesting_stack;
 	
 	mono_bitset_clear_all (area->expression_occurrences_buffer);
  	for (current_expression = expression->occurrences; current_expression != NULL; current_expression = current_expression->next) {
@@ -1023,15 +1047,59 @@ phi_insertion (MonoSsapreWorkArea *area, MonoSsapreExpression *expression) {
 		}
 	}
 	
+	top = -1;
+	stack = (MonoSsapreBBInfo **) alloca (sizeof (MonoSsapreBBInfo *) * (area->dt_depth));
+	interesting_stack = (gboolean *) alloca (sizeof (gboolean) * (area->dt_depth));
+	
+	/* Setup the list of interesting BBs, and their "DT coverage" */
 	for (current_bb = area->bb_infos, current_bb_dt_dfn = 0; current_bb_dt_dfn < area->num_bblocks; current_bb++, current_bb_dt_dfn++) {
+		gboolean current_bb_is_interesting;
+		
 		if ((current_bb->first_expression_in_bb != NULL) || (current_bb->has_phi) || (current_bb->has_phi_argument)) {
+			current_bb_is_interesting = TRUE;
+			
 			if (previous_interesting_bb != NULL) {
 				previous_interesting_bb->next_interesting_bb = current_bb;
 			} else {
 				area->first_interesting_bb = current_bb;
 			}
 			previous_interesting_bb = current_bb;
+		} else {
+			current_bb_is_interesting = FALSE;
 		}
+		
+		if (top >= 0) {
+			while ((top >= 0) && (! dominates (stack [top], current_bb))) {
+				gboolean top_covers_his_idominator = ((interesting_stack [top]) || (stack [top]->dt_covered_by_interesting_BBs));
+				
+				if ((top > 0) && (! top_covers_his_idominator)) {
+					stack [top - 1]->dt_covered_by_interesting_BBs = FALSE;
+				}
+				
+				top--;
+			}
+		} else {
+			top = -1;
+		}
+		
+		top++;
+		
+		interesting_stack [top] = current_bb_is_interesting;
+		stack [top] = current_bb;
+		if (stack [top]->dt_descendants == 0) {
+			stack [top]->dt_covered_by_interesting_BBs = FALSE;
+		} else {
+			stack [top]->dt_covered_by_interesting_BBs = TRUE;
+		}
+	}
+	while (top > 0) {
+		gboolean top_covers_his_idominator = ((interesting_stack [top]) || (stack [top]->dt_covered_by_interesting_BBs));
+		
+		if (! top_covers_his_idominator) {
+			stack [top - 1]->dt_covered_by_interesting_BBs = FALSE;
+		}
+		
+		top--;
 	}
 }
 
@@ -1063,18 +1131,6 @@ phi_insertion (MonoSsapreWorkArea *area, MonoSsapreExpression *expression) {
 			area->top_of_renaming_stack = NULL; \
 			area->bb_on_top_of_renaming_stack->phi_argument_has_real_use = FALSE; \
 		} while(0)
-
-/*
- * See paper, section 5.1, definition of "Dominate"
- */
-static gboolean
-dominates (MonoSsapreBBInfo *dominator, MonoSsapreBBInfo *dominated) {
-	if ((dominator->dt_dfn <= dominated->dt_dfn) && (dominated->dt_dfn <= (dominator->dt_dfn + dominator->dt_descendants))) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
 
 /*
  * See paper, section 5.4.
@@ -1139,7 +1195,11 @@ renaming_pass (MonoSsapreWorkArea *area) {
 		}
 		
 		if (current_bb->has_phi) {
-			current_bb->phi_is_down_safe = TRUE;
+			if (current_bb->dt_covered_by_interesting_BBs) {
+				current_bb->phi_is_down_safe = TRUE;
+			} else {
+				current_bb->phi_is_down_safe = FALSE;
+			}
 			current_bb->phi_redundancy_class = current_class;
 			current_class++;
 			PUSH_PHI_OCCURRENCE (current_bb);
@@ -2006,7 +2066,8 @@ mono_perform_ssapre (MonoCompile *cfg) {
 	area.current_occurrence = (MonoSsapreExpressionOccurrence*) mono_mempool_alloc (area.mempool, sizeof (MonoSsapreExpressionOccurrence));
 	dt_dfn = 0;
 	descendants = 0;
-	process_bb (&area, cfg->bblocks [0], &dt_dfn, &descendants);
+	area.dt_depth = 0;
+	process_bb (&area, cfg->bblocks [0], &dt_dfn, &descendants, 1);
 	for (block = 0; block < area.num_bblocks; block++) {
 		MonoSsapreBBInfo *bb_info = &(area.bb_infos [block]);
 		MonoBasicBlock *bb = bb_info->bb;

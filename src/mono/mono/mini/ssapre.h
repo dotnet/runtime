@@ -136,7 +136,14 @@ typedef struct MonoSsapreBBInfo {
 	/* (the last existing phi definition, or NULL if there is none) */
 	MonoInst *phi_insertion_point;
 	
-	/* Information reused during the analysis of each expression: */
+	/* Information recomputed during the analysis of each expression: */
+	
+	/* True if the whole BB subtree in the dominator tree is "covered" with */
+	/* BBs marked "interesting" (a BB where this is false cannot be down */
+	/* safe, since there would be a path to exit with no occurrence at all). */
+	/* A more formal way of stating this is that on the DT there is no path */
+	/* from this BB to any leaf that does not meet an interesting BB */
+	gboolean dt_covered_by_interesting_BBs;
 	
 	/* True if this BB has a PHI occurrence */
 	gboolean has_phi;
@@ -154,7 +161,6 @@ typedef struct MonoSsapreBBInfo {
 	int phi_variable_index;
 	/* Array of the class numbers of the PHI arguments (has "in_count" elements) */
 	int *phi_arguments_classes;
-	
 	
 	/* True if this BB has a PHI argument */
 	gboolean has_phi_argument;
@@ -363,6 +369,9 @@ typedef struct MonoSsapreWorkArea {
 	MonoBitSet *iterated_dfrontier_buffer;
 	MonoBitSet *left_argument_bb_bitset;
 	MonoBitSet *right_argument_bb_bitset;
+	
+	/* The depth of the dominator tree */
+	int dt_depth;
 	
 	/* The expression worklist */
 	MonoSsapreExpression *worklist;
