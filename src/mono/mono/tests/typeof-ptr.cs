@@ -15,8 +15,12 @@ class T {
 		}
 		if (args[0].ParameterType != typeof(int))
 			return 3;
-		if (args[1].ParameterType != typeof(int*))
-			return 4;
+
+		unsafe { 
+			if (args[1].ParameterType != typeof(int*))
+				return 4;
+		}
+
 		return 0;
 	}
 }
