@@ -122,7 +122,7 @@ get_address (GPtrArray *forest, guint32 vaddr)
 			return a;
 	}
 
-	g_assert_not_reached ();
+	g_error ("address 0x%x not found", vaddr);
 	return 0;
 }
 
@@ -376,7 +376,8 @@ mono_compile_method (MonoMethod *method)
 		for (i = 0; i < header->num_locals; ++i) {
 			locals_offsets [i] = local_offset;
 			size = mono_type_size (header->locals [i], &align);
-			local_offset += local_offset % align;
+			local_offset += align - 1;
+			local_offset &= ~(align - 1);
 			local_offset += size;
 		}
 	}
@@ -394,7 +395,8 @@ mono_compile_method (MonoMethod *method)
 		for (i = 0; i < signature->param_count; ++i) {
 			args_offsets [i + has_this] = offset;
 			size = mono_type_size (signature->params [i], &align);
-			offset += offset % align;
+			offset += align - 1;
+			offset &= ~(align - 1);
 			offset += size;
 		}
 	}
@@ -437,7 +439,8 @@ mono_compile_method (MonoMethod *method)
 				t2 = ctree_new (MB_TERM_STLOC, csig->ret->type, t1, NULL);
 				size = mono_type_size (csig->ret, &align);
 				t2->data.i = local_offset;
-				local_offset += local_offset % align;
+				local_offset += align - 1;
+				local_offset &= ~(align - 1);
 				local_offset += size;
 				ADD_TREE (t2);
 				t1 = ctree_new_leaf (MB_TERM_LDLOC, t2->type);
@@ -494,6 +497,15 @@ mono_compile_method (MonoMethod *method)
 			PUSH_TREE (t1);
 			break;
 		}
+		case CEE_LDLOC_S: {
+			++ip;
+
+			t1 = ctree_new_leaf (MB_TERM_LDLOC, LOCAL_TYPE (*ip)->type);
+			t1->data.i = LOCAL_POS (*ip);
+			++ip;
+			PUSH_TREE (t1);
+			break;
+		}
 		case CEE_STLOC_0:
 		case CEE_STLOC_1:
 		case CEE_STLOC_2:
@@ -508,7 +520,17 @@ mono_compile_method (MonoMethod *method)
 			ADD_TREE (t1);			
 			break;
 		}
+		case CEE_STLOC_S: {
+			++ip;
+			--sp;
 
+			t1 = ctree_new (MB_TERM_STLOC, LOCAL_TYPE (*ip)->type, *sp, NULL);
+			t1->data.i = LOCAL_POS (*ip);
+			++ip;
+
+			ADD_TREE (t1);			
+			break;
+		}
 		case CEE_ADD:
 			++ip;
 			sp -= 2;
