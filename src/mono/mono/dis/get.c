@@ -1848,10 +1848,7 @@ get_token (MonoImage *m, guint32 token, MonoGenericContext *context)
 		g_free (temp);
 		return result;
 	case MONO_TOKEN_TYPE_REF:
-		temp = get_typeref (m, idx);
-		result = get_escaped_name (temp);
-		g_free (temp);
-		return result;
+		return get_typeref (m, idx);
 	case MONO_TOKEN_TYPE_SPEC:
 		return get_typespec (m, idx, TRUE, context);
 	case MONO_TOKEN_MEMBER_REF: {
@@ -2467,6 +2464,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "stored_object", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "streamed_object", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stream", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "strict", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "string", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "struct", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "synchronized", GINT_TO_POINTER (TRUE));
