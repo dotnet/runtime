@@ -1214,7 +1214,28 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 		mono_digest_get_public_token (pubtoken + 1, pubkey, publen);
 		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, pubtoken, 9);
 	} else {
-		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
+		/* 
+		 * We add the pubtoken from ms, so that the ms runtime can handle our binaries.
+		 * This is currently only a problem with references to System.Xml (see bug#27706),
+		 * but there may be other cases that makes this necessary. Note, we need to set 
+		 * the version as well. When/if we sign our assemblies, we'd need to get our pubtoken 
+		 * recognized by ms, yuck!
+		 * FIXME: need to add more assembly names, as needed.
+		 */
+		if (strcmp (image->assembly_name, "corlib") == 0 ||
+				strcmp (image->assembly_name, "mscorlib") == 0 ||
+				strcmp (image->assembly_name, "System") == 0 ||
+				strcmp (image->assembly_name, "System.Xml") == 0 ||
+				strcmp (image->assembly_name, "System.Data") == 0 ||
+				strcmp (image->assembly_name, "System.Drawing") == 0 ||
+				strcmp (image->assembly_name, "System.Web") == 0) {
+			static const guchar ptoken [9] = {8, '\xB7', '\x7A', '\x5C', '\x56', '\x19', '\x34', '\xE0', '\x89'};
+			values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, ptoken, 9);
+			values [MONO_ASSEMBLYREF_MAJOR_VERSION] = 1;
+			values [MONO_ASSEMBLYREF_BUILD_NUMBER] = 3300;
+		} else {
+			values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
+		}
 	}
 	token <<= RESOLTION_SCOPE_BITS;
 	token |= RESOLTION_SCOPE_ASSEMBLYREF;
