@@ -419,7 +419,7 @@ dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod)
 	int i;
 	for (i = 0; i < n; ++i) {
 		char *tok = dis_stringify_token (m, mod[i].token);
-		g_string_sprintfa (s, "%s %s", mod[i].mod == MONO_TYPE_CMOD_OPT ? "opt": "reqd", tok);
+		g_string_sprintfa (s, "%s %s", mod[i].required ? "opt": "reqd", tok);
 		g_free (tok);
 	}
 	g_string_append_c (s, ' ');
@@ -429,23 +429,14 @@ dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod)
 }
 
 char*
-dis_stringify_param (MonoMetadata *m, MonoParam *param) 
+dis_stringify_param (MonoMetadata *m, MonoType *param) 
 {
-	char *mods = NULL;
 	char *t;
 	char *result;
-	char *out = param->param_attrs & 2 ? "[out] ": "";
-	if (param->num_modifiers)
-		mods = dis_stringify_modifiers (m, param->num_modifiers, param->modifiers);
-	if (param->typedbyref)
-		t = g_strdup ("TypedByRef");
-	else if (!param->type)
-		t = g_strdup ("void");
-	else
-		t = dis_stringify_type (m, param->type);
-	result = g_strconcat (mods ? mods : "", out, t, NULL);
+	char *out = param->attrs & 2 ? "[out] ": "";
+	t = dis_stringify_type (m, param);
+	result = g_strconcat (out, t, NULL);
 	g_free (t);
-	g_free (mods);
 	return result;
 }
 
@@ -485,7 +476,7 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 		if (param_index) {
 			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
 			name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
-			method->params [i]->param_attrs = pcols [MONO_PARAM_FLAGS];
+			method->params [i]->attrs = pcols [MONO_PARAM_FLAGS];
 			param_index++;
 		} else {
 			name = "";
@@ -510,7 +501,11 @@ char*
 dis_stringify_type (MonoMetadata *m, MonoType *type)
 {
 	char *bare = NULL, *pinned = "", *byref = "";
+	char *mods = NULL;
 	char *result;
+
+	if (type->num_mods)
+		mods = dis_stringify_modifiers (m, type->num_mods, type->modifiers);
 
 	switch (type->type){
 	case MONO_TYPE_BOOLEAN:
@@ -544,18 +539,10 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY: {
 		char *child_type;
-		char *mods;
-		if (type->custom_mod) {
-			mods = dis_stringify_modifiers (m, type->data.mtype->num_modifiers, type->data.mtype->modifiers);	
-			child_type = dis_stringify_type (m, type->data.mtype->type);
-		} else {
-			mods = g_strdup("");
-			child_type = dis_stringify_type (m, type->data.type);
-		}
+		child_type = dis_stringify_type (m, type->data.type);
 		
-		bare = g_strdup_printf (type->type == MONO_TYPE_PTR ? "%s%s*" : "%s%s[]", mods, child_type);
+		bare = g_strdup_printf (type->type == MONO_TYPE_PTR ? "%s*" : "%s[]", child_type);
 		g_free (child_type);
-		g_free (mods);
 		break;
 	}
 	case MONO_TYPE_ARRAY:
@@ -568,13 +555,13 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		g_error ("Do not know how to stringify type 0x%x", type->type);
 	}
 	
-	if (type->constraint == MONO_TYPE_PINNED)
+	if (type->pinned)
 		pinned = " pinned";
 
 	if (type->byref)
 		byref = "&";
 		
-	result = g_strconcat (bare, byref, pinned, NULL);
+	result = g_strconcat (mods ? mods : "", bare, byref, pinned, NULL);
 
 	g_free (bare);
 
@@ -595,7 +582,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 const char *
 get_type (MonoMetadata *m, const char *ptr, char **result)
 {
-	MonoType *type = mono_metadata_parse_type (m, ptr, &ptr);
+	MonoType *type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	*result = dis_stringify_type (m, type);
 	mono_metadata_free_type (type);
 	return ptr;

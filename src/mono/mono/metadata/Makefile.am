@@ -43,3 +43,4 @@ pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
 pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) ../../libffi/libffi.a
+

@@ -130,15 +130,9 @@ typedef struct _MonoArray MonoArray;
 typedef struct _MonoMethodSignature MonoMethodSignature;
 
 typedef struct {
-	guchar mod;
-	guint32 token;
+	unsigned int required : 1;
+	unsigned int token    : 31;
 } MonoCustomMod;
-
-typedef struct {
-	MonoType *type;
-	int num_modifiers;
-	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
-} MonoModifiedType;
 
 struct _MonoArray {
 	MonoType *type;
@@ -150,31 +144,19 @@ struct _MonoArray {
 };
 
 struct _MonoType {
-	guchar type; /* ElementTypeEnum */
-	guchar custom_mod; /* for PTR and SZARRAY: use data.mtype instead of data.type */
-	guchar byref; /* when included in a MonoRetType */
-	guchar constraint; /* valid when included in a local var signature */
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
-		MonoType *type;
-		MonoModifiedType *mtype;
+		MonoType *type;   /* for PTR and SZARRAY */
 		MonoArray *array; /* for ARRAY */
 		MonoMethodSignature *method;
 	} data;
-};
-
-typedef struct {
-	/* maybe use a union here: saves 4 bytes */
-	MonoType *type; /* NULL for VOID */
-	short param_attrs; /* 22.1.11 */
-	char typedbyref;
-	char num_modifiers;
+	unsigned int attrs    : 16; /* param attributes or field flags */
+	unsigned int type     : 8;  /* ElementTypeEnum */
+	unsigned int num_mods : 6;  /* max 64 modifiers follow at the end */
+	unsigned int byref    : 1;
+	unsigned int pinned   : 1;  /* valid when included in a local var signature */
 	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
-} MonoRetType;
-
-/* MonoRetType is used also for params and fields */
-typedef MonoRetType MonoParam;
-typedef MonoRetType MonoFieldType;
+};
 
 struct _MonoMethodSignature {
 	char          hasthis;
@@ -182,8 +164,8 @@ struct _MonoMethodSignature {
 	char          call_convention;
 	guint16       param_count;
 	guint16       sentinelpos;
-	MonoRetType  *ret;
-	MonoParam   **params;
+	MonoType     *ret;
+	MonoType    **params;
 	guint32       params_size;
 };
 
@@ -200,6 +182,15 @@ typedef struct {
 	MonoExceptionClause *clauses;
 } MonoMethodHeader;
 
+typedef enum {
+	MONO_PARSE_TYPE,
+	MONO_PARSE_MOD_TYPE,
+	MONO_PARSE_LOCAL,
+	MONO_PARSE_PARAM,
+	MONO_PARSE_RET,
+	MONO_PARSE_FIELD
+} MonoParseTypeMode;
+
 guint32     mono_metadata_parse_typedef_or_ref (MonoMetadata      *m,
                                                 const char      *ptr,
                                                 const char     **rptr);
@@ -211,22 +202,24 @@ MonoArray     *mono_metadata_parse_array       (MonoMetadata      *m,
 						const char      *ptr,
 						const char     **rptr);
 void           mono_metadata_free_array        (MonoArray       *array);
-MonoParam     *mono_metadata_parse_param       (MonoMetadata      *m,
-						int              rettype,
-						const char      *ptr,
-						const char     **rptr);
-void           mono_metadata_free_param        (MonoParam       *param);
 MonoType      *mono_metadata_parse_type        (MonoMetadata      *m,
-               					const char      *ptr,
-               					const char     **rptr);
+						MonoParseTypeMode  mode,
+						short              opt_attrs,
+						const char        *ptr,
+						const char       **rptr);
+MonoType      *mono_metadata_parse_param       (MonoMetadata      *m,
+						const char      *ptr,
+						const char      **rptr);
+MonoType      *mono_metadata_parse_ret_type    (MonoMetadata      *m,
+						const char      *ptr,
+						const char      **rptr);
+MonoType      *mono_metadata_parse_field_type  (MonoMetadata      *m,
+		                                short            field_flags,
+						const char      *ptr,
+						const char      **rptr);
 void           mono_metadata_free_type         (MonoType        *type);
 int            mono_type_size                  (MonoType        *type, 
 						int             *alignment);
-
-MonoFieldType *mono_metadata_parse_field_type  (MonoMetadata      *m,
-						const char      *ptr,
-						const char      **rptr);
-							
 
 MonoMethodSignature  *mono_metadata_parse_method_signature (MonoMetadata            *m,
                                                             int                    def,

@@ -94,8 +94,7 @@ class_compute_field_layout (MonoClass *class)
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
 		class->fields [i].type = mono_metadata_parse_field_type (
-			m, sig + 1, &sig);
-		class->fields [i].flags = cols [0];
+			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 	}
 	/*
 	 * Compute field layout and total size.
@@ -106,8 +105,8 @@ class_compute_field_layout (MonoClass *class)
 		for (i = 0; i < top; i++){
 			int size, align;
 			
-			size = mono_type_size (class->fields [i].type->type, &align);
-			if (class->fields [i].flags & FIELD_ATTRIBUTE_STATIC) {
+			size = mono_type_size (class->fields [i].type, &align);
+			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
 				class->class_size += (class->class_size % align);
 				class->class_size += size;
@@ -134,8 +133,8 @@ class_compute_field_layout (MonoClass *class)
 				}
 			}
 			
-			size = mono_type_size (class->fields [i].type->type, &align);
-			if (class->fields [i].flags & FIELD_ATTRIBUTE_STATIC) {
+			size = mono_type_size (class->fields [i].type, &align);
+			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
 				class->class_size += (class->class_size % align);
 				class->class_size += size;
@@ -344,7 +343,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type (image, ptr, &ptr);
+	type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:
@@ -352,7 +351,6 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		class = mono_array_class_get (eclass, type->data.array->rank);
 		break;
 	case MONO_TYPE_SZARRAY:
-		g_assert (!type->custom_mod);
 		eclass = mono_class_from_mono_type (type->data.type);
 		class = mono_array_class_get (eclass, 1);
 		break;
@@ -566,7 +564,8 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		return 0;
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 	
-	g_assert (token);
+	if (!token)
+		g_error ("token not found for %s.%s in image %s", name_space, name, image->name);
 
 	token = MONO_TOKEN_TYPE_DEF | token;
 

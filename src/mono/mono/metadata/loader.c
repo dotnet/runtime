@@ -242,7 +242,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 					  bcols, MONO_TYPESPEC_SIZE);
 		ptr = mono_metadata_blob_heap (image, bcols [MONO_TYPESPEC_SIGNATURE]);
 		len = mono_metadata_decode_value (ptr, &ptr);	
-		type = mono_metadata_parse_type (image, ptr, &ptr);
+		type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 		if (type->type != MONO_TYPE_ARRAY)
 			g_assert_not_reached ();		
@@ -388,9 +388,9 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 	args = g_new (ffi_type *, acount);
 
 	for (i = 0; i < acount; i++)
-		args[i] = ves_map_ffi_type (mh->signature->params [i]->type);
+		args[i] = ves_map_ffi_type (mh->signature->params [i]);
 
-	rettype = ves_map_ffi_type (mh->signature->ret->type);
+	rettype = ves_map_ffi_type (mh->signature->ret);
 	
 	if (!ffi_prep_cif (piinfo->cif, FFI_DEFAULT_ABI, acount, rettype, 
 			   args) == FFI_OK) {

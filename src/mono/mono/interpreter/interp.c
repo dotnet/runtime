@@ -62,6 +62,7 @@ enum {
 		(frame)->method = (mono_method);	\
 		(frame)->ex_handler = NULL;	\
 		(frame)->ex = NULL;	\
+		(frame)->child = NULL;	\
 	} while (0)
 
 static void ves_exec_method (MonoInvocation *frame);
@@ -440,7 +441,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	for (i = 0; i < acount; i++) {
 
-		switch (sig->params [i]->type->type) {
+		switch (sig->params [i]->type) {
 
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -479,13 +480,13 @@ ves_pinvoke_method (MonoInvocation *frame)
 			break;
  		default:
 			g_warning ("not implemented %x", 
-				   sig->params [i]->type->type);
+				   sig->params [i]->type);
 			g_assert_not_reached ();
 		}
 
 	}
 
-	if ((rsize = mono_type_size (sig->ret->type, &align)))
+	if ((rsize = mono_type_size (sig->ret, &align)))
 		res = alloca (rsize);
 
 	ffi_call (piinfo->cif, frame->method->addr, res, values);
@@ -498,8 +499,8 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	g_slist_free (l);
 
-	if (sig->ret->type->type != MONO_TYPE_VOID)
-		stackval_from_data (sig->ret->type, frame->retval, res);
+	if (sig->ret->type != MONO_TYPE_VOID)
+		stackval_from_data (sig->ret, frame->retval, res);
 }
 
 #define DEBUG_INTERP 0
@@ -566,19 +567,20 @@ dump_stack (stackval *stack, stackval *sp)
 
 static MonoType 
 method_this = {
+	{NULL}, /* data */
+	0, /* attrs */
 	MONO_TYPE_CLASS, 
-	0, 
+	0, /* num_mods */
 	1, /* byref */
-	0,
-	{0}
+	0 /* pinned */
 };
 
 #define LOCAL_POS(n)            (locals_pointers [(n)])
 #define LOCAL_TYPE(header, n)   ((header)->locals [(n)])
 
 #define ARG_POS(n)              (args_pointers [(n)])
-#define ARG_TYPE(sig, n)        ((n) ? (sig)->params [(n) - (sig)->hasthis]->type : \
-				(sig)->hasthis ? &method_this: (sig)->params [(0)]->type)
+#define ARG_TYPE(sig, n)        ((n) ? (sig)->params [(n) - (sig)->hasthis] : \
+				(sig)->hasthis ? &method_this: (sig)->params [(0)])
 
 #define THROW_EX(exception,ex_ip)	\
 		do {\
@@ -675,8 +677,8 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		for (i = 0; i < signature->param_count; ++i) {
 			args_pointers [i + has_this] = frame->args + offset;
-			stackval_to_data (signature->params [i]->type, frame->stack_args + i, frame->args + offset);
-			size = mono_type_size (signature->params [i]->type, &align);
+			stackval_to_data (signature->params [i], frame->stack_args + i, frame->args + offset);
+			size = mono_type_size (signature->params [i], &align);
 			offset += offset % align;
 			offset += size;
 		}
@@ -888,7 +890,7 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				child_frame.obj = NULL;
 			}
-			if (csignature->ret->type->type != MONO_TYPE_VOID) {
+			if (csignature->ret->type != MONO_TYPE_VOID) {
 				/* FIXME: handle valuetype */
 				child_frame.retval = &retval;
 			} else {
@@ -909,7 +911,7 @@ ves_exec_method (MonoInvocation *frame)
 			}
 
 			/* need to handle typedbyref ... */
-			if (csignature->ret->type->type != MONO_TYPE_VOID) {
+			if (csignature->ret->type != MONO_TYPE_VOID) {
 				*sp = retval;
 				sp++;
 			}
@@ -917,7 +919,7 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		CASE (CEE_CALLI) ves_abort(); BREAK;
 		CASE (CEE_RET)
-			if (signature->ret->type->type != MONO_TYPE_VOID) {
+			if (signature->ret->type != MONO_TYPE_VOID) {
 				--sp;
 				*frame->retval = *sp;
 			}
@@ -1692,7 +1694,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp->type = VAL_TP;
 				sp->data.p = (char*)obj + field->offset;
 			} else {
-				stackval_from_data (field->type->type, &sp [-1], (char*)obj + field->offset);
+				stackval_from_data (field->type, &sp [-1], (char*)obj + field->offset);
 			}
 			BREAK;
 		}
@@ -1711,7 +1713,7 @@ ves_exec_method (MonoInvocation *frame)
 			obj = sp [0].data.p;
 			field = mono_class_get_field (obj->klass, token);
 			g_assert (field);
-			stackval_to_data (field->type->type, &sp [1], (char*)obj + field->offset);
+			stackval_to_data (field->type, &sp [1], (char*)obj + field->offset);
 			BREAK;
 		}
 		CASE (CEE_LDSFLD) /* Fall through */
@@ -1736,7 +1738,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp->type = VAL_TP;
 				sp->data.p = (char*)klass + field->offset;
 			} else {
-				stackval_from_data (field->type->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+				stackval_from_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			}
 			++sp;
 			BREAK;
@@ -1758,7 +1760,7 @@ ves_exec_method (MonoInvocation *frame)
 				init_class (klass);
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			stackval_to_data (field->type->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+			stackval_to_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			BREAK;
 		}
 		CASE (CEE_STOBJ) ves_abort(); BREAK;
@@ -2294,7 +2296,7 @@ ves_exec_method (MonoInvocation *frame)
 }
 
 static int 
-ves_exec (MonoAssembly *assembly)
+ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
@@ -2304,7 +2306,21 @@ ves_exec (MonoAssembly *assembly)
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
-	INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
+
+	if (method->signature->param_count) {
+		/*
+		int i;
+		stackval argv_array;
+		MonoObject *arr = mono_new_szarray (mono_defaults.corlib, mono_defaults.string_token, argc);
+		argv_array.type = VAL_OBJ;
+		argv_array.data.p = arr;
+		for (i=0; i < argc; ++i) {
+		}
+		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
+		*/
+	} else {
+		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
+	}
 	
 	ves_exec_method (&call);
 	mono_free_method (call.method);
@@ -2320,6 +2336,21 @@ usage (void)
 		 "Usage is: mint executable args...\n", "0.6");
 	exit (1);
 }
+
+#ifdef RUN_TEST
+static void
+test_load_class (MonoImage* image)
+{
+	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
+	MonoClass *klass;
+	int i;
+
+	for (i = 1; i <= t->rows; ++i) {
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | i);
+		mono_class_metadata_init (klass);
+	}
+}
+#endif
 
 int 
 main (int argc, char *argv [])
@@ -2341,7 +2372,12 @@ main (int argc, char *argv [])
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
 	}
-	retval = ves_exec (assembly);
+
+#ifdef RUN_TEST
+	test_load_class (assembly->image);
+#else
+	retval = ves_exec (assembly, argc, argv);
+#endif
 	mono_assembly_close (assembly);
 
 	return retval;

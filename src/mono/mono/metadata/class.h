@@ -10,9 +10,8 @@
 #define MONO_CLASS_STATIC_FIELDS_BASE(c) (c->data)
 
 typedef struct {
-	MonoFieldType *type;
-	int            offset;
-	guint32        flags;
+	MonoType *type;
+	int       offset;
 } MonoClassField;
 
 struct _MonoClass {

@@ -549,7 +549,7 @@ dis_property_signature (MonoMetadata *m, guint32 prop_idx)
 	guint32 pcount, i;
 	guint32 cols [MONO_PROPERTY_SIZE];
 	MonoType *type;
-	MonoParam *param;
+	MonoType *param;
 	char *blurb;
 	const char *name;
 	int prop_flags;
@@ -565,7 +565,7 @@ dis_property_signature (MonoMetadata *m, guint32 prop_idx)
 		g_warning("incorrect signature in propert blob: 0x%x", *ptr);
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type (m, ptr, &ptr);
+	type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	blurb = dis_stringify_type (m, type);
 	if (prop_flags & 0x0200)
 		g_string_append (res, "special ");
@@ -579,10 +579,10 @@ dis_property_signature (MonoMetadata *m, guint32 prop_idx)
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
-		param = mono_metadata_parse_param (m, 0, ptr, &ptr);
+		param = mono_metadata_parse_param (m, ptr, &ptr);
 		blurb = dis_stringify_param (m, param);
 		g_string_append (res, blurb);
-		mono_metadata_free_param (param);
+		mono_metadata_free_type (param);
 		g_free (blurb);
 	}
 	g_string_append_c (res, ')');

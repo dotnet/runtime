@@ -19,6 +19,8 @@
 #include "private.h"
 #include "class.h"
 
+static void do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, const char **rptr);
+
 /*
  * Encoding of the "description" argument:
  *
@@ -930,8 +932,8 @@ mono_metadata_parse_custom_mod (MonoMetadata *m, MonoCustomMod *dest, const char
 	    (*ptr == MONO_TYPE_CMOD_REQD)) {
 		if (!dest)
 			dest = &local;
-		dest->mod = *ptr++;
-		dest->token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
+		dest->required = *ptr == MONO_TYPE_CMOD_REQD ? 1 : 0;
+		dest->token = mono_metadata_parse_typedef_or_ref (m, ptr + 1, &ptr);
 		return TRUE;
 	}
 	return FALSE;
@@ -943,7 +945,7 @@ mono_metadata_parse_array (MonoMetadata *m, const char *ptr, const char **rptr)
 	int i;
 	MonoArray *array = g_new0 (MonoArray, 1);
 	
-	array->type = mono_metadata_parse_type (m, ptr, &ptr);
+	array->type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
 	array->numsizes = mono_metadata_decode_value (ptr, &ptr);
@@ -972,50 +974,153 @@ mono_metadata_free_array (MonoArray *array)
 	g_free (array);
 }
 
-MonoParam *
-mono_metadata_parse_param (MonoMetadata *m, int rettype, const char *ptr, const char **rptr)
-{
-	const char *tmp_ptr = ptr;
-	MonoParam *param;
-	int count = 0;
-	int byref = 0;
+/*
+ * need to add common field and param attributes combinations:
+ * [out] param
+ * public static
+ * public static literal
+ * private
+ * private static
+ * private static literal
+ */
+static MonoType
+builtin_types[] = {
+	/* data, attrs, type,              nmods, byref, pinned */
+	{{NULL}, 0,     MONO_TYPE_VOID,    0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_BOOLEAN, 0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_BOOLEAN, 0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_CHAR,    0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_CHAR,    0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_I1,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_I1,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_U1,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_U1,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_I2,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_I2,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_U2,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_U2,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_I4,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_I4,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_U4,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_U4,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_I8,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_I8,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_U8,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_U8,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_R4,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_R4,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_R8,      0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_R8,      0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_STRING,  0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_STRING,  0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_TYPEDBYREF,  0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_I,       0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_I,       0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_U,       0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_U,       0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_OBJECT,  0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_OBJECT,  0,     1,     0}
+};
 
-	/* count the modifiers */
-	while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
-		count++;
-	param = g_malloc0(sizeof(MonoParam)+(count-MONO_ZERO_LEN_ARRAY)*sizeof(MonoCustomMod));
-	param->num_modifiers = count;
-	/* save them this time */
-	count = 0;
-	while (mono_metadata_parse_custom_mod (m, &(param->modifiers[count]), ptr, &ptr))
-		count++;
-	switch (*ptr) {
-	case MONO_TYPE_TYPEDBYREF: 
-		param->typedbyref = 1; 
-		ptr++; 
+#define NBUILTIN_TYPES() (sizeof (builtin_types) / sizeof (builtin_types [0]))
+
+static GHashTable *type_cache = NULL;
+
+/*
+ * MonoTypes with modifies are never cached, so we never check or use that field.
+ */
+static int
+mono_type_hash (MonoType *type)
+{
+	return type->type | (type->byref << 8) | (type->attrs << 9);
+}
+
+static gboolean
+mono_type_equal (MonoType *a, MonoType *b)
+{
+	if (a->type != b->type || a->byref != b->byref || a->attrs != b->attrs || a->pinned != b->pinned)
+		return 0;
+	/* need other checks */
+	return 1;
+}
+
+MonoType*
+mono_metadata_parse_type (MonoMetadata *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
+{
+	MonoType *type, *cached;
+
+	if (!type_cache) {
+		int i;
+		type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
+		for (i=0; i < NBUILTIN_TYPES (); ++i)
+			g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
+	}
+
+	switch (mode) {
+	case MONO_PARSE_MOD_TYPE:
+	case MONO_PARSE_PARAM:
+	case MONO_PARSE_RET:
+	case MONO_PARSE_FIELD: {
+		/* count the modifiers */
+		const char *tmp_ptr = ptr;
+		int count = 0;
+		while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
+			count++;
+		if (count) {
+			type = g_malloc0 (sizeof (MonoType) + (count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
+			type->num_mods = count;
+			if (count > 64)
+				g_warning ("got more than 64 modifiers in type");
+			/* save them this time */
+			count = 0;
+			while (mono_metadata_parse_custom_mod (m, &(type->modifiers [count]), ptr, &ptr))
+				count++;
+			break;
+		} /* fall through */
+	}
+	case MONO_PARSE_LOCAL:
+	case MONO_PARSE_TYPE:
+		/*
+		 * Later we can avoid doing this allocation.
+		 */
+		type = g_new0 (MonoType, 1);
 		break;
+	default:
+		g_assert_not_reached ();
+	}
+	
+	type->attrs = opt_attrs;
+	if (mode == MONO_PARSE_LOCAL) {
+		/*
+		 * check for pinned flag
+		 */
+		if (*ptr == MONO_TYPE_PINNED) {
+			type->pinned = 1;
+			++ptr;
+		}
+	}
+
+	switch (*ptr) {
 	case MONO_TYPE_BYREF: 
-		byref = 1; 
+		if (mode == MONO_PARSE_FIELD)
+			g_warning ("A field type cannot be byref");
+		type->byref = 1; 
 		ptr++;
 		/* follow through */
 	default:
-		if (*ptr == MONO_TYPE_VOID && !rettype)
-			g_error ("void not allowed in param");
-		param->type = mono_metadata_parse_type (m, ptr, &ptr);
-		param->type->byref = byref;
+		/*if (*ptr == MONO_TYPE_VOID && mode != MONO_PARSE_RET)
+			g_error ("void not allowed in param");*/
+		do_mono_metadata_parse_type (type, m, ptr, &ptr);
 		break;
 	}
 	if (rptr)
 		*rptr = ptr;
-	return param;
-}
-
-void
-mono_metadata_free_param (MonoParam *param)
-{
-	if (param->type)
-		mono_metadata_free_type (param->type);
-	g_free (param);
+	if (mode != MONO_PARSE_PARAM && !type->num_mods && (cached = g_hash_table_lookup (type_cache, type))) {
+		mono_metadata_free_type (type);
+		return cached;
+	} else {
+		return type;
+	}
 }
 
 MonoMethodSignature *
@@ -1031,14 +1136,14 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 	method->call_convention = *ptr & 0x0F;
 	ptr++;
 	method->param_count = mono_metadata_decode_value (ptr, &ptr);
-	method->ret = mono_metadata_parse_param (m, 1, ptr, &ptr);
+	method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, 0, ptr, &ptr);
 
 	if (method->hasthis)
 		offset += sizeof(gpointer);
 	if (method->param_count) {
 		int size;
 		
-		method->params = g_new0(MonoParam*, method->param_count);
+		method->params = g_new0 (MonoType*, method->param_count);
 		method->sentinelpos = -1;
 		
 		for (i = 0; i < method->param_count; ++i) {
@@ -1048,8 +1153,8 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 				method->sentinelpos = i;
 				ptr++;
 			}
-			method->params [i] = mono_metadata_parse_param (m, 0, ptr, &ptr);
-			size = mono_type_size (method->params [i]->type, &align);
+			method->params [i] = mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, &ptr);
+			size = mono_type_size (method->params [i], &align);
 			offset += (offset % align);
 			offset += size;
 		}
@@ -1065,9 +1170,9 @@ void
 mono_metadata_free_method_signature (MonoMethodSignature *method)
 {
 	int i;
-	mono_metadata_free_param (method->ret);
+	mono_metadata_free_type (method->ret);
 	for (i = 0; i < method->param_count; ++i)
-		mono_metadata_free_param (method->params[i]);
+		mono_metadata_free_type (method->params [i]);
 
 	g_free (method->params);
 	g_free (method);
@@ -1115,34 +1220,13 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		guint32 token;
-
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		type->data.klass = mono_class_get (m, token);
-
 		break;
 	}
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
-		if (mono_metadata_parse_custom_mod (m, NULL, ptr, NULL)) {
-			const char *tmp_ptr = ptr;
-			MonoModifiedType *mtype;
-			int count = 0;
-
-			type->custom_mod = 1;
-			/* count the modifiers */
-			while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
-				count++;
-			type->data.mtype = mtype = g_malloc0(sizeof(MonoModifiedType)+(count-MONO_ZERO_LEN_ARRAY)*sizeof(MonoCustomMod));
-			mtype->num_modifiers = count;
-			count = 0;
-			
-			/* save them this time */
-			while (mono_metadata_parse_custom_mod (m, &(mtype->modifiers[count]), ptr, &ptr))
-				count++;
-			mtype->type = mono_metadata_parse_type (m, ptr, &ptr);
-		} else {
-			type->data.type = mono_metadata_parse_type (m, ptr, &ptr);
-		}
+		type->data.type = mono_metadata_parse_type (m, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		break;
 	case MONO_TYPE_FNPTR:
 		type->data.method = mono_metadata_parse_method_signature (m, 0, ptr, &ptr);
@@ -1158,6 +1242,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
 		*rptr = ptr;
 }
 
+#if 0
 /**
  * mono_metadata_parse_type:
  * @m: metadata context to scan
@@ -1177,20 +1262,17 @@ mono_metadata_parse_type (MonoMetadata *m, const char *ptr, const char **rptr)
 
 	return type;
 }
+#endif
 
 void
 mono_metadata_free_type (MonoType *type)
 {
+	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
+		return;
 	switch (type->type){
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
-		if (!type->custom_mod) {
-			if (type->data.type)
-				mono_metadata_free_type (type->data.type);
-		} else if (type->data.mtype) {
-			mono_metadata_free_type (type->data.mtype->type);
-			g_free (type->data.mtype);
-		}
+		mono_metadata_free_type (type->data.type);
 		break;
 	case MONO_TYPE_FNPTR:
 		mono_metadata_free_method_signature (type->data.method);
@@ -1392,24 +1474,9 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 			return mh;
 		mh->locals = g_new (MonoType*, len);
 		for (i = 0; i < len; ++i) {
-			gboolean pinned = FALSE;
 			int val;
 			int align;
-			const char *p = ptr;
-			val = mono_metadata_decode_blob_size (ptr, &ptr);
-			if (val == MONO_TYPE_PINNED) {
-				p = ptr;
-				pinned = TRUE;
-				val = mono_metadata_decode_blob_size (ptr, &ptr);
-			}
-			if (val == MONO_TYPE_BYREF) {
-				p = ptr;
-			}
-			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
-			if (pinned) 
-				mh->locals [i]->constraint = MONO_TYPE_PINNED;
-			if (val == MONO_TYPE_BYREF) 
-				mh->locals [i]->byref = 1;
+			mh->locals [i] = mono_metadata_parse_type (m, MONO_PARSE_LOCAL, 0, ptr, &ptr);
 
 			val = mono_type_size (mh->locals [i], &align);
 			offset += (offset % align);
@@ -1438,12 +1505,18 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
  *
  * Parses the field signature, and returns the type information for it. 
  *
- * Returns: The MonoFieldType that was extracted from @ptr.
+ * Returns: The MonoType that was extracted from @ptr.
  */
-MonoFieldType *
-mono_metadata_parse_field_type (MonoMetadata *m, const char *ptr, const char **rptr)
+MonoType *
+mono_metadata_parse_field_type (MonoMetadata *m, short field_flags, const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_param (m, 0, ptr, rptr);
+	return mono_metadata_parse_type (m, MONO_PARSE_FIELD, field_flags, ptr, rptr);
+}
+
+MonoType *
+mono_metadata_parse_param (MonoMetadata *m, const char *ptr, const char **rptr)
+{
+	return mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, rptr);
 }
 
 /*
@@ -1729,14 +1802,13 @@ mono_metadata_signature_equal (MonoMetadata *m1, MonoMethodSignature *sig1,
 		return FALSE;
 
 	for (i = 0; i < sig1->param_count; i++) { 
-		MonoParam *p1 = sig1->params[i];
-		MonoParam *p2 = sig2->params[i];
+		MonoType *p1 = sig1->params[i];
+		MonoType *p2 = sig2->params[i];
 		
-		if (p1->param_attrs != p2->param_attrs ||
-		    p1->typedbyref !=  p2->typedbyref)
+		if (p1->attrs != p2->attrs)
 			return FALSE;
 		
-		if (!mono_metadata_type_equal (m1, p1->type, m2, p2->type))
+		if (!mono_metadata_type_equal (m1, p1, m2, p2))
 			return FALSE;
 	}
 
