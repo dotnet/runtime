@@ -205,6 +205,7 @@ struct MonoVTable {
 	guint       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data; /* to store static class data */
+        gpointer    type; /* System.Type type for klass */
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
 	guint initializing    : 1; /* cctor is running */

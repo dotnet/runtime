@@ -3,8 +3,9 @@
  *
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001-2004 Ximian, Inc.
  */
 #include <config.h>
 #include <stdlib.h>
@@ -573,6 +574,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	if (class->parent)
 		mono_class_vtable (domain, class->parent);
 
+	vt->type = mono_type_get_object (domain, &class->byval_arg);
 	if (class->contextbound)
 		vt->remote = 1;
 	else
