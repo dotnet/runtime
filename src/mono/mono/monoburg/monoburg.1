@@ -38,7 +38,39 @@ costfunc: `cost' `{' ccode `}'
 .RE
 .fi
 .PP
-where \fIccode\fP is arbitrary C code.
+Where \fIccode\fP is arbitrary C code. \fIcost\fP and \fIcostfunc\fP are
+used mutually exclusive, you can't use both in one rule. \fIcost\fP must be a C
+expression, whereas \fIccode\fP inside \fIcostfunc\fP is the body of a C 
+function. Here are some example rules:
+.PP
+.nf
+.RS
+.ft CW
+# define some terminal
+%term Fetch Four Mul Plus
+
+# this rule uses fixed costs
+addr: Plus (con, Mul (Four, reg)) 2 
+{
+        printf ("Emit your code here.");
+} 
+
+# this one computes costs inside a function
+reg:  Fetch (addr)  
+{
+        printf ("Tree address is %p", tree);
+
+} cost {
+	int c;
+
+	c = 1; /* calculate the costs here */
+
+	return c;
+}
+.RE
+.fi
+.PP
+
 .SH OPTIONS
 The following options are supported:
 .TP
@@ -46,10 +78,13 @@ The following options are supported:
 Displays usage instructions.
 .TP
 .I "-d HEADER"
-Writes a separate header file which conatins all monoburg definitions.
+Writes a separate header file which contains all monoburg definitions.
 .PP
 .SH AUTHOR
-monoburg was written by Dietmar Maurer.
+monoburg was written by Dietmar Maurer. It is based on the papers from 
+Christopher W.\ Fraser, Robert R.\ Henry and Todd A.\ Proebsting:
+"BURG - Fast Optimal Instruction Selection and Tree Parsing" and
+"Engineering a Simple, Efficient Code Generator Generator".
 .SH SEE ALSO
 .BR monodis(1)
 .BR pedump(1)
