@@ -2061,6 +2061,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	int i, n, start_new_bblock, align;
 	int num_calls = 0, inline_costs = 0;
 	int *filter_lengths = NULL;
+	int breakpoint_id = 0;
 	guint real_offset;
 
 	image = method->klass->image;
@@ -2152,7 +2153,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ADD_BBLOCK (cfg, bbhash, bblock);
 
 	if (cfg->method == method) {
-		if (mono_debugger_method_has_breakpoint (method, FALSE)) {
+		breakpoint_id = mono_debugger_method_has_breakpoint (method);
+		if (breakpoint_id && (mono_debug_format != MONO_DEBUG_FORMAT_DEBUGGER)) {
 			MONO_INST_NEW (cfg, ins, CEE_BREAK);
 			MONO_ADD_INS (bblock, ins);
 		}
@@ -2172,7 +2174,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		link_bblock (cfg, start_bblock, bblock);
 	}
 
-	mono_debug_init_method (cfg, bblock);
+	mono_debug_init_method (cfg, bblock, breakpoint_id);
 
 	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * (sig->hasthis + sig->param_count));
 	if (sig->hasthis)

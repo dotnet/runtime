@@ -30,11 +30,6 @@
 guint8 *mono_generic_trampoline_code = NULL;
 
 /*
- * Address of a special breakpoint trampoline code for the debugger.
- */
-guint8 *mono_breakpoint_trampoline_code = NULL;
-
-/*
  * get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
@@ -59,41 +54,6 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
 	ppc_bcctr (code, 20, 0);
 	g_assert ((code - start) <= 20);
-
-	return start;
-}
-
-/*
- * get_breakpoint_trampoline:
- * @m: method pointer
- * @addr: pointer to native code for @m
- *
- * creates a special trampoline for the debugger which is used to get
- * a breakpoint after compiling a method.
- */
-static gpointer
-get_breakpoint_trampoline (MonoMethod *m, guint32 breakpoint_id, gpointer addr)
-{
-	guint8 *code, *start, *buf;
-
-	if (!mono_breakpoint_trampoline_code) {
-		mono_breakpoint_trampoline_code = buf = g_malloc (8);
-
-		ppc_break (buf);
-	/*	x86_breakpoint (buf);
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8);
-		x86_ret (buf);*/
-
-		g_assert ((buf - mono_breakpoint_trampoline_code) <= 8);
-	}
-
-	start = code = g_malloc (22);
-	ppc_break (code);
-/*	x86_push_imm (code, addr);
-	x86_push_imm (code, breakpoint_id);
-	x86_push_imm (code, m);
-	x86_jump_code (code, mono_breakpoint_trampoline_code);*/
-	g_assert ((code - start) <= 22);
 
 	return start;
 }
@@ -534,8 +494,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	guint8 reg;
 	gint32 disp;
 	char *o;
-	guint32 breakpoint_id;
-	gpointer addr, trampoline;
+	gpointer addr;
 
 	EnterCriticalSection (metadata_section);
 	addr = mono_compile_method (m);
@@ -558,14 +517,8 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
-			breakpoint_id = mono_debugger_method_has_breakpoint (m, TRUE);
-			if (breakpoint_id) {
-				mono_remove_breakpoint (breakpoint_id);
-				trampoline = get_breakpoint_trampoline (m, breakpoint_id, addr);
-			} else
-				trampoline = addr;
 			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
-			return trampoline;
+			return addr;
 		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
 			/*
 			 * This is a interface call: should check the above code can't catch it earlier 
@@ -607,17 +560,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	o += disp;
 
 	if (m->klass->valuetype) {
-		trampoline = *((gpointer *)o) = get_unbox_trampoline (m, addr);
+		return *((gpointer *)o) = get_unbox_trampoline (m, addr);
 	} else {
-		trampoline = *((gpointer *)o) = addr;
-	}
-
-	breakpoint_id = mono_debugger_method_has_breakpoint (m, TRUE);
-	if (breakpoint_id) {
-		mono_debugger_remove_breakpoint (breakpoint_id);
-		return get_breakpoint_trampoline (m, breakpoint_id, trampoline);
-	} else {
-		return trampoline;
+		return *((gpointer *)o) = addr;
 	}
 }
 

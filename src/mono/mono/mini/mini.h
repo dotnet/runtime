@@ -655,7 +655,8 @@ void        mono_ssa_deadce                     (MonoCompile *cfg);
 void        mono_ssa_strength_reduction         (MonoCompile *cfg);
 
 /* debugging support */
-void      mono_debug_init_method                (MonoCompile *cfg, MonoBasicBlock *start_block);
+void      mono_debug_init_method                (MonoCompile *cfg, MonoBasicBlock *start_block,
+						 guint32 breakpoint_id);
 void      mono_debug_open_method                (MonoCompile *cfg);
 void      mono_debug_close_method               (MonoCompile *cfg);
 void      mono_debug_open_block                 (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address);

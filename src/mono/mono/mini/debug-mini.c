@@ -44,10 +44,11 @@ typedef struct
 {
 	MonoDebugMethodJitInfo *jit;
 	guint32 has_line_numbers;
+	guint32 breakpoint_id;
 } MiniDebugMethodInfo;
 
 void
-mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block)
+mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block, guint32 breakpoint_id)
 {
 	MonoMethod *method = cfg->method;
 	MiniDebugMethodInfo *info;
@@ -63,6 +64,7 @@ mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block)
 		return;
 
 	info = g_new0 (MiniDebugMethodInfo, 1);
+	info->breakpoint_id = breakpoint_id;
 
 	cfg->debug_info = info;
 }
@@ -140,6 +142,9 @@ mono_debug_close_method (MonoCompile *cfg)
 		write_variable (cfg->varinfo [i + method->signature->hasthis], &jit->params [i]);
 
 	mono_debug_add_method (method, jit);
+
+	if (info->breakpoint_id)
+		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 }
 
 void
