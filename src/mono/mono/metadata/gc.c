@@ -23,6 +23,8 @@
 
 static int finalize_slot = -1;
 
+static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
+
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
@@ -45,6 +47,8 @@ run_finalize (void *obj, void *data)
 			}
 		}
 	}
+	/* make sure the finalizer is not called again if the object is resurrected */
+	object_register_finalizer (obj, NULL);
 	/* speedup later... and use a timeout */
 	/*g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name);*/
 	mono_domain_set (mono_object_domain (o));
@@ -399,6 +403,9 @@ void mono_gc_init (void)
 {
 	HANDLE gc_thread;
 
+	if (getenv ("GC_DONT_GC"))
+		return;
+	
 	finalizer_event=CreateEvent (NULL, FALSE, FALSE, NULL);
 	if(finalizer_event==NULL) {
 		g_assert_not_reached ();
