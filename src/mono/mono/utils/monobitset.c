@@ -152,6 +152,19 @@ mono_bitset_clear_all (MonoBitSet *set) {
 }
 
 /*
+ * mono_bitset_set_all:
+ * @set: bitset ptr
+ *
+ * Set all bits.
+ */
+void
+mono_bitset_set_all (MonoBitSet *set) {
+	int i;
+	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i)
+		set->data [i] = 0xffffffff;
+}
+
+/*
  * mono_bitset_invert:
  * @set: bitset ptr
  *

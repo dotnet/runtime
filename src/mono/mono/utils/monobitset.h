@@ -25,6 +25,8 @@ void        mono_bitset_free         (MonoBitSet *set);
 
 void        mono_bitset_set          (MonoBitSet *set, guint32 pos);
 
+void        mono_bitset_set_all      (MonoBitSet *set);
+
 int         mono_bitset_test         (const MonoBitSet *set, guint32 pos);
 
 void        mono_bitset_clear        (MonoBitSet *set, guint32 pos);
