@@ -227,7 +227,7 @@ emit_header ()
 	output ("#define MBMAXCOST 32768\n");
 
 	output ("\n");
-	output ("#define MBCOND(x) if (!x) return MBMAXCOST;\n");
+	output ("#define MBCOND(x) if (!(x)) return MBMAXCOST;\n");
 
 	output ("\n");
 
