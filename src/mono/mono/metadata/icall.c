@@ -1470,7 +1470,7 @@ ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types
 	}
 
 	klass = mono_class_from_generic (geninst);
-	return mono_type_get_object (mono_object_domain (type), &klass->byval_arg);
+	return mono_type_get_object (mono_object_domain (type), klass->generic_inst);
 }
 
 static MonoReflectionType*
