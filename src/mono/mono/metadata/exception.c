@@ -106,6 +106,13 @@ mono_get_exception_security ()
 }
 
 MonoException *
+mono_get_exception_thread_abort ()
+{
+	return mono_exception_from_name (mono_defaults.corlib, "System.Threading",
+					 "ThreadAbortException");
+}
+
+MonoException *
 mono_get_exception_arithmetic ()
 {
 	return mono_exception_from_name (mono_defaults.corlib, "System",
@@ -239,6 +246,23 @@ mono_get_exception_argument_out_of_range (const guchar *arg)
 		((MonoArgumentException *)ex)->param_name =
 			mono_string_new (domain, arg);
 	
+	return ex;
+}
+
+MonoException *
+mono_get_exception_thread_state (const guchar *msg)
+{
+	MonoException *ex;
+	MonoDomain *domain;
+
+	ex = (MonoException *)mono_exception_from_name (
+	        mono_defaults.corlib, "System.Threading", "ThreadStateException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
+
+	if (msg)
+		ex->message = mono_string_new (domain, msg);
+		
 	return ex;
 }
 

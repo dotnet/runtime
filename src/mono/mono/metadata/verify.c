@@ -2492,8 +2492,20 @@ wait_handle_fields[] = {
 	{NULL, 0}
 };
 
+static FieldDesc 
+thread_fields[] = {
+	{"system_thread_handle", G_STRUCT_OFFSET (MonoThread, handle)},
+	{"current_culture", G_STRUCT_OFFSET (MonoThread, culture_info)},
+	{"threadpool_thread", G_STRUCT_OFFSET (MonoThread, threadpool_thread)},
+	{"state", G_STRUCT_OFFSET (MonoThread, state)},
+	{"abort_exc", G_STRUCT_OFFSET (MonoThread, abort_exc)},
+	{"abort_state", G_STRUCT_OFFSET (MonoThread, abort_state)},
+	{NULL, 0}
+};
+
 static const ClassDesc
 threading_classes_to_check [] = {
+	{"Thread", thread_fields},
 	{"WaitHandle", wait_handle_fields},
 	{NULL, NULL}
 };

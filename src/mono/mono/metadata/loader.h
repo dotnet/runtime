@@ -83,6 +83,7 @@ typedef struct {
 	MonoClass *methodhandle_class;
 	MonoClass *monotype_class;
 	MonoClass *exception_class;
+	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *transparent_proxy_class;
 	MonoClass *real_proxy_class;

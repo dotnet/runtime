@@ -2658,11 +2658,13 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Threading
 	 */
+	"System.Threading.Thread::Abort(object)", ves_icall_System_Threading_Thread_Abort,
+	"System.Threading.Thread::ResetAbort", ves_icall_System_Threading_Thread_ResetAbort,
 	"System.Threading.Thread::Thread_internal", ves_icall_System_Threading_Thread_Thread_internal,
 	"System.Threading.Thread::Thread_free_internal", ves_icall_System_Threading_Thread_Thread_free_internal,
 	"System.Threading.Thread::Start_internal", ves_icall_System_Threading_Thread_Start_internal,
 	"System.Threading.Thread::Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal,
-	"System.Threading.Thread::CurrentThread_internal", ves_icall_System_Threading_Thread_CurrentThread_internal,
+	"System.Threading.Thread::CurrentThread_internal", mono_thread_current,
 	"System.Threading.Thread::CurrentThreadDomain_internal", ves_icall_System_Threading_Thread_CurrentThreadDomain_internal,
 	"System.Threading.Thread::Join_internal", ves_icall_System_Threading_Thread_Join_internal,
 	"System.Threading.Thread::SlotHash_lookup", ves_icall_System_Threading_Thread_SlotHash_lookup,

@@ -25,6 +25,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/threads.h>
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "regset.h"
@@ -270,7 +271,7 @@ debug_memcopy (void *dest, const void *src, size_t n);
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
-%term EXCEPTION THROW RETHROW HANDLER CHECKTHIS
+%term EXCEPTION THROW RETHROW HANDLER CHECKTHIS RETHROW_ABORT
 %term LDLEN LDELEMA LDFTN LDVIRTFTN LDSTR LDSFLDA
 %term REMOTE_LDFLDA REMOTE_STIND_I1 REMOTE_STIND_I2 REMOTE_STIND_I4
 %term REMOTE_STIND_I8 REMOTE_STIND_R4 REMOTE_STIND_R8 REMOTE_STIND_OBJ
@@ -408,6 +409,28 @@ stmt: RETHROW {
 	target = arch_get_throw_exception ();
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, target);
 	x86_call_code (s->code, target);
+}
+
+stmt: RETHROW_ABORT {
+	guint8 *br;
+	gpointer target;
+
+	target = mono_thread_current;
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, target);
+	x86_call_code (s->code, target);
+
+	x86_mov_reg_membase (s->code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoThread, abort_exc), 4);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0);
+	/* check for NULL */
+	br = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
+
+	x86_push_reg (s->code, X86_EAX);
+
+	target = arch_get_throw_exception ();
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, target);
+	x86_call_code (s->code, target);
+	
+	x86_patch (br, s->code);
 }
 
 stmt: HANDLER {

@@ -166,6 +166,16 @@ typedef struct {
 	gint32 column;
 } MonoStackFrame;
 
+typedef struct {
+	MonoObject  obj;
+	HANDLE      handle;
+	MonoObject *culture_info;
+	MonoBoolean threadpool_thread;
+	guint32     state;
+	MonoObject *abort_exc;
+	MonoObject *abort_state;
+} MonoThread;
+
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
 

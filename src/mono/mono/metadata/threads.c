@@ -10,12 +10,14 @@
 
 #include <config.h>
 #include <glib.h>
+#include <signal.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/exception.h>
 #include <mono/io-layer/io-layer.h>
 
 #if HAVE_BOEHM_GC
@@ -51,7 +53,7 @@ static CRITICAL_SECTION monitor_mutex;
 static GArray *threads=NULL;
 
 /* The MonoObject associated with the main thread */
-static MonoObject *main_thread;
+static MonoThread *main_thread;
 
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key;
@@ -301,18 +303,19 @@ MonoAppDomain *ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(vo
 	return mono_domain_get()->domain;
 }
 
-MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)
+MonoThread *
+mono_thread_current (void)
 {
-	MonoObject *thread;
+	MonoThread *thread;
 	
 	/* Find the current thread object */
-	thread=TlsGetValue(current_object_key);
-
+	thread=TlsGetValue (current_object_key);
+	
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", thread);
 #endif
 
-	return(thread);
+	return (thread);
 }
 
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
@@ -945,6 +948,35 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 	return ret.fval;
 }
 
+void
+ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
+{
+	thread->abort_state = state;
+	thread->abort_exc = mono_get_exception_thread_abort ();
+
+
+	/* fixme: store the state somewhere */
+#ifndef __MINGW32__
+	PosixKillThread (thread->handle, SIGUSR1);
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+void
+ves_icall_System_Threading_Thread_ResetAbort (void)
+{
+	MonoThread *thread = mono_thread_current ();
+	
+	if (!thread->abort_exc) {
+		const char *msg = "Unable to reset abort because no abort was requested";
+		mono_raise_exception (mono_get_exception_thread_state (msg));
+	} else {
+		thread->abort_exc = NULL;
+		thread->abort_state = NULL;
+	}
+}
+
 void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 {
 	MonoClass *thread_class;
@@ -962,7 +994,12 @@ void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Starting to build main Thread object");
 #endif
-	main_thread = mono_object_new (domain, thread_class);
+	main_thread = (MonoThread *)mono_object_new (domain, thread_class);
+
+#if 0
+	main_thread->handle = OpenThread(THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId());
+#endif
+
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Finished building main Thread object: %p", main_thread);

@@ -126,7 +126,10 @@ TEST_CS_SRC=			\
 	array-invoke.cs		\
 	decimal.cs		\
 	marshal1.cs		\
-	marshal2.cs
+	marshal2.cs		\
+	thread.cs		\
+	thread5.cs		\
+	thread6.cs
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\

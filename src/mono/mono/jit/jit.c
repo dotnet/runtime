@@ -2710,7 +2710,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			gint32 target;
 			MonoBBlock *hb;
 			int leave_s = (*ip == CEE_LEAVE_S);
-
+			int k;
 			++ip;
 			if (leave_s)
 				target = cli_addr + 2 + (signed char) *ip;
@@ -2738,6 +2738,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.p = hb;
 				ADD_TREE (t1, cli_addr);
 			} 
+
+			/* check if we leave a catch handler, if so we have to
+			 * rethrow ThreadAbort exceptions */
+			for (k = 0; k < header->num_clauses; ++k) {
+				MonoExceptionClause *clause = &header->clauses [k];
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE &&
+				    MONO_OFFSET_IN_HANDLER (clause, cli_addr)) {
+					t1 = mono_ctree_new_leaf (mp, MB_TERM_RETHROW_ABORT);
+					t1->data.i = mono_allocate_excvar (cfg);
+					ADD_TREE (t1, cli_addr);
+					break;
+				}
+			}
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
@@ -3979,7 +3992,6 @@ sigill_signal_handler (int _dummy)
 {
 	MonoException *exc;
 	GET_CONTEXT
-
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
 	arch_handle_exception (ctx, exc, FALSE);
@@ -3994,6 +4006,19 @@ sigsegv_signal_handler (int _dummy)
 	exc = mono_get_exception_null_reference ();
 	
 	arch_handle_exception (ctx, exc, FALSE);
+}
+
+static void
+sigusr1_signal_handler (int _dummy)
+{
+	MonoThread *thread;
+	GET_CONTEXT
+	
+	thread = mono_thread_current ();
+        
+	g_assert (thread->abort_exc);
+
+	arch_handle_exception (ctx, thread->abort_exc, FALSE);
 }
 
 gpointer 
@@ -4071,6 +4096,13 @@ mono_runtime_install_handlers (void)
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
 	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
+
+	/* catch SIGUSR1 */
+	sa.sa_handler = sigusr1_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
+	g_assert (sigaction (SIGUSR1, &sa, NULL) != -1);
 
 #if 1
 	/* catch SIGSEGV */

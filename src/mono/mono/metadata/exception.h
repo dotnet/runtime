@@ -35,6 +35,12 @@ MonoException *
 mono_get_exception_execution_engine    (const guchar *msg);
 
 MonoException *
+mono_get_exception_thread_abort        (void);
+
+MonoException *
+mono_get_exception_thread_state        (const guchar *msg);
+
+MonoException *
 mono_get_exception_invalid_cast        (void);
 
 MonoException *

@@ -267,7 +267,7 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 #endif
 
 	mono_mutex_lock(&thread_hash_mutex);
-
+	
 	ret=g_hash_table_lookup(thread_hash, &tid);
 	mono_mutex_unlock(&thread_hash_mutex);
 	
@@ -422,6 +422,25 @@ guint32 ResumeThread(gpointer handle G_GNUC_UNUSED)
 guint32 SuspendThread(gpointer handle G_GNUC_UNUSED)
 {
 	return(0xFFFFFFFF);
+}
+
+int
+PosixKillThread (gpointer handle, int signum)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gboolean ok;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread_handle,
+				  (gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return(FALSE);
+	}
+
+	return pthread_kill (thread_private_handle->thread->id, signum);
 }
 
 /*

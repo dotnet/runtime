@@ -18,6 +18,7 @@
 
 extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb);
 extern void mono_thread_cleanup(void);
+MonoThread *mono_thread_current (void);
 
 MonoObject *mono_thread_create (MonoDomain *domain, gpointer func);
 
@@ -25,7 +26,6 @@ extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoObject *this, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
-extern MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void);
 extern MonoAppDomain * ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(void);
 extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this, int ms, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
@@ -60,6 +60,8 @@ extern gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *loc
 extern gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand);
 extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location1, MonoObject *value, MonoObject *comparand);
 extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand);
+extern void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state);
+extern void ves_icall_System_Threading_Thread_ResetAbort (void);
 
 
 #endif /* _MONO_METADATA_THREADS_H_ */

@@ -588,21 +588,23 @@ mono_unhandled_exception (MonoObject *exc)
 					     "UnhandledException");
 	g_assert (field);
 
-	delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
+	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
+		delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
 
-	if (!delegate) {
-		mono_print_unhandled_exception (exc);
-	} else {
-		MonoObject *e = NULL;
-		gpointer pa [2];
+		if (!delegate) {
+			mono_print_unhandled_exception (exc);
+		} else {
+			MonoObject *e = NULL;
+			gpointer pa [2];
 
-		/* fixme: pass useful arguments */
-		pa [0] = NULL;
-		pa [1] = NULL;
-		mono_runtime_delegate_invoke (delegate, pa, &e);
-	       
-		if (e)
-			g_warning ("exception inside UnhandledException handler!");
+			/* fixme: pass useful arguments */
+			pa [0] = NULL;
+			pa [1] = NULL;
+			mono_runtime_delegate_invoke (delegate, pa, &e);
+			
+			if (e)
+				g_warning ("exception inside UnhandledException handler!");
+		}
 	}
 }
 
