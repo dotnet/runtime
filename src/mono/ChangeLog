@@ -1,7 +1,11 @@
 2005-02-01  Raja R Harinath  <rharinath@novell.com>
 
-	* runtime/Makefile.am (mcs-compileall): Set MONO_PATH.  Remove
+	* runtime/Makefile.am (test-support-files): New target.
+	(mcs-do-compiler-tests): Use it.
+	(mcs-compileall): Likewise.  Set MONO_PATH.  Remove
 	reference to #71963, since it's fixed, and it's breaking elsewhere.
+	Don't exit out on the first failing DLL.
+	($(tmpinst)/config): Update to changes in data/config.in.
 
 2005-01-31  Jonathan Pryor  <jonpryor@vt.edu>
 
