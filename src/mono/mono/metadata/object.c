@@ -687,9 +687,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		 * vtable field in MonoObject, since we can no longer assume the 
 		 * vtable is reachable by other roots after the appdomain is unloaded.
 		 */
+#ifdef HAVE_BOEHM_GC
 	if (domain != mono_get_root_domain ())
 		vt->gc_descr = GC_NO_DESCRIPTOR;
 	else
+#endif
 		vt->gc_descr = class->gc_descr;
 
 	if (class->class_size) {
@@ -890,6 +892,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	memcpy (pvt, vt, vtsize);
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
+	/* we need to keep the GC descriptor for a transparent proxy or we confuse the precise GC */
+	pvt->gc_descr = mono_defaults.transparent_proxy_class->gc_descr;
 
 	/* initialize vtable */
 	mono_class_setup_vtable (class);
