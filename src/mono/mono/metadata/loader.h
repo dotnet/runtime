@@ -36,6 +36,8 @@ typedef struct {
 	MonoClass *uint16_class;
 	MonoClass *int32_class;
 	MonoClass *uint32_class;
+	MonoClass *int_class;
+	MonoClass *uint_class;
 	MonoClass *int64_class;
 	MonoClass *uint64_class;
 	MonoClass *single_class;

@@ -275,7 +275,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
-static MonoClass *
+MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
 	MonoImage *corlib;
@@ -307,6 +307,12 @@ mono_class_from_mono_type (MonoType *type)
 		break;
 	case MONO_TYPE_U4:
 		res = mono_defaults.uint32_class;
+		break;
+	case MONO_TYPE_I:
+		res = mono_defaults.int_class;
+		break;
+	case MONO_TYPE_U:
+		res = mono_defaults.uint_class;
 		break;
 	case MONO_TYPE_I8:
 		res = mono_defaults.int64_class;

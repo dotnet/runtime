@@ -100,6 +100,14 @@ mono_init ()
                 mono_defaults.corlib, "System", "UInt32");
 	g_assert (mono_defaults.uint32_class != 0);
 
+	mono_defaults.uint_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UIntPtr");
+	g_assert (mono_defaults.uint_class != 0);
+
+	mono_defaults.int_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "IntPtr");
+	g_assert (mono_defaults.int_class != 0);
+
 	mono_defaults.int64_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Int64");
 	g_assert (mono_defaults.int64_class != 0);
@@ -207,7 +215,8 @@ method_from_memberref (MonoImage *image, guint32 index)
 			name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 
 			/* this will triggered by references to mscorlib */
-			g_assert (image->references [scopeindex-1] != NULL);
+			if (image->references [scopeindex-1] == NULL)
+				g_error ("Reference to mscorlib? Probably need to implement %s.%s::%s in corlib", nspace, name, mname);
 
 			mimage = image->references [scopeindex-1]->image;
 

@@ -93,4 +93,7 @@ mono_class_value_size      (MonoClass *klass, guint32 *align);
 gint32
 mono_class_data_size       (MonoClass *klass);
 
+MonoClass *
+mono_class_from_mono_type  (MonoType *type);
+
 #endif /* _MONO_CLI_CLASS_H_ */
