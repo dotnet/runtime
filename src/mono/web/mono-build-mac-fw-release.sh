@@ -2,11 +2,16 @@
 
 # this horrid little script updates a mono revision
 # Author: Andy Satori <dru@satori-assoc.com>
+# Modifications: kangaroo
+# Changes June 2/2004
+#  - Updated for beta2 0.95
+#  - Updated to boehm.gc.a6
+#  - Updated to glib-2.4.1
 
 set -e 
 
 INITIALDIR=$PWD
-VERSION=0.91
+VERSION=0.95
 PREFIX=/Library/Frameworks/Mono.framework/Versions/$VERSION
 
 export C_INCLUDE_PATH=$C_INCLUDE_PATH:$PREFIX/include
@@ -86,13 +91,13 @@ fi
 echo +++ processing glib2
 
 if test ! -f "$PREFIX/lib/libgobject-2.0.la"; then
-	if test ! -d "glib-2.4.0"; then
-		curl ftp://ftp.gtk.org/pub/gtk/v2.4/glib-2.4.0.tar.gz -O
-		tar xzf glib-2.4.0.tar.gz
-		rm glib-2.4.0.tar.gz
+	if test ! -d "glib-2.4.1"; then
+		curl ftp://ftp.gtk.org/pub/gtk/v2.4/glib-2.4.1.tar.gz -O
+		tar xzf glib-2.4.1.tar.gz
+		rm glib-2.4.1.tar.gz
 	fi
 	
-	cd glib-2.4.0
+	cd glib-2.4.1
 	
 	./configure --prefix=$PREFIX 
 	make
@@ -102,26 +107,7 @@ if test ! -f "$PREFIX/lib/libgobject-2.0.la"; then
 	cd ..
 fi
 
-# boehm gc
-
-echo +++ processing boehm gc
-
-if test ! -f "$PREFIX/lib/libgc.dylib"; then
-	if test ! -d "gc6.3alpha6"; then
-		curl http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/gc6.3alpha6.tar.gz -O
-		tar xzf gc6.3alpha6.tar.gz
-		rm gc6.3alpha6.tar.gz
-	fi
-	
-	cd gc6.3alpha6
-	
-	./configure --prefix=$PREFIX --enable-thread=pthreads
-	gnumake
-	make install
-	make clean
-	
-	cd ..
-fi
+# boehm gc, is now built-in (since 0.95)
 
 # icu ( http://oss.software.ibm.com/icu/index.html )
 
@@ -191,14 +177,14 @@ if test ! -f "$PREFIX/bin/mono"; then
 	cd $INITIALDIR/Bootstrap
 	
 	if test ! -d "mono-$VERSION"; then
-		curl http://www.go-mono.com/archive/beta1/mono-$VERSION.tar.gz -O
+		curl http://www.go-mono.com/archive/beta2/mono-$VERSION.tar.gz -O
 		tar xzf mono-$VERSION.tar.gz
 		rm mono-$VERSION.tar.gz
 	fi
 	
 	cd mono-$VERSION
 	
-	./configure --prefix=$PREFIX --with-gc=boehm 
+	./configure --prefix=$PREFIX
 	make
 	make install
 	make clean
@@ -216,5 +202,3 @@ fi
 ln -s $VERSION Current
 
 # update the installer source files
-
-
