@@ -18,18 +18,31 @@ typedef struct {
 
 enum {
 	MONO_MT_END,
+
+	/* Sized elements */
 	MONO_MT_UINT32,
 	MONO_MT_UINT16,
 	MONO_MT_UINT8,
+
+	/* Index into Blob heap */
 	MONO_MT_BLOB_IDX,
+
+	/* Index into String heap */
 	MONO_MT_STRING_IDX,
+
+	/* GUID index */
+	MONO_MT_GUID_IDX,
+
+	/* Pointer into a table */
 	MONO_MT_TABLE_IDX,
-	MONO_MT_GUID_IDX
+
+	/* Constant:Parent pointer (Param, Field or Property) */
+	MONO_MT_CONST_IDX, 
 };
 
 typedef struct {
 	int   code;
 	char *def;
-} MonoMetaTable;
+} MonoMetaSchema;
 
 const char *mono_meta_table_name (int table);

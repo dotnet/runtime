@@ -112,7 +112,7 @@ load_metadata_ptrs (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 {
 	metadata_t *metadata = &iinfo->dn_metadata;
 	guint32 offset, size;
-	guint16 records;
+	guint16 streams;
 	int i;
 	char *ptr;
 	
@@ -125,12 +125,7 @@ load_metadata_ptrs (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 
 	ptr = metadata->raw_metadata;
 
-	/*
-	 * Handle Beta 1 and ECMA versions of the metadata root
-	 */
-	if (strncmp (ptr, "COM+", 4) == 0){
-		ptr += 10;
-	} else if (strncmp (ptr, "BSJB", 4) == 0){
+	if (strncmp (ptr, "BSJB", 4) == 0){
 		guint32 version_string_len;
 
 		ptr += 12;
@@ -139,15 +134,16 @@ load_metadata_ptrs (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 		ptr += version_string_len;
 		if (((guint32) ptr) % 4)
 			ptr += 4 - (((guint32) ptr) %4);
-	}
+	} else
+		return FALSE;
 
 	/* skip over flags */
 	ptr += 2;
 	
-	records = read16 (ptr);
+	streams = read16 (ptr);
 	ptr += 2;
 
-	for (i = 0; i < records; i++){
+	for (i = 0; i < streams; i++){
 		if (strncmp (ptr + 8, "#~", 3) == 0){
 			metadata->heap_tables.sh_offset = read32 (ptr);
 			metadata->heap_tables.sh_size = read32 (ptr + 4);

@@ -217,6 +217,12 @@ dump_metadata_ptrs (dotnet_image_info_t *iinfo)
 }
 
 static void
+dump_table (metadata_t *meta, int table)
+{
+	
+}
+
+static void
 dump_metadata (dotnet_image_info_t *iinfo)
 {
 	metadata_t *meta = &iinfo->dn_metadata;
@@ -229,6 +235,7 @@ dump_metadata (dotnet_image_info_t *iinfo)
 		if (meta->rows [table] == 0)
 			continue;
 		printf ("Table %s (%d): %d rows\n", mono_meta_table_name (table), table, meta->rows [table]);
+		dump_table (meta, table);
 	}
 }
 
@@ -270,6 +277,10 @@ main (int argc, char *argv [])
 		usage ();
 
 	assembly = mono_assembly_open (file, NULL);
+	if (!assembly){
+		fprintf (stderr, "Can not open assembly %s\n", file);
+		exit (1);
+	}
 	iinfo = assembly->image_info;
 
 	dump_dotnet_iinfo (iinfo);

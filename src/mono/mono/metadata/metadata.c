@@ -23,7 +23,8 @@
  * Aliased table for example is `CustomAttributeType' which depending on the
  * information might refer to different tables.
  */
-static MonoMetaTable AssemblyTable [] = {
+
+static MonoMetaTable AssemblySchema [] = {
 	{ MONO_MT_UINT32,     "HashId" },
 	{ MONO_MT_UINT16,     "Major" },  
 	{ MONO_MT_UINT16,     "Minor" },
@@ -36,19 +37,19 @@ static MonoMetaTable AssemblyTable [] = {
 	{ MONO_MT_END, NULL }
 };
 	
-static MonoMetaTable AssemblyOSTable [] = {
+static MonoMetaTable AssemblyOSSchema [] = {
 	{ MONO_MT_UINT32,     "OSPlatformID" },
 	{ MONO_MT_UINT32,     "OSMajor" },
 	{ MONO_MT_UINT32,     "OSMinor" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyProcessorTable [] = {
+static MonoMetaTable AssemblyProcessorSchema [] = {
 	{ MONO_MT_UINT32,     "Processor" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyRefTable [] = {
+static MonoMetaTable AssemblyRefSchema [] = {
 	{ MONO_MT_UINT16,     "Major" },
 	{ MONO_MT_UINT16,     "Minor" },
 	{ MONO_MT_UINT16,     "Build" },
@@ -61,7 +62,7 @@ static MonoMetaTable AssemblyRefTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyRefOSTable [] = {
+static MonoMetaTable AssemblyRefOSSchema [] = {
 	{ MONO_MT_UINT32,     "OSPlatformID" },
 	{ MONO_MT_UINT32,     "OSMajorVersion" },
 	{ MONO_MT_UINT32,     "OSMinorVersion" },
@@ -69,55 +70,55 @@ static MonoMetaTable AssemblyRefOSTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyRefProcessorTable [] = {
+static MonoMetaTable AssemblyRefProcessorSchema [] = {
 	{ MONO_MT_UINT32,     "Processor" },
 	{ MONO_MT_TABLE_IDX,  "AssemblyRef:AssemblyRef" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable ClassLayoutTable [] = {
+static MonoMetaTable ClassLayoutSchema [] = {
 	{ MONO_MT_UINT16,     "PackingSize" },
 	{ MONO_MT_UINT32,     "ClassSize" },
 	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ConstantTable [] = {
+static MonoMetaTable ConstantSchema [] = {
 	{ MONO_MT_UINT8,      "Type" },
 	{ MONO_MT_UINT8,      "PaddingZero" },
-	{ MONO_MT_TABLE_IDX,  "Parent" },
+	{ MONO_MT_CONST_IDX,  "Parent" },
 	{ MONO_MT_BLOB_IDX,   "Value" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable CustomAttributeTable [] = {
+static MonoMetaTable CustomAttributeSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Parent" },
 	{ MONO_MT_TABLE_IDX,  "Type=CustomAttributeType" },
 	{ MONO_MT_BLOB_IDX,   "Value" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable DeclSecurityTable [] = {
+static MonoMetaTable DeclSecuritySchema [] = {
 	{ MONO_MT_UINT16,     "Action" },
 	{ MONO_MT_TABLE_IDX,  "Parent=HasDeclSecurity" },
 	{ MONO_MT_BLOB_IDX,   "PermissionSet" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable EventMapTable [] = {
+static MonoMetaTable EventMapSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "EventList:Event" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable EventTable [] = {
+static MonoMetaTable EventSchema [] = {
 	{ MONO_MT_UINT16,     "EventFlags#EventAttribute" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_TABLE_IDX,  "EventType" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable ExportedTypeTable [] = {
+static MonoMetaTable ExportedTypeSchema [] = {
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_TABLE_IDX,  "TypeDefId" },
 	{ MONO_MT_STRING_IDX, "TypeName" },
@@ -126,37 +127,37 @@ static MonoMetaTable ExportedTypeTable [] = {
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable FieldTable [] = {
+static MonoMetaTable FieldSchema [] = {
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }	
 };
-static MonoMetaTable FieldLayoutTable [] = {
+static MonoMetaTable FieldLayoutSchema [] = {
 	{ MONO_MT_UINT32,     "Offset" },
 	{ MONO_MT_TABLE_IDX,  "Field:Field" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable FieldMarshalTable [] = {
+static MonoMetaTable FieldMarshalSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Parent" },
 	{ MONO_MT_BLOB_IDX,   "NativeType" },
 	{ MONO_MT_END, NULL }	
 };
-static MonoMetaTable FieldRVATable [] = {
+static MonoMetaTable FieldRVASchema [] = {
 	{ MONO_MT_UINT32,     "RVA" },
 	{ MONO_MT_TABLE_IDX,  "Field:Field" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable FileTable [] = {
+static MonoMetaTable FileSchema [] = {
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Value" }, 
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ImplMapTable [] = {
+static MonoMetaTable ImplMapSchema [] = {
 	{ MONO_MT_UINT16,     "MappingFlag" },
 	{ MONO_MT_TABLE_IDX,  "MemberForwarded=MemberForwardedCodedIndex" },
 	{ MONO_MT_STRING_IDX, "ImportName" },
@@ -164,13 +165,13 @@ static MonoMetaTable ImplMapTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable InterfaceImplTable [] = {
+static MonoMetaTable InterfaceImplSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "Interface=TypeDefOrRef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ManifestResourceTable [] = {
+static MonoMetaTable ManifestResourceSchema [] = {
 	{ MONO_MT_UINT32,     "Offset" },
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
@@ -178,14 +179,14 @@ static MonoMetaTable ManifestResourceTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MemberRefTable [] = {
+static MonoMetaTable MemberRefSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Class=MemberRefParent" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodTable [] = {
+static MonoMetaTable MethodSchema [] = {
 	{ MONO_MT_UINT32,     "RVA" },
 	{ MONO_MT_UINT16,     "ImplFlags#MethodImplAttributes" },
 	{ MONO_MT_UINT16,     "Flags#MethodAttribute" },
@@ -195,21 +196,21 @@ static MonoMetaTable MethodTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodImplTable [] = {
+static MonoMetaTable MethodImplSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "MethodBody=MethodDefOrRef" },
 	{ MONO_MT_TABLE_IDX,  "MethodDeclaration=MethodDefOrRef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodSemanticsTable [] = {
+static MonoMetaTable MethodSemanticsSchema [] = {
 	{ MONO_MT_UINT16,     "MethodSemantic" },
 	{ MONO_MT_TABLE_IDX,  "Method:Method" },
 	{ MONO_MT_TABLE_IDX,  "Association=HasSemantic" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ModuleTable [] = {
+static MonoMetaTable ModuleSchema [] = {
 	{ MONO_MT_UINT16,     "Generation" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_GUID_IDX,   "MVID" },
@@ -218,43 +219,43 @@ static MonoMetaTable ModuleTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ModuleRefTable [] = {
+static MonoMetaTable ModuleRefSchema [] = {
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable NestedClassTable [] = {
+static MonoMetaTable NestedClassSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "NestedClass:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "EnclosingClass:TypeDef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ParamTable [] = {
+static MonoMetaTable ParamSchema [] = {
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_UINT16,     "Sequence" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable PropertyTable [] = {
+static MonoMetaTable PropertySchema [] = {
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Type" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable PropertyMapTable [] = {
+static MonoMetaTable PropertyMapSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "PropertyList:Property" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable StandaloneSigTable [] = {
+static MonoMetaTable StandaloneSigSchema [] = {
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable TypeDefTable [] = {
+static MonoMetaTable TypeDefSchema [] = {
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_STRING_IDX, "Namespace" },
@@ -264,14 +265,14 @@ static MonoMetaTable TypeDefTable [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable TypeRefTable [] = {
+static MonoMetaTable TypeRefSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "ResolutionScope=ResolutionScope" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_STRING_IDX, "Namespace" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable TypeSpecTable [] = {
+static MonoMetaTable TypeSpecSchema [] = {
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
@@ -280,50 +281,50 @@ static struct {
 	MonoMetaTable *table;
 	const char    *name;
 } tables [] = {
-	/*  0 */ { ModuleTable,               "Module" },
-	/*  1 */ { TypeRefTable,              "TypeRef" },
-	/*  2 */ { TypeDefTable,              "TypeDef" },
-	/*  3 */ { NULL,                      NULL },
-	/*  4 */ { FieldTable,                "Field" },
-	/*  5 */ { NULL,                      NULL },
-	/*  6 */ { MethodTable,               "Method" },
-	/*  7 */ { NULL,                      NULL },
-	/*  8 */ { ParamTable,                "Param" },
-	/*  9 */ { InterfaceImplTable,        "InterfaceImpl" },
-	/*  A */ { MemberRefTable,            "MemberRef" },
-	/*  B */ { ConstantTable,             "Constant" },
-	/*  C */ { CustomAttributeTable,      "CustomAttribute" },
-	/*  D */ { FieldMarshalTable,         "FieldMarshal" },
-	/*  E */ { DeclSecurityTable,         "DeclSecurity" },
-	/*  F */ { ClassLayoutTable,          "ClassLayout" },
-	/* 10 */ { FieldLayoutTable,          "FieldLayout" },
-	/* 11 */ { StandaloneSigTable,        "StandaloneSig" },
-	/* 12 */ { EventMapTable,             "EventMap" },
-	/* 13 */ { NULL,                      NULL },
-	/* 14 */ { EventTable,                "Event" },
-	/* 15 */ { PropertyMapTable,          "PropertyMap" },
-	/* 16 */ { NULL,                      NULL },
-	/* 17 */ { PropertyTable,             "PropertyTable" },
-	/* 18 */ { MethodSemanticsTable,      "MethodSemantics" },
-	/* 19 */ { MethodImplTable,           "MethodImpl" },
-	/* 1A */ { ModuleRefTable,            "ModuleRef" },
-	/* 1B */ { TypeSpecTable,             "TypeSpec" },
-	/* 1C */ { ImplMapTable,              "ImplMap" },
-	/* 1D */ { FieldRVATable,             "FieldRVA" },
-	/* 1E */ { NULL,                      NULL },
-	/* 1F */ { NULL,                      NULL },
-	/* 20 */ { AssemblyTable,             "Assembly" },
-	/* 21 */ { AssemblyProcessorTable,    "AssemblyProcessor" },
-	/* 22 */ { AssemblyOSTable,           "AssemblyOS" },
-	/* 23 */ { AssemblyRefTable,          "AssemblyRef" },
-	/* 24 */ { AssemblyRefProcessorTable, "AssemblyRefProcessor" },
-	/* 25 */ { AssemblyRefOSTable,        "AssemblyRefOS" },
-	/* 26 */ { FileTable,                 "File" },
-	/* 27 */ { ExportedTypeTable,         "ExportedType" },
-	/* 28 */ { ManifestResourceTable,     "ManifestResource" },
-	/* 29 */ { NestedClassTable,          "NestedClass" },
-	/* 2A */ { NULL,                      NULL },
-	/* 2B */ { NULL,                      NULL },
+	/*  0 */ { ModuleSchema,               "Module" },
+	/*  1 */ { TypeRefSchema,              "TypeRef" },
+	/*  2 */ { TypeDefSchema,              "TypeDef" },
+	/*  3 */ { NULL,                       NULL },
+	/*  4 */ { FieldSchema,                "Field" },
+	/*  5 */ { NULL,                       NULL },
+	/*  6 */ { MethodSchema,               "Method" },
+	/*  7 */ { NULL,                       NULL },
+	/*  8 */ { ParamSchema,                "Param" },
+	/*  9 */ { InterfaceImplSchema,        "InterfaceImpl" },
+	/*  A */ { MemberRefSchema,            "MemberRef" },
+	/*  B */ { ConstantSchema,             "Constant" },
+	/*  C */ { CustomAttributeSchema,      "CustomAttribute" },
+	/*  D */ { FieldMarshalSchema,         "FieldMarshal" },
+	/*  E */ { DeclSecuritySchema,         "DeclSecurity" },
+	/*  F */ { ClassLayoutSchema,          "ClassLayout" },
+	/* 10 */ { FieldLayoutSchema,          "FieldLayout" },
+	/* 11 */ { StandaloneSigSchema,        "StandaloneSig" },
+	/* 12 */ { EventMapSchema,             "EventMap" },
+	/* 13 */ { NULL,                       NULL },
+	/* 14 */ { EventSchema,                "Event" },
+	/* 15 */ { PropertyMapSchema,          "PropertyMap" },
+	/* 16 */ { NULL,                       NULL },
+	/* 17 */ { PropertySchema,             "PropertyTable" },
+	/* 18 */ { MethodSemanticsSchema,      "MethodSemantics" },
+	/* 19 */ { MethodImplSchema,           "MethodImpl" },
+	/* 1A */ { ModuleRefSchema,            "ModuleRef" },
+	/* 1B */ { TypeSpecSchema,             "TypeSpec" },
+	/* 1C */ { ImplMapSchema,              "ImplMap" },
+	/* 1D */ { FieldRVASchema,             "FieldRVA" },
+	/* 1E */ { NULL,                       NULL },
+	/* 1F */ { NULL,                       NULL },
+	/* 20 */ { AssemblySchema,             "Assembly" },
+	/* 21 */ { AssemblyProcessorSchema,    "AssemblyProcessor" },
+	/* 22 */ { AssemblyOSSchema,           "AssemblyOS" },
+	/* 23 */ { AssemblyRefSchema,          "AssemblyRef" },
+	/* 24 */ { AssemblyRefProcessorSchema, "AssemblyRefProcessor" },
+	/* 25 */ { AssemblyRefOSSchema,        "AssemblyRefOS" },
+	/* 26 */ { FileSchema,                 "File" },
+	/* 27 */ { ExportedTypeSchema,         "ExportedType" },
+	/* 28 */ { ManifestResourceSchema,     "ManifestResource" },
+	/* 29 */ { NestedClassSchema,          "NestedClass" },
+	/* 2A */ { NULL,                       NULL },
+	/* 2B */ { NULL,                       NULL },
 };
 
 const char *
