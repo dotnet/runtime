@@ -612,13 +612,34 @@ A: There are a few advantages in using ORBit, like reusing existing code
 
 Q: What is MonoDoc?
 
-A: MonoDoc is a graphical documentation editor and viewer. Currently, MonoDoc 
-   consists of a Gtk# application and is in heavy development. There is also a 
-   Qt# version of it.
-
+A: MonoDoc is a graphical documentation browser for the Mono class
+   libraries. Currently, monodoc consists of a Gtk# application and is
+   in heavy development.
 
 <a name="devel"></a>
 ** Development Tools and Issues
+
+Q: I am having trouble compiling a new version of Mono from CVS, it 
+   complains about my runtime being out of sync.
+
+A: Jonathan Pryor has provided the following answer:
+
+   To upgrade your class libraries and compiler, see the See
+   README.building in the MCS directory.
+
+   The single biggest source of confusion seems to be the "Your
+   runtime is out of sync" messages.  Realize that this is *normal*
+   while BUILDING.  Think about it: you're building a new class
+   library with the old runtime.  If the new class library references
+   a function that the old runtime knows nothing about, the runtime
+   system issues this warning.
+
+   Basically what needs to happen is for a new mono runtime to be
+   compiled, then the corlib class library be compiled, and once this
+   is done, install the new runtime, followed by corlib.
+
+   Once this is done, you can continue building your entire
+   environment.
 
 Q: Will it be possible to use the CLI features without using byte codes
    or the JIT?
