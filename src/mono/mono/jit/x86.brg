@@ -2486,6 +2486,40 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 	g_assert (tree->reg2 == X86_EDX);
 }
 
+lreg: CALL_I8 (this, INTF_ADDR) {
+	MethodCallInfo *ci = tree->data.ci;
+	int lreg = tree->left->reg1;
+	int treg = X86_EAX;
+
+	if (lreg == treg) 
+		treg = X86_EDX;
+
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
+	if (ci->vtype_num) {
+		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
+		x86_lea_membase (s->code, treg, X86_EBP, offset);
+		x86_push_reg (s->code, treg);
+	}
+
+	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
+	x86_mov_reg_membase (s->code, lreg, lreg, 
+	        G_STRUCT_OFFSET (MonoVTable, interface_offsets), 4);
+	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
+	x86_call_virtual (s->code, lreg, tree->right->data.m->slot << 2);
+
+	if (ci->args_size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
+
+	PRINT_REG ("CALL_I8(INTERFACE)", tree->reg1);
+
+	g_assert (tree->reg1 == X86_EAX);
+	g_assert (tree->reg2 == X86_EDX);
+}
+
 stmt: RET (lreg) {
 	if (tree->left->reg1 != X86_EAX) {
 		if (tree->left->reg2 != X86_EAX) {
