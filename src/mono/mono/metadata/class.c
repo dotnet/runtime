@@ -264,6 +264,9 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 			return nt;
 		}
 
+		nginst->dynamic_info = NULL;
+		nginst->initialized = FALSE;
+
 		mono_class_create_generic (nginst);
 
 		nt = dup_type (type, type);
