@@ -187,6 +187,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int nregs     = size / 4;
 	int soffset   = vt->inst_offset;
 	int i, tmpr;
+//printf("OP_OUTARG_VT (CEE_LDOBJ (base)) Line: %d Size: %d Reg: %d\n",__LINE__,size,start_reg);
 	if (size < 0) { 
 		size = -size;
 		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm,
@@ -211,11 +212,66 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	}
 }
 
+stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) {
+	MonoInst *vt  = state->left->left->tree;
+	int start_reg = tree->sreg1;
+	int size      = tree->unused;
+	int nregs     = size / 4;
+	int soffset   = vt->inst_offset;
+	int i, tmpr;
+//printf("OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) Line: %d Size: %d Reg: %d\n",__LINE__,size,start_reg);
+	if (size < 0) { 
+		size = -size;
+		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm,
+				  vt->inst_basereg, soffset, size, 0);
+		if (start_reg != STK_BASE) {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
+						 s->frame_reg, tree->sreg2);
+		}
+	} else {
+		if (start_reg != STK_BASE) {
+			for (i = 0; i < nregs; ++i) {
+				tmpr = mono_regstate_next_int (s->rs);
+				MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr,
+							 vt->inst_basereg,
+							 s->stack_offset);
+				MONO_EMIT_NEW_LOAD_MEMBASE (s, start_reg + i, 
+							    tmpr, soffset);
+				MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg + i, tmpr);
+				soffset += sizeof (gpointer);
+			}
+		} else {
+			tmpr = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, 
+						 vt->inst_basereg,
+						 s->stack_offset);
+			mini_emit_memcpy (s, s->frame_reg, tree->inst_imm, 
+				 	  tmpr, soffset, size, 0);
+		}	
+	}
+}
+
+stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_LOADARG)) {
+	MonoInst *vt  = state->left->left->tree;
+	int start_reg = tree->sreg1;
+	int size      = -tree->unused;
+	int soffset   = vt->inst_offset;
+//printf("OP_OUTARG_VT (CEE_LDOBJ (OP_S390_LOADARG)) Line: %d Size: %d Reg: %d\n",__LINE__,size,start_reg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, start_reg, s->frame_reg, soffset);
+	mini_emit_memcpy (s, s->frame_reg, tree->sreg2,
+			  start_reg, 0, size, 0);
+	if (start_reg != STK_BASE) {
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
+					 s->frame_reg, tree->sreg2);
+	}
+}
+
 stmt: OP_OUTARG_VT (OP_ICONST) {
 	int start_reg = tree->sreg1;
 	int size      = tree->unused;
 	int nregs     = size / 4;
 	int i;
+//printf("OP_OUTARG_VT (OP_ICONST) Line: %d Size: %d Reg: %d\n",__LINE__,size,start_reg);
 	if (start_reg != STK_BASE) {
 		if (nregs) {
 			tree->opcode  = OP_SETREGIMM;
@@ -233,32 +289,36 @@ stmt: OP_OUTARG_VT (reg) {
 	int start_reg = tree->sreg1;
 	int size      = tree->unused;
 	int nregs     = size / 4;
-	int soffset   = tree->inst_offset;
+	int soffset   = tree->sreg2;
 	int i;
+	int tmpr;
 
+//printf("OP_OUTARG_VT (reg) Line: %d Size: %d Reg: %d\n",__LINE__,size,start_reg);
 	if (size < 0) { 
 		size = -size;
-		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm,
-				  tree->inst_basereg, soffset, size, 0);
+		mini_emit_memcpy (s, s->frame_reg, soffset,
+				  state->left->tree->sreg1, 
+				  tree->inst_imm, size, 0);
 		if (start_reg != STK_BASE) {
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
-						 s->frame_reg, tree->sreg2);
+				     		 s->frame_reg, soffset);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
 			for (i = 0; i < nregs; ++i) {
 				MONO_EMIT_NEW_LOAD_MEMBASE(s, start_reg + i, 
 							   s->frame_reg, 
-							   soffset);
+							   state->left->tree->inst_offset);
+//							   soffset);
 				soffset += sizeof(gpointer);
 			}
 		} else {
-			int tmpr;
 			tmpr = mono_regstate_next_int (s->rs);
+//printf("Offset: %d soffset: %d off: %d\n",s->stack_offset,soffset,state->left->tree->inst_offset);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
 						s->stack_offset);
 			mini_emit_memcpy (s, s->frame_reg, soffset, tmpr, 
-					  tree->sreg2, size, 0);
+					  state->left->tree->inst_offset, size, 0);
 		}
 	}
 }
@@ -376,6 +436,7 @@ base: OP_S390_STKARG "0" {
 
 base: OP_LDADDR (OP_S390_LOADARG) "0" {
 	int tmpr;
+//printf("OP_LDADDR (OP_S390_LOADARG) 0 Line: %d Offset: %d\n",__LINE__,state->left->tree->inst_offset);
 	tmpr = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
 				    state->left->tree->inst_offset);
@@ -404,6 +465,7 @@ base: OP_LDADDR (OP_S390_STKARG) "0" {
 }
 
 reg: OP_LDADDR (OP_S390_LOADARG) "2" {
+//printf("OP_LDADDR (OP_S390_LOADARG) 2 Line: %d Offset: %d\n",__LINE__,state->left->tree->inst_offset);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
 				 state->left->tree->inst_offset);
 	tree->inst_offset  = 0;
@@ -428,18 +490,18 @@ reg: OP_LDADDR (OP_S390_STKARG) "2" {
 
 reg: CEE_LDOBJ (OP_S390_LOADARG) "1" {
 	int tmpr;
+//printf("CEE_LDOBJ (OP_S390_LOADARG) 1 Line: %d Offset: %d\n",__LINE__,state->left->tree->inst_offset);
 	tmpr = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
 				    state->left->tree->inst_offset);
 	tree->inst_offset  = 0;
-	tree->inst_basereg = tmpr;
+	tree->dreg 	   = tmpr;
 }
 
 reg: CEE_LDOBJ (OP_S390_ARGPTR) "1" {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
-				 state->left->tree->inst_offset);
-	tree->inst_offset  = 0;
-	tree->inst_basereg = state->reg1;
+//printf("CEE_LDOBJ (OP_S390_ARGPTR) 1 - offset: %d\n",state->left->tree->inst_offset);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->reg1, s->frame_reg, 
+			     s->stack_offset + state->left->tree->inst_offset);
 }
 
 reg: CEE_LDOBJ (OP_S390_STKARG) "1" {
@@ -448,7 +510,7 @@ reg: CEE_LDOBJ (OP_S390_STKARG) "1" {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1,
 				 state->left->tree->inst_offset);
 	tree->inst_offset  = 0;
-	tree->inst_basereg = state->reg1;
+	tree->dreg 	   = state->reg1;
 }
 
 base: CEE_LDOBJ (OP_S390_ARGPTR) "0" {
@@ -457,7 +519,7 @@ base: CEE_LDOBJ (OP_S390_ARGPTR) "0" {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
 				    state->left->tree->inst_offset);
 	tree->inst_offset  = 0;
-	tree->inst_basereg = tmpr;
+	tree->dreg 	   = tmpr;
 }
 
 base: CEE_LDOBJ (OP_S390_STKARG) "0" {
