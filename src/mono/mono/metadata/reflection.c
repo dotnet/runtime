@@ -3799,24 +3799,99 @@ calc_section_size (MonoDynamicImage *assembly)
 	return nsections;
 }
 
-static void
-assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssemblyBuilder *assemblyb)
+typedef struct {
+	guint32 id;
+	guint32 offset;
+	GSList *children;
+	MonoReflectionWin32Resource *win32_res; /* Only for leaf nodes */
+} ResTreeNode;
+
+static int
+resource_tree_compare_by_id (gconstpointer a, gconstpointer b)
 {
-	char *buf;
-	char *p;
-	guint32 size;
+	ResTreeNode *t1 = (ResTreeNode*)a;
+	ResTreeNode *t2 = (ResTreeNode*)b;
+
+	return t1->id - t2->id;
+}
+
+/*
+ * resource_tree_create:
+ *
+ *  Organize the resources into a resource tree.
+ */
+static ResTreeNode *
+resource_tree_create (MonoArray *win32_resources)
+{
+	ResTreeNode *tree, *res_node, *type_node, *lang_node;
+	GSList *l;
+	int i;
+
+	tree = g_new0 (ResTreeNode, 1);
+	
+	for (i = 0; i < mono_array_length (win32_resources); ++i) {
+		MonoReflectionWin32Resource *win32_res =
+			(MonoReflectionWin32Resource*)mono_array_addr (win32_resources, MonoReflectionWin32Resource, i);
+
+		/* Create node */
+
+		lang_node = g_new0 (ResTreeNode, 1);
+		lang_node->id = win32_res->lang_id;
+		lang_node->win32_res = win32_res;
+
+		/* Create type node if neccesary */
+		type_node = NULL;
+		for (l = tree->children; l; l = l->next)
+			if (((ResTreeNode*)(l->data))->id == win32_res->res_type) {
+				type_node = (ResTreeNode*)l->data;
+				break;
+			}
+
+		if (!type_node) {
+			type_node = g_new0 (ResTreeNode, 1);
+			type_node->id = win32_res->res_type;
+
+			/* 
+			 * The resource types have to be sorted otherwise
+			 * Windows Explorer can't display the version information.
+			 */
+			tree->children = g_slist_insert_sorted (tree->children, type_node, 
+													resource_tree_compare_by_id);
+		}
+
+		/* Create res node if neccesary */
+		res_node = NULL;
+		for (l = type_node->children; l; l = l->next)
+			if (((ResTreeNode*)(l->data))->id == win32_res->res_id) {
+				res_node = (ResTreeNode*)l->data;
+				break;
+			}
+
+		if (!res_node) {
+			res_node = g_new0 (ResTreeNode, 1);
+			res_node->id = win32_res->res_id;
+			type_node->children = g_slist_append (type_node->children, res_node);
+		}
+
+		res_node->children = g_slist_append (res_node->children, lang_node);
+	}
+
+	return tree;
+}
+
+/*
+ * resource_tree_encode:
+ * 
+ *   Encode the resource tree into the format used in the PE file.
+ */
+static void
+resource_tree_encode (ResTreeNode *node, char *begin, char *p, char **endbuf)
+{
+	char *entries;
 	MonoPEResourceDir dir;
 	MonoPEResourceDirEntry dir_entry;
 	MonoPEResourceDataEntry data_entry;
-	MonoReflectionWin32Resource *win32_res;
-
-	if (!assemblyb->win32_resources)
-		return;
-
-	/* Currently, we only support one resource */
-	g_assert (mono_array_length (assemblyb->win32_resources) == 1);
-
-	win32_res = (MonoReflectionWin32Resource*)mono_array_addr (assemblyb->win32_resources, MonoReflectionWin32Resource, 0);
+	GSList *l;
 
 	/*
 	 * For the format of the resource directory, see the article
@@ -3824,63 +3899,96 @@ assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssembly
 	 * Matt Pietrek
 	 */
 
-	size = 256 + mono_array_length (win32_res->res_data);
-	p = buf = g_malloc (size);
-
 	memset (&dir, 0, sizeof (dir));
-	dir.res_id_entries = GUINT32_TO_LE (1);
-
 	memset (&dir_entry, 0, sizeof (dir_entry));
-
 	memset (&data_entry, 0, sizeof (data_entry));
 
 	g_assert (sizeof (dir) == 16);
 	g_assert (sizeof (dir_entry) == 8);
 	g_assert (sizeof (data_entry) == 16);
 
-	/* Level one IMAGE_RESOURCE_DIRECTORY */
+	node->offset = p - begin;
+
+	/* IMAGE_RESOURCE_DIRECTORY */
+	dir.res_id_entries = GUINT32_TO_LE (g_slist_length (node->children));
+
 	memcpy (p, &dir, sizeof (dir));
 	p += sizeof (dir);
 
-	dir_entry.name_offset = GUINT32_TO_LE (win32_res->res_type);
-	dir_entry.dir_offset = GUINT32_TO_LE (p + sizeof (dir_entry) - buf);
-	dir_entry.is_dir = 1;
+	/* Reserve space for entries */
+	entries = p;
+	p += sizeof (dir_entry) * dir.res_id_entries;
 
-	memcpy (p, &dir_entry, sizeof (dir_entry));
-	p += sizeof (dir_entry);
+	/* Write children */
+	for (l = node->children; l; l = l->next) {
+		ResTreeNode *child = (ResTreeNode*)l->data;
 
-	/* Level two IMAGE_RESOURCE_DIRECTORY */
-	memcpy (p, &dir, sizeof (dir));
-	p += sizeof (dir);
+		if (child->win32_res) {
 
-	dir_entry.name_offset = GUINT32_TO_LE (win32_res->res_id);
-	dir_entry.dir_offset = GUINT32_TO_LE (p - buf + sizeof (dir_entry));
-	dir_entry.is_dir = 1;
+			child->offset = p - begin;
 
-	memcpy (p, &dir_entry, sizeof (dir_entry));
-	p += sizeof (dir_entry);
+			/* IMAGE_RESOURCE_DATA_ENTRY */
+			data_entry.rde_data_offset = GUINT32_TO_LE (p - begin + sizeof (data_entry));
+			data_entry.rde_size = mono_array_length (child->win32_res->res_data);
 
-	/* Level three IMAGE_RESOURCE_DIRECTORY */
-	memcpy (p, &dir, sizeof (dir));
-	p += sizeof (dir);
+			memcpy (p, &data_entry, sizeof (data_entry));
+			p += sizeof (data_entry);
 
-	/* The dir_offset field is an RVA in this case, it will be fixed up later */
-	dir_entry.name_offset = GUINT32_TO_LE (win32_res->lang_id);
-	dir_entry.dir_offset = GUINT32_TO_LE (p - buf + sizeof (dir_entry));
-	dir_entry.is_dir = 0;
+			memcpy (p, mono_array_addr (child->win32_res->res_data, char, 0), data_entry.rde_size);
+			p += data_entry.rde_size;
+		}
+		else
+			resource_tree_encode (child, begin, p, &p);
+	}
 
-	memcpy (p, &dir_entry, sizeof (dir_entry));
-	p += sizeof (dir_entry);
+	/* IMAGE_RESOURCE_ENTRY */
+	for (l = node->children; l; l = l->next) {
+		ResTreeNode *child = (ResTreeNode*)l->data;
+		dir_entry.name_offset = GUINT32_TO_LE (child->id);
 
-	/* Level four IMAGE_RESOURCE_DATA_ENTRY */
-	data_entry.rde_data_offset = GUINT32_TO_LE (p - buf + sizeof (data_entry));
-	data_entry.rde_size = mono_array_length (win32_res->res_data);
+		dir_entry.is_dir = child->win32_res ? 0 : 1;
+		dir_entry.dir_offset = GUINT32_TO_LE (child->offset);
 
-	memcpy (p, &data_entry, sizeof (data_entry));
-	p += sizeof (data_entry);
+		memcpy (entries, &dir_entry, sizeof (dir_entry));
+		entries += sizeof (dir_entry);
+	}
 
-	memcpy (p, mono_array_addr (win32_res->res_data, char, 0), data_entry.rde_size);
-	p += data_entry.rde_size;
+	*endbuf = p;
+}
+
+static void
+assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssemblyBuilder *assemblyb)
+{
+	char *buf;
+	char *p;
+	guint32 size, i;
+	MonoReflectionWin32Resource *win32_res;
+	ResTreeNode *tree;
+
+	if (!assemblyb->win32_resources)
+		return;
+
+	/*
+	 * Resources are stored in a three level tree inside the PE file.
+	 * - level one contains a node for each type of resource
+	 * - level two contains a node for each resource
+	 * - level three contains a node for each instance of a resource for a
+	 *   specific language.
+	 */
+
+	tree = resource_tree_create (assemblyb->win32_resources);
+
+	/* Estimate the size of the encoded tree */
+	size = 0;
+	for (i = 0; i < mono_array_length (assemblyb->win32_resources); ++i) {
+		win32_res = (MonoReflectionWin32Resource*)mono_array_addr (assemblyb->win32_resources, MonoReflectionWin32Resource, i);
+		size += mono_array_length (win32_res->res_data);
+	}
+	/* Directory structure */
+	size += mono_array_length (assemblyb->win32_resources) * 256;
+	p = buf = g_malloc (size);
+
+	resource_tree_encode (tree, p, p, &p);
 
 	g_assert (p - buf < size);
 
