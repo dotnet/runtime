@@ -185,7 +185,7 @@ class Tests {
 	{
 		void *ptr = new IntPtr (55).ToPointer ();
 
-		if (byref_return (ptr) == ptr)
+		if (ptr_return (ptr) == ptr)
 			return 0;
 		else
 			return 1;
