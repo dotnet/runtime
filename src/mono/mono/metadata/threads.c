@@ -886,6 +886,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoClass *klass;
+	MonoThread *thread = mono_thread_current ();
 		
 	MONO_ARCH_SAVE_REGS;
 
@@ -906,8 +907,16 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	if(ms== -1) {
 		ms=INFINITE;
 	}
+
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 	
 	ret=WaitForMultipleObjectsEx(numhandles, handles, TRUE, ms, TRUE);
+
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 
 	g_free(handles);
 
@@ -942,6 +951,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoClass *klass;
+	MonoThread *thread = mono_thread_current ();
 		
 	MONO_ARCH_SAVE_REGS;
 
@@ -963,7 +973,15 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 		ms=INFINITE;
 	}
 
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	ret=WaitForMultipleObjectsEx(numhandles, handles, FALSE, ms, TRUE);
+
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 
 	g_free(handles);
 
@@ -990,6 +1008,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext)
 {
 	guint32 ret;
+	MonoThread *thread = mono_thread_current ();
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1002,7 +1021,15 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 		ms=INFINITE;
 	}
 	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	ret=WaitForSingleObjectEx (handle, ms, TRUE);
+	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 
 	if(ret==WAIT_FAILED) {
 #ifdef THREAD_WAIT_DEBUG

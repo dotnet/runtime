@@ -15,6 +15,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/threads.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/metadata/object-internals.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -480,6 +481,7 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	guint32 ret;
 	gboolean success=FALSE;
 	gint32 regain;
+	MonoThread *thread = mono_thread_current ();
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -510,6 +512,10 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 		  GetCurrentThreadId (), event);
 #endif
 
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	mon->wait_list=g_slist_append (mon->wait_list, event);
 	
 	/* Save the nest count, and release the lock */
@@ -528,6 +534,13 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	 * signalled before we wait, we still succeed.
 	 */
 	ret=WaitForSingleObjectEx (event, ms, TRUE);
+
+	/* Reset the thread state fairly early, so we don't have to worry
+	 * about the monitor error checking
+	 */
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 	
 	if (mono_thread_interruption_requested ()) {
 		CloseHandle (event);
