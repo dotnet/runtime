@@ -140,15 +140,18 @@
   </tr>
 </table>
 
-@item Oct 28th: Mono Get Together at the PDC
+@item Oct 28th: Mono Get Together at the PDC.  GTK# 0.12 Released.
 
 	We will be getting together at the West Tower Lobby on Tuesday
 	28th at 6pm to talk about the Mono project. You have 24 hours to
 	notify all of your friends, open source buddies and free software
 	folks.
 
-	We will bring Mono t-shirts ;-)
+	We will bring Mono t-shirts.
 
+	Mike Kestner released <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> 0.12 today.  GTK# source tar balls
+	and RPMs are available.  A windows installer was contributed by Johannes Roith.
+	
 @item Oct 26th: Last Minute Mono BOF
 
 	The first in a series of undercover Mono BOFs at the PDC will take
