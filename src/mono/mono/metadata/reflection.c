@@ -3969,13 +3969,21 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 		} else if ((m->method->klass->image == &assembly->image) &&
 			 !m->method->klass->generic_inst) {
 			static guint32 method_table_idx = 0xffffff;
-			/*
-			 * Each token should have a unique index, but the indexes are
-			 * assigned by managed code, so we don't know about them. An
-			 * easy solution is to count backwards...
-			 */
-			method_table_idx --;
-			token = MONO_TOKEN_METHOD_DEF | method_table_idx;
+			if (m->method->klass->wastypebuilder) {
+				/* we use the same token as the one that was assigned
+				 * to the Methodbuilder.
+				 * FIXME: do the equivalent for Fields.
+				 */
+				token = m->method->token;
+			} else {
+				/*
+				 * Each token should have a unique index, but the indexes are
+				 * assigned by managed code, so we don't know about them. An
+				 * easy solution is to count backwards...
+				 */
+				method_table_idx --;
+				token = MONO_TOKEN_METHOD_DEF | method_table_idx;
+			}
 		} else
 			token = mono_image_get_methodref_token (assembly, m->method);
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
