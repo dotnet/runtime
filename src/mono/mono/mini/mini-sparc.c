@@ -2689,7 +2689,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Sign extend sreg1 into %y */
 			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
 			sparc_wry (code, sparc_o7, sparc_g0);
-			sparc_sdiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
+			sparc_sdiv (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
+			EMIT_COND_SYSTEM_EXCEPTION (code, sparc_boverflow, "ArithmeticException");
 			break;
 		case CEE_DIV_UN:
 			sparc_wry (code, sparc_g0, sparc_g0);
@@ -2723,7 +2724,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				/* Sign extend sreg1 into %y */
 				sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
 				sparc_wry (code, sparc_o7, sparc_g0);
-				EMIT_ALU_IMM (ins, sdiv, FALSE);
+				EMIT_ALU_IMM (ins, sdiv, TRUE);
+				EMIT_COND_SYSTEM_EXCEPTION (code, sparc_boverflow, "ArithmeticException");
 			}
 			break;
 		}
@@ -2731,7 +2733,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Sign extend sreg1 into %y */
 			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
 			sparc_wry (code, sparc_o7, sparc_g0);
-			sparc_sdiv (code, FALSE, ins->sreg1, ins->sreg2, sparc_o7);
+			sparc_sdiv (code, TRUE, ins->sreg1, ins->sreg2, sparc_o7);
+			EMIT_COND_SYSTEM_EXCEPTION (code, sparc_boverflow, "ArithmeticException");
 			sparc_smul (code, FALSE, ins->sreg2, sparc_o7, sparc_o7);
 			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			break;
@@ -2747,11 +2750,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_wry (code, sparc_o7, sparc_g0);
 			if (!sparc_is_imm13 (ins->inst_imm)) {
 				sparc_set (code, ins->inst_imm, sparc_g1);
-				sparc_sdiv (code, FALSE, ins->sreg1, sparc_g1, sparc_o7);
+				sparc_sdiv (code, TRUE, ins->sreg1, sparc_g1, sparc_o7);
+				EMIT_COND_SYSTEM_EXCEPTION (code, sparc_boverflow, "ArithmeticException");
 				sparc_smul (code, FALSE, sparc_o7, sparc_g1, sparc_o7);
 			}
 			else {
-				sparc_sdiv_imm (code, FALSE, ins->sreg1, ins->inst_imm, sparc_o7);
+				sparc_sdiv_imm (code, TRUE, ins->sreg1, ins->inst_imm, sparc_o7);
+				EMIT_COND_SYSTEM_EXCEPTION (code, sparc_boverflow, "ArithmeticException");
 				sparc_smul_imm (code, FALSE, sparc_o7, ins->inst_imm, sparc_o7);
 			}
 			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);

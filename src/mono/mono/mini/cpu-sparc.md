@@ -141,9 +141,9 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
-div: dest:i src1:i src2:i len:12
+div: dest:i src1:i src2:i len:20
 div.un: dest:i src1:i src2:i len:8
-rem: dest:d src1:i src2:i len:20
+rem: dest:d src1:i src2:i len:28
 rem.un: dest:d src1:i src2:i len:16
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
@@ -358,9 +358,9 @@ move: dest:i src1:i len:4
 add_imm: dest:i src1:i len:12
 sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:12
-div_imm: dest:a src1:i src2:i len:20
+div_imm: dest:a src1:i src2:i len:28
 div_un_imm: dest:a src1:i src2:i len:12
-rem_imm: dest:d src1:i src2:i len:28
+rem_imm: dest:d src1:i src2:i len:36
 rem_un_imm: dest:d src1:i src2:i len:16
 and_imm: dest:i src1:i len:12
 or_imm: dest:i src1:i len:12
@@ -521,25 +521,6 @@ float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
 op_endfilter: src1:i len:12
 aot_const: dest:i len:8
-x86_test_null: src1:i len:4
-x86_compare_membase_reg: src1:b src2:i len:8
-x86_compare_membase_imm: src1:b len:8
-x86_compare_reg_membase: src1:i src2:b len:8
-x86_inc_reg: dest:i src1:i clob:1 len:1
-x86_inc_membase: src1:b len:6
-x86_dec_reg: dest:i src1:i clob:1 len:1
-x86_dec_membase: src1:b len:6
-x86_add_membase_imm: src1:b len:8
-x86_sub_membase_imm: src1:b len:8
-x86_push: src1:i len:1
-x86_push_imm: len:5
-x86_push_membase: src1:b len:6
-x86_push_obj: src1:b len:30
-x86_lea: dest:i src1:i src2:i len:7
-x86_xchg: src1:i src2:i clob:x len:1
-x86_fpop: src1:f len:2
-x86_fp_load_i8: dest:f src1:b len:7
-x86_fp_load_i4: dest:f src1:b len:7
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
@@ -547,8 +528,6 @@ adc_imm: dest:i src1:i len:12
 sbb: dest:i src1:i src2:i len:4
 sbb_imm: dest:i src1:i len:12
 br_reg: src1:i len:8
-ppc_subfic: dest:i src1:i len:4
-ppc_subfze: dest:i src1:i len:4
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 fmove: dest:f src1:f len:8
