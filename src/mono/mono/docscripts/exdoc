@@ -1,8 +1,25 @@
 #!/usr/bin/perl
 
 if ($ARGV[0] eq "-h"){
+    $dir = $ARGV[1];
     $html = 1;
     shift @ARGV;
+    shift @ARGV;
+}
+
+if ($html){
+    opendir (D, "$dir/sources/") || die "Can not open $dir";
+    while ($n = readdir (D)){
+	if ($n =~ /mono-api-.*\.html/){
+	    open (IN, "$dir/sources/$n") || die "Can not open $n";
+	    $files[$filecount] = $n;
+	    while (<IN>){
+		@files_content[$filecount] .= $_;
+	    }
+	    $filecount++;
+	    close IN;
+	}
+    }
 }
 
 while (<ARGV>){
@@ -13,22 +30,76 @@ while (<ARGV>){
 	}
 }
 
+if ($html){
+    for ($f = 0; $f < $filecount; $f++){
+	$name = $files[$f];
+	open (OUT, ">$dir/deploy/$name") || die "Can not create $dir/deploy/$name";
+	print "Merging: $name\n";
+	@a = split (/\n/, $files_content[$f]);
+
+	for ($ai = 0; $ai < $#a; $ai++){
+	    $line = $a[$ai];
+
+	    ($api) = $line =~  /<h4><a name=\"api:(\w+)\">(\w+)<\/a><\/h4>/;
+	    if ($api ne ""){
+		    print OUT "<h4><a name=\"api:$api\">Function: $api<\/a><\/h4>\n";
+		    if ($arguments{$api} ne ""){
+                        print OUT "<h4>Parameters</h4>";
+			print OUT "<blockquote><dl>";
+
+		        print OUT "$arguments{$api}\n";
+			print OUT "</blockquote>";
+		    }
+		    if ($bodies{$api} ne ""){
+			print OUT "<h4>Remarks</h4>";
+			print OUT "<blockquote>";
+		        print OUT "$bodies{$api}\n";
+			print OUT "</blockquote>";
+		    }
+		    print OUT "</td></tr></table>";
+		    print OUT "\n";
+	    } else {
+		print OUT "$line\n";
+	    }
+	}
+	close OUT;
+    }
+}
+
 sub process_doc {
 	$doc = "";
 	$func = <>;
 	chop $func;
 	$func =~ s/^ \* //;
-	print "Function: $func\n";
-	$body = "";
+	$func =~ s/:$//;
+	print "Function: $func\n" if (!$html);
+	$args = "";
+	$inbody = 0;
+
+	$functions[$fn++] = $func;
 
 	# Process arguments
 	while (<>){
 		if (/^ \*\*?\//){
-			print "$body\n";
-			return;
+		    # print "$body</p>\n\n";
+		    $body =~ s/@(\w+)/<i>\1<\/i>/g;
+		    $bodies{$func} = $body;
+		    $arguments{$func} = $args;
+		    return;
 		}
 		chop;
 		s/^\ \*//;
-		$body .= "\t$_\n";
+		if ($inbody == 0){
+		    if (/\s*(\w+):(.*)/){
+			$args .= "<dt><i>$1:</i></dt><dd>$2</dd>";
+		    } else {
+			
+			$body = "\t<p>$_\n";
+			$inbody = 1;
+		    }
+		} else {
+		    $body .= "\n\t$_";
+		} 
+		   
 	}
 }
