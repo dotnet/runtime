@@ -130,6 +130,9 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 		return NULL;
 	}
 	*method_name++ = 0;
+	/* allow two :: to separate the method name */
+	if (*method_name == ':')
+		method_name++;
 	class_name = strrchr (class_nspace, '.');
 	if (class_name) {
 		*class_name++ = 0;

@@ -1825,6 +1825,101 @@ emit_classes_to_check [] = {
 	{NULL, NULL}
 };
 
+static const FieldDesc 
+monoevent_fields[] = {
+	{"klass", G_STRUCT_OFFSET (MonoReflectionEvent, klass)},
+	{"handle", G_STRUCT_OFFSET (MonoReflectionEvent, event)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monoproperty_fields[] = {
+	{"klass", G_STRUCT_OFFSET (MonoReflectionProperty, klass)},
+	{"prop", G_STRUCT_OFFSET (MonoReflectionProperty, property)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monofield_fields[] = {
+	{"klass", G_STRUCT_OFFSET (MonoReflectionField, klass)},
+	{"fhandle", G_STRUCT_OFFSET (MonoReflectionField, field)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monomethodinfo_fields[] = {
+	{"parent", G_STRUCT_OFFSET (MonoMethodInfo, parent)},
+	{"ret", G_STRUCT_OFFSET (MonoMethodInfo, ret)},
+	{"name", G_STRUCT_OFFSET (MonoMethodInfo, name)},
+	{"attrs", G_STRUCT_OFFSET (MonoMethodInfo, attrs)},
+	{"iattrs", G_STRUCT_OFFSET (MonoMethodInfo, implattrs)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monopropertyinfo_fields[] = {
+	{"parent", G_STRUCT_OFFSET (MonoPropertyInfo, parent)},
+	{"name", G_STRUCT_OFFSET (MonoPropertyInfo, name)},
+	{"get_method", G_STRUCT_OFFSET (MonoPropertyInfo, get)},
+	{"set_method", G_STRUCT_OFFSET (MonoPropertyInfo, set)},
+	{"attrs", G_STRUCT_OFFSET (MonoPropertyInfo, attrs)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monofieldinfo_fields[] = {
+	{"parent", G_STRUCT_OFFSET (MonoFieldInfo, parent)},
+	{"type", G_STRUCT_OFFSET (MonoFieldInfo, type)},
+	{"name", G_STRUCT_OFFSET (MonoFieldInfo, name)},
+	{"attrs", G_STRUCT_OFFSET (MonoFieldInfo, attrs)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monomethod_fields[] = {
+	{"mhandle", G_STRUCT_OFFSET (MonoReflectionMethod, method)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+monocmethod_fields[] = {
+	{"mhandle", G_STRUCT_OFFSET (MonoReflectionMethod, method)},
+	{NULL, 0}
+};
+
+static const FieldDesc 
+pinfo_fields[] = {
+	{"ClassImpl", G_STRUCT_OFFSET (MonoReflectionParameter, ClassImpl)},
+	{"DefaultValueImpl", G_STRUCT_OFFSET (MonoReflectionParameter, DefaultValueImpl)},
+	{"MemberImpl", G_STRUCT_OFFSET (MonoReflectionParameter, MemberImpl)},
+	{"NameImpl", G_STRUCT_OFFSET (MonoReflectionParameter, NameImpl)},
+	{"PositionImpl", G_STRUCT_OFFSET (MonoReflectionParameter, PositionImpl)},
+	{"AttrsImpl", G_STRUCT_OFFSET (MonoReflectionParameter, AttrsImpl)},
+	{NULL, 0}
+};
+
+static const ClassDesc
+reflection_classes_to_check [] = {
+	{"MonoEvent", monoevent_fields},
+	{"MonoProperty", monoproperty_fields},
+	{"MonoField", monofield_fields},
+	{"MonoMethodInfo", monomethodinfo_fields},
+	{"MonoPropertyInfo", monopropertyinfo_fields},
+	{"MonoFieldInfo", monofieldinfo_fields},
+	{"MonoMethod", monomethod_fields},
+	{"MonoCMethod", monocmethod_fields},
+	{"ParameterInfo", pinfo_fields},
+	{NULL, NULL}
+};
+
+static FieldDesc 
+enuminfo_fields[] = {
+	{"utype", G_STRUCT_OFFSET (MonoEnumInfo, utype)},
+	{"values", G_STRUCT_OFFSET (MonoEnumInfo, values)},
+	{"names", G_STRUCT_OFFSET (MonoEnumInfo, names)},
+	{NULL, 0}
+};
+
 static FieldDesc 
 delegate_fields[] = {
 	{"target_type", G_STRUCT_OFFSET (MonoDelegate, target_type)},
@@ -1855,6 +1950,7 @@ async_result_fields[] = {
 
 static const ClassDesc
 system_classes_to_check [] = {
+	{"MonoEnumInfo", enuminfo_fields},
 	{"Delegate", delegate_fields},
 	{"MulticastDelegate", multicast_delegate_fields},
 	{NULL, NULL}
@@ -1888,6 +1984,7 @@ static const NameSpaceDesc
 namespaces_to_check[] = {
 	{"System.Runtime.Remoting.Messaging", messaging_classes_to_check},
 	{"System.Reflection.Emit", emit_classes_to_check},
+	{"System.Reflection", reflection_classes_to_check},
 	{"System.Threading", threading_classes_to_check},
 	{"System", system_classes_to_check},
 	{NULL, NULL}

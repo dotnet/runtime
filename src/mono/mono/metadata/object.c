@@ -193,7 +193,11 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 
 	byte_len = mono_array_element_size (array_class);
 
+#if HAVE_BOEHM_GC
+	bounds = GC_debug_malloc (sizeof (MonoArrayBounds) * array_class->rank, "bounds", 0);
+#else
 	bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
+#endif
 	for (i = 0; i < array_class->rank; ++i) {
 		bounds [i].length = lengths [i];
 		byte_len *= lengths [i];
