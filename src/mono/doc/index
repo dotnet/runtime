@@ -80,6 +80,18 @@
   </tr>
 </table>
 
+@item Aug 1st, 2002
+
+	The <a href="hackers.html">Mono Hackers Hall Of Fame</a> has been started
+	to show our appreciation to the excellent contributors that made <b>mono::</b>
+	a successful free software project.
+
+	The first, deserved, entry goes to
+	Nick Drochak, who joined us in the first days of Mono and built the testing 
+	infrastructure for the C# assemblies, fixed tons of bugs and even adventured 
+	himself in the lands of the C runtime. His work is invaluable for keeping
+	Mono on the right track through the daily changes in the codebase.
+
 @item Jul 26th, 2002
 
 	<b>Mono 0.13 has been released!</b> (details <a

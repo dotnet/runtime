@@ -26,6 +26,7 @@ OBJECTS=	\
 	deploy/download.html				\
 	deploy/faq.html					\
 	deploy/gcc-frontend.html			\
+	deploy/hackers.html				\
 	deploy/index.html				\
 	deploy/ideas.html				\
 	deploy/java.html				\
