@@ -593,7 +593,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
 
-		if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		if ((cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (cols [MONO_METHOD_RVA] == 0))
 			fprintf (output, "%s", pinvoke_info (m, i));
 
 		fprintf (output, "\n           %s", sig_str);
@@ -606,7 +606,10 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		cattrs_for_method (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
-		dis_code (m, cols [MONO_METHOD_RVA]);
+		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
+			fprintf (output, "          // Disassembly of native methods is not supported\n");
+		else
+			dis_code (m, cols [MONO_METHOD_RVA]);
 		fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
@@ -748,7 +751,7 @@ dis_event_methods (MonoImage *m, guint32 event)
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	char *sig;
-	const char *type;
+	const char *type = "";
 
 	start = mono_metadata_methods_from_event (m, event, &end);
 	while (start < end) {
@@ -1134,6 +1137,7 @@ struct {
 	{ "--propertymap", MONO_TABLE_PROPERTYMAP, 	dump_table_property_map },
 	{ "--typedef",     MONO_TABLE_TYPEDEF,     	dump_table_typedef },
 	{ "--typeref",     MONO_TABLE_TYPEREF,     	dump_table_typeref },
+	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
 	{ NULL, -1 }
 };
 

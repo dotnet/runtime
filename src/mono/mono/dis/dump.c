@@ -559,6 +559,31 @@ dump_table_method (MonoImage *m)
 	
 }
 
+void
+dump_table_implmap (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_IMPLMAP];
+	MonoTableInfo *td = &m->tables [MONO_TABLE_MODULEREF];
+	int i;
+
+	fprintf (output, "ImplMap Table (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_IMPLMAP_SIZE];
+		char *method;
+
+		mono_metadata_decode_row (t, i - 1, cols, MONO_IMPLMAP_SIZE);
+
+		method = get_method (m, MONO_TOKEN_METHOD_DEF | (cols [MONO_IMPLMAP_MEMBER] >> MEMBERFORWD_BITS));
+		
+		fprintf (output, "%d: %s %d (%s %s)\n", i, 
+				 method,
+				 cols [MONO_IMPLMAP_FLAGS], 
+				 mono_metadata_string_heap (m, cols [MONO_IMPLMAP_NAME]),
+				 mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME)));
+	}
+}
+
 static guint32
 method_dor_to_token (guint32 idx) {
 	switch (idx & METHODDEFORREF_MASK) {
@@ -903,6 +928,7 @@ dump_table_exported (MonoImage *m)
 	int i;
 	const char *name, *nspace;
 	char *impl;
+	guint32 index;
 	fprintf (output, "ExportedType Table (1..%d)\n", t->rows);
 
 	for (i = 1; i <= t->rows; i++) {
@@ -910,7 +936,8 @@ dump_table_exported (MonoImage *m)
 		name = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAME]);
 		nspace = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAMESPACE]);
 		impl = get_manifest_implementation (m, cols [MONO_EXP_TYPE_IMPLEMENTATION]);
-		fprintf (output, "%d: %s.%s is in %s\n", i, nspace, name, impl);
+		index = cols [MONO_EXP_TYPE_TYPEDEF];
+		fprintf (output, "%d: %s-%s%s is in %s, token %x\n", i, nspace, *nspace ? "." : "", name, impl, index);
 		g_free (impl);
 	}
 	
