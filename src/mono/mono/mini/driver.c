@@ -467,7 +467,7 @@ mini_usage (void)
 	int i;
 
 	fprintf (stderr,
-		"Usage is: mini [options] assembly\n\n"
+		"Usage is: mono [options] assembly\n\n"
 		"Runtime and JIT debugging:\n"
 		"    --compile METHOD       Just compile METHOD in assembly\n"
 		"    --ncompile N           Number of times to compile METHOD (default: 1)\n"

@@ -81,21 +81,21 @@ get_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum)
 {
 	switch (dwarf_regnum) {
 	case X86_EAX:
-		return ctx->eax;
+		return ctx->SC_EAX;
 	case X86_EBX:
-		return ctx->ebx;
+		return ctx->SC_EBX;
 	case X86_ECX:
-		return ctx->ecx;
+		return ctx->SC_ECX;
 	case X86_EDX:
-		return ctx->edx;
+		return ctx->SC_EDX;
 	case X86_ESI:
-		return ctx->esi;
+		return ctx->SC_ESI;
 	case X86_EDI:
-		return ctx->edi;
+		return ctx->SC_EDI;
 	case X86_EBP:
-		return ctx->ebp;
+		return ctx->SC_EBP;
 	case X86_ESP:
-		return ctx->esp;
+		return ctx->SC_ESP;
 	default:
 		g_assert_not_reached ();
 	}
@@ -108,31 +108,31 @@ set_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum, long value)
 {
 	switch (dwarf_regnum) {
 	case X86_EAX:
-		ctx->eax = value;
+		ctx->SC_EAX = value;
 		break;
 	case X86_EBX:
-		ctx->ebx = value;
+		ctx->SC_EBX = value;
 		break;
 	case X86_ECX:
-		ctx->ecx = value;
+		ctx->SC_ECX = value;
 		break;
 	case X86_EDX:
-		ctx->edx = value;
+		ctx->SC_EDX = value;
 		break;
 	case X86_ESI:
-		ctx->esi = value;
+		ctx->SC_ESI = value;
 		break;
 	case X86_EDI:
-		ctx->edi = value;
+		ctx->SC_EDI = value;
 		break;
 	case X86_EBP:
-		ctx->ebp = value;
+		ctx->SC_EBP = value;
 		break;
 	case X86_ESP:
-		ctx->esp = value;
+		ctx->SC_ESP = value;
 		break;
 	case 8:
-		ctx->eip = value;
+		ctx->SC_EIP = value;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -278,7 +278,7 @@ x86_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sig
 					set_sigcontext_reg (new_ctx, i, val);
 				}
 			}
-			new_ctx->esp = (long)cfa;
+			new_ctx->SC_ESP = (long)cfa;
 
 			if (res->saved [X86_EBX] == 1 &&
 			    res->saved [X86_EDI] == 1 &&
