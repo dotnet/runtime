@@ -1821,7 +1821,7 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
 			encode_reflection_type (assembly, pt, p, &p);
 		}
-	} else {
+	} else if (smb) {
 		/* the property type is the last param */
 		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), p, &p);
 		for (i = 0; i < nparams; ++i) {
@@ -1829,6 +1829,10 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 			encode_reflection_type (assembly, pt, p, &p);
 		}
 	}
+	else {
+		encode_reflection_type (assembly, fb->type, p, &p);
+	}
+
 	/* store length */
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
