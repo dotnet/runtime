@@ -226,7 +226,7 @@ stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
 
 	dreg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (state->left->tree->opcode),
-				  	dreg, state->left->left->tree->inst_basereg, state->left->left->tree->inst_offset);
+				  	dreg, base->inst_basereg, base->inst_offset);
 
 	regpair = (((guint64)tree->unused) << 32) + dreg;
 	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));

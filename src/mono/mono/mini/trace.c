@@ -285,7 +285,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		printf (") ip: %p\n", __builtin_return_address (1));
 		return;
 	}	
-	if (((int)ebp & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
+	if ((GPOINTER_TO_INT (ebp) & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
 		g_error ("unaligned stack detected (%p)", ebp);
 	}
 
@@ -333,7 +333,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 			
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-			printf ("%p, ", (gpointer)*((int *)(cpos)));
+			printf ("%p, ", *((gpointer **)(cpos)));
 			break;
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -383,7 +383,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			printf ("0x%016llx, ", *((gint64 *)(cpos)));
+			printf ("0x%016llx, ", (long long)*((gint64 *)(cpos)));
 			break;
 		case MONO_TYPE_R4:
 			printf ("%f, ", *((float *)(cpos)));
@@ -470,7 +470,7 @@ handle_enum:
 			} else if  (o->vtable->klass == mono_defaults.int32_class) {
 				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
 			} else if  (o->vtable->klass == mono_defaults.int64_class) {
-				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
+				printf ("[INT64:%p:%lld]", o, (long long)*((gint64 *)((char *)o + sizeof (MonoObject))));	
 			} else
 				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
 		} else
@@ -488,12 +488,12 @@ handle_enum:
 	}
 	case MONO_TYPE_I8: {
 		gint64 l =  va_arg (ap, gint64);
-		printf ("lresult=0x%16llx", l);
+		printf ("lresult=0x%16llx", (long long)l);
 		break;
 	}
 	case MONO_TYPE_U8: {
 		gint64 l =  va_arg (ap, gint64);
-		printf ("lresult=0x%16llx", l);
+		printf ("lresult=0x%16llx", (long long)l);
 		break;
 	}
 	case MONO_TYPE_R4:

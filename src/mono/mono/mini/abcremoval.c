@@ -264,7 +264,7 @@ get_variable_value_from_store_instruction (MonoInst *store, int expected_variabl
 static void
 check_delta_safety (MonoVariableRelationsEvaluationArea *area, MonoSummarizedValue *value) {
 	if (value->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-		gssize variable = value->value.variable.variable;
+		int variable = value->value.variable.variable;
 		int delta = value->value.variable.delta;
 		if ((area->variable_value_kind [variable]) & MONO_UNSIGNED_VALUE_FLAG) {
 			if (delta < 0) {
@@ -816,7 +816,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				
 				// If the relation is "ANY", nothing to do (no added information)
 				if (relation->relation != MONO_ANY_RELATION) {
-					gssize related_variable = relation->related_value.value.variable.variable;
+					int related_variable = relation->related_value.value.variable.variable;
 					MonoRelationsEvaluationContext *related_context = &(area->contexts [related_variable]);
 					
 					// The second condition in the "or" avoids messing with "back edges" in the graph traversal
@@ -1093,7 +1093,7 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 		
 		/* If the array is a local variable... */
 		if (array_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			gssize array_variable = array_value.value.variable.variable;
+			int array_variable = array_value.value.variable.variable;
 			MonoRelationsEvaluationContext *array_context = &(area->contexts [array_variable]);
 			
 			if (index_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
@@ -1114,7 +1114,7 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 				// The common case: we must evaluate both the index and the array length, and check for relevant
 				// relations both through variable definitions and as constant definitions
 				
-				gssize index_variable = index_value.value.variable.variable;
+				int index_variable = index_value.value.variable.variable;
 				MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
 				
 				clean_contexts (area->contexts, area->cfg->num_varinfo);
@@ -1159,7 +1159,7 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 				}
 			} else if (index_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 				/* The index has a variable related value, which must be evaluated */
-				gssize index_variable = index_value.value.variable.variable;
+				int index_variable = index_value.value.variable.variable;
 				MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
 				
 				clean_contexts (area->contexts, area->cfg->num_varinfo);

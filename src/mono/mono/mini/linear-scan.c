@@ -90,7 +90,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 	max_regs = g_list_length (regs);
 
 	for (l = regs; l; l = l->next) {
-		int regnum = (int)l->data;
+		int regnum = GPOINTER_TO_INT (l->data);
 		g_assert (regnum < G_N_ELEMENTS (gains));
 		gains [regnum] = 0;
 	}
@@ -115,7 +115,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 				amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 #endif
 			active = g_list_delete_link (active, active);
-			regs = g_list_prepend (regs, (gpointer)amv->reg);
+			regs = g_list_prepend (regs, GINT_TO_POINTER (amv->reg));
 			gains [amv->reg] += amv->spill_costs;
 		}
 
@@ -154,7 +154,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 
 			g_assert (regs);
 
-			vmv->reg = (int)regs->data;
+			vmv->reg = GPOINTER_TO_INT (regs->data);
 
 			used_regs |= 1LL << vmv->reg;
 

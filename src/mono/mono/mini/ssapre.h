@@ -47,9 +47,9 @@ typedef enum {
 typedef struct MonoSsapreExpressionArgument {
 	MonoSsapreExpressionArgumentType type;
 	union {
-		gssize original_variable;
-		gssize ssa_variable;
-		gssize integer_constant;
+		int original_variable;
+		int ssa_variable;
+		int integer_constant;
 		gint64* long_constant;
 		float* float_constant;
 		double* double_constant;
@@ -149,11 +149,11 @@ typedef struct MonoSsapreBBInfo {
 	/* True if this PHI is "later" */
 	gboolean phi_is_later;
 	/* The PHI class number */
-	gssize phi_redundancy_class;
+	int phi_redundancy_class;
 	/* The index of this PHI in the cfg->vars array */
-	gssize phi_variable_index;
+	int phi_variable_index;
 	/* Array of the class numbers of the PHI arguments (has "in_count" elements) */
-	gssize *phi_arguments_classes;
+	int *phi_arguments_classes;
 	
 	
 	/* True if this BB has a PHI argument */
@@ -165,18 +165,18 @@ typedef struct MonoSsapreBBInfo {
 	/* True if this PHI argument has been processed (see "set_save") */
 	gboolean phi_argument_has_been_processed;
 	/* The PHI argument class number */
-	gssize phi_argument_class;
+	int phi_argument_class;
 	/* The index of this PHI argument in the cfg->vars array */
-	gssize phi_argument_variable_index;
+	int phi_argument_variable_index;
 	/* Points to the real occurrence defining this PHI argument (NULL otherwise) */
 	struct MonoSsapreExpressionOccurrence *phi_argument_defined_by_real_occurrence;
 	/* Points to the BB containing the PHI defining this PHI argument (NULL otherwise) */
 	struct MonoSsapreBBInfo *phi_argument_defined_by_phi;
 	/* Variable version of the left argument og the PHI argument "expected" at */
 	/* the PHI (or BOTTOM_REDUNDANCY_CLASS otherwise), see "renaming_pass" */
-	gssize phi_argument_left_argument_version;
+	int phi_argument_left_argument_version;
 	/* As above, but for the right argument */
-	gssize phi_argument_right_argument_version;
+	int phi_argument_right_argument_version;
 	
 	/* The first real occurrence in this BB (NULL if there is none) */
 	struct MonoSsapreExpressionOccurrence *first_expression_in_bb;
@@ -237,9 +237,9 @@ typedef struct MonoSsapreExpressionOccurrence {
 	struct MonoSsapreExpressionOccurrence *next_in_renaming_stack;
 	
 	/* Class number of this occurrence */
-	gssize redundancy_class;
+	int redundancy_class;
 	/* The index of the temporary of this occurrence in the cfg->vars array */
-	gssize variable_index;
+	int variable_index;
 	/* Points to the real occurrence defining this occurrence (NULL otherwise) */
 	struct MonoSsapreExpressionOccurrence *defined_by_real_occurrence;
 	/* Points to the BB containing the PHI defining this occurrence (NULL otherwise) */
@@ -264,7 +264,7 @@ typedef struct MonoSsapreExpression {
 	struct MonoSsapreExpression *father;
 	struct MonoSsapreExpression *previous;
 	struct MonoSsapreExpression *next;
-	gssize tree_size;
+	int tree_size;
 	
 	/* Next expression to be processed in the worklist */
 	struct MonoSsapreExpression *next_in_queue;	

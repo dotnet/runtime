@@ -6885,7 +6885,7 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 			 */
 			if (! (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
 				if (slot_info->slots) {
-					slot = (int)slot_info->slots->data;
+					slot = GPOINTER_TO_INT (slot_info->slots->data);
 
 					slot_info->slots = g_list_delete_link (slot_info->slots, slot_info->slots);
 				}
@@ -9686,10 +9686,6 @@ mini_init (const char *filename)
 
 #if SIZEOF_VOID_P == 4
 	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4, TRUE);
-#else
-#ifdef __GNUC__
-#warning "fixme: add opcode emulation"
-#endif
 #endif
 
 	/* other jit icalls */

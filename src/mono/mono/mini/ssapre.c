@@ -53,7 +53,7 @@ print_argument (MonoSsapreExpressionArgument *argument) {
 			printf ("INTEGER_CONSTANT %d", argument->argument.integer_constant);
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_LONG_COSTANT:
-			printf ("LONG_COSTANT %lld", *(argument->argument.long_constant));
+			printf ("LONG_COSTANT %lld", (long long)*(argument->argument.long_constant));
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_FLOAT_COSTANT:
 			printf ("FLOAT_COSTANT %f", *(argument->argument.float_constant));
@@ -815,7 +815,7 @@ process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *uppe
 	bb_info->bb = bb;
 	bb_info->in_bb = (MonoSsapreBBInfo**) mono_mempool_alloc (area->mempool, sizeof (MonoSsapreBBInfo*) * (bb->in_count));
 	bb_info->out_bb = (MonoSsapreBBInfo**) mono_mempool_alloc (area->mempool, sizeof (MonoSsapreBBInfo*) * (bb->out_count));
-	bb_info->phi_arguments_classes = (gssize*) mono_mempool_alloc (area->mempool, sizeof (gssize) * (bb->in_count));
+	bb_info->phi_arguments_classes = (int*) mono_mempool_alloc (area->mempool, sizeof (int) * (bb->in_count));
 	
 	bb_info->phi_insertion_point = NULL;
 	

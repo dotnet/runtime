@@ -44,7 +44,7 @@ typedef struct MonoSummarizedConstantValue {
  * delta: the delta (can be zero)
  */
 typedef struct MonoSummarizedVariableValue {
-	gssize variable;
+	int variable;
 	int delta;
 } MonoSummarizedVariableValue;
 
@@ -321,7 +321,7 @@ typedef struct MonoVariableRelationsEvaluationArea {
  *                  in the traversal of the dominator tree)
  */
 typedef struct MonoAdditionalVariableRelation {
-	gssize variable;
+	int variable;
 	MonoSummarizedValueRelation relation;
 	MonoSummarizedValueRelation *insertion_point;
 } MonoAdditionalVariableRelation;
