@@ -565,7 +565,10 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 		} else {
 			MonoObject *obj;
 			obj = handles->entries [slot];
-			result = domain == mono_object_domain (obj);
+			if (obj == NULL)
+				result = TRUE;
+			else
+				result = domain == mono_object_domain (obj);
 		}
 	} else {
 		/* print a warning? */
