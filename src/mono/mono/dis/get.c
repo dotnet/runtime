@@ -650,7 +650,8 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 			mono_metadata_decode_blob_size (sig, &sig);
 			method = mono_metadata_parse_method_signature_full (m, context, methoddef_row, sig, &sig);
 			free_method = 1;
-		}      
+		} else if (context)
+			container = context->container;
                 gen_param = get_generic_param (m, container);
 	}
 	

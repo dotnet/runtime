@@ -771,7 +771,6 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		}
 
 		ms = mono_metadata_parse_method_signature_full (m, method_context, i + 1, sig, &sig);
-		// ms = mono_metadata_parse_method_signature_full (m, context, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context, FALSE);
 
 		fprintf (output, "    // method line %d\n", i + 1);
@@ -794,7 +793,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		
 		fprintf (output, "    {\n");
 		dump_cattrs (m, token, "        ");
-		// dump_cattrs_for_method_params (m, i, ms);
+		dump_cattrs_for_method_params (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dump_declarative_security (m, OBJECT_TYPE_METHODDEF, i + 1, "        ");
@@ -803,7 +802,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		else
 			dis_code (m, token, cols [MONO_METHOD_RVA], method_context);
 		fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
-		// mono_metadata_free_method_signature (ms);
+		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
 	}
 }
