@@ -6,18 +6,18 @@ CC=$(CC_FOR_BUILD)
 #sample_SOURCES = sample.c
 bdir=$(top_builddir)/$(subdir)
 
-$(bdir)/parser.c:  $(srcdir)/monoburg.y
-	bison $(srcdir)/monoburg.y -o $(bdir)/parser.c
+parser.c:  $(srcdir)/monoburg.y
+	bison $(srcdir)/monoburg.y -o parser.c
 
-monoburg$(BUILD_EXEEXT): $(srcdir)/monoburg.c $(srcdir)/monoburg.h $(bdir)/parser.c
-	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c $(bdir)/parser.c $(INCLUDES) $(BUILD_GLIB_LIBS)
+monoburg$(BUILD_EXEEXT): $(srcdir)/monoburg.c $(srcdir)/monoburg.h parser.c
+	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c parser.c $(INCLUDES) $(BUILD_GLIB_LIBS)
 
-$(bdir)/sample.c: monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg
-	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg > $(bdir)/sample.c
+sample.c: monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg
+	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg > sample.c
 
 #sample_LDADD = $(BUILD_GLIB_LIBS)
 
-BUILT_SOURCES = $(bdir)/parser.c $(bdir)/sample.c
+BUILT_SOURCES = parser.c sample.c
 
 CLEANFILES = $(BUILT_SOURCES) monoburg$(BUILD_EXEEXT)
 
