@@ -505,7 +505,7 @@ class_compute_field_layout (MonoClass *class)
 		}
 		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 			mono_metadata_field_info (m, idx, &field->offset, NULL, NULL);
-			if (field->offset == (guint32)-1)
+			if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, field->name);
 		}
 
