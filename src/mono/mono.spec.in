@@ -8,7 +8,7 @@ Group: System Environment/Base
 Source0: http://go-mono.com/archive/mono-0.14.tar.gz
 URL: http://go-mono.com/
 BuildRoot: %{_tmppath}/%{name}-root
-Requires: /sbin/ldconfig
+Requires: /sbin/ldconfig, libxml2, libxslt
 BuildRequires: libgc-devel
 BuildRequires: bison
 Packager: Miguel de Icaza <miguel@ximian.com>
