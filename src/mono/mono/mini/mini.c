@@ -4757,8 +4757,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 
 			/* allocate the domainvar - becaus this is used in decompose_foreach */
-			if (cfg->opt & MONO_OPT_SHARED)
+			if (cfg->opt & MONO_OPT_SHARED) {
 				mono_get_domainvar (cfg);
+				/* LAME-IR: Mark it as used since otherwise it will be optimized away */
+				cfg->domainvar->flags |= MONO_INST_VOLATILE;
+			}
 			
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);

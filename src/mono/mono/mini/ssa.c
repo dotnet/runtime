@@ -1164,7 +1164,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 		MonoMethodVar *info = (MonoMethodVar *)work_list->data;
 		work_list = g_list_remove_link (work_list, work_list);
 
-		if (!info->uses && info->def) {
+		if (!info->uses && info->def && (!(cfg->varinfo [info->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))) {
 			MonoInst *i1;
 			//printf ("ELIMINATE %s: ", mono_method_full_name (cfg->method, TRUE)); mono_print_tree (info->def); printf ("\n");
 
