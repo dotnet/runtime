@@ -213,7 +213,7 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 #if HAVE_BOEHM_GC
 	if (forceCollection)
 		GC_gcollect ();
-	return GC_get_heap_size ();
+	return GC_get_heap_size () - GC_get_free_bytes ();
 #else
 	return 0;
 #endif
