@@ -171,7 +171,7 @@ static guint32 start_wrapper(void *data)
 	 * executed, as it calls the callback function that (for the
 	 * jit) sets the lmf marker.
 	 */
-	mono_new_thread_init (tid, &tid, start_func);
+	mono_thread_new_init (tid, &tid, start_func);
 
 	if(start_info->fake_thread) {
 		thread = (MonoThread *)mono_object_new (start_info->domain, mono_defaults.thread_class);
@@ -214,7 +214,7 @@ static guint32 start_wrapper(void *data)
 	return(0);
 }
 
-void mono_new_thread_init (guint32 tid, gpointer stack_start, gpointer func)
+void mono_thread_new_init (guint32 tid, gpointer stack_start, gpointer func)
 {
 	if (mono_thread_start_cb) {
 		mono_thread_start_cb (tid, stack_start, func);

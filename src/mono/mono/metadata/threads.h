@@ -33,7 +33,7 @@ typedef struct {
 
 extern void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks);
 
-extern void mono_new_thread_init (guint32 tid, gpointer stack_start,
+extern void mono_thread_new_init (guint32 tid, gpointer stack_start,
 				  gpointer func);
 extern void mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);

@@ -163,7 +163,7 @@ internal_domain_finalize (gpointer data) {
 	MonoDomain *domain=(MonoDomain *)data;
 	GHashTable *todo = g_hash_table_new (NULL, NULL);
 
-	mono_new_thread_init (GetCurrentThreadId (), todo, NULL);
+	mono_thread_new_init (GetCurrentThreadId (), todo, NULL);
 	
 #if HAVE_BOEHM_GC
 	GC_gcollect ();
@@ -438,7 +438,7 @@ static guint32 finalizer_thread (gpointer unused)
 {
 	guint32 stack_start;
 	
-	mono_new_thread_init (GetCurrentThreadId (), &stack_start, NULL);
+	mono_thread_new_init (GetCurrentThreadId (), &stack_start, NULL);
 	
 	while(!finished) {
 		/* Wait to be notified that there's at least one
