@@ -1,9 +1,14 @@
+2004-05-21  Raja R Harinath  <rharinath@novell.com>
+
+	* README: Update to include instructions for the various new
+	bootstrap-like targets.
+
 2004-05-20  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (get-monolite-latest, monolite-bootstrap):
 	New bootstrap targets to build from monolite.
 	Based on idea from Jaroslaw Kowalski <jaak@zd.com.pl>.
-	
+
 2004-05-20  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (AC_OUTPUT): Add tools/Makefile and
