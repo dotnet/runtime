@@ -678,7 +678,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 
 	/* This will call the type constructor */
 	if (! (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
-		mono_class_vtable (mono_domain_get (), klass);
+		mono_runtime_class_init (mono_class_vtable (mono_domain_get (), klass));
 }
 
 static MonoObject *
@@ -1129,6 +1129,8 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
 		vtable = mono_class_vtable (domain, field->klass);
+		if (!vtable->initialized)
+			mono_runtime_class_init (vtable);
 	}
 	
 	if (is_ref) {
@@ -1197,6 +1199,8 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		MonoVTable *vtable = mono_class_vtable (mono_object_domain (field), field->klass);
+		if (!vtable->initialized)
+			mono_runtime_class_init (vtable);
 		mono_field_static_set_value (vtable, cf, v);
 	} else {
 		mono_field_set_value (obj, cf, v);
