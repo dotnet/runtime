@@ -1,5 +1,7 @@
 * System.Windows.Forms
 
+	Currently Windows.Forms support is not finished.
+
 	The System.Windows.Forms effort is taking two paths: 
 
 	<ul>

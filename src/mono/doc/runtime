@@ -1,9 +1,10 @@
 * The Mono runtime
 
-	The Mono runtime implements a JIT engine for the CIL virtual
-	machine (as well as a byte code interpreter, this is to
-	quickly port it to new systems), the class loader, the garbage
-	collector, threading system and metadata access libraries.
+	The Mono runtime engine is considered feature complete.
+
+	It implements a Just-in-Time compiler engine for the CIL
+	virtual machine, the class loader, the garbage collector,
+	threading system and metadata access libraries.
 
 	We currently have two runtimes:
 
@@ -16,8 +17,7 @@
 		  easy-to-port runtime engine.
 	</ul>
 
-	Currently we are using the Bohem conservative garbage
-	collector.
+	We are using the Bohem conservative garbage collector.
 
 	The Mono runtime can be used as a stand-alone process, or it
 	can be <a href="embedded-api">embedded into applications</a> (see
@@ -31,7 +31,7 @@
 	href="http://primates.ximian.com/~lupus/slides/jit/">slides
 	here</a>
 
-** Current JIT Engine (<b>updated, July 8th, 2002</b>)
+** Current JIT Engine: technical details (<b>updated, July 8th, 2002</b>)
 
 	The JIT engine uses a code-generator generator approach for
 	compilation.  Given the properties of CIL byte codes, we can
@@ -84,18 +84,11 @@
 
 ** Garbage Collection
 
-	Currently we are using the Boehm conservative GC.  Although our plans 
-	are to move to the Intel ORP GC engine, our plans on a next generation
-	dual-JIT engine have to be taken into account.
-
-	We will be using the Intel ORP GC engine as it provides a precise
+	We are using the Boehm conservative GC.  We might consider
+	adopting other GC engines in the future, like the Intel ORP GC
+	engine.  The Intel ORP GC engine as it provides a precise
 	garbage collector engine, similar to what is available on the
-	.NET environment. 
-
-	Although using a conservative garbage collector like Bohem's
-	would work, all the type information is available at runtime,
-	so we can actually implement a better collector than a
-	conservative collector.
+	.NET environment.
 
 	<ul>
 		* Garbage collection list and FAQ:<br>
@@ -119,7 +112,7 @@
 	The ECMA runtime and the .NET runtime assume an IO model and a
 	threading model that is very similar to the Win32 API.  
 
-	Dick Porter has been working on the Mono abstraction layer
+	Dick Porter has developed WAPI: the Mono abstraction layer
 	that allows our runtime to execute code that depend on this
 	behaviour.
 
@@ -148,7 +141,8 @@
 	as well as talking to system libraries.
 
 	Initially we used libffi, but it was fairly slow, so we have
-	reused parts of the JIT work to create efficient PInvoke trampolines. 
+	reused parts of the JIT work to create efficient PInvoke
+	trampolines.
 
 ** Remoting
 
