@@ -10,7 +10,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include <mono/cli/cli.h>
+#include <mono/metadata/loader.h>
 
 #include "interp.h"
 
@@ -267,30 +267,17 @@ static gpointer icall_map [] = {
 	NULL, NULL
 };
 
-gpointer
-mono_lookup_internal_call (const char *name)
+void
+mono_init_icall ()
 {
-	static GHashTable *icall_hash = NULL;
-	gpointer res;
+	char *n;
+	int i = 0;
 
-	if (!icall_hash) {
-		char *n;
-		int i = 0;
-
-		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
-		
-		while ((n = icall_map [i])) {
-			g_hash_table_insert (icall_hash, n, icall_map [i+1]);
-			i += 2;
-		}
+	while ((n = icall_map [i])) {
+		mono_add_internal_call (n, icall_map [i+1]);
+		i += 2;
 	}
-
-	if (!(res = g_hash_table_lookup (icall_hash, name))) {
-		g_warning ("cant resolve internal call to \"%s\"", name);
-		g_assert_not_reached ();
-	}
-
-	return res;
+       
 }
 
 

@@ -34,8 +34,8 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
-#include <mono/cli/cli.h>
-#include <mono/cli/types.h>
+#include <mono/metadata/loader.h>
+//#include <mono/cli/types.h>
 #include "interp.h"
 #include "hacks.h"
 
@@ -56,7 +56,6 @@ static int debug_indent_level = 0;
 static void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
-
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
@@ -1365,7 +1364,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_DOUBLE)
 				sp->data.f = - sp->data.f;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(- (m_i)sp->data.p);
+				sp->data.p = (gpointer)(- (int)sp->data.p);
 			BREAK;
 		CASE (CEE_NOT)
 			++ip;
@@ -1374,7 +1373,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_I64)
 				sp->data.l = ~ sp->data.l;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(~ (m_i)sp->data.p);
+				sp->data.p = (gpointer)(~ (int)sp->data.p);
 			BREAK;
 		CASE (CEE_CONV_I1) ves_abort(); BREAK;
 		CASE (CEE_CONV_I2) ves_abort(); BREAK;
@@ -2139,6 +2138,7 @@ main (int argc, char *argv [])
 	file = argv [1];
 
 	mono_init ();
+	mono_init_icall ();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){

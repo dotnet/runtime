@@ -9,8 +9,8 @@
 #include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <mono/cli/cli.h>
-#include <mono/cli/object.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
 
 /**
  * mono_object_allocate:

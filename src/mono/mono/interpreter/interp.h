@@ -1,7 +1,7 @@
 
 #include <glib.h>
-#include <mono/cli/cli.h>
-#include <mono/cli/object.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
 
 enum {
 	VAL_I32     = 0,
@@ -49,4 +49,6 @@ struct _MonoInvocation {
 	MonoObject     *ex;
 	MonoExceptionClause *ex_handler;
 };
+
+void mono_init_icall ();
 

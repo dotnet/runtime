@@ -40,7 +40,6 @@ mono/Makefile
 mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
-mono/cli/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile

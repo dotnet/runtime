@@ -3,7 +3,7 @@
 
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
-#include <mono/cli/cli.h>
+#include <mono/metadata/loader.h>
 
 #define MONO_CLASS_IS_ARRAY(c) (c->type_token == 0)
 

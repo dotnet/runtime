@@ -1,7 +1,7 @@
 #ifndef _MONO_CLI_OBJECT_H_
 #define _MONO_CLI_OBJECT_H_
 
-#include <mono/cli/class.h>
+#include <mono/metadata/class.h>
 
 typedef struct {
 	MonoClass *klass;

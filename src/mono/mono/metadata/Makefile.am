@@ -7,15 +7,20 @@ lib_LIBRARIES = libmetadata.a
 #
 assembliesdir = $(libdir)
 
-INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)	\
-	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"
+INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	\
+	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		\
+	-I$(top_srcdir)/libffi/include	
+
 
 libmetadata_a_SOURCES = \
 	assembly.c	\
 	image.c		\
 	metadata.c	\
 	private.h	\
-	rawbuffer.c
+	rawbuffer.c	\
+	loader.c	\
+	class.c		\
+	object.c	
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
@@ -29,9 +34,12 @@ libmetadatainclude_HEADERS = \
 	rawbuffer.h	\
 	row-indexes.h	\
 	tabledefs.h	\
-	tokentype.h
+	tokentype.h	\
+	loader.h	\
+	class.h		\
+	object.h	
 
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
-pedump_LDADD = $(GLIB_LIBS) 
+pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) ../../libffi/libffi.a

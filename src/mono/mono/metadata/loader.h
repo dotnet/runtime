@@ -1,5 +1,5 @@
-#ifndef _MONO_CLI_CLI_H_
-#define _MONO_CLI_CLI_H_ 1
+#ifndef _MONO_METADATA_LOADER_H_
+#define _MONO_METADATA_LOADER_H_ 1
 
 #include <ffi.h>
 #include <mono/metadata/metadata.h>
@@ -50,6 +50,9 @@ mono_typedef_from_name     (MonoImage *image, const char *name,
 
 MonoImage *
 mono_load_image            (const char *fname, enum MonoImageOpenStatus *status);
+
+void
+mono_add_internal_call     (const char *name, gpointer method);
 
 gpointer
 mono_lookup_internal_call  (const char *name);

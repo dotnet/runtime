@@ -21,10 +21,8 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
-#include <mono/cli/cli.h>
-#include <mono/cli/class.h>
-#include <mono/cli/types.h>
-#include <mono/cli/object.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/object.h>
 
 #define CSIZE(x) (sizeof (x) / 4)
 

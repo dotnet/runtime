@@ -26,7 +26,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
-#include "cli.h"
+#include <mono/metadata/loader.h>
 
 MonoDefaults mono_defaults;
 
@@ -102,6 +102,35 @@ mono_init ()
 	
 	g_assert (mono_defaults.string_token != 0);
 
+}
+
+static GHashTable *icall_hash = NULL;
+
+void
+mono_add_internal_call (const char *name, gpointer method)
+{
+	if (!icall_hash)
+		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
+	
+	g_hash_table_insert (icall_hash, g_strdup (name), method);
+}
+
+gpointer
+mono_lookup_internal_call (const char *name)
+{
+	gpointer res;
+
+	if (!icall_hash) {
+		g_warning ("icall_hash not initialized");
+		g_assert_not_reached ();
+	}
+
+	if (!(res = g_hash_table_lookup (icall_hash, name))) {
+		g_warning ("cant resolve internal call to \"%s\"", name);
+		g_assert_not_reached ();
+	}
+
+	return res;
 }
 
 static MonoMethod *
