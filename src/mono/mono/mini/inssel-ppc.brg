@@ -328,7 +328,7 @@ stmt: OP_OUTARG_VT (reg) {
 	if (nregs) {
 		tree->opcode = OP_SETREG;
 		tree->dreg = start_reg;
-		tree->sreg1 = state->left->tree->dreg;
+		tree->sreg1 = state->left->reg1;
 		mono_bblock_add_inst (s->cbb, tree);
 	} else {
 		g_assert_not_reached ();

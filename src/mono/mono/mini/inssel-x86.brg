@@ -379,7 +379,7 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 
 stmt: OP_OUTARG_VT (reg) {
 	tree->opcode = OP_X86_PUSH;
-	tree->sreg1 = state->left->tree->dreg;
+	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
