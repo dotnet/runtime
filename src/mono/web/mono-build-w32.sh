@@ -48,11 +48,6 @@ fi
 
 cvs checkout mono || exit -1
 
-if [ ! -z "${AUTO_STABLE}" -o -e /usr/autotool/stable ]; then
-    export AUTO_STABLE=${AUTO_STABLE:-/usr/autotool/stable}
-    export AUTO_DEVEL=${AUTO_STABLE}
-fi
-
 echo "Checking automake version"
 automake_required="1.6.2"
 automake_version=`automake --version | head -1 | awk '{print $4}' | tr -d '[a-zA-Z]' | sed 's/-.*$//g'`
@@ -62,6 +57,12 @@ if expr $automake_version \< $automake_required > /dev/null; then
 	exit -1
 else
 	echo "Automake version new enough."
+fi
+
+# Select the stable version anyway...
+if [ ! -z "${AUTO_STABLE}" -o -e /usr/autotool/stable ]; then
+    export AUTO_STABLE=${AUTO_STABLE:-/usr/autotool/stable}
+    export AUTO_DEVEL=${AUTO_STABLE}
 fi
 
 # Need to install pkgconfig and set ACLOCAL_FLAGS if there is not a
