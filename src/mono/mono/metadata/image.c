@@ -847,8 +847,17 @@ MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
 	MonoImage *image, *image2;
+	const char *absfname;
 	
 	g_return_val_if_fail (fname != NULL, NULL);
+	
+	if (g_path_is_absolute (fname)) 
+		absfname = fname;
+	else {
+		gchar *path = g_get_current_dir ();
+		absfname = g_build_filename (path, fname, NULL);
+		g_free (path);
+	}
 
 	/*
 	 * The easiest solution would be to do all the loading inside the mutex,
@@ -857,7 +866,11 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	 * the same image, we discard all but the first copy.
 	 */
 	EnterCriticalSection (&images_mutex);
-	image = g_hash_table_lookup (loaded_images_hash, fname);
+	image = g_hash_table_lookup (loaded_images_hash, absfname);
+	
+	if (absfname != fname)
+		g_free (absfname);
+	
 	if (image){
 		image->ref_count++;
 		LeaveCriticalSection (&images_mutex);
