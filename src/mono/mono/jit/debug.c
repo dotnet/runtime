@@ -18,6 +18,8 @@ MonoDebuggerSymbolFileTable *mono_debugger_symbol_file_table = NULL;
 /* Caution: This function MUST be called before touching the symbol table! */
 static void release_symbol_file_table (void);
 
+static void initialize_debugger_support (void);
+
 static MonoDebugHandle *mono_debug_handles = NULL;
 static MonoDebugHandle *mono_default_debug_handle = NULL;
 
@@ -148,6 +150,7 @@ mono_debug_open (const char *name, MonoDebugFormat format, const char **args)
 		} else {
 			if (!strcmp (arg, "internal_mono_debugger")) {
 				debug->flags |= MONO_DEBUG_FLAGS_MONO_DEBUGGER;
+				initialize_debugger_support ();
 				continue;
 			}
 		}
@@ -774,11 +777,40 @@ address_from_il_offset (MonoDebugMethodInfo *minfo, guint32 il_offset)
 void
 mono_debug_add_type (MonoClass *klass)
 {
-	MonoDebugHandle *debug = mono_debug_handle_from_class (klass);
+	MonoDebugHandle *debug;
+	AssemblyDebugInfo* info;
 
-	g_assert (debug != NULL);
+	debug = mono_debug_handle_from_class (klass);
+	if (!debug) {
+		if (mono_default_debug_handle)
+			debug = mono_default_debug_handle;
+		else
+			return;
+	}
 
-	mono_debug_get_type (debug, klass);
+	info = mono_debug_get_image (debug, klass->image);
+	if (info == NULL) {
+		release_symbol_file_table ();
+		mono_debugger_symbol_file_table_generation++;
+
+		info = mono_debug_open_image (debug, klass->image);
+	}
+
+	if (debug->format != MONO_DEBUG_FORMAT_MONO) {
+		mono_debug_get_type (debug, klass);
+		return;
+	}
+
+	info = mono_debug_get_image (debug, klass->image);
+	if (info == NULL) {
+		release_symbol_file_table ();
+		mono_debugger_symbol_file_table_generation++;
+
+		info = mono_debug_open_image (debug, klass->image);
+	}
+
+	if (info->symfile)
+		mono_debug_symfile_add_type (info->symfile, klass);
 }
 
 static gint32
@@ -1065,4 +1097,23 @@ mono_debugger_update_symbol_file_table (void)
 
 	mono_debugger_symbol_file_table = symfile_table;
 	return TRUE;
+}
+
+static gboolean has_debugger_support = FALSE;
+
+extern void (*mono_debugger_class_init_func) (MonoClass *klass);
+static GPtrArray *class_table = NULL;
+gpointer *mono_debugger_class_table = NULL;
+guint32 mono_debugger_class_table_size = 0;
+
+static void
+initialize_debugger_support ()
+{
+	if (has_debugger_support)
+		return;
+	has_debugger_support = TRUE;
+
+	class_table = g_ptr_array_new ();
+
+	mono_debugger_class_init_func = mono_debug_add_type;
 }
