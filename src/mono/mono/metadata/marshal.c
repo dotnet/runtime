@@ -1971,14 +1971,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* we copy the signature, so that we can modify it */
 	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
-	csig = g_memdup (sig, sigsize);
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 
+		MonoMethodSignature *call_sig;
+
 		/* hack - string constructors returns a value */
-		if (method->string_ctor)
+		if (method->string_ctor) {
+			csig = g_memdup (sig, sigsize);
 			csig->ret = &mono_defaults.string_class->byval_arg;
+		} else
+			csig = sig;
 
 		if (sig->hasthis)
 			mono_mb_emit_byte (mb, CEE_LDARG_0);
@@ -1986,8 +1990,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		for (i = 0; i < sig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
+		call_sig = g_memdup (csig, sigsize);
+		call_sig->pinvoke = 1;
+
 		g_assert (method->addr);
-		mono_mb_emit_native_call (mb, csig, method->addr);
+		mono_mb_emit_native_call (mb, call_sig, method->addr);
 
 		mono_mb_emit_byte (mb, CEE_RET);
 
@@ -2001,6 +2008,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* pinvoke: we need to convert the arguments if necessary */
 
+	csig = g_memdup (sig, sigsize);
 	csig->pinvoke = 1;
 
 	/* we allocate local for use with emit_struct_conv() */
