@@ -47,20 +47,39 @@
 		    <a href="archive/beta1/redhat-9-i386">Packages</a>
 		  </td>
 	        </tr>
-<!-- 		<tr bgcolor="#bbbbbb"> -->
-<!-- 		  <td bgcolor="#999999"> -->
-<!--                     <img src="images/redhat-36.gif"><b>Fedora Core 1/x86</b><br> -->
-<!-- 		  </td> -->
-<!--   		  <td> -->
-<!-- 		    <a href="archive/beta1/fedora-1-i386">Packages</a> -->
-<!-- 		  </td> -->
-<!-- 	        </tr> -->
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Fedora Core 1/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta1/fedora-1-i386">Packages</a>
+                    <p>For YUM repository, please use:
+                    <pre>http://www.go-mono.com/archive/beta1/fedora-1-i386/</pre>
+		  </td>
+	        </tr>
+                  <tr bgcolor="#bbbbbb">
+                      <td bgcolor="#999999">
+                        <img src="images/suse-36.gif"><b>SLES 8/x86</b><br>
+                      </td>
+                      <td>
+                        <a href="archive/beta1/sles-8-i386/">Packages</a>
+                      </td>
+                </tr>
 		<tr bgcolor="#bbbbbb">
 		  <td bgcolor="#999999">
                     <img src="images/suse-36.gif"><b>SUSE 9/x86</b><br>
 		  </td>
   		  <td>
 		    <a href="archive/beta1/suse-90-i586/">Packages</a>
+		  </td>
+	        </tr>
+		<tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SUSE 9.1/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta1/suse-91-i586/">Packages</a>
 		  </td>
 	        </tr>
 		<tr>
