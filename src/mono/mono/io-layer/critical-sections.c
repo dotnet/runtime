@@ -135,7 +135,12 @@ gboolean TryEnterCriticalSection(WapiCriticalSection *section)
  */
 void EnterCriticalSection(WapiCriticalSection *section)
 {
-	mono_mutex_lock(&section->mutex);
+	int stat;
+
+	if ((stat = mono_mutex_lock(&section->mutex)) != 0) {
+		g_error (G_GNUC_PRETTY_FUNCTION
+			 ": EnterCriticalSection failed: %s", g_strerror(stat));
+	}
 }
 
 /**
