@@ -65,10 +65,27 @@
 	      Corlib is self hosting.
 	    </td>
 	  </tr>
+	  <tr>
+	    <td>
+	      RSS feed:
+	    </td>
+	    <td>
+	      <a href="index.rss"><img src="images/xml.gif"></a>
+	    </td>
+	  </tr>
 	</table>
     </td>
   </tr>
 </table>
+
+@item May 27, 2002
+
+	An <a href="index.rss">RSS feed</a> is now available for the
+	Mono news.  I find it surprising that there are so many tools
+	that process this data.  
+
+	Binaries for <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> are
+	now location independent, do not require Cygwin and come with a Wizard.
 
 @item May 26, 2002
 

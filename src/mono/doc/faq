@@ -103,19 +103,26 @@ Q: Is Mono usable?
 A: The JIT engine is usable on Intel x86 machines.  An interpreter
    can be used on other non-Intel x86 machines.  
 
-   The class libraries are not yet mature enough to run real applications,
-   but if you are interested in trying out Mono, you can definetly start
-   testing things out as many programs run.
-
-   The C# compiler has made significant progress, it can even compile
-   itself now, but it can not yet be ran with our class libraries as
-   they are missing some features. 
+   The class libraries are mature enough to run some real applications
+   (the compiler for instance, and every day more and more applications
+   are natively developed with Mono).
 
 Q: When will you ship it?
 
-A: It is premature to target a shipdate for the code, but we
-   anticipate that it will be available some time in the middle of
-   2002.
+A: Different parts of Mono will achieve usability at different stages,
+   once we are comfortable with the compiler, we will release "Mono Core",
+   which contains everything needed to develop applications with the base
+   class libraries.  This should be available at some point during 2002.
+
+   Other higher level class libraries (ASP.NET, ADO.NET, Windows.Forms) will
+   be released when they become stable. 
+
+Q: What major components will you include in Mono?
+
+A: Hopefully eveyrthing that Microsoft ships on their Framework
+   (ADO.NET, ASP.NET, Windows.Forms), and
+   we encourage third party developers to create reusable components that
+   work on both Mono and Windows.
 
 Q: How can I contribute?
 
@@ -164,6 +171,13 @@ Q: Will Ximian offer Mono commercially?
 
 A: When Mono is ready to be shipped Ximian will offer a commercial
    support and services for Mono. 
+
+Q: Does Ximian provide consulting services around Mono?
+
+A: Yes, Ximian does provide consulting services around Mono to
+   make it suitable to your needs.  Porting the runtime engine,
+   customizing it, working on specific classes or tuning the code
+   for your particular needs. 
 
 Q: Will you wait until Mono is finished?
 
@@ -343,8 +357,48 @@ Q: What are the differences between Mono and Portable.NET?
 
 A: Most of Mono is being written using C#, with only
    a few parts written in C (The JIT engine, the runtime, the
-   interfaces to the garbage collection system).  The Portable.NET
-   Project is using C for development.
+   interfaces to the garbage collection system).  
+
+   It is easier to describe what is unique about Mono:
+   <ul>
+     <li> A self-hosting C# compiler written in C#, which is clean, easy
+          to maintain.
+
+     <li> A multi-platform runtime engine: both a JIT engine and an
+          interpreter exist.  The JIT engine runs currently on x86
+          systems, while the interpreter works on Sparc, StrongARM and
+          PowerPC systems.  
+
+     <li> Supports Linux, Windows and Solaris at this point.
+
+     <li> The JIT engine is written using a portable instruction
+          selector which not only generates good code (we are told
+          that we are faster than Rotor, but it is hard to tell) but
+          is also the foundation to retarget the JIT engine to other
+          systems.  
+
+          The system employed is described in various compiler
+          books and it is very similar to what is described in the 
+          book that covers LCC, the Ansi C retargetable C compiler.
+
+     <li> The JIT engine supports inlining, constant folding and propagation,
+
+     <li> Full support for remoting in the runtime, but the class 
+          libraries are still behind.
+
+     <li> The C# compiler, the JIT engine and the class libraries are
+          mature enough that the whole system is self-hosting, ie, that
+          it can be fully developed with itself at this point.
+
+     <li> We are not yet done, and there is a lot of work left to be
+          done
+
+     <li> We have a great community of developers, without which Mono
+          would not be possible.
+
+     <li> We will provide an ahead of time compilation mode in the 
+          future.
+   </ul>
 
 <a name="webservices"></a>
 ** Web Services
@@ -524,7 +578,7 @@ A: Currently, we are doing our work on Linux-based systems and
    Windows.  We do not expect many Linux-isms in the code, so it
    should be easy to port Mono to other UNIX variants.   
 
-Q: What about Mono on non X-based systems?
+Q: What about Mono on non Linux-based systems?
 
 A: Our main intention at Ximian is to be able to develop GNOME
    applications with Mono, but if you are interested in providing a
@@ -532,11 +586,17 @@ A: Our main intention at Ximian is to be able to develop GNOME
    MacOS X for example), we would gladly integrate them, as long
    they are under an open source license.  
 
-Q: Will Mono run on Windows?
+Q: What operating systems/CPUs do you support
 
-A: Yes.  Currently some parts of Mono only run on Windows
-   (the C# compiler is a .NET executable) and other parts have only
-   been compiled on Linux, and require Cygwin to compile on Windows.
+A: Mono currently runs on Linux, Windows, Solaris and FreeBSD.
+   There is a JIT engine available for x86 processors that can
+   generate code and optimizations tailored for a particular CPU.
+
+   Interpreters exist for the SPARC, PowerPC and StrongARM cpus.
+
+Q: Does Mono run on Windows?
+
+A: Yes.   The Compiler and the runtime both run on Windows.
 
 Q: Will I require Cygwin to run mono?
 
@@ -564,11 +624,17 @@ A: At this time, we are investigating whether we can use elements of
    defined API that splits the JIT from the GC system and the actual
    byte code implementation.
 
+   We are using some pieces of ORP (Their code generation interface)
+   and we use it as a source of inspiration for optimizations.  Paolo
+   and Dietmar consider ORP as being one of the best JIT engines out
+   there (and their research work and papers are very useful if you are
+   interested in JIT technology).
+
 Q: What about using GNU Lightning?
 
-A: We are also researching <a
-   href="http://www.gnu.org/software/lightning/lightning.html">GNU
-   Lightning</a>.
+A: We are not using GNU Lightning.  Our JIT is using an instruction
+   selector based on tree-pattern matching, and a code generation
+   interface that is very tied to the current architecture.
 
 <a name="gcc"></a>
 ** Mono and GCC
@@ -672,8 +738,8 @@ A: No.  First, its basic functional capabilities have pre-existed too
    open source software community with good development tools, which
    is the primary reason for developing Mono.  
 
-<a name="etc"></a> **
-Miscellaneous Questions
+<a name="etc"></a> 
+** Miscellaneous Questions
 
 Q: You say that the CLI allows multiple languages to execute on the
    same environment.  Isn't this the purpose of CORBA?

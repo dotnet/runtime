@@ -22,7 +22,7 @@ class X {
 				break;
 		}
 
-		if (!s.StartsWith ("@item ")){
+		if (s == null || !s.StartsWith ("@item ")){
 			Console.WriteLine ("Could not find beginning of text to RSS");
 			return;
 		}
@@ -31,14 +31,14 @@ class X {
 		string description = "";
 		do {
 			if (s.StartsWith ("@item ")){
+				if (item_count++ > 25)
+					break;
+
 				if (i != null){
 					i.Description = description;
 					description = "";
 				}
 				
-				if (item_count++ > 74)
-					break;
-
 				string title = s.Substring (6);
 				string link = "http://www.go-mono.com/index.html#";
 				foreach (char ch in title){
@@ -54,8 +54,9 @@ class X {
 			}
 		} while ((s = input.ReadLine ()) != null);
 
-		if (i != null)
+		if (i != null){
 			i.Description = description;
+		}
 	}
 	
 	static void MakeRSS (string input, string output)
