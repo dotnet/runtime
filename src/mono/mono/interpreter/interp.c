@@ -2968,7 +2968,15 @@ array_constructed:
 			vtklass = mono_class_get (image, read32 (ip));
 			ip += 4;
 			sp -= 2;
-			memcpy (sp [0].data.p, sp [1].data.vt.vt, mono_class_value_size (vtklass, NULL));
+
+			/*
+			 * LAMESPEC: According to the spec, the stack should contain a 
+			 * pointer to a value type. In reality, it can contain anything.
+			 */
+			if (sp [1].type == VAL_VALUET)
+				memcpy (sp [0].data.p, sp [1].data.vt.vt, mono_class_value_size (vtklass, NULL));
+			else
+				memcpy (sp [0].data.p, &sp [1].data, mono_class_value_size (vtklass, NULL));
 			BREAK;
 		}
 #if SIZEOF_VOID_P == 8
@@ -4223,6 +4231,7 @@ array_constructed:
 							if (tracing)
 								g_print ("* Found handler at '%s'\n", inv->method->name);
 #endif
+
 							/*
 							 * It seems that if the catch handler is found in the same method,
 							 * it gets executed before the finally handler.
