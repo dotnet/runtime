@@ -13,6 +13,9 @@
 	
 	<li>An alternative to unixODBC, but not tested with this 
 	provider is <a href="http://www.iodbc.org">iODBC</a>
+
+	<li>Another alternative to unixODBC, but not tested this provider is 
+	<a href="http://oplweb.openlinksw.com:8080/download/">OpenLink's</a>.
 	
 	<li>List of <a href="http://ourworld.compuserve.com/homepages/Ken_North/odbcvend.htm">ODBC Vendors</a>
 		
