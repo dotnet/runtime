@@ -239,6 +239,7 @@ typedef struct {
 	MonoReflectionMethodBuilder *entry_point;
 	MonoArray *modules;
 	MonoString *name;
+	MonoString *dir;
 	MonoArray *cattrs;
 } MonoReflectionAssemblyBuilder;
 
