@@ -1370,6 +1370,8 @@ man/Makefile
 web/Makefile
 docs/Makefile
 data/Makefile
+data/net_1_1/Makefile
+data/net_2_0/Makefile
 samples/Makefile
 support/Makefile
 data/config

@@ -1,3 +1,14 @@
+2004-07-28  Lluis Sanchez Gual  <lluis@novell.com>
+
+	* configure.in: Added data/net_1_1 and data/net_2_0 to the build.
+	* data/Makefile.am: Removed installation of machine.config and
+	  DefaultWsdlHelpGenerator.aspx. Those now are in a version-specific
+	  directory.
+	* data/net_1_1/Makefile.am, data/net_2_0/Makefile.am: new makefiles for
+	  installing 1.1 and 2.0 makefiles.
+	* runtime/net_1_1/Makefile.am, runtime/net_2_0/Makefile.am: Install mscorlib
+	  at the correct version specific directory.
+
 2004-07-27  John Merryweather Cooper <john_m_cooper@yahoo.com>
 	* configure.in: Disable __thread test (TLS) for FreeBSD as
 	it succeeds on FreeBSD 5.x when it should fail.  Fix pthread
