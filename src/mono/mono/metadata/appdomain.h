@@ -86,6 +86,9 @@ struct _MonoDomain {
 	gint32             domain_id;
 	/* Used when loading assemblies */
 	gchar **search_path;
+	/* Used by remoting proxies */
+	MonoMethod         *create_proxy_for_type_method;
+	MonoMethod         *private_invoke_method;
 };
 
 /* This is a copy of System.AppDomain */

@@ -3001,6 +3001,37 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	return 0;
 }
 
+static void
+ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionType *type, MonoBoolean enable)
+{
+	MonoClass *klass;
+	MonoVTable* vtable;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type);
+	vtable = mono_class_vtable (mono_domain_get (), klass);
+
+	if (enable) vtable->remote = 1;
+	else vtable->remote = 0;
+}
+
+static MonoObject *
+ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MonoObject *obj;
+	MonoDomain *domain;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_object_domain (type);
+	klass = mono_class_from_mono_type (type->type);
+
+	// Bypass remoting object creation check
+	return mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
+}
+
 static MonoObject *
 ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_Internal (MonoReflectionType *type)
 {
@@ -3627,6 +3658,14 @@ static gconstpointer icall_map [] = {
 	ves_icall_InternalExecute,
 	"System.Runtime.Remoting.RemotingServices::IsTransparentProxy",
 	ves_icall_IsTransparentProxy,
+
+	/*
+	 * System.Runtime.Remoting.Activation
+	 */	
+	"System.Runtime.Remoting.Activation.ActivationServices::AllocateUninitializedClassInstance",
+	ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance,
+	"System.Runtime.Remoting.Activation.ActivationServices::EnableProxyActivation",
+	ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation,
 
 	/*
 	 * System.Runtime.Remoting.Messaging

@@ -164,6 +164,7 @@ struct MonoVTable {
         gpointer   *interface_offsets;   
         gpointer    data; /* to store static class data */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
+	guint remote          : 1; /* class is remotely activated */
 };
 
 typedef struct {

@@ -334,6 +334,11 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 	mono_runtime_class_init (class);
 	
+	if (class->contextbound)
+		vt->remote = 1;
+	else
+		vt->remote = 0;
+
 	return vt;
 }
 
@@ -889,7 +894,42 @@ mono_object_new_specific (MonoVTable *vtable)
 {
 	MonoObject *o;
 
-	o = mono_object_allocate (vtable->klass->instance_size);
+	if (vtable->remote)
+	{
+		gpointer pa [1];
+		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
+
+		if (im == NULL) {
+			MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Activation", "ActivationServices");
+			int i;
+
+			if (!klass->inited)
+				mono_class_init (klass);
+
+			for (i = 0; i < klass->method.count; ++i) {
+				if (!strcmp ("CreateProxyForType", klass->methods [i]->name) &&
+					klass->methods [i]->signature->param_count == 1) {
+					im = klass->methods [i];
+					break;
+				}
+			}
+			g_assert (im);
+			vtable->domain->create_proxy_for_type_method = im;
+		}
+	
+		pa [0] = mono_type_get_object (mono_domain_get (), &vtable->klass->byval_arg);
+
+		o = mono_runtime_invoke (im, NULL, pa, NULL);		
+		if (o != NULL) return o;
+	}
+
+	return mono_object_new_alloc_specific (vtable);
+}
+
+MonoObject *
+mono_object_new_alloc_specific (MonoVTable *vtable)
+{
+	MonoObject *o = mono_object_allocate (vtable->klass->instance_size);
 	o->vtable = vtable;
 	if (vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
@@ -1624,12 +1664,11 @@ MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
 		      MonoObject **exc, MonoArray **out_args)
 {
-	static MonoMethod *im = NULL;
+	MonoMethod *im = real_proxy->vtable->domain->private_invoke_method;
 	gpointer pa [4];
 
 	/*static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;*/
 
-	/* FIXME: make this domain dependent */
 	if (!im) {
 		MonoClass *klass;
 		int i;
@@ -1645,6 +1684,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 		}
 	
 		g_assert (im);
+		real_proxy->vtable->domain->private_invoke_method = im;
 	}
 
 	pa [0] = real_proxy;
