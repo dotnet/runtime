@@ -1356,6 +1356,11 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			++ip;			
 			switch (*ip) {
 				
+			case CEE_STLOC:
+			case CEE_LDLOC:
+			case CEE_LDLOCA:
+				ip += 3;
+				break;
 			case CEE_CEQ:
 			case CEE_CLT:
 			case CEE_CGT:
@@ -2961,6 +2966,39 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			++ip;			
 			switch (*ip) {
 				
+			case CEE_LDLOC: {
+				++ip;
+			
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = LOCAL_POS (read16 (ip));
+				t1 = ctree_create_load (cfg, LOCAL_TYPE (read16 (ip)), t1, &svt, FALSE);
+				ip += 2;
+
+				PUSH_TREE (t1, svt);
+				break;
+			}
+			case CEE_LDLOCA: {
+				++ip;
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = LOCAL_POS (read16 (ip));
+				ip += 2;
+				PUSH_TREE (t1, VAL_POINTER);			
+				break;
+			}
+			case CEE_STLOC: {
+				++ip;
+				--sp;
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = LOCAL_POS (read16 (ip));
+				t1 = ctree_create_store (cfg, LOCAL_TYPE (read16 (ip)), t1, *sp, FALSE);
+
+				ip += 2;
+				ADD_TREE (t1, cli_addr);			
+				break;
+			}
+
 			MAKE_CMP (CEQ)
 			MAKE_CMP (CLT)
 			MAKE_CMP (CGT)
