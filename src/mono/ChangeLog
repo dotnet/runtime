@@ -1,3 +1,7 @@
+2004-10-24  Jonathan Pryor <jonpryor@vt.edu>
+
+	* man/mono.1: Add documentation for the MONO_TRACE environment variable.
+
 2004-10-14  Joe Shaw  <joeshaw@novell.com>
 
 	* man/mono.1: Fix the syntax of the M: trace syntax
