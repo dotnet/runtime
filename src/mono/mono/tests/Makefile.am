@@ -10,6 +10,7 @@ TESTSRC=			\
 	array-init.cs		\
 	arraylist.cs		\
 	char-isnumber.cs	\
+	create-instance.cs	\
 	field-layout.cs		\
 	hash-table.cs		\
 	test-ops.cs		\

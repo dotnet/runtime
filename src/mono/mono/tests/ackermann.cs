@@ -1,12 +1,15 @@
-// $Id: ackermann.cs,v 1.2 2001/11/19 07:11:32 lupus Exp $
+// $Id: ackermann.cs,v 1.3 2002/05/23 13:03:04 lupus Exp $
 // http://www.bagley.org/~doug/shootout/
 
 public class ackermann {
 
-    public static int Main() {
+    public static int Main(string[] args) {
 	int NUM = 8;
-	return Ack(3, NUM) != 2045? 1: 0;
-	//System.out.print("Ack(3," + NUM + "): " + Ack(3, NUM) + "\n");
+	if (args.Length > 0)
+		NUM = System.Int32.Parse (args [0]);
+	//return Ack(3, NUM) != 2045? 1: 0;
+	System.Console.WriteLine("Ack(3," + NUM + "): " + Ack(3, NUM));
+	return 0;
     }
 
     public static int Ack(int M, int N) {
