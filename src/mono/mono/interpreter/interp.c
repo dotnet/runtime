@@ -833,8 +833,9 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 
 #define THROW_EX(exception,ex_ip)	\
 		do {\
-			char *stack_trace = dump_frame (frame);	\
+			char *stack_trace;	\
 			frame->ip = (ex_ip);		\
+			stack_trace = dump_frame (frame);	\
 			frame->ex = (MonoException*)(exception);	\
 			frame->ex->stack_trace = mono_string_new (domain, stack_trace);	\
 			g_free (stack_trace);	\
