@@ -1066,7 +1066,7 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 }
 
 static guint32
-fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoClassField *field)
+fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoType *type)
 {
 	char blob_size [64];
 	char *b = blob_size;
@@ -1081,7 +1081,7 @@ fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoClassField *field)
 	
 	mono_metadata_encode_value (0x06, p, &p);
 	/* encode custom attributes before the type */
-	encode_type (assembly, field->type, p, &p);
+	encode_type (assembly, type, p, &p);
 	g_assert (p-buf < 64);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
@@ -1860,7 +1860,7 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 		return token;
 	field->parent = klass;
 	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, 
-		field->name,  fieldref_encode_signature (assembly, field));
+		field->name,  fieldref_encode_signature (assembly, field->type));
 	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -1874,7 +1874,7 @@ field_encode_inflated_field (MonoDynamicAssembly *assembly, MonoReflectionInflat
 
 	klass = field->rfield.klass;
 	name = field->rfield.field->name;
-	sig = fieldref_encode_signature (assembly, field->declaring);
+	sig = fieldref_encode_signature (assembly, field->declaring->type);
 	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig);
 
 	return token;
@@ -1983,6 +1983,85 @@ mono_image_get_methodspec_token (MonoDynamicAssembly *assembly, MonoMethod *meth
 	return token;
 }
 
+static guint32
+create_generic_typespec (MonoDynamicAssembly *assembly, MonoType *type)
+{
+	MonoDynamicTable *table;
+	MonoClass *klass;
+	guint32 *values;
+	guint32 token;
+	char sig [128];
+	char *p = sig;
+	char blob_size [6];
+	char *b = blob_size;
+	int i;
+
+	g_assert ((type->type == MONO_TYPE_CLASS) || (type->type == MONO_TYPE_VALUETYPE));
+	klass = mono_class_from_mono_type (type);
+
+	mono_metadata_encode_value (MONO_TYPE_GENERICINST, p, &p);
+	encode_type (assembly, &klass->byval_arg, p, &p);
+	mono_metadata_encode_value (klass->num_gen_params, p, &p);
+	for (i = 0; i < klass->num_gen_params; i++) {
+		MonoType t;
+
+		t.type = MONO_TYPE_VAR;
+		t.data.generic_param = &klass->gen_params [i];
+
+		encode_type (assembly, &t, p, &p);
+	}
+
+	table = &assembly->tables [MONO_TABLE_TYPESPEC];
+	if (assembly->save) {
+		g_assert (p-sig < 128);
+		mono_metadata_encode_value (p-sig, b, &b);
+		token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
+		values [MONO_TYPESPEC_SIGNATURE] = token;
+	}
+
+	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
+	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
+	table->next_idx ++;
+	return token;
+}
+
+static guint32
+mono_image_get_generic_field_token (MonoDynamicAssembly *assembly, MonoReflectionFieldBuilder *fb)
+{
+	MonoDynamicTable *table;
+	MonoClass *klass;
+	guint32 *values;
+	guint32 token, pclass, parent, sig;
+	gchar *name;
+
+	klass = mono_class_from_mono_type (fb->typeb->type);
+	name = mono_string_to_utf8 (fb->name);
+
+	sig = fieldref_encode_signature (assembly, fb->type->type);
+
+	parent = create_generic_typespec (assembly, fb->typeb->type);
+	g_assert ((parent & TYPEDEFORREF_MASK) == TYPEDEFORREF_TYPESPEC);
+	
+	pclass = MEMBERREF_PARENT_TYPESPEC;
+	parent >>= TYPEDEFORREF_BITS;
+
+	table = &assembly->tables [MONO_TABLE_MEMBERREF];
+
+	if (assembly->save) {
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
+		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
+		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
+		values [MONO_MEMBERREF_SIGNATURE] = sig;
+	}
+
+	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
+	table->next_idx ++;
+
+	return token;
+}
 
 static guint32
 mono_reflection_encode_sighelper (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper)
@@ -2720,6 +2799,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 				   !strcmp (iltoken->member->vtable->klass->name, "MonoInflatedCtor") ||
 				   !strcmp (iltoken->member->vtable->klass->name, "MonoInflatedField")) {
 				continue;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
+				continue;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -3068,8 +3149,13 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
 	}
 	else if (strcmp (klass->name, "FieldBuilder") == 0) {
-		MonoReflectionFieldBuilder *mb = (MonoReflectionFieldBuilder *)obj;
-		token = mb->table_idx | MONO_TOKEN_FIELD_DEF;
+		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)fb->typeb;
+		if (tb->generic_params) {
+			token = mono_image_get_generic_field_token (assembly, fb);
+		} else {
+			token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
+		}
 	}
 	else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
