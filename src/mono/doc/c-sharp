@@ -72,16 +72,20 @@
 		* Jay does not work correctly with `error'
 		  productions, making parser errors hard to point.  It
 		  would be best to port the Bison-To-Java compiler to
-		  become Bison-to-C# compiler (bjepson@oreilly.com
-		  might have more information)
+		  become Bison-to-C# compiler. 
+		  
+		  Nick Drochak has started a project on SourceForge for this.
+		  You can find the project at: <a href="http://sourceforge.net/projects/jb2csharp/">
+		  http://sourceforge.net/projects/jb2csharp/</a>
 	</ul>
 
 	Interesting and Fun hacks to the compiler:
 
 	<ul>
 		* Finishing the JB port from Java to C#.  If you are
-		  interested in working on this, please contact Brian
-		  Jepson (bjepson at oreilly d-o-t com).
+		  interested in working on this, please contact the project admin on SourceForge:
+		  <a href="http://sourceforge.net/projects/jb2csharp/">
+		  http://sourceforge.net/projects/jb2csharp/</a>
 
 		  More on JB at: <a href="http://www.cs.colorado.edu/~dennis/software/jb.html">
 		  http://www.cs.colorado.edu/~dennis/software/jb.html</a>
