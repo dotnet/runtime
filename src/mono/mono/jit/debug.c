@@ -305,6 +305,26 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 	case MONO_TYPE_CLASS:
 		if (klass->parent)
 			mono_debug_get_type (info, klass->parent);
+
+		for (i = 0; i < klass->method.count; i++) {
+			MonoMethod *method = klass->methods [i];
+			MonoType *ret_type = NULL;
+			int j;
+
+			if (method->signature->ret->type != MONO_TYPE_VOID)
+				ret_type = method->signature->ret;
+
+			if (ret_type) {
+				MonoClass *ret_klass = mono_class_from_mono_type (ret_type);
+				mono_debug_get_type (info, ret_klass);
+			}
+
+			for (j = 0; j < method->signature->param_count; j++) {
+				MonoType *sub_type = method->signature->params [j];
+				MonoClass *sub_klass = mono_class_from_mono_type (sub_type);
+				mono_debug_get_type (info, sub_klass);
+			}
+		}
 		// fall through
 	case MONO_TYPE_VALUETYPE:
 		for (i = 0; i < klass->field.count; i++) {
@@ -357,12 +377,8 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 		;
 	start_line = i + 1;
 
-	/* FIXME: we should mangle the name better */
-	name = g_strdup_printf ("%s%s%s__%s_%p", klass->name_space, klass->name_space [0]? "_": "",
-				klass->name, method->name, method);
-
-	for (i = 0; name [i]; ++i)
-		if (name [i] == '.') name [i] = '_';
+	name = g_strdup_printf ("%s%s%s.%s", klass->name_space, klass->name_space [0]? ".": "",
+				klass->name, method->name);
 
 	minfo = g_new0 (DebugMethodInfo, 1);
 	minfo->name = name;
