@@ -112,12 +112,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
-		printf ("AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
+		/*printf ("AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);*/
 		usable = FALSE;
 	}
 	else
 		if (!saved_guid || strcmp (assembly->image->guid, saved_guid)) {
-			printf ("AOT module %s is out of date.\n", aot_name);
+			/*printf ("AOT module %s is out of date.\n", aot_name);*/
 			usable = FALSE;
 		}
 
@@ -154,7 +154,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		for (i = 0; i < table_len; ++i) {
 			info->image_table [i] = mono_image_loaded_by_guid (table);
 			if (!info->image_table [i]) {
-				printf ("AOT module %s is out of date.\n", aot_name);
+				/*printf ("AOT module %s is out of date.\n", aot_name);*/
 				g_free (info->methods);
 				g_free (info->image_table);
 				g_free (info);
@@ -192,7 +192,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_g_hash_table_insert (aot_modules, assembly, info);
 	LeaveCriticalSection (&aot_mutex);
 
-	printf ("Loaded AOT Module for %s.\n", assembly->image->name);
+	/*printf ("Loaded AOT Module for %s.\n", assembly->image->name);*/
 }
 
 void
@@ -968,7 +968,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	char *com, *tmpfname, *opts_str;
 	FILE *tmpfp;
 	int i;
-	guint8 *mname, *symbol;
+	guint8 *symbol;
 	int ccount = 0, mcount = 0, lmfcount = 0, abscount = 0, wrappercount = 0, ocount = 0;
 	GHashTable *ref_hash;
 	MonoAotCompile *acfg;
@@ -1072,7 +1072,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 		emitted [i] = TRUE;
 		emit_method (acfg, cfg);
 
-		g_free (mname);
 		mono_destroy_compile (cfg);
 
 		ccount++;
