@@ -12,6 +12,7 @@
 
 #include <mono/metadata/gc.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/tabledefs.h>
 #if HAVE_BOEHM_GC
 #define GC_I_HIDE_POINTERS
 #include <gc/gc.h>
@@ -44,8 +45,8 @@ run_finalize (void *obj, void *data)
 			}
 		}
 	}
-	/* speedup later... */
-	/* g_print ("Finalize run on %s\n", mono_object_class (o)->name); */
+	/* speedup later... and use a timeout */
+	/*g_print ("Finalize run on %s\n", mono_object_class (o)->name);*/
 	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
 	if (exc) {
@@ -76,6 +77,88 @@ void
 mono_object_register_finalizer (MonoObject *obj)
 {
 	object_register_finalizer (obj, run_finalize);
+}
+
+/* 
+ * to speedup, at class init time, check if a class or struct
+ * have fields that need to be finalized and set a flag.
+ */
+static void
+finalize_fields (MonoClass *class, char *data, gboolean instance, GHashTable *todo) {
+	int i;
+	MonoClassField *field;
+	MonoObject *obj;
+
+	/*if (!instance)
+		g_print ("Finalize statics on on %s\n", class->name);*/
+	if (instance && class->valuetype)
+		data -= sizeof (MonoObject);
+	do {
+		for (i = 0; i < class->field.count; ++i) {
+			field = &class->fields [i];
+			if (instance) {
+				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+					continue;
+			} else {
+				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+					continue;
+			}
+			switch (field->type->type) {
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_CLASS:
+				obj = *((MonoObject**)(data + field->offset));
+				if (obj) {
+					if (mono_object_class (obj)->has_finalize) {
+						/* disable the registered finalizer */
+						object_register_finalizer (obj, NULL);
+						run_finalize (obj, NULL);
+					} else {
+						/* 
+						 * if the type doesn't have a finalizer, we finalize 
+						 * the fields ourselves just like we do for structs.
+						 * Disabled for now: how do we handle loops?
+						 */
+						/*finalize_fields (mono_object_class (obj), obj, TRUE, todo);*/
+					}
+				}
+				break;
+			case MONO_TYPE_VALUETYPE: {
+				MonoClass *fclass = mono_class_from_mono_type (field->type);
+				if (fclass->enumtype)
+					continue;
+				/*finalize_fields (fclass, data + field->offset, TRUE, todo);*/
+				break;
+			}
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				/* FIXME: foreach item... */
+				break;
+			}
+		}
+		if (!instance)
+			return;
+		class = class->parent;
+	} while (class);
+}
+
+static void
+finalize_static_data (MonoClass *class, MonoVTable *vtable, GHashTable *todo) {
+
+	if (class->enumtype || !vtable->data)
+		return;
+	finalize_fields (class, vtable->data, FALSE, todo);
+}
+
+void
+mono_domain_finalize (MonoDomain *domain) {
+
+	GHashTable *todo = g_hash_table_new (NULL, NULL);
+#if HAVE_BOEHM_GC
+	GC_gcollect ();
+#endif
+	mono_g_hash_table_foreach (domain->class_vtable_hash, (GHFunc)finalize_static_data, todo);
+	/* FIXME: finalize objects in todo... */
+	g_hash_table_destroy (todo);
 }
 
 void

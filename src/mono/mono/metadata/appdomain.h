@@ -117,6 +117,9 @@ MonoAssembly *
 mono_domain_assembly_open  (MonoDomain *domain, const char *name);
 
 void
+mono_domain_finalize       (MonoDomain *domain);
+
+void
 mono_domain_unload         (MonoDomain *domain, gboolean force);
 
 void
