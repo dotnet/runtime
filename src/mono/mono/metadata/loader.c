@@ -587,7 +587,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			if (idx + 1 < methodt->rows)
 				lastp = mono_metadata_decode_row_col (methodt, idx + 1, MONO_METHOD_PARAMLIST);
 			else
-				lastp = paramt->rows;
+				lastp = paramt->rows + 1;
 			for (i = param_index; i < lastp; ++i) {
 				mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 				if (cols [MONO_PARAM_SEQUENCE]) /* skip return param spec */
