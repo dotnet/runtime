@@ -49,6 +49,13 @@
 		      <li><a href="archive/beta2/monodoc-0.16.tar.gz">MonoDoc 0.16</a>
  		      <li><a href="archive/beta2/xsp-0.14.tar.gz">XSP web server 0.14</a>
  		      <li><a href="archive/beta2/mod_mono-0.10.tar.gz">Apache Mono module 0.9</a>
+		      <p>
+		      <li><a href="archive/beta2/gtk-sharp-0.93.tar.gz">Gtk# 0.93</a>
+		      <li><a href="archive/beta2/gecko-sharp-0.4.tar.gz">Gecko# 0.4</a>
+		      <p>
+		      <li><a href="archive/beta2/monodevelop-0.4.tar.gz">MonoDevelop 0.4</a>
+		      <li><a href="archive/beta2/gtksourceview-sharp-0.3.tar.gz">GtkSourceView# 0.93</a>
+		      <li><a href="archive/beta2/gtk-sharp-0.93.tar.gz">Gtk# 0.93</a>
 	            </ul>
 		  </td>
 	        </tr>
