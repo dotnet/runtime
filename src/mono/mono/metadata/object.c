@@ -907,21 +907,21 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 
 	size = size - sizeof (MonoObject);
 
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if NO_UNALIGNED_ACCESS
 	memcpy ((char *)res + sizeof (MonoObject), value, size);
 #else
 	switch (size) {
 	case 1:
-		*(guint8 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *)value;
+		*((guint8 *) res + sizeof (MonoObject)) = *(guint8 *) value;
 		break;
 	case 2:
-		*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *)value;
+		*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint16 *) value;
 		break;
 	case 4:
-		*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *)value;
+		*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *) value;
 		break;
 	case 8:
-		*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *)value;
+		*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
 		break;
 	default:
 		memcpy ((char *)res + sizeof (MonoObject), value, size);
