@@ -216,7 +216,7 @@ void
 mono_class_setup_parent    (MonoClass *klass, MonoClass *parent);
 
 void
-mono_class_setup_supertypes (MonoClass *class);
+mono_class_setup_supertypes (MonoClass *klass);
 
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);
