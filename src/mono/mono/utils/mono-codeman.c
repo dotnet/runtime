@@ -20,10 +20,11 @@
 #define FORCE_MALLOC
 #endif
 
-#define MIN_PAGES 8
+#define MIN_PAGES 16
 #define MIN_ALIGN 8
 /* if a chunk has less than this amount of free space it's considered full */
 #define MAX_WASTAGE 32
+#define MIN_BSIZE 32
 
 #ifndef MAP_ANONYMOUS
 #ifdef MAP_ANON
@@ -188,6 +189,11 @@ new_codechunk (int dynamic, int size)
 	}
 #ifdef BIND_ROOM
 	bsize = chunk_size / BIND_ROOM;
+	if (bsize < MIN_BSIZE)
+		bsize = MIN_BSIZE;
+	bsize += MIN_ALIGN -1;
+	bsize &= ~ (MIN_ALIGN - 1);
+	g_print ("aligned bsize: %d\n", bsize);
 	if (chunk_size - size < bsize) {
 		if (dynamic)
 			chunk_size = size + bsize;
