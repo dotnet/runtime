@@ -549,9 +549,21 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	MonoReflectionType *type;
-	MonoString *name;
+	MonoReflectionType *local_type;
 	MonoBoolean is_pinned;
+	int local_index;
+} MonoReflectionLocalVariableInfo;
+
+typedef struct {
+	/*
+	 * Must have the same layout as MonoReflectionLocalVariableInfo, since
+	 * LocalBuilder inherits from it under net 2.0.
+	 */
+	MonoObject object;
+	MonoReflectionType *type;
+	MonoBoolean is_pinned;
+	guint16 local_index;
+	MonoString *name;
 } MonoReflectionLocalBuilder;
 
 typedef struct {
