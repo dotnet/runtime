@@ -1,7 +1,8 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
 	$(GMODULE_CFLAGS)		\
-	$(GLIB_CFLAGS)			
+	$(GLIB_CFLAGS)			\
+	$(LIBGC_CFLAGS)
 
 if PLATFORM_WIN32
 export HOST_CC

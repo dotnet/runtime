@@ -117,6 +117,12 @@ automake --add-missing --gnu $am_opt ||
 echo "Running autoconf ..."
 autoconf || { echo "**Error**: autoconf failed."; exit 1; }
 
+if test -d $srcdir/libgc; then
+  echo Running libgc/autogen.sh ...
+  (cd $srcdir/libgc ; NOCONFIGURE=1 ./autogen.sh "$@")
+  echo Done running libgc/autogen.sh ...
+fi
+
 
 conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 

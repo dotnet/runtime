@@ -157,12 +157,21 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
+dnl
+dnl libgc checks
+dnl
+
+AC_CONFIG_SUBDIRS(libgc)
+
 gc_headers=no
 AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
-gc=auto
-AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
+gc=included
+use_included_gc=no
+AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc])
 
+LIBGC_CFLAGS=
+LIBGC_LIBS=
 case "x$gc" in
 	xboehm|xbohem|xyes)
 		if test "x$found_boehm" != "xyes"; then
@@ -174,8 +183,22 @@ case "x$gc" in
 
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
-		LIBS="$LIBS -lgc $libdl"
+		LIBGC_LIBS="-lgc $libdl"
 		;;
+
+	xincluded)
+		found_boehm=yes
+		gc_headers=yes
+		use_included_gc=yes
+
+		LIBGC_CFLAGS='-I$(top_srcdir)/libgc/include'
+		LIBGC_LIBS='$(top_builddir)/libgc/libgc.la'
+
+		AC_DEFINE(HAVE_BOEHM_GC)
+		AC_DEFINE(USE_INCLUDED_LIBGC)
+		AC_SUBST(HAVE_BOEHM_GC)
+		;;
+
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
 		;;
@@ -198,6 +221,14 @@ esac
 if test "x$gc" = xboehm; then
 	AC_CHECK_FUNCS(GC_gcj_malloc)
 fi
+
+AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
+AC_SUBST(LIBGC_CFLAGS)
+AC_SUBST(LIBGC_LIBS)
+
+dnl
+dnl End of libgc checks
+dnl
 
 if test x$platform_win32 = xno; then
 	dnl ******************************************************************

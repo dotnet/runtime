@@ -1,6 +1,14 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = mono doc docs runtime scripts man data
+if INCLUDED_LIBGC
+libgc_SUBDIRS = libgc
+else
+libgc_SUBDIRS =
+endif
+
+SUBDIRS = $(libgc_SUBDIRS) mono doc docs runtime scripts man data
+
+EXTRA_SUBDIRS = libgc
 
 EXTRA_DIST= mono.pc.in mono.spec.in
 

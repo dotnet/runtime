@@ -1,3 +1,21 @@
+2003-06-08  Martin Baulig  <martin@ximian.com>
+
+	* libgc/: Integrate the libgc module here.
+
+	[Note: A simple `cvs update' won't work this time; you either need
+	to re-checkout the `mono' module or manually move the `libgc'
+	module here.]
+
+	* configure.in (--with-gc): Added `included' option to use the
+	included libgc.  This is now also the default.
+	(LIBGC_CFLAGS, LIBGC_LIBS): Put the libgc stuff here and AC_SUBST it.
+	(INCLUDED_LIBGC): New automake conditional.
+	(USE_INCLUDED_LIBGC): #define this if appropriate.
+
+	* autogen.sh: Run libgc/autogen.sh.
+
+	* Makefile.am (SUBDIRS): Added libgc.
+
 2003-06-05  Duncan Mak  <duncan@ximian.com>
 
 	* mono.spec.in (Requires): Add libxml2 and libxslt dependency on

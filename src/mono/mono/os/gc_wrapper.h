@@ -9,7 +9,7 @@
 #include <gc/gc_mark.h>
 #else
 
-#ifdef	HAVE_GC_H
+#if defined(HAVE_GC_H) || defined(USE_INCLUDED_LIBGC)
 #include <gc.h>
 #include <gc_typed.h>
 #include <gc_gcj.h>
