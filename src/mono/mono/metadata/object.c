@@ -480,6 +480,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
+			case MONO_TYPE_SZARRAY:
 				pa [i] = (char *)(((gpointer *)params->vector)[i]);
 				break;
 			default:

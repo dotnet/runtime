@@ -104,7 +104,8 @@ TESTSRC=			\
 	marshalbyref1.cs	\
 	static-ctor.cs		\
 	inctest.cs		\
-	bound.cs
+	bound.cs		\
+	array-invoke.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)
