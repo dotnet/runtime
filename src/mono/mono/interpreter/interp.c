@@ -3559,6 +3559,7 @@ usage (void)
 		 "--dieonex\n"
 		 "--profile\n"
 		 "--debug method_name\n"
+		 "--print-vtable\n"
 		 "--opcode-count\n");
 	exit (1);
 }
@@ -3811,6 +3812,8 @@ main (int argc, char *argv [])
 			tracing = 2;
 		if (strcmp (argv [i], "--dieonex") == 0)
 			die_on_exception = 1;
+		if (strcmp (argv [i], "--print-vtable") == 0)
+			mono_print_vtable = TRUE;
 		if (strcmp (argv [i], "--profile") == 0)
 			profiling = g_hash_table_new (g_direct_hash, g_direct_equal);
 		if (strcmp (argv [i], "--opcode-count") == 0)

@@ -7,6 +7,8 @@
 
 #define MONO_CLASS_IS_ARRAY(c) (c->type_token == 0)
 
+extern gboolean mono_print_vtable;
+
 typedef struct {
 	MonoType *type;
 	int       offset;

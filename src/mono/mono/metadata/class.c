@@ -30,6 +30,8 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
+gboolean mono_print_vtable = FALSE;
+
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 
 static gpointer
@@ -540,20 +542,49 @@ mono_class_init (MonoClass *class)
 		++i;
 	}
 
-	/*
-	printf ("VTABLE %s.%s\n", class->name_space, class->name); 
+	if (mono_print_vtable) {
+		int icount = 0;
 
-	for (i = 0; i < class->vtable_size; ++i) {
-		MonoMethod *cm;
+		for (i = 0; i <= max_iid; i++)
+			if (class->interface_offsets [i] != -1)
+				icount++;
+
+		printf ("VTable %s.%s (size = %d, interfaces = %d)\n", class->name_space, 
+			class->name, class->vtable_size, icount); 
+
+		for (i = 0; i < class->vtable_size; ++i) {
+			MonoMethod *cm;
 	       
-		cm = vtable [i];
-		if (cm) {
-			printf ("  METH%d %p %s %d\n", i, cm, cm->name, cm->slot);
+			cm = vtable [i];
+			if (cm) {
+				printf ("  slot %03d(%03d) %s.%s:%s\n", i, cm->slot,
+					cm->klass->name_space, cm->klass->name,
+					cm->name);
+			}
+		}
+
+
+		if (icount) {
+			printf ("Interfaces %s.%s (max_iid = %d)\n", class->name_space, 
+				class->name, max_iid);
+	
+			for (i = 0; i < class->interface_count; i++) {
+				ic = class->interfaces [i];
+				printf ("  slot %03d(%03d) %s.%s\n",  
+					class->interface_offsets [ic->interface_id],
+					ic->method.count, ic->name_space, ic->name);
+			}
+
+			for (k = class->parent; k ; k = k->parent) {
+				for (i = 0; i < k->interface_count; i++) {
+					ic = k->interfaces [i]; 
+					printf ("  slot %03d(%03d) %s.%s\n", 
+						class->interface_offsets [ic->interface_id],
+						ic->method.count, ic->name_space, ic->name);
+				}
+			}
 		}
 	}
-	
-	printf ("METAEND %s.%s\n", class->name_space, class->name); 
-	*/
 }
 
 /**

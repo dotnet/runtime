@@ -3190,6 +3190,7 @@ usage (char *name)
 		 "--dump-forest    dumps the reconstructed forest\n"
 		 "--trace-calls    printf function call trace\n"
 		 "--share-code     force jit to produce shared code\n"
+		 "--print-vtable   print the VTable of all used classes\n"
 		 "--stabs          write stabs debug information\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
@@ -3292,6 +3293,8 @@ main (int argc, char *argv [])
 			mono_jit_trace_calls = TRUE;
 		else if (strcmp (argv [i], "--share-code") == 0)
 			mono_jit_share_code = TRUE;
+		else if (strcmp (argv [i], "--print-vtable") == 0)
+			mono_print_vtable = TRUE;
 		else if (strcmp (argv [i], "--debug") == 0) {
 			mono_debug_methods = g_list_append (mono_debug_methods, argv [++i]);
 		} else if (strcmp (argv [i], "--count") == 0) {
