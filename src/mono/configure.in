@@ -54,9 +54,6 @@ AM_PROG_LIBTOOL
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h)
 
-AC_CHECK_HEADERS(iconv.h)
-AC_CHECK_HEADERS(giconv.h)
-
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
@@ -482,27 +479,6 @@ if test "x$ac_cv_have_dev_random" = "xno" \
 ***]])
 fi
  
-if test "x$cross_compiling" = "xno"; then
-# check for new iconv version
-AC_MSG_CHECKING(for new iconv)
-AC_CACHE_VAL(new_iconv,[
-	AC_TRY_RUN([#include <stdio.h> 
-	        #include <iconv.h>
- 
-		int main()
-		{
-		  exit (iconv_open ("UTF-16le", "UTF-8") == (iconv_t)-1);
-		}
-		],
-		new_iconv=yes,new_iconv=)])
-if test -n "$new_iconv"; then
-   	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_NEW_ICONV)
-else
-	AC_MSG_RESULT(no)
-fi
-fi
-
 AC_MSG_CHECKING([if inter-process shared handles are requested])
 AC_ARG_ENABLE(shared-handles, [  --disable-shared-handles disable inter-process shared handles], try_shared_handles=$enableval, try_shared_handles=yes)
 AC_MSG_RESULT($try_shared_handles)
