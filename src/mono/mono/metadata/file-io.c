@@ -809,10 +809,20 @@ ves_icall_System_IO_MonoIO_get_PathSeparator ()
 
 static gunichar2 invalid_path_chars [] = {
 #if defined (PLATFORM_WIN32)
-	0x0022,				/* double quote */
+	0x0022,				/* double quote, which seems allowed in MS.NET but should be rejected */
 	0x003c,				/* less than */
 	0x003e,				/* greater than */
 	0x007c,				/* pipe */
+	0x0008,
+	0x0010,
+	0x0011,
+	0x0012,
+	0x0014,
+	0x0015,
+	0x0016,
+	0x0017,
+	0x0018,
+	0x0019,
 #endif
 	0x0000				/* null */
 };
@@ -827,7 +837,7 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars ()
 	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_domain_get ();
-	chars = mono_array_new (domain, mono_defaults.char_class, 5);
+	chars = mono_array_new (domain, mono_defaults.char_class, 15);
 
 	n = sizeof (invalid_path_chars) / sizeof (gunichar2);
 
