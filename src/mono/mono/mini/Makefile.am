@@ -31,7 +31,9 @@ regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-c
 libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
 if JIT_SUPPORTED
-bin_PROGRAMS = mono genmdesc
+bin_PROGRAMS = mono
+
+noinst_PROGRAMS = genmdesc
 
 lib_LTLIBRARIES = libmono.la
 endif
