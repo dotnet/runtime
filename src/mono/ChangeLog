@@ -1,3 +1,9 @@
+2005-02-07  Lluis Sanchez Gual  <lluis@novell.com>
+
+	* data/net_1_1/DefaultWsdlHelpGenerator.aspx:
+	* data/net_2_0/DefaultWsdlHelpGenerator.aspx: Don't use databinding where
+	not needed.
+
 2005-02-04  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Check for curses.h.
