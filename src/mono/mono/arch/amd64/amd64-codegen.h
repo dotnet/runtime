@@ -499,22 +499,28 @@ typedef union {
 } while (0)
 
 #define emit_sse_reg_reg_size(inst,dreg,reg,op1,op2,op3,size) do { \
+    *(inst)++ = (unsigned char)(op1); \
 	amd64_emit_rex ((inst), size, (dreg), 0, (reg)); \
-    emit_opcode3 ((inst), (op1), (op2), (op3)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
     x86_reg_emit ((inst), (dreg), (reg)); \
 } while (0)
 
 #define emit_sse_reg_reg(inst,dreg,reg,op1,op2,op3) emit_sse_reg_reg_size ((inst), (dreg), (reg), (op1), (op2), (op3), 0)
 
 #define emit_sse_membase_reg(inst,basereg,disp,reg,op1,op2,op3) do { \
+    *(inst)++ = (unsigned char)(op1); \
     amd64_emit_rex ((inst), 0, (reg), 0, (basereg)); \
-    emit_opcode3 ((inst), (op1), (op2), (op3)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
     amd64_membase_emit ((inst), (reg), (basereg), (disp)); \
 } while (0)
 
 #define emit_sse_reg_membase(inst,dreg,basereg,disp,op1,op2,op3) do { \
+    *(inst)++ = (unsigned char)(op1); \
     amd64_emit_rex ((inst), 0, (dreg), 0, (basereg) == AMD64_RIP ? 0 : (basereg)); \
-    emit_opcode3 ((inst), (op1), (op2), (op3)); \
+    *(inst)++ = (unsigned char)(op2); \
+    *(inst)++ = (unsigned char)(op3); \
     amd64_membase_emit ((inst), (dreg), (basereg), (disp)); \
 } while (0)
 
@@ -537,6 +543,10 @@ typedef union {
 #define amd64_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 0)
 
 #define amd64_sse_cvtsi2sd_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, 8)
+
+#define amd64_sse_cvtsd2ss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5a)
+
+#define amd64_sse_cvtss2sd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf3, 0x0f, 0x5a)
 
 #define amd64_sse_addsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x58)
 
