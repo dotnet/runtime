@@ -740,17 +740,27 @@ static char*
 dis_event_signature (MonoImage *m, guint32 event_idx)
 {
 	MonoTableInfo *et = &m->tables [MONO_TABLE_EVENT];
-	char *type, *res, *esname;
+	char *type, *result, *esname;
 	guint32 cols [MONO_EVENT_SIZE];
+	int event_flags;
+	GString *res = g_string_new ("");
 	
 	mono_metadata_decode_row (et, event_idx, cols, MONO_EVENT_SIZE);
 	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]));
 	type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE]);
+	event_flags = cols [MONO_EVENT_FLAGS];
 
-	res = g_strdup_printf ("%s %s", type, esname);
+	if (event_flags & 0x0200)
+		g_string_append (res, "specialname ");
+	if (event_flags & 0x0400)
+		g_string_append (res, "rtspecialname ");
+	g_string_sprintfa (res, "%s %s", type, esname);
+
 	g_free (type);
 	g_free (esname);
-	return res;
+	result = res->str;
+	g_string_free (res, FALSE);
+	return result;
 }
 
 static void
