@@ -232,11 +232,26 @@ dump_metadata (dotnet_image_info_t *iinfo)
 
 	printf ("Rows:\n");
 	for (table = 0; table < 64; table++){
-		if (meta->rows [table] == 0)
+		if (meta->tables [table].rows == 0)
 			continue;
-		printf ("Table %s (%d): %d rows\n", mono_meta_table_name (table), table, meta->rows [table]);
+		printf ("Table %s: %p (%d, %d)\n",
+			mono_meta_table_name (table),
+			meta->tables [table].base, 
+			meta->tables [table].rows,
+			meta->tables [table].row_size
+			);
 		dump_table (meta, table);
 	}
+}
+
+static void
+dump_methoddef (dotnet_image_info_t *iinfo, guint32 token)
+{
+	char *loc;
+
+	loc = mono_metadata_locate_token (&iinfo->dn_metadata, token);
+
+	printf ("RVA for Entry Point: 0x%08x\n", (*(guint32 *)loc));
 }
 
 static void
@@ -246,6 +261,8 @@ dump_dotnet_iinfo (dotnet_image_info_t *iinfo)
 	dump_sections (iinfo);
 	dump_cli_header (&iinfo->dn_cli_header);
 	dump_metadata (iinfo);
+
+	dump_methoddef (iinfo, iinfo->dn_cli_header.ch_entry_point);
 }
 
 static void

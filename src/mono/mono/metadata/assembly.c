@@ -173,6 +173,9 @@ load_metadata_ptrs (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 	return TRUE;
 }
 
+/*
+ * Load representation of logical metadata tables, from the "#~" stream
+ */
 static gboolean
 load_tables (MonoAssembly *assembly, metadata_t *meta)
 {
@@ -180,20 +183,32 @@ load_tables (MonoAssembly *assembly, metadata_t *meta)
 	guint32 *rows;
 	guint64 valid_mask;
 	int valid = 0, table;
+	int heap_sizes;
+	
+	heap_sizes = heap_tables [6];
+	meta->idx_string_wide = ((heap_sizes & 0x01) == 1);
+	meta->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
+	meta->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (guint32 *) (heap_tables + 24);
 	
 	for (table = 0; table < 64; table++){
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
-			meta->rows [table] = 0;
+			meta->tables [table].rows = 0;
 			continue;
 		}
-		meta->rows [table] = *rows;
+		meta->tables [table].rows = read32 (rows);
 		rows++;
 		valid++;
 	}
 
+	meta->tables_base = (heap_tables + 24) + (4 * valid);
+
+	/* They must be the same */
+	g_assert (meta->tables_base == rows);
+
+	mono_metadata_compute_table_bases (meta);
 	return TRUE;
 }
 

@@ -1,3 +1,17 @@
+2001-06-21  Miguel de Icaza  <miguel@ximian.com>
+
+	* mono/metadata/metadata.c (mono_metadata_locate_token,
+	mono_metadata_locate): Functions to locate the information
+	definition given a token or a table and an index.
+	(mono_metadata_compute_table_bases): New.
+	(compute_size): New function to compute the sizes of the various
+	tables.
+
+	* mono/metadata/metadata.h: Finish listing the different index
+	types. 
+
+	* mono/metadata/pedump.c: Improve to dump new information.
+
 2001-06-19  Miguel de Icaza  <miguel@ximian.com>
 
 	* mono/metadata/metadata.c: Entered all the tables matching
