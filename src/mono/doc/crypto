@@ -138,9 +138,11 @@
 		* Additional algorithms: MD2, MD4, ARCFOUR (required for SSL)
 		* Convertion helpers
 	</ul>
-*** Namespace: Mono.Security.Protocol.Tls
+*** Namespace: Mono.Security.Protocol.*
 	<ul>
-		* An 100% managed TLS implementation from Carlos Guzman Alvarez.
+		* Tls: An 100% managed TLS implementation from Carlos Guzman 
+		  Alvarez.
+		* Ntlm: NTLM authentication (used for HTTP and SQL Server).
 	</ul>
 *** Namespace: Mono.Security.X509
 	<ul>
@@ -375,9 +377,8 @@
 		  <b>monodoc</b> as I'm not a very good writer (at least in English).
 	</ul>
 
-	Contact Sebastien Pouliot (<a href="mailto:spouliot@videotron.ca">home</a>
-	, <a href="mailto:spouliot@motus.com">work</a>) if you need additional
-	informations about the status of the cryptographic classes.
-
+	Contact <a href="mailto:spouliot@videotron.ca">Sebastien Pouliot</a> if
+	you need additional informations about the status of the cryptographic 
+	classes.
 <hr>
-Last reviewed: December 15, 2003 (post mono 0.29)
+Last reviewed: January 26, 2004 (post mono 0.29)
