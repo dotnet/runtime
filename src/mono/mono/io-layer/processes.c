@@ -89,7 +89,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			WapiStartupInfo *startup,
 			WapiProcessInformation *process_info)
 {
-	gchar *cmd=NULL, *prog, *full_prog, *args=NULL, *args_after_prog=NULL, *dir=NULL;
+	gchar *cmd=NULL, *prog = NULL, *full_prog = NULL, *args=NULL, *args_after_prog=NULL, *dir=NULL;
 	guint32 env=0, stored_dir=0, stored_prog=0, i;
 	gboolean ret=FALSE;
 	gpointer stdin_handle, stdout_handle, stderr_handle;
@@ -244,6 +244,16 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		if(cmd[0]=='/') {
 			/* Assume full path given */
 			prog=g_strdup (cmd);
+
+			/* Executable existing ? */
+			if(access (prog, X_OK)!=0) {
+				g_free (prog);
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION ": Couldn't find executable %s", token);
+#endif
+				SetLastError (ERROR_FILE_NOT_FOUND);
+				goto cleanup;
+			}
 		} else {
 			/* Search for file named by cmd in the current
 			 * directory
@@ -328,6 +338,18 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		if(token[0]=='/') {
 			/* Assume full path given */
 			prog=g_strdup (token);
+			
+			/* Executable existing ? */
+			if(access (prog, X_OK)!=0) {
+				g_free (prog);
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION ": Couldn't find executable %s", token);
+#endif
+				g_free (token);
+				SetLastError (ERROR_FILE_NOT_FOUND);
+				goto cleanup;
+			}
+
 		} else {
 			char *curdir=g_get_current_dir ();
 
@@ -352,6 +374,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 #endif
 
 					g_free (token);
+					SetLastError (ERROR_FILE_NOT_FOUND);
 					goto cleanup;
 				}
 			}
