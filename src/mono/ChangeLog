@@ -1,3 +1,10 @@
+2004-08-27  Lluis Sanchez Gual  <lluis@novell.com>
+
+	* data/net_1_1/DefaultWsdlHelpGenerator.aspx: Little fix.
+	* data/net_2_0/DefaultWsdlHelpGenerator.aspx: Added information about
+	  basic profile compliance.
+	* data/net_2_0/machine.config: Use 2.0 assembly versions.
+
 2004-08-26  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (mcs-do-run-test): Depend on '$(tmpinst)/bin/mbas'.
