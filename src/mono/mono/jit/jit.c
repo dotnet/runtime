@@ -4166,7 +4166,8 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
+	g_assert (syscall (SYS_sigaction, mono_thread_get_abort_signal (), &sa, NULL) != -1);
+	//g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
 
 #if 1
 	/* catch SIGSEGV */
