@@ -97,7 +97,11 @@ static void socket_close_private (gpointer handle)
 
 	g_ptr_array_remove_fast(sockets, GUINT_TO_POINTER (handle));
 
-	ret=close(socket_private_handle->fd);
+	do {
+		ret=close(socket_private_handle->fd);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	
 	if(ret==-1) {
 		gint errnum = errno;
 #ifdef DEBUG
@@ -232,7 +236,11 @@ guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
 		return(INVALID_SOCKET);
 	}
 	
-	fd=accept(socket_private_handle->fd, addr, addrlen);
+	do {
+		fd=accept(socket_private_handle->fd, addr, addrlen);
+	}
+	while (fd==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(fd==-1) {
 		gint errnum = errno;
 #ifdef DEBUG
@@ -340,7 +348,11 @@ int _wapi_connect(guint32 handle, const struct sockaddr *serv_addr,
 		return(SOCKET_ERROR);
 	}
 	
-	ret=connect(socket_private_handle->fd, serv_addr, addrlen);
+	do {
+		ret=connect(socket_private_handle->fd, serv_addr, addrlen);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(ret==-1 && errno==EACCES) {
 		/* Try setting SO_BROADCAST and connecting again, but
 		 * keep the original errno
@@ -352,8 +364,10 @@ int _wapi_connect(guint32 handle, const struct sockaddr *serv_addr,
 		ret=setsockopt (socket_private_handle->fd, SOL_SOCKET,
 				SO_BROADCAST, &true, sizeof(true));
 		if(ret==0) {
-			ret=connect (socket_private_handle->fd, serv_addr,
-				     addrlen);
+			do {
+				ret=connect (socket_private_handle->fd, serv_addr, addrlen);
+			}
+			while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 		}
 	} else if (ret==-1) {
 		errnum = errno;
@@ -554,12 +568,18 @@ int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
 	}
 	
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags | MSG_NOSIGNAL, from,
-		     fromlen);
+	do {
+		ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags | MSG_NOSIGNAL, from,
+			     fromlen);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 #else
 	old_sigpipe = signal(SIGPIPE, SIG_IGN);
-	ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags, from,
-		     fromlen);
+	do {
+		ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags, from,
+			     fromlen);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 	signal(SIGPIPE, old_sigpipe);
 #endif
 
@@ -602,10 +622,16 @@ int _wapi_send(guint32 handle, const void *msg, size_t len, int send_flags)
 	}
 
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=send(socket_private_handle->fd, msg, len, send_flags | MSG_NOSIGNAL);
+	do {
+		ret=send(socket_private_handle->fd, msg, len, send_flags | MSG_NOSIGNAL);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 #else
 	old_sigpipe = signal(SIGPIPE, SIG_IGN);
-	ret=send(socket_private_handle->fd, msg, len, send_flags);
+	do {
+		ret=send(socket_private_handle->fd, msg, len, send_flags);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 	signal(SIGPIPE, old_sigpipe);
 #endif
 	if(ret==-1) {
@@ -648,10 +674,16 @@ int _wapi_sendto(guint32 handle, const void *msg, size_t len, int send_flags,
 	}
 	
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=sendto(socket_private_handle->fd, msg, len, send_flags | MSG_NOSIGNAL, to, tolen);
+	do {
+		ret=sendto(socket_private_handle->fd, msg, len, send_flags | MSG_NOSIGNAL, to, tolen);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 #else
 	old_sigpipe = signal(SIGPIPE, SIG_IGN);
-	ret=sendto(socket_private_handle->fd, msg, len, send_flags, to, tolen);
+	do {
+		ret=sendto(socket_private_handle->fd, msg, len, send_flags, to, tolen);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 	signal(SIGPIPE, old_sigpipe);
 #endif
 	if(ret==-1) {
@@ -984,7 +1016,11 @@ int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 		return(SOCKET_ERROR);
 	}
 
-	ret=select(getdtablesize(), readfds, writefds, exceptfds, timeout);
+	do {
+		ret=select(getdtablesize(), readfds, writefds, exceptfds, timeout);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(ret==-1) {
 		gint errnum = errno;
 #ifdef DEBUG

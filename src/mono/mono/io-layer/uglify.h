@@ -67,6 +67,7 @@ typedef WapiStartupInfo STARTUPINFO;
 typedef WapiStartupInfo *LPSTARTUPINFO;
 typedef WapiProcessInformation PROCESS_INFORMATION;
 typedef WapiFixedFileInfo VS_FIXEDFILEINFO;
+typedef WapiApcProc PAPCFUNC;
 
 #define CONST const
 #define VOID void

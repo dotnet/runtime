@@ -23,9 +23,10 @@
 #undef DEBUG
 
 /**
- * WaitForSingleObject:
+ * WaitForSingleObjectEx:
  * @handle: an object to wait for
  * @timeout: the maximum time in milliseconds to wait for
+ * @alertable: if TRUE, the wait can be interrupted by an APC call
  *
  * This function returns when either @handle is signalled, or @timeout
  * ms elapses.  If @timeout is zero, the object's state is tested and
@@ -38,13 +39,16 @@
  * to nonsignalled.  %WAIT_OBJECT_0 - The state of @handle is
  * signalled.  %WAIT_TIMEOUT - The @timeout interval elapsed and
  * @handle's state is still not signalled.  %WAIT_FAILED - an error
- * occurred.
+ * occurred. %WAIT_IO_COMPLETION - the wait was ended by an APC.
  */
-guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
+guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
+						gboolean alertable)
 {
 	guint32 ret, waited;
 	struct timespec abstime;
 	int thr_ret;
+	gboolean apc_pending = FALSE;
+	gpointer current_thread = GetCurrentThread ();
 	
 	if(_wapi_handle_test_capabilities (handle,
 					   WAPI_HANDLE_CAP_WAIT)==FALSE) {
@@ -78,6 +82,11 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 		}
 	}
 	
+	if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		apc_pending = TRUE;
+		goto done;
+	}
+	
 	if(_wapi_handle_issignalled (handle)) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
@@ -101,8 +110,11 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 			waited=_wapi_handle_timedwait_signal_handle (handle,
 								     &abstime);
 		}
+	
+		if (alertable)
+			apc_pending = _wapi_thread_apc_pending (current_thread);
 
-		if(waited==0) {
+		if(waited==0 && !apc_pending) {
 			/* Condition was signalled, so hopefully
 			 * handle is signalled now.  (It might not be
 			 * if someone else got in before us.)
@@ -120,7 +132,7 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 		
 			/* Better luck next time */
 		}
-	} while(waited==0);
+	} while(waited==0 && !apc_pending);
 
 	/* Timeout or other error */
 #ifdef DEBUG
@@ -140,8 +152,19 @@ done:
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 	
+	if (apc_pending) {
+		_wapi_thread_dispatch_apc_queue (current_thread);
+		ret = WAIT_IO_COMPLETION;
+	}
+		
 	return(ret);
 }
+
+guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
+{
+	return WaitForSingleObjectEx (handle, timeout, FALSE);
+}
+
 
 /**
  * SignalObjectAndWait:
@@ -184,6 +207,8 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	guint32 ret, waited;
 	struct timespec abstime;
 	int thr_ret;
+	gboolean apc_pending = FALSE;
+	gpointer current_thread = GetCurrentThread ();
 	
 	if(_wapi_handle_test_capabilities (signal_handle,
 					   WAPI_HANDLE_CAP_SIGNAL)==FALSE) {
@@ -218,6 +243,11 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		}
 	}
 	
+	if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		apc_pending = TRUE;
+		goto done;
+	}
+	
 	if(_wapi_handle_issignalled (wait)) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
@@ -242,7 +272,10 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 								     &abstime);
 		}
 
-		if(waited==0) {
+		if (alertable)
+			apc_pending = _wapi_thread_apc_pending (current_thread);
+
+		if(waited==0 && !apc_pending) {
 			/* Condition was signalled, so hopefully
 			 * handle is signalled now.  (It might not be
 			 * if someone else got in before us.)
@@ -260,7 +293,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		
 			/* Better luck next time */
 		}
-	} while(waited==0);
+	} while(waited==0 && !apc_pending);
 
 	/* Timeout or other error */
 #ifdef DEBUG
@@ -280,8 +313,9 @@ done:
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 
-	if(alertable==TRUE) {
-		/* Deal with queued APC or IO completion routines */
+	if (apc_pending) {
+		_wapi_thread_dispatch_apc_queue (current_thread);
+		ret = WAIT_IO_COMPLETION;
 	}
 	
 	return(ret);
@@ -336,7 +370,7 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
 
 
 /**
- * WaitForMultipleObjects:
+ * WaitForMultipleObjectsEx:
  * @numobjects: The number of objects in @handles. The maximum allowed
  * is %MAXIMUM_WAIT_OBJECTS.
  * @handles: An array of object handles.  Duplicates are not allowed.
@@ -344,6 +378,7 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
  * are signalled.  If %FALSE, this function returns when any object is
  * signalled.
  * @timeout: The maximum time in milliseconds to wait for.
+ * @alertable: if TRUE, the wait can be interrupted by an APC call
  * 
  * This function returns when either one or more of @handles is
  * signalled, or @timeout ms elapses.  If @timeout is zero, the state
@@ -362,9 +397,10 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
  * indicates the first index into @handles of an abandoned mutex.
  * %WAIT_TIMEOUT - The @timeout interval elapsed and no objects in
  * @handles are signalled.  %WAIT_FAILED - an error occurred.
+ * %WAIT_IO_COMPLETION - the wait was ended by an APC.
  */
-guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
-			       gboolean waitall, guint32 timeout)
+guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
+			       gboolean waitall, guint32 timeout, gboolean alertable)
 {
 	GHashTable *dups;
 	gboolean duplicate=FALSE, bogustype=FALSE, done;
@@ -373,6 +409,7 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 	guint i;
 	guint32 ret;
 	int thr_ret;
+	gpointer current_thread = GetCurrentThread ();
 	
 	if(numobjects>MAXIMUM_WAIT_OBJECTS) {
 #ifdef DEBUG
@@ -384,7 +421,7 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 	}
 	
 	if (numobjects == 1) {
-		return WaitForSingleObject (handles [0], timeout);
+		return WaitForSingleObjectEx (handles [0], timeout, alertable);
 	}
 
 	/* Check for duplicates */
@@ -445,6 +482,11 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		_wapi_calc_timeout (&abstime, timeout);
 	}
 
+	if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		_wapi_thread_dispatch_apc_queue (current_thread);
+		return WAIT_IO_COMPLETION;
+	}
+	
 	while(1) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": locking signal mutex");
@@ -468,6 +510,11 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		g_assert (thr_ret == 0);
 		pthread_cleanup_pop (0);
 		
+		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+			_wapi_thread_dispatch_apc_queue (current_thread);
+			return WAIT_IO_COMPLETION;
+		}
+	
 		if(ret==0) {
 			/* Something was signalled ... */
 			done = test_and_own (numobjects, handles, waitall,
@@ -488,4 +535,10 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 			}
 		}
 	}
+}
+
+guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
+			       gboolean waitall, guint32 timeout)
+{
+	return WaitForMultipleObjectsEx(numobjects, handles, waitall, timeout, FALSE);
 }

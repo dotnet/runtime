@@ -122,6 +122,7 @@ gpointer _wapi_shm_file_expand (gpointer mem, _wapi_shm_t type,
 	int fd;
 	gpointer new_mem;
 	guchar *filename=_wapi_shm_file (type, segment);
+	int ret;
 
 	if(old_len>=new_len) {
 		return(mem);
@@ -144,12 +145,18 @@ gpointer _wapi_shm_file_expand (gpointer mem, _wapi_shm_t type,
 		return(NULL);
 	}
 	
-	if(write (fd, "", 1)==-1) {
+	do {
+		ret=write (fd, "", 1);
+	}
+	while (ret==-1 && errno==EINTR);
+
+	if(ret==-1) {
 		g_critical (G_GNUC_PRETTY_FUNCTION
 			    ": shared file [%s] write error: %s", filename,
 			    g_strerror (errno));
 		return(NULL);
 	}
+
 	close (fd);
 	
 	new_mem=_wapi_shm_file_map (type, segment, NULL, NULL);
@@ -163,6 +170,7 @@ static int _wapi_shm_file_open (const guchar *filename, _wapi_shm_t type,
 	int fd;
 	struct stat statbuf;
 	guint32 wanted_size = 0;
+	int ret;
 	
 	if(created) {
 		*created=FALSE;
@@ -215,7 +223,12 @@ try_again:
 				return(-1);
 			}
 			
-			if(write (fd, "", 1)==-1) {
+			do {
+				ret=write (fd, "", 1);
+			}
+			while (ret==-1 && errno==EINTR);
+				
+			if(ret==-1) {
 				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] write error: %s", filename, g_strerror (errno));
 				close (fd);
 				unlink (filename);

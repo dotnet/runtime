@@ -36,6 +36,7 @@
 #define THREAD_ALL_ACCESS		(STANDARD_RIGHTS_REQUIRED|SYNCHRONIZE|0x3ff)
 
 typedef guint32 (*WapiThreadStart)(gpointer);
+typedef guint32 (*WapiApcProc)(gpointer);
 
 extern gpointer CreateThread(WapiSecurityAttributes *security,
 			     guint32 stacksize, WapiThreadStart start,
@@ -56,5 +57,8 @@ extern void SleepEx(guint32 ms, gboolean);
 extern gboolean BindIoCompletionCallback (gpointer handle,
 					  WapiOverlappedCB callback,
 					  guint64 flags);
+
+extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 
+					gpointer param);
 
 #endif /* _WAPI_THREADS_H_ */

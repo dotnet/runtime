@@ -424,7 +424,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		process_info->dwProcessId=pid;
 		process_info->dwThreadId=tid;
 		/* Wait for possible execve failure */
-		if (WaitForSingleObject  (process_handle, 500) != WAIT_TIMEOUT) {
+		if (WaitForSingleObjectEx (process_handle, 500, FALSE) != WAIT_TIMEOUT) {
 			_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
 					     WAPI_HANDLE_PROCESS,
 					     (gpointer *) &process_handle_data,

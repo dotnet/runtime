@@ -75,11 +75,18 @@ static void _wapi_daemon_request_response_internal (int fd,
 	g_assert (ret == 0);
 	
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=sendmsg (fd, msg, MSG_NOSIGNAL);
+	do {
+		ret=sendmsg (fd, msg, MSG_NOSIGNAL);
+	}
+	while (ret==-1 && errno==EINTR);
 #else
 	old_sigpipe = signal (SIGPIPE, SIG_IGN);
-	ret=sendmsg (fd, msg, 0);
+	do {
+		ret=sendmsg (fd, msg, 0);
+	}
+	while (ret==-1 && errno==EINTR);
 #endif
+
 	if(ret!=sizeof(WapiHandleRequest)) {
 		if(errno==EPIPE) {
 			g_critical (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
@@ -92,11 +99,18 @@ static void _wapi_daemon_request_response_internal (int fd,
 	}
 
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=recv (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
+	do {
+		ret=recv (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
+	}
+	while (ret==-1 && errno==EINTR);
 #else
-	ret=recv (fd, resp, sizeof(WapiHandleResponse), 0);
+	do {
+		ret=recv (fd, resp, sizeof(WapiHandleResponse), 0);
+	}
+	while (ret==-1 && errno==EINTR);
 	signal (SIGPIPE, old_sigpipe);
 #endif
+
 	if(ret==-1) {
 		if(errno==EPIPE) {
 			g_critical (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
@@ -107,7 +121,7 @@ static void _wapi_daemon_request_response_internal (int fd,
 			g_assert_not_reached ();
 		}
 	}
-
+		
 	ret = mono_mutex_unlock (&req_mutex);
 	g_assert (ret == 0);
 	
@@ -195,11 +209,15 @@ int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 	iov.iov_base=req;
 	iov.iov_len=sizeof(WapiHandleRequest);
 	
+	do {
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=recvmsg (fd, &msg, MSG_NOSIGNAL);
+		ret=recvmsg (fd, &msg, MSG_NOSIGNAL);
 #else
-	ret=recvmsg (fd, &msg, 0);
+		ret=recvmsg (fd, &msg, 0);
 #endif
+	}
+	while (ret==-1 && errno==EINTR);
+
 	if(ret==-1 || ret!= sizeof(WapiHandleRequest)) {
 		/* Make sure we dont do anything with this response */
 		req->type=WapiHandleRequestType_Error;
@@ -255,13 +273,18 @@ int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 int _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 {
 	int ret;
-	
+
+	do {
 #ifdef HAVE_MSG_NOSIGNAL
-	ret=send (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
+		ret=send (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
 #else
-	ret=send (fd, resp, sizeof(WapiHandleResponse), 0);
+		ret=send (fd, resp, sizeof(WapiHandleResponse), 0);
 #endif
+	}
+	while (ret==-1 && errno==EINTR);
+
 #ifdef DEBUG
+
 	if(ret==-1 || ret != sizeof(WapiHandleResponse)) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Send error: %s",
 			   strerror (errno));

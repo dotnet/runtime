@@ -30,12 +30,17 @@
 
 static pthread_key_t timed_thread_key;
 static mono_once_t timed_thread_once = MONO_ONCE_INIT;
+static mono_mutex_t apc_mutex;
+
 
 static void timed_thread_init(void)
 {
 	int thr_ret;
 	
 	thr_ret = pthread_key_create(&timed_thread_key, NULL);
+	g_assert (thr_ret == 0);
+	
+	thr_ret = mono_mutex_init(&apc_mutex, NULL);
 	g_assert (thr_ret == 0);
 }
 
@@ -159,6 +164,7 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 	thread->exit_userdata = exit_userdata;
 	thread->exitstatus = 0;
 	thread->exiting = FALSE;
+	thread->apc_queue = NULL;
 	
 	*threadp = thread;
 
@@ -296,3 +302,57 @@ void _wapi_timed_thread_resume (TimedThread *thread)
 {
 	MONO_SEM_POST (&thread->suspend_sem);
 }
+
+void _wapi_timed_thread_queue_apc (TimedThread *thread, 
+	guint32 (*apc_callback)(gpointer), gpointer param)
+{
+	ApcInfo *apc;
+	int thr_ret;
+	
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&apc_mutex);
+	thr_ret = mono_mutex_lock(&apc_mutex);
+	g_assert (thr_ret == 0);
+	
+	apc = (ApcInfo *)g_new(ApcInfo, 1);
+	apc->callback = apc_callback;
+	apc->param = param;
+	thread->apc_queue = g_slist_append (thread->apc_queue, apc);
+
+	thr_ret = mono_mutex_unlock(&apc_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+}
+
+gboolean _wapi_timed_thread_apc_pending (TimedThread *thread)
+{
+	return thread->apc_queue != NULL;
+}
+
+void _wapi_timed_thread_dispatch_apc_queue (TimedThread *thread)
+{
+	ApcInfo* apc;
+	GSList *list;
+	int thr_ret;
+
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&apc_mutex);
+	thr_ret = mono_mutex_lock(&apc_mutex);
+	g_assert (thr_ret == 0);
+	
+	list = thread->apc_queue;
+	thread->apc_queue = NULL;
+
+	thr_ret = mono_mutex_unlock(&apc_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	while (list != NULL) {
+		apc = (ApcInfo*)list->data;
+		apc->callback (apc->param);
+		g_free (apc);
+		list = g_slist_next (list);
+	}
+	g_slist_free (list);
+}
+

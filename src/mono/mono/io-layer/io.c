@@ -339,7 +339,11 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	}
 
 	if (file_private_handle->async == FALSE) {
-		ret=read(file_private_handle->fd, buffer, numbytes);
+		do {
+			ret=read(file_private_handle->fd, buffer, numbytes);
+		}
+		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+			
 		if(ret==-1) {
 			gint err = errno;
 
@@ -450,7 +454,11 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	}
 	
 	if (file_private_handle->async == FALSE) {
-		ret=write(file_private_handle->fd, buffer, numbytes);
+		do {
+			ret=write(file_private_handle->fd, buffer, numbytes);
+		}
+		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 		if(ret==-1) {
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
@@ -743,7 +751,11 @@ static gboolean file_setendoffile(gpointer handle)
 	
 	if(pos>size) {
 		/* extend */
-		ret=write(file_private_handle->fd, "", 1);
+		do {
+			ret=write(file_private_handle->fd, "", 1);
+		}
+		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 		if(ret==-1) {
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
@@ -759,7 +771,11 @@ static gboolean file_setendoffile(gpointer handle)
 	/* always truncate, because the extend write() adds an extra
 	 * byte to the end of the file
 	 */
-	ret=ftruncate(file_private_handle->fd, pos);
+	do {
+		ret=ftruncate(file_private_handle->fd, pos);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+			
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1103,7 +1119,11 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 		return(FALSE);
 	}
 	
-	ret=read(console_private_handle->fd, buffer, numbytes);
+	do {
+		ret=read(console_private_handle->fd, buffer, numbytes);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1152,7 +1172,11 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
-	ret=write(console_private_handle->fd, buffer, numbytes);
+	do {
+		ret=write(console_private_handle->fd, buffer, numbytes);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1260,7 +1284,11 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		   handle, pipe_private_handle->fd);
 #endif
 
-	ret=read(pipe_private_handle->fd, buffer, numbytes);
+	do {
+		ret=read(pipe_private_handle->fd, buffer, numbytes);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+		
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1318,8 +1346,12 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		   ": writing up to %d bytes to pipe %p (fd %d)", numbytes,
 		   handle, pipe_private_handle->fd);
 #endif
-	
-	ret=write(pipe_private_handle->fd, buffer, numbytes);
+
+	do {
+		ret=write(pipe_private_handle->fd, buffer, numbytes);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1768,8 +1800,9 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	
 	for (;;) {
 		remain = read (src_fd, buf, buf_size);
+		
 		if (remain < 0) {
-			if (errno == EINTR) {
+			if (errno == EINTR && !_wapi_thread_cur_apc_pending()) {
 				continue;
 			}
 			
@@ -1789,6 +1822,9 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 
 		while (remain > 0) {
 			if ((n = write (dest_fd, buf, remain)) < 0) {
+				if (errno == EINTR && !_wapi_thread_cur_apc_pending())
+					continue;
+
 				_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 				g_message (G_GNUC_PRETTY_FUNCTION ": write failed.");
@@ -1834,7 +1870,11 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 #endif
 	
 	/* Check if fd is valid */
-	flags=fcntl(fd, F_GETFL);
+	do {
+		flags=fcntl(fd, F_GETFL);
+	}
+	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
 	if(flags==-1) {
 		/* Invalid fd.  Not really much point checking for EBADF
 		 * specifically

@@ -51,7 +51,14 @@ typedef struct
 	guint32 exitstatus;
 	gboolean exiting;
 	gpointer stack_ptr;
+	GSList *apc_queue;
 } TimedThread;
+
+typedef struct
+{
+	guint32 (*callback)(gpointer arg);
+	gpointer param;
+} ApcInfo;
 
 extern void _wapi_timed_thread_exit(guint32 exitstatus) G_GNUC_NORETURN;
 extern int _wapi_timed_thread_create(TimedThread **threadp,
@@ -69,5 +76,11 @@ extern int _wapi_timed_thread_join(TimedThread *thread,
 extern void _wapi_timed_thread_destroy (TimedThread *thread);
 extern void _wapi_timed_thread_suspend (TimedThread *thread);
 extern void _wapi_timed_thread_resume (TimedThread *thread);
+				   
+extern void _wapi_timed_thread_queue_apc (TimedThread *thread, 
+					guint32 (*apc_callback)(gpointer), gpointer param);
+extern gboolean _wapi_timed_thread_apc_pending (TimedThread *thread);
+extern void _wapi_timed_thread_dispatch_apc_queue (TimedThread *thread);
+		   
 
 #endif /* _WAPI_TIMED_THREAD_H_ */

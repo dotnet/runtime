@@ -12,6 +12,7 @@
 #include <mono/os/gc_wrapper.h>
 #include "mono/utils/mono-hash.h"
 #endif
+#include <stdio.h>
 #include <glib.h>
 #include <string.h>
 #include <pthread.h>
@@ -912,6 +913,71 @@ BindIoCompletionCallback (gpointer handle,
 	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 }
+
+guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle, 
+					gpointer param)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gboolean ok;
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return(0);
+	}
+
+	_wapi_timed_thread_queue_apc (thread_private_handle->thread, 
+							apc_callback, param);
+	return(1);
+}
+
+gboolean _wapi_thread_cur_apc_pending (void)
+{
+	return _wapi_thread_apc_pending (GetCurrentThread ());
+}
+
+gboolean _wapi_thread_apc_pending (gpointer handle)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gboolean ok;
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return(FALSE);
+	}
+
+	return _wapi_timed_thread_apc_pending (thread_private_handle->thread);
+}
+
+gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gboolean ok;
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return(0);
+	}
+
+	_wapi_timed_thread_dispatch_apc_queue (thread_private_handle->thread);
+	return(1);
+}
+
+
 
 #ifdef WITH_INCLUDED_LIBGC
 

@@ -35,4 +35,9 @@ struct _WapiHandlePrivate_thread
 	gboolean joined;
 };
 
+gboolean _wapi_thread_apc_pending (gpointer handle);
+gboolean _wapi_thread_cur_apc_pending (void);
+gboolean _wapi_thread_dispatch_apc_queue (gpointer handle);
+
+
 #endif /* _WAPI_THREAD_PRIVATE_H_ */
