@@ -554,38 +554,44 @@ ves_icall_AssemblyBuilder_getToken (MonoReflectionAssemblyBuilder *assb, MonoObj
 }
 
 static gint32
-ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 offset, MonoArray *buf)
+ves_icall_AssemblyBuilder_getPEHeader (MonoReflectionAssemblyBuilder *assb, MonoArray *buf, gint32 *data_size)
 {
-	int count;
+	int count, hsize;
+	MonoDynamicAssembly *ass = assb->dynamic_assembly;
 
-	if (offset == 0) { /* get the header */
-		count = mono_image_get_header (assb, (char*)buf->vector, buf->bounds->length);
-		if (count != -1)
-			return count;
-	} else {
-		MonoDynamicAssembly *ass = assb->dynamic_assembly;
-		char *p = mono_array_addr (buf, char, 0);
-		int chunklen;
-		offset--;
-		count = ass->code.index + ass->meta_size;
-		if (count - offset > buf->bounds->length) {
-			count =  buf->bounds->length;
-		} else
-			count = count - offset;
-		if (offset < ass->code.index) {
-			chunklen = ass->code.index - offset;
-			memcpy (p, ass->code.data + offset, chunklen);
-			offset += chunklen;
-			p += chunklen;
-			chunklen = count - chunklen;
-		} else
-			chunklen = count;
-		offset -= ass->code.index;
-		memcpy (p, ass->assembly.image->raw_metadata + offset, chunklen);
-		return count;
-	}
+	hsize = mono_image_get_header (assb, (char*)buf->vector, buf->bounds->length);
+	if (hsize < 0)
+		return hsize;
+	count = ass->code.index + ass->meta_size;
+	count += 512 - 1;
+	count &= ~(512 - 1);
+	*data_size = count;
+
+	return hsize;
+}
+
+static gint32
+ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, MonoArray *buf)
+{
+	int count, real_data;
+	MonoDynamicAssembly *ass = assb->dynamic_assembly;
+	char *p = mono_array_addr (buf, char, 0);
 	
-	return 0;
+	count = real_data = ass->code.index + ass->meta_size;
+	count += 512 - 1;
+	count &= ~(512 - 1);
+	if (count > mono_array_length (buf))
+		return -1;
+	count -= real_data;
+	
+	memcpy (p, ass->code.data, ass->code.index);
+	p += ass->code.index;
+	memcpy (p, ass->assembly.image->raw_metadata, ass->meta_size);
+	p += ass->meta_size;
+	/* null-pad section */
+	memset (p, 0, count);
+
+	return real_data + count;
 }
 
 static MonoReflectionType*
@@ -1264,7 +1270,7 @@ ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 
-handle_parent:	
+handle_parent:
 	for (i = 0; i < klass->method.count; ++i) {
 		match = 0;
 		method = klass->methods [i];
@@ -1385,7 +1391,7 @@ ves_icall_Type_GetProperties (MonoReflectionType *type, guint32 bflags)
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 
-handle_parent:	
+handle_parent:
 	for (i = 0; i < klass->property.count; ++i) {
 		prop = &klass->properties [i];
 		match = 0;
@@ -1484,6 +1490,46 @@ handle_parent:
 	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 	i = 0;
 	tmp = l;
+	for (; tmp; tmp = tmp->next, ++i)
+		mono_array_set (res, gpointer, i, tmp->data);
+	g_slist_free (l);
+	return res;
+}
+
+static MonoArray*
+ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
+{
+	MonoDomain *domain; 
+	GSList *l = NULL, *tmp;
+	GList *tmpn;
+	MonoClass *startklass, *klass;
+	MonoArray *res;
+	MonoObject *member;
+	int i, len, match;
+	MonoClass *nested;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+
+	for (tmpn = klass->nested_classes; tmpn; tmpn = tmpn->next) {
+		match = 0;
+		nested = tmpn->data;
+		if ((nested->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		member = (MonoObject*)mono_type_get_object (domain, &nested->byval_arg);
+		l = g_slist_prepend (l, member);
+	}
+	len = g_slist_length (l);
+	res = mono_array_new (domain, mono_defaults.monotype_class, len);
+	i = 0;
+	tmp = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
@@ -2087,7 +2133,8 @@ static gconstpointer icall_map [] = {
 	/*
 	 * AssemblyBuilder
 	 */
-	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_get_data_chunk,
+	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_AssemblyBuilder_getDataChunk,
+	"System.Reflection.Emit.AssemblyBuilder::getPEHeader", ves_icall_AssemblyBuilder_getPEHeader,
 	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
 	"System.Reflection.Emit.AssemblyBuilder::getToken", ves_icall_AssemblyBuilder_getToken,
 	"System.Reflection.Emit.AssemblyBuilder::basic_init", mono_image_basic_init,
@@ -2191,6 +2238,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::GetProperties", ves_icall_Type_GetProperties,
 	"System.MonoType::GetEvents", ves_icall_Type_GetEvents,
 	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
+	"System.MonoType::GetNestedTypes", ves_icall_Type_GetNestedTypes,
 
 	/*
 	 * System.Net.Sockets I/O Services
