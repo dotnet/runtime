@@ -169,4 +169,19 @@
 		sub
 		ret
 	}
+
+	.method static public int32 test_11_switch_with_nonempty_stack () il managed {
+		.maxstack 16
+
+		ldc.i4.5
+		ldc.i4.6
+		ldc.i4.1
+		switch (L0, L1)
+	L0: 
+		add
+		ret
+	L1:
+		add
+		ret
+	}
 }
