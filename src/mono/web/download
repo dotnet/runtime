@@ -17,6 +17,67 @@
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
 	    <td>
+	      <b>Release 0.30</b><br>
+	      <a href="archive/mono-0.30.html">Release notes</a><br>
+	       Dec 2nd, 2003
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	 	      <li><a href="archive/mcs-0.30.tar.gz">Mono Class Libraries and C# Compiler 0.30.</a>
+	              <li><a href="archive/mono-0.30.tar.gz">Mono Runtime 0.30</a>
+ 		      <li><a href="archive/xsp-0.9.tar.gz">XSP web server 0.9</a>
+ 		      <li><a href="archive/mod_mono-0.7.tar.gz">Apache Mono module 0.7</a>
+ 		      <li><a href="archive/monodoc-0.9.tar.gz">MonoDoc 0.9</a>
+	            </ul>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30/redhat-9-i386">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Fedora Core 1/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30/fedora-1-i386">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>SUSE 9.0/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30/suse-90-i586">Packages</a>
+		  </td>
+	        </tr>
+		<tr>
+		  <td bgcolor="#999999">
+                    <img src="images/windows-36.gif"><b>Windows installer</b>
+		  </td>
+		  <td>
+		    <a href="archive/0.30/windows/mono-0.30-win32-2.exe">Mono Setup</a>
+		    <a href="archive/0.30/windows/mono-0.30-gtksharp-0.15-win32-1.exe">Gtk# Setup</a>
+		  </td>
+		</tr>
+             </table>
+            </td>
+	</table>
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
 	      <b>Release 0.29</b><br>
 	      <a href="archive/mono-0.29.html">Release notes</a><br>
 	       Dec 2nd, 2003
