@@ -3095,6 +3095,32 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionType *type)
 	return mono_object_new (domain, klass);
 }
 
+static MonoReflectionMethod *
+ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
+{
+	MonoClass *klass;
+	MonoMethod *method = m->method;
+	MonoMethod *result = NULL;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
+	     method->klass->flags & TYPE_ATTRIBUTE_INTERFACE ||
+	     method->flags & METHOD_ATTRIBUTE_NEW_SLOT)
+		return m;
+
+	if (method->klass == NULL || (klass = method->klass->parent) == NULL)
+		return m;
+
+	if (klass->vtable_size > method->slot)
+		result = klass->vtable [method->slot];
+
+	if (result == NULL)
+		return m;
+
+	return mono_method_get_object (mono_domain_get (), result, NULL);
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3245,6 +3271,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.SignatureHelper::get_signature_field", mono_reflection_sighelper_get_signature_field,
 
 	"System.RuntimeMethodHandle::GetFunctionPointer", ves_icall_RuntimeMethod_GetFunctionPointer,
+	"System.Reflection.MonoMethod::get_base_definition", ves_icall_MonoMethod_get_base_definition,
 	
 	/* System.Enum */
 
