@@ -108,7 +108,7 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	return(ret);
 }
 
-#elif defined(sparc)
+#elif defined(sparc) || defined (__sparc__)
 #define WAPI_ATOMIC_ASM
 
 #define BEGIN_SPIN(tmp,lock) \

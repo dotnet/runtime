@@ -22,12 +22,14 @@
 
 #define ARG_SIZE	sizeof (stackval)
 #define PROLOG_INS 1
-#define CALL_INS 3  /* Max 3.  2 for the load and 1 for the call */
+#define CALL_INS 2  /* Max 2.  1 for the jmpl and 1 for the nop */
 #define EPILOG_INS 2
 #define MINIMAL_STACK_SIZE 23
 #define FLOAT_REGS 32
 #define OUT_REGS 6
 #define LOCAL_REGS 8
+
+#define NOT_IMPL(x) g_error("FIXME: %s", x);
 
 /* Some assembly... */
 #define flushi(addr)    __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
@@ -38,7 +40,7 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 	if (simple) {
 		if (*gr >= OUT_REGS) {
 			*stack_size += 4;
-			*code_size += 8;
+			*code_size += 12;
 		} else {
 			*code_size += 4;
 		}
@@ -94,11 +96,9 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_R4:
-			add_general (&gr, stack_size, code_size, TRUE);
-			break;
 		case MONO_TYPE_SZARRAY:
 			add_general (&gr, stack_size, code_size, TRUE);
-			*code_size += 4;
+			break;
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
 			if (sig->params[i]->data.klass->enumtype) {
@@ -107,16 +107,7 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 			}
 			size = mono_class_value_size (sig->params[i]->data.klass, NULL);
 			if (size != 4) {
-				*use_memcpy = TRUE;
-				*code_size += 8*4;
-				*stack_size += (size+3)&(~3);
-				if (gr > OUT_REGS) {
-					*code_size += 4;
-					*stack_size += 4;
-				} else {
-					add_general (&gr, stack_size, code_size, TRUE);
-					*code_size += 4;
-				}
+				NOT_IMPL("size != 4")
 				break;
 			}
 		}
@@ -206,30 +197,25 @@ emit_prolog (guint32 *p, MonoMethodSignature *sig, guint stack_size)
 	return p;
 }
 
-#define ARG_BASE sparc_l2 /* use local #2 */
+#define ARG_BASE sparc_i3 /* pointer to args in i3 */
 #define SAVE_4_IN_GENERIC_REGISTER \
-                if (gr < OUT_REGS) { \
-                        sparc_ld_imm (p, ARG_BASE, i*16, sparc_o0 + gr); \
-                        gr++; \
-                } else { \
-	                sparc_ld_imm (p, ARG_BASE, i*16, sparc_l0); \
-                        sparc_st_imm (p, sparc_l1, sparc_sp, stack_par_pos); \
-                        stack_par_pos += 4; \
-                }
+              if (gr < OUT_REGS) { \
+                      sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_o0 + gr); \
+                      gr++; \
+              } else { \
+	              g_error("FIXME: SAVE_4_IN_GENERIC_REGISTER"); \
+              }
 
 #define SAVE_4_VAL_IN_GENERIC_REGISTER \
-                if (gr < OUT_REGS) { \
-                        sparc_ld_imm (p, ARG_BASE, i*16, sparc_o0 + gr); \
-                        sparc_ld (p, sparc_o0 + gr, 0, sparc_o0 + gr); \
-                        gr++; \
-                } else { \
-                        sparc_ld_imm (p, ARG_BASE, i*16, sparc_l0); \
-                        sparc_ld_imm (p, sparc_l1, i*16, sparc_l0); \
-                        sparc_st_imm (p, sparc_l1, sparc_sp, stack_par_pos); \
-                        stack_par_pos += 4; \
-                }
+              if (gr < OUT_REGS) { \
+                      sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0); \
+                      sparc_ld (p, sparc_l0, 0, sparc_o0 + gr); \
+                      gr++; \
+              } else { \
+                      g_error("FIXME: SAVE_4_VAL_IN_GENERIC_REGISTER"); \
+              }
 
-inline static guint32*
+static inline guint32*
 emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 		      gboolean use_memcpy)
 {
@@ -239,27 +225,15 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 	fr = gr = 0;
 	stack_par_pos = MINIMAL_STACK_SIZE * 4;
 
-	sparc_st_imm (p, sparc_i1, sparc_sp, stack_size - 12); /* retval */
-
-	if (use_memcpy) {
-		sparc_st_imm (p, sparc_l4, sparc_sp, stack_size - 16);
-		sparc_st_imm (p, sparc_l5, sparc_sp, stack_size - 20);
-		sparc_mov_reg_reg (p, sparc_i0, sparc_l4);
-		sparc_mov_reg_reg (p, sparc_i3, sparc_l5);
-	} else {
-		sparc_mov_reg_reg (p, sparc_i3, sparc_l2);
-		sparc_mov_reg_reg (p, sparc_i0, sparc_l0);
-	}
-
 	if (sig->hasthis) {
 		if (use_memcpy) {
-			sparc_st_imm (p, sparc_l6, sparc_sp, stack_size - 16);
-			sparc_mov_reg_reg (p, sparc_i2, sparc_l6);
+			NOT_IMPL("emit_save_parameters: use_memcpy #1")
 		} else 
 			sparc_mov_reg_reg (p, sparc_i2, sparc_o0);
 		gr ++;
 	}
 
+#if 0
 	if (use_memcpy) {
 		cur_struct_pos = struct_pos = stack_par_pos;
 		for (i = 0; i < sig->param_count; i++) {
@@ -310,6 +284,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			}
 		}
 	}
+#endif
 
 	for (i = 0; i < sig->param_count; i++) {
 		if (sig->params[i]->byref) {
@@ -327,6 +302,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
                 case MONO_TYPE_CHAR:
                 case MONO_TYPE_I4:
                 case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
                 case MONO_TYPE_I:
                 case MONO_TYPE_U:
                 case MONO_TYPE_PTR:
@@ -338,41 +314,39 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
-			g_warning ("tramp: MONO_TYPE_VALUETYPE");
 			if (sig->params[i]->data.klass->enumtype) {
 				simpletype = sig->params[i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
 			size = mono_class_value_size (sig->params[i]->data.klass, NULL);
 			if (size == 4) {
-				g_warning("size is 4");
 				SAVE_4_VAL_IN_GENERIC_REGISTER;
 			} else {
-				if (gr < OUT_REGS) {
-					sparc_add_imm (p, 0, sparc_sp, cur_struct_pos, sparc_o0 + gr);
-					gr ++;
-				} else {
-					sparc_ld_imm (p, sparc_sp, cur_struct_pos, sparc_l1);
-					sparc_st_imm (p, sparc_l1, stack_par_pos, sparc_sp);
-				}
-				cur_struct_pos += (size + 3) & (~3);
+				NOT_IMPL("emit_save_parameters: size != 4")
 			}
 			break;
 		}
 
 		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			/* this will break in subtle ways... */
 			if (gr < 5) {
 				if (gr & 1)
 					gr ++;
-				sparc_ld_imm (p, ARG_BASE, i*16, sparc_o0 + gr);
+				sparc_ld_imm (p, ARG_BASE, ARG_SIZE, sparc_o0 + gr);
 				gr ++;
-				sparc_ld_imm (p, ARG_BASE, i*16 + 4, sparc_o0 + gr);
+				
+				if (gr >= OUT_REGS) {
+					NOT_IMPL("split reg/stack")
+						break;
+				} else {
+					sparc_ld_imm (p, ARG_BASE, 
+						      ARG_SIZE + 4,
+						      sparc_o0 + gr);
+				}
 				gr ++;
 			} else {
-				g_error("FIXME: i8r4r8 on stack");
+				NOT_IMPL("FIXME: I8/R8 on stack");
 			}
 			break;
 		default:
@@ -405,8 +379,7 @@ emit_call_and_store_retval (guint32 *p, MonoMethodSignature *sig,
 
 	/* get return value */
 	if (sig->ret->byref || string_ctor) {
-		sparc_ld_imm (p, sparc_sp, stack_size - 12, sparc_o5);
-		sparc_st_imm (p, sparc_o5, 0, sparc_i0);
+		sparc_st (p, sparc_o0, sparc_i1, 0);
 	} else {
 		simpletype = sig->ret->type;
 	enum_retval:
