@@ -15,6 +15,11 @@ struct _MonoAssembly {
 	guint8 in_gac;
 	guint8 dynamic;
 	guint8 corlib_internal;
+	/* security manager flags (one bit is for lazy initialization) */
+	guint32 ecma:2;		/* Has the ECMA key */
+	guint32 aptc:2;		/* Has the [AllowPartiallyTrustedCallers] attributes */
+	guint32 fulltrust:2;	/* Has FullTrust permission */
+	guint32 unmanaged:2;	/* Has SecurityPermissionFlag.UnmanagedCode permission */
 };
 
 typedef struct {

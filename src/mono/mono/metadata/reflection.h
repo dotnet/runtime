@@ -122,6 +122,10 @@ typedef struct {
 } MonoDeclSecurityActions;
 
 MonoBoolean mono_declsec_get_demands (MonoMethod *callee, MonoDeclSecurityActions* demands);
+MonoBoolean mono_declsec_get_linkdemands (MonoMethod *callee, MonoDeclSecurityActions* klass, MonoDeclSecurityActions* method);
+MonoBoolean mono_declsec_get_inheritdemands_class (MonoMethod *callee, MonoDeclSecurityActions* klass);
+MonoBoolean mono_declsec_get_inheritdemands_method (MonoMethod *callee, MonoDeclSecurityActions* cmethod);
+
 MonoBoolean mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecurityEntry *entry);
 MonoBoolean mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurityEntry *entry);
 MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry);

@@ -36,10 +36,31 @@ mono_security_manager_get_methods (void)
 		
 	secman.demand = mono_class_get_method_from_name (secman.securitymanager,
 		"InternalDemand", 2);	
+	g_assert (secman.demand);
+
 	secman.inheritancedemand = mono_class_get_method_from_name (secman.securitymanager,
-		"InheritanceDemand", 2);	
+		"InheritanceDemand", 3);	
+	g_assert (secman.inheritancedemand);
+
 	secman.linkdemand = mono_class_get_method_from_name (secman.securitymanager,
-		"LinkDemand", 9);
+		"LinkDemand", 3);
+	g_assert (secman.linkdemand);
+
+	secman.linkdemandunmanaged = mono_class_get_method_from_name (secman.securitymanager,
+		"LinkDemandUnmanaged", 1);
+	g_assert (secman.linkdemandunmanaged);
+
+	secman.linkdemandfulltrust = mono_class_get_method_from_name (secman.securitymanager,
+		"LinkDemandFullTrust", 1);
+	g_assert (secman.linkdemandfulltrust);
+
+	secman.linkdemandsecurityexception = mono_class_get_method_from_name (secman.securitymanager,
+		"LinkDemandSecurityException", 3);
+	g_assert (secman.linkdemandsecurityexception);
+
+	secman.aptc = mono_class_from_name (mono_defaults.corlib, "System.Security", 
+		"AllowPartiallyTrustedCallersAttribute");
+	g_assert (secman.aptc);
 
 	return &secman;
 }
@@ -58,6 +79,30 @@ gboolean
 mono_is_security_manager_active (void)
 {
 	return mono_security_manager_activated;
+}
+
+/*
+ * @publickey	An encoded (with header) public key
+ * @size	The length of the public key
+ *
+ * returns TRUE if the public key is the ECMA "key", FALSE otherwise
+ *
+ * ECMA key isn't a real public key - it's simply an empty (but valid) header
+ * so it's length (16) and value (00000000000000000400000000000000) are 
+ * constants.
+ */
+gboolean 
+mono_is_ecma_key (char *publickey, int size)
+{
+	int i;
+	if ((publickey == NULL) || (size != MONO_ECMA_KEY_LENGTH) || (publickey [8] != 0x04))
+		return FALSE;
+
+	for (i=0; i < size; i++) {
+		if ((publickey [i] != 0x00) && (i != 8))
+			return FALSE;
+	}
+	return TRUE;
 }
 
 MonoBoolean

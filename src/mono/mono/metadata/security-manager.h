@@ -17,6 +17,12 @@
 #include "tokentype.h"
 #include "threads.h"
 #include "marshal.h"
+#include "image.h"
+
+
+/* Definitions */
+
+#define MONO_ECMA_KEY_LENGTH			16
 
 
 /* Structures */
@@ -28,8 +34,12 @@ typedef struct {
 	MonoMethod *assert;			/* SecurityManager.InternalAssert */
 	MonoMethod *deny;			/* SecurityManager.InternalDeny */
 	MonoMethod *permitonly;			/* SecurityManager.InternalPermitOnly */
-	MonoMethod *linkdemand;			/* SecurityManager.LinkDemand */
 	MonoMethod *inheritancedemand;		/* SecurityManager.InheritanceDemand */
+	MonoMethod *linkdemand;			/* SecurityManager.LinkDemand */
+	MonoMethod *linkdemandfulltrust;	/* SecurityManager.LinkDemandFullTrust */
+	MonoMethod *linkdemandunmanaged;	/* SecurityManager.LinkDemandUnmanaged */
+	MonoMethod *linkdemandsecurityexception;/* SecurityManager.LinkDemandSecurityException */
+	MonoClass *aptc;			/* System.Security.AllowPartiallyTrustedCallersAttribute */
 } MonoSecurityManager;
 
 
@@ -37,6 +47,7 @@ typedef struct {
 void mono_activate_security_manager (void);
 gboolean mono_is_security_manager_active (void);
 MonoSecurityManager* mono_security_manager_get_methods (void);
+gboolean mono_is_ecma_key (char *publickey, int size);
 
 
 /* internal calls */

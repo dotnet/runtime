@@ -9044,7 +9044,8 @@ mono_declsec_flags_from_assembly (MonoAssembly *assembly)
  * Returns TRUE if some actions requiring code generation are present, FALSE otherwise.
  */
 static MonoBoolean
-fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityActions* actions)
+fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityActions* actions,
+	guint32 id_std, guint32 id_noncas, guint32 id_choice)
 {
 	MonoBoolean result = FALSE;
 	MonoTableInfo *t;
@@ -9061,8 +9062,7 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 
 		/* if present only replace (class) permissions with method permissions */
 		/* if empty accept either class or method permissions */
-		switch (cols [MONO_DECL_SECURITY_ACTION]) {
-		case SECURITY_ACTION_DEMAND:
+		if (cols [MONO_DECL_SECURITY_ACTION] == id_std) {
 			if (!actions->demand.blob) {
 				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
 				actions->demand.index = cols [MONO_DECL_SECURITY_PERMISSIONSET];
@@ -9070,8 +9070,7 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 				actions->demand.size = mono_metadata_decode_blob_size (blob, &blob);
 				result = TRUE;
 			}
-			break;
-		case SECURITY_ACTION_NONCASDEMAND:
+		} else if (cols [MONO_DECL_SECURITY_ACTION] == id_noncas) {
 			if (!actions->noncasdemand.blob) {
 				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
 				actions->noncasdemand.index = cols [MONO_DECL_SECURITY_PERMISSIONSET];
@@ -9079,8 +9078,7 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 				actions->noncasdemand.size = mono_metadata_decode_blob_size (blob, &blob);
 				result = TRUE;
 			}
-			break;
-		case SECURITY_ACTION_DEMANDCHOICE:
+		} else if (cols [MONO_DECL_SECURITY_ACTION] == id_choice) {
 			if (!actions->demandchoice.blob) {
 				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
 				actions->demandchoice.index = cols [MONO_DECL_SECURITY_PERMISSIONSET];
@@ -9088,11 +9086,30 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 				actions->demandchoice.size = mono_metadata_decode_blob_size (blob, &blob);
 				result = TRUE;
 			}
-			break;
 		}
 	}
 
 	return result;
+}
+
+static MonoBoolean
+mono_declsec_get_class_demands_params (MonoMethod *method, MonoDeclSecurityActions* demands, 
+	guint32 id_std, guint32 id_noncas, guint32 id_choice)
+{
+	guint32 idx = mono_metadata_token_index (method->klass->type_token);
+	idx <<= MONO_HAS_DECL_SECURITY_BITS;
+	idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
+	return fill_actions_from_index (method->klass->image, idx, demands, id_std, id_noncas, id_choice);
+}
+
+static MonoBoolean
+mono_declsec_get_method_demands_params (MonoMethod *method, MonoDeclSecurityActions* demands, 
+	guint32 id_std, guint32 id_noncas, guint32 id_choice)
+{
+	guint32 idx = mono_method_get_index (method);
+	idx <<= MONO_HAS_DECL_SECURITY_BITS;
+	idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
+	return fill_actions_from_index (method->klass->image, idx, demands, id_std, id_noncas, id_choice);
 }
 
 /*
@@ -9103,12 +9120,13 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 MonoBoolean
 mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 {
-	MonoImage *image = method->klass->image;
+	guint32 mask = MONO_DECLSEC_FLAG_DEMAND | MONO_DECLSEC_FLAG_NONCAS_DEMAND | 
+		MONO_DECLSEC_FLAG_DEMAND_CHOICE;
 	MonoBoolean result = FALSE;
 	guint32 flags;
 
 	/* quick exit if no declarative security is present in the metadata */
-	if (!image->tables [MONO_TABLE_DECLSECURITY].rows)
+	if (!method->klass->image->tables [MONO_TABLE_DECLSECURITY].rows)
 		return FALSE;
 
 	/* we want the original as the wrapper is "free" of the security informations */
@@ -9120,36 +9138,140 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 
 	/* First we look for method-level attributes */
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
-		guint32 idx;
-
 		mono_class_init (method->klass);
 		memset (demands, 0, sizeof (MonoDeclSecurityActions));
 
-		idx = mono_method_get_index (method);
-		idx <<= MONO_HAS_DECL_SECURITY_BITS;
-		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
-		result = fill_actions_from_index (image, idx, demands);
+		result = mono_declsec_get_method_demands_params (method, demands, 
+			SECURITY_ACTION_DEMAND, SECURITY_ACTION_NONCASDEMAND, SECURITY_ACTION_DEMANDCHOICE);
 	}
 
-	/* Next we fill holes with class-level attributes */
 	/* Here we use (or create) the class declarative cache to look for demands */
 	flags = mono_declsec_flags_from_class (method->klass);
-	if (flags & (MONO_DECLSEC_FLAG_DEMAND | MONO_DECLSEC_FLAG_NONCAS_DEMAND | MONO_DECLSEC_FLAG_DEMAND_CHOICE)) {
-		guint32 idx;
+	if (flags & mask) {
 		if (!result) {
 			mono_class_init (method->klass);
 			memset (demands, 0, sizeof (MonoDeclSecurityActions));
 		}
-		idx = mono_metadata_token_index (method->klass->type_token);
-		idx <<= MONO_HAS_DECL_SECURITY_BITS;
-		idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
-		result |= fill_actions_from_index (image, idx, demands);
+		result |= mono_declsec_get_class_demands_params (method, demands, 
+			SECURITY_ACTION_DEMAND, SECURITY_ACTION_NONCASDEMAND, SECURITY_ACTION_DEMANDCHOICE);
 	}
 
 	/* The boolean return value is used as a shortcut in case nothing needs to
 	   be generated (e.g. LinkDemand[Choice] and InheritanceDemand[Choice]) */
 	return result;
 }
+
+
+/*
+ * Collect all Link actions: LinkDemand, NonCasLinkDemand and LinkDemandChoice (2.0).
+ *
+ * Note: Don't use the content of actions if the function return FALSE.
+ */
+MonoBoolean
+mono_declsec_get_linkdemands (MonoMethod *method, MonoDeclSecurityActions* klass, MonoDeclSecurityActions *cmethod)
+{
+	MonoBoolean result = FALSE;
+	guint32 flags;
+
+	/* quick exit if no declarative security is present in the metadata */
+	if (!method->klass->image->tables [MONO_TABLE_DECLSECURITY].rows)
+		return FALSE;
+
+	/* we want the original as the wrapper is "free" of the security informations */
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		method = mono_marshal_method_from_wrapper (method);
+		if (!method)
+			return FALSE;
+	}
+
+	/* results are independant - zeroize both */
+	memset (cmethod, 0, sizeof (MonoDeclSecurityActions));
+	memset (klass, 0, sizeof (MonoDeclSecurityActions));
+
+	/* First we look for method-level attributes */
+	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
+		mono_class_init (method->klass);
+
+		result = mono_declsec_get_method_demands_params (method, cmethod, 
+			SECURITY_ACTION_LINKDEMAND, SECURITY_ACTION_NONCASLINKDEMAND, SECURITY_ACTION_LINKDEMANDCHOICE);
+	}
+
+	/* Here we use (or create) the class declarative cache to look for demands */
+	flags = mono_declsec_flags_from_class (method->klass);
+	if (flags & (MONO_DECLSEC_FLAG_LINKDEMAND | MONO_DECLSEC_FLAG_NONCAS_LINKDEMAND | MONO_DECLSEC_FLAG_LINKDEMAND_CHOICE)) {
+		mono_class_init (method->klass);
+
+		result |= mono_declsec_get_class_demands_params (method, klass, 
+			SECURITY_ACTION_LINKDEMAND, SECURITY_ACTION_NONCASLINKDEMAND, SECURITY_ACTION_LINKDEMANDCHOICE);
+	}
+
+	return result;
+}
+
+/*
+ * Collect all Inherit actions: InheritanceDemand, NonCasInheritanceDemand and InheritanceDemandChoice (2.0).
+ *
+ * Note: Don't use the content of actions if the function return FALSE.
+ */
+MonoBoolean
+mono_declsec_get_inheritdemands_class (MonoMethod *method, MonoDeclSecurityActions* klass)
+{
+	MonoBoolean result = FALSE;
+	guint32 flags;
+
+	/* quick exit if no declarative security is present in the metadata */
+	if (!method->klass->image->tables [MONO_TABLE_DECLSECURITY].rows)
+		return FALSE;
+
+	/* we want the original as the wrapper is "free" of the security informations */
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		method = mono_marshal_method_from_wrapper (method);
+		if (!method)
+			return FALSE;
+	}
+
+	/* Here we use (or create) the class declarative cache to look for demands */
+	flags = mono_declsec_flags_from_class (method->klass);
+	if (flags & (MONO_DECLSEC_FLAG_INHERITANCEDEMAND | MONO_DECLSEC_FLAG_NONCAS_INHERITANCEDEMAND | MONO_DECLSEC_FLAG_INHERITANCEDEMAND_CHOICE)) {
+		mono_class_init (method->klass);
+		memset (klass, 0, sizeof (MonoDeclSecurityActions));
+
+		result |= mono_declsec_get_class_demands_params (method, klass, 
+			SECURITY_ACTION_INHERITDEMAND, SECURITY_ACTION_NONCASDEMAND, SECURITY_ACTION_INHERITDEMANDCHOICE);
+	}
+
+	return result;
+}
+
+/*
+ * Collect all Inherit actions: InheritanceDemand, NonCasInheritanceDemand and InheritanceDemandChoice (2.0).
+ *
+ * Note: Don't use the content of actions if the function return FALSE.
+ */
+MonoBoolean
+mono_declsec_get_inheritdemands_method (MonoMethod *method, MonoDeclSecurityActions* cmethod)
+{
+	/* quick exit if no declarative security is present in the metadata */
+	if (!method->klass->image->tables [MONO_TABLE_DECLSECURITY].rows)
+		return FALSE;
+
+	/* we want the original as the wrapper is "free" of the security informations */
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		method = mono_marshal_method_from_wrapper (method);
+		if (!method)
+			return FALSE;
+	}
+
+	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
+		mono_class_init (method->klass);
+		memset (cmethod, 0, sizeof (MonoDeclSecurityActions));
+
+		return mono_declsec_get_method_demands_params (method, cmethod, 
+			SECURITY_ACTION_INHERITDEMAND, SECURITY_ACTION_NONCASDEMAND, SECURITY_ACTION_INHERITDEMANDCHOICE);
+	}
+	return FALSE;
+}
+
 
 static MonoBoolean
 get_declsec_action (MonoImage *image, guint32 token, guint32 action, MonoDeclSecurityEntry *entry)
