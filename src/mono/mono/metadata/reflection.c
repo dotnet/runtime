@@ -1593,13 +1593,6 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 		return token;
 
 	if (image->assembly->dynamic && (image->assembly == assembly->image.assembly)) {
-		table = &assembly->tables [MONO_TABLE_FILE];
-		table->rows++;
-		alloc_table (table, table->rows);
-		values = table->values + table->next_idx * MONO_FILE_SIZE;
-		values [MONO_FILE_FLAGS] = FILE_CONTAINS_METADATA;
-		values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, image->module_name);
-
 		table = &assembly->tables [MONO_TABLE_MODULEREF];
 		token = table->next_idx ++;
 		table->rows ++;
@@ -2532,6 +2525,35 @@ module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *mb) 
 }
 
 static void
+mono_image_fill_file_table (MonoDomain *domain, MonoReflectionModuleBuilder *mb,
+							MonoDynamicImage *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	char blob_size [6];
+	guchar hash [20];
+	char *b = blob_size;
+	char *dir, *path;
+
+	table = &assembly->tables [MONO_TABLE_FILE];
+	table->rows++;
+	alloc_table (table, table->rows);
+	values = table->values + table->next_idx * MONO_FILE_SIZE;
+	values [MONO_FILE_FLAGS] = FILE_CONTAINS_METADATA;
+	values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, mb->dynamic_image->image.module_name);
+	/* This depends on the fact that the main module is emitted last */
+	dir = mono_string_to_utf8 (mb->assemblyb->dir);
+	path = g_strdup_printf ("%s%c%s", dir, G_DIR_SEPARATOR, mb->dynamic_image->image.module_name);
+	mono_sha1_get_digest_from_file (path, hash);
+	g_free (dir);
+	g_free (path);
+	mono_metadata_encode_value (20, b, &b);
+	values [MONO_FILE_HASH_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, hash, 20);
+	table->next_idx ++;
+}
+
+static void
 mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly)
 {
 	MonoDynamicTable *table;
@@ -2549,6 +2571,54 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_MVID] = i;
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENC] = 0;
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENCBASE] = 0;
+}
+
+static void
+mono_image_fill_export_table (MonoDomain *domain, MonoReflectionTypeBuilder *tb,
+							  guint32 module_index, guint32 parent_index, 
+							  MonoDynamicImage *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 visib;
+	char *name;
+	char *name_space;
+	int i;
+
+	visib = tb->attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+	if (! ((visib & TYPE_ATTRIBUTE_PUBLIC) || (visib & TYPE_ATTRIBUTE_NESTED_PUBLIC)))
+		return;
+
+	name = mono_string_to_utf8 (tb->name);
+	name_space = mono_string_to_utf8 (tb->nspace);
+
+	table = &assembly->tables [MONO_TABLE_EXPORTEDTYPE];
+	table->rows++;
+	alloc_table (table, table->rows);
+	values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
+
+	values [MONO_EXP_TYPE_FLAGS] = tb->attrs;
+	values [MONO_EXP_TYPE_TYPEDEF] = mono_metadata_make_token (MONO_TABLE_TYPEDEF, tb->table_idx);
+	if (tb->nesting_type) {
+		values [MONO_EXP_TYPE_IMPLEMENTATION] = (parent_index << IMPLEMENTATION_BITS) + IMPLEMENTATION_EXP_TYPE;
+	}
+	else {
+		values [MONO_EXP_TYPE_TYPEDEF] = mono_metadata_make_token (MONO_TABLE_TYPEDEF, tb->table_idx);
+		values [MONO_EXP_TYPE_IMPLEMENTATION] = (module_index << IMPLEMENTATION_BITS) + IMPLEMENTATION_FILE;
+	}
+	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, name);
+	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, name_space);
+
+	g_free (name);
+	g_free (name_space);
+
+	table->next_idx ++;
+
+	/* Emit nested types */
+	if (tb->subtypes) {
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i)
+			mono_image_fill_export_table (domain, mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i), module_index, table->next_idx - 1, assembly);
+	}
 }
 
 #define align_pointer(base,p)\
@@ -3012,6 +3082,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	guint32 *values;
 	char *name;
 	int i;
+	guint32 module_index;
 
 	assemblyb = moduleb->assemblyb;
 	assembly = moduleb->dynamic_image;
@@ -3041,6 +3112,23 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 		values [MONO_ASSEMBLY_PUBLIC_KEY] = load_public_key (assemblyb->public_key, assembly);
 		values [MONO_ASSEMBLY_FLAGS] = assemblyb->flags;
 		set_version_from_string (assemblyb->version, values);
+
+		/* Emit FILE + EXPORTED_TYPE table */
+		module_index = 0;
+		for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
+			int j;
+			MonoReflectionModuleBuilder *file_module = 
+				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i);
+			if (file_module != moduleb) {
+				mono_image_fill_file_table (domain, file_module, assembly);
+				module_index ++;
+				for (j = 0; j < mono_array_length (file_module->types); ++j) {
+					MonoReflectionTypeBuilder *tb = mono_array_get (file_module->types, MonoReflectionTypeBuilder*, j);
+					mono_image_fill_export_table (domain, tb, module_index, 0,
+												  assembly);
+				}
+			}
+		}
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
