@@ -85,7 +85,7 @@ fi
 
 # End of build dependencies, now get the latest mono checkout and build that
 
-test -z "$CVSROOT" && CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+test -z "$CVSROOT" && CVSROOT=:pserver:anonymous@anoncvs.go-mono.com:/mono
 export CVSROOT
 
 echo "Updating mono"

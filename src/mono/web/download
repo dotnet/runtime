@@ -74,7 +74,7 @@
 	with the cygwin installer.
 
 	The script will download required packages from
-	www.go-mono.org and do a cvs checkout of mono in the current
+	www.go-mono.com and do a cvs checkout of mono in the current
 	directory.  The cvs server chosen defaults to anonymous cvs;
 	set your CVSROOT environment variable before running the script to
 	select a particular cvs server.
@@ -97,12 +97,12 @@
 
 		* Precompiled GLIB 1.3 and pkg-config packages (and
 		  their dependencies) by the <a href="http://www.gimp.org/~tml/gimp/win32//index.html">GIMP for Windows</a> project from
-		  <a href="http://www.go-mono.org/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.org/archive/pkgconfig-0.80-tml-20020101.zip</a>
-		  <a href="http://www.go-mono.org/archive/glib-1.3.12-20020101.zip">http://www.go-mono.org/archive/glib-1.3.12-20020101.zip</a>
-		  <a href="http://www.go-mono.org/archive/glib-dev-1.3.12-20020101.zip">http://www.go-mono.org/archive/glib-dev-1.3.12-20020101.zip</a>
-		  <a href="http://www.go-mono.org/archive/libiconv-1.7.zip">http://www.go-mono.org/archive/libiconv-1.7.zip</a>
-		  <a href="http://www.go-mono.org/archive/libiconv-dev-1.7.zip">http://www.go-mono.org/archive/libiconv-dev-1.7-20020101.zip</a>
-		  <a href="http://www.go-mono.org/archive/libintl-0.10.40-20020101.zip">http://www.go-mono.org/archive/libintl-0.10.40-20020101.zip</a>
+		  <a href="http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip</a>
+		  <a href="http://www.go-mono.com/archive/glib-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-1.3.12-20020101.zip</a>
+		  <a href="http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip</a>
+		  <a href="http://www.go-mono.com/archive/libiconv-1.7.zip">http://www.go-mono.com/archive/libiconv-1.7.zip</a>
+		  <a href="http://www.go-mono.com/archive/libiconv-dev-1.7.zip">http://www.go-mono.com/archive/libiconv-dev-1.7-20020101.zip</a>
+		  <a href="http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip">http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip</a>
 
 		* Download the Mono source code from the
 		  <a href="#feb-11">packaged versions</a> or

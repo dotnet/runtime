@@ -19,7 +19,7 @@ PATH=$here/install/bin:$here/install/lib:$PATH
 
 # Check mono out first, so we can run aclocal from inside the mono dir (it
 # needs to see which version of the real aclocal to run)
-test -z "$CVSROOT" && CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+test -z "$CVSROOT" && CVSROOT=:pserver:anonymous@anoncvs.go-mono.com:/mono
 export CVSROOT
 
 echo "Updating mono"
