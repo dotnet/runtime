@@ -75,6 +75,7 @@ static MonoMethodSignature *helper_sig_void_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj = NULL;
+static MonoMethodSignature *helper_sig_ptr_int = NULL;
 static MonoMethodSignature *helper_sig_initobj = NULL;
 static MonoMethodSignature *helper_sig_memcpy = NULL;
 static MonoMethodSignature *helper_sig_memset = NULL;
@@ -3393,9 +3394,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				temp = mono_emit_jit_icall (cfg, bblock, mono_class_static_field_address, iargs, ip);
 				NEW_TEMPLOAD (cfg, ins, temp);
 			} else {
+				gpointer addr;
 				vtable = mono_class_vtable (cfg->domain, klass);
-				NEW_PCONST (cfg, ins, (char*)vtable->data + field->offset);
-				ins->cil_code = ip;
+				if (!cfg->domain->thread_static_fields || !(addr = g_hash_table_lookup (cfg->domain->thread_static_fields, field))) {
+					addr = (char*)vtable->data + field->offset;
+					NEW_PCONST (cfg, ins, addr);
+					ins->cil_code = ip;
+				} else {
+					/* 
+					 * insert call to mono_threads_get_static_data (GPOINTER_TO_UINT (addr)) 
+					 * This could be later optimized to do just a couple of
+					 * memory dereferences with constant offsets.
+					 */
+					int temp;
+					MonoInst *iargs [1];
+					NEW_ICONST (cfg, iargs [0], GPOINTER_TO_UINT (addr));
+					temp = mono_emit_jit_icall (cfg, bblock, mono_threads_get_static_data, iargs, ip);
+					NEW_TEMPLOAD (cfg, ins, temp);
+				}
 			}
 
 			/* FIXME: mark instructions for use in SSA */
@@ -4581,6 +4597,12 @@ create_helper_signature (void)
 	helper_sig_ptr_obj->params [0] = &mono_defaults.object_class->byval_arg;
 	helper_sig_ptr_obj->ret = &mono_defaults.int_class->byval_arg;
 	helper_sig_ptr_obj->pinvoke = 1;
+
+	/* IntPtr  amethod (int) */
+	helper_sig_ptr_int = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+	helper_sig_ptr_int->params [0] = &mono_defaults.int32_class->byval_arg;
+	helper_sig_ptr_int->ret = &mono_defaults.int_class->byval_arg;
+	helper_sig_ptr_int->pinvoke = 1;
 
 	/* long amethod (long, guint32) */
 	helper_sig_long_long_int = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
@@ -6208,6 +6230,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_class_static_field_address , "mono_class_static_field_address", 
 				 helper_sig_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr, FALSE);
+	mono_register_jit_icall (mono_threads_get_static_data, "mono_threads_get_static_data", helper_sig_ptr_int, FALSE);
 	mono_register_jit_icall (mono_ldstr, "mono_ldstr", helper_sig_ldstr, FALSE);
 	mono_register_jit_icall (helper_memcpy, "helper_memcpy", helper_sig_memcpy, FALSE);
 	mono_register_jit_icall (helper_memset, "helper_memset", helper_sig_memset, FALSE);

@@ -345,6 +345,7 @@ static gpointer
 mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 {
 	MonoVTable *vtable;
+	gpointer addr;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -356,8 +357,12 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 
 	//printf ("SFLDA1 %p\n", (char*)vtable->data + field->offset);
 
+	if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
+		addr = (char*)vtable->data + field->offset;
+	else
+		addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
 	
-	return (char*)vtable->data + field->offset;
+	return addr;
 }
 
 static gpointer
