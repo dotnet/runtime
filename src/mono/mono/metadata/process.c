@@ -741,27 +741,24 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 	
 	if (process_info->use_shell) {
 		const gchar *spath;
+		gchar *shell_args;
 #ifdef PLATFORM_WIN32
 		spath = g_getenv ("COMSPEC");
+		shell_args = "/c %s";
 #else
 		spath = g_getenv ("SHELL");
+		shell_args = "-c %s";
 #endif
 		if (spath != NULL) {
 			gint dummy;
 			gchar *newcmd, *tmp;
+			gchar *quoted;
 
 			shell_path = mono_unicode_from_external (spath, &dummy);
 			tmp = mono_string_to_utf8 (cmd);
-#ifdef PLATFORM_WIN32
-			newcmd = g_strdup_printf ("/c %s", tmp);
-#else
-			{
-			gchar *quoted;
 			quoted = g_shell_quote (tmp);
-			newcmd = g_strdup_printf ("-c %s", quoted);
+			newcmd = g_strdup_printf (shell_args, quoted);
 			g_free (quoted);
-			}
-#endif
 			g_free (tmp);
 			cmd = mono_string_new (mono_domain_get (), newcmd);
 			g_free (newcmd);
