@@ -531,10 +531,14 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 {
 	char *t;
 	char *result;
-	const char *out = param->attrs & 2 ? "[out] ": "";
+	char *attribs;
+	const char *out = param->attrs & PARAM_ATTRIBUTE_OUT ? "[out]": "";
+	const char *opt = param->attrs & PARAM_ATTRIBUTE_OPTIONAL ? "[opt]": "";
+	attribs = g_strconcat(out, opt, NULL);
 	t = dis_stringify_type (m, param);
-	result = g_strconcat (out, t, NULL);
+	result = g_strjoin(attribs[0] ? " ":"", attribs, t, NULL);
 	g_free (t);
+	g_free (attribs);
 	return result;
 }
 

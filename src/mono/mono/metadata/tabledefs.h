@@ -186,11 +186,11 @@ enum {
 #define METHOD_SEMANTIC_FIRE      0x0020
 
 /*
- * Flags for Params (22.1.11)
+ * Flags for Params (22.1.12)
  */
 #define PARAM_ATTRIBUTE_IN                 0x0001
 #define PARAM_ATTRIBUTE_OUT                0x0002
-#define PARAM_ATTRIBUTE_OPTIONAL           0x0004
+#define PARAM_ATTRIBUTE_OPTIONAL           0x0010
 #define PARAM_ATTRIBUTE_RESERVED_MASK      0xf000
 #define PARAM_ATTRIBUTE_HAS_DEFAULT        0x1000
 #define PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL  0x2000

@@ -318,9 +318,9 @@ dump_table_constant (MonoImage *m)
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_CONSTANT_SIZE];
-		const char *parent = desc [cols [MONO_CONSTANT_PARENT] & MONO_HASCONSTANT_MASK];
-		
+		char *parent;
 		mono_metadata_decode_row (t, i, cols, MONO_CONSTANT_SIZE);
+		parent = desc [cols [MONO_CONSTANT_PARENT] & MONO_HASCONSTANT_MASK];
 
 		fprintf (output, "%d: Parent= %s: %d %s\n",
 			 i + 1, parent, cols [MONO_CONSTANT_PARENT] >> MONO_HASCONSTANT_BITS, 
