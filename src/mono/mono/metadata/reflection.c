@@ -882,7 +882,7 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 	 */
 	table = &assembly->tables [MONO_TABLE_PROPERTY];
 	pb->table_idx = table->next_idx ++;
-	values = table->values + pb->table_idx * MONO_FIELD_SIZE;
+	values = table->values + pb->table_idx * MONO_PROPERTY_SIZE;
 	name = mono_string_to_utf8 (pb->name);
 	values [MONO_PROPERTY_NAME] = string_heap_insert (&assembly->sheap, name);
 	g_free (name);
@@ -912,6 +912,66 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY;
 	}
 	mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PROPERTY, pb->cattrs);
+}
+
+static void
+mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicAssembly *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	char *name;
+	guint num_methods = 0;
+	guint32 semaidx;
+
+	/* 
+	 * we need to set things in the following tables:
+	 * EVENTMAP (info already filled in _get_type_info ())
+	 * EVENT    (rows already preallocated in _get_type_info ())
+	 * METHOD      (method info already done with the generic method code)
+	 * METHODSEMANTICS
+	 */
+	table = &assembly->tables [MONO_TABLE_EVENT];
+	eb->table_idx = table->next_idx ++;
+	values = table->values + eb->table_idx * MONO_EVENT_SIZE;
+	name = mono_string_to_utf8 (eb->name);
+	values [MONO_EVENT_NAME] = string_heap_insert (&assembly->sheap, name);
+	g_free (name);
+	values [MONO_EVENT_FLAGS] = eb->attrs;
+	values [MONO_EVENT_TYPE] = mono_image_typedef_or_ref (assembly, eb->type->type);
+
+	/*
+	 * FIXME: we still don't handle 'other' methods 
+	 */
+	if (eb->add_method) num_methods ++;
+	if (eb->remove_method) num_methods ++;
+	if (eb->raise_method) num_methods ++;
+
+	table = &assembly->tables [MONO_TABLE_METHODSEMANTICS];
+	table->rows += num_methods;
+	alloc_table (table, table->rows);
+
+	if (eb->add_method) {
+		semaidx = table->next_idx ++;
+		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
+		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_ADD_ON;
+		values [MONO_METHOD_SEMA_METHOD] = eb->add_method->table_idx;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
+	}
+	if (eb->remove_method) {
+		semaidx = table->next_idx ++;
+		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
+		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_REMOVE_ON;
+		values [MONO_METHOD_SEMA_METHOD] = eb->remove_method->table_idx;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
+	}
+	if (eb->raise_method) {
+		semaidx = table->next_idx ++;
+		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
+		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_FIRE;
+		values [MONO_METHOD_SEMA_METHOD] = eb->raise_method->table_idx;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
+	}
+	mono_image_add_cattrs (assembly, eb->table_idx, CUSTOM_ATTR_EVENT, eb->cattrs);
 }
 
 static guint32
@@ -1125,6 +1185,9 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	}
 
 	/* Do the same with properties etc.. */
+	/*
+	 * FIXME: note that the methodsemantics table needs to be sorted...
+	 */
 	if (tb->properties && mono_array_length (tb->properties)) {
 		table = &assembly->tables [MONO_TABLE_PROPERTY];
 		table->rows += mono_array_length (tb->properties);
@@ -1138,6 +1201,20 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		for (i = 0; i < mono_array_length (tb->properties); ++i)
 			mono_image_get_property_info (
 				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
+	}
+	if (tb->events && mono_array_length (tb->events)) {
+		table = &assembly->tables [MONO_TABLE_EVENT];
+		table->rows += mono_array_length (tb->events);
+		alloc_table (table, table->rows);
+		table = &assembly->tables [MONO_TABLE_EVENTMAP];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_EVENT_MAP_SIZE;
+		values [MONO_EVENT_MAP_PARENT] = tb->table_idx;
+		values [MONO_EVENT_MAP_EVENTLIST] = assembly->tables [MONO_TABLE_EVENT].next_idx;
+		for (i = 0; i < mono_array_length (tb->events); ++i)
+			mono_image_get_event_info (
+				mono_array_get (tb->events, MonoReflectionEventBuilder*, i), assembly);
 	}
 	if (tb->subtypes) {
 		MonoDynamicTable *ntable;

@@ -141,7 +141,7 @@ ves_real_abort (int line, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
 {
 	MonoMethodNormal *mm = (MonoMethodNormal *)mh;
-	fprintf (stderr, "Execution aborted in method: %s\n", mh->name);
+	fprintf (stderr, "Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
 		 ip-mm->header->code);
 	g_print ("0x%04x %02x\n",
@@ -653,39 +653,6 @@ db_match_method (gpointer data, gpointer user_data)
 	/* ignore namespace */
 }
 
-static guint32*
-calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
-{
-	int i, align, size, offset = 0;
-	int hasthis = signature->hasthis;
-	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
-
-	for (i = 0; i < header->num_locals; ++i) {
-		size = mono_type_size (header->locals [i], &align);
-		offset += align - 1;
-		offset &= ~(align - 1);
-		offsets [2 + i] = offset;
-		offset += size;
-	}
-	offsets [0] = offset;
-	offset = 0;
-	if (hasthis) {
-		offset += sizeof (gpointer) - 1;
-		offset &= ~(sizeof (gpointer) - 1);
-		offsets [2 + header->num_locals] = offset;
-		offset += sizeof (gpointer);
-	}
-	for (i = 0; i < signature->param_count; ++i) {
-		size = mono_type_size (signature->params [i], &align);
-		offset += align - 1;
-		offset &= ~(align - 1);
-		offsets [2 + hasthis + header->num_locals + i] = offset;
-		offset += size;
-	}
-	offsets [1] = offset;
-	return offsets;
-}
-
 #define DEBUG_ENTER()	\
 	fcall_count++;	\
 	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method);	\
@@ -727,6 +694,39 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 #define DEBUG_LEAVE()
 
 #endif
+
+static guint32*
+calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
+{
+	int i, align, size, offset = 0;
+	int hasthis = signature->hasthis;
+	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
+
+	for (i = 0; i < header->num_locals; ++i) {
+		size = mono_type_size (header->locals [i], &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		offsets [2 + i] = offset;
+		offset += size;
+	}
+	offsets [0] = offset;
+	offset = 0;
+	if (hasthis) {
+		offset += sizeof (gpointer) - 1;
+		offset &= ~(sizeof (gpointer) - 1);
+		offsets [2 + header->num_locals] = offset;
+		offset += sizeof (gpointer);
+	}
+	for (i = 0; i < signature->param_count; ++i) {
+		size = mono_type_size (signature->params [i], &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		offsets [2 + hasthis + header->num_locals + i] = offset;
+		offset += size;
+	}
+	offsets [1] = offset;
+	return offsets;
+}
 
 #define LOCAL_POS(n)            (frame->locals + offsets [2 + (n)])
 #define LOCAL_TYPE(header, n)   ((header)->locals [(n)])
@@ -2901,25 +2901,26 @@ array_constructed:
 			}
 			BREAK;
 		CASE (CEE_CONV_OVF_I4)
-			++ip;
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
 				/* defined as NOP */
 			} else if(sp [-1].type == VAL_I64) {
 				sp [-1].data.i = (gint32)sp [-1].data.l;
-				break;
 			} else {
 				ves_abort();
 			}
+			++ip;
 			BREAK;
 		CASE (CEE_CONV_OVF_U4)
-			++ip;
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
 				/* defined as NOP */
+			} else if(sp [-1].type == VAL_I64) {
+				sp [-1].data.i = (guint32)sp [-1].data.l;
 			} else {
 				ves_abort();
 			}
+			++ip;
 			BREAK;
 		CASE (CEE_CONV_OVF_I8) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U8) ves_abort(); BREAK;

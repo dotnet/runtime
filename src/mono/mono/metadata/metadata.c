@@ -2173,6 +2173,76 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token)
 }
 
 guint32
+mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
+{
+	locator_t loc;
+	guint32 start, end;
+	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_EVENTMAP];
+
+	*end_idx = 0;
+	
+	if (!tdef->base)
+		return 0;
+
+	loc.t = tdef;
+	loc.col_idx = MONO_EVENT_MAP_PARENT;
+	loc.idx = index + 1;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+	
+	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
+	if (loc.result + 1 < tdef->rows) {
+		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
+	} else {
+		end = meta->tables [MONO_TABLE_EVENT].rows;
+	}
+
+	*end_idx = end;
+	return start - 1;
+}
+
+guint32
+mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_idx)
+{
+	locator_t loc;
+	guint start, end;
+	guint32 cols [MONO_METHOD_SEMA_SIZE];
+	MonoTableInfo *msemt = &meta->tables [MONO_TABLE_METHODSEMANTICS];
+
+	*end_idx = 0;
+	if (!msemt->base)
+		return 0;
+
+	loc.t = msemt;
+	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
+	loc.idx = ((index + 1) << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT; /* Method association coded index */
+
+	if (!bsearch (&loc, msemt->base, msemt->rows, msemt->row_size, table_locator))
+		return 0;
+
+	start = loc.result;
+	/*
+	 * We may end up in the middle of the rows... 
+	 */
+	while (start > 0) {
+		if (loc.idx == mono_metadata_decode_row_col (msemt, start - 1, MONO_METHOD_SEMA_ASSOCIATION))
+			start--;
+		else
+			break;
+	}
+	end = start + 1;
+	while (end < msemt->rows) {
+		mono_metadata_decode_row (msemt, end, cols, MONO_METHOD_SEMA_SIZE);
+		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
+			break;
+		++end;
+	}
+	*end_idx = end;
+	return start;
+}
+
+guint32
 mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
 {
 	locator_t loc;
@@ -2216,7 +2286,7 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
-	loc.idx = ((index + 1) << 1) | 1; /* Method association coded index */
+	loc.idx = ((index + 1) << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY; /* Method association coded index */
 
 	if (!bsearch (&loc, msemt->base, msemt->rows, msemt->row_size, table_locator))
 		return 0;

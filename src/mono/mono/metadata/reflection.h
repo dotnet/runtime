@@ -266,6 +266,7 @@ typedef struct {
 	MonoArray *ctors;
 	MonoArray *properties;
 	MonoArray *fields;
+	MonoArray *events;
 	MonoArray *cattrs;
 	MonoArray *subtypes;
 	guint32 attrs;
@@ -281,6 +282,20 @@ typedef struct {
 	MonoString *codebase;
 	MonoObject *version;
 } MonoReflectionAssemblyName;
+
+typedef struct {
+	MonoObject  obj;
+	MonoString *name;
+	MonoReflectionType *type;
+	MonoReflectionTypeBuilder *typeb;
+	MonoArray *cattrs;
+	MonoReflectionMethodBuilder *add_method;
+	MonoReflectionMethodBuilder *remove_method;
+	MonoReflectionMethodBuilder *raise_method;
+	MonoArray *other_methods;
+	guint32 attrs;
+	guint32 table_idx;
+} MonoReflectionEventBuilder;
 
 typedef struct {
 	MonoObject  obj;

@@ -117,6 +117,8 @@ guint32 mono_metadata_nesting_typedef     (MonoImage *meta, guint32 index);
 
 MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count);
 
+guint32     mono_metadata_events_from_typedef     (MonoImage *meta, guint32 index, guint *end_idx);
+guint32     mono_metadata_methods_from_event      (MonoImage *meta, guint32 index, guint *end);
 guint32     mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end);
 guint32     mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end);
 guint32     mono_metadata_packing_from_typedef    (MonoImage *meta, guint32 index, guint32 *packing, guint32 *size);

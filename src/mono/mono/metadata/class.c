@@ -234,12 +234,50 @@ init_properties (MonoClass *class)
 		for (j = startm; j < endm; ++j) {
 			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
 			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
-			case 1: /* set */
+			case METHOD_SEMANTIC_SETTER:
 				class->properties [i - class->property.first].set = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
-			case 2: /* get */
+			case METHOD_SEMANTIC_GETTER:
 				class->properties [i - class->property.first].get = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
+static void
+init_events (MonoClass *class)
+{
+	guint startm, endm, i, j;
+	guint32 cols [MONO_EVENT_SIZE];
+	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_EVENT];
+	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
+
+	class->event.first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &class->event.last);
+	class->event.count = class->event.last - class->event.first;
+
+	class->events = g_new0 (MonoEvent, class->event.count);
+	for (i = class->event.first; i < class->event.last; ++i) {
+		mono_metadata_decode_row (pt, i, cols, MONO_EVENT_SIZE);
+		class->events [i - class->event.first].attrs = cols [MONO_EVENT_FLAGS];
+		class->events [i - class->event.first].name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
+
+		startm = mono_metadata_methods_from_event (class->image, i, &endm);
+		for (j = startm; j < endm; ++j) {
+			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+			case METHOD_SEMANTIC_ADD_ON:
+				class->events [i - class->event.first].add = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				break;
+			case METHOD_SEMANTIC_REMOVE_ON:
+				class->events [i - class->event.first].remove = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				break;
+			case METHOD_SEMANTIC_FIRE:
+				class->events [i - class->event.first].raise = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				break;
+			case METHOD_SEMANTIC_OTHER: /* don't care for now */
 			default:
 				break;
 			}
@@ -529,6 +567,7 @@ mono_class_init (MonoClass *class)
 	}
 
 	init_properties (class);
+	init_events (class);
 
 	i = mono_metadata_nesting_typedef (class->image, class->type_token);
 	while (i) {

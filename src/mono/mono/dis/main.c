@@ -595,6 +595,69 @@ dis_property_list (MonoImage *m, guint32 typedef_row)
 	}
 }
 
+static char*
+dis_event_signature (MonoImage *m, guint32 event_idx)
+{
+	MonoTableInfo *et = &m->tables [MONO_TABLE_EVENT];
+	const char *name;
+	char *type, *res;
+	guint32 cols [MONO_EVENT_SIZE];
+	
+	mono_metadata_decode_row (et, event_idx, cols, MONO_EVENT_SIZE);
+	name = mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]);
+	type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE]);
+
+	res = g_strdup_printf ("%s %s", type, name);
+	g_free (type);
+	return res;
+}
+
+static void
+dis_event_methods (MonoImage *m, guint32 event)
+{
+	guint start, end;
+	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
+	guint32 cols [MONO_METHOD_SEMA_SIZE];
+	char *sig;
+	char *type;
+
+	start = mono_metadata_methods_from_event (m, event, &end);
+	while (start < end) {
+		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD]);
+		switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+		case METHOD_SEMANTIC_OTHER:
+			type = ".other"; break;
+		case METHOD_SEMANTIC_ADD_ON:
+			type = ".addon"; break;
+		case METHOD_SEMANTIC_REMOVE_ON:
+			type = ".removeon"; break;
+		case METHOD_SEMANTIC_FIRE:
+			type = ".fire"; break;
+		default:
+			break;
+		}
+		fprintf (output, "\t\t%s %s\n", type, sig);
+		g_free (sig);
+		++start;
+	}
+}
+
+static void
+dis_event_list (MonoImage *m, guint32 typedef_row)
+{
+	guint start, end, i;
+	start = mono_metadata_events_from_typedef (m, typedef_row, &end);
+
+	for (i = start; i < end; ++i) {
+		char *sig = dis_event_signature (m, i);
+		fprintf (output, "\t.event %s\n\t{\n", sig);
+		dis_event_methods (m, i);
+		fprintf (output, "\t}\n");
+		g_free (sig);
+	}
+}
+
 static void
 dis_interfaces (MonoImage *m, guint32 typedef_row)
 {
@@ -703,6 +766,7 @@ dis_type (MonoImage *m, int n)
 		dis_method_list (m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
 
 	dis_property_list (m, n);
+	dis_event_list (m, n);
 
 	fprintf (output, "  }\n");
 	if (*nspace)

@@ -490,9 +490,9 @@ dump_table_methodsem (MonoImage *m)
 		
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SEMA_SIZE);
 		semantics = flags (cols [MONO_METHOD_SEMA_SEMANTICS], semantics_map);
-		is_property = cols [MONO_METHOD_SEMA_ASSOCIATION] & 1;
-		index = cols [MONO_METHOD_SEMA_ASSOCIATION] >> 1;
-		fprintf (output, "%d: %s method: %d %s %d\n", i, semantics,
+		is_property = cols [MONO_METHOD_SEMA_ASSOCIATION] & HAS_SEMANTICS_MASK;
+		index = cols [MONO_METHOD_SEMA_ASSOCIATION] >> HAS_SEMANTICS_BITS;
+		fprintf (output, "%d: [%d] %s method: %d %s %d\n", i, cols [MONO_METHOD_SEMA_ASSOCIATION], semantics,
 						cols [MONO_METHOD_SEMA_METHOD] - 1, 
 						is_property? "property" : "event",
 						index);
