@@ -165,13 +165,13 @@ ves_icall_System_String_ctor_chara_int_int (gpointer dummy, MonoArray *value,
 
 	MONO_ARCH_SAVE_REGS;
 
-	if ((value == NULL) && ((sindex != 0) || (length != 0)))
+	if (value == NULL)
 		mono_raise_exception (mono_get_exception_argument_null ("value"));
 	if (sindex < 0)
 		mono_raise_exception (mono_get_exception_argument_out_of_range ("startIndex"));		
 	if (length < 0)
 		mono_raise_exception (mono_get_exception_argument_out_of_range ("length"));
-	if ((value != NULL) && (sindex + length > mono_array_length (value)))
+	if (sindex + length > mono_array_length (value))
 		mono_raise_exception (mono_get_exception_argument_out_of_range ("Out of range"));
 
 	domain = mono_domain_get ();
