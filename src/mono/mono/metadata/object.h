@@ -80,6 +80,11 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoType  *type;
+} MonoReflectionType;
+
+typedef struct {
+	MonoObject object;
 	MonoObject *inner_ex;
 	MonoString *message;
 	MonoString *help_link;
@@ -117,13 +122,13 @@ typedef struct {
 
 typedef struct {
 	MonoObject  object;
-	MonoObject *rp;	
-} MonoTransparentProxy;
+	MonoReflectionType *class_to_proxy;	
+} MonoRealProxy;
 
 typedef struct {
 	MonoObject  object;
-	MonoObject *class_to_proxy;	
-} MonoRealProxy;
+	MonoRealProxy *rp;	
+} MonoTransparentProxy;
 
 typedef void   (*MonoRuntimeObjectInit) (MonoObject *o);
 typedef gint32 (*MonoRuntimeExecMain)   (MonoMethod *method, MonoArray *args);

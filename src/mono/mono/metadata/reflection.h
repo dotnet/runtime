@@ -30,11 +30,6 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	MonoType  *type;
-} MonoReflectionType;
-
-typedef struct {
-	MonoObject object;
 	MonoMethod *method;
 } MonoReflectionMethod;
 
