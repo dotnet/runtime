@@ -7517,8 +7517,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	decompose_pass (cfg);
 
-	/* FIXME: disabled with exception clauses: bug #42136 */
-	if ((!header->num_clauses) && (cfg->opt & MONO_OPT_LINEARS)) {
+	if (cfg->opt & MONO_OPT_LINEARS) {
 		GList *vars, *regs;
 
 		/* fixme: maybe we can avoid to compute livenesss here if already computed ? */

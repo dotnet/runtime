@@ -59,6 +59,8 @@ mono_varlist_sort (MonoCompile *cfg, GList *list, int sort_type)
 		return g_list_sort (list, compare_by_first_use_func);
 	else
 		g_assert_not_reached ();
+
+	return NULL;
 }
 
 //#define DEBUG_LSCAN
@@ -191,11 +193,18 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 				cfg->varinfo [vmv->idx]->dreg = vmv->reg;
 				if (cfg->verbose_level > 2)
 					printf ("REGVAR %d C%d R%d\n", vmv->idx, vmv->spill_costs, vmv->reg);
-			} else {
-				used_regs &= ~(1LL << vmv->reg); 
+			} else
 				vmv->reg = -1;
-			}
 		}
+	}
+
+	/* Compute used regs */
+	used_regs = 0;
+	for (l = vars; l; l = l->next) {
+		vmv = l->data;
+		
+		if (vmv->reg >= 0)
+			used_regs |= 1LL << vmv->reg;
 	}
 
 	*used_mask |= used_regs;
