@@ -17,6 +17,12 @@
 
 #include "abcremoval.h"
 
+#if SIZEOF_VOID_P == 8
+#define OP_PCONST OP_I8CONST
+#else
+#define OP_PCONST OP_ICONST
+#endif
+
 extern guint8 mono_burg_arity [];
 
 #define TRACE_ABC_REMOVAL (verbose_level > 2)
@@ -229,7 +235,7 @@ get_variable_value_from_store_instruction (MonoInst *store, int expected_variabl
 		if (TRACE_ABC_REMOVAL) {
 			printf ("[store instruction found]");
 		}
-		if (store->inst_left->opcode == OP_LOCAL) {
+		if ((store->inst_left->opcode == OP_LOCAL) || (store->inst_left->opcode == OP_ARG)) {
 			int variable_index = store->inst_left->inst_c0;
 			if (TRACE_ABC_REMOVAL) {
 				printf ("[value put in local %d (expected %d)]", variable_index, expected_variable_index);
@@ -251,11 +257,51 @@ get_variable_value_from_store_instruction (MonoInst *store, int expected_variabl
 }
 
 /*
- * Given a MonoInst representing a value, store it in "summarized" form.
- * result: the "summarized" value
+ * Check if the delta of an integer variable value is safe with respect
+ * to the variable size in bytes and its kind (signed or unsigned).
+ * If the delta is not safe, make the value an "any".
  */
 static void
-summarize_value (MonoInst *value, MonoSummarizedValue *result) {
+check_delta_safety (MonoVariableRelationsEvaluationArea *area, MonoSummarizedValue *value) {
+	if (value->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
+		gssize variable = value->value.variable.variable;
+		int delta = value->value.variable.delta;
+		if ((area->variable_value_kind [variable]) & MONO_UNSIGNED_VALUE_FLAG) {
+			if (delta < 0) {
+				MAKE_VALUE_ANY (*value);
+			}
+		} else {
+			if (((area->variable_value_kind [variable]) & MONO_INTEGER_VALUE_SIZE_BITMASK) < 4) {
+				MAKE_VALUE_ANY (*value);
+			} else if (delta > 16) {
+				MAKE_VALUE_ANY (*value);
+			}
+		}
+	}
+}
+
+/* Prototype, definition comes later */
+static void
+summarize_array_value (MonoVariableRelationsEvaluationArea *area, MonoInst *value, MonoSummarizedValue *result, gboolean is_array_type);
+
+/*
+ * Given a MonoInst representing an integer value, store it in "summarized" form.
+ * result_value_kind: the "expected" kind of result;
+ * result: the "summarized" value
+ * returns the "actual" kind of result, if guessable (otherwise MONO_UNKNOWN_INTEGER_VALUE)
+ */
+static MonoIntegerValueKind
+summarize_integer_value (MonoVariableRelationsEvaluationArea *area, MonoInst *value, MonoSummarizedValue *result, MonoIntegerValueKind result_value_kind) {
+	MonoIntegerValueKind value_kind;
+	
+	if (value->type == STACK_I8) {
+		value_kind = MONO_INTEGER_VALUE_SIZE_8;
+	} else if (value->type == STACK_I4) {
+		value_kind = MONO_INTEGER_VALUE_SIZE_4;
+	} else {
+		value_kind = MONO_UNKNOWN_INTEGER_VALUE;
+	}
+
 	switch (value->opcode) {
 	case OP_ICONST:
 		result->type = MONO_CONSTANT_SUMMARIZED_VALUE;
@@ -266,16 +312,34 @@ summarize_value (MonoInst *value, MonoSummarizedValue *result) {
 		result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		result->value.variable.variable = value->inst_c0;
 		result->value.variable.delta = 0;
+		value_kind = area->variable_value_kind [value->inst_c0];
 		break;
 	case CEE_LDIND_I1:
+		value_kind = MONO_INTEGER_VALUE_SIZE_1;
+		goto handle_load;
 	case CEE_LDIND_U1:
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
+		goto handle_load;
 	case CEE_LDIND_I2:
+		value_kind = MONO_INTEGER_VALUE_SIZE_2;
+		goto handle_load;
 	case CEE_LDIND_U2:
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
+		goto handle_load;
 	case CEE_LDIND_I4:
+		value_kind = MONO_INTEGER_VALUE_SIZE_4;
+		goto handle_load;
 	case CEE_LDIND_U4:
-	case CEE_LDIND_REF:
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
+		goto handle_load;
+	case CEE_LDIND_I8:
+		value_kind = MONO_INTEGER_VALUE_SIZE_8;
+		goto handle_load;
+	case CEE_LDIND_I:
+		value_kind = SIZEOF_VOID_P;
+handle_load:
 		if ((value->inst_left->opcode == OP_LOCAL) || (value->inst_left->opcode == OP_ARG)) {
-			summarize_value (value->inst_left, result);
+			value_kind = summarize_integer_value (area, value->inst_left, result, result_value_kind);
 		} else {
 			MAKE_VALUE_ANY (*result);
 		}
@@ -283,9 +347,9 @@ summarize_value (MonoInst *value, MonoSummarizedValue *result) {
 	case CEE_ADD: {
 		MonoSummarizedValue left_value;
 		MonoSummarizedValue right_value;
-		summarize_value (value->inst_left, &left_value);
-		summarize_value (value->inst_right, &right_value);
-
+		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
+		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
+		
 		if (left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 			if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
 				result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
@@ -309,13 +373,16 @@ summarize_value (MonoInst *value, MonoSummarizedValue *result) {
 		} else {
 			MAKE_VALUE_ANY (*result);
 		}
+		if (result->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
+			check_delta_safety (area, result);
+		}
 		break;
 	}
 	case CEE_SUB: {
 		MonoSummarizedValue left_value;
 		MonoSummarizedValue right_value;
-		summarize_value (value->inst_left, &left_value);
-		summarize_value (value->inst_right, &right_value);
+		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
+		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
 
 		if (left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 			if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
@@ -332,13 +399,108 @@ summarize_value (MonoInst *value, MonoSummarizedValue *result) {
 		} else {
 			MAKE_VALUE_ANY (*result);
 		}
+		if (result->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
+			check_delta_safety (area, result);
+		}
 		break;
 	}
-	case CEE_NEWARR:
-		summarize_value (value->inst_newa_len, result);
+	case CEE_AND: {
+		MonoSummarizedValue left_value;
+		MonoSummarizedValue right_value;
+		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
+		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
+		int constant_operand_value;
+
+		if (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
+			constant_operand_value = left_value.value.constant.value;
+		} else if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
+			constant_operand_value = right_value.value.constant.value;
+		} else {
+			constant_operand_value = 0;
+		}
+		
+		if (constant_operand_value > 0) {
+			if (constant_operand_value <= 0xff) {
+				if ((result_value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) > 1) {
+					value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
+				}
+			} else if (constant_operand_value <= 0xffff) {
+				if ((result_value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) > 2) {
+					value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
+				}
+			}
+		}
+		
+		MAKE_VALUE_ANY (*result);
+		break;
+	}
+	case CEE_CONV_I1:
+	case CEE_CONV_OVF_I1:
+	case CEE_CONV_OVF_I1_UN:
+		value_kind = MONO_INTEGER_VALUE_SIZE_1;
+		MAKE_VALUE_ANY (*result);
+		break;
+	case CEE_CONV_U1:
+	case CEE_CONV_OVF_U1:
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
+		MAKE_VALUE_ANY (*result);
+		break;
+	case CEE_CONV_I2:
+	case CEE_CONV_OVF_I2:
+	case CEE_CONV_OVF_I2_UN:
+		value_kind = MONO_INTEGER_VALUE_SIZE_2;
+		MAKE_VALUE_ANY (*result);
+		break;
+	case CEE_CONV_U2:
+	case CEE_CONV_OVF_U2:
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
+		MAKE_VALUE_ANY (*result);
 		break;
 	case CEE_LDLEN:
-		summarize_value (value->inst_left, result);
+		summarize_array_value (area, value->inst_left, result, TRUE);
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
+		break;
+	case OP_PHI:
+		result->type = MONO_PHI_SUMMARIZED_VALUE;
+		result->value.phi.number_of_alternatives = *(value->inst_phi_args);
+		result->value.phi.phi_alternatives = value->inst_phi_args + 1;
+		break;
+	default:
+		MAKE_VALUE_ANY (*result);
+	}
+	return value_kind;
+}
+
+/*
+ * Given a MonoInst representing an array value, store it in "summarized" form.
+ * result: the "summarized" value
+ * is_array_type: TRUE of we are *sure* that an eventual OP_PCONST will point
+ * to a MonoArray (this can happen for already initialized readonly static fields,
+ * in which case we will get the array length directly from the MonoArray)
+ */
+static void
+summarize_array_value (MonoVariableRelationsEvaluationArea *area, MonoInst *value, MonoSummarizedValue *result, gboolean is_array_type) {
+	switch (value->opcode) {
+	case OP_LOCAL:
+	case OP_ARG:
+		result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		result->value.variable.variable = value->inst_c0;
+		result->value.variable.delta = 0;
+		break;
+	case CEE_LDIND_REF:
+		summarize_array_value (area, value->inst_left, result, FALSE);
+		break;
+	case CEE_NEWARR:
+		summarize_integer_value (area, value->inst_newa_len, result, MONO_UNKNOWN_INTEGER_VALUE);
+		break;
+	case OP_PCONST:
+		if ((is_array_type) && (value->inst_p0 != NULL)) {
+			MonoArray *array = (MonoArray *) (value->inst_p0);
+			result->type = MONO_CONSTANT_SUMMARIZED_VALUE;
+			result->value.constant.value = array->max_length;
+		} else {
+			MAKE_VALUE_ANY (*result);
+		}
 		break;
 	case OP_PHI:
 		result->type = MONO_PHI_SUMMARIZED_VALUE;
@@ -381,7 +543,7 @@ get_relation_from_branch_instruction (int opcode) {
  * relations: the resulting relations (entry condition of the given BB)
  */
 static void
-get_relations_from_previous_bb (MonoBasicBlock *bb, MonoAdditionalVariableRelationsForBB *relations) {
+get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoBasicBlock *bb, MonoAdditionalVariableRelationsForBB *relations) {
 	MonoBasicBlock *in_bb;
 	MonoInst *branch;
 	MonoValueRelation branch_relation;
@@ -421,8 +583,8 @@ get_relations_from_previous_bb (MonoBasicBlock *bb, MonoAdditionalVariableRelati
 			}
 			symmetric_relation = MONO_SYMMETRIC_RELATION (branch_relation);
 
-			summarize_value (branch->inst_left->inst_left, &left_value);
-			summarize_value (branch->inst_left->inst_right, &right_value);
+			summarize_integer_value (area, branch->inst_left->inst_left, &left_value, MONO_UNKNOWN_INTEGER_VALUE);
+			summarize_integer_value (area, branch->inst_left->inst_right, &right_value, MONO_UNKNOWN_INTEGER_VALUE);
 
 			if ((left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) && ((right_value.type == MONO_VARIABLE_SUMMARIZED_VALUE)||(right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE))) {
 				relations->relation1.variable = left_value.value.variable.variable;
@@ -679,6 +841,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 								// conditions because they are first in the list), intersection is not
 								// strictly necessary, we simply copy the ranges and apply the delta
 								context->ranges = related_context->ranges;
+								/* Delta has already been checked for over/under-flow when evaluating values */
 								MONO_ADD_DELTA_SAFELY_TO_RANGES (context->ranges, relation->related_value.value.variable.delta);
 								context->status = MONO_RELATIONS_EVALUATION_COMPLETED;
 								if (TRACE_ABC_REMOVAL) {
@@ -777,7 +940,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			context->status = MONO_RELATIONS_EVALUATION_NOT_STARTED;
 		} else {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Ranges for varible %d (target variable %d) computated: ", variable, target_variable);
+				printf ("Ranges for varible %d (target variable %d) computed: ", variable, target_variable);
 				print_evaluation_context_ranges (&(context->ranges));
 				printf ("\n");
 			}
@@ -810,6 +973,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			
 			if (current_context->current_relation->relation_is_static_definition) {
 				if (current_context->current_relation->related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
+					/* No need to check path_value for over/under-flow, since delta should be safe */
 					path_value += current_context->current_relation->related_value.value.variable.delta;
 				} else if (current_context->current_relation->related_value.type != MONO_PHI_SUMMARIZED_VALUE) {
 					evaluation_can_be_recursive = FALSE;
@@ -870,6 +1034,43 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 	
 }
 
+/*
+ * Apply the given value kind to the given range
+ */
+static void apply_value_kind_to_range (MonoRelationsEvaluationRange *range, MonoIntegerValueKind value_kind) {
+	if (value_kind != MONO_UNKNOWN_INTEGER_VALUE) {
+		if (value_kind & MONO_UNSIGNED_VALUE_FLAG) {
+			if (range->lower < 0) {
+				range->lower = 0;
+			}
+			if ((value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) == 1) {
+				if (range->upper > 0xff) {
+					range->upper = 0xff;
+				}
+			} else if ((value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) == 2) {
+				if (range->upper > 0xffff) {
+					range->upper = 0xffff;
+				}
+			}
+		} else {
+			if ((value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) == 1) {
+				if (range->lower < -0x80) {
+					range->lower = -0x80;
+				}
+				if (range->upper > 0x7f) {
+					range->upper = 0x7f;
+				}
+			} else if ((value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) == 2) {
+				if (range->lower < -0x8000) {
+					range->lower = -0x8000;
+				}
+				if (range->upper > 0x7fff) {
+					range->upper = 0x7fff;
+				}
+			}
+		}
+	}
+}
 
 /*
  * Attempt the removal of bounds checks from a MonoInst.
@@ -882,15 +1083,19 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 	if (inst->opcode == CEE_LDELEMA) {
 		MonoInst *array_inst = inst->inst_left;
 		MonoInst *index_inst = inst->inst_right;
+		MonoSummarizedValue array_value;
+		MonoSummarizedValue index_value;
+		MonoIntegerValueKind index_value_kind;
 		
-		// The array must be a local variable and the index must be a properly summarized value
-		if ((array_inst->opcode == CEE_LDIND_REF) &&
-				((array_inst->inst_left->opcode == OP_LOCAL)||(array_inst->inst_left->opcode == OP_ARG))) {
-			gssize array_variable = array_inst->inst_left->inst_c0;
+		/* First of all, examine the CEE_LDELEMA operands */
+		summarize_array_value (area, array_inst, &array_value, TRUE);
+		index_value_kind = summarize_integer_value (area, index_inst, &index_value, MONO_UNKNOWN_INTEGER_VALUE);
+		
+		/* If the array is a local variable... */
+		if (array_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
+			gssize array_variable = array_value.value.variable.variable;
 			MonoRelationsEvaluationContext *array_context = &(area->contexts [array_variable]);
-			MonoSummarizedValue index_value;
 			
-			summarize_value (index_inst, &index_value);
 			if (index_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
 				// The easiest case: we just evaluate the array length, to see if it has some relation
 				// with the index constant, and act accordingly
@@ -918,6 +1123,8 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 				evaluate_relation_with_target_variable (area, array_variable, array_variable, NULL);
 				
 				MONO_SUB_DELTA_SAFELY_FROM_RANGES (index_context->ranges, index_value.value.variable.delta);
+				/* Apply index value kind */
+				apply_value_kind_to_range (&(index_context->ranges.zero), index_value_kind);
 				
 				if (index_context->ranges.zero.lower >= 0) {
 					if (TRACE_ABC_REMOVAL) {
@@ -940,7 +1147,47 @@ remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area)
 					}
 				}
 			}
-			
+		} else if (array_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
+			if (index_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
+				/* The easiest possible case: constant with constant */
+				if ((index_value.value.constant.value >= 0) && (index_value.value.constant.value < array_value.value.constant.value)) {
+					if (REPORT_ABC_REMOVAL) {
+						printf ("ARRAY-ACCESS: removed bounds check on array of constant length %d with constant index %d in method %s\n",
+								array_value.value.constant.value, index_value.value.constant.value, mono_method_full_name (area->cfg->method, TRUE));
+					}
+					inst->flags |= (MONO_INST_NORANGECHECK);
+				}
+			} else if (index_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
+				/* The index has a variable related value, which must be evaluated */
+				gssize index_variable = index_value.value.variable.variable;
+				MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
+				
+				clean_contexts (area->contexts, area->cfg->num_varinfo);
+				evaluate_relation_with_target_variable (area, index_variable, index_variable, NULL);
+				/* Apply index value kind */
+				apply_value_kind_to_range (&(index_context->ranges.zero), index_value_kind);
+				
+				if ((index_context->ranges.zero.lower >= 0) && (index_context->ranges.zero.upper < array_value.value.constant.value)) {
+					if (REPORT_ABC_REMOVAL) {
+						printf ("ARRAY-ACCESS: removed bounds check on array of constant length %d with index %d ranging from %d to %d in method %s\n",
+								array_value.value.constant.value, index_variable, index_context->ranges.zero.lower, index_context->ranges.zero.upper, mono_method_full_name (area->cfg->method, TRUE));
+					}
+					inst->flags |= (MONO_INST_NORANGECHECK);
+				}
+			} else if (index_value_kind != MONO_UNKNOWN_INTEGER_VALUE) {
+				/* The index has an unknown but bounded value */
+				MonoRelationsEvaluationRange range;
+				MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK (range);
+				apply_value_kind_to_range (&range, index_value_kind);
+				
+				if ((range.lower >= 0) && (range.upper < array_value.value.constant.value)) {
+					if (REPORT_ABC_REMOVAL) {
+						printf ("ARRAY-ACCESS: removed bounds check on array of constant length %d with unknown index ranging from %d to %d in method %s\n",
+								array_value.value.constant.value, range.lower, range.upper, mono_method_full_name (area->cfg->method, TRUE));
+					}
+					inst->flags |= (MONO_INST_NORANGECHECK);
+				}
+			}
 		}
 	}
 }
@@ -996,7 +1243,7 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 		printf ("Processing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
 	}
 	
-	get_relations_from_previous_bb (bb, &additional_relations);
+	get_relations_from_previous_bb (area, bb, &additional_relations);
 	if (TRACE_ABC_REMOVAL) {
 		if (additional_relations.relation1.relation.relation != MONO_ANY_RELATION) {
 			printf ("Adding relation 1 on variable %d: ", additional_relations.relation1.variable);
@@ -1073,18 +1320,106 @@ mono_perform_abc_removal (MonoCompile *cfg)
 		alloca (sizeof (MonoSummarizedValueRelation) * (cfg->num_varinfo) * 2);
 	area.contexts = (MonoRelationsEvaluationContext *)
 		alloca (sizeof (MonoRelationsEvaluationContext) * (cfg->num_varinfo));
+	area.variable_value_kind = (MonoIntegerValueKind *)
+		alloca (sizeof (MonoIntegerValueKind) * (cfg->num_varinfo));
 	for (i = 0; i < cfg->num_varinfo; i++) {
+		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
 		area.relations [i].next = NULL;
 		if (cfg->vars [i]->def != NULL) {
 			MonoInst *value = get_variable_value_from_store_instruction (cfg->vars [i]->def, i);
 			if (value != NULL) {
-				summarize_value (value, &(area.relations [i].related_value));
-				if (TRACE_ABC_REMOVAL) {
-					printf ("Summarized variable %d: ", i);
-					print_summarized_value (&(area.relations [i].related_value));
-					printf ("\n");
+				gboolean is_array_type;
+				MonoIntegerValueKind effective_value_kind;
+				MonoRelationsEvaluationRange range;
+				MonoSummarizedValueRelation *type_relation;
+				
+				switch (cfg->varinfo [i]->inst_vtype->type) {
+				case MONO_TYPE_ARRAY:
+				case MONO_TYPE_SZARRAY:
+					is_array_type = TRUE;
+					goto handle_array_value;
+				case MONO_TYPE_OBJECT:
+					is_array_type = FALSE;
+handle_array_value:
+					summarize_array_value (&area, value, &(area.relations [i].related_value), is_array_type);
+					if (TRACE_ABC_REMOVAL) {
+						printf ("Summarized variable %d as array (is_array_type = %s): ", i, (is_array_type?"TRUE":"FALSE"));
+						print_summarized_value (&(area.relations [i].related_value));
+						printf ("\n");
+					}
+					break;
+				case MONO_TYPE_I1:
+					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_1;
+					goto handle_integer_value;
+				case MONO_TYPE_U1:
+					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
+					goto handle_integer_value;
+				case MONO_TYPE_I2:
+					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_2;
+					goto handle_integer_value;
+				case MONO_TYPE_U2:
+					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
+					goto handle_integer_value;
+				case MONO_TYPE_I4:
+					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_4;
+					goto handle_integer_value;
+				case MONO_TYPE_U4:
+					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
+					goto handle_integer_value;
+				case MONO_TYPE_I:
+					area.variable_value_kind [i] = SIZEOF_VOID_P;
+					goto handle_integer_value;
+				case MONO_TYPE_U:
+					area.variable_value_kind [i] = (MONO_UNSIGNED_VALUE_FLAG|SIZEOF_VOID_P);
+					goto handle_integer_value;
+				case MONO_TYPE_I8:
+					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_8;
+					goto handle_integer_value;
+				case MONO_TYPE_U8:
+					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_8;
+handle_integer_value:
+					effective_value_kind = summarize_integer_value (&area, value, &(area.relations [i].related_value), area.variable_value_kind [i]);
+					MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK (range);
+					apply_value_kind_to_range (&range, area.variable_value_kind [i]);
+					apply_value_kind_to_range (&range, effective_value_kind);
+					
+					if (range.upper < INT_MAX) {
+						type_relation = (MonoSummarizedValueRelation *) alloca (sizeof (MonoSummarizedValueRelation));
+						type_relation->relation = MONO_LE_RELATION;
+						type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+						type_relation->related_value.value.constant.value = range.upper;
+						type_relation->relation_is_static_definition = TRUE;
+						type_relation->next = area.relations [i].next;
+						area.relations [i].next = type_relation;
+						if (TRACE_ABC_REMOVAL) {
+							printf ("[var%d <= %d]", i, range.upper);
+						}
+					}
+					if (range.lower > INT_MIN) {
+						type_relation = (MonoSummarizedValueRelation *) alloca (sizeof (MonoSummarizedValueRelation));
+						type_relation->relation = MONO_GE_RELATION;
+						type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+						type_relation->related_value.value.constant.value = range.lower;
+						type_relation->relation_is_static_definition = TRUE;
+						type_relation->next = area.relations [i].next;
+						area.relations [i].next = type_relation;
+						if (TRACE_ABC_REMOVAL) {
+							printf ("[var%d >= %d]", i, range.lower);
+						}
+					}
+					if (TRACE_ABC_REMOVAL) {
+						printf ("Summarized variable %d: ", i);
+						print_summarized_value (&(area.relations [i].related_value));
+						printf ("\n");
+					}
+					break;
+				default:
+					MAKE_VALUE_ANY (area.relations [i].related_value);
+					if (TRACE_ABC_REMOVAL) {
+						printf ("Variable %d not handled (type %d)\n", i, cfg->varinfo [i]->inst_vtype->type);
+					}
 				}
 			} else {
 				MAKE_VALUE_ANY (area.relations [i].related_value);
@@ -1123,4 +1458,3 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	
 	process_block (cfg->bblocks [0], &area);
 }
-

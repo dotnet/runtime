@@ -91,6 +91,26 @@ typedef enum {
 } MonoValueRelation;
 
 /**
+ * A "kind" of integer value.
+ * The enumeration is used as a bit field, with two fields.
+ * The first, four bits wide, is the "sizeof" in bytes.
+ * The second is a flag that is true if the value is unsigned.
+ */
+typedef enum {
+	MONO_INTEGER_VALUE_SIZE_1 = 1,
+	MONO_INTEGER_VALUE_SIZE_2 = 2,
+	MONO_INTEGER_VALUE_SIZE_4 = 4,
+	MONO_INTEGER_VALUE_SIZE_8 = 8,
+	MONO_INTEGER_VALUE_SIZE_BITMASK = 15,
+	MONO_UNSIGNED_VALUE_FLAG = 16,
+	MONO_UNSIGNED_INTEGER_VALUE_SIZE_1 = MONO_UNSIGNED_VALUE_FLAG|MONO_INTEGER_VALUE_SIZE_1,
+	MONO_UNSIGNED_INTEGER_VALUE_SIZE_2 = MONO_UNSIGNED_VALUE_FLAG|MONO_INTEGER_VALUE_SIZE_2,
+	MONO_UNSIGNED_INTEGER_VALUE_SIZE_4 = MONO_UNSIGNED_VALUE_FLAG|MONO_INTEGER_VALUE_SIZE_4,
+	MONO_UNSIGNED_INTEGER_VALUE_SIZE_8 = MONO_UNSIGNED_VALUE_FLAG|MONO_INTEGER_VALUE_SIZE_8,
+	MONO_UNKNOWN_INTEGER_VALUE = 0
+} MonoIntegerValueKind;
+
+/**
  * A relation between variables (or a variable and a constant).
  * The first variable (the one "on the left of the expression") is implicit.
  * relation: the relation between the variable and the value
@@ -191,9 +211,13 @@ typedef struct MonoRelationsEvaluationContext {
 		MONO_MAKE_RELATIONS_EVALUATION_RANGE_IMPOSSIBLE ((rs).zero); \
 		MONO_MAKE_RELATIONS_EVALUATION_RANGE_IMPOSSIBLE ((rs).variable); \
 	} while (0)
-#define MONO_RELATIONS_EVALUATION_RANGE_IS_IMPOSSIBLE(r) (((r).lower==INT_MAX)&&((r).upper==INT_MIN))
-#define MONO_RELATIONS_EVALUATION_RANGES_IS_IMPOSSIBLE(rs) \
-	(MONO_RELATIONS_EVALUATION_RANGE_IS_IMPOSSIBLE((rs).zero) && \
+#define MONO_RELATIONS_EVALUATION_RANGE_IS_WEAK(r) (((r).lower==INT_MIN)&&((r).upper==INT_MAX))
+#define MONO_RELATIONS_EVALUATION_RANGES_ARE_WEAK(rs) \
+	(MONO_RELATIONS_EVALUATION_RANGE_IS_WEAK((rs).zero) && \
+	MONO_RELATIONS_EVALUATION_RANGE_IS_WEAK((rs).variable))
+#define MONO_RELATIONS_EVALUATION_RANGE_IS_IMPOSSIBLE(r) (((r).lower)>((r).upper))
+#define MONO_RELATIONS_EVALUATION_RANGES_ARE_IMPOSSIBLE(rs) \
+	(MONO_RELATIONS_EVALUATION_RANGE_IS_IMPOSSIBLE((rs).zero) || \
 	MONO_RELATIONS_EVALUATION_RANGE_IS_IMPOSSIBLE((rs).variable))
 
 /*
@@ -277,11 +301,14 @@ typedef struct MonoRelationsEvaluationContext {
  * relations: and array of relations, one for each method variable (each
  *            relation is the head of a list); this is the evaluation graph
  * contexts: an array of evaluation contexts (one for each method variable)
+ * variable_value_kind: an array of MonoIntegerValueKind, one for each local
+ *                      variable (or argument)
  */
 typedef struct MonoVariableRelationsEvaluationArea {
 	MonoCompile *cfg;
 	MonoSummarizedValueRelation *relations;
 	MonoRelationsEvaluationContext *contexts;
+	MonoIntegerValueKind *variable_value_kind;
 } MonoVariableRelationsEvaluationArea;
 
 /**
@@ -312,4 +339,3 @@ typedef struct MonoAdditionalVariableRelationsForBB {
 
 
 #endif /* __MONO_ABCREMOVAL_H__ */
-
