@@ -43,6 +43,9 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 					     gint32 count, gunichar2 value,
 					     MonoBoolean first);
 
+static MonoString *string_invariant_tolower (MonoString *this);
+static MonoString *string_invariant_toupper (MonoString *this);
+
 static int
 culture_lcid_locator (const void *a, const void *b)
 {
@@ -1933,3 +1936,44 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 		return(-1);
 	}
 }
+
+static MonoString *string_invariant_tolower (MonoString *this)
+{
+	MonoString *ret;
+	gunichar2 *src; 
+	gunichar2 *dest;
+	gint32 i;
+
+	ret = mono_string_new_size(mono_domain_get (),
+				   mono_string_length(this));
+
+	src = mono_string_chars (this);
+	dest = mono_string_chars (ret);
+
+	for (i = 0; i < mono_string_length (this); ++i) {
+		dest[i] = g_unichar_tolower(src[i]);
+	}
+
+	return(ret);
+}
+
+static MonoString *string_invariant_toupper (MonoString *this)
+{
+	MonoString *ret;
+	gunichar2 *src; 
+	gunichar2 *dest;
+	guint32 i;
+
+	ret = mono_string_new_size(mono_domain_get (),
+				   mono_string_length(this));
+
+	src = mono_string_chars (this);
+	dest = mono_string_chars (ret);
+
+	for (i = 0; i < mono_string_length (this); ++i) {
+		dest[i] = g_unichar_toupper(src[i]);
+	}
+
+	return(ret);
+}
+
