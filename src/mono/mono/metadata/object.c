@@ -394,7 +394,8 @@ void *
 mono_object_allocate (size_t size)
 {
 #if HAVE_BOEHM_GC
-	void *o = GC_debug_malloc (size, "object", 1);
+	/* if this is changed to GC_debug_malloc(), we need to change also metadata/gc.c */
+	void *o = GC_malloc (size);
 #else
 	void *o = calloc (1, size);
 #endif
@@ -448,6 +449,9 @@ mono_object_new_specific (MonoVTable *vtable)
 
 	mono_stats.new_object_count++;		/* thread safe? */
 
+	/* if the returned pointer is not the same as the address returned by GC_malloc(), 
+	 * we need to change also metadata/gc.c to take into account the new offset.
+	 */
 	if (vtable->klass->ghcimpl)
 		o = mono_object_allocate (vtable->klass->instance_size);
 	else {
@@ -575,7 +579,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 		len = lengths [0];
 	} else {
 	#if HAVE_BOEHM_GC
-		bounds = GC_debug_malloc (sizeof (MonoArrayBounds) * array_class->rank, "bounds", 0);
+		bounds = GC_malloc (sizeof (MonoArrayBounds) * array_class->rank);
 	#else
 		bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
 	#endif
@@ -686,7 +690,17 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
 
+	/* 
+	 * enable to get a good speedup: we still need to figure out
+	 * how the sync structure is freed.
+	 */
+#ifdef 0 && HAVE_BOEHM_GC
+	s = GC_malloc_atomic (sizeof (MonoString) + ((len + 1) * 2));
+	s->object.synchronisation = 0;
+	mono_string_chars (s) [len] = 0;
+#else
 	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
+#endif
 	if (!s)
 		G_BREAKPOINT ();
 

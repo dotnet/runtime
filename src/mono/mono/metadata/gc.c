@@ -24,7 +24,8 @@ static int finalize_slot = -1;
 static void
 run_finalize (void *obj, void *data)
 {
-	MonoObject *o = obj;
+	MonoObject *o;
+	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
 	if (finalize_slot < 0) {
 		int i;
@@ -39,17 +40,36 @@ run_finalize (void *obj, void *data)
 	}
 	/* speedup later... */
 	/*
-	 * Disabled: it seems to be called too early.
-	 * g_print ("finalizer is run on %s\n", mono_object_class(o)->name);
-	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], obj, NULL);*/
+	 * mono crashes (see bug#23778)
+	 g_print ("finalizer is run on %s at %p\n", mono_object_class(o)->name, o);
+	 mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], obj, NULL);
+	 */
+}
+
+/*
+ * Some of our objects may point to a different address than the address returned by GC_malloc()
+ * (because of the GetHashCode hack), but we need to pass the real address to register_finalizer.
+ * This also means that in the callback we need to adjust the pointer to get back the real
+ * MonoObject*.
+ * We also need to be consistent in the use of the GC_debug* variants of malloc and register_finalizer, 
+ * since that, too, can cause the underlying pointer to be offset.
+ */
+static void
+object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
+{
+#if HAVE_BOEHM_GC
+	guint offset = 0;
+	if (mono_object_class (obj)->ghcimpl)
+		offset += 4;
+	/*g_print ("registering %s at %p (base: %p)\n", mono_object_class (obj)->name, obj, GC_base (obj));*/
+	GC_register_finalizer ((char*)obj - offset, run_finalize, GUINT_TO_POINTER (offset), NULL, NULL);
+#endif
 }
 
 void
 mono_object_register_finalizer (MonoObject *obj)
 {
-#if HAVE_BOEHM_GC
-	GC_register_finalizer (obj, run_finalize, NULL, NULL, NULL);
-#endif
+	object_register_finalizer (obj, run_finalize);
 }
 
 void
@@ -83,17 +103,13 @@ ves_icall_System_GC_KeepAlive (MonoObject *obj)
 void
 ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 {
-#if HAVE_BOEHM_GC
-	GC_register_finalizer (obj, run_finalize, NULL, NULL, NULL);
-#endif
+	object_register_finalizer (obj, run_finalize);
 }
 
 void
 ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 {
-#if HAVE_BOEHM_GC
-	GC_register_finalizer (obj, NULL, NULL, NULL, NULL);
-#endif
+	object_register_finalizer (obj, NULL);
 }
 
 void
