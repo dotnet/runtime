@@ -18,13 +18,6 @@
 
 #include <sys/time.h> 
 
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>    /* defines FIONBIO and FIONREAD */
-#endif
-#ifdef HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>   /* defines SIOCATMARK */
-#endif
-
 #undef DEBUG
 
 static gint32 convert_family(MonoAddressFamily mono_family)
@@ -1242,6 +1235,7 @@ static int
 inet_pton (int family, const char *address, void *inaddrp)
 {
 	if (family == AF_INET) {
+#ifdef HAVE_INET_ATON
 		struct in_addr inaddr;
 		
 		if (!inet_aton (address, &inaddr))
@@ -1249,6 +1243,26 @@ inet_pton (int family, const char *address, void *inaddrp)
 		
 		memcpy (inaddrp, &inaddr, sizeof (struct in_addr));
 		return 1;
+#else
+		/* assume the system has inet_addr(), if it doesn't
+		   have that we're pretty much screwed... */
+		in_addr_t inaddr;
+		
+		if (!strcmp (address, "255.255.255.255")) {
+			/* special-case hack */
+			inaddr = 0xffffffff;
+		} else {
+			inaddr = inet_addr (address);
+#ifndef INADDR_NONE
+#define INADDR_NONE ((in_addr_t) -1)
+#endif
+			if (inaddr == INADDR_NONE)
+				return 0;
+		}
+		
+		memcpy (inaddrp, &inaddr, sizeof (in_addr_t));
+		return 1;
+#endif /* HAVE_INET_ATON */
 	}
 	
 	errno = EAFNOSUPPRT;
