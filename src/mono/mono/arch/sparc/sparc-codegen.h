@@ -277,8 +277,12 @@ typedef struct {
 
 /* disassembly */
 #define sparc_inst_op(inst) ((inst) >> 30)
+#define sparc_inst_rd(inst) (((inst) >> 25) & 0x1f)
 #define sparc_inst_op3(inst) (((inst) >> 19) & 0x3f)
+#define sparc_inst_rs1(inst) (((inst) >> 14) & 0x1f)
+#define sparc_inst_rs2(inst) (((inst) >> 0) & 0x1f)
 #define sparc_inst_imm(inst) (((inst) >> 13) & 0x1)
+#define sparc_inst_imm13(inst) (((inst) >> 0) & 0x1fff)
 
 #define sparc_encode_call(ins,addr) \
 	do {	\
@@ -463,6 +467,8 @@ typedef struct {
 
 #define sparc_flush(ins,base,disp) sparc_encode_format3a((ins),2,0,(base),(disp),59,0)
 #define sparc_flush_imm(ins,base,disp) sparc_encode_format3b((ins),2,(base),(disp),59,0)
+
+#define sparc_flushw(ins) sparc_encode_format3a((ins),2,0,0,0,43,0)
 
 /* trap */
 
