@@ -5534,6 +5534,25 @@ static const IcallEntry web_icalls [] = {
 	{"GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir}
 };
 
+static const IcallEntry identity_icalls [] = {
+	{"GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken},
+	{"GetTokenName", ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName},
+	{"GetUserToken", ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken},
+	{"_GetRoles", ves_icall_System_Security_Principal_WindowsIdentity_GetRoles}
+};
+
+static const IcallEntry impersonation_icalls [] = {
+	{"CloseToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken},
+	{"DuplicateToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken},
+	{"RevertToSelf", ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf},
+	{"SetCurrentToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken}
+};
+
+static const IcallEntry principal_icalls [] = {
+	{"IsMemberOfGroupId", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId},
+	{"IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName}
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -5603,6 +5622,9 @@ static const IcallMap icall_entries [] = {
 	{"System.Runtime.Remoting.RemotingServices", remotingservices_icalls, G_N_ELEMENTS (remotingservices_icalls)},
 	{"System.RuntimeMethodHandle", methodhandle_icalls, G_N_ELEMENTS (methodhandle_icalls)},
 	{"System.Security.Cryptography.RNGCryptoServiceProvider", rng_icalls, G_N_ELEMENTS (rng_icalls)},
+	{"System.Security.Principal.WindowsIdentity", identity_icalls, G_N_ELEMENTS (identity_icalls)},
+	{"System.Security.Principal.WindowsImpersonationContext", impersonation_icalls, G_N_ELEMENTS (impersonation_icalls)},
+	{"System.Security.Principal.WindowsPrincipal", principal_icalls, G_N_ELEMENTS (principal_icalls)},
 	{"System.String", string_icalls, G_N_ELEMENTS (string_icalls)},
 	{"System.Text.Encoding", encoding_icalls, G_N_ELEMENTS (encoding_icalls)},
 	{"System.Threading.Interlocked", interlocked_icalls, G_N_ELEMENTS (interlocked_icalls)},
