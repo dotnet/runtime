@@ -1,3 +1,8 @@
+2004-04-28  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* configure.in: reword message re EGD support
+	now it is there
+
 2004-04-28  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* config.h.in:

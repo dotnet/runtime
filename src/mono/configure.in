@@ -962,7 +962,8 @@ if test "x$ac_cv_have_dev_random" = "xno" \
 *** entropy collection in place, please contact <crichton@gimp.org> and
 *** provide information about the system and how to access the random device.
 ***
-*** For those systems who lack a random device, EGD support is forthcoming.
+*** Otherwise you can install either egd or prngd and set the environment
+*** variable MONO_EGD_SOCKET to point to the daemon's socket to use that.
 ***]])
 fi
  
