@@ -10,6 +10,9 @@ void
 mono_mempool_destroy       (MonoMemPool *pool);
 
 void
+mono_mempool_invalidate    (MonoMemPool *pool);
+
+void
 mono_mempool_empty         (MonoMemPool *pool);
 
 void

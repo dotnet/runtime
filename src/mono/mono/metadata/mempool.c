@@ -29,6 +29,7 @@ struct _MonoMemPool {
 	MonoMemPool *next;
 	gint rest;
 	gpointer pos;
+	guint32 size;
 	union {
 		double pad; /* to assure proper alignment */
 		guint32 allocated;
@@ -48,13 +49,13 @@ mono_mempool_new ()
 	pool->next = NULL;
 	pool->pos = (char *)pool + sizeof (MonoMemPool);
 	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
-	pool->d.allocated = MONO_MEMPOOL_PAGESIZE;
+	pool->d.allocated = pool->size = MONO_MEMPOOL_PAGESIZE;
 	return pool;
 }
 
 /**
  * mono_mempool_destroy:
- * @pool: the momory pool to destroy
+ * @pool: the memory pool to destroy
  *
  * Free all memory associated with this pool.
  */
@@ -67,6 +68,25 @@ mono_mempool_destroy (MonoMemPool *pool)
 	while (p) {
 		n = p->next;
 		g_free (p);
+		p = n;
+	}
+}
+
+/**
+ * mono_mempool_invalidate:
+ * @pool: the memory pool to invalidate
+ *
+ * Fill the memory associated with this pool to 0x2a (42). Useful for debugging.
+ */
+void
+mono_mempool_invalidate (MonoMemPool *pool)
+{
+	MonoMemPool *p, *n;
+
+	p = pool;
+	while (p) {
+		n = p->next;
+		memset (p, 42, p->size);
 		p = n;
 	}
 }
@@ -130,6 +150,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
 			np->next = pool->next;
 			pool->next = np;
+			np->size = sizeof (MonoMemPool) + size;
 			pool->d.allocated += sizeof (MonoMemPool) + size;
 			return (char *)np + sizeof (MonoMemPool);
 		} else {
@@ -137,6 +158,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			np->next = pool->next;
 			pool->next = np;
 			pool->pos = (char *)np + sizeof (MonoMemPool);
+			np->size = MONO_MEMPOOL_PAGESIZE;
 			pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 			pool->d.allocated += MONO_MEMPOOL_PAGESIZE;
 		}
