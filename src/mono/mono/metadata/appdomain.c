@@ -41,6 +41,9 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 static MonoMethod *
 look_for_method_by_name (MonoClass *klass, const gchar *name);
 
+static void
+mono_domain_unload (MonoDomain *domain);
+
 /*
  * mono_runtime_init:
  * @domain: domain returned by mono_init ()
@@ -176,6 +179,26 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 	else
 		*params = tb;
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
+}
+
+/*
+ * mono_domain_set:
+ *
+ *   Set the current appdomain to @domain. If @force is set, set it even
+ * if it is being unloaded.
+ * Returns:
+ *   - TRUE on success
+ *   - FALSE if the domain is being unloaded
+ */
+gboolean
+mono_domain_set (MonoDomain *domain, gboolean force)
+{
+	if (!force && (domain->state == MONO_APPDOMAIN_UNLOADING || domain->state == MONO_APPDOMAIN_UNLOADED))
+		return FALSE;
+
+	mono_domain_set_internal (domain);
+
+	return TRUE;
 }
 
 void
@@ -839,8 +862,12 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 		mono_raise_exception (exc);
 	}
 	
+	if (domain == mono_root_domain) {
+		mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("The default appdomain can not be unloaded."));
+		return;
+	}
 
-	mono_domain_unload (domain, FALSE);
+	mono_domain_unload (domain);
 }
 
 gint32
@@ -894,7 +921,8 @@ ves_icall_System_AppDomain_InternalSetDomain (MonoAppDomain *ad)
 
 	MONO_ARCH_SAVE_REGS;
 
-	mono_domain_set(ad->data);
+	if (!mono_domain_set (ad->data, FALSE))
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
 	return old_domain->domain;
 }
@@ -907,9 +935,37 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 
 	MONO_ARCH_SAVE_REGS;
 
-	mono_domain_set (domain);
-	
+	if (!mono_domain_set (domain, FALSE))	
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+
 	return current_domain->domain;
+}
+
+MonoObject *
+ves_icall_System_AppDomain_InternalInvokeInDomain (MonoAppDomain *ad, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args)
+{
+	MonoDomain *old_domain = mono_domain_get ();
+	MonoMethod *m = method->method;
+	MonoObject *res;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!mono_domain_set (ad->data, FALSE))
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+
+	res = mono_runtime_invoke_array (m, obj, args, NULL);
+
+	mono_domain_set (old_domain, TRUE);
+
+	return res;
+}
+
+MonoObject *
+ves_icall_System_AppDomain_InternalInvokeInDomainByID (gint32 domain_id, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args)
+{
+	MonoDomain *domain = mono_domain_get_by_id (domain_id);
+
+	return ves_icall_System_AppDomain_InternalInvokeInDomain (domain->domain, method, obj, args);
 }
 
 MonoAppContext * 
@@ -952,4 +1008,88 @@ ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid)
 	process_guid_set = TRUE;
 	mono_domain_unlock (mono_root_domain);
 	return newguid;
+}
+
+gboolean
+mono_domain_is_unloading (MonoDomain *domain)
+{
+	if (domain->state == MONO_APPDOMAIN_UNLOADING || domain->state == MONO_APPDOMAIN_UNLOADED)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+static guint32
+unload_thread_main (void *arg)
+{
+	MonoDomain *domain = (MonoDomain*)arg;
+
+#if 0
+	printf ("STOP WORLD...\n");
+	/* FIXME: Can this deadlock with the same call in libgc ? */
+	mono_gc_stop_world ();
+
+	/* 
+	 * FIXME: Abort all threads which have stack frames which belong to the
+	 * doomed appdomain.
+	 */
+
+	printf ("START WORLD...\n");
+	mono_gc_start_world ();
+#endif
+
+	/* Finalize all finalizable objects in the doomed appdomain */
+	if (!mono_domain_finalize (domain, 1000)) {
+		g_warning ("Finalization of domain %s timed out.", domain->friendly_name);
+		return 1;
+	}
+
+	domain->state = MONO_APPDOMAIN_UNLOADED;
+
+	mono_domain_free (domain, FALSE);
+
+	return 0;
+}
+
+/*
+ * mono_domain_unload:
+ *
+ *  Unloads an appdomain. Follows the process outlined in:
+ *  http://blogs.gotdotnet.com/cbrumme
+ *  If doing things the 'right' way is too hard or complex, we do it the 
+ *  'simple' way, which means do everything needed to avoid crashes and
+ *  memory leaks, but not much else.
+ */
+static void
+mono_domain_unload (MonoDomain *domain)
+{
+	HANDLE thread_handle;
+	guint32 tid;
+	gboolean ret;
+	MonoAppDomainState prev_state;
+
+	//printf ("UNLOAD STARTING FOR %s.\n", domain->friendly_name);
+
+	/* Atomically change our state to UNLOADING */
+	prev_state = InterlockedCompareExchange (&domain->state,
+											 MONO_APPDOMAIN_UNLOADING,
+											 MONO_APPDOMAIN_CREATED);
+	if (prev_state != MONO_APPDOMAIN_CREATED) {
+		if (prev_state == MONO_APPDOMAIN_UNLOADING)
+			mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("Appdomain is already being unloaded."));
+		else
+			if (prev_state == MONO_APPDOMAIN_UNLOADED)
+				mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("Appdomain is already unloaded."));
+		else
+			g_assert_not_reached ();
+	}
+
+	/* 
+	 * First we create a separate thread for unloading, since
+	 * we might have to abort some threads, including the current one.
+	 */
+	thread_handle = CreateThread (NULL, 0, unload_thread_main, domain, 0, &tid);
+	ret = WaitForSingleObject (thread_handle, INFINITE);
+
+	/* FIXME: Check the thread exit code and throw an exception on failure */
 }

@@ -22,6 +22,11 @@
 #define REVEAL_POINTER(v)       (v)
 #endif
 
+typedef struct DomainFinalizationReq {
+	MonoDomain *domain;
+	HANDLE done_event;
+} DomainFinalizationReq;
+
 #ifdef PLATFORM_WINCE /* FIXME: add accessors to gc.dll API */
 extern void (*__imp_GC_finalizer_notifier)(void);
 #define GC_finalizer_notifier __imp_GC_finalizer_notifier
@@ -32,6 +37,10 @@ extern int __imp_GC_finalize_on_demand;
 static int finalize_slot = -1;
 
 static gboolean gc_disabled = FALSE;
+
+static CRITICAL_SECTION finalizer_mutex;
+
+static GSList *domains_to_finalize= NULL;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
@@ -49,7 +58,7 @@ static void
 run_finalize (void *obj, void *data)
 {
 	MonoObject *exc = NULL;
-	MonoObject *o;
+	MonoObject *o, *o2;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
 	if (finalize_slot < 0) {
@@ -64,11 +73,23 @@ run_finalize (void *obj, void *data)
 		}
 	}
 
+	mono_domain_lock (o->vtable->domain);
+
+	o2 = g_hash_table_lookup (o->vtable->domain->finalizable_objects_hash, o);
+
+	mono_domain_unlock (o->vtable->domain);
+
+	if (!o2)
+		/* Already finalized somehow */
+		return;
+
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 	/* speedup later... and use a timeout */
-	/*g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name);*/
-	mono_domain_set (mono_object_domain (o));
+	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
+
+	/* Use _internal here, since this thread can enter a doomed appdomain */
+	mono_domain_set_internal (mono_object_domain (o));		
 
 	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
@@ -95,6 +116,24 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	/* This assertion is not valid when GC_DEBUG is defined */
 	g_assert (GC_base (obj) == (char*)obj - offset);
 #endif
+
+	if (mono_domain_is_unloading (obj->vtable->domain) && (callback != NULL))
+		/*
+		 * Can't register finalizers in a dying appdomain, since they
+		 * could be invoked after the appdomain has been unloaded.
+		 */
+		return;
+
+	mono_domain_lock (obj->vtable->domain);
+
+	if (callback)
+		g_hash_table_insert (obj->vtable->domain->finalizable_objects_hash, obj,
+							 obj);
+	else
+		g_hash_table_remove (obj->vtable->domain->finalizable_objects_hash, obj);
+
+	mono_domain_unlock (obj->vtable->domain);
+
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #endif
 }
@@ -102,84 +141,24 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 void
 mono_object_register_finalizer (MonoObject *obj)
 {
-	/*g_print ("Registered finalizer on %p %s.%s\n", obj, mono_object_class (obj)->name_space, mono_object_class (obj)->name);*/
+	/* g_print ("Registered finalizer on %p %s.%s\n", obj, mono_object_class (obj)->name_space, mono_object_class (obj)->name); */
 	object_register_finalizer (obj, run_finalize);
 }
 
-/* 
- * to speedup, at class init time, check if a class or struct
- * have fields that need to be finalized and set a flag.
+/*
+ * mono_domain_finalize:
+ *
+ *  Request finalization of all finalizable objects inside @domain. Wait
+ * @timeout msecs for the finalization to complete.
+ * Returns: TRUE if succeeded, FALSE if there was a timeout
  */
-static void
-finalize_fields (MonoClass *class, char *data, gboolean instance, GHashTable *todo) {
-	int i;
-	MonoClassField *field;
-	MonoObject *obj;
 
-	/*if (!instance)
-		g_print ("Finalize statics on on %s\n", class->name);*/
-	if (instance && class->valuetype)
-		data -= sizeof (MonoObject);
-	do {
-		for (i = 0; i < class->field.count; ++i) {
-			field = &class->fields [i];
-			if (instance) {
-				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-					continue;
-			} else {
-				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-					continue;
-			}
-			switch (field->type->type) {
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_CLASS:
-				obj = *((MonoObject**)(data + field->offset));
-				if (obj) {
-					if (mono_object_class (obj)->has_finalize) {
-						/* disable the registered finalizer */
-						object_register_finalizer (obj, NULL);
-						run_finalize (obj, NULL);
-					} else {
-						/* 
-						 * if the type doesn't have a finalizer, we finalize 
-						 * the fields ourselves just like we do for structs.
-						 * Disabled for now: how do we handle loops?
-						 */
-						/*finalize_fields (mono_object_class (obj), obj, TRUE, todo);*/
-					}
-				}
-				break;
-			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = mono_class_from_mono_type (field->type);
-				if (fclass->enumtype)
-					continue;
-				/*finalize_fields (fclass, data + field->offset, TRUE, todo);*/
-				break;
-			}
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-				/* FIXME: foreach item... */
-				break;
-			}
-		}
-		if (!instance)
-			return;
-		class = class->parent;
-	} while (class);
-}
-
-static void
-finalize_static_data (MonoClass *class, MonoVTable *vtable, GHashTable *todo) {
-
-	if (class->enumtype || !vtable->data)
-		return;
-	finalize_fields (class, vtable->data, FALSE, todo);
-}
-
-void
-mono_domain_finalize (MonoDomain *domain) 
+gboolean
+mono_domain_finalize (MonoDomain *domain, guint32 timeout) 
 {
-	GHashTable *todo = g_hash_table_new (NULL, NULL);
+	DomainFinalizationReq *req;
+	guint32 res;
+	HANDLE done_event;
 
 	/* 
 	 * No need to create another thread 'cause the finalizer thread
@@ -189,11 +168,29 @@ mono_domain_finalize (MonoDomain *domain)
 #if HAVE_BOEHM_GC
 	GC_gcollect ();
 #endif
-	mono_g_hash_table_foreach (domain->class_vtable_hash, (GHFunc)finalize_static_data, todo);
-	/* FIXME: finalize objects in todo... */
-	g_hash_table_destroy (todo);
 
-	return;
+	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+
+	req = g_new0 (DomainFinalizationReq, 1);
+	req->domain = domain;
+	req->done_event = done_event;
+	
+	EnterCriticalSection (&finalizer_mutex);
+
+	domains_to_finalize = g_slist_append (domains_to_finalize, req);
+
+	LeaveCriticalSection (&finalizer_mutex);
+
+	/* Tell the finalizer thread to finalize this appdomain */
+	finalize_notify ();
+
+	res = WaitForSingleObject (done_event, timeout);
+
+	//printf ("WAIT RES: %d.\n", res);
+	if (res == WAIT_TIMEOUT)
+		return FALSE;
+	else
+		return TRUE;
 }
 
 void
@@ -451,6 +448,52 @@ static void finalize_notify (void)
 	SetEvent (finalizer_event);
 }
 
+static void
+collect_objects (gpointer key, gpointer value, gpointer user_data)
+{
+	GPtrArray *arr = (GPtrArray*)user_data;
+	g_ptr_array_add (arr, key);
+}
+
+/*
+ * finalize_domain_objects:
+ *
+ *  Run the finalizers of all finalizable objects in req->domain.
+ */
+static void
+finalize_domain_objects (DomainFinalizationReq *req)
+{
+	int i;
+	GPtrArray *objs;
+	MonoDomain *domain = req->domain;
+
+	while (g_hash_table_size (domain->finalizable_objects_hash) > 0) {
+		/* 
+		 * Since the domain is unloading, nobody is allowed to put
+		 * new entries into the hash table. But finalize_object might
+		 * remove entries from the hash table, so we make a copy.
+		 */
+		objs = g_ptr_array_new ();
+		g_hash_table_foreach (domain->finalizable_objects_hash, 
+							  collect_objects, objs);
+		//printf ("FINALIZING %d OBJECTS.\n", objs->len);
+
+		for (i = 0; i < objs->len; ++i) {
+			MonoObject *o = (MonoObject*)g_ptr_array_index (objs, i);
+			/* FIXME: Avoid finalizing threads, etc */
+			run_finalize (o, 0);
+		}
+
+		g_ptr_array_free (objs, TRUE);
+	}
+
+	//printf ("DONE.\n");
+	SetEvent (req->done_event);
+
+	/* FIXME: How to delete the event ? */
+	g_free (req);
+}
+
 static guint32 finalizer_thread (gpointer unused)
 {
 	guint32 stack_start;
@@ -462,6 +505,19 @@ static guint32 finalizer_thread (gpointer unused)
 		 * finaliser to run
 		 */
 		WaitForSingleObject (finalizer_event, INFINITE);
+
+		if (domains_to_finalize) {
+			EnterCriticalSection (&finalizer_mutex);
+			if (domains_to_finalize) {
+				DomainFinalizationReq *req = domains_to_finalize->data;
+				domains_to_finalize = g_slist_remove (domains_to_finalize, req);
+				LeaveCriticalSection (&finalizer_mutex);
+
+				finalize_domain_objects (req);
+			}
+			else
+				LeaveCriticalSection (&finalizer_mutex);
+		}				
 
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": invoking finalizers");
@@ -529,6 +585,8 @@ void mono_gc_init (void)
 
 	InitializeCriticalSection (&handle_section);
 	InitializeCriticalSection (&allocator_section);
+
+	InitializeCriticalSection (&finalizer_mutex);
 
 #ifdef WITH_INCLUDED_LIBGC
 	gc_thread_vtable = &mono_gc_thread_vtable;

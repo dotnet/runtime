@@ -70,6 +70,12 @@ typedef struct {
 	gint32 context_id;
 } MonoAppContext;
 
+typedef enum {
+	MONO_APPDOMAIN_CREATED,
+	MONO_APPDOMAIN_UNLOADING,
+	MONO_APPDOMAIN_UNLOADED
+} MonoAppDomainState;
+
 typedef struct _MonoAppDomain MonoAppDomain;
 
 struct _MonoDomain {
@@ -82,6 +88,7 @@ struct _MonoDomain {
 	MonoAssembly       *entry_assembly;
 	MonoAppDomainSetup *setup;
 	char               *friendly_name;
+	guint32            state;
 	MonoGHashTable     *ldstr_table;
 	MonoGHashTable     *class_vtable_hash;
 	MonoGHashTable     *proxy_vtable_hash;
@@ -102,6 +109,11 @@ struct _MonoDomain {
 	GHashTable         *thread_static_fields;
 	GHashTable         *jump_target_hash;
 	MonoGHashTable     *class_init_trampoline_hash;
+	/* 
+	 * This must be a GHashTable, since these objects can't be finalized
+	 * if the hashtable contains a GC visible reference to them.
+	 */
+	GHashTable         *finalizable_objects_hash;
 };
 
 /* This is a copy of System.AppDomain */
@@ -145,8 +157,14 @@ mono_domain_get            (void);
 inline MonoDomain *
 mono_domain_get_by_id      (gint32 domainid);
 
+inline gboolean
+mono_domain_set            (MonoDomain *domain, gboolean force);
+
 inline void
-mono_domain_set            (MonoDomain *domain);
+mono_domain_set_internal   (MonoDomain *domain);
+
+gboolean
+mono_domain_is_unloading   (MonoDomain *domain);
 
 void
 mono_domain_foreach        (MonoDomainFunc func, gpointer user_data);
@@ -154,11 +172,11 @@ mono_domain_foreach        (MonoDomainFunc func, gpointer user_data);
 MonoAssembly *
 mono_domain_assembly_open  (MonoDomain *domain, const char *name);
 
-void
-mono_domain_finalize       (MonoDomain *domain);
+gboolean
+mono_domain_finalize       (MonoDomain *domain, guint32 timeout);
 
 void
-mono_domain_unload         (MonoDomain *domain, gboolean force);
+mono_domain_free           (MonoDomain *domain, gboolean force);
 
 gboolean
 mono_domain_has_type_resolve (MonoDomain *domain);
@@ -231,6 +249,12 @@ ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
 
 MonoAppDomain * 
 ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
+
+MonoObject *
+ves_icall_System_AppDomain_InternalInvokeInDomain (MonoAppDomain *ad, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args);
+
+MonoObject *
+ves_icall_System_AppDomain_InternalInvokeInDomainByID (gint32 domain_id, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args);
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalGetContext      (void);

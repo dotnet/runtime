@@ -22,6 +22,8 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/rawbuffer.h>
 
+//#define DEBUG_DOMAIN_UNLOAD
+
 static guint32 appdomain_thread_id = -1;
 static guint32 context_thread_id = -1;
 
@@ -203,6 +205,7 @@ mono_domain_create (void)
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
 	domain->class_init_trampoline_hash = mono_g_hash_table_new (NULL, NULL);
+	domain->finalizable_objects_hash = g_hash_table_new (NULL, NULL);
 	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
@@ -487,13 +490,13 @@ mono_domain_get ()
 }
 
 /**
- * mono_domain_set:
+ * mono_domain_set_internal:
  * @domain: the new domain
  *
  * Sets the current domain to @domain.
  */
 inline void
-mono_domain_set (MonoDomain *domain)
+mono_domain_set_internal (MonoDomain *domain)
 {
 	TlsSetValue (appdomain_thread_id, domain);
 	TlsSetValue (context_thread_id, domain->default_context);
@@ -581,7 +584,7 @@ delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 }
 
 void
-mono_domain_unload (MonoDomain *domain, gboolean force)
+mono_domain_free (MonoDomain *domain, gboolean force)
 {
 	if ((domain == mono_root_domain) && !force) {
 		g_warning ("cant unload root domain");
@@ -589,7 +592,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	}
 
 	EnterCriticalSection (&appdomains_mutex);
-	mono_g_hash_table_remove(appdomains_list, GINT_TO_POINTER(domain->domain_id));
+	mono_g_hash_table_remove (appdomains_list, GINT_TO_POINTER(domain->domain_id));
 	LeaveCriticalSection (&appdomains_mutex);
 	
 	g_free (domain->friendly_name);
@@ -603,13 +606,19 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	g_hash_table_destroy (domain->jit_code_hash);
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	mono_jit_info_table_free (domain->jit_info_table);
+#ifdef DEBUG_DOMAIN_UNLOAD
+	mono_mempool_invalidate (domain->mp);
+	mono_mempool_invalidate (domain->code_mp);
+#else
 	mono_mempool_destroy (domain->mp);
 	mono_mempool_destroy (domain->code_mp);
+#endif	
 	if (domain->jump_target_hash) {
 		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);
 		g_hash_table_destroy (domain->jump_target_hash);
 	}
 	mono_g_hash_table_destroy (domain->class_init_trampoline_hash);
+	g_hash_table_destroy (domain->finalizable_objects_hash);
 	if (domain->thread_static_fields)
 		g_hash_table_destroy (domain->thread_static_fields);
 	DeleteCriticalSection (&domain->lock);

@@ -61,6 +61,10 @@ extern guint32 mono_threads_get_default_stacksize (void);
 guint32  mono_threads_alloc_static_data (guint32 size, guint32 align);
 gpointer mono_threads_get_static_data   (guint32 offset);
 
+void mono_gc_stop_world (void);
+
+void mono_gc_start_world (void);
+
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this_obj, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this_obj, HANDLE thread);

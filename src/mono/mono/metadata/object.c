@@ -103,11 +103,16 @@ mono_runtime_class_init (MonoVTable *vtable)
 		if (mono_domain_get () != vtable->domain) {
 			/* Transfer into the target domain */
 			last_domain = mono_domain_get ();
-			mono_domain_set (vtable->domain);
+			if (!mono_domain_set (vtable->domain, FALSE)) {
+				vtable->initialized = 1;
+				vtable->initializing = 0;
+				mono_domain_unlock (vtable->domain);
+				mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+			}
 		}
 		mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
 		if (last_domain)
-			mono_domain_set (last_domain);
+			mono_domain_set (last_domain, TRUE);
 		vtable->initialized = 1;
 		vtable->initializing = 0;
 		/* FIXME: if the cctor fails, the type must be marked as unusable */
@@ -348,11 +353,12 @@ field_is_thread_static (MonoClass *fklass, MonoClassField *field)
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
-	MonoVTable *vt;
+	MonoVTable *vt = NULL;
 	MonoClassField *field;
 	const char *p;
 	char *t;
 	int i, len;
+	guint32 vtable_size;
 
 	g_assert (class);
 
@@ -372,8 +378,21 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	mono_stats.used_class_count++;
 	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
-	vt = mono_mempool_alloc0 (domain->mp,  sizeof (MonoVTable) + 
-				  class->vtable_size * sizeof (gpointer));
+	vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+
+#if CREATION_SPEEDUP
+	if (domain != mono_root_domain) {
+		/*
+		 * We can't allocate vtables in the mempool, since they contain
+		 * GC descriptors, which is needed by the collector even after the
+		 * mempool is destroyed during domain unloading.
+		 */
+		vt = GC_MALLOC (vtable_size);
+	}
+#endif
+	if (!vt)
+		vt = mono_mempool_alloc0 (domain->mp,  vtable_size);
+
 	vt->klass = class;
 	vt->domain = domain;
 
@@ -542,16 +561,18 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 MonoVTable *
 mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 {
-	MonoVTable *vt, *pvt, *pvt2;
+	MonoVTable *vt, *pvt;
 	int i, j, vtsize, interface_vtsize = 0;
 	MonoClass* iclass = NULL;
 	MonoClass* k;
 
 	mono_domain_lock (domain);
 	pvt = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class);
-	mono_domain_unlock (domain);
-	if (pvt)
+
+	if (pvt) {
+		mono_domain_unlock (domain);
 		return pvt;
+	}
 
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		int method_count;
@@ -637,16 +658,6 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
-	mono_domain_lock (domain);
-
-	pvt2 = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class);
-	if (pvt2) {
-		/* Somebody got in before us */
-		mono_domain_unlock (domain);
-		g_free (pvt);
-		
-		return pvt2;
-	}
 	mono_g_hash_table_insert (domain->proxy_vtable_hash, class, pvt);
 
 	mono_domain_unlock (domain);

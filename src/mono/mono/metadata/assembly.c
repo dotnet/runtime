@@ -202,6 +202,7 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
 
 		image->references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
+
 		if (image->references [i] == NULL){
 			int j;
 			
@@ -213,6 +214,9 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
 			return;
 		}
+
+		if (image->references [i]->image == image)
+			g_error ("Error: Assembly %s references itself", image->name);
 	}
 	image->references [i] = NULL;
 }

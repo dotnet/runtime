@@ -166,7 +166,11 @@ static guint32 start_wrapper(void *data)
 
 	TlsSetValue (current_object_key, thread);
 	
-	mono_domain_set (start_info->domain);
+	if (!mono_domain_set (start_info->domain, FALSE)) {
+		/* No point in raising an appdomain_unloaded exception here */
+		/* FIXME: Cleanup here */
+		return 0;
+	}
 
 	start_func = start_info->func;
 	this = start_info->this;
@@ -325,7 +329,7 @@ mono_thread_attach (MonoDomain *domain)
 #endif
 
 	TlsSetValue (current_object_key, thread);
-	mono_domain_set (domain);
+	mono_domain_set (domain, TRUE);
 
 	thread_adjust_static_data (thread);
 
@@ -1218,8 +1222,6 @@ mono_threads_get_static_data (guint32 offset)
 	return ((char*) thread->static_data [idx - 1]) + (offset & 0xffffff);
 }
 
-#ifdef WITH_INCLUDED_LIBGC
-
 static void gc_stop_world (gpointer key, gpointer value, gpointer user)
 {
 	MonoThread *thread=(MonoThread *)value;
@@ -1281,6 +1283,8 @@ void mono_gc_start_world (void)
 	
 	LeaveCriticalSection (&threads_mutex);
 }
+
+#ifdef WITH_INCLUDED_LIBGC
 
 static void gc_push_all_stacks (gpointer key, gpointer value, gpointer user)
 {

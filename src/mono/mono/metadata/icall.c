@@ -4058,6 +4058,8 @@ static gconstpointer icall_map [] = {
 	"System.AppDomain::ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly,
 	"System.AppDomain::InternalSetDomain", ves_icall_System_AppDomain_InternalSetDomain,
 	"System.AppDomain::InternalSetDomainByID", ves_icall_System_AppDomain_InternalSetDomainByID,
+	"System.AppDomain::InternalInvokeInDomain", ves_icall_System_AppDomain_InternalInvokeInDomain,
+	"System.AppDomain::InternalInvokeInDomainByID", ves_icall_System_AppDomain_InternalInvokeInDomainByID,
 	"System.AppDomain::InternalSetContext", ves_icall_System_AppDomain_InternalSetContext,
 	"System.AppDomain::InternalGetContext", ves_icall_System_AppDomain_InternalGetContext,
 	"System.AppDomain::InternalGetDefaultContext", ves_icall_System_AppDomain_InternalGetDefaultContext,
