@@ -1141,8 +1141,8 @@ static gpointer icall_map [] = {
 	/*
 	 * System.String
 	 */
-	"System.String::IsInterned", mono_string_is_interned,
-	"System.String::Intern", mono_string_intern,
+	"System.String::_IsInterned", mono_string_is_interned,
+	"System.String::_Intern", mono_string_intern,
 
 	/*
 	 * System.AppDomain
