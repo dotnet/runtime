@@ -1,3 +1,10 @@
+2004-07-27  John Merryweather Cooper <john_m_cooper@yahoo.com>
+	* configure.in: Disable __thread test (TLS) for FreeBSD as
+	it succeeds on FreeBSD 5.x when it should fail.  Fix pthread
+	library detection for FreeBSD 4.x since pthread is embedded
+	in libc_r on this platform.  Fix some typos in my host
+	regexes for freebsd.
+
 2004-07-23  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Changes for FreeBSD thread support by John

@@ -69,7 +69,7 @@ case "$host" in
 		;;
 # these flags will work for all versions of -STABLE
 #
-	*-*-*freebsd4)
+	*-*-*freebsd4*)
 		platform_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
 			CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS"
@@ -91,11 +91,12 @@ case "$host" in
 		libgc_threads=pthreads
 # TLS isn't implemented at all on -STABLE
 		with_nptl=no
+		with_tls=pthread
 		;;
 # older versions of -CURRENT will break with these flags but testing
 # indicates these older versions won't run Mono anyway
 #
-	*-*-*freebsd5)
+	*-*-*freebsd5*)
 		platform_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
 			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
@@ -119,6 +120,7 @@ case "$host" in
 # but NOT library support)
 #
 		with_nptl=no
+		with_tls=pthread
 		;;
 	*-*-*openbsd*)
 		platform_win32=no
@@ -706,7 +708,17 @@ if test x$platform_win32 = xno; then
 	dnl *****************************
 	dnl *** Checks for libpthread ***
 	dnl *****************************
-	AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")
+# on FreeBSD -STABLE, the pthreads functions all reside in libc_r
+# and libpthread does not exist
+#
+	case "${host}" in
+		*-*-*freebsd4*)
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
+		;;
+		*)
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")
+		;;
+	esac
 	AC_CHECK_HEADERS(pthread.h)
 	AC_CHECK_FUNCS(pthread_mutex_timedlock)
 	AC_CHECK_FUNCS(pthread_getattr_np pthread_attr_get_np)
