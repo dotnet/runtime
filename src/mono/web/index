@@ -86,13 +86,49 @@
   </tr>
 </table>
 
-<h3>Events</h3>
+@item Nov 19th, 2002: Crypto update; Books; Gtk# Datagrid; .NET ONE Slides
 
-<ul>
-	<li><b><a
-	href="http://www.sigs-datacom.de/sd/kongresse/dotnet_2002/index.htm">.NET
-	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
-</ul>
+	Sebastien has got DSA and RSA signatures <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003497.html">working</a>
+	as well as RSA <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003502.html">encryption</a>.
+	We now distribute Chew Keong TAN's BigInteger classes.
+
+	Brian has contributed a System.Data multiplexor in Mono, it
+	can be found in the Mono.Data assembly.  The details of this
+	new technology are <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003400.html">here</a>.
+	It works in Mono and the .NET Framework.
+
+	Larry O'Brien has announced the candidate book for <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003500.html">
+	Thinking in C#</a>.  The book is Mono-friendly.
+
+	Dan Morgan has implemented a DataGrid widget for Gtk#, you can
+	see Windows screenshots for it <a
+	href="images/GtkSharpDataGridScreenshot.png">here</a> and <a
+	href="images/SqlSharpGtkScreenshot4.png">here</a>.
+
+	Slides from the Mono developers for the .NET ONE conference are available now:
+	<ul>
+		<li><a
+		href="http://primates.ximian.com/~miguel/slides-europe-nov-2002/http://primates.ximian.com/~miguel/slides-europe-nov-2002/DotNetOneKeynote.sxi">
+		Mono Keynote presentation</a>
+
+		<li><a href="http://primates.ximian.com/~lupus/slides/embed/">Hosting the Mono Runtime</a><br>
+		The simple embedding of Mono in Perl is available <a
+		href="http://primates.ximian.com/~lupus/slides/embed/Mono-0.01.tar.gz">here</a>
+
+		<li><a href="http://primates.ximian.com/~lupus/slides/jit/">The Mono JIT compiler</a>
+
+		<li><a href="http://primates.ximian.com/~miguel/slides-europe-nov-2002/Mono_C_Sharp_Overview_1007.sxi">
+		Mono C# Compiler Overview</a>
+	</ul>
+
+	A couple of other presentations from Miguel's trip to Europe
+	are available <a
+	href="http://primates.ximian.com/~miguel/slides-europe-nov-2002/">here</a>
+	in Open Office file format.
 
 @item Nov 8th, 2002: Mono s390, Database work, new JIT updates.
 
