@@ -120,15 +120,12 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		}
 		else {
 			/* FIXME: handle more cases */
-
-			/* Patch trampoline in case the calling code can't be patched */
-			/* FIXME: Make this thread safe */
-#if 0
-			/* FIXME:  This causes nunit-console to fail */
-			amd64_mov_reg_imm (tramp, AMD64_R11, addr);
-			amd64_jump_reg (tramp, AMD64_R11);
-#endif
 		}
+
+		/* Patch trampoline */
+		/* FIXME: Make this thread safe */
+		amd64_mov_reg_imm (tramp, AMD64_R11, addr);
+		amd64_jump_reg (tramp, AMD64_R11);
 	}
 
 	return addr;
@@ -141,11 +138,12 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
  * for the type, then patches the caller code so it is not called again.
  */
 static void
-amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable)
+amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
 	mono_runtime_class_init (vtable);
 
 	code -= 3;
+
 	if ((code [0] == 0x49) && (code [1] == 0xff)) {
 		if (!mono_running_on_valgrind ()) {
 			/* amd64_set_reg_template is 10 bytes long */
