@@ -167,7 +167,8 @@ TEST_CS_SRC=			\
 	vararg.cs		\
 	async_read.cs		\
 	threadpool.cs		\
-	threadpool1.cs
+	threadpool1.cs		\
+	base-definition.cs
 
 
 TEST_IL_SRC=			\
