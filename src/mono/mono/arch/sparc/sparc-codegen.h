@@ -272,6 +272,14 @@ typedef struct {
 /* for use in logical ops, use 0 to not set flags */
 #define sparc_cc 16
 
+#define sparc_is_imm13(val) ((gint)val >= (gint)-(1<<12) && (gint)val <= (gint)((1<<12)-1))
+#define sparc_is_imm22(val) ((gint)val >= (gint)-(1<<21) && (gint)val <= (gint)((1<<21)-1))
+
+/* disassembly */
+#define sparc_inst_op(inst) ((inst) >> 30)
+#define sparc_inst_op3(inst) (((inst) >> 19) & 0x3f)
+#define sparc_inst_imm(inst) (((inst) >> 13) & 0x1)
+
 #define sparc_encode_call(ins,addr) \
 	do {	\
 		sparc_format1 *__f = (sparc_format1*)(ins);	\
@@ -384,10 +392,9 @@ typedef struct {
 #define sparc_ld(ins,base,disp,dest) sparc_encode_format3a((ins),3,sparc_asi,(base),(disp),0,(dest))
 #define sparc_ld_imm(ins,base,disp,dest) sparc_encode_format3b((ins),3,(base),(disp),0,(dest))
 
-#if SPARCV9
+/* Sparc V9 */
 #define sparc_ldx(ins,base,disp,dest) sparc_encode_format3a((ins),3,sparc_asi,(base),(disp),11,(dest))
 #define sparc_ldx_imm(ins,base,disp,dest) sparc_encode_format3b((ins),3,(base),(disp),11,(dest))
-#endif
 
 #define sparc_ldd(ins,base,disp,dest) sparc_encode_format3a((ins),3,sparc_asi,(base),(disp),3,(dest))
 #define sparc_ldd_imm(ins,base,disp,dest) sparc_encode_format3b((ins),3,(base),(disp),3,(dest))
@@ -408,10 +415,9 @@ typedef struct {
 #define sparc_st(ins,src,base,disp) sparc_encode_format3a((ins),3,sparc_asi,(base),(disp),4,(src))
 #define sparc_st_imm(ins,src,base,disp) sparc_encode_format3b((ins),3,(base),(disp),4,(src))
 
-#if SPARCV9
+/* Sparc V9 */
 #define sparc_stx(ins,src,base,disp) sparc_encode_format3a((ins),3,sparc_asi,(base),(disp),14,(src))
 #define sparc_stx_imm(ins,src,base,disp) sparc_encode_format3b((ins),3,(base),(disp),14,(src))
-#endif
 
 #define sparc_std(ins,src,base,disp) sparc_encode_format3a((ins),3,sparc_asi,(base),(disp),7,(src))
 #define sparc_std_imm(ins,src,base,disp) sparc_encode_format3b((ins),3,(base),(disp),7,(src))
@@ -444,7 +450,7 @@ typedef struct {
 #define sparc_jmpl(ins,base,disp,dest) sparc_encode_format3a((ins),2,0,(base),(disp),56,(dest))
 #define sparc_jmpl_imm(ins,base,disp,dest) sparc_encode_format3b((ins),2,(base),(disp),56,(dest))
 
-#define sparc_call_simple(ins,addr) sparc_encode_call((ins),((unsigned int)(addr)>>2))
+#define sparc_call_simple(ins,disp) sparc_encode_call((ins),((unsigned int)(disp)))
 
 #define sparc_rdy(ins,dest) sparc_encode_format3a((ins),2,0,0,0,40,(dest))
 
@@ -459,6 +465,8 @@ typedef struct {
 #define sparc_flush_imm(ins,base,disp) sparc_encode_format3b((ins),2,(base),(disp),59,0)
 
 /* trap */
+
+#define sparc_ta(ins,tt) sparc_encode_format3b((ins),2,0,(tt),58,0x8)
 
 /* alu fop */
 /* provide wrappers for: fitos, fitod, fstoi, fdtoi, fstod, fdtos, fmov, fneg, fabs */
@@ -521,8 +529,15 @@ typedef struct {
 #define sparc_fcmpeq( ins, r1, r2 ) sparc_fcmpeq( ins, r1, sparc_fcmpeq_val, r2 ) 
 
 /* logical */
-#define sparc_and(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|1,(dest))
-#define sparc_and_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|1,(dest))
+
+/* FIXME: condense this using macros */
+/* FIXME: the setcc stuff is wrong in lots of places */
+
+#define sparc_logic(ins,op,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),((setcc) ? 0x10 : 0) | (op), (dest))
+#define sparc_logic_imm(ins,op,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),((setcc) ? 0x10 : 0) | (op), (dest))
+
+#define sparc_and(ins,setcc,r1,r2,dest) sparc_logic(ins,1,setcc,r1,r2,dest)
+#define sparc_and_imm(ins,setcc,r1,imm,dest) sparc_logic_imm(ins,1,setcc,r1,imm,dest)
 
 #define sparc_andn(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|5,(dest))
 #define sparc_andn_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|5,(dest))
@@ -534,7 +549,7 @@ typedef struct {
 #define sparc_orn_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|6,(dest))
 
 #define sparc_xor(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|3,(dest))
-#define sparc_xor_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(r2),(imm)|3,(dest))
+#define sparc_xor_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm), (setcc)|3,(dest))
 
 #define sparc_xnor(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|7,(dest))
 #define sparc_xnor_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|7,(dest))
@@ -543,49 +558,51 @@ typedef struct {
 #define sparc_sll(ins,src,disp,dest) sparc_encode_format3a((ins),2,0,(src),(disp),37,(dest))
 #define sparc_sll_imm(ins,src,disp,dest) sparc_encode_format3b((ins),2,(src),(disp),37,(dest))
 
-#if SPARCV9
+/* Sparc V9 */
 #define sparc_sllx(ins,src,disp,dest) sparc_encode_format3ax((ins),2,0,(src),(disp),37,(dest))
 #define sparc_sllx_imm(ins,src,disp,dest) sparc_encode_format3bx((ins),2,(src),(disp),37,(dest))
-#endif
 
 #define sparc_srl(ins,src,disp,dest) sparc_encode_format3a((ins),2,0,(src),(disp),38,(dest))
 #define sparc_srl_imm(ins,src,disp,dest) sparc_encode_format3b((ins),2,(src),(disp),38,(dest))
 
-#if SPARCV9
+/* Sparc V9 */
 #define sparc_srlx(ins,src,disp,dest) sparc_encode_format3ax((ins),2,0,(src),(disp),38,(dest))
 #define sparc_srlx_imm(ins,src,disp,dest) sparc_encode_format3bx((ins),2,(src),(disp),38,(dest))
-#endif
 
 #define sparc_sra(ins,src,disp,dest) sparc_encode_format3a((ins),2,0,(src),(disp),39,(dest))
 #define sparc_sra_imm(ins,src,disp,dest) sparc_encode_format3b((ins),2,(src),(disp),39,(dest))
 
 /* alu */
-#define sparc_add(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|0,(dest))
-#define sparc_add_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|0,(dest))
 
-#define sparc_addx(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|8,(dest))
-#define sparc_addx_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|8,(dest))
+#define sparc_alu_reg(ins,op,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),op|((setcc) ? 0x10 : 0),(dest))
+#define sparc_alu_imm(ins,op,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),op|((setcc) ? 0x10 : 0),(dest))
 
-#define sparc_sub(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|4,(dest))
-#define sparc_sub_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|4,(dest))
+#define sparc_add(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0,(setcc),(r1),(r2),(dest))
+#define sparc_add_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0,(setcc),(r1),(imm),(dest))
 
-#define sparc_subx(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|12,(dest))
-#define sparc_subx_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|12,(dest))
+#define sparc_addx(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0x8,(setcc),(r1),(r2),(dest))
+#define sparc_addx_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0x8,(setcc),(r1),(imm),(dest))
+
+#define sparc_sub(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0x4,(setcc),(r1),(r2),(dest))
+#define sparc_sub_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0x4,(setcc),(r1),(imm),(dest))
+
+#define sparc_subx(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0xc,(setcc),(r1),(r2),(dest))
+#define sparc_subx_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0xc,(setcc),(r1),(imm),(dest))
 
 #define sparc_muls(ins,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),36,(dest))
 #define sparc_muls_imm(ins,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),36,(dest))
 
-#define sparc_umul(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|10,(dest))
-#define sparc_umul_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|10,(dest))
+#define sparc_umul(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0xa,(setcc),(r1),(r2),(dest))
+#define sparc_umul_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0xa,(setcc),(r1),(imm),(dest))
 
-#define sparc_smul(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|11,(dest))
-#define sparc_smul_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|11,(dest))
+#define sparc_smul(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0xb,(setcc),(r1),(r2),(dest))
+#define sparc_smul_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0xb,(setcc),(r1),(imm),(dest))
 
-#define sparc_udiv(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|14,(dest))
-#define sparc_udiv_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|14,(dest))
+#define sparc_udiv(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0xe,(setcc),(r1),(r2),(dest))
+#define sparc_udiv_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0xe,(setcc),(r1),(imm),(dest))
 
-#define sparc_sdiv(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|15,(dest))
-#define sparc_sdiv_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|15,(dest))
+#define sparc_sdiv(ins,setcc,r1,r2,dest) sparc_alu_reg((ins),0xf,(setcc),(r1),(r2),(dest))
+#define sparc_sdiv_imm(ins,setcc,r1,imm,dest) sparc_alu_imm((ins),0xf,(setcc),(r1),(imm),(dest))
 
 
 /* branch */
@@ -607,9 +624,13 @@ typedef struct {
 #define sparc_retl(ins) sparc_jmpl_imm((ins),sparc_o7,8,sparc_g0)
 #define sparc_restore_simple(ins) sparc_restore((ins),sparc_g0,sparc_g0,sparc_g0)
 
+#define SPARC_SET_MAX_SIZE 8
+
 #define sparc_set(ins,val,reg)	\
 	do {	\
-		if (((guint32)(val) & 0x1fff) == 0)	\
+        if ((val) == 0) \
+            sparc_clr_reg((ins),(reg)); \
+		else if (((guint32)(val) & 0x1fff) == 0)	\
 			sparc_sethi((ins),(guint32)(val),(reg));	\
 		else if (((gint32)(val) >= -4096) && ((gint32)(val) <= 4095))	\
 			sparc_or_imm((ins),FALSE,sparc_g0,(gint32)(val),(reg));	\
