@@ -48,7 +48,8 @@
         src="images/mono-new.gif" alt="mono-logo" border="0"></a>
 	    </td>
 	    <td>
-              <a class="navi0" href="download.html">Downloads</a> | 
+              <a class="navi0" href="download.html">Downloads</a> |
+              <a class="navi0" href="http://go-mono.com/daily">Daily snapshots</a> |              
               <a class="navi0" href="screenshots.html">Screenshots</a> |
               <a class="navi0" href="http://mono.ximian.com:8080">API Docs</a>
 	    </td>
