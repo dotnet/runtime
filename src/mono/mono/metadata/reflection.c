@@ -710,6 +710,7 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type,
 		values += MONO_CUSTOM_ATTR_SIZE;
 		++table->next_idx;
 next:
+	break;
 	}
 }
 
