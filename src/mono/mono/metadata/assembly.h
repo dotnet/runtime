@@ -19,7 +19,7 @@ void          mono_assembly_set_main   (MonoAssembly *assembly);
 MonoAssembly *mono_assembly_get_main   (void);
 
 /* Installs a function which is called each time a new assembly is loaded. */
-typedef void  (*MonoOpenAssemblyFunc)         (MonoAssembly *assembly);
-void          mono_install_open_assembly_hook (MonoOpenAssemblyFunc func);
+typedef void  (*MonoAssemblyLoadFunc)         (MonoAssembly *assembly, gpointer user_data);
+void          mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data);
 
 #endif

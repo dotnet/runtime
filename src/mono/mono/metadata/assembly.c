@@ -183,13 +183,37 @@ load_references (MonoImage *image, MonoImageOpenStatus *status) {
 
 }
 
-static MonoOpenAssemblyFunc mono_open_assembly_func = NULL;
+typedef struct AssemblyLoadHook AssemblyLoadHook;
+struct AssemblyLoadHook {
+	AssemblyLoadHook *next;
+	MonoAssemblyLoadFunc func;
+	gpointer user_data;
+};
+
+AssemblyLoadHook *assembly_load_hook = NULL;
+
+static void
+invoke_assembly_hook (MonoAssembly *ass)
+{
+	AssemblyLoadHook *hook;
+
+	for (hook = assembly_load_hook; hook; hook = hook->next) {
+		hook->func (ass, hook->user_data);
+	}
+}
 
 void
-mono_install_open_assembly_hook (MonoOpenAssemblyFunc func)
+mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 {
-	g_assert (!mono_open_assembly_func);
-	mono_open_assembly_func = func;
+	AssemblyLoadHook *hook;
+	
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyLoadHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = assembly_load_hook;
+	assembly_load_hook = hook;
 }
 
 /**
@@ -294,9 +318,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		g_free (module_ref);
 	}
 
-	if (mono_open_assembly_func)
-		mono_open_assembly_func (ass);
-	
+	invoke_assembly_hook (ass);
+
 	return ass;
 }
 

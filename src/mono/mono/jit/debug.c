@@ -38,7 +38,7 @@ static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar 
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
 static int debugger_update_symbol_file_table (void);
 
-static void mono_debug_add_assembly (MonoAssembly *assembly);
+static void mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data);
 static void mono_debug_close_assembly (AssemblyDebugInfo* info);
 static AssemblyDebugInfo *mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image);
 
@@ -204,7 +204,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	}
 
 	mono_debug_handle = debug;
-	mono_install_open_assembly_hook (mono_debug_add_assembly);
+	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
 	mono_debug_open_image (mono_debug_handle, assembly->image);
 
@@ -212,7 +212,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 }
 
 static void
-mono_debug_add_assembly (MonoAssembly *assembly)
+mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 {
 	if (!mono_debug_handle)
 		return;
@@ -618,7 +618,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	info->mlines = g_new0 (int, info->nmethods);
 
 	for (ptr = image->references; ptr && *ptr; ptr++)
-		mono_debug_add_assembly (*ptr);
+		mono_debug_add_assembly (*ptr, NULL);
 
 	switch (info->format) {
 	case MONO_DEBUG_FORMAT_STABS:
