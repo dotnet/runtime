@@ -514,4 +514,14 @@ PASS:	ldc.i4.0
 		ceq
 		ret
 	}
+	
+	.method public static int32 test_1_conv_u8_cfold  () {
+		ldc.i4.m1
+		conv.u8
+		
+		ldc.i8 0x00000000ffffffff
+		
+		ceq
+		ret
+	}
 }
