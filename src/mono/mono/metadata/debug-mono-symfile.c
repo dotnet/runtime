@@ -134,7 +134,8 @@ load_symfile (MonoSymbolFile *symfile)
 		mep->index = i;
 
 		mep->method_name_offset = priv->string_table_size;
-		mep->name = g_strdup_printf ("%s.%s.%s", method->klass->name_space,
+		mep->name = g_strdup_printf ("%s%s%s.%s", method->klass->name_space,
+					     method->klass->name_space [0] ? "." : "",
 					     method->klass->name, method->name);
 		priv->string_table_size += strlen (mep->name) + 5;
 
@@ -938,7 +939,7 @@ static gpointer
 write_type (MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
-	int num_fields = 0;
+	int num_fields = 0, num_properties = 0;
 	guint32 size;
 
 	if (!type_table)
@@ -976,7 +977,12 @@ write_type (MonoType *type)
 			if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
 				++num_fields;
 
-		size = 14 + sizeof (int) + num_fields * (4 + sizeof (gpointer));
+		for (i = 0; i < klass->property.count; i++)
+			if (!(klass->properties [i].attrs & FIELD_ATTRIBUTE_STATIC))
+				++num_properties;
+
+		size = 22 + sizeof (int) + num_fields * (4 + sizeof (gpointer)) +
+			num_properties * 3 * sizeof (gpointer);
 
 		if (type->type == MONO_TYPE_CLASS)
 			size += sizeof (gpointer);
@@ -1050,18 +1056,33 @@ write_type (MonoType *type)
 			break;
 		}
 
-		*((int *) ptr)++ = -14 - num_fields * (4 + sizeof (gpointer));
+		*((int *) ptr)++ = -22 - num_fields * (4 + sizeof (gpointer)) -
+			num_properties * 2 * sizeof (gpointer);
 		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
 		*ptr++ = type->type == MONO_TYPE_CLASS ? 6 : 5;
 		*ptr++ = type->type == MONO_TYPE_CLASS;
 		*((guint32 *) ptr)++ = num_fields;
 		*((guint32 *) ptr)++ = num_fields * (4 + sizeof (gpointer));
+		*((guint32 *) ptr)++ = num_properties;
+		*((guint32 *) ptr)++ = num_properties * 3 * sizeof (gpointer);
 		for (i = 0; i < klass->field.count; i++) {
 			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
 			*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
 			*((gpointer *) ptr)++ = write_type (klass->fields [i].type);
+		}
+
+		for (i = 0; i < klass->property.count; i++) {
+			if (klass->properties [i].attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+
+			if (klass->properties [i].get)
+				*((gpointer *) ptr)++ = write_type (klass->properties [i].get->signature->ret);
+			else
+				*((gpointer *) ptr)++ = NULL;
+			*((gpointer *) ptr)++ = klass->properties [i].get;
+			*((gpointer *) ptr)++ = klass->properties [i].set;
 		}
 
 		if (type->type == MONO_TYPE_CLASS) {
