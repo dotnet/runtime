@@ -1299,7 +1299,7 @@ if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 		# undefined reference to `__tls_get_addr'
 		#
 		rm -f conftest.c conftest.so conftest
-		echo "static __thread int foo; void bar () { foo = 5 };" > conftest.c
+		echo "static __thread int foo; void main () { foo = 5; }" > conftest.c
 		gcc -fPIC --shared -o conftest.so conftest.c > /dev/null 2>&1
 		gcc -o conftest conftest.so > /dev/null 2>&1
 		if test ! -f conftest; then
