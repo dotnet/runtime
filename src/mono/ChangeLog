@@ -1,4 +1,8 @@
 
+Sun Aug  3 21:12:13 BST 2003 Malte Hildingson <malte@amy.udd.htu.se>
+
+	* configure.in: added FPU test for ARM.
+
 Thu Jul 31 16:19:07 CEST 2003 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in, etc.: portability fixes and support for

@@ -14,7 +14,7 @@ typedef union {
 	unsigned char cval [8];
 } mono_rdouble;
 
-#if defined(__arm__) && G_BYTE_ORDER == G_LITTLE_ENDIAN
+#ifdef ARM_FPU_FPA
 #define MONO_DOUBLE_ASSERT_ENDIANITY(dbl_ptr) \
 	do { \
 		mono_rdouble r;	\

@@ -702,6 +702,26 @@ case "$host" in
 		;;
 esac
 
+if test ${TARGET} = ARM; then
+	dnl ******************************************
+	dnl *** Check to see what FPU is available ***
+	dnl ******************************************
+	AC_MSG_CHECKING(which FPU to use)
+
+	echo "double foo () { return 0.0; } \
+		int main () { double d = foo(); }" > conftest.c
+	${CC} -S conftest.c -o conftest.s
+
+	if test -n "`grep f0 conftest.s`"; then fpu=FPA
+	else if test -n "`grep d0 conftest.s`"; then fpu=VFP
+	else fpu=NONE
+	fi fi
+
+	AC_MSG_RESULT($fpu)
+	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu"
+	unset fpu
+fi
+
 if test ${TARGET} = unknown; then
 	CPPFLAGS="$CPPFLAGS -DNO_PORT"
 	AC_MSG_WARN("mono has not been ported to $host: some things may not work.")
