@@ -636,13 +636,16 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	}
 
 	if (!gmodule) {
-		gchar *error = g_strdup (g_module_error ());
+		if (getenv ("MONO_DEBUG")) {
+			gchar *error = g_strdup (g_module_error ());
+			g_message ("Error loading '%s': %s\n", orig_scope, error);
+			g_free (error);
+		}
 
 		if (exc_class) {
 			*exc_class = "DllNotFoundException";
 			*exc_arg = orig_scope;
 		}
-		g_free (error);
 		return NULL;
 	}
 
