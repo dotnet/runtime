@@ -1,3 +1,7 @@
+2001-11-30  Radek Doulik  <rodo@ximian.com>
+
+	* configure.in: remove ACCESS_UNALIGNED="no" from ppc
+
 2001-11-29  Radek Doulik  <rodo@ximian.com>
 
 	* configure.in (ACCESS_UNALIGNED): uncommented and modified
