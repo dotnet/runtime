@@ -2680,16 +2680,6 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	} else {
 		if (!MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_parent (klass, klassc))
 			return TRUE;
-		if (klass->generic_inst) {
-			MonoType *parent = klass->generic_inst->parent;
-			if (!parent)
-				return FALSE;
-
-			if (mono_metadata_type_equal (parent, &klassc->byval_arg))
-				return TRUE;
-			klass = mono_class_from_mono_type (parent);
-			goto again;
-		}
 	}
 
 	/* 
@@ -2698,6 +2688,17 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	 */
 	if (klassc == mono_defaults.object_class)
 		return TRUE;
+
+	if (klass->generic_inst) {
+		MonoType *parent = klass->generic_inst->parent;
+		if (!parent)
+			return FALSE;
+
+		if (mono_metadata_type_equal (parent, &klassc->byval_arg))
+			return TRUE;
+		klass = mono_class_from_mono_type (parent);
+		goto again;
+	}
 	
 	return FALSE;
 }
