@@ -118,7 +118,7 @@ struct _MonoSymbolFile {
 	MonoSymbolFileOffsetTable *offset_table;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		36
+#define MONO_SYMBOL_FILE_VERSION		37
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614ULL
 
 MonoSymbolFile *
