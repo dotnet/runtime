@@ -34,7 +34,7 @@
 		* <a href="#python">Python</a>
 	</ul>
 
-<a name="Java">
+<a name="Java"></a>
 ** Java
 
 	There is a very interesting project to make a JavaVM for .NET
@@ -91,7 +91,7 @@
 ** Delta Forth
 
    	 The Delta Forth.NET project: <a href="http://www.dataman.ro/dforth">Home
-	 Page</a> and <a href="http://www.dataman.ro/dforth/index.html">more
+	 Page</a> and <a href="http://www.dataman.ro/dforth">more
 	 details here</a>.
 	 
 
@@ -101,7 +101,7 @@
 	A subset of Scheme language called <a
 	href="http://radio.weblogs.com/0101156/stories/2002/03/19/tachy.html">Tachy</a>
 
-<a name="Python">
+<a name="Python"></a>
 ** Python
 
         <a href="mailto:brian@No.Spam.zope.com">Brian Lloyd</a> is
@@ -109,7 +109,7 @@
 	More information on the PS.NET project can be found <a
 	href="http://www.zope.org/Members/Brian/PythonNet">here</a>.
 
-<a name="dotlisp">
+<a name="dotlisp"></a>
 ** dotLisp
 
 	DotLisp is available from: <a

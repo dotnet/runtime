@@ -49,14 +49,14 @@ In order to test.
 	<li>Have working mono and mcs setup</li>
 	
 	<li>Have access to an IBM DB2 database.  If you do not have access, download the
-	<a href="http://www-3.ibm.com/software/data/db2/">IBM DB2</a> software.  There 
+	<a href="http://www-306.ibm.com/software/data/db2/">IBM DB2</a> software.  There 
 	are versions for Windows, Linux, AIX, and Sun Solaris.</li>
 	
 	<li>Make sure the assembly Mono.Data.DB2Client.dll was built and installed 
 	where the other class libraries are installed.</li>
 	
 	<li>If you do not have the source to mcs, get the source from
-	<a href="http://www.go-mono.com/download">here</a></li>
+	<a href="http://www.go-mono.com/download.html">here</a></li>
 	
 	<li>Has a ConnectionString format like ODBC</li>
 	
