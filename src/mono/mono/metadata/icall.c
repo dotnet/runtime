@@ -5686,6 +5686,7 @@ static const IcallEntry datetime_icalls [] = {
 	{"GetNow", ves_icall_System_DateTime_GetNow}
 };
 
+#ifndef DISABLE_DECIMAL
 static const IcallEntry decimal_icalls [] = {
 	{"decimal2Int64", mono_decimal2Int64},
 	{"decimal2UInt64", mono_decimal2UInt64},
@@ -5702,6 +5703,7 @@ static const IcallEntry decimal_icalls [] = {
 	{"double2decimal", mono_double2decimal}, /* FIXME: wrong signature. */
 	{"string2decimal", mono_string2decimal}
 };
+#endif
 
 static const IcallEntry delegate_icalls [] = {
 	{"CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal},
@@ -6436,7 +6438,9 @@ static const IcallMap icall_entries [] = {
 	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
 	{"System.CurrentTimeZone", timezone_icalls, G_N_ELEMENTS (timezone_icalls)},
 	{"System.DateTime", datetime_icalls, G_N_ELEMENTS (datetime_icalls)},
+#ifndef DISABLE_DECIMAL
 	{"System.Decimal", decimal_icalls, G_N_ELEMENTS (decimal_icalls)},
+#endif	
 	{"System.Delegate", delegate_icalls, G_N_ELEMENTS (delegate_icalls)},
 	{"System.Diagnostics.DefaultTraceListener", tracelist_icalls, G_N_ELEMENTS (tracelist_icalls)},
 	{"System.Diagnostics.FileVersionInfo", fileversion_icalls, G_N_ELEMENTS (fileversion_icalls)},

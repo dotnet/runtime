@@ -13,12 +13,15 @@
  * CSharp value type System.Decimal
  */
 
+#include "config.h"
 #include <mono/metadata/exception.h>
 #include <stdio.h>
 #include <memory.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+#ifndef DISABLE_DECIMAL
 
 /* needed for building microsoft dll */
 #ifdef __GNUC__
@@ -1557,3 +1560,6 @@ gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp)
         return DECIMAL_SUCCESS;
     }
 }
+
+#endif /* DISABLE_DECIMAL */
+
