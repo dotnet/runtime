@@ -89,7 +89,7 @@ unused99:
 dup:
 pop:
 jmp: len:32
-call: dest:a clob:c len:8
+call: dest:a clob:c len:11
 calli:
 ret:
 br.s:
