@@ -343,28 +343,36 @@ ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValu
 		for (i = 0; i <= srclen - oldstrlen; i++)
 			if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2)))
 				occurr++;
-
+                if (occurr == 0)
+                        return me;
 		newsize = srclen + ((newstrlen - oldstrlen) * occurr);
  	} else
 		newsize = srclen;
 
-	ret = mono_string_new_size( mono_domain_get (), newsize);
-	dest = mono_string_chars(ret);
-
+        ret = NULL;
 	i = 0;
 	while (i < srclen) {
 		if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2))) {
+                        if (ret == NULL) {
+                                ret = mono_string_new_size( mono_domain_get (), newsize);
+                                dest = mono_string_chars(ret);
+                                memcpy (dest, src, i * sizeof(gunichar2));
+                        }
 			if (newstrlen > 0) {
 				memcpy(dest + destpos, newstr, newstrlen * sizeof(gunichar2));
 				destpos += newstrlen;
 			}
 			i += oldstrlen;
-		} else {
+                        continue;
+		} else if (ret != NULL) {
 			dest[destpos] = src[i];
+ 		}
 			destpos++;
 			i++;
 		}
-	}
+        
+        if (ret == NULL)
+                return me;
 
 	return ret;
 }
