@@ -213,7 +213,10 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 		result.type = VAL_DOUBLE;
 		result.data.f = *(double*)(data + offset);
 		break;
-
+	case MONO_TYPE_CLASS:
+		result.type = VAL_OBJ;
+		result.data.p = *(gpointer*)(data + offset);
+		break;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
@@ -245,6 +248,9 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 		break;
 	case MONO_TYPE_R8:
 		*(double*)(data + offset) = val->data.f;
+		break;
+	case MONO_TYPE_CLASS:
+		*(gpointer*)(data + offset) = val->data.p;
 		break;
 	default:
 		g_warning ("got type %x", type->type);
@@ -351,6 +357,8 @@ dump_stack (stackval *stack, stackval *sp)
 
 #endif
 
+#define DEFAULT_LOCALS_SIZE	64
+
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -372,7 +380,8 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	stackval *stack;
 	register const unsigned char *ip;
 	register stackval *sp;
-	stackval *locals;
+	char locals_store [DEFAULT_LOCALS_SIZE];
+	char *locals = locals_store;
 	GOTO_LABEL_VARS;
 
 	if (mh->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
@@ -401,8 +410,9 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	sp = stack + 1;
 	++stack;
 
-	if (mm->header->num_locals)
-		locals = alloca (sizeof (stackval) * mm->header->num_locals);
+	if (mm->header->num_locals && mm->header->locals_offsets [0] > DEFAULT_LOCALS_SIZE) {
+		locals = alloca (mm->header->locals_offsets [0]);
+	}
 
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
@@ -438,19 +448,25 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_LDLOC_0)
 		CASE (CEE_LDLOC_1)
 		CASE (CEE_LDLOC_2)
-		CASE (CEE_LDLOC_3)
-			*sp = locals [(*ip)-CEE_LDLOC_0];
+		CASE (CEE_LDLOC_3) {
+			int n = (*ip)-CEE_LDLOC_0;
 			++ip;
+			*sp = stackval_from_data (mm->header->locals [n], locals,
+				n ? mm->header->locals_offsets [n]: 0);
 			++sp;
 			BREAK;
+		}
 		CASE (CEE_STLOC_0)
 		CASE (CEE_STLOC_1)
 		CASE (CEE_STLOC_2)
-		CASE (CEE_STLOC_3)
-			--sp;
-			locals [(*ip)-CEE_STLOC_0] = *sp;
+		CASE (CEE_STLOC_3) {
+			int n = (*ip)-CEE_STLOC_0;
 			++ip;
+			--sp;
+			stackval_to_data (mm->header->locals [n], sp, locals,
+				n ? mm->header->locals_offsets [n]: 0);
 			BREAK;
+		}
 		CASE (CEE_LDARG_S)
 			++ip;
 			*sp = args [*ip];
@@ -467,21 +483,23 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_STARG_S) ves_abort(); BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
-			*sp = locals [*ip];
-			++sp;
+			*sp = stackval_from_data (mm->header->locals [*ip], locals,
+				*ip ? mm->header->locals_offsets [*ip]: 0);
 			++ip;
+			++sp;
 			BREAK;
 		CASE (CEE_LDLOCA_S)
 			++ip;
 			sp->type = VAL_TP;
-			sp->data.p = &locals [*ip];
+			sp->data.p = locals + (*ip ? mm->header->locals_offsets [*ip]: 0);
 			++sp;
 			++ip;
 			BREAK;
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
-			locals [*ip] = *sp;
+			stackval_to_data (mm->header->locals [*ip], sp, locals,
+				*ip ? mm->header->locals_offsets [*ip]: 0);
 			++ip;
 			BREAK;
 		CASE (CEE_LDNULL) 
@@ -730,7 +748,23 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			++ip;
 			BREAK;
 		}
-		CASE (CEE_BNE_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BNE_UN_S) {
+			int result;
+			++ip;
+			sp -= 2;
+			if (sp->type == VAL_I32)
+				result = (guint32)sp [0].data.i != (guint32)GET_NATI (sp [1]);
+			else if (sp->type == VAL_I64)
+				result = (guint64)sp [0].data.l != (guint64)sp [1].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				result = sp [0].data.f != sp [1].data.f; /* uhm: unordered compare here */
+			else
+				result = GET_NATI (sp [0]) != GET_NATI (sp [1]);
+			if (result)
+				ip += (signed char)*ip;
+			++ip;
+			BREAK;
+		}
 		CASE (CEE_BGE_UN_S) ves_abort(); BREAK;
 		CASE (CEE_BGT_UN_S) ves_abort(); BREAK;
 		CASE (CEE_BLE_UN_S) ves_abort(); BREAK;
@@ -1388,7 +1422,7 @@ ves_exec (MonoAssembly *assembly)
 	fprintf (stderr, "result: %d\n", result.data.i);
 	mono_free_method (mh);
 
-	return 0;
+	return result.data.i;
 }
 
 static void

@@ -27,83 +27,6 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
-/*
- * mono_field_type_size:
- * @t: the type to return the size of
- *
- * Returns: the number of bytes required to hold an instance of this
- * type in memory
- */
-int
-mono_field_type_size (MonoFieldType *ft)
-{
-	MonoType *t = ft->type;
-
-	switch (t->type){
-	case MONO_TYPE_BOOLEAN:
-		return sizeof (m_boolean);
-		
-	case MONO_TYPE_CHAR:
-		return sizeof (m_char);
-		
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		return 1;
-		
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-		return 2;
-		
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_R4:
-		return 4;
-		
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R8:
-		return 8;
-		
-	case MONO_TYPE_I:
-		return sizeof (m_i);
-		
-	case MONO_TYPE_U:
-		return sizeof (m_u);
-		
-	case MONO_TYPE_STRING:
-		return sizeof (m_string);
-		
-	case MONO_TYPE_OBJECT:
-		return sizeof (m_object);
-		
-	case MONO_TYPE_VALUETYPE:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_VALUETYPE");
-		
-	case MONO_TYPE_CLASS:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_CLASS");
-		break;
-		
-	case MONO_TYPE_SZARRAY:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_SZARRAY");
-		break;
-		
-	case MONO_TYPE_PTR:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_PTR");
-		break;
-		
-	case MONO_TYPE_FNPTR:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_FNPTR");
-		break;
-		
-	case MONO_TYPE_ARRAY:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_ARRAY");
-		break;
-	default:
-		g_error ("type 0x%02x unknown", t->type);
-	}
-	return 0;
-}
-
 /** 
  * class_compute_field_layout:
  * @m: pointer to the metadata.
@@ -149,15 +72,16 @@ class_compute_field_layout (MonoMetadata *m, MonoClass *class)
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
 		for (i = 0; i < top; i++){
-			int size;
+			int size, align;
 			
-			size = mono_field_type_size (class->fields [i].type);
-			size += (size % 4);
+			size = mono_type_size (class->fields [i].type->type, &align);
 			if (class->fields [i].flags & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
+				class->class_size += (class->class_size % align);
 				class->class_size += size;
 			} else {
 				class->fields [i].offset = class->instance_size;
+				class->instance_size += (class->instance_size % align);
 				class->instance_size += size;
 			}
 		}
@@ -191,7 +115,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	/*
 	 * If root of the hierarchy
 	 */
-	if (MONO_IMAGE_IS_CORLIB (image) && cols [3] == 5){
+	if (MONO_IMAGE_IS_CORLIB (image) && cols [3] == 0){
 		class->instance_size = sizeof (MonoObject);
 		class->parent = NULL;
 	} else {

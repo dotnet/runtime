@@ -211,16 +211,21 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 
 		case InlineSwitch: {
-			guint32 count = *(guint32 *) ptr;
+			guint32 count = read32 (ptr);
+			const unsigned char *endswitch;
 			guint32 i;
 			
 			ptr += 4;
-			fprintf (output, "(\n\t\t\t");
+			endswitch = ptr + sizeof (guint32) * count;
+			fprintf (output, "(\n");
+			CODE_INDENT;
 			for (i = 0; i < count; i++){
-				fprintf (output, "IL_%x", *(guint32 *) ptr);
+				fprintf (output, "\t%sIL_%04x%s", indent, 
+					endswitch-start+read32 (ptr), 
+					i == count - 1 ? ")" : ",\n");
 				ptr += 4;
 			}
-			fprintf (output, "\t\t\t)");
+			CODE_UNINDENT;
 			break;
 		}
 

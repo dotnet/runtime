@@ -47,7 +47,6 @@ struct _MonoClass {
 
 MonoClass *mono_class_get       (MonoImage *image, guint32 type_token);
 
-int             mono_field_type_size (MonoFieldType *ft);
 MonoClassField *mono_class_get_field (MonoClass *class, guint32 field_token);
 
 #endif /* _MONO_CLI_CLASS_H_ */

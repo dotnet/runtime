@@ -168,7 +168,7 @@ typedef struct {
 typedef struct {
 	MonoType *type;
 	int num_modifiers;
-	MonoCustomMod modifiers[MONO_ZERO_LEN_ARRAY]; /* this may grow */
+	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
 } MonoModifiedType;
 
 struct _MonoArray {
@@ -200,7 +200,7 @@ typedef struct {
 	short param_attrs; /* 22.1.11 */
 	char typedbyref;
 	char num_modifiers;
-	MonoCustomMod modifiers[MONO_ZERO_LEN_ARRAY]; /* this may grow */
+	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
 } MonoRetType;
 
 /* MonoRetType is used also for params and fields */
@@ -208,25 +208,26 @@ typedef MonoRetType MonoParam;
 typedef MonoRetType MonoFieldType;
 
 struct _MonoMethodSignature {
-	char hasthis;
-	char explicit_this;
-	char call_convention;
-	int param_count;
-	int sentinelpos;
-	MonoRetType *ret;
-	MonoParam **params;
+	char          hasthis;
+	char          explicit_this;
+	char          call_convention;
+	guint16       param_count;
+	guint16       sentinelpos;
+	MonoRetType  *ret;
+	MonoParam   **params;
+	guint32      *param_offsets;
 };
 
 typedef struct {
 	guint32      code_size;
 	const char  *code;
-	short        max_stack;
+	guint16      max_stack;
 	unsigned int num_clauses : 15;
 	/* if num_locals != 0, then the following apply: */
 	unsigned int init_locals : 1;
-	int          num_locals;
+	guint16      num_locals;
 	MonoType   **locals;
-
+	guint32     *locals_offsets;
 	MonoExceptionClause *clauses;
 } MonoMethodHeader;
 
@@ -250,6 +251,8 @@ MonoType      *mono_metadata_parse_type        (MonoMetadata      *m,
                					const char      *ptr,
                					const char     **rptr);
 void           mono_metadata_free_type         (MonoType        *type);
+int            mono_type_size                  (MonoType        *type, 
+				                                int             *alignment);
 
 MonoFieldType *mono_metadata_parse_field_type  (MonoMetadata      *m,
 						const char      *ptr,

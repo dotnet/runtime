@@ -1335,6 +1335,7 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		const char *ptr;
 		guint32 cols [MONO_STAND_ALONG_SIGNATURE_SIZE];
 		int len=0, i, bsize;
+		guint offset = 0;
 
 		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
 		ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONG_SIGNATURE]);
@@ -1344,9 +1345,13 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		ptr++;
 		len = mono_metadata_decode_value (ptr, &ptr);
 		mh->num_locals = len;
+		if (!mh->num_locals)
+			return mh;
 		mh->locals = g_new (MonoType*, len);
+		mh->locals_offsets = g_new0 (guint32, len);
 		for (i = 0; i < len; ++i) {
 			int val;
+			int align;
 			const char *p = ptr;
 			val = mono_metadata_decode_blob_size (ptr, &ptr);
 			/* FIXME: store pinned/byref values */
@@ -1358,7 +1363,16 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 				p = ptr;
 			}
 			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
+			mh->locals_offsets [i] = offset;
+			val = mono_type_size (mh->locals [i], &align);
+			offset += (offset % align);
+			offset += val;
 		}
+		/*
+		 * The offset of the first item is always 0, so we use the slot
+		 * to store how much data we need in total.
+		 */
+		mh->locals_offsets [0] = offset;
 	}
 	return mh;
 }
@@ -1370,6 +1384,7 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
 	for (i = 0; i < mh->num_locals; ++i)
 		mono_metadata_free_type (mh->locals[i]);
 	g_free (mh->locals);
+	g_free (mh->locals_offsets);
 	g_free (mh->clauses);
 	g_free (mh);
 }
@@ -1499,5 +1514,103 @@ mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return loc.result + 1;
+}
+
+#ifndef __GNUC__
+#define __alignof__(a) sizeof(a)
+#endif
+
+/*
+ * mono_type_size:
+ * @t: the type to return the size of
+ *
+ * Returns: the number of bytes required to hold an instance of this
+ * type in memory
+ */
+int
+mono_type_size (MonoType *t, gint *align)
+{
+	if (t->byref) {
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+	}
+
+	switch (t->type){
+	case MONO_TYPE_BOOLEAN:
+		*align = __alignof__(char);
+		return sizeof (char);
+		
+	case MONO_TYPE_CHAR:
+		*align = __alignof__(short);
+		return sizeof (short);
+		
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		*align = __alignof__(char);
+		return 1;
+		
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		*align = __alignof__(gint16);
+		return 2;
+		
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		*align = __alignof__(gint32);
+		return 4;
+	case MONO_TYPE_R4:
+		*align = __alignof__(float);
+		return 4;
+		
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		*align = __alignof__(gint64);
+	case MONO_TYPE_R8:
+		*align = __alignof__(double);
+		return 8;
+		
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+		
+	case MONO_TYPE_STRING:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+		
+	case MONO_TYPE_OBJECT:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+		
+	case MONO_TYPE_VALUETYPE:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_VALUETYPE");
+		
+	case MONO_TYPE_CLASS:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+		/*g_error ("FIXME: Add computation of size for MONO_TYPE_CLASS");
+		break;*/
+		
+	case MONO_TYPE_SZARRAY:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_SZARRAY");
+		break;
+		
+	case MONO_TYPE_PTR:
+		*align = __alignof__(gpointer);
+		g_error ("FIXME: Add computation of size for MONO_TYPE_PTR");
+		break;
+		
+	case MONO_TYPE_FNPTR:
+		*align = __alignof__(gpointer);
+		g_error ("FIXME: Add computation of size for MONO_TYPE_FNPTR");
+		break;
+		
+	case MONO_TYPE_ARRAY:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_ARRAY");
+		break;
+	default:
+		g_error ("type 0x%02x unknown", t->type);
+	}
+	return 0;
 }
 

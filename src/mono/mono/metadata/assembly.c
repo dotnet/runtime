@@ -143,8 +143,9 @@ mono_assembly_close (MonoAssembly *assembly)
 	
 	g_return_if_fail (assembly != NULL);
 
+	image = assembly->image;
 	for (i = 0; image->references [i] != NULL; i++)
-		mono_image_close (assembly->image);
+		mono_image_close (image->references [i]->image);
 	g_free (image->references);
 	     
 	mono_image_close (assembly->image);
