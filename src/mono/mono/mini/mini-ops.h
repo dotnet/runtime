@@ -287,6 +287,8 @@ MINI_OP(OP_ABS,     "abs")
 MINI_OP(OP_TAN,     "tan")
 MINI_OP(OP_ATAN,    "atan")
 MINI_OP(OP_SQRT,    "sqrt")
+/* to optimize strings */
+MINI_OP(OP_GETCHR, "getchar")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")

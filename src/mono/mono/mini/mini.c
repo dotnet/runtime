@@ -2521,14 +2521,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= n;
 
 			if (cmethod && (mop = mono_find_method_opcode (cmethod))) {
-
+				int pc = fsig->param_count + fsig->hasthis;
 				MONO_INST_NEW (cfg, ins, mop);
 				ins->cil_code = ip;
 				g_assert (n <= 2);
 
-				if (fsig->param_count > 0) {
+				if (pc > 0) {
 					ins->inst_i0 = sp [0];
-					if (fsig->param_count > 1)
+					if (pc > 1)
 						ins->inst_i1 = sp [1];
 				}
 
@@ -6043,6 +6043,9 @@ mini_init (const char *filename)
 	g_assert ((m = mono_find_unique_method (mono_defaults.math_class, "Sqrt", 1)));
 	mono_register_method_opcode (m, OP_SQRT);
 	
+	g_assert ((m = mono_find_unique_method (mono_defaults.string_class, "get_Chars", 1)));
+	mono_register_method_opcode (m, OP_GETCHR);
+
 	g_assert ((desc = mono_method_desc_new ("System.Math:Abs(double)", 0)));
 	g_assert ((m = mono_method_desc_search_in_image (desc, mono_defaults.corlib)));
 	mono_register_method_opcode (m, OP_ABS);
