@@ -1,4 +1,45 @@
+using System;
+
 public class TestJit {
+
+	public static int test_nan ()
+	{
+		double nan1 = Double.NaN;
+		double nan2 = Double.NaN;
+		double neg_inf1 = Double.NegativeInfinity;
+		double neg_inf2 = Double.NegativeInfinity;
+		double pos_inf1 = Double.PositiveInfinity;
+		double pos_inf2 = Double.PositiveInfinity;
+		
+		if (nan1 == nan2)
+			return 1;
+		
+		if (!nan1.Equals(nan2))
+			return 1;
+			
+		if (neg_inf1 != neg_inf2)
+			return 1;
+
+		if (!neg_inf1.Equals(neg_inf2))
+			return 1;
+
+		if (pos_inf1 != pos_inf2)
+			return 1;
+
+		if (!pos_inf1.Equals(pos_inf2))
+			return 1;
+
+		if (pos_inf1 == neg_inf1)
+			return 1;
+
+		if (pos_inf1.Equals (neg_inf1))
+			return 1;
+
+		if (pos_inf1 == nan1)
+			return 1;
+		
+		return 0;
+	}
 
 	public static double test_call (double a, double b) {
 		return a+b;
@@ -73,6 +114,11 @@ public class TestJit {
 			return num;
 		num++;
 
+		if (test_nan () != 0)
+			return num;
+		num++;
+
+			
 		return 0;
 	}
 }
