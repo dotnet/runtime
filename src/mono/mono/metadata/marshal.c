@@ -883,6 +883,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 
 	info = mono_marshal_load_type_info (klass);
 
+	if (info->native_size == 0)
+		return;
+
 	if (klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
