@@ -13,7 +13,7 @@
 
 #include <mono/metadata/object.h>
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(MonoArray *arry);
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes(MonoArray *arry);
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(MonoObject *self, MonoArray *arry);
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes(MonoObject *self, MonoArray *arry);
 
 #endif

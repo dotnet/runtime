@@ -24,7 +24,8 @@
 
 #if defined (NAME_DEV_RANDOM) && defined (HAVE_CRYPT_RNG)
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(MonoArray *arry)
+void 
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes (MonoObject *self, MonoArray *arry)
 {
     guint32 len;
     gint file;
@@ -59,7 +60,8 @@ void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(Mo
     close(file);
 }
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes(MonoArray *arry)
+void 
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes (MonoObject *self, MonoArray *arry)
 {
     guint32 len;
     gint file, i;
