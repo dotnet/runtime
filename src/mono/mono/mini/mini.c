@@ -3350,21 +3350,59 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				temp->cil_code = ip;
 				*sp++ = temp;
 			} else {
-				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-				temp->cil_code = ip;
-				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-				store->cil_code = ip;
-				if (store->opcode == CEE_STOBJ) {
-					NEW_TEMPLOADA (cfg, store, temp->inst_c0);
-					handle_stobj (cfg, bblock, store, ins, ins->cil_code, store->klass, TRUE, FALSE);
-				} else
+				/* Common idiom: ... / dup / stloc.x */
+				int ins_len = 0;
+				if (ip_in_bb (cfg, bblock, ip + 1)) {
+					switch (ip [1]) {
+					case CEE_STLOC_0:
+					case CEE_STLOC_1:
+					case CEE_STLOC_2:
+					case CEE_STLOC_3:
+						n = (ip [1]) - CEE_STLOC_0;
+						ins_len = 1;
+						break;
+					
+					case CEE_STLOC_S:
+						n = ip [2];
+						ins_len = 2;
+						break;
+					
+					case CEE_PREFIX1:
+						if (ip [2] == CEE_LDLOC) {
+							n = read16 (ip + 3);
+							ins_len = 4;
+						}
+					}
+				}
+				
+				if (ins_len) {
+					CHECK_LOCAL (n);
+					handle_loaded_temps (cfg, bblock, stack_start, sp - 1);
+					NEW_LOCSTORE (cfg, ins, n, *sp);
+					ins->cil_code = ip;
+					if (ins->opcode == CEE_STOBJ) {
+						NEW_LOCLOADA (cfg, ins, n);
+						handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
+					} else
+						MONO_ADD_INS (bblock, ins);
+					
+					NEW_LOCLOAD (cfg, *sp, n);
+					(*sp)->cil_code = ip;
+					ip += ins_len;
+					sp++;
+				} else {
+					temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+					temp->cil_code = ip;
+					NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+					store->cil_code = ip;
 					MONO_ADD_INS (bblock, store);
-				NEW_TEMPLOAD (cfg, ins, temp->inst_c0);
-				*sp++ = ins;
-				ins->cil_code = ip;
-				NEW_TEMPLOAD (cfg, ins, temp->inst_c0);
-				*sp++ = ins;
-				ins->cil_code = ip;
+					NEW_TEMPLOAD (cfg, ins, temp->inst_c0);
+					*sp++ = ins;
+					ins->cil_code = ip;
+					NEW_TEMPLOAD (cfg, ins, temp->inst_c0);
+					*sp++ = ins;
+					ins->cil_code = ip;
+				}
 			}
 			++ip;
 			inline_costs += 2;
