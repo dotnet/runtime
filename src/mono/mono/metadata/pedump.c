@@ -216,34 +216,6 @@ dump_metadata_ptrs (dotnet_image_info_t *iinfo)
 	dsh ("\t       GUID", iinfo, &meta->heap_guid);
 }
 
-static const char *
-table_to_string (int table)
-{
-	char *map_table_to_string [] = {
-		/* 0 */  "Module",       "TypeRef",       "TypeDef",     "FieldPtr",
-		/* 4 */  "FieldDef",     "MethodPtr",     "MethodDef",   "ParamPtr",
-		/* 8 */  "ParamDef",     "InterfaceImpl", "MemberRef",   "FieldInit",
-		/* 12 */ "CustomAttr",   "MarshalDef",    "Permission",  "LayoutDef",
-		/* 16 */ "FieldOffset",  "Signature",     "EventAssoc",  "EventPtr",
-		/* 20 */ "Event",        "PropertyAssoc", "PropertyPtr", "Property",
-		/* 24 */ "MethodAssoc",  "MethodImpl",    "ModuleRef",   "TypeSpec",
-		/* 28 */ "PInvoke",      "Data",          "EncLog",      "EncAssoc",
-		/* 32 */ "Assembly",     "ProcessorDef",  "OSDef",       "AssemblyRef",
-		/* 36 */ "ProcessorRef", "OSRef",         "File",        "ComType",
-		/* 40 */ "ManifestResource", "ExeLocation", "42",        "43",
-		/* 44 */ "44",           "45",            "NestedClass", "47"
-		/* 48 */ "48",           "49",            "50",          "51",
-		/* 52 */ "52",           "53",            "54",          "55"
-		/* 56 */ "56",           "57",            "58",          "59"
-		/* 60 */ "60",           "61",            "62",          "63"
-	};
-	
-	if (table < 0 || table > 63)
-		return "Unknown table name";
-	
-	return map_table_to_string [table];
-}
-
 static void
 dump_metadata (dotnet_image_info_t *iinfo)
 {
@@ -256,7 +228,7 @@ dump_metadata (dotnet_image_info_t *iinfo)
 	for (table = 0; table < 64; table++){
 		if (meta->rows [table] == 0)
 			continue;
-		printf ("Table %s (%d): %d rows\n", table_to_string (table), table, meta->rows [table]);
+		printf ("Table %s (%d): %d rows\n", mono_meta_table_name (table), table, meta->rows [table]);
 	}
 }
 

@@ -133,13 +133,17 @@ load_metadata_ptrs (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 	} else if (strncmp (ptr, "BSJB", 4) == 0){
 		guint32 version_string_len;
 
-		ptr += 8;
+		ptr += 12;
 		version_string_len = read32 (ptr);
+		ptr += 4;
 		ptr += version_string_len;
 		if (((guint32) ptr) % 4)
 			ptr += 4 - (((guint32) ptr) %4);
 	}
 
+	/* skip over flags */
+	ptr += 2;
+	
 	records = read16 (ptr);
 	ptr += 2;
 

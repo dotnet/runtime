@@ -1,3 +1,10 @@
+2001-06-19  Miguel de Icaza  <miguel@ximian.com>
+
+	* mono/metadata/metadata.c: Entered all the tables matching
+	Beta2. 
+
+	* mono/metadata/assembly.c (load_metadata_ptrs): Fix for Beta2
+
 2001-05-30  Miguel de Icaza  <miguel@ximian.com>
 
 	* NEWS: 
