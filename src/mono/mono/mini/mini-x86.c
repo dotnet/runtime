@@ -3014,7 +3014,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP: {
-			MonoJitInfo *jit_info;
 			GSList *list;
 
 			/* get the trampoline to the method from the domain */
