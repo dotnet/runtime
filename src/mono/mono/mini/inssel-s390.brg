@@ -402,7 +402,6 @@ reg: OP_LDADDR (OP_S390_ARGPTR) "2" {
 }
 
 reg: OP_LDADDR (OP_S390_STKARG) "2" {
-printf("CEE_LDOBJ (OP_S390_STKARG) 2\n");
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
 				 (s->stack_offset + state->left->tree->unused));
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1, 

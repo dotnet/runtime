@@ -4402,20 +4402,26 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		s390_lr    (code, s390_r13, cfg->frame_reg);
 		s390_ahi   (code, s390_r13, lmfOffset);
+
+		/*---------------------------------------------------------------*/
+		/* Set lmf.lmf_addr = jit_tls->lmf				 */
+		/*---------------------------------------------------------------*/
 		s390_st    (code, s390_r2, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
+
+		/*---------------------------------------------------------------*/
+		/* Get current lmf						 */
+		/*---------------------------------------------------------------*/
+		s390_l     (code, s390_r0, 0, s390_r2, 0);
+
+		/*---------------------------------------------------------------*/
+		/* Set our lmf as the current lmf				 */
+		/*---------------------------------------------------------------*/
 		s390_st	   (code, s390_r13, 0, s390_r2, 0);
 
 		/*---------------------------------------------------------------*/
-		/* new_lmf->previous_lmf = *lmf_addr 				 */
+		/* Have our lmf.previous_lmf point to the last lmf		 */
 		/*---------------------------------------------------------------*/
-		s390_l     (code, s390_r0, 0, s390_r2, 0);
 		s390_st	   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
-
-		/*---------------------------------------------------------------*/
-		/* *(lmf_addr) = r13						 */
-		/*---------------------------------------------------------------*/
-		s390_l	   (code, s390_r2,  0, s390_r2, 0);
-		s390_st    (code, s390_r13, 0, s390_r2, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
 
 		/*---------------------------------------------------------------*/
 		/* save method info						 */
@@ -4430,7 +4436,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* save the current IP						 */
 		/*---------------------------------------------------------------*/
-		s390_basr  (code, s390_r1, 0);
+		s390_larl  (code, s390_r1, 0);
 		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));
 
 		/*---------------------------------------------------------------*/
@@ -4468,46 +4474,41 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig = method->signature;
 	MonoInst *inst;
-	int pos, i;
+	int i, lmfOffset, tracing = 0;
 	guint8 *code;
 
 	code = cfg->native_code + cfg->code_len;
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
-		pos = 8;
-	} else {
-		pos = 0;
-	}
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) 
+		tracing = 1;
 	
 	if (method->save_lmf) {
 		s390_lr  (code, s390_r13, cfg->frame_reg);
-		s390_ahi (code, s390_r13, S390_MINIMAL_STACK_SIZE + cfg->param_area);
+
+		lmfOffset = S390_MINIMAL_STACK_SIZE + cfg->param_area;
+		if (tracing)
+			lmfOffset += S390_TRACE_STACK_SIZE;
+
 		/*-------------------------------------------------*/
-		/* r6 = lmf_addr 				   */
+		/* r13 = my lmf					   */
+		/*-------------------------------------------------*/
+		s390_ahi (code, s390_r13, lmfOffset);
+
+		/*-------------------------------------------------*/
+		/* r6 = &jit_tls->lmf				   */
 		/*-------------------------------------------------*/
 		s390_l   (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
 
 		/*-------------------------------------------------*/
-		/* r0 = previous_lmf 				   */
+		/* r0 = lmf.previous_lmf			   */
 		/*-------------------------------------------------*/
 		s390_l   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
+
 		/*-------------------------------------------------*/
-		/* lmf_adr = previous_lmf			   */
+		/* jit_tls->lmf = previous_lmf			   */
 		/*-------------------------------------------------*/
 		s390_l   (code, s390_r13, 0, s390_r6, 0);
 		s390_st  (code, s390_r0, 0, s390_r6, 0);
-
-		/*-------------------------------------------------*/
-		/* *(lmf_addr) = previous_lmf 			   */
-		/*-------------------------------------------------*/
-		s390_st  (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
-		/* restore iregs */
-		// s390_lm  (code, s390_r13, s390_r11, s390_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
-		/* restore fregs */
-		//for (i = 0; i < 15; i++) {
-		//	s390_ld (code, i, 0, s390_r11, G_STRUCT_OFFSET(MonoLMF, fregs) + (i * sizeof (gdouble)));
-		//}
 	}
 
 	if (cfg->frame_reg != STK_BASE)

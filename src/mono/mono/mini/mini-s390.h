@@ -3,8 +3,8 @@
 
 #include <mono/arch/s390/s390-codegen.h>
 
-#define MONO_MAX_IREGS 32
-#define MONO_MAX_FREGS 32
+#define MONO_MAX_IREGS 16
+#define MONO_MAX_FREGS 16
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 
@@ -18,8 +18,6 @@ struct MonoLMF {
 	MonoMethod *method;
 	gulong      ebp;
 	gulong      eip;
-	gulong      iregs [15]; /* 0..14 */
-	gdouble     fregs [16]; /* 0..15 */
 };
 
 typedef struct MonoCompileArch {
