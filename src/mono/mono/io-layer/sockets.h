@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 
@@ -49,6 +50,27 @@ extern int closesocket(WapiHandle *handle);
 #define shutdown _wapi_shutdown
 #define socket _wapi_socket
 #define gethostbyname _wapi_gethostbyname
+#define select _wapi_select
+
+#ifdef FD_CLR
+#undef FD_CLR
+#endif
+
+#ifdef FD_ISSET
+#undef FD_ISSET
+#endif
+
+#ifdef FD_SET
+#undef FD_SET
+#endif
+
+/* No need to wrap FD_ZERO because it doesnt involve file
+ * descriptors
+*/
+#define FD_CLR _wapi_FD_CLR
+#define FD_ISSET _wapi_FD_ISSET
+#define FD_SET _wapi_FD_SET
+
 #endif /* _WAPI_BUILDING */
 
 extern WapiHandle *_wapi_accept(WapiHandle *handle, struct sockaddr *addr, socklen_t *addrlen);
@@ -66,6 +88,10 @@ extern int _wapi_setsockopt(WapiHandle *handle, int level, int optname, const vo
 extern int _wapi_shutdown(WapiHandle *handle, int how);
 extern WapiHandle *_wapi_socket(int domain, int type, int protocol);;
 extern struct hostent *_wapi_gethostbyname(const char *hostname);
+extern int _wapi_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+extern void _wapi_FD_CLR(WapiHandle *handle, fd_set *set);
+extern int _wapi_FD_ISSET(WapiHandle *handle, fd_set *set);
+extern void _wapi_FD_SET(WapiHandle *handle, fd_set *set);
 
 extern int ioctlsocket(WapiHandle *handle, gint32 command, gpointer arg);
 

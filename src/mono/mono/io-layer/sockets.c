@@ -746,8 +746,37 @@ int _wapi_setsockopt(WapiHandle *handle, int level, int optname, const void *opt
 int _wapi_shutdown(WapiHandle *handle, int how)
 {
 	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	int ret;
 	
-	return(shutdown(socket_handle->fd, how));
+	if(startup_count==0) {
+		WSASetLastError(WSANOTINITIALISED);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=shutdown(socket_handle->fd, how);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": shutdown error: %s",
+			  strerror(errno));
+#endif
+
+		switch(errno) {
+		case EBADF:
+		case ENOTSOCK:
+			WSASetLastError(WSAENOTSOCK);
+			break;
+		case ENOTCONN:
+			WSASetLastError(WSAENOTCONN);
+			break;
+		default:
+			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
+			break;
+		}
+		
+		return(SOCKET_ERROR);
+	}
+	
+	return(ret);
 }
 
 WapiHandle *_wapi_socket(int domain, int type, int protocol)
@@ -875,3 +904,65 @@ int ioctlsocket(WapiHandle *handle, gint32 command, gpointer arg)
 	
 	return(0);
 }
+
+int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
+		 fd_set *exceptfds, struct timeval *timeout)
+{
+	int ret;
+	
+	if(startup_count==0) {
+		WSASetLastError(WSANOTINITIALISED);
+		return(SOCKET_ERROR);
+	}
+
+	ret=select(getdtablesize(), readfds, writefds, exceptfds, timeout);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": select error: %s",
+			  strerror(errno));
+#endif
+		switch(errno) {
+		case EBADF:
+			WSASetLastError(WSAENOTSOCK);
+			break;
+		case EINTR:
+			WSASetLastError(WSAEINTR);
+			break;
+		case EINVAL:
+			WSASetLastError(WSAEINVAL);
+			break;
+		case ENOMEM:
+			WSASetLastError(WSAEFAULT);
+			break;
+		default:
+			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
+			break;
+		}
+		
+		return(SOCKET_ERROR);
+	}
+
+	return(ret);
+}
+
+void _wapi_FD_CLR(WapiHandle *handle, fd_set *set)
+{
+	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+
+	FD_CLR(socket_handle->fd, set);
+}
+
+int _wapi_FD_ISSET(WapiHandle *handle, fd_set *set)
+{
+	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+
+	return(FD_ISSET(socket_handle->fd, set));
+}
+
+void _wapi_FD_SET(WapiHandle *handle, fd_set *set)
+{
+	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+
+	FD_SET(socket_handle->fd, set);
+}
+

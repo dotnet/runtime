@@ -135,6 +135,7 @@ extern SOCKET ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *th
 extern void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock);
 extern gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void);
 extern gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock);
+extern void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock, gboolean block);
 extern SOCKET ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock);
 extern void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock, guint32 backlog);
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock);
@@ -145,9 +146,13 @@ extern gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, 
 extern gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr);
 extern gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags);
 extern gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject *sockaddr);
+extern void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout);
+extern void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock, gint32 how);
+extern void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val);
+extern void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET sock, gint32 level, gint32 name, MonoArray **byte_val);
+extern void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val);
 extern gboolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list);
 extern gboolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list);
-
 
 extern void mono_network_init(void);
 extern void mono_network_cleanup(void);

@@ -206,6 +206,175 @@ static gint32 convert_proto(MonoProtocolType mono_proto)
 	return(proto);
 }
 
+static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
+					     MonoSocketOptionName mono_name,
+					     int *system_level,
+					     int *system_name)
+{
+	switch(mono_level) {
+	case SocketOptionLevel_Socket:
+		*system_level=SOL_SOCKET;
+
+		switch(mono_name) {
+		case SocketOptionName_DontLinger:
+			/* This is SO_LINGER, because the setsockopt
+			 * internal call maps DontLinger to SO_LINGER
+			 * with l_onoff=0
+			 */
+			*system_name=SO_LINGER;
+			break;
+		case SocketOptionName_Debug:
+			*system_name=SO_DEBUG;
+			break;
+		case SocketOptionName_AcceptConnection:
+			*system_name=SO_ACCEPTCONN;
+			break;
+		case SocketOptionName_ReuseAddress:
+			*system_name=SO_REUSEADDR;
+			break;
+		case SocketOptionName_KeepAlive:
+			*system_name=SO_KEEPALIVE;
+			break;
+		case SocketOptionName_DontRoute:
+			*system_name=SO_DONTROUTE;
+			break;
+		case SocketOptionName_Broadcast:
+			*system_name=SO_BROADCAST;
+			break;
+		case SocketOptionName_Linger:
+			*system_name=SO_LINGER;
+			break;
+		case SocketOptionName_OutOfBandInline:
+			*system_name=SO_OOBINLINE;
+			break;
+		case SocketOptionName_SendBuffer:
+			*system_name=SO_SNDBUF;
+			break;
+		case SocketOptionName_ReceiveBuffer:
+			*system_name=SO_RCVBUF;
+			break;
+		case SocketOptionName_SendLowWater:
+			*system_name=SO_SNDLOWAT;
+			break;
+		case SocketOptionName_ReceiveLowWater:
+			*system_name=SO_RCVLOWAT;
+			break;
+		case SocketOptionName_SendTimeout:
+			*system_name=SO_SNDTIMEO;
+			break;
+		case SocketOptionName_ReceiveTimeout:
+			*system_name=SO_RCVTIMEO;
+			break;
+		case SocketOptionName_Error:
+			*system_name=SO_ERROR;
+			break;
+		case SocketOptionName_Type:
+			*system_name=SO_TYPE;
+			break;
+		case SocketOptionName_ExclusiveAddressUse:
+		case SocketOptionName_UseLoopback:
+		case SocketOptionName_MaxConnections:
+			/* Can't figure out how to map these, so fall
+			 * through
+			 */
+		default:
+			g_warning("System.Net.Sockets.SocketOptionName 0x%x is not supported at Socket level", mono_name);
+			return(-1);
+		}
+		break;
+		
+	case SocketOptionLevel_IP:
+		*system_level=SOL_IP;
+
+		switch(mono_name) {
+		case SocketOptionName_IPOptions:
+			*system_name=IP_OPTIONS;
+			break;
+		case SocketOptionName_HeaderIncluded:
+			*system_name=IP_HDRINCL;
+			break;
+		case SocketOptionName_TypeOfService:
+			*system_name=IP_TOS;
+			break;
+		case SocketOptionName_IpTimeToLive:
+			*system_name=IP_TTL;
+			break;
+		case SocketOptionName_MulticastInterface:
+			*system_name=IP_MULTICAST_IF;
+			break;
+		case SocketOptionName_MulticastTimeToLive:
+			*system_name=IP_MULTICAST_TTL;
+			break;
+		case SocketOptionName_MulticastLoopback:
+			*system_name=IP_MULTICAST_LOOP;
+			break;
+		case SocketOptionName_AddMembership:
+			*system_name=IP_ADD_MEMBERSHIP;
+			break;
+		case SocketOptionName_DropMembership:
+			*system_name=IP_DROP_MEMBERSHIP;
+			break;
+		case SocketOptionName_PacketInformation:
+			*system_name=IP_PKTINFO;
+			break;
+		case SocketOptionName_DontFragment:
+		case SocketOptionName_AddSourceMembership:
+		case SocketOptionName_DropSourceMembership:
+		case SocketOptionName_BlockSource:
+		case SocketOptionName_UnblockSource:
+			/* Can't figure out how to map these, so fall
+			 * through
+			 */
+		default:
+			g_warning("System.Net.Sockets.SocketOptionName 0x%x is not supported at IP level", mono_name);
+			return(-1);
+		}
+		break;
+		
+	case SocketOptionLevel_Tcp:
+		*system_level=SOL_TCP;
+
+		switch(mono_name) {
+		case SocketOptionName_NoDelay:
+			*system_name=TCP_NODELAY;
+			break;
+#if 0
+			/* The documentation is talking complete
+			 * bollocks here: rfc-1222 is titled
+			 * 'Advancing the NSFNET Routing Architecture'
+			 * and doesn't mention either of the words
+			 * "expedite" or "urgent".
+			 */
+		case SocketOptionName_BsdUrgent:
+		case SocketOptionName_Expedited:
+#endif
+		default:
+			g_warning("System.Net.Sockets.SocketOptionName 0x%x is not supported at TCP level", mono_name);
+			return(-1);
+		}
+		break;
+		
+	case SocketOptionLevel_Udp:
+		g_warning("System.Net.Sockets.SocketOptionLevel has unsupported value 0x%x", mono_level);
+
+		switch(mono_name) {
+		case SocketOptionName_NoChecksum:
+		case SocketOptionName_ChecksumCoverage:
+		default:
+			g_warning("System.Net.Sockets.SocketOptionName 0x%x is not supported at UDP level", mono_name);
+			return(-1);
+		}
+		return(-1);
+		break;
+
+	default:
+		g_warning("System.Net.Sockets.SocketOptionLevel has unknown value 0x%x", mono_level);
+		return(-1);
+	}
+
+	return(0);
+}
+
 #define STASH_SYS_ASS(this) \
 	if(system_assembly==NULL) { \
 		system_assembly=this->vtable->klass->image; \
@@ -303,6 +472,17 @@ gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock)
 	return(amount);
 }
 
+void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
+							   gboolean block)
+{
+	int ret;
+	
+	ret=ioctlsocket(sock, FIONBIO, &block);
+	if(ret==SOCKET_ERROR) {
+		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+	}
+}
+
 SOCKET ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 {
 	SOCKET newsock;
@@ -369,7 +549,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		guint32 address=ntohl(sa_in->sin_addr.s_addr);
 		
 		if(sa_size<8) {
-			mono_raise_exception(mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+			mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
 		}
 		
 		mono_array_set(data, guint8, 2, (port>>8) & 0xff);
@@ -448,7 +628,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 	 */
 	len=mono_array_get(data, guint8, 1);
 	if((len<2) || (mono_array_length(data)!=len)) {
-		mono_raise_exception(mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
 	}
 	
 	family=convert_family(mono_array_get(data, guint8, 0));
@@ -629,6 +809,352 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 	}
 	
 	return(ret);
+}
+
+static SOCKET Socket_to_SOCKET(MonoObject *socket)
+{
+	SOCKET sock;
+	MonoClassField *field;
+	
+	field=mono_class_get_field_from_name(socket->vtable->klass, "socket");
+	sock=*(SOCKET *)(((char *)socket)+field->offset);
+
+	return(sock);
+}
+
+void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout)
+{
+	fd_set readfds, writefds, errfds;
+	struct timeval tv;
+	div_t divvy;
+	int ret;
+	int readarrsize, writearrsize, errarrsize;
+	MonoDomain *domain=mono_domain_get();
+	MonoClass *sock_arr_class;
+	MonoArray *socks;
+	int count;
+	int i;
+	
+	readarrsize=mono_array_length(*read_socks);
+	if(readarrsize>FD_SETSIZE) {
+		mono_raise_exception(get_socket_exception(WSAEFAULT));
+		return;
+	}
+	
+	FD_ZERO(&readfds);
+	for(i=0; i<readarrsize; i++) {
+		FD_SET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds);
+	}
+	
+	writearrsize=mono_array_length(*write_socks);
+	if(writearrsize>FD_SETSIZE) {
+		mono_raise_exception(get_socket_exception(WSAEFAULT));
+		return;
+	}
+	
+	FD_ZERO(&writefds);
+	for(i=0; i<writearrsize; i++) {
+		FD_SET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds);
+	}
+	
+	errarrsize=mono_array_length(*err_socks);
+	if(errarrsize>FD_SETSIZE) {
+		mono_raise_exception(get_socket_exception(WSAEFAULT));
+		return;
+	}
+	
+	FD_ZERO(&errfds);
+	for(i=0; i<errarrsize; i++) {
+		FD_SET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds);
+	}
+
+	/* Negative timeout meaning block until ready is only
+	 * specified in Poll, not Select
+	 */
+	if(timeout>=0) {
+		divvy=div(timeout, 1000000);
+		tv.tv_sec=divvy.quot;
+		tv.tv_usec=divvy.rem*1000000;
+	
+		ret=select(0, &readfds, &writefds, &errfds, &tv);
+	} else {
+		ret=select(0, &readfds, &writefds, &errfds, NULL);
+	}
+	
+	if(ret==SOCKET_ERROR) {
+		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		return;
+	}
+
+	sock_arr_class=((MonoObject *)*read_socks)->vtable->klass;
+	
+	count=0;
+	for(i=0; i<readarrsize; i++) {
+		if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds)) {
+			count++;
+		}
+	}
+	socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
+	count=0;
+	for(i=0; i<readarrsize; i++) {
+		MonoObject *sock=mono_array_get(*read_socks, MonoObject *, i);
+		
+		if(FD_ISSET(Socket_to_SOCKET(sock), &readfds)) {
+			mono_array_set(socks, MonoObject *, count, sock);
+			count++;
+		}
+	}
+	*read_socks=socks;
+
+	count=0;
+	for(i=0; i<writearrsize; i++) {
+		if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds)) {
+			count++;
+		}
+	}
+	socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
+	count=0;
+	for(i=0; i<writearrsize; i++) {
+		MonoObject *sock=mono_array_get(*write_socks, MonoObject *, i);
+		
+		if(FD_ISSET(Socket_to_SOCKET(sock), &writefds)) {
+			mono_array_set(socks, MonoObject *, count, sock);
+			count++;
+		}
+	}
+	*write_socks=socks;
+
+	count=0;
+	for(i=0; i<errarrsize; i++) {
+		if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds)) {
+			count++;
+		}
+	}
+	socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
+	count=0;
+	for(i=0; i<errarrsize; i++) {
+		MonoObject *sock=mono_array_get(*err_socks, MonoObject *, i);
+		
+		if(FD_ISSET(Socket_to_SOCKET(sock), &errfds)) {
+			mono_array_set(socks, MonoObject *, count, sock);
+			count++;
+		}
+	}
+	*err_socks=socks;
+}
+
+void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val)
+{
+	int system_level;
+	int system_name;
+	int ret;
+	int val;
+	int valsize=sizeof(val);
+	struct linger linger;
+	int lingersize=sizeof(linger);
+	MonoDomain *domain=mono_domain_get();
+	MonoObject *obj;
+	MonoClass *obj_class;
+	MonoClassField *field;
+	
+	ret=convert_sockopt_level_and_name(level, name, &system_level,
+					   &system_name);
+	if(ret==-1) {
+		mono_raise_exception(get_socket_exception(WSAENOPROTOOPT));
+		return;
+	}
+	
+	/* No need to deal with MulticastOption names here, because
+	 * you cant getsockopt AddMembership or DropMembership (the
+	 * int getsockopt will error, causing an exception)
+	 */
+	switch(name) {
+	case SocketOptionName_Linger:
+	case SocketOptionName_DontLinger:
+		ret=getsockopt(sock, system_level, system_name, &linger,
+			       &lingersize);
+		break;
+		
+	default:
+		ret=getsockopt(sock, system_level, system_name, &val,
+			       &valsize);
+	}
+	
+	if(ret==SOCKET_ERROR) {
+		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		return;
+	}
+	
+	switch(name) {
+	case SocketOptionName_Linger:
+		/* build a System.Net.Sockets.LingerOption */
+		obj_class=mono_class_from_name(system_assembly,
+					       "System.Net.Sockets",
+					       "LingerOption");
+		obj=mono_object_new(domain, obj_class);
+		
+		/* Locate and set the fields "bool enabled" and "int
+		 * seconds"
+		 */
+		field=mono_class_get_field_from_name(obj_class, "enabled");
+		*(guint8 *)(((char *)obj)+field->offset)=linger.l_onoff;
+
+		field=mono_class_get_field_from_name(obj_class, "seconds");
+		*(guint32 *)(((char *)obj)+field->offset)=linger.l_linger;
+		
+		break;
+		
+	case SocketOptionName_DontLinger:
+		/* construct a bool int in val - true if linger is off */
+		val=!linger.l_onoff;
+		
+		/* fall through */
+		
+	default:
+		/* construct an Int32 object to hold val */
+		obj=mono_object_new(domain, mono_defaults.int32_class);
+		
+		/* Locate and set the "value" field */
+		field=mono_class_get_field_from_name(mono_defaults.int32_class,
+						     "value");
+		*(gint32 *)(((char *)obj)+field->offset)=val;
+	}
+
+	*obj_val=obj;
+}
+
+void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET sock, gint32 level, gint32 name, MonoArray **byte_val)
+{
+	int system_level;
+	int system_name;
+	int ret;
+	guchar *buf;
+	int valsize;
+	
+	ret=convert_sockopt_level_and_name(level, name, &system_level,
+					   &system_name);
+	if(ret==-1) {
+		mono_raise_exception(get_socket_exception(WSAENOPROTOOPT));
+		return;
+	}
+
+	valsize=mono_array_length(*byte_val);
+	buf=mono_array_addr(*byte_val, guchar, 0);
+	
+	ret=getsockopt(sock, system_level, system_name, buf, &valsize);
+	if(ret==SOCKET_ERROR) {
+		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+	}
+}
+
+static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
+{
+	struct in_addr inaddr;
+	guint64 addr;
+	MonoClassField *field;
+	
+	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "address");
+	addr=*(guint64 *)(((char *)ipaddr)+field->offset);
+
+	/* No idea why .net uses a 64bit type to hold a 32bit value */
+	inaddr.s_addr=htonl((guint32)addr);
+	
+	return(inaddr);
+}
+
+void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val)
+{
+	int system_level;
+	int system_name;
+	int ret;
+
+	ret=convert_sockopt_level_and_name(level, name, &system_level,
+					   &system_name);
+	if(ret==-1) {
+		mono_raise_exception(get_socket_exception(WSAENOPROTOOPT));
+		return;
+	}
+
+	/* Only one of obj_val, byte_val or int_val has data */
+	if(obj_val!=NULL) {
+		struct linger linger;
+		struct ip_mreqn mreq;
+		int valsize;
+		MonoClassField *field;
+		
+		switch(name) {
+		case SocketOptionName_DontLinger:
+			linger.l_onoff=0;
+			linger.l_linger=0;
+			valsize=sizeof(linger);
+			ret=setsockopt(sock, system_level, system_name,
+				       &linger, valsize);
+			break;
+			
+		case SocketOptionName_Linger:
+			/* Dig out "bool enabled" and "int seconds"
+			 * fields
+			 */
+			field=mono_class_get_field_from_name(obj_val->vtable->klass, "enabled");
+			linger.l_onoff=*(guint8 *)(((char *)obj_val)+field->offset);
+			field=mono_class_get_field_from_name(obj_val->vtable->klass, "seconds");
+			linger.l_linger=*(guint32 *)(((char *)obj_val)+field->offset);
+			
+			valsize=sizeof(linger);
+			ret=setsockopt(sock, system_level, system_name,
+				       &linger, valsize);
+			break;
+			
+		case SocketOptionName_AddMembership:
+		case SocketOptionName_DropMembership:
+			/* pain! MulticastOption holds two IPAddress
+			 * members, so I have to dig the value out of
+			 * those :-(
+			 */
+			field=mono_class_get_field_from_name(obj_val->vtable->klass, "group");
+			mreq.imr_multiaddr=ipaddress_to_struct_in_addr(*(gpointer *)(((char *)obj_val)+field->offset));
+			field=mono_class_get_field_from_name(obj_val->vtable->klass, "local");
+			mreq.imr_address=ipaddress_to_struct_in_addr(*(gpointer *)(((char *)obj_val)+field->offset))
+;
+			valsize=sizeof(mreq);
+			ret=setsockopt(sock, system_level, system_name,
+				       &mreq, valsize);
+			break;
+
+		default:
+			/* Throw an exception */
+			mono_raise_exception(get_socket_exception(WSAEINVAL));
+		}
+	} else if (byte_val!=NULL) {
+		int valsize=mono_array_length(byte_val);
+		guchar *buf=mono_array_addr(byte_val, guchar, 0);
+	
+		ret=setsockopt(sock, system_level, system_name, buf, valsize);
+		if(ret==SOCKET_ERROR) {
+			mono_raise_exception(get_socket_exception(WSAGetLastError()));
+		}
+	} else {
+		ret=setsockopt(sock, system_level, system_name, &int_val,
+			       sizeof(int_val));
+	}
+
+	if(ret==SOCKET_ERROR) {
+		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+	}
+}
+
+void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
+							   gint32 how)
+{
+	int ret;
+	
+	/* Currently, the values for how (recv=0, send=1, both=2) match
+	 * the BSD API
+	 */
+	ret=shutdown(sock, how);
+	if(ret==SOCKET_ERROR) {
+		mono_raise_exception(get_socket_exception(WSAGetLastError()));
+	}
 }
 
 static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
