@@ -73,6 +73,14 @@ ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
 				     func);
 }
 
+gboolean
+ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
+						MonoString **filename,
+						gint *code,
+						gint *reqnum)
+{
+	return FALSE;
+}
 #else
 
 static int (*FAMNextEvent) (gpointer, gpointer);
