@@ -27,7 +27,7 @@ static guint32 allocate_type_entry (MonoDebuggerSymbolTable *table, guint32 size
 static guint32 write_type (MonoDebuggerSymbolTable *table, MonoType *type);
 
 MonoDebuggerSymbolTable *mono_debugger_symbol_table = NULL;
-void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2) = NULL;
+void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg) = NULL;
 
 #ifndef PLATFORM_WIN32
 
@@ -137,7 +137,7 @@ mono_debugger_add_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 		info->token = klass->type_token;
 	info->type_info = write_type (mono_debugger_symbol_table, &klass->this_arg);
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_TYPE_ADDED, symfile, klass);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_TYPE_ADDED, NULL, 0);
 	mono_debugger_unlock ();
 }
 
@@ -272,7 +272,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 		}
 	}
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_METHOD_ADDED, symfile, method);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_METHOD_ADDED, NULL, 0);
 }
 
 static MonoDebuggerRangeInfo *
@@ -767,10 +767,10 @@ ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assemb
 }
 
 void
-mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpointer data2)
+mono_debugger_event (MonoDebuggerEvent event, gpointer data, guint32 arg)
 {
 	if (mono_debugger_event_handler)
-		(* mono_debugger_event_handler) (event, data, data2);
+		(* mono_debugger_event_handler) (event, data, arg);
 }
 
 void
@@ -790,14 +790,13 @@ mono_debugger_cleanup (void)
 static GPtrArray *breakpoints = NULL;
 
 int
-mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc, gboolean use_trampoline)
+mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc)
 {
 	static int last_breakpoint_id = 0;
 	MonoDebuggerBreakpointInfo *info;
 
 	info = g_new0 (MonoDebuggerBreakpointInfo, 1);
 	info->desc = desc;
-	info->use_trampoline = use_trampoline;
 	info->index = ++last_breakpoint_id;
 
 	if (!breakpoints)
@@ -835,18 +834,16 @@ int
 mono_debugger_insert_breakpoint (const gchar *method_name, gboolean include_namespace)
 {
 	MonoMethodDesc *desc;
-	gboolean in_the_debugger;
 
 	desc = mono_method_desc_new (method_name, include_namespace);
 	if (!desc)
 		return 0;
 
-	in_the_debugger = mono_debug_format == MONO_DEBUG_FORMAT_DEBUGGER;
-	return mono_debugger_insert_breakpoint_full (desc, in_the_debugger);
+	return mono_debugger_insert_breakpoint_full (desc);
 }
 
 int
-mono_debugger_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline)
+mono_debugger_method_has_breakpoint (MonoMethod *method)
 {
 	int i;
 
@@ -855,9 +852,6 @@ mono_debugger_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline
 
 	for (i = 0; i < breakpoints->len; i++) {
 		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
-
-		if (info->use_trampoline != use_trampoline)
-			continue;
 
 		if (!mono_method_desc_full_match (info->desc, method))
 			continue;
@@ -869,7 +863,7 @@ mono_debugger_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline
 }
 
 void
-mono_debugger_trampoline_breakpoint_callback (void)
+mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 {
-	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE, NULL, NULL);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, method, index);
 }

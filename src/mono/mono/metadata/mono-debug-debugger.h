@@ -16,12 +16,11 @@ typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
 typedef enum {
 	MONO_DEBUGGER_EVENT_TYPE_ADDED,
 	MONO_DEBUGGER_EVENT_METHOD_ADDED,
-	MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE
+	MONO_DEBUGGER_EVENT_BREAKPOINT
 } MonoDebuggerEvent;
 
 struct _MonoDebuggerBreakpointInfo {
 	guint32 index;
-	gboolean use_trampoline;
 	MonoMethodDesc *desc;
 };
 
@@ -111,11 +110,6 @@ extern MonoDebuggerSymbolTable *mono_debugger_symbol_table;
  */
 extern guint8 *mono_generic_trampoline_code;
 
-/*
- * Address of a special breakpoint trampoline code for the debugger.
- */
-extern guint8 *mono_breakpoint_trampoline_code;
-
 #ifndef PLATFORM_WIN32
 
 /*
@@ -149,24 +143,24 @@ extern MonoDebuggerIOLayer mono_debugger_io_layer;
 
 #endif
 
-extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2);
+extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
 void            mono_debugger_initialize              (void);
 void            mono_debugger_cleanup                 (void);
 
 void            mono_debugger_lock                    (void);
 void            mono_debugger_unlock                  (void);
-void            mono_debugger_event                   (MonoDebuggerEvent event, gpointer data, gpointer data2);
+void            mono_debugger_event                   (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
 MonoDebuggerSymbolFile *mono_debugger_add_symbol_file (MonoSymbolFile *symfile);
 void            mono_debugger_add_type                (MonoDebuggerSymbolFile *symfile, MonoClass *klass);
 void            mono_debugger_add_method              (MonoDebuggerSymbolFile *symfile, MonoMethod *method);
 
-int             mono_debugger_insert_breakpoint_full  (MonoMethodDesc *desc, gboolean use_trampoline);
+int             mono_debugger_insert_breakpoint_full  (MonoMethodDesc *desc);
 int             mono_debugger_remove_breakpoint       (int breakpoint_id);
 int             mono_debugger_insert_breakpoint       (const gchar *method_name, gboolean include_namespace);
-int             mono_debugger_method_has_breakpoint   (MonoMethod* method, gboolean use_trampoline);
-void            mono_debugger_trampoline_breakpoint_callback (void);
+int             mono_debugger_method_has_breakpoint   (MonoMethod *method);
+void            mono_debugger_breakpoint_callback     (MonoMethod *method, guint32 index);
 
 gpointer        mono_debugger_create_notification_function (gpointer *notification_address);
 
