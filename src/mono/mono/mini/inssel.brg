@@ -1829,6 +1829,7 @@ mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soff
 	int cur_reg;
 
 	/* FIXME: consider alignment for archs that need it. */
+#if !NO_UNALIGNED_ACCESS
 	if (sizeof (gpointer) == 8) {
 		while (size >= 8) {
 			cur_reg = mono_regstate_next_int (s->rs);
@@ -1839,6 +1840,7 @@ mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soff
 			size -= 8;
 		}
 	}	
+#endif
 
 	while (size >= 4) {
 		cur_reg = mono_regstate_next_int (s->rs);
