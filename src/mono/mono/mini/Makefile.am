@@ -28,8 +28,6 @@ endif
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
-regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
-
 libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
 if JIT_SUPPORTED
@@ -100,6 +98,20 @@ common_sources = \
 	linear-scan.c	\
 	aot.c		\
 	graph.c	
+
+test_sources = 		\
+	basic-calls.cs 	\
+	basic-long.cs 	\
+	bench.cs 		\
+	objects.cs 		\
+	arrays.cs		\
+	basic-float.cs	\
+	basic.cs		\
+	exceptions.cs	\
+	iltests.il		\
+	test.cs
+
+regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
 
@@ -203,8 +215,8 @@ endif
 
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) $(documents) inssel-x86.brg inssel-ppc.brg \
-	$(x86_sources) $(ppc_sources) $(sparc_sources)	\
+	$(x86_sources) $(ppc_sources) $(sparc_sources) $(test_sources) \
 	jit-icalls.c cprop.c inssel-sparc.brg \
-	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md
+	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md TestDriver.cs
 
 
