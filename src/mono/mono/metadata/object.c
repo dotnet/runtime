@@ -2760,6 +2760,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	MonoDomain *domain; 
 	MonoMethod *method;
 	MonoMethodSignature *sig;
+	MonoObject *ret;
 	int i, j, outarg_count = 0;
 
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
@@ -2784,6 +2785,8 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	*out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
 	*exc = NULL;
 
+	ret = mono_runtime_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc);
+
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		if (sig->params [i]->byref) {
 			gpointer arg;
@@ -2793,7 +2796,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 		}
 	}
 
-	return mono_runtime_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc);
+	return ret;
 }
 
 void
