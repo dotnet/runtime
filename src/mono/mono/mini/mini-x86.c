@@ -1767,6 +1767,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 				}
 			}
+			if (!(rs->ifree_mask & (1 << clob_reg)) && (clob_reg != val) && (rs->isymbolic [clob_reg] >= 8)) {
+				DEBUG (g_print ("\tforced spill of clobbered reg R%d\n", rs->isymbolic [clob_reg]));
+				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [clob_reg]);
+				mono_regstate_free_int (rs, clob_reg);
+			}
 			src1_mask = 1 << X86_EAX;
 			src2_mask = 1 << X86_ECX;
 		}
