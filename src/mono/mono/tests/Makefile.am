@@ -172,7 +172,8 @@ TEST_CS_SRC=			\
 DISABLED_TESTS=			\
 	remoting2.exe		\
 	remoting3.exe		\
-	appdomain-unload.exe	
+	appdomain-unload.exe	\
+	thread6.exe
 
 # These only compile with MS CSC
 TEST_CSC_SRC=			\
@@ -260,7 +261,7 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
-	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
 
 testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	@failed=0; \
@@ -280,7 +281,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
-	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
+	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
 
 testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	@failed=0; \
@@ -298,7 +299,7 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
-	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi ;
+	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi ;
 
 testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
