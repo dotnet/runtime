@@ -3324,14 +3324,14 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
 	"System.Object::GetType", ves_icall_System_Object_GetType,
-	"System.Object::GetHashCode", ves_icall_System_Object_GetHashCode,
+	"System.Object::InternalGetHashCode", ves_icall_System_Object_GetHashCode,
 	"System.Object::obj_address", ves_icall_System_Object_obj_address,
 
 	/*
 	 * System.ValueType
 	 */
 	"System.ValueType::GetHashCode", ves_icall_System_ValueType_GetHashCode,
-	"System.ValueType::Equals", ves_icall_System_ValueType_Equals,
+	"System.ValueType::InternalEquals", ves_icall_System_ValueType_Equals,
 
 	/*
 	 * System.String
