@@ -135,12 +135,12 @@ mono_wrapper_readdir (gpointer dir)
 
 	p = readdir((DIR*)dir);
 
-	// fixme: ugly hack - remove this code ASAP
+	/*
 	if (p)
 		return mono_string_new (p->d_name);
 	else 
 		return NULL;
-
+	*/
 	return p != NULL ? p->d_name : NULL;
 }
 
