@@ -217,7 +217,7 @@ domain_dump_native_code (MonoDomain *domain) {
 #endif
 
 static int
-mini_regression (MonoImage *image, int verbose) {
+mini_regression (MonoImage *image, int verbose, int *total_run) {
 	guint32 i, opt, opt_flags;
 	MonoMethod *method;
 	MonoCompile *cfg;
@@ -261,6 +261,7 @@ mini_regression (MonoImage *image, int verbose) {
 
 
 	total = 0;
+	*total_run = 0;
 	for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
 		double elapsed, comp_time, start_time;
 		opt_flags = opt_sets [opt];
@@ -337,6 +338,7 @@ mini_regression (MonoImage *image, int verbose) {
 		g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed, 
 			 elapsed - comp_time, comp_time, code_size);
 		total += failed + cfailed;
+		*total_run += run;
 	}
 
 	if (mini_stats_fd) {
@@ -351,19 +353,22 @@ mini_regression (MonoImage *image, int verbose) {
 static int
 mini_regression_list (int verbose, int count, char *images [])
 {
-	int i, total;
+	int i, total, total_run, run;
 	MonoAssembly *ass;
 	
-	total = 0;
+	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
 		ass = mono_assembly_open (images [i], NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
 		}
-		total += mini_regression (ass->image, verbose);
+		total += mini_regression (ass->image, verbose, &run);
+		total_run += run;
 		mono_assembly_close (ass);
 	}
+	g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n", 
+		total_run, total, G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
 	return total;
 }
 
