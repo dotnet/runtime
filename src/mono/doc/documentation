@@ -31,20 +31,5 @@
 
 ** Class Library documentation
 
-	When contributing to the Class Library effort, please use the
-	inline XML documentation tags to document your classes so we
-	can automatically generate the documentation from the class
-	libraries. 
-
-	If you provide examples, please do not embed them into the
-	source code, as that will make the source code harder to read
-	and maintain.  Instead, put examples for your code into a
-	subdirectory of the class libraries. Make your sample
-	code a full standalone application that people can compile.
-	Ideally the Mono documentation browser will let you edit, modify
-	and run the sample programs.
-
-
-
-
-
+	We are moving to a new setup for documenting the class libraries, 
+	you can read about it <a href="classlib-doc.html">here</a>

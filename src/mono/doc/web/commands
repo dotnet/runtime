@@ -12,6 +12,7 @@
 1,AnonCVS access,anoncvs.html,anoncvs.src
 0,Contributing,contributing.html,contributing.src
 1,Documentation,documentation.html,documentation.src
+1,Class Docs,classlib-doc.html,classlib.src
 1,Test Suite,testing.html,testing.src
 1,Tools,tools.html,tools.src
 1,Porting,porting.html,porting.src
