@@ -1,7 +1,7 @@
 if PLATFORM_WIN32
 bin_PROGRAMS = 
 else
-bin_PROGRAMS = service-daemon
+bin_PROGRAMS = monod
 endif
 
 if JIT_SUPPORTED
