@@ -6972,10 +6972,18 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		tb = (MonoReflectionTypeBuilder *) type;
 
 		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
+		ginst->is_dynamic = TRUE;
+	} else if (!strcmp (((MonoObject *) type)->vtable->klass->name, "MonoGenericInst")) {
+		MonoReflectionGenericInst *rgi = (MonoReflectionGenericInst *) type;
+		MonoReflectionType *rgt = rgi->generic_type;
+
+		g_assert (!strcmp (((MonoObject *) rgt)->vtable->klass->name, "TypeBuilder"));
+		tb = (MonoReflectionTypeBuilder *) rgt;
+
+		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
+		ginst->is_dynamic = TRUE;
 	} else
 		icount = klass->interface_count;
-
-	ginst->is_dynamic = tb != NULL;
 
 	ginst->ifaces = g_new0 (MonoType *, icount);
 	ginst->count_ifaces = icount;
