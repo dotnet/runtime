@@ -518,14 +518,14 @@ call_handler: len:10
 aot_const: dest:i len:5
 x86_test_null: src1:i len:2
 x86_compare_membase_reg: src1:b src2:i len:6
-x86_compare_membase_imm: src1:b len:10
+x86_compare_membase_imm: src1:b len:11
 x86_compare_reg_membase: src1:i src2:b len:6
 x86_inc_reg: dest:i src1:i clob:1 len:1
 x86_inc_membase: src1:b len:6
 x86_dec_reg: dest:i src1:i clob:1 len:1
 x86_dec_membase: src1:b len:6
-x86_add_membase_imm: src1:b len:8
-x86_sub_membase_imm: src1:b len:8
+x86_add_membase_imm: src1:b len:11
+x86_sub_membase_imm: src1:b len:11
 x86_push: src1:i len:1
 x86_push_imm: len:5
 x86_push_membase: src1:b len:6
