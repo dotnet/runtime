@@ -442,6 +442,12 @@ ctree_create_dup (MonoMemPool *mp, MBTree *s)
 		t = mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
 		t->svt = VAL_DOUBLE;
 		break;
+	case MB_TERM_STIND_OBJ:
+	case MB_TERM_LDIND_OBJ:
+		t = ctree_dup_address (mp, s->left);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_OBJ, t, NULL);
+		t->svt = VAL_UNKNOWN;
+		break;
 	default:
 		g_warning ("unknown op \"%s\"", mono_burg_term_string [s->op]);
 		g_assert_not_reached ();
@@ -489,7 +495,8 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **tdup)
 			g_assert (s->svt != VAL_UNKNOWN);
 
 			if (slot >= 0) {
-				vnum = mono_allocate_intvar (cfg, slot, s->svt);
+				if (!vnum)
+					vnum = mono_allocate_intvar (cfg, slot, s->svt);
 			} else {
 				int size, align;
 				mono_get_val_sizes (s->svt, &size, &align);
@@ -505,7 +512,7 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **tdup)
 	}
 
 	if (tdup) 
-		mono_store_tree (cfg, -1, t, tdup);
+		*tdup = ctree_create_dup (mp, t);
 
 	return t;
 }
