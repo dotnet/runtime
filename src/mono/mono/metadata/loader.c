@@ -612,18 +612,28 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	/*
 	 * Try loading the module using a variety of names
 	 */
-	for (i = 0; i < 2; ++i) {
-		if (i == 0)
+	for (i = 0; i < 3; ++i) {
+		switch (i) {
+		case 0:
 			/* Try the original name */
 			file_name = g_strdup (new_scope);
-		else {
+			break;
+		case 1:
 			/* Try trimming the .dll extension */
 			if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
 				file_name = g_strdup (new_scope);
 				file_name [strlen (new_scope) - 4] = '\0';
 			}
 			else
-				break;
+				continue;
+			break;
+		default:
+			if (strstr (new_scope, "lib") != new_scope) {
+				file_name = g_strdup_printf ("lib%s", new_scope);
+			}
+			else
+				continue;
+			break;
 		}
 
 		if (!gmodule) {
