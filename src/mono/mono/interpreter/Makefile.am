@@ -15,7 +15,7 @@ mint_LDADD =				\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
-	$(PTHREAD_LIBS)			\
+	$(THREAD_LIBS)			\
 	-lm
 
 man_MANS = mint.1

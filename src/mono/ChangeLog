@@ -1,5 +1,10 @@
 2001-09-23  Dick Porter  <dick@ximian.com>
 
+	* configure.in: Arrange to compile dummy thread support routines
+	if pthread isnt available
+	
+2001-09-23  Dick Porter  <dick@ximian.com>
+
 	* configure.in: Check for pthread.h, so that we can check for the
 	HAVE_PTHREAD_H define in config.h
 

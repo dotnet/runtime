@@ -10,13 +10,16 @@
 #ifndef _MONO_METADATA_THREADS_H_
 #define _MONO_METADATA_THREADS_H_
 
+#include <config.h>
+
 extern void mono_thread_init(void);
 extern void mono_thread_cleanup(void);
 
 #ifdef HAVE_PTHREAD_H
 #include <mono/metadata/threads-pthread.h>
 #else
-#error "No thread support found!"
+#warning "No thread support found!"
+#include <mono/metadata/threads-dummy.h>
 #endif
 
 #endif /* _MONO_METADATA_THREADS_H_ */

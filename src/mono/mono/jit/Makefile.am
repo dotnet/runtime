@@ -20,7 +20,7 @@ testjit_LDADD =				\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
-	$(PTHREAD_LIBS)			\
+	$(THREAD_LIBS)			\
 	-lm
 
 codegen-x86.c codegen.h: x86.brg

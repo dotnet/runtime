@@ -37,9 +37,17 @@ dnl *****************************
 dnl *** Checks for libpthread ***
 dnl *****************************
 AC_CHECK_HEADERS(pthread.h)
-AC_CHECK_LIB(pthread,pthread_create,PTHREAD_LIBS=-lpthread,
-	AC_MSG_ERROR([Cannot find libpthread]))
-AC_SUBST(PTHREAD_LIBS)
+AC_CHECK_LIB(pthread, pthread_create, [
+		THREAD_LIBS=-lpthread
+		AM_CONDITIONAL(THREADS_PTHREAD, true)
+	], [
+		AC_MSG_RESULT([Cannot find libpthread])
+		# Check for other thread systems here, set THREAD_LIBS to
+		# whatever is needed, and define
+		# AM_CONDITIONAL(THREADS_foo, true), and add it to the
+		# section in mono/metadata/Makefile.am
+	])
+AC_SUBST(THREAD_LIBS)
 
 CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
 
