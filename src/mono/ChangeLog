@@ -1,3 +1,7 @@
+2004-06-22  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (bootstrap) [PLATFORM_WIN32]: Make two-stage.
+
 2004-06-18  Jackson Harper  <jackson@ximian.com>
 
 	* man/mono.1: Add MONO_LOG_LEVEL and MONO_LOG_MASK. Add

@@ -50,18 +50,19 @@ MCS_FILES = $(MCS_BASIC_FILES) $(mcs_topdir)/class/lib/default/System.Xml.dll $(
 
 tmpinst = _tmpinst
 
+populate_profiles = default:net_1_1
+
 if PLATFORM_WIN32
 
 # bootstraps using the .NET C# compiler
-bootstrap: tmpinst-dir
-	cd $(mcs_topdir) && $(MAKE) PROFILE=default all
-	$(MAKE) populate_profiles='default:net_1_1' populate-runtime-subdir
-	$(MAKE)
+bootstrap: faststrap
 
 else
 
 MONO_CSHARP_DEBUGGER_DIR = class/Mono.CSharp.Debugger
 MONO_CSHARP_DEBUGGER_FILE = $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
+
+populate_profiles += net_2_0:net_2_0
 
 bootstrap: tmpinst-mcs-basic-build mono-do-runtime-only
 	$(MAKE) tmpinst-mcs-short-build
@@ -74,7 +75,7 @@ faststrap: tmpinst-mcs-short-build
 	$(MAKE) fasterstrap
 
 fasterstrap: tmpinst-mcs-full-build
-	$(MAKE) populate_profiles='default:net_1_1 net_2_0:net_2_0' populate-runtime-subdir
+	$(MAKE) populate-runtime-subdir
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
