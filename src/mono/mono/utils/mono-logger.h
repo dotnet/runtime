@@ -45,6 +45,9 @@ mono_trace_push (GLogLevelFlags level, MonoTraceMask mask);
 void 
 mono_trace_pop (void);
 
+gboolean
+mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
+
 #ifdef G_HAVE_ISO_VARARGS
 #define mono_trace_error(...)	mono_trace(G_LOG_LEVEL_ERROR, \
 											__VA_ARGS__)

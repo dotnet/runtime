@@ -239,3 +239,14 @@ mono_trace_set_mask_string (char *value)
 	if(flags)
 		mono_trace_set_mask (flags);
 }
+
+/*
+ * mono_trace_visible:
+ *
+ *   Returns whenever a message with @level and @mask will be printed or not.
+ */
+gboolean
+mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
+{
+	return (level <= current_level && mask & current_mask);
+}
