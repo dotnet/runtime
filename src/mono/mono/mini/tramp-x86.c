@@ -16,6 +16,10 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
+
 #include "mini.h"
 #include "mini-x86.h"
 
@@ -116,8 +120,13 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			 * If the call was made from domain-neutral to domain-specific 
 			 * code, we can't patch the call site.
 			 */
-			if (ji && target_ji && ! (ji->domain_neutral && !target_ji->domain_neutral))
+			if (ji && target_ji && ! (ji->domain_neutral && !target_ji->domain_neutral)) {
 				*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5;
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+				/* Tell valgrind to recompile the patched code */
+				VALGRIND_DISCARD_TRANSLATIONS (code, code + 16);
+#endif
+			}
 			return addr;
 		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
 			/*
