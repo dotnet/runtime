@@ -36,6 +36,8 @@
 #include <sys/un.h>
 #endif
 
+#include "mono/io-layer/socket-wrappers.h"
+
 #ifdef PLATFORM_WIN32
 /* This is a kludge to make this file build under cygwin:
  * w32api/ws2tcpip.h has definitions for some AF_INET6 values and
@@ -609,7 +611,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 		return(NULL);
 	}
 	
-	sock=socket(sock_family, sock_type, sock_proto);
+	sock = _wapi_socket (sock_family, sock_type, sock_proto);
 	if(sock==INVALID_SOCKET) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 		return(NULL);
@@ -628,7 +630,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	/* .net seems to set this by default for SOCK_STREAM,
 	 * not for SOCK_DGRAM (see bug #36322)
 	 */
-	ret=setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(true));
+	ret = _wapi_setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof (true));
 	if(ret==SOCKET_ERROR) {
 		closesocket(sock);
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
@@ -697,7 +699,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 	
 	MONO_ARCH_SAVE_REGS;
 
-	newsock=accept(sock, NULL, 0);
+	newsock = _wapi_accept (sock, NULL, 0);
 	if(newsock==INVALID_SOCKET) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 		return(NULL);
@@ -713,7 +715,7 @@ void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 	
 	MONO_ARCH_SAVE_REGS;
 
-	ret=listen(sock, backlog);
+	ret = _wapi_listen (sock, backlog);
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 	}
@@ -832,7 +834,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 	MONO_ARCH_SAVE_REGS;
 
 	salen=sizeof(sa);
-	ret=getsockname(sock, (struct sockaddr *)sa, &salen);
+	ret = _wapi_getsockname (sock, (struct sockaddr *)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
@@ -854,7 +856,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 	MONO_ARCH_SAVE_REGS;
 
 	salen=sizeof(sa);
-	ret=getpeername(sock, (struct sockaddr *)sa, &salen);
+	ret = _wapi_getpeername (sock, (struct sockaddr *)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
@@ -968,7 +970,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
 #endif
 
-	ret=bind(sock, sa, sa_size);
+	ret = _wapi_bind (sock, sa, sa_size);
 	g_free(sa);
 	
 	if(ret==SOCKET_ERROR) {
@@ -990,7 +992,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 	g_message(G_GNUC_PRETTY_FUNCTION ": connecting to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
 #endif
 
-	ret=connect(sock, sa, sa_size);
+	ret = _wapi_connect (sock, sa, sa_size);
 	g_free(sa);
 	
 	if(ret==SOCKET_ERROR) {
@@ -1014,7 +1016,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 	
-	ret=recv(sock, buf, count, recvflags);
+	ret = _wapi_recv (sock, buf, count, recvflags);
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 	}
@@ -1042,7 +1044,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 	
-	ret=recvfrom(sock, buf, count, recvflags, sa, &sa_size);
+	ret = _wapi_recvfrom (sock, buf, count, recvflags, sa, &sa_size);
 	
 	if(ret==SOCKET_ERROR) {
 		g_free(sa);
@@ -1079,7 +1081,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sending %d bytes", count);
 #endif
 
-	ret=send(sock, buf, count, sendflags);
+	ret = _wapi_send (sock, buf, count, sendflags);
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 	}
@@ -1115,7 +1117,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sending %d bytes", count);
 #endif
 
-	ret=sendto(sock, buf, count, sendflags, sa, sa_size);
+	ret = _wapi_sendto (sock, buf, count, sendflags, sa, sa_size);
 	g_free(sa);
 	
 	if(ret==SOCKET_ERROR) {
@@ -1166,7 +1168,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		FD_ZERO(&readfds);
 		for(i=0; i<readarrsize; i++) {
 			handle = Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i));
-			FD_SET(handle, &readfds);
+			_wapi_FD_SET(handle, &readfds);
 		}
 	}
 	
@@ -1183,7 +1185,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		FD_ZERO(&writefds);
 		for(i=0; i<writearrsize; i++) {
 			handle = Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i));
-			FD_SET(handle, &writefds);
+			_wapi_FD_SET(handle, &writefds);
 		}
 	}
 	
@@ -1200,7 +1202,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		FD_ZERO(&errfds);
 		for(i=0; i<errarrsize; i++) {
 			handle = Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i));
-			FD_SET(handle, &errfds);
+			_wapi_FD_SET(handle, &errfds);
 		}
 	}
 
@@ -1215,9 +1217,9 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 			tv.tv_sec=divvy.quot;
 			tv.tv_usec=divvy.rem;
 
-			ret=select(0, readptr, writeptr, errptr, &tv);
+			ret = _wapi_select (0, readptr, writeptr, errptr, &tv);
 		} else {
-			ret=select(0, readptr, writeptr, errptr, NULL);
+			ret = _wapi_select (0, readptr, writeptr, errptr, NULL);
 		}
 	} while ((ret==SOCKET_ERROR) && (WSAGetLastError() == WSAEINTR));
 	
@@ -1231,7 +1233,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		
 		count=0;
 		for(i=0; i<readarrsize; i++) {
-			if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds)) {
+			if(_wapi_FD_ISSET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds)) {
 				count++;
 			}
 		}
@@ -1240,7 +1242,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		for(i=0; i<readarrsize; i++) {
 			MonoObject *sock=mono_array_get(*read_socks, MonoObject *, i);
 			
-			if(FD_ISSET(Socket_to_SOCKET(sock), &readfds)) {
+			if(_wapi_FD_ISSET(Socket_to_SOCKET(sock), &readfds)) {
 				mono_array_set(socks, MonoObject *, count, sock);
 				count++;
 			}
@@ -1254,7 +1256,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		sock_arr_class=((MonoObject *)*write_socks)->vtable->klass;
 		count=0;
 		for(i=0; i<writearrsize; i++) {
-			if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds)) {
+			if(_wapi_FD_ISSET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds)) {
 				count++;
 			}
 		}
@@ -1263,7 +1265,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		for(i=0; i<writearrsize; i++) {
 			MonoObject *sock=mono_array_get(*write_socks, MonoObject *, i);
 			
-			if(FD_ISSET(Socket_to_SOCKET(sock), &writefds)) {
+			if(_wapi_FD_ISSET(Socket_to_SOCKET(sock), &writefds)) {
 				mono_array_set(socks, MonoObject *, count, sock);
 				count++;
 			}
@@ -1277,7 +1279,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		sock_arr_class=((MonoObject *)*err_socks)->vtable->klass;
 		count=0;
 		for(i=0; i<errarrsize; i++) {
-			if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds)) {
+			if(_wapi_FD_ISSET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds)) {
 				count++;
 			}
 		}
@@ -1286,7 +1288,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		for(i=0; i<errarrsize; i++) {
 			MonoObject *sock=mono_array_get(*err_socks, MonoObject *, i);
 			
-			if(FD_ISSET(Socket_to_SOCKET(sock), &errfds)) {
+			if(_wapi_FD_ISSET(Socket_to_SOCKET(sock), &errfds)) {
 				mono_array_set(socks, MonoObject *, count, sock);
 				count++;
 			}
@@ -1340,18 +1342,18 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	switch(name) {
 	case SocketOptionName_Linger:
 	case SocketOptionName_DontLinger:
-		ret=getsockopt(sock, system_level, system_name, &linger,
+		ret = _wapi_getsockopt(sock, system_level, system_name, &linger,
 			       &lingersize);
 		break;
 		
 	case SocketOptionName_SendTimeout:
 	case SocketOptionName_ReceiveTimeout:
-		ret=getsockopt(sock, system_level, system_name, &tv,
+		ret = _wapi_getsockopt (sock, system_level, system_name, &tv,
 		           &tvsize);
 		break;
 
 	default:
-		ret=getsockopt(sock, system_level, system_name, &val,
+		ret = _wapi_getsockopt (sock, system_level, system_name, &val,
 			       &valsize);
 	}
 	
@@ -1416,7 +1418,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 	valsize=mono_array_length(*byte_val);
 	buf=mono_array_addr(*byte_val, guchar, 0);
 	
-	ret=getsockopt(sock, system_level, system_name, buf, &valsize);
+	ret = _wapi_getsockopt (sock, system_level, system_name, buf, &valsize);
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 	}
@@ -1515,7 +1517,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			linger.l_onoff=0;
 			linger.l_linger=0;
 			valsize=sizeof(linger);
-			ret=setsockopt(sock, system_level, system_name,
+			ret = _wapi_setsockopt (sock, system_level, system_name,
 				       &linger, valsize);
 			break;
 			
@@ -1529,7 +1531,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			linger.l_linger=*(guint32 *)(((char *)obj_val)+field->offset);
 			
 			valsize=sizeof(linger);
-			ret=setsockopt(sock, system_level, system_name,
+			ret = _wapi_setsockopt (sock, system_level, system_name,
 				       &linger, valsize);
 			break;
 		case SocketOptionName_AddMembership:
@@ -1555,7 +1557,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				field=mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
 				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
 
-				ret = setsockopt (sock, system_level,
+				ret = _wapi_setsockopt (sock, system_level,
 						  system_name, &mreq6,
 						  sizeof (mreq6));
 			} else if(system_level == sol_ip)
@@ -1593,7 +1595,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				}
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
-				ret = setsockopt (sock, system_level,
+				ret = _wapi_setsockopt (sock, system_level,
 						  system_name, &mreq,
 						  sizeof (mreq));
 			}
@@ -1608,7 +1610,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 		int valsize=mono_array_length(byte_val);
 		guchar *buf=mono_array_addr(byte_val, guchar, 0);
 	
-		ret=setsockopt(sock, system_level, system_name, buf, valsize);
+		ret = _wapi_setsockopt (sock, system_level, system_name, buf, valsize);
 		if(ret==SOCKET_ERROR) {
 			mono_raise_exception(get_socket_exception(WSAGetLastError()));
 		}
@@ -1619,11 +1621,11 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				struct timeval tv;
 				tv.tv_sec = int_val / 1000;
 				tv.tv_usec = (int_val % 1000) * 1000;
-				ret=setsockopt(sock, system_level, system_name, &tv, sizeof (tv));
+				ret = _wapi_setsockopt (sock, system_level, system_name, &tv, sizeof (tv));
 				break;
 			}
 			default:
-				ret=setsockopt(sock, system_level, system_name, &int_val,
+				ret = _wapi_setsockopt (sock, system_level, system_name, &int_val,
 			       sizeof(int_val));
 		}
 	}
@@ -1643,7 +1645,7 @@ void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 	/* Currently, the values for how (recv=0, send=1, both=2) match
 	 * the BSD API
 	 */
-	ret=shutdown(sock, how);
+	ret = _wapi_shutdown (sock, how);
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 	}
@@ -1983,7 +1985,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 
 	hostname=mono_string_to_utf8(host);
 
-	he=gethostbyname(hostname);
+	he = _wapi_gethostbyname (hostname);
 	g_free(hostname);
 
 	if(he==NULL) {
@@ -2116,7 +2118,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 	
 	MONO_ARCH_SAVE_REGS;
 
-	ret=gethostname (hostname, sizeof(hostname));
+	ret = gethostname (hostname, sizeof (hostname));
 	if(ret==-1) {
 		return(FALSE);
 	}
