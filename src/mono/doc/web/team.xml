@@ -359,4 +359,20 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Jonathan</first-name>
+      <last-name>Pryor</last-name>
+    </name>
+    <e-mail>jonpryor@vt.edu</e-mail>
+    <image>none.png</image>
+    <location>Blacksburg, Virginia</location>
+    <organization>Virgia Tech</organization>
+    <description>Graduate Student</description>
+    <tasks>
+      <task>Type Reflector</task>
+      <task>System.Diagnostics Trace/Debug/Listeners, Config File Support</task>
+    </tasks>
+  </contributor>
+
 </contributors>
