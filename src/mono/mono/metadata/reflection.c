@@ -925,12 +925,17 @@ encode_constant (MonoDynamicAssembly *assembly, MonoObject *val, guint32 *ret_ty
 	char *b = blob_size;
 	char *p, *box_val;
 	char* buf;
-	guint32 idx, len;
+	guint32 idx, len, dummy = 0;
 	
 	p = buf = g_malloc (64);
-
-	box_val = ((char*)val) + sizeof (MonoObject);
-	*ret_type = val->vtable->klass->byval_arg.type;
+	if (!val) {
+		*ret_type = MONO_TYPE_CLASS;
+		len = 4;
+		box_val = (char*)&dummy;
+	} else {
+		box_val = ((char*)val) + sizeof (MonoObject);
+		*ret_type = val->vtable->klass->byval_arg.type;
+	}
 handle_enum:
 	switch (*ret_type) {
 	case MONO_TYPE_BOOLEAN:
@@ -959,6 +964,8 @@ handle_enum:
 			goto handle_enum;
 		} else
 			g_error ("we can't encode valuetypes");
+	case MONO_TYPE_CLASS:
+		break;
 	case MONO_TYPE_STRING: {
 		MonoString *str = (MonoString*)val;
 		/* there is no signature */
@@ -2878,9 +2885,15 @@ reflected_hash (gconstpointer a) {
 		}	\
 	} while (0)
 
+#if HAVE_BOEHM_GC
+#define ALLOC_REFENTRY GC_MALLOC (sizeof (ReflectedEntry))
+#else
+#define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
+#endif
+
 #define CACHE_OBJECT(p,o,k)	\
 	do {	\
-		ReflectedEntry *e = mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry)); 	\
+		ReflectedEntry *e = ALLOC_REFENTRY; 	\
 		e->item = (p);	\
 		e->refclass = (k);	\
 		mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
