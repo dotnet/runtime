@@ -226,7 +226,8 @@ AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default]
 # Enable support for NPTL only features like fast thread-local storage
 # We can't reliably detect nptl at compile & run time
 # so this option will stay until nptl becomes more widespread
-AC_ARG_WITH(nptl, [  --with-nptl Enable support for NPTL])
+with_nptl=1
+#AC_ARG_WITH(nptl, [  --with-nptl Enable support for NPTL])
 
 # assembly bundle support, see metadata/make-bundle.pl for more info
 AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
