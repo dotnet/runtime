@@ -1,11 +1,34 @@
 * The Class Library
 
 	The Class Library should be compatible with Microsoft's .NET
-	implementation.  
+	implementation.
 
-	We will write as much code as possible in C#. We may need to 
-	interface with code written in C to gain access to the functionality of
+	We will write as much code as possible in C#. We may need to
+	interface with code written in C to gain access to the
+	functionality of
         libraries like libart, Gtk+, and libc.
+
+** Layout
+
+	The Class Library resides in the `mcs' module in the directoy
+	`class'.
+	
+	Each directory in the directory represents the assembly where
+	the code belongs to, and inside each directory we divide the
+	code based on the namespace they implement.
+
+	There are two cases when we should consider portability: when
+	we are dealing with a couple of classes only that differ from
+	system to system (Consider System.Net and System.IO for Win32
+	and Unix).  In those cases we will just place the files for
+	example on <t>corlib/System/System.IO/Unix-Console.cs</t> and
+	<t>corlib/System/System.IO/Win32-Console.cs</t>.
+
+	For classes that might differ more (for example, the
+	implementation of Windows.Forms), we might have different
+	directories altogether: <t>System.Windows.Forms/Win32</t>,
+	<t>System.Windows.Forms/Gtk+</t> and
+	<t>System.Windows.Forms/Cocoa</t>.
 
 ** Using existing components from GNOME.
 

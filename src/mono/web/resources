@@ -1,6 +1,11 @@
 
 * Resources
 
+	There are a number of resources available for those of you who
+	want to contribute to the Mono project.  Here are a few links.
+
+	If you want to send suggestions for links, address them to <a
+	mailto="web-mono@ximian.com">web-mono@ximian.com</a>.
 
 ** ECMA Documentation.
 
@@ -26,6 +31,7 @@
 	You can also get this information if you install the Beta2
 	release of the .NET Framework.
 
+<a name="mailing">
 ** Mailing Lists
 
 	There are a number of mailing lists for Mono
@@ -35,8 +41,12 @@
 		* <b><a
 	href="http://mail.ximian.com/mailman/listinfo/mono-list">mono-list:</a></b>
 	The general Mono discussion list.
-		* <b><a 
-	href="http://mail.ximian.com/mailman/listinfo/mono-hackers-list">mono-hackers-list:</a></b> Mailing list intended to be used by active developers of Mono.
+		* <b><a
+	href="http://mail.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list:</a></b>
+	Announcements of Mono developments.
+		* <b><a
+	href="http://mail.ximian.com/mailman/listinfo/mono-docs-list">mono-docs-list:</a></b>
+	Discussion on the documentation of Mono.
 		* <b><a
 	href="http://discuss.develop.com/dotnet.html">Dotnet mailing
 	list at Develop.com:</a></b> The guys at Develop Mentor run
@@ -56,48 +66,44 @@
 		  lists various newsgroups related to .NET</ul>
 	</ul>
 
-** Related Technologies
+** Other .NET related projects
+
+	There are a number of related projects to Mono:
 
 	<ul>
+		* <a
+		  href="http://www.icsharpcode.net/OpenSource/SD/default.asp">Sharp
+		  Develop:</a> an IDE for the C# language written in C#.
 
-		* The CLI allows people to create Web Services using the SOAP
-		  protocol.  SOAP is based on XML, XML schemas an the HTTP
-		  protocol.
-		  <ul>
-		* XML specification.
-		* XML Namespaces.
-		* XML Schemas.
-		* SOAP Specification.
-		  </ul>
+		* <a
+	          href="http://www.southern-storm.com.au/portable_net.html">Portable.NET:</a>
+
+		* <a href="http://nunit.sourceforge.net">NUnit:</a> A
+		testing framework for .NET classes.
+
+		* <a href="http://www.kaffe.org">Kaffe:</a> A popular
+		  Free Software JIT engine for Java.
+
+		* <a href="http://www.intel.com/research/mrl/orp">ORP:</a> A research
+JIT/VM/GC system from Intel.
 	</ul>
 
-** Compiler Information
-		GCC
-		GCC Sample front-end tutorial
-
-** Other JIT Engines
-		ORP
-		Kaffe
-
-** Other .NET projects
-		Portable.NET
-
-** Open Source .NET projects
-		C# Develop.
-		NUnit testing framework.
-
 ** GNOME Documentation
-		Gtk+
 
-** MacOS Documentation
+	Documnetation on GNOME, and the GNOME APIs is available from
+	the <a href="http://developer.gnome.org">developer</a> site at
+	GNOME:
 
-** Assembly Language Manuals online
-		Intel
-		MIPS
-		SPARC
+	<ul>
+		* <a href="http://developer.gnome.org/doc/API/">GNOME
+	API documentation</a>
 
-** Microsoft 
-		msdn.microsoft.com/net
-		Research.microsoft.com
+		* <a href="http://developer.gnome.org/doc/books">GNOME
+	Online books</a>
+
+		* <A
+	href="http://developer.gnome.org/arch/">Architecture Overview</a>
+	</ul>
+
 	
 	

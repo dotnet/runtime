@@ -2,7 +2,9 @@
 
 Q: Is Mono the same as Microsoft's .NET initiative?
    
-A: No.  .NET is a company-wide initiative at Microsoft that
+A: No.  
+
+   .NET is a company-wide initiative at Microsoft that
    encompasses many different areas. The .NET development framework,
    Passport, Biztalk, new server products, and anything that is
    remotely connected to .NET gets the ".NET-stamping" treatment.

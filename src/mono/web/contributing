@@ -1,8 +1,19 @@
 * Contributing to the Mono project
 
-	Links to Documentation.
-	Links to Class Library.
-	Links to ...
+	There are many ways in which you can help in the Mono project:
+
+	<ul>
+		* <b>Programmers:</b> You can work on a free
+		  implementation of the <a
+		  href="class-library.html">class libraries</a>, the
+		  <a href="runtime.html">runtime engine</a>, <a
+		  href="tools.html">the tools</a>, the <a
+		  href="testing.html">testing framework</a>
+
+		* <b>Writers:</b> You can help us with writing <a
+		  href="documentation.html">documentation</a>.
+		
+	</ul>
 
 * Special note
 
