@@ -1584,16 +1584,13 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 static gboolean
 ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
 {
-	MonoMethodNormal *mn;
-
 	MONO_ARCH_SAVE_REGS;
 
 	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return FALSE;
 
-	mn = (MonoMethodNormal *) method->method;
-	return mn->header->gen_params != NULL;
+	return method->method->signature->gen_params != NULL;
 }
 
 static MonoObject *

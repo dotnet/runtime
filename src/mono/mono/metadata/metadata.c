@@ -1386,6 +1386,27 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	}
 	g_free (pattrs);
 
+	if (method->generic_param_count) {
+		guint32 token;
+
+		g_assert (def);
+		token = mono_metadata_make_token (MONO_TABLE_METHOD, def);
+		method->gen_params = mono_metadata_load_generic_params (m, token, NULL, method);
+
+		for (i = 0; i < method->param_count; i++) {
+			MonoGenericParam *param;
+			guint32 index;
+
+			if (method->params [i]->type != MONO_TYPE_MVAR)
+				continue;
+
+			index = method->params [i]->data.generic_param->num;
+			method->params [i]->data.generic_param = param = &method->gen_params [index];
+
+			mono_class_from_generic_parameter (param, m, TRUE);
+		}
+	}
+
 	if (rptr)
 		*rptr = ptr;
 	/*
