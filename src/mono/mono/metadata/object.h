@@ -5,6 +5,7 @@
 #include <mono/metadata/threads-types.h>
 
 #if 1
+#ifdef __GNUC__
 #define mono_assert(expr) 	           G_STMT_START{		  \
      if (!(expr))							  \
        {								  \
@@ -25,6 +26,28 @@
      g_free (msg);                                                        \
      mono_raise_exception (ex);                                           \
 }G_STMT_END
+#else /* not GNUC */
+#define mono_assert(expr) 	           G_STMT_START{		  \
+     if (!(expr))							  \
+       {								  \
+              	MonoException *ex;                                        \
+                char *msg = g_strdup_printf ("file %s: line %d: "         \
+                "assertion failed: (%s)", __FILE__, __LINE__,             \
+                #expr);							  \
+		ex = mono_get_exception_execution_engine (msg);           \
+		g_free (msg);                                             \
+                mono_raise_exception (ex);                                \
+       };				}G_STMT_END
+
+#define mono_assert_not_reached() 	          G_STMT_START{		  \
+     MonoException *ex;                                                   \
+     char *msg = g_strdup_printf ("file %s: line %d): "                   \
+     "should not be reached", __FILE__, __LINE__);			  \
+     ex = mono_get_exception_execution_engine (msg);                      \
+     g_free (msg);                                                        \
+     mono_raise_exception (ex);                                           \
+}G_STMT_END
+#endif
 #else
 #define mono_assert(expr) g_assert(expr)
 #define mono_assert_not_reached() g_assert_not_reached() 
@@ -234,9 +257,6 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
 
-void *
-mono_object_allocate        (size_t size);
-
 MonoObject *
 mono_object_new             (MonoDomain *domain, MonoClass *klass);
 
@@ -300,7 +320,10 @@ mono_object_free            (MonoObject *o);
 
 MonoObject *
 mono_value_box              (MonoDomain *domain, MonoClass *klass, gpointer val);
-		      
+
+gpointer
+mono_object_unbox           (MonoObject *obj);
+
 MonoObject *
 mono_object_clone           (MonoObject *obj);
 

@@ -965,6 +965,8 @@ mono_unhandled_exception (MonoObject *exc)
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
 		delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
 
+		/* set exitcode only in the main thread? */
+		mono_environment_exitcode_set (1);
 		if (domain != mono_root_domain || !delegate) {
 			mono_print_unhandled_exception (exc);
 		} else {
@@ -1129,7 +1131,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
  *
  * Returns: an allocated object of size @size, or NULL on failure.
  */
-void *
+static void *
 mono_object_allocate (size_t size)
 {
 #if HAVE_BOEHM_GC
@@ -1643,6 +1645,13 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	if (class->has_finalize)
 		mono_object_register_finalizer (res);
 	return res;
+}
+
+gpointer
+mono_object_unbox (MonoObject *obj)
+{
+	/* add assert for valuetypes? */
+	return ((char*)obj) + sizeof (MonoObject);
 }
 
 /**
