@@ -2,7 +2,9 @@ noinst_PROGRAMS = pedump
 
 lib_LIBRARIES = libmetadata.a
 
-#assembliesdir = $(libdir)/$(VERSION)/assemblies
+#
+# Keep in sync with mono/runtime/Makefile.am
+#
 assembliesdir = $(libdir)
 
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)	\

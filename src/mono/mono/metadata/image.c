@@ -186,7 +186,13 @@ load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 	    (iinfo->cli_cli_header.ch_ridmap.rva != 0) ||
 	    (iinfo->cli_cli_header.ch_debug_map.rva != 0) ||
 	    (iinfo->cli_cli_header.ch_ip_map.rva != 0)){
-		g_warning ("Some fields in the CLI header which should have been zero are not zero");
+
+		/*
+		 * No need to scare people who are testing this, I am just
+		 * labelling this as a LAMESPEC
+		 */
+		/* g_warning ("Some fields in the CLI header which should have been zero are not zero"); */
+
 	}
 	    
 	return TRUE;

@@ -14,7 +14,9 @@ noinst_HEADERS =
 
 
 wrapper.h: genwrapper.pl
-	./genwrapper.pl >wrapper.h
+	$(srcdir)/genwrapper.pl >wrapper.h
 
 BUILT_SOURCES = wrapper.h
 CLEANFILES += $(BUILT_SOURCES)
+
+EXTRA_DIST = genwrapper.pl

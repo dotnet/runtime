@@ -1,6 +1,6 @@
 AC_INIT(README)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.5)
+AM_INIT_AUTOMAKE(mono, 0.6)
 AM_MAINTAINER_MODE
 
 AC_PROG_CC
@@ -44,5 +44,6 @@ mono/cli/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile
+runtime/Makefile
 doc/Makefile
 ])

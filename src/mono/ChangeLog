@@ -1,3 +1,14 @@
+2001-08-20  Miguel de Icaza  <miguel@ximian.com>
+
+	* mono/Makefile.am (SUBDIRS): Remove `test' from here to allow us
+	to pass make distcheck
+
+	* mono/wrapper/Makefile.am (EXTRA_DIST): Include genwrapper.pl
+
+	* configure.in, Makefile.am, runtime/Makefile.am (dist-hook,
+	install-data-hook): Added mechanism to distribute and install the
+	dll files.
+
 2001-08-20  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/stream.cs: new tests for the Stream class
