@@ -1,0 +1,10 @@
+Hello fellow developer,
+
+    This directory contains the first implementation of the Mono just-in-time
+compiler.  This is what most people use as of April 2003 but we are phasing it
+out in favor of the new compilation architecture found in the directory "mini".
+
+    We encourage developers and contributors to look at the other JIT engine,
+as it is more extensible, easier, cleaner and more powerful.
+
+Miguel.
