@@ -208,11 +208,87 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 # tree definitions
 #
 
+# integer constant folding
+coni4: AND (coni4, coni4) {
+	tree->data.i = tree->left->data.i & tree->right->data.i;
+}
+
+coni4: OR (coni4, coni4) {
+	tree->data.i = tree->left->data.i | tree->right->data.i;
+}
+
+coni4: XOR (coni4, coni4) {
+	tree->data.i = tree->left->data.i ^ tree->right->data.i;
+}
+
+coni4: SHL (coni4, coni4) {
+	tree->data.i = tree->left->data.i << tree->right->data.i;
+}
+
+coni4: SHR (coni4, coni4) {
+	tree->data.i = tree->left->data.i >> tree->right->data.i;
+}
+
+coni4: NOT (coni4) {
+	tree->data.i = ~tree->left->data.i;
+}
+
+coni4: ADD (coni4, coni4) {
+	tree->data.i = tree->left->data.i + tree->right->data.i;
+}
+
+coni4: SUB (coni4, coni4) {
+	tree->data.i = tree->left->data.i - tree->right->data.i;
+}
+
+coni4: MUL (coni4, coni4) {
+	tree->data.i = tree->left->data.i * tree->right->data.i;
+}
+
+coni4: DIV (coni4, coni4) {
+	tree->data.i = tree->left->data.i / tree->right->data.i;
+} cost {
+	MBCOND (tree->right->data.i)
+	return 0;
+}
+
+coni4: REM (coni4, coni4) {
+	tree->data.i = tree->left->data.i % tree->right->data.i;
+} cost {
+	MBCOND (tree->right->data.i)
+	return 0;
+}
+
+coni4: CEQ (coni4, coni4) {
+	if (tree->left->data.i == tree->right->data.i)
+		tree->data.i = 1;
+	else 
+		tree->data.i = 0;
+}
+
+coni4: CGT (coni4, coni4) {
+	if (tree->left->data.i > tree->right->data.i)
+		tree->data.i = 1;
+	else 
+		tree->data.i = 0;
+}
+
+coni4: CLT (coni4, coni4) {
+	if (tree->left->data.i < tree->right->data.i)
+		tree->data.i = 1;
+	else 
+		tree->data.i = 0;
+}
+
+coni4: CONST_I4 {
+	/* do nothing */
+}
+
 #
 # x86 adressing mode
 #
 
-acon: CONST_I4 {
+acon: coni4 {
 	tree->data.ainfo.offset = tree->data.i;
 	tree->data.ainfo.amode = AMImmediate;
 }
@@ -222,7 +298,7 @@ acon: ADDR_G {
 	tree->data.ainfo.amode = AMImmediate;
 }
 
-acon: ADD (ADDR_G, CONST_I4) {
+acon: ADD (ADDR_G, coni4) {
 	tree->data.ainfo.offset = (unsigned)tree->left->data.p + tree->right->data.i;
 	tree->data.ainfo.amode = AMImmediate;
 }
@@ -235,7 +311,7 @@ base: reg {
 	tree->data.ainfo.amode = AMBase;
 }
 
-base: ADD (reg, acon) {
+base: ADD (reg, coni4) {
 	tree->data.ainfo.offset = tree->right->data.i;
 	tree->data.ainfo.basereg = tree->left->reg1;
 	tree->data.ainfo.amode = AMBase;
@@ -254,7 +330,7 @@ index: reg {
 	tree->data.ainfo.amode = AMIndex;
 }
 
-index: SHL (reg, CONST_I4) {
+index: SHL (reg, coni4) {
 	tree->data.ainfo.offset = 0;
 	tree->data.ainfo.amode = AMIndex;
 	tree->data.ainfo.indexreg = tree->left->reg1;
@@ -268,7 +344,7 @@ index: SHL (reg, CONST_I4) {
 	return 0;
 }
 
-index: MUL (reg, CONST_I4) {
+index: MUL (reg, coni4) {
 	static int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
   
 	tree->data.ainfo.offset = 0;
@@ -866,7 +942,8 @@ reg: CONV_I2 (reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, TRUE);
 }
 
-reg: CONST_I4 1 {
+# warning: this chain rule requires a register
+reg: coni4 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->data.i);
 }
 
@@ -1042,7 +1119,7 @@ reg: REM_UN (reg, reg) {
 		     tree->reg2 == X86_EDX);
 }
 
-reg: ADD (reg, CONST_I4) "MB_USE_OPT1(0)" {
+reg: ADD (reg, coni4) "MB_USE_OPT1(0)" {
 	if (tree->right->data.i == 1)
 		x86_inc_reg (s->code, tree->left->reg1);
 	else 
@@ -1076,7 +1153,7 @@ reg: ADD_OVF_UN (reg, reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
 
-reg: SUB (reg, CONST_I4) "MB_USE_OPT1(0)" {
+reg: SUB (reg, coni4) "MB_USE_OPT1(0)" {
 	if (tree->right->data.i == 1)
 		x86_dec_reg (s->code, tree->left->reg1);
 	else
@@ -1107,6 +1184,12 @@ reg: SUB_OVF_UN (reg, reg) {
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: CEQ (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	x86_set_reg (s->code, X86_CC_EQ, tree->reg1, TRUE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
 reg: CEQ (reg, reg) {
@@ -1174,7 +1257,7 @@ reg: NOT (reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
 
-reg: SHL (reg, CONST_I4) {
+reg: SHL (reg, coni4) {
 	x86_shift_reg_imm (s->code, X86_SHL, tree->left->reg1, tree->right->data.i);
 
 	if (tree->reg1 != tree->left->reg1)
@@ -1193,7 +1276,7 @@ reg: SHL (reg, reg) {
 		  tree->left->reg1 != X86_ECX);
 }
 
-reg: SHR (reg, CONST_I4) {
+reg: SHR (reg, coni4) {
 	x86_shift_reg_imm (s->code, X86_SAR, tree->left->reg1, tree->right->data.i);
 
 	if (tree->reg1 != tree->left->reg1)
@@ -1212,7 +1295,7 @@ reg: SHR (reg, reg) {
 		  tree->left->reg1 != X86_ECX);
 }
 
-reg: SHR_UN (reg, CONST_I4) {
+reg: SHR_UN (reg, coni4) {
 	x86_shift_reg_imm (s->code, X86_SHR, tree->left->reg1, tree->right->data.i);
 
 	if (tree->reg1 != tree->left->reg1)
@@ -1231,7 +1314,7 @@ reg: SHR_UN (reg, reg) {
 		  tree->left->reg1 != X86_ECX);
 }
 
-reg: LDSFLDA (CONST_I4) {
+reg: LDSFLDA (coni4) {
 	if (tree->reg1 != X86_EAX)
 		x86_push_reg (s->code, X86_EAX);
 	x86_push_reg (s->code, X86_ECX);
@@ -1575,7 +1658,7 @@ stmt: BLT (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_LT, 0, TRUE); 
 }
 
-stmt: BLT (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BLT (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_LT, 0, TRUE); 
@@ -1587,7 +1670,7 @@ stmt: BLT_UN (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_LT, 0, FALSE); 
 }
 
-stmt: BLT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BLT_UN (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_LT, 0, FALSE); 
@@ -1599,7 +1682,7 @@ stmt: BGT (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_GT, 0, TRUE); 
 }
 
-stmt: BGT (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BGT (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_GT, 0, TRUE); 
@@ -1611,13 +1694,13 @@ stmt: BGT_UN (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_GT, 0, FALSE); 
 }
 
-stmt: BGT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BGT_UN (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_GT, 0, FALSE); 
 }
 
-stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BEQ (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
@@ -1635,7 +1718,7 @@ stmt: BNE_UN (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
-stmt: BNE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BNE_UN (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
@@ -1647,7 +1730,7 @@ stmt: BGE (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_GE, 0, TRUE);
 }
 
-stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BGE (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_GE, 0, TRUE);
@@ -1659,7 +1742,7 @@ stmt: BGE_UN (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
 }
 
-stmt: BGE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BGE_UN (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
@@ -1671,7 +1754,7 @@ stmt: BLE (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_LE, 0, TRUE);
 }
 
-stmt: BLE (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BLE (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_LE, 0, TRUE);
@@ -1683,7 +1766,7 @@ stmt: BLE_UN (reg, reg) 1 {
 	x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
 }
 
-stmt: BLE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+stmt: BLE_UN (reg, coni4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
@@ -1799,7 +1882,7 @@ stmt: ARG_I4 (ADDR_G) {
 	x86_push_imm (s->code, tree->left->data.p);
 }
 
-stmt: ARG_I4 (CONST_I4) "MB_USE_OPT1(0)" {
+stmt: ARG_I4 (coni4) "MB_USE_OPT1(0)" {
 	x86_push_imm (s->code, tree->left->data.i);
 }
 
@@ -2151,7 +2234,7 @@ lreg: CONST_I8 1 {
 	x86_mov_reg_imm (s->code, tree->reg2, *((gint32 *)&tree->data.p + 1));
 }
 
-lreg: CONV_I8 (CONST_I4) {
+lreg: CONV_I8 (coni4) {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 
 	if (tree->left->data.i >= 0)
@@ -2174,12 +2257,12 @@ lreg: CONV_I8 (reg) {
 	mono_assert ((s->code - i1) == 5);
 }
 
-lreg: CONV_U8 (CONST_I4) 1 {
+lreg: CONV_U8 (coni4) 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
 }
 
-lreg: CONV_OVF_U8 (CONST_I4) {
+lreg: CONV_OVF_U8 (coni4) {
 	if (tree->left->data.i < 0){
 		x86_push_imm (s->code, "OverflowException");
 		mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, 
@@ -2191,7 +2274,7 @@ lreg: CONV_OVF_U8 (CONST_I4) {
 	}
 }
 
-lreg: CONV_OVF_I8_UN (CONST_I4) {
+lreg: CONV_OVF_I8_UN (coni4) {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
 }
@@ -2321,7 +2404,7 @@ lreg: LDIND_I8 (addr) {
 	PRINT_REG ("LDIND_I8_1", tree->reg2);
 }
 
-lreg: SHR (lreg, CONST_I4) {
+lreg: SHR (lreg, coni4) {
 	if (tree->right->data.i < 32) {
 		x86_shrd_reg_imm (s->code, tree->left->reg1, tree->left->reg2, tree->right->data.i);
 		x86_shift_reg_imm (s->code, X86_SAR, tree->left->reg2, tree->right->data.i);
@@ -2339,7 +2422,7 @@ lreg: SHR (lreg, CONST_I4) {
 	} /* else unspecified result */
 }
 
-lreg: SHR_UN (lreg, CONST_I4) {
+lreg: SHR_UN (lreg, coni4) {
 	if (tree->right->data.i < 32) {
 		x86_shrd_reg_imm (s->code, tree->left->reg1, tree->left->reg2, tree->right->data.i);
 		x86_shift_reg_imm (s->code, X86_SHR, tree->left->reg2, tree->right->data.i);
@@ -2404,7 +2487,7 @@ lreg: SHR_UN (lreg, reg) {
 		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
 }
 
-lreg: SHL (lreg, CONST_I4) {
+lreg: SHL (lreg, coni4) {
 	if (tree->right->data.i < 32) {
 		x86_shld_reg_imm (s->code, tree->left->reg2, tree->left->reg1, tree->right->data.i);
 		x86_shift_reg_imm (s->code, X86_SHL, tree->left->reg1, tree->right->data.i);
@@ -3790,7 +3873,7 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
 }
 
-stmt: ARG_OBJ (CONST_I4) {
+stmt: ARG_OBJ (coni4) {
 	x86_push_imm (s->code, tree->left->data.i);	
 }
 

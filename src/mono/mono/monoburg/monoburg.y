@@ -176,7 +176,7 @@ yylex (void)
 
 	    do {
 		    num = 10*num + (c - '0');
-	    } while ((c = isdigit (*next++)));
+	    } while (isdigit (c = (*next++)));
 
 	    yylval.ivalue = num;
 	    return INTEGER;

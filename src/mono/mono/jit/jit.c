@@ -672,6 +672,7 @@ mono_print_ctree (MBTree *tree)
 		printf (" %s", mono_burg_term_string [tree->op]);
 
 	switch (tree->op) {
+	case MB_TERM_CONST_I4:
 	case MB_TERM_ADDR_L:
 		printf ("[%d]", tree->data.i);
 		break;

@@ -403,6 +403,7 @@ mono_label_cfg (MonoFlowGraph *cfg)
 			MBState *mbstate;
 
 			mbstate =  mono_burg_label (t1, cfg);
+
 			if (!mbstate) {
 				cfg->invalid = 1;
 				if (mono_debug_handle)
@@ -476,11 +477,17 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	
 	mono_burg_kids (tree, ern, kids);
 
-	//printf ("RALLOC START %d %p %d\n",  tree->op, rs->free_mask, goal);
+	//printf ("RALLOC START %d %p %d %d\n",  tree->op, rs->free_mask, goal, (nts [0] && kids [0] == tree));
 
 	if (nts [0] && kids [0] == tree) {
 		/* chain rule */
 		tree_allocate_regs (kids [0], nts [0], rs);
+		/* special case reg: coni4 */
+		if (goal == MB_NTERM_reg) {
+			if (tree->reg1 == -1)
+				tree->reg1 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
+			g_assert (tree->reg1 != -1);
+		}
 		return;
 	}
 

@@ -8,7 +8,8 @@ TESTSRC=			\
 	castclass.cs		\
 	isinst.cs		\
 	inline1.cs		\
-	inline2.cs
+	inline2.cs		\
+	inline3.cs
 
 TESTSI=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
