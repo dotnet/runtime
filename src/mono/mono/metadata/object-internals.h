@@ -808,8 +808,8 @@ typedef struct {
 	guint32 attrs;
 } MonoReflectionGenericParam;
 
-typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;
-struct _MonoReflectionGenericInst {
+typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
+struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
 	MonoReflectionType *generic_type;
 	guint32 initialized;
@@ -948,7 +948,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 void
-mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events);
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events);
 MonoReflectionEvent *
 mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
 

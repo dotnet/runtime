@@ -265,7 +265,7 @@ struct _MonoClass {
 	MonoType this_arg;
 	MonoType byval_arg;
 
-	MonoGenericInst *generic_inst;
+	MonoGenericClass *generic_class;
 	MonoGenericContainer *generic_container;
 
 	void *reflection_info;
@@ -301,7 +301,7 @@ struct MonoVTable {
 /*
  * Generic instantiation data type encoding.
  */
-struct _MonoGenericInst {
+struct _MonoGenericClass {
 	MonoGenericContainer *container;
 	MonoGenericContext *context;
 	MonoClass *klass;
@@ -309,7 +309,7 @@ struct _MonoGenericInst {
 	int count_ifaces;
 	MonoType **ifaces;
 	MonoType *generic_type;
-	MonoDynamicGenericInst *dynamic_info;
+	MonoDynamicGenericClass *dynamic_info;
 	int type_argc;
 	MonoType **type_argv;
 	guint is_open       : 1;
@@ -318,7 +318,7 @@ struct _MonoGenericInst {
 	guint is_dynamic    : 1;
 };
 
-struct _MonoDynamicGenericInst {
+struct _MonoDynamicGenericClass {
 	int count_methods;
 	MonoMethod **methods;
 	int count_ctors;
@@ -341,7 +341,7 @@ struct _MonoGenericMethod {
 
 struct _MonoGenericContext {
 	MonoGenericContainer *container;
-	MonoGenericInst *ginst;
+	MonoGenericClass *gclass;
 	MonoGenericMethod *gmethod;
 };
 
@@ -438,10 +438,10 @@ void
 mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
 
 void
-mono_class_create_generic (MonoGenericInst *ginst);
+mono_class_create_generic (MonoGenericClass *gclass);
 
 void
-mono_class_create_generic_2 (MonoGenericInst *ginst);
+mono_class_create_generic_2 (MonoGenericClass *gclass);
 
 typedef struct {
 	MonoImage *corlib;

@@ -1533,27 +1533,27 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 }
 
 static void
-do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, MonoGenericContainer *generic_container,
-				     const char *ptr, const char **rptr)
+do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *generic_container,
+				      const char *ptr, const char **rptr)
 {
-	MonoGenericInst *ginst = g_new0 (MonoGenericInst, 1);
-	MonoGenericInst *cached;
+	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
+	MonoGenericClass *cached;
 	MonoClass *gklass;
 	int i, count;
 
-	type->data.generic_inst = ginst;
+	type->data.generic_class = gclass;
 
-	ginst->context = g_new0 (MonoGenericContext, 1);
-	ginst->context->ginst = ginst;
+	gclass->context = g_new0 (MonoGenericContext, 1);
+	gclass->context->gclass = gclass;
 
-	ginst->klass = g_new0 (MonoClass, 1);
+	gclass->klass = g_new0 (MonoClass, 1);
 
-	ginst->generic_type = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
-	ginst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
-	ginst->type_argv = g_new0 (MonoType*, count);
+	gclass->generic_type = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	gclass->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
+	gclass->type_argv = g_new0 (MonoType*, count);
 
-	gklass = mono_class_from_mono_type (ginst->generic_type);
-	g_assert ((ginst->container = gklass->generic_container) != NULL);
+	gklass = mono_class_from_mono_type (gclass->generic_type);
+	g_assert ((gclass->container = gklass->generic_container) != NULL);
 
 	/*
 	 * Create the klass before parsing the type arguments.
@@ -1561,19 +1561,19 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, MonoGenericCo
 	 * See mcs/tests/gen-23.cs for an example.
 	 */
 
-	ginst->init_pending = TRUE;
+	gclass->init_pending = TRUE;
 
-	mono_class_create_generic (ginst);
+	mono_class_create_generic (gclass);
 
-	for (i = 0; i < ginst->type_argc; i++) {
+	for (i = 0; i < gclass->type_argc; i++) {
 		MonoType *t = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-		ginst->type_argv [i] = t;
-		if (!ginst->is_open)
-			ginst->is_open = mono_class_is_open_constructed_type (t);
+		gclass->type_argv [i] = t;
+		if (!gclass->is_open)
+			gclass->is_open = mono_class_is_open_constructed_type (t);
 	}
 
-	mono_class_create_generic_2 (ginst);
+	mono_class_create_generic_2 (gclass);
 
 	if (rptr)
 		*rptr = ptr;
@@ -1583,7 +1583,7 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, MonoGenericCo
 	 * instantiated type.  This happens for instance if we're part of a method or
 	 * local variable signature.
 	 *
-	 * It's important to return the same MonoGenericInst * for each particualar
+	 * It's important to return the same MonoGenericClass * for each particualar
 	 * instantiation of a generic type (ie "Stack<Int32>") to make static fields
 	 * work.
 	 *
@@ -1592,24 +1592,24 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, MonoGenericCo
 	 * type.
 	 */
 
-	cached = g_hash_table_lookup (m->generic_inst_cache, ginst);
+	cached = g_hash_table_lookup (m->generic_class_cache, gclass);
 	if (cached) {
-		g_free (ginst->klass);
-		g_free (ginst->type_argv);
-		g_free (ginst);
+		g_free (gclass->klass);
+		g_free (gclass->type_argv);
+		g_free (gclass);
 
-		type->data.generic_inst = cached;
+		type->data.generic_class = cached;
 		return;
 	} else {
-		g_hash_table_insert (m->generic_inst_cache, ginst, ginst);
+		g_hash_table_insert (m->generic_class_cache, gclass, gclass);
 
 		mono_stats.generic_instance_count++;
-		mono_stats.generics_metadata_size += sizeof (MonoGenericInst) +
+		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
 			sizeof (MonoGenericContext) +
-			ginst->type_argc * sizeof (MonoType);
+			gclass->type_argc * sizeof (MonoType);
 	}
 
-	ginst->init_pending = FALSE;
+	gclass->init_pending = FALSE;
 }
 
 /* 
@@ -1721,7 +1721,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		break;
 
 	case MONO_TYPE_GENERICINST:
-		do_mono_metadata_parse_generic_inst (type, m, generic_container, ptr, &ptr);
+		do_mono_metadata_parse_generic_class (type, m, generic_container, ptr, &ptr);
 		break;
 		
 	default:
@@ -2564,17 +2564,17 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, align);
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericInst *ginst = t->data.generic_inst;
+		MonoGenericClass *gclass = t->data.generic_class;
 
-		g_assert (!ginst->is_open && !ginst->klass->generic_container);
+		g_assert (!gclass->is_open && !gclass->klass->generic_container);
 
-		if (MONO_TYPE_ISSTRUCT (ginst->generic_type)) {
-			MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
+		if (MONO_TYPE_ISSTRUCT (gclass->generic_type)) {
+			MonoClass *gklass = mono_class_from_mono_type (gclass->generic_type);
 
 			if (gklass->enumtype)
 				return mono_type_size (gklass->enum_basetype, align);
 			else
-				return mono_class_value_size (ginst->klass, align);
+				return mono_class_value_size (gclass->klass, align);
 		} else {
 			*align = __alignof__(gpointer);
 			return sizeof (gpointer);
@@ -2663,17 +2663,17 @@ mono_type_stack_size (MonoType *t, gint *align)
 		}
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericInst *ginst = t->data.generic_inst;
+		MonoGenericClass *gclass = t->data.generic_class;
 
-		g_assert (!ginst->is_open && !ginst->klass->generic_container);
+		g_assert (!gclass->is_open && !gclass->klass->generic_container);
 
-		if (MONO_TYPE_ISSTRUCT (ginst->generic_type)) {
-			MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
+		if (MONO_TYPE_ISSTRUCT (gclass->generic_type)) {
+			MonoClass *gklass = mono_class_from_mono_type (gclass->generic_type);
 
 			if (gklass->enumtype)
 				return mono_type_stack_size (gklass->enum_basetype, align);
 			else {
-				guint32 size = mono_class_value_size (ginst->klass, align);
+				guint32 size = mono_class_value_size (gclass->klass, align);
 
 				*align = *align + __alignof__(gpointer) - 1;
 				*align &= ~(__alignof__(gpointer) - 1);
@@ -2695,19 +2695,19 @@ mono_type_stack_size (MonoType *t, gint *align)
 }
 
 gboolean
-mono_metadata_generic_inst_is_valuetype (MonoGenericInst *ginst)
+mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 {
-	return MONO_TYPE_ISSTRUCT (ginst->generic_type);
+	return MONO_TYPE_ISSTRUCT (gclass->generic_type);
 }
 
 guint
-mono_metadata_generic_inst_hash (MonoGenericInst *ginst)
+mono_metadata_generic_class_hash (MonoGenericClass *gclass)
 {
-	return mono_metadata_type_hash (ginst->generic_type);
+	return mono_metadata_type_hash (gclass->generic_type);
 }
 
 static gboolean
-_mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2, gboolean signature_only)
+_mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2, gboolean signature_only)
 {
 	int i;
 
@@ -2723,9 +2723,9 @@ _mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2, gbo
 }
 
 gboolean
-mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2)
+mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2)
 {
-	return _mono_metadata_generic_inst_equal (g1, g2, FALSE);
+	return _mono_metadata_generic_class_equal (g1, g2, FALSE);
 }
 
 guint
@@ -2772,7 +2772,7 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_ARRAY:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	case MONO_TYPE_GENERICINST:
-		return ((hash << 5) - hash) ^ mono_metadata_generic_inst_hash (t1->data.generic_inst);
+		return ((hash << 5) - hash) ^ mono_metadata_generic_class_hash (t1->data.generic_class);
 	}
 	return hash;
 }
@@ -2802,8 +2802,8 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 {
 	if (c1 == c2)
 		return TRUE;
-	if (c1->generic_inst && c2->generic_inst)
-		return _mono_metadata_generic_inst_equal (c1->generic_inst, c2->generic_inst, signature_only);
+	if (c1->generic_class && c2->generic_class)
+		return _mono_metadata_generic_class_equal (c1->generic_class, c2->generic_class, signature_only);
 	if ((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR))
 		return mono_metadata_generic_param_equal (
 			c1->byval_arg.data.generic_param, c2->byval_arg.data.generic_param, FALSE);
@@ -2859,8 +2859,8 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 			return FALSE;
 		return mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass, signature_only);
 	case MONO_TYPE_GENERICINST:
-		return _mono_metadata_generic_inst_equal (
-			t1->data.generic_inst, t2->data.generic_inst, signature_only);
+		return _mono_metadata_generic_class_equal (
+			t1->data.generic_class, t2->data.generic_class, signature_only);
 	case MONO_TYPE_VAR:
 		return mono_metadata_generic_param_equal (
 			t1->data.generic_param, t2->data.generic_param, FALSE);

@@ -152,7 +152,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 	}
 
 	mono_loader_lock ();
-	if (!field->parent->generic_inst)
+	if (!field->parent->generic_class)
 		g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
 	mono_loader_unlock ();
 	return field;
@@ -222,11 +222,11 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		klass = klass->parent;
 	}
 
-	if (sclass->generic_inst) {
+	if (sclass->generic_class) {
 		MonoClass *gclass;
 		MonoMethod *res;
 
-		gclass = mono_class_from_mono_type (sclass->generic_inst->generic_type);
+		gclass = mono_class_from_mono_type (sclass->generic_class->generic_type);
 		mono_class_init (gclass);
 
 		res = find_method (gclass, ic, name, sig);
@@ -267,7 +267,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 		return method->signature;
 	}
 
-	if (method->klass->generic_inst)
+	if (method->klass->generic_class)
 		return method->signature;
 
 	if (image->dynamic)
@@ -340,9 +340,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 
 	if (klass->generic_container)
 		container = klass->generic_container;
-	else if (klass->generic_inst) {
-		g_assert (klass->generic_inst->container);
-		container = klass->generic_inst->container;
+	else if (klass->generic_class) {
+		g_assert (klass->generic_class->container);
+		container = klass->generic_class->container;
 	}
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
@@ -366,9 +366,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 			method = find_method (klass, NULL, mname, sig);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
-			else if (klass->generic_inst && (klass != method->klass))
+			else if (klass->generic_class && (klass != method->klass))
 				method = mono_class_inflate_generic_method (
-					method, klass->generic_inst->context, klass);
+					method, klass->generic_class->context, klass);
 			mono_metadata_free_method_signature (sig);
 			return method;
 		}
@@ -457,9 +457,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	g_assert (container && container->is_method);
 
 	if (context) {
-		if (context->ginst) {
-			g_assert (context->ginst->container);
-			container->parent = context->ginst->container;
+		if (context->gclass) {
+			g_assert (context->gclass->container);
+			container->parent = context->gclass->container;
 		} else
 			container->parent = context->container;
 	}
@@ -502,7 +502,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	} else {
 		new_context = g_new0 (MonoGenericContext, 1);
 		new_context->gmethod = gmethod;
-		new_context->ginst = context->ginst;
+		new_context->gclass = context->gclass;
 
 		context = new_context;
 	}
@@ -514,7 +514,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	if (new_context)
-		context->ginst = inflated->klass->generic_inst;
+		context->gclass = inflated->klass->generic_class;
 	return inflated;
 }
 
@@ -822,9 +822,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (table != MONO_TABLE_METHOD) {
 		MonoGenericContainer *generic_container = NULL;
 		if (context) {
-			if (context->ginst) {
-				g_assert (context->ginst->container);
-				generic_container = context->ginst->container;
+			if (context->gclass) {
+				g_assert (context->gclass->container);
+				generic_container = context->gclass->container;
 			} else
 				generic_container = context->container;
 		}
@@ -1036,7 +1036,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	for (i = 0; i < method->signature->param_count; ++i)
 		names [i] = "";
 
-	if (klass->generic_inst) /* copy the names later */
+	if (klass->generic_class) /* copy the names later */
 		return;
 
 	mono_class_init (klass);
@@ -1082,7 +1082,7 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	MonoClass *klass = method->klass;
 	MonoTableInfo *methodt;
 
-	if (klass->generic_inst)
+	if (klass->generic_class)
 		g_assert_not_reached ();
 
 	mono_class_init (klass);

@@ -733,16 +733,16 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 	esname = get_escaped_name (result);
 	g_free (result);
 
-	if (c->generic_inst) {
-		MonoGenericInst *ginst = c->generic_inst;
+	if (c->generic_class) {
+		MonoGenericClass *gclass = c->generic_class;
 		GString *str = g_string_new ("");
 		int i;
 
-		for (i = 0; i < ginst->type_argc; i++){
-			char *t = dis_stringify_type (m, ginst->type_argv [i]);
+		for (i = 0; i < gclass->type_argc; i++){
+			char *t = dis_stringify_type (m, gclass->type_argv [i]);
 
 			g_string_append (str, t);
-			if (i+1 != ginst->type_argc)
+			if (i+1 != gclass->type_argc)
 				g_string_append (str, ", ");
 			g_free (t);
 		}
@@ -841,13 +841,13 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 	case MONO_TYPE_GENERICINST: {
 		GString *str = g_string_new ("");
 		int i;
-		char *generic_type = dis_stringify_type (m, type->data.generic_inst->generic_type);
+		char *generic_type = dis_stringify_type (m, type->data.generic_class->generic_type);
 
-		for (i = 0; i < type->data.generic_inst->type_argc; i++){
-			char *t = dis_stringify_type (m, type->data.generic_inst->type_argv [i]);
+		for (i = 0; i < type->data.generic_class->type_argc; i++){
+			char *t = dis_stringify_type (m, type->data.generic_class->type_argv [i]);
 
 			g_string_append (str, t);
-			if (i+1 != type->data.generic_inst->type_argc)
+			if (i+1 != type->data.generic_class->type_argc)
 				g_string_append (str, ", ");
 			g_free (t);
 		}

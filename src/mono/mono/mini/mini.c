@@ -897,7 +897,7 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_LDOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = type->data.generic_inst->generic_type;
+		type = type->data.generic_class->generic_type;
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
@@ -951,7 +951,7 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_STOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = type->data.generic_inst->generic_type;
+		type = type->data.generic_class->generic_type;
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_stind", type->type);
@@ -1022,7 +1022,7 @@ handle_enum:
 		inst->type = STACK_VTYPE;
 		return;
 	case MONO_TYPE_GENERICINST:
-		type = type->data.generic_inst->generic_type;
+		type = type->data.generic_class->generic_type;
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in eval stack type", type->type);
@@ -1744,7 +1744,7 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
 	case MONO_TYPE_GENERICINST:
-		type = type->data.generic_inst->generic_type;
+		type = type->data.generic_class->generic_type;
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in ret_type_to_call_opcode", type->type);
@@ -1895,7 +1895,7 @@ handle_enum:
 				return 1;
 			continue;
 		case MONO_TYPE_GENERICINST:
-			simple_type = simple_type->data.generic_inst->generic_type;
+			simple_type = simple_type->data.generic_class->generic_type;
 			goto handle_enum;
 
 		default:
@@ -5855,7 +5855,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
 			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
-				   ((t == MONO_TYPE_GENERICINST) && mono_metadata_generic_inst_is_valuetype (ptype->data.generic_inst))) {
+				   ((t == MONO_TYPE_GENERICINST) && mono_metadata_generic_class_is_valuetype (ptype->data.generic_class))) {
 				NEW_LOCLOADA (cfg, ins, i);
 				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (ptype), NULL, NULL);
 				break;

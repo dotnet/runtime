@@ -14,7 +14,7 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
-#define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && !(t)->data.klass->enumtype) || ((t)->type == MONO_TYPE_TYPEDBYREF) || (((t)->type == MONO_TYPE_GENERICINST) && mono_metadata_generic_inst_is_valuetype ((t)->data.generic_inst))))
+#define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && !(t)->data.klass->enumtype) || ((t)->type == MONO_TYPE_TYPEDBYREF) || (((t)->type == MONO_TYPE_GENERICINST) && mono_metadata_generic_class_is_valuetype ((t)->data.generic_class))))
 #define MONO_TYPE_IS_VOID(t) ((t) && ((t)->type == MONO_TYPE_VOID) && !(t)->byref)
 #define MONO_TYPE_IS_POINTER(t) ((t) && (((t)->byref || ((t)->type == MONO_TYPE_I) || (t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY) || ((t)->type == MONO_TYPE_PTR)))
 
@@ -25,7 +25,7 @@
 				     ((t)->type == MONO_TYPE_OBJECT) ||		\
 				     ((t)->type == MONO_TYPE_ARRAY)) ||		\
 				    (((t)->type == MONO_TYPE_GENERICINST) &&	\
-				     !mono_metadata_generic_inst_is_valuetype ((t)->data.generic_inst))))
+				     !mono_metadata_generic_class_is_valuetype ((t)->data.generic_class))))
 
 #define MONO_CLASS_IS_INTERFACE(c) ((c->flags & TYPE_ATTRIBUTE_INTERFACE) || (c->byval_arg.type == MONO_TYPE_VAR) || (c->byval_arg.type == MONO_TYPE_MVAR))
 
@@ -275,8 +275,8 @@ typedef struct {
 } MonoExceptionClause;
 
 typedef struct _MonoType MonoType;
-typedef struct _MonoGenericInst MonoGenericInst;
-typedef struct _MonoDynamicGenericInst MonoDynamicGenericInst;
+typedef struct _MonoGenericClass MonoGenericClass;
+typedef struct _MonoDynamicGenericClass MonoDynamicGenericClass;
 typedef struct _MonoGenericMethod MonoGenericMethod;
 typedef struct _MonoGenericContext MonoGenericContext;
 typedef struct _MonoGenericContainer MonoGenericContainer;
@@ -305,7 +305,7 @@ struct _MonoType {
 		MonoArrayType *array; /* for ARRAY */
 		MonoMethodSignature *method;
 		MonoGenericParam *generic_param; /* for VAR and MVAR */
-		MonoGenericInst *generic_inst; /* for GENERICINST */
+		MonoGenericClass *generic_class; /* for GENERICINST */
 	} data;
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	unsigned int type     : 8;  /* ElementTypeEnum */
@@ -426,9 +426,9 @@ int            mono_type_size                  (MonoType        *type,
 int            mono_type_stack_size            (MonoType        *type, 
 						int             *alignment);
 
-gboolean       mono_metadata_generic_inst_is_valuetype (MonoGenericInst *ginst);
-guint          mono_metadata_generic_inst_hash  (MonoGenericInst *ginst);
-gboolean       mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2);
+gboolean       mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass);
+guint          mono_metadata_generic_class_hash  (MonoGenericClass *gclass);
+gboolean       mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2);
 
 guint          mono_metadata_type_hash         (MonoType *t1);
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
