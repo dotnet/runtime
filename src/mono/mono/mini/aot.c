@@ -18,6 +18,8 @@
 #include <windows.h>
 #endif
 
+#include <errno.h>
+#include <sys/stat.h>
 #include <limits.h>    /* for PAGESIZE */
 #ifndef PAGESIZE
 #define PAGESIZE 4096
@@ -79,6 +81,10 @@ typedef struct MonoAotCompile {
 	GPtrArray *image_table;
 } MonoAotCompile;
 
+typedef struct MonoAotOptions {
+	char *outfile;
+} MonoAotOptions;
+
 static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
@@ -91,6 +97,12 @@ static CRITICAL_SECTION aot_mutex;
  * of the runtime.
  */
 static gboolean use_loaded_code = FALSE;
+
+/*
+ * Whenever to AOT compile loaded assemblies on demand and store them in
+ * a cache under $HOME/.mono/aot-cache.
+ */
+static gboolean use_aot_cache = FALSE;
 
 /* For debugging */
 static gint32 mono_last_aot_method = -1;
@@ -119,6 +131,103 @@ decode_class_info (MonoAotModule *module, guint32 *data)
 }
 
 static void
+create_cache_structure (void)
+{
+	const char *home;
+	char *tmp;
+	int err;
+
+	home = g_get_home_dir ();
+	if (!home)
+		return;
+
+	tmp = g_build_filename (home, ".mono", NULL);
+	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
+		err = mkdir (tmp, 0777);
+		if (err) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed: %s", g_strerror (errno));
+			g_free (tmp);
+			return;
+		}
+	}
+	g_free (tmp);
+	tmp = g_build_filename (home, ".mono", "aot-cache", NULL);
+	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
+		err = mkdir (tmp, 0777);
+		if (err) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed: %s", g_strerror (errno));
+			g_free (tmp);
+			return;
+		}
+	}
+	g_free (tmp);
+}
+
+/*
+ * load_aot_module_from_cache:
+ *
+ *  Experimental code to AOT compile loaded assemblies on demand. 
+ *
+ * FIXME: 
+ * - Add environment variable MONO_AOT_CACHE_OPTIONS
+ * - Add options for controlling the cache size
+ * - Handle full cache by deleting old assemblies lru style
+ * - Add options for excluding assemblies during development
+ * - Maybe add a threshold after an assembly is AOT compiled
+ * - invoking a new mono process is a security risk
+ */
+static GModule*
+load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
+{
+	char *fname, *cmd, *tmp2;
+	const char *home;
+	GModule *module;
+	gboolean res;
+	gchar *out, *err;
+
+	*aot_name = NULL;
+
+	if (assembly->image->dynamic)
+		return NULL;
+
+	create_cache_structure ();
+
+	home = g_get_home_dir ();
+
+	tmp2 = g_strdup_printf ("%s-%s%s", assembly->image->assembly_name, assembly->image->guid, SHARED_EXT);
+	fname = g_build_filename (home, ".mono", "aot-cache", tmp2, NULL);
+	*aot_name = fname;
+	g_free (tmp2);
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT trying to load from cache: '%s'.", fname);
+	module = g_module_open (fname, G_MODULE_BIND_LAZY);	
+
+	if (!module) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT not found.");
+
+		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT precompiling assembly '%s'... ", assembly->image->name);
+
+		/* FIXME: security */
+		cmd = g_strdup_printf ("mono -O=all --aot=outfile=%s %s", fname, assembly->image->name);
+
+		res = g_spawn_command_line_sync (cmd, &out, &err, NULL, NULL);
+		g_free (cmd);
+		if (!res) {
+			mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed.");
+			return NULL;
+		}
+
+		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT succeeded.");
+
+		module = g_module_open (fname, G_MODULE_BIND_LAZY);	
+	}
+
+	return module;
+}
+
+static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
 	char *aot_name;
@@ -128,12 +237,22 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *aot_version = NULL;
 	char *opt_flags = NULL;
 
-	aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
+	if (mono_compile_aot)
+		return;
+							
+	if (use_aot_cache)
+		assembly->aot_module = load_aot_module_from_cache (assembly, &aot_name);
+	else {
+		aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
 
-	assembly->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
+		assembly->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
+
+		if (!assembly->aot_module) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed to load AOT module %s: %s\n", aot_name, g_module_error ());
+		}
+	}
 
 	if (!assembly->aot_module) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Failed to load AOT module %s: %s\n", aot_name, g_module_error ());
 		g_free (aot_name);
 		return;
 	}
@@ -143,12 +262,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
 		usable = FALSE;
 	}
 	else
 		if (!saved_guid || strcmp (assembly->image->guid, saved_guid)) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is out of date.\n", aot_name);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date.\n", aot_name);
 			usable = FALSE;
 		}
 
@@ -225,7 +344,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_g_hash_table_insert (aot_modules, assembly, info);
 	LeaveCriticalSection (&aot_mutex);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Loaded AOT Module for %s.\n", assembly->image->name);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
 }
 
 void
@@ -529,21 +648,51 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				break;
 			}
 			case MONO_PATCH_INFO_WRAPPER: {
-				guint32 image_index, token;
 				guint32 wrapper_type;
 
 				wrapper_type = (guint32)data[0];
-				image_index = (guint32)data[1] >> 24;
-				token = MONO_TOKEN_METHOD_DEF | ((guint32)data[1] & 0xffffff);
 
-				image = aot_module->image_table [image_index];
-				ji->data.method = mono_get_method (image, token, NULL);
-				g_assert (ji->data.method);
-				mono_class_init (ji->data.method->klass);
+				switch (wrapper_type) {
+				case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
+					guint32 image_index, token;
 
-				g_assert (wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK);
-				ji->type = MONO_PATCH_INFO_METHOD;
-				ji->data.method = mono_marshal_get_remoting_invoke_with_check (ji->data.method);
+					image_index = (guint32)data[1] >> 24;
+					token = MONO_TOKEN_METHOD_DEF | ((guint32)data[1] & 0xffffff);
+
+					image = aot_module->image_table [image_index];
+					ji->data.method = mono_get_method (image, token, NULL);
+					g_assert (ji->data.method);
+					mono_class_init (ji->data.method->klass);
+
+					ji->type = MONO_PATCH_INFO_METHOD;
+					ji->data.method = mono_marshal_get_remoting_invoke_with_check (ji->data.method);
+					break;
+				}
+				case MONO_WRAPPER_PROXY_ISINST: {
+					/* The pointer is dword aligned */
+					gpointer class_ptr = *(gpointer*)(ALIGN_PTR_TO (&data[1], sizeof (gpointer)));
+					MonoClass *klass = decode_class_info (aot_module, class_ptr);
+					mono_class_init (klass);
+					ji->type = MONO_PATCH_INFO_METHODCONST;
+					ji->data.method = mono_marshal_get_proxy_cancast (klass);
+					break;
+				}
+				case MONO_WRAPPER_LDFLD:
+				case MONO_WRAPPER_STFLD: {
+					/* The pointer is dword aligned */
+					gpointer class_ptr = *(gpointer*)(ALIGN_PTR_TO (&data[1], sizeof (gpointer)));
+					MonoClass *klass = decode_class_info (aot_module, class_ptr);
+					mono_class_init (klass);
+					ji->type = MONO_PATCH_INFO_METHOD;
+					if (wrapper_type == MONO_WRAPPER_LDFLD)
+						ji->data.method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
+					else
+						ji->data.method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
+					break;
+				}
+				default:
+					g_assert_not_reached ();
+				}
 				break;
 			}
 			case MONO_PATCH_INFO_FIELD:
@@ -565,7 +714,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				table = g_new (gpointer, ji->table_size);
 				ji->data.target = table;
 				for (i = 0; i < ji->table_size; i++) {
-					table [i] = data [i + 1];
+					table [i] = (gpointer)data [i + 1];
 				}
 				break;
 			case MONO_PATCH_INFO_R4:
@@ -968,20 +1117,37 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_WRAPPER: {
-			MonoMethod *m;
-			guint32 image_index;
-			guint32 token;
+			switch (patch_info->data.method->wrapper_type) {
+			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
+				MonoMethod *m;
+				guint32 image_index;
+				guint32 token;
 
-			m = mono_marshal_method_from_wrapper (patch_info->data.method);
-			image_index = get_image_index (acfg, m->klass->image);
-			token = m->token;
-			g_assert (image_index < 256);
-			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+				m = mono_marshal_method_from_wrapper (patch_info->data.method);
+				image_index = get_image_index (acfg, m->klass->image);
+				token = m->token;
+				g_assert (image_index < 256);
+				g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+				emit_alignment(tmpfp, sizeof (gpointer));
+				fprintf (tmpfp, "%s_p_%d:\n", mname, j);
+				fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
+				fprintf (tmpfp, "\t.long %d\n", (image_index << 24) + (mono_metadata_token_index (token)));
+				break;
+			}
+			case MONO_WRAPPER_PROXY_ISINST:
+			case MONO_WRAPPER_LDFLD:
+			case MONO_WRAPPER_STFLD: {
+				MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
+				char *klass_label = cond_emit_klass_label (acfg, proxy_class);
 
-			emit_alignment(tmpfp, sizeof (gpointer));
-			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
-			fprintf (tmpfp, "\t.long %d\n", (image_index << 24) + (mono_metadata_token_index (token)));
+				fprintf (tmpfp, "%s_p_%d:\n", mname, j);
+				fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
+				emit_pointer (tmpfp, klass_label);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+			}
 			j++;
 			break;
 		}
@@ -1206,8 +1372,36 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	g_free (mname_p);
 }
 
+static gboolean
+str_begins_with (const char *str1, const char *str2)
+{
+	int len = strlen (str2);
+	return strncmp (str1, str2, len) == 0;
+}
+
+static void
+mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
+{
+	gchar **args, **ptr;
+
+	memset (opts, 0, sizeof (*opts));
+
+	args = g_strsplit (aot_options ? aot_options : "", ",", -1);
+	for (ptr = args; ptr && *ptr; ptr ++) {
+		const char *arg = *ptr;
+
+		if (str_begins_with (arg, "outfile=")) {
+			opts->outfile = g_strdup (arg + strlen ("outfile="));
+		}
+		else {
+			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
+			exit (1);
+		}
+	}
+}
+
 int
-mono_compile_assembly (MonoAssembly *ass, guint32 opts)
+mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoCompile *cfg;
 	MonoImage *image = ass->image;
@@ -1220,8 +1414,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	GHashTable *ref_hash;
 	MonoAotCompile *acfg;
 	gboolean *emitted;
+	MonoAotOptions aot_opts;
+	char *outfile_name, *tmp_outfile_name;
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
+
+	mono_aot_parse_options (aot_options, &aot_opts);
 
 	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
 	tmpfp = fdopen (i, "w+");
@@ -1298,11 +1496,24 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 			continue;
 		}
 
-		/* remoting-invoke-with-check wrappers are very common */
+		/* some wrappers are very common */
 		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-			if ((patch_info->type == MONO_PATCH_INFO_METHOD) &&
-				((patch_info->data.method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)))
-				patch_info->type = MONO_PATCH_INFO_WRAPPER;
+			if (patch_info->type == MONO_PATCH_INFO_METHODCONST) {
+				switch (patch_info->data.method->wrapper_type) {
+				case MONO_WRAPPER_PROXY_ISINST:
+					patch_info->type = MONO_PATCH_INFO_WRAPPER;
+				}
+			}
+
+			if (patch_info->type == MONO_PATCH_INFO_METHOD) {
+				switch (patch_info->data.method->wrapper_type) {
+				case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
+				case MONO_WRAPPER_STFLD:
+				case MONO_WRAPPER_LDFLD:
+					patch_info->type = MONO_PATCH_INFO_WRAPPER;
+					break;
+				}
+			}
 		}
 
 		skip = FALSE;
@@ -1401,15 +1612,25 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	}
 
 	g_free (com);
+
+	if (aot_opts.outfile)
+		outfile_name = g_strdup_printf ("%s", aot_opts.outfile);
+	else
+		outfile_name = g_strdup_printf ("%s%s", image->name, SHARED_EXT);
+
+	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
+
 #if defined(sparc)
-	com = g_strdup_printf ("ld -shared -G -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+	com = g_strdup_printf ("ld -shared -G -o %s %s.o", outfile_name, tmpfname);
 #elif defined(__ppc__) && defined(__MACH__)
-	com = g_strdup_printf ("gcc -dynamiclib -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+	com = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", outfile_name, tmpfname);
 #else
-	com = g_strdup_printf ("ld -shared -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+	com = g_strdup_printf ("ld -shared -o %s %s.o", outfile_name, tmpfname);
 #endif
 	printf ("Executing the native linker: %s\n", com);
 	if (system (com) != 0) {
+		g_free (tmp_outfile_name);
+		g_free (outfile_name);
 		g_free (com);
 		return 1;
 	}
@@ -1422,6 +1643,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	printf ("Stripping the binary: %s\n", com);
 	system (com);
 	g_free (com);*/
+
+	rename (tmp_outfile_name, outfile_name);
+
+	g_free (tmp_outfile_name);
+	g_free (outfile_name);
 
 	printf ("Compiled %d out of %d methods (%d%%)\n", ccount, mcount, mcount ? (ccount*100)/mcount : 100);
 	printf ("%d methods contain absolute addresses (%d%%)\n", abscount, mcount ? (abscount*100)/mcount : 100);

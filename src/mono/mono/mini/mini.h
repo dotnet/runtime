@@ -703,7 +703,7 @@ GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int 
 void      mono_analyze_liveness             (MonoCompile *cfg);
 void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);
-int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts);
+int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, const char *aot_options);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_aot_init                     (void);

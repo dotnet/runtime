@@ -475,6 +475,7 @@ typedef struct
 	int argc;
 	char **argv;
 	guint32 opts;
+	char *aot_options;
 } MainThreadArgs;
 
 static void main_thread_handler (gpointer user_data)
@@ -489,7 +490,7 @@ static void main_thread_handler (gpointer user_data)
 	}
 
 	if (mono_compile_aot) {
-		int res = mono_compile_assembly (assembly, main_args->opts);
+		int res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options);
 		printf ("AOT RESULT %d\n", res);
 	} else {
 		/* 
@@ -612,11 +613,12 @@ mono_main (int argc, char* argv[])
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
 	char *trace_options = NULL;
+	char *aot_options = NULL;
 
 	setlocale (LC_ALL, "");
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
-	
+
 	opt = parse_optimizations (NULL);
 
 	for (i = 1; i < argc; ++i) {
@@ -675,6 +677,9 @@ mono_main (int argc, char* argv[])
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			mono_compile_aot = TRUE;
+		} else if (strncmp (argv [i], "--aot=", 6) == 0) {
+			mono_compile_aot = TRUE;
+			aot_options = &argv [i][6];
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
 		} else if (strcmp (argv [i], "--profile") == 0) {
@@ -796,6 +801,7 @@ mono_main (int argc, char* argv[])
 		main_args.argc = argc - i;
 		main_args.argv = argv + i;
 		main_args.opts = opt;
+		main_args.aot_options = aot_options;
 	     
 		mono_runtime_exec_managed_code (domain, main_thread_handler, &main_args);
 		mini_cleanup (domain);
