@@ -23,13 +23,18 @@
 
     <A HREF="http://e-www.motorola.com/brdata/PDFDB/docs/MPCFPE32B.pdf">PowerPC Programming environments manual</A><BR>
     <A HREF="http://e-www.motorola.com/brdata/PDFDB/docs/MPC7410UM.pdf">G4 (7410) User's manual</A>
-
+	
 	There's a very nice introduction to PowerPC assembly language
 	at <a
 	href="http://www-106.ibm.com/developerworks/library/l-ppc/">http://www-106.ibm.com/developerworks/library/l-ppc/</a>.
 
 *** Calling conventions:
 
-    <a href="http://refspecs.freestandards.org/elf/elfspec_ppc.pdf">The PowerPC SystemV ABI specification</a>
+	Linux on PPC32 uses the <a
+	href="http://refspecs.freestandards.org/elf/elfspec_ppc.pdf">The
+	PowerPC SystemV ABI specification</a>.
 
+	On MacOS X, the conventions are documented in the <a
+	href="http://developer.apple.com/documentation/DeveloperTools/Conceptual/MachORuntime/MachORuntime.pdf">Mach-O
+	Runtime Architecture</a>.
 
