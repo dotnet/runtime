@@ -541,6 +541,8 @@ invalid_image:
 
 MonoImage *
 mono_image_loaded (const char *name) {
+	if (strcmp (name, "mscorlib") == 0)
+		name = "corlib";
 	if (loaded_images_hash)
 		return g_hash_table_lookup (loaded_images_hash, name);
 	return NULL;

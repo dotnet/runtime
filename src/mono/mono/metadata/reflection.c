@@ -2917,6 +2917,8 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		default:
 			break;
 		}
+		if (info->assembly)
+			break;
 	}
 	*w = 0; /* terminate class name */
 	if (!info->name || !*info->name)
