@@ -425,20 +425,23 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		image = ass->image;
 		break;
 	}
-	LeaveCriticalSection (&assemblies_mutex);
+
 	for (i = 0; !image && bundled_assemblies [i]; ++i) {
 		if (strcmp (bundled_assemblies [i]->name, name) == 0) {
 			image = mono_image_open_from_data ((char*)bundled_assemblies [i]->data, bundled_assemblies [i]->size, FALSE, status);
 			break;
 		}
 	}
+	LeaveCriticalSection (&assemblies_mutex);
 	g_free (name);
 	if (image) {
 		mono_image_addref (image);
 		return image;
 	}
 #endif
+	EnterCriticalSection (&assemblies_mutex);
 	image = mono_image_open (filename, status);
+	LeaveCriticalSection (&assemblies_mutex);
 	
 	return image;
 }
