@@ -1381,6 +1381,7 @@ mono_method_get_index (MonoMethod *method) {
 	MonoClass *klass = method->klass;
 	int i;
 
+	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		if (method == klass->methods [i])
 			return klass->method.first + 1 + i;
