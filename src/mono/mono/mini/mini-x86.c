@@ -2086,6 +2086,10 @@ x86_pop_reg (code, X86_ECX); \
 x86_pop_reg (code, X86_EDX); \
 x86_pop_reg (code, X86_EAX);
 
+/* benchmark and set based on cpu */
+#define LOOP_ALIGNMENT 8
+#define bb_is_loop_start(bb) ((bb)->nesting && ((bb)->in_count == 1))
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -2101,9 +2105,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		peephole_pass (cfg, bb);
 
 	if (cfg->opt & MONO_OPT_LOOP) {
-		int pad, align = 8;
+		int pad, align = LOOP_ALIGNMENT;
 		/* set alignment depending on cpu */
-		if (bb->nesting && (bb->in_count == 1) && (pad = (cfg->code_len & (align - 1)))) {
+		if (bb_is_loop_start (bb) && (pad = (cfg->code_len & (align - 1)))) {
 			pad = align - pad;
 			/*g_print ("adding %d pad at %x to loop in %s\n", pad, cfg->code_len, cfg->method->name);*/
 			x86_padding (code, pad);
@@ -3444,7 +3448,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			bb->max_offset = max_offset;
 
 			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-				max_offset += 6; 
+				max_offset += 6;
+			/* max alignment for loops */
+			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
+				max_offset += LOOP_ALIGNMENT;
 
 			while (ins) {
 				max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
