@@ -305,10 +305,17 @@ A: (This is based in an original mail to mono-list written by Miguel de
 
 Q: What about VCL?.
 
-   Someone mentioned VCL.  The only problem with the VCL is that it can
+   Someone mentioned VCL. The only problem with the VCL is that it can
    only be used for GPL applications (or I guess you could license it from
    Borland for your app), and would have to be ported from Delphi to C# 
    (or someone would have to write a CIL compiler for it).
+
+Q: What about doing something like the eclipse project (www.eclipse.org)? 
+
+A: The Eclipse toolkit is not a general purpose toolkit.� It will require a
+   lot of work before it is such a thing.� It is a toolkit used to
+   implement a development environment.
+
 
 <a name="msft"></a>
 ** Mono and Microsoft
@@ -792,7 +799,7 @@ A: We are not using GNU Lightning.  Our JIT is using an instruction
    interface that is very tied to the current architecture.
 
 Q: Will I be able to use Microsoft SQL Server 2000 or will I need to switch
-   to a specific Open Source Database.  Will I need to recode?
+   to a specific Open Source Database. Will I need to recode?
 
 A: There should not be any need to recode.
 
@@ -805,14 +812,14 @@ A: Not making any PInvoke or DLL calls should and not using anything in
    infrastructure and is not intended to be used directly from your code." 
    even if you know what these classes/methods do.
 
-Q: Will built-in reporting be supported for crystal reports?  This is a
+Q: Will built-in reporting be supported for crystal reports? This is a
    heavily used part of our system.
 
 A: Probably not. Crystal Reports are propriety. Someone may try to emulate
    the behaviour, but no-one has yet volunteered.
 
 Q: Who about writing to the registry? As I understand it, Linux does not have
-   a counterpart to the registry.  Should I avoid relying on that feature?
+   a counterpart to the registry. Should I avoid relying on that feature?
 
 A: Try to avoid it. Although there would be a emulation for registry in
    Mono too. GNOME does have a registry like mechanism for configuration. But
@@ -820,6 +827,12 @@ A: Try to avoid it. Although there would be a emulation for registry in
    will not be equal, so you will probably end up having to do some runtime 
    detection, and depending on this load an assembly that has your 
    platform-specific hacks.
+
+Q: System.Data.SqlClient with FreeTDS, will you port parts of these to C# and 
+   use them?
+
+A: if their license is compatible with mono's, yes, we'd think about porting 
+   them. If not, we'll continue with the plan of using FreeTDS.
 
 <a name="gcc"></a>
 ** Mono and GCC
@@ -955,3 +968,21 @@ Q: Are there any Boehm's gc binaries?
 
 A: Yes. You can find them <a href="http://java.thn.htu.se/~toor/">here</a>
 
+Q: I have get into trouble when trying to build the site in my Linux box, what
+   can I do?.
+
+A: Try to change the line "./mono-rss.exe ../index deploy/index.rss" for
+   "mono ./mono-rss.exe ../index deploy/index.rss"
+
+Q: How can I report a bug?
+
+A: The best thing is to track down the bug and provide a simple test to
+   reproduce the bug. You can then add the bug to bugzilla:
+   http://bugzilla.ximian.com/enter_bug.cgi or simply send it to 
+   mono-list@ximian.com.
+
+Q: Does mcs support the same command line options as the MS C# 
+   compiler?
+
+A: The Mono C# compiler on CVS now supports the same command line
+   arguments as the Microsoft C# compiler does.
