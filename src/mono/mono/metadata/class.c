@@ -1141,6 +1141,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	
 	if (class->parent) {
 		mono_class_init (class->parent);
+		mono_class_setup_vtable (class->parent);
 		max_vtsize += class->parent->vtable_size;
 		cur_slot = class->parent->vtable_size;
 	}
@@ -1163,6 +1164,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
 			int dslot;
+			mono_class_setup_methods (decl->klass);
 			g_assert (decl->slot != -1);
 			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
 			vtable [dslot] = overrides [i*2 + 1];
@@ -1189,6 +1191,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			g_assert (io <= max_vtsize);
 
 			if (k == class) {
+				mono_class_setup_methods (ic);
 				for (l = 0; l < ic->method.count; l++) {
 					MonoMethod *im = ic->methods [l];						
 
@@ -1497,6 +1500,7 @@ mono_class_init (MonoClass *class)
 	static MonoMethod *default_finalize = NULL;
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
+	MonoCachedClassInfo cached_info;
 
 	g_assert (class);
 
@@ -1677,14 +1681,9 @@ mono_class_init (MonoClass *class)
 		return;
 	}
 
-	mono_class_setup_vtable (class);
-
-	class->inited = 1;
-	class->init_pending = 0;
-
 	if (!default_ghc) {
 		if (class == mono_defaults.object_class) { 
-		       
+			mono_class_setup_vtable (class);		       
 			for (i = 0; i < class->vtable_size; ++i) {
 				MonoMethod *cm = class->vtable [i];
 	       
@@ -1699,18 +1698,10 @@ mono_class_init (MonoClass *class)
 			default_ghc = class->vtable [ghc_slot];
 		}
 	}
-	
-	class->ghcimpl = 1;
-	if (class->parent) { 
-
-		if (class->vtable [ghc_slot] == default_ghc) {
-			class->ghcimpl = 0;
-		}
-	}
 
 	if (!default_finalize) {
 		if (class == mono_defaults.object_class) { 
-		       
+			mono_class_setup_vtable (class);		       
 			for (i = 0; i < class->vtable_size; ++i) {
 				MonoMethod *cm = class->vtable [i];
 	       
@@ -1726,13 +1717,55 @@ mono_class_init (MonoClass *class)
 		}
 	}
 
-	/* Object::Finalize should have empty implemenatation */
-	class->has_finalize = 0;
-	if (class->parent) { 
-		if (class->vtable [finalize_slot] != default_finalize)
-			class->has_finalize = 1;
+	/*
+	 * If possible, avoid the creation of the generic vtable by requesting
+	 * cached info from the runtime.
+	 */
+	if (mono_class_get_cached_class_info (class, &cached_info)) {
+		class->vtable_size = cached_info.vtable_size;
+		class->has_finalize = cached_info.has_finalize;
+		class->ghcimpl = cached_info.ghcimpl;
+		class->has_cctor = cached_info.has_cctor;
+
+		guint32 cur_slot = 0;
+
+		if (class->parent) {
+			mono_class_init (class->parent);
+			cur_slot = class->parent->vtable_size;
+		}
+
+		setup_interface_offsets (class, cur_slot);
+	}
+	else {
+		mono_class_setup_vtable (class);
+	
+		class->ghcimpl = 1;
+		if (class->parent) { 
+			if (class->vtable [ghc_slot] == default_ghc) {
+				class->ghcimpl = 0;
+			}
+		}
+
+		/* Object::Finalize should have empty implemenatation */
+		class->has_finalize = 0;
+		if (class->parent) { 
+			if (class->vtable [finalize_slot] != default_finalize)
+				class->has_finalize = 1;
+		}
+
+		for (i = 0; i < class->method.count; ++i) {
+			MonoMethod *method = class->methods [i];
+			if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+				(strcmp (".cctor", method->name) == 0)) {
+				class->has_cctor = 1;
+				break;
+			}
+		}
 	}
 
+	class->inited = 1;
+	class->init_pending = 0;
+	
 	mono_loader_unlock ();
 
 	if (mono_debugger_class_init_func)
@@ -3170,10 +3203,8 @@ mono_class_get_cctor (MonoClass *klass)
 {
 	MonoCachedClassInfo cached_info;
 
-	/*
 	if (!klass->has_cctor)
 		return NULL;
-	*/
 
 	if (mono_class_get_cached_class_info (klass, &cached_info))
 		return mono_get_method (klass->image, cached_info.cctor_token, klass);
