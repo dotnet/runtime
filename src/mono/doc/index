@@ -113,9 +113,10 @@
 	list</a> mailing list. 
 
 	Tim's TDS System.Data set of classes can now talk to SQL
-	servers using the TDS protocol (version 4.2).  Currently it
-	can connect, run transactions, update/insert/delete, and read
-	some types.  A data adapter is also coming soon.
+	servers using the TDS protocol (version 4.2) with
+	connection pooling.  Currently it can connect, run
+	transactions, update/insert/delete, and read some types.  A
+	data adapter is also coming soon.
 	
 @item Oct 21th, 2002: Crypto, Winforms list, Database, GConf, Debugger.
 
