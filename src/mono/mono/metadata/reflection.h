@@ -446,13 +446,6 @@ struct _MonoReflectionGenericInst {
 };
 
 typedef struct {
-	MonoReflectionField rfield;
-	MonoClassField *declaring;
-	MonoReflectionGenericInst *declaring_type;
-	MonoReflectionGenericInst *reflected_type;
-} MonoReflectionInflatedField;
-
-typedef struct {
 	MonoObject  obj;
 	MonoString *name;
 	MonoString *codebase;
@@ -618,7 +611,7 @@ MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 MonoReflectionMethod*
 mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_type, MonoReflectionGenericInst *reflected_type, MonoObject *obj);
-MonoReflectionInflatedField*
+MonoReflectionField*
 mono_reflection_inflate_field (MonoReflectionGenericInst *declaring_type, MonoReflectionGenericInst *reflected_type, MonoObject *obj);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);

@@ -27,6 +27,12 @@ typedef struct {
 	/* Type of the field */
 	MonoType        *type;
 
+	/* If this is an instantiated generic type, this is the
+	 * "original" type, ie. the MONO_TYPE_VAR or MONO_TYPE_GENERICINST
+	 * it was instantiated from.
+	 */
+	MonoType        *generic_type;
+
 	/*
 	 * Offset where this field is stored; if it is an instance
 	 * field, it's the offset from the start of the object, if
