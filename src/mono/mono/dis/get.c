@@ -20,6 +20,9 @@
 
 extern gboolean substitute_with_mscorlib_p;
 
+static char *
+get_memberref_parent (MonoImage *m, guint32 mrp_token);
+
 char *
 get_typedef (MonoImage *m, int idx)
 {
@@ -352,11 +355,11 @@ static map_t element_type_map [] = {
 	{ MONO_TYPE_I1         , "int8" },
 	{ MONO_TYPE_U1         , "unsigned int8" }, 
 	{ MONO_TYPE_I2         , "int16" },
-	{ MONO_TYPE_U2         , "uint16" },
+	{ MONO_TYPE_U2         , "unsigned int16" },
 	{ MONO_TYPE_I4         , "int32" },
-	{ MONO_TYPE_U4         , "uint32" },
+	{ MONO_TYPE_U4         , "unsigned int32" },
 	{ MONO_TYPE_I8         , "int64" },
-	{ MONO_TYPE_U8         , "uint64" },
+	{ MONO_TYPE_U8         , "unsigned int64" },
 	{ MONO_TYPE_R4         , "float32" },
 	{ MONO_TYPE_R8         , "float64" },
 	{ MONO_TYPE_STRING     , "string" },
@@ -499,7 +502,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		if (i)
 			g_string_append (result, ", ");
 		retval = dis_stringify_param (m, method->params [i]);
-		g_string_sprintfa (result, "%s %s", retval, name);
+		g_string_sprintfa (result, "%s '%s'", retval, name);
 		g_free (retval);
 	}
 	g_string_append (result, ") ");
@@ -766,7 +769,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type)
 		 g_string_append (str, "void");
 		 ptr++;
 	} else {
-		if (*ptr == MONO_TYPE_BYREF){
+                if (*ptr == MONO_TYPE_BYREF){
 			g_string_append (str, "[out] ");
 			ptr++;
 		}
@@ -806,10 +809,10 @@ get_param (MonoImage *m, const char *ptr, char **retval)
 	}
 	
 	if (*ptr == MONO_TYPE_TYPEDBYREF){
-		g_string_append (str, "/*FIXME: what does typedbyref mean? */ typedbyref ");
+		g_string_append (str, " typedbyref ");
 		ptr++;
 	} else {
-		if (*ptr == MONO_TYPE_BYREF){
+		 if (*ptr == MONO_TYPE_BYREF){
 			g_string_append (str, "[out] ");
 			ptr++;
 		}
@@ -958,6 +961,28 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 }
 
 /**
+ * Returns a stringifed representation of a field ref
+ */
+char *
+get_fieldref_signature (MonoImage *m, int idx)
+{
+        guint32 cols [MONO_MEMBERREF_SIZE];
+        char *sig;
+        char *full_sig;
+
+        mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
+                        idx - 1, cols, MONO_MEMBERREF_SIZE);
+
+        sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
+        full_sig = g_strdup_printf ("%s %s::%s", sig,
+                        get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS]),
+                        mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));
+        g_free (sig);
+        
+        return full_sig;
+}
+
+/**
  * get_field:
  * @m: metadata context
  * @token: a FIELD_DEF token
@@ -979,7 +1004,7 @@ get_field (MonoImage *m, guint32 token)
 	 * defined in another module/assembly, just like in get_method ()
 	 */
 	if (mono_metadata_token_code (token) == MONO_TOKEN_MEMBER_REF) {
-		return g_strdup_printf ("fieldref-0x%08x", token);
+                return get_fieldref_signature (m, idx);
 	}
 	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
 

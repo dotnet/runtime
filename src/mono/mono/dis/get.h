@@ -8,6 +8,7 @@ char *get_assemblyref         (MonoImage *m, int idx);
 char *get_typeref             (MonoImage *m, int idx);
 char *get_typedef_or_ref      (MonoImage *m, guint32 dor_token);
 char *get_field_signature     (MonoImage *m, guint32 blob_signature);
+char *get_fieldref_signature  (MonoImage *m, int idx);
 char *decode_literal          (MonoImage *m, guint32 token);
 char *get_field               (MonoImage *m, guint32 token);
 char *param_flags             (guint32 f);

@@ -120,12 +120,12 @@ dis_directive_assemblyref (MonoImage *m)
 static map_t visibility_map [] = {
 	{ TYPE_ATTRIBUTE_NOT_PUBLIC,           "private " },
 	{ TYPE_ATTRIBUTE_PUBLIC,               "public " },
-	{ TYPE_ATTRIBUTE_NESTED_PUBLIC,        "nested-public " },
-	{ TYPE_ATTRIBUTE_NESTED_PRIVATE,       "nested-private " },
+	{ TYPE_ATTRIBUTE_NESTED_PUBLIC,        "nested public " },
+	{ TYPE_ATTRIBUTE_NESTED_PRIVATE,       "nested private " },
 	{ TYPE_ATTRIBUTE_NESTED_FAMILY,        "family " },
-	{ TYPE_ATTRIBUTE_NESTED_ASSEMBLY,      "nested-assembly" },
-	{ TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM, "nested-fam-and-assembly" },
-	{ TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM,  "nested-fam-or-assembly" },
+	{ TYPE_ATTRIBUTE_NESTED_ASSEMBLY,      "nested assembly" },
+	{ TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM, "nested famandassem" },
+	{ TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM,  "nested famorassem" },
 	{ 0, NULL }
 };
 
@@ -452,7 +452,7 @@ pinvoke_info (MonoImage *m, guint32 mindex)
 
 			scope = mono_metadata_string_heap (m, mr_cols [MONO_MODULEREF_NAME]);
 				
-			return g_strdup_printf ("(%s as %s %s)", scope, import,
+			return g_strdup_printf ("(\"%s\" as \"%s\" %s)", scope, import,
 						flags);
 			g_free (flags);
 		}
@@ -614,11 +614,9 @@ dis_property_signature (MonoImage *m, guint32 prop_idx)
 	type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	blurb = dis_stringify_type (m, type);
 	if (prop_flags & 0x0200)
-		g_string_append (res, "special ");
+		g_string_append (res, "specialname ");
 	if (prop_flags & 0x0400)
-		g_string_append (res, "runtime ");
-	if (prop_flags & 0x1000)
-		g_string_append (res, "hasdefault ");
+		g_string_append (res, "rtspecialname ");
 	g_string_sprintfa (res, "%s %s (", blurb, name);
 	g_free (blurb);
 	mono_metadata_free_type (type);
@@ -882,6 +880,56 @@ dis_type (MonoImage *m, int n)
 	fprintf (output, "\n");
 }
 
+
+/**
+ * dis_globals
+ * @m: metadata context
+ *
+ * disassembles all the global fields and methods
+ */
+static void
+dis_globals (MonoImage *m)
+{
+        MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
+	guint32 cols [MONO_TYPEDEF_SIZE];
+	guint32 cols_next [MONO_TYPEDEF_SIZE];
+	gboolean next_is_valid, last;
+        gchar *name;
+
+        name = g_strdup ("<Module>");
+
+        mono_metadata_decode_row (t, 0, cols, MONO_TYPEDEF_SIZE);
+
+	if (t->rows > 1) {
+		mono_metadata_decode_row (t, 1, cols_next, MONO_TYPEDEF_SIZE);
+		next_is_valid = 1;
+	} else
+		next_is_valid = 0;
+        
+	/*
+	 * The value in the table is always valid, we know we have fields
+	 * if the value stored is different than the next record.
+	 */
+
+	if (next_is_valid)
+		last = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
+	else
+		last = m->tables [MONO_TABLE_FIELD].rows;
+			
+	if (cols [MONO_TYPEDEF_FIELD_LIST] && cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
+		dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last);
+	fprintf (output, "\n");
+
+	if (next_is_valid)
+		last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
+	else
+		last = m->tables [MONO_TABLE_METHOD].rows;
+	
+	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
+		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
+
+}
+
 /**
  * dis_types:
  * @m: metadata context
@@ -895,6 +943,8 @@ dis_types (MonoImage *m)
 	int i;
 	guint32 flags;
 
+        dis_globals (m);
+        
 	for (i = 1; i < t->rows; i++) {
 		flags = mono_metadata_decode_row_col (t, i, MONO_TYPEDEF_FLAGS);
 		flags &= TYPE_ATTRIBUTE_VISIBILITY_MASK;
