@@ -94,7 +94,7 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
-@item Nov 1st, 2002: TDS, Crypto, Gtk#, bug fixes.
+@item Nov 1st, 2002: TDS, Crypto, Gtk#, Winforms, bug fixes.
 
 	Tim's SqlClient is <a
 	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003161.html">now
@@ -119,6 +119,9 @@
 
 	In the Gtk# land saw the integration of gda, gnome-db and GStreamer
 	bindings.
+
+	Windows.Forms classes now build on Linux and Windows, check
+	out the status pages for areas of collaboration.
 
 @item Oct 24th, 2002: S390 support, XSP/ASP.NET, Win32 contributors, TDS.
 
