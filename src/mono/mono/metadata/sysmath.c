@@ -57,7 +57,7 @@ ves_icall_System_Math_Asin (gdouble x)
 	if (x < -1 || x > 1)
 		return MONO_NAN;
 
-	return acos (x);
+	return asin (x);
 }
 
 gdouble 
