@@ -1137,10 +1137,9 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		return offset;
 
 	klass = mono_class_from_mono_type (type);
-	if (type->type == MONO_TYPE_CLASS)
-		return write_class (table, klass);
 
-	// mono_class_init (klass);
+	if (klass->enumtype && builtin_types_initialized)
+		mono_class_init (klass);
 
 	switch (type->type) {
 	case MONO_TYPE_VOID:
