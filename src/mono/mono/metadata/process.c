@@ -758,6 +758,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 		process_info->thread_handle=procinfo.hThread;
 		process_info->pid=procinfo.dwProcessId;
 		process_info->tid=procinfo.dwThreadId;
+	} else {
+		process_info->pid = -GetLastError ();
 	}
 	
 	return(ret);

@@ -20,7 +20,7 @@ typedef struct
 {
 	HANDLE process_handle;
 	HANDLE thread_handle;
-	guint32 pid;
+	guint32 pid; /* Contains GetLastError () on failure */
 	guint32 tid;
 } MonoProcInfo;
 
