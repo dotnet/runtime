@@ -190,6 +190,25 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 	g_ptr_array_add (info->source_files, g_strdup_printf ("%s.il", image->assembly_name));
 	info->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
 
+	mono_debug_get_type (info, mono_defaults.void_class);
+	mono_debug_get_type (info, mono_defaults.object_class);
+	mono_debug_get_type (info, mono_defaults.void_class);
+	mono_debug_get_type (info, mono_defaults.boolean_class);
+	mono_debug_get_type (info, mono_defaults.char_class);
+	mono_debug_get_type (info, mono_defaults.sbyte_class);
+	mono_debug_get_type (info, mono_defaults.byte_class);
+	mono_debug_get_type (info, mono_defaults.int16_class);
+	mono_debug_get_type (info, mono_defaults.uint16_class);
+	mono_debug_get_type (info, mono_defaults.int32_class);
+	mono_debug_get_type (info, mono_defaults.uint32_class);
+	mono_debug_get_type (info, mono_defaults.int_class);
+	mono_debug_get_type (info, mono_defaults.uint_class);
+	mono_debug_get_type (info, mono_defaults.int64_class);
+	mono_debug_get_type (info, mono_defaults.uint64_class);
+	mono_debug_get_type (info, mono_defaults.single_class);
+	mono_debug_get_type (info, mono_defaults.double_class);
+	mono_debug_get_type (info, mono_defaults.string_class);
+
 	switch (handle->format) {
 	case MONO_DEBUG_FORMAT_STABS:
 		mono_debug_open_assembly_stabs (info);
@@ -331,6 +350,10 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 			MonoClass *subclass = mono_class_from_mono_type (klass->fields [i].type);
 			mono_debug_get_type (info, subclass);
 		}
+		break;
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+		mono_debug_get_type (info, klass->element_class);
 		break;
 	default:
 		break;
