@@ -2652,7 +2652,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* this requires a loop, because fprem1 somtimes 
 			 * returns a partial remainder */
 			l1 = code;
-			x86_fprem (code);
+			x86_fprem1 (code);
 			x86_fnstsw (code);
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x0400);
 			l2 = code + 2;

@@ -2186,6 +2186,8 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			op = OP_SQRT;
 		else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8)
 			op = OP_ABS;
+		else if (strcmp (cmethod->name, "IEEERemainder") == 0)
+			op = OP_FREM;
 		else
 			return NULL;
 	} else {
@@ -2357,7 +2359,7 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 
 	while (ip < end) {
 		cli_addr = ip - start;
-		i = mono_opcode_value (&ip);
+		i = mono_opcode_value ((const guint8 **)&ip);
 		opcode = &mono_opcodes [i];
 		switch (opcode->argument) {
 		case MonoInlineNone:
