@@ -149,6 +149,7 @@ pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
+	$(PLATFORM_LIB)			\
 	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 monodiet_SOURCES = monodiet.c
@@ -157,6 +158,7 @@ monodiet_LDADD = \
 	libmonoruntime.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
+	$(PLATFORM_LIB)			\
 	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
