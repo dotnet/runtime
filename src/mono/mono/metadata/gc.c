@@ -168,6 +168,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	 */ 
 	
 #if HAVE_BOEHM_GC
+	if (gc_disabled)
+		return TRUE;
+
 	GC_gcollect ();
 
 	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
@@ -634,9 +637,9 @@ void mono_gc_cleanup (void)
 #endif
 
 #ifdef ENABLE_FINALIZER_THREAD
-	ResetEvent (shutdown_event);
-	finished = TRUE;
 	if (!gc_disabled) {
+		ResetEvent (shutdown_event);
+		finished = TRUE;
 		finalize_notify ();
 		/* Finishing the finalizer thread, so wait a little bit... */
 		/* MS seems to wait for about 2 seconds */
