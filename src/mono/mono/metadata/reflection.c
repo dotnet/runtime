@@ -3506,7 +3506,8 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			}
 			p = s;
 		} else {
-			return 1;
+			while (*p && *p != ',')
+				p++;
 		}
 		found_sep = 0;
 		while (*p == ' ' || *p == ',') {
