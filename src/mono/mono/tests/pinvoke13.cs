@@ -42,10 +42,10 @@ public class Tests
 		if (res != 198)
 			return 2;
 		res = NameManglingUnicode ("ABC");
-		if (res != 131)
+		if (res != 198)
 			return 3;
 		res = NameManglingUnicode ("ABC");
-		if (res != 131)
+		if (res != 198)
 			return 4;
 
 		res = NameManglingAuto ("ABC");

@@ -922,13 +922,13 @@ NameManglingUnicode (char *data)
 }
 
 STDCALL int
-NameManglingUnicodeW (char *data)
+NameManglingUnicodeW (gunichar2 *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
 STDCALL int
-NameManglingUnicode2 (char *data)
+NameManglingUnicode2 (gunichar2 *data)
 {
 	return data [0] + data [1] + data [2];
 }
