@@ -4518,9 +4518,46 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_REFANYVAL:
-		case CEE_MKREFANY:
-			g_error ("opcode 0x%02x not handled", *ip);
+			CHECK_STACK (1);
+			MONO_INST_NEW (cfg, ins, *ip);
+			--sp;
+			klass = mono_class_get (image, read32 (ip + 1));
+			mono_class_init (klass);
+			if (klass->byval_arg.type == MONO_TYPE_VAR)
+				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
+			ins->type = STACK_MP;
+			ins->inst_left = *sp;
+			ins->klass = klass;
+			ins->inst_newa_class = klass;
+			ins->cil_code = ip;
+			ip += 5;
+			*sp++ = ins;
 			break;
+		case CEE_MKREFANY: {
+			MonoInst *loc, *klassconst;
+
+			CHECK_STACK (1);
+			MONO_INST_NEW (cfg, ins, *ip);
+			--sp;
+			klass = mono_class_get (image, read32 (ip + 1));
+			mono_class_init (klass);
+			if (klass->byval_arg.type == MONO_TYPE_VAR)
+				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
+			ins->cil_code = ip;
+
+			loc = mono_compile_create_var (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL);
+			NEW_TEMPLOADA (cfg, ins->inst_right, loc->inst_c0);
+
+			NEW_PCONST (cfg, klassconst, klass);
+			NEW_GROUP (cfg, ins->inst_left, *sp, klassconst);
+			
+			MONO_ADD_INS (bblock, ins);
+
+			NEW_TEMPLOAD (cfg, *sp, loc->inst_c0);
+			++sp;
+			ip += 5;
+			break;
+		}
 		case CEE_LDTOKEN: {
 			gpointer handle;
 			MonoClass *handle_class;
@@ -5166,7 +5203,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				break;
 			case CEE_REFANYTYPE:
-				g_error ("opcode 0xfe 0x%02x not handled", ip [1]);
+				CHECK_STACK (1);
+				MONO_INST_NEW (cfg, ins, ip [1]);
+				--sp;
+				ins->type = STACK_MP;
+				ins->inst_left = *sp;
+				ins->type = STACK_VTYPE;
+				ins->klass = mono_defaults.typehandle_class;
+				ins->cil_code = ip;
+				ip += 2;
+				*sp++ = ins;
 				break;
 			case CEE_READONLY_:
 				ip += 2;
@@ -5223,7 +5269,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_p0 = (void*)&r8_0;
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
-			} else if (t == MONO_TYPE_VALUETYPE) {
+			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF)) {
 				NEW_LOCLOADA (cfg, ins, i);
 				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (header->locals [i]), NULL, NULL);
 				break;
@@ -6681,7 +6727,7 @@ mono_codegen (MonoCompile *cfg)
 		}
 	}
        
-	if (cfg->verbose_level > 1)
+	if (cfg->verbose_level > 0)
 		g_print ("Method %s emmitted at %p to %p\n", 
 				 mono_method_full_name (cfg->method, TRUE), 
 				 cfg->native_code, cfg->native_code + cfg->code_len);
@@ -6963,7 +7009,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 		mono_compute_natural_loops (cfg);
 	}
 
-
 	/* after method_to_ir */
 	if (parts == 1)
 		return cfg;
@@ -7131,7 +7176,6 @@ mono_jit_compile_method_inner (MonoMethod *method)
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoCompile *cfg;
 	GHashTable *jit_code_hash;
-	MonoJitInfo *info;
 	gpointer code;
 
 	if (default_opt & MONO_OPT_SHARED)
@@ -7241,7 +7285,6 @@ mono_jit_compile_method (MonoMethod *method)
 {
 	/* FIXME: later copy the code from mono */
 	MonoDomain *target_domain, *domain = mono_domain_get ();
-	MonoCompile *cfg;
 	MonoJitInfo *info;
 	gpointer code;
 
