@@ -2401,7 +2401,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 }
 
 static MonoReflectionType*
-ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
+ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *assembly, MonoReflectionModule *module, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
 	gchar *str;
 	MonoType *type;
@@ -2421,7 +2421,14 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		return NULL;
 	}
 
-	type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
+	if (module != NULL) {
+		if (module->image)
+			type = mono_reflection_get_type (module->image, &info, ignoreCase);
+		else
+			type = NULL;
+	}
+	else
+		type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
 	g_free (str);
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
@@ -2903,12 +2910,12 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 }
 
 static MonoArray*
-ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
+mono_module_get_types (MonoDomain *domain, MonoImage *image, 
+					   MonoBoolean exportedOnly)
 {
-	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoArray *res;
 	MonoClass *klass;
-	MonoTableInfo *tdef = &assembly->assembly->image->tables [MONO_TABLE_TYPEDEF];
+	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
 	int i, count;
 	guint32 attrs, visibility;
 
@@ -2932,13 +2939,19 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
 		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
-			klass = mono_class_get (assembly->assembly->image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+			klass = mono_class_get (image, (i + 1) | MONO_TOKEN_TYPE_DEF);
 			mono_array_set (res, gpointer, count, mono_type_get_object (domain, &klass->byval_arg));
 			count++;
 		}
 	}
 	
 	return res;
+}
+
+static MonoArray*
+ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
+{
+	return mono_module_get_types (mono_object_domain (assembly), assembly->assembly->image, exportedOnly);
 }
 
 static MonoReflectionType*
@@ -2963,6 +2976,15 @@ ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module
 
 	g_assert (module->image);
 	return mono_string_new (domain, module->image->guid);
+}
+
+static MonoArray*
+ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *module)
+{
+	if (!module->image)
+		return mono_array_new (mono_object_domain (module), mono_defaults.monotype_class, 0);
+	else
+		return mono_module_get_types (mono_object_domain (module), module->image, FALSE);
 }
 
 static MonoReflectionType*
@@ -4315,6 +4337,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Reflection.Module::GetGlobalType", ves_icall_System_Reflection_Module_GetGlobalType,
 	"System.Reflection.Module::GetGuidInternal", ves_icall_System_Reflection_Module_GetGuidInternal,
+	"System.Reflection.Module::InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes,
 
 	/*
 	 * System.MonoType.
