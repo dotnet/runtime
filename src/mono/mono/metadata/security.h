@@ -16,7 +16,6 @@
 
 /* System.Environment */
 extern MonoString* ves_icall_System_Environment_get_UserName (void);
-extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
 /* System.Security.Principal */
 
