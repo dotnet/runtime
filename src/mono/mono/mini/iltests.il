@@ -43,6 +43,53 @@
 		ret
 	}
 	
+	.method static public int32 test_3_shl_regvars () il managed {
+		.locals init (
+			int32	a,
+			int32	b,
+			int32	r1,
+			int32	r2,
+			int32	r3
+		)
+			
+		ldc.i4.2
+		stloc      a
+		ldc.i4.1
+		stloc      b
+	
+		ldloc      a
+		ldloc      b
+		shl 
+		stloc      r1
+		
+		ldloc      a
+		ldloc      b
+		shl 
+		stloc      r2
+		
+		ldloc      a
+		ldloc      b
+		shl 
+		stloc      r3
+		
+		ldloc      r1
+		ldc.i4.4
+		ceq
+		
+		ldloc      r2
+		ldc.i4.4
+		ceq
+		
+		ldloc      r3
+		ldc.i4.4
+		ceq
+		
+		add
+		add
+		
+		ret
+	}
+	
 	.method static public int32 test_1_fceq_to_i4 () il managed {
 	
 		.locals init (
