@@ -16,10 +16,12 @@
 #define UNICODE
 #define _UNICODE
 #define __USE_W32_SOCKETS
-#include <w32api.h>
+#include <winsock2.h>
 #include <windows.h>
+#include <WinBase.h>
 #include <ws2tcpip.h>
 #include <psapi.h>
+#include <shlobj.h>
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
