@@ -110,7 +110,7 @@ nextchar ()
 	if (!fgets (input, sizeof (input), inputfd))
 	  return 0;
 
-	ll = (input [0] == '%' && input [1] == '%' && isspace (input [2]));
+	ll = (input [0] == '%' && input [1] == '%');
 	next_state = state;
 
 	switch (state) {
@@ -121,8 +121,10 @@ nextchar ()
 	    fputs (input, stdout);
 	  break;
 	case 1:
-	  if (ll)
+	  if (ll) {
 	    next_state = 2;
+	    *next = 0;
+	  }
 	  break;
 	default:
 	  return 0;

@@ -25,6 +25,7 @@ struct _NonTerm {
 	int number;
 	GList *rules; /* rules with this nonterm on the left side */
 	GList *chain;
+	gboolean reached;
 };
 
 typedef struct _Tree Tree;
