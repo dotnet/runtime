@@ -35,7 +35,7 @@
 <opcode name="ldc.i8" input="Pop0" output="PushI8" args="InlineI8" o1="0xFF" o2="0x21" flow="next"/>
 <opcode name="ldc.r4" input="Pop0" output="PushR4" args="ShortInlineR" o1="0xFF" o2="0x22" flow="next"/>
 <opcode name="ldc.r8" input="Pop0" output="PushR8" args="InlineR" o1="0xFF" o2="0x23" flow="next"/>
-<opcode name="unused59" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x24" flow="next"/>
+<opcode name="unused99" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x24" flow="next"/>
 <opcode name="dup" input="Pop1" output="Push1+Push1" args="InlineNone" o1="0xFF" o2="0x25" flow="next"/>
 <opcode name="pop" input="Pop1" output="Push0" args="InlineNone" o1="0xFF" o2="0x26" flow="next"/>
 <opcode name="jmp" input="Pop0" output="Push0" args="InlineMethod" o1="0xFF" o2="0x27" flow="call"/>
