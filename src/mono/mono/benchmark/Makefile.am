@@ -9,6 +9,8 @@ TESTSRC=			\
 	life.cs 		\
 	castclass.cs		\
 	isinst.cs		\
+	sbperf1.cs		\
+	sbperf2.cs		\
 	inline1.cs		\
 	inline2.cs		\
 	inline3.cs		\
