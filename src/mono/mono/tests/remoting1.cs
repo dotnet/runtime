@@ -63,8 +63,11 @@ public struct MyStruct {
 	public int b;
 	public int c;
 }
+
+interface R2 {
+}
 	
-class R1 : MarshalByRefObject {
+class R1 : MarshalByRefObject, R2 {
 
 	public int test_field = 5;
 	
@@ -111,6 +114,8 @@ class Test {
 		
 		if (!RemotingServices.IsTransparentProxy (o))
 			return 2;
+
+		Console.WriteLine ("XXXXXXXXXXXX: " + RemotingServices.GetRealProxy (o));
 
 		if (o.GetType () != myobj.GetType ())
 			return 3;
@@ -170,6 +175,9 @@ class Test {
 
 		RemoteDelegate2 d2 = new RemoteDelegate2 (o.nonvirtual_Add);
 		d2 (6, 7);
+
+		if (!(real_proxy.GetTransparentProxy () is R2))
+			return 14;
 
 		return 0;
 	}

@@ -1,3 +1,8 @@
+2003-09-30  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/remoting1.cs: Added test for interface casts on
+	TransparentProxies.
+
 2003-09-24  Bernie Solomon  <bernard@ugsolutions.com>
 
         * mono/tests/pinvoke*.cs, delegate4.cs, marshal10.cs, marshal4.cs
