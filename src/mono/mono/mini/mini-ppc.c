@@ -313,8 +313,15 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	guint8 *p;
 
 	p = code;
-	for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
-		asm ("dcbst 0,%0;" : : "r"(p) : "memory");
+	/* use dcbf for smp support, later optimize for UP, see pem._64bit.d20030611.pdf page 211 */
+	if (1) {
+		for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
+			asm ("dcbf 0,%0;" : : "r"(p) : "memory");
+		}
+	} else {
+		for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
+			asm ("dcbst 0,%0;" : : "r"(p) : "memory");
+		}
 	}
 	asm ("sync");
 	p = code;
