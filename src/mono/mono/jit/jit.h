@@ -152,7 +152,7 @@ extern MonoJitInfoTable *mono_jit_info_table;
 extern gpointer mono_end_of_stack;
 extern guint32  lmf_thread_id;
 
-extern WapiCriticalSection *metadata_section;
+extern CRITICAL_SECTION *metadata_section;
 
 MonoJitInfoTable *
 mono_jit_info_table_new    (void);

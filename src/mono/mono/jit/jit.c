@@ -206,7 +206,7 @@ guint32 lmf_thread_id = 0;
 
 MonoJitStats mono_jit_stats;
 
-WapiCriticalSection *metadata_section = NULL;
+CRITICAL_SECTION *metadata_section = NULL;
 
 /* 
  * We sometimes need static data, for example the forest generator need it to
@@ -3303,7 +3303,7 @@ main (int argc, char *argv [])
 	char *file;
 	gboolean testjit = FALSE;
 	int stack, verbose = FALSE;
-	WapiCriticalSection ms;
+	CRITICAL_SECTION ms;
 
 	mono_end_of_stack = &stack; /* a pointer to a local variable is always < BP */
 
