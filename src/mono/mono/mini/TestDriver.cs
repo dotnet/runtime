@@ -11,13 +11,23 @@ public class TestDriver {
 		string name;
 		MethodInfo[] methods;
 		bool do_timings = false;
+		bool verbose = false;
 		int tms = 0;
 		DateTime start, end = DateTime.Now;
 
 		if (args != null && args.Length > 0) {
 			for (j = 0; j < args.Length; j++) {
+				bool found = false;
 				if (args [j] == "--time") {
 					do_timings = true;
+					found = true;
+				}
+				if ((args [j] == "-v") || (args [j] == "--verbose")) {
+					verbose = true;
+					found = true;
+				}
+
+				if (found) {
 					string[] new_args = new string [args.Length - 1];
 					for (i = 0; i < j; ++i)
 						new_args [i] = args [i];
@@ -48,6 +58,8 @@ public class TestDriver {
 			for (j = 5; j < name.Length; ++j)
 				if (!Char.IsDigit (name [j]))
 					break;
+			if (verbose)
+				Console.WriteLine ("Running '{0}' ...", name);
 			expected = Int32.Parse (name.Substring (5, j - 5));
 			start = DateTime.Now;
 			result = (int)methods [i].Invoke (null, null);
