@@ -1,4 +1,10 @@
 2002-02-21  Mark Crichton  <crichton@gimp.org>
+
+	* status/class.xml: Added contact info for RNGCryptoServiceProvider
+	class and Rijndael classes.
+	* status/maintainers.xml: Added contact info to maintainers list.
+
+2002-02-21  Mark Crichton  <crichton@gimp.org>
  
         * configure.in: Add checks for a system-provided entropy device
         * acconfig.h: Added HAVE_CRYPT_RNG and NAME_DEV_RANDOM

@@ -2563,18 +2563,27 @@
 		<last-activity>Aug-1-2001</last-activity>
 		<implementation>no</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>0</completion>
 		<maintainers>
-			<maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+			<maintainer>crichton@gimp.org</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Security.Cryptography.RijndaelManaged">
 		<last-activity>Aug-1-2001</last-activity>
 		<implementation>no</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>0</completion>
 		<maintainers>
-			<maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+			<maintainer>crichton@gimp.org</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.Cryptography.RNGCryptoServiceProvider">
+		<last-activity>Feb-21-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>70</completion>
+		<maintainers>
+			<maintainer>crichton@gimp.org</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Security.Cryptography.SHA1">
