@@ -24,6 +24,14 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 	we make the first tarball release.
 
 	<ul>
+		<a name="july-17">
+		<b>July 17th, 2001</b>
+		<ul>
+		* <a href="archive/mcs-17-Jul-2001.tar.gz">mcs-17-Jul-2001.tar.gz</a>: CVS snapshot.
+		* <a href="archive/mcs-Jul-15-Jul-17-2001.tar.gz">Differences since 15</a>: CVS snapshot.
+		* <a href="archive/mcs-17">Release Notes</a>
+		</ul>
+
 		<a name="july-15">
 		<b>July 15th, 2001</b>
 		<ul>
@@ -73,27 +81,31 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		  window (a shortcut should be on your desktop), untar the glib
 		  distribution:
 
-		  <t>tar xzvf glib-1.2.10.tar.gz</t>
+<pre>
+tar xzvf glib-1.2.10.tar.gz
+</pre>
 
 		* Configure, compile and install glib, like this:
 
-		  <t>./configure --prefix=//c/mono</t>
-
-		  <t>make</t>
-
-		  <t>make install</t>
+<pre>
+./configure --prefix=//c/mono
+make
+make install
+</pre>
 
 		* Unpack the mono distribution:
 
-		  <t>tar xzvf mono-XXX.tar.gz</t>
+<pre>
+tar xzvf mono-XXX.tar.gz
+</pre>
 
 		* Configure, compile and install:
 
-		  <t>./configure --prefix=//c/mono</t>
-
-		  <t>make</t>
-
-		  <t>make install</t>
+<pre>
+./configure --prefix=//c/mono
+make
+make install
+</pre>
 	</ul>
 
 	To compile the mono runtime on Unix:
@@ -104,15 +116,16 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 
 		* Unpack the mono distribution:
 
-		  <t>tar xzvf mono-XXX.tar.gz</t>
+<pre>
+tar xzvf mono-XXX.tar.gz
+</pre>
 
 		* Configure, compile and install:
-
-		  <t>./configure</t>
-
-		  <t>make</t>
-
-		  <t>make install</t>
+<pre>
+./configure
+make
+make install
+</pre>
 	</ul>
 	
 ** CVS
@@ -120,3 +133,5 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 	We are trying to figure out where to put our CVS repository.
 	We are debating between the GNOME CVS or SourceForge.  Watch
 	this spot.
+
+
