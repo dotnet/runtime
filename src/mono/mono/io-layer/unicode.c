@@ -88,9 +88,11 @@ guchar *_wapi_unicode_to_utf8(const guchar *uni)
 
 	/* fixme: ugly - iconv expects big endian encoding 
 	   UTF-16le does not work on older libc */
-	for (i = 0; i < len; i += 2) {
-		str [i] = uni [i + 1];
-		str [i + 1] = uni [i];
+	if (G_BYTE_ORDER == G_LITTLE_ENDIAN) {
+		for (i = 0; i < len; i += 2) {
+			str [i] = uni [i + 1];
+			str [i + 1] = uni [i];
+		}
 	}
 
 	p = str;
@@ -106,7 +108,6 @@ again:
 	if(err == (size_t)-1) {
 		switch(errno) {
 		case EINVAL:
-			have_error = TRUE;
 			/* Incomplete text, do not report an error */
 			break;
 		case E2BIG: {
