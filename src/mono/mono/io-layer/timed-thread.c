@@ -14,7 +14,6 @@
 #ifdef HAVE_SEMAPHORE_H
 #include <semaphore.h>
 #endif
-#include <unistd.h>
 
 #include <mono/io-layer/processes.h>
 
@@ -31,8 +30,6 @@
 
 static pthread_key_t timed_thread_key;
 static mono_once_t timed_thread_once = MONO_ONCE_INIT;
-
-extern int mono_debugger_threads_debug;
 
 static void timed_thread_init(void)
 {
@@ -90,16 +87,6 @@ static void *timed_thread_start_routine(gpointer args)
 	pthread_setspecific(timed_thread_key, (void *)thread);
 	pthread_detach(thread->id);
 
-	/*
-	 * This is only non-zero if we're running inside the Mono Debugger.
-	 * In this case, the caller is blocking on the `thread->start_sem'
-	 * until we set our pid in `thread->pid'.
-	 */
-	if (mono_debugger_threads_debug) {
-		thread->pid = getpid ();
-		sem_post (&thread->start_sem);
-	}
-
 	if(thread->create_flags & CREATE_SUSPENDED) {
 		_wapi_timed_thread_suspend (thread);
 	}
@@ -124,7 +111,6 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
 	thread->create_flags = create_flags;
-	sem_init (&thread->start_sem, 0, 0);
 	sem_init (&thread->suspend_sem, 0, 0);
 	thread->start_routine = start_routine;
 	thread->exit_routine = exit_routine;
@@ -141,15 +127,7 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 		g_free(thread);
 		return(result);
 	}
-
-	/*
-	 * This is only non-zero if we're running inside the Mono Debugger.
-	 * In this case, we block on the `thread->start_sem' until the new
-	 * thread has been started and written its pid into `thread->pid'.
-	 */
-	if (mono_debugger_threads_debug)
-		sem_wait (&thread->start_sem);
-
+	
 	return(0);
 }
 
@@ -164,7 +142,6 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
 	sem_init (&thread->suspend_sem, 0, 0);
-	sem_init (&thread->start_sem, 0, 0);
 	thread->exit_routine = exit_routine;
 	thread->exit_userdata = exit_userdata;
 	thread->exitstatus = 0;
@@ -219,7 +196,6 @@ void _wapi_timed_thread_destroy (TimedThread *thread)
 	mono_mutex_destroy (&thread->join_mutex);
 	pthread_cond_destroy (&thread->exit_cond);
 	sem_destroy (&thread->suspend_sem);
-	sem_destroy (&thread->start_sem);
 	
 	g_free(thread);
 }

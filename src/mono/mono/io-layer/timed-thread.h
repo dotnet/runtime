@@ -22,8 +22,6 @@
 typedef struct
 {
 	pthread_t id;
-	pid_t pid;
-	sem_t start_sem;
 	mono_mutex_t join_mutex;
 	pthread_cond_t exit_cond;
 	guint32 create_flags;
