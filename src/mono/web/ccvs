@@ -34,9 +34,9 @@
 	ssh-keygen -i -f id_XXX.pub > my_public_key.pub
 </pre>
 	
-	where the file <pre>id_XXX.pub</pre> is your public key file, 
-	normally located under <pre>~/.ssh/</pre> or <pre>~/.ssh2/</pre>.
-	Send to miguel the <pre>my_public_key.pub</pre> file. 
+	where the file id_XXX.pub is your public key file, 
+	normally located under ~/.ssh/ or ~/.ssh2/.
+	Send to miguel the my_public_key.pub file. 
 
 	The *exact* format for this file must be:
 

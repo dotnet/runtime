@@ -1,3 +1,7 @@
+2002-10-04  Diego Sevilla Ruiz  <dsevilla@um.es>
+
+	* doc/ccvs: Fixed some ugly formatting.
+
 2002-10-03  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h:
