@@ -1516,7 +1516,13 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE:
-				g_assert (((gpointer*)params->vector) [i]);
+				if (sig->params [i]->byref) {
+					/* MS seems to create the objects if a null is passed in */
+					if (! ((gpointer *)params->vector)[i])
+						((gpointer*)params->vector)[i] = mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->params [i]));
+				}
+				else
+					g_assert (((gpointer*)params->vector) [i]);
 				pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
 				break;
 			case MONO_TYPE_STRING:
