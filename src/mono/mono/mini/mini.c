@@ -4401,7 +4401,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
 			if (*ip == CEE_STFLD) {
-				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound) {
+				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
 					MonoMethod *stfld_wrapper = mono_marshal_get_stfld_wrapper (field->type); 
 					MonoInst *iargs [5];
 
@@ -4456,7 +4456,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MONO_ADD_INS (bblock, store);
 				}
 			} else {
-				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound) {
+				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
 					/* fixme: we need to inline that call somehow */
 					MonoMethod *ldfld_wrapper = mono_marshal_get_ldfld_wrapper (field->type); 
 					MonoInst *iargs [4];
