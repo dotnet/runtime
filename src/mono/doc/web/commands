@@ -26,7 +26,7 @@
 1,Test Suite,testing.html,testing.src
 1,Tools,tools.html,tools.src
 1,Porting,porting.html,porting.src
-1,HOWTO,mono-contributing-howto.html,mono-contributing-howto.src
+1,HOWTO,mono-contribution-howto.html,mono-contribution-howto.src
 0,Plans,plans.html,plans.src
 1,ADO.NET,ado-net.html,ado-net.src
 1,ASP.NET,asp-net.html,asp-net.src
