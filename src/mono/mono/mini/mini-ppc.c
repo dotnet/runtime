@@ -1296,7 +1296,11 @@ mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
-#define reg_is_freeable(r) ((r) >= 3 && (r) <= 10)
+/* use ppc_r3-ppc_10,ppc_r12 as temp registers, f1-f13 for FP registers */
+#define PPC_CALLER_REGS ((0xff<<3) | (1<<12) | USE_EXTRA_TEMPS)
+#define PPC_CALLER_FREGS (0x3ffe)
+
+#define reg_is_freeable(r) (PPC_CALLER_REGS & 1 << (r))
 #define freg_is_freeable(r) ((r) >= 1 && (r) <= 13)
 
 typedef struct {
@@ -1630,10 +1634,6 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 	cfg->rs->isymbolic [val] = sym_reg;
 	return val;
 }
-
-/* use ppc_r3-ppc_10,ppc_r12 as temp registers, f1-f13 for FP registers */
-#define PPC_CALLER_REGS ((0xff<<3) | (1<<12) | USE_EXTRA_TEMPS)
-#define PPC_CALLER_FREGS (0x3ffe)
 
 /*
  * Local register allocation.
@@ -3410,6 +3410,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->varinfo [pos];
 		
+		if (cfg->verbose_level > 2)
+			g_print ("Saving argument %d (type: %d)\n", i, ainfo->regtype);
 		if (inst->opcode == OP_REGVAR) {
 			if (ainfo->regtype == RegTypeGeneral)
 				ppc_mr (code, inst->dreg, ainfo->reg);
