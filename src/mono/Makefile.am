@@ -1,11 +1,11 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = $(libgc_dir) mono $(ikvm_jni_dir) docs data scripts man samples support web 
+SUBDIRS = $(libgc_dir) mono $(ikvm_jni_dir) docs data runtime scripts man samples support web 
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
-DIST_SUBDIRS = libgc mono ikvm-jni docs data scripts man samples support web tools
+DIST_SUBDIRS = libgc mono ikvm-jni docs data runtime scripts man samples support web tools
 
 EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 

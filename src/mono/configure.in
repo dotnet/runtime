@@ -1463,6 +1463,28 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
+mono_build_root=`pwd`
+AC_SUBST(mono_build_root)
+
+if test x$USEJIT = xtrue; then
+  mono_runtime=mono/mini/mono
+else
+  mono_runtime=mono/interpreter/mint
+fi
+AC_SUBST(mono_runtime)
+
+mono_cfg_root=$mono_build_root/runtime
+if test x$platform_win32 = xyes; then
+  mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
+else
+  mono_cfg_dir=$mono_cfg_root/etc
+fi
+AC_SUBST(mono_cfg_dir)
+
+AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
+AC_CONFIG_LINKS([runtime/etc/mono/1.0/machine.config:data/net_1_1/machine.config 
+                 runtime/etc/mono/2.0/machine.config:data/net_2_0/machine.config])
+
 AC_OUTPUT([
 Makefile
 mint.pc
