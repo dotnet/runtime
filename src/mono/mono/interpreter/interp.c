@@ -53,7 +53,7 @@ static int count = 0;
  */
 #define GOTO_LABEL
 #ifdef GOTO_LABEL
-#define SWITCH(a) goto *goto_map[a];
+#define SWITCH(a) goto *goto_map [(a)];
 #define BREAK SWITCH(*ip)
 #define CASE(l)	l ## _LABEL:
 #define SUB_SWITCH \
@@ -160,13 +160,13 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			BREAK;
 		CASE (CEE_BREAK)
 			++ip;
-			G_BREAKPOINT(); /* this is not portable... */
+			G_BREAKPOINT (); /* this is not portable... */
 			BREAK;
 		CASE (CEE_LDARG_0)
 		CASE (CEE_LDARG_1)
 		CASE (CEE_LDARG_2)
 		CASE (CEE_LDARG_3)
-			*sp = args[(*ip)-CEE_LDARG_0];
+			*sp = args [(*ip)-CEE_LDARG_0];
 			++sp;
 			++ip;
 			BREAK;
@@ -183,26 +183,26 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_STLOC_2)
 		CASE (CEE_STLOC_3)
 			--sp;
-			locals[(*ip)-CEE_STLOC_0] = *sp;
+			locals [(*ip)-CEE_STLOC_0] = *sp;
 			++ip;
 			BREAK;
 		CASE (CEE_LDARG_S)
 			++ip;
-			*sp = args[*ip];
+			*sp = args [*ip];
 			++sp;
 			++ip;
 			BREAK;
 		CASE (CEE_LDARGA_S)
 			++ip;
 			sp->type = VAL_TP;
-			sp->data.p = &(args[*ip]);
+			sp->data.p = &(args [*ip]);
 			++sp;
 			++ip;
 			BREAK;
 		CASE (CEE_STARG_S) g_assert_not_reached(); BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
-			*sp = locals[*ip];
+			*sp = locals [*ip];
 			++sp;
 			++ip;
 			BREAK;
@@ -210,7 +210,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
-			locals[*ip] = *sp;
+			locals [*ip] = *sp;
 			++ip;
 			BREAK;
 		CASE (CEE_LDNULL) 
@@ -249,14 +249,14 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_LDC_I4)
 			++ip;
 			sp->type = VAL_I32;
-			sp->data.i = read32(ip);
+			sp->data.i = read32 (ip);
 			ip += 4;
 			++sp;
 			BREAK;
 		CASE (CEE_LDC_I8)
 			++ip;
 			sp->type = VAL_I64;
-			sp->data.i = read64(ip);
+			sp->data.i = read64 (ip);
 			ip += 8;
 			++sp;
 			BREAK;
@@ -265,20 +265,20 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			sp->type = VAL_DOUBLE;
 			/* FIXME: ENOENDIAN */
 			sp->data.f = *(float*)(ip);
-			ip += sizeof(float);
+			ip += sizeof (float);
 			++sp;
 			BREAK;
 		CASE (CEE_LDC_R8) 
 			++ip;
 			sp->type = VAL_DOUBLE;
 			/* FIXME: ENOENDIAN */
-			sp->data.f = *(double*)(ip);
-			ip += sizeof(double);
+			sp->data.f = *(double*) (ip);
+			ip += sizeof (double);
 			++sp;
 			BREAK;
-		CASE (CEE_UNUSED99) g_assert_not_reached(); BREAK;
+		CASE (CEE_UNUSED99) g_assert_not_reached (); BREAK;
 		CASE (CEE_DUP) 
-			*sp = sp[-1]; 
+			*sp = sp [-1]; 
 			++sp; 
 			++ip; 
 			BREAK;
@@ -288,21 +288,24 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			BREAK;
 		CASE (CEE_JMP) g_assert_not_reached(); BREAK;
 		CASE (CEE_CALL) {
-			guint32 token;
 			MonoMethod *cmh;
+			guint32 token;
 
 			++ip;
-			token = read32(ip);
+			token = read32 (ip);
 			ip += 4;
-			if (!(cmh=g_hash_table_lookup(method_cache, GINT_TO_POINTER(token)))) {
+			if (!(cmh = g_hash_table_lookup (method_cache, GINT_TO_POINTER (token)))) {
 				cmh = mono_get_method (iinfo, token);
-				g_hash_table_insert (method_cache, GINT_TO_POINTER(token), cmh);
+				g_hash_table_insert (method_cache, GINT_TO_POINTER (token), cmh);
 			}
+
 			/* decrement by the actual number of args */
 			sp -= cmh->signature->param_count;
 			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
+
 			/* we need to truncate according to the type of args ... */
 			ves_exec_method (iinfo, cmh, sp);
+
 			/* need to handle typedbyref ... */
 			if (cmh->signature->ret->type)
 				sp++;
@@ -314,13 +317,14 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			*args = *sp;
 			if (sp != stack)
 				g_warning ("more values on stack: %d", sp-stack);
+
 			/*if (sp->type == VAL_DOUBLE)
 					g_print("%.9f\n", sp->data.f);*/
 			/*g_free (stack);*/
 			return;
 		CASE (CEE_BR_S)
 			++ip;
-			ip += (signed char)*ip;
+			ip += (signed char) *ip;
 			++ip;
 			BREAK;
 		CASE (CEE_BRFALSE_S) {
@@ -345,7 +349,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			switch (sp->type) {
 			case VAL_I32: result = sp->data.i != 0; break;
 			case VAL_I64: result = sp->data.l != 0; break;
-			case VAL_DOUBLE: result = sp->data.f? 1 : 0; break;
+			case VAL_DOUBLE: result = sp->data.f ? 1 : 0; break;
 			default: result = sp->data.p != NULL; break;
 			}
 			if (result)
@@ -358,13 +362,13 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp[0].data.i == GET_NATI(sp[1]);
+				result = sp [0].data.i == GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
-				result = sp[0].data.l == sp[1].data.l;
+				result = sp [0].data.l == sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				result = sp[0].data.f == sp[1].data.f;
+				result = sp [0].data.f == sp [1].data.f;
 			else
-				result = GET_NATI(sp[0]) == GET_NATI(sp[1]);
+				result = GET_NATI (sp [0]) == GET_NATI (sp [1]);
 			if (result)
 				ip += (signed char)*ip;
 			++ip;
@@ -375,13 +379,13 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp[0].data.i >= GET_NATI(sp[1]);
+				result = sp [0].data.i >= GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
-				result = sp[0].data.l >= sp[1].data.l;
+				result = sp [0].data.l >= sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				result = sp[0].data.f >= sp[1].data.f;
+				result = sp [0].data.f >= sp [1].data.f;
 			else
-				result = GET_NATI(sp[0]) >= GET_NATI(sp[1]);
+				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
 			if (result)
 				ip += (signed char)*ip;
 			++ip;
@@ -392,13 +396,13 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp[0].data.i > GET_NATI(sp[1]);
+				result = sp [0].data.i > GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
-				result = sp[0].data.l > sp[1].data.l;
+				result = sp [0].data.l > sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				result = sp[0].data.f > sp[1].data.f;
+				result = sp [0].data.f > sp [1].data.f;
 			else
-				result = GET_NATI(sp[0]) > GET_NATI(sp[1]);
+				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
 			if (result)
 				ip += (signed char)*ip;
 			++ip;
@@ -425,17 +429,21 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			int result;
 			++ip;
 			sp -= 2;
+
 			if (sp->type == VAL_I32)
-				result = sp[0].data.i <= GET_NATI(sp[1]);
+				result = sp [0].data.i <= GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
-				result = sp[0].data.l <= sp[1].data.l;
+				result = sp [0].data.l <= sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				result = sp[0].data.f <= sp[1].data.f;
-			else /* FIXME: here and in other places GET_NATI on the left side 
-			      _will_ be wrong when we change the macro to work on 64 buts 
-			      systems.
-			      */
-				result = GET_NATI(sp[0]) <= GET_NATI(sp[1]);
+				result = sp [0].data.f <= sp [1].data.f;
+			else {
+				/*
+				 * FIXME: here and in other places GET_NATI on the left side 
+				 * _will_ be wrong when we change the macro to work on 64 buts 
+				 * systems.
+				 */
+				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
+			}
 			if (result)
 				ip += (signed char)*ip;
 			++ip;
@@ -483,120 +491,120 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			--sp;
 			/* should probably consider the pointers as unsigned */
 			if (sp->type == VAL_I32)
-				sp[-1].data.i += GET_NATI(sp[0]);
+				sp [-1].data.i += GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l += sp[0].data.l;
+				sp [-1].data.l += sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				sp[-1].data.f += sp[0].data.f;
+				sp [-1].data.f += sp [0].data.f;
 			else
-				(char*)sp[-1].data.p += GET_NATI(sp[0]);
+				(char*)sp [-1].data.p += GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SUB)
 			++ip;
 			--sp;
 			/* should probably consider the pointers as unsigned */
 			if (sp->type == VAL_I32)
-				sp[-1].data.i -= GET_NATI(sp[0]);
+				sp [-1].data.i -= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l -= sp[0].data.l;
+				sp [-1].data.l -= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				sp[-1].data.f -= sp[0].data.f;
+				sp [-1].data.f -= sp [0].data.f;
 			else
-				(char*)sp[-1].data.p -= GET_NATI(sp[0]);
+				(char*)sp [-1].data.p -= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_MUL)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i *= GET_NATI(sp[0]);
+				sp [-1].data.i *= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l *= sp[0].data.l;
+				sp [-1].data.l *= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				sp[-1].data.f *= sp[0].data.f;
+				sp [-1].data.f *= sp [0].data.f;
 			BREAK;
 		CASE (CEE_DIV)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i /= GET_NATI(sp[0]);
+				sp [-1].data.i /= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l /= sp[0].data.l;
+				sp [-1].data.l /= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				sp[-1].data.f /= sp[0].data.f;
+				sp [-1].data.f /= sp [0].data.f;
 			BREAK;
 		CASE (CEE_DIV_UN)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				(guint32)sp[-1].data.i /= (guint32)GET_NATI(sp[0]);
+				(guint32)sp [-1].data.i /= (guint32)GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				(guint64)sp[-1].data.l /= (guint64)sp[0].data.l;
+				(guint64)sp [-1].data.l /= (guint64)sp [0].data.l;
 			else if (sp->type == VAL_NATI)
-				(gulong)sp[-1].data.p /= (gulong)sp[0].data.p;
+				(gulong)sp [-1].data.p /= (gulong)sp [0].data.p;
 			BREAK;
 		CASE (CEE_REM)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i %= GET_NATI(sp[0]);
+				sp [-1].data.i %= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l %= sp[0].data.l;
+				sp [-1].data.l %= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				/* FIXME: what do we actually fo here? */
-				sp[-1].data.f = 0;
+				sp [-1].data.f = 0;
 			else
-				GET_NATI(sp[-1]) %= GET_NATI(sp[0]);
+				GET_NATI (sp [-1]) %= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_REM_UN) g_assert_not_reached(); BREAK;
 		CASE (CEE_AND)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i &= GET_NATI(sp[0]);
+				sp [-1].data.i &= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l &= sp[0].data.l;
+				sp [-1].data.l &= sp [0].data.l;
 			else
-				GET_NATI(sp[-1]) &= GET_NATI(sp[0]);
+				GET_NATI (sp [-1]) &= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_OR)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i |= GET_NATI(sp[0]);
+				sp [-1].data.i |= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l |= sp[0].data.l;
+				sp [-1].data.l |= sp [0].data.l;
 			else
-				GET_NATI(sp[-1]) |= GET_NATI(sp[0]);
+				GET_NATI (sp [-1]) |= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_XOR)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i ^= GET_NATI(sp[0]);
+				sp [-1].data.i ^= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l ^= sp[0].data.l;
+				sp [-1].data.l ^= sp [0].data.l;
 			else
-				GET_NATI(sp[-1]) ^= GET_NATI(sp[0]);
+				GET_NATI (sp [-1]) ^= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SHL)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i <<= GET_NATI(sp[0]);
+				sp [-1].data.i <<= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l <<= GET_NATI(sp[0]);
+				sp [-1].data.l <<= GET_NATI (sp [0]);
 			else
-				GET_NATI(sp[-1]) <<= GET_NATI(sp[0]);
+				GET_NATI (sp [-1]) <<= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SHR)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32)
-				sp[-1].data.i >>= GET_NATI(sp[0]);
+				sp [-1].data.i >>= GET_NATI (sp [0]);
 			else if (sp->type == VAL_I64)
-				sp[-1].data.l >>= GET_NATI(sp[0]);
+				sp [-1].data.l >>= GET_NATI (sp [0]);
 			else
-				GET_NATI(sp[-1]) >>= GET_NATI(sp[0]);
+				GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SHR_UN) g_assert_not_reached(); BREAK;
 		CASE (CEE_NEG)
@@ -624,9 +632,9 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_I4)
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
-			if (sp[-1].type == VAL_DOUBLE) {
-				sp[-1].data.i = (gint32)sp[-1].data.f;
-				sp[-1].type = VAL_I32;
+			if (sp [-1].type == VAL_DOUBLE) {
+				sp [-1].data.i = (gint32)sp [-1].data.f;
+				sp [-1].type = VAL_I32;
 			} else {
 				g_assert_not_reached();
 			}
@@ -636,9 +644,9 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_R8)
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
-			if (sp[-1].type == VAL_I32) {
-				sp[-1].data.f = (double)sp[-1].data.i;
-				sp[-1].type = VAL_DOUBLE;
+			if (sp [-1].type == VAL_I32) {
+				sp [-1].data.f = (double)sp [-1].data.i;
+				sp [-1].type = VAL_DOUBLE;
 			} else {
 				g_assert_not_reached();
 			}
@@ -646,9 +654,9 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_U4)
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
-			if (sp[-1].type == VAL_DOUBLE) {
-				sp[-1].data.i = (guint32)sp[-1].data.f;
-				sp[-1].type = VAL_I32;
+			if (sp [-1].type == VAL_DOUBLE) {
+				sp [-1].data.i = (guint32)sp [-1].data.f;
+				sp [-1].type = VAL_I32;
 			} else {
 				g_assert_not_reached();
 			}
