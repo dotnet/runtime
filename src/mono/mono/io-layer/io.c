@@ -1485,9 +1485,10 @@ gboolean DeleteFile(const gunichar2 *name)
 
 	if(ret==0) {
 		return(TRUE);
-	} else {
-		return(FALSE);
 	}
+
+	_wapi_set_last_error_from_errno ();
+	return(FALSE);
 }
 
 /**
