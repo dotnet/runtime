@@ -590,6 +590,17 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoReflectionType *catch_type;
+	gint32 filter_offset;
+	gint32 flags;
+	gint32 try_offset;
+	gint32 try_length;
+	gint32 handler_offset;
+	gint32 handler_length;
+} MonoReflectionExceptionHandlingClause;
+
+typedef struct {
+	MonoObject object;
 	MonoReflectionType *local_type;
 	MonoBoolean is_pinned;
 	guint16 local_index;

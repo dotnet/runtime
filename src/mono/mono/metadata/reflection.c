@@ -5563,6 +5563,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_MethodBody = NULL;
 	static MonoClass *System_Reflection_LocalVariableInfo = NULL;
+	static MonoClass *System_Reflection_ExceptionHandlingClause = NULL;
 	MonoReflectionMethodBody *ret;
 	MonoMethodNormal *mn;
 	MonoMethodHeader *header;
@@ -5575,6 +5576,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		System_Reflection_MethodBody = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MethodBody");
 	if (!System_Reflection_LocalVariableInfo)
 		System_Reflection_LocalVariableInfo = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "LocalVariableInfo");
+	if (!System_Reflection_ExceptionHandlingClause)
+		System_Reflection_ExceptionHandlingClause = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ExceptionHandlingClause");
 
 	CHECK_OBJECT (MonoReflectionMethodBody *, method, NULL);
 
@@ -5607,12 +5610,14 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	}
 
 	ret = (MonoReflectionMethodBody*)mono_object_new (domain, System_Reflection_MethodBody);
-	/* FIXME: Other fields */
+
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
 	ret->local_var_sig_token = local_var_sig_token;
 	ret->il = mono_array_new (domain, mono_defaults.byte_class, header->code_size);
 	memcpy (mono_array_addr (ret->il, guint8*, 0), header->code, header->code_size);
+
+	/* Locals */
 	ret->locals = mono_array_new (domain, System_Reflection_LocalVariableInfo, header->num_locals);
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new (domain, System_Reflection_LocalVariableInfo);
@@ -5621,7 +5626,26 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		info->local_index = i;
 		mono_array_set (ret->locals, MonoReflectionLocalVariableInfo*, i, info);
 	}
-		
+
+	/* Exceptions */
+	ret->clauses = mono_array_new (domain, System_Reflection_ExceptionHandlingClause, header->num_clauses);
+	for (i = 0; i < header->num_clauses; ++i) {
+		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new (domain, System_Reflection_ExceptionHandlingClause);
+		MonoExceptionClause *clause = &header->clauses [i];
+
+		info->flags = clause->flags;
+		info->try_offset = clause->try_offset;
+		info->try_length = clause->try_len;
+		info->handler_offset = clause->handler_offset;
+		info->handler_length = clause->handler_len;
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+			info->filter_offset = clause->data.filter_offset;
+		else if (clause->data.catch_class)
+			info->catch_type = mono_type_get_object (mono_domain_get (), &clause->data.catch_class->byval_arg);
+
+		mono_array_set (ret->clauses, MonoReflectionExceptionHandlingClause*, i, info);
+	}
+
 	CACHE_OBJECT (method, ret, NULL);
 	return ret;
 }
