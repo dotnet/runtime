@@ -1318,18 +1318,39 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	}
 }
 
+/* From MonoProperty.cs */
+typedef enum {
+	PInfo_Attributes = 1,
+	PInfo_GetMethod  = 1 << 1,
+	PInfo_SetMethod  = 1 << 2,
+	PInfo_ReflectedType = 1 << 3,
+	PInfo_DeclaringType = 1 << 4,
+	PInfo_Name = 1 << 5
+} PInfo;
+
 static void
-ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo *info)
+ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo *info, PInfo req_info)
 {
 	MonoDomain *domain = mono_object_domain (property); 
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->parent = mono_type_get_object (domain, &property->klass->byval_arg);
-	info->name = mono_string_new (domain, property->property->name);
-	info->attrs = property->property->attrs;
-	info->get = property->property->get ? mono_method_get_object (domain, property->property->get, NULL): NULL;
-	info->set = property->property->set ? mono_method_get_object (domain, property->property->set, NULL): NULL;
+	if ((req_info & PInfo_ReflectedType) != 0 || (req_info & PInfo_DeclaringType) != 0)
+		info->parent = mono_type_get_object (domain, &property->klass->byval_arg);
+
+	if ((req_info & PInfo_Name) != 0)
+		info->name = mono_string_new (domain, property->property->name);
+
+	if ((req_info & PInfo_Attributes) != 0)
+		info->attrs = property->property->attrs;
+
+	if ((req_info & PInfo_GetMethod) != 0)
+		info->get = property->property->get ?
+			    mono_method_get_object (domain, property->property->get, NULL): NULL;
+	
+	if ((req_info & PInfo_SetMethod) != 0)
+		info->set = property->property->set ?
+			    mono_method_get_object (domain, property->property->set, NULL): NULL;
 	/* 
 	 * There may be other methods defined for properties, though, it seems they are not exposed 
 	 * in the reflection API 
@@ -1365,6 +1386,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 
 	if (class->rank) {
 		/* GetInterfaces() returns an empty array in MS.NET (this may be a bug) */
+		mono_bitset_free (slots);
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	}
 

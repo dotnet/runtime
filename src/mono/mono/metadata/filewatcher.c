@@ -86,7 +86,6 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 
 	fam_module = g_module_open ("libfam", G_MODULE_BIND_LAZY);
 	if (fam_module == NULL) {
-		g_print ("error: %s\n", g_module_error ());
 		return 0;
 	}
 
