@@ -216,6 +216,9 @@ function clickHandler (evt)
 
 			if (strAssembly)
 			{
+				if (strAssembly == 'mscorlib')
+					strAssembly = 'corlib';
+
 				strRoot = strRoot + strAssembly + '/';
 				if (strNamespace)
 				{
