@@ -36,7 +36,7 @@ AC_CHECK_HEADERS(elf.h)
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
-CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
+CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs  -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings'
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
@@ -79,7 +79,7 @@ AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes")
-gc=none
+gc=auto
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
 
 case "x$gc" in
@@ -91,6 +91,9 @@ case "x$gc" in
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
 		LIBS="$LIBS -lgc"
+		;;
+	xnone)
+		AC_MSG_WARN("Compiling mono without GC.")
 		;;
 	*)
 dnl When the JIT works with libgc, use this chunk.
