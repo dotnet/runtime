@@ -149,9 +149,9 @@
   </tr>
 </table>
 
-@item Jan 13th, 2004: Monodoc 0.9 released.
+@item Jan 13th, 2004: MonoDoc 0.9 released.
 
-	A new edition of Monodoc has been released, available in source form from:
+	A new edition of MonoDoc, the Mono Documentation Browser, has been released, available in source form from:
 	<a href="archive/monodoc-0.9.tar.gz">archive/monodoc-0.9.tar.gz</a>
 
 @item Jan 11th, 2004: Call for Stories
@@ -163,7 +163,7 @@
 @item Jan 4th, 2004: Windows Installer for Mono 0.29
 
 	There is a <a href="archive/mono-0.29-win32-1.exe">Windows
-	Intaller for Mono 0.29</a> available now.
+	Installer for Mono 0.29</a> available now.
 	
 @item Dec 21st: Mono on PowerPC Progress.
 
