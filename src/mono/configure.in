@@ -115,13 +115,6 @@ esac
 AC_MSG_RESULT(ok)
 AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
 
-# Test whenever ld supports -version-script
-+AC_PROG_LD
-+AC_PROG_LD_GNU
-if test "x$lt_cv_prog_gnu_ld" = "xno"; then
-   no_version_script=yes
-fi
-
 AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -158,6 +151,13 @@ AC_SUBST(BUILD_EXEEXT)
 AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
+
+# Test whenever ld supports -version-script
+AC_PROG_LD
+AC_PROG_LD_GNU
+if test "x$lt_cv_prog_gnu_ld" = "xno"; then
+   no_version_script=yes
+fi
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h)
 

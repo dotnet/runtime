@@ -1,3 +1,7 @@
+2004-03-23  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Fix GNU ld check.
+
 2004-03-22  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Use amd64 instead of x86-64 as directory name. Fixes
