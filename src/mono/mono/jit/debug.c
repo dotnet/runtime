@@ -539,9 +539,12 @@ debug_generate_method_lines (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo
 }
 
 static void
-generate_line_number (MonoDebugMethodInfo *minfo, guint32 address, guint32 offset)
+generate_line_number (MonoDebugMethodInfo *minfo, guint32 address, guint32 offset, int debug)
 {
 	int i;
+
+	if (debug)
+		g_message (G_STRLOC ": searching IL offset %x", offset);
 
 	for (i = minfo->num_il_offsets - 1; i >= 0; i--) {
 		MonoDebugLineNumberEntry *lne;
@@ -549,14 +552,31 @@ generate_line_number (MonoDebugMethodInfo *minfo, guint32 address, guint32 offse
 		if (minfo->il_offsets [i].offset > offset)
 			continue;
 
+		if (debug)
+			g_message (G_STRLOC ": found entry %d: offset = %x, row = %d",
+				   i, minfo->il_offsets [i].offset, minfo->il_offsets [i].row);
+
 		if (minfo->jit->line_numbers->len) {
 			MonoDebugLineNumberEntry last = g_array_index (
 				minfo->jit->line_numbers, MonoDebugLineNumberEntry,
 				minfo->jit->line_numbers->len - 1);
 
-			if (minfo->il_offsets [i].row <= last.line)
-				continue;
+			/* Avoid writing more than one entry for the same line. */
+			if (minfo->il_offsets [i].row == last.line) {
+				if (debug)
+					g_message (G_STRLOC ": skipping line: line = %d, last line = %d, "
+						   "last address = %x, address = %x, "
+						   "last offset = %x, offset = %x",
+						   last.line, minfo->il_offsets [i].row,
+						   last.address, address, last.offset, offset);
+
+				return;
+			}
 		}
+
+		if (debug)
+			g_message (G_STRLOC ": writing entry: line = %d, offfset = %x, address = %x",
+				   minfo->il_offsets [i].row, offset, address);
 
 		lne = g_new0 (MonoDebugLineNumberEntry, 1);
 		lne->address = address;
@@ -590,7 +610,7 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 	header = ((MonoMethodNormal*)minfo->method)->header;
 
 #if 0
-	if (!strcmp (minfo->method->name, "Main")) {
+	if (!strcmp (minfo->method->name, "Test") || !strcmp (minfo->method->name, "Main")) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)minfo->method)->header;
 
 		debug = 1;
@@ -603,7 +623,7 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 	}
 #endif
 
-	generate_line_number (minfo, address, offset);
+	generate_line_number (minfo, address, offset, debug);
 
 	/* start lines of basic blocks */
 	for (i = 0; i < cfg->block_count; ++i) {
@@ -618,11 +638,11 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 			offset = t->cli_addr;
 			address = t->addr;
 
-			generate_line_number (minfo, address, offset);
+			generate_line_number (minfo, address, offset, debug);
 		}
 	}
 
-	generate_line_number (minfo, minfo->jit->epilogue_begin, header->code_size);
+	generate_line_number (minfo, minfo->jit->epilogue_begin, header->code_size, debug);
 
 	if (debug) {
 		for (i = 0; i < minfo->jit->line_numbers->len; i++) {

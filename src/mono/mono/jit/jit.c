@@ -876,7 +876,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 }
 
 #define ADD_TREE(t,a)   do { t->cli_addr = a; g_ptr_array_add (forest, (t)); } while (0)
-#define PUSH_TREE(t,k)  do { int tt = k; *sp = t; t->svt = tt; sp++; } while (0)
+#define PUSH_TREE(t,k)  do { int tt = k; *sp = t; t->svt = tt; t->cli_addr = cli_addr; sp++; } while (0)
 
 #define LOCAL_POS(n)    (1 + n)
 
@@ -2148,7 +2148,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					    (ii->arg_map [0]->op != MB_TERM_CHECKTHIS)) {
 						ii->arg_map [0] = mono_ctree_new (mp, MB_TERM_CHECKTHIS, 
 										  ii->arg_map [0], NULL);
-						ADD_TREE (ii->arg_map [0], cli_addr);
+						ADD_TREE (ii->arg_map [0], ii->arg_map [0]->cli_addr);
 					}
 				
 					if (cm->inline_count) {
@@ -2189,7 +2189,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			for (k = nargs - 1; k >= 0; k--) {
 				t1 = mono_ctree_new (mp, mono_map_arg_type (csig->params [k]), arg_sp [k], NULL);
 				t1->data.arg_info = arg_info [k + 1];
-				ADD_TREE (t1, cli_addr);
+				ADD_TREE (t1, arg_sp [k]->cli_addr);
 			}
 
 			if (csig->hasthis) 
@@ -2198,7 +2198,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 			
 
-			if (MONO_TYPE_ISSTRUCT (csig->ret) && !array_rank) {
+			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
 				int size, align;
 				if (csig->pinvoke)
 					size = mono_class_native_size (csig->ret->data.klass, &align);
