@@ -4053,6 +4053,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 				return 0;
 			break;
 		default:
+			return 0;
 			break;
 		}
 		if (info->assembly.name)
