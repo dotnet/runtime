@@ -16,6 +16,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/arch/x86/x86-codegen.h>
 
@@ -869,9 +870,8 @@ match_debug_method (MonoMethod* method)
 	GList *tmp = mono_debug_methods;
 
 	for (; tmp; tmp = tmp->next) {
-		if (strcmp (method->name, tmp->data) == 0) {
+		if (mono_method_desc_full_match (tmp->data, method))
 			return 1;
-		}
 	}
 	return 0;
 }

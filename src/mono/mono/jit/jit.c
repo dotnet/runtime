@@ -23,6 +23,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
@@ -3366,7 +3367,10 @@ main (int argc, char *argv [])
 		else if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
 		else if (strcmp (argv [i], "--debug") == 0) {
-			mono_debug_methods = g_list_append (mono_debug_methods, argv [++i]);
+			MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
+			if (!desc)
+				g_error ("Invalid method name '%s'", argv [i]);
+			mono_debug_methods = g_list_append (mono_debug_methods, desc);
 		} else if (strcmp (argv [i], "--count") == 0) {
 			compile_times = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--compile") == 0) {
@@ -3449,34 +3453,31 @@ main (int argc, char *argv [])
 		int i, j;
 		MonoClass *class;
 
-		if (cmethod)
-			*cmethod++ = 0;
-		cname = strrchr (compile_class, '.');
-		if (cname)
-			*cname++ = 0;
-		else {
-			cname = compile_class;
-			compile_class = "";
-		}
-		class = mono_class_from_name (assembly->image, compile_class, cname);
-		if (!class)
-			g_error ("Cannot find class %s.%s", compile_class, cname);
-		mono_class_init (class);
 		if (cmethod) {
-			MonoMethod *m = NULL;
-			for (i = 0; i < class->method.count; ++i) {
-				if (strcmp (class->methods [i]->name, cmethod) == 0) {
-					m = class->methods [i];
-					break;;
-				}
-			}
+			MonoMethodDesc *mdesc;
+			MonoMethod *m;
+			mdesc = mono_method_desc_new (compile_class, FALSE);
+			if (!mdesc)
+				g_error ("Invalid method name '%s'", compile_class);
+			m = mono_method_desc_search_in_image (mdesc, assembly->image);
 			if (!m)
-				g_error ("Cannot find method %s.%s:%s", compile_class, cname, cmethod);
+				g_error ("Cannot find method '%s'", compile_class);
 			for (j = 0; j < compile_times; ++j) {
 				code = arch_compile_method (m);
 				g_free (code);
 			}
 		} else {
+			cname = strrchr (compile_class, '.');
+			if (cname)
+				*cname++ = 0;
+			else {
+				cname = compile_class;
+				compile_class = "";
+			}
+			class = mono_class_from_name (assembly->image, compile_class, cname);
+			if (!class)
+				g_error ("Cannot find class %s.%s", compile_class, cname);
+			mono_class_init (class);
 			for (j = 0; j < compile_times; ++j) {
 				for (i = 0; i < class->method.count; ++i) {
 					if (class->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
