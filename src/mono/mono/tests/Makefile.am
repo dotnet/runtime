@@ -36,6 +36,7 @@ TESTSRC=			\
 	enum2.cs		\
 	property.cs		\
 	enumcast.cs		\
+	assignable-tests.cs	\
 	array-cast.cs		\
 	cattr-compile.cs	\
 	custom-attr.cs		\
