@@ -70,18 +70,6 @@ Happy hacking!
 	</tr>
 
 	<tr>
-		<td>Runtime (mono/metadata)
-		<td>Optimize method vtable. Currently all the methods in a class
-		are added to the method vtable, including static and non-virtual methods.
-		This makes vtables bigger and the instructions to access them are longer, 
-		increasing also code size. Some code in metadata/icall.c and maybe also some 
-		remoting code may depend on the current layout: such code should be fixed as well.
-		<td>Medium
-		<td>1-2 weeks
-		<td>not assigned
-	</tr>
-
-	<tr>
 		<td>System assembly (mcs/class/System/)
 		<td>Implement the IL-based regular expression engine. Instead of
 		intepreting the regular expression pattern, a method is created at runtime using
