@@ -1,3 +1,7 @@
+2004-07-15  Jackson Harper  <jackson@ximian.com>
+
+	* man/gacutil.1: MONO_GAC_PREFIX not MONO_GAC_PATH
+	
 2004-07-12  Massimiliano Mantione  <massi@ximian.com>
 
 	* docs/abc-removal.txt: Updated documentation for ABC removal.
