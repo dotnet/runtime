@@ -903,10 +903,19 @@ dump_frame (MonoInvocation *inv)
 	char *args;
 	for (i = 0; inv; inv = inv->parent, ++i) {
 		if (inv->method != NULL) {
-			MonoClass *k = inv->method->klass;
+			MonoClass *k;
+
 			int codep = 0;
 			const char * opname = "";
 			gchar *source = NULL;
+
+			if (!inv->method) {
+				--i;
+				continue;
+			}
+
+			k = inv->method->klass;
+
 			if ((inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 				(inv->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
 				MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
@@ -3181,7 +3190,9 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference(), ip - 1);
 
-			if (o->vtable->klass->element_class->type_token != c->element_class->type_token)
+			if (!(mono_object_isinst (o, c) || 
+				  ((o->vtable->klass->rank == 0) && 
+				   (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip - 1);
 
 			sp [-1].type = VAL_MP;
