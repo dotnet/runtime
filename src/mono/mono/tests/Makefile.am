@@ -329,7 +329,11 @@ noinst_LTLIBRARIES = libtest.la
 
 INCLUDES = $(GLIB_CFLAGS)
 
+if PLATFORM_WIN32
+libtest_la_LDFLAGS=-no-undefined -rpath `pwd`
+else
 libtest_la_LDFLAGS = -rpath `pwd`
+endif
 libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(GLIB_LIBS)
 
