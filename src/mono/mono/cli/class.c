@@ -104,18 +104,19 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	MonoClass *class = &stack_class;
 	guint32 cols [6], parent_token;
 	guint tidx = type_token & 0xffffff;
-	const char *name;
+	const char *name, *nspace;
      
 	memset (class, 0, sizeof (MonoClass));
 
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
 	name = mono_metadata_string_heap (m, cols[1]);
+	nspace = mono_metadata_string_heap (m, cols[2]);
 	/*g_print ("Init class %s\n", name);*/
 
 	/*
 	 * If root of the hierarchy
 	 */
-	if (MONO_IMAGE_IS_CORLIB (image) && cols [3] == 0){
+	if (!strcmp (name, "Object") && !strcmp (nspace, "System")) {
 		class->instance_size = sizeof (MonoObject);
 		class->parent = NULL;
 	} else {

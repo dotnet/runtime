@@ -839,7 +839,6 @@ char *
 get_field (MonoMetadata *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
-	MonoTableInfo *tdef = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [3];
 	char *sig, *res, *type;
 	guint32 type_idx;
@@ -916,14 +915,15 @@ get_method (MonoMetadata *m, guint32 token)
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [3], method_cols [6];
 	char *res, *class, *fancy_name, *sig;
-	
+	const char *name;
+
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF:
 
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
 					  idx - 1, method_cols, 6);
 
-		fancy_name = mono_metadata_string_heap (m, method_cols [3]);
+		name = mono_metadata_string_heap (m, method_cols [3]);
 
 		sig = get_methodref_signature (m, method_cols [4], fancy_name);
 

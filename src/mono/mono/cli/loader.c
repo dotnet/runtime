@@ -29,6 +29,18 @@
 #include "cli.h"
 
 
+/**
+ * mono_get_string_class_info:
+ * @ttoken: pointer to location to store type definition token
+ * @cl: pointer where image will be stored
+ *
+ * This routine locates information about the System.String class. A reference
+ * to the image containing the class is returned in @cl. The type definition 
+ * token is returned in @ttoken. 
+ *
+ * Returns: the method definition token for System.String::.ctor (char *)
+ */
+
 guint32
 mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 {
@@ -41,6 +53,7 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 	guint32 cols [MAX (MONO_TYPEDEF_SIZE, MONO_METHOD_SIZE)];
 	guint32 ncols [MONO_TYPEDEF_SIZE];
 	guint32 i, first = 0, last = 0;
+	const char *name, *nspace;
 
 	if (ctor) {
 		*ttoken = tt;
@@ -60,18 +73,15 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 
 	for (i = 0; i < t->rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
+		name = mono_metadata_string_heap (m, cols[1]);
+		nspace = mono_metadata_string_heap (m, cols[2]);
 
-		if (((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == 
-		     TYPE_ATTRIBUTE_CLASS) &&
-		    (cols [3] == 5) &&
-		    (!strcmp (mono_metadata_string_heap (m, cols [1]), 
-			      "String"))) {
+		if (((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS) &&
+		    !strcmp (nspace, "System") && !strcmp (name, "String")) {
 
-			*ttoken = tt = MONO_TOKEN_TYPE_DEF | i + 1;
+			*ttoken = tt = MONO_TOKEN_TYPE_DEF | (i + 1);
 
-			first = cols [5]-1;
-
-			first = cols [5]-1;
+			first = cols [5] - 1;
 
 			if (i + 1 < t->rows) {
 				mono_metadata_decode_row (t, i + 1, ncols, 
@@ -91,7 +101,7 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 	for (i = first; i < last; i++) {
 		const char *ptr;
 		int len;
-
+		guint8 sig[] = { 0x20, 0x01, 0x01, 0x0f, 0x03 };
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 
 		if (!strcmp (mono_metadata_string_heap (m, cols [3]), 
@@ -101,10 +111,8 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 			ptr = mono_metadata_blob_heap (m, cols [4]);
 			len = mono_metadata_decode_value (ptr, &ptr);
 
-			if (len == 5 && ptr [0] == 0x20 && ptr [1] == 0x01 &&
-			     ptr [2] == 0x01 &&  ptr [3] == 0x0f && 
-			    ptr [4] == 0x03) {
-				ctor = MONO_TOKEN_METHOD_DEF | i + 1;
+			if (len == 5 && !memcmp (ptr, sig, len)) {
+				ctor = MONO_TOKEN_METHOD_DEF | (i + 1);
 				break;
 			}
 		} 
@@ -172,10 +180,8 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 			nspace = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
 			name = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
 
-			if (MONO_IMAGE_IS_CORLIB (image)) {
-				g_warning ("reference to mscorlib detected");
-				g_assert_not_reached ();
-			}
+			/* this will triggered by references to mscorlib */
+			g_assert (image->references [scopeindex-1] != NULL);
 
 			image = image->references [scopeindex-1]->image;
 
