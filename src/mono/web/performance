@@ -111,15 +111,10 @@ Total memory allocated: 448 KB
 	object for pointers, looking for unreferenced objects. If you allocate
 	extra objects, the GC then must take the effort to free the objects.
 	
-	Right now, Mono's GC is what is called a `conservative' GC. This
-	means it does not attempt to move objects to speed up collection.
-	As a result, it can not have `generational' behavior. A generational
-	GC works on the basis that `most objects die young'. It focuses its
-	effort on scanning new objects.
-	
-	As a consequence, in Mono, holding large data structures with
-	many object references can be very costly, because the structures
-	must be traced by the GC. We hope to change this in the future.
+	Mono's uses the Boehm GC, which is a conservative collector,
+	and this might lead to some memory fragmentation and unlike
+	generational GC systems, it has to scan the entire allocated
+	memory pool. 
 
 ** foreach
 

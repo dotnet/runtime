@@ -545,8 +545,8 @@ mono TestExample.exe
           "User ID=postgres;" +
           "Password=fun2db;";
        IDbConnection dbcon;
-       dbcon.Open();
        dbcon = new NpgsqlConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
        // with columns firstname and lastname
