@@ -335,6 +335,14 @@ arch_create_native_wrapper (MonoMethod *method)
 	GList *free_list = NULL;
 	gboolean end_invoke = FALSE;
 
+	/* this would save some time, but then we cant raise exceptions
+	 * in those internal calls
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+	    (method->klass == mono_defaults.array_class ||
+	     method->klass == mono_defaults.string_class))
+		return method->addr;
+	*/
+
 	mono_profiler_method_jit (method);
 
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
@@ -368,6 +376,7 @@ arch_create_native_wrapper (MonoMethod *method)
 		x86_call_reg (code, X86_EAX);
 		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 	}
+
 	/* save LMF - the instruction pointer is already on the 
 	 * stack (return address) */
 
