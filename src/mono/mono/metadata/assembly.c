@@ -51,7 +51,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 }
 
 static char *
-default_assembly_name_resolver (const char *name)
+default_assembly_name_resolver (const char *base_dir, const char *name)
 {
 	char *file, *path;
 	
@@ -61,12 +61,22 @@ default_assembly_name_resolver (const char *name)
 			(strcmp (name, "corlib") == 0))
 		return g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
 
+	path = g_concat_dir_and_file (base_dir, name);
 	if (g_file_test (name, G_FILE_TEST_EXISTS))
-		return g_strdup (name);
+		return path;
+
+	file = path;
+	path = g_strconcat (file, ".dll", NULL);
+	g_free (file);
+	if (g_file_test (path, G_FILE_TEST_EXISTS))
+		return path;
+	g_free (path);
+	
 	path = g_concat_dir_and_file (MONO_ASSEMBLIES, name);
 	if (g_file_test (path, G_FILE_TEST_EXISTS))
-		return g_strdup (path);
+		return path;
 	g_free (path);
+
 	file = g_strconcat (name, ".dll", NULL);
 	path = g_concat_dir_and_file (MONO_ASSEMBLIES, file);
 	g_free (file);
@@ -94,7 +104,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoImage *image;
 	MonoTableInfo *t;
 	int i;
-	char *fullname;
+	char *fullname, *base_dir;
 	const char *base_name = strrchr (filename, G_DIR_SEPARATOR);
 	static MonoAssembly *corlib;
 	
@@ -116,14 +126,16 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	if (resolver == NULL)
 		resolver = default_assembly_name_resolver;
 
-
-	fullname = resolver (filename);
+	base_dir = g_path_get_dirname (fullname);
+	
+	fullname = resolver (base_dir, filename);
 	image = mono_image_open (fullname, status);
 
 	if (!image){
 		if (status)
 			*status = MONO_IMAGE_ERROR_ERRNO;
 		g_free (fullname);
+		g_free (base_dir);
 		return NULL;
 	}
 
@@ -166,7 +178,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 				continue;
 		}
 		
-		assembly_ref = (*resolver) (name);
+		assembly_ref = (*resolver) (base_dir, name);
 
 		image->references [i] = mono_assembly_open (assembly_ref, resolver, status);
 
@@ -183,12 +195,14 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 			if (status)
 				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
 			g_free (ass);
+			g_free (base_dir);
 			return NULL;
 		}
 		g_free (assembly_ref);
 	}
 	image->references [i] = NULL;
 
+	g_free (base_dir);
 	return ass;
 }
 
