@@ -27,9 +27,9 @@ The following Generic options are supported:
 Displays usage instructions.
 .TP
 .I "--trace"
-Traces execution.
+Traces execution showing when methods are entered and left.
 .I "--traceops"
-Traces execution and displays stack state.
+Traces execution at the instruction level and displays the stack contents.
 .I "--traceclassinit"
 Shows when classes are initialized
 .TP
@@ -44,7 +44,8 @@ Displays the number of opcodes executed.
 Aborts execution upon hitting an exception.
 .TP
 .I "--debug method"
-Debugs the method whose name is `method'
+Debugs the method whose name is `method'.  You can specify the method
+like this: `class:method' or `class::method'
 .TP
 .I "--opcode-count"
 Displays the number of opcodes executed
