@@ -105,6 +105,10 @@ guint64  mono_lldiv_un      (guint64 a, guint64 b);
 guint64  mono_llrem_un      (guint64 a, guint64 b);
 gpointer mono_ldsflda       (MonoClass *klass, int offset);
 
+gpointer mono_ldvirtftn     (MonoObject *this, int slot);
+gpointer mono_ldintftn      (MonoObject *this, int slot);
+gpointer mono_ldftn         (MonoMethod *method);
+
 void mono_emit_fast_iconv(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
 void mono_emit_fast_iconv_i8(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
 
@@ -2709,13 +2713,26 @@ reg: CALL_I4 (this, ADDR_G) {
 }
 
 reg: LDVIRTFTN (reg, INTF_ADDR) {
-	int lreg = tree->left->reg1;
+	/* we cant return the value in the vtable, because it can be
+	 * a magic trampoline, and we cant pass that to the outside world */
+	
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
 
-	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
-	x86_mov_reg_membase (s->code, lreg, lreg, 
-	        G_STRUCT_OFFSET (MonoVTable, interface_offsets), 4);
-	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
-	x86_mov_reg_membase (s->code, tree->reg1, lreg, tree->right->data.m->slot << 2, 4);
+	x86_push_imm (s->code, tree->right->data.m->klass->interface_id);
+	x86_push_reg (s->code, tree->left->reg1);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_ldintftn);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
 }
 
 reg: CALL_I4 (this, INTF_ADDR) {
@@ -2751,11 +2768,26 @@ reg: CALL_I4 (this, INTF_ADDR) {
 }
 
 reg: LDVIRTFTN (reg, VFUNC_ADDR) {
-	int lreg = tree->left->reg1;
+	/* we cant return the value in the vtable, because it can be
+	 * a magic trampoline, and we cant pass that to the outside world */
 	
-	x86_mov_reg_membase (s->code, tree->reg1, lreg, 0, 4);
-	
-	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, G_STRUCT_OFFSET (MonoVTable, vtable) + (tree->right->data.m->slot << 2), 4);
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_imm (s->code, tree->right->data.m->slot);
+	x86_push_reg (s->code, tree->left->reg1);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_ldvirtftn);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
 }
 
 reg: LDFTN {
@@ -2765,7 +2797,7 @@ reg: LDFTN {
 	x86_push_reg (s->code, X86_EDX);
 
 	x86_push_imm (s->code, tree->data.m);
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_compile_method);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_ldftn);
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
 
@@ -2775,7 +2807,6 @@ reg: LDFTN {
 		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
-	PRINT_REG ("LDFTN", tree->reg1);
 }
 
 
@@ -4578,7 +4609,7 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int rreg = tree->right->reg1;
-	int offset;
+	int size, offset;
 
 	if (lreg == treg)
 		treg = X86_EDX;
@@ -4607,7 +4638,8 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 
-	x86_push_imm (s->code, mono_class_value_size (tree->data.fi.klass, NULL));
+	size = mono_class_value_size (tree->data.fi.field->type->data.klass, NULL);
+	x86_push_imm (s->code, size);
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, offset);	
 	x86_push_reg (s->code, tree->left->reg1);
@@ -4871,4 +4903,74 @@ void mono_emit_fast_iconv_i8 (MBCGEN_TYPE* s, MBTREE_TYPE* tree)
 	x86_alu_reg_imm (s->code, X86_SBB, tree->reg2, -1);
 	x86_patch (br[1], s->code);
 	x86_patch (br[2], s->code);
+}
+
+gpointer 
+mono_ldvirtftn (MonoObject *this, int slot)
+{
+	MonoClass *class;
+	MonoMethod *m;
+	gpointer addr;
+	gboolean is_proxy = FALSE;
+	g_assert (this);
+
+	if ((class = this->vtable->klass) == mono_defaults.transparent_proxy_class) {
+		class = ((MonoTransparentProxy *)this)->klass;
+		is_proxy = TRUE;
+	}
+
+	
+	g_assert (slot <= class->vtable_size);
+
+	m = class->vtable [slot];
+
+	if (is_proxy) {
+		return arch_create_remoting_trampoline (m);
+	} else {
+		EnterCriticalSection (metadata_section);
+		addr = mono_compile_method (m);
+		LeaveCriticalSection (metadata_section);
+		return addr;
+	}
+}
+
+gpointer 
+mono_ldintftn (MonoObject *this, int slot)
+{
+	MonoClass *class;
+	MonoMethod *m;
+	gpointer addr;
+	gboolean is_proxy = FALSE;
+	g_assert (this);
+
+	if ((class = this->vtable->klass) == mono_defaults.transparent_proxy_class) {
+		class = ((MonoTransparentProxy *)this)->klass;
+		is_proxy = TRUE;
+	}
+
+	g_assert (slot < class->interface_count);
+
+	slot = class->interface_offsets [slot];
+
+	m = class->vtable [slot];
+
+	if (is_proxy) {
+		return arch_create_remoting_trampoline (m);
+	} else {
+		EnterCriticalSection (metadata_section);
+		addr = mono_compile_method (m);
+		LeaveCriticalSection (metadata_section);
+		return addr;
+	}
+}
+
+gpointer mono_ldftn (MonoMethod *method)
+{
+	gpointer addr;
+
+	EnterCriticalSection (metadata_section);
+	addr = mono_compile_method (method);
+	LeaveCriticalSection (metadata_section);
+
+	return addr;
 }
