@@ -645,6 +645,7 @@ init_properties (MonoClass *class)
 	class->properties = g_new0 (MonoProperty, class->property.count);
 	for (i = class->property.first; i < class->property.last; ++i) {
 		mono_metadata_decode_row (pt, i, cols, MONO_PROPERTY_SIZE);
+		class->properties [i - class->property.first].parent = class;
 		class->properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
 		class->properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
 
@@ -679,6 +680,7 @@ init_events (MonoClass *class)
 	class->events = g_new0 (MonoEvent, class->event.count);
 	for (i = class->event.first; i < class->event.last; ++i) {
 		mono_metadata_decode_row (pt, i, cols, MONO_EVENT_SIZE);
+		class->events [i - class->event.first].parent = class;
 		class->events [i - class->event.first].attrs = cols [MONO_EVENT_FLAGS];
 		class->events [i - class->event.first].name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
 

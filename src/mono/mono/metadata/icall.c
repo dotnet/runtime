@@ -1355,8 +1355,10 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 
 	MONO_ARCH_SAVE_REGS;
 
-	if ((req_info & PInfo_ReflectedType) != 0 || (req_info & PInfo_DeclaringType) != 0)
+	if ((req_info & PInfo_ReflectedType) != 0)
 		info->parent = mono_type_get_object (domain, &property->klass->byval_arg);
+	else if ((req_info & PInfo_DeclaringType) != 0)
+		info->parent = mono_type_get_object (domain, &property->property->parent->byval_arg);
 
 	if ((req_info & PInfo_Name) != 0)
 		info->name = mono_string_new (domain, property->property->name);
@@ -1384,7 +1386,9 @@ ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->parent = mono_type_get_object (domain, &event->klass->byval_arg);
+	info->declaring_type = mono_type_get_object (domain, &event->klass->byval_arg);
+	info->reflected_type = mono_type_get_object (domain, &event->event->parent->byval_arg);
+
 	info->name = mono_string_new (domain, event->event->name);
 	info->attrs = event->event->attrs;
 	info->add_method = event->event->add ? mono_method_get_object (domain, event->event->add, NULL): NULL;
@@ -2672,7 +2676,7 @@ handle_parent:
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
 
-		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
+		l = g_slist_prepend (l, mono_property_get_object (domain, startklass, prop));
 		len++;
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
@@ -2698,7 +2702,7 @@ static MonoReflectionEvent *
 ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoDomain *domain;
-	MonoClass *klass;
+	MonoClass *klass, *startklass;
 	gint i;
 	MonoEvent *event;
 	MonoMethod *method;
@@ -2707,7 +2711,7 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 	MONO_ARCH_SAVE_REGS;
 
 	event_name = mono_string_to_utf8 (name);
-	klass = mono_class_from_mono_type (type->type);
+	klass = startklass = mono_class_from_mono_type (type->type);
 	domain = mono_object_domain (type);
 
 handle_parent:	
@@ -2729,7 +2733,7 @@ handle_parent:
 		}
 
 		g_free (event_name);
-		return mono_event_get_object (domain, klass, event);
+		return mono_event_get_object (domain, startklass, event);
 	}
 
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))

@@ -111,7 +111,8 @@ typedef struct {
 } MonoPropertyInfo;
 
 typedef struct {
-	MonoReflectionType *parent;
+	MonoReflectionType *declaring_type;
+	MonoReflectionType *reflected_type;
 	MonoString *name;
 	MonoReflectionMethod *add_method;
 	MonoReflectionMethod *remove_method;

@@ -7268,6 +7268,7 @@ typebuilder_setup_properties (MonoClass *klass)
 	klass->properties = g_new0 (MonoProperty, klass->property.count);
 	for (i = 0; i < klass->property.count; ++i) {
 		pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
+		klass->properties [i].parent = klass;
 		klass->properties [i].attrs = pb->attrs;
 		klass->properties [i].name = mono_string_to_utf8 (pb->name);
 		if (pb->get_method)
@@ -7291,6 +7292,7 @@ typebuilder_setup_events (MonoClass *klass)
 	klass->events = g_new0 (MonoEvent, klass->event.count);
 	for (i = 0; i < klass->event.count; ++i) {
 		eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
+		klass->events [i].parent = klass;
 		klass->events [i].attrs = eb->attrs;
 		klass->events [i].name = mono_string_to_utf8 (eb->name);
 		if (eb->add_method)

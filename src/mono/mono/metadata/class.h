@@ -75,6 +75,7 @@ typedef struct {
 } MonoMarshalType;
 
 typedef struct {
+	MonoClass *parent;
 	const char *name;
 	MonoMethod *get;
 	MonoMethod *set;
@@ -82,6 +83,7 @@ typedef struct {
 } MonoProperty;
 
 typedef struct {
+	MonoClass *parent;
 	const char *name;
 	MonoMethod *add;
 	MonoMethod *remove;
