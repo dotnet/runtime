@@ -25,6 +25,7 @@ TESTSRC=			\
 	exception5.cs		\
 	exception6.cs		\
 	struct.cs		\
+	valuetype-gettype.cs	\
 	static-constructor.cs	\
 	pinvoke.cs		\
 	box.cs			\

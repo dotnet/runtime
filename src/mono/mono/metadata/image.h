@@ -98,9 +98,9 @@ enum MonoImageOpenStatus {
 
 MonoImage    *mono_image_open     (const char *fname,
 				   enum MonoImageOpenStatus *status);
+MonoImage    *mono_image_loaded   (const char *name);
 void          mono_image_close    (MonoImage *image);
 const char   *mono_image_strerror (enum MonoImageOpenStatus status);
-
 
 int           mono_image_ensure_section     (MonoImage *image,
 					     const char *section);

@@ -528,6 +528,13 @@ invalid_image:
 		return NULL;
 }
 
+MonoImage *
+mono_image_loaded (const char *name) {
+	if (loaded_images_hash)
+		return g_hash_table_lookup (loaded_images_hash, name);
+	return NULL;
+}
+
 /**
  * mono_image_open:
  * @fname: filename that points to the module we want to open
@@ -558,6 +565,7 @@ mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	if (!loaded_images_hash)
 		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_insert (loaded_images_hash, image->name, image);
+	g_hash_table_insert (loaded_images_hash, image->assembly_name, image);
 
 	return image;
 }

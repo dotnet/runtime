@@ -261,6 +261,19 @@ typedef struct {
 	MonoReflectionModuleBuilder *module;
 } MonoReflectionTypeBuilder;
 
+typedef struct {
+	char *nest_name_space;
+	char *nest_name;
+	char *name_space;
+	char *name;
+	char *assembly;
+	int rank; /* we may need more info than this */
+	int isbyref;
+	int ispointer;
+} MonoTypeNameParse;
+
+int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
+
 int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);

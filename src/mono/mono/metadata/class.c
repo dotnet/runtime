@@ -29,6 +29,8 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
+static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
+
 static gpointer
 default_trampoline (MonoMethod *method)
 {
@@ -136,8 +138,10 @@ class_compute_field_layout (MonoClass *class)
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC))
 			class->enum_basetype = class->fields [i].type;
 	}
-	if (class->enumtype && !class->enum_basetype)
-		G_BREAKPOINT ();
+	if (class->enumtype && !class->enum_basetype) {
+		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
+			G_BREAKPOINT ();
+	}
 	/*
 	 * Compute field layout and total size.
 	 */
@@ -267,7 +271,7 @@ mono_class_init (MonoClass *class)
 	if (class->class_size)
 		class->data = g_malloc0 (class->class_size);
 
-	/* initialize mothod pointers */
+	/* initialize method pointers */
 	class->methods = g_new (MonoMethod*, class->method.count);
 	for (i = 0; i < class->method.count; ++i)
 		class->methods [i] = mono_get_method (class->image,
@@ -479,6 +483,18 @@ mono_class_init (MonoClass *class)
 
 	init_properties (class);
 
+	i = mono_metadata_nesting_typedef (class->image, class->type_token);
+	while (i) {
+		MonoClass* nclass;
+		guint32 cols [MONO_NESTED_CLASS_SIZE];
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		if (cols [MONO_NESTED_CLASS_ENCLOSING] != mono_metadata_token_index (class->type_token))
+			break;
+		nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+		class->nested_classes = g_list_prepend (class->nested_classes, nclass);
+		++i;
+	}
+
 	mono_runtime_class_init (class);
 
 	/*
@@ -595,7 +611,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	} else if (!(cols [0] & TYPE_ATTRIBUTE_INTERFACE)) {
 		int rnum = 0;
 		class->parent = mono_class_get (image,  mono_metadata_token_from_dor (cols [3]));
-		class->valuetype = class->parent->valuetype;
+		if ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0))
+			class->valuetype = 1;
+		else
+			class->valuetype = class->parent->valuetype;
 		class->enumtype = class->parent->enumtype;
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
@@ -603,7 +622,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (!strcmp (nspace, "System")) {
 		if (!strcmp (name, "ValueType")) {
-			class->valuetype = 1;
+			/*
+			 * do not set the valuetype bit for System.ValueType.
+			 * class->valuetype = 1;i
+			 */
 		} else if (!strcmp (name, "Enum")) {
 			class->valuetype = 1;
 			class->enumtype = 1;

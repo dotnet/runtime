@@ -1750,6 +1750,36 @@ mono_metadata_nested_in_typedef (MonoMetadata *meta, guint32 index)
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
 }
 
+guint32
+mono_metadata_nesting_typedef (MonoMetadata *meta, guint32 index)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
+	locator_t loc;
+	guint32 start;
+	
+	if (!tdef->base)
+		return 0;
+
+	loc.idx = mono_metadata_token_index (index);
+	loc.col_idx = MONO_NESTED_CLASS_ENCLOSING;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	start = loc.result;
+
+	while (start > 0) {
+		if (loc.idx == mono_metadata_decode_row_col (tdef, start - 1, MONO_NESTED_CLASS_ENCLOSING))
+			start--;
+		else
+			break;
+	}
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	return start + 1;
+}
+
 #ifndef __GNUC__
 #define __alignof__(a) sizeof(a)
 #endif

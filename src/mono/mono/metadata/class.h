@@ -36,6 +36,7 @@ struct _MonoClass {
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
+	GList      *nested_classes;
 	GList      *subclasses; /* list of all subclasses */
 
 	const char *name;

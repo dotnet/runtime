@@ -1696,3 +1696,118 @@ mono_param_get_objects (MonoMethod *method)
 	return res;
 }
 
+/*
+ * Parse a type name as accepted by the GetType () method and output the info
+ * extracted in the info structure.
+ * the name param will be mangled, so, make a copy before passing it to this function.
+ * The fields in info will be valid until the memory pointed to by name is valid.
+ * Returns 0 on parse error.
+ */
+int
+mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
+
+	char *start, *p, *w, *last_point;
+	int in_modifiers = 0;
+
+	start = p = w = name;
+
+	info->name = info->name_space = info->assembly = NULL;
+	info->nest_name = info->nest_name_space = NULL;
+	info->rank = info->isbyref = info->ispointer = 0;
+
+	last_point = NULL;
+
+	while (*p) {
+		switch (*p) {
+		case '+':
+			/* we have parsed the nesting namespace + name */
+			if (last_point) {
+				info->nest_name_space = start;
+				*last_point = 0;
+				info->nest_name = last_point + 1;
+			} else {
+				info->nest_name_space = "";
+				info->nest_name = start;
+			}
+			*p = 0; /* NULL terminate */
+			last_point = NULL;
+			start = p + 1;
+			break;
+		case '.':
+			last_point = w;
+			break;
+		case '\\':
+			++p;
+			break;
+		case '&':
+		case '*':
+		case '[':
+		case ',':
+			in_modifiers = 1;
+			break;
+		default:
+			break;
+		}
+		if (in_modifiers)
+			break;
+		*w++ = *p++;
+	}
+	
+	if (last_point) {
+		info->name_space = start;
+		*last_point = 0;
+		info->name = last_point + 1;
+	} else {
+		info->name_space = "";
+		info->name = start;
+	}
+	/* FIXME: we don't mainatin an order for byref, pointer and array... */
+	while (*p) {
+		switch (*p) {
+		case '&':
+			info->isbyref = 1;
+			*p++ = 0;
+			break;
+		case '*':
+			info->ispointer = 1;
+			*p++ = 0;
+			break;
+		case '[':
+			info->rank = 1;
+			*p++ = 0;
+			while (*p) {
+				if (*p == ',')
+					info->rank++;
+				if (*p == ']')
+					break;
+				++p;
+			}
+			if (*p != ']')
+				return 0;
+			break;
+		case ',':
+			*p++ = 0;
+			while (*p) {
+				if (*p == ' ') {
+					++p;
+					continue;
+				}
+				break;
+			}
+			if (!*p)
+				return 0; /* missing assembly name */
+			info->assembly = p;
+			break;
+		default:
+			break;
+		}
+	}
+	*w = 0; /* terminate class name */
+	if (!info->name || !*info->name)
+		return 0;
+	if (info->nest_name && !*info->nest_name)
+		return 0;
+	/* add other consistency checks */
+	return 1;
+}
+

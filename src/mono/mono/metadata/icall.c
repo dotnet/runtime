@@ -190,6 +190,7 @@ static void
 mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 {
 	mtype->type = &obj->klass->byval_arg;
+	g_assert (mtype->type->type);
 }
 
 static gint32
@@ -219,45 +220,51 @@ static MonoReflectionType*
 ves_icall_type_from_name (MonoString *name)
 {
 	MonoClass *klass;
-	gchar *n, *namespace, *str;
-	char* byref, *isarray;
-	guint rank;
+	MonoImage *image;
+	MonoTypeNameParse info;
+	gchar *str;
 	
-	str = namespace = mono_string_to_utf8 (name);
+	str = mono_string_to_utf8 (name);
 	/*g_print ("requested type %s\n", str);*/
+	if (!mono_reflection_parse_type (str, &info)) {
+		g_free (str);
+		return NULL;
+	}
 
-	n = strrchr (str, '.');
-	byref = strrchr (str, '&');
-	if (byref)
-		*byref = 0;
-	isarray = strrchr (str, '[');
-	if (isarray) {
-		rank = 1;
-		*isarray = 0;
-		while (*isarray) {
-			if (*isarray == ',')
-				rank++;
-			if (*isarray == ']')
-				break;
-			++isarray;
+	if (info.assembly) {
+		image = mono_image_loaded (info.assembly);
+		/* do we need to load if it's not already loaded? */
+		if (!image) {
+			g_free (str);
+			return NULL;
 		}
-	}
-	if (n) {
-		*n = 0;
-		++n;
+	} else
+		image = mono_defaults.corlib;
+	if (info.nest_name) {
+		klass = mono_class_from_name (image, info.nest_name_space, info.nest_name);
+		if (klass) {
+			GList *nested;
+			mono_class_init (klass);
+			nested = klass->nested_classes;
+			while (nested) {
+				klass = nested->data;
+				if (strcmp (klass->name, info.nest_name) == 0 &&
+						strcmp (klass->name_space, info.nest_name_space) == 0)
+					break;
+				klass = NULL;
+			}
+		}
 	} else {
-		namespace = "";
-		n = str;
+		klass = mono_class_from_name (image, info.name_space, info.name);
 	}
-	klass = mono_class_from_name (mono_defaults.corlib, namespace, n);
 	g_free (str);
 	if (!klass)
 		return NULL;
 	mono_class_init (klass);
-	if (isarray)
-		klass = mono_array_class_get (klass, rank);
+	if (info.rank)
+		klass = mono_array_class_get (klass, info.rank);
 	
-	if (byref)
+	if (info.isbyref || info.ispointer) /* hack */
 		return mono_type_get_object (&klass->this_arg);
 	else
 		return mono_type_get_object (&klass->byval_arg);
@@ -278,9 +285,10 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
 
 	g_assert (type != NULL);
 	
+
 	if (!c) /* FIXME: dont know what do do here */
 		return 0;
-
+	
 	while (!type->type) { /* FIXME: hack for TypeBuilder */
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)type;
 		type = tb->parent;
@@ -680,7 +688,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 {
 	/* FIXME : use throwOnError and ignoreCase */
 	gchar *name, *namespace, *str;
-	char *byref, *isarray;
+	char *byref, *isarray, *ispointer;
 	guint rank;
 	MonoClass *klass;
 
@@ -689,8 +697,11 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 
 	name = strrchr (str, '.');
 	byref = strrchr (str, '&');
+	ispointer = strrchr (str, '*');
 	if (byref)
 		*byref = 0;
+	if (ispointer)
+		*ispointer = 0;
 	isarray = strrchr (str, '[');
 	if (isarray) {
 		rank = 1;
@@ -725,7 +736,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		/*g_print ("got array class %s [%d] (0x%x)\n", klass->element_class->name, klass->rank, klass->this_arg.type);*/
 	}
 
-	if (byref)
+	if (byref || ispointer)
 		return mono_type_get_object (&klass->this_arg);
 	else
 		return mono_type_get_object (&klass->byval_arg);
@@ -872,7 +883,7 @@ static gpointer icall_map [] = {
 	"System.Type::get_constructor", ves_icall_get_constructor,
 	"System.Type::get_property", ves_icall_get_property,
 	"System.Type::get_method", ves_icall_get_method,
-	"System.Type::get_attributes", ves_icall_get_attributes,
+	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::FindMembers", ves_icall_type_find_members,
 
