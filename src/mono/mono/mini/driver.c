@@ -516,7 +516,7 @@ mini_usage (void)
 		"    --breakonex            Inserts a breakpoint on exceptions\n"
 		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
 		"    --debug                Enable debugging support\n"
-	    "    --stats                Print statistics about the JIT operations\n"
+	        "    --stats                Print statistics about the JIT operations\n"
 		"\n"
 		"Development:\n"
 		"    --statfile FILE        Sets the stat file to FILE\n"
@@ -560,6 +560,28 @@ mini_trace_usage (void)
 		 "    -EXPR                Excludes expression\n");
 }
 
+static const char *info = ""
+#ifdef HAVE_KW_THREAD
+	"\tTLS:           NPTL\n"
+#else
+	"\tTLS:           normal\n"
+#endif /* HAVE_KW_THREAD */
+#ifdef HAVE_BOEHM_GC
+#ifdef USE_INCLUDED_LIBGC
+	"\tGC:            Included Boehm (with typed GC)\n"
+#else
+	"\tGC:            System Boehm (no typed GC available)\n"
+#endif
+#else
+	"\tGC:            none\n"
+#endif /* HAVE_BOEHM_GC */
+#ifdef HAVE_ICU
+	"\tGlobalization: ICU\n"
+#else
+	"\tGlobalization: none\n"
+#endif /* HAVE_ICU */
+	"";
+
 int
 mono_main (int argc, char* argv[])
 {
@@ -593,6 +615,7 @@ mono_main (int argc, char* argv[])
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
 			g_print ("Mono JIT compiler version %s, (C) 2002-2004 Novell, Inc. www.go-mono.com\n", VERSION);
+			g_print (info);
 			if (mini_verbose) {
 				const guchar *cerror;
 				const guchar *clibpath;
