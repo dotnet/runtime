@@ -22,7 +22,6 @@
 
 
 /* prototypes for private functions (to avoid compiler warnings) */
-MonoString* mono_string_new_wrapper (const char* text);
 void flush_icache (void);
 void* alloc_code_buff (int num_instr);
 
@@ -44,14 +43,6 @@ void* alloc_code_buff (int num_instr);
 #define ARG_SIZE sizeof(stackval)
 
 
-
-/*
- * Invokes mono_string_new for the current AppDomain.
- */
-MonoString* mono_string_new_wrapper (const char* text)
-{
-	return text == NULL ? NULL : mono_string_new(mono_domain_get(), text);
-}
 
 
 void flush_icache ()
