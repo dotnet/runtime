@@ -51,6 +51,12 @@ mono_is_power_of_two (guint32 val)
 				inst->inst_i1 = tmp;	\
                        } \
 		} \
+		if (inst->inst_i1->opcode == OP_ICONST && inst->opcode == CEE_ADD) {	\
+			if (inst->inst_i1->inst_c0 == 0) { \
+				*inst = *(inst->inst_i0); \
+				return;	\
+			} \
+		} \
 		if (inst->inst_i1->opcode == OP_ICONST && inst->opcode == CEE_MUL) {	\
  		        int power2;	\
 			if (inst->inst_i1->inst_c0 == 1) {	\
