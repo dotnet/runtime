@@ -670,6 +670,15 @@ class Tests {
 		return 0;
 	}
 
+	static unsafe int test_0_pin_string () {
+		string x = "xxx";
+		fixed (char *c = x) {
+			if (*c != 'x')
+				return 1;
+		}
+		return 0;
+	}
+
 	static int test_3_shift_regalloc () {
 		int shift = 8;
 		int orig = 1;
