@@ -1,3 +1,7 @@
+2004-06-15  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Check for struct ip_mreqn and struct ip_mreq on
+	windows too.  Fixes bug 55040.
 
 Mon Jun 14 18:38:34 CEST 2004 Paolo Molaro <lupus@ximian.com>
 
