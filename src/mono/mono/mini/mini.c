@@ -110,6 +110,7 @@ mono_type_blittable (MonoType *type)
 	case MONO_TYPE_R8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_OBJECT:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:

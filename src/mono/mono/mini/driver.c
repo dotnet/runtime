@@ -466,6 +466,7 @@ mini_usage (void)
 		"    --compile METHOD       Just compile METHOD in assembly\n"
 		"    --ncompile N           Number of times to compile METHOD (default: 1)\n"
 		"    --regression           Runs the regression test contained in the assembly\n"
+		"    --print-vtable         Print the vtable of all used classes\n"
 		"    --trace                Enable tracing\n"
 		"    --compile-all          Compiles all the methods in the assembly\n"
 		"    --breakonex            Inserts a breakpoint on exceptions\n"
@@ -539,6 +540,8 @@ mini_main (int argc, char* argv[]) {
 		} else if (strcmp (argv [i], "--break") == 0) {
 			if (!mono_insert_breakpoint (argv [++i], FALSE))
 				g_error ("Invalid method name '%s'", argv [i]);
+		} else if (strcmp (argv [i], "--print-vtable") == 0) {
+			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--aot") == 0) {
@@ -562,7 +565,7 @@ mini_main (int argc, char* argv[]) {
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
 		} else {
-			fprintf (stderr, "Unknown command line option: %s", argv [i]);
+			fprintf (stderr, "Unknown command line option: %s\n", argv [i]);
 			return 1;
 		}
 	}
