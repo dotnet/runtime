@@ -660,7 +660,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *fil
 	gboolean ret;
 	gunichar2 *utf16_filename;
 	gunichar2 *utf16_args;
-	STARTUPINFO startinfo;
+	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
 	
 	utf16_filename=mono_string_to_utf16 (filename);

@@ -46,5 +46,6 @@ struct _WapiHandlePrivate_find
 	int dummy;
 };
 
+extern int _wapi_file_handle_to_fd (gpointer handle);
 
 #endif /* _WAPI_IO_PRIVATE_H_ */

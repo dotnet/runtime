@@ -646,7 +646,8 @@ static void process_scratch_free (guint32 idx, guint32 scratch_idx)
 }
 
 static void process_process_fork (guint32 idx,
-				  WapiHandleRequest_ProcessFork process_fork)
+				  WapiHandleRequest_ProcessFork process_fork,
+				  int *fds)
 {
 	WapiHandleResponse resp;
 	guint32 process_handle, thread_handle;
@@ -726,6 +727,9 @@ static void process_process_fork (guint32 idx,
 			}
 
 			/* Connect stdin, stdout and stderr */
+			dup2 (fds[0], 0);
+			dup2 (fds[1], 1);
+			dup2 (fds[2], 2);
 			
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -802,9 +806,11 @@ static void process_process_fork (guint32 idx,
 static void read_message (guint32 idx)
 {
 	WapiHandleRequest req;
+	int fds[3]={0, 1, 2};
+	gboolean has_fds=FALSE;
 	
 	/* Reading data */
-	_wapi_daemon_request (pollfds[idx].fd, &req);
+	_wapi_daemon_request (pollfds[idx].fd, &req, fds, &has_fds);
 	switch(req.type) {
 	case WapiHandleRequestType_New:
 		process_new (idx, req.u.new.type);
@@ -828,7 +834,7 @@ static void read_message (guint32 idx)
 		process_scratch_free (idx, req.u.scratch_free.idx);
 		break;
 	case WapiHandleRequestType_ProcessFork:
-		process_process_fork (idx, req.u.process_fork);
+		process_process_fork (idx, req.u.process_fork, fds);
 		break;
 	case WapiHandleRequestType_Error:
 		/* fall through */
@@ -836,6 +842,18 @@ static void read_message (guint32 idx)
 		/* Catch bogus requests */
 		/* FIXME: call rem_fd? */
 		break;
+	}
+
+	if(has_fds==TRUE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": closing %d", fds[0]);
+		g_message (G_GNUC_PRETTY_FUNCTION ": closing %d", fds[1]);
+		g_message (G_GNUC_PRETTY_FUNCTION ": closing %d", fds[2]);
+#endif
+		
+		close (fds[0]);
+		close (fds[1]);
+		close (fds[2]);
 	}
 }
 

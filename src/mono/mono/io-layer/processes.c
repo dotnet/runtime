@@ -86,7 +86,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	guint32 env=0, stored_dir=0, stored_prog=0, stored_args=0;
 	guint32 env_count=0, i;
 	gboolean ret=FALSE;
-	gpointer stdin_handle=NULL, stdout_handle=NULL, stderr_handle=NULL;
+	gpointer stdin_handle, stdout_handle, stderr_handle;
 	guint32 pid, tid;
 	gpointer process_handle, thread_handle;
 	
@@ -320,6 +320,10 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	
 	stored_prog=_wapi_handle_scratch_store (prog, strlen (prog));
 	stored_args=_wapi_handle_scratch_store (args, strlen (args));
+	
+	stdin_handle=GetStdHandle (STD_INPUT_HANDLE);
+	stdout_handle=GetStdHandle (STD_OUTPUT_HANDLE);
+	stderr_handle=GetStdHandle (STD_ERROR_HANDLE);
 	
 	if(startup!=NULL) {
 		if(startup->dwFlags & STARTF_USESTDHANDLES) {

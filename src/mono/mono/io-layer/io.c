@@ -1458,6 +1458,39 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	return TRUE;
 }
 
+static gboolean console_find_fd (gpointer handle, gpointer user_data)
+{
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	guint32 fd;
+
+	fd=GPOINTER_TO_UINT (user_data);
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Looking up a console handle for fd %d", fd);
+#endif
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE, NULL,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		return(FALSE);
+	}
+	
+	if(file_private_handle->fd==fd) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Returning console handle %p", handle);
+#endif
+	
+		return(TRUE);
+	} else {
+		return(FALSE);
+	}
+}
+
 /**
  * GetStdHandle:
  * @stdhandle: specifies the file descriptor
@@ -1517,41 +1550,49 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 
 		return(INVALID_HANDLE_VALUE);
 	}
-	
-	handle=_wapi_handle_new (WAPI_HANDLE_CONSOLE);
-	if(handle==_WAPI_HANDLE_INVALID) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error creating file handle");
-		return(NULL);
-	}
 
-	_wapi_handle_lock_handle (handle);
+	/* See if we already have a handle for this fd */
+	handle=_wapi_search_handle (WAPI_HANDLE_CONSOLE, console_find_fd,
+				    GUINT_TO_POINTER (fd), NULL, NULL);
+	if(handle==0) {
+		/* Create a new one */
+		handle=_wapi_handle_new (WAPI_HANDLE_CONSOLE);
+		if(handle==_WAPI_HANDLE_INVALID) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": error creating file handle");
+			return(NULL);
+		}
+
+		_wapi_handle_lock_handle (handle);
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
-				(gpointer *)&file_handle,
-				(gpointer *)&file_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up console handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
-	}
+		ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+					(gpointer *)&file_handle,
+					(gpointer *)&file_private_handle);
+		if(ok==FALSE) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": error looking up console handle %p",
+				   handle);
+			_wapi_handle_unlock_handle (handle);
+			return(NULL);
+		}
 	
-	file_private_handle->fd=fd;
-	file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
-	/* some default security attributes might be needed */
-	file_handle->security_attributes=0;
-	file_handle->fileaccess=convert_from_flags(flags);
-	file_handle->sharemode=0;
-	file_handle->attrs=0;
+		file_private_handle->fd=fd;
+		file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
+		/* some default security attributes might be needed */
+		file_handle->security_attributes=0;
+		file_handle->fileaccess=convert_from_flags(flags);
+		file_handle->sharemode=0;
+		file_handle->attrs=0;
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": returning handle %p with fd %d",
-		  handle, file_private_handle->fd);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": returning handle %p with fd %d", handle,
+			  file_private_handle->fd);
 #endif
 
-	_wapi_handle_unlock_handle (handle);
-
+		_wapi_handle_unlock_handle (handle);
+	}
+	
 	return(handle);
 }
 
@@ -2458,4 +2499,34 @@ extern gboolean SetCurrentDirectory (const gunichar2 *path)
 
 	g_free (utf8_path);
 	return result;
+}
+
+int _wapi_file_handle_to_fd (gpointer handle)
+{
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": looking up fd for %p", handle);
+#endif
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE, NULL,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE, NULL,
+					(gpointer *)&file_private_handle);
+		if(ok==FALSE) {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": returning -1");
+#endif
+			return(-1);
+		}
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": returning %d",
+		   file_private_handle->fd);
+#endif
+	
+	return(file_private_handle->fd);
 }

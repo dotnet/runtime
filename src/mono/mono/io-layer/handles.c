@@ -272,16 +272,16 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 	struct _WapiHandlePrivate *private_handle_data;
 	guint32 idx=GPOINTER_TO_UINT (handle);
 
-	if(shared!=NULL) {
-		shared_handle_data=&_wapi_shared_data->handles[idx];
-		/* Allow WAPI_HANDLE_UNUSED to mean "dont care which
-		 * type"
-		 */
-		if(shared_handle_data->type!=type &&
-		   type != WAPI_HANDLE_UNUSED) {
-			return(FALSE);
-		}
+	shared_handle_data=&_wapi_shared_data->handles[idx];
 
+	/* Allow WAPI_HANDLE_UNUSED to mean "dont care which
+	 * type"
+	 */
+	if(shared_handle_data->type!=type && type != WAPI_HANDLE_UNUSED) {
+		return(FALSE);
+	}
+
+	if(shared!=NULL) {
 		*shared=&shared_handle_data->u;
 	}
 	
@@ -1004,6 +1004,7 @@ gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args, guint32 env,
 {
 	WapiHandleRequest fork_proc;
 	WapiHandleResponse fork_proc_resp;
+	int in_fd, out_fd, err_fd;
 	
 	if(shared!=TRUE) {
 		return(FALSE);
@@ -1020,8 +1021,19 @@ gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args, guint32 env,
 	fork_proc.u.process_fork.inherit=inherit;
 	fork_proc.u.process_fork.flags=flags;
 	
-	_wapi_daemon_request_response (daemon_sock, &fork_proc,
-				       &fork_proc_resp);
+	in_fd=_wapi_file_handle_to_fd (stdin_handle);
+	out_fd=_wapi_file_handle_to_fd (stdout_handle);
+	err_fd=_wapi_file_handle_to_fd (stderr_handle);
+
+	if(in_fd==-1 || out_fd==-1 || err_fd==-1) {
+		/* We were given duff handles */
+		/* FIXME: error code */
+		return(FALSE);
+	}
+	
+	_wapi_daemon_request_response_with_fds (daemon_sock, &fork_proc,
+						&fork_proc_resp, in_fd,
+						out_fd, err_fd);
 	if(fork_proc_resp.type==WapiHandleResponseType_ProcessFork) {
 		*process_handle=GUINT_TO_POINTER (fork_proc_resp.u.process_fork.process_handle);
 		*thread_handle=GUINT_TO_POINTER (fork_proc_resp.u.process_fork.thread_handle);

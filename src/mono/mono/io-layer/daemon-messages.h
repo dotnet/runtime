@@ -141,7 +141,13 @@ typedef struct
 
 extern void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 					   WapiHandleResponse *resp);
-extern void _wapi_daemon_request (int fd, WapiHandleRequest *req);
+extern void _wapi_daemon_request_response_with_fds (int fd,
+						    WapiHandleRequest *req,
+						    WapiHandleResponse *resp,
+						    int in_fd, int out_fd,
+						    int err_fd);
+extern void _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
+				  gboolean *has_fds);
 extern void _wapi_daemon_response (int fd, WapiHandleResponse *resp);
 
 #endif /* _WAPI_DAEMON_MESSAGES_H_ */
