@@ -893,7 +893,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		mono_raise_exception (mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
 	}
 	
-	family = convert_family (mono_array_get (data, guint16, 0));
+	family = convert_family (mono_array_get (data, guint8, 0) + (mono_array_get (data, guint8, 1) << 8));
 	if(family==AF_INET) {
 		struct sockaddr_in *sa=g_new0(struct sockaddr_in, 1);
 		guint16 port=(mono_array_get(data, guint8, 2) << 8) +
