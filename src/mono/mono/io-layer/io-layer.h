@@ -26,11 +26,4 @@
 #include "mono/io-layer/uglify.h"
 #endif /* PLATFORM_WIN32 */
 
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>     /* defines FIONBIO and FIONREAD */
-#endif
-#ifdef HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>    /* defines SIOCATMARK */
-#endif
-
 #endif /* _MONO_IOLAYER_IOLAYER_H_ */

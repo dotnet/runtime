@@ -10,6 +10,7 @@
 #ifndef _WAPI_SOCKETS_H_
 #define _WAPI_SOCKETS_H_
 
+#include <config.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -17,6 +18,13 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>     /* defines FIONBIO and FIONREAD */
+#endif
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>    /* defines SIOCATMARK */
+#endif
 
 #include "mono/io-layer/wapi.h"
 
