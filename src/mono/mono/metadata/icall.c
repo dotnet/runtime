@@ -1044,13 +1044,8 @@ ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type && c->type) {
-		/*
-		 * FIXME: This is a hack, we should do a "normal" comparision here, but
-		 *        large parts of gmcs rely on this behavior.
-		 */
-		return _mono_metadata_type_equal (type->type, c->type, TRUE);
-	}
+	if (type->type && c->type)
+		return mono_metadata_type_equal (type->type, c->type);
 	g_print ("type equals\n");
 	return 0;
 }
