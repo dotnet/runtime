@@ -242,6 +242,8 @@ void
 mono_config_parse (const char *filename) {
 	const char *home;
 	char *user_cfg;
+	char *mono_cfg;
+	extern char *mono_cfg_dir;
 	
 	if (filename) {
 		mono_config_parse_file (filename);
@@ -253,16 +255,18 @@ mono_config_parse (const char *filename) {
 		mono_config_parse_file (home);
 		return;
 	}
-#if defined (PLATFORM_WIN32)
-	/* maybe it's better to use a registry key or the install root from the binary */
-	mono_config_parse_file (MONO_CFG_DIR "\\mono\\config");
-#else
-	mono_config_parse_file (MONO_CFG_DIR "/mono/config");
+
+	/* Ensure mono_cfg_dir gets a value */
+	mono_install_get_config_dir ();
+	mono_cfg = g_build_filename (mono_cfg_dir, "mono", "config", NULL);
+	mono_config_parse_file (mono_cfg);
+	g_free (mono_cfg);
+
+#ifndef PLATFORM_WIN32
 	home = g_get_home_dir ();
 	user_cfg = g_strconcat (home, G_DIR_SEPARATOR_S, ".mono/config", NULL);
 	mono_config_parse_file (user_cfg);
 	g_free (user_cfg);
 #endif
-	
 }
 

@@ -1,7 +1,10 @@
 if PLATFORM_WIN32
 export HOST_CC
-assembliesdir = `cygpath -w "${libdir}" | sed -e 's@\\\\@\\\\\\\\@g'`
-confdir = `cygpath -w "${sysconfdir}" | sed -e 's@\\\\@\\\\\\\\@g'`
+# Use -m here. This will use / as directory separator (C:/WINNT).
+# The files that use MONO_ASSEMBLIES and/or MONO_CFG_DIR replace the
+# / by \ if running under WIN32.
+assembliesdir = `cygpath -m "${libdir}"`
+confdir = `cygpath -m "${sysconfdir}"`
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
