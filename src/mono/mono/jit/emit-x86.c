@@ -30,7 +30,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 	MonoClass *class;
 	MonoObject *o;
 
-	printf ("ENTER: %s.%s::%s (", method->klass->name_space,
+	printf ("ENTER: %s.%s::%s\n(", method->klass->name_space,
 		method->klass->name, method->name);
 
 	ebp += 8;
@@ -51,11 +51,13 @@ enter_method (MonoMethod *method, gpointer ebp)
 			printf ("value:%p, ", *((gpointer *)ebp));
 		} else {
 			o = *((MonoObject **)ebp);
+
+			g_assert (o);
+
 			class = o->klass;
 
 			if (class == mono_defaults.string_class) {
-				printf ("this:%p[STRING:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
-
+				printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
 			} else {
 				printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
 			}
@@ -81,12 +83,32 @@ enter_method (MonoMethod *method, gpointer ebp)
 		case MONO_TYPE_U:
 			printf ("%d, ", *((int *)(ebp)));
 			break;
-		case MONO_TYPE_STRING:
-			printf ("[STRING:%s], ", mono_string_to_utf8 (*(MonoString **)(ebp)));
+		case MONO_TYPE_STRING: {
+			MonoString *s = *((MonoString **)ebp);
+			if (s) {
+				g_assert (((MonoObject *)s)->klass == mono_defaults.string_class);
+				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
+			} else 
+				printf ("[STRING:null], ");
 			break;
-		case MONO_TYPE_PTR:
+		}
 		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_OBJECT: {
+			o = *((MonoObject **)ebp);
+			if (o) {
+				class = o->klass;
+				if (class == mono_defaults.string_class) {
+					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+				} else if (class == mono_defaults.int32_class) {
+					printf ("[INT32:%p:%d], ", o, *(gint32 *)((gpointer)o + sizeof (MonoObject)));
+				} else
+					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
+			} else {
+				printf ("%p, ", *((gpointer *)(ebp)));				
+			}
+			break;
+		}
+		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
@@ -147,9 +169,16 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 	case MONO_TYPE_U:
 		printf ("EAX=%d", eax);
 		break;
-	case MONO_TYPE_STRING:
-		printf ("[STRING:%s]", mono_string_to_utf8 ((MonoString *)(eax)));
+	case MONO_TYPE_STRING: {
+		MonoString *s = (MonoString *)eax;
+
+		if (s) {
+			g_assert (((MonoObject *)s)->klass == mono_defaults.string_class);
+			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
+		} else 
+			printf ("[STRING:null], ");
 		break;
+	}
 	case MONO_TYPE_OBJECT: {
 		MonoObject *o = (MonoObject *)eax;
 		
@@ -255,6 +284,33 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 	x86_ret (cfg->code);
 }
 
+/*
+ * get_unbox_trampoline:
+ * @m: method pointer
+ *
+ * when value type methods are called through the vtable we need to unbox the
+ * this argument. This method returns a pointer to a trampoline which does
+ * unboxing before calling the method
+ */
+static gpointer
+get_unbox_trampoline (MonoMethod *m)
+{
+	gpointer p = arch_compile_method (m);
+	guint8 *code, *start;
+	int this_pos = 4;
+
+	if (!m->signature->ret->byref && m->signature->ret->type == MONO_TYPE_VALUETYPE)
+		this_pos = 8;
+	    
+	start = code = g_malloc (16);
+
+	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
+	x86_jump_code (code, p);
+	g_assert ((code - start) < 16);
+
+	return start;
+}
+
 /**
  * x86_magic_trampoline:
  * @eax: saved x86 register 
@@ -323,7 +379,10 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	o += disp;
 
-	return *((gpointer *)o) = arch_compile_method (m);
+	if (m->klass->valuetype) {
+		return *((gpointer *)o) = get_unbox_trampoline (m);
+	} else
+		return *((gpointer *)o) = arch_compile_method (m);
 }
 
 /**
@@ -808,6 +867,8 @@ arch_compile_method (MonoMethod *method)
 
 		if (mono_jit_dump_forest) {
 			int i;
+			printf ("FOREST %s.%s:%s\n", method->klass->name_space,
+				method->klass->name, method->name);
 			for (i = 0; i < cfg->block_count; i++) {
 				printf ("BLOCK %d:\n", i);
 				mono_print_forest (cfg->bblocks [i].forest);
@@ -886,6 +947,7 @@ arch_compile_method (MonoMethod *method)
 		printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
 			method->klass->name, method->name, method, method->addr);
 	}
+
 
 	return method->addr;
 }
@@ -1013,8 +1075,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			for (i = 0; i < ji->num_clauses; i++) {
 				MonoJitExceptionInfo *ei = &ji->clauses [i];
 
-				if (ei->try_start <= ip && ip < (ei->try_end)) { 
-				
+				if (ei->try_start <= ip && ip <= (ei->try_end)) { 
 					/* catch block */
 					if (ei->flags == 0 && mono_object_isinst (obj, 
 					        mono_class_get (m->klass->image, ei->token_or_filter))) {

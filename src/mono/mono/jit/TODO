@@ -22,3 +22,4 @@
 	loads or exceptions (as we can always tell)
 	
 	
+* thread does not work with the jit (mcs/tests/test-19.cs)??
