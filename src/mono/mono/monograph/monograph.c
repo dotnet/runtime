@@ -101,7 +101,7 @@ get_type (GString *res, MonoType *type) {
 	case MONO_TYPE_U4:
 		g_string_append (res, "int"); break;
 	case MONO_TYPE_I4:
-		g_string_append (res, "unint"); break;
+		g_string_append (res, "uint"); break;
 	case MONO_TYPE_U8:
 		g_string_append (res, "ulong"); break;
 	case MONO_TYPE_I8:
@@ -111,7 +111,7 @@ get_type (GString *res, MonoType *type) {
 	case MONO_TYPE_U:
 		g_string_append (res, "intptr"); break;
 	case MONO_TYPE_I:
-		g_string_append (res, "unintptr"); break;
+		g_string_append (res, "uintptr"); break;
 	case MONO_TYPE_R4:
 		g_string_append (res, "single"); break;
 	case MONO_TYPE_R8:
@@ -408,7 +408,7 @@ main (int argc, char *argv[]) {
 	int callneato = 0;
 	int i;
 	
-	mono_init ();
+	mono_init (argv [0]);
 	output = stdout;
 
 	for (i = 1; i < argc; ++i) {
