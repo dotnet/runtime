@@ -836,7 +836,6 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			while ((m = mono_class_get_methods (k, &iter)))
 				if (!pvt->vtable [m->slot])
 					pvt->vtable [m->slot] = arch_create_remoting_trampoline (m, target_type);
-			}
 		}
 	}
 
