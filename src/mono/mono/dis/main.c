@@ -759,6 +759,7 @@ dis_type (MonoImage *m, int n)
 	const char *name, *nspace;
 	guint32 packing_size, class_size;
 	gboolean next_is_valid, last;
+	guint32 nested;
 	
 	mono_metadata_decode_row (t, n, cols, MONO_TYPEDEF_SIZE);
 
@@ -816,6 +817,13 @@ dis_type (MonoImage *m, int n)
 	dis_property_list (m, n);
 	dis_event_list (m, n);
 
+	t = &m->tables [MONO_TABLE_NESTEDCLASS];
+	nested = mono_metadata_nesting_typedef (m, n + 1, 1);
+	while (nested) {
+		dis_type (m, mono_metadata_decode_row_col (t, nested - 1, MONO_NESTED_CLASS_NESTED) - 1);
+		nested = mono_metadata_nesting_typedef (m, n + 1, nested + 1);
+	}
+	
 	fprintf (output, "  } // end of type %s%s%s\n", nspace, *nspace? ".": "", name);
 	if (*nspace)
 		fprintf (output, "}\n");
@@ -833,9 +841,14 @@ dis_types (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	int i;
+	guint32 flags;
 
-	for (i = 1; i < t->rows; i++)
-		dis_type (m, i);
+	for (i = 1; i < t->rows; i++) {
+		flags = mono_metadata_decode_row_col (t, i, MONO_TYPEDEF_FLAGS);
+		flags &= TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if (flags == TYPE_ATTRIBUTE_PUBLIC || flags == TYPE_ATTRIBUTE_NOT_PUBLIC)
+			dis_type (m, i);
+	}
 }
 
 /**
