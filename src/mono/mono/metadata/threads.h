@@ -53,6 +53,9 @@ extern void mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
 
+guint32  mono_threads_alloc_static_data (guint32 size, guint32 align);
+gpointer mono_threads_get_static_data   (guint32 offset);
+
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this_obj, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this_obj, HANDLE thread);

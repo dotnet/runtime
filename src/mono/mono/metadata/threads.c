@@ -3,6 +3,7 @@
  *
  * Author:
  *	Dick Porter (dick@ximian.com)
+ *	Paolo Molaro (lupus@ximian.com)
  *	Patrik Torstensson (patrik.torstensson@labs2.com)
  *
  * (C) 2001 Ximian, Inc.
@@ -67,6 +68,8 @@ static MonoThreadCallbacks *mono_thread_callbacks = NULL;
 
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
 static guint32 slothash_key;
+
+static void thread_adjust_static_data (MonoThread *thread);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 static CRITICAL_SECTION interlocked_mutex;
@@ -189,6 +192,8 @@ static guint32 start_wrapper(void *data)
 	
 	g_free (start_info);
 
+	thread_adjust_static_data (thread);
+
 	start_func (this);
 
 	/* If the thread calls ExitThread at all, this remaining code
@@ -292,6 +297,8 @@ mono_thread_attach (MonoDomain *domain)
 
 	TlsSetValue (current_object_key, thread);
 	mono_domain_set (domain);
+
+	thread_adjust_static_data (thread);
 
 	if (mono_thread_attach_cb) {
 		mono_thread_attach_cb (tid, &tid);
@@ -1032,6 +1039,113 @@ void mono_thread_abort_all_other_threads (void)
 				   GUINT_TO_POINTER (self));
 	
 	LeaveCriticalSection (&threads_mutex);
+}
+
+static int static_data_idx = 0;
+static int static_data_offset = 0;
+#define NUM_STATIC_DATA_IDX 8
+static const int static_data_size [NUM_STATIC_DATA_IDX] = {
+	1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216
+};
+
+static void 
+thread_alloc_static_data (MonoThread *thread, guint32 offset)
+{
+	guint idx = (offset >> 24) - 1;
+	int i;
+
+	if (!thread->static_data) {
+		thread->static_data = GC_MALLOC (static_data_size [0]);
+		thread->static_data [0] = thread->static_data;
+	}
+	for (i = 1; i < idx; ++i) {
+		if (thread->static_data [i])
+			continue;
+		thread->static_data [i] = GC_MALLOC (static_data_size [i]);
+	}
+	
+}
+
+/* 
+ * ensure thread static fields already allocated are valid for thread
+ * This function is called when a thread is created or on thread attach.
+ */
+static void
+thread_adjust_static_data (MonoThread *thread)
+{
+	guint32 offset;
+
+	EnterCriticalSection (&threads_mutex);
+	if (static_data_offset || static_data_idx > 0) {
+		/* get the current allocated size */
+		offset = static_data_offset | ((static_data_idx + 1) << 24);
+		thread_alloc_static_data (thread, offset);
+	}
+	LeaveCriticalSection (&threads_mutex);
+}
+
+static void 
+alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread = value;
+	guint32 offset = GPOINTER_TO_UINT (user);
+	
+	thread_alloc_static_data (thread, offset);
+}
+
+/*
+ * The offset for a thread static variable is composed of two parts:
+ * an index in the array of chunks of memory for the thread (thread->static_data)
+ * and an offset in that chunk of mem. This allows allocating less memory in the 
+ * common case.
+ */
+guint32
+mono_threads_alloc_static_data (guint32 size, guint32 align)
+{
+	guint32 offset;
+	
+	EnterCriticalSection (&threads_mutex);
+
+	if (!static_data_idx && !static_data_offset) {
+		/* 
+		 * we use the first chunk of the first allocation also as
+		 * an array for the rest of the data 
+		 */
+		static_data_offset = sizeof (gpointer) * NUM_STATIC_DATA_IDX;
+	}
+	static_data_offset += align - 1;
+	static_data_offset &= ~(align - 1);
+	if (static_data_offset + size >= static_data_size [static_data_idx]) {
+		static_data_idx ++;
+		g_assert (size <= static_data_size [static_data_idx]);
+		/* 
+		 * massive unloading and reloading of domains with thread-static
+		 * data may eventually exceed the allocated storage...
+		 * Need to check what the MS runtime does in that case.
+		 * Note that for each appdomain, we need to allocate a separate
+		 * thread data slot for security reasons. We could keep track
+		 * of the slots per-domain and when the domain is unloaded
+		 * out the slots on a sort of free list.
+		 */
+		g_assert (static_data_idx < NUM_STATIC_DATA_IDX);
+		static_data_offset = 0;
+	}
+	offset = static_data_offset | ((static_data_idx + 1) << 24);
+	static_data_offset += size;
+	
+	mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
+
+	LeaveCriticalSection (&threads_mutex);
+	return offset;
+}
+
+gpointer
+mono_threads_get_static_data (guint32 offset)
+{
+	MonoThread *thread = mono_thread_current ();
+	int idx = offset >> 24;
+	
+	return ((char*) thread->static_data [idx - 1]) + (offset & 0xffffff);
 }
 
 #ifdef WITH_INCLUDED_LIBGC

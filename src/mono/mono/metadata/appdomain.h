@@ -96,6 +96,7 @@ struct _MonoDomain {
 	MonoMethod         *create_proxy_for_type_method;
 	MonoMethod         *private_invoke_method;
 	MonoAppContext     *default_context;
+	GHashTable         *thread_static_fields;
 };
 
 /* This is a copy of System.AppDomain */

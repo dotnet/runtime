@@ -184,6 +184,7 @@ typedef struct {
 	guint32 tid;
 	HANDLE      start_notify;
 	gpointer stack_ptr;
+	gpointer *static_data;
 } MonoThread;
 
 typedef struct {

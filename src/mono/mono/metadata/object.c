@@ -283,6 +283,25 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 }
 #endif /* CREATION_SPEEDUP */
 
+static gboolean
+field_is_thread_static (MonoClass *fklass, MonoClassField *field)
+{
+	MonoCustomAttrInfo *ainfo;
+	int i;
+	ainfo = mono_custom_attrs_from_field (fklass, field);
+	if (!ainfo)
+		return FALSE;
+	for (i = 0; i < ainfo->num_attrs; ++i) {
+		MonoClass *klass = ainfo->attrs [i].ctor->klass;
+		if (strcmp (klass->name, "ThreadStaticAttribute") == 0 && klass->image == mono_defaults.corlib) {
+			mono_custom_attrs_free (ainfo);
+			return TRUE;
+		}
+	}
+	mono_custom_attrs_free (ainfo);
+	return FALSE;
+}
+
 /**
  * mono_class_vtable:
  * @domain: the application domain
@@ -347,6 +366,17 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		field = &class->fields [i - class->field.first];
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
+			if (field_is_thread_static (class, field)) {
+				guint32 size, align, offset;
+				size = mono_type_size (field->type, &align);
+				offset = mono_threads_alloc_static_data (size, align);
+				if (!domain->thread_static_fields)
+					domain->thread_static_fields = g_hash_table_new (NULL, NULL);
+				g_hash_table_insert (domain->thread_static_fields, field, GUINT_TO_POINTER (offset));
+				continue;
+			}
+		}
 		if ((field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
 			MonoClass *fklass = mono_class_from_mono_type (field->type);
 			t = (char*)vt->data + field->offset;
