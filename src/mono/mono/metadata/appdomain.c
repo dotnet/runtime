@@ -1038,8 +1038,14 @@ ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (domain)
-		mono_thread_push_appdomain_ref (domain);
+	if (!domain)
+		/* 
+		 * Raise an exception to prevent the managed code from executing a pop
+		 * later.
+		 */
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+
+	mono_thread_push_appdomain_ref (domain);
 }
 
 void
