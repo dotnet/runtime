@@ -1495,4 +1495,31 @@
     </tasks>
 
   </contributor>
+  <contributor>
+
+    <name>
+      
+      <first-name>Carlos</first-name>
+
+      <last-name>Guzmán Álvarez</last-name>
+
+    </name>
+
+    <e-mail>carlosga@telefonica.net</e-mail>
+
+    <image>none.png</image>
+
+    <location>Vigo, Spain</location>
+
+    <organization></organization>
+
+    <description>Contributor</description>
+
+    <tasks>
+
+      <task>TLS protocol</task>
+
+    </tasks>
+
+  </contributor>
 </contributors>
