@@ -3214,6 +3214,7 @@ mono_jit_init (char *file) {
 	mono_install_runtime_invoke (arch_runtime_invoke);
 
 	domain = mono_init (file);
+	mono_runtime_init (domain);
 	mono_thread_init (domain);
 	mono_network_init ();
 	mono_delegate_init ();
