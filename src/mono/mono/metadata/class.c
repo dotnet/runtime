@@ -154,14 +154,14 @@ class_compute_field_layout (MonoClass *class)
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &real_size);
 
-	g_assert ((packing_size & 0xfffffff0) == 0);
-	class->packing_size = packing_size;
+	if (explicit_size) {
+		g_assert ((packing_size & 0xfffffff0) == 0);
+		class->packing_size = packing_size;
+		real_size += class->instance_size;
+	}
 
 	if (!top) {
 		if (explicit_size && real_size) {
-			if (class->parent)
-				real_size += class->parent->instance_size;
-
 			class->instance_size = MAX (real_size, class->instance_size);
 		}
 		class->size_inited = 1;
@@ -243,14 +243,11 @@ class_compute_field_layout (MonoClass *class)
 		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
 			G_BREAKPOINT ();
 	}
-	mono_class_layout_fields (class);
-
 	if (explicit_size && real_size) {
-		if (class->parent)
-			real_size += class->parent->instance_size;
-
 		class->instance_size = MAX (real_size, class->instance_size);
 	}
+
+	mono_class_layout_fields (class);
 }
 
 void
