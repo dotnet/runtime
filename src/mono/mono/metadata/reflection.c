@@ -3916,7 +3916,7 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	type = mono_reflection_get_type_internal (image, info, ignorecase);
 	if (type)
 		return type;
-	if (!image || !mono_domain_has_type_resolve (mono_domain_get ()))
+	if (!mono_domain_has_type_resolve (mono_domain_get ()))
 		return NULL;
 	
 	// Reconstruct the type name
@@ -3931,7 +3931,7 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	assembly = 
 		mono_domain_try_type_resolve (
 			mono_domain_get (), fullName->str, NULL);
-	if (assembly && (assembly->assembly->image == image))
+	if (assembly && (!image || (assembly->assembly->image == image)))
 		type = mono_reflection_get_type_internal (assembly->assembly->image, 
 										 info, ignorecase);
 	g_string_free (fullName, TRUE);
