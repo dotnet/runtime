@@ -460,6 +460,7 @@ static void mon_finalize (void *o, void *unused)
 	CloseHandle (mon->monitor);
 	CloseHandle (mon->sema);
 	CloseHandle (mon->waiters_done);
+	DeleteCriticalSection (&mon->waiters_count_lock);
 }
 
 static MonoThreadsSync *mon_new(void)
