@@ -1,3 +1,55 @@
 * JIT Compiler
 
+  <a
+  href="http://cui.unige.ch/OSG/publications/OO-articles/TechnicalReports/98/efficient.pdf">
+  Efficient Type Inclusion Tests: Jahn Vitek, R. Nigel Horspool, Andres
+  Krall</a>
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/2822939%2C410249%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/20094/http%253AzSzzSzwww.math.tau.ac.ilzSz%257EguyzSzjava-optzSzssa.pdf/cytron91efficiently.pdf">
+  Efficiently Computing Static Single Assignment Form and the Control
+  Dependence Graph: Ron Cytron, Jeanne Ferrante</a> 
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/14269422%2C217684%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/9476/http%253AzSzzSzwww.cs.ucsb.eduzSzconferenceszSzjava98zSzpaperszSzcacao.pdf/krall98monitors.pdf">
+  Monitors and Exceptions - How to implement Java efficiently: Andreas Krall,
+  Mark Probst</a> 
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/78588775%2C217642%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/9476/http%253AzSzzSzwww.complang.tuwien.ac.atzSzandizSzpact_98.pdf/krall98efficient.pdf">
+  Efficient JavaVM Just-in-Time Compilation: Andreas Krall</a>
+
+  <a
+  href="http://www.complang.tuwien.ac.at/andi/scicom_01.ps">Java for
+  Large-Scale Scientific Computations: Andreas Krall, Phillip Thomsich</a> 
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/62076894%2C117522%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/642/ftp%253AzSzzSzftp.cs.princeton.eduzSzpubzSzlcczSzcontribzSziburg.pdf/fraser92engineering.pdf">
+  Engineering Simple, Efficient Code Generator Generator: Christopher
+  W. Fraser, David R. Hanson, Todd A. Proebsting</a> 
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/8408515%2C54698%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/815/http%253AzSzzSzcuiwww.unige.chzSzOSGzSzpeoplezSzjvitekzSzResourceszSzArchivezSzProebsting.pdf/proebsting92code.pdf">
+  Code Generation Techniques: Todd Alan Proebsting</a>
+
+* Register Allocation
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/28309937%2C283402%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/12458/http%253AzSzzSzwww.pdos.lcs.mit.eduzSzpaperszSztoplas-linearscan.pdf/poletto99linear.pdf">
+  Linear Scan Register Allocation: Massimiliano Poletto, Vivek Sarkar</a>
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/19916683%2C91122%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/468/http%253AzSzzSzwww.eecs.harvard.eduzSzhubezSzpaperszSzpldi98-binpack.pdf/traub98quality.pdf">
+  Quality and Speed in Linear-scan Register Allocation: Omri Traub, Glenn
+  Holloway, Michael D. Smith</a> 
+
+* Interpreter
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/62076894%2C470069%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/24640/http%253AzSzzSzwww.complang.tuwien.ac.atzSzpaperszSzertlzPz01.pdf/ertl01vmgen.pdf">
+  vmgen-A Generator of Efficient Virtual Machine Interpreters: M. Anton
+  Ertl, David Gregg, Andreas Krall, Bernd Paysan</a>
+
+
+
 
