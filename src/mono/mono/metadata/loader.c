@@ -36,7 +36,7 @@ MonoDefaults mono_defaults;
 #ifdef __CYGWIN__
 #define mono_map_dll(name) (name)
 #else
-static char *dll_map[] = {
+static const char *dll_map[] = {
 	"libc", "libc.so.6",
 	"libm", "libm.so.6",
 	"cygwin1.dll", "libc.so.6", 
@@ -61,7 +61,7 @@ mono_map_dll (const char *name)
 static GHashTable *icall_hash = NULL;
 
 void
-mono_add_internal_call (const char *name, gpointer method)
+mono_add_internal_call (const char *name, gconstpointer method)
 {
 	if (!icall_hash) {
 		dummy_icall = FALSE;
@@ -72,7 +72,7 @@ mono_add_internal_call (const char *name, gpointer method)
 }
 
 static void
-ves_icall_dummy ()
+ves_icall_dummy (void)
 {
 	g_warning ("the mono runtime is not initialized");
 	g_assert_not_reached ();
@@ -109,9 +109,9 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 	guint32 nindex, class, i;
 	const char *fname, *name, *nspace;
 	const char *ptr;
-	guint32 index = mono_metadata_token_index (token);
+	guint32 idx = mono_metadata_token_index (token);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, MONO_MEMBERREF_SIZE);
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
 	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
 
@@ -172,7 +172,7 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 }
 
 static MonoMethod *
-method_from_memberref (MonoImage *image, guint32 index)
+method_from_memberref (MonoImage *image, guint32 idx)
 {
 	MonoImage *mimage;
 	MonoClass *klass;
@@ -183,7 +183,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 	MonoMethodSignature *sig;
 	const char *ptr;
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, 3);
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
 	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
@@ -310,7 +310,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 }
 
 static void
-fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
+fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int idx)
 {
 	MonoMethod *mh = &piinfo->method;
 	MonoTableInfo *tables = image->tables;
@@ -328,7 +328,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 			
 		mono_metadata_decode_row (im, i, im_cols, 4);
 
-		if ((im_cols[1] >> 1) == index + 1) {
+		if ((im_cols[1] >> 1) == idx + 1) {
 
 			import = mono_metadata_string_heap (image, im_cols [2]);
 
@@ -372,7 +372,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 {
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
-	int index = mono_metadata_token_index (token);
+	int idx = mono_metadata_token_index (token);
 	MonoTableInfo *tables = image->tables;
 	const char *loc, *sig = NULL;
 	char *name;
@@ -386,12 +386,12 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		result = method_from_memberref (image, index);
+		result = method_from_memberref (image, idx);
 		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
 		return result;
 	}
 
-	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
+	mono_metadata_decode_row (&tables [table], idx - 1, cols, 6);
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
@@ -422,7 +422,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		g_free (name);
 		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index - 1);
+		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, idx - 1);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
@@ -472,12 +472,12 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (method == klass->methods [i]) {
-			guint32 index = klass->method.first + i;
+			guint32 idx = klass->method.first + i;
 			guint32 cols [MONO_PARAM_SIZE];
-			guint param_index = mono_metadata_decode_row_col (methodt, index, MONO_METHOD_PARAMLIST);
+			guint param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 
-			if (index < methodt->rows)
-				lastp = mono_metadata_decode_row_col (methodt, index + 1, MONO_METHOD_PARAMLIST);
+			if (idx < methodt->rows)
+				lastp = mono_metadata_decode_row_col (methodt, idx + 1, MONO_METHOD_PARAMLIST);
 			else
 				lastp = paramt->rows;
 			for (i = param_index; i < lastp; ++i) {

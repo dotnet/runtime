@@ -78,7 +78,7 @@ MonoImage *
 mono_load_image            (const char *fname, enum MonoImageOpenStatus *status);
 
 void
-mono_add_internal_call     (const char *name, gpointer method);
+mono_add_internal_call     (const char *name, gconstpointer method);
 
 gpointer
 mono_lookup_internal_call  (const char *name);

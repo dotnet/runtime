@@ -1008,10 +1008,10 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	res = mono_object_new (domain, enumc);
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject), MIN (s1, s2));
+	memcpy ((char *)res + sizeof (MonoObject), (char *)obj + sizeof (MonoObject), MIN (s1, s2));
 #else
-	memcpy ((gpointer)res + sizeof (MonoObject) + (s1 > s2 ? s1 - s2 : 0),
-		(gpointer)obj + sizeof (MonoObject) + (s2 > s1 ? s2 - s1 : 0),
+	memcpy ((char *)res + sizeof (MonoObject) + (s1 > s2 ? s1 - s2 : 0),
+		(char *)obj + sizeof (MonoObject) + (s2 > s1 ? s2 - s1 : 0),
 		MIN (s1, s2));
 #endif
 	return res;
@@ -1034,8 +1034,8 @@ ves_icall_System_Enum_get_value (MonoObject *this)
 	
 	enumc = mono_class_from_mono_type (this->vtable->klass->enum_basetype);
 	res = mono_object_new (domain, enumc);
-	dst = (gpointer)res + sizeof (MonoObject);
-	src = (gpointer)this + sizeof (MonoObject);
+	dst = (char *)res + sizeof (MonoObject);
+	src = (char *)this + sizeof (MonoObject);
 	size = mono_class_value_size (enumc, NULL);
 
 	memcpy (dst, src, size);
@@ -1093,7 +1093,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 }
 
 static MonoMethod*
-search_method (MonoReflectionType *type, char *name, guint32 flags, MonoArray *args)
+search_method (MonoReflectionType *type, const char *name, guint32 flags, MonoArray *args)
 {
 	MonoClass *klass, *start_class;
 	MonoMethod *m;
@@ -1665,7 +1665,7 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 #define	EPOCH_ADJUST	((gint64)62135596800L)
 
 static gint64
-ves_icall_System_DateTime_GetNow ()
+ves_icall_System_DateTime_GetNow (void)
 {
 #ifndef PLATFORM_WIN32
 	/* FIXME: put this in io-layer and call it GetLocalTime */
@@ -1798,13 +1798,13 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) {
 }
 
 static gint8 
-ves_icall_System_Buffer_GetByteInternal (MonoArray *array, gint32 index) {
-	return mono_array_get (array, gint8, index);
+ves_icall_System_Buffer_GetByteInternal (MonoArray *array, gint32 idx) {
+	return mono_array_get (array, gint8, idx);
 }
 
 static void 
-ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 index, gint8 value) {
-	mono_array_set (array, gint8, index, value);
+ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 idx, gint8 value) {
+	mono_array_set (array, gint8, idx, value);
 }
 
 static void 
@@ -1828,7 +1828,7 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 
 	res = mono_object_new (domain, mono_defaults.transparent_proxy_class);
 	
-	((MonoTransparentProxy *)res)->rp = this;
+	((MonoTransparentProxy *)res)->rp = rp;
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
@@ -1840,7 +1840,7 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 /* System.Environment */
 
 static MonoString *
-ves_icall_System_Environment_get_MachineName ()
+ves_icall_System_Environment_get_MachineName (void)
 {
 #if defined (PLATFORM_WIN32)
 	gunichar2 *buf;
@@ -1874,7 +1874,7 @@ ves_icall_System_Environment_get_MachineName ()
 }
 
 static MonoString *
-ves_icall_System_Environment_get_NewLine ()
+ves_icall_System_Environment_get_NewLine (void)
 {
 #if defined (PLATFORM_WIN32)
 	return mono_string_new (mono_domain_get (), "\r\n");
@@ -1903,7 +1903,7 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
 }
 
 static MonoArray *
-ves_icall_System_Environment_GetEnvironmentVariableNames ()
+ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 {
 	MonoArray *names;
 	MonoDomain *domain;
@@ -1935,7 +1935,7 @@ ves_icall_System_Environment_GetEnvironmentVariableNames ()
 }
 
 static MonoString *
-ves_icall_System_Environment_GetCommandLine ()
+ves_icall_System_Environment_GetCommandLine (void)
 {
 	return NULL;	/* FIXME */
 }
@@ -2012,7 +2012,7 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 
 /* icall map */
 
-static gpointer icall_map [] = {
+static gconstpointer icall_map [] = {
 	/*
 	 * System.Array
 	 */
@@ -2367,13 +2367,13 @@ static gpointer icall_map [] = {
 };
 
 void
-mono_init_icall ()
+mono_init_icall (void)
 {
-	char *n;
+	const char *name;
 	int i = 0;
 
-	while ((n = icall_map [i])) {
-		mono_add_internal_call (n, icall_map [i+1]);
+	while ((name = icall_map [i])) {
+		mono_add_internal_call (name, icall_map [i+1]);
 		i += 2;
 	}
        

@@ -275,6 +275,12 @@ runtime_class_init (MonoClass *klass)
 	/* No class constructor found */
 }
 
+static gpointer
+interp_create_remoting_trampoline (MonoMethod *method)
+{
+	return method;
+}
+
 static MonoMethod*
 get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 {
@@ -1458,7 +1464,13 @@ ves_exec_method (MonoInvocation *frame)
 			child_frame.ex = NULL;
 			child_frame.ex_handler = NULL;
 
-			ves_exec_method (&child_frame);
+			if (csignature->hasthis && sp->type == VAL_OBJ &&
+			    ((MonoObject *)sp->data.p)->vtable->klass ==
+			    mono_defaults.transparent_proxy_class) {
+				/* implement remoting */
+				g_assert_not_reached ();
+			} else
+				ves_exec_method (&child_frame);
 
 			while (endsp > sp) {
 				--endsp;
@@ -3972,6 +3984,7 @@ main (int argc, char *argv [])
 	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_runtime_exec_main (runtime_exec_main);
 	mono_install_runtime_invoke (interp_mono_runtime_invoke);
+	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 
 	mono_install_handler (interp_ex_handler);
 
