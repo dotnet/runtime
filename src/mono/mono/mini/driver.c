@@ -411,13 +411,15 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 	int verbose = args->verbose;
 	MonoImage *image = mono_assembly_get_image (ass);
 	MonoMethod *method;
+	MonoCompile *cfg;
 	int i, count = 0;
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
-		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
-			continue;
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+		    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 			continue;
 
 		count++;
@@ -426,7 +428,8 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		mono_compile_method (method);
+		cfg = mini_method_compile (method, DEFAULT_OPTIMIZATIONS, mono_get_root_domain (), FALSE, FALSE, 0);
+		mono_destroy_compile (cfg);
 	}
 
 }
