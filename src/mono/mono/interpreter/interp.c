@@ -4429,6 +4429,8 @@ mono_main (int argc, char *argv [])
 	if (argc < 2)
 		usage ();
 
+	MONO_GC_PRE_INIT ();
+	
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
 			global_tracing = 1;
