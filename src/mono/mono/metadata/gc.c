@@ -261,7 +261,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	if (!GC_should_invoke_finalizers ())
 		return;
 
-	if (GetCurrentThread () == gc_thread)
+	if (mono_thread_current () == gc_thread)
 		/* Avoid deadlocks */
 		return;
 
