@@ -3018,5 +3018,32 @@
             <maintainer>michaellambert@bellsouth.net</maintainer>
         </maintainers>
     </class>
+    <class name="System.Web.UI.WebControls.WebControl">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Net.IPHostEntry">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>mpultz@get2net.dk</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Net.Dns">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>mpultz@get2net.dk</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
