@@ -166,6 +166,9 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 		case MONO_TYPE_R4:
 #if SPARCV9
 			(*code_size) += 4; /* for the fdtos */
+#else
+			(*code_size) += 12;
+			(*stack_size) += 4;
 #endif
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -191,7 +194,11 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 				goto enum_calc_size;
 			}
 			size = mono_class_native_size (sig->params[i]->data.klass, NULL);
+#if SPARCV9
 			if (size != 4) {
+#else
+			if (1) {
+#endif
 				DEBUG(fprintf(stderr, "copy %d byte struct on stack\n", size));
 				*use_memcpy = TRUE;
 				*code_size += 8*4;
@@ -408,7 +415,11 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 				gint size;
 				
 				size = mono_class_native_size (sig->params[i]->data.klass, NULL);
+#if SPARCV9
 				if (size != 4) {
+#else
+				if (1) {
+#endif
 					/* need to call memcpy here */
 					sparc_add_imm (p, 0, sparc_sp, stack_par_pos, sparc_o0);
 					sparc_ld_imm_ptr (p, sparc_i3, i*16, sparc_o1);
@@ -458,25 +469,44 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
                 case MONO_TYPE_CHAR:
                 case MONO_TYPE_I4:
                 case MONO_TYPE_U4:
-#if !SPARCV9
+                        if (gr < OUT_REGS) {
+                                sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_o0 + gr);
+                                gr++;
+                        } else {
+                                sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0);
+                                sparc_st_imm_word (p, sparc_l0, sparc_sp, stack_par_pos);
+                                stack_par_pos += SLOT_SIZE;
+                        }
+                        break;
+
 		case MONO_TYPE_R4:
-#endif
-			if (gr < OUT_REGS) {
-				sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_o0 + gr);
-				gr++;
-			} else {
-				sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0);
-				sparc_st_imm_word (p, sparc_l0, sparc_sp, stack_par_pos);
-				stack_par_pos += SLOT_SIZE;
-			}
-			break;
 #if SPARCV9
-		case MONO_TYPE_R4:
 			sparc_lddf_imm (p, ARG_BASE, i*ARG_SIZE, sparc_f30); /* fix using this fixed reg */
 			sparc_fdtos(p, sparc_f30, sparc_f0 + 2 * gr + 1);
 			gr++;
 			break;
+#else
+			/* Convert from double to single */
+			sparc_lddf_imm (p, ARG_BASE, i*ARG_SIZE, sparc_f0);
+			sparc_fdtos (p, sparc_f0, sparc_f0);
+
+			/*
+			 * FIXME: Is there an easier way to do an
+			 * freg->ireg move ?
+			 */
+			sparc_stf_imm (p, sparc_f0, sparc_sp, stack_par_pos);
+
+			if (gr < OUT_REGS) {
+				sparc_ld_imm (p, sparc_sp, stack_par_pos, sparc_o0 + gr);
+				gr++;
+			} else {
+				sparc_ldf_imm (p, sparc_sp, stack_par_pos, sparc_f0);
+				sparc_stf_imm (p, sparc_f0, sparc_sp, stack_par_pos);
+				stack_par_pos += SLOT_SIZE;
+			}
+			break;
 #endif
+
                 case MONO_TYPE_I:
                 case MONO_TYPE_U:
                 case MONO_TYPE_PTR:
@@ -504,7 +534,15 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 					sparc_st_imm_word (p, sparc_l0, sparc_sp, stack_par_pos);
 					stack_par_pos += SLOT_SIZE;
 				}
+				break;
+			}
 #else
+			/* 
+			 * FIXME: The 32bit ABI docs do not mention that small
+			 * structures are passed in registers.
+			 */
+
+			/*
 			if (size == 4) {
 				if (gr < OUT_REGS) {
 					sparc_ld_imm_ptr (p, ARG_BASE, i*ARG_SIZE, sparc_l0);
@@ -516,22 +554,24 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 					sparc_st_imm_word (p, sparc_l0, sparc_sp, stack_par_pos);
 					stack_par_pos += SLOT_SIZE;
 				}
-#endif
-			} else {
-				if (gr < OUT_REGS) {
-					sparc_add_imm (p, 0, sparc_sp,
-					       cur_struct_pos, sparc_o0 + gr);
-					gr ++;
-				} else {
-					sparc_ld_imm_ptr (p, sparc_sp,
-						      cur_struct_pos,
-						      sparc_l1);
-					sparc_st_imm_ptr (p, sparc_l1,
-						     sparc_sp,
-						     stack_par_pos);
-				}
-				cur_struct_pos += (size + (SLOT_SIZE - 1)) & (~(SLOT_SIZE - 1));
+				break;
 			}
+			*/
+#endif
+
+			if (gr < OUT_REGS) {
+				sparc_add_imm (p, 0, sparc_sp,
+					       cur_struct_pos, sparc_o0 + gr);
+				gr ++;
+			} else {
+				sparc_ld_imm_ptr (p, sparc_sp,
+						  cur_struct_pos,
+						  sparc_l1);
+				sparc_st_imm_ptr (p, sparc_l1,
+						  sparc_sp,
+						  stack_par_pos);
+			}
+			cur_struct_pos += (size + (SLOT_SIZE - 1)) & (~(SLOT_SIZE - 1));
 			break;
 		}
 
@@ -552,22 +592,30 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 #else
 		case MONO_TYPE_I8:
 		case MONO_TYPE_R8:
-			/* this will break in subtle ways... */
-			if (gr < 5) {
+			if (gr < (OUT_REGS - 1)) {
 				sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_o0 + gr);
 				gr ++;
 				
-				if (gr >= OUT_REGS) {
-					NOT_IMPL("split reg/stack")
-						break;
-				} else {
-					sparc_ld_imm (p, ARG_BASE, 
-						      (i*ARG_SIZE) + 4,
-						      sparc_o0 + gr);
-				}
+				sparc_ld_imm (p, ARG_BASE, 
+					      (i*ARG_SIZE) + 4,
+					      sparc_o0 + gr);
 				gr ++;
+			} else if (gr == (OUT_REGS - 1)) {
+				/* Split register/stack */
+				sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_o0 + gr);
+				gr ++;
+
+				sparc_ld_imm (p, ARG_BASE, (i*ARG_SIZE) + 4, sparc_l0);
+				sparc_st_imm (p, sparc_l0, sparc_sp, stack_par_pos);
+				stack_par_pos += SLOT_SIZE;
 			} else {
-				NOT_IMPL("FIXME: I8/R8 on stack");
+				sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0);
+				sparc_st_imm (p, sparc_l0, sparc_sp, stack_par_pos);
+				stack_par_pos += SLOT_SIZE;
+
+				sparc_ld_imm (p, ARG_BASE, (i*ARG_SIZE) + 4, sparc_l0);
+				sparc_st_imm (p, sparc_l0, sparc_sp, stack_par_pos);
+				stack_par_pos += SLOT_SIZE;
 			}
 			break;
 #endif
@@ -575,6 +623,8 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			g_error ("Can't trampoline 0x%x", sig->params[i]->type);
 		}
 	}
+
+	g_assert ((stack_par_pos - BIAS) <= stack_size);
 
 	return p;
 }
