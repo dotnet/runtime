@@ -72,8 +72,8 @@ case "$host" in
 		;;
 	*-*-linux*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -DMONO_USE_EXC_TABLES -D_GNU_SOURCE -D_REENTRANT -fexceptions"
-		libmono_cflags="-DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT"
+		libmono_cflags="-D_REENTRANT"
 		libmono_ldflags="-lpthread"
 		libdl="-ldl"
 		libgc_threads=pthreads
