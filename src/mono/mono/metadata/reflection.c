@@ -1590,7 +1590,7 @@ static void
 assign_type_idx (MonoReflectionTypeBuilder *type, MonoDynamicTable *table)
 {
 	int j;
-	
+
 	type->table_idx = table->next_idx ++;
 	if (!type->subtypes)
 		return;
@@ -1977,6 +1977,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 	MonoReflectionFieldBuilder *field;
 	MonoReflectionCtorBuilder *ctor;
 	MonoReflectionMethodBuilder *method;
+	MonoReflectionTypeBuilder *tb;
 	guint32 i, idx;
 	unsigned char *target;
 
@@ -2000,6 +2001,12 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 			} else {
 				g_assert_not_reached ();
 			}
+			break;
+		case MONO_TABLE_TYPEDEF:
+			if (strcmp (iltoken->member->vtable->klass->name, "TypeBuilder"))
+				g_assert_not_reached ();
+			tb = (MonoReflectionTypeBuilder *)iltoken->member;
+			idx = tb->table_idx;
 			break;
 		default:
 			g_error ("got unexpected table 0x%02x in fixup", target [3]);
@@ -3593,7 +3600,7 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 		return name;
 
 	/* missing public key */
-	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s", 
+	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s",
 		name, ta->aname.name,
 		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
 		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral");

@@ -188,17 +188,5 @@ ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj
 void
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst);
 
-
-
-
-
-
-
-
-
-
-
-
-
 #endif /* __MONO_MARSHAL_H__ */
 

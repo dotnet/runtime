@@ -2907,3 +2907,23 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 	g_assert_not_reached ();
 	return 0;
 }
+
+const char*
+mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
+{
+	locator_t loc;
+	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
+
+	if (!tdef->base)
+		return NULL;
+
+	loc.t = tdef;
+	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
+	loc.idx = ((idx + 1) << HAS_FIELD_MARSHAL_BITS) | (is_field? HAS_FIELD_MARSHAL_FIELDSREF: HAS_FIELD_MARSHAL_PARAMDEF);
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return NULL;
+
+	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
+}
+

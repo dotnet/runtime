@@ -613,6 +613,8 @@ mono_image_close (MonoImage *image)
 	if (--image->ref_count)
 		return;
 
+	if (!loaded_images_hash)
+		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_remove (loaded_images_hash, image->name);
 	
 	if (image->f)

@@ -885,13 +885,21 @@ mono_method_verify (MonoMethod *method, int level)
 	}
 	/*g_print ("Method %s.%s::%s\n", method->klass->name_space, method->klass->name, method->name);*/
 
+	for (i = 0; i < header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &header->clauses [i];
+		/* catch blocks have the exception on the stack. */
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
+			code [clause->handler_offset].stack_count = 1;
+			code [clause->handler_offset].flags |= CODE_SEEN;
+		}
+	}
+
 	while (ip < end) {
 		ip_offset = ip - header->code;
 		if (start || !(code [ip_offset].flags & CODE_SEEN)) {
 			if (start) {
 				/* g_print ("setting stack of IL_%04x to %d\n", ip_offset, 0); */
-				cur_stack = code [ip_offset].stack_count = 0;
-				start = 0;
+				cur_stack = code [ip_offset].stack_count;
 			} else {
 				code [ip_offset].stack_count = cur_stack;
 			}
@@ -901,6 +909,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (code [ip_offset].stack_count != cur_stack)
 				ADD_INVALID (list, g_strdup_printf ("Cannot merge stack states at 0x%04x", ip_offset));
 		}
+		start = 0;
 		if (need_merge) {
 			if (!can_merge_stack (&code [ip_offset], &code [target - header->code]))
 				ADD_INVALID (list, g_strdup_printf ("Cannot merge stack states at 0x%04x", ip_offset));
@@ -1645,6 +1654,7 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_UNDERFLOW (1);
 				token = read32 (ip + 1);
 				ip += 5;
+				--cur_stack;
 				break;
 			case CEE_UNUSED68:
 				++ip;
@@ -1670,6 +1680,7 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_OVERFLOW ();
 				token = read32 (ip + 1);
 				ip += 5;
+				cur_stack++;
 				break;
 			case CEE_REFANYTYPE:
 				CHECK_STACK_UNDERFLOW (1);
