@@ -605,6 +605,9 @@ custom_attr_params (MonoImage *m, MonoMethodSignature* sig, const char* value)
 
 	res = g_string_new ("");
 	for (i = 0; i < sig->param_count; ++i) {
+		if (read16 (p) != 0x0001)
+			g_warning ("no prolog in custom attr");
+		p += 2;
 		if (i != 0)
 			g_string_append (res, ", ");
 		switch (sig->params [i]->type) {
@@ -625,7 +628,6 @@ custom_attr_params (MonoImage *m, MonoMethodSignature* sig, const char* value)
 			break;
 		case MONO_TYPE_STRING:
 			slen = mono_metadata_decode_value (p, &p);
-			++p;
 			g_string_append_c (res, '"');
 			g_string_append (res, p);
 			g_string_append_c (res, '"');

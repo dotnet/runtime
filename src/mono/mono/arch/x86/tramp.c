@@ -503,5 +503,5 @@ mono_method_pointer_get (void *code)
 	unsigned char *c = code;
 	if (c [2] != 'M' || c [3] != 'o')
 		return NULL;
-	return *(MonoMethod**)(code + sizeof (gpointer));
+	return *(MonoMethod**)(c + sizeof (gpointer));
 }

@@ -397,6 +397,7 @@ usage () {
  * * make --neato option the default?
  * * use multiple classes/method roots?
  * * write a manpage
+ * * reverse call graph: given a method what methods call it?
  */
 int
 main (int argc, char *argv[]) {
