@@ -119,8 +119,8 @@ cond_exc_nc: len:8
 cond_exc_ne_un: len:8
 cond_exc_no: len:8
 cond_exc_ov: len:8
-conv.i1: dest:i src1:i len:22
-conv.i2: dest:i src1:i len:22
+conv.i1: dest:i src1:i len:24
+conv.i2: dest:i src1:i len:24
 conv.i4: dest:i src1:i len:2
 conv.i8:
 conv.i: dest:i src1:i len:2
@@ -211,10 +211,10 @@ float_conv_to_ovf_u8_un:
 float_conv_to_ovf_u_un:
 float_conv_to_r4: dest:f src1:f len:4
 float_conv_to_r8:
-float_conv_to_u1: dest:i src1:f len:52
-float_conv_to_u2: dest:i src1:f len:52
-float_conv_to_u4: dest:i src1:f len:52
-float_conv_to_u8: dest:l src1:f len:52
+float_conv_to_u1: dest:i src1:f len:62
+float_conv_to_u2: dest:i src1:f len:62
+float_conv_to_u4: dest:i src1:f len:62
+float_conv_to_u8: dest:l src1:f len:62
 float_conv_to_u: dest:i src1:f len:36
 float_div: dest:f src1:f src2:f len:6
 float_div_un: dest:f src1:f src2:f len:6
@@ -315,7 +315,7 @@ loadi1_membase: dest:i src1:b len:40
 loadi2_membase: dest:i src1:b len:22
 loadi4_membase: dest:i src1:b len:18
 loadi8_membase: dest:i src1:b
-loadr4_membase: dest:f src1:b len:18
+loadr4_membase: dest:f src1:b len:20
 loadr8_membase: dest:f src1:b len:18
 loadu1_membase: dest:i src1:b len:26
 loadu2_membase: dest:i src1:b len:26
@@ -446,6 +446,7 @@ ret:
 retarg:
 rethrow:
 s390_move: len:48 dest:b src1:b
+s390_setf4ret: dest:f src1:f len:4 clob:r
 sbb: dest:i src1:i src2:i len:6
 sbb_imm: dest:i src1:i len:14
 setfreg: dest:f src1:f len:4 clob:r
@@ -499,8 +500,8 @@ storei4_membase_imm: dest:b len:32
 storei4_membase_reg: dest:b src1:i len:18
 storei8_membase_imm: dest:b 
 storei8_membase_reg: dest:b src1:i 
-storer4_membase_reg: dest:b src1:f len:20
-storer8_membase_reg: dest:b src1:f len:20
+storer4_membase_reg: dest:b src1:f len:22
+storer8_membase_reg: dest:b src1:f len:22
 stsfld:
 sub.ovf.un: len:10 dest:i src1:i src2:i 
 sub.ovf: len:24 dest:i src1:i src2:i

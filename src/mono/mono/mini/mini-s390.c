@@ -793,9 +793,14 @@ handle_enum:
 		printf ("[LONG:%lld]", l);
 		break;
 	}
+	case MONO_TYPE_R4: {
+		double f = va_arg (ap, double);
+		printf ("[FLOAT4:%f]\n", (float) f);
+		break;
+	}
 	case MONO_TYPE_R8: {
 		double f = va_arg (ap, double);
-		printf ("[FP:%g]\n", f);
+		printf ("[FLOAT8:%g]\n", f);
 		break;
 	}
 	case MONO_TYPE_VALUETYPE: 
@@ -2904,6 +2909,17 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 	/* sreg is a float, dreg is an integer reg. */
 	if (is_signed) {
 		s390_cfdbr (code, dreg, 5, sreg);
+		switch (size) {
+			case 1:
+				s390_lhi  (code, s390_r0, 0);
+				s390_lhi  (code, s390_r13, 0xff);
+				s390_ltr  (code, dreg, dreg);
+				s390_jnl  (code, 4);
+				s390_lhi  (code, s390_r0, 0x80);
+				s390_nr   (code, dreg, s390_r13);
+				s390_or   (code, dreg, s390_r0);
+				break;
+		}
 	} else {
 		s390_basr   (code, s390_r13, 0);
 		s390_j	    (code, 10);
@@ -2914,8 +2930,19 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		s390_jl     (code, 10);
 		s390_sdb    (code, s390_f15, 0, s390_r13, 8);
 		s390_cfdbr  (code, dreg, 7, s390_f15);
-		s390_j      (code, 5);
+		s390_j      (code, 4);
 		s390_cfdbr  (code, dreg, 5, sreg);
+		switch (size) {
+			case 1: 
+				s390_lhi  (code, s390_r0, 0xff);
+				s390_or   (code, dreg, s390_r0);
+				break;
+			case 2:
+				s390_lhi  (code, s390_r0, -1);
+				s390_srl  (code, s390_r0, 0, 16);
+				s390_or   (code, dreg, s390_r0);
+				break;
+		}
 	}
 	return code;
 }
@@ -3185,6 +3212,7 @@ guint8 cond;
 			break;
 		case CEE_CONV_I2: {
 			s390_lhi  (code, s390_r0, 0x80);
+			s390_sll  (code, s390_r0, 0, 8);
 			if (ins->dreg != ins->sreg1) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
@@ -3216,7 +3244,11 @@ guint8 cond;
 		case OP_COMPARE: {
 			if ((ins->next) && 
 			    ((ins->next->opcode >= CEE_BNE_UN) &&
-			     (ins->next->opcode <= CEE_BLT_UN)))
+			     (ins->next->opcode <= CEE_BLT_UN)) || 
+			    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
+			     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
+			    ((ins->next->opcode == OP_CLT_UN) ||
+			     (ins->next->opcode == OP_CGT_UN)))
 				s390_clr  (code, ins->sreg1, ins->sreg2);
 			else
 				s390_cr   (code, ins->sreg1, ins->sreg2);
@@ -3226,8 +3258,12 @@ guint8 cond;
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if ((ins->next) && 
-			    	    ((ins->next->opcode >= CEE_BNE_UN) &&
-			            (ins->next->opcode <= CEE_BLT_UN)))
+				    ((ins->next->opcode >= CEE_BNE_UN) &&
+				     (ins->next->opcode <= CEE_BLT_UN)) || 
+				    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
+				     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
+				    ((ins->next->opcode == OP_CLT_UN) ||
+				     (ins->next->opcode == OP_CGT_UN)))
 					s390_clr  (code, ins->sreg1, s390_r0);
 				else
 					s390_cr   (code, ins->sreg1, s390_r0);
@@ -3237,8 +3273,12 @@ guint8 cond;
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_imm);
 				if ((ins->next) && 
-			    	    ((ins->next->opcode >= CEE_BNE_UN) &&
-			            (ins->next->opcode <= CEE_BLT_UN)))
+				    ((ins->next->opcode >= CEE_BNE_UN) &&
+				     (ins->next->opcode <= CEE_BLT_UN)) || 
+				    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
+				     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
+				    ((ins->next->opcode == OP_CLT_UN) &&
+				     (ins->next->opcode == OP_CGT_UN)))
 					s390_cl   (code, ins->sreg1, 0, s390_r13, 4);
 				else
 					s390_c 	  (code, ins->sreg1, 0, s390_r13, 4);
@@ -3770,8 +3810,14 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_FCONV_TO_R4: {
+		case OP_S390_SETF4RET: {
 			s390_ledbr (code, ins->dreg, ins->sreg1);
+		}
+			break;
+		case OP_FCONV_TO_R4: {
+			if ((ins->next) &&
+			    (ins->next->opcode != OP_STORER4_MEMBASE_REG))
+				s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
 		case CEE_JMP:
@@ -5107,12 +5153,16 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 			done = 1;
 			break;
 		case OP_S390_MOVE:
-			printf ("[%x(%d,%s),%x(%s)]",
+			printf ("[0x%x(%d,%s),0x%x(%s)]",
 				tree->inst_offset, tree->unused,
 				tree->dreg, tree->inst_imm, 
 				tree->sreg1);
 			done = 1;
 			break;
+		case OP_S390_SETF4RET:
+			printf ("[f%d,f%d]", 
+				mono_arch_regname (tree->dreg),
+				mono_arch_regname (tree->sreg1));
 		default:
 			done = 0;
 	}
