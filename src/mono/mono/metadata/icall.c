@@ -5488,7 +5488,7 @@ static void
 ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoString *message)
 {
 #if defined (PLATFORM_WIN32)
-	static void (*output_debug) (gchar *);
+	static void (*output_debug) (gunichar2 *);
 	static gboolean tried_loading = FALSE;
 
 	MONO_ARCH_SAVE_REGS;

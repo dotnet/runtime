@@ -28,6 +28,10 @@
 #include <mono/utils/mono-logger.h>
 #ifdef PLATFORM_WIN32
 #include <mono/os/util.h>
+#ifdef _MSC_VER
+	/* not used on Windows - see mono_set_rootdir () */
+	#define MONO_ASSEMBLIES		NULL
+#endif
 #endif
 
 /* AssemblyVersionMap: an assembly name and the assembly version set on which it is based */

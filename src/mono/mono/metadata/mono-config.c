@@ -10,6 +10,8 @@
 #include "config.h"
 #include <glib.h>
 #include <string.h>
+
+#include "mono/metadata/assembly.h"
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
 #include "mono/metadata/metadata-internals.h"
@@ -344,9 +346,11 @@ mono_config_for_assembly (MonoImage *assembly)
 void
 mono_config_parse (const char *filename) {
 	const char *home;
-	char *user_cfg;
 	char *mono_cfg;
-	
+#ifndef PLATFORM_WIN32
+	char *user_cfg;
+#endif
+
 	if (filename) {
 		mono_config_parse_file (filename);
 		return;

@@ -682,7 +682,7 @@ mono_get_root_domain (void)
  *
  * Returns: the current domain.
  */
-inline MonoDomain *
+MonoDomain *
 mono_domain_get ()
 {
 	return GET_APPDOMAIN ();
@@ -694,7 +694,7 @@ mono_domain_get ()
  *
  * Sets the current domain to @domain.
  */
-inline void
+void
 mono_domain_set_internal (MonoDomain *domain)
 {
 	SET_APPDOMAIN (domain);

@@ -1373,7 +1373,7 @@ mono_domain_unload (MonoDomain *domain)
 #if 0
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
-	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
+	thread_handle = CreateThread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
 	ResumeThread (thread_handle);
 #endif
 

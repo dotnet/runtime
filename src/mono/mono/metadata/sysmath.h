@@ -12,6 +12,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include "mono/utils/mono-compiler.h"
 
 extern gdouble ves_icall_System_Math_Floor (gdouble x);
 extern gdouble ves_icall_System_Math_Round (gdouble x);

@@ -59,19 +59,19 @@ mono_check_corlib_version (void);
 MonoDomain *
 mono_domain_create         (void);
 
-inline MonoDomain *
+MonoDomain *
 mono_domain_get            (void);
 
-inline MonoDomain *
+MonoDomain *
 mono_domain_get_by_id      (gint32 domainid);
 
 gint32
 mono_domain_get_id         (MonoDomain *domain);
 
-inline gboolean
+gboolean
 mono_domain_set            (MonoDomain *domain, gboolean force);
 
-inline void
+void
 mono_domain_set_internal   (MonoDomain *domain);
 
 gboolean
@@ -101,10 +101,10 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot);
 void
 mono_context_init 				   (MonoDomain *domain);
 
-inline void 
+void 
 mono_context_set				   (MonoAppContext *new_context);
 
-inline MonoAppContext * 
+MonoAppContext * 
 mono_context_get				   (void);
 
 MonoJitInfo *

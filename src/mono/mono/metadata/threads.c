@@ -222,7 +222,7 @@ static void thread_cleanup (MonoThread *thread)
 		mono_thread_cleanup (thread);
 }
 
-static guint32 start_wrapper(void *data)
+static guint32 WINAPI start_wrapper(void *data)
 {
 	struct StartInfo *start_info=(struct StartInfo *)data;
 	guint32 (*start_func)(void *);
@@ -359,7 +359,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
-	thread_handle = CreateThread(NULL, default_stacksize_for_thread (thread), start_wrapper, start_info,
+	thread_handle = CreateThread(NULL, default_stacksize_for_thread (thread), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
 		  tid, thread_handle));
@@ -510,7 +510,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 			return(NULL);
 		}
 
-		thread=CreateThread(NULL, default_stacksize_for_thread (this), start_wrapper, start_info,
+		thread=CreateThread(NULL, default_stacksize_for_thread (this), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
 			g_warning(G_GNUC_PRETTY_FUNCTION
@@ -1293,7 +1293,7 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 int  
 mono_thread_get_abort_signal (void)
 {
-#ifdef __MINGW32__
+#if defined (__MINGW32__) || defined (_MSC_VER)
 	return -1;
 #else
 #ifndef	SIGRTMIN
@@ -1301,17 +1301,16 @@ mono_thread_get_abort_signal (void)
 #else
 	return SIGRTMIN;
 #endif
-#endif /* __MINGW32__ */
+#endif /*defined (__MINGW32__) || defined (_MSC_VER) */
 }
 
-#ifdef __MINGW32__
-static CALLBACK void interruption_request_apc (ULONG_PTR param)
+#if defined (__MINGW32__) || defined (_MSC_VER)
+static void CALLBACK interruption_request_apc (ULONG_PTR param)
 {
 	MonoException* exc = mono_thread_request_interruption (FALSE);
 	if (exc) mono_raise_exception (exc);
-	return 0;
 }
-#endif /* __MINGW32__ */
+#endif /* defined (__MINGW32__) || defined (_MSC_VER) */
 
 /*
  * signal_thread_state_change
@@ -1328,8 +1327,8 @@ static void signal_thread_state_change (MonoThread *thread)
 			mono_raise_exception (exc);
 	}
 
-#ifdef __MINGW32__
-	QueueUserAPC (interruption_request_apc, thread->handle, NULL);
+#if defined (__MINGW32__) || defined (_MSC_VER)
+	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, NULL);
 #else
 	/* fixme: store the state somewhere */
 #ifdef PTHREAD_POINTER_ID
@@ -1337,7 +1336,7 @@ static void signal_thread_state_change (MonoThread *thread)
 #else
 	pthread_kill (thread->tid, mono_thread_get_abort_signal ());
 #endif
-#endif /* __MINGW32__ */
+#endif /* defined (__MINGW32__) || defined (__MSC_VER) */
 }
 
 void
@@ -2331,7 +2330,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		
 		/* this will awake the thread if it is in WaitForSingleObject 
 	       or similar */
-		QueueUserAPC (dummy_apc, thread->handle, NULL);
+		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
 		
 		return NULL;
 	}

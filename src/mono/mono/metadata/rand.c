@@ -94,6 +94,7 @@ get_entropy_from_server (const char *path, guchar *buf, int len)
 
 #if defined (PLATFORM_WIN32)
 
+#include <windows.h>
 #include <WinCrypt.h>
 
 #ifndef PROV_INTEL_SEC
@@ -158,13 +159,14 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 	if (!CryptGenRandom (provider, len, buf)) {
 		CryptReleaseContext (provider, 0);
 		/* we may have lost our context with CryptoAPI, but all hope isn't lost yet! */
-		provider = ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (NULL);
+		provider = (HCRYPTPROV) ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (NULL);
 		if (!CryptGenRandom (provider, len, buf)) {
 			CryptReleaseContext (provider, 0);
 			provider = 0;
 			/* exception will be thrown in managed code */
 		}
-	} 
+	}
+	return (gpointer) provider;
 }
 
 void

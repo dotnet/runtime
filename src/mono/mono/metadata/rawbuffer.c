@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #ifdef USE_WIN32_API
+#include <winsock2.h>
 #include <windows.h>
 #include <io.h>
 #else
