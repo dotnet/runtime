@@ -392,13 +392,13 @@ ves_icall_System_AppDomain_getCurDomain ()
 }
 
 MonoAppDomain *
-ves_icall_System_AppDomain_getDomainByID (gint32 domain_id)
+ves_icall_System_AppDomain_getRootDomain ()
 {
-	MonoDomain *add = mono_domain_get_by_id (domain_id);
+	MonoDomain *root = mono_get_root_domain ();
 
 	MONO_ARCH_SAVE_REGS;
 
-	return ((add == NULL) ? NULL : add->domain);
+	return root->domain;
 }
 
 static void
