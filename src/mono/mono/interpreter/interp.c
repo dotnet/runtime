@@ -3385,89 +3385,38 @@ array_constructed:
 			}
 			goto handle_finally;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_CONV1)
+		MINT_IN_CASE(MINT_MONO_PROC1) {
+		    void (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
-			switch (ip [-1]) {
-			case MONO_MARSHAL_CONV_STR_LPWSTR:
-				sp [-1].data.p = mono_string_to_utf16 (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_LPSTR_STR:
-				sp [-1].data.p = mono_string_new_wrapper (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_STR_LPTSTR:
-			case MONO_MARSHAL_CONV_STR_LPSTR:
-				sp [-1].data.p = mono_string_to_utf8 (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_STR_BSTR:
-				sp [-1].data.p = mono_string_to_bstr (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_STR_TBSTR:
-			case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-				sp [-1].data.p = mono_string_to_ansibstr (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_SB_LPSTR:
-			case MONO_MARSHAL_CONV_SB_LPTSTR:
-				sp [-1].data.p = mono_string_builder_to_utf8 (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_SB_LPWSTR:
-				sp [-1].data.p = mono_string_builder_to_utf16 (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-				sp [-1].data.p = mono_array_to_savearray (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
-				sp [-1].data.p = mono_array_to_lparray (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_DEL_FTN:
-				sp [-1].data.p = mono_delegate_to_ftnptr (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY:
-				sp [-1].data.p = mono_marshal_string_array (sp [-1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY:
-				sp [-1].data.p = mono_marshal_string_array_to_unicode (sp [-1].data.p);
-				break;
-			case MONO_MARSHAL_CONV_LPWSTR_STR:
-				sp [-1].data.p = mono_string_from_utf16 (sp [-1].data.p);
-				MINT_IN_BREAK;
-			default:
-				fprintf(stderr, "MINT_MONO_CONV1 %d", ip[-1]);
-				g_assert_not_reached ();
-			}
+
+			func (sp [-1].data.p);
+			sp --;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_CONV2)
+		}
+		MINT_IN_CASE(MINT_MONO_CONV1) {
+		    gpointer (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+			ip += 2;
+
+			sp [-1].data.p = func (sp [-1].data.p);
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CONV2) {
+		    void (*func)(gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+			ip += 2;
 			sp -= 2;
-			ip += 2;
-			switch (ip [-1]) {
-			case MONO_MARSHAL_CONV_LPSTR_SB:
-			case MONO_MARSHAL_CONV_LPTSTR_SB:
-				mono_string_utf8_to_builder (sp [0].data.p, sp [1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_LPWSTR_SB:
-				mono_string_utf16_to_builder (sp [0].data.p, sp [1].data.p);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_FREE_ARRAY:
-				mono_marshal_free_array (sp [0].data.p, sp [1].data.i);
-				MINT_IN_BREAK;
-			default:
-				g_assert_not_reached ();
-			}				 
+
+			func (sp [0].data.p, sp [1].data.p);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_CONV3)
+		}
+		MINT_IN_CASE(MINT_MONO_CONV3) {
+		    void (*func)(gpointer,gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+			ip += 2;
 			sp -= 3;
-			ip += 2;
-			switch (ip [-1]) {
-			case MONO_MARSHAL_CONV_STR_BYVALSTR:
-				mono_string_to_byvalstr (sp [0].data.p, sp [1].data.p, sp [2].data.i);
-				MINT_IN_BREAK;
-			case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-				mono_string_to_byvalwstr (sp [0].data.p, sp [1].data.p, sp [2].data.i);
-				MINT_IN_BREAK;
-			default:
-				g_assert_not_reached ();
-			}
+
+			func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_LDPTR)
+		}
+		MINT_IN_CASE(MINT_MONO_LDPTR) 
 			sp->data.p = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
 			++sp;

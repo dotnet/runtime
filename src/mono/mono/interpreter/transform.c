@@ -2380,26 +2380,43 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_UNUSED41:
 			++td.ip;
 		        switch (*td.ip) {
-			case CEE_MONO_FUNC1:
-				ADD_CODE(&td, MINT_MONO_CONV1);
-				ADD_CODE(&td, *(td.ip + 1));
-				td.ip += 2;
-				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I);
-				break;
-			case CEE_MONO_PROC2:
-				CHECK_STACK (&td, 2);
-				ADD_CODE(&td, MINT_MONO_CONV2);
-				ADD_CODE(&td, *(td.ip + 1));
-				td.ip += 2;
-				td.sp -= 2;
-				break;
-			case CEE_MONO_PROC3:
-				CHECK_STACK (&td, 3);
-				ADD_CODE(&td, MINT_MONO_CONV3);
-				ADD_CODE(&td, *(td.ip + 1));
-				td.ip += 2;
-				td.sp -= 3;
-				break;
+				case CEE_MONO_ICALL: {
+					guint32 token;
+					gpointer func;
+					MonoJitICallInfo *info;
+
+					token = read32 (td.ip + 1);
+					td.ip += 5;
+					func = mono_method_get_wrapper_data (method, token);
+					info = mono_find_jit_icall_by_addr (func);
+					g_assert (info);
+
+					CHECK_STACK (&td, info->sig->param_count);
+					switch (info->sig->param_count) {
+					case 1:
+						if (MONO_TYPE_IS_VOID (info->sig->ret))
+							ADD_CODE (&td,MINT_MONO_PROC1);
+						else
+							ADD_CODE (&td,MINT_MONO_CONV1);
+						break;
+					case 2:
+						ADD_CODE (&td,MINT_MONO_CONV2);
+						break;
+					case 3:
+						ADD_CODE (&td,MINT_MONO_CONV3);
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+					ADD_CODE(&td, get_data_item_index (&td, func));
+					td.sp -= info->sig->param_count;
+
+					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
+						td.sp ++;
+						SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I);
+					}
+					break;
+				}
 			case CEE_MONO_VTADDR: {
 				int size;
 				CHECK_STACK (&td, 1);
@@ -2423,12 +2440,6 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, get_data_item_index (&td, mono_method_get_wrapper_data (method, token)));
 				td.sp [0].type = STACK_TYPE_I;
 				++td.sp;
-				break;
-			case CEE_MONO_FREE:
-				CHECK_STACK (&td, 1);
-				ADD_CODE(&td, MINT_MONO_FREE);
-				++td.ip;
-				--td.sp;
 				break;
 			case CEE_MONO_OBJADDR:
 				CHECK_STACK (&td, 1);
@@ -2864,7 +2875,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		}
 		else if (in == 0xf0) {
 			ip++;
-			in = *ip + MONO_CEE_MONO_FUNC1;
+			in = *ip + MONO_CEE_MONO_ICALL;
 		}
 		opcode = &mono_opcodes [in];
 		switch (opcode->argument) {
