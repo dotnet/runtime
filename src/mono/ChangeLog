@@ -1,3 +1,7 @@
+2002-04-08  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Set -mno-cygwin here rather than in the build script
+
 2002-04-05  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/remoting2.cs: new test for async invoke of proxy calls

@@ -5,6 +5,23 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono, 0.10)
 AM_MAINTAINER_MODE
 
+dnl ****************************************
+dnl *** Check if we're building on win32 ***
+dnl ****************************************
+AC_MSG_CHECKING([if building for some Win32 platform])
+case "$host" in
+	*-*-mingw*|*-*-cygwin*)
+		platform_win32=yes
+		AC_DEFINE(PLATFORM_WIN32)
+		CC="gcc -mno-cygwin"
+		;;
+	*)
+		platform_win32=no
+		;;
+esac
+AC_MSG_RESULT($platform_win32)
+AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
+
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AM_PROG_CC_STDC
@@ -109,22 +126,6 @@ dnl		# If libgc was found, use it.  Otherwise just warn.
 dnl		AC_MSG_WARN("Compiling mono without GC.")
 		;;
 esac
-
-dnl ****************************************
-dnl *** Check if we're building on win32 ***
-dnl ****************************************
-AC_MSG_CHECKING([if building for some Win32 platform])
-case "$host" in
-	*-*-mingw*|*-*-cygwin*)
-		platform_win32=yes
-		AC_DEFINE(PLATFORM_WIN32)
-		;;
-	*)
-		platform_win32=no
-		;;
-esac
-AC_MSG_RESULT($platform_win32)
-AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
 
 if test x$platform_win32 = xno; then
 	dnl ******************************************************************

@@ -120,8 +120,8 @@ export CPPFLAGS
 export LDFLAGS
 
 # Make sure we build native w32, not cygwin
-CC="gcc -mno-cygwin"
-export CC
+#CC="gcc -mno-cygwin"
+#export CC
 
 # --prefix is used to set the class library dir in mono, and it needs
 # to be in windows-native form.  It also needs to have '\' turned into
