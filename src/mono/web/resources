@@ -36,7 +36,14 @@
 
 	Zip classes:
 
-	Mike's port to .NET: <a href="http://www.icsharpcode.net/OpenSource/NZipLib/default.asp">NZipLib</a>
+	Mike's port to .NET: <a
+	href="http://www.icsharpcode.net/OpenSource/NZipLib/default.asp">NZipLib</a>
+
+	.NET Security:
+
+	A nice overview paper on the <a
+	href="http://www.foundstone.com/pdf/dotnet-security-framework.pdf">.NET
+	security architecture</a>.
 
 ** Presentations
 
