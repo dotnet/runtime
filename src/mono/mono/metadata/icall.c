@@ -2931,6 +2931,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	GHashTable *method_slots = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
+	gpointer iter;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2942,9 +2943,8 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	}
 
 handle_parent:
-	mono_class_setup_properties (klass);
-	for (i = 0; i < klass->property.count; ++i) {
-		prop = &klass->properties [i];
+	iter = NULL;
+	while ((prop = mono_class_get_properties (klass, &iter))) {
 		match = 0;
 		method = prop->get;
 		if (!method)

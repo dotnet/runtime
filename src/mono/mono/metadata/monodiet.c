@@ -223,6 +223,8 @@ handle_type (MonoClass *klass, guint32 flags)
 	guint32 missing;
 	MonoCustomAttrInfo* cattrs;
 	gpointer val = NULL, oldkey = NULL;
+	MonoProperty* prop;
+	gpointer iter;
 	
 	if (g_hash_table_lookup_extended (type_table, klass, &oldkey, &val)) {
 		missing = flags & ~(GPOINTER_TO_UINT (val));
@@ -252,9 +254,9 @@ handle_type (MonoClass *klass, guint32 flags)
 			add_field (&klass->fields [i]);
 		}
 	}
-	mono_class_setup_properties (klass);
-	for (i = 0; i < klass->property.count; ++i) {
-		cattrs = mono_custom_attrs_from_property (klass, &klass->properties [i]);
+	iter = NULL;
+	while ((prop = mono_class_get_properties (klass, &iter))) {
+		cattrs = mono_custom_attrs_from_property (klass, prop);
 		handle_cattrs (cattrs);
 	}
 	mono_class_setup_events (klass);

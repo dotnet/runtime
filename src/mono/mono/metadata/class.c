@@ -845,7 +845,7 @@ mono_class_setup_methods (MonoClass *class)
 }
 
 
-void
+static void
 mono_class_setup_properties (MonoClass *class)
 {
 	guint startm, endm, i, j;
@@ -2812,13 +2812,12 @@ mono_vtable_get_static_field_data (MonoVTable *vt)
 MonoProperty*
 mono_class_get_property_from_name (MonoClass *klass, const char *name)
 {
-	int i;
-
 	while (klass) {
-		mono_class_setup_properties (klass);
-		for (i = 0; i < klass->property.count; ++i) {
-			if (strcmp (name, klass->properties [i].name) == 0)
-				return &klass->properties [i];
+		MonoProperty* p;
+		gpointer iter = NULL;
+		while ((p = mono_class_get_properties (klass, &iter))) {
+			if (! strcmp (name, p->name))
+				return p;
 		}
 		klass = klass->parent;
 	}
@@ -2829,13 +2828,15 @@ guint32
 mono_class_get_property_token (MonoProperty *prop)
 {
 	MonoClass *klass = prop->parent;
-	int i;
-
 	while (klass) {
-		mono_class_setup_properties (klass);
-		for (i = 0; i < klass->property.count; ++i) {
+		MonoProperty* p;
+		int i = 0;
+		gpointer iter = NULL;
+		while ((p = mono_class_get_properties (klass, &iter))) {
 			if (&klass->properties [i] == prop)
 				return mono_metadata_make_token (MONO_TABLE_PROPERTY, klass->property.first + i + 1);
+			
+			i ++;
 		}
 		klass = klass->parent;
 	}
