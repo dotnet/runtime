@@ -682,7 +682,7 @@
     <class name="System.StringBuilder">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
-        <test-suite>no</test-suite>
+        <test-suite>yes</test-suite>
         <completion>100</completion>
         <maintainers>
             <maintainer>marcins@zipworld.com.au</maintainer>
@@ -731,7 +731,7 @@
 
     <class name="System.IO.TextReader">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -741,8 +741,8 @@
 
     <class name="System.IO.StringReader">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>marcins@zipworld.com.au</maintainer>
@@ -753,7 +753,7 @@
         <last-activity>Jun-15-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>yes</completion>
         <maintainers>
             <maintainer>marcins@zipworld.com.au</maintainer>
         </maintainers>
@@ -762,8 +762,8 @@
     <class name="System.IO.StringWriter">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
+        <test-suite>yes</test-suite>
+        <completion>yes</completion>
         <maintainers>
             <maintainer>marcins@zipworld.com.au</maintainer>
         </maintainers>
@@ -931,8 +931,18 @@
 
     <class name="System.Xml.XmlReader">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlTextReader">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>jason@injektilo.org</maintainer>
