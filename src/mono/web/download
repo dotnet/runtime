@@ -93,12 +93,12 @@
                         <li><a href="archive/suse-82-i586/mono-devel-0.28-2.ximian.7.1.i586.rpm">mono-devel-0.28-2.ximian.7.1.i586.rpm</a>
                      </ul>
                    </td>
-<!--                   <td bgcolor="#999999"> -->
-<!--                     <img src="images/windows-36.gif"><b>Windows installer</b> -->
-<!--                       <ul> -->
-<!--                         <li><a href="archive/mono-0.28-win32-1.exe">mono-0.28-win32-1.exe</a> -->
-<!--                      </ul> -->
-<!--                    </td> -->
+                  <td bgcolor="#999999">
+                    <img src="images/windows-36.gif"><b>Windows installer</b>
+                      <ul>
+                        <li><a href="archive/mono-0.28-win32-1.exe">mono-0.28-win32-1.exe</a>
+                     </ul>
+                   </td>
                  </tr>
              </table>
             </td>
