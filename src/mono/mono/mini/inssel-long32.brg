@@ -498,6 +498,11 @@ reg: OP_LCONV_TO_U4 (lreg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
+lreg: OP_LCONV_TO_U8 (lreg) {
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg1);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg2, state->left->reg2);
+}
+
 reg: OP_LCONV_TO_U (lreg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
