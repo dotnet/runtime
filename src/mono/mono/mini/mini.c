@@ -4649,7 +4649,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoInst *iargs [2];
 			MonoMethodSignature *fsig;
 			int temp;
-
+			
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -4674,7 +4674,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
-			
 
 			if (cmethod->klass->parent == mono_defaults.array_class) {
 				NEW_METHODCONST (cfg, *sp, cmethod);
@@ -4685,6 +4684,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* now call the string ctor */
 				temp = mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, NULL);
 			} else {
+				MonoInst* callvirt_this_arg = NULL;
+				
 				if (cmethod->klass->valuetype) {
 					iargs [0] = mono_compile_create_var (cfg, &cmethod->klass->byval_arg, OP_LOCAL);
 					temp = iargs [0]->inst_c0;
@@ -4702,6 +4703,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
+				/* Avoid virtual calls to ctors if possible */
+				if (cmethod->klass->marshalbyref)
+					callvirt_this_arg = sp [0];
+				
 				if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 				    mono_method_check_inlining (cfg, cmethod) &&
 				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
@@ -4728,11 +4733,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						break;
 						
 					} else {
-						mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, sp[0]);
+						mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, callvirt_this_arg);
 					}
 				} else {
 					/* now call the actual ctor */
-					mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, sp[0]);
+					mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, callvirt_this_arg);
 				}
 			}
 
