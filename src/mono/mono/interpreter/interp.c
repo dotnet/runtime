@@ -1212,6 +1212,7 @@ mono_create_method_pointer (MonoMethod *method)
 
 	EnterCriticalSection (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
+		MONO_GC_REGISTER_ROOT (method_pointer_hash);
 		method_pointer_hash = mono_g_hash_table_new (NULL, NULL);
 	}
 	addr = mono_g_hash_table_lookup (method_pointer_hash, method);
