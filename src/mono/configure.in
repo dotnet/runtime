@@ -1204,13 +1204,16 @@ fi
 #
 ICU_CFLAGS=""
 ICU_LIBS=""
-enable_icu=no
+enable_icu="no;  default"
 
-probe_icu=true
+probe_icu=false
 AC_ARG_WITH(icu, [  --with-icu=yes/no],
 	if test x$with_icu = xno; then
 	   probe_icu=false;
 	   AC_MSG_RESULT(Will not probe for ICU)
+	fi
+	if test x$with_icu = xyes; then
+	   probe_icu=true;
 	fi
 )
 
