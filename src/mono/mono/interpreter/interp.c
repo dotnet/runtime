@@ -745,7 +745,6 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 {
 	const char *name = frame->method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
-	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)frame->obj;
 	MonoInvocation call;
 	MonoMethod *nm;
 
@@ -758,26 +757,10 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 			return;
 		}
 		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			guchar *code;
-			MonoJitInfo *ji;
-			MonoMethod *method;
-		
-			while (delegate) {
-
-				code = (guchar*)delegate->delegate.method_ptr;
-				if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
-					method = ji->method;
-					INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
-					ves_exec_method_with_context (&call, context);
-					frame->ex = call.ex;
-					if (frame->ex)
-						return;
-				} else {
-					g_assert_not_reached ();
-				}
-
-				delegate = delegate->prev;
-			}
+			nm = mono_marshal_get_delegate_invoke (frame->method);
+			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
+			ves_exec_method_with_context (&call, context);
+			frame->ex = call.ex;
 			return;
 		}
 		if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
@@ -1905,17 +1888,23 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				MonoJitInfo *ji;
 				--sp;
 				code = sp->data.p;
-				if (frame->method->wrapper_type != MONO_WRAPPER_NONE) {
+				if (frame->method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE &&
+					(ji = mono_jit_info_table_find (mono_root_domain, code)) != NULL) {
+					child_frame.method = ji->method;
+					csignature = ji->method->signature;
+				}
+				else if (frame->method->wrapper_type != MONO_WRAPPER_NONE) {
 					csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (frame->method, token);
 					child_frame.method = NULL;
-				} else if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
-					child_frame.method = ji->method;
 				} else {
 					g_assert_not_reached ();
 				}
 				g_assert (code);
 			} else {
-				child_frame.method = mono_get_method (image, token, NULL);
+				if (frame->method->wrapper_type != MONO_WRAPPER_NONE) 
+					child_frame.method = (MonoMethod *)mono_method_get_wrapper_data (frame->method, token);
+				else
+					child_frame.method = mono_get_method (image, token, NULL);
 				if (!child_frame.method)
 					THROW_EX (mono_get_exception_missing_method (), ip -5);
 				csignature = child_frame.method->signature;
@@ -3017,7 +3006,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			str_index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = (MonoObject*)mono_ldstr (domain, image, str_index);
+			if (frame->method->wrapper_type != MONO_WRAPPER_NONE) {
+				o = (MonoObject *)mono_string_new_wrapper(
+					mono_method_get_wrapper_data (frame->method, str_index));
+			}
+			else
+				o = (MonoObject*)mono_ldstr (domain, image, str_index);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 
@@ -4131,7 +4125,11 @@ array_constructed:
 				case MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY:
 					sp->data.p = mono_marshal_string_array (sp->data.p);
 					break;
+				case MONO_MARSHAL_CONV_LPWSTR_STR:
+					sp->data.p = mono_string_from_utf16 (sp->data.p);
+					break;
 				default:
+					fprintf(stderr, "MONO_FUNC1 %d", conv);
 					g_assert_not_reached ();
 				}
 				sp++; 
