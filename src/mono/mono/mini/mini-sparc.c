@@ -186,9 +186,9 @@ mono_arch_regname (int reg) {
 void
 mono_arch_cpu_init (void)
 {
-    guint32 dummy;
-    /* make sure sparcv9 is initialized for embedded use */
-    mono_arch_cpu_optimizazions(&dummy);
+	guint32 dummy;
+	/* make sure sparcv9 is initialized for embedded use */
+	mono_arch_cpu_optimizazions(&dummy);
 }
 
 /*
