@@ -12,11 +12,11 @@
 	programs can be run using the Mono runtime and the XSP page
 	parser.
 
-	Tim started work on the Web Services early this week.
-	Although we have a SoapFormatter as part of the remoting
-	infrastructure already (contributed by Jesus), most people
-	will be using the ASP.NET Web-services support.  Work for the
-	supporting class libraries just started recently.
+	Tim started work on the Web Services.  Although we have a
+	SoapFormatter as part of the remoting infrastructure already
+	(contributed by Jesus), most people will be using the ASP.NET
+	Web Services support.  Work for the supporting class libraries
+	just started recently.
 
 * Web Forms: The pieces
 
@@ -41,7 +41,7 @@
 	files and generated the code required to run them (the code lives in
 	module `xsp' along with a little web server for testing).
 
-	Most of the runtime support was mostly written by Patrik Torstensson
+	Most of the runtime support was written by Patrik Torstensson
 	(now at Intel).  This was interesting, because in order to implement
 	some of its features, Patrik had to go into the runtime/JIT engine and
 	he spent a few weeks doing work there.
@@ -56,14 +56,18 @@
 ** HttpRuntime
 
 	Patrik has authored most of the HttpRuntime support (both on
-	the System.Web and on the foundation) but it is still not
-	ready to run.
+	the System.Web and on the foundation).
+
+	He is now working on finishing HttpRuntime and a few needed
+	classes.
 
 ** XSP
 
-	Currently XSP provides the .aspx compiler to C#.  It would be
-	interesting to see if it makes sense to extend the ASP.NET
-	syntax to make it simpler to develop applications.
+	Currently XSP provides the .aspx compiler to C#.
+	There is also a small web server for testing in module xsp
+	along with a bunch of .aspx pages to test the server.
+
+	The C# code generator is being moved to System.Web.Compilation.
 
 	Gonzalo is in charge of the compiler.
 
@@ -73,10 +77,11 @@
 	implement the controls (UI.HtmlControls and UI.WebControls),
 	but they have been coded mostly in the dark, and without being
 	able to test them in real life: Gaurav and Leen worked very
-	hard on this namespace, but needs to be finished.
+	hard on this namespace.
 
-	We can now render all HtmlControls and some WebControls. Work is
-	ongoing to make all WebControls render HTML.
+	We can now render all HtmlControls and almost all WebControls.
+	DataGrid and DataList controls are being finisehd by Gaurav.
+	Xml control needs some work on System.Xml related to XSL.
 
 ** Extending ASP.NET
 
@@ -101,16 +106,19 @@
            but using our generated page.   
 
         4. Run the sample with our classes with the .NET runtime.
-	<b>We are here</b>.
 
-        5. Finish HttpRuntime.
+        5. Run the samples with our classes with the our runtime (without
+	using HttpRuntime).
+
+        6. Finish HttpRuntime.
+	<b>We are here</b>.
 	
-        6. Running our sample code with our classes with our runtime.
+        7. Running our sample code with our classes with our runtime.
 
 ** How to Help
 
-        Currently we are testing and fixing HtmlControls, WebControls and
-        validators.
+        Testing and fixing HtmlControls, WebControls and validators is an
+	easy way to help.
 
         In the CVS module XSP you can find the aspx to C# page parser,
         a little web server used for testing and a directory containing
