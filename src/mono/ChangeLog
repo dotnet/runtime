@@ -1,3 +1,7 @@
+2001-07-15  Joe Shaw  <joe@ximian.com>
+
+	* autogen.sh: Call aclocal with the $ACLOCAL_FLAGS env var.
+
 2001-07-15  Miguel de Icaza  <miguel@ximian.com>
 
 	* doc/class-library (A): Updated FAQ with question on error 1595.

@@ -1,6 +1,6 @@
 libtoolize --automake
 automake -a
 autoheader
-aclocal
+aclocal $ACLOCAL_FLAGS
 autoconf
 ./configure $*
