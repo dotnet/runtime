@@ -96,7 +96,18 @@
   </tr>
 </table>
 
-@item Jan, 20th: Mono 0.19 released;  Screenshots page
+@item Jan, 22th: Mono wins award, OpenLink releases Virtuoso.
+
+	Mono wont the `Best Open Source Project' award at the Linux
+	World Expo.  A description is <a
+	href="http://linuxtoday.com/news_story.php3?ltsn=2003-01-23-024-26-OP-EV">here</a>
+
+	Open Link has a <a
+	href="http://biz.yahoo.com/prnews/030123/neth013_1.html">press
+	release</a> about Virtuoso 3.0: the first commercial product
+	shipping that uses Mono.
+
+@item Jan, 20th: Mono 0.19 released;  Screenshots page; Gtk# 0.7
 
 	Mono 0.19 has been released.  Check out the <a
 	href="archive/mono-0.19">release notes</a> for an overview of
@@ -108,6 +119,9 @@
 	screenshots</a> of various Mono applications.  You can see
 	there the new released Debugger, as well as the work in
 	progress on the documentation browser.
+
+        <a href="http://gtk-sharp.sf.net">Gtk# 0.7</a> has been <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-January/005222.html">released</a>
 
 @item Jan, 19th: Mono Debugger released.
 
