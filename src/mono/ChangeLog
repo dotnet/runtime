@@ -1,3 +1,9 @@
+2003-08-18  Johannes Roith  <johannes@jroith.de>
+
+	* mono/Makefile.am: add windows build option
+	* mono/monowiz.win32.nsi: add windows build script
+	* mono/mono-win32-light.bmp: add bitmap
+
 2003-08-16  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/checked.cs: Added mul.ovf tests.
