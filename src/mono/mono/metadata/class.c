@@ -350,7 +350,7 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	MonoClass *class, *eclass;
 	static MonoClass *parent = NULL;
 	MonoArrayClass *aclass;
-	guint32 esize, key;
+	guint32 key;
 
 	g_assert (rank <= 255);
 
@@ -364,8 +364,6 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	g_assert (eclass != NULL);
 
 	image = eclass->image;
-
-	esize = eclass->instance_size;
 
 	g_assert (!eclass->type_token ||
 		  mono_metadata_token_table (eclass->type_token) == MONO_TABLE_TYPEDEF);
