@@ -431,8 +431,14 @@ mono_type_initialization_init (void);
 guint32
 mono_thread_get_tls_key    (void);
 
+gint32
+mono_thread_get_tls_offset (void);
+
 guint32
 mono_domain_get_tls_key    (void);
+
+gint32
+mono_domain_get_tls_offset (void);
 
 /* Reflection and Reflection.Emit support */
 

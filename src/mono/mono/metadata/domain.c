@@ -16,6 +16,7 @@
 
 #include <mono/os/gc_wrapper.h>
 
+#include <mono/utils/mono-compiler.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -40,7 +41,7 @@
 static guint32 appdomain_thread_id = -1;
  
 #ifdef HAVE_KW_THREAD
-static __thread MonoDomain * tls_appdomain;
+static __thread MonoDomain * tls_appdomain MONO_TLS_FAST;
 #define GET_APPDOMAIN() tls_appdomain
 #define SET_APPDOMAIN(x) do { \
 	tls_appdomain = x; \
@@ -99,6 +100,16 @@ guint32
 mono_domain_get_tls_key (void)
 {
 	return appdomain_thread_id;
+}
+
+gint32
+mono_domain_get_tls_offset (void)
+{
+	int offset = -1;
+	MONO_THREAD_VAR_OFFSET (tls_appdomain, offset);
+/*	__asm ("jmp 1f; .section writetext, \"awx\"; 1: movl $tls_appdomain@ntpoff, %0; jmp 2f; .previous; 2:" 
+		: "=r" (offset));*/
+	return offset;
 }
 
 static MonoJitInfoTable *

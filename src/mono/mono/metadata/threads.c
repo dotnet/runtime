@@ -31,6 +31,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/utils/mono-compiler.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -95,7 +96,7 @@ static guint32 current_object_key = -1;
 /* we need to use both the Tls* functions and __thread because
  * the gc needs to see all the threads 
  */
-static __thread MonoThread * tls_current_object;
+static __thread MonoThread * tls_current_object MONO_TLS_FAST;
 #define SET_CURRENT_OBJECT(x) do { \
 	tls_current_object = x; \
 	TlsSetValue (current_object_key, x); \
@@ -142,6 +143,14 @@ guint32
 mono_thread_get_tls_key (void)
 {
 	return current_object_key;
+}
+
+gint32
+mono_thread_get_tls_offset (void)
+{
+	int offset;
+	MONO_THREAD_VAR_OFFSET (tls_current_object,offset);
+	return offset;
 }
 
 /* handle_store() and handle_remove() manage the array of threads that
