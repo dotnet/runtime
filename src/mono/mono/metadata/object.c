@@ -1434,7 +1434,9 @@ mono_unhandled_exception (MonoObject *exc)
 	MonoDomain *domain = mono_domain_get ();
 	MonoClassField *field;
 	MonoObject *delegate;
-	
+
+	printf ("UNHANDLED IN %x\n", GetCurrentThreadId ());
+
 	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, 
 					     "UnhandledException");
 	g_assert (field);
@@ -1655,7 +1657,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 }
 
 static void
-arith_overflow ()
+arith_overflow (void)
 {
 	mono_raise_exception (mono_get_exception_overflow ());
 }
