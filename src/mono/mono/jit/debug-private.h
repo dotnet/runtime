@@ -26,50 +26,44 @@ typedef struct {
 } DebugMethodInfo;
 
 struct _AssemblyDebugInfo {
-	FILE *f;
 	char *filename;
 	char *name;
 	char *objfile;
-	char *producer_name;
+	int source_file;
 	int total_lines;
 	int *mlines;
 	int *moffsets;
 	int nmethods;
-	int next_idx;
 	MonoImage *image;
-	GHashTable *methods;
-	GHashTable *type_hash;
-	int next_klass_idx;
-	GPtrArray *source_files;
-	MonoDebugFormat format;
 	gpointer _priv;
 };
 
 struct _MonoDebugHandle {
 	char *name;
-	char *objfiles;
-	MonoDebugFormat default_format;
+	char *filename;
+	char *objfile;
+	char *producer_name;
+	MonoDebugFormat format;
+	GHashTable *type_hash;
+	GHashTable *methods;
+	GPtrArray *source_files;
+	int next_idx;
+	int next_klass_idx;
 	GList *info;
+	FILE *f;
 };
 
-guint32        mono_debug_get_type                   (AssemblyDebugInfo* info, MonoClass *klass);
-
-void           mono_debug_open_assembly_stabs        (AssemblyDebugInfo *info);
-
-void           mono_debug_open_assembly_dwarf2       (AssemblyDebugInfo *info);
+guint32        mono_debug_get_type                   (MonoDebugHandle* debug, MonoClass *klass);
 
 void           mono_debug_open_assembly_dwarf2_plus  (AssemblyDebugInfo *info);
 
-void           mono_debug_write_assembly_stabs       (AssemblyDebugInfo *info);
-
-void           mono_debug_write_assembly_dwarf2      (AssemblyDebugInfo *info);
-
 void           mono_debug_write_assembly_dwarf2_plus (AssemblyDebugInfo *info);
 
-void           mono_debug_close_assembly_stabs       (AssemblyDebugInfo *info);
-
-void           mono_debug_close_assembly_dwarf2      (AssemblyDebugInfo *info);
-
 void           mono_debug_close_assembly_dwarf2_plus (AssemblyDebugInfo *info);
+
+void           mono_debug_write_stabs                (MonoDebugHandle *debug);
+
+void           mono_debug_write_dwarf2               (MonoDebugHandle *debug);
+
 
 #endif /* __MONO_JIT_DEBUG_PRIVATE_H__ */

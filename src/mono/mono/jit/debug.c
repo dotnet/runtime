@@ -10,6 +10,16 @@
 
 #include "debug-private.h"
 
+static void
+free_method_info (DebugMethodInfo *minfo)
+{
+	if (minfo->line_numbers)
+		g_ptr_array_free (minfo->line_numbers, TRUE);
+	g_free (minfo->method_info.params);
+	g_free (minfo->method_info.locals);
+	g_free (minfo);
+}
+
 MonoDebugHandle*
 mono_debug_open_file (const char *filename, MonoDebugFormat format)
 {
@@ -17,8 +27,29 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 	
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (filename);
-	debug->default_format = format;
-	debug->objfiles = g_strdup ("");
+	debug->format = format;
+	debug->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
+	debug->next_idx = 100;
+
+	debug->type_hash = g_hash_table_new (NULL, NULL);
+	debug->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+						NULL, (GDestroyNotify) free_method_info);
+	debug->source_files = g_ptr_array_new ();
+
+	switch (debug->format) {
+	case MONO_DEBUG_FORMAT_STABS:
+		debug->filename = g_strdup_printf ("%s-stabs.s", g_basename (debug->name));
+		debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
+		break;
+	case MONO_DEBUG_FORMAT_DWARF2:
+		debug->filename = g_strdup_printf ("%s-dwarf.s", g_basename (debug->name));
+		debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+
 	return debug;
 }
 
@@ -210,122 +241,34 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	g_ptr_array_free (il_offsets, TRUE);
 }
 
-static void
-free_method_info (DebugMethodInfo *minfo)
-{
-	if (minfo->line_numbers)
-		g_ptr_array_free (minfo->line_numbers, TRUE);
-	g_free (minfo->method_info.params);
-	g_free (minfo->method_info.locals);
-	g_free (minfo);
-}
-
 static AssemblyDebugInfo*
-mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
+mono_debug_open_assembly (MonoDebugHandle* debug, MonoImage *image)
 {
 	GList *tmp;
 	AssemblyDebugInfo* info;
 
-	for (tmp = handle->info; tmp; tmp = tmp->next) {
+	if (debug->format == MONO_DEBUG_FORMAT_NONE)
+		return NULL;
+
+	for (tmp = debug->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
 		if (strcmp (info->name, image->assembly_name) == 0)
 			return info;
 	}
 	info = g_new0 (AssemblyDebugInfo, 1);
-	info->format = handle->default_format;
-	switch (handle->default_format) {
-	case MONO_DEBUG_FORMAT_NONE:
-		g_free (info);
-		return NULL;
-	case MONO_DEBUG_FORMAT_STABS:
-		info->filename = g_strdup_printf ("%s-stabs.s", image->assembly_name);
-		info->objfile = g_strdup_printf ("%s-stabs.o", image->assembly_name);
-		break;
-	case MONO_DEBUG_FORMAT_DWARF2:
-		info->filename = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
-		info->objfile = g_strdup_printf ("%s-dwarf.o", image->assembly_name);
-		break;
-	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
-		info->filename = g_strdup_printf ("%s-debug.o", image->assembly_name);
-		info->objfile = g_strdup_printf ("%s-debug.o", image->assembly_name);
-
-		g_message (G_STRLOC ": %s - %s", image->assembly_name, image->name);
-
-		/* Fall back to dwarf if we can't find the symbol file. */
-		if (!g_file_test (info->filename, G_FILE_TEST_EXISTS)) {
-			gchar *fname = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
-
-			if (g_file_test (fname, G_FILE_TEST_EXISTS)) {
-				g_warning ("Can't open symbol file `%s', falling back to DWARF 2.",
-					   info->filename);
-				g_free (info->filename);
-				g_free (info->objfile);
-				info->filename = fname;
-				info->format = MONO_DEBUG_FORMAT_DWARF2;
-			} else
-				g_free (fname);
-		}
-
-		break;
-	}
 	info->image = image;
 	info->image->ref_count++;
 	info->name = g_strdup (image->assembly_name);
-	info->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
-					       NULL, (GDestroyNotify) free_method_info);
-	info->source_files = g_ptr_array_new ();
-	info->type_hash = g_hash_table_new (NULL, NULL);
 
-	g_ptr_array_add (info->source_files, g_strdup_printf ("%s.il", image->assembly_name));
-	info->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
+	info->source_file = debug->source_files->len;
+	g_ptr_array_add (debug->source_files, g_strdup_printf ("%s.il", image->assembly_name));
 
-	mono_debug_get_type (info, mono_defaults.void_class);
-	mono_debug_get_type (info, mono_defaults.object_class);
-	mono_debug_get_type (info, mono_defaults.void_class);
-	mono_debug_get_type (info, mono_defaults.boolean_class);
-	mono_debug_get_type (info, mono_defaults.char_class);
-	mono_debug_get_type (info, mono_defaults.sbyte_class);
-	mono_debug_get_type (info, mono_defaults.byte_class);
-	mono_debug_get_type (info, mono_defaults.int16_class);
-	mono_debug_get_type (info, mono_defaults.uint16_class);
-	mono_debug_get_type (info, mono_defaults.int32_class);
-	mono_debug_get_type (info, mono_defaults.uint32_class);
-	mono_debug_get_type (info, mono_defaults.int_class);
-	mono_debug_get_type (info, mono_defaults.uint_class);
-	mono_debug_get_type (info, mono_defaults.int64_class);
-	mono_debug_get_type (info, mono_defaults.uint64_class);
-	mono_debug_get_type (info, mono_defaults.single_class);
-	mono_debug_get_type (info, mono_defaults.double_class);
-	mono_debug_get_type (info, mono_defaults.string_class);
-
-	switch (info->format) {
-	case MONO_DEBUG_FORMAT_STABS:
-		mono_debug_open_assembly_stabs (info);
-		break;
-	case MONO_DEBUG_FORMAT_DWARF2:
-		mono_debug_open_assembly_dwarf2 (info);
-		break;
-	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
-		mono_debug_open_assembly_dwarf2_plus (info);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-	info->next_idx = 100;
-	handle->info = g_list_prepend (handle->info, info);
-
-	if (info->objfile) {
-		gchar *objfiles = g_strdup_printf ("%s %s", handle->objfiles, info->objfile);
-
-		g_free (handle->objfiles);
-		handle->objfiles = objfiles;
-	}
+	debug->info = g_list_prepend (debug->info, info);
 
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
 	info->mlines = g_new0 (int, info->nmethods);
 
-	if (info->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
+	if (debug->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
 		debug_load_method_lines (info);
 
 	return info;
@@ -334,41 +277,19 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 void
 mono_debug_make_symbols (void)
 {
-	GList *tmp;
-	AssemblyDebugInfo* info;
-	char *command;
-
 	if (!mono_debug_handle)
 		return;
 
-	for (tmp = mono_debug_handle->info; tmp; tmp = tmp->next) {
-		info = (AssemblyDebugInfo*)tmp->data;
-
-		switch (info->format) {
-		case MONO_DEBUG_FORMAT_STABS:
-			mono_debug_write_assembly_stabs (info);
-			break;
-		case MONO_DEBUG_FORMAT_DWARF2:
-			mono_debug_write_assembly_dwarf2 (info);
-			break;
-		case MONO_DEBUG_FORMAT_DWARF2_PLUS:
-			mono_debug_write_assembly_dwarf2_plus (info);
-			break;
-		default:
-			g_assert_not_reached ();
-		}
+	switch (mono_debug_handle->format) {
+	case MONO_DEBUG_FORMAT_STABS:
+		mono_debug_write_stabs (mono_debug_handle);
+		break;
+	case MONO_DEBUG_FORMAT_DWARF2:
+		mono_debug_write_dwarf2 (mono_debug_handle);
+		break;
+	default:
+		g_assert_not_reached ();
 	}
-
-	command = g_strdup_printf ("ld -r -o %s.o %s", mono_debug_handle->name,
-				   mono_debug_handle->objfiles);
-
-	g_print ("Creating symbol file %s.o (%s).\n", mono_debug_handle->name, command);
-
-	if (system (command))
-		g_warning ("Can't create symbol file `%s.o' (%s): %s", mono_debug_handle->name,
-			   command, g_strerror (errno));
-
-	g_free (command);
 }
 
 static void
@@ -379,10 +300,6 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 	g_free (info->name);
 	g_free (info->filename);
 	g_free (info->objfile);
-	g_ptr_array_free (info->source_files, TRUE);
-	g_hash_table_destroy (info->type_hash);
-	g_hash_table_destroy (info->methods);
-	g_free (info->producer_name);
 	g_free (info);
 }
 
@@ -397,41 +314,30 @@ mono_debug_close (MonoDebugHandle* debug)
 	for (tmp = debug->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
 
-		switch (info->format) {
-		case MONO_DEBUG_FORMAT_STABS:
-			mono_debug_close_assembly_stabs (info);
-			break;
-		case MONO_DEBUG_FORMAT_DWARF2:
-			mono_debug_close_assembly_dwarf2 (info);
-			break;
-		case MONO_DEBUG_FORMAT_DWARF2_PLUS:
-			mono_debug_close_assembly_dwarf2_plus (info);
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-
 		mono_debug_close_assembly (info);
 	}
 
-	g_free (debug->objfiles);
+	g_ptr_array_free (debug->source_files, TRUE);
+	g_hash_table_destroy (debug->methods);
+	g_hash_table_destroy (debug->type_hash);
+	g_free (debug->producer_name);
 	g_free (debug->name);
 	g_free (debug);
 }
 
 guint32
-mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
+mono_debug_get_type (MonoDebugHandle *debug, MonoClass *klass)
 {
 	guint index, i;
 
 	mono_class_init (klass);
 
-	index = GPOINTER_TO_INT (g_hash_table_lookup (info->type_hash, klass));
+	index = GPOINTER_TO_INT (g_hash_table_lookup (debug->type_hash, klass));
 	if (index)
 		return index;
 
-	index = ++info->next_klass_idx;
-	g_hash_table_insert (info->type_hash, klass, GINT_TO_POINTER (index));
+	index = ++debug->next_klass_idx;
+	g_hash_table_insert (debug->type_hash, klass, GINT_TO_POINTER (index));
 
 	if (klass->enumtype)
 		return index;
@@ -439,7 +345,7 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 	switch (klass->byval_arg.type) {
 	case MONO_TYPE_CLASS:
 		if (klass->parent)
-			mono_debug_get_type (info, klass->parent);
+			mono_debug_get_type (debug, klass->parent);
 
 		for (i = 0; i < klass->method.count; i++) {
 			MonoMethod *method = klass->methods [i];
@@ -451,25 +357,25 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 
 			if (ret_type) {
 				MonoClass *ret_klass = mono_class_from_mono_type (ret_type);
-				mono_debug_get_type (info, ret_klass);
+				mono_debug_get_type (debug, ret_klass);
 			}
 
 			for (j = 0; j < method->signature->param_count; j++) {
 				MonoType *sub_type = method->signature->params [j];
 				MonoClass *sub_klass = mono_class_from_mono_type (sub_type);
-				mono_debug_get_type (info, sub_klass);
+				mono_debug_get_type (debug, sub_klass);
 			}
 		}
 		// fall through
 	case MONO_TYPE_VALUETYPE:
 		for (i = 0; i < klass->field.count; i++) {
 			MonoClass *subclass = mono_class_from_mono_type (klass->fields [i].type);
-			mono_debug_get_type (info, subclass);
+			mono_debug_get_type (debug, subclass);
 		}
 		break;
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
-		mono_debug_get_type (info, klass->element_class);
+		mono_debug_get_type (debug, klass->element_class);
 		break;
 	default:
 		break;
@@ -481,9 +387,7 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 void
 mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass)
 {
-	AssemblyDebugInfo* info = mono_debug_open_assembly (debug, klass->image);
-
-	mono_debug_get_type (info, klass);
+	mono_debug_get_type (debug, klass);
 }
 
 void
@@ -508,7 +412,7 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 		}
 	}
 
-	if (g_hash_table_lookup (info->methods, method))
+	if (g_hash_table_lookup (debug->methods, method))
 		return;
 
 	if (info->moffsets) {
@@ -530,6 +434,7 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	minfo->start_line = start_line;
 	minfo->first_line = line;
 	minfo->last_line = end_line;
+	minfo->source_file = info->source_file;
 	minfo->method_info.code_start = cfg->start + 1;
 	minfo->method_info.code_size = cfg->epilogue_end - 1;
 	minfo->method_number = method_number;
@@ -568,5 +473,5 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 
 	debug_generate_method_lines (info, minfo, cfg);
 
-	g_hash_table_insert (info->methods, method, minfo);
+	g_hash_table_insert (debug->methods, method, minfo);
 }

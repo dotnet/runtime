@@ -43,7 +43,8 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 	if (!method)
 		return NULL;
 
-	minfo = g_hash_table_lookup (info->methods, method);
+	g_assert_not_reached (); // FIXME
+	// minfo = g_hash_table_lookup (info->methods, method);
 
 	return (MonoDebugMethodInfo *) minfo;
 }
