@@ -275,6 +275,7 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->generic_param_count = sig->generic_param_count;
+	res->gen_method = gmethod;
 	return res;
 }
 
@@ -292,7 +293,6 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericMethod *gmethod)
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
 	res->gen_params = header->gen_params;
-	res->gen_method = gmethod;
 	for (i = 0; i < header->num_locals; ++i)
 		res->locals [i] = mono_class_inflate_generic_type (header->locals [i],
 								   gmethod->generic_inst,

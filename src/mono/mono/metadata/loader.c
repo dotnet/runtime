@@ -246,13 +246,10 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 		return method->signature;
 
 	if (table == MONO_TABLE_METHODSPEC) {
-		MonoMethodNormal *mn;
-
 		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
 			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 			  method->signature);
-		mn = (MonoMethodNormal *) method;
-		g_assert (mn->header->gen_method);
+		g_assert (method->signature->gen_method);
 
 		return method->signature;
 	}
