@@ -146,6 +146,8 @@ static GHashTable *class_init_hash_addr = NULL;
 
 static MonoCodeManager *global_codeman = NULL;
 
+static GHashTable *jit_icall_name_hash = NULL;
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -2497,6 +2499,7 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 {
 	MonoMethodSignature *esig;
 	char icall_name [256];
+	char *name;
 	MonoJitICallInfo *info;
 
 	/* Need to register the icall so it gets an icall wrapper */
@@ -2505,7 +2508,12 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
 		esig = mono_get_array_new_va_signature (rank);
-		info = mono_register_jit_icall (mono_array_new_va, g_strdup (icall_name), esig, FALSE);
+		name = g_strdup (icall_name);
+		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
+
+		EnterCriticalSection (&jit_mutex);
+		g_hash_table_insert (jit_icall_name_hash, name, name);
+		LeaveCriticalSection (&jit_mutex);
 	}
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
@@ -2631,6 +2639,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	MonoInst *addr;
 	MonoMethodSignature *esig;
 	char icall_name [256];
+	char *name;
 	MonoJitICallInfo *info;
 
 	rank = cmethod->signature->param_count - (is_set? 1: 0);
@@ -2653,7 +2662,12 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
 		esig = mono_get_element_address_signature (rank);
-		info = mono_register_jit_icall (ves_array_element_address, g_strdup (icall_name), esig, FALSE);
+		name = g_strdup (icall_name);
+		info = mono_register_jit_icall (ves_array_element_address, name, esig, FALSE);
+
+		EnterCriticalSection (&jit_mutex);
+		g_hash_table_insert (jit_icall_name_hash, name, name);
+		LeaveCriticalSection (&jit_mutex);
 	}
 
 	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
@@ -6670,7 +6684,7 @@ gpointer
 mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, 
 							 gboolean add_sync_wrapper)
 {
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, *ji2;
 	gpointer code;
 
 	if (add_sync_wrapper && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
@@ -6688,18 +6702,25 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 
 	ji = mono_arch_create_jump_trampoline (method);
 
+	/* Allocate a new JitInfo in the mempool as with the other JitInfos */
+	mono_domain_lock (domain);
+	ji2 = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
+	mono_domain_unlock (domain);
+	memcpy (ji2, ji, sizeof (MonoJitInfo));
+	g_free (ji);
+
 	/*
 	 * mono_delegate_ctor needs to find the method metadata from the 
 	 * trampoline address, so we save it here.
 	 */
 
-	mono_jit_info_table_add (mono_get_root_domain (), ji);
+	mono_jit_info_table_add (mono_get_root_domain (), ji2);
 
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
+	g_hash_table_insert (domain->jump_trampoline_hash, method, ji2->code_start);
 	mono_domain_unlock (domain);
 
-	return ji->code_start;
+	return ji2->code_start;
 }
 
 gpointer
@@ -9191,7 +9212,9 @@ mini_init (const char *filename)
 	MonoDomain *domain;
 
 	InitializeCriticalSection (&jit_mutex);
+
 	global_codeman = mono_code_manager_new ();
+	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
 	mono_arch_cpu_init ();
 
@@ -9226,7 +9249,7 @@ mini_init (const char *filename)
 	mono_install_stack_walk (mono_jit_walk_stack);
 
 	domain = mono_init_from_assembly (filename, filename);
-	mono_init_icall ();
+	mono_icall_init ();
 
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
 				ves_icall_get_frame_info);
@@ -9415,6 +9438,8 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_debug_cleanup ();
 
+	mono_icall_cleanup ();
+
 #ifdef PLATFORM_WIN32
 	win32_seh_cleanup();
 #endif
@@ -9422,8 +9447,9 @@ mini_cleanup (MonoDomain *domain)
 	mono_domain_free (domain, TRUE);
 
 	mono_code_manager_destroy (global_codeman);
-
-	g_hash_table_destroy (class_init_hash_addr);
+	g_hash_table_destroy (jit_icall_name_hash);
+	if (class_init_hash_addr)
+		g_hash_table_destroy (class_init_hash_addr);
 
 	print_jit_stats ();
 }
