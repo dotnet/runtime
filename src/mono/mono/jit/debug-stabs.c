@@ -105,7 +105,7 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 			DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
 
 			fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line,
-				 lni->address - minfo->method_info.code_start);
+				 (char *)lni->address - minfo->method_info.code_start);
 		}
 
 		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->last_line, minfo->epilogue_begin_offset);

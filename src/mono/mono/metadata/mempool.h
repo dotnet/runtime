@@ -10,9 +10,11 @@ void
 mono_mempool_destroy       (MonoMemPool *pool);
 
 gpointer
-mono_mempool_alloc         (MonoMemPool *pool, guint size);
+mono_mempool_alloc         (MonoMemPool *pool, 
+			    guint        size);
 
 gpointer
-mono_mempool_alloc0        (MonoMemPool *pool, guint size);
+mono_mempool_alloc0        (MonoMemPool *pool, 
+			    guint        size);
 
 #endif
