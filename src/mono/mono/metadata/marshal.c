@@ -1196,9 +1196,10 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_native_call (mb, csig, mono_delegate_end_invoke);
 
-	if (sig->ret->type == MONO_TYPE_VOID)
+	if (sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_byte (mb, CEE_POP);
-	else
+		mono_mb_emit_byte (mb, CEE_RET);
+	} else
 		mono_mb_emit_restore_result (mb, sig->ret);
 
 	res = mono_mb_create_method (mb, sig, 0);
