@@ -1,3 +1,9 @@
+2002-04-28  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: fix for conditional "THREADS_PTHREAD" was never 
+	defined problem under cygwin with latest version of automake and
+	autoconf. Patch from Jeroen Janssen <japj@darius.demon.nl>.
+
 2002-04-23  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: removed -Wshadow from CFLAGS.

@@ -338,6 +338,7 @@ if test x$platform_win32 = xno; then
 	dnl ********************************
 	AC_CHECK_LIB(rt, sem_init, LIBS="$LIBS -lrt")
 else
+	AM_CONDITIONAL(THREADS_PTHREAD, false)
 	# This is a kludge, we really ought to test for libws2_32, but
 	# I can't make AC_CHECK_LIB link (the symbols seem to be mangled
 	# with @num suffixes)
