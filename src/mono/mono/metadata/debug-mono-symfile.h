@@ -53,8 +53,10 @@ struct MonoSymbolFileMethodEntry {
 
 struct MonoSymbolFileMethodAddress {
 	guint32 size;
-	guint64 start_address;
-	guint64 end_address;
+	const guint8 *start_address;
+	const guint8 *end_address;
+	const guint8 *method_start_address;
+	const guint8 *method_end_address;
 	guint32 variable_table_offset;
 	guint32 type_table_offset;
 	guint32 num_line_numbers;
@@ -128,8 +130,8 @@ struct MonoDebugVarInfo {
 };
 
 struct MonoDebugRangeInfo {
-	guint64 start_address;
-	guint64 end_address;
+	const guint8 *start_address;
+	const guint8 *end_address;
 	guint32 file_offset;
 	gpointer dynamic_data;
 	guint32 dynamic_size;
@@ -173,7 +175,7 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		26
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	9
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	10
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 MonoSymbolFile *

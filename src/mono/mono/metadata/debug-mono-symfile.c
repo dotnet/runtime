@@ -372,8 +372,10 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	ptr = (guint8 *) address;
 
 	address->size = size;
-	address->start_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start);
-	address->end_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start + mep->minfo->jit->code_size);
+	address->start_address = mep->minfo->jit->code_start;
+	address->end_address = mep->minfo->jit->code_start + mep->minfo->jit->code_size;
+	address->method_start_address = address->start_address + mep->minfo->jit->prologue_end;
+	address->method_end_address = address->start_address + mep->minfo->jit->epilogue_begin;
 	address->variable_table_offset = variable_offset;
 	address->type_table_offset = type_offset;
 
