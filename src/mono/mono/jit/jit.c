@@ -445,6 +445,7 @@ map_arg_type (MonoType *type, gboolean pinvoke)
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I:
+	case MONO_TYPE_U:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_CLASS:

@@ -1,3 +1,4 @@
+* 64bit integer mult with overflow checks + test bench
 * correctly align value types on the stack and in arrays
 * impl. marshalling attributes for pinvoke
 * raise exceptions everywhere

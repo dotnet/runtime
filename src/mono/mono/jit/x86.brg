@@ -77,7 +77,8 @@ struct _MBTree {
 };
 
 gint64   mono_llmult        (gint64 a, gint64 b);
-guint64  mono_llmult_ovf_un (gpointer *exc, guint32 al, guint32 ah, guint32 bl, gint32 bh);
+guint64  mono_llmult_ovf    (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh);
+guint64  mono_llmult_ovf_un (gpointer *exc, guint32 al, guint32 ah, guint32 bl, guint32 bh);
 gint64   mono_lldiv         (gint64 a, gint64 b);
 gint64   mono_llrem         (gint64 a, gint64 b);
 guint64  mono_lldiv_un      (guint64 a, guint64 b);
@@ -2360,6 +2361,36 @@ lreg: MUL (lreg, lreg) {
 		  tree->reg2 == X86_EDX);
 }
 
+lreg: MUL_OVF (lreg, lreg) {
+	if (mono_regset_reg_used (s->rs, X86_ECX)) 
+		x86_push_reg (s->code, X86_ECX);
+
+	x86_push_reg (s->code, tree->right->reg2);
+	x86_push_reg (s->code, tree->right->reg1);
+	x86_push_reg (s->code, tree->left->reg2);
+	x86_push_reg (s->code, tree->left->reg1);
+	/* pass a pointer to store the resulting exception -
+	 * ugly, but it works */
+	x86_push_reg (s->code, X86_ESP); 
+	x86_mov_reg_imm (s->code, X86_EAX, mono_llmult_ovf);
+	x86_call_reg (s->code, X86_EAX);
+	x86_mov_reg_membase (s->code, X86_ECX, X86_ESP, 4, 4);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_ECX, 0);
+
+	/* cond. emit exception */
+	x86_branch8 (s->code, X86_CC_EQ, 9, FALSE);                     
+	x86_push_reg (s->code, X86_ECX);                                 
+	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ());  
+	x86_call_reg (s->code, X86_EAX);                             
+
+	if (mono_regset_reg_used (s->rs, X86_ECX))
+		x86_pop_reg (s->code, X86_ECX);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
+}
+
 lreg: MUL_OVF_UN (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX)) 
 		x86_push_reg (s->code, X86_ECX);
@@ -3251,7 +3282,7 @@ mono_llmult (gint64 a, gint64 b)
 }
 
 guint64  
-mono_llmult_ovf_un (gpointer *exc, guint32 al, guint32 ah, guint32 bl, gint32 bh)
+mono_llmult_ovf_un (gpointer *exc, guint32 al, guint32 ah, guint32 bl, guint32 bh)
 {
 	guint64 res, t1;
 
@@ -3267,7 +3298,28 @@ mono_llmult_ovf_un (gpointer *exc, guint32 al, guint32 ah, guint32 bl, gint32 bh
 	if (t1 > 0xffffffff)
 		goto raise_exception;
 
-	res += (guint32)t1; 
+	res += ((guint64)t1) << 32; 
+
+	*exc = NULL;
+	return res;
+
+ raise_exception:
+	*exc = mono_get_exception_overflow ();
+	return 0;
+}
+
+guint64  
+mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh)
+{
+	gint64 res, t1;
+
+	// fixme: check for overflow
+
+	res = (gint64)al * (gint64)bl;
+
+	t1 = (gint64)ah * bl + al * (gint64)bh;
+
+	res += ((gint64)t1) << 32; 
 
 	*exc = NULL;
 	return res;

@@ -348,7 +348,11 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 		    vt->interface_offsets [klass->interface_id])
 			return obj;
 	} else {
-		if ((oklass->baseval - klass->baseval) <= klass->diffval)
+		if (oklass->rank && oklass->rank == klass->rank) {
+			if ((oklass->element_class->baseval - klass->element_class->baseval) <= 
+			    klass->element_class->diffval)
+				return obj;
+		} else if ((oklass->baseval - klass->baseval) <= klass->diffval)
 			return obj;
 	}
 

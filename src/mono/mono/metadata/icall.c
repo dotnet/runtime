@@ -345,6 +345,14 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 		if ((klassc->interface_id <= klass->max_interface_id) &&
 		    klass_vt->interface_offsets [klassc->interface_id])
 			return 1;
+	} else if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		int i;
+
+		for (i = 0; i < klass->interface_count; i ++) {
+			MonoClass *ic =  klass->interfaces [i];
+			if (ic == klassc)
+				return 1;
+		}
 	} else {
 		/*
 		 * klass->baseval is 0 for interfaces 
