@@ -59,6 +59,8 @@ TEST_CS_SRC=			\
 	assignable-tests.cs	\
 	array-cast.cs		\
 	cattr-compile.cs	\
+	cattr-field.cs		\
+	cattr-object.cs		\
 	custom-attr.cs		\
 	double-cast.cs		\
 	newobj-valuetype.cs	\
