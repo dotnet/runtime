@@ -297,7 +297,7 @@ main (int argc, char *argv [])
 		usage (argv [0]);
 
 	mono_config_parse (config_file);
-	mono_set_rootdir (argv [0]);
+	mono_set_rootdir ();
 	domain = mono_jit_init (file);
 
 	error = mono_verify_corlib ();

@@ -13,6 +13,7 @@ case "$host" in
 		platform_win32=yes
 		AC_DEFINE(PLATFORM_WIN32)
 		CC="gcc -mno-cygwin"
+		HOST_CC="gcc"
 		libdl=
 		;;
 	*)

@@ -4,6 +4,10 @@ INCLUDES = 				\
 	$(GLIB_CFLAGS)
 
 if X86
+if PLATFORM_WIN32
+export HOST_CC
+endif
+
 bin_PROGRAMS = mono
 lib_LTLIBRARIES = libmono.la
 

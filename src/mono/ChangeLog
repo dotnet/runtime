@@ -1,3 +1,12 @@
+2002-08-28  Dick Porter  <dick@ximian.com>
+
+	* mono/os/win32/util.c: 
+	* mono/os/unix/util.c: 
+	* mono/os/util.h: mono_set_rootdir() doesnt take any args now.
+	(It doesn't do anything on unix builds, and the w32 version no
+	longer needs an arg.)
+
+	* configure.in: Add HOST_CC for w32 builds
 
 Tue Aug 27 18:17:43 CEST 2002 Paolo Molaro <lupus@ximian.com>
 

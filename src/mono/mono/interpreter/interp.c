@@ -62,6 +62,7 @@
 #include "interp.h"
 #include "hacks.h"
 
+/* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
 #ifdef _WIN32
 #define isnan _isnan
 #define finite _finite
@@ -4460,7 +4461,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
-	mono_set_rootdir (argv [0]);
+	mono_set_rootdir ();
 	mono_config_parse (config_file);
 	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);

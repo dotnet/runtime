@@ -11,13 +11,12 @@
 
 /*
  * mono_set_rootdir:
- * @vm_filename: The pathname of the code invoking us (argv [0])
  *
  * Informs the runtime of the root directory for the Mono installation,
  * the vm_file
  */
 void
-mono_set_rootdir (const char *vm_filename)
+mono_set_rootdir (void)
 {
 	/* nothing on Unix */
 }

@@ -1,5 +1,9 @@
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
+if PLATFORM_WIN32
+export HOST_CC
+endif
+
 bin_PROGRAMS = monodis
 
 noinst_LIBRARIES = libmonodis.a

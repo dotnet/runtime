@@ -1,3 +1,7 @@
+if PLATFORM_WIN32
+export HOST_CC
+endif
+
 noinst_PROGRAMS = pedump
 
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
