@@ -87,6 +87,7 @@ opt_names [] = {
 	MONO_OPT_BRANCH |	\
 	MONO_OPT_LINEARS |	\
 	MONO_OPT_INTRINS |  \
+	MONO_OPT_LOOP |  \
     MONO_OPT_AOT)
 
 
