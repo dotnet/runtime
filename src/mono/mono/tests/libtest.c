@@ -935,7 +935,7 @@ STDCALL int
 NameManglingAuto (char *data)
 {
 #ifndef WIN32
-	return (data [0] + data [1] + data [2]) == 131 ? 0 : 1;
+	return (data [0] + data [1] + data [2]) == 198 ? 0 : 1;
 #else
 	g_assert_not_reached ();
 #endif
