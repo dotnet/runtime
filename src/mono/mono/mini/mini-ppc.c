@@ -574,7 +574,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
-		m->param_area = MAX (m->param_area, 16);
+		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
 
 	header = ((MonoMethodNormal *)m->method)->header;
 
@@ -2082,17 +2082,13 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 	guint32 load [2];
 	guchar *templ;
 	int i, count = 0;
+	int difflow, diffhigh;
 
-	if (!pdata->absolute) {
-		g_assert (!is_call_imm (pdata->target - pdata->code));
-		/* make sure a jump is possible from the code to the thunk area */
-		i = pdata->code - code;
-		if (!is_call_imm (i))
-			return 0;
-		i = pdata->code + csize - code;
-		if (!is_call_imm (i))
-			return 0;
-	}
+	/* always ensure a call from pdata->code can reach to the thunks without further thunks */
+	difflow = (char*)pdata->code - (char*)thunks;
+	diffhigh = (char*)pdata->code - (char*)endthunks;
+	if (!((is_call_imm (thunks) && is_call_imm (endthunks)) || (is_call_imm (difflow) && is_call_imm (diffhigh))))
+		return 0;
 
 	templ = (guchar*)load;
 	ppc_lis (templ, ppc_r0, (guint32)(pdata->target) >> 16);
@@ -2165,14 +2161,14 @@ ppc_patch (guchar *code, guchar *target)
 	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 18) {
 		if ((glong)target >= 0){
-			if ((glong)target < 33554431){
+			if ((glong)target <= 33554431){
 				ins = (18 << 26) | ((guint32) target) | (ins & 1) | 2;
 				*(guint32*)code = ins;
 				return;
 			} 
 		} else {
-			if ((glong)target > -33554432){
-				ins = (18 << 26) | (((guint32)target) & 0xfc000000) | (ins & 1) | 2;
+			if ((glong)target >= -33554432){
+				ins = (18 << 26) | (((guint32)target) & ~0xfc000000) | (ins & 1) | 2;
 				*(guint32*)code = ins;
 				return;
 			}
@@ -2180,7 +2176,7 @@ ppc_patch (guchar *code, guchar *target)
 		
 		gint diff = target - code;
 		if (diff >= 0){
-			if (diff < 33554431){
+			if (diff <= 33554431){
 				ins = (18 << 26) | (diff) | (ins & 1);
 				*(guint32*)code = ins;
 				return;
@@ -2190,7 +2186,7 @@ ppc_patch (guchar *code, guchar *target)
 			}
 		} else {
 			/* diff between 0 and -33554432 */
-			if (diff > -33554432){
+			if (diff >= -33554432){
 				ins = (18 << 26) | (diff & ~0xfc000000) | (ins & 1);
 				*(guint32*)code = ins;
 				return;
@@ -2202,44 +2198,6 @@ ppc_patch (guchar *code, guchar *target)
 		g_assert_not_reached ();
 	}
 	
-#if OLD_REFERENCE_CODE
-		// absolute address
-		if (ins & 2) {
-			gint diff = (gint)target;
-			if ((diff < -33554432) || (diff > 33554431)) {
-				diff = target - code;
-				if (is_call_imm (diff)) {
-					handle_thunk (TRUE, code, target);
-					return;
-				}
-				/* change it to relative */
-				ins &= ~2;
-			}
-			ins = prim << 26 | (ins & 3);
-			diff &= ~0xfc000003;
-			ins |= diff;
-		} else {
-			gint diff = target - code;
-			if (is_call_imm (target)) {
-				/* we change it into an absolute reference */
-				ins = prim << 26 | (ins & 3) | 2;
-				diff = (gint)target;
-				diff &= ~0xfc000003;
-				ins |= diff;
-				*(guint32*)code = ins;
-				return;
-			}
-			if (!is_call_imm (diff)) {
-				handle_thunk (FALSE, code, target);
-				return;
-			}
-			ins = prim << 26 | (ins & 3);
-			diff &= ~0xfc000003;
-			ins |= diff;
-		}
-		*(guint32*)code = ins;
-	} 
-#endif
 	
 	if (prim == 16) {
 		// absolute address
@@ -3525,9 +3483,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
 		 * of MonoLMF from the current stack ptr is alloc_size - lmf_offset.
-		 * The pointer to the struct is put in ppc_r11.
+		 * The pointer to the struct is put in ppc_r11 (new_lmf).
+		 * The callee-saved registers are already in the MonoLMF structure
 		 */
 		ppc_addi (code, ppc_r11, ppc_sp, alloc_size - lmf_offset);
+		/* ppc_r3 is the result from mono_get_lmf_addr () */
 		ppc_stw (code, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
 		/* new_lmf->previous_lmf = *lmf_addr */
 		ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
