@@ -3848,8 +3848,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj,
 		guint32 sig_token;
 		int nargs, i;
 
-		g_assert (opt_param_types && method->signature->param_count &&
-			  (method->signature->sentinelpos >= 0));
+		g_assert (opt_param_types && (method->signature->sentinelpos >= 0));
 
 		nargs = mono_array_length (opt_param_types);
 		old = method->signature;

@@ -1408,10 +1408,11 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 			}
 			method->params [i] = mono_metadata_parse_type (m, MONO_PARSE_PARAM, pattrs [i], ptr, &ptr);
 		}
-
-		if (def && (method->call_convention == MONO_CALL_VARARG))
-			method->sentinelpos = method->param_count;
 	}
+
+	if (def && (method->call_convention == MONO_CALL_VARARG))
+		method->sentinelpos = method->param_count;
+
 	g_free (pattrs);
 
 	if (rptr)
