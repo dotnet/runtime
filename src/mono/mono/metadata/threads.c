@@ -1274,6 +1274,13 @@ static CALLBACK void interruption_request_apc (ULONG_PTR param)
  */
 static void signal_thread_state_change (MonoThread *thread)
 {
+	if (thread == mono_thread_current ()) {
+		/* Do it synchronously */
+		MonoException *exc = mono_thread_request_interruption (FALSE); 
+		if (exc)
+			mono_raise_exception (exc);
+	}
+
 #ifdef __MINGW32__
 	QueueUserAPC (interruption_request_apc, thread->handle, NULL);
 #else
