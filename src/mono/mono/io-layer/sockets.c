@@ -348,6 +348,11 @@ int _wapi_bind(guint32 handle, struct sockaddr *my_addr, socklen_t addrlen)
 		case EFAULT:
 			WSASetLastError(WSAEFAULT);
 			break;
+	
+		case EADDRINUSE:
+			WSASetLastError(WSAEADDRINUSE);
+			break;
+
 		case EROFS:
 		case ENAMETOOLONG:
 		case ENOENT:
