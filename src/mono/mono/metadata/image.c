@@ -281,7 +281,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		ptr += 12;
 		version_string_len = read32 (ptr);
 		ptr += 4;
-		image->version = strndup (ptr, version_string_len);
+		image->version = g_strndup (ptr, version_string_len);
 		ptr += version_string_len;
 		pad = ptr - image->raw_metadata;
 		if (pad % 4)
