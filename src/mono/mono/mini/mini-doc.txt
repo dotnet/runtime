@@ -15,6 +15,14 @@
 
 * Introduction
 
+	Mono is a Open Source implementation of the .NET Framework: it
+	is made up of a runtime engine that implements the ECMA Common
+	Language Infrastructure (CLI), a set of compilers that target
+	the CLI and a large collection of class libraries.
+
+	This article discusses the new code generation facilities that
+	have been added to the Mono runtime.  
+
 	First we discuss the overall architecture of the Mono runtime,
 	and how code generation fits into it; Then we discuss the
 	development and basic architecture of our first JIT compiler
