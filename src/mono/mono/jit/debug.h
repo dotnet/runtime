@@ -124,6 +124,7 @@ struct _MonoDebuggerSymbolFileTable {
 	guint32 total_size;
 	guint32 count;
 	guint32 generation;
+	MonoGlobalSymbolFile *global_symfile;
 	MonoSymbolFile *symfiles [MONO_ZERO_LEN_ARRAY];
 };
 

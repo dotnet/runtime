@@ -1276,6 +1276,7 @@ debugger_update_symbol_file_table (void)
 	symfile_table->total_size = size;
 	symfile_table->count = count;
 	symfile_table->generation = debugger_symbol_file_table_generation;
+	symfile_table->global_symfile = mono_debugger_global_symbol_file;
 
 	data.symfile_table = symfile_table;
 	data.index = 0;
