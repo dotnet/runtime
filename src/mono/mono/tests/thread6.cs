@@ -11,17 +11,39 @@ public class MultiThreadExceptionTest {
 
 		try {
 			try {
-				int i = 0;
 				try {
-					while (true) {
-						Console.WriteLine ("Count: " + i++);
-						Thread.Sleep (100);
+					int i = 0;
+					try {
+						while (true) {
+							Console.WriteLine ("Count: " + i++);
+							Thread.Sleep (100);
+						}
 					}
+					catch (ThreadAbortException e) {
+						Console.WriteLine ("cought exception level 3 ");
+
+						// Check that the exception is only rethrown in
+						// the appropriate catch clauses
+
+						try {
+						}
+						catch {}
+						try {
+							throw new DivideByZeroException ();
+						}
+						catch (Exception) {
+						}
+						result |= 32;
+
+						// Check that the exception is properly rethrown
+					}
+					result = 255;
 				} catch (ThreadAbortException e) {
 					Console.WriteLine ("cought exception level 2 " + e.ExceptionState);
 					Console.WriteLine (e);
 					if ((string)e.ExceptionState == "STATETEST")
 						result |= 1;
+
 					Thread.ResetAbort ();
 					throw e;
 				}
@@ -65,7 +87,7 @@ public class MultiThreadExceptionTest {
 		t1.Join ();
 		Console.WriteLine ("Result: " + result);
 
-		if (result != 27)
+		if (result != 59)
 			return 1;
 
 		return 0;
