@@ -1,3 +1,14 @@
+2002-10-13  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/adonet: updated status of all providers, added links, 
+	  and added information
+	  about the Mono.Data.SqliteClient provider that 
+	  Vladimir Vukicevic contributed. Added Brian Ritchie's 
+	  and Vladimir Vukicevic's email addresses as
+	  people to contact about ADO.NET in Mono.  
+	  Added information about SQL#, configuration tools, 
+	  and an ADO.NET Multiplexor, etc...  
+
 2002-10-10  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/index: corrected some mistypes
