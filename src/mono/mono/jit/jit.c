@@ -1629,7 +1629,6 @@ check_inlining (MonoMethod *method)
 		case CEE_CONV_U4:
 		case CEE_CONV_U8:
 		case CEE_CONV_R_UN:
-		case CEE_THROW:
 		case CEE_CONV_OVF_I1_UN:
 		case CEE_CONV_OVF_I2_UN:
 		case CEE_CONV_OVF_I4_UN:
@@ -1799,7 +1798,7 @@ check_inlining (MonoMethod *method)
 		}
 	}
 
-	if (ip >= end ||
+	if (ip < end &&
 	    !(ip [0] == CEE_RET ||
 	      ((ip + 4) < end &&
 	       ip [0] == CEE_STLOC_0 &&
