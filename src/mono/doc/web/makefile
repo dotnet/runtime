@@ -1,5 +1,4 @@
-# Until we are ready:
-#	../class-library	\
+CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
 
 OBJECTS=	\
 	deploy/anoncvs.html		\
@@ -21,6 +20,7 @@ OBJECTS=	\
 	deploy/index.html		\
 	deploy/ideas.html		\
 	deploy/mailing-lists.html	\
+	deploy/monodoc-xml.html		\
 	deploy/passport.html		\
 	deploy/rationale.html		\
 	deploy/resources.html		\
@@ -67,10 +67,9 @@ src/%.src: ../% commands makefile template.html.in
 	cat ../class-status.in $< > $@
 
 
-
 .PRECIOUS: src/%.html.in
 src/%.html.in: src/%.xml ../../../mcs/tools/corcompare/transform.js ../../../mcs/tools/corcompare/cormissing.xsl
-	cscript /nologo ../../../mcs/tools/corcompare/transform.js $< ../../../mcs/tools/corcompare/cormissing.xsl > $@
+	$(CSCRIPT) /nologo ../../../mcs/tools/corcompare/transform.js $< ../../../mcs/tools/corcompare/cormissing.xsl > $@
 
 
 

@@ -37,7 +37,7 @@ namespace Mono.StatusReporter {
 			foreach (string str in nsList) {
 				//sw.WriteLine ("<li><a href=\"" + str + ".html\">" + str + "</a>");
 
-				XmlWriter writer = new XmlTextWriter ("bn/" + str, null);
+				XmlWriter writer = new XmlTextWriter ("src/" + str, null);
 
 				XsltArgumentList xslArg = new XsltArgumentList ();
 				xslArg.AddParam ("ns", "", str);

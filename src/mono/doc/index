@@ -71,6 +71,12 @@
   </tr>
 </table>
 
+** Mar 9, 2002
+
+	Updated the <a href="class-status.html">class status</a>, now
+	it is possible to use the right-side menu to browse a specific
+	assembly.
+
 ** Mar 7, 2002
 
 	MCS compiles on Linux!   
@@ -104,6 +110,15 @@
 	killed bugs of bugs in the <a href="http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FClass+Libraries&product=Mono%2FMCS&product=Mono%2FRuntime&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&order=%27Importance%27&form_name=query">Mono Bug List</a>
 
 ** Mar 1, 2002
+
+	RPMs of Mono 0.9 are available at <a href="http://mono.baselabs.org/#download">mono.baselabs.com</a>
+
+** Feb 28, 2002
+
+	<a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-February/003464.html">Christophe</a>
+	has setup his <a href="http://mono.baselabs.org">First Steps in Mono</a> web site, which 
+	shows you a step-by-step process on getting Mono running on your system.
 
 	RPMs of Mono 0.9 are available at <a href="http://mono.baselabs.org/index.php/software/">mono.baselabs.org</a>
 

@@ -33,7 +33,7 @@ namespace Mono.StatusReporter {
 
 				//sw.WriteLine ("<li><a href=\"" + email + ".html\">" + email + "</a>");
 
-				XmlWriter writer = new XmlTextWriter ("bm/" + email, null);
+				XmlWriter writer = new XmlTextWriter ("src/" + email, null);
 
 				XsltArgumentList xslArg = new XsltArgumentList ();
 				xslArg.AddParam ("email", "", email);

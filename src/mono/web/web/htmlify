@@ -9,6 +9,8 @@ while (<>){
 		print "<h2>$1</h2>\n";
 	} elsif (/^\*\*\* (.*)$/) {
 		print "<h3>$1</h3>\n";
+	} elsif (/^\*\*\*\* (.*)$/) {
+		print "<h4>$1</h4>\n";
 	} elsif (/^$/) {
 		print "<p>\n";
 	} elsif (/^\t\t\* (.*)$/) {

@@ -17,6 +17,7 @@
 0,Contributing,contributing.html,contributing.src
 1,Documentation,documentation.html,documentation.src
 1,Class Docs,classlib-doc.html,classlib-doc.src
+1,Doc format,monodoc-xml.html,monodoc-xml.src
 1,Test Suite,testing.html,testing.src
 1,Tools,tools.html,tools.src
 1,Porting,porting.html,porting.src

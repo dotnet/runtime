@@ -48,7 +48,7 @@ while (<COMMANDS>) {
 	  open OUTPUT, ">" . $n || die "Can not create $n";
 	
 	  my $content = "";
-	  open INPUT, "src/" . $command[3] || die "Can not open $command[3]";
+	  open INPUT, "src/$command[3]" || die "Can not open $command[3]";
 	  while (<INPUT>) {
 	    $content .= $_;
 	  }
