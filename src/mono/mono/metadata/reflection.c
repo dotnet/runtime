@@ -471,7 +471,7 @@ fat_header:
 		for (i = mono_array_length (mb->ilgen->ex_handlers) - 1; i >= 0; --i) {
 			ex_info = (MonoILExceptionInfo *)mono_array_addr (mb->ilgen->ex_handlers, MonoILExceptionInfo, i);
 			if (ex_info->handlers) {
-				int finally_start = 0;
+				int finally_start = ex_info->start + ex_info->len;
 				for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
 					ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
 					clause.flags = GUINT32_TO_LE (ex_block->type);
@@ -487,8 +487,8 @@ fat_header:
 					clause.token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
 							mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
 					clause.token_or_filter = GUINT32_TO_LE (clause.token_or_filter);
-					/*g_print ("out clause %d: from %d len=%d, handler at %d, %d\n", 
-							clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len);*/
+					/*g_print ("out clause %d: from %d len=%d, handler at %d, %d, finally_start=%d, ex_info->start=%d, ex_info->len=%d, ex_block->type=%d, j=%d, i=%d\n", 
+							clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len, finally_start, ex_info->start, ex_info->len, ex_block->type, j, i);*/
 					mono_image_add_stream_data (&assembly->code, (char*)&clause, sizeof (clause));
 				}
 			} else {
