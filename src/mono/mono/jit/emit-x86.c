@@ -128,7 +128,7 @@ enter_method (MonoMethod *method, char *ebp)
 		
 		g_assert (!method->signature->ret->byref);
 
-		size = mono_type_stack_size (method->signature->ret, &align);
+		mono_get_param_info (method->signature, -1, &size, &align);
 
 		printf ("VALUERET:%p, ", *((gpointer *)ebp));
 		ebp += sizeof (gpointer);
@@ -155,9 +155,8 @@ enter_method (MonoMethod *method, char *ebp)
 	}
 
 	for (i = 0; i < method->signature->param_count; ++i) {
-		MonoType *type = method->signature->params [i];
 		int size, align;
-		size = mono_type_stack_size (type, &align);
+		MonoType *type = mono_get_param_info (method->signature, i, &size, &align);
 
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *((gpointer *)ebp)); 

@@ -340,6 +340,19 @@ mono_mb_emit_ldarg_addr (MonoMethodBuilder *mb, guint argnum)
 }
 
 void
+mono_mb_emit_ldloc_addr (MonoMethodBuilder *mb, guint locnum)
+{
+	if (locnum < 256) {
+		mono_mb_emit_byte (mb, CEE_LDLOCA_S);
+		mono_mb_emit_byte (mb, locnum);
+	} else {
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_LDLOCA);
+		mono_mb_emit_i4 (mb, locnum);
+	}
+}
+
+void
 mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num)
 {
 	if (num < 4) {
@@ -423,13 +436,90 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint8 local, gint8 incr)
 }
 
 static void
-emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoMarshalConv conv, int usize, int msize)
+emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, 
+		      int usize, int msize)
 {
-	/* fixme: dont know what do do here - docs say 
-	   this does not work for value types  */
+	switch (conv) {
+	case MONO_MARSHAL_CONV_BOOL_I4:
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
+		mono_mb_emit_byte (mb, 5);
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		mono_mb_emit_byte (mb, CEE_BR_S);
+		mono_mb_emit_byte (mb, 3);
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		break;
+	case MONO_MARSHAL_CONV_ARRAY_BYVALARRAY: {
+		MonoClass *eclass;
+		int esize;
 
-	g_warning ("not implemented");
-	g_assert_not_reached ();
+		if (type->type == MONO_TYPE_ARRAY)
+			eclass = mono_class_from_mono_type (type->data.array->type);
+		else if (type->type == MONO_TYPE_SZARRAY) {
+			eclass = mono_class_from_mono_type (type->data.type);
+		} else {
+			g_assert_not_reached ();
+		}
+
+	     	if (eclass->valuetype)
+			esize = mono_class_instance_size (eclass) - sizeof (MonoObject);
+		else
+			esize = sizeof (gpointer);
+
+		/* create a new array */
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_icon (mb, msize / esize);
+		mono_mb_emit_byte (mb, CEE_NEWARR);	
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+
+		/* copy the elements */
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_icon (mb, usize);
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_CPBLK);			
+
+		break;
+	}
+	case MONO_MARSHAL_CONV_STR_BYVALSTR: 
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+		mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+		mono_mb_emit_byte (mb, CEE_STIND_I);		
+		break;
+	case MONO_MARSHAL_CONV_STR_LPTSTR:
+	case MONO_MARSHAL_CONV_STR_LPSTR:
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+		mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+		mono_mb_emit_byte (mb, CEE_STIND_I);		
+		break;
+	case MONO_MARSHAL_CONV_STR_LPWSTR:
+	case MONO_MARSHAL_CONV_STR_BSTR:
+	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+	case MONO_MARSHAL_CONV_STR_TBSTR:
+	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
+	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
+	case MONO_MARSHAL_CONV_STR_BYVALWSTR: 
+	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
+	default:
+		g_warning ("marshalling conversion %d not implemented", conv);
+		g_assert_not_reached ();
+	}
 }
 
 static void
@@ -504,7 +594,8 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoMarshalConv conv, int usize, in
 	}
 	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 	default:
-		g_error ("marshalling conversion %d not implemented", conv);
+		g_warning ("marshalling conversion %d not implemented", conv);
+		g_assert_not_reached ();
 	}
 }
 
@@ -594,7 +685,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				break;
 			case MONO_TYPE_VALUETYPE:
 				emit_struct_conv (mb, ftype->data.klass, to_object);
-				break;
+				continue;
 			default:
 				g_error ("marshalling type %02x not implemented", ftype->type);
 			}
@@ -602,12 +693,15 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 
 		default:
 			if (to_object) 
-				emit_ptr_to_str_conv (mb, conv, usize, msize);
+				emit_ptr_to_str_conv (mb, ftype, conv, usize, msize);
 			else
 				emit_str_to_ptr_conv (mb, conv, usize, msize);	
 		}
 
-		if (!last_field) {
+		if (to_object) {
+			mono_mb_emit_add_to_local (mb, 0, usize);
+			mono_mb_emit_add_to_local (mb, 1, msize);
+		} else {
 			mono_mb_emit_add_to_local (mb, 0, msize);
 			mono_mb_emit_add_to_local (mb, 1, usize);
 		}		
@@ -1339,7 +1433,7 @@ handle_enum:
 		mono_mb_emit_managed_call (mb, method, strsig);		
 	} else 
 		mono_mb_emit_managed_call (mb, method, NULL);
-
+	
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
 		if (!method->string_ctor)
@@ -1437,7 +1531,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	MonoClass *klass;
 	MonoMethod *res;
 	GHashTable *cache;
-	int i, sigsize;
+	int i, sigsize, *tmp_locals;
 
 	g_assert (method != NULL);
 
@@ -1450,10 +1544,21 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	mb = mono_mb_new (method->klass, method->name);
 	mb->method->wrapper_type = MONO_WRAPPER_NATIVE_TO_MANAGED;
 
+	/* allocate local 0 (pointer) src_ptr */
+	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	/* allocate local 1 (pointer) dst_ptr */
+	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	/* allocate local 2 (boolean) delete_old */
+	mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
+
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_byte (mb, CEE_STLOC_2);
+
 	/* we copy the signature, so that we can modify it */
 	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
 	csig = g_memdup (sig, sigsize);
 	csig->hasthis = 0;
+	csig->pinvoke = 1;
 
 	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
@@ -1469,6 +1574,46 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			g_assert_not_reached ();
 		}
 	} 
+
+
+	/* we first do all conversions */
+	tmp_locals = alloca (sizeof (int) * sig->param_count);
+	for (i = 0; i < sig->param_count; i ++) {
+		MonoType *t = sig->params [i];
+
+		tmp_locals [i] = 0;
+
+		switch (t->type) {
+		case MONO_TYPE_VALUETYPE:
+			
+			klass = sig->params [i]->data.klass;
+			if (klass->enumtype)
+				break;
+
+			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
+
+			mono_mb_emit_ldarg_addr (mb, i);
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+			mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+			/* emit valuetype convnversion code code */
+			emit_struct_conv (mb, klass, TRUE);
+			break;
+		case MONO_TYPE_STRING:
+
+			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+			csig->params [i] = &mono_defaults.int_class->byval_arg;
+			mono_mb_emit_ldarg (mb, i);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+			mono_mb_emit_stloc (mb, tmp_locals [i]);
+			break;	
+		}
+
+	}
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
@@ -1495,11 +1640,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			mono_mb_emit_ldarg (mb, i);
 			break;
 		case MONO_TYPE_STRING:
-			csig->params [i] = &mono_defaults.int_class->byval_arg;
-			mono_mb_emit_ldarg (mb, i);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+			g_assert (tmp_locals [i]);
+			mono_mb_emit_ldloc (mb, tmp_locals [i]);
 			break;	
 		case MONO_TYPE_CLASS:  
 		case MONO_TYPE_ARRAY:
@@ -1515,7 +1657,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 				break;
 			}
 
-			g_assert_not_reached ();
+			g_assert (tmp_locals [i]);
+			mono_mb_emit_ldloc (mb, tmp_locals [i]);
 			break;
 		default:
 			g_warning ("type 0x%02x unknown", t->type);	
@@ -1663,7 +1806,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
 			/* emit valuetype convnversion code code */
-			emit_struct_conv (mb, sig->params [i]->data.klass, FALSE);
+			emit_struct_conv (mb, klass, FALSE);
 			break;
 		case MONO_TYPE_STRING:
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
@@ -1928,7 +2071,8 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	/* allocate local 2 (boolean) delete_old */
 	mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-	mono_mb_emit_byte (mb, CEE_LDARG_2);
+
+	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_byte (mb, CEE_STLOC_2);
 
 	/* initialize src_ptr to point to the start of object data */

@@ -926,7 +926,10 @@ mono_string_new_wrapper (const char *text)
 {
 	MonoDomain *domain = mono_domain_get ();
 
-	return mono_string_new (domain, text);
+	if (text)
+		return mono_string_new (domain, text);
+
+	return NULL;
 }
 
 /**
@@ -1499,11 +1502,11 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 	int i, j, type, size, align;
 	
 	for (i = 0, j = 0; i < sig->param_count; i++) {
-		size = mono_type_stack_size (sig->params [i], &align);
-		
-		if (sig->params [i]->byref) {
+		MonoType *pt = mono_get_param_info (sig, i, &size, &align);
+
+		if (pt->byref) {
 			char *arg = mono_array_get (out_args, gpointer, j);
-			type = sig->params [i]->type;
+			type = pt->type;
 			
 			switch (type) {
 			case MONO_TYPE_VOID:

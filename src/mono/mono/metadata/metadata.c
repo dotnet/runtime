@@ -2176,6 +2176,33 @@ mono_type_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
+MonoType *
+mono_get_param_info (MonoMethodSignature *sig, int param_num, int *size, int *align)
+{
+	MonoType *type;
+	int s, a;
+
+	if (!size)
+		size = &s;
+
+	if (!align)
+		align = &a;
+
+	if (param_num == -1)
+		type = sig->ret;
+	else
+		type = sig->params [param_num];
+	
+	if (sig->pinvoke && !type->byref && type->type == MONO_TYPE_VALUETYPE && 
+	    !type->data.klass->enumtype) {
+		*size = mono_class_native_size (type->data.klass);
+	} else {
+		*size = mono_type_stack_size (type, align);
+	}
+
+	return type;
+}
+
 /*
  * mono_metadata_type_hash:
  * @t1: a type

@@ -19,6 +19,7 @@ public class Test {
 		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)] public short[] a1;
 		[MarshalAs (UnmanagedType.ByValTStr, SizeConst=4)] public string s1;
 		public SimpleStruct2 emb1;
+		public string s2;
 	}
 	
 	public unsafe static int Main () {
@@ -27,7 +28,7 @@ public class Test {
 		int size = Marshal.SizeOf (typeof (SimpleStruct));
 		
 		Console.WriteLine ("SimpleStruct:" + size);
-		if (size != 32)
+		if (size != 36)
 			return 1;
 		
 		IntPtr p = Marshal.AllocHGlobal (size);
@@ -42,7 +43,8 @@ public class Test {
 		ss.emb1 = new SimpleStruct2 ();
 		ss.emb1.a = 3;
 		ss.emb1.b = 4;
-				
+		ss.s2 = "just a test";
+		
 		Marshal.StructureToPtr (ss, p, false);
 		if (Marshal.ReadInt32 (p, 0) != 1)
 			return 1;
@@ -68,10 +70,42 @@ public class Test {
 			return 1;
 		if (Marshal.ReadInt32 (p, 28) != 4)
 			return 1;
+		if (Marshal.ReadInt32 (p, 32) == 0)
+			return 1;
 
 		object o = cp;
 		Marshal.PtrToStructure (p, o);
 		cp = (SimpleStruct)o;
+
+		if (cp.a != 1)
+			return 2;
+
+		if (cp.bool1 != true)
+			return 2;
+
+		if (cp.bool2 != false)
+			return 2;
+
+		if (cp.b != 2)
+			return 2;
+
+		if (cp.a1 [0] != 6)
+			return 2;
+		
+		if (cp.a1 [1] != 5)
+			return 2;
+
+		if (cp.s1 != "abc")
+			return 3;
+		
+		if (cp.emb1.a != 3)
+			return 2;
+
+		if (cp.emb1.b != 4)
+			return 2;
+
+		if (cp.s2 != "just a test")
+			return 2;
 		
 		return 0;
 	}

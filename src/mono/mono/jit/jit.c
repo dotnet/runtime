@@ -1388,7 +1388,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 		for (i = 0; i < signature->param_count; ++i) {
 			int argvar;
-			size = mono_type_stack_size (signature->params [i], &align);
+			mono_get_param_info (signature, i, &size, &align);
 			argvar = arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
 			VARINFO (cfg, argvar).isvolatile = 1;
 		}
@@ -1865,9 +1865,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip++;
 			--sp;
 			token = read32 (ip);
-			class = mono_class_get (image, token);
 			ip += 4;
 
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				class = (MonoClass *)mono_method_get_wrapper_data (method, token);
+			else
+				class = mono_class_get (image, token);
+				
 			if (cfg->share_code) {
 				t1 = mono_ctree_new (mp, MB_TERM_NEWARR, *sp, NULL);
 				t1->data.p = class;
@@ -1966,9 +1970,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			args_size += sizeof (gpointer); /* this argument */		
 
 			for (k = csig->param_count - 1; k >= 0; k--) {
-				MonoType *type = cm->signature->params [k];
-
-				size = mono_type_stack_size (type, &align);
+				MonoType *type = mono_get_param_info (cm->signature, k, &size, &align);
 				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);	
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
@@ -2139,13 +2141,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			for (k = nargs - 1; k >= 0; k--) {
-				MonoType *type = csig->params [k];
+				MonoType *type = mono_get_param_info (csig, k, &size, NULL);
 				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);
-				if (csig->pinvoke && ISSTRUCT (type)) {
-					size = mono_class_native_size (type->data.klass);
-				} else {
-					size = mono_type_stack_size (type, &align);
-				}
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
 				args_size += size;

@@ -323,13 +323,19 @@ MonoType      *mono_metadata_parse_field_type  (MonoImage      *m,
 		                                short            field_flags,
 						const char      *ptr,
 						const char      **rptr);
-MonoType      *mono_type_create_from_typespec (MonoImage        *image, 
-					       guint32           type_spec);
+MonoType      *mono_type_create_from_typespec  (MonoImage        *image, 
+					        guint32           type_spec);
 void           mono_metadata_free_type         (MonoType        *type);
 int            mono_type_size                  (MonoType        *type, 
 						int             *alignment);
 int            mono_type_stack_size            (MonoType        *type, 
 						int             *alignment);
+
+MonoType      *mono_get_param_info             (MonoMethodSignature *sig, 
+						int                  param_num, 
+						int                 *size, 
+						int                 *align);
+
 
 guint          mono_metadata_type_hash         (MonoType *t1);
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
