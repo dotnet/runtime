@@ -8053,8 +8053,13 @@ mono_jit_free_method (MonoMethod *method)
 		EnterCriticalSection (&jit_mutex);
 		ji = g_hash_table_lookup (dynamic_code_hash, method);
 		LeaveCriticalSection (&jit_mutex);
-		if (ji)
-			mono_arch_invalidate_method (ji->ji, invalidated_delegate_trampoline, method->klass);
+		if (ji){
+		        char *type = mono_type_full_name (&method->klass->byval_arg);
+			char *type_and_method = g_strdup_printf ("%s.%s", type, method->name);
+
+			g_free (type);
+			mono_arch_invalidate_method (ji->ji, invalidated_delegate_trampoline, type_and_method);
+		}
 		return;
 	}
 #endif
