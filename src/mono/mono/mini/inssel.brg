@@ -1829,6 +1829,17 @@ mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soff
 	int cur_reg;
 
 	/* FIXME: consider alignment for archs that need it. */
+	if (sizeof (gpointer) == 8) {
+		while (size >= 8) {
+			cur_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI8_MEMBASE, cur_reg, srcreg, soffset);
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, destreg, doffset, cur_reg);
+			doffset += 8;
+			soffset += 8;
+			size -= 8;
+		}
+	}	
+
 	while (size >= 4) {
 		cur_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, cur_reg, srcreg, soffset);
