@@ -19,11 +19,6 @@
 	Currently we are using the Bohem conservative garbage
 	collector, but we working on incorporating the ORP GC engine. 
 
-* COM and XPCOM
-
-	We plan on adding support for XPCOM on Unix and COM on Microsoft
-	Windows later in our development process.
-
 ** Executing MSIL/CIL images
 
 	The code will load an executable and map the references to
@@ -64,12 +59,28 @@
 	Unix-like compilation environment (mostly we use GNU make in 
 	a few of the makefiles).
 
-** JIT Engine (<b>updated, March 26th, 2002</b>)
+** JIT Engine (<b>updated, April 21, 2002</b>)
 
 	The JIT engine uses a code-generator generator approach for
 	compilation.  Given the properties of CIL byte codes, we can
 	take full advantage of a real instruction selector for our
 	code generator. 
+
+	The JIT engine implements a number of optimizations:
+
+	<ul>
+		* Opcode cost estimates (our architecture allows
+	 	  us to generate different code paths depending
+		  on the target CPU dynamically).
+		  
+		* Inlining.
+
+		* Constant folding.  
+
+		  Although compilers typically do
+		  constant folding, the combination of inlining with
+		  constant folding gives some very good results.
+	</ul>
 
 	There are a couple of books that deal with this technique: "A
 	Retargetable C Compiler" and "Advanced Compiler Design and
@@ -176,4 +187,9 @@
 	platforms, you might find the pre-compiled <a
 	href="archive/mono-tests.tar.gz">Mono regression test
 	suite</a> useful to debug your implementation.
+
+* COM and XPCOM
+
+	We plan on adding support for XPCOM on Unix and COM on Microsoft
+	Windows later in our development process.
 
