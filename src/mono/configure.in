@@ -28,6 +28,8 @@ AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
+AC_CHECK_HEADERS(sys/filio.h sys/sockio.h)
+
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
@@ -153,7 +155,18 @@ if test x$platform_win32 = xno; then
 	if test $large_offt = no; then
 		AC_MSG_WARN([No 64 bit file size support available])
 	fi
+	
+	dnl *****************************
+	dnl *** Checks for libsocket  ***
+	dnl *****************************
+	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
+	
+	dnl *****************************
+	dnl *** Checks for libnsl     ***
+	dnl *****************************
+	AC_CHECK_LIB(nsl, gethostbyaddr, LIBS="$LIBS -lnsl")
 
+	AC_CHECK_FUNCS(inet_pton inet_aton)
 
 	dnl *****************************
 	dnl *** Checks for libpthread ***
@@ -237,6 +250,11 @@ if test x$platform_win32 = xno; then
 	], [
 		AC_MSG_ERROR([libpthread is required on non-win32 hosts])
 	])
+
+	dnl ********************************
+	dnl *** Checks for semaphore lib ***
+	dnl ********************************
+	AC_CHECK_LIB(rt, sem_init, LIBS="$LIBS -lrt")
 fi
 
 if test "x$cross_compiling" = "xno"; then

@@ -1,3 +1,8 @@
+2002-02-14  Jeffrey Stedfast  <fejj@ximian.com>
+
+	* configure.in: Add checks to see if we need to link to libsocket,
+	libnsl, and/or librt. Also check for inet_pton and inet_aton.
+
 2002-02-13  Jeffrey Stedfast  <fejj@ximian.com>
 
 	* acconfig.h: #undef USE_MONO_MUTEX
