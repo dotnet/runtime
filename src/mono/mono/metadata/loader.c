@@ -999,5 +999,22 @@ mono_method_get_last_managed (void)
 	return m;
 }
 
+/*
+ * This routine exists to load and init Wine due to the special Wine
+ * requirements: basically the SharedWineInit must be called before
+ * any modules are dlopened or they will fail to work.
+ */
+void
+mono_loader_wine_init ()
+{
+	GModule *module = g_module_open ("wine-sharedlib.exe.so", G_MODULE_BIND_LAZY);
+	int (*shared_wine_init)();
 
+	if (module == NULL){
+		fprintf (stderr, "Could not load wine-sharedlib.exe.so");
+		return;
+	}
 
+	g_module_symbol (module, "SharedWineInit", &shared_wine_init);
+	shared_wine_init ();
+}

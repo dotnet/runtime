@@ -182,6 +182,9 @@ mono_stack_walk         (MonoStackWalk func, gpointer user_data);
 void
 mono_install_stack_walk (MonoStackWalkImpl func);
 
+void
+mono_loader_wine_init   ();
+
 MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num);
 
 #endif
