@@ -24,7 +24,8 @@ struct _MonoClass {
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
 
-	MonoClass *parent;
+	MonoClass  *parent;
+	GList      *subclasses; /* list of all subclasses */
 
 	const char *name;
 	const char *name_space;
@@ -40,6 +41,12 @@ struct _MonoClass {
 	int        instance_size;
 	int        class_size;
 	int        vtable_size; /* number of slots */
+
+	/*
+	 * relartive numbering for fast type checking
+	 */
+	unsigned int baseval;
+	unsigned int diffval;
 
 	/*
 	 * From the TypeDef table

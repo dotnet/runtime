@@ -394,6 +394,25 @@ mono_class_metadata_init (MonoClass *class)
 	//printf ("METAEND %s.%s\n", class->name_space, class->name);
 }
 
+/*
+ * Compute a relative numbering of the class hierarchy as described in
+ * "Java for Large-Scale Scientific Computations?"
+ */
+static void
+mono_compute_relative_numbering (MonoClass *class, int *c)
+{
+	GList *s;
+
+	(*c)++;
+
+	class->baseval = *c;
+
+	for (s = class->subclasses; s; s = s->next)
+		mono_compute_relative_numbering ((MonoClass *)s->data, c); 
+	
+	class->diffval = *c -  class->baseval;
+}
+
 /**
  * @image: context where the image is created
  * @type_token:  typedef token
@@ -468,9 +487,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->parent = NULL;
 		class->instance_size = sizeof (MonoObject);
 	} else if (!(cols [0] & TYPE_ATTRIBUTE_INTERFACE)) {
+		int rnum = 0;
 		class->parent = mono_class_get (image,  mono_metadata_token_from_dor (cols [3]));
 		class->valuetype = class->parent->valuetype;
 		class->enumtype = class->parent->enumtype;
+		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
+		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 	}
 
 	if (!strcmp (nspace, "System")) {
@@ -703,6 +725,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	MonoClass *class;
 	static MonoClass *parent = NULL;
 	guint32 key;
+	int rnum = 0;
 
 	g_assert (rank <= 255);
 
@@ -732,6 +755,8 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
 	class->vtable_size = parent->vtable_size;
+	class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
+	mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 
 	class->rank = rank;
 	class->element_class = eclass;

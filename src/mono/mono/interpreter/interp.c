@@ -2061,22 +2061,27 @@ ves_exec_method (MonoInvocation *frame)
 			token = read32 (ip);
 			c = mono_class_get (image, token);
 
+			if (!c->inited)
+				init_class (c);
+
 			g_assert (sp [-1].type == VAL_OBJ);
 
 			if ((o = sp [-1].data.p)) {
-				/* 
-				 * fixme: this only works for class casts, but not for 
-				 * interface casts. 
-				 */
+
 				oclass = o->klass;
-				while (oclass) {
-					if (c == oclass) {
-						sp [-1].data.vt.klass = oclass;
+
+				if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
+					if ((c->interface_id < oclass->interface_count) &&
+					    oclass->interface_offsets [c->interface_id])
 						found = TRUE;
-						break;
+					g_error ("fixme: dont know if this works");
+				} else {
+					if ((oclass->baseval - c->baseval) <= c->diffval) {
+						sp [-1].data.vt.klass = c;
+						found = TRUE;
 					}
-					oclass = oclass->parent;
 				}
+
 				if (!found) {
 					if (do_isinst) {
 						sp [-1].data.p = NULL;
