@@ -769,7 +769,6 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 #ifdef PLATFORM_WIN32
 		/* Try the stdcall mangled name */
 		if (!piinfo->addr) {
-			/* FIX: Compute this correctly */
 			mangled_name = g_strdup_printf ("%s@%d", import, mono_method_signature (method)->param_count * sizeof (gpointer));
 			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
@@ -778,6 +777,21 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			mangled_name = g_strdup_printf ("_%s@%d", import, mono_method_signature (method)->param_count * sizeof (gpointer));
 			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
+		}
+		if (!piinfo->addr) {
+			/* Try brute force, since it would be very hard to compute the stack usage correctly */
+			for (i = 0; i < 256; i += 4) {
+				if (!piinfo->addr) {
+					mangled_name = g_strdup_printf ("%s@%d", import, i);
+					g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
+					g_free (mangled_name);
+				}
+				if (!piinfo->addr) {
+					mangled_name = g_strdup_printf ("_%s@%d", import, i);
+					g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
+					g_free (mangled_name);
+				}
+			}
 		}
 #endif
 	}
