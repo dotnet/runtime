@@ -206,6 +206,10 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	code -= 5;
 	if (code [0] == 0xe8) {
+		/* 
+		 * FIXME: This is not thread safe, since another thread might execute
+		 * the partially changed code.
+		 */
 		for (i = 0; i < 5; ++i)
 			x86_nop (code);
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -216,7 +220,13 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 #endif
 	}
 	else
-		g_assert_not_reached ();
+		if (code [0] == 0x90)
+			/* Already changed by another thread */
+		else {
+			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
+				code [4], code [5], code [6]);
+			g_assert_not_reached ();
+		}
 }
 
 static guchar*
