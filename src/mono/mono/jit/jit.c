@@ -71,7 +71,7 @@ case CEE_##name##_S: {                                                        \
 	create_outstack (cfg, bb, stack, sp - stack);                         \
 	mark_reached (cfg, tbb, bb->outstack, bb->outdepth);                  \
 	t1->data.p = tbb;                                                     \
-	ADD_TREE (t1, cli_addr);                                                        \
+	ADD_TREE (t1, cli_addr);                                              \
 	ip += near_jump ? 1: 4;		                                      \
 	break;                                                                \
 }
@@ -140,7 +140,7 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, op, sp [0], sp [1]);                         \
-	ADD_TREE (t1, cli_addr);                                                        \
+	ADD_TREE (t1, cli_addr);                                              \
 	break;                                                                \
 }
 
@@ -156,7 +156,7 @@ case CEE_##name: {                                                            \
         t2 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t2);                    \
 	t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);                        \
 	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
-	ADD_TREE (t1, cli_addr);                                                        \
+	ADD_TREE (t1, cli_addr);                                              \
 	break;                                                                \
 }
 	
@@ -2353,6 +2353,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 						t1 = mono_store_tree (cfg, -1, t1, &t2);
 						g_assert (t1);
 						ADD_TREE (t1, cli_addr);
+
+						if (pinvoke && csig->ret->type == MONO_TYPE_STRING) {
+							t2 = mono_ctree_new (mp, MB_TERM_TOSTRING, t2, NULL);
+							t2->svt = VAL_POINTER;
+						} 
 						PUSH_TREE (t2, t2->svt);
 					}
 				} else
@@ -3429,11 +3434,12 @@ main (int argc, char *argv [])
 	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
+	mono_add_internal_call ("__array_Address", ves_array_element_address);
 
 	mono_jit_info_table = mono_jit_info_table_new ();
 

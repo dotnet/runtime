@@ -176,7 +176,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
-%term LDLEN LDFTN
+%term LDLEN LDFTN TOSTRING
 
 #
 # we start at stmt
@@ -1047,6 +1047,41 @@ reg: LDLEN (reg) {
 #	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
 #	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, G_STRUCT_OFFSET (MonoArray, vector));
 #}
+
+reg: TOSTRING (reg) {
+	guint8 *start = s->code, *l1, *le;
+	int i;
+
+	tree->is_jump = TRUE;
+	l1 = le = NULL;
+
+	for (i = 0; i < 2; i++) {
+		s->code = start;
+
+		x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+		x86_branch8 (s->code, X86_CC_EQ, le - l1, FALSE);
+		l1 = s->code;
+
+		if (tree->reg1 != X86_EAX)
+			x86_push_reg (s->code, X86_EAX);
+		x86_push_reg (s->code, X86_ECX);
+		x86_push_reg (s->code, X86_EDX);
+
+		x86_push_reg (s->code, tree->left->reg1);
+		x86_mov_reg_imm (s->code, X86_EAX, mono_string_new);
+		x86_call_reg (s->code, X86_EAX);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+
+		x86_pop_reg (s->code, X86_EDX);
+		x86_pop_reg (s->code, X86_ECX);
+		if (tree->reg1 != X86_EAX) {
+			x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+			x86_pop_reg (s->code, X86_EAX);
+		}
+
+		le = s->code;
+	}
+}
 
 reg: NEWARR (reg) {
 	if (tree->reg1 != X86_EAX)
@@ -2671,6 +2706,10 @@ freg: CONV_R8 (freg) {
 	/* nothing to do */
 }
 
+freg: CONV_R4 (freg) {
+	/* fixme: nothing to do ??*/
+}
+
 freg: CONV_R8 (LDIND_I4 (ADDR_G)) {
 	x86_fild (s->code, tree->left->left->data.p, FALSE);
 }
@@ -2683,6 +2722,17 @@ freg: CONV_R8 (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_fild_membase (s->code, X86_ESP, 0, FALSE);
 	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+}
+
+freg: CONV_R8 (lreg) {
+	/* I found no direct way to move an integer register to 
+	 * the floating point stack, so we need to store the register
+	 * to memory
+	 */
+	x86_push_reg (s->code, tree->left->reg2);
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_fild_membase (s->code, X86_ESP, 0, TRUE);
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
 }
 
 freg: CONV_R4 (reg) {

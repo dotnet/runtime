@@ -461,6 +461,34 @@ ves_array_get (MonoInvocation *frame)
 	stackval_from_data (mt, frame->retval, ea);
 }
 
+static void
+ves_array_element_address (MonoInvocation *frame)
+{
+	stackval *sp = frame->stack_args;
+	MonoObject *o;
+	MonoArray *ao;
+	MonoClass *ac;
+	gint32 i, pos, esize;
+	gpointer ea;
+
+	o = frame->obj;
+	ao = (MonoArray *)o;
+	ac = o->klass;
+
+	g_assert (ac->rank >= 1);
+
+	pos = sp [0].data.i - ao->bounds [0].lower_bound;
+	for (i = 1; i < ac->rank; i++)
+		pos = pos*ao->bounds [i].length + sp [i].data.i - 
+			ao->bounds [i].lower_bound;
+
+	esize = mono_array_element_size (ac);
+	ea = mono_array_addr_with_size (ao, esize, pos);
+
+	frame->retval->type = VAL_TP;
+	frame->retval->data.p = ea;
+}
+
 static void 
 ves_pinvoke_method (MonoInvocation *frame)
 {
@@ -3678,6 +3706,7 @@ main (int argc, char *argv [])
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
+	mono_add_internal_call ("__array_Address", ves_array_element_address);
 
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);

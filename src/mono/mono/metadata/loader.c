@@ -425,6 +425,14 @@ method_from_memberref (MonoImage *image, guint32 index)
 			return result;
 		}
 
+		if (!strcmp (mname, "Address")) {
+			g_assert (sig->hasthis);
+			g_assert (type->data.array->rank == sig->param_count);
+
+			result->addr = mono_lookup_internal_call ("__array_Address");
+			return result;
+		}
+
 		g_assert_not_reached ();
 		break;
 	}
