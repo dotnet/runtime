@@ -41,7 +41,8 @@ enum {
 	FILE_CONTAINS_NO_METADATA   = 1
 };
 
-/* keep in synch with System.Security.Permissions.SecurityAction enum */
+/* keep in synch with System.Security.Permissions.SecurityAction enum 
+   (except for the special non-CAS cases) */
 enum {
 	SECURITY_ACTION_DEMAND        = 2,
 	SECURITY_ACTION_ASSERT        = 3,
@@ -52,7 +53,11 @@ enum {
 	SECURITY_ACTION_REQMIN        = 8,
 	SECURITY_ACTION_REQOPT        = 9,
 	SECURITY_ACTION_REQREFUSE     = 10,
-	/* New in Fx 2.0 */
+	/* Special cases (non CAS permissions) */
+	SECURITY_ACTION_NONCASDEMAND        = 13,
+	SECURITY_ACTION_NONCASLINKDEMAND    = 14,
+	SECURITY_ACTION_NONCASINHERITANCE   = 15,
+	/* Fx 2.0 actions (for both CAS and non-CAS permissions) */
 	SECURITY_ACTION_LINKDEMANDCHOICE    = 16,
 	SECURITY_ACTION_INHERITDEMANDCHOICE = 17,
 	SECURITY_ACTION_DEMANDCHOICE        = 18
