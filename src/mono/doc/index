@@ -80,12 +80,15 @@
   </tr>
 </table>
 
-	Mono at the O'Reilly Open Source Conference (<a
+	<b>Mono at the O'Reilly Open Source Conference (<a
 	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2994">here</a>
 	and <a
-	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)
+	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)</b>
 
 @item Jul 17th, 2002
+
+	A Tutorial on getting Mono installed from sources is now <a
+	href="http://www.go-mono.com/mono-beginning/x145.html">online</b>
 
 	More progress on the ASP.NET front: user defined controls are
 	now being rendered, as well as many of the sample programs

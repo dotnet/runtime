@@ -1,21 +1,9 @@
-	<h1> Mono for beginners </h1>
+* Mono for beginners
 
-	<p> Hinne Hettema has provided us a beautiful and complete 
-	    document on how to obtain, install and test Mono on 
-	    a Linux system.
-	</p>
+	Hinne Hettema has provided us a beautiful and complete 
+	document on how to obtain, install and test Mono on 
+	a Linux system.
 
-	<p> You can download the <a href="mono-beginning-xml.html">mono-beginning xml</a> 
-	    version of the document and then generate HTMLs or PDFs from it.
-	</p>
-	
-<pre>
-	To generate the HTMLs: 
-
-		db2html mono-beginning.xml
-
-	To generate the PDFs:
-
-		db2pdf mono-beginning.pdf
-</pre>
-
+	You can <a href="mono-beginning/t1.html">Read it online</a>,
+	download a <a href="mono-beginning.pdf">PDF</a> version, or get the
+	<a href="mono-beginning.xml">source code</a> for it.

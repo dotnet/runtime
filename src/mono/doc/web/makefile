@@ -52,8 +52,21 @@ NON_HTML_SOURCES=	\
 	../mono-build-w32.sh
 
 
-all: $(OBJECTS) deploy/index.rss
+all: $(OBJECTS) deploy/index.rss 
 	perl process.pl commands template.html.in deploy
+
+tutorial: mono-beginning.html.stamp mono-beginning.pdf
+	cp -a mono-beginning mono-beginning.xml mono-beginning.pdf deploy
+
+mono-beginning.html.stamp: mono-beginning.xml
+	db2html mono-beginning.xml
+	touch mono-beginning.html.stamp
+
+mono-beginning.pdf: mono-beginning.xml
+	db2pdf mono-beginning.xml
+
+mono-beginning.xml: ../mono-beginning.xml
+	cp ../mono-beginning.xml .
 
 deploy/index.rss: mono-rss.exe ../index
 	./mono-rss.exe ../index deploy/index.rss
