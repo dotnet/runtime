@@ -4598,7 +4598,8 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 		 * this is almost safe to do with enums and it's needed to be able
 		 * to create objects of the enum type (for use in SetConstant).
 		 */
-		mono_class_setup_vtable (klass);
+		/* FIXME: Does this mean enums can't have method overrides ? */
+		mono_class_setup_vtable (klass, NULL, 0);
 	}
 }
 
@@ -4751,7 +4752,8 @@ static void
 ensure_runtime_vtable (MonoClass *klass)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
-	int i, num, j;
+	int i, num, j, onum;
+	MonoMethod **overrides;
 
 	if (!tb || klass->wastypebuilder)
 		return;
@@ -4779,7 +4781,40 @@ ensure_runtime_vtable (MonoClass *klass)
 			klass->interfaces [i] = mono_class_from_mono_type (iface->type);
 		}
 	}
-	mono_class_setup_vtable (klass);
+
+	/* Overrides */
+	onum = 0;
+	if (tb->methods) {
+		for (i = 0; i < mono_array_length (tb->methods); ++i) {
+			MonoReflectionMethodBuilder *mb = 
+				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
+			if (mb->override_method)
+				onum ++;
+		}
+	}
+
+	overrides = (MonoMethod**)g_new0 (MonoMethod, onum * 2);
+
+	if (tb->methods) {
+		onum = 0;
+		for (i = 0; i < mono_array_length (tb->methods); ++i) {
+			MonoReflectionMethodBuilder *mb = 
+				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
+			if (mb->override_method) {
+				/* FIXME: What if 'override_method' is a MethodBuilder ? */
+				overrides [onum * 2] = 
+					mb->override_method->method;
+				overrides [onum * 2 + 1] =
+					mb->mhandle;
+
+				g_assert (mb->mhandle);
+
+				onum ++;
+			}
+		}
+	}
+
+	mono_class_setup_vtable (klass, overrides, onum);
 }
 
 static void

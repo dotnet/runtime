@@ -487,12 +487,11 @@ mono_get_unique_iid (MonoClass *class)
 }
 
 void
-mono_class_setup_vtable (MonoClass *class)
+mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 {
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
-	int i, onum = 0, max_vtsize = 0, max_iid, cur_slot = 0;
-	MonoMethod **overrides;
+	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 
 	/* setup_vtable() must be called only once on the type */
 	if (class->interface_offsets) {
@@ -558,8 +557,6 @@ mono_class_setup_vtable (MonoClass *class)
 
 	if (class->parent && class->parent->vtable_size)
 		memcpy (vtable, class->parent->vtable,  sizeof (gpointer) * class->parent->vtable_size);
-
-	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);
 
 	/* override interface methods */
 	for (i = 0; i < onum; i++) {
@@ -759,11 +756,10 @@ mono_class_setup_vtable (MonoClass *class)
 		if (!(decl->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = overrides [i*2 + 1];
+ 			overrides [i * 2 + 1]->slot = decl->slot;
 		}
 	}
        
-	g_free (overrides);
-
 	class->vtable_size = cur_slot;
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
 	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
@@ -831,6 +827,8 @@ mono_class_init (MonoClass *class)
 	static MonoMethod *default_finalize = NULL;
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
+ 	MonoMethod **overrides;
+	int onum = 0;
 
 	g_assert (class);
 
@@ -884,7 +882,9 @@ mono_class_init (MonoClass *class)
 		return;
 	}
 
-	mono_class_setup_vtable (class);
+ 	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);	
+	mono_class_setup_vtable (class, overrides, onum);
+	g_free (overrides);
 
 	class->inited = 1;
 	class->init_pending = 0;

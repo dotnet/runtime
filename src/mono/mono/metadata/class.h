@@ -184,7 +184,7 @@ void
 mono_class_layout_fields   (MonoClass *klass);
 
 void
-mono_class_setup_vtable    (MonoClass *klass);
+mono_class_setup_vtable    (MonoClass *klass, MonoMethod **overrides, int onum);
 
 MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *klass);
