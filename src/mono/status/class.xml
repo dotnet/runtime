@@ -739,6 +739,16 @@
         </maintainers>
     </class>
 
+    <class name="System.Console">
+        <last-activity>Jul-0-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.IO.StringReader">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
