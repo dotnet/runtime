@@ -436,6 +436,17 @@ typedef struct {
 	guint32 unmanaged_call_conv;
 } MonoReflectionSigHelper;
 
+typedef struct {
+	MonoMethod *ctor;
+	guint32     data_size;
+	const guchar* data;
+} MonoCustomAttrEntry;
+
+typedef struct {
+	int num_attrs;
+	MonoImage *image;
+	MonoCustomAttrEntry attrs [MONO_ZERO_LEN_ARRAY];
+} MonoCustomAttrInfo;
 
 
 char*         mono_type_get_name         (MonoType *type);
@@ -461,6 +472,16 @@ MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMetho
 
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
+
+MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
+MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, guint32 idx);
+MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
+MonoCustomAttrInfo* mono_custom_attrs_from_class    (MonoClass *klass);
+MonoCustomAttrInfo* mono_custom_attrs_from_assembly (MonoAssembly *assembly);
+MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property);
+MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
+MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
+MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, guint32 param);
 
 void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
 
