@@ -81,6 +81,13 @@ public class Tests {
 		public long c;
 	}
 
+	[StructLayout(LayoutKind.Sequential)]
+	public class VectorList
+	{
+		public int a = 1;
+		public int b = 2;
+	}
+
 	[DllImport ("libnot-found", EntryPoint="not_found")]
 	public static extern int mono_library_not_found ();
 
@@ -657,4 +664,24 @@ public class Tests {
 
 		return (s2.d1 == 6.0 && s2.d2 == -4.0) ? 0 : 1;
 	}
+
+	/* Blittable class */
+	[DllImport("libtest")]
+	private static extern VectorList TestVectorList (VectorList vl);
+
+	public static int test_0_marshal_blittable_class () {
+		VectorList v1 = new VectorList ();
+
+		/* Since it is blittable, it looks like it is passed as in/out */
+		VectorList v2 = TestVectorList (v1);
+
+		if (v1.a != 2 || v1.b != 3)
+			return 1;
+		
+		if (v2.a != 2 || v2.b != 3)
+			return 2;
+		
+		return 0;
+	}
 }
+
