@@ -147,3 +147,15 @@
 	APIs are being worked on, and how to get in touch with 
 	individual maintainers.
 
+** FAQ
+
+Frequently asked questions about the class library:
+
+Q: I am writing a new class that overrides one of the system classes,
+   and I am getting a 1595 warning from the compiler.  Should we use a
+   different namespace?
+
+A: There is a quick solution to the problem, you can pass the command
+   line argument /nowarn:1595 and this will effectively let you use
+   your implementation of the code, while overriding the ones from the
+   system assemblies.

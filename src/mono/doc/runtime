@@ -19,7 +19,8 @@
 	external assemblies to our own version of the assemblies on
 	GNU/Linux.
 
-	Our roadmap looks like this:
+	Our roadmap looks like this, this has been updated as of
+	<b>Jul 15, 2001</b>:
 
 	<ul>
 
@@ -31,14 +32,15 @@
 		  run CIL byte code on a system where no JIT is
 		  available.
 
-		* Milestone 3: IA32 translating-JIT engine.
+		* Milestone 3: Define an <i>lburg</i> instruction
+		  selector for the JITer for Intel.  Although slower
+		  at JITing than a streaming JITer, it generates
+		  better code.  The same grammar can later be used for
+		  the stream jitter. 
 
-		* Milestone 4: non-Intel port of the JIT engine.
+		* Milestone 4: Implement JITer.
 
-		* Milestone 5: Optimizing JIT engine port for IA32.
-
-		* Milestone 6: non-Intel port of the Optimizing JIT
-		  engine.
+		* Milestone 5: Port of the JITer to non IA32 systems.
 	</ul>
 
 	A setup similar to the Kaffe JIT engine can be used to
@@ -46,25 +48,38 @@
 	will be focused on getting a IA32 version running first.  
 
 	The JIT engine should work on Linux and Win32, although you
-	might need to install the CygWin32 development tools to get a
+	will need to install the CygWin32 development tools to get a
 	Unix-like compilation environment.
 
-** JIT Engine
+** JIT Engine (<b>updated, Jul 14th, 2001</b>)
 
-	Currently we are evaluating various mechanisms for our JIT
-	engine (<a
-	href="http://www.intel.com/research/mrl/orp/">ORP</a>, <a
-	href="http://www.gnu.org/software/lightning/">GNU
-	Lightning</a>, and <a
-	href="http://www.eecs.harvard.edu/~nr/toolkit/">NJ Machine
-	Toolkit</a>.).
+	We will be using a code-generator generator approach for our
+        JITer.  Given the properties of CIL byte codes, we can take
+        full advantage of a real instruction selector for our code
+        generator. 
 
-	We have not made a decision yet, but we might want to use a
-	Code Generator Generator for the Common Intermediate Language,
-	as that is likely going to allow us to create better code
-	(There are a couple of books that deal with this technique: "A
+	There are a couple of books that deal with this technique: "A
 	Retargetable C Compiler" and "Advanced Compiler Design and
-	Implementation"). 
+	Implementation" are good references.  You can also get a
+        technical description of <a
+        href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/iburg.pdf&pub=ACM">lbrug</a>
+
+	Previously we had looked at a number of JIT engines and tools,
+        but they would not take full advantage of the CIL properties: 
+
+	<ul>
+		* <a
+		  href="http://www.intel.com/research/mrl/orp/">ORP</a>
+
+		* <a
+		  href="http://www.gnu.org/software/lightning/">GNU
+        	  Lightning</a>
+
+		* href="http://www.eecs.harvard.edu/~nr/toolkit/">NJ Machine
+	 	  Toolkit</a>.).
+
+		* VCODE.
+	</ul>
 
 ** Garbage Collection
 

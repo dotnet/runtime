@@ -1,3 +1,11 @@
+2001-07-15  Miguel de Icaza  <miguel@ximian.com>
+
+	* doc/class-library (A): Updated FAQ with question on error 1595.
+
+2001-07-14  Miguel de Icaza  <miguel@ximian.com>
+
+	* doc/index: 
+
 Wed Jul 11 00:36:36 CEST 2001 Paolo Molaro <lupus@ximian.com>
 
 	* status/*: scripts and data to create statistics about the

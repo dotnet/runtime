@@ -20,6 +20,21 @@
         </person>
 	<person email="marcins@zipworld.com.au" name="Marcin Szczepanski">
 		<class name="System.StringBuilder"/>
+                <class name="System.IO.TextReader"/>
+                <class name="System.IO.StringReader"/>
+                <class name="System.IO.TextWriter"/>
+                <class name="System.IO.StringWriter"/>
 	</person>
+        <person email="rooneg@electricjellyfish.net" name="Garrett Rooney">
+		<class name="System.Collections.Stack"/>
+        </person>
 </maintainers>
+
+
+
+
+
+
+
+
 
