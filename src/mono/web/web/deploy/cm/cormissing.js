@@ -4,17 +4,17 @@ function toggle (elt)
 		return;
 
 	var eltLink = elt.firstChild;
-	if (eltLink != null && eltLink.className == 'toggle')
+	if (eltLink != null && eltLink.className == 't')	// toggle
 	{
-		var ich = elt.className.indexOf ('_collapsed');
+		var ich = elt.className.indexOf ('_');
 		if (ich < 0)
 		{
-			eltLink.src = 'cm/toggle_plus.gif';
-			elt.className += '_collapsed';
+			eltLink.src = 'cm/tp.gif';
+			elt.className += '_';
 		}
 		else
 		{
-			eltLink.src = 'cm/toggle_minus.gif';
+			eltLink.src = 'cm/tm.gif';
 			elt.className = elt.className.slice (0, ich);
 		}
 	}
@@ -23,17 +23,17 @@ function toggle (elt)
 function setView (elt, fView)
 {
 	var eltLink = elt.firstChild;
-	if (eltLink != null && eltLink.className == 'toggle')
+	if (eltLink != null && eltLink.className == 't')	// toggle
 	{
-		var ich = elt.className.indexOf ('_collapsed');
+		var ich = elt.className.indexOf ('_');
 		if (ich < 0 && !fView)
 		{
-			eltLink.src = 'cm/toggle_plus.gif';
-			elt.className += '_collapsed';
+			eltLink.src = 'cm/tp.gif';
+			elt.className += '_';
 		}
 		else if (ich >= 0 && fView)
 		{
-			eltLink.src = 'cm/toggle_minus.gif';
+			eltLink.src = 'cm/tm.gif';
 			elt.className = elt.className.slice (0, ich);
 		}
 	}
@@ -70,14 +70,11 @@ function viewAll (elt, dictTypes)
 		for (var iImage = 0; iImage < cImages; iImage++)
 		{
 			var image = rgImages [iImage];
-			if (image.name == 'status')
+			var strImage = trimSrc (rgImages [iImage].src);
+			if (dictTypes [strImage])
 			{
-				var strImage = trimSrc (rgImages [iImage].src);
-				if (dictTypes [strImage])
-				{
-					fView = true;
-					break;
-				}
+				fView = true;
+				break;
 			}
 		}
 	}
@@ -94,9 +91,9 @@ function viewAll (elt, dictTypes)
 function getView (elt)
 {
 	var eltLink = elt.firstChild;
-	if (eltLink != null && eltLink.className == 'toggle')
+	if (eltLink != null && eltLink.className == 't')	// toggle
 	{
-		var ich = elt.className.indexOf ('_collapsed');
+		var ich = elt.className.indexOf ('_');
 		if (ich < 0)
 			return true;
 	}
@@ -123,7 +120,7 @@ function getName (elt)
 	for (var iSpan = 0; iSpan < rgSpans.length; iSpan ++)
 	{
 		var span = rgSpans [iSpan];
-		if (span.className == 'name')
+		if (span.className == 'l')	// label
 		{
 			if (span.innerText)
 				return span.innerText;
@@ -150,17 +147,17 @@ function clickHandler (evt)
 	if (!elt.className && elt.parentNode)
 		elt = elt.parentNode;
 
-	if (elt.className == 'name')
+	if (elt.className == 'l')	// label
 	{
 		var strClass;
 		var strField;
 
 		elt = getParentDiv (elt);
-		if (elt.className == 'method' ||
-			elt.className == 'property' ||
-			elt.className == 'event' ||
-			elt.className == 'constructor' ||
-			elt.className == 'field')
+		if (elt.className == 'm' ||	// method
+			elt.className == 'p' ||	// property
+			elt.className == 'e' ||	// event
+			elt.className == 'x' ||	// constructor
+			elt.className == 'f')	// field
 		{
 			strField = getName (elt).toLowerCase ();
 			var match = strField.match ( /[A-Z0-9_]*/i );
@@ -169,19 +166,19 @@ function clickHandler (evt)
 			elt = getParentDiv (elt);
 			elt = getParentDiv (elt);
 		}
-		if (elt.className == 'class' ||
-			elt.className == 'struct' ||
-			elt.className == 'enum')
+		if (elt.className == 'c' ||	// class
+			elt.className == 's' ||	// struct
+			elt.className == 'en')	// enum
 		{
 			strClass = getName (elt).toLowerCase () + 'class';
 			elt = getParentDiv (elt);
 		}
-		else if (elt.className == 'delegate')
+		else if (elt.className == 'd')	// delegate
 		{
 			strClass = getName (elt).toLowerCase () + 'eventhandler';
 			elt = getParentDiv (elt);
 		}
-		if (elt.className == 'namespace')
+		if (elt.className == 'n')	// namespace
 		{
 			var strNamespace = getName (elt).toLowerCase ().replace ('.', '');
 			if (strClass)
@@ -192,38 +189,13 @@ function clickHandler (evt)
 				strNamespace += 'topic';
 
 			window.open ('http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrf' + strNamespace + '.asp', 'MSDN');
-			//window.open ('http://msdn.microsoft.com/library/en-us/cpref/html/frlrf'+strNamespace+'.asp', 'MSDN');
 		}
 	}
-/*
-	else if (elt.className == 'filter')
-	{
-		var strType = trimSrc (elt.src);
-		var dictTypes = new Object ();
-		if (evt.shiftKey || evt.ctrlKey)
-		{
-			if (evt.ctrlKey)
-				strType = '';
-
-			if (strType != 'complete')
-				dictTypes ['complete'] = true;
-			if (strType != 'missing')
-				dictTypes ['missing'] = true;
-			if (strType != 'todo')
-				dictTypes ['todo'] = true;
-		}
-		else
-		{
-			dictTypes [strType] = true;
-		}
-		viewAll (document.getElementById ('ROOT'), dictTypes);
-	}
-*/
 	else
 	{
-		if (elt.parentNode && elt.parentNode.className == 'toggle')
+		if (elt.parentNode && elt.parentNode.className == 't')	// toggle
 			elt = elt.parentNode;
-		else if (elt.className != 'toggle')
+		else if (elt.className != 't')	// toggle
 			return;
 
 		while (elt != null && elt.tagName != 'DIV')
@@ -285,10 +257,10 @@ function filterTree ()
 
 	var dictTypes = new Object ();
 	if (eltMissing.checked)
-		dictTypes ['missing'] = true;
+		dictTypes ['sm'] = true;
 	if (eltTodo.checked)
-		dictTypes ['todo'] = true;
-	dictTypes ['completed'] = true;
+		dictTypes ['st'] = true;
+	dictTypes ['sc'] = true;
 
 	viewAll (document.getElementById ('ROOT'), dictTypes);
 }

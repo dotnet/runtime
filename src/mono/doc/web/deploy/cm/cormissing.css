@@ -1,4 +1,4 @@
-.assembly IMG
+.y IMG
 {
 	border: 0px;
 	padding: 0px;
@@ -7,29 +7,33 @@
 	vertical-align: middle;
 }
 
-.assembly, .assembly_collapsed,
-.namespace, .namespace_collapsed,
-.class, .class_collapsed,
-.method, .property, .event, .constructor, .field
+.y, .y_,
+.n, .n_,
+.c, .c_,
+.s, .s_,
+.en, .en_,
+.m, .p, .e, .c, .f
 {
 	FONT: 10px 'Verdana';
 	margin-left: 20px;
 }
 
-.assembly_collapsed .namespace,
-.assembly_collapsed .namespace_collapsed,
-.namespace_collapsed .class,
-.namespace_collapsed .class_collapsed,
-.class_collapsed .method,
-.class_collapsed .property,
-.class_collapsed .event,
-.class_collapsed .constructor,
-.class_collapsed .field
+.y_ .n,
+.y_ .n_,
+.n_ .c,
+.n_ .c_,
+.n_ .s,
+.n_ .s_,
+.c_ .m,
+.c_ .p,
+.c_ .e,
+.c_ .c,
+.c_ .f
 {
 	display: none;
 }
 
-.toggle
+.t
 {
 	cursor: pointer;
 	margin-right: 8px;
@@ -42,14 +46,12 @@
 }
 
 
-.status
+.st
 {
-	margin-left: 10px;
-	float: right;
-	width: 50;
+	margin-left: 20px;
 }
 
-.name
+.l
 {
 	cursor: pointer;
 }
