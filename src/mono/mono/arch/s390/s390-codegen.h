@@ -234,6 +234,7 @@ typedef enum {
 #define s390_mvc(c, l, b1, d1, b2, d2)	do {s390_emit32 (c, (210 << 24 | ((((l)-1)  << 16) & 0x00ff0000) | \
 							(b1) << 12 | ((d1) & 0xfff))); 		  \
 					    s390_emit16 (c, ((b2) << 12 | ((d2) & 0xfff)));} while (0)
+#define s390_mvcl(c, r1, r2)		s390_emit16 (c, (14 << 8 | (r1) << 4 | (r2)))
 #define s390_mvcle(c, r1, r3, d2, b2)	s390_emit32 (c, (168 << 24 | (r1) << 20 |	\
 						     (r3) << 16 | (b2) << 12 | 		\
 						     ((d2) & 0xfff)))
