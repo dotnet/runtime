@@ -98,6 +98,7 @@ case "$host" in
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA)
+		AM_CONDITIONAL(NO_VERSION_SCRIPT, true)
 		libdl=
 		libgc_threads=no
 		gc_default=none 
@@ -685,6 +686,12 @@ ac_cv_c_socklen_t=yes
 ],[
 	AC_MSG_RESULT(no)
 ])
+
+AC_CHECK_FUNCS(truncl, , AC_MSG_CHECKING(for truncl in math.h)
+	AC_TRY_LINK([#include <math.h>], 
+	[ truncl(0.0); ], 
+	AC_DEFINE(HAVE_TRUNCL) AC_MSG_RESULT(yes),
+	AC_MSG_RESULT(no)))
 
 dnl ****************************
 dnl *** Look for /dev/random ***

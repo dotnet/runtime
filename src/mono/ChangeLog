@@ -1,4 +1,10 @@
 
+Fri Jan 23 16:07:05 EST 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, acconfig.h: check for truncl. Disable 
+	version script on MacOSX (see bug #51590 if a check becomes
+	necessary).
+
 Fri Jan 23 21:26:01 CET 2004 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in, acconfig.h: added check for socklen_t.
