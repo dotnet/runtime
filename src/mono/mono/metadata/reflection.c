@@ -1295,7 +1295,11 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, image))))
 		return token;
 
-	mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
+	if (image->assembly->dynamic)
+		/* FIXME: */
+		memset (cols, 0, sizeof (cols));
+	else
+		mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
 
 	table = &assembly->tables [MONO_TABLE_ASSEMBLYREF];
 	token = table->next_idx ++;
@@ -1391,7 +1395,8 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
  * Despite the name, we handle also TypeSpec (with the above helper).
  */
 static guint32
-mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
+mono_image_typedef_or_ref_aux (MonoDynamicAssembly *assembly, MonoType *type,
+							   gboolean force_ref)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -1416,7 +1421,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	/*
 	 * If it's in the same module:
 	 */
-	if (klass->image == assembly->assembly.image) {
+	if (!force_ref && (klass->image == assembly->assembly.image)) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 		token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
 		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
@@ -1444,6 +1449,12 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	return token;
 }
 
+static guint32
+mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
+{
+	return mono_image_typedef_or_ref_aux (assembly, type, FALSE);
+}
+
 /*
  * Insert a memberef row into the metadata: the token that point to the memberref
  * is returned. Caching is done in the caller (mono_image_get_methodref_token() or
@@ -1458,7 +1469,7 @@ mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoType *type, c
 	guint32 token, pclass;
 	guint32 parent;
 
-	parent = mono_image_typedef_or_ref (assembly, type);
+	parent = mono_image_typedef_or_ref_aux (assembly, type, TRUE);
 	switch (parent & TYPEDEFORREF_MASK) {
 	case TYPEDEFORREF_TYPEREF:
 		pclass = MEMBERREF_PARENT_TYPEREF;
