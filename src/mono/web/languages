@@ -37,10 +37,14 @@
 
 	There is a very interesting project to make a JavaVM for .NET
 	<a href="http://radio.weblogs.com/0109845/">here</a>.
-	Currently this will not work with Mono, as they use some
-	pieces of Managed C++ to implement the JNI interface.
 
-	A workaround has been discussed, contact the author if you want to contribute. 
+	Zoltan has got IKVM to work with Mono.
+
+<a name="PHP">
+** PHP
+
+	Sterling has code to allow PHP developers to use Mono code, in
+	his <a href="http://www.php.net/~sterling/mono/">site</a>
 
 <a name="MonoLogo">
 ** MonoLogo
