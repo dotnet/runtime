@@ -23,7 +23,7 @@
 
 using System;
 
-public class Logic {
+public class Tests {
 
 	public static void logic_run ()
 	{
