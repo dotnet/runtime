@@ -49,6 +49,7 @@
 
 static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
 
+
 static MonoString *
 mono_double_ToStringImpl (double value)
 {
@@ -766,6 +767,14 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 	memcpy (p, ass->pefile.data + offset, count);
 
 	return count;
+}
+
+static void
+ves_icall_AssemblyBuilder_build_metadata (MonoReflectionAssemblyBuilder *assb)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	mono_image_build_metadata (assb);
 }
 
 static MonoReflectionType*
@@ -3285,6 +3294,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
 	"System.Reflection.Emit.AssemblyBuilder::getToken", ves_icall_AssemblyBuilder_getToken,
 	"System.Reflection.Emit.AssemblyBuilder::basic_init", mono_image_basic_init,
+	"System.Reflection.Emit.AssemblyBuilder::build_metadata", ves_icall_AssemblyBuilder_build_metadata,
 
 	/*
 	 * Reflection stuff.

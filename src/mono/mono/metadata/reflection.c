@@ -2378,7 +2378,7 @@ load_public_key (MonoString *fname, MonoDynamicAssembly *assembly) {
  * At the end of the process, method and field tokens are fixed up and the on-disk
  * compressed metadata representation is created.
  */
-static void
+void
 mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	MonoDynamicTable *table;
@@ -2388,7 +2388,10 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	guint32 *values;
 	char *name;
 	int i;
-	
+
+	if (assembly->text_rva)
+		return;
+
 	assembly->text_rva = START_TEXT_RVA;
 
 	table = &assembly->tables [MONO_TABLE_ASSEMBLY];
@@ -2466,16 +2469,8 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 			module_add_cattrs (assembly, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i));
 	}
 
-	if (assemblyb->resources) {
-		len = mono_array_length (assemblyb->resources);
-		for (i = 0; i < len; ++i)
-			assembly_add_resource (assembly, (MonoReflectionResource*)mono_array_addr (assemblyb->resources, MonoReflectionResource, i));
-	}
-	
 	/* fixup tokens */
 	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
-	
-	build_compressed_metadata (assembly);
 }
 
 /*
@@ -2776,6 +2771,16 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 		return;
 	
 	mono_image_build_metadata (assemblyb);
+
+	if (assemblyb->resources) {
+		int len = mono_array_length (assemblyb->resources);
+		for (i = 0; i < len; ++i)
+			assembly_add_resource (assembly, (MonoReflectionResource*)mono_array_addr (assemblyb->resources, MonoReflectionResource, i));
+	}
+
+	
+	build_compressed_metadata (assembly);
+
 	nsections = calc_section_size (assembly);
 
 	pefile = &assembly->pefile;

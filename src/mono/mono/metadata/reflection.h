@@ -473,5 +473,8 @@ MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelp
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token);
 
+void
+mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb);
+
 #endif /* __METADATA_REFLECTION_H__ */
 
