@@ -2839,8 +2839,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		pinvoke = TRUE;
 
-	if (pinvoke && !method->addr)
-		mono_lookup_pinvoke_call (method);
+	if (!method->addr) {
+		if (pinvoke)
+			mono_lookup_pinvoke_call (method);
+		else
+			method->addr = mono_lookup_internal_call (method);
+	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 

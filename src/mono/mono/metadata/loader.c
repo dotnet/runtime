@@ -712,7 +712,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
 			result->string_ctor = 1;
 
-		result->addr = mono_lookup_internal_call (result);
 		result->signature->pinvoke = 1;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
