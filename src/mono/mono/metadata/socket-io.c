@@ -505,7 +505,11 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 		return(NULL);
 	}
 
-	/* .net seems to set this by default */
+	if (sock_family == AF_INET && sock_type == SOCK_DGRAM)
+		return (GUINT_TO_POINTER (sock));
+
+	/* .net seems to set this by default for SOCK_STREAM,
+	 * not for SOCK_DGRAM (see bug #36322) */
 	ret=setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(true));
 	if(ret==SOCKET_ERROR) {
 		closesocket(sock);
@@ -790,7 +794,6 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
 #endif
-
 	ret=bind(sock, sa, sa_size);
 	g_free(sa);
 	
