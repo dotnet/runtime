@@ -72,6 +72,15 @@ helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 	mono_array_set (array, gpointer, index, val);
 }
 
+static void
+helper_stelem_ref_check (MonoArray *array, MonoObject *val)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (val && !mono_object_isinst (val, array->obj.vtable->klass->element_class))
+		mono_raise_exception (mono_get_exception_array_type_mismatch ());
+}
+
 static gint64 
 mono_llmult (gint64 a, gint64 b)
 {

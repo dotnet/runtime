@@ -97,6 +97,7 @@ static MonoMethodSignature *helper_sig_double_double_double = NULL;
 static MonoMethodSignature *helper_sig_uint_double = NULL;
 static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
+static MonoMethodSignature *helper_sig_stelem_ref_check = NULL;
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 static MonoMethodSignature *helper_sig_obj_obj_cls = NULL;
 
@@ -2252,10 +2253,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	MonoMethodSignature *esig;
 
 	rank = cmethod->signature->param_count - (is_set? 1: 0);
-	/* 
-	 * FIXME: handle TypeMismatch for set or use the slow path
-	 * for that.
-	 */
+
 	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS)) {
 		MonoInst *indexes;
 		NEW_GROUP (cfg, indexes, sp [1], sp [2]);
@@ -3287,6 +3285,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *addr;
 
 				if (strcmp (cmethod->name, "Set") == 0) { /* array Set */ 
+					if (sp [fsig->param_count]->type == STACK_OBJ) {
+						MonoInst *iargs [2];
+
+						handle_loaded_temps (cfg, bblock, stack_start, sp);
+						
+						iargs [0] = sp [0];
+						iargs [1] = sp [fsig->param_count];
+			
+						mono_emit_jit_icall (cfg, bblock, helper_stelem_ref_check, iargs, ip);						
+					}
+
 					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, TRUE);
 					NEW_INDSTORE (cfg, ins, addr, sp [fsig->param_count], fsig->params [fsig->param_count - 1]);
 					ins->cil_code = ip;
@@ -5803,6 +5812,13 @@ create_helper_signature (void)
 	helper_sig_stelem_ref->ret = &mono_defaults.void_class->byval_arg;
 	helper_sig_stelem_ref->pinvoke = 1;
 
+	/* void* stelem_ref_check (MonoArray *, MonoObject *) */
+	helper_sig_stelem_ref_check = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	helper_sig_stelem_ref_check->params [0] = &mono_defaults.array_class->byval_arg;
+	helper_sig_stelem_ref_check->params [1] = &mono_defaults.object_class->byval_arg;
+	helper_sig_stelem_ref_check->ret = &mono_defaults.void_class->byval_arg;
+	helper_sig_stelem_ref_check->pinvoke = 1;
+
 	/* long amethod (long, long) */
 	helper_sig_long_long_long = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 	helper_sig_long_long_long->params [0] = helper_sig_long_long_long->params [1] = 
@@ -7933,6 +7949,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (helper_memset, "helper_memset", helper_sig_memset, FALSE);
 	mono_register_jit_icall (helper_initobj, "helper_initobj", helper_sig_initobj, FALSE);
 	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
+	mono_register_jit_icall (helper_stelem_ref_check, "helper_stelem_ref_check", helper_sig_stelem_ref_check, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
 	mono_register_jit_icall (mono_object_new_specific, "mono_object_new_specific", helper_sig_object_new_specific, FALSE);
 	mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", helper_sig_object_new_specific, FALSE);

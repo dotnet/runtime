@@ -244,6 +244,20 @@ class Tests {
 		return 0;
 	}
 
+	static int test_0_multi_array_cast () {
+		Duper[,] d = new Duper [1, 1];
+		object[,] o = d;
+
+		try {
+			o [0, 0] = new Super ();
+			return 1;
+		}
+		catch (ArrayTypeMismatchException) {
+		}
+
+		return 0;
+	}
+
 	static int test_0_enum_array_cast () {
 		TypeCode[] tc = new TypeCode [0];
 		object[] oa;
