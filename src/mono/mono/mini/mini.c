@@ -5562,6 +5562,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				if (sp != stack_start) 
 					goto unverified;
+				if (cfg->method != method) 
+					/* 
+					 * Inlining this into a loop in a parent could lead to 
+					 * stack overflows which is different behavior than the
+					 * non-inlined case, thus disable inlining in this case.
+					 */
+					goto inline_failure;
 				MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
 				ins->inst_left = *sp;
 				ins->cil_code = ip;

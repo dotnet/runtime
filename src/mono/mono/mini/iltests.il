@@ -273,6 +273,42 @@ FAIL:	ldc.i4.1
 PASS:	ldc.i4.0
 		ret
 	}
+
+    .method private static void do_localloc () cil managed {
+        .maxstack 3
+        .locals init (
+                unsigned int8*  V_0)
+        IL_0000:  ldc.i4.1
+        IL_0001:  ldc.i4 131072
+        IL_0006:  mul
+        IL_0007:  localloc
+        IL_0009:  stloc.0
+        IL_000a:  ret
+    }
+
+	// Check that localloc can't be inlined
+	.method static public int32 test_0_localloc_inline () cil managed {
+		.maxstack 16
+		.locals init (
+			int32 i
+		)
+
+		ldc.i4.0
+        stloc.0
+        br COND
+
+START:  call void class Tests::do_localloc()
+        ldloc.0
+        ldc.i4.1
+        add
+        stloc.0
+COND:   ldloc.0
+        ldc.i4 1000
+        blt START
+
+		ldc.i4.0
+		ret
+	}	
 	
 	.method static public int32 test_3_copy_used_bug () il managed {
 
