@@ -408,7 +408,9 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 		x86_push_imm (cfg->code, method);
 	
 		/* get the address of lmf for the current thread */
-		x86_call_code (cfg->code, mono_get_lmf_addr);
+		mono_add_jump_info (cfg, cfg->code, MONO_JUMP_INFO_ABS, mono_get_lmf_addr);
+		x86_call_code (cfg->code, 0);
+
 		/* push lmf */
 		x86_push_reg (cfg->code, X86_EAX); 
 		/* push *lfm (previous_lmf) */
