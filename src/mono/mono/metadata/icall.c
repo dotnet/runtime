@@ -2860,6 +2860,8 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
     gpointer args [1];
 	guint32 pkey_len;
 	const char *pkey_ptr;
+	gchar *absolute;
+	gchar *codebase;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2873,6 +2875,12 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 	aname->build = name->build;
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
+
+	absolute = g_build_filename (assembly->assembly->basedir, assembly->assembly->image->module_name, NULL);
+	codebase = g_filename_to_uri (absolute, NULL, NULL);
+	aname->codebase = mono_string_new (mono_object_domain (assembly), codebase);
+	g_free (codebase);
+	g_free (absolute);
 
 	if (!create_culture) {
 		MonoMethodDesc *desc = mono_method_desc_new ("System.Globalization.CultureInfo:CreateSpecificCulture(string)", TRUE);
