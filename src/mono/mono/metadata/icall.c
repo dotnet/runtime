@@ -3159,7 +3159,11 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 			domain, System_Reflection_AssemblyName);
 
 		aname->name = mono_string_new (domain, assem->aname.name);
+
 		aname->major = assem->aname.major;
+		aname->minor = assem->aname.minor;
+		aname->build = assem->aname.build;
+		aname->revision = assem->aname.revision;
 
 		absolute = g_build_filename (assem->basedir, assem->image->module_name, NULL);
 		codebase = g_filename_to_uri (absolute, NULL, NULL);
