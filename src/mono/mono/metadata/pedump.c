@@ -166,13 +166,13 @@ dump_section_table (section_table_t *st)
 }
 
 static void
-dump_sections (dotnet_image_info_t *iinfo)
+dump_sections (cli_image_info_t *iinfo)
 {
-	const int top = iinfo->dn_header.coff.coff_sections;
+	const int top = iinfo->cli_header.coff.coff_sections;
 	int i;
 	
 	for (i = 0; i < top; i++)
-		dump_section_table (&iinfo->dn_section_tables [i]);
+		dump_section_table (&iinfo->cli_section_tables [i]);
 }
 
 static void
@@ -195,7 +195,7 @@ dump_cli_header (cli_header_t *ch)
 }	
 
 static void
-dsh (char *label, dotnet_image_info_t *iinfo, stream_header_t *sh)
+dsh (char *label, cli_image_info_t *iinfo, stream_header_t *sh)
 {
 	printf ("%s: 0x%08x - 0x%08x [%d == 0x%08x]\n",
 		label,
@@ -204,9 +204,9 @@ dsh (char *label, dotnet_image_info_t *iinfo, stream_header_t *sh)
 }
 
 static void
-dump_metadata_ptrs (dotnet_image_info_t *iinfo)
+dump_metadata_ptrs (cli_image_info_t *iinfo)
 {
-	metadata_t *meta = &iinfo->dn_metadata;
+	metadata_t *meta = &iinfo->cli_metadata;
 	
 	printf ("\nMetadata pointers:\n");
 	dsh ("\tTables (#~)", iinfo, &meta->heap_tables);
@@ -223,9 +223,9 @@ dump_table (metadata_t *meta, int table)
 }
 
 static void
-dump_metadata (dotnet_image_info_t *iinfo)
+dump_metadata (cli_image_info_t *iinfo)
 {
-	metadata_t *meta = &iinfo->dn_metadata;
+	metadata_t *meta = &iinfo->cli_metadata;
 	int table;
 	
 	dump_metadata_ptrs (iinfo);
@@ -245,24 +245,24 @@ dump_metadata (dotnet_image_info_t *iinfo)
 }
 
 static void
-dump_methoddef (dotnet_image_info_t *iinfo, guint32 token)
+dump_methoddef (cli_image_info_t *iinfo, guint32 token)
 {
 	char *loc;
 
-	loc = mono_metadata_locate_token (&iinfo->dn_metadata, token);
+	loc = mono_metadata_locate_token (&iinfo->cli_metadata, token);
 
 	printf ("RVA for Entry Point: 0x%08x\n", (*(guint32 *)loc));
 }
 
 static void
-dump_dotnet_iinfo (dotnet_image_info_t *iinfo)
+dump_dotnet_iinfo (cli_image_info_t *iinfo)
 {
-	dump_dotnet_header (&iinfo->dn_header);
+	dump_dotnet_header (&iinfo->cli_header);
 	dump_sections (iinfo);
-	dump_cli_header (&iinfo->dn_cli_header);
+	dump_cli_header (&iinfo->cli_cli_header);
 	dump_metadata (iinfo);
 
-	dump_methoddef (iinfo, iinfo->dn_cli_header.ch_entry_point);
+	dump_methoddef (iinfo, iinfo->cli_cli_header.ch_entry_point);
 }
 
 static void
@@ -275,7 +275,7 @@ usage (void)
 int
 main (int argc, char *argv [])
 {
-	dotnet_image_info_t *iinfo;
+	cli_image_info_t *iinfo;
 	MonoAssembly *assembly;
 	char *file = NULL;
 	int i;

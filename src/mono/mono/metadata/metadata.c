@@ -198,8 +198,8 @@ static MonoMetaTable MethodSchema [] = {
 
 static MonoMetaTable MethodImplSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" },
-	{ MONO_MT_MDOR_IDX,  "MethodBody" },
-	{ MONO_MT_MDOR_IDX,  "MethodDeclaration" },
+	{ MONO_MT_MDOR_IDX,   "MethodBody" },
+	{ MONO_MT_MDOR_IDX,   "MethodDeclaration" },
 	{ MONO_MT_END, NULL }
 };
 

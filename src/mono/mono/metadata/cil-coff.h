@@ -110,6 +110,7 @@ typedef struct {
 #define SECT_FLAGS_MEM_READ               0x40000000
 #define SECT_FLAGS_MEM_WRITE              0x80000000
 	guint32 st_flags;
+
 } section_table_t;
 
 typedef struct {
@@ -144,13 +145,15 @@ typedef struct {
 
 /* This is not an on-disk structure */
 typedef struct {
-	dotnet_header_t   dn_header;
-	int               dn_section_count;
-	section_table_t  *dn_section_tables;
-	cli_header_t      dn_cli_header;
+	dotnet_header_t   cli_header;
+	int               cli_section_count;
+	section_table_t  *cli_section_tables;
+	void            **cli_sections;
+	cli_header_t      cli_cli_header;
 
-	metadata_t        dn_metadata;
-} dotnet_image_info_t;
+	metadata_t        cli_metadata;
+} cli_image_info_t;
 
-
+guint32       cli_rva_image_map (cli_image_info_t *iinfo, guint32 rva);
+char         *cli_rva_map       (cli_image_info_t *iinfo, guint32 rva);
 

@@ -8,7 +8,7 @@
  * (C) 2001 Ximian, Inc.  http://www.ximian.com
  *
  * TODO:
- *   Do byteswaps for big-endian systems on the various headers.
+ *   Implement big-endian versions of the reading routines.
  */
 #include <config.h>
 #include <stdio.h>
@@ -29,11 +29,11 @@
 #define read16(x) le16_to_cpu (*((guint16 *) (x)))
 #define read64(x) le64_to_cpu (*((guint64 *) (x)))
 
-static guint32
-coff_map (dotnet_image_info_t *iinfo, guint32 addr)
+guint32
+cli_rva_image_map (cli_image_info_t *iinfo, guint32 addr)
 {
-	const int top = iinfo->dn_section_count;
-	section_table_t *tables = iinfo->dn_section_tables;
+	const int top = iinfo->cli_section_count;
+	section_table_t *tables = iinfo->cli_section_tables;
 	int i;
 	
 	for (i = 0; i < top; i++){
@@ -46,17 +46,97 @@ coff_map (dotnet_image_info_t *iinfo, guint32 addr)
 	return INVALID_ADDRESS;
 }
 
-static int
-load_section_tables (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
+char *
+cli_rva_map (cli_image_info_t *iinfo, guint32 addr)
 {
-	const int top = iinfo->dn_header.coff.coff_sections;
+	const int top = iinfo->cli_section_count;
+	section_table_t *tables = iinfo->cli_section_tables;
+	int i;
+	
+	for (i = 0; i < top; i++){
+		if ((addr >= tables->st_virtual_address) &&
+		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
+			return iinfo->cli_sections [i] +
+				(addr - tables->st_virtual_address);
+		}
+		tables++;
+	}
+	return NULL;
+}
+
+/**
+ * mono_assembly_ensure_section_idx:
+ * @assembly: The image we are operating on
+ * @section: section number that we will load/map into memory
+ *
+ * This routine makes sure that we have an in-memory copy of
+ * an image section (.text, .rsrc, .data).
+ *
+ * Returns: TRUE on success
+ */
+int
+mono_assembly_ensure_section_idx (MonoAssembly *assembly, int section)
+{
+	cli_image_info_t *iinfo = assembly->image_info;
+	section_table_t *sect;
+	gboolean writable;
+	
+	g_return_val_if_fail (section < iinfo->cli_section_count, FALSE);
+
+	if (iinfo->cli_sections [section] != NULL)
+		return TRUE;
+
+	sect = &iinfo->cli_section_tables [section];
+	
+	writable = sect->st_flags & SECT_FLAGS_MEM_WRITE;
+
+	iinfo->cli_sections [section] = raw_buffer_load (
+		fileno (assembly->f), writable,
+		sect->st_raw_data_ptr, sect->st_raw_data_size);
+
+	if (iinfo->cli_sections [section] == NULL)
+		return FALSE;
+
+	return TRUE;
+}
+
+/**
+ * mono_assembly_ensure_section:
+ * @assembly: The image we are operating on
+ * @section: section name that we will load/map into memory
+ *
+ * This routine makes sure that we have an in-memory copy of
+ * an image section (.text, .rsrc, .data).
+ *
+ * Returns: TRUE on success
+ */
+int
+mono_assembly_ensure_section (MonoAssembly *assembly, const char *section)
+{
+	cli_image_info_t *ii = assembly->image_info;
+	int i;
+	
+	for (i = 0; i < ii->cli_section_count; i++){
+		if (strncmp (ii->cli_section_tables [i].st_name, section, 8) != 0)
+			continue;
+		
+		return mono_assembly_ensure_section_idx (assembly, i);
+	}
+	return FALSE;
+}
+
+static int
+load_section_tables (MonoAssembly *assembly, cli_image_info_t *iinfo)
+{
+	const int top = iinfo->cli_header.coff.coff_sections;
 	int i;
 
-	iinfo->dn_section_count = top;
-	iinfo->dn_section_tables = g_new (section_table_t, top);
-
+	iinfo->cli_section_count = top;
+	iinfo->cli_section_tables = g_new (section_table_t, top);
+	iinfo->cli_sections = g_new0 (void *, top);
+	
 	for (i = 0; i < top; i++){
-		section_table_t *t = &iinfo->dn_section_tables [i];
+		section_table_t *t = &iinfo->cli_section_tables [i];
 		
 		if (fread (t, sizeof (section_table_t), 1, assembly->f) != 1)
 			return FALSE;
@@ -71,36 +151,40 @@ load_section_tables (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 		t->st_line_count = le16_to_cpu (t->st_line_count);
 	}
 
+	for (i = 0; i < top; i++)
+		if (!mono_assembly_ensure_section_idx (assembly, i))
+			return FALSE;
+	
 	return TRUE;
 }
 
 static gboolean
-load_cli_header (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
+load_cli_header (MonoAssembly *assembly, cli_image_info_t *iinfo)
 {
 	guint32 offset;
 	int n;
 	
-	offset = coff_map (iinfo, iinfo->dn_header.datadir.pe_cli_header.rva);
+	offset = cli_rva_image_map (iinfo, iinfo->cli_header.datadir.pe_cli_header.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
 
 	if (fseek (assembly->f, offset, 0) != 0)
 		return FALSE;
 	
-	if ((n = fread (&iinfo->dn_cli_header, sizeof (cli_header_t), 1, assembly->f)) != 1)
+	if ((n = fread (&iinfo->cli_cli_header, sizeof (cli_header_t), 1, assembly->f)) != 1)
 		return FALSE;
 
 	/* Catch new uses of the fields that are supposed to be zero */
 
-	if ((iinfo->dn_cli_header.ch_eeinfo_table.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_helper_table.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_dynamic_info.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_delay_load_info.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_module_image.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_external_fixups.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_ridmap.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_debug_map.rva != 0) ||
-	    (iinfo->dn_cli_header.ch_ip_map.rva != 0)){
+	if ((iinfo->cli_cli_header.ch_eeinfo_table.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_helper_table.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_dynamic_info.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_delay_load_info.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_module_image.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_external_fixups.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_ridmap.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_debug_map.rva != 0) ||
+	    (iinfo->cli_cli_header.ch_ip_map.rva != 0)){
 		g_message ("Some fields in the CLI header which should have been zero are not zero");
 	}
 	    
@@ -108,16 +192,16 @@ load_cli_header (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
 }
 
 static gboolean
-load_metadata_ptrs (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
+load_metadata_ptrs (MonoAssembly *assembly, cli_image_info_t *iinfo)
 {
-	metadata_t *metadata = &iinfo->dn_metadata;
+	metadata_t *metadata = &iinfo->cli_metadata;
 	guint32 offset, size;
 	guint16 streams;
 	int i;
 	char *ptr;
 	
-	offset = coff_map (iinfo, iinfo->dn_cli_header.ch_metadata.rva);
-	size = iinfo->dn_cli_header.ch_metadata.size;
+	offset = cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
+	size = iinfo->cli_cli_header.ch_metadata.size;
 	
 	metadata->raw_metadata = raw_buffer_load (fileno (assembly->f), FALSE, offset, size);
 	if (metadata->raw_metadata == NULL)
@@ -206,25 +290,33 @@ load_tables (MonoAssembly *assembly, metadata_t *meta)
 	meta->tables_base = (heap_tables + 24) + (4 * valid);
 
 	/* They must be the same */
-	g_assert (meta->tables_base == rows);
+	g_assert ((void *) meta->tables_base == (void *) rows);
 
 	mono_metadata_compute_table_bases (meta);
 	return TRUE;
 }
 
 static gboolean
-load_metadata (MonoAssembly *assembly, dotnet_image_info_t *iinfo)
+load_metadata (MonoAssembly *assembly, cli_image_info_t *iinfo)
 {
 	if (!load_metadata_ptrs (assembly, iinfo))
 		return FALSE;
 
-	return load_tables (assembly, &iinfo->dn_metadata);
+	return load_tables (assembly, &iinfo->cli_metadata);
 }
 
+/**
+ * mono_assembly_open:
+ * @fname: filename that points to the module we want to open
+ * @status: An error condition is returned in this field
+ *
+ * Retuns: An open assembly of type %MonoAssembly or NULL on error.
+ * if NULL, then check the value of @status for details on the error
+ */
 MonoAssembly *
 mono_assembly_open (const char *fname, enum MonoAssemblyOpenStatus *status)
 {
-	dotnet_image_info_t *iinfo;
+	cli_image_info_t *iinfo;
 	dotnet_header_t *header;
 	msdos_header_t msdos;
 	MonoAssembly *assembly;
@@ -232,10 +324,10 @@ mono_assembly_open (const char *fname, enum MonoAssemblyOpenStatus *status)
 
 	assembly = g_new (MonoAssembly, 1);
 	assembly->f = fopen (fname, "r");
-	iinfo = g_new (dotnet_image_info_t, 1);
+	iinfo = g_new (cli_image_info_t, 1);
 	assembly->image_info = iinfo;
 
-	header = &iinfo->dn_header;
+	header = &iinfo->cli_header;
 		
 	if (assembly->f == NULL){
 		if (status)
@@ -280,6 +372,13 @@ invalid_image:
 		return NULL;
 }
 
+/**
+ * mono_assembly_close:
+ * @assembly: The image file we wish to close
+ *
+ * Closes an image file, deallocates all memory consumed and
+ * unmaps all possible sections of the file
+ */
 void
 mono_assembly_close (MonoAssembly *assembly)
 {
@@ -289,26 +388,39 @@ mono_assembly_close (MonoAssembly *assembly)
 		fclose (assembly->f);
 
 	if (assembly->image_info){
-		dotnet_image_info_t *ii = assembly->image_info;
+		cli_image_info_t *ii = assembly->image_info;
+		int i;
 
-		if (ii->dn_metadata.raw_metadata != NULL)
-			raw_buffer_free (ii->dn_metadata.raw_metadata);
+		if (ii->cli_metadata.raw_metadata != NULL)
+			raw_buffer_free (ii->cli_metadata.raw_metadata);
 	
-		if (ii->dn_section_tables)
-			g_free (ii->dn_section_tables);
-
+		for (i = 0; i < ii->cli_section_count; i++){
+			if (!ii->cli_sections [i])
+				continue;
+			raw_buffer_free (ii->cli_sections [i]);
+		}
+		if (ii->cli_section_tables)
+			g_free (ii->cli_section_tables);
+		if (ii->cli_sections)
+			g_free (ii->cli_section_tables);
 		g_free (assembly->image_info);
 	}
 	
 	g_free (assembly);
 }
 
+/** 
+ * mono_assembly_strerror:
+ * @status: an code indicating the result from a recent operation
+ *
+ * Returns: a string describing the error
+ */
 const char *
 mono_assembly_strerror (enum MonoAssemblyOpenStatus status)
 {
 	switch (status){
 	case MONO_ASSEMBLY_OK:
-		return "succes";
+		return "success";
 	case MONO_ASSEMBLY_ERROR_ERRNO:
 		return strerror (errno);
 	case MONO_ASSEMBLY_IMAGE_INVALID:
@@ -316,3 +428,4 @@ mono_assembly_strerror (enum MonoAssemblyOpenStatus status)
 	}
 	return "Internal error";
 }
+
