@@ -3762,15 +3762,68 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image,
 static MonoArray*
 ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
 {
-	MonoArray *res;
-	MonoImage *image = assembly->assembly->image;
-	MonoTableInfo *table = &image->tables [MONO_TABLE_FILE];
+	MonoArray *res = NULL;
+	MonoImage *image = NULL;
+	MonoTableInfo *table = NULL;
 	MonoDomain *domain;
 	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_object_domain (assembly);
+
+	if (assembly->assembly->dynamic) {
+		MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
+		if (abuilder->modules)
+			for (i = 0; i < mono_array_length(abuilder->modules); i++) {
+				MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
+				if (res == NULL)
+					res = mb->types;
+				else {
+					MonoArray *append = mb->types;
+					if (mono_array_length (append) > 0) {
+						guint32 len1, len2;
+						MonoArray *new;
+						len1 = mono_array_length (res);
+						len2 = mono_array_length (append);
+						new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+						memcpy (mono_array_addr (new, MonoReflectionType*, 0),
+							mono_array_addr (res, MonoReflectionType*, 0),
+							len1 * sizeof (MonoReflectionType*));
+						memcpy (mono_array_addr (new, MonoReflectionType*, len1),
+							mono_array_addr (append, MonoReflectionType*, 0),
+							len2 * sizeof (MonoReflectionType*));
+						res = new;
+					}
+				}
+			}
+		if (abuilder->loaded_modules)
+			for (i = 0; i < mono_array_length(abuilder->loaded_modules); i++) {
+				MonoReflectionModule *rm = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
+				if (res == NULL)
+					res = mono_module_get_types (domain, rm->image, exportedOnly);
+				else {
+					MonoArray *append = mono_module_get_types (domain, rm->image, exportedOnly);
+					if (mono_array_length (append) > 0) {
+						guint32 len1, len2;
+						MonoArray *new;
+						len1 = mono_array_length (res);
+						len2 = mono_array_length (append);
+						new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+						memcpy (mono_array_addr (new, MonoReflectionType*, 0),
+							mono_array_addr (res, MonoReflectionType*, 0),
+							len1 * sizeof (MonoReflectionType*));
+						memcpy (mono_array_addr (new, MonoReflectionType*, len1),
+							mono_array_addr (append, MonoReflectionType*, 0),
+							len2 * sizeof (MonoReflectionType*));
+						res = new;
+					}
+				}
+			}
+		return res;
+	}
+	image = assembly->assembly->image;
+	table = &image->tables [MONO_TABLE_FILE];
 	res = mono_module_get_types (domain, image, exportedOnly);
 
 	/* Append data from all modules in the assembly */
@@ -3798,7 +3851,6 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 			}
 		}
 	}		
-
 	return res;
 }
 
