@@ -47,7 +47,7 @@ public class MyMarshal: ICustomMarshaler
 			number = Convert.ToInt32 (managedObj);
 			ptr = Marshal.AllocHGlobal (8);
 			Marshal.WriteInt32 (ptr, 0);
-			Marshal.WriteInt32 (new IntPtr (ptr.ToInt32 () + Marshal.SizeOf (typeof(int))), number);
+			Marshal.WriteInt32 (new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof(int))), number);
 			return ptr;
 		} catch {
 			return IntPtr.Zero;

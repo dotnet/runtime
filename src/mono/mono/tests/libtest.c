@@ -876,7 +876,11 @@ time_t
 mono_test_marshal_time_t (time_t *t)
 {
 	/* Skip forward an hour */
-	return *t + 3600;
+	/* t can be unaligned on 64bit machines at present owing to the magic 4 bytes currently added
+           for custom marshaling which may or may not be correct... cope for the moment */
+	time_t s;
+	memcpy(&s, t, sizeof *t);
+	return s + 3600;
 }
 
 int 

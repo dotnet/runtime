@@ -82,7 +82,7 @@ public class time_t_CustomMarshaler : ICustomMarshaler {
 		//
 		// This method should return a pointer to a memory buffer holding
 		// the unmanaged representation of 'obj'
-		// The first 4 bytes of the buffer is unused
+		// The first 4 bytes of the buffer is unused (is this really 4 bytes on a 64bit machine?)
 		// The unmanaged function will receive the address of the buffer
 		// as the parameter
 		//
@@ -90,7 +90,7 @@ public class time_t_CustomMarshaler : ICustomMarshaler {
 		DateTime dt = (DateTime) obj;
 		int size = Marshal.SizeOf (typeof (int)) + GetNativeDataSize ();
 		IntPtr ptr = Marshal.AllocCoTaskMem (size);
-		IntPtr time_t_ptr = new IntPtr (ptr.ToInt32 () + Marshal.SizeOf (typeof(int)));
+		IntPtr time_t_ptr = new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof(int)));
 		int secs = ((int)dt.Subtract (local_epoch).TotalSeconds) + utc_offset;
 		if (GetNativeDataSize () == 4)
 			Marshal.WriteInt32 (time_t_ptr, secs);
