@@ -267,6 +267,9 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 {
 	gpointer ret=NULL;
 	
+	mono_once(&thread_hash_once, thread_hash_init);
+	mono_once (&thread_ops_once, thread_ops_init);
+	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": looking up thread %d", tid);
 #endif
@@ -298,10 +301,6 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
  */
 void ExitThread(guint32 exitcode)
 {
-	/* No thread created yet.  */
-	if (thread_hash == NULL)
-		exit(exitcode);
-
 	_wapi_timed_thread_exit(exitcode);
 }
 
@@ -475,6 +474,9 @@ gpointer GetCurrentThread(void)
 {
 	gpointer ret=NULL;
 	guint32 tid;
+	
+	mono_once(&thread_hash_once, thread_hash_init);
+	mono_once (&thread_ops_once, thread_ops_init);
 	
 	tid=GetCurrentThreadId();
 	

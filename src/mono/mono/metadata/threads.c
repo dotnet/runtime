@@ -472,9 +472,7 @@ static MonoThreadsSync *mon_new(void)
 	new->waiters_done=CreateEvent(NULL, FALSE, FALSE, NULL);
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": ThreadsSync %p mutex created: %p, sem: %p, event: %p",
-		  new, new->monitor, new->sema, new->waiters_done);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) ThreadsSync %p mutex created: %p, sem: %p, event: %p", GetCurrentThreadId (), new, new->monitor, new->sema, new->waiters_done);
 #endif
 	
 	return(new);
@@ -488,8 +486,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 	
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Trying to lock object %p in thread %d", obj,
-		  GetCurrentThreadId());
+		  ": (%d) Trying to lock object %p", GetCurrentThreadId(),
+		  obj);
 #endif
 
 	EnterCriticalSection(&monitor_mutex);
@@ -507,8 +505,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 	
 	/* Acquire the mutex */
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Acquiring monitor mutex %p",
-		  mon->monitor);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Acquiring monitor mutex %p",
+		  GetCurrentThreadId (), mon->monitor);
 #endif
 	ret=WaitForSingleObject(mon->monitor, ms);
 	if(ret==WAIT_OBJECT_0) {
@@ -517,7 +515,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 	
 #ifdef THREAD_LOCK_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": object %p now locked %d times", obj, mon->count);
+			  ": (%d) object %p now locked %d times",
+			  GetCurrentThreadId (), obj, mon->count);
 #endif
 
 		return(TRUE);
@@ -531,8 +530,8 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 	MonoThreadsSync *mon;
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Unlocking %p in thread %d", obj,
-		  GetCurrentThreadId());
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Unlocking %p",
+		  GetCurrentThreadId (), obj);
 #endif
 
 	/* No need to lock monitor_mutex here because we only adjust
@@ -551,8 +550,8 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 	mon->count--;
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": %p now locked %d times", obj,
-		  mon->count);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) %p now locked %d times",
+		  GetCurrentThreadId (), obj, mon->count);
 #endif
 
 	if(mon->count==0) {
@@ -560,7 +559,8 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 	}
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Releasing mutex %p", mon->monitor);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Releasing mutex %p",
+		  GetCurrentThreadId (), mon->monitor);
 #endif
 
 	ReleaseMutex(mon->monitor);
@@ -587,7 +587,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
 	if(mon->tid!=GetCurrentThreadId()) {
 #ifdef THREAD_LOCK_DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": object %p is owned by thread %d", obj, mon->tid);
+			   ": (%d) object %p is owned by thread %d",
+			   GetCurrentThreadId (), obj, mon->tid);
 #endif
 
 		goto finished;
@@ -608,7 +609,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject
 	
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Testing if %p is owned by any thread", obj);
+		  ": (%d) Testing if %p is owned by any thread",
+		  GetCurrentThreadId (), obj);
 #endif
 
 	EnterCriticalSection(&monitor_mutex);
@@ -639,7 +641,7 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
 	MonoThreadsSync *mon;
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message("Pulsing %p in thread %d", obj, GetCurrentThreadId());
+	g_message("(%d) Pulsing %p", GetCurrentThreadId (), obj);
 #endif
 
 	EnterCriticalSection(&monitor_mutex);
@@ -671,7 +673,7 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
 	MonoThreadsSync *mon;
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message("Pulsing all %p", obj);
+	g_message("(%d) Pulsing all %p", GetCurrentThreadId (), obj);
 #endif
 
 	EnterCriticalSection(&monitor_mutex);
@@ -714,8 +716,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	guint32 save_count;
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message("Trying to wait for %p in thread %d with timeout %dms", obj,
-		  GetCurrentThreadId(), ms);
+	g_message("(%d) Trying to wait for %p with timeout %dms",
+		  GetCurrentThreadId (), obj, ms);
 #endif
 
 	EnterCriticalSection(&monitor_mutex);
@@ -737,8 +739,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	LeaveCriticalSection(&mon->waiters_count_lock);
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": %p locked %d times", obj,
-		  mon->count);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) %p locked %d times",
+		  GetCurrentThreadId (), obj, mon->count);
 #endif
 
 	/* We need to put the lock count back afterwards */
@@ -746,8 +748,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	
 	while(mon->count>1) {
 #ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Releasing mutex %p",
-			  mon->monitor);
+		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Releasing mutex %p",
+			  GetCurrentThreadId (), mon->monitor);
 #endif
 
 		ReleaseMutex(mon->monitor);
@@ -758,8 +760,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	mon->count=0;
 	mon->tid=0;
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Signalling monitor mutex %p",
-		  mon->monitor);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Signalling monitor mutex %p",
+		  GetCurrentThreadId (), mon->monitor);
 #endif
 
 	SignalObjectAndWait(mon->monitor, mon->sema, INFINITE, FALSE);
@@ -771,14 +773,14 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	
 	if(last_waiter) {
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Waiting for monitor mutex %p",
-		  mon->monitor);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Waiting for monitor mutex %p",
+		  GetCurrentThreadId (), mon->monitor);
 #endif
 		SignalObjectAndWait(mon->waiters_done, mon->monitor, INFINITE, FALSE);
 	} else {
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Waiting for monitor mutex %p",
-		  mon->monitor);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Waiting for monitor mutex %p",
+		  GetCurrentThreadId (), mon->monitor);
 #endif
 		WaitForSingleObject(mon->monitor, INFINITE);
 	}
@@ -791,15 +793,16 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	while(save_count>1) {
 #ifdef THREAD_LOCK_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Waiting for monitor mutex %p", mon->monitor);
+			  ": (%d) Waiting for monitor mutex %p",
+			  GetCurrentThreadId (), mon->monitor);
 #endif
 		WaitForSingleObject(mon->monitor, INFINITE);
 		save_count--;
 	}
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": %p still locked %d times", obj,
-		  mon->count);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) %p still locked %d times",
+		  GetCurrentThreadId (), obj, mon->count);
 #endif
 	
 	return(TRUE);
@@ -829,12 +832,14 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	
 	if(ret==WAIT_FAILED) {
 #ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Wait failed");
+		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
+			  GetCurrentThreadId ());
 #endif
 		return(FALSE);
 	} else if(ret==WAIT_TIMEOUT) {
 #ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Wait timed out");
+		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
+			  GetCurrentThreadId ());
 #endif
 		return(FALSE);
 	}
@@ -865,7 +870,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	g_free(handles);
 	
 #ifdef THREAD_WAIT_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", ret);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) returning %d",
+		  GetCurrentThreadId (), ret);
 #endif
 
 	return(ret);
@@ -877,7 +883,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	guint32 ret;
 	
 #ifdef THREAD_WAIT_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": waiting for %p", handle);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) waiting for %p",
+		  GetCurrentThreadId (), handle);
 #endif
 	
 	if(ms== -1) {
@@ -887,12 +894,14 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	ret=WaitForSingleObject(handle, ms);
 	if(ret==WAIT_FAILED) {
 #ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Wait failed");
+		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
+			  GetCurrentThreadId ());
 #endif
 		return(FALSE);
 	} else if(ret==WAIT_TIMEOUT) {
 #ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Wait timed out");
+		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
+			  GetCurrentThreadId ());
 #endif
 		return(FALSE);
 	}
@@ -1059,9 +1068,7 @@ void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 #endif
 	main_thread = (MonoThread *)mono_object_new (domain, mono_defaults.thread_class);
 
-#if 0
-	main_thread->handle = OpenThread(THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId());
-#endif
+	main_thread->handle = GetCurrentThread ();
 
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -1112,7 +1119,8 @@ static void wait_for_tids (struct wait_data *wait)
 	guint32 i, ret;
 	
 #ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": %d threads to wait for in this batch", wait->num);
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": %d threads to wait for in this batch", wait->num);
 #endif
 
 	ret=WaitForMultipleObjects(wait->num, wait->handles, TRUE, INFINITE);

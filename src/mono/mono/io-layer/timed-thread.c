@@ -148,6 +148,13 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 	thread->exiting = FALSE;
 	thread->id = pthread_self();
 
+	/* Make sure the timed-thread initialisation that the start
+	 * routing does happens here too (we might be first to be
+	 * called)
+	 */
+	mono_once(&timed_thread_once, timed_thread_init);
+	pthread_setspecific(timed_thread_key, (void *)thread);
+
 	*threadp = thread;
 
 	return(0);
