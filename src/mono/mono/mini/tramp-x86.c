@@ -124,11 +124,19 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 			/* The first part of the condition means an icall without a wrapper */
 			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
-				InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
+				gboolean do_patch = TRUE;
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
-				/* Tell valgrind to recompile the patched code */
-				VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
+				if (RUNNING_ON_VALGRIND)
+					do_patch = FALSE;
 #endif
+
+				if (do_patch) {
+					InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
+
+					/* Tell valgrind to recompile the patched code */
+					VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
+				}
 			}
 			return addr;
 		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
