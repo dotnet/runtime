@@ -15,7 +15,7 @@
 
 #include <mono/io-layer/timed-thread.h>
 
-extern struct _WapiHandleOps _wapi_thread_ops;
+extern const struct _WapiHandleOps _wapi_thread_ops;
 
 typedef enum {
 	THREAD_STATE_START,
