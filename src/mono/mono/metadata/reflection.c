@@ -3125,10 +3125,12 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 			if (file_module != moduleb) {
 				mono_image_fill_file_table (domain, file_module, assembly);
 				module_index ++;
-				for (j = 0; j < mono_array_length (file_module->types); ++j) {
-					MonoReflectionTypeBuilder *tb = mono_array_get (file_module->types, MonoReflectionTypeBuilder*, j);
-					mono_image_fill_export_table (domain, tb, module_index, 0,
-												  assembly);
+				if (file_module->types) {
+					for (j = 0; j < mono_array_length (file_module->types); ++j) {
+						MonoReflectionTypeBuilder *tb = mono_array_get (file_module->types, MonoReflectionTypeBuilder*, j);
+						mono_image_fill_export_table (domain, tb, module_index, 0,
+													  assembly);
+					}
 				}
 			}
 		}

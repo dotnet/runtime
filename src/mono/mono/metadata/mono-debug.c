@@ -267,7 +267,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		return;
 
 	handle = _mono_debug_get_image (klass->image);
-	g_assert (handle);
+	if (!handle)
+		return;
 
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo)
