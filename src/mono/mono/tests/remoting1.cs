@@ -58,6 +58,20 @@ class MyProxy : RealProxy {
 	}
 }
 
+public class EmptyProxy : RealProxy
+{
+	public EmptyProxy ( Type type ) : base( type ) 
+	{ 
+	}
+
+	public override IMessage Invoke( IMessage msg )
+	{
+		IMethodCallMessage call = (IMethodCallMessage)msg;
+
+		return new ReturnMessage( null, null, 0, null, call );
+	}
+}
+
 public struct MyStruct {
 	public int a;
 	public int b;
@@ -88,6 +102,10 @@ class R1 : MarshalByRefObject, R2 {
 		Console.WriteLine ("nonvirtual_Add " + a + " + " + b);
 		return a + b;
 	}
+}
+
+class R3 : MarshalByRefObject {
+	public object anObject;
 }
 
 class Test {
@@ -178,6 +196,13 @@ class Test {
 
 		if (!(real_proxy.GetTransparentProxy () is R2))
 			return 14;
+
+		/* Test what happens if the proxy doesn't return the required information */
+		EmptyProxy handler = new EmptyProxy ( typeof (R3) );
+		R3 o3 = (R3)handler.GetTransparentProxy();
+
+		if (o3.anObject != null)
+			return 15;
 
 		return 0;
 	}
