@@ -65,6 +65,7 @@ struct _MonoDomain {
 	MonoGHashTable     *ldstr_table;
 	MonoGHashTable     *class_vtable_hash;
 	MonoGHashTable     *proxy_vtable_hash;
+	MonoGHashTable     *static_data_hash;
 	GHashTable         *jit_code_hash;
 	MonoJitInfoTable   *jit_info_table;
 };

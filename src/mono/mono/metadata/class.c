@@ -737,7 +737,7 @@ mono_class_init (MonoClass *class)
 	}
 }
 
-#if HAVE_BOEHM_GC
+#if 0 && HAVE_BOEHM_GC
 static void
 vtable_finalizer (void *obj, void *data) {
 	g_print ("%s finalized (%p)\n", (char*)data, obj);
@@ -779,13 +779,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	mono_stats.used_class_count++;
 	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
-#if HAVE_BOEHM_GC
-	vt = GC_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
-	/*vt = GC_debug_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer), class->name, 1);*/
-	GC_register_finalizer (vt, vtable_finalizer, "vtable", NULL, NULL);
-#else
 	vt = g_malloc0 (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
-#endif
 	vt->klass = class;
 	vt->domain = domain;
 
@@ -793,14 +787,11 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 #if HAVE_BOEHM_GC
 		vt->data = GC_malloc (class->class_size + 8);
 		/*vt->data = GC_debug_malloc (class->class_size + 8, class->name, 2);*/
-		GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);
+		/*GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);*/
+		mono_g_hash_table_insert (domain->static_data_hash, class, vt->data);
 #else
 		vt->data = g_malloc0 (class->class_size + 8);
 #endif
-		/* align: fixme not 64 bit clean */
-		if (((guint32)vt->data) & 0x7)
-			vt->data = (char*)vt->data + 8 - (((guint32)vt->data) & 0x7);
-
 		mono_stats.class_static_data_size += class->class_size + 8;
 	}
 
@@ -919,13 +910,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 
 	mono_stats.class_vtable_size += vtsize;
 
-#if HAVE_BOEHM_GC
-	pvt = GC_malloc (vtsize);
-	GC_register_finalizer (vt, vtable_finalizer, "vtable", NULL, NULL);
-#else
-	pvt = g_malloc0 (vtsize);
-#endif
-	
+	pvt = g_malloc (vtsize);
 	memcpy (pvt, vt, vtsize);
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
@@ -1121,7 +1106,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	const char *name, *nspace;
 	guint icount = 0; 
 	MonoClass **interfaces;
-	int i;
 
 	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
 		return class;
