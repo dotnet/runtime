@@ -952,7 +952,7 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 	return current_domain->domain;
 }
 
-MonoObject *
+void
 ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -960,7 +960,7 @@ ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad)
 	mono_thread_push_appdomain_ref (ad->data);
 }
 
-MonoObject *
+void
 ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 {
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
@@ -971,7 +971,7 @@ ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 		mono_thread_push_appdomain_ref (domain);
 }
 
-MonoObject *
+void
 ves_icall_System_AppDomain_InternalPopDomainRef (void)
 {
 	MONO_ARCH_SAVE_REGS;
