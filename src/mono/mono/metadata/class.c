@@ -193,9 +193,17 @@ mono_class_is_open_constructed_type (MonoType *t)
 		return mono_class_is_open_constructed_type (&t->data.array->eklass->byval_arg);
 	case MONO_TYPE_PTR:
 		return mono_class_is_open_constructed_type (t->data.type);
-	case MONO_TYPE_GENERICINST:
-		// FIXME
-		g_assert_not_reached ();
+	case MONO_TYPE_GENERICINST: {
+		MonoGenericInst *ginst = t->data.generic_inst;
+		int i;
+
+		if (mono_class_is_open_constructed_type (ginst->generic_type))
+			return TRUE;
+		for (i = 0; i < ginst->type_argc; i++)
+			if (mono_class_is_open_constructed_type (ginst->type_argv [i]))
+				return TRUE;
+		return FALSE;
+	}
 	default:
 		return FALSE;
 	}
