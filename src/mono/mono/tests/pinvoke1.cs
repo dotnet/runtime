@@ -18,7 +18,7 @@ public class Test : T {
 
 	delegate int MyDelegate (string name);
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_puts_static")]
+	[DllImport ("libtest", EntryPoint="mono_test_puts_static")]
 	public static extern int puts_static (string name);
 
 	public static int Main () {

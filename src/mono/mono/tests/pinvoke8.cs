@@ -11,7 +11,7 @@ public class Test {
 		public string d;
 	}
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_return_vtype2")]
+	[DllImport ("libtest", EntryPoint="mono_test_return_vtype2")]
 	public static extern SimpleStruct mono_test_return_vtype2 (ReturnVTypeDelegate d);
 
 	public static SimpleStruct managed_return_vtype (SimpleStruct ss) {

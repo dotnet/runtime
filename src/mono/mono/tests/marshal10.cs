@@ -58,7 +58,7 @@ public class MyMarshal: ICustomMarshaler
 
 public class Testing
 {
-	[DllImport("libtest.so")]
+	[DllImport("libtest")]
 	[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MyMarshal))]
 	private static extern string functionReturningString();
 

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 public class Test {
 
-	[DllImport("libtest.so")]
+	[DllImport("libtest")]
 	[return: MarshalAs(UnmanagedType.LPWStr)]
 	private static extern string test_lpwstr_marshal(
 		[MarshalAs(UnmanagedType.LPWStr)] string s,

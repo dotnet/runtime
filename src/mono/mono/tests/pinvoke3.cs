@@ -25,7 +25,7 @@ public class Test {
 		return 1;
 	}
 	
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_delegate2")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate2")]
 	public static extern int mono_test_marshal_delegate2 (SimpleDelegate2 d);
 
 	public delegate int SimpleDelegate2 (SimpleStruct ss);

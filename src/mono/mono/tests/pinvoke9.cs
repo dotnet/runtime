@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 public class Test {
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_return_string")]
+	[DllImport ("libtest", EntryPoint="mono_test_return_string")]
 	public static extern String mono_test_return_string (ReturnStringDelegate d);
 
 	public static String managed_return_string (String s) {

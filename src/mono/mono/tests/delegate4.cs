@@ -6,7 +6,7 @@ using System.Runtime.Remoting.Messaging;
 class Test {
 	public delegate int SimpleDelegate (int a, int b);
 
-	[DllImport ("libtest.so", EntryPoint="mono_invoke_delegate")]
+	[DllImport ("libtest", EntryPoint="mono_invoke_delegate")]
 	static extern int mono_invoke_delegate (SimpleDelegate d);
 
 	public static int Add (int a, int b) {

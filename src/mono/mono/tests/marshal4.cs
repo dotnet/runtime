@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 public class Test {
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_delegate_struct")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate_struct")]
 	public static extern int mono_test_marshal_delegate_struct (DelegateStruct s);
 
 	public delegate int WndProc (int a);

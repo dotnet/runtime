@@ -7,7 +7,7 @@ public class Test {
 	public struct EmptyStruct {
 	}
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_empty_struct")]
+	[DllImport ("libtest", EntryPoint="mono_test_empty_struct")]
 	public static extern int mono_test_empty_struct (int a, EmptyStruct es, int b);
 
 	public static int Main () {

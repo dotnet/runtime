@@ -6,19 +6,19 @@ public class Test {
 	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
 	public static extern int puts (string name);
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_many_int_arguments")]
+	[DllImport ("libtest", EntryPoint="mono_test_many_int_arguments")]
 	public static extern int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							       int f, int g, int h, int i, int j);
-	[DllImport ("libtest.so", EntryPoint="mono_test_many_short_arguments")]
+	[DllImport ("libtest", EntryPoint="mono_test_many_short_arguments")]
 	public static extern int mono_test_many_short_arguments (short a, short b, short c, short d, short e,
 								 short f, short g, short h, short i, short j);
-	[DllImport ("libtest.so", EntryPoint="mono_test_many_byte_arguments")]
+	[DllImport ("libtest", EntryPoint="mono_test_many_byte_arguments")]
 	public static extern int mono_test_many_byte_arguments (byte a, byte b, byte c, byte d, byte e,
 								byte f, byte g, byte h, byte i, byte j);
-	[DllImport ("libtest.so", EntryPoint="mono_test_many_float_arguments")]
+	[DllImport ("libtest", EntryPoint="mono_test_many_float_arguments")]
 	public static extern float mono_test_many_float_arguments (float a, float b, float c, float d, float e,
 								float f, float g, float h, float i, float j);
-	[DllImport ("libtest.so", EntryPoint="mono_test_many_double_arguments")]
+	[DllImport ("libtest", EntryPoint="mono_test_many_double_arguments")]
 	public static extern double mono_test_many_double_arguments (double a, double b, double c, double d, double e,
 								double f, double g, double h, double i, double j);
 

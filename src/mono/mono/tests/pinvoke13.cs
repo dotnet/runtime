@@ -4,15 +4,15 @@ using System.Runtime.InteropServices;
 public class DumpTest
 {
 	/* this should call HexDumpA with ANSI encoded string */
-	[DllImport("libtest.so", CharSet=CharSet.Ansi)]
+	[DllImport("libtest", CharSet=CharSet.Ansi)]
 	private static extern int HexDump (string data);
 
 	/* this should call HexDump default version with Unicode string */
-	[DllImport("libtest.so", EntryPoint="HexDump", CharSet=CharSet.Unicode)]
+	[DllImport("libtest", EntryPoint="HexDump", CharSet=CharSet.Unicode)]
 	private static extern int HexDump2(string data);
 
 	/* this should call HexDump1W with unicode encoding */
-	[DllImport("libtest.so", CharSet=CharSet.Unicode)]
+	[DllImport("libtest", CharSet=CharSet.Unicode)]
 	private static extern int HexDump1(string data);
 
 	public static int Main()

@@ -34,19 +34,19 @@ public class Test {
 	}
 
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_char")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_array")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array")]
 	public static extern int mono_test_marshal_array (int [] a1);
 	
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_struct")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
 	public static extern int mono_test_marshal_struct (SimpleStruct ss);
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_struct2")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct2")]
 	public static extern int mono_test_marshal_struct2 (SimpleStruct2 ss);
 
-	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_delegate")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate")]
 	public static extern int mono_test_marshal_delegate (SimpleDelegate d);
 
 	public delegate int SimpleDelegate (int a);
