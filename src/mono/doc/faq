@@ -88,7 +88,9 @@ A: Check the <a href="contributing.html">contributing</a> section.
 
 Q: You guys should innovate instead of copying.
 
-A: 
+A: In this particular case, we see a clear advantage in the platform
+   and we are interested in using the features of the CLI on open source systems.
+
    We have decided that we should spend our limited resources towards
    implementing an existing specification instead of designing and
    implementing our own.
@@ -124,7 +126,12 @@ A: We will focus on building a development and execution
 
 Q: Why does Ximian even care?
 
-A: 
+A: We like the features that the CLI and its related technologies
+   bring to the table.  An exciting addition to the developer toolkit.
+   The goal of Mono is to bring this technology to non-Windows
+   platforms (although we hope Mono will also run on Windows, for
+   debugging and comparative purposes).
+
 
 ** Licensing
 
@@ -168,6 +175,17 @@ A: A `100% .NET application' is one that only uses the APIs defined
    applications would in theory run unmodified on Windows, Linux,
    HP-UX, Solaris, MacOS X and others. 
 
+Q: But Microsoft will release a port of the real thing under the
+   `Shared Source' license, why bother with anything else?
+
+A: The Shared Source implementation will not be usable for commercial
+   purposes.  We are working towards an implementation that will grant
+   a number of rights to recipients: use for any purpose,
+   redistribution, modification, and redistribution of modifications.
+
+   This is what we call <a
+   href="http://www.gnu.org/philosophy/free-sw.html">Free Software</a>
+
 ** Passport
 
 Q: Is this a free implementation of Passport?
@@ -190,6 +208,14 @@ A: No.  That just means that applications might use that API to
    We do not know at this time whether the Passport protocol is
    documented and whether we will be able to talk to
    passport.com 
+
+** Mono and Windows
+
+Q: Will Mono allow me to run Microsoft Office on Linux?
+
+A: No, it will not.  Microsoft Office is a Windows application.  To
+   run Windows applications on Intel Unix systems refer to <a
+   href="http://www.winehq.com">the Wine Project</a>
 
 ** GNOME
 
@@ -368,7 +394,9 @@ A: We want to get Mono in the hands of programmers soon.  We are
 Q: What about Intel's research JIT framework, ORP?
 
 A: At this time, we are investigating whether we can use elements of
-   ORP for Mono. 
+   ORP for Mono.   ORP is a research JIT engine that has a clear
+   defined API that splits the JIT from the GC system and the actual
+   byte code implementation.   It is a research product.
 
 Q: What about using GNU Lightning?
 
@@ -397,6 +425,14 @@ Q: Did Nat and Miguel meet at Microsoft?
 
 A: They met online on the Linux IRC network;  They met in person for
    the first time in 1997.
+
+Q: How can you expect Mono to compete with Microsoft, wont this
+   require an effort too large?
+
+A: You are right.  Mono will never become a reality without the help
+   of other contributors.  Ximian is a small company that can not
+   finish Mono alone.  We will be working with members of the
+   community to deliver the product.
 
 ** Acronyms
 
