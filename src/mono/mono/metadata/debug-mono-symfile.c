@@ -1,8 +1,11 @@
 #include <config.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/rawbuffer.h>
@@ -97,16 +100,26 @@ MonoSymbolFile *
 mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfile)
 {
 	MonoSymbolFile *symfile;
+	FILE* f;
 
 	mono_loader_lock ();
 	symfile = g_new0 (MonoSymbolFile, 1);
 
 	symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
 
-	if (!g_file_get_contents (symfile->filename, (gchar **) &symfile->raw_contents,
-				  &symfile->raw_contents_size, NULL))
-		symfile->raw_contents = NULL;
-
+	if ((f = fopen (symfile->filename, "rb")) > 0) {
+		struct stat stat_buf;
+			
+		if (fstat (fileno (f), &stat_buf) < 0) {
+			g_warning ("stat of %s failed: %s", symfile->filename,  g_strerror (errno));
+		} else {	
+			symfile->raw_contents_size = stat_buf.st_size;
+			symfile->raw_contents = mono_raw_buffer_load (fileno (f), FALSE, 0, stat_buf.st_size);
+		}
+		
+		fclose (f);
+	}
+	
 	if (load_symfile (handle, symfile)) {
 		mono_loader_unlock ();
 		return symfile;
@@ -130,6 +143,9 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 	if (symfile->method_hash)
 		g_hash_table_destroy (symfile->method_hash);
 
+	if (symfile->raw_contents)
+		mono_raw_buffer_free ((gpointer) symfile->raw_contents);
+	
 	g_free (symfile);
 	mono_loader_unlock ();
 }
