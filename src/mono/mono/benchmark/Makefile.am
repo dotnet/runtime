@@ -20,6 +20,7 @@ TESTSRC=			\
 	initlocals.cs		\
 	logic.cs		\
 	switch.cs		\
+	ctor-bench.cs		\
 	bulkcpy.il		\
 	math.cs
 
