@@ -548,7 +548,11 @@ emit_label_func ()
 	}
 	
 	output ("\tdefault:\n");
+	output ("#ifdef MBGET_OP_NAME\n");
+	output ("\t\tg_error (\"unknown operator: %%s\", MBGET_OP_NAME(MBTREE_OP(tree)));\n");
+	output ("#else\n");
 	output ("\t\tg_error (\"unknown operator: 0x%%04x\", MBTREE_OP(tree));\n");
+	output ("#endif\n");
 	output ("\t}\n\n");
 
 	if (!dag_mode) {
