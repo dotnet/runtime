@@ -53,6 +53,7 @@
 #define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
 gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
+static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
 
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 
@@ -1530,6 +1531,7 @@ mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 	case CEE_BLE_UN:
 	case CEE_BLT_UN:
 	case CEE_BR:
+	case CEE_SWITCH:
 		prev = bb->code;
 		while (prev->next && prev->next != bb->last_ins)
 			prev = prev->next;
@@ -2020,7 +2022,7 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 		g_assert_not_reached ();
 	}
 
-	return mono_emit_native_call (cfg, bblock, info->wrapper, info->sig, args, ip, FALSE);
+	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, args, ip, FALSE);
 }
 
 static void
@@ -2075,7 +2077,7 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		cfg->cbb->code = begin;
 	}
 
-	call->fptr = info->wrapper;
+	call->fptr = mono_icall_get_wrapper (info);
 
 	if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
 		NEW_TEMPLOAD (cfg, load, temp->inst_c0);
@@ -3526,7 +3528,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_many_bb [i] = tblock;
 				ip += 4;
 			}
-			/* FIXME: handle stack args */
+			if (sp != stack_start) {
+				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
+				sp = stack_start;
+			}
 			inline_costs += 20;
 			break;
 		case CEE_LDIND_I1:
@@ -6031,7 +6036,11 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 		return callinfo->wrapper;
 	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
-	callinfo->wrapper = mono_jit_compile_method (wrapper);
+	/* Must be domain neutral since there is only one copy */
+	callinfo->wrapper = mono_jit_compile_method_with_opt (wrapper, default_opt | MONO_OPT_SHARED);
+
+	g_hash_table_insert (jit_icall_hash_addr, (gpointer)callinfo->wrapper, callinfo);
+
 	g_free (name);
 	return callinfo->wrapper;
 }
@@ -6068,13 +6077,10 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 		info->wrapper = func;
 	} else {
 		info->wrapper = NULL;
-		mono_icall_get_wrapper (info);
 	}
 
 	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
 	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
-	if (func != info->wrapper)
-		g_hash_table_insert (jit_icall_hash_addr, (gpointer)info->wrapper, info);
 
 	return info;
 }
@@ -7637,7 +7643,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 }
 
 static gpointer
-mono_jit_compile_method (MonoMethod *method)
+mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 {
 	/* FIXME: later copy the code from mono */
 	MonoDomain *target_domain, *domain = mono_domain_get ();
@@ -7665,6 +7671,12 @@ mono_jit_compile_method (MonoMethod *method)
 	mono_domain_unlock (target_domain);
 
 	return code;
+}
+
+static gpointer
+mono_jit_compile_method (MonoMethod *method)
+{
+	return mono_jit_compile_method_with_opt (method, default_opt);
 }
 
 /**

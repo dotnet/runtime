@@ -3067,7 +3067,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
 				g_assert_not_reached ();
 			}
-			target = mi->wrapper;
+			target = mono_icall_get_wrapper (mi);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP:
