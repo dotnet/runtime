@@ -2516,12 +2516,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define CHECK_LOCAL(num) if ((unsigned)(num) >= (unsigned)header->num_locals) goto unverified
 #define CHECK_OPSIZE(size) if (ip + size > end) goto unverified
 
-#define TYPE_PARAM_TO_TYPE(num) (generic_context->ginst->type_argv [(num)])
-#define TYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (TYPE_PARAM_TO_TYPE ((num))))
-
-#define MTYPE_PARAM_TO_TYPE(num) (generic_context->gmethod->mtype_argv [(num)])
-#define MTYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (MTYPE_PARAM_TO_TYPE ((num))))
-
 
 /* offset from br.s -> br like opcodes */
 #define BIG_BRANCH_OFFSET 13
@@ -3703,10 +3697,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, token, generic_context);
 
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			sp -= 2;
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MonoInst *store, *load;
@@ -3757,10 +3747,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, token, generic_context);
 
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
 				ins->cil_code = ip;
@@ -4003,11 +3989,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
 
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				/* CASTCLASS */
 				if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -4103,11 +4084,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
 
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-
 			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
 			ins->type = STACK_OBJ;
 			ins->inst_left = *sp;
@@ -4131,10 +4107,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 		
 			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				
@@ -4513,10 +4485,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			n = mono_type_to_stind (&klass->byval_arg);
 			if (n == CEE_STOBJ) {
 				handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE);
@@ -4548,10 +4516,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				*sp++ = val;
@@ -4615,10 +4579,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, token, generic_context);
 
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			ins->inst_newa_class = klass;
 			ins->inst_newa_len = *sp;
 			ins->type = STACK_OBJ;
@@ -4660,10 +4620,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			NEW_LDELEMA (cfg, ins, sp, klass);
 			ins->cil_code = ip;
 			*sp++ = ins;
@@ -4677,10 +4633,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
 			MONO_INST_NEW (cfg, ins, mono_type_to_ldind (&klass->byval_arg));
@@ -4762,10 +4714,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MonoInst *iargs [3];
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -4854,10 +4802,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			ins->type = STACK_MP;
 			ins->inst_left = *sp;
 			ins->klass = klass;
@@ -4875,10 +4819,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
-			if (klass->byval_arg.type == MONO_TYPE_VAR)
-				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			ins->cil_code = ip;
 
 			loc = mono_compile_create_var (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL);
@@ -5548,11 +5488,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					klass = mono_method_get_wrapper_data (method, token);
 				else
 					klass = mono_class_get_full (image, token, generic_context);
-				if (klass->byval_arg.type == MONO_TYPE_VAR)
-					klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-				else if (klass->byval_arg.type == MONO_TYPE_MVAR)
-					klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-
 				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 					MonoInst *store, *load;
 					NEW_PCONST (cfg, load, NULL);
