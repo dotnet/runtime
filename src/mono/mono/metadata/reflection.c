@@ -5438,7 +5438,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			param->DefaultValueImpl = dbnull;
 		} else {
 			MonoType *type = param->ClassImpl->type;
-			
+
 			if (!blobs) {
 				blobs = g_new0 (char *, method->signature->param_count);
 				get_default_param_value_blobs (method, blobs); 
@@ -5512,7 +5512,10 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs)
 	mono_class_init (klass);
 
 	if (klass->image->dynamic) {
-		return;	/* FIXME */
+		MonoReflectionMethodAux *aux = mono_g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+		if (aux && aux->param_defaults)
+			memcpy (blobs, &(aux->param_defaults [1]), methodsig->param_count * sizeof (char*));
+		return;
 	}
 
 	methodt = &klass->image->tables [MONO_TABLE_METHOD];
@@ -7534,7 +7537,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	method_aux = NULL;
 
-	/* Parameter names */
+	/* Parameter info */
 	if (rmb->pinfo) {
 		if (!method_aux)
 			method_aux = g_new0 (MonoReflectionMethodAux, 1);
@@ -7542,6 +7545,27 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		for (i = 0; i <= m->signature->param_count; ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
+				if (i > 0)
+					m->signature->params [i - 1]->attrs = pb->attrs;
+
+				if (pb->def_value) {
+					MonoDynamicImage *assembly;
+					guint32 idx, def_type, len;
+					char *p;
+					const char *p2;
+
+					if (!method_aux->param_defaults)
+						method_aux->param_defaults = g_new0 (guint8*, m->signature->param_count + 1);
+					assembly = (MonoDynamicImage*)klass->image;
+					idx = encode_constant (assembly, pb->def_value, &def_type);
+					/* Copy the data from the blob since it might get realloc-ed */
+					p = assembly->blob.data + idx;
+					len = mono_metadata_decode_blob_size (p, &p2);
+					len += p2 - p;
+					method_aux->param_defaults [i] = g_malloc (len);
+					memcpy ((gpointer)method_aux->param_defaults [i], p, len);
+				}
+
 				if (pb->name)
 					method_aux->param_names [i] = mono_string_to_utf8 (pb->name);
 				if (pb->cattrs) {
