@@ -2648,7 +2648,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_add (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_ADD_IMM:
-			EMIT_ALU_IMM (ins, add, FALSE);
+			/* according to inssel-long32.brg, this should set cc */
+			EMIT_ALU_IMM (ins, add, TRUE);
 			break;
 		case OP_ADC:
 			/* according to inssel-long32.brg, this should set cc */
@@ -2664,12 +2665,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_sub (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_SUB_IMM:
+			/* according to inssel-long32.brg, this should set cc */
 			// we add the negated value
 			if (sparc_is_imm13 (- ins->inst_imm))
-				sparc_add_imm (code, FALSE, ins->sreg1, -ins->inst_imm, ins->dreg);
+				sparc_add_imm (code, TRUE, ins->sreg1, -ins->inst_imm, ins->dreg);
 			else {
 				sparc_set (code, - ins->inst_imm, sparc_o7);
-				sparc_add (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
+				sparc_add (code, TRUE, ins->sreg1, sparc_o7, ins->dreg);
 			}
 			break;
 		case OP_SBB:

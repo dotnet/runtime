@@ -248,6 +248,11 @@ class Tests {
 		return (int)(a + 3);
 	}
 
+	static int test_0_add_imm_carry () {
+		long a = -1;
+		return (int)(a + 1);
+	}
+
 	static int test_0_add_imm_no_inc () {
 		// we can't blindly convert an add x, 1 to an inc x
 		long a = 0x1ffffffff;
@@ -267,6 +272,11 @@ class Tests {
 	static int test_5_sub_imm () {
 		long a = 8;
 		return (int)(a - 3);
+	}
+
+	static int test_0_sub_imm_carry () {
+		long a = 0;
+		return (int)((a - 1) + 1);
 	}
 
 	static int test_2_neg () {
