@@ -585,7 +585,7 @@ void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoObje
 void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this, MonoObject *key, MonoString *source, gint32 options)
 {
 	MonoArray *arr;
-	int32_t keylen, i;
+	gint32 keylen, i;
 
 	MONO_ARCH_SAVE_REGS;
 	
