@@ -387,36 +387,8 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	return NULL;
 }
 
-
-typedef struct {
-	MonoString *obj;
-	MonoString *found;
-} InternCheck;
-
-static void
-check_interned (gpointer key, MonoString *value, InternCheck *check)
-{
-	if (value == check->obj)
-		check->found = value;
-}
-
-MonoString*
-mono_string_is_interned (MonoString *o)
-{
-	InternCheck check;
-	check.obj = o;
-	check.found = NULL;
-
-	/*
-	 * Yes, this is slow. Our System.String implementation needs to be redone.
-	 * And GLib needs foreach() methods that can be stopped halfway.
-	 */
-	g_hash_table_foreach (((MonoObject *)o)->vtable->domain->ldstr_table, (GHFunc)check_interned, &check);
-	return check.found;
-}
-
-MonoString*
-mono_string_intern (MonoString *str)
+static MonoString*
+mono_string_is_interned_lookup (MonoString *str, int insert)
 {
 	GHashTable *ldstr_table;
 	MonoString *res;
@@ -454,8 +426,24 @@ mono_string_intern (MonoString *str)
 		g_free (ins);
 		return res;
 	}
-	g_hash_table_insert (ldstr_table, ins, str);
-	return str;
+	if (insert) {
+		g_hash_table_insert (ldstr_table, ins, str);
+		return str;
+	}
+	g_free (ins);
+	return NULL;
+}
+
+MonoString*
+mono_string_is_interned (MonoString *o)
+{
+	return mono_string_is_interned_lookup (o, FALSE);
+}
+
+MonoString*
+mono_string_intern (MonoString *str)
+{
+	return mono_string_is_interned_lookup (str, TRUE);
 }
 
 MonoString*
