@@ -7,6 +7,7 @@ libmonoutils_a_SOURCES = \
 	mono-hash.h	\
 	monobitset.h	\
 	monobitset.c	\
+	strtod.h	\
 	strtod.c
 
 libmonoutilsincludedir = $(includedir)/mono/utils
