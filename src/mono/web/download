@@ -9,9 +9,7 @@
 	Some useful links: <a
 	href="http://www.go-mono.org/mono-beginning.html">Resources/Beginning
 	section</a>, the <a
-	href="http://www.go-mono.org/faq.html">FAQ</a> and the <a
-	href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">
-	Mono Common Problems</a>. 
+	href="http://www.go-mono.org/faq.html">FAQ</a>.
 
 	<table>
 	  <tbody>
@@ -32,13 +30,14 @@
 	 	      <li><a href="archive/mcs-0.17.tar.gz">Mono Class Libraries and C# Compiler.</a>
 	              <li><a href="archive/mono-0.17.tar.gz">Mono Runtime</a>
 		      <li><a href="archive/gc6.1.tar.gz">Boehm GC 6.1</a>
-		      <li><b>New!</b> <a href="archive/xsp-0.2.tar.gz">XSP web server</a>
+		      <li><a href="archive/xsp-0.2.tar.gz">XSP web server</a> <b><font color="#dd0000">New!</font></b> 
 	            </ul>
 		  </td>
 	        </tr>
 	        <tr bgcolor="#BBBBBB">
 		  <td>
-		     <b>Source RPMs</b>
+		     <b>Source RPMs</b><br>
+		     (No RPMS for XSP).
 	          </td>
 		  <td>
 		    <ul>
