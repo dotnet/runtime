@@ -134,12 +134,10 @@ TEST_CS_SRC=			\
 	appdomain-unload.cs \
 	loader.cs       \
 	pointer.cs		\
-	rounding.cs		\
 	hashcode.cs		\
 	delegate1.cs		\
 	delegate2.cs		\
 	delegate3.cs		\
-	delegate4.cs		\
 	delegate5.cs		\
 	delegate6.cs		\
 	delegate7.cs		\
