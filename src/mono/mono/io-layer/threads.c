@@ -270,14 +270,18 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	g_assert (thr_ret == 0);
 	
 	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
+	/* temporarily changed to use 1 MB: this allows more threads to be used,
+	 * as well as using less virtual memory and so more is available for
+	 * the GC heap.
+	 */
 	if (stacksize == 0){
 #if HAVE_VALGRIND_MEMCHECK_H
 		if (RUNNING_ON_VALGRIND)
 			stacksize = 1 << 20;
 		else
-			stacksize = (SIZEOF_VOID_P / 2) * 1024 * 1024;
+			stacksize = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #else
-		stacksize = (SIZEOF_VOID_P / 2) * 1024 * 1024;
+		stacksize = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
 		
 	}
