@@ -112,9 +112,10 @@ arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgum
 static int indent_level = 0;
 
 static void indent (int diff) {
+	int v;
 	if (diff < 0)
 		indent_level += diff;
-	int v = indent_level;
+	v = indent_level;
 	while (v-- > 0) {
 		printf (". ");
 	}
