@@ -958,8 +958,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef THREAD_WAIT_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) waiting for %p",
-		  GetCurrentThreadId (), handle);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) waiting for %p, %d ms",
+		  GetCurrentThreadId (), handle, ms);
 #endif
 	
 	if(ms== -1) {
