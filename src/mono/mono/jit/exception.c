@@ -133,6 +133,125 @@ arch_get_call_finally (void)
 	return start;
 }
 
+/*
+ * return TRUE if the exception is catched. It also sets the 
+ * stack_trace String. 
+ */
+static gboolean
+arch_exc_is_catched (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip, 
+		     gpointer *bp, gpointer obj)
+{
+	MonoJitInfo *ji;
+	gpointer *end_of_stack;
+	MonoLMF *lmf = jit_tls->lmf;
+	MonoMethod *m;
+	int i;
+
+	end_of_stack = jit_tls->end_of_stack;
+	g_assert (end_of_stack);
+
+	while (1) {
+
+		ji = mono_jit_info_table_find (domain, ip);
+
+		if (ji) { /* we are inside managed code */
+			m = ji->method;
+			
+			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+				char    *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+				char    *tmp, *tmpsig, *source_location, *tmpaddr;
+				gint32   address, iloffset;
+
+				if (!strcmp (strace, "TODO: implement stack traces")){
+					g_free (strace);
+					strace = g_strdup ("");
+				}
+
+				address = (char *)ip - (char *)ji->code_start;
+
+				source_location = mono_debug_source_location_from_address (m, address);
+				iloffset = mono_debug_il_offset_from_address (m, address);
+
+				if (iloffset < 0)
+					tmpaddr = g_strdup_printf ("<0x%05x>", address);
+				else
+					tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
+
+				tmpsig = mono_signature_get_desc(m->signature, TRUE);
+				if (source_location)
+					tmp = g_strdup_printf ("%sin %s (at %s) %s.%s:%s (%s)\n", strace, tmpaddr,
+							       source_location, m->klass->name_space, m->klass->name,
+							       m->name, tmpsig);
+				else
+					tmp = g_strdup_printf ("%sin %s %s.%s:%s (%s)\n", strace, tmpaddr,
+							       m->klass->name_space, m->klass->name, m->name, tmpsig);
+				g_free (source_location);
+				g_free (tmpsig);
+				g_free (strace);
+
+				((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
+				g_free (tmp);
+			}
+
+			if (ji->num_clauses) {
+
+				g_assert (ji->clauses);
+
+				for (i = 0; i < ji->num_clauses; i++) {
+					MonoJitExceptionInfo *ei = &ji->clauses [i];
+				
+					if (ei->try_start <= ip && ip <= (ei->try_end)) { 
+						/* catch block */
+						if (ei->flags == 0 && mono_object_isinst (obj, 
+						        mono_class_get (m->klass->image, ei->token_or_filter))) {
+							return TRUE;
+						}
+					}
+				}
+			}
+
+			/* continue unwinding */
+
+			ip = (gpointer)(*((int *)bp + 1) - 5);
+			bp = (gpointer)(*((int *)bp));
+
+			if (bp >= end_of_stack)
+				return FALSE;
+	
+		} else {
+			if (!lmf) 
+				return FALSE;
+
+			bp = (gpointer)lmf->ebp;
+			ip = (gpointer)lmf->eip;
+
+			m = lmf->method;
+
+			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+				char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+				char  *tmp;
+
+				if (!strcmp (strace, "TODO: implement stack traces"))
+					strace = g_strdup ("");
+
+				tmp = g_strdup_printf ("%sin (unmanaged) %s.%s:%s ()\n", strace, m->klass->name_space,  
+						       m->klass->name, m->name);
+
+				g_free (strace);
+
+				((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
+				g_free (tmp);
+			}
+
+			lmf = lmf->previous_lmf;
+
+			if (bp >= end_of_stack)
+				return FALSE;
+		}
+	}
+	
+	return FALSE;
+}
 
 /**
  * arch_handle_exception:
@@ -152,12 +271,13 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	gpointer end_of_stack;
 
 	g_assert (ctx != NULL);
-	g_assert (obj != NULL);
 
-	ji = mono_jit_info_table_find (domain, ip);
-	
-	end_of_stack = jit_tls->end_of_stack;
-	g_assert (end_of_stack);
+	if (!obj) {
+		MonoException *ex = mono_get_exception_null_reference ();
+		ex->message = mono_string_new (domain, 
+		        "Object reference not set to an instance of an object");
+		obj = (MonoObject *)ex;
+	}
 
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
@@ -165,147 +285,110 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	if (!call_finally)
 		call_finally = arch_get_call_finally ();
 
+	end_of_stack = jit_tls->end_of_stack;
+	g_assert (end_of_stack);
+
 	cleanup = jit_tls->abort_func;
 
-	if (ji) { /* we are inside managed code */
-		MonoMethod *m = ji->method;
-		int offset;
+	if (!arch_exc_is_catched (domain, jit_tls, ip, (gpointer *)ctx->SC_EBP, obj)) {
+		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+			G_BREAKPOINT ();
+		mono_unhandled_exception (obj);
+	}
 
-		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-			char    *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
-			char    *tmp, *tmpsig, *source_location, *tmpaddr;
-			gint32   address, iloffset;
+	while (1) {
 
-			if (!strcmp (strace, "TODO: implement stack traces")){
-				g_free (strace);
-				strace = g_strdup ("");
-			}
+		ji = mono_jit_info_table_find (domain, ip);
+	
+		if (ji) { /* we are inside managed code */
+			MonoMethod *m = ji->method;
+			int offset;
 
-			address = (char *)ip - (char *)ji->code_start;
-
-			source_location = mono_debug_source_location_from_address (m, address);
-			iloffset = mono_debug_il_offset_from_address (m, address);
-
-			if (iloffset < 0)
-				tmpaddr = g_strdup_printf ("<0x%05x>", address);
-			else
-				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
-
-			tmpsig = mono_signature_get_desc(m->signature, TRUE);
-			if (source_location)
-				tmp = g_strdup_printf ("%sin %s (at %s) %s.%s:%s (%s)\n", strace, tmpaddr,
-						       source_location, m->klass->name_space, m->klass->name,
-						       m->name, tmpsig);
-			else
-				tmp = g_strdup_printf ("%sin %s %s.%s:%s (%s)\n", strace, tmpaddr,
-						       m->klass->name_space, m->klass->name, m->name, tmpsig);
-			g_free (source_location);
-			g_free (tmpsig);
-			g_free (strace);
-
-			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
-			g_free (tmp);
-		}
-
-		if (ji->num_clauses) {
-			int i;
-
-			g_assert (ji->clauses);
+			if (ji->num_clauses) {
+				int i;
+				
+				g_assert (ji->clauses);
 			
-			for (i = 0; i < ji->num_clauses; i++) {
-				MonoJitExceptionInfo *ei = &ji->clauses [i];
+				for (i = 0; i < ji->num_clauses; i++) {
+					MonoJitExceptionInfo *ei = &ji->clauses [i];
 
-				if (ei->try_start <= ip && ip <= (ei->try_end)) { 
-					/* catch block */
-					if (ei->flags == 0 && mono_object_isinst (obj, 
-					        mono_class_get (m->klass->image, ei->token_or_filter))) {
+					if (ei->try_start <= ip && ip <= (ei->try_end)) { 
+						/* catch block */
+						if (ei->flags == 0 && mono_object_isinst (obj, 
+						        mono_class_get (m->klass->image, ei->token_or_filter))) {
 					
-						ctx->SC_EIP = (unsigned long)ei->handler_start;
-						ctx->SC_ECX = (unsigned long)obj;
-						restore_context (ctx);
-						g_assert_not_reached ();
+							ctx->SC_EIP = (unsigned long)ei->handler_start;
+							ctx->SC_ECX = (unsigned long)obj;
+							restore_context (ctx);
+							g_assert_not_reached ();
+						}
+					}
+				}
+
+				/* no handler found - we need to call all finally handlers */
+				for (i = 0; i < ji->num_clauses; i++) {
+					MonoJitExceptionInfo *ei = &ji->clauses [i];
+
+					if (ei->try_start <= ip && ip < (ei->try_end) &&
+					    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+						call_finally (ctx, (unsigned long)ei->handler_start);
 					}
 				}
 			}
 
-			/* no handler found - we need to call all finally handlers */
-			for (i = 0; i < ji->num_clauses; i++) {
-				MonoJitExceptionInfo *ei = &ji->clauses [i];
+			/* continue unwinding */
 
-				if (ei->try_start <= ip && ip < (ei->try_end) &&
-				    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
-					call_finally (ctx, (unsigned long)ei->handler_start);
-				}
+			offset = -1;
+			/* restore caller saved registers */
+			if (ji->used_regs & X86_ESI_MASK) {
+				ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
+				offset--;
 			}
-		}
+			if (ji->used_regs & X86_EDI_MASK) {
+				ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
+				offset--;
+			}
+			if (ji->used_regs & X86_EBX_MASK) {
+				ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
+			}
 
-		/* continue unwinding */
+			ctx->SC_ESP = ctx->SC_EBP;
+			ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 5;
+			ctx->SC_EBP = *((int *)ctx->SC_EBP);
 
-		offset = -1;
-		/* restore caller saved registers */
-		if (ji->used_regs & X86_ESI_MASK) {
-			ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
-			offset--;
-		}
-		if (ji->used_regs & X86_EDI_MASK) {
-			ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
-			offset--;
-		}
-		if (ji->used_regs & X86_EBX_MASK) {
-			ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
-		}
+			ip = (gpointer)ctx->SC_EIP;
 
-		ctx->SC_ESP = ctx->SC_EBP;
-		ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 5;
-		ctx->SC_EBP = *((int *)ctx->SC_EBP);
-		
-		if (ctx->SC_EBP < (unsigned)end_of_stack)
-			arch_handle_exception (ctx, obj);
-		else {
-			g_assert (cleanup);
-			cleanup (obj);
-		}
+			if (ctx->SC_EBP > (unsigned)end_of_stack) {
+				g_assert (cleanup);
+				cleanup (obj);
+				g_assert_not_reached ();
+			}
 	
-	} else {
-		MonoLMF *lmf = jit_tls->lmf;
-		MonoMethod *m;
+		} else {
+			MonoLMF *lmf = jit_tls->lmf;
 
-		if (!lmf) {
-			g_assert (cleanup);
-			cleanup (obj);
-		}
-		m = lmf->method;
+			if (!lmf) {
+				g_assert (cleanup);
+				cleanup (obj);
+				g_assert_not_reached ();
+			}
 
-		jit_tls->lmf = lmf->previous_lmf;
+			jit_tls->lmf = lmf->previous_lmf;
 
-		ctx->SC_ESI = lmf->esi;
-		ctx->SC_EDI = lmf->edi;
-		ctx->SC_EBX = lmf->ebx;
-		ctx->SC_EBP = lmf->ebp;
-		ctx->SC_EIP = lmf->eip;
-		ctx->SC_ESP = (unsigned long)&lmf->eip;
+			ctx->SC_ESI = lmf->esi;
+			ctx->SC_EDI = lmf->edi;
+			ctx->SC_EBX = lmf->ebx;
+			ctx->SC_EBP = lmf->ebp;
+			ctx->SC_EIP = lmf->eip;
+			ctx->SC_ESP = (unsigned long)&lmf->eip;
 
-		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
-			char  *tmp;
+			ip = (gpointer)ctx->SC_EIP;
 
-			if (!strcmp (strace, "TODO: implement stack traces"))
-				strace = g_strdup ("");
-
-			tmp = g_strdup_printf ("%sin (unmanaged) %s.%s:%s ()\n", strace, m->klass->name_space,  
-					       m->klass->name, m->name);
-
-			g_free (strace);
-
-			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
-			g_free (tmp);
-		}
-
-		if (ctx->SC_EBP < (unsigned)end_of_stack)
-			arch_handle_exception (ctx, obj);
-		else {
-			g_assert (cleanup);
-			cleanup (obj);
+			if (ctx->SC_EBP >= (unsigned)end_of_stack) {
+				g_assert (cleanup);
+				cleanup (obj);
+				g_assert_not_reached ();
+			}
 		}
 	}
 

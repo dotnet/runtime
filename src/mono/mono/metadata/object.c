@@ -400,9 +400,9 @@ mono_unhandled_exception (MonoObject *exc)
 		pa [0] = NULL;
 		pa [1] = NULL;
 		mono_runtime_delegate_invoke (delegate, pa, &e);
-		/* fixme: what if an exception occured */
-
-		mono_print_unhandled_exception (exc);
+	       
+		if (e)
+			g_warning ("exception inside UnhandledException handler!");
 	}
 }
 
@@ -433,9 +433,6 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		else
 			rval = -1;
 	}
-
-	if (exc && *exc) 
-		mono_unhandled_exception (*exc);
 
 	return rval;
 }

@@ -3739,10 +3739,7 @@ mono_thread_abort (MonoObject *obj)
 	if (jit_tls->env) {	
 		longjmp (*jit_tls->env, obj);
 	}
-	       
-	if (obj) 
-		mono_unhandled_exception (obj);
-	
+	       	
 	ExitThread (-1);
 }
 		
