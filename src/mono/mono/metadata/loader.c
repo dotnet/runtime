@@ -533,3 +533,44 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 
 	return l->data;
 }
+
+static void
+default_stack_walk (MonoStackWalk func, gpointer user_data) {
+	g_error ("stack walk not installed");
+}
+
+static MonoStackWalkImpl stack_walk = default_stack_walk;
+
+void
+mono_stack_walk (MonoStackWalk func, gpointer user_data)
+{
+	stack_walk (func, user_data);
+}
+
+void
+mono_install_stack_walk (MonoStackWalkImpl func)
+{
+	stack_walk = func;
+}
+
+static gboolean
+last_managed (MonoMethod *m, gint no, gint ilo, gpointer data)
+{
+	MonoMethod **dest = data;
+	*dest = m;
+	/*g_print ("In %s::%s [%d] [%d]\n", m->klass->name, m->name, no, ilo);*/
+	if ((m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || m->wrapper_type)
+		return FALSE;
+	return TRUE;
+}
+
+MonoMethod*
+mono_method_get_last_managed (void)
+{
+	MonoMethod *m = NULL;
+	stack_walk (last_managed, &m);
+	return m;
+}
+
+
+

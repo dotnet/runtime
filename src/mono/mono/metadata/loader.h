@@ -98,6 +98,9 @@ typedef struct {
 
 extern MonoDefaults mono_defaults;
 
+typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gpointer data);
+typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gpointer user_data);
+
 void 
 mono_init_icall            (void);
 
@@ -130,5 +133,14 @@ mono_method_get_param_names (MonoMethod *method, const char **names);
 
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
+
+MonoMethod*
+mono_method_get_last_managed  (void);
+
+void
+mono_stack_walk         (MonoStackWalk func, gpointer user_data);
+
+void
+mono_install_stack_walk (MonoStackWalkImpl func);
 
 #endif

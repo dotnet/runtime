@@ -1755,6 +1755,46 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	return res;
 }
 
+static MonoReflectionMethod*
+ves_icall_GetCurrentMethod (void) {
+	MonoMethod *m = mono_method_get_last_managed ();
+	return mono_method_get_object (mono_domain_get (), m);
+}
+
+static MonoReflectionAssembly*
+ves_icall_System_Reflection_Assembly_GetExecutingAssembly (void)
+{
+	MonoMethod *m = mono_method_get_last_managed ();
+	return mono_assembly_get_object (mono_domain_get (), m->klass->image->assembly);
+}
+
+
+static gboolean
+get_caller (MonoMethod *m, gint32 no, gint32 ilo, gpointer data)
+{
+	MonoMethod **dest = data;
+	if (m == *dest) {
+		*dest = NULL;
+		return FALSE;
+	}
+	if (!(*dest)) {
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static MonoReflectionAssembly*
+ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
+{
+	MonoMethod *m = mono_method_get_last_managed ();
+	MonoMethod *dest = m;
+	mono_stack_walk (get_caller, &dest);
+	if (!dest)
+		dest = m;
+	return mono_assembly_get_object (mono_domain_get (), dest->klass->image->assembly);
+}
+
 static MonoString *
 ves_icall_System_MonoType_getFullName (MonoReflectionType *object)
 {
@@ -2404,6 +2444,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.MonoEventInfo::get_event_info", ves_icall_get_event_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.Reflection.MonoCMethod::InternalInvoke", ves_icall_InternalInvoke,
+	"System.Reflection.MethodBase::GetCurrentMethod", ves_icall_GetCurrentMethod,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
 	"System.Reflection.MonoField::GetValue", ves_icall_MonoField_GetValue,
@@ -2522,6 +2563,8 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::GetTypes", ves_icall_System_Reflection_Assembly_GetTypes,
 	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
+	"System.Reflection.Assembly::GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly,
+	"System.Reflection.Assembly::GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly,
 
 	/*
 	 * System.MonoType.
