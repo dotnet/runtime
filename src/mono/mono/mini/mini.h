@@ -568,6 +568,7 @@ typedef struct {
 	gboolean         need_lmf_area;
 	gboolean         compile_aot;
 	gboolean         got_var_allocated;
+	gboolean         ret_var_is_local;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
@@ -869,6 +870,7 @@ MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg);
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg);
 guint32  mono_arch_get_patch_offset             (guint8 *code);
+void     mono_arch_create_vars                  (MonoCompile *cfg);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,

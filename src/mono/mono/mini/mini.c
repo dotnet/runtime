@@ -453,7 +453,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->ssa_op = MONO_SSA_MAYBE_LOAD;	\
 		(dest)->inst_i0 = (cfg)->ret;	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
-		(dest)->opcode = CEE_LDIND_I;	\
+		(dest)->opcode = cfg->ret_var_is_local ? OP_LDADDR : CEE_LDIND_I;	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
                 (cfg)->disable_ssa = TRUE; \
@@ -8156,6 +8156,10 @@ mono_compile_create_vars (MonoCompile *cfg)
 		mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
+
+#ifdef MONO_ARCH_HAVE_CREATE_VARS
+	mono_arch_create_vars (cfg);
+#endif
 }
 
 void

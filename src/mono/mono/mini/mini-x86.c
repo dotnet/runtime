@@ -60,8 +60,9 @@ typedef enum {
 	ArgInDoubleSSEReg,
 	ArgOnStack,
 	ArgValuetypeInReg,
-	ArgOnFpStack,
-	ArgNone /* only in pair_storage */
+	ArgOnFloatFpStack,
+	ArgOnDoubleFpStack,
+	ArgNone
 } ArgStorage;
 
 typedef struct {
@@ -168,21 +169,27 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		info = mono_marshal_load_type_info (klass);
 		g_assert (info);
 
+		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+
 		/* Special case structs with only a float member */
 		if ((info->native_size == 8) && (info->num_fields == 1) && (info->fields [0].field->type->type == MONO_TYPE_R8)) {
-			ainfo->storage = ArgOnFpStack;
+			ainfo->storage = ArgValuetypeInReg;
+			ainfo->pair_storage [0] = ArgOnDoubleFpStack;
 			return;
 		}
 		if ((info->native_size == 4) && (info->num_fields == 1) && (info->fields [0].field->type->type == MONO_TYPE_R4)) {
-			ainfo->storage = ArgOnFpStack;
+			ainfo->storage = ArgValuetypeInReg;
+			ainfo->pair_storage [0] = ArgOnFloatFpStack;
 			return;
 		}		
 		if ((info->native_size == 1) || (info->native_size == 2) || (info->native_size == 4) || (info->native_size == 8)) {
 			ainfo->storage = ArgValuetypeInReg;
 			ainfo->pair_storage [0] = ArgInIReg;
 			ainfo->pair_regs [0] = return_regs [0];
-			ainfo->pair_storage [1] = ArgInIReg;
-			ainfo->pair_regs [1] = return_regs [1];
+			if (info->native_size > 4) {
+				ainfo->pair_storage [1] = ArgInIReg;
+				ainfo->pair_regs [1] = return_regs [1];
+			}
 			return;
 		}
 	}
@@ -245,10 +252,10 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.reg = X86_EAX;
 			break;
 		case MONO_TYPE_R4:
-			cinfo->ret.storage = ArgOnFpStack;
+			cinfo->ret.storage = ArgOnFloatFpStack;
 			break;
 		case MONO_TYPE_R8:
-			cinfo->ret.storage = ArgOnFpStack;
+			cinfo->ret.storage = ArgOnDoubleFpStack;
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
@@ -265,6 +272,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			;
 			break;
 		case MONO_TYPE_VOID:
+			cinfo->ret.storage = ArgNone;
 			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
@@ -383,8 +391,11 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	int k, frame_size = 0;
 	int size, align, pad;
 	int offset = 8;
+	CallInfo *cinfo;
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
+	cinfo = get_call_info (csig, FALSE);
+
+	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
 		frame_size += sizeof (gpointer);
 		offset += 4;
 	}
@@ -421,6 +432,8 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	align = MONO_ARCH_FRAME_ALIGNMENT;
 	frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
 	arg_info [k].pad = pad;
+
+	g_free (cinfo);
 
 	return frame_size;
 }
@@ -673,28 +686,37 @@ mono_arch_allocate_vars (MonoCompile *m)
 	guint32 locals_stack_size, locals_stack_align;
 	int i, offset, curinst, size, align;
 	gint32 *offsets;
+	CallInfo *cinfo;
 
 	header = mono_method_get_header (m->method);
 	sig = mono_method_signature (m->method);
 
 	offset = 8;
 	curinst = 0;
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+
+	cinfo = get_call_info (sig, FALSE);
+
+	switch (cinfo->ret.storage) {
+	case ArgOnStack:
 		m->ret->opcode = OP_REGOFFSET;
 		m->ret->inst_basereg = X86_EBP;
 		m->ret->inst_offset = offset;
 		offset += sizeof (gpointer);
-	} else {
-		/* FIXME: handle long and FP values */
-		switch (sig->ret->type) {
-		case MONO_TYPE_VOID:
-			break;
-		default:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = X86_EAX;
-			break;
-		}
+		break;
+	case ArgValuetypeInReg:
+		break;
+	case ArgInIReg:
+		m->ret->opcode = OP_REGVAR;
+		m->ret->inst_c0 = cinfo->ret.reg;
+		break;
+	case ArgNone:
+	case ArgOnFloatFpStack:
+	case ArgOnDoubleFpStack:
+		break;
+	default:
+		g_assert_not_reached ();
 	}
+
 	if (sig->hasthis) {
 		inst = m->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
@@ -745,6 +767,18 @@ mono_arch_allocate_vars (MonoCompile *m)
 		}
 	}
 
+	switch (cinfo->ret.storage) {
+	case ArgValuetypeInReg:
+		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+		offset += 8;
+		m->ret->opcode = OP_REGOFFSET;
+		m->ret->inst_basereg = X86_EBP;
+		m->ret->inst_offset = - offset;
+		break;
+	default:
+		break;
+	}
+
 	/* Allocate locals */
 	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
@@ -766,8 +800,26 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset += (MONO_ARCH_FRAME_ALIGNMENT - 1);
 	offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
+	g_free (cinfo);
+
 	/* change sign? */
 	m->stack_offset = -offset;
+}
+
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+
+	sig = mono_method_signature (cfg->method);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	if (cinfo->ret.storage == ArgValuetypeInReg)
+		cfg->ret_var_is_local = TRUE;
+
+	g_free (cinfo);
 }
 
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
@@ -4252,10 +4304,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig = mono_method_signature (method);
-	int pos;
+	int quad, pos;
 	guint32 stack_to_pop;
 	guint8 *code;
 	int max_epilog_size = 16;
+	CallInfo *cinfo;
 	
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
@@ -4339,13 +4392,35 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 	}
 
+	/* Load returned vtypes into registers if needed */
+	cinfo = get_call_info (sig, FALSE);
+	if (cinfo->ret.storage == ArgValuetypeInReg) {
+		for (quad = 0; quad < 2; quad ++) {
+			switch (cinfo->ret.pair_storage [quad]) {
+			case ArgInIReg:
+				x86_mov_reg_membase (code, cinfo->ret.pair_regs [quad], cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (gpointer)), 4);
+				break;
+			case ArgOnFloatFpStack:
+				x86_fld_membase (code, cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (gpointer)), FALSE);
+				break;
+			case ArgOnDoubleFpStack:
+				x86_fld_membase (code, cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (gpointer)), TRUE);
+				break;
+			case ArgNone:
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
+
 	x86_leave (code);
 
 	if (CALLCONV_IS_STDCALL (sig->call_convention)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
 		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
-	} else if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret))
+	} else if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret) && (cinfo->ret.storage == ArgOnStack))
 		stack_to_pop = 4;
 	else
 		stack_to_pop = 0;
@@ -4355,10 +4430,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	else
 		x86_ret (code);
 
+	g_free (cinfo);
+
 	cfg->code_len = code - cfg->native_code;
 
 	g_assert (cfg->code_len < cfg->code_size);
-
 }
 
 void
