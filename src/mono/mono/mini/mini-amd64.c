@@ -4848,6 +4848,14 @@ mono_arch_is_inst_imm (gint64 imm)
 	return amd64_is_imm32 (imm);
 }
 
+#define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
+
+static int reg_to_ucontext_reg [] = {
+	REG_RAX, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
+	REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15,
+	REG_RIP
+};
+
 /*
  * Determine whenever the trap whose info is in SIGINFO is caused by
  * integer overflow.
@@ -4857,20 +4865,27 @@ mono_arch_is_int_overflow (void *sigctx)
 {
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	guint8* rip;
-	int i;
+	int reg;
 
 	rip = (guint8*)ctx->uc_mcontext.gregs [REG_RIP];
 
-	if ((rip [0] == 0xf7) && (rip [1] == 0xf9)) {
-		/* idiv %ecx */
-		if (ctx->uc_mcontext.gregs [REG_RCX] == -1)
+	if (IS_REX (rip [0])) {
+		reg = amd64_rex_r (rip [0]);
+		rip ++;
+	}
+	else
+		reg = 0;
+
+	if ((rip [0] == 0xf7) && (x86_modrm_mod (rip [1]) == 0x3) && (x86_modrm_reg (rip [1]) == 0x7)) {
+		/* idiv REG */
+		reg += x86_modrm_rm (rip [1]);
+
+		if (ctx->uc_mcontext.gregs [reg_to_ucontext_reg [reg]] == -1)
 			return TRUE;
 	}
 
 	return FALSE;
 }
-
-#define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
