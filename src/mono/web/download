@@ -29,9 +29,9 @@
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
 	    <td>
-	      <b>Release Candidate</b><br>
-	      <!-- <a href="archive/beta3/beta3.html">Release notes</a><br> -->
-	       June 25th, 2004
+	      <b>Mono 1.0</b><br>
+	      <a href="archive/1.0/index.html">Release notes</a><br>
+	       June 30th, 2004
 	    </td>
 	    <td>
 	      <table cellspacing="1" cellpadding="3">
@@ -128,6 +128,8 @@
              </table>
             </td>
 	</table>
+
+	<hr>
 
 	<table>
 	  <tbody>
