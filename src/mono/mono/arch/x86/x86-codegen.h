@@ -6,6 +6,7 @@
  *   Intel Corporation (ORP Project)
  *   Sergey Chaban (serge@wildwestsoftware.com)
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Patrik Torstensson
  * 
  * Copyright (C)  2000 Intel Corporation.  All rights reserved.
  * Copyright (C)  2001, 2002 Ximian, Inc.
@@ -1229,6 +1230,13 @@ typedef union {
 			*(inst)++ = (unsigned char)0xdb;	\
 			x86_membase_emit ((inst), 3, (basereg), (disp));	\
 		}	\
+	} while (0)
+
+#define x86_fstsw(inst)	\
+	do {	\
+			*(inst)++ = (unsigned char)0x9b;	\
+			*(inst)++ = (unsigned char)0xdf;	\
+			*(inst)++ = (unsigned char)0xe0;	\
 	} while (0)
 
 /**
