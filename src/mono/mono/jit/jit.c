@@ -2933,28 +2933,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			break;
 		}
 
-		case CEE_SHR: {
-			++ip;  
-			sp -= 2;
-			t1 = mono_ctree_new (mp, MB_TERM_SHR, sp [0], sp [1]); 
-			PUSH_TREE (t1, sp [0]->svt);     
-			break;
-		}
-		case CEE_SHR_UN: {
-			++ip;  
-			sp -= 2;
-			t1 = mono_ctree_new (mp, MB_TERM_SHR_UN, sp [0], sp [1]); 
-			PUSH_TREE (t1, sp [0]->svt);     
-			break;
-		}
-		case CEE_SHL: {
-			++ip;  
-			sp -= 2;
-			t1 = mono_ctree_new (mp, MB_TERM_SHL, sp [0], sp [1]); 
-			PUSH_TREE (t1, sp [0]->svt);     
-			break;
-		}
-
 		MAKE_BI_ALU (ADD)
 		MAKE_BI_ALU (ADD_OVF)
 		MAKE_BI_ALU (ADD_OVF_UN)
@@ -2964,6 +2942,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_BI_ALU (AND)
 		MAKE_BI_ALU (OR)
 		MAKE_BI_ALU (XOR)
+		MAKE_SPILLED_BI_ALU (SHL)
+		MAKE_SPILLED_BI_ALU (SHR)
+		MAKE_SPILLED_BI_ALU (SHR_UN)
 		MAKE_SPILLED_BI_ALU (MUL)
 		MAKE_SPILLED_BI_ALU (MUL_OVF)
 		MAKE_SPILLED_BI_ALU (MUL_OVF_UN)

@@ -759,6 +759,7 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 #endif
 			if (!tree_allocate_regs (cfg, t1, 1, cfg->rs, 0, &spillcount)) {
 				mono_print_ctree (cfg, t1);
+				printf ("\n");
 				g_error ("register allocation failed");
 			}
 
