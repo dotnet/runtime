@@ -1674,6 +1674,11 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 #endif
 }
 
+static gpointer
+ves_icall_System_Object_obj_address (MonoObject *this) {
+	return this;
+}
+
 static gpointer icall_map [] = {
 	/*
 	 * System.Array
@@ -1695,6 +1700,7 @@ static gpointer icall_map [] = {
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
 	"System.Object::GetType", ves_icall_System_Object_GetType,
 	"System.Object::GetHashCode", ves_icall_System_Object_GetHashCode,
+	"System.Object::obj_address", ves_icall_System_Object_obj_address,
 
 	/*
 	 * System.ValueType
