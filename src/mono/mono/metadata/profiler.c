@@ -517,6 +517,8 @@ method_get_name (MonoMethod* method)
 	return res;
 }
 
+static void output_callers (MethodProfile *p);
+
 static void
 output_profile (GList *funcs)
 {
@@ -533,9 +535,11 @@ output_profile (GList *funcs)
 		if (!(gint)(p->total*1000))
 			continue;
 		m = method_get_name (p->u.method);
-		printf ("% 8.3f %7llu % 8.3f  %s\n",
+		printf ("########################\n% 8.3f %7llu % 8.3f  %s\n",
 			(double)(p->total*1000), p->count, (double)(p->total*1000)/(double)p->count, m);
 		g_free (m);
+		/* callers */
+		output_callers (p);
 	}
 	printf ("Total number of calls: %lld\n", total_calls);
 }
@@ -601,19 +605,41 @@ sort_caller_list (CallerInfo *ai)
 }
 
 static void
+output_callers (MethodProfile *p) {
+	guint total_callers, percent;
+	GSList *sorted, *tmps;
+	CallerInfo *cinfo;
+	char *m;
+	
+	g_print ("  Callers (with count) that contribute at least for 1%%:\n");
+	total_callers = 0;
+	for (cinfo = p->caller_info; cinfo; cinfo = cinfo->next) {
+		total_callers += cinfo->count;
+	}
+	sorted = sort_caller_list (p->caller_info);
+	for (tmps = sorted; tmps; tmps = tmps->next) {
+		cinfo = tmps->data;
+		percent = (cinfo->count * 100)/total_callers;
+		if (percent < 1)
+			continue;
+		m = method_get_name (cinfo->caller);
+		g_print ("    %8d % 3d %% %s\n", cinfo->count, percent, m);
+		g_free (m);
+	}
+}
+
+static void
 output_newobj_profile (GList *proflist)
 {
 	GList *tmp;
 	NewobjProfile *p;
 	MethodProfile *mp;
 	AllocInfo *ainfo;
-	CallerInfo *cinfo;
 	MonoClass *klass;
 	const char* isarray;
 	char buf [256];
 	char *m;
 	guint total = 0;
-	guint total_callers;
 	GSList *sorted, *tmps;
 
 	g_print ("\nAllocation profiler\n");
@@ -646,20 +672,7 @@ output_newobj_profile (GList *proflist)
 			g_print ("    %8d KB %8d %-48s\n", ainfo->mem / 1024, ainfo->count, buf);
 		}
 		/* callers */
-		g_print ("  Callers (with count) that contribute at least for 3%%:\n");
-		total_callers = 0;
-		for (cinfo = mp->caller_info; cinfo; cinfo = cinfo->next) {
-			total_callers += cinfo->count;
-		}
-		sorted = sort_caller_list (mp->caller_info);
-		for (tmps = sorted; tmps; tmps = tmps->next) {
-			cinfo = tmps->data;
-			if ((cinfo->count * 100)/total_callers < 3)
-				continue;
-			m = method_get_name (cinfo->caller);
-			g_print ("    %8d %s\n", cinfo->count, m);
-			g_free (m);
-		}
+		output_callers (mp);
 	}
 	g_print ("Total memory allocated: %d KB\n", total / 1024);
 }
