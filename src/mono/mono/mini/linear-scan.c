@@ -186,7 +186,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		vmv = l->data;
 		
 		if (vmv->reg >= 0)  {
-			if (gains [vmv->reg] > mono_arch_regalloc_cost (vmv)) {
+			if (gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) {
 				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;
 				cfg->varinfo [vmv->idx]->dreg = vmv->reg;
 				if (cfg->verbose_level > 2)

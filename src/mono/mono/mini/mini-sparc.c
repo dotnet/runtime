@@ -188,7 +188,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
  * allocation.
  */
 guint32
-mono_arch_regalloc_cost (MonoMethodVar *vmv)
+mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
 	return 0;
 }

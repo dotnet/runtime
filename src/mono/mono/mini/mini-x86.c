@@ -287,10 +287,16 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
  * allocation.
  */
 guint32
-mono_arch_regalloc_cost (MonoMethodVar *vmv)
+mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
-	/* push+pop+possible load if it is an argument */
-	return 3;
+	MonoInst *ins = cfg->varinfo [vmv->idx];
+
+	if (cfg->method->save_lmf)
+		/* The register is already saved */
+		return (ins->opcode == OP_ARG) ? 1 : 0;
+	else
+		/* push+pop+possible load if it is an argument */
+		return (ins->opcode == OP_ARG) ? 3 : 2;
 }
  
 /*
