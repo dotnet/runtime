@@ -1,3 +1,11 @@
+2003-04-10  Duncan Mak  <duncan@ximian.com>
+
+	* doc/web/render-team-page.cs (Compare): Correctly fix
+	ContributorComparer.
+	(RenderHtml): Add some SetAttribute loving to make it render prettier.
+
+	* doc/web/team.xml: Revert excessive indenting.
+
 2003-04-07  Martin Baulig  <martin@ximian.com>
 
 	* mono/mini/: Added this directory to the build; install `mini'

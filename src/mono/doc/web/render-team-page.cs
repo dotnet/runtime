@@ -64,10 +64,7 @@ public class ContributorComparer : IComparer
 {
         public int Compare (object x, object y)
         {
-                string a = (string) x;
-                string b = (string) y;
-
-                return String.Compare (a, b);
+                return String.Compare (x.ToString (), y.ToString ());
         }
 }
 
@@ -151,11 +148,11 @@ class Contributor {
         {
                 XmlElement root = document.CreateElement ("TD");
                 XmlElement table = document.CreateElement ("TABLE");
-                table.SetAttribute ("width", "100%");
                 XmlElement tr = document.CreateElement ("TR");
                 XmlElement td = document.CreateElement ("TD");
                 td.SetAttribute ("bgcolor", "#c3cda7");
                 td.SetAttribute ("valign", "top");
+                td.SetAttribute ("width", "1%");
                 tr.AppendChild (td);
                 table.AppendChild (tr);
                 root.AppendChild (table);
@@ -171,6 +168,7 @@ class Contributor {
                 td = document.CreateElement ("TD");
                 td.SetAttribute ("bgcolor", "#c3cda7");
                 td.SetAttribute ("valign", "bottom");
+                td.SetAttribute ("width", "100%");
                 tr.AppendChild (td);
 
                 td.AppendChild (name.ToXml (document));
