@@ -355,6 +355,9 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 	gboolean is_open;
 	int i;
 
+	if (!context || !sig->has_type_parameters)
+		return sig;
+
 	res = mono_metadata_signature_alloc (image, sig->param_count);
 	res->ret = mono_class_inflate_generic_type (sig->ret, context);
 	is_open = mono_class_is_open_constructed_type (res->ret);
@@ -367,6 +370,7 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->generic_param_count = sig->generic_param_count;
+	res->sentinelpos = sig->sentinelpos;
 	res->has_type_parameters = is_open;
 	res->is_inflated = 1;
 	return res;
