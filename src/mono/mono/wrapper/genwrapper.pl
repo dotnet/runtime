@@ -104,6 +104,16 @@ create_func ($lib, "", "utime",  "int",
 	     "int",    "atime",
 	     "int",    "mtime");
 
+create_func ($lib, "mono_glob_compile", "mono_glob_compile", "IntPtr",
+	     "string", "glob");
+
+create_func ($lib, "mono_glob_match", "mono_glob_match", "int",
+	     "IntPtr", "handle",
+	     "string", "str");
+
+create_func ($lib, "mono_glob_dispose", "mono_glob_dispose", "void",
+	     "IntPtr", "handle");
+
 map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "SEEK_CUR",
 	   "int", "%d", "SEEK_END",

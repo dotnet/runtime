@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libmonowrapper.la
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 libmonowrapper_la_SOURCES = 		\
+	glob.c				\
 	wrapper.c	
 
 libmonowrapperincludedir = $(includedir)/mono/wrapper

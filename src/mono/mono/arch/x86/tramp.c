@@ -264,6 +264,9 @@ enum_retvalue:
 				break;
 			}
 
+			/* If the argument is non-null, then convert the value back */
+			x86_alu_reg_reg (p, X86_OR, X86_EAX, X86_EAX);
+			x86_branch8 (p, X86_CC_EQ, 11, FALSE);
 			x86_push_reg (p, X86_EAX);
 			x86_mov_reg_imm (p, X86_EDX, mono_string_new);
 			x86_call_reg (p, X86_EDX);

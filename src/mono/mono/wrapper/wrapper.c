@@ -131,7 +131,9 @@ mono_wrapper_opendir (const char * path)
 const char *
 mono_wrapper_readdir (gpointer dir)
 {
-	struct dirent* p = readdir((DIR*)dir);
+	struct dirent* p;
+
+	p = readdir((DIR*)dir);
 	return p != NULL ? p->d_name : NULL;
 }
 
@@ -183,7 +185,7 @@ mono_wrapper_utime (const char *path, int atime, int mtime)
 	struct utimbuf buf;
 
 	buf.actime = atime;
-	buf.modtime = utime;
+	buf.modtime = mtime;
 
 	if (utime (path, &buf) == -1)
 		return -errno;
