@@ -85,6 +85,7 @@ TEST_CS_SRC=			\
 	reflection-prop.cs	\
 	reflection4.cs		\
 	reflection5.cs		\
+	reflection-const-field.cs \
 	many-locals.cs		\
 	string-compare.cs	\
 	test-prime.cs		\
