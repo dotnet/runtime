@@ -152,7 +152,6 @@ mono_method_blittable (MonoMethod *method)
 }
 #endif
 
-#if 0
 /* debug function */
 static void
 print_method_from_ip (void *ip)
@@ -170,7 +169,6 @@ print_method_from_ip (void *ip)
 	g_free (method);
 
 }
-#endif
 
 #define MONO_INIT_VARINFO(vi,id) do { \
 	(vi)->range.first_use.pos.bid = 0xffff; \
@@ -1929,6 +1927,46 @@ mono_method_check_inlining (MonoMethod *method)
 	return FALSE;
 }
 
+static MonoInst*
+mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	int pc, op;
+	MonoInst *ins;
+
+	if (cmethod->klass == mono_defaults.string_class) {
+		if (cmethod->name [0] != 'g' || strcmp (cmethod->name, "get_Chars"))
+			return NULL;
+		op = OP_GETCHR;
+	} else if (cmethod->klass == mono_defaults.math_class) {
+		if (strcmp (cmethod->name, "Sin") == 0)
+			op = OP_SIN;
+		else if (strcmp (cmethod->name, "Cos") == 0)
+			op = OP_COS;
+		else if (strcmp (cmethod->name, "Tan") == 0)
+			op = OP_TAN;
+		else if (strcmp (cmethod->name, "Atan") == 0)
+			op = OP_ATAN;
+		else if (strcmp (cmethod->name, "Sqrt") == 0)
+			op = OP_SQRT;
+		else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8)
+			op = OP_ABS;
+		else
+			return NULL;
+	} else {
+		return NULL;
+	}
+	pc = fsig->param_count + fsig->hasthis;
+	MONO_INST_NEW (cfg, ins, op);
+
+	if (pc > 0) {
+		ins->inst_i0 = args [0];
+		if (pc > 1)
+			ins->inst_i1 = args [1];
+	}
+
+	return ins;
+}
+
 static void
 mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *sig, MonoInst **sp, MonoInst **args)
 {
@@ -2462,7 +2500,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoInst *addr = NULL;
 			MonoMethodSignature *fsig = NULL;
 			MonoMethodHeader *cheader;
-			int mop, temp, array_rank = 0;
+			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
 
 			token = read32 (ip + 1);
@@ -2520,17 +2558,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
-			if (cmethod && (mop = mono_find_method_opcode (cmethod))) {
-				int pc = fsig->param_count + fsig->hasthis;
-				MONO_INST_NEW (cfg, ins, mop);
+			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_get_opcode_for_method (cfg, cmethod, fsig, sp))) {
 				ins->cil_code = ip;
-				g_assert (n <= 2);
-
-				if (pc > 0) {
-					ins->inst_i0 = sp [0];
-					if (pc > 1)
-						ins->inst_i1 = sp [1];
-				}
 
 				if (MONO_TYPE_IS_VOID (fsig->ret)) {
 					MONO_ADD_INS (bblock, ins);
@@ -4481,27 +4510,6 @@ create_helper_signature (void)
 	helper_sig_memset->pinvoke = 1;
 }
 
-static GHashTable *method_opcode_hash = NULL;
-
-static void
-mono_register_method_opcode (MonoMethod *method, int opcode)
-{
-
-	if (!method_opcode_hash)
-		method_opcode_hash = g_hash_table_new (NULL, NULL);
-
-	g_hash_table_insert (method_opcode_hash, method, (gpointer)opcode);
-
-}
-
-int
-mono_find_method_opcode (MonoMethod *method)
-{
-	g_assert (method_opcode_hash);
-
-	return (int)g_hash_table_lookup (method_opcode_hash, method);
-}
-
 static GHashTable *jit_icall_hash_name = NULL;
 static GHashTable *jit_icall_hash_addr = NULL;
 
@@ -5955,35 +5963,12 @@ mono_jit_create_remoting_trampoline (MonoMethod *method)
 	return addr;
 }
 
-static MonoMethod *
-mono_find_unique_method (MonoClass *klass, const char *name, int param_count)
-{
-	MonoMethod *rval = NULL;
-	int i;
-
-	mono_class_init (klass);
- 
-	for (i = 0; i < klass->method.count; ++i) {
-		if (!strcmp (name, klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == param_count) {
-			g_assert (rval == NULL);
-			rval = klass->methods [i];
-			g_assert (!(rval->flags & METHOD_ATTRIBUTE_VIRTUAL));
-		}
-	}
-
-	return rval;
-}
-
-
 static CRITICAL_SECTION ms;
 
 MonoDomain *
 mini_init (const char *filename)
 {
 	MonoDomain *domain;
-	MonoMethod *m;
-	MonoMethodDesc *desc;
 	
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
@@ -6030,25 +6015,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
 				 helper_sig_void_ptr, TRUE);
-
-
-	g_assert ((m = mono_find_unique_method (mono_defaults.math_class, "Sin", 1)));
-	mono_register_method_opcode (m, OP_SIN);
-	g_assert ((m = mono_find_unique_method (mono_defaults.math_class, "Cos", 1)));
-	mono_register_method_opcode (m, OP_COS);
-	g_assert ((m = mono_find_unique_method (mono_defaults.math_class, "Tan", 1)));
-	mono_register_method_opcode (m, OP_TAN);
-	g_assert ((m = mono_find_unique_method (mono_defaults.math_class, "Atan", 1)));
-	mono_register_method_opcode (m, OP_ATAN);
-	g_assert ((m = mono_find_unique_method (mono_defaults.math_class, "Sqrt", 1)));
-	mono_register_method_opcode (m, OP_SQRT);
-	
-	g_assert ((m = mono_find_unique_method (mono_defaults.string_class, "get_Chars", 1)));
-	mono_register_method_opcode (m, OP_GETCHR);
-
-	g_assert ((desc = mono_method_desc_new ("System.Math:Abs(double)", 0)));
-	g_assert ((m = mono_method_desc_search_in_image (desc, mono_defaults.corlib)));
-	mono_register_method_opcode (m, OP_ABS);
 
 	/* 
 	 * NOTE, NOTE, NOTE, NOTE:
