@@ -97,7 +97,7 @@ write_method_stabs (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 			 i, debug->next_idx++, header->locals [i]->type, priv->start_line, stack_offset);
 	}
 
-	if (minfo->jit->line_numbers) {
+	if (minfo->jit && minfo->jit->line_numbers) {
 		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->start_line, 0);
 		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->first_line,
 			 minfo->jit->prologue_end);
@@ -150,6 +150,14 @@ write_method_func (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
+write_method_func_1 (gpointer key, gpointer value, gpointer user_data)
+{
+	AssemblyDebugInfo *info = (AssemblyDebugInfo *) value;
+
+	g_hash_table_foreach (info->methods, write_method_func, user_data);
+}
+
+static void
 write_class_stabs (MonoDebugHandle *debug, MonoClass *klass, int idx)
 {
 	char *name;
@@ -182,7 +190,6 @@ void
 mono_debug_write_stabs (MonoDebugHandle *debug)
 {
 	gchar *source_file;
-	GList *tmp;
 	int i;
 
 	if (!(debug->f = fopen (debug->filename, "w"))) {
@@ -206,11 +213,7 @@ mono_debug_write_stabs (MonoDebugHandle *debug)
 		fprintf (debug->f, ",128,0,0,0\n");
 	}
 
-	for (tmp = debug->info; tmp; tmp = tmp->next) {
-		AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
-
-		g_hash_table_foreach (info->methods, write_method_func, debug);
-	}
+	g_hash_table_foreach (debug->images, write_method_func_1, debug);
 
 	g_hash_table_foreach (debug->type_hash, write_class, debug);
 

@@ -51,13 +51,9 @@ extern MonoDebugFormat mono_debug_format;
  */
 extern int mono_debug_insert_breakpoint;
 
-MonoDebugHandle* mono_debug_open (const char *name, MonoDebugFormat format, const char **args);
+MonoDebugHandle* mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args);
 
 void           mono_debug_cleanup (void);
-
-void           mono_debug_add_image (MonoDebugHandle* debug, MonoImage *image);
-
-MonoDebugHandle* mono_debug_handle_from_class (MonoClass *klass);
 
 void           mono_debug_add_method (MonoFlowGraph *cfg);
 

@@ -299,14 +299,6 @@ main (int argc, char *argv [])
 	mono_config_parse (config_file);
 	mono_set_rootdir ();
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		gchar **args;
-
-		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
-		debug = mono_debug_open (file, mono_debug_format, (const char **) args);
-		g_strfreev (args);
-	}
-
 	domain = mono_jit_init (file);
 
 	error = mono_verify_corlib ();
@@ -321,8 +313,13 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
-	if (debug)
-		mono_debug_add_image (debug, assembly->image);
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		gchar **args;
+
+		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
+		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
+		g_strfreev (args);
+	}
 
 	if (testjit) {
 		mono_jit_compile_image (assembly->image, TRUE);

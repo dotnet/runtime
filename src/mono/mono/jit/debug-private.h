@@ -57,7 +57,6 @@ struct _AssemblyDebugInfo {
 };
 
 struct _MonoDebugHandle {
-	MonoDebugHandle *next;
 	MonoDebugFormat format;
 	MonoDebugFlags flags;
 	char *name;
@@ -69,7 +68,7 @@ struct _MonoDebugHandle {
 	int next_idx;
 	int next_klass_idx;
 	int dirty;
-	GList *info;
+	GHashTable *images;
 	FILE *f;
 };
 
