@@ -46,7 +46,7 @@ void
 mono_runtime_cleanup       (MonoDomain *domain);
 
 void
-mono_runtime_install_cleanup (MonoDomainFunc func);
+mono_install_runtime_cleanup (MonoDomainFunc func);
 
 void
 mono_runtime_quit (void);

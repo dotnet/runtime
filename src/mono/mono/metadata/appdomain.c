@@ -1272,14 +1272,14 @@ static void
 mono_domain_unload (MonoDomain *domain)
 {
 	HANDLE thread_handle;
-	guint32 tid;
+	guint32 tid, res;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	MonoObject *exc;
 	unload_data thread_data;
 	MonoDomain *caller_domain = mono_domain_get ();
 
-	/* printf ("UNLOAD STARTING FOR %s.\n", domain->friendly_name); */
+	/* printf ("UNLOAD STARTING FOR %s (%p) IN THREAD 0x%x.\n", domain->friendly_name, domain, GetCurrentThreadId ()); */
 
 	/* Atomically change our state to UNLOADING */
 	prev_state = InterlockedCompareExchange (&domain->state,
@@ -1331,22 +1331,28 @@ mono_domain_unload (MonoDomain *domain)
 #endif
 	ResumeThread (thread_handle);
 #endif
-	
-	while (WaitForSingleObjectEx (thread_handle, INFINITE, FALSE) == WAIT_IO_COMPLETION)
-		; /* wait for the thread */
-	
+
+	/* Wait for the thread */	
+	while ((res = WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION)) {
+		if (mono_thread_has_appdomain_ref (mono_thread_current (), domain) && (mono_thread_interruption_requested ()))
+			/* The unload thread tries to abort us */
+			/* The icall wrapper will execute the abort */
+			return;
+	}
 
 	mono_domain_set (caller_domain, FALSE);
+
 	if (thread_data.failure_reason) {
 		MonoException *ex;
 
-		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
 		/* Roll back the state change */
 		domain->state = MONO_APPDOMAIN_CREATED;
 
 		g_warning (thread_data.failure_reason);
 
 		g_free (thread_data.failure_reason);
+
+		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
 
 		mono_raise_exception (ex);
 	}

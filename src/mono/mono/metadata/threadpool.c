@@ -290,8 +290,11 @@ async_invoke_thread (gpointer data)
 			/* worker threads invokes methods in different domains,
 			 * so we need to set the right domain here */
 			domain = ((MonoObject *)ar)->vtable->domain;
-			if (mono_domain_set (domain, FALSE))
+			if (mono_domain_set (domain, FALSE)) {
+				mono_thread_push_appdomain_ref (domain);
 				mono_async_invoke (ar);
+				mono_thread_pop_appdomain_ref ();
+			}
 			InterlockedDecrement (&busy_worker_threads);
 		}
 
