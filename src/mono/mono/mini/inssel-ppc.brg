@@ -10,6 +10,11 @@
 # (C) 2002 Ximian, Inc.
 #
 
+stmt: OP_START_HANDLER {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, spvar->inst_basereg, spvar->inst_offset, ppc_sp);
+}
+
 stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
 	/* this should only happen for methods returning a long */
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, ppc_r3, state->right->reg1);

@@ -299,18 +299,18 @@ setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
 voidcall: len:8 clob:c
 voidcall_reg: src1:i len:8 clob:c
-voidcall_membase: src1:b len:8 clob:c
+voidcall_membase: src1:b len:12 clob:c
 fcall: dest:f len:8 clob:c
 fcall_reg: dest:f src1:i len:8 clob:c
-fcall_membase: dest:f src1:b len:8 clob:c
+fcall_membase: dest:f src1:b len:12 clob:c
 lcall: dest:l len:8 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
-lcall_membase: dest:l src1:b len:8 clob:c
+lcall_membase: dest:l src1:b len:12 clob:c
 vcall: len:8 clob:c
 vcall_reg: src1:i len:8 clob:c
-vcall_membase: src1:b len:8 clob:c
+vcall_membase: src1:b len:12 clob:c
 call_reg: dest:i src1:i len:8 clob:c
-call_membase: dest:i src1:b len:8 clob:c
+call_membase: dest:i src1:b len:12 clob:c
 trap:
 iconst: dest:i len:8
 i8const:
@@ -458,20 +458,20 @@ float_bge: len:8
 float_bge_un: len:8
 float_ble: len:8
 float_ble_un: len:8
-float_add: len:4
-float_sub: len:4
-float_mul: len:4
-float_div: len:4
-float_div_un: len:4
-float_rem: len:16
-float_rem_un: len:16
+float_add: dest:f src1:f src2:f len:4
+float_sub: dest:f src1:f src2:f len:4
+float_mul: dest:f src1:f src2:f len:4
+float_div: dest:f src1:f src2:f len:4
+float_div_un: dest:f src1:f src2:f len:4
+float_rem: dest:f src1:f src2:f len:16
+float_rem_un: dest:f src1:f src2:f len:16
 float_neg: dest:f src1:f len:4
 float_not: dest:f src1:f len:4
 float_conv_to_i1: dest:i src1:f len:40
 float_conv_to_i2: dest:i src1:f len:40
 float_conv_to_i4: dest:i src1:f len:40
 float_conv_to_i8: dest:l src1:f len:40
-float_conv_to_r4:
+float_conv_to_r4: dest:f src1:f len:4
 float_conv_to_r8:
 float_conv_to_u4: dest:i src1:f len:40
 float_conv_to_u8: dest:l src1:f len:40
