@@ -533,6 +533,9 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	}
 	
 	ret=WaitForMultipleObjects(numhandles, handles, TRUE, ms);
+
+	g_free(handles);
+	
 	if(ret==WAIT_FAILED) {
 #ifdef THREAD_WAIT_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Wait failed");
@@ -564,8 +567,10 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	
 	ret=WaitForMultipleObjects(numhandles, handles, FALSE, ms);
 
+	g_free(handles);
+	
 #ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", ret);
+	g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", ret);
 #endif
 
 	return(ret);
