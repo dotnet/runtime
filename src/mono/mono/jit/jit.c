@@ -254,6 +254,7 @@ mono_alloc_static0 (int size)
 
 typedef void (*MonoCCtor) (void);
 
+
 static int
 map_store_svt_type (int svt)
 {
@@ -1459,6 +1460,74 @@ mono_array_new_va (MonoMethod *cm, ...)
 #define ARG_POS(n)      (firstarg + n)
 #define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
 			(signature)->hasthis ? &method->klass->this_arg: (signature)->params [(0)])
+
+
+/*
+ * replaces all occurences of variable @varnum in @tree with @copy. 
+ */
+static void
+mono_copy_used_var (MonoFlowGraph *cfg, MBTree *tree, int varnum, MBTree **copy)
+{
+	MBTree *t1, *t2;
+	int v, size, align;
+
+	if (tree->left)
+		mono_find_var (cfg, tree->left, varnum, copy);
+	if (tree->right)
+		mono_find_var (cfg, tree->right, varnum, copy);
+
+	switch (tree->op) {
+	case MB_TERM_LDIND_I1:
+	case MB_TERM_LDIND_I2:
+	case MB_TERM_LDIND_I4:
+	case MB_TERM_LDIND_I8:
+	case MB_TERM_LDIND_R4:
+	case MB_TERM_LDIND_R8:
+		if (tree->left->op == MB_TERM_ADDR_L &&
+		    tree->left->data.i == varnum) {
+			if (*copy) {
+				tree->left->data.i = (*copy)->left->data.i;
+				return;
+			} 
+			
+			mono_get_val_sizes (tree->svt, &size, &align);
+			v = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, tree->svt);
+ 
+			t1 = mono_ctree_new_leaf (cfg->mp, MB_TERM_ADDR_L);
+			t1->data.i = v;
+		       
+			t2 = mono_ctree_new_leaf (cfg->mp, MB_TERM_ADDR_L);
+			t2->data.i = varnum;
+			t2 = mono_ctree_new (cfg->mp, tree->op, t2, NULL);
+
+			t2 = mono_ctree_new (cfg->mp, map_store_svt_type (tree->svt), t1, t2);
+			t2->svt = tree->svt;
+
+			tree->left->data.i = v;
+
+			*copy = t2;
+		}
+	}
+}
+
+/* 
+ * if a variable is modified and there are still referencence
+ * to it on the runtime stack we need to store the value into
+ * a temporary variable and use that value instead of the 
+ * modified one.
+ */
+static MBTree *
+mono_stack_duplicate_used_var (MonoFlowGraph *cfg, MBTree **stack, MBTree **sp, int varnum)
+{
+	MBTree *res = NULL;
+
+	while (stack < sp) {
+		mono_copy_used_var (cfg, *stack, varnum, &res);
+		stack++;
+	}
+
+	return res;
+}
 
 static int
 check_inlining (MonoMethod *method)
@@ -2830,8 +2899,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t1->data.i = LOCAL_POS (n);
-			t1 = ctree_create_store (cfg, LOCAL_TYPE (n), t1, *sp, FALSE);
 
+			if ((t2 = mono_stack_duplicate_used_var (cfg, stack, sp, t1->data.i)))
+				ADD_TREE (t2, cli_addr); 
+
+			t1 = ctree_create_store (cfg, LOCAL_TYPE (n), t1, *sp, FALSE);
 			ADD_TREE (t1, cli_addr);			
 			break;
 		}
@@ -2841,8 +2913,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t1->data.i = LOCAL_POS (*ip);
-			t1 = ctree_create_store (cfg, LOCAL_TYPE (*ip), t1, *sp, FALSE);
+			if ((t2 = mono_stack_duplicate_used_var (cfg, stack, sp, t1->data.i)))
+				ADD_TREE (t2, cli_addr); 
 
+			t1 = ctree_create_store (cfg, LOCAL_TYPE (*ip), t1, *sp, FALSE);
 			++ip;
 			ADD_TREE (t1, cli_addr);			
 			break;
@@ -3404,8 +3478,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = LOCAL_POS (read16 (ip));
-				t1 = ctree_create_store (cfg, LOCAL_TYPE (read16 (ip)), t1, *sp, FALSE);
+				if ((t2 = mono_stack_duplicate_used_var (cfg, stack, sp, t1->data.i)))
+					ADD_TREE (t2, cli_addr); 
 
+				t1 = ctree_create_store (cfg, LOCAL_TYPE (read16 (ip)), t1, *sp, FALSE);
 				ip += 2;
 				ADD_TREE (t1, cli_addr);			
 				break;

@@ -97,7 +97,8 @@ TESTSRC=			\
 	largeexp.cs		\
 	largeexp2.cs		\
 	marshalbyref1.cs	\
-	static-ctor.cs
+	static-ctor.cs		\
+	inctest.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)
