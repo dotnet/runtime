@@ -1397,12 +1397,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	case MONO_TYPE_U8:
 		/* no conversions necessary */
 		break;
+	case MONO_TYPE_BOOLEAN:
+		/* maybe we need to make sure that it fits within 8 bits */
+		break;
 	case MONO_TYPE_STRING:
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 		mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
 		break;
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
