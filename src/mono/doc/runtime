@@ -9,9 +9,8 @@
 	We currently have two runtimes:
 
 	<ul>
-		* <b>mono:</b> The Just In Time compiler implemented
-	 	  using a BURS instruction selector.  We only support
-		  x86 machines in the JIT engine at this point.
+		* <b>mono:</b> Our Just-in-Time and Ahead-of-Time code
+		  generator for maximum performance.
 	
 		* <b>mint:</b> The Mono interpreter.  This is an
 		  easy-to-port runtime engine.
@@ -31,12 +30,52 @@
 	href="http://primates.ximian.com/~lupus/slides/jit/">slides
 	here</a>
 
-** Current JIT Engine: technical details (<b>updated, July 8th, 2002</b>)
+** Current JIT Engine: technical details (<b>updated, June 28th, 2003</b>)
 
-	The JIT engine uses a code-generator generator approach for
-	compilation.  Given the properties of CIL byte codes, we can
-	take full advantage of a real instruction selector for our
-	code generator. 
+	We have re-written our JIT compiler. We wanted to support a
+	number of features that were missing:
+
+	<ul>
+		* Ahead-of-time compilation.  
+
+	     The idea is to allow developers to pre-compile their code
+	     to native code to reduce startup time, and the working
+	     set that is used at runtime in the just-in-time compiler.
+
+	     Although in Mono this has not been a visible problem, we
+	     wanted to pro-actively address this problem.
+
+	     When an assembly (a Mono/.NET executable) is installed in
+	     the system, it would then be possible to pre-compile the
+	     code, and have the JIT compiler tune the generated code
+	     to the particular CPU on which the software is
+	     installed. 
+
+	     This is done in the Microsoft.NET world with a tool
+	     called ngen.exe
+
+		* Have a good platform for doing code optimizations. 
+
+	     The design called for a good architecture that would
+	     enable various levels of optimizations: some
+	     optimizations are better performed on high-level
+	     intermediate representations, some on medium-level and
+	     some at low-level representations.
+
+	     Also it should be possible to conditionally turn these on
+	     or off.  Some optimizations are too expensive to be used
+	     in just-in-time compilation scenarios, but these
+	     expensive optimizations can be turned on for
+	     ahead-of-time compilations or when using profile-guided
+	     optimizations on a subset of the executed methods.
+
+		* Reduce the effort required to port the Mono code
+             generator to new architectures.
+
+	     For Mono to gain wide adoption in the Unix world, it is
+	     necessary that the JIT engine works in most of today's
+	     commercial hardware platforms. 
+	</ul>
 
 	The JIT engine implements a number of optimizations:
 
@@ -47,7 +86,7 @@
 		  
 		* Inlining.
 
-		* Constant folding.  
+		* Constant folding, copy propagation, dead code elimination.
 
 		  Although compilers typically do
 		  constant folding, the combination of inlining with
@@ -56,6 +95,9 @@
 		* Linear scan register allocation.  In the past,
 		  register allocation was our achilles heel, but now 
 		  we have left this problem behind.
+
+		* SSA-based framework.  Various optimizations are
+		  implemented on top of this framework
 	</ul>
 
 	There are a couple of books that deal with this technique: "A
@@ -64,7 +106,13 @@
         technical description of <a
         href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/iburg.pdf&pub=ACM">lbrug</a>.
 
-	A few papers that describe the instruction selector:
+	The new JIT engines uses three intermediate representations:
+	the source is the CIL which is transformed into a forest of
+	trees; This is fed into a BURS instruction selector that
+	generates the final low-level intermediate representation.
+
+	The instruction selector is documented in the following
+	papers:
 
 	<ul>
 		* <a href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/interface.pdf&pub=wiley">A code generation interface for ANSI C</a>
@@ -73,14 +121,6 @@
 		* <a href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/iburg.pdf&pub=ACM">Engineering efficient code generators using tree matching and dynamic programming.</a>
 
 	</ul>
-
-** New JIT engine.
-
-	We are working on a new JIT engine.  The new JIT engine
-	focuses on portability and in two intermediate representations
-	that simplify the development of optimizations.  This together
-	with the Ahead-of-Time compilation will allow developers to
-	deploy applications that match the speed of natively compiled code.
 
 ** Garbage Collection
 
