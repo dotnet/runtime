@@ -625,6 +625,7 @@ if test x$platform_win32 = xno; then
 		#include <unistd.h>
 		#include <signal.h>
 		#include <pthread.h>
+		#include <sys/wait.h>
 
 		static void
 		sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
@@ -635,30 +636,26 @@ if test x$platform_win32 = xno; then
 		static void *
 		loop (void *ignored)
 		{
-			sleep (1);
+			char *ptr = NULL;
 
-			/* If we reach here, the signal handler wasn't called */
-			exit (1);
+			*ptr = 0;
+			return NULL;
 		}
 
-		int
-		main ()
+		static void
+		child ()
 		{
 			struct sigaction sa;
 			struct sigaltstack sas;
 			pthread_t id;
 			pthread_attr_t attr;
-			char *ptr = NULL;
-
-			/* Disabled for now since it can hang */
-			exit (1);
 
 			sa.sa_sigaction = sigsegv_signal_handler;
 			sigemptyset (&sa.sa_mask);
 			sa.sa_flags = SA_SIGINFO | SA_STACK;
 			if (sigaction (SIGSEGV, &sa, NULL) == -1) {
 				perror ("lala");
-				return 1;
+				return;
 			}
 
 			sas.ss_sp = malloc (SIGSTKSZ);
@@ -666,19 +663,43 @@ if test x$platform_win32 = xno; then
 			sas.ss_flags = SS_ONSTACK;
 			if (sigaltstack (&sas, NULL) == -1) {
 				perror ("lala");
-				return 1;
+				return;
 			}
 
 			pthread_attr_init (&attr);
 			if (pthread_create(&id, &attr, loop, &attr) != 0) {
 				printf ("failed\n");
-				return 3;
+				return;
 			}
 
-			*ptr = 0;
-			pthread_join (id, NULL);
-			return 2;
+			sleep (100);
 		}
+
+		int
+		main ()
+		{
+			pid_t son;
+			int status;
+
+			son = fork ();
+			if (son == -1) {
+				return 1;
+			}
+
+			if (son == 0) {
+				child ();
+				return 0;
+			}
+
+			sleep (3);
+			waitpid (son, &status, WNOHANG);
+			if (WIFEXITED (status) && WEXITSTATUS (status) == 0)
+				return 0;
+
+			kill (son, SIGKILL);
+			return 1;
+		}
+
 	], [
 			if test "x$with_sigaltstack" != "xyes"; then
 				AC_MSG_RESULT(disabled)
