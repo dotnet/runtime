@@ -1,6 +1,6 @@
 using System;
 
-[My(1)]
+[My((long)1)]
 [My(TypeCode.Empty)]
 [My(typeof(System.Enum))]
 class T {
@@ -10,14 +10,14 @@ class T {
 			return 1;
 		foreach (object o in a) {
 			My attr = (My)o;
-			if (attr.obj.GetType () == typeof(int)) {
-				int val = (int)attr.obj;
+			if (attr.obj.GetType () == typeof(long)) {
+				long val = (long)attr.obj;
 				Console.WriteLine ("got value: {0}", val);
 				if (val != 1)
 					return 2;
-			} else if (attr.obj.GetType () == typeof(System.TypeCode)) {
-				TypeCode val = (TypeCode)attr.obj;
-				if (val != TypeCode.Empty)
+			} else if (attr.obj.GetType () == typeof(int)) {
+				int val = (int)attr.obj;
+				if (val != (int)TypeCode.Empty)
 					return 3;
 			} else {
 				Type t = attr.obj as Type;

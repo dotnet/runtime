@@ -1,3 +1,14 @@
+2003-07-13  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/cattr-object.cs: Make it run under both mono and MS.NET.
+
+	* mono/tests/struct.cs: Add test for unboxing trampolines.
+
+	* mono/tests/bug-27420.cs: new regression test.
+
+	* mono/tests/Makefile.am: skip vararg test since it does not compile 
+	under mono. Add testinterp target. Add new tests.
+	
 2003-07-10  Martin Willemoes Hansen
 
 	* doc/web/team.xml : Modified my tasks a bit.

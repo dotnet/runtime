@@ -1,3 +1,5 @@
+using System;
+
 struct Point 
 { 
   public int x, y, z; 
@@ -53,6 +55,13 @@ public class test {
 			return 10;
 		if (zp.x != zp.y || zp.y != zp.z || zp.z != 0)
 			return 11;
+
+		// Test that the object is properly unboxed when called through
+		// the reflection interface
+		object o = Activator.CreateInstance (typeof (Point), new object [] { 1, 2 });
+		if (!(o is Point))
+			return 12;
+
 		return 0;
 	}
 }
