@@ -167,7 +167,9 @@ calculate_sizes (MonoMethod *method, guint *stack_size, guint *code_size, guint 
 		}
 	}
 
-	if (sig->ret->byref) {
+	if (sig->ret->byref ||
+	    (method->klass == mono_defaults.string_class &&
+	     *method->name == '.' && !strcmp (method->name, ".ctor"))) {
 		*code_size += 8;
 	} else {
 		simpletype = sig->ret->type;
@@ -411,11 +413,11 @@ alloc_code_memory (guint code_size)
 	return p;
 }
 
-static MonoString*
+/* static MonoString*
 mono_string_new_wrapper (const char *text)
 {
 	return text ? mono_string_new (mono_domain_get (), text) : NULL;
-}
+} */
 
 static inline guint8 *
 emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gint runtime)
@@ -428,7 +430,9 @@ emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint stack_size, gui
 	ppc_blrl (p);
 
 	/* get return value */
-	if (sig->ret->byref) {
+	if (sig->ret->byref ||
+	    (method->klass == mono_defaults.string_class &&
+	     *method->name == '.' && !strcmp (method->name, ".ctor"))) {
 		ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
 		ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
 	} else {
