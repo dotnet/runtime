@@ -1,3 +1,8 @@
+2003-10-10  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/libtest.c (mono_test_marshal_delegate): Added test for
+	stdcall calling convention.
+
 2003-10-09  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h:

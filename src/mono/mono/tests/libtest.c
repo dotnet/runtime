@@ -87,7 +87,7 @@ struct sc5
 };
 
 struct sc5 mono_return_sc5 (struct sc5 a) {
-	printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
+	printf ("Got values %d %d %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
 	a.c[0]++;
 	a.c[1] += 2;
 	a.c[2] += 3;
@@ -174,6 +174,22 @@ mono_test_marshal_char (short a1)
 		return 0;
 	
 	return 1;
+}
+
+int
+mono_test_empty_pinvoke (int i)
+{
+	return i;
+}
+
+int 
+mono_test_marshal_bool_byref (int a, char *b, int c)
+{
+    int res = *b;
+
+	*b = 1;
+
+	return res;
 }
 
 int 
@@ -343,11 +359,34 @@ mono_test_marshal_struct_array (simplestruct2 *ss)
 	return 0;
 }
 
+#ifdef WIN32
+typedef int (__stdcall *SimpleDelegate) (int a);
+#else
 typedef int (*SimpleDelegate) (int a);
+#endif
+
+static void *
+get_sp (void)
+{
+	int i;
+	void *p;
+
+	p = &i;
+	return p;
+}
 
 int
 mono_test_marshal_delegate (SimpleDelegate delegate)
 {
+	void *sp1, *sp2;
+
+	/* Check that the delegate wrapper is stdcall */
+	delegate (2);
+	sp1 = get_sp ();
+	delegate (2);
+	sp2 = get_sp ();
+	g_assert (sp1 == sp2);
+
 	return delegate (2);
 }
 
