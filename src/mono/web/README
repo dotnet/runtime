@@ -15,3 +15,33 @@ To publish changes:
 
 cd web
 make push
+
+############## Samples 
+
+
+  If you want to add a new item in the left menu 
+  you have to edit mono/doc/web/commands and add
+  the entry there.
+
+    For new files you can add something as:
+    level,entry,path_to_the_file,file.src
+
+    ex: 1,COBOL#,cobol.html,cobol.src
+
+    If you just want to add a link to the menu:
+    1,MyEntry,URL
+    
+    ex: 1,About Linux,http://www.linux.org
+
+  To test the results under Linux:
+    1. Edit mono/doc/web/makefile
+
+    Delete all the references to class status
+    and the deploy/index.rss as well as the
+    mono.exe commands.
+
+    2. make
+    3. Open your browser and point to the 
+       file:///(YOUR PATH HERE)mono/doc/web/deploy/index.html
+
+
