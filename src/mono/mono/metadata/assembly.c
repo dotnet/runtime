@@ -879,7 +879,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	if (extra_gac_paths) {
 		paths = extra_gac_paths;
 		while (!result && *paths) {
-			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "gac", subpath, NULL);
+			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", subpath, NULL);
 			result = mono_assembly_open (fullpath, status);
 			g_free (fullpath);
 			paths++;
