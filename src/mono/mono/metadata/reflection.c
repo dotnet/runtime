@@ -31,6 +31,7 @@ typedef struct {
 	MonoReflectionILGen *ilgen;
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
+	MonoArray *pinfo;
 	guint32 attrs;
 	guint32 iattrs;
 	guint32 call_conv;
@@ -87,6 +88,7 @@ const unsigned char table_sizes [64] = {
 };
 
 static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type);
+static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method);
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
@@ -211,7 +213,11 @@ encode_reflection_type (MonoDynamicAssembly *assembly, MonoReflectionType *type,
 {
 	MonoReflectionTypeBuilder *tb;
 	guint32 token;
-	
+
+	if (!type) {
+		mono_metadata_encode_value (MONO_TYPE_VOID, p, endbuf);
+		return;
+	}
 	if (type->type) {
 		encode_type (assembly, type->type, p, endbuf);
 		return;
@@ -348,11 +354,13 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 	guint32 *intp;
 	guint16 *shortp;
 	guint32 local_sig = 0;
+	guint32 header_size = 12;
 	MonoArray *code;
 
-	if ((mb->attrs) & METHOD_ATTRIBUTE_PINVOKE_IMPL ||
+	if ((mb->attrs & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 			(mb->iattrs & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-			(mb->iattrs & METHOD_IMPL_ATTRIBUTE_RUNTIME))
+			(mb->iattrs & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+			(mb->attrs & METHOD_ATTRIBUTE_ABSTRACT))
 		return 0;
 
 	/*if (mb->name)
@@ -384,14 +392,14 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 	} 
 fat_header:
 	if (num_locals)
-		local_sig = encode_locals (assembly, mb->ilgen);
+		local_sig = MONO_TOKEN_SIGNATURE | encode_locals (assembly, mb->ilgen);
 	/* 
 	 * FIXME: need to set also the header size in fat_flags.
 	 * (and more sects and init locals flags)
 	 */
 	fat_flags =  0x03;
 	shortp = (guint16*)(fat_header);
-	*shortp = fat_flags;
+	*shortp = fat_flags | ((header_size / 4 ) << 12);
 	shortp = (guint16*)(fat_header + 2);
 	*shortp = max_stack;
 	intp = (guint32*)(fat_header + 4);
@@ -428,7 +436,9 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 	MonoDynamicTable *table;
 	guint32 *values;
 	char *name;
+	guint i, count;
 
+	/* room in this table is already allocated */
 	table = &assembly->tables [MONO_TABLE_METHOD];
 	*mb->table_idx = table->next_idx ++;
 	values = table->values + *mb->table_idx * MONO_METHOD_SIZE;
@@ -442,8 +452,33 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 	values [MONO_METHOD_FLAGS] = mb->attrs;
 	values [MONO_METHOD_IMPLFLAGS] = mb->iattrs;
 	values [MONO_METHOD_SIGNATURE] = method_builder_encode_signature (assembly, mb);
-	values [MONO_METHOD_PARAMLIST] = 0; /* FIXME: add support later */
 	values [MONO_METHOD_RVA] = method_encode_code (assembly, mb);
+	
+	table = &assembly->tables [MONO_TABLE_PARAM];
+	values [MONO_METHOD_PARAMLIST] = table->next_idx;
+
+	if (mb->pinfo) {
+		count = 0;
+		for (i = 0; i < mono_array_length (mb->pinfo); ++i) {
+			if (mono_array_get (mb->pinfo, gpointer, i))
+				count++;
+		}
+		table->rows += count;
+		alloc_table (table, table->rows);
+		values = table->values + table->next_idx * MONO_PARAM_SIZE;
+		for (i = 0; i < mono_array_length (mb->pinfo); ++i) {
+			MonoReflectionParamBuilder *pb;
+			if ((pb = mono_array_get (mb->pinfo, MonoReflectionParamBuilder*, i))) {
+				values [MONO_PARAM_FLAGS] = pb->attrs;
+				values [MONO_PARAM_SEQUENCE] = i;
+				name = mono_string_to_utf8 (pb->name);
+				values [MONO_PARAM_NAME] = string_heap_insert (&assembly->sheap, name);
+				g_free (name);
+				values += MONO_PARAM_SIZE;
+				table->next_idx++;
+			}
+		}
+	}
 }
 
 static void
@@ -457,6 +492,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 	rmb.ilgen = mb->ilgen;
 	rmb.rtype = mb->rtype;
 	rmb.parameters = mb->parameters;
+	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs;
 	rmb.iattrs = mb->iattrs;
 	rmb.call_conv = mb->call_conv;
@@ -489,6 +525,21 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 			values [MONO_IMPLMAP_SCOPE] = table->rows;
 		}
 	}
+	if (mb->override_method) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
+		table = &assembly->tables [MONO_TABLE_METHODIMPL];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_MTHODIMPL_SIZE;
+		values [MONO_MTHODIMPL_CLASS] = tb->table_idx;
+		values [MONO_MTHODIMPL_BODY] = METHODDEFORREF_METHODDEF | (mb->table_idx << METHODDEFORREF_BITS);
+		if (mb->override_method->method)
+			values [MONO_MTHODIMPL_DECLARATION] = mono_image_get_methodref_token (assembly, mb->override_method->method);
+		else {
+			MonoReflectionMethodBuilder *omb = (MonoReflectionMethodBuilder*)mb->override_method;
+			values [MONO_MTHODIMPL_DECLARATION] = METHODDEFORREF_METHODDEF | (omb->table_idx << METHODDEFORREF_BITS);
+		}
+	}
 }
 
 static void
@@ -499,6 +550,7 @@ mono_image_get_ctor_info (MonoReflectionCtorBuilder *mb, MonoDynamicAssembly *as
 	rmb.ilgen = mb->ilgen;
 	rmb.rtype = mono_type_get_object (&mono_defaults.void_class->byval_arg);
 	rmb.parameters = mb->parameters;
+	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs;
 	rmb.iattrs = mb->iattrs;
 	rmb.call_conv = mb->call_conv;
@@ -654,14 +706,14 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_GETTER;
 		values [MONO_METHOD_SEMA_METHOD] = pb->get_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << 1) | 1;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY;
 	}
 	if (pb->set_method) {
 		semaidx = table->next_idx ++;
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_SETTER;
 		values [MONO_METHOD_SEMA_METHOD] = pb->set_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << 1) | 0;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY;
 	}
 }
 
@@ -771,7 +823,15 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 	tb->table_idx = table->next_idx ++;
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
 	values [MONO_TYPEDEF_FLAGS] = tb->attrs;
-	values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
+	if (tb->parent) { /* interfaces don't have a parent */
+		if (tb->parent->type)
+			values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
+		else {
+			MonoReflectionTypeBuilder *ptb = (MonoReflectionTypeBuilder *)tb->parent;
+			values [MONO_TYPEDEF_EXTENDS] = TYPEDEFORREF_TYPEDEF | (ptb->table_idx << TYPEDEFORREF_BITS);
+		}
+	} else
+		values [MONO_TYPEDEF_EXTENDS] = 0;
 	n = mono_string_to_utf8 (tb->name);
 	values [MONO_TYPEDEF_NAME] = string_heap_insert (&assembly->sheap, n);
 	g_free (n);
@@ -1108,6 +1168,14 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	alloc_table (table, 1);
 	values = table->values + table->columns;
 	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, "corlib");
+	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = 0;
+	values [MONO_ASSEMBLYREF_MINOR_VERSION] = 0;
+	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = 0;
+	values [MONO_ASSEMBLYREF_REV_NUMBER] = 0;
+	values [MONO_ASSEMBLYREF_FLAGS] = 0;
+	values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
+	values [MONO_ASSEMBLYREF_CULTURE] = 0;
+	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
 
 	build_compressed_metadata (assembly);
 }

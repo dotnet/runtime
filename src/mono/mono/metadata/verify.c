@@ -119,7 +119,7 @@ is_valid_blob (MonoImage *image, guint32 index, int notnull)
 		return 0;
 	p = mono_metadata_blob_heap (image, index);
 	size = mono_metadata_decode_blob_size (p, &send);
-	if (index + size + (send-p) >= image->heap_blob.size)
+	if (index + size + (send-p) > image->heap_blob.size)
 		return 0;
 	if (notnull && !size)
 		return 0;

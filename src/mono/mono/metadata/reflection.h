@@ -125,6 +125,15 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoObject* methodb;
+	MonoString *name;
+	guint32 attrs;
+	int position;
+	guint32 table_idx;
+} MonoReflectionParamBuilder;
+
+typedef struct {
+	MonoObject object;
 	MonoReflectionILGen *ilgen;
 	MonoArray *parameters;
 	guint32 attrs;
@@ -132,6 +141,7 @@ typedef struct {
 	guint32 table_idx;
 	guint32 call_conv;
 	MonoObject *type;
+	MonoArray *pinfo;
 } MonoReflectionCtorBuilder;
 
 typedef struct {

@@ -312,6 +312,7 @@ main (int argc, char *argv [])
 			usage ();
 		else if (strcmp (argv [i], "--verify") == 0) {
 			verify_pe = 1;
+			dump_data = 0;
 			++i;
 			flags = argv [i];
 		} else {
