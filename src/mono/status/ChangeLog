@@ -1,0 +1,16 @@
+2001-07-16  Sean MacIsaac  <macisaac@ximian.com>
+
+	* ByNamespace.xsl: Needed by ByNamespace.cs.
+
+	* ByNamespace.cs: Generates html by namespace..
+
+	* ByMaintainer.xsl: Needed by ByMaintainer.cs.
+
+	* ByMaintainer.cs: Generates html by maintainer.
+
+	* class.xml: Class maintainers go here.
+	
+	* maintainers.xml: Only maintaining email/name pairs here.
+
+	* compare-assembly.cs: Started refactoring to give what Migee
+	wants.

@@ -133,19 +133,5 @@ A: No, currently I am using Jay which is a port of Berkeley Yacc to
    In the future I want to port one of the Bison/Java ports to C# for
    the parser.
 
-Q: How do I compile it?
-
-A: Compiling MCS currently requires you to run my port of <a
-   href="http://primates.ximian.com/~miguel/code/jay.cs.tar.gz">Jay to
-   C#</a> on a Unix system to generate the parser, and then you need
-   to use Microsoft's .NET csc.exe compiler to compile the compiler.
-
-   You only need to compile the compiler compiler (C code), the
-   samples are Java samples that I did not port, and you do not need
-   them.
-
-   It might be simple to port Jay.cs to Windows, but I have not tried
-   this. 
-
 You might also want to look at the <a href="faq.html#gcc">GCC</a>
 section on the main FAQ

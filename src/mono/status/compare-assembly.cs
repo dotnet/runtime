@@ -35,29 +35,26 @@ Tool #2:
 		Per Percent status.
 
 */
+
+using System;
+using System.Collections;
+using System.Reflection;
+using System.Xml;
+
 namespace Mapper
 {
-    using System;
-	using System.Collections;
-	using System.Reflection;
+	public class Mapper
+	{
+                Assembly ms, mono;
+                XmlDocument annotations, output;
 
-    /// <summary>
-    ///    Summary description for Class1.
-    /// </summary>
-    public class Mapper
-    {
-		Assembly a;
-		Hashtable nshash = new Hashtable();
-		int indent = 0;
-
-        public Mapper(string name)
+		public Mapper(string ms_lib, string mono_lib, string annotation)
 		{
-			a = Assembly.LoadFrom (name);
-		}
-
-		void o (string s)
-		{
-			Console.WriteLine (s.PadLeft (s.Length + indent, ' '));
+			Assembly ms = Assembly.LoadFrom (ms_lib);
+                        Assembly mono = Assembly.LoadFrom (mono_lib);
+                        annotations = new XmlDocument ();
+                        annotations.Load (annotation);
+                        output = new XmlDocument ();
 		}
 
 		void DumpMember (MemberInfo mi)
@@ -66,7 +63,7 @@ namespace Mapper
 			string more="";
 
 			switch (mi.MemberType)
-			{
+				{
 				case MemberTypes.Field:
 					kind = "field";
 					break;
@@ -86,9 +83,7 @@ namespace Mapper
 				default:
 					kind = "***UNKOWN***";
 					break;
-			}
-
-			o ("<" + kind + " name='" + mi.Name + "'" + more + "/>");
+				}
 		}
 
 		void DumpType (Type t)
@@ -115,117 +110,55 @@ namespace Mapper
 				attrs += "comobject='true'";
 			}
 
-			o ("<" + kind + " name='" + name + (attrs == "" ? "'" : "' ") + attrs + ">");
-
-			indent += 4;
-
-			/*o ("<maintainer></maintainer>");
-			o ("<description></description>");*/
-
-			foreach (Type type in t.GetNestedTypes ())
-			{
-				DumpType(type);
+			foreach (Type type in t.GetNestedTypes ()) {
+					DumpType (type);
 			}
 
-			foreach (FieldInfo field in t.GetFields ())
-			{
-				DumpMember (field);
+			foreach (FieldInfo field in t.GetFields ()) {
+					DumpMember (field);
 			}
 
-			foreach (MethodInfo method in t.GetMethods ())
-			{
+			foreach (MethodInfo method in t.GetMethods ()) {
 				DumpMember (method);
 			}
 
-			indent -= 4;
-
-			o ("</" + kind + ">");
 		}
 	
 		void LoadTypeList (Type [] types)
 		{
-			foreach (Type t in types)
-			{
-				ArrayList list = (ArrayList) nshash [t.Namespace];
-				if (list == null)
-				{
-					list = new ArrayList ();
-					nshash.Add (t.Namespace, list);
-				}
-				list.Add (t);
+			foreach (Type t in types) {
 			}
 		}
 	
-		void DumpTypeList (Type [] types)
-		{
-			LoadTypeList (types);
-
-			foreach (string ns in nshash.Keys)
-			{
-				o ("<namespace " + "name='" + ns + "'>");
-
-				indent += 4;
-
-				foreach (Type t in (ArrayList) nshash [ns])
-				{
-					DumpType (t);
-				}
-
-				indent -= 4;
-
-				o ("</namespace>");
-			}
-		}
-
 		public void Map ()
 		{
-			string name;
 			Type [] types;
 			Module [] modules;
+                        string name;
 
-			name = a.GetName ().Name;
-			types = a.GetExportedTypes ();
-			modules = a.GetModules ();
-
-			o ("<assembly name='" + name + "'>");
-
-			indent += 4;
-
-			/*o ("<maintainer></maintainer>");
-			o ("<description></description>");*/
+			name = ms.GetName ().Name;
+			types = ms.GetExportedTypes ();
+			modules = ms.GetModules ();
 
 			DumpTypeList (types);
-
-			indent -= 4;
-
-			o ("</assembly>");
-		}
+                }
 
 		public static int Main(string[] args)
-        {
+		{
 			Mapper m;
 			string basedir = "c:\\WINDOWS\\Microsoft.NET\\Framework\\v1.0.2914\\";
 
-			if (args.Length > 0) {
-				foreach (string s in args){
-					try {
-						m = new Mapper (s);
-						m.Map ();
-					} catch (Exception e) {
-						Console.WriteLine("Error: "+e.ToString());
-					}
-				}
-			} else {
-					try {
-				m = new Mapper (basedir + "mscorlib.dll");
+			if (args.Length != 3) {
+                                Console.WriteLine ("usage: compare ms_lib.dll mono_lib.dll annotations.xml");
+                        }
+			try {
+        			m = new Mapper (args[0], args[1], args[2]);
 				m.Map ();
-					} catch (Exception e) {
-						Console.WriteLine("Error: "+e.ToString());
-					}
-			}
-
-            return 0;
-        }
-    }
+	        	} catch (Exception e) {
+				Console.WriteLine("Error: " + e.ToString ());
+			}		
+			return 0;
+		}
+	}
 }
 

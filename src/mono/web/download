@@ -10,8 +10,9 @@
 	test suite and the class library are in the `mcs' package, we
 	will move this later into `mono' itself. 
 
-	The mcs compiler requires the `jay' parser generator, this is
-	available in module `jay'.
+	In order to make mcs and the class libraries you will need the
+	GNU make tools.  These may be obtained for the Windows
+	environment from <a href="www.cygwin.com">cygwin.com</a>.
 
 ** Sources
 

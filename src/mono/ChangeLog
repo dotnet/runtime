@@ -1,5 +1,9 @@
 2001-07-15  Sean MacIsaac  <macisaac@ximian.com>
 
+	* doc/download: added instructions for cygwin
+	
+	* doc/c-sharp: removed bit about compiling
+	
 	* status/compare-assembly.cs: basedir should be there if
 	parameters are provided.
 

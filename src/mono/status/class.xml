@@ -1,0 +1,281 @@
+<classes>
+    <class name="System.Object">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.String">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>fejj@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.Hashtable">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.Queue">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>iain@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Math">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Array">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.StringBuilder">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.TextReader">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.StringReader">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.TextWriter">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.StringWriter">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.MemoryStream">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.Stack">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>rooneg@electricjellyfish.net</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.Switch">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.BooleanSwitch">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.TraceSwitch">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.ConditionalAttribute">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.Debug">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.DiagnosticsConfigurationHandler">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.StackFrame">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.StackTrace">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.Trace">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.TraceListener">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.BinaryReader">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>czw@home.se</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.BinaryWriter">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>czw@home.se</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.FileStream">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>czw@home.se</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.Stream">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>czw@home.se</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlReader">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+</classes>
