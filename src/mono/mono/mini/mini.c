@@ -611,6 +611,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->inst_right = (sp) [1];	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (k);	\
+		(cfg)->flags |= MONO_CFG_HAS_LDELEMA; \
 	} while (0)
 
 #define NEW_GROUP(cfg,dest,el1,el2) do {	\
@@ -4939,7 +4940,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				if ((ip [5] == CEE_CALL) && (cmethod = mono_get_method_full (image, read32 (ip + 6), NULL, generic_context)) &&
 						(cmethod->klass == mono_defaults.monotype_class->parent) &&
-						(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
+						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && 
+					((g_hash_table_lookup (bbhash, ip + 5) == NULL) ||
+					 (g_hash_table_lookup (bbhash, ip + 5) == bblock))) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
 					if (mono_compile_aot)
@@ -4950,12 +4953,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->klass = cmethod->klass;
 					ip += 5;
 				} else {
+					MonoInst *store, *addr, *vtvar;
+
 					if (mono_compile_aot)
 						NEW_LDTOKENCONST (cfg, ins, image, n);
 					else
 						NEW_PCONST (cfg, ins, handle);
-					ins->type = STACK_VTYPE;
-					ins->klass = handle_class;
+					vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL);
+					NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
+					NEW_INDSTORE (cfg, store, addr, ins, &mono_defaults.int_class->byval_arg);
+					MONO_ADD_INS (bblock, store);
+					NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 				}
 			}
 
@@ -7795,7 +7803,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		//mono_ssa_strength_reduction (cfg);
 
-		if (cfg->opt & MONO_OPT_ABCREM)
+		if ((cfg->flags & MONO_CFG_HAS_LDELEMA) && (cfg->opt & MONO_OPT_ABCREM))
 			mono_perform_abc_removal (cfg);
 
 		mono_ssa_remove (cfg);

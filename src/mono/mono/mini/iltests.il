@@ -415,5 +415,27 @@
 		ldc.i4.0
 		ret
 	}		
+
+	.method public static int32 test_0_get_type_from_handle_on_bblock_boundary () cil managed 
+	{
+		.entrypoint
+		.maxstack 16
+	
+		ldc.i4.1
+		brfalse OBJECT
+	
+		ldtoken [mscorlib]System.String
+		br AFTER
+	OBJECT:
+		ldtoken [mscorlib]System.Object
+	AFTER:
+		call class [mscorlib]'System.Type' class [mscorlib]'System.Type'::'GetTypeFromHandle'(valuetype [mscorlib]'System.RuntimeTypeHandle')
+		callvirt string class [mscorlib]System.Type::get_FullName ()
+		ldstr "System.String"
+		callvirt bool class [mscorlib]System.Object::Equals(object)
+		ldc.i4.0
+		ceq
+		ret 
+	}
 		
 }
