@@ -315,6 +315,9 @@ mono_profiler_shutdown (void)
 struct _MonoProfiler {
 	GHashTable *methods;
 	GHashTable *newobjs;
+	GTimer     *jit_timer;
+	double      jit_time;
+	int         methods_jitted;
 };
 
 typedef struct {
@@ -435,10 +438,25 @@ simple_method_leave (MonoProfiler *prof, MonoMethod *method)
 }
 
 static void
+simple_method_jit (MonoProfiler *prof, MonoMethod *method)
+{
+	g_timer_start (prof->jit_timer);
+	prof->methods_jitted++;
+}
+
+static void
+simple_method_end_jit (MonoProfiler *prof, MonoMethod *method, int result)
+{
+	g_timer_stop (prof->jit_timer);
+	prof->jit_time += g_timer_elapsed (prof->jit_timer, NULL);
+}
+
+static void
 simple_shutdown (MonoProfiler *prof)
 {
 	GList *profile = NULL;
 
+	printf("Total time spent compiling %d methods (sec): %.4g\n", prof->methods_jitted, prof->jit_time);
 	g_hash_table_foreach (prof->methods, (GHFunc)build_profile, &profile);
 	output_profile (profile);
 	g_list_free (profile);
@@ -456,10 +474,12 @@ mono_profiler_install_simple (void)
 
 	prof->methods = g_hash_table_new (g_direct_hash, g_direct_equal);
 	prof->newobjs = g_hash_table_new (g_direct_hash, g_direct_equal);
+	prof->jit_timer = g_timer_new ();
 
 	mono_profiler_install (prof, simple_shutdown);
 	/* later do also object creation */
 	mono_profiler_install_enter_leave (simple_method_enter, simple_method_leave);
-	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE);
+	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
+	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION);
 }
 

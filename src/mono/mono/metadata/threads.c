@@ -13,6 +13,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/io-layer/io-layer.h>
@@ -128,6 +129,10 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 
 	*(gpointer *)(((char *)thread) + field->offset) = thread_handle; 
 
+	/*
+	 * This thread is not added to the threads array: why?
+	 */
+	mono_profiler_thread_start (thread_handle);
 	return thread;
 }
 
@@ -175,6 +180,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 
 		/* Store handle for cleanup later */
 		handle_store(thread);
+		mono_profiler_thread_start (thread);
 		
 		return(thread);
 	}
@@ -225,6 +231,8 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 	
 	ret=WaitForSingleObject(thread, ms);
 	if(ret==WAIT_OBJECT_0) {
+		/* is the handle still valid at this point? */
+		mono_profiler_thread_end (thread);
 		/* Clean up the handle */
 		handle_remove(thread);
 		return(TRUE);

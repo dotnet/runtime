@@ -22,6 +22,11 @@ typedef enum {
 	MONO_PROFILE_ENTER_LEAVE      = 1 << 12
 } MonoProfileFlags;
 
+typedef enum {
+	MONO_PROFILE_OK,
+	MONO_PROFILE_FAILED
+} MonoProfileResult;
+
 typedef struct _MonoProfiler MonoProfiler;
 
 /*
