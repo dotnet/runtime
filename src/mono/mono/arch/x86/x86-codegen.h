@@ -162,6 +162,8 @@ typedef union {
 #define X86_IS_SCRATCH(reg) (X86_CALLER_REGS & (1 << (reg))) /* X86_EAX, X86_ECX, or X86_EDX */
 #define X86_IS_CALLEE(reg)  (X86_CALLEE_REGS & (1 << (reg))) 	/* X86_ESI, X86_EDI, X86_EBX, or X86_EBP */
 
+#define X86_IS_BYTE_REG(reg) ((reg) < 4)
+
 /*
 // Frame structure:
 //
@@ -952,6 +954,7 @@ typedef union {
 #define x86_widen_reg(inst,dreg,reg,is_signed,is_half)	\
 	do {	\
 		unsigned char op = 0xb6;	\
+                g_assert (is_half ||  X86_IS_BYTE_REG (reg)); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
@@ -1430,7 +1433,7 @@ typedef union {
 
 #define x86_set_reg(inst,cond,reg,is_signed)	\
 	do {	\
-                g_assert (reg < 4); \
+                g_assert (X86_IS_BYTE_REG (reg)); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\

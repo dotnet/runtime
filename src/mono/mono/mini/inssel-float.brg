@@ -167,15 +167,15 @@ freg: OP_FCONV_TO_R4 (freg) {
 	/* fixme: nothing to do ??*/
 }
 
-freg: CEE_CONV_R4 (reg) {
+freg: CEE_CONV_R4 (reg) "2" {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 
-freg: CEE_CONV_R8 (reg) {
+freg: CEE_CONV_R8 (reg) "2" {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 
-freg: CEE_CONV_R_UN (reg) {
+freg: CEE_CONV_R_UN (reg) "2" {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 

@@ -480,9 +480,10 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		    (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
-		if (is_regsize_var (ins->inst_vtype) ||
-		    (ins->inst_vtype->type == MONO_TYPE_BOOLEAN) || (ins->inst_vtype->type == MONO_TYPE_U1) || 
-		    (ins->inst_vtype->type == MONO_TYPE_U2) || (ins->inst_vtype->type == MONO_TYPE_I1) ||
+		/* we dont allocate I1 to registers because there is no simply way to sign extend 
+		 * 8bit quantities in caller saved registers on x86 */
+		if (is_regsize_var (ins->inst_vtype) || (ins->inst_vtype->type == MONO_TYPE_BOOLEAN) || 
+		    (ins->inst_vtype->type == MONO_TYPE_U1) || (ins->inst_vtype->type == MONO_TYPE_U2)||
 		    (ins->inst_vtype->type == MONO_TYPE_I2) || (ins->inst_vtype->type == MONO_TYPE_CHAR)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);

@@ -418,10 +418,6 @@ stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: CEE_LDIND_I1 (OP_REGVAR) {
-	MONO_EMIT_UNALU (s, tree, OP_SEXT_I1, state->reg1, state->left->tree->dreg);
-}
-
 reg: CEE_LDIND_I2 (OP_REGVAR) {
 	MONO_EMIT_UNALU (s, tree, OP_SEXT_I2, state->reg1, state->left->tree->dreg);
 }
