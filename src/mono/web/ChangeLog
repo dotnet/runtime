@@ -1,3 +1,7 @@
+2004-06-02  Duncan Mak  <duncan@ximian.com>
+
+	* download: Use the correct yum-repository.
+	
 2004-05-17  Duncan Mak  <duncan@ximian.com>
 
 	* languages: Added section on Nemerle, per request from Kamil
