@@ -597,6 +597,15 @@ ves_array_element_address (MonoInvocation *frame)
 	frame->retval->data.p = ea;
 }
 
+/* This is the implementation of the ldftn opcode
+ * used to implement CreateDelegate
+ */
+static void *
+ves_delegate_createdelegate (MonoReflectionMethod *info)
+{
+	return mono_create_method_pointer (info->method);
+}
+
 static void 
 ves_pinvoke_method (MonoInvocation *frame)
 {
@@ -4204,6 +4213,7 @@ main (int argc, char *argv [])
 	mono_add_internal_call ("System.Array::Set", ves_array_set);
 	mono_add_internal_call ("System.Array::Get", ves_array_get);
 	mono_add_internal_call ("System.Array::Address", ves_array_element_address);
+	mono_add_internal_call ("System.Delegate::CreateDelegate_internal", ves_delegate_createdelegate);
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
 
@@ -4254,6 +4264,3 @@ main (int argc, char *argv [])
 #endif
 	return retval;
 }
-
-
-
