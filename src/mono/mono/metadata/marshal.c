@@ -1974,6 +1974,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		case MONO_TYPE_R8:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
+		case MONO_TYPE_OBJECT:
 			mono_mb_emit_byte (mb, CEE_RET);
 			break;
 		case MONO_TYPE_STRING:		

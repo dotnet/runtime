@@ -2643,19 +2643,26 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		if (m->method->klass->image == assembly->assembly.image)
-			/* Will get fixed up */
-			token = MONO_TOKEN_METHOD_DEF | 0;
-		else
+		if (m->method->klass->image == assembly->assembly.image) {
+			static guint32 method_table_idx = 0xffffff;
+			/*
+			 * Each token should have a unique index, but the indexes are
+			 * assigned by managed code, so we don't know about them. An
+			 * easy solution is to count backwards...
+			 */
+			method_table_idx --;
+			token = MONO_TOKEN_METHOD_DEF | method_table_idx;
+		} else
 			token = mono_image_get_methodref_token (assembly, m->method);
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	}
 	else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField *)obj;
-		if (f->klass->image == assembly->assembly.image)
-			/* Will get fixed up */
-			token = MONO_TOKEN_FIELD_DEF | 0;
-		else
+		if (f->klass->image == assembly->assembly.image) {
+			static guint32 field_table_idx = 0xffffff;
+			field_table_idx --;
+			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
+		} else
 			token = mono_image_get_fieldref_token (assembly, f->field, f->klass);
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	}
@@ -3644,11 +3651,10 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		case '+':
 			*p = 0; /* NULL terminate the name */
 			startn = p + 1;
+			info->nested = g_list_append (info->nested, startn);
 			/* we have parsed the nesting namespace + name */
-			if (info->name) {
-				info->nested = g_list_append (info->nested, startn);
+			if (info->name)
 				break;
-			}
 			if (last_point) {
 				info->name_space = start;
 				*last_point = 0;
@@ -3678,9 +3684,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		*w++ = *p++;
 	}
 	
-	if (info->name) {
-		info->nested = g_list_append (info->nested, startn);
-	} else {
+	if (!info->name) {
 		if (last_point) {
 			info->name_space = start;
 			*last_point = 0;

@@ -581,6 +581,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	MonoMethod **vtable;
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 	GPtrArray *ifaces;
+	MonoGHashTable *override_map;
 
 	/* setup_vtable() must be called only once on the type */
 	if (class->interface_offsets) {
@@ -613,6 +614,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	if (class->parent && class->parent->vtable_size)
 		memcpy (vtable, class->parent->vtable,  sizeof (gpointer) * class->parent->vtable_size);
 
+	override_map = mono_g_hash_table_new (NULL, NULL);
+
 	/* override interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
@@ -621,6 +624,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			g_assert (decl->slot != -1);
 			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
 			vtable [dslot] = overrides [i*2 + 1];
+			mono_g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
 		}
 	}
 
@@ -783,6 +787,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					    mono_metadata_signature_equal (cm->signature, m1->signature)) {
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
+						mono_g_hash_table_insert (override_map, m1, cm);
 						break;
 					}
 				}
@@ -807,8 +812,22 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = overrides [i*2 + 1];
  			overrides [i * 2 + 1]->slot = decl->slot;
+			mono_g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
 		}
 	}
+
+	/*
+	 * If a method occupies more than one place in the vtable, and it is
+	 * overriden, then change the other occurances too.
+	 */
+	for (i = 0; i < max_vtsize; ++i)
+		if (vtable [i]) {
+			MonoMethod *cm = mono_g_hash_table_lookup (override_map, vtable [i]);
+			if (cm)
+				vtable [i] = cm;
+		}
+	mono_g_hash_table_destroy (override_map);
+
        
 	class->vtable_size = cur_slot;
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
