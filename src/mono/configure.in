@@ -1533,7 +1533,7 @@ if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
 fi
 
-PREVIEW=no
+PREVIEW=yes
 AC_ARG_WITH(preview, [ --with-preview=yes,no     If you want to install the 2.0 FX preview],[
 	if test x$with_preview = xyes; then
 	      PREVIEW=yes
