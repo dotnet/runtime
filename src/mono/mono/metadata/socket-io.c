@@ -1536,12 +1536,20 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		/* build a Mono.Posix.PeerCred+PeerCredData if
 		 * possible
 		 */
-		MonoImage *mono_posix_image = mono_image_loaded ("Mono.Posix");
+		static MonoImage *mono_posix_image = NULL;
 		MonoPeerCredData *cred_data;
 		
 		if (mono_posix_image == NULL) {
-			*error = WSAENOPROTOOPT;
-			return;
+			mono_posix_image=mono_image_loaded ("Mono.Posix");
+			if (!mono_posix_image) {
+				MonoAssembly *sa = mono_assembly_open ("Mono.Posix.dll", NULL);
+				if (!sa) {
+					*error = WSAENOPROTOOPT;
+					return;
+				} else {
+					mono_posix_image = mono_assembly_get_image (sa);
+				}
+			}
 		}
 		
 		obj_class = mono_class_from_name(mono_posix_image,
