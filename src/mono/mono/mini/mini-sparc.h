@@ -3,6 +3,8 @@
 
 #include <mono/arch/sparc/sparc-codegen.h>
 
+#include <glib.h>
+
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
@@ -76,5 +78,11 @@ gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, guint32 *fp);
 void mono_sparc_flushw (void);
 
 gboolean mono_sparc_is_v9 (void);
+
+struct MonoCompile;
+
+guint32* mono_sparc_emit_save_lmf (guint32* code, guint32 lmf_offset);
+
+guint32* mono_sparc_emit_restore_lmf (guint32 *code, guint32 lmf_offset);
 
 #endif /* __MONO_MINI_SPARC_H__ */  

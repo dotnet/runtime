@@ -88,8 +88,6 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
-	/* FIXME: patch calling code and vtable */
-
 	/*
 	 * Check whenever this is a virtual call, and call an unbox trampoline if
 	 * needed.
@@ -116,13 +114,15 @@ sparc_class_init_trampoline (MonoVTable *vtable, guint32 *code)
 {
 	mono_runtime_class_init (vtable);
 
-	/* FIXME: patch calling code */
+	/* Patch calling code */
+	sparc_nop (code);
 }
 
 static guchar*
 create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp_addr;
+	guint32 lmf_offset;
 	static guint8* generic_jump_trampoline = NULL;
 	static guint8 *generic_class_init_trampoline = NULL;
 
@@ -147,18 +147,50 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	sparc_save_imm (code, sparc_sp, -200, sparc_sp);
 
-	/* We receive the method address in %r1 */
-	sparc_mov_reg_reg (code, sparc_g1, sparc_o0);
+	/* We receive the method address in %r1, so save it here */
+	sparc_st_imm (code, sparc_g1, sparc_sp, 128);
+
+	/* Save lmf since compilation can raise exceptions */
+	lmf_offset = - sizeof (MonoLMF);
+
+	/* Save the data for the parent (managed) frame */
+
+	/* Save ip */
+	sparc_st_imm (code, sparc_i7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ip));
+	/* Save sp */
+	sparc_st_imm (code, sparc_fp, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, sp));
+	/* Save fp */
+	/* Load previous fp from the saved register window */
+	sparc_flushw (code);
+	sparc_ld_imm (code, sparc_fp, (sparc_i6 - 16) * 4, sparc_o7);
+	sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp));
+	/* Save method */
+	sparc_st_imm (code, sparc_g1, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method));
+
+	sparc_call_simple (code, (guint8*)mono_get_lmf_addr - (guint8*)code);
+	sparc_nop (code);
+
+	code = mono_sparc_emit_save_lmf (code, lmf_offset);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		tramp_addr = &sparc_class_init_trampoline;
 	else
 		tramp_addr = &sparc_magic_trampoline;
+	sparc_ld_imm (code, sparc_sp, 128, sparc_o0);
 	/* pass parent frame address as third argument */
 	sparc_mov_reg_reg (code, sparc_fp, sparc_o2);
 	sparc_call_simple (code, tramp_addr - code);
 	/* set %o1 to caller address in delay slot */
 	sparc_mov_reg_reg (code, sparc_i7, sparc_o1);
+
+	/* Save result */
+	sparc_st_imm (code, sparc_o0, sparc_sp, 128);
+
+	/* Restore lmf */
+	code = mono_sparc_emit_restore_lmf (code, lmf_offset);
+
+	/* Reload result */
+	sparc_ld_imm (code, sparc_sp, 128, sparc_o0);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		sparc_ret (code);
@@ -182,7 +214,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		break;
 	}
 
-	/* FIXME: flush icache */
+	mono_arch_flush_icache (buf, code - buf);
 
 	return buf;
 }

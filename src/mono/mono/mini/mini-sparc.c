@@ -59,16 +59,26 @@
  *  - Thread Abort
  * The following tests in mono/mini are expected to fail:
  *  - test_0_simple_double_casts
+ *      This test casts (guint64)-1 to double and then back to guint64 again.
+ *    Under x86, it returns 0, while under sparc it returns -1.
  * The following tests in mono/tests are expected to fail:
- * appdomain-unload.exe (Thread.Abort)
+ * appdomain-unload.exe (fails on x86)
  * remoting2.exe (fails on x86)
  * remoting3.exe (fails on x86)
  * thread5.exe (fails on x86)
+ * thread6.exe (thread abort)
  *
  * In addition to this, the runtime requires the truncl function, or its 
  * solaris counterpart, aintl, to do some double->int conversions. If this 
  * function is not available, it is emulated somewhat, but the results can be
  * strange.
+ */
+
+/*
+ * Possible optimizations:
+ * - delay slot scheduling
+ * - allocate large constants to registers
+ * - use %o registers for local allocation
  */
 
 #if SPARCV9
@@ -493,6 +503,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		if (is_regsize_var (ins->inst_vtype)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
+
 			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
 		}
 	}
@@ -601,8 +612,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
 
-		if (inst->opcode == OP_REGVAR)
+		if (inst->opcode == OP_REGVAR) {
+			//g_print ("allocating local %d to %s\n", i, mono_arch_regname (inst->dreg));
 			continue;
+		}
 
 		/* inst->unused indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
@@ -631,7 +644,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst->inst_basereg = sparc_fp;
 		inst->inst_offset = -offset;
 
-		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
+		//g_print ("allocating local %d to [%s - %d]\n", i, mono_arch_regname (inst->inst_basereg), - inst->inst_offset);
 	}
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
@@ -2141,6 +2154,39 @@ sparc_patch (guint8 *code, const guint8 *target)
 //	g_print ("patched with 0x%08x\n", ins);
 }
 
+/*
+ * mono_sparc_emit_save_lmf:
+ *
+ *  Emit the code neccesary to push a new entry onto the lmf stack. Used by
+ * trampolines as well.
+ */
+guint32*
+mono_sparc_emit_save_lmf (guint32 *code, guint32 lmf_offset)
+{
+	/* Save lmf_addr */
+	sparc_st_imm (code, sparc_o0, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	/* Save previous_lmf */
+	sparc_ld (code, sparc_o0, sparc_g0, sparc_o7);
+	sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* Set new lmf */
+	sparc_add_imm (code, FALSE, sparc_fp, lmf_offset, sparc_o7);
+	sparc_st (code, sparc_o7, sparc_o0, sparc_g0);
+
+	return code;
+}
+
+guint32*
+mono_sparc_emit_restore_lmf (guint32 *code, guint32 lmf_offset)
+{
+	/* Load previous_lmf */
+	sparc_ld_imm (code, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sparc_l0);
+	/* Load lmf_addr */
+	sparc_ld_imm (code, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sparc_l1);
+	/* *(lmf) = previous_lmf */
+	sparc_st (code, sparc_l0, sparc_l1, sparc_g0);
+	return code;
+}
+
 static guint32*
 emit_save_sp_to_lmf (MonoCompile *cfg, guint32 *code)
 {
@@ -2923,7 +2969,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CLT_UN:
 		case OP_CGT:
 		case OP_CGT_UN:
-			if (cfg->opt & MONO_OPT_CMOV) {
+			//if (cfg->opt & MONO_OPT_CMOV) {
+			if (0) {
 				sparc_clr_reg (code, ins->dreg);
 				sparc_movcc_imm (code, sparc_icc, opcode_to_sparc_cond (ins->opcode), 1, ins->dreg);
 			}
@@ -3357,6 +3404,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	sparc_st_imm (code, sparc_i2, sparc_fp, 76);
 	sparc_st_imm (code, sparc_i3, sparc_fp, 80);
 	sparc_st_imm (code, sparc_i4, sparc_fp, 84);
+	sparc_st_imm (code, sparc_i5, sparc_fp, 88);
 
 	sparc_set (code, cfg->method, sparc_o0);
 	sparc_mov_reg_reg (code, sparc_fp, sparc_o1);
@@ -3650,7 +3698,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		gint32 lmf_offset = - cfg->arch.lmf_offset;
 
 		/* Save ip */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
+		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		sparc_set (code, 0xfffffff, sparc_o7);
 		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ip));
 		/* Save sp */
@@ -3661,20 +3709,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* FIXME: add a relocation for this */
 		sparc_set (code, cfg->method, sparc_o7);
 		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method));
-		/* Get the address of lmf for the current thread */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+
+		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							 (gpointer)"mono_get_lmf_addr");		
 		sparc_call_simple (code, 0);
 		sparc_nop (code);
 
-		/* Save lmf_addr */
-		sparc_st_imm (code, sparc_o0, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr));
-		/* Save previous_lmf */
-		sparc_ld (code, sparc_o0, sparc_g0, sparc_o7);
-		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* Set new lmf */
-		sparc_add_imm (code, FALSE, sparc_fp, lmf_offset, sparc_o7);
-		sparc_st (code, sparc_o7, sparc_o0, sparc_g0);
+		code = (guint32*)mono_sparc_emit_save_lmf ((guint32*)code, lmf_offset);
 	}
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
@@ -3702,12 +3743,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		gint32 lmf_offset = - cfg->arch.lmf_offset;
 
-		/* Load previous_lmf */
-		sparc_ld_imm (code, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sparc_l0);
-		/* Load lmf_addr */
-		sparc_ld_imm (code, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sparc_l1);
-		/* *(lmf) = previous_lmf */
-		sparc_st (code, sparc_l0, sparc_l1, sparc_g0);
+		code = mono_sparc_emit_restore_lmf (code, lmf_offset);
 	}
 
 	/* 

@@ -134,12 +134,14 @@ arch_get_call_filter (void)
 	/* Save %fp to a location reserved in mono_arch_allocate_vars */
 	sparc_st_imm (code, sparc_o7, sparc_fp, -4);
 
-	/* Call the filter code, after this returns, %i0 will hold the result */
+	/* Call the filter code, after this returns, %o0 will hold the result */
 	sparc_call_imm (code, sparc_o0, 0);
 	sparc_nop (code);
 
 	/* Restore original %fp */
 	sparc_ld_imm (code, sparc_fp, -4, sparc_fp);
+
+	sparc_mov_reg_reg (code, sparc_o0, sparc_i0);
 
 	/* Return to first frame */
 	sparc_restore (code, sparc_g0, sparc_g0, sparc_g0);
