@@ -8308,7 +8308,6 @@ mini_init (const char *filename)
 	mono_install_handler (mono_arch_get_throw_exception ());
 #endif
 	mono_install_stack_walk (mono_jit_walk_stack);
-	mono_install_get_config_dir ();
 
 	domain = mono_init (filename);
 	mono_init_icall ();
