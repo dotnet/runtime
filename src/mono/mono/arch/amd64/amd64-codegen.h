@@ -45,6 +45,7 @@ typedef enum {
 	AMD64_XMM4 = 4,
 	AMD64_XMM5 = 5,
 	AMD64_XMM6 = 6,
+	AMD64_XMM7 = 7,
 	AMD64_XMM8 = 8,
 	AMD64_XMM9 = 9,
 	AMD64_XMM10 = 10,
