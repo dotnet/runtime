@@ -52,6 +52,9 @@ mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block)
 	MonoMethod *method = cfg->method;
 	MiniDebugMethodInfo *info;
 
+	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+		return;
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
