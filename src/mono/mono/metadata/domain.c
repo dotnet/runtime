@@ -25,6 +25,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
@@ -58,9 +59,9 @@ static __thread MonoAppContext * tls_appcontext;
 #define SET_APPCONTEXT(x) TlsSetValue (context_thread_id, x);
 #endif
 
-static gint32 appdomain_id_counter = 0;
-
-static MonoGHashTable * appdomains_list = NULL;
+static guint16 appdomain_list_size = 0;
+static guint16 appdomain_next = 0;
+static MonoDomain **appdomains_list = NULL;
 
 static CRITICAL_SECTION appdomains_mutex;
 
@@ -226,24 +227,62 @@ mono_string_hash (MonoString *s)
 	return h;	
 }
 
-#if HAVE_BOEHM_GC
-static void
-domain_finalizer (void *obj, void *data) {
-	/*g_print ("domain finalized\n");*/
+/*
+ * Allocate an id for domain and set domain->domain_id.
+ * LOCKING: must be called while holding appdomains_mutex.
+ * We try to assign low numbers to the domain, so it can be used
+ * as an index in data tables to lookup domain-specific info
+ * with minimal memory overhead. We also try not to reuse the
+ * same id too quickly (to help debugging).
+ */
+static int
+domain_id_alloc (MonoDomain *domain)
+{
+	int id = -1, i;
+	if (!appdomains_list) {
+		appdomain_list_size = 2;
+		appdomains_list = mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), NULL);
+	}
+	for (i = appdomain_next; i < appdomain_list_size; ++i) {
+		if (!appdomains_list [i]) {
+			id = i;
+			break;
+		}
+	}
+	if (id == -1) {
+		for (i = 0; i < appdomain_next; ++i) {
+			if (!appdomains_list [i]) {
+				id = i;
+				break;
+			}
+		}
+	}
+	if (id == -1) {
+		MonoDomain **new_list;
+		int new_size = appdomain_list_size * 2;
+		if (new_size >= (1 << 16))
+			g_assert_not_reached ();
+		id = appdomain_list_size;
+		new_list = mono_gc_alloc_fixed (new_size * sizeof (void*), NULL);
+		memcpy (new_list, appdomains_list, appdomain_list_size * sizeof (void*));
+		mono_gc_free_fixed (appdomains_list);
+		appdomains_list = new_list;
+		appdomain_list_size = new_size;
+	}
+	domain->domain_id = id;
+	appdomains_list [id] = domain;
+	appdomain_next++;
+	if (appdomain_next > appdomain_list_size)
+		appdomain_next = 0;
+	return id;
 }
-#endif
 
 MonoDomain *
 mono_domain_create (void)
 {
 	MonoDomain *domain;
 
-#if HAVE_BOEHM_GC
-	domain = GC_MALLOC (sizeof (MonoDomain));
-	GC_REGISTER_FINALIZER (domain, domain_finalizer, NULL, NULL, NULL);
-#else
-	domain = g_new0 (MonoDomain, 1);
-#endif
+	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), NULL);
 	domain->domain = NULL;
 	domain->setup = NULL;
 	domain->friendly_name = NULL;
@@ -263,12 +302,11 @@ mono_domain_create (void)
 	domain->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
 
 	EnterCriticalSection (&appdomains_mutex);
-	mono_g_hash_table_insert(appdomains_list, GINT_TO_POINTER(domain->domain_id), domain);
+	domain_id_alloc (domain);
 	LeaveCriticalSection (&appdomains_mutex);
 
 	return domain;
@@ -313,7 +351,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	/* FIXME: When should we release this memory? */
 	MONO_GC_REGISTER_ROOT (appdomains_list);
-	appdomains_list = mono_g_hash_table_new (mono_aligned_addr_hash, g_direct_equal);
 
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
@@ -652,48 +689,29 @@ mono_domain_set_internal (MonoDomain *domain)
 	SET_APPCONTEXT (domain->default_context);
 }
 
-typedef struct {
-	MonoDomainFunc func;
-	gpointer user_data;
-} DomainInfo;
-
-static void
-copy_hash_entry (gpointer key, gpointer data, gpointer user_data)
-{
-	MonoGHashTable *dest = (MonoGHashTable*)user_data;
-
-	mono_g_hash_table_insert (dest, key, data);
-}
-
-static void
-foreach_domain (gpointer key, gpointer data, gpointer user_data)
-{
-	DomainInfo *dom_info = user_data;
-
-	dom_info->func ((MonoDomain*)data, dom_info->user_data);
-}
-
 void
 mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 {
-	DomainInfo dom_info;
-	MonoGHashTable *copy;
+	int i, size;
+	MonoDomain **copy;
 
 	/*
-	 * Create a copy of the hashtable to avoid calling the user callback
+	 * Create a copy of the data to avoid calling the user callback
 	 * inside the lock because that could lead to deadlocks.
 	 * We can do this because this function is not perf. critical.
 	 */
-	copy = mono_g_hash_table_new (mono_aligned_addr_hash, NULL);
 	EnterCriticalSection (&appdomains_mutex);
-	mono_g_hash_table_foreach (appdomains_list, copy_hash_entry, copy);
+	size = appdomain_list_size;
+	copy = mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), NULL);
+	memcpy (copy, appdomains_list, appdomain_list_size * sizeof (void*));
 	LeaveCriticalSection (&appdomains_mutex);
 
-	dom_info.func = func;
-	dom_info.user_data = user_data;
-	mono_g_hash_table_foreach (copy, foreach_domain, &dom_info);
+	for (i = 0; i < size; ++i) {
+		if (copy [i])
+			func (copy [i], user_data);
+	}
 
-	mono_g_hash_table_destroy (copy);
+	mono_gc_free_fixed (copy);
 }
 
 /**
@@ -749,7 +767,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 
 	EnterCriticalSection (&appdomains_mutex);
-	mono_g_hash_table_remove (appdomains_list, GINT_TO_POINTER(domain->domain_id));
+	appdomains_list [domain->domain_id] = NULL;
 	LeaveCriticalSection (&appdomains_mutex);
 
 	/* FIXME: free delegate_hash_table when it's used */
@@ -832,10 +850,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	/* FIXME: anything else required ? */
 
-#if HAVE_BOEHM_GC
-#else
-	g_free (domain);
-#endif
+	mono_gc_free_fixed (domain);
 
 	if ((domain == mono_root_domain))
 		mono_root_domain = NULL;
@@ -852,7 +867,10 @@ mono_domain_get_by_id (gint32 domainid)
 	MonoDomain * domain;
 
 	EnterCriticalSection (&appdomains_mutex);
-	domain = mono_g_hash_table_lookup (appdomains_list, GINT_TO_POINTER(domainid));
+	if (domainid < appdomain_list_size)
+		domain = appdomains_list [domainid];
+	else
+		domain = NULL;
 	LeaveCriticalSection (&appdomains_mutex);
 
 	return domain;
