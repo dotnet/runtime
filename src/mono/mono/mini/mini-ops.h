@@ -308,6 +308,8 @@ MINI_OP(OP_GETCHR, "getchar")
 MINI_OP(OP_LDELEMA2D, "getldelema2")
 /* inlined small memcpy with constant length */
 MINI_OP(OP_MEMCPY, "memcpy")
+/* inlined small memset with constant length */
+MINI_OP(OP_MEMSET, "memset")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")
@@ -326,6 +328,7 @@ MINI_OP(OP_X86_PUSH,               "x86_push")
 MINI_OP(OP_X86_PUSH_FP,            "x86_push_fp")
 MINI_OP(OP_X86_PUSH_OBJ,           "x86_push_obj")
 MINI_OP(OP_X86_LEA,                "x86_lea")
+MINI_OP(OP_X86_LEA_MEMBASE,        "x86_lea_membase")
 MINI_OP(OP_X86_XCHG,               "x86_xchg")
 MINI_OP(OP_X86_FPOP,               "x86_fpop")
 MINI_OP(OP_X86_FP_LOAD_I8,         "x86_fp_load_i8")

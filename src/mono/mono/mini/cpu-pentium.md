@@ -597,6 +597,7 @@ x86_push_imm: len:5
 x86_push_membase: src1:b len:6
 x86_push_obj: src1:b len:30
 x86_lea: dest:i src1:i src2:i len:7
+x86_lea_membase: dest:i src1:i len:10
 x86_xchg: src1:i src2:i clob:x len:1
 x86_fpop: src1:f len:2
 x86_fp_load_i8: dest:f src1:b len:7

@@ -290,6 +290,12 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 		tree->inst_basereg = vt->inst_basereg;
 		tree->inst_offset = vt->inst_offset;
 		mono_bblock_add_inst (s->cbb, tree);
+	} else if (tree->inst_imm <= 20) {
+		int sz = tree->inst_imm;
+		sz += 3;
+		sz &= ~3;
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, sz);
+		mini_emit_memcpy (s, X86_ESP, 0, vt->inst_basereg, vt->inst_offset, tree->inst_imm, 0);
 	} else {
 		tree->opcode = OP_X86_PUSH_OBJ;
 		tree->inst_basereg = vt->inst_basereg;
@@ -301,6 +307,34 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 stmt: OP_OUTARG_VT (OP_ICONST) {
 	tree->opcode = OP_X86_PUSH_IMM;
 	tree->inst_imm = state->left->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_LDADDR (OP_REGOFFSET) "1" {
+	if (state->left->tree->inst_offset) {
+		tree->opcode = OP_X86_LEA_MEMBASE;
+		tree->sreg1 = state->left->tree->inst_basereg;
+		tree->inst_imm = state->left->tree->inst_offset;
+		tree->dreg = state->reg1;
+	} else {
+		tree->opcode = OP_MOVE;
+		tree->sreg1 = state->left->tree->inst_basereg;
+		tree->dreg = state->reg1;
+	}
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: CEE_LDOBJ (OP_REGOFFSET) "1" {
+	if (state->left->tree->inst_offset) {
+		tree->opcode = OP_X86_LEA_MEMBASE;
+		tree->sreg1 = state->left->tree->inst_basereg;
+		tree->inst_imm = state->left->tree->inst_offset;
+		tree->dreg = state->reg1;
+	} else {
+		tree->opcode = OP_MOVE;
+		tree->sreg1 = state->left->tree->inst_basereg;
+		tree->dreg = state->reg1;
+	}
 	mono_bblock_add_inst (s->cbb, tree);
 }
 

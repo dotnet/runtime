@@ -2380,6 +2380,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_LEA:
 			x86_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->unused);
 			break;
+		case OP_X86_LEA_MEMBASE:
+			x86_lea_membase (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
 		case OP_X86_XCHG:
 			x86_xchg_reg_reg (code, ins->sreg1, ins->sreg2, 4);
 			break;

@@ -2020,6 +2020,13 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 		MONO_ADD_INS (bblock, ins);
 		break;
 	default:
+		if (n <= sizeof (gpointer) * 5) {
+			ins->opcode = OP_MEMSET;
+			ins->inst_imm = 0;
+			ins->unused = n;
+			MONO_ADD_INS (bblock, ins);
+			break;
+		}
 		handle_loaded_temps (cfg, bblock, stack_start, sp);
 		NEW_ICONST (cfg, ins, n);
 		iargs [0] = dest;
