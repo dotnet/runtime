@@ -1465,6 +1465,30 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	int system_level;
 	int system_name;
 	int ret;
+#ifdef AF_INET6
+	int sol_ip;
+	int sol_ipv6;
+
+#ifdef HAVE_SOL_IPV6
+	sol_ipv6 = SOL_IPV6;
+#else
+	{
+		struct protoent *pent;
+		pent = getprotobyname ("ipv6");
+		sol_ipv6 = (pent != NULL) ? pent->p_proto : 41;
+	}
+#endif
+
+#ifdef HAVE_SOL_IP
+	sol_ip = SOL_IP;
+#else
+	{
+		struct protoent *pent;
+		pent = getprotobyname ("ip");
+		sol_ip = (pent != NULL) ? pent->p_proto : 0;
+	}
+#endif
+#endif /* AF_INET6 */
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1510,7 +1534,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			MonoObject *address = NULL;
 
 #ifdef AF_INET6
-			if(system_level == SOL_IPV6) {
+			if(system_level == sol_ipv6) {
 				struct ipv6_mreq mreq6;
 
 				/*
@@ -1529,7 +1553,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				ret = setsockopt (sock, system_level,
 						  system_name, &mreq6,
 						  sizeof (mreq6));
-			} else if(system_level == SOL_IP)
+			} else if(system_level == sol_ip)
 #endif /* AF_INET6 */
 			{
 #ifdef HAVE_STRUCT_IP_MREQN
