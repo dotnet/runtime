@@ -1436,7 +1436,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			p ++;
 			*p = 255;
 			p ++;
-			emit_value (offset, p, &p);
+			encode_value (offset, p, &p);
 		}
 #endif
 	}
