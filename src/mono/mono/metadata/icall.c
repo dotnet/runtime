@@ -1798,6 +1798,25 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 	return -1;
 }
 
+static GenericParameterAttributes
+ves_icall_Type_GetGenericParameterAttributes (MonoReflectionType *type)
+{
+	MonoGenericParam *gparam;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return 0;
+
+	gparam = type->type->data.generic_param;
+	if (gparam->flags == 0x18)
+		return GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT;
+	else if (gparam->flags == 0x04)
+		return GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT;
+	else
+		return GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT;
+}
+
 static MonoBoolean
 ves_icall_MonoType_get_HasGenericArguments (MonoReflectionType *type)
 {
@@ -6146,6 +6165,7 @@ static const IcallEntry waithandle_icalls [] = {
 static const IcallEntry type_icalls [] = {
 	{"BindGenericParameters", ves_icall_Type_BindGenericParameters},
 	{"Equals", ves_icall_type_Equals},
+	{"GetGenericParameterAttributes", ves_icall_Type_GetGenericParameterAttributes},
 	{"GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition},
 	{"GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl},
 	{"GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData},
