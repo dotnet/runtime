@@ -2272,12 +2272,21 @@ static guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method)
 {
 	guint32 token;
+	MonoMethodSignature *sig;
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
 	if (token)
 		return token;
+
+	/*
+	 * A methodref signature can't contain an unmanaged calling convention.
+	 */
+	sig = mono_metadata_signature_dup (method->signature);
+	if ((sig->call_convention != MONO_CALL_DEFAULT) && (sig->call_convention != MONO_CALL_VARARG))
+		sig->call_convention = MONO_CALL_DEFAULT;
 	token = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
-		method->name,  method_encode_signature (assembly, method->signature));
+		method->name,  method_encode_signature (assembly, sig));
+	g_free (sig);
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -7271,7 +7280,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 		len = mono_metadata_decode_blob_size (p, &p2);
 		len += p2 - p;
 		field->data = g_malloc (len);
-		memcpy (field->data, p, len);
+		memcpy ((gpointer)field->data, p, len);
 	}
 
 	return field;
@@ -7776,7 +7785,7 @@ typebuilder_setup_fields (MonoClass *klass)
 			len = mono_metadata_decode_blob_size (p, &p2);
 			len += p2 - p;
 			field->data = g_malloc (len);
-			memcpy (field->data, p, len);
+			memcpy ((gpointer)field->data, p, len);
 		}
 	}
 	mono_class_layout_fields (klass);
