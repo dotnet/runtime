@@ -58,6 +58,9 @@ ves_icall_System_String_ctor_char_int (gpointer dummy, gunichar2 value, gint32 c
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (count < 0)
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("count"));
+
 	domain = mono_domain_get ();
 	res = mono_string_new_size (domain, count);
 
@@ -146,11 +149,12 @@ ves_icall_System_String_ctor_chara (gpointer dummy, MonoArray *value)
 
 	MONO_ARCH_SAVE_REGS;
 
-	MONO_CHECK_ARG_NULL (value);
-	
 	domain = mono_domain_get ();
-	
-	return mono_string_new_utf16 (domain, (gunichar2 *) mono_array_addr(value, gunichar2, 0),  value->max_length);
+
+	if (value == NULL)
+		return mono_string_new_utf16 (domain, NULL, 0);
+	else
+		return mono_string_new_utf16 (domain, (gunichar2 *) mono_array_addr(value, gunichar2, 0),  value->max_length);
 }
 
 MonoString *
@@ -161,7 +165,14 @@ ves_icall_System_String_ctor_chara_int_int (gpointer dummy, MonoArray *value,
 
 	MONO_ARCH_SAVE_REGS;
 
-	MONO_CHECK_ARG_NULL (value);
+	if ((value == NULL) && ((sindex != 0) || (length != 0)))
+		mono_raise_exception (mono_get_exception_argument_null ("value"));
+	if (sindex < 0)
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("startIndex"));		
+	if (length < 0)
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("length"));
+	if ((value != NULL) && (sindex + length > mono_array_length (value)))
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("Out of range"));
 
 	domain = mono_domain_get ();
 	
