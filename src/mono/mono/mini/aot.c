@@ -110,24 +110,44 @@ static gint32 mono_last_aot_method = -1;
 static MonoJitInfo*
 mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info);
 
-static MonoClass * 
-decode_class_info (MonoAotModule *module, guint32 *data)
+static MonoClass*
+decode_klass_info (MonoAotModule *module, guint32 *info, guint32 **out_info)
 {
 	MonoImage *image;
 	MonoClass *klass;
-	
-	image = module->image_table [data [1]];
-	g_assert (image);
+	guint32 token, rank;
 
-	if (data [0]) {
-		return mono_class_get (image, data [0]);
+	image = module->image_table [info [0]];
+	token = info [1];
+	info += 2;
+	if (token) {
+		klass = mono_class_get (image, token);
 	} else {
-		/* the pointer is dword aligned */
-		klass = decode_class_info (module, *(guint32**)(ALIGN_PTR_TO (&data[3], sizeof (gpointer))));
-		return mono_array_class_get (klass, data [2]);
+		token = info [0];
+		rank = info [1];
+		info += 2;
+		klass = mono_class_get (image, token);
+		g_assert (klass);
+		klass = mono_array_class_get (klass, rank);
 	}
+	g_assert (klass);
+	mono_class_init (klass);
 
-	return NULL;
+	*out_info = info;
+	return klass;
+}
+
+static MonoClassField*
+decode_field_info (MonoAotModule *module, guint32 *info, guint32 **out_info)
+{
+	MonoClass *klass = decode_klass_info (module, info, &info);
+	guint32 token;
+
+	token = info [0];
+	info ++;
+	*out_info = info;
+
+	return mono_class_get_field (klass, token);
 }
 
 static void
@@ -574,7 +594,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		int pages;
 		int i, err;
 		guint32 last_offset, buf_len;
-		guint32 *data;
+		guint32 *info32;
 
 		if (aot_module->opts & MONO_OPT_SHARED)
 			mp = mono_mempool_new ();
@@ -617,56 +637,52 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 		info = ALIGN_PTR_TO (info, sizeof (gpointer));
 
+		info32 = (guint32*)info;
+
 		/* Then load the other data */
 		for (pindex = 0; pindex < patches->len; ++pindex) {
 			MonoJumpInfo *ji = g_ptr_array_index (patches, pindex);
-		
-			data = *((guint32 **)info);
-			info += sizeof (gpointer);
 
 			switch (ji->type) {
 			case MONO_PATCH_INFO_CLASS:
 			case MONO_PATCH_INFO_IID:
-				ji->data.klass = decode_class_info (aot_module, data);
-				g_assert (ji->data.klass);
-				mono_class_init (ji->data.klass);
-				break;
 			case MONO_PATCH_INFO_VTABLE:
 			case MONO_PATCH_INFO_CLASS_INIT:
-				ji->data.klass = decode_class_info (aot_module, data);
-				g_assert (ji->data.klass);
-				mono_class_init (ji->data.klass);
+				ji->data.klass = decode_klass_info (aot_module, info32, &info32);
 				break;
 			case MONO_PATCH_INFO_IMAGE:
-				ji->data.image = aot_module->image_table [(guint32)data];
+				ji->data.image = aot_module->image_table [info32 [0]];
 				g_assert (ji->data.image);
+				info32 ++;
 				break;
 			case MONO_PATCH_INFO_METHOD:
 			case MONO_PATCH_INFO_METHODCONST:
 			case MONO_PATCH_INFO_METHOD_JUMP: {
 				guint32 image_index, token;
 
-				image_index = (guint32)data >> 24;
-				token = MONO_TOKEN_METHOD_DEF | ((guint32)data & 0xffffff);
+				image_index = info32 [0] >> 24;
+				token = MONO_TOKEN_METHOD_DEF | (info32 [0] & 0xffffff);
 
 				image = aot_module->image_table [image_index];
 				ji->data.method = mono_get_method (image, token, NULL);
 				g_assert (ji->data.method);
 				mono_class_init (ji->data.method->klass);
+				info32 ++;
 
 				break;
 			}
 			case MONO_PATCH_INFO_WRAPPER: {
 				guint32 wrapper_type;
 
-				wrapper_type = (guint32)data[0];
+				wrapper_type = info32 [0];
+				info32 ++;
 
 				switch (wrapper_type) {
 				case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
 					guint32 image_index, token;
 
-					image_index = (guint32)data[1] >> 24;
-					token = MONO_TOKEN_METHOD_DEF | ((guint32)data[1] & 0xffffff);
+					image_index = info32 [0] >> 24;
+					token = MONO_TOKEN_METHOD_DEF | (info32 [0] & 0xffffff);
 
 					image = aot_module->image_table [image_index];
 					ji->data.method = mono_get_method (image, token, NULL);
@@ -675,23 +691,20 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 					ji->type = MONO_PATCH_INFO_METHOD;
 					ji->data.method = mono_marshal_get_remoting_invoke_with_check (ji->data.method);
+					info32 ++;
 					break;
 				}
 				case MONO_WRAPPER_PROXY_ISINST: {
-					/* The pointer is dword aligned */
-					gpointer class_ptr = *(gpointer*)(ALIGN_PTR_TO (&data[1], sizeof (gpointer)));
-					MonoClass *klass = decode_class_info (aot_module, class_ptr);
-					mono_class_init (klass);
+					MonoClass *klass = decode_klass_info (aot_module, info32, &info32);
+
 					ji->type = MONO_PATCH_INFO_METHODCONST;
 					ji->data.method = mono_marshal_get_proxy_cancast (klass);
 					break;
 				}
 				case MONO_WRAPPER_LDFLD:
 				case MONO_WRAPPER_STFLD: {
-					/* The pointer is dword aligned */
-					gpointer class_ptr = *(gpointer*)(ALIGN_PTR_TO (&data[1], sizeof (gpointer)));
-					MonoClass *klass = decode_class_info (aot_module, class_ptr);
-					mono_class_init (klass);
+					MonoClass *klass = decode_klass_info (aot_module, info32, &info32);
+
 					ji->type = MONO_PATCH_INFO_METHOD;
 					if (wrapper_type == MONO_WRAPPER_LDFLD)
 						ji->data.method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
@@ -705,51 +718,54 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				break;
 			}
 			case MONO_PATCH_INFO_FIELD:
-			case MONO_PATCH_INFO_SFLDA: {
-				/* The pointer is dword aligned */
-				gpointer class_ptr = *(gpointer*)(ALIGN_PTR_TO (&data[1], sizeof (gpointer)));
-				MonoClass *klass = decode_class_info (aot_module, class_ptr);
-				mono_class_init (klass);
-				ji->data.field = mono_class_get_field (klass, data [0]);
+			case MONO_PATCH_INFO_SFLDA:
+				ji->data.field = decode_field_info (aot_module, info32, &info32);
 				break;
-			}
 			case MONO_PATCH_INFO_INTERNAL_METHOD:
-				ji->data.name = aot_module->icall_table [(guint32)data];
+				ji->data.name = aot_module->icall_table [info32 [0]];
 				g_assert (ji->data.name);
+				info32 ++;
 				//printf ("A: %s.\n", ji->data.name);
 				break;
 			case MONO_PATCH_INFO_SWITCH:
-				ji->table_size = data [0];
+				ji->table_size = info32 [0];
 				table = g_new (gpointer, ji->table_size);
 				ji->data.target = table;
 				for (i = 0; i < ji->table_size; i++) {
-					table [i] = (gpointer)data [i + 1];
+					table [i] = (gpointer)(gssize)info32 [i + 1];
 				}
+				info32 += (ji->table_size + 1);
 				break;
 			case MONO_PATCH_INFO_R4:
+				ji->data.target = info;
+				info32 ++;
+				break;
 			case MONO_PATCH_INFO_R8:
-				ji->data.target = data;
+				ji->data.target = info;
+				info32 += 2;
 				break;
 			case MONO_PATCH_INFO_LDSTR:
 			case MONO_PATCH_INFO_LDTOKEN:
 			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-				image = aot_module->image_table [data [0]];
-				ji->data.token = mono_jump_info_token_new (mp, image, data [1]);
+				image = aot_module->image_table [info32 [0]];
+				ji->data.token = mono_jump_info_token_new (mp, image, info32 [1]);
+				info32 += 2;
 				break;
 			case MONO_PATCH_INFO_EXC_NAME:
-				ji->data.klass = decode_class_info (aot_module, data);
-				g_assert (ji->data.klass);
-				mono_class_init (ji->data.klass);
+				ji->data.klass = decode_klass_info (aot_module, info32, &info32);
 				ji->data.name = ji->data.klass->name;
 				break;
 			case MONO_PATCH_INFO_METHOD_REL:
-				ji->data.offset = data [0];
+				ji->data.offset = info32 [0];
+				info32 ++;
 				break;
 			default:
 				g_warning ("unhandled type %d", ji->type);
 				g_assert_not_reached ();
 			}
 		}
+
+		info = (guint8*)info32;
 
 		g_ptr_array_free (patches, TRUE);
 
@@ -760,7 +776,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		if (use_loaded_code) {
 		/* disable write protection */
 #ifndef PLATFORM_WIN32
-			page_start = (char *) (((int) (code)) & ~ (PAGESIZE - 1));
+			page_start = (char *) (((gssize) (code)) & ~ (PAGESIZE - 1));
 			pages = (code + code_len - page_start + PAGESIZE - 1) / PAGESIZE;
 			err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
 			g_assert (err == 0);
@@ -915,13 +931,24 @@ get_image_index (MonoAotCompile *cfg, MonoImage *image)
 }
 
 static void
-emit_image_index (MonoAotCompile *cfg, MonoImage *image)
+emit_klass_info (MonoAotCompile *cfg, MonoClass *klass)
 {
-	guint32 image_index;
+	fprintf (cfg->fp, "\t.long 0x%08x\n", get_image_index (cfg, klass->image));
+	fprintf (cfg->fp, "\t.long 0x%08x\n", klass->type_token);
+	if (!klass->type_token) {
+		/* Array class */
+		g_assert (klass->rank > 0);
+		g_assert (klass->element_class->type_token);
+		fprintf (cfg->fp, "\t.long 0x%08x\n", klass->element_class->type_token);
+		fprintf (cfg->fp, "\t.long 0x%08x\n", klass->rank);
+	}
+}
 
-	image_index = get_image_index (cfg, image);
-
-	fprintf (cfg->fp, "\t.long %d\n", image_index);
+static void
+emit_field_info (MonoAotCompile *cfg, MonoClassField *field)
+{
+	emit_klass_info (cfg, field->parent);
+	fprintf (cfg->fp, "\t.long 0x%08x\n", mono_get_field_token (field));
 }
 
 #if defined(__ppc__) && defined(__MACH__)
@@ -935,7 +962,8 @@ ilog2(register int value)
 }
 #endif
 
-static void emit_alignment(FILE *fp, int size)
+static void 
+emit_alignment(FILE *fp, int size)
 {
 #if defined(__ppc__) && defined(__MACH__)
 	// the mach-o assembler specifies alignments as powers of 2.
@@ -947,7 +975,7 @@ static void emit_alignment(FILE *fp, int size)
 #endif
 }
 
-static void
+G_GNUC_UNUSED static void
 emit_pointer (FILE *fp, const char *target)
 {
 	emit_alignment (fp, sizeof (gpointer));
@@ -958,60 +986,6 @@ emit_pointer (FILE *fp, const char *target)
 #else
 	fprintf (fp, "\t.long %s\n", target);
 #endif
-}
-
-static char *
-cond_emit_klass_label (MonoAotCompile *cfg, MonoClass *klass)
-{
-	char *l1, *el = NULL;
-
-	if ((l1 = g_hash_table_lookup (cfg->ref_hash, klass))) 
-		return l1;
-
-	if (!klass->type_token) {
-		g_assert (klass->rank > 0);
-		el = cond_emit_klass_label (cfg, klass->element_class);
-	}
-	
-	emit_alignment(cfg->fp, sizeof (gpointer));
-
-	l1 = g_strdup_printf ("klass_p_%08x_%p", klass->type_token, klass);
-	fprintf (cfg->fp, "%s:\n", l1);
-	fprintf (cfg->fp, "\t.long 0x%08x\n", klass->type_token);
-	emit_image_index (cfg, klass->image);
-
-	if (el) {
-		fprintf (cfg->fp, "\t.long %d\n", klass->rank);	
-		emit_pointer (cfg->fp, el);
-	}
-
-	g_hash_table_insert (cfg->ref_hash, klass, l1);
-
-	return l1;
-}
-
-static char *
-cond_emit_field_label (MonoAotCompile *cfg, MonoJumpInfo *patch_info)
-{
-	MonoClassField *field = patch_info->data.field;
-	char *l1, *l2;
-	guint token;
-
-	if ((l1 = g_hash_table_lookup (cfg->ref_hash, field))) 
-		return l1;
-
-	l2 = cond_emit_klass_label (cfg, field->parent);
-	emit_alignment(cfg->fp, sizeof (gpointer));
-	token = mono_get_field_token (field);
-	g_assert (token);
-	l1 = g_strdup_printf ("klass_p_%08x_%p", token, field);
-	fprintf (cfg->fp, "%s:\n", l1);
-	fprintf (cfg->fp, "\t.long 0x%08x\n", token);
-	emit_pointer (cfg->fp, l2);
-		
-	g_hash_table_insert (cfg->ref_hash, field, l1);
-
-	return l1;
 }
 
 static gint
@@ -1043,6 +1017,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	MonoMethodHeader *header;
+	guint32 last_offset;
 
 	tmpfp = acfg->fp;
 	method = cfg->method;
@@ -1072,163 +1047,6 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_ptr_array_add (patches, patch_info);
 	g_ptr_array_sort (patches, compare_patches);
 
-	/* Emit out of line info for relocations */
-	j = 0;
-	for (pindex = 0; pindex < patches->len; ++pindex) {
-		patch_info = g_ptr_array_index (patches, pindex);
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_LABEL:
-		case MONO_PATCH_INFO_BB:
-			/* relative jumps are no problem, there is no need to handle then here */
-			break;
-		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = (gpointer *)patch_info->data.target;
-			int k;
-
-			emit_alignment(tmpfp, sizeof (gpointer));
-			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long %d\n", patch_info->table_size);
-			
-			for (k = 0; k < patch_info->table_size; k++) {
-				fprintf (tmpfp, "\t.long %d\n", (int)table [k]);
-			}
-			j++;
-			break;
-		}
-		case MONO_PATCH_INFO_INTERNAL_METHOD: {
-			guint32 icall_index;
-
-			icall_index = (guint32)g_hash_table_lookup (acfg->icall_hash, patch_info->data.name);
-			if (!icall_index) {
-				icall_index = g_hash_table_size (acfg->icall_hash) + 1;
-				g_hash_table_insert (acfg->icall_hash, (gpointer)patch_info->data.name,
-									 GUINT_TO_POINTER (icall_index));
-				g_ptr_array_add (acfg->icall_table, (gpointer)patch_info->data.name);
-			}
-			patch_info->data.name = g_strdup_printf ("%d", icall_index - 1);
-			j++;
-			break;
-		}
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_METHOD_JUMP: {
-			/*
-			 * The majority of patches are for methods, so we emit
-			 * them inline instead of defining a label for them to
-			 * decrease the number of relocations.
-			 */
-			guint32 image_index = get_image_index (acfg, patch_info->data.method->klass->image);
-			guint32 token = patch_info->data.method->token;
-			g_assert (image_index < 256);
-			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-
-			patch_info->data.name = 
-				g_strdup_printf ("%d", (image_index << 24) + (mono_metadata_token_index (token)));
-			j++;
-			break;
-		}
-		case MONO_PATCH_INFO_WRAPPER: {
-			switch (patch_info->data.method->wrapper_type) {
-			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-				MonoMethod *m;
-				guint32 image_index;
-				guint32 token;
-
-				m = mono_marshal_method_from_wrapper (patch_info->data.method);
-				image_index = get_image_index (acfg, m->klass->image);
-				token = m->token;
-				g_assert (image_index < 256);
-				g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-				emit_alignment(tmpfp, sizeof (gpointer));
-				fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-				fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
-				fprintf (tmpfp, "\t.long %d\n", (image_index << 24) + (mono_metadata_token_index (token)));
-				break;
-			}
-			case MONO_WRAPPER_PROXY_ISINST:
-			case MONO_WRAPPER_LDFLD:
-			case MONO_WRAPPER_STFLD: {
-				MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
-				char *klass_label = cond_emit_klass_label (acfg, proxy_class);
-
-				fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-				fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
-				emit_pointer (tmpfp, klass_label);
-				break;
-			}
-			default:
-				g_assert_not_reached ();
-			}
-			j++;
-			break;
-		}
-		case MONO_PATCH_INFO_FIELD:
-			patch_info->data.name = cond_emit_field_label (acfg, patch_info);
-			j++;
-			break;
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IID:
-			patch_info->data.name = cond_emit_klass_label (acfg, patch_info->data.klass);
-			j++;
-			break;
-		case MONO_PATCH_INFO_IMAGE:
-			patch_info->data.name = g_strdup_printf ("%d", get_image_index (acfg, patch_info->data.image));
-			j++;
-			break;
-		case MONO_PATCH_INFO_EXC_NAME: {
-			MonoClass *ex_class;
-			
-			ex_class =
-				mono_class_from_name (mono_defaults.exception_class->image,
-									  "System", patch_info->data.target);
-			g_assert (ex_class);
-			patch_info->data.name = cond_emit_klass_label (acfg, ex_class);
-			j++;
-			break;
-		}
-		case MONO_PATCH_INFO_R4:
-			emit_alignment(tmpfp, 8);
-			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));	
-			j++;
-			break;
-		case MONO_PATCH_INFO_R8:
-			emit_alignment(tmpfp, 8);
-			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));
-			fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target + 1));
-			j++;
-			break;
-		case MONO_PATCH_INFO_METHOD_REL:
-			emit_alignment(tmpfp, sizeof (gpointer));
-			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.offset);
-			j++;
-			break;
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_CLASS_INIT:
-			patch_info->data.name = cond_emit_klass_label (acfg, patch_info->data.klass);
-			j++;
-			break;
-		case MONO_PATCH_INFO_SFLDA:
-			patch_info->data.name = cond_emit_field_label (acfg, patch_info);
-			j++;
-			break;
-		case MONO_PATCH_INFO_LDSTR:
-		case MONO_PATCH_INFO_LDTOKEN:
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-			emit_alignment(tmpfp, 8);
-			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long 0x%08x\n", get_image_index (acfg, patch_info->data.token->image));
-			fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.token->token);
-			j++;
-			break;
-		default:
-			g_warning ("unable to handle jump info %d", patch_info->type);
-			g_assert_not_reached ();
-		}
-	}
-
 	emit_global (tmpfp, mname_p);
 	emit_alignment (tmpfp, sizeof (gpointer));
 	emit_label (tmpfp, mname_p);
@@ -1246,14 +1064,14 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			MonoJitExceptionInfo *ei = &jinfo->clauses [k];
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-				fprintf (tmpfp, "\t.long %d\n", (guint8*)ei->data.filter - code);
+				fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->data.filter - code));
 			else
 				/* fixme: tokens are not global */
 				fprintf (tmpfp, "\t.long %d\n", ei->data.token);
 
-			fprintf (tmpfp, "\t.long %d\n", (guint8*)ei->try_start - code);
-			fprintf (tmpfp, "\t.long %d\n", (guint8*)ei->try_end - code);
-			fprintf (tmpfp, "\t.long %d\n", (guint8*)ei->handler_start - code);
+			fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->try_start - code));
+			fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->try_end - code));
+			fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->handler_start - code));
 		}
 	}
 
@@ -1270,40 +1088,38 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	//printf ("M: %s (%s).\n", mono_method_full_name (method, TRUE), mname);
 
-	if (j) {
-		guint32 last_offset;
-		last_offset = 0;
+	/* First emit the type+position table */
+	last_offset = 0;
+	j = 0;
+	for (pindex = 0; pindex < patches->len; ++pindex) {
+		guint32 offset;
+		patch_info = g_ptr_array_index (patches, pindex);
+		
+		if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
+			(patch_info->type == MONO_PATCH_INFO_BB))
+			/* Nothing to do */
+			continue;
 
-		j = 0;
+		j ++;
+		//printf ("T: %d O: %d.\n", patch_info->type, patch_info->ip.i);
+		offset = patch_info->ip.i - last_offset;
+		last_offset = patch_info->ip.i;
 
-		/* First emit the type+position table */
-		for (pindex = 0; pindex < patches->len; ++pindex) {
-			guint32 offset;
-			patch_info = g_ptr_array_index (patches, pindex);
-
-			if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
-				(patch_info->type == MONO_PATCH_INFO_BB))
-				/* Nothing to do */
-				continue;
-
-			//printf ("T: %d O: %d.\n", patch_info->type, patch_info->ip.i);
-			offset = patch_info->ip.i - last_offset;
-			last_offset = patch_info->ip.i;
-
-			/* Encode type+position compactly */
-			g_assert (patch_info->type < 64);
-			if (offset < 1024 - 1) {
-				fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + (offset >> 8));
-				fprintf (tmpfp, "\t.byte %d\n", offset & ((1 << 8) - 1));
-			}
-			else {
-				fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + 3);
-				fprintf (tmpfp, "\t.byte %d\n", 255);
-				emit_alignment(tmpfp, 4);
-				fprintf (tmpfp, "\t.long %d\n", offset);
-			}
+		/* Encode type+position compactly */
+		g_assert (patch_info->type < 64);
+		if (offset < 1024 - 1) {
+			fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + (offset >> 8));
+			fprintf (tmpfp, "\t.byte %d\n", offset & ((1 << 8) - 1));
 		}
+		else {
+			fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + 3);
+			fprintf (tmpfp, "\t.byte %d\n", 255);
+			emit_alignment(tmpfp, 4);
+			fprintf (tmpfp, "\t.long %d\n", offset);
+		}
+	}
 
+	if (j) {
 		/*
 		 * 0 is PATCH_INFO_BB, which can't be in the file.
 		 */
@@ -1322,43 +1138,117 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 				continue;
 
 			switch (patch_info->type) {
-			case MONO_PATCH_INFO_METHODCONST:
-			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_METHOD_JUMP:
-			case MONO_PATCH_INFO_CLASS:
-			case MONO_PATCH_INFO_IID:
-			case MONO_PATCH_INFO_FIELD:
-			case MONO_PATCH_INFO_INTERNAL_METHOD:
-			case MONO_PATCH_INFO_IMAGE:
-			case MONO_PATCH_INFO_VTABLE:
-			case MONO_PATCH_INFO_CLASS_INIT:
-			case MONO_PATCH_INFO_SFLDA:
-			case MONO_PATCH_INFO_EXC_NAME:
-				emit_pointer (tmpfp, patch_info->data.name);
-				j++;
-				break;
-			case MONO_PATCH_INFO_SWITCH:
-			case MONO_PATCH_INFO_R4:
-			case MONO_PATCH_INFO_R8:
-			case MONO_PATCH_INFO_METHOD_REL:
-			case MONO_PATCH_INFO_LDSTR:
-			case MONO_PATCH_INFO_LDTOKEN:
-			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-			case MONO_PATCH_INFO_WRAPPER: {
-				char buf [256];
-				sprintf (buf, "%s_p_%d", mname, j);
-				emit_pointer (tmpfp, buf);
-				j++;
-				break;
-			}
 			case MONO_PATCH_INFO_LABEL:
 			case MONO_PATCH_INFO_BB:
 				break;
+			case MONO_PATCH_INFO_IMAGE:
+				fprintf (tmpfp, "\t.long 0x%08x\n", get_image_index (acfg, patch_info->data.image));
+				break;
+			case MONO_PATCH_INFO_METHOD_REL:
+				fprintf (tmpfp, "\t.long 0x%08x\n", (gint)patch_info->data.offset);
+				break;
+			case MONO_PATCH_INFO_SWITCH: {
+				gpointer *table = (gpointer *)patch_info->data.target;
+				int k;
+
+				fprintf (tmpfp, "\t.long %d\n", patch_info->table_size);
+			
+				for (k = 0; k < patch_info->table_size; k++) {
+					fprintf (tmpfp, "\t.long %d\n", (int)(gssize)table [k]);
+				}
+				break;
+			}
+			case MONO_PATCH_INFO_METHODCONST:
+			case MONO_PATCH_INFO_METHOD:
+			case MONO_PATCH_INFO_METHOD_JUMP: {
+				guint32 image_index = get_image_index (acfg, patch_info->data.method->klass->image);
+				guint32 token = patch_info->data.method->token;
+				g_assert (image_index < 256);
+				g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+
+				fprintf (tmpfp, "\t.long 0x%08x\n", (image_index << 24) + (mono_metadata_token_index (token)));
+				break;
+			}
+			case MONO_PATCH_INFO_INTERNAL_METHOD: {
+				guint32 icall_index;
+
+				icall_index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->icall_hash, patch_info->data.name));
+				if (!icall_index) {
+					icall_index = g_hash_table_size (acfg->icall_hash) + 1;
+					g_hash_table_insert (acfg->icall_hash, (gpointer)patch_info->data.name,
+										 GUINT_TO_POINTER (icall_index));
+					g_ptr_array_add (acfg->icall_table, (gpointer)patch_info->data.name);
+				}
+				fprintf (tmpfp, "\t.long 0x%08x\n", icall_index - 1);
+				break;
+			}
+			case MONO_PATCH_INFO_LDSTR:
+			case MONO_PATCH_INFO_LDTOKEN:
+			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+				fprintf (tmpfp, "\t.long 0x%08x\n", get_image_index (acfg, patch_info->data.token->image));
+				fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.token->token);
+				break;
+			case MONO_PATCH_INFO_EXC_NAME: {
+				MonoClass *ex_class;
+
+				ex_class =
+					mono_class_from_name (mono_defaults.exception_class->image,
+										  "System", patch_info->data.target);
+				g_assert (ex_class);
+				emit_klass_info (acfg, ex_class);
+				break;
+			}
+			case MONO_PATCH_INFO_R4:
+				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));	
+				break;
+			case MONO_PATCH_INFO_R8:
+				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));
+				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target + 1));
+				break;
+			case MONO_PATCH_INFO_VTABLE:
+			case MONO_PATCH_INFO_CLASS_INIT:
+			case MONO_PATCH_INFO_CLASS:
+			case MONO_PATCH_INFO_IID:
+				emit_klass_info (acfg, patch_info->data.klass);
+				break;
+			case MONO_PATCH_INFO_FIELD:
+			case MONO_PATCH_INFO_SFLDA:
+				emit_field_info (acfg, patch_info->data.field);
+				break;
+			case MONO_PATCH_INFO_WRAPPER: {
+				fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
+
+				switch (patch_info->data.method->wrapper_type) {
+				case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
+					MonoMethod *m;
+					guint32 image_index;
+					guint32 token;
+
+					m = mono_marshal_method_from_wrapper (patch_info->data.method);
+					image_index = get_image_index (acfg, m->klass->image);
+					token = m->token;
+					g_assert (image_index < 256);
+					g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+
+					fprintf (tmpfp, "\t.long %d\n", (image_index << 24) + (mono_metadata_token_index (token)));
+					break;
+				}
+				case MONO_WRAPPER_PROXY_ISINST:
+				case MONO_WRAPPER_LDFLD:
+				case MONO_WRAPPER_STFLD: {
+					MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
+					emit_klass_info (acfg, proxy_class);
+					break;
+				}
+				default:
+					g_assert_not_reached ();
+				}
+				break;
+			}
 			default:
 				g_warning ("unable to handle jump info %d", patch_info->type);
 				g_assert_not_reached ();
 			}
-
 		}
 	}
 
