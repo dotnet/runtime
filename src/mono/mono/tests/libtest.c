@@ -31,3 +31,19 @@ mono_test_puts_static (char *s)
 	printf ("TEST %s\n", s);
 	return 1;
 }
+
+typedef int (*SimpleDelegate) (int a, int b);
+
+int
+mono_invoke_delegate (SimpleDelegate delegate)
+{
+	int res;
+
+	printf ("start invoke %p\n", delegate);
+
+	res = delegate (2, 3);
+
+	printf ("end invoke\n");
+
+	return res;
+}

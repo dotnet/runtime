@@ -55,6 +55,7 @@ typedef struct {
 	MonoObject *target;
 	MonoString *method_name;
 	gpointer method_ptr;
+	gpointer delegate_trampoline;
 	MonoReflectionMethod *method_info;
 } MonoDelegate;
 

@@ -232,6 +232,85 @@ handle_enum_2:
 	return retval;
 }
 
+/**
+ * arch_create_delegate_trampoline:
+ * @delegate: pointer to a Delegate object
+ *
+ * This trampoline is called when we invoke delegates from unmanaged code
+ */
+static gpointer
+arch_create_delegate_trampoline (MonoDelegate *delegate)
+{
+	MonoMethod *method, *invoke;
+	MonoMethodSignature *sig;
+	MonoClass *klass;
+	guint8 *code, *start, *invoke_code;
+	int i, align, arg_size = 0;;
+
+	if (!delegate)
+		return NULL;
+
+	/* fixme: add the delegate to a scanned hash
+	 * so that is is never destroyed, or store
+	 * this wrapper inside a new field in the delegate */
+
+	klass = ((MonoObject *)delegate)->vtable->klass;
+	g_assert (klass->delegate);
+
+	if (delegate->delegate_trampoline)
+		return delegate->delegate_trampoline;
+
+	method = delegate->method_info->method;
+	sig = method->signature;
+
+	if (sig->param_count) {
+		for (i = 0; i < sig->param_count; ++i)
+			arg_size += mono_type_stack_size (sig->params [i], &align);
+	}
+
+	invoke = 0;
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'I' && 
+		    !strcmp ("Invoke", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == sig->param_count) {
+			invoke = klass->methods [i];
+		}
+	}
+	g_assert (invoke);
+	invoke_code = arch_compile_method (invoke);
+
+	/* fixme: when do we free this code ? */
+
+	code = start = g_malloc (64 + arg_size);
+
+	/* start of original frame */
+	x86_lea_membase (code, X86_ECX, X86_ESP, 4);
+
+	/* allocate stack frame */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, arg_size);
+
+	/* fixme: mybe we need to transform char* to Strings */
+
+	/* memcopy activation frame to the stack */
+	x86_push_imm (code, arg_size);
+	x86_push_reg (code, X86_ECX);
+	x86_lea_membase (code, X86_ECX, X86_ESP, 8);
+	x86_push_reg (code, X86_ECX);
+	x86_call_code (code, memcpy);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+
+	/* call delegate invoke */
+	x86_push_imm (code, delegate);
+	x86_call_code (code, invoke_code);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
+
+	x86_ret (code);
+
+	delegate->delegate_trampoline = start;
+
+	return start;
+}
+
 gpointer
 arch_create_native_wrapper (MonoMethod *method)
 {
@@ -240,7 +319,7 @@ arch_create_native_wrapper (MonoMethod *method)
 	guint8 *code, *start;
 	int i, align, locals = 0, arg_size = 0;
 	gboolean pinvoke = FALSE;
-	GList *str_list = NULL;
+	GList *free_list = NULL;
 
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
@@ -259,6 +338,9 @@ arch_create_native_wrapper (MonoMethod *method)
 	for (i = 0; i < csig->param_count; ++i) {
 		arg_size += mono_type_stack_size (csig->params [i], &align);
 		if (pinvoke && (csig->params [i]->type == MONO_TYPE_STRING))
+			locals++;
+		if (pinvoke && (csig->params [i]->type == MONO_TYPE_OBJECT) &&
+		    csig->params [i]->data.klass->delegate)
 			locals++;
 	}
 
@@ -339,21 +421,31 @@ enum_marshal:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_CLASS:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_PTR:
-			case MONO_TYPE_FNPTR:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_TYPEDBYREF:
 			case MONO_TYPE_R4:
 				x86_push_membase (code, X86_ESP, offset);
 				break;
+			case MONO_TYPE_FNPTR:
+				/* fixme: dont know when this is used */
+				g_assert_not_reached ();
+				break;
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+				if (t->data.klass->delegate) {
+					x86_push_membase (code, X86_ESP, offset);
+					x86_call_code (code, arch_create_delegate_trampoline);
+					x86_mov_membase_reg (code, X86_ESP, 0, X86_EAX, 4);
+				} else
+					x86_push_membase (code, X86_ESP, offset);
+				break;
 			case MONO_TYPE_STRING:
 				x86_push_membase (code, X86_ESP, offset);
 				x86_call_code (code, mono_string_to_utf8);
 				x86_mov_membase_reg (code, X86_ESP, 0, X86_EAX, 4);
-				str_list = g_list_prepend (str_list, (gpointer)l);
+				free_list = g_list_prepend (free_list, (gpointer)l);
 				x86_mov_membase_reg (code, X86_EBP, l, X86_EAX, 4);
 				l+= 4;
 				break;
@@ -404,13 +496,13 @@ enum_marshal:
 	}
 
 	/* free pinvoke string args */
-	if (str_list) {
+	if (free_list) {
 		GList *l;
 
 		x86_push_reg (code, X86_EAX);
 		x86_push_reg (code, X86_EDX);
 		
-		for (l = str_list; l; l = l->next) {
+		for (l = free_list; l; l = l->next) {
 			x86_push_membase (code, X86_EBP, ((int)l->data));
 			x86_call_code (code, g_free);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
@@ -419,7 +511,7 @@ enum_marshal:
 		x86_pop_reg (code, X86_EDX);
 		x86_pop_reg (code, X86_EAX);
 
-		g_list_free (str_list);
+		g_list_free (free_list);
 	}
 
 	/* remove arguments from stack */

@@ -56,7 +56,8 @@ struct _MonoClass {
 	guint enumtype        : 1; /* derives from System.Enum */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
-	guint contextbound    : 1; /* calss is a ContextBoundObject */
+	guint contextbound    : 1; /* class is a ContextBoundObject */
+	guint delegate        : 1; /* class is a Delegate */
 	guint min_align       : 4;
 
 	MonoClass  *parent;

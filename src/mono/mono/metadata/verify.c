@@ -1926,6 +1926,7 @@ delegate_fields[] = {
 	{"m_target", G_STRUCT_OFFSET (MonoDelegate, target)},
 	{"method_name", G_STRUCT_OFFSET (MonoDelegate, method_name)},
 	{"method_ptr", G_STRUCT_OFFSET (MonoDelegate, method_ptr)},
+	{"delegate_trampoline", G_STRUCT_OFFSET (MonoDelegate, delegate_trampoline)},
 	{"method_info", G_STRUCT_OFFSET (MonoDelegate, method_info)},
 	{NULL, 0}
 };

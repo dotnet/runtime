@@ -1051,16 +1051,19 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		int rnum = 0;
 		class->parent = parent;
 
-		if (system && *class->name == 'M' && !strcmp (class->name, "MarshalByRefObject")) {
-			class->marshalbyref = 1;
-		} else {
-			class->marshalbyref = parent->marshalbyref;
-		}
+		class->marshalbyref = parent->marshalbyref;
+		class->contextbound  = parent->contextbound;
+		class->delegate  = parent->delegate;
+		
+		if (system) {
+			if (*class->name == 'M' && !strcmp (class->name, "MarshalByRefObject"))
+				class->marshalbyref = 1;
 
-		if (system && *class->name == 'M' && !strcmp (class->name, "ContextBoundObject")) {
-			class->contextbound  = 1;
-		} else {
-			class->contextbound  = parent->contextbound ;
+			if (*class->name == 'M' && !strcmp (class->name, "ContextBoundObject")) 
+				class->contextbound  = 1;
+
+			if (*class->name == 'D' && !strcmp (class->name, "Delegate")) 
+				class->delegate  = 1;
 		}
 
 		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && 

@@ -87,6 +87,7 @@ TESTSRC=			\
 	delegate1.cs		\
 	delegate2.cs		\
 	delegate3.cs		\
+	delegate4.cs		\
 	remoting1.cs
 
 
