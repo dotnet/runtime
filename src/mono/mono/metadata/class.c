@@ -1803,8 +1803,8 @@ set_generic_param_owner (MonoGenericContainer *container, MonoClass *klass, int 
 		return pos;
 
 	gc = klass->generic_container;
-	for (i = 0; i < gc->type_argc; i++)
-		container->type_params [pos + i].owner = gc;
+	for (i = pos; i < gc->type_argc; i++)
+		container->type_params [i].owner = gc;
 
 	return pos + gc->type_argc;
 }
@@ -1975,8 +1975,6 @@ mono_class_create_generic_2 (MonoGenericInst *ginst)
 
 	klass = ginst->klass;
 	gklass = mono_class_from_mono_type (ginst->generic_type);
-	while (gklass->generic_inst)
-		gklass = mono_class_from_mono_type (gklass->generic_inst->generic_type);
 
 	klass->method = gklass->method;
 	klass->field = gklass->field;
