@@ -77,7 +77,6 @@ static inline void
 amd64_patch (unsigned char* code, gpointer target)
 {
 	/* Skip REX */
-
 	if ((code [0] >= 0x40) && (code [0] <= 0x4f))
 		code += 1;
 
@@ -86,8 +85,8 @@ amd64_patch (unsigned char* code, gpointer target)
 
 typedef enum {
 	ArgInIReg,
-	ArgInIRegPair,
-	ArgInSSEReg,
+	ArgInFloatSSEReg,
+	ArgInDoubleSSEReg,
 	ArgOnStack,
 } ArgStorage;
 
@@ -131,7 +130,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 #define FLOAT_PARAM_REGS 8
 
 static void inline
-add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
+add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 {
     ainfo->offset = *stack_size;
 
@@ -141,7 +140,10 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
     }
     else {
 		/* A double register */
-		ainfo->storage = ArgInSSEReg;
+		if (is_double)
+			ainfo->storage = ArgInDoubleSSEReg;
+		else
+			ainfo->storage = ArgInFloatSSEReg;
 		ainfo->reg = *gr;
 		(*gr) += 1;
     }
@@ -234,10 +236,10 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_R4:
-			add_float (&fr, &stack_size, ainfo);
+			add_float (&fr, &stack_size, ainfo, FALSE);
 			break;
 		case MONO_TYPE_R8:
-			add_float (&fr, &stack_size, ainfo);
+			add_float (&fr, &stack_size, ainfo, TRUE);
 			break;
 		default:
 			g_assert_not_reached ();
@@ -274,8 +276,11 @@ enum_retvalue:
 			cinfo->ret.reg = AMD64_RAX;
 			break;
 		case MONO_TYPE_R4:
+			cinfo->ret.storage = ArgInFloatSSEReg;
+			cinfo->ret.reg = AMD64_XMM0;
+			break;
 		case MONO_TYPE_R8:
-			cinfo->ret.storage = ArgInSSEReg;
+			cinfo->ret.storage = ArgInDoubleSSEReg;
 			cinfo->ret.reg = AMD64_XMM0;
 			break;
 		case MONO_TYPE_VALUETYPE:
@@ -532,20 +537,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	cinfo = get_call_info (sig, FALSE);
 
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		switch (cinfo->ret.storage) {
-		case ArgInIReg:
-		case ArgInSSEReg:
-		case ArgInIRegPair:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = cinfo->ret.reg;
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-		m->ret->dreg = m->ret->inst_c0;
-	}
-
 	/*
 	 * We use the ABI calling conventions for managed code as well.
 	 * FIXME: Exception: valuetypes are never passed or returned in registers.
@@ -555,12 +546,41 @@ mono_arch_allocate_vars (MonoCompile *m)
 	m->frame_reg = AMD64_RBP;
 	offset = 0;
 
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		switch (cinfo->ret.storage) {
+		case ArgInIReg:
+		case ArgInFloatSSEReg:
+		case ArgInDoubleSSEReg:
+			if (((sig->ret->type == MONO_TYPE_VALUETYPE) && !sig->ret->data.klass->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
+				/* The register is volatile */
+				m->ret->opcode = OP_REGOFFSET;
+				m->ret->inst_basereg = AMD64_RBP;
+				offset += 8;
+				m->ret->inst_offset = - offset;
+			}
+			else {
+				m->ret->opcode = OP_REGVAR;
+				m->ret->inst_c0 = cinfo->ret.reg;
+			}
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		m->ret->dreg = m->ret->inst_c0;
+	}
+
 	/* 
 	 * Reserve a stack slot for holding information used during exception 
 	 * handling.
 	 */
 	if (header->num_clauses)
 		offset += sizeof (gpointer) * 2;
+
+	/* Reserve space for caller saved registers */
+	for (i = 0; i < AMD64_NREG; ++i)
+		if (AMD64_IS_CALLEE_SAVED_REG (i) && (m->used_int_regs & (1 << i))) {
+			offset += sizeof (gpointer);
+		}
 
 	if (m->method->save_lmf) {
 		offset += sizeof (MonoLMF);
@@ -624,7 +644,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			 * are volatile across calls.
 			 * FIXME: Optimize this.
 			 */
-			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInSSEReg))
+			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg))
 				inreg = FALSE;
 
 			if (MONO_TYPE_ISSTRUCT (arg_type))
@@ -635,7 +655,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 			switch (ainfo->storage) {
 			case ArgInIReg:
-			case ArgInSSEReg:
+			case ArgInFloatSSEReg:
+			case ArgInDoubleSSEReg:
 				inst->opcode = OP_REGVAR;
 				inst->dreg = ainfo->reg;
 				break;
@@ -648,7 +669,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg) {
+			if (!inreg && (ainfo->storage != ArgOnStack)) {
 				inst->opcode = OP_REGOFFSET;
 				inst->inst_basereg = AMD64_RBP;
 				/* These arguments are saved to the stack in the prolog */
@@ -662,7 +683,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 				 * It would be easier to add OP_LDIND_I here, but ldind_i instructions
 				 * are destructively modified in a lot of places in inssel.brg.
 				 */
-				NOT_IMPLEMENTED;
+				MonoInst *indir;
+				MONO_INST_NEW (m, indir, 0);
+				*indir = *inst;
+				inst->opcode = OP_INARG_VT;
+				inst->inst_left = indir;
 			}
 		}
 	}
@@ -717,9 +742,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	cinfo = get_call_info (sig, sig->pinvoke);
 
-	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
-		stack_size += sizeof (gpointer);
-
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
@@ -742,14 +764,23 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
 				break;
-			case ArgInSSEReg:
-				arg->opcode = OP_AMD64_OUTARG_XMMREG;
+			case ArgInFloatSSEReg:
+				arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
 				arg->unused = ainfo->reg;
-				/* FIXME: set call->used_... */
+				break;
+			case ArgInDoubleSSEReg:
+				arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
+				arg->unused = ainfo->reg;
 				break;
 			case ArgOnStack:
 				arg->opcode = OP_OUTARG;
-				break;
+				if (!sig->params [i - sig->hasthis]->byref) {
+					if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4)
+						arg->opcode = OP_OUTARG_R4;
+					else
+						if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8)
+							arg->opcode = OP_OUTARG_R8;
+				}
 				break;
 			default:
 				g_assert_not_reached ();
@@ -2293,6 +2324,8 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 #ifdef PLATFORM_WIN32
 	guint8* br[5];
 
+	NOT_IMPLEMENTED;
+
 	/*
 	 * Under Windows:
 	 * If requested stack size is larger than one page,
@@ -2334,20 +2367,20 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 		int offset = 0;
 		if (tree->dreg != AMD64_RAX && sreg != AMD64_RAX) {
 			amd64_push_reg (code, AMD64_RAX);
-			offset += 4;
+			offset += 8;
 		}
 		if (tree->dreg != AMD64_RCX && sreg != AMD64_RCX) {
 			amd64_push_reg (code, AMD64_RCX);
-			offset += 4;
+			offset += 8;
 		}
 		if (tree->dreg != AMD64_RDI && sreg != AMD64_RDI) {
 			amd64_push_reg (code, AMD64_RDI);
-			offset += 4;
+			offset += 8;
 		}
 		
 		amd64_shift_reg_imm (code, X86_SHR, sreg, 2);
 		if (sreg != AMD64_RCX)
-			amd64_mov_reg_reg (code, AMD64_RCX, sreg, 4);
+			amd64_mov_reg_reg (code, AMD64_RCX, sreg, 8);
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 				
 		amd64_lea_membase (code, AMD64_RDI, AMD64_RSP, offset);
@@ -2365,8 +2398,8 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 	return code;
 }
 
-static guint32*
-emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint32 *code)
+static guint8*
+emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
 	guint32 offset;
 
@@ -2378,8 +2411,14 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint32 *code)
 	case OP_FCALL_MEMBASE:
 		/* FIXME: optimize this */
 		offset = mono_spillvar_offset_float (cfg, 0);
-		amd64_movsd_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
-		amd64_fld_membase (code, AMD64_RBP, offset, TRUE);
+		if (((MonoCallInst*)ins)->signature->ret->type == MONO_TYPE_R4) {
+			amd64_movss_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
+			amd64_fld_membase (code, AMD64_RBP, offset, FALSE);
+		}
+		else {
+			amd64_movsd_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
+			amd64_fld_membase (code, AMD64_RBP, offset, TRUE);
+		}
 		break;
 	}
 
@@ -2561,10 +2600,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, FALSE, TRUE);
 			break;
 		case CEE_CONV_U8:
+		case CEE_CONV_U:
 			/* Clean out the upper word */
 			amd64_mov_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case CEE_CONV_I8:
+		case CEE_CONV_I:
 			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;			
 		case OP_COMPARE:
@@ -2589,32 +2630,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_test_reg_reg (code, ins->sreg1, ins->sreg1);
 			break;
 		case OP_X86_ADD_MEMBASE_IMM:
-			amd64_alu_membase_imm (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
+			/* FIXME: Make a 64 version too */
+			amd64_alu_membase_imm_size (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
 			break;
 		case OP_X86_ADD_MEMBASE:
-			amd64_alu_reg_membase (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset);
+			amd64_alu_reg_membase_size (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 		case OP_X86_SUB_MEMBASE_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
-			amd64_alu_membase_imm (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
+			amd64_alu_membase_imm_size (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
 			break;
 		case OP_X86_SUB_MEMBASE:
-			amd64_alu_reg_membase (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset);
+			amd64_alu_reg_membase_size (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 		case OP_X86_INC_MEMBASE:
-			amd64_inc_membase (code, ins->inst_basereg, ins->inst_offset);
+			amd64_inc_membase_size (code, ins->inst_basereg, ins->inst_offset, 4);
 			break;
 		case OP_X86_INC_REG:
-			amd64_inc_reg (code, ins->dreg);
+			amd64_inc_reg_size (code, ins->dreg, 4);
 			break;
 		case OP_X86_DEC_MEMBASE:
-			amd64_dec_membase (code, ins->inst_basereg, ins->inst_offset);
+			amd64_dec_membase_size (code, ins->inst_basereg, ins->inst_offset, 4);
 			break;
 		case OP_X86_DEC_REG:
-			amd64_dec_reg (code, ins->dreg);
+			amd64_dec_reg_size (code, ins->dreg, 4);
 			break;
 		case OP_X86_MUL_MEMBASE:
-			amd64_imul_reg_membase (code, ins->sreg1, ins->sreg2, ins->inst_offset);
+			amd64_imul_reg_membase_size (code, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 		case OP_AMD64_ICOMPARE_MEMBASE_REG:
 			amd64_alu_membase_reg_size (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
@@ -2944,7 +2986,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SETREG:
 			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
 			break;
-		case OP_AMD64_SET_XMMREG: {
+		case OP_AMD64_SET_XMMREG_R4: {
+			/* FIXME: optimize this */
+			guint32 offset = mono_spillvar_offset_float (cfg, 0);
+			amd64_fst_membase (code, AMD64_RBP, offset, FALSE, TRUE);
+			/* ins->dreg is set to -1 by the reg allocator */
+			amd64_movss_reg_membase (code, ins->unused, AMD64_RBP, offset);
+			break;
+		}
+		case OP_AMD64_SET_XMMREG_R8: {
 			/* FIXME: optimize this */
 			guint32 offset = mono_spillvar_offset_float (cfg, 0);
 			amd64_fst_membase (code, AMD64_RBP, offset, TRUE, TRUE);
@@ -3085,7 +3135,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_ADD, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1);
 			amd64_alu_reg_imm (code, X86_AND, ins->sreg1, ~(MONO_ARCH_FRAME_ALIGNMENT - 1));
 			code = mono_emit_stack_alloc (code, ins);
-			amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 4);
+			amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
 			break;
 		case CEE_RET:
 			amd64_ret (code);
@@ -3094,6 +3144,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_push_reg (code, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
+			amd64_breakpoint (code);
 			EMIT_CALL ();
 			break;
 		}
@@ -3747,9 +3798,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			continue;			
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			guint8 *code = ip;
-			/* Might already been changed to a nop */
-			amd64_call_imm (code, 0);
-			break;
+			/* FIXME: Might already been changed to a nop */
+			*((gconstpointer *)(ip + 2)) = target;
+			continue;
 		}
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
@@ -3806,9 +3857,8 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 
 	/* 
 	 * make sure we have enough space for exceptions
-	 * 16 is the size of two push_imm instructions and a call
 	 */
-	max_epilog_size += exc_count*16;
+	max_epilog_size += exc_count*32;
 
 	return max_epilog_size;
 }
@@ -3835,6 +3885,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (method->save_lmf) {
 		/* FIXME: */
+
+		for (i = 0; i < AMD64_NREG; ++i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				amd64_push_reg (code, i);
+				pos += sizeof (gpointer);
+			}
+
 #if 0
 		pos += sizeof (MonoLMF);
 
@@ -3939,6 +3996,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cinfo = get_call_info (sig, FALSE);
 
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
+			/* Save volatile arguments to the stack */
+			amd64_mov_membase_reg (code, cfg->ret->inst_basereg, cfg->ret->inst_offset, cinfo->ret.reg, 8);
+		}
+	}
+
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		gint32 stack_offset;
@@ -3952,13 +4016,36 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		stack_offset = ainfo->offset + ARGS_OFFSET;
 
-		if ((ainfo->storage == ArgInIReg) && (inst->opcode != OP_REGVAR)) {
-			/* Argument in register, but need to be saved to stack */
-			amd64_mov_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg, sizeof (gpointer));
-		}
-		if ((ainfo->storage == ArgInSSEReg) && (inst->opcode != OP_REGVAR)) {
-			/* Argument in register, but need to be saved to stack */
-			amd64_movsd_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg);
+		if (inst->opcode == OP_INARG_VT)
+			inst = inst->inst_left;
+
+		/* Save volatile arguments to the stack */
+		if (inst->opcode != OP_REGVAR) {
+			switch (ainfo->storage) {
+			case ArgInIReg: {
+				guint32 size = 8;
+
+				/* FIXME: I1 etc */
+				/*
+				if (stack_offset & 0x1)
+					size = 1;
+				else if (stack_offset & 0x2)
+					size = 2;
+				else if (stack_offset & 0x4)
+					size = 4;
+				else
+					size = 8;
+				*/
+				amd64_mov_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg, size);
+				break;
+			}
+			case ArgInFloatSSEReg:
+				amd64_movss_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg);
+				break;
+			case ArgInDoubleSSEReg:
+				amd64_movsd_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg);
+				break;
+			}
 		}
 
 		if (inst->opcode == OP_REGVAR) {
@@ -3994,6 +4081,20 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (method->save_lmf) {
 		/* FIXME: */
+
+		for (i = 0; i < AMD64_NREG; ++i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
+				pos -= sizeof (gpointer);
+
+		if (pos)
+			amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
+
+		/* Pop registers in reverse order */
+		for (i = AMD64_NREG - 1; i > 0; --i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				amd64_pop_reg (code, i);
+			}
+
 #if 0
 		gint32 prev_lmf_reg;
 
@@ -4040,26 +4141,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	amd64_leave (code);
-
-	if (CALLCONV_IS_STDCALL (sig->call_convention)) {
-		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
-
-		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
-	} else if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
-		stack_to_pop = 4;
-	else
-		stack_to_pop = 0;
-
-	if (stack_to_pop)
-		amd64_ret_imm (code, stack_to_pop);
-	else
-		amd64_ret (code);
+	amd64_ret (code);
 
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC:
 			amd64_patch (patch_info->ip.i + cfg->native_code, code);
+			amd64_breakpoint (code);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
 			amd64_push_imm (code, patch_info->data.target);
 			mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
@@ -4096,6 +4185,98 @@ gboolean
 mono_arch_is_inst_imm (gint64 imm)
 {
 	return amd64_is_imm32 (imm);
+}
+
+#define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
+
+gpointer*
+mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
+{
+	guint32 reg;
+	guint32 disp;
+	guint8 rex = 0;
+
+	/* go to the start of the call instruction
+	 *
+	 * address_byte = (m << 6) | (o << 3) | reg
+	 * call opcode: 0xff address_byte displacement
+	 * 0xff m=1,o=2 imm8
+	 * 0xff m=2,o=2 imm32
+	 */
+	code -= 6;
+
+	/* FIXME: Read register extensions from REX */
+
+	if (IS_REX (code [3]) && (code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x3)) {
+		/* call *%reg */
+		return NULL;
+	}
+	else if ((code [0] == 0xff) && (amd64_modrm_reg (code [1]) == 0x2) && (amd64_modrm_mod (code [1]) == 0x2)) {
+		/* call *[reg+disp32] */
+		reg = amd64_modrm_rm (code [1]);
+		disp = *(guint32*)(code + 2);
+		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
+	}
+	else if ((code [3] == 0xff) && (amd64_modrm_reg (code [4]) == 0x2) && (amd64_modrm_mod (code [4]) == 0x1)) {
+		/* call *[reg+disp8] */
+		reg = amd64_modrm_rm (code [4]);
+		disp = *(guint8*)(code + 5);
+		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
+	}
+	else if ((code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x0)) {
+			/*
+			 * This is a interface call: should check the above code can't catch it earlier 
+			 * 8b 40 30   mov    0x30(%eax),%eax
+			 * ff 10      call   *(%eax)
+			 */
+		reg = amd64_modrm_rm (code [5]);
+		disp = 0;
+	}
+	else
+		g_assert_not_reached ();
+
+	reg += amd64_rex_b (rex);
+
+#if 0
+	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
+		reg = code [4] & 0x07;
+		disp = (signed char)code [5];
+	}
+	else if (IS_REX (code [3]) && (code [4] == 0xff) && ((code [5] & 0x18) == 0x10) && ((code [5] >> 6) == 1)) {
+		reg = code [5] & 0x07;
+		disp = (signed char)code [6];
+	} else {
+		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
+			reg = code [1] & 0x07;
+			disp = *((gint32*)(code + 2));
+		} else if (IS_REX (code [0]) && (code [1] == 0xff) && ((code [2] & 0x18) == 0x10) && ((code [2] >> 6) == 2)) {
+			reg = code [2] & 0x07;
+			disp = *((gint32*)(code + 3));
+		} else if ((code [1] == 0xe8)) {
+			return NULL;
+		} else if (IS_REX (code [1]) && (code [2] == 0xe8)) {
+			return NULL;
+		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
+			/*
+			 * This is a interface call: should check the above code can't catch it earlier 
+			 * 8b 40 30   mov    0x30(%eax),%eax
+			 * ff 10      call   *(%eax)
+			 */
+			disp = 0;
+			reg = code [5] & 0x07;
+		} else if (IS_REX(code [4]) && (code [5] == 0xff) && (((code [6] >> 6) & 0x3) == 0) && (((code [6] >> 3) & 0x7) == 2)) {
+			disp = 0;
+			reg = code [6] & 0x07;
+		} else {
+			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
+				code [4], code [5], code [6]);
+			g_assert_not_reached ();
+		}
+	}
+#endif
+
+	/* FIXME: */
+	return (gpointer)1;
 }
 
 /*
@@ -4202,22 +4383,25 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
+	int out_reg = param_regs [0];
+
+	if (vt_reg != -1) {
+		MonoInst *vtarg;
+		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
+		vtarg->sreg1 = vt_reg;
+		vtarg->dreg = out_reg;
+		out_reg = param_regs [1];
+		mono_bblock_add_inst (cfg->cbb, vtarg);
+	}
 
 	/* add the this argument */
 	if (this_reg != -1) {
 		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_OUTARG);
+		MONO_INST_NEW (cfg, this, OP_SETREG);
 		this->type = this_type;
 		this->sreg1 = this_reg;
+		this->dreg = out_reg;
 		mono_bblock_add_inst (cfg->cbb, this);
-	}
-
-	if (vt_reg != -1) {
-		MonoInst *vtarg;
-		MONO_INST_NEW (cfg, vtarg, OP_OUTARG);
-		vtarg->type = STACK_MP;
-		vtarg->sreg1 = vt_reg;
-		mono_bblock_add_inst (cfg->cbb, vtarg);
 	}
 }
 

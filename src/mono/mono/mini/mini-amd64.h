@@ -167,6 +167,9 @@ typedef struct sigcontext MonoContext;
 
 #endif
 
+gpointer*
+mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);
+
 /* FIXME: */
 //#define MONO_ARCH_BIGMUL_INTRINS 1
 

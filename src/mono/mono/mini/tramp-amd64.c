@@ -51,18 +51,20 @@ static gpointer
 get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_pos = 4;
-
-	g_assert_not_reached ();
+	int this_reg = AMD64_RDI;
 
 	if (!m->signature->ret->byref && MONO_TYPE_ISSTRUCT (m->signature->ret))
-		this_pos = 8;
+		this_reg = AMD64_RSI;
 	    
-	start = code = g_malloc (16);
+	start = code = g_malloc (20);
 
-	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
-	x86_jump_code (code, addr);
-	g_assert ((code - start) < 16);
+	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
+	/* FIXME: Optimize this */
+	amd64_mov_reg_imm (code, AMD64_RAX, addr);
+	amd64_jump_reg (code, AMD64_RAX);
+	g_assert ((code - start) < 20);
+
+	mono_arch_flush_icache (start, code - start);
 
 	return start;
 }
@@ -73,129 +75,47 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 static gpointer
 amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m)
 {
-	guint8 reg;
-	gint32 disp;
-	char *o;
 	gpointer addr;
+	gpointer *vtable_slot;
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
-	/* FIXME: patch calling code */
-
-#if 0
+	//printf ("ENTER: %s\n", mono_method_full_name (m, TRUE));
 
 	/* the method was jumped to */
 	if (!code)
 		return addr;
 
-	/* go to the start of the call instruction
-	 *
-	 * address_byte = (m << 6) | (o << 3) | reg
-	 * call opcode: 0xff address_byte displacement
-	 * 0xff m=1,o=2 imm8
-	 * 0xff m=2,o=2 imm32
-	 */
-	code -= 6;
-	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
-		reg = code [4] & 0x07;
-		disp = (signed char)code [5];
-	} else {
-		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
-			reg = code [1] & 0x07;
-			disp = *((gint32*)(code + 2));
-		} else if ((code [1] == 0xe8)) {
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), addr);
+	vtable_slot = mono_amd64_get_vcall_slot_addr (code, regs);
 
-			/* The first part of the condition means an icall without a wrapper */
-			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
-				if (!mono_running_on_valgrind ()) {
-					InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
+	if (vtable_slot) {
+		if (m->klass->valuetype)
+			addr = get_unbox_trampoline (m, addr);
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-					/* Tell valgrind to recompile the patched code */
-					//VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
-#endif
-				}
-			}
-			return addr;
-		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
-			/*
-			 * This is a interface call: should check the above code can't catch it earlier 
-			 * 8b 40 30   mov    0x30(%eax),%eax
-			 * ff 10      call   *(%eax)
-			 */
-			disp = 0;
-			reg = code [5] & 0x07;
-		} else {
-			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
-			g_assert_not_reached ();
-		}
+		/* FIXME: Fill in vtable slot */
 	}
-
-	o = 0;
-	/*
-	switch (reg) {
-	case X86_EAX:
-		o = (gpointer)eax;
-		break;
-	case X86_EDX:
-		o = (gpointer)edx;
-		break;
-	case X86_ECX:
-		o = (gpointer)ecx;
-		break;
-	case X86_ESI:
-		o = (gpointer)esi;
-		break;
-	case X86_EDI:
-		o = (gpointer)edi;
-		break;
-	case X86_EBX:
-		o = (gpointer)ebx;
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-	*/
-
-	o += disp;
-
-	if (m->klass->valuetype)
-		addr = get_unbox_trampoline (m, addr);
-
-	*((gpointer *)o) = addr;
-#endif
+	else
+		/* FIXME: Patch calling code */
+		;
 
 	return addr;
 }
 
 /**
  * amd64_class_init_trampoline:
- * @eax: saved x86 register 
- * @ecx: saved x86 register 
- * @edx: saved x86 register 
- * @esi: saved x86 register 
- * @edi: saved x86 register 
- * @ebx: saved x86 register
- * @code: pointer into caller code
- * @vtable: the type to initialize
  *
  * This method calls mono_runtime_class_init () to run the static constructor
  * for the type, then patches the caller code so it is not called again.
  */
 static void
-amd64_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-							 int ebx, guint8 *code, MonoVTable *vtable)
+amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable)
 {
 	mono_runtime_class_init (vtable);
 
-	g_assert_not_reached ();
+	/* FIXME: patch calling code */
 
+#if 0
 	code -= 5;
 	if (code [0] == 0xe8) {
 		if (!mono_running_on_valgrind ()) {
@@ -237,6 +157,7 @@ amd64_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 				code [4], code [5], code [6]);
 			g_assert_not_reached ();
 		}
+#endif
 }
 
 static guchar*
@@ -418,8 +339,8 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 
 	amd64_mov_reg_imm (code, AMD64_RAX, arg1);
 	/* FIXME: optimize this */
-	amd64_mov_reg_imm (code, AMD64_RBX, tramp);
-	amd64_jump_reg (code, AMD64_RBX);
+	amd64_mov_reg_imm (code, AMD64_R11, tramp);
+	amd64_jump_reg (code, AMD64_R11);
 
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
 

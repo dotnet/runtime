@@ -125,7 +125,7 @@ castclass:
 isinst:
 conv.r.un:
 unbox:
-throw: src1:i len:15
+throw: src1:i len:17
 ldfld:
 ldflda:
 stfld:
@@ -260,7 +260,7 @@ ret: len:2
 voidcall: clob:c len:18
 voidcall_reg: src1:i clob:c len:12
 voidcall_membase: src1:b clob:c len:17
-fcall: dest:f len:18 clob:c
+fcall: dest:f len:45 clob:c
 fcall_reg: dest:f src1:i len:12 clob:c
 fcall_membase: dest:f src1:b len:17 clob:c
 lcall: dest:l len:18 clob:c
@@ -501,7 +501,8 @@ x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
 amd64_icompare_membase_reg: src1:b src2:i len:7
 amd64_icompare_membase_imm: src1:b len:12
 amd64_icompare_reg_membase: src1:i src2:b len:7
-amd64_set_xmmreg: src1:f len:9
+amd64_set_xmmreg_r4: src1:f len:9
+amd64_set_xmmreg_r8: src1:f len:14
 adc: dest:i src1:i src2:i len:3 clob:1
 addcc: dest:i src1:i src2:i len:3 clob:1
 subcc: dest:i src1:i src2:i len:3 clob:1

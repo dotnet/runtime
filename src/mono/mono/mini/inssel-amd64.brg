@@ -41,7 +41,7 @@
 %%
 
 #
-# inssel-x86.brg: burg file for special x86 instructions
+# inssel-amd64.brg: burg file for special AMD64 instructions
 #
 # Author:
 #   Dietmar Maurer (dietmar@ximian.com)
@@ -169,7 +169,10 @@ stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)) {
 }
 
 stmt: OP_SETRET (freg) {
-	tree->opcode = OP_AMD64_SET_XMMREG;
+	if (s->method->signature->ret->type == MONO_TYPE_R4)
+		tree->opcode = OP_AMD64_SET_XMMREG_R4;
+	else
+		tree->opcode = OP_AMD64_SET_XMMREG_R8;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = 0; /* %xmm0 */
 	mono_bblock_add_inst (s->cbb, tree);	
@@ -302,7 +305,7 @@ stmt: OP_OUTARG (freg) {
 }
 
 stmt: OP_OUTARG_R4 (freg) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 4);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
 	tree->opcode = OP_STORER4_MEMBASE_REG;
 	tree->sreg1 = state->left->reg1;
 	tree->inst_destbasereg = X86_ESP;
@@ -319,8 +322,15 @@ stmt: OP_OUTARG_R8 (freg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_AMD64_OUTARG_XMMREG (freg) {
-	tree->opcode = OP_AMD64_SET_XMMREG;
+stmt: OP_AMD64_OUTARG_XMMREG_R4 (freg) {
+	tree->opcode = OP_AMD64_SET_XMMREG_R4;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_AMD64_OUTARG_XMMREG_R8 (freg) {
+	tree->opcode = OP_AMD64_SET_XMMREG_R8;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = tree->unused;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -362,6 +372,21 @@ stmt: OP_OUTARG_VT (reg) {
 	tree->opcode = OP_X86_PUSH;
 	tree->sreg1 = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
+}
+
+base: OP_INARG_VT (base) {
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->tree->inst_basereg, 
+					state->left->tree->inst_offset);
+}
+
+reg: OP_LDADDR (OP_INARG_VT (base)) {
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
+					state->left->left->tree->inst_offset);
+}
+
+reg: CEE_LDOBJ (OP_INARG_VT (base)) {
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
+					state->left->left->tree->inst_offset);
 }
 
 reg: OP_LDADDR (OP_REGOFFSET) "1" {
