@@ -54,23 +54,16 @@
 
 /*
  * The following things are not implemented or do not work:
- *  - tail calls and JMP
  *  - some fp arithmetic corner cases
- *  - varargs
  *  - AOT
  *  - Thread Abort
  * The following tests in mono/mini are expected to fail:
- *  - test_15_float_branch_un
  *  - test_0_simple_double_casts
- *  - iltests.exe
  * The following tests in mono/tests are expected to fail:
  * appdomain-unload.exe (Thread.Abort)
  * remoting2.exe (fails on x86)
  * remoting3.exe (fails on x86)
  * thread5.exe (fails on x86)
- * jmpTest.exe (JMP)
- * vararg.exe  (varargs)
- * even-odd.exe (tail calls)
  *
  * In addition to this, the runtime requires the truncl function, or its 
  * solaris counterpart, aintl, to do some double->int conversions. If this 
