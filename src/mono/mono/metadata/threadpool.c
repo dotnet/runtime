@@ -160,7 +160,10 @@ static void
 async_invoke_thread ()
 {
 	MonoDomain *domain;
+	MonoThread *thread;
  
+	thread = mono_thread_current ();
+	thread->threadpool_thread = TRUE;
 	for (;;) {
 		MonoAsyncResult *ar;
 		gboolean new_worker = FALSE;
