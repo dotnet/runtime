@@ -8250,6 +8250,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	jinfo->code_size = cfg->code_len;
 	jinfo->used_regs = cfg->used_int_regs;
 	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
+	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
 
 	if (header->num_clauses) {
 		int i;
@@ -8838,6 +8839,10 @@ mini_init (const char *filename)
 				ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 
 				ves_icall_get_trace);
+	mono_add_internal_call ("System.Security.SecurityFrame::_GetSecurityFrame",
+				ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
+	mono_add_internal_call ("System.Security.SecurityFrame::_GetSecurityStack",
+				ves_icall_System_Security_SecurityFrame_GetSecurityStack);
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", 
 				mono_runtime_install_handlers);
 

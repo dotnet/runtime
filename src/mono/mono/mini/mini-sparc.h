@@ -49,6 +49,12 @@ typedef struct MonoCompileArch {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
 
+#define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
+		mono_arch_flush_register_windows ();	\
+		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
+		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
+	} while (0)
+
 #define MONO_ARCH_USE_SIGACTION 1
 
 //#define MONO_ARCH_SIGSEGV_ON_ALTSTACK

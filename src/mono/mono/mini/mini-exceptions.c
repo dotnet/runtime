@@ -154,6 +154,49 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	return res;
 }
 
+
+/**
+ * mono_walk_stack:
+ * @domain: starting appdomain
+ * @jit_tls: JIT data for the thread
+ * @start_ctx: starting state of the stack frame
+ * @func: callback to call for each stack frame
+ * @user_data: data passed to the callback
+ *
+ * This function walks the stack of a thread, starting from the state
+ * represented by jit_tls and start_ctx. For each frame the callback
+ * function is called with the relevant info. The walk ends when no more
+ * managed stack frames are found or when the callback returns a TRUE value.
+ * Note that the function can be used to walk the stack of a thread 
+ * different from the current.
+ */
+void
+mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gpointer user_data)
+{
+	MonoLMF *lmf = jit_tls->lmf;
+	MonoJitInfo *ji, rji;
+	gint native_offset;
+	gboolean managed;
+	MonoContext ctx, new_ctx;
+
+	ctx = *start_ctx;
+
+	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
+		/* 
+		 * FIXME: mono_find_jit_info () will need to be able to return a different
+		 * MonoDomain when apddomain transitions are found on the stack.
+		 */
+		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		if (!ji || ji == (gpointer)-1)
+			return;
+
+		if (func (domain, &new_ctx, ji, user_data))
+			return;
+
+		ctx = new_ctx;
+	}
+}
+
 void
 mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
 	MonoDomain *domain = mono_domain_get ();
@@ -243,8 +286,95 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	return TRUE;
 }
 
+typedef struct {
+	guint32 skips;
+	MonoSecurityFrame *frame;
+} MonoFrameSecurityInfo;
+
+static gboolean
+callback_get_first_frame_security_info (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
+{
+	MonoFrameSecurityInfo *si = (MonoFrameSecurityInfo*) data;
+
+	/* FIXME: skip all wrappers ?? probably not - case by case testing is required */
+	if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
+	    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
+	    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
+	    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
+	    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE) {
+		return FALSE;
+	}
+
+	if (si->skips > 0) {
+		si->skips--;
+		return FALSE;
+	}
+
+	si->frame = mono_declsec_create_frame (domain, ji);
+
+	/* Stop - we only want the first frame (e.g. LinkDemand and InheritanceDemand) */
+	return TRUE;
+}
+
+/**
+ * ves_icall_System_Security_SecurityFrame_GetSecurityFrame:
+ * @skip: the number of stack frames to skip
+ *
+ * This function returns a the security informations of a single stack frame 
+ * (after the skipped ones). This is required for [NonCas]LinkDemand[Choice]
+ * and [NonCas]InheritanceDemand[Choice] as only the caller security is 
+ * evaluated.
+ */
+MonoSecurityFrame*
+ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoFrameSecurityInfo si;
+	MonoContext ctx;
+
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
+
+	si.skips = skip;
+	si.frame = NULL;
+	mono_walk_stack (domain, jit_tls, &ctx, callback_get_first_frame_security_info, (gpointer)&si);
+
+	return (si.skips == 0) ? si.frame : NULL;
+}
+
+
+typedef struct {
+	guint32 skips;
+	GList *stack;
+} MonoSecurityStack;
+
+static gboolean
+callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
+{
+	MonoSecurityStack *ss = (MonoSecurityStack*) data;
+
+	/* FIXME: skip all wrappers ?? probably not - case by case testing is required */
+	if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
+	    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
+	    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
+	    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
+	    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE) {
+		return FALSE;
+	}
+
+	if (ss->skips > 0) {
+		ss->skips--;
+		return FALSE;
+	}
+
+	ss->stack = g_list_prepend (ss->stack, mono_declsec_create_frame (domain, ji));
+
+	/* continue down the stack */
+	return FALSE;
+}
+
 static MonoArray *
-glist_to_array (GList *list) 
+glist_to_array (GList *list, MonoClass *eclass) 
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
@@ -254,12 +384,43 @@ glist_to_array (GList *list)
 		return NULL;
 
 	len = g_list_length (list);
-	res = mono_array_new (domain, mono_defaults.int_class, len);
+	res = mono_array_new (domain, eclass, len);
 
 	for (i = 0; list; list = list->next, i++)
 		mono_array_set (res, gpointer, i, list->data);
 
 	return res;
+}
+
+/**
+ * ves_icall_System_Security_SecurityFrame_GetSecurityStack:
+ * @skip: the number of stack frames to skip
+ *
+ * This function returns an managed array of containing the security
+ * informations for each frame (after the skipped ones). This is used for
+ * [NonCas]Demand[Choice] where the complete evaluation of the stack is 
+ * required.
+ */
+MonoArray*
+ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoSecurityStack ss;
+	MonoContext ctx;
+	MonoArray *stack;
+
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
+
+	ss.skips = skip;
+	ss.stack = NULL;
+	mono_walk_stack (domain, jit_tls, &ctx, callback_get_stack_frames_security_info, (gpointer)&ss);
+
+	stack = glist_to_array (ss.stack, mono_defaults.runtimesecurityframe_class);
+	if (ss.stack)
+		g_list_free (ss.stack);
+
+	return stack;
 }
 
 /**
@@ -446,7 +607,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							if (test_only) {
 								if (mono_ex) {
 									trace_ips = g_list_reverse (trace_ips);
-									mono_ex->trace_ips = glist_to_array (trace_ips);
+									mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
 								}
 								g_list_free (trace_ips);
 								g_free (trace);
@@ -509,7 +670,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 			} else {
 				if (mono_ex) {
 					trace_ips = g_list_reverse (trace_ips);
-					mono_ex->trace_ips = glist_to_array (trace_ips);
+					mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
 				}
 				g_list_free (trace_ips);
 				if (trace_str)

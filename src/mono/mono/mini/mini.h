@@ -819,6 +819,11 @@ guint32  mono_arch_get_patch_offset             (guint8 *code);
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
+
+/* the new function to do stack walks */
+typedef gboolean (*MonoStackFrameWalk)          (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data);
+void      mono_walk_stack                       (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gpointer user_data);
+
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 
 						 MonoReflectionMethod **method, 
@@ -859,5 +864,10 @@ extern void
 mono_perform_abc_removal (MonoCompile *cfg);
 extern void
 mono_perform_ssapre (MonoCompile *cfg);
+
+/* CAS - stack walk */
+//MonoBoolean ves_icall_System_Security_SecurityFrame_GetSecurityFrameInformation (gint32 skip, MonoReflectionMethod **method, gint32 *flags);
+MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip);
+MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip);
 
 #endif /* __MONO_MINI_H__ */
