@@ -19,6 +19,12 @@ class Test {
 		res.b = !ss.b;
 		return res;
 	}
+
+	public static void Foo(ref int x, ref int y)
+	{
+		x = 20;
+		y = 30;
+	}
 	
 	static int Main () {
 		Type t = typeof (Test);
@@ -43,6 +49,17 @@ class Test {
 			return 1;
 		if (res.b == false)
 			return 1;
+
+		// Test that the objects for byref valuetype arguments are 
+		// automatically created
+		MethodInfo m3 = typeof(Test).GetMethod("Foo");
+		
+		args = new object[2];
+		
+		m3.Invoke(null, args);
+
+		if ((((int)(args [0])) != 20) || (((int)(args [1])) != 30))
+			return 2;
 	
 		return 0;
 	}
