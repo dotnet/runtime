@@ -2411,6 +2411,18 @@ ves_icall_System_Environment_get_MachineName (void)
 #endif
 }
 
+static int
+ves_icall_System_Environment_get_Platform (void)
+{
+#if defined (PLATFORM_WIN32)
+	/* Win32NT */
+	return 2;
+#else
+	/* Unix */
+	return 128;
+#endif
+}
+
 static MonoString *
 ves_icall_System_Environment_get_NewLine (void)
 {
@@ -2985,6 +2997,7 @@ static gconstpointer icall_map [] = {
 	"System.Environment::GetCommandLineArgs", mono_runtime_get_main_args,
 	"System.Environment::get_TickCount", ves_icall_System_Environment_get_TickCount,
 	"System.Environment::Exit", ves_icall_System_Environment_Exit,
+	"System.Environment::get_Platform", ves_icall_System_Environment_get_Platform,
 
 	/*
 	 * System.Runtime.Remoting
