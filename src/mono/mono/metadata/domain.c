@@ -150,20 +150,18 @@ MonoJitInfo *
 mono_jit_info_table_find (MonoDomain *domain, char *addr)
 {
 	MonoJitInfoTable *table = domain->jit_info_table;
-	int left = 0, right;
+	guint left = 0, right;
 
 	mono_domain_lock (domain);
 
 	right = table->len;
 	while (left < right) {
-		int pos = (left + right) / 2;
+		guint pos = (left + right) / 2;
 		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
-		char *start = ji->code_start;
-		char *end = start + ji->code_size;
 
-		if (addr < start)
+		if (addr < (char*)ji->code_start)
 			right = pos;
-		else if (addr >= end) 
+		else if (addr >= (char*)ji->code_start + ji->code_size) 
 			left = pos + 1;
 		else {
 			mono_domain_unlock (domain);
