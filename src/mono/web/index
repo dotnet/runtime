@@ -148,6 +148,14 @@
 <br>
 <h2>Mono Project Notes</h2>
 
+@item Feb 13, 2004: Mono Performance Optimization
+
+	We have a new document that describes some <a
+	href="performance.html">common tricks to improve the
+	performance</a> of your Mono or .NET application.  These are a
+	summary of techniques that we employed to tune our own C#
+	compiler.
+
 @item Feb 2nd, 2004: Mono 0.30 has been released
 
 	Check out the <a

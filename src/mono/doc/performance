@@ -1,5 +1,10 @@
 * Writing performant .NET and Mono applications
 
+<center>
+Miguel de Icaza (miguel@novell.com)<br>
+Ben Maurer (bmaurer@users.sourceforge.net)
+</center>
+
 	The following document contains a few hints on how to improve
 	the performance of your Mono/.NET applications.
 
