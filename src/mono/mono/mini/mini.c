@@ -1102,37 +1102,37 @@ shift_table [STACK_MAX] [STACK_MAX] = {
 /* handles from CEE_ADD to CEE_SHR_UN (CEE_REM_UN for floats) */
 static const guint16
 binops_op_map [STACK_MAX] = {
-	0, 0, OP_LADD-CEE_ADD, OP_PADD-CEE_ADD, OP_FADD-CEE_ADD, 0
+	0, 0, OP_LADD-CEE_ADD, OP_PADD-CEE_ADD, OP_FADD-CEE_ADD, OP_PADD-CEE_ADD
 };
 
 /* handles from CEE_NEG to CEE_CONV_U8 */
 static const guint16
 unops_op_map [STACK_MAX] = {
-	0, 0, OP_LNEG-CEE_NEG, OP_PNEG-CEE_NEG, OP_FNEG-CEE_NEG, 0
+	0, 0, OP_LNEG-CEE_NEG, OP_PNEG-CEE_NEG, OP_FNEG-CEE_NEG, OP_PNEG-CEE_NEG
 };
 
 /* handles from CEE_CONV_U2 to CEE_SUB_OVF_UN */
 static const guint16
 ovfops_op_map [STACK_MAX] = {
-	0, 0, OP_LCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, OP_FCONV_TO_U2-CEE_CONV_U2, 0
+	0, 0, OP_LCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, OP_FCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2
 };
 
 /* handles from CEE_CONV_OVF_I1_UN to CEE_CONV_OVF_U_UN */
 static const guint16
 ovf2ops_op_map [STACK_MAX] = {
-	0, 0, OP_LCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_FCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, 0
+	0, 0, OP_LCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_FCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN
 };
 
 /* handles from CEE_CONV_OVF_I1 to CEE_CONV_OVF_U8 */
 static const guint16
 ovf3ops_op_map [STACK_MAX] = {
-	0, 0, OP_LCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_FCONV_TO_OVF_I1-CEE_CONV_OVF_I1, 0
+	0, 0, OP_LCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_FCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1
 };
 
 /* handles from CEE_CEQ to CEE_CLT_UN */
 static const guint16
 ceqops_op_map [STACK_MAX] = {
-	0, 0, OP_LCEQ-CEE_CEQ, OP_PCEQ-CEE_CEQ, OP_FCEQ-CEE_CEQ, 0
+	0, 0, OP_LCEQ-CEE_CEQ, OP_PCEQ-CEE_CEQ, OP_FCEQ-CEE_CEQ, OP_LCEQ-CEE_CEQ
 };
 
 /*
@@ -2144,6 +2144,38 @@ mono_get_element_address_signature (int arity)
 	
 	for (i = 1; i <= arity; i++)
 		res->params [i] = &mono_defaults.int_class->byval_arg;
+
+	res->ret = &mono_defaults.int_class->byval_arg;
+
+	g_hash_table_insert (sighash, (gpointer)arity, res);
+	LeaveCriticalSection (&trampoline_hash_mutex);
+
+	return res;
+}
+
+static MonoMethodSignature *
+mono_get_array_new_va_signature (int arity)
+{
+	static GHashTable *sighash = NULL;
+	MonoMethodSignature *res;
+	int i;
+
+	EnterCriticalSection (&trampoline_hash_mutex);
+	if (!sighash) {
+		sighash = g_hash_table_new (NULL, NULL);
+	}
+	else if ((res = g_hash_table_lookup (sighash, (gpointer)arity))) {
+		LeaveCriticalSection (&trampoline_hash_mutex);
+		return res;
+	}
+
+	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
+
+	res->pinvoke = 1;
+
+	res->params [0] = &mono_defaults.int_class->byval_arg;	
+	for (i = 0; i < arity; i++)
+		res->params [i + 1] = &mono_defaults.int_class->byval_arg;
 
 	res->ret = &mono_defaults.int_class->byval_arg;
 
@@ -4011,7 +4043,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (cmethod->klass->parent == mono_defaults.array_class) {
 				NEW_METHODCONST (cfg, *sp, cmethod);
-				temp = mono_emit_native_call (cfg, bblock, mono_array_new_va, fsig, sp, ip, FALSE);
+				temp = mono_emit_native_call (cfg, bblock, mono_array_new_va, mono_get_array_new_va_signature (fsig->param_count), sp, ip, FALSE);
 				cfg->flags |= MONO_CFG_HAS_VARARGS;
 
 			} else if (cmethod->string_ctor) {
@@ -7947,7 +7979,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #define GET_CONTEXT \
     ucontext_t *uctx = context; \
     struct sigcontext *ctx = (struct sigcontext *)&(uctx->uc_mcontext);
-#elif defined(__ppc__) || defined (__powerpc__) || defined (__s390__)
+#elif defined(__ppc__) || defined (__powerpc__) || defined (__s390__) || defined (MONO_ARCH_USE_SIGACTION)
 #define GET_CONTEXT \
     void *ctx = context;
 #else
