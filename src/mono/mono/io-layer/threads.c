@@ -241,7 +241,10 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
 	if (stacksize == 0)
 		stacksize = (SIZEOF_VOID_P / 2) * 1024 *1024;
+
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
 	pthread_attr_setstacksize(&attr, stacksize);
+#endif
 
 	ret=_wapi_timed_thread_create(&thread_private_handle->thread, &attr,
 				      create, start, thread_exit, param,
