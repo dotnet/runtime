@@ -151,6 +151,14 @@ typedef union {
 */
 #endif
 
+#define amd64_modrm_mod(modrm) ((modrm) >> 6)
+#define amd64_modrm_reg(modrm) (((modrm) >> 3) & 0x7)
+#define amd64_modrm_rm(modrm) ((modrm) & 0x7)
+
+#define amd64_rex_r(rex) ((((rex) >> 2) & 0x1) << 3)
+#define amd64_rex_x(rex) ((((rex) >> 1) & 0x1) << 3)
+#define amd64_rex_b(rex) ((((rex) >> 0) & 0x1) << 3)
+
 #define amd64_is_imm32(val) ((glong)val >= -((glong)1<<31) && (glong)val <= (((glong)1<<31)-1))
 
 #define x86_imm_emit64(inst,imm)     \
@@ -431,7 +439,7 @@ typedef union {
 		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
 	} while (0)
 
-#define amd64_movss_membase_reg(inst,reg,basereg,disp)	\
+#define amd64_movss_membase_reg(inst,basereg,disp,reg)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xf3;	\
 		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
@@ -460,14 +468,14 @@ typedef union {
 /* Generated from x86-codegen.h */
 
 #define amd64_breakpoint_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_breakpoint(inst); } while (0)
-#define amd64_cld_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_cld(inst); } while (0)
+#define amd64_cld_size(inst,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_cld(inst); } while (0)
 #define amd64_stosb_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_stosb(inst); } while (0)
 #define amd64_stosl_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_stosl(inst); } while (0)
 #define amd64_stosd_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_stosd(inst); } while (0)
 #define amd64_movsb_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_movsb(inst); } while (0)
 #define amd64_movsl_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_movsl(inst); } while (0)
 #define amd64_movsd_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_movsd(inst); } while (0)
-#define amd64_prefix_size(inst,p,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_prefix((inst), p); } while (0)
+#define amd64_prefix_size(inst,p,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_prefix((inst), p); } while (0)
 #define amd64_rdtsc_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_rdtsc(inst); } while (0)
 #define amd64_cmpxchg_reg_reg_size(inst,dreg,reg,size) do { amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_cmpxchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7)); } while (0)
 #define amd64_cmpxchg_mem_reg_size(inst,mem,reg,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_cmpxchg_mem_reg((inst),(mem),((reg)&0x7)); } while (0)
@@ -547,11 +555,11 @@ typedef union {
 #define amd64_widen_memindex_size(inst,dreg,basereg,disp,indexreg,shift,is_signed,is_half,size) do { amd64_emit_rex ((inst),(size),(dreg),(indexreg),(basereg)); x86_widen_memindex((inst),((dreg)&0x7),((basereg)&0x7),(disp),((indexreg)&0x7),(shift),(is_signed),(is_half)); } while (0)
 #define amd64_cdq_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_cdq(inst); } while (0)
 #define amd64_wait_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_wait(inst); } while (0)
-#define amd64_fp_op_mem_size(inst,opc,mem,is_double,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_fp_op_mem((inst),(opc),(mem),(is_double)); } while (0)
-#define amd64_fp_op_membase_size(inst,opc,basereg,disp,is_double,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_fp_op_membase((inst),(opc),((basereg)&0x7),(disp),(is_double)); } while (0)
-#define amd64_fp_op_size(inst,opc,index,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_fp_op((inst),(opc),(index)); } while (0)
-#define amd64_fp_op_reg_size(inst,opc,index,pop_stack,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_fp_op_reg((inst),(opc),(index),(pop_stack)); } while (0)
-#define amd64_fp_int_op_membase_size(inst,opc,basereg,disp,is_int,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_fp_int_op_membase((inst),(opc),((basereg)&0x7),(disp),(is_int)); } while (0)
+#define amd64_fp_op_mem_size(inst,opc,mem,is_double,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fp_op_mem((inst),(opc),(mem),(is_double)); } while (0)
+#define amd64_fp_op_membase_size(inst,opc,basereg,disp,is_double,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); x86_fp_op_membase((inst),(opc),((basereg)&0x7),(disp),(is_double)); } while (0)
+#define amd64_fp_op_size(inst,opc,index,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fp_op((inst),(opc),(index)); } while (0)
+#define amd64_fp_op_reg_size(inst,opc,index,pop_stack,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fp_op_reg((inst),(opc),(index),(pop_stack)); } while (0)
+#define amd64_fp_int_op_membase_size(inst,opc,basereg,disp,is_int,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); x86_fp_int_op_membase((inst),(opc),((basereg)&0x7),(disp),(is_int)); } while (0)
 #define amd64_fstp_size(inst,index,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fstp((inst),(index)); } while (0)
 #define amd64_fcompp_size(inst,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fcompp(inst); } while (0)
 #define amd64_fucompp_size(inst,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fucompp(inst); } while (0)
@@ -618,7 +626,7 @@ typedef union {
 #define amd64_call_imm_size(inst,disp,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_call_imm((inst),(disp)); } while (0)
 //#define amd64_call_reg_size(inst,reg,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_call_reg((inst),((reg)&0x7)); } while (0)
 #define amd64_call_mem_size(inst,mem,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_call_mem((inst),(mem)); } while (0)
-#define amd64_call_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_call_membase((inst),((basereg)&0x7),(disp)); } while (0)
+#define amd64_call_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); x86_call_membase((inst),((basereg)&0x7),(disp)); } while (0)
 #define amd64_call_code_size(inst,target,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_call_code((inst),(target)); } while (0)
 //#define amd64_ret_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_ret(inst); } while (0)
 #define amd64_ret_imm_size(inst,imm,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_ret_imm((inst),(imm)); } while (0)
