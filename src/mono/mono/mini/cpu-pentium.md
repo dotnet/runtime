@@ -303,22 +303,17 @@ checkthis: src1:b len:3
 voidcall: len:11 clob:c
 voidcall_reg: src1:i len:11 clob:c
 voidcall_membase: src1:b len:16 clob:c
-voidcall_imm: len:11 clob:c
 fcall: dest:f len:11 clob:c
 fcall_reg: dest:f src1:i len:11 clob:c
 fcall_membase: dest:f src1:b len:16 clob:c
-fcall_imm: dest:f len:11 clob:c
 lcall: dest:l len:11 clob:c
 lcall_reg: dest:l src1:i len:11 clob:c
 lcall_membase: dest:l src1:b len:16 clob:c
-lcall_imm: dest:l len:16 clob:c
 vcall: len:11 clob:c
 vcall_reg: src1:i len:11 clob:c
 vcall_membase: src1:b len:16 clob:c
-vcall_imm: len:16 clob:c
 call_reg: dest:a src1:i len:11 clob:c
 call_membase: dest:a src1:b len:16 clob:c
-call_imm: dest:a len:16 clob:c
 trap:
 iconst: dest:i len:5
 i8const:

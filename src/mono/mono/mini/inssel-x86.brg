@@ -575,27 +575,27 @@ stmt: CEE_POP (freg) "0" {
 }     
 
 reg: OP_CALL_REG (OP_ICONST) {
-	tree->opcode = OP_CALL_IMM;
+	tree->opcode = CEE_CALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_VOIDCALL_REG (OP_ICONST) {
-	tree->opcode = OP_VOIDCALL_IMM;
+	tree->opcode = OP_VOIDCALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: OP_FCALL_REG (OP_ICONST) {
-	tree->opcode = OP_FCALL_IMM;
+	tree->opcode = OP_FCALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 lreg: OP_LCALL_REG (OP_ICONST) {
-	tree->opcode = OP_LCALL_IMM;
+	tree->opcode = OP_LCALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);

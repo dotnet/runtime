@@ -2593,17 +2593,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
-		case OP_FCALL_IMM:
-		case OP_LCALL_IMM:
-		case OP_VCALL_IMM:
-		case OP_VOIDCALL_IMM:
-		case OP_CALL_IMM:
-			call = (MonoCallInst*)ins;
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-			x86_call_code (code, 0);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
-				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
-			break;
 		case OP_OUTARG:
 		case OP_X86_PUSH:
 			x86_push_reg (code, ins->sreg1);
