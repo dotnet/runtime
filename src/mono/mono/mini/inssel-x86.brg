@@ -1,3 +1,39 @@
+#define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG(cfg,basereg,offset,operand) do { \
+		MonoInst *inst; \
+		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		inst->opcode = OP_X86_COMPARE_MEMBASE_REG; \
+		inst->inst_basereg = basereg; \
+		inst->inst_offset = offset; \
+		inst->sreg2 = operand; \
+		mono_bblock_add_inst (cfg->cbb, inst); \
+	} while (0)
+
+#define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM(cfg,basereg,offset,operand) do { \
+		MonoInst *inst; \
+		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		inst->opcode = OP_X86_COMPARE_MEMBASE_IMM; \
+		inst->inst_basereg = basereg; \
+		inst->inst_offset = offset; \
+		inst->inst_imm = operand; \
+		mono_bblock_add_inst (cfg->cbb, inst); \
+	} while (0)
+
+/* override the arch independant versions with fast x86 versions */
+
+#undef MONO_EMIT_BOUNDS_CHECK
+#undef MONO_EMIT_BOUNDS_CHECK_IMM
+
+#define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
+		MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_reg); \
+		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+	} while (0)
+
+#define MONO_EMIT_BOUNDS_CHECK_IMM(cfg, array_reg, array_type, array_length_field, index_imm) do { \
+		MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_imm); \
+		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+	} while (0)
+
+
 %%
 
 #
@@ -349,13 +385,9 @@ reg: CEE_LDOBJ (OP_REGOFFSET) "1" {
 }
 
 reg: CEE_LDELEMA (reg, reg) "15" {
-	int length_reg = mono_regstate_next_int (s->rs);
 	guint32 size = mono_class_array_element_size (tree->klass);
 	
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, length_reg, 
-				       state->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
-	MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, length_reg, state->right->reg1);
-	MONO_EMIT_NEW_COND_EXC (s, LE_UN, "IndexOutOfRangeException");
+	MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoArray, max_length, state->right->reg1);
 
 	if (size == 1 || size == 2 || size == 4 || size == 8) {
 		static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
