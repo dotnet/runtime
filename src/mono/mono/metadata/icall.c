@@ -524,7 +524,7 @@ ves_icall_System_ValueType_GetHashCode (MonoObject *this)
 
 	size = this->vtable->klass->instance_size - sizeof (MonoObject);
 
-	p = (char *)this + sizeof (MonoObject);
+	p = (const char *)this + sizeof (MonoObject);
 
 	for (i = 0; i < size; i++) {
 		h = (h << 5) - h + *p;
@@ -532,6 +532,26 @@ ves_icall_System_ValueType_GetHashCode (MonoObject *this)
 	}
 
 	return h;
+}
+
+static MonoBoolean
+ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that)
+{
+	gint32 i, size;
+	const char *p, *s;
+	guint h;
+
+	MONO_CHECK_ARG_NULL (that);
+
+	if (this->vtable != that->vtable)
+		return FALSE;
+
+	size = this->vtable->klass->instance_size - sizeof (MonoObject);
+
+	p = (const char *)this + sizeof (MonoObject);
+	s = (const char *)that + sizeof (MonoObject);
+
+	return memcmp (p, s, size)? FALSE: TRUE;
 }
 
 static MonoReflectionType *
@@ -1992,6 +2012,7 @@ static gconstpointer icall_map [] = {
 	 * System.ValueType
 	 */
 	"System.ValueType::GetHashCode", ves_icall_System_ValueType_GetHashCode,
+	"System.ValueType::Equals", ves_icall_System_ValueType_Equals,
 
 	/*
 	 * System.String
