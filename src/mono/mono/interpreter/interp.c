@@ -1261,9 +1261,11 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		if (!frame->method->addr) {
-			frame->ex = (MonoException*)mono_get_exception_missing_method ();
-			DEBUG_LEAVE ();
-			return;
+			if (!mono_lookup_pinvoke_call (frame->method)) {
+				frame->ex = (MonoException*)mono_get_exception_missing_method ();
+				DEBUG_LEAVE ();
+				return;
+			}
 		}
 		ves_pinvoke_method (frame);
 		if (frame->ex)

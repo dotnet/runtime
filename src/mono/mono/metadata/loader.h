@@ -28,8 +28,10 @@ typedef struct {
 
 typedef struct {
 	MonoMethod method;
-	guint16 piflags;  /* pinvoke flags */
 	void  (*code) (void);
+	/* add marshal info */
+	guint16 piflags;  /* pinvoke flags */
+	guint16 implmap_idx;  /* index into IMPLMAP */
 } MonoMethodPInvoke;
 
 typedef struct {
@@ -87,6 +89,9 @@ mono_add_internal_call     (const char *name, gconstpointer method);
 
 gpointer
 mono_lookup_internal_call (MonoMethod *method);
+
+gpointer
+mono_lookup_pinvoke_call (MonoMethod *method);
 
 void
 mono_method_get_param_names (MonoMethod *method, const char **names);

@@ -2588,6 +2588,26 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 	return start;
 }
 
+guint32
+mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
+{
+	locator_t loc;
+	guint32 start, end;
+	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_IMPLMAP];
+
+	if (!tdef->base)
+		return 0;
+
+	loc.t = tdef;
+	loc.col_idx = MONO_IMPLMAP_MEMBER;
+	loc.idx = ((method_idx + 1) << MEMBERFORWD_BITS) | MEMBERFORWD_METHODDEF;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	return loc.result + 1;
+}
+
 /**
  * @image: context where the image is created
  * @type_spec:  typespec token

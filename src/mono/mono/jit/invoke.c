@@ -556,6 +556,8 @@ enum_marshal:
 		g_assert_not_reached ();
 	}
 
+	if (pinvoke && !method->addr)
+		mono_lookup_pinvoke_call (method);
 	if (method->addr) {
 		/* special case EndInvoke - we pass the MonoMethod as first parameter */
 		if (end_invoke)

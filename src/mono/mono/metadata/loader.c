@@ -284,62 +284,55 @@ method_from_memberref (MonoImage *image, guint32 idx)
 	return NULL;
 }
 
-static void
-fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int idx)
+gpointer
+mono_lookup_pinvoke_call (MonoMethod *method)
 {
-	MonoMethod *mh = &piinfo->method;
+	MonoImage *image = method->klass->image;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
-	guint32 im_cols [4];
-	guint32 mr_cols [1];
+	guint32 im_cols [MONO_IMPLMAP_SIZE];
+	guint32 scope_token;
 	const char *import = NULL;
 	const char *scope = NULL;
 	char *full_name;
 	GModule *gmodule;
-	int i;
 
-	for (i = 0; i < im->rows; i++) {
-			
-		mono_metadata_decode_row (im, i, im_cols, 4);
+	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
-		if ((im_cols[1] >> 1) == idx + 1) {
+	if (method->addr)
+		return method->addr;
+	if (!piinfo->implmap_idx)
+		return NULL;
+	
+	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
-			import = mono_metadata_string_heap (image, im_cols [2]);
-
-			mono_metadata_decode_row (mr, im_cols [3] - 1, mr_cols,
-						  1);
-			
-			scope = mono_metadata_string_heap (image, mr_cols [0]);
-		}
-	}
-
-	piinfo->piflags = im_cols [0];
-
-	g_assert (import && scope);
+	piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
+	import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
+	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
+	scope = mono_metadata_string_heap (image, scope_token);
 
 	scope = mono_map_dll (scope);
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
 
-	mh->addr = NULL;
 	if (!gmodule) {
 		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
 			g_warning ("Failed to load library %s (%s)", full_name, scope);
 			g_free (full_name);
-			return;
+			return NULL;
 		}
 	}
 	g_free (full_name);
 
-	g_module_symbol (gmodule, import, &mh->addr); 
+	g_module_symbol (gmodule, import, &method->addr); 
 
-	if (!mh->addr) {
+	if (!method->addr) {
 		g_warning ("Failed to load function %s from %s", import, scope);
-		return;
+		return NULL;
 	}
-
-	mh->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
+	return method->addr;
 }
 
 MonoMethod *
@@ -393,7 +386,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		result->addr = mono_lookup_internal_call (result);
 		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, idx - 1);
+		((MonoMethodPInvoke *)result)->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
