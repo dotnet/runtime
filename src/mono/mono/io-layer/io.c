@@ -2367,9 +2367,10 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	gboolean ok;
 	struct stat buf;
 	const gchar *filename;
-	gchar *utf8_filename, *utf8_basename, *utf16_basename;
+	gchar *utf8_filename, *utf8_basename;
+	gunichar2 *utf16_basename;
 	time_t create_time;
-	gsize bytes;
+	glong bytes;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
 				(gpointer *)&find_handle, NULL);
@@ -2444,11 +2445,14 @@ retry:
 	find_data->dwReserved1 = 0;
 
 	utf8_basename = g_path_get_basename (utf8_filename);
-	utf16_basename = g_convert (utf8_basename, -1, "UTF16LE", "UTF8",
-				    NULL, &bytes, NULL);
+	utf16_basename = g_utf8_to_utf16 (utf8_basename, -1, NULL, &bytes,
+					  NULL);
 	if(utf16_basename==NULL) {
 		goto retry;
 	}
+
+	/* utf16 is 2 * utf8 */
+	bytes *= 2;
 
 	memset (find_data->cFileName, '\0', (MAX_PATH*2));
 
