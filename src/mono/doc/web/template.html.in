@@ -3,67 +3,68 @@
 <title>[ m o n o ] main page</title>
 <style type="text/css">
 <!--
-   body { font-family: "trebuchet ms", lucida, verdana, helvetica; background-image: url("images/bgsquares.gif"); background-attachment: fixed; }
-   body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; font-size: 12px; }
-	a:link { color: #bbbbbb; text-decoration: none; font-weight: bold; border-bottom: none 1px; }
-	a:visited { color: #ee9900; }
-//	a:active  { color: #222222; }
-	a:hover  { color: #ee9900; 
-		   // border-bottom: #ffffff dashed 1px; 
-                 }
-//	.subnavi { font-size: small; text-indent: 16pt; }
-	.subnavi { text-indent: 16pt; }
+   body { font-family: "trebuchet ms", lucida, verdana, helvetica; 
+          background-image: url("images/bgsquares.gif"); 
+          background-attachment: fixed; }
+   body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; 
+                     font-size: 12px; }
+
+	.navi { font-size: 14px; background: #444444; }
+	.subnavi { font-size: 12px; }
+
+	a.navi { color: #ffffff; text-decoration: none; font-weight: bold; }
+	a.navi:visited { color: #cccccc; }
+	a.navi:hover { color: #ee9900; text-decoration: underline; }
+
+	a.subnavi { color: #ffffff; text-decoration: none; font-weight: bold; }
+	a.subnavi:visited { color: #cccccc; }
+	a.subnavi:hover { color: #ee9900; text-decoration: underline; }
+
 // -->
 </style>
 </head>
 <body bgcolor="#555555" text="#000000">
 
-<table align="center" width="100%" height="100%"><tr><td valign="center" align="center">
-
-<table cellpadding="0" cellspacing="0" border="0">
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
-        <td><img src="images/pixel.gif"></td>
-        <td colspan="3"><img src="images/mono.gif"></td>
-        <td><img src="images/pixel.gif"></td>
+        <td><img src="images/pixel.gif"></td><!-- left border -->
+        <td colspan="4">
+           <a href="/mono/"><img src="images/mono.gif" border="0"></a></td>
+        <td><img src="images/pixel.gif"></td><!-- right border -->
     </tr>
     <tr>
-        <td>
-            <img src="images/pixel.gif"></td><td colspan="3" bgcolor="black">
-            <img src="images/pixel.gif" height="2">
-        </td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
-	<td><img src="images/pixel.gif"></td>
+        <td><img src="images/pixel.gif" width="1" height="1"></td>
+        <td colspan="3" bgcolor="black"><img src="images/pixel.gif" height="2"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
+	     <td><img src="images/pixel.gif"></td>
     </tr>
     <tr>
-	<td width="100"><img src="images/pixel.gif"></td>
-	<td valign="top">
-	    <table cellpadding="3" valign="top">
+        <td width="100"><img src="images/pixel.gif"></td>
+        <td valign="top">
+            <table cellpadding="2" valign="top" cellspacing="0" border="0">
                 #MENU#
-	    </table>
-	</td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
+            </table>
+	     </td>
+        <td bgcolor="black" width="1"><img src="images/pixel.gif" width="1"></td>
         <td bgcolor="white">
             <table cellpadding="16">
               <tr><td>
                 #CONTENT#
-	      </td></tr>
+	           </td></tr>
             </table>
-	</td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
+	      </td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
         <td width="100"><img src="images/pixel.gif"></td>
     </tr>
     <tr>
         <td colspan="2">
-            <img src="images/pixel.gif"></td><td colspan="2" bgcolor="black">
-            <img src="images/pixel.gif" height="2">
-        </td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
+            <img src="images/pixel.gif"></td>
+        <td colspan="2" bgcolor="black"><img src="images/pixel.gif" height="1"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
         <td><img src="images/pixel.gif"></td>
     </tr>
 </tr>
 </table>
-
-</td></tr></table>
 
 </body>
 </html>
