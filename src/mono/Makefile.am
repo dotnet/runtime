@@ -41,8 +41,8 @@ mcs-tree-safe-build: remove-binaries
 xinstall-runtime: mcs-tree-safe-build $(CONFIG_HEADER)
 	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) && $(MAKE) install ; fi
 	cd mono && $(MAKE) && $(MAKE) install
-	cd runtime && $(MAKE) install SUBDIRS= monobins_DATA=mcs.exe
-	cd runtime/net_1_1 && $(MAKE) install assemblies_DATA=mscorlib.dll gac_assemblies_list=
+	cd runtime && $(MAKE) dist_monobins_DATA=mcs.exe install-dist_monobinsDATA
+	cd runtime/net_1_1 && $(MAKE) install-dist_corlibDATA
 
 mcs-rest: xinstall-runtime
 	cd $(mcs_topdir) && $(MAKE)

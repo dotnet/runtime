@@ -1,3 +1,21 @@
+2004-04-30  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/net_1_1/Makefile.am (gac_assemblies_list): Remove .dll
+	suffix.
+	(gac_assemblies, non_gac_assemblies, corlibdir, dist_corlib_DATA): 
+	New variables.  Use Automake idioms.
+	(dist-hook): Remove.
+	(install-local, uninstall-local): Use mscorlib.dll from current
+	tree when running gacutil.
+	(mono_runtime): New variable.  Points to either JIT compiler or
+	interpreter.  
+	Report from Bernie Solomon <bernard@ugsolutions.com>
+	* runtime/net_2_0/Makefile.am: Likewise.
+	* runtime/Makefile.am (dist_monobins_DATA): Rename from
+	monobins_DATA.
+	(EXTRA_DIST): Remove.
+	* Makefile.am (fullbuild): Update to changes.
+
 2004-04-30  Jackson Harper  <jackson@ximian.com>
 
 	* runtime/net_2_0/Makefile.am:
