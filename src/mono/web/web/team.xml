@@ -236,6 +236,7 @@
     <image>none.png</image>
     <location>Quebec City, Canada</location>
     <organization>Motus Technologies</organization>
+    <description>Cryptoman</description>
     <tasks>
       <task>Cryptography</task>
       <task>Security</task>
