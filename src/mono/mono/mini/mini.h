@@ -798,4 +798,7 @@ void      mono_debug_add_aot_method            (MonoDomain *domain,
 MonoTraceSpec *mono_trace_parse_options         (MonoAssembly *assembly, char *options);
 gboolean       mono_trace_eval                  (MonoMethod *method);
 
+extern void
+mono_perform_abc_removal (MonoCompile *cfg);
+
 #endif /* __MONO_MINI_H__ */  
