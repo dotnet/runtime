@@ -243,6 +243,7 @@ typedef struct {
 	gpointer *static_data;
 	gpointer jit_data;
 	gpointer lock_data;
+	GSList *appdomain_refs;
 } MonoThread;
 
 typedef struct {

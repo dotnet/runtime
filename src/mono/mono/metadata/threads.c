@@ -136,9 +136,12 @@ static void thread_cleanup (MonoThread *thread)
 	mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
 	thread->state |= ThreadState_Stopped;
 	mono_monitor_exit ((MonoObject *)thread);
-	
+
 	mono_profiler_thread_end (thread->tid);
 	handle_remove (thread->tid);
+
+	mono_thread_pop_appdomain_ref ();
+
 	if (mono_thread_cleanup)
 		mono_thread_cleanup (thread);
 }
@@ -204,6 +207,9 @@ static guint32 start_wrapper(void *data)
 	}
 	
 	g_free (start_info);
+
+	/* Every thread references the appdomain which created it */
+	mono_thread_push_appdomain_ref (mono_domain_get ());
 
 	thread_adjust_static_data (thread);
 
@@ -888,7 +894,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	MONO_ARCH_SAVE_REGS;
 
 	thread->abort_state = state;
-	thread->abort_exc = mono_get_exception_thread_abort ();
+	thread->abort_exc = NULL;
 
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
@@ -974,7 +980,7 @@ struct wait_data
 	guint32 num;
 };
 
-static void wait_for_tids (struct wait_data *wait)
+static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 {
 	guint32 i, ret;
 	
@@ -983,7 +989,7 @@ static void wait_for_tids (struct wait_data *wait)
 		  ": %d threads to wait for in this batch", wait->num);
 #endif
 
-	ret=WaitForMultipleObjects(wait->num, wait->handles, TRUE, INFINITE);
+	ret=WaitForMultipleObjects(wait->num, wait->handles, TRUE, timeout);
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
 #ifdef THREAD_DEBUG
@@ -1070,7 +1076,7 @@ void mono_thread_manage (void)
 		LeaveCriticalSection (&threads_mutex);
 		if(wait->num>0) {
 			/* Something to wait for */
-			wait_for_tids (wait);
+			wait_for_tids (wait, INFINITE);
 		}
 	} while(wait->num>0);
 	
@@ -1105,6 +1111,142 @@ void mono_thread_abort_all_other_threads (void)
 				   GUINT_TO_POINTER (self));
 	
 	LeaveCriticalSection (&threads_mutex);
+}
+
+/*
+ * mono_thread_push_appdomain_ref:
+ *
+ *   Register that the current thread may have references to objects in domain 
+ * @domain on its stack. Each call to this function should be paired with a 
+ * call to pop_appdomain_ref.
+ */
+void 
+mono_thread_push_appdomain_ref (MonoDomain *domain)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	if (thread) {
+		//printf ("PUSH REF: %p -> %s.\n", thread, domain->friendly_name);
+		EnterCriticalSection (&threads_mutex);
+		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
+		LeaveCriticalSection (&threads_mutex);
+	}
+}
+
+void
+mono_thread_pop_appdomain_ref (void)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	if (thread) {
+		//printf ("POP REF: %p -> %s.\n", thread, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name);
+		EnterCriticalSection (&threads_mutex);
+		thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
+		LeaveCriticalSection (&threads_mutex);
+	}
+}
+
+static gboolean
+mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain)
+{
+	gboolean res;
+	EnterCriticalSection (&threads_mutex);
+	res = g_slist_find (thread->appdomain_refs, domain) != NULL;
+	LeaveCriticalSection (&threads_mutex);
+	return res;
+}
+
+typedef struct abort_appdomain_data {
+	struct wait_data wait;
+	MonoDomain *domain;
+} abort_appdomain_data;
+
+static void
+abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoThread *thread = (MonoThread*)value;
+	abort_appdomain_data *data = (abort_appdomain_data*)user_data;
+	MonoDomain *domain = data->domain;
+
+	if (mono_thread_has_appdomain_ref (thread, domain)) {
+		//printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name);
+		ves_icall_System_Threading_Thread_Abort (thread, (MonoObject*)domain->domain);
+
+		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
+			data->wait.handles [data->wait.num] = thread->handle;
+			data->wait.threads [data->wait.num] = thread;
+			data->wait.num++;
+		} else {
+			/* Just ignore the rest, we can't do anything with
+			 * them yet
+			 */
+		}
+	}
+}
+
+/*
+ * mono_threads_abort_appdomain_threads:
+ *
+ *   Abort threads which has references to the given appdomain.
+ */
+gboolean
+mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
+{
+	abort_appdomain_data user_data;
+	guint32 start_time;
+
+	//printf ("ABORT BEGIN.\n");
+
+	start_time = GetTickCount ();
+	do {
+		EnterCriticalSection (&threads_mutex);
+
+		user_data.domain = domain;
+		user_data.wait.num = 0;
+		mono_g_hash_table_foreach (threads, abort_appdomain_thread, &user_data);
+		LeaveCriticalSection (&threads_mutex);
+
+		if (user_data.wait.num > 0)
+			wait_for_tids (&user_data.wait, timeout);
+
+		/* Update remaining time */
+		timeout -= GetTickCount () - start_time;
+		start_time = GetTickCount ();
+
+		if (timeout < 0)
+			return FALSE;
+	}
+	while (user_data.wait.num > 0);
+
+	//printf ("ABORT DONE.\n");
+
+	return TRUE;
+}
+
+/*
+ * mono_thread_get_pending_exception:
+ *
+ *   Return an exception which needs to be raised when leaving a catch clause.
+ * This is used for undeniable exception propagation.
+ */
+MonoException*
+mono_thread_get_pending_exception (void)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (thread && thread->abort_exc) {
+		/*
+		 * FIXME: Clear the abort exception and return an AppDomainUnloaded 
+		 * exception if the thread no longer references a dying appdomain.
+		 */
+		thread->abort_exc->trace_ips = NULL;
+		thread->abort_exc->stack_trace = NULL;
+		return thread->abort_exc;
+	}
+
+	return NULL;
 }
 
 static int static_data_idx = 0;

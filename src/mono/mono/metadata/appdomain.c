@@ -964,7 +964,11 @@ ves_icall_System_AppDomain_InternalInvokeInDomain (MonoAppDomain *ad, MonoReflec
 	if (!mono_domain_set (ad->data, FALSE))
 		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
+	mono_thread_push_appdomain_ref (ad->data);
+
 	res = mono_runtime_invoke_array (m, obj, args, NULL);
+
+	mono_thread_pop_appdomain_ref ();
 
 	mono_domain_set (old_domain, TRUE);
 
@@ -1045,28 +1049,29 @@ clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
 		klass->cached_vtable = NULL;
 }
 
+typedef struct unload_data {
+	MonoDomain *domain;
+	char *failure_reason;
+} unload_data;
+
 static guint32
 unload_thread_main (void *arg)
 {
-	MonoDomain *domain = (MonoDomain*)arg;
-
-#if 0
-	printf ("STOP WORLD...\n");
-	/* FIXME: Can this deadlock with the same call in libgc ? */
-	mono_gc_stop_world ();
+	unload_data *data = (unload_data*)arg;
+	MonoDomain *domain = data->domain;
 
 	/* 
-	 * FIXME: Abort all threads which have stack frames which belong to the
-	 * doomed appdomain.
+	 * FIXME: Abort our parent thread last, so we can return a failure 
+	 * indication if aborting times out.
 	 */
-
-	printf ("START WORLD...\n");
-	mono_gc_start_world ();
-#endif
+	if (!mono_threads_abort_appdomain_threads (domain, 1000)) {
+		data->failure_reason = g_strdup_printf ("Aborting of threads in domain %s timed out.", domain->friendly_name);
+		return 1;
+	}
 
 	/* Finalize all finalizable objects in the doomed appdomain */
 	if (!mono_domain_finalize (domain, 1000)) {
-		g_warning ("Finalization of domain %s timed out.", domain->friendly_name);
+		data->failure_reason = g_strdup_printf ("Finalization of domain %s timed out.", domain->friendly_name);
 		return 1;
 	}
 
@@ -1107,6 +1112,7 @@ mono_domain_unload (MonoDomain *domain)
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	MonoObject *exc;
+	unload_data thread_data;
 
 	//printf ("UNLOAD STARTING FOR %s.\n", domain->friendly_name);
 
@@ -1136,12 +1142,27 @@ mono_domain_unload (MonoDomain *domain)
 		mono_raise_exception ((MonoException*)exc);
 	}
 
+	thread_data.domain = domain;
+	thread_data.failure_reason = NULL;
+
 	/* 
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
-	thread_handle = CreateThread (NULL, 0, unload_thread_main, domain, 0, &tid);
+	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 	ret = WaitForSingleObject (thread_handle, INFINITE);
 
-	/* FIXME: Check the thread exit code and throw an exception on failure */
+	if (thread_data.failure_reason) {
+		MonoException *ex;
+
+		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
+		/* Roll back the state change */
+		domain->state = MONO_APPDOMAIN_CREATED;
+
+		g_warning (thread_data.failure_reason);
+
+		g_free (thread_data.failure_reason);
+
+		mono_raise_exception (ex);
+	}
 }

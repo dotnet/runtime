@@ -37,6 +37,13 @@ extern void mono_thread_init (MonoThreadStartCB start_cb,
 extern void mono_thread_manage(void);
 extern void mono_thread_abort_all_other_threads (void);
 
+extern void mono_thread_push_appdomain_ref (MonoDomain *domain);
+extern void mono_thread_pop_appdomain_ref (void);
+
+extern MonoException * mono_thread_get_pending_exception (void);
+
+extern gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
+
 extern MonoThread *mono_thread_current (void);
 
 typedef struct {
