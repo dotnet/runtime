@@ -1026,7 +1026,7 @@ handle_enum:
 			g_free (swapped);
 		}
 #else
-		idx = add_to_blob_cached (assembly, blob_size, b-blob_size, (const char*)mono_string_chars (str), len);
+		idx = add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
 #endif
 
 		g_free (buf);
@@ -2683,7 +2683,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);
-	add_to_blob_cached (assembly, "", 1, NULL, 0);
+	add_to_blob_cached (assembly, (char*) "", 1, NULL, 0);
 	/* import tables... */
 	mono_image_add_stream_data (&assembly->code, entrycode, sizeof (entrycode));
 	assembly->iat_offset = mono_image_add_stream_zero (&assembly->code, 8); /* two IAT entries */

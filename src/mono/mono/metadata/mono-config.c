@@ -208,7 +208,7 @@ mono_config_init (void)
 {
 	inited = 1;
 	config_handlers = g_hash_table_new (g_str_hash, g_str_equal);
-	g_hash_table_insert (config_handlers, dllmap_handler.element_name, &dllmap_handler);
+	g_hash_table_insert (config_handlers, (gpointer) dllmap_handler.element_name, (gpointer) &dllmap_handler);
 }
 
 /* FIXME: error handling */

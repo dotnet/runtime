@@ -461,7 +461,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	} else {
 		g_assert ((header != NULL) || (mep->entry->num_locals == 0));
 		for (i = 0; i < mep->entry->num_locals; i++) {
-			MonoDebugVarInfo *var = &mep->minfo->jit->locals [i];
+			/*MonoDebugVarInfo *var = &mep->minfo->jit->locals [i];*/
 			*var_table++ = mep->minfo->jit->locals [i];
 			*type_table++ = write_type (symfile->global, header->locals [i]);
 		}

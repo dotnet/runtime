@@ -769,7 +769,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		sun->sun_path [len - 2] = '\0';
 		*sa_size = sizeof (struct sockaddr_un);
 
-		return sun;
+		return (struct sockaddr *)sun;
 #endif
 	} else {
 		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));

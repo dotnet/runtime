@@ -34,6 +34,9 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
+static MonoMethod *
+look_for_method_by_name (MonoClass *klass, const gchar *name);
+
 /*
  * mono_runtime_init:
  * @domain: domain returned by mono_init ()
@@ -237,7 +240,7 @@ ves_icall_System_AppDomain_getCurDomain ()
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	/*MonoDomain *domain = mono_domain_get (); */
 	MonoClass *adclass;
 	MonoAppDomain *ad;
 	MonoDomain *data;
@@ -781,7 +784,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 		g_error ("No entry point method found in %s", image->name);
 
 	if (!args)
-		args = (MonoObject *) mono_array_new (ad->data, mono_defaults.string_class, 0);
+		args = (MonoArray *) mono_array_new (ad->data, mono_defaults.string_class, 0);
 
 	res = mono_runtime_exec_main (method, (MonoArray *)args, NULL);
 

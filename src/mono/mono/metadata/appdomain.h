@@ -211,4 +211,7 @@ ves_icall_System_AppDomain_InternalGetContext      (void);
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
 
+gint32 
+ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
+
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */

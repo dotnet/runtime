@@ -3027,7 +3027,7 @@ ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
 	return mono_compile_method (method);
 }
 
-char * mono_cfg_dir = "";
+char const * mono_cfg_dir = "";
 
 void    
 mono_install_get_config_dir (void)

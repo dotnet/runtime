@@ -47,7 +47,7 @@ mono_add_internal_call (const char *name, gconstpointer method)
 		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
 	}
 
-	g_hash_table_insert (icall_hash, g_strdup (name), method);
+	g_hash_table_insert (icall_hash, g_strdup (name), (gpointer) method);
 }
 
 static void

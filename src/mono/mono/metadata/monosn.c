@@ -408,7 +408,7 @@ convert_format (const char *from, const char *outfile) {
 	int binlen, ret, lenout;
 	FILE *file;
 	
-	if (!g_file_get_contents (from, &key, &len, NULL)) {
+	if (!g_file_get_contents (from, (gchar**) &key, &len, NULL)) {
 		printf ("Cannot load file: %s\n", from);
 		return 2;
 	}
@@ -461,7 +461,7 @@ get_digest (const char *from, const char *outfile)
 		snsize = 0;
 	}
 	
-	if (!g_file_get_contents (from, &ass, &len, NULL)) {
+	if (!g_file_get_contents (from, (gchar**) &ass, &len, NULL)) {
 		printf ("Cannot load file: %s\n", from);
 		mono_image_close (image);
 		return 2;

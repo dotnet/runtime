@@ -273,4 +273,7 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token);
 void
 mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
 
+void    
+mono_install_get_config_dir(void);
+
 #endif /* _MONO_CLI_CLASS_H_ */
