@@ -7042,10 +7042,18 @@ handle_type:
 	}
 	/* it may be a boxed value or a Type */
 	case MONO_TYPE_OBJECT: {
-		MonoClass *klass = mono_object_class (arg);
+		MonoClass *klass;
 		char *str;
 		guint32 slen;
+
+		if (arg == NULL) {
+			*p++ = MONO_TYPE_STRING;	// It's same hack as MS uses
+			*p++ = 0xFF;
+			break;
+		}
 		
+		klass = mono_object_class (arg);
+
 		if (mono_object_isinst (arg, mono_defaults.monotype_class)) {
 			*p++ = 0x50;
 			goto handle_type;
