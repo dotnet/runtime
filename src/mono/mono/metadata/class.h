@@ -107,6 +107,9 @@ mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclas
 char*         
 mono_type_get_name         (MonoType *type);
 
+char*         
+mono_type_get_full_name    (MonoType *type);
+
 /* MonoClass accessors */
 MonoImage*
 mono_class_get_image         (MonoClass *klass);

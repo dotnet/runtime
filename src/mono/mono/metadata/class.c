@@ -201,10 +201,10 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
  * The inverse of mono_reflection_parse_type ().
  */
 static char*
-_mono_type_get_name (MonoType *type, gboolean include_arity)
+_mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_arity)
 {
 	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (type, result, FALSE, include_arity);
+	mono_type_get_name_recurse (type, result, is_recursed, include_arity);
 
 	if (type->byref)
 		g_string_append_c (result, '&');
@@ -215,7 +215,13 @@ _mono_type_get_name (MonoType *type, gboolean include_arity)
 char*
 mono_type_get_name (MonoType *type)
 {
-	return _mono_type_get_name (type, TRUE);
+	return _mono_type_get_name (type, TRUE, TRUE);
+}
+
+char*
+mono_type_get_full_name (MonoType *type)
+{
+	return _mono_type_get_name (type, FALSE, TRUE);
 }
 
 gboolean
@@ -1055,14 +1061,14 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = ic->methods [l];						
 				char *qname, *fqname, *cname, *the_cname;
-				MonoClass *k1, *the_ic;
+				MonoClass *k1;
 				
 				if (vtable [io + l])
 					continue;
 
 				if (ic->generic_inst) {
 					MonoClass *the_ic = mono_class_from_mono_type (ic->generic_inst->generic_type);
-					the_cname = _mono_type_get_name (&the_ic->byval_arg, FALSE);
+					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, FALSE);
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
