@@ -1,3 +1,8 @@
+2001-12-20  Aaron Weber  <aaron@ximian.com>
+
+	* doc/faq: added <a name=""> nav links, and moved all MSFT-related
+	questions into a single section.
+
 2001-12-17  Aaron Weber  <aaron@ximian.com>
 
 	* doc/faq (Q): Question-by-question, line-by-line revision.
