@@ -810,5 +810,5 @@ mono.spec
 echo "
 
 	GC:	$gc
-	ICU support: $enable_icu
+	ICU:	$enable_icu
 "
