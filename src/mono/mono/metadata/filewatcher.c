@@ -93,15 +93,16 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	return 3;
 #else
 	GModule *fam_module;
+	gchar *filename;
 
 	MONO_ARCH_SAVE_REGS;
 
-	fam_module = g_module_open ("libfam", G_MODULE_BIND_LAZY);
-	if (fam_module == NULL) {
+	filename = g_module_build_path (NULL, "libfam.so.0");
+	fam_module = g_module_open (filename, G_MODULE_BIND_LAZY);
+	g_free (filename);
+	if (fam_module == NULL)
 		return 0;
-	}
 
-	
 	g_module_symbol (fam_module, "FAMNextEvent", (gpointer *) &FAMNextEvent);
 	if (FAMNextEvent == NULL)
 		return 0;
