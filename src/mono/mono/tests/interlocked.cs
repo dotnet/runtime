@@ -6,6 +6,8 @@ public class InterlockTest
 	public int test;
 	public int add;
 	public int rem;
+
+	static int s_test;
 	
 	public static int Main() {
 		int a,b;
@@ -34,8 +36,20 @@ public class InterlockTest
 		if (a != 1)
 			return -4;
 
+		string s = IncTest ();
+		if (s != "A1")
+			return -5;
+
+		s = IncTest ();
+		if (s != "A2")
+			return -6;
+
 		Console.WriteLine ("done!");
 
 		return 0;
+	}
+
+	public static string IncTest () {
+		return "A" + Interlocked.Increment (ref s_test);
 	}
 }
