@@ -1778,7 +1778,7 @@ ves_icall_System_DateTime_GetNow (void)
 	
 	GetLocalTime (&st);
 	SystemTimeToFileTime (&st, &ft);
-	return (gint64)504911232000000000L + (((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime;
+	return (gint64)504911232000000000L + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
 #else
 	/* FIXME: put this in io-layer and call it GetLocalTime */
 	struct timeval tv;
