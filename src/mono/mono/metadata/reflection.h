@@ -406,7 +406,7 @@ typedef struct {
 	AssemblyVersionCompatibility versioncompat;*/
 	MonoObject  *cultureInfo;
 	MonoObject  *flags;
-	MonoObject  *hashalg;
+	guint32     hashalg;
 	MonoObject  *keypair;
 	MonoArray   *publicKey;
 	MonoArray   *keyToken;

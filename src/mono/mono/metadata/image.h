@@ -11,6 +11,8 @@ typedef struct {
 	const char *name;
 	const char *culture;
 	const char *hash_value;
+	const guint8* public_key;
+	guint32 hash_alg;
 	guint32 hash_len;
 	guint32 flags;
 	guint16 major, minor, build, revision;
@@ -96,6 +98,7 @@ struct _MonoImage {
 	 */
 	GHashTable *method_cache;
 	GHashTable *class_cache;
+
 	/* indexed by a generic type instantiation */
 	GHashTable *generics_cache;
 	/*

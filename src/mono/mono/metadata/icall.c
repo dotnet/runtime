@@ -2862,6 +2862,10 @@ static void
 ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
 {
 	MonoAssemblyName *name = &assembly->assembly->aname;
+	static MonoMethod *create_culture = NULL;
+    gpointer args [1];
+	guint32 pkey_len;
+	const char *pkey_ptr;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2874,6 +2878,26 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 	aname->minor = name->minor;
 	aname->build = name->build;
 	aname->revision = name->revision;
+	aname->hashalg = name->hash_alg;
+
+	if (!create_culture) {
+		MonoMethodDesc *desc = mono_method_desc_new ("System.Globalization.CultureInfo:CreateSpecificCulture(string)", TRUE);
+		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
+		g_assert (create_culture);
+		mono_method_desc_free (desc);
+	}
+
+	args [0] = mono_string_new (mono_object_domain (assembly), name->culture);
+	aname->cultureInfo = 
+		mono_runtime_invoke (create_culture, NULL, args, NULL);
+
+	if (name->public_key) {
+		pkey_ptr = name->public_key;
+		pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
+
+		aname->publicKey = mono_array_new (mono_object_domain (assembly), mono_defaults.byte_class, pkey_len);
+		memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
+	}
 }
 
 static MonoArray*
@@ -3921,7 +3945,6 @@ mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 static MonoObject*
 mono_TypedReference_ToObject (MonoTypedRef tref)
 {
-	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
 	if (MONO_TYPE_IS_REFERENCE (tref.type)) {

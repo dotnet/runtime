@@ -482,7 +482,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	t = &image->tables [MONO_TABLE_ASSEMBLY];
 	if (t->rows) {
 		mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
-		
+
 		ass->aname.hash_len = 0;
 		ass->aname.hash_value = NULL;
 		ass->aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
@@ -492,6 +492,9 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		ass->aname.minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
 		ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
 		ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
+		ass->aname.hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
+		if (cols [MONO_ASSEMBLY_PUBLIC_KEY])
+			ass->aname.public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
 	}
 
 	/* 
