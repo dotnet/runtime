@@ -26,6 +26,7 @@ struct StartInfo
 {
 	guint32 (*func)(void *);
 	MonoObject *obj;
+	void *this;
 	MonoDomain *domain;
 };
 
@@ -53,6 +54,7 @@ static guint32 start_wrapper(void *data)
 {
 	struct StartInfo *start_info=(struct StartInfo *)data;
 	guint32 (*start_func)(void *);
+	void *this;
 	
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
@@ -64,13 +66,13 @@ static guint32 start_wrapper(void *data)
 	 * This is recorded so CurrentThread can return the
 	 * Thread object.
 	 */
-	TlsSetValue(current_object_key, start_info->obj);
-	start_func=start_info->func;
+	TlsSetValue (current_object_key, start_info->obj);
+	start_func = start_info->func;
 	mono_domain_set (start_info->domain);
+	this = start_info->this;
+	g_free (start_info);
 	
-	g_free(start_info);
-	
-	start_func(NULL);
+	start_func (this);
 
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper terminating");
@@ -139,7 +141,7 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 							 MonoObject *start)
 {
-	MonoClassField *field;
+	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)start;
 	guint32 (*start_func)(void *);
 	struct StartInfo *start_info;
 	HANDLE thread;
@@ -151,8 +153,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		  this, start);
 #endif
 	
-	field=mono_class_get_field_from_name(mono_defaults.multicastdelegate_class->parent, "method_ptr");
-	start_func= *(gpointer *)(((char *)start) + field->offset);
+	start_func = delegate->delegate.method_ptr;
 	
 	if(start_func==NULL) {
 		g_warning(G_GNUC_PRETTY_FUNCTION
@@ -160,9 +161,10 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		return(NULL);
 	} else {
 		/* This is freed in start_wrapper */
-		start_info=g_new0(struct StartInfo, 1);
-		start_info->func=start_func;
-		start_info->obj=this;
+		start_info = g_new0 (struct StartInfo, 1);
+		start_info->func = start_func;
+		start_info->this = delegate->delegate.target;
+		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
 		
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
