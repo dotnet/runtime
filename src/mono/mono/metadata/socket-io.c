@@ -369,7 +369,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 				struct protoent *pent;
 				
 				pent = getprotobyname ("TCP");
-				proto = pent ? pent->p_proto : 0 /* is 0 a good default value?? */;
+				proto = pent ? pent->p_proto : 6 /* is 6 a good default value?? */;
 				cached = 1;
 			}
 			
@@ -1154,7 +1154,11 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 #endif
 #if defined (HAVE_IP_ADD_MEMBERSHIP) || defined (HAVE_IP_DROP_MEMBERSHIP)
 		{
+#ifdef HAVE_STRUCT_IP_MREQN
 			struct ip_mreqn mreq;
+#else
+			struct ip_mreq mreq;
+#endif /* HAVE_STRUCT_IP_MREQN */
 			
 			/* pain! MulticastOption holds two IPAddress
 			 * members, so I have to dig the value out of
@@ -1164,11 +1168,16 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			mreq.imr_multiaddr = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
 											field->offset));
 			field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
+#ifdef HAVE_STRUCT_IP_MREQN
 			mreq.imr_address = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
 										      field->offset));
-			valsize = sizeof (mreq);
+#else
+			mreq.imr_interface = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
+											field->offset));
+#endif /* HAVE_STRUCT_IP_MREQN */
+			
 			ret = setsockopt (sock, system_level, system_name,
-					  &mreq, valsize);
+					  &mreq, sizeof (mreq));
 			break;
 		}
 #endif /* HAVE_IP_[ADD,DROP]_MEMBERSHIP */
