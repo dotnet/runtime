@@ -73,7 +73,10 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	gpointer *ea;
 
 	vo = (MonoArray *)value;
-	vc = (MonoClass *)vo->obj.vtable->klass;
+	if (vo)
+		vc = (MonoClass *)vo->obj.vtable->klass;
+	else
+		vc = NULL;
 
 	io = (MonoArray *)idxs;
 	ic = (MonoClass *)io->obj.vtable->klass;
@@ -83,7 +86,7 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 
 	g_assert (ic->rank == 1);
 	g_assert (io->bounds [0].length == ac->rank);
-	if (!mono_object_isinst (value, ac->element_class)) {
+	if (vo && !mono_object_isinst (value, ac->element_class)) {
 		g_error ("Array not compatible: %s <= %s", ac->element_class->name, vc->name);
 	}
 
@@ -98,9 +101,11 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	ea = (gpointer*)((char*)ao->vector + (pos * esize));
 
 	if (ac->element_class->valuetype) {
-		g_assert (vc->valuetype);
-
-		memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
+		if (vo) {
+			g_assert (vc->valuetype);
+			memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
+		} else
+			memset (ea, '0',  esize);
 	} else
 		*ea = (gpointer)vo;
 
