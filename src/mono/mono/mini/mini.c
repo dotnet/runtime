@@ -135,9 +135,6 @@ static CRITICAL_SECTION jit_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
 
-/* MonoMethod -> MonoJitDynamicMethodInfo */
-static GHashTable *dynamic_code_hash = NULL;
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -6242,26 +6239,22 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 }
 
 static void
-mono_dynamic_code_hash_insert (MonoMethod *method, MonoJitDynamicMethodInfo *ji)
+mono_dynamic_code_hash_insert (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *ji)
 {
-	EnterCriticalSection (&jit_mutex);
-	if (!dynamic_code_hash)
-		dynamic_code_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (dynamic_code_hash, method, ji);
-	LeaveCriticalSection (&jit_mutex);
+	if (!domain->dynamic_code_hash)
+		domain->dynamic_code_hash = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (domain->dynamic_code_hash, method, ji);
 }
 
 static MonoJitDynamicMethodInfo*
-mono_dynamic_code_hash_lookup (MonoMethod *method)
+mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitDynamicMethodInfo *res;
 
-	EnterCriticalSection (&jit_mutex);
-	if (dynamic_code_hash)
-		res = g_hash_table_lookup (dynamic_code_hash, method);
+	if (domain->dynamic_code_hash)
+		res = g_hash_table_lookup (domain->dynamic_code_hash, method);
 	else
 		res = NULL;
-	LeaveCriticalSection (&jit_mutex);
 	return res;
 }
 
@@ -6644,9 +6637,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		int i;
 
 		if (method->dynamic) {
-			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (method)->code_mp, sizeof (gpointer) * patch_info->table_size);
-		}
-		else {
+			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->table_size);
+		} else {
 			mono_domain_lock (domain);
 			jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			mono_domain_unlock (domain);
@@ -7356,16 +7348,15 @@ mono_codegen (MonoCompile *cfg)
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
 
 	if (cfg->method->dynamic) {
-		MonoJitDynamicMethodInfo *dyn_ji;
-
 		/* Allocate the code into a separate memory pool so it can be freed */
-		dyn_ji = g_new0 (MonoJitDynamicMethodInfo, 1);
-		dyn_ji->code_mp = mono_code_manager_new_dynamic ();
-		mono_dynamic_code_hash_insert (cfg->method, dyn_ji);
+		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
+		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic ();
+		mono_domain_lock (cfg->domain);
+		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
+		mono_domain_unlock (cfg->domain);
 
-		code = mono_code_manager_reserve (dyn_ji->code_mp, cfg->code_size);
-	}
-	else {
+		code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size);
+	} else {
 		mono_domain_lock (cfg->domain);
 		code = mono_code_manager_reserve (cfg->domain->code_mp, cfg->code_size);
 		mono_domain_unlock (cfg->domain);
@@ -7416,9 +7407,9 @@ mono_codegen (MonoCompile *cfg)
 		}
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table;
-			if (cfg->method->dynamic)
-				table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (cfg->method)->code_mp, sizeof (gpointer) * patch_info->table_size);
-			else {
+			if (cfg->method->dynamic) {
+				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->table_size);
+			} else {
 				mono_domain_lock (cfg->domain);
 				table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 				mono_domain_unlock (cfg->domain);
@@ -7445,9 +7436,8 @@ mono_codegen (MonoCompile *cfg)
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	if (cfg->method->dynamic) {
-		mono_code_manager_commit (mono_dynamic_code_hash_lookup (cfg->method)->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
-	}
-	else {
+		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
+	} else {
 		mono_domain_lock (cfg->domain);
 		mono_code_manager_commit (cfg->domain->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 		mono_domain_unlock (cfg->domain);
@@ -7877,7 +7867,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_info_table_add (cfg->domain, jinfo);
 
 	if (cfg->method->dynamic)
-		mono_dynamic_code_hash_lookup (cfg->method)->ji = jinfo;
+		mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = jinfo;
 
 	/* collect statistics */
 	mono_jit_stats.allocated_code_size += cfg->code_len;
@@ -8064,21 +8054,22 @@ invalidated_delegate_trampoline (MonoClass *klass)
  *  Free all memory allocated by the JIT for METHOD.
  */
 static void
-mono_jit_free_method (MonoMethod *method)
+mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitDynamicMethodInfo *ji;
 
 	g_assert (method->dynamic);
 
+	mono_domain_lock (domain);
+	ji = mono_dynamic_code_hash_lookup (domain, method);
+	mono_domain_unlock (domain);
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
+	/* FIXME: only enable this with a env var */
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/*
 		 * Instead of freeing the code, change it to call an error routine
 		 * so people can fix their code.
 		 */
-		EnterCriticalSection (&jit_mutex);
-		ji = g_hash_table_lookup (dynamic_code_hash, method);
-		LeaveCriticalSection (&jit_mutex);
 		if (ji){
 		        char *type = mono_type_full_name (&method->klass->byval_arg);
 			char *type_and_method = g_strdup_printf ("%s.%s", type, method->name);
@@ -8090,17 +8081,14 @@ mono_jit_free_method (MonoMethod *method)
 	}
 #endif
 
-	EnterCriticalSection (&jit_mutex);
-	ji = g_hash_table_lookup (dynamic_code_hash, method);
-	if (!ji) {
-		LeaveCriticalSection (&jit_mutex);
+	if (!ji)
 		return;
-	}
-	g_hash_table_remove (dynamic_code_hash, ji);
-	LeaveCriticalSection (&jit_mutex);
+	mono_domain_lock (domain);
+	g_hash_table_remove (domain->dynamic_code_hash, ji);
+	mono_domain_unlock (domain);
 
 	mono_code_manager_destroy (ji->code_mp);
-	mono_jit_info_table_remove (mono_domain_get (), ji->ji);
+	mono_jit_info_table_remove (domain, ji->ji);
 	g_free (ji->ji);
 	g_free (ji);
 }

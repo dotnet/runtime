@@ -491,6 +491,7 @@ typedef struct {
 	MonoInst        *prev_ins;   /* in decompose */
 	MonoJumpInfo    *patch_info;
 	MonoJitInfo     *jit_info;
+	MonoJitDynamicMethodInfo *dynamic_info;
 	guint            num_bblocks;
 	guint            locals_start;
 	guint            num_varinfo; /* used items in varinfo */
@@ -674,11 +675,6 @@ typedef struct {
 	guint16 offset;
 	guint8  pad;
 } MonoJitArgumentInfo;
-
-typedef struct {
-	MonoJitInfo *ji;
-	MonoCodeManager *code_mp;
-} MonoJitDynamicMethodInfo;
 
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
