@@ -11,6 +11,13 @@
 
 #include "debug-private.h"
 
+/* See debug.h for documentation. */
+guint32 mono_debugger_symbol_file_table_generation = 0;
+guint8 *mono_debugger_symbol_file_table = NULL;
+
+/* Caution: This function MUST be called before touching the symbol table! */
+static void release_symbol_file_table (void);
+
 static MonoDebugHandle *mono_debug_handles = NULL;
 static MonoDebugHandle *mono_default_debug_handle = NULL;
 
@@ -35,6 +42,8 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 {
 	MonoDebugHandle *debug;
 	const char **ptr;
+
+	release_symbol_file_table ();
 	
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (assembly->image->name);
@@ -154,8 +163,6 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	char buf [1024];
 	int i, mnum;
 	int offset = -1;
-
-	g_message (G_STRLOC ": %d - %s", info->always_create_il, info->filename);
 
 	if (info->always_create_il || !(info->handle->flags & MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES)) {
 		char *command = g_strdup_printf ("monodis --output=%s %s",
@@ -430,7 +437,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 			debug_load_method_lines (info);
 			info->mono_symfile = mono_debug_create_mono_symbol_file (info->image, info->ilfile);
 		}
-		mono_debugger_internal_symbol_files_changed = TRUE;
+		mono_debugger_symbol_file_table_generation++;
 		break;
 
 	default:
@@ -457,6 +464,9 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 
 	if (!debug || !debug->dirty)
 		return;
+
+	release_symbol_file_table ();
+	
 	switch (debug->format) {
 	case MONO_DEBUG_FORMAT_STABS:
 		mono_debug_write_stabs (debug);
@@ -526,6 +536,8 @@ mono_debug_cleanup (void)
 {
 	MonoDebugHandle *debug, *temp;
 
+	release_symbol_file_table ();
+	
 	for (debug = mono_debug_handles; debug; debug = temp) {
 		GList *tmp;
 
@@ -716,6 +728,8 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 			return;
 	}
 
+	release_symbol_file_table ();
+	
 	info = mono_debug_open_image (debug, klass->image);
 
 	/*
@@ -913,20 +927,41 @@ mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset)
 	return address_from_il_offset (minfo, il_offset);
 }
 
-MonoSymbolFile *
-mono_debugger_internal_get_symbol_files (void)
+static void
+release_symbol_file_table ()
+{
+	guint8 *temp;
+
+	if (!mono_debugger_symbol_file_table)
+		return;
+
+	/*
+	 * Caution: The debugger may access the memory pointed to by this variable
+	 *          at any time.  It is very important to set the pointer to NULL
+	 *          before freeing the area.
+	 */
+
+	temp = mono_debugger_symbol_file_table;
+	mono_debugger_symbol_file_table = NULL;
+	g_free (mono_debugger_symbol_file_table);
+}
+
+int
+mono_debugger_update_symbol_file_table (void)
 {
 	MonoDebugHandle *debug;
-	MonoSymbolFile *symfiles, *ptr;
-	int count = 0;
-
-	mono_debug_make_symbols ();
+	int dirty = 0, count = 0;
+	guint8 *ptr, *symfiles;
+	guint32 size;
 
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
 		GList *tmp;
 
 		if (debug->format != MONO_DEBUG_FORMAT_MONO)
 			continue;
+
+		if (debug->dirty)
+			dirty = TRUE;
 
 		for (tmp = debug->info; tmp; tmp = tmp->next) {
 			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
@@ -939,7 +974,16 @@ mono_debugger_internal_get_symbol_files (void)
 		}
 	}
 
-	symfiles = ptr = g_new0 (MonoSymbolFile, count+1);
+	if (!dirty)
+		return FALSE;
+
+	release_symbol_file_table ();
+
+	size = 2 * sizeof (guint32) + count * sizeof (MonoSymbolFile);
+	symfiles = ptr = g_malloc0 (size);
+	*((guint32 *) ptr)++ = size;
+	*((guint32 *) ptr)++ = count;
+	*((guint32 *) ptr)++ = mono_debugger_symbol_file_table_generation;
 
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
 		GList *tmp;
@@ -954,20 +998,13 @@ mono_debugger_internal_get_symbol_files (void)
 			if (!symfile)
 				continue;
 
-			*ptr++ = *symfile;
+			if (debug->dirty)
+				mono_debug_update_mono_symbol_file (info->mono_symfile, info->methods);
+
+			*((MonoSymbolFile *) ptr)++ = *symfile;
 		}
 	}
-
-	mono_debugger_internal_symbol_files_changed = FALSE;
-
-	return symfiles;
+	
+	mono_debugger_symbol_file_table = symfiles;
+	return TRUE;
 }
-
-void
-mono_debugger_internal_free_symbol_files (gpointer data)
-{
-	g_free (data);
-}
-
-/* This is intentionally a global variable and not a method. */
-int mono_debugger_internal_symbol_files_changed = FALSE;

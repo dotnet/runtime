@@ -87,20 +87,26 @@ void           mono_debug_make_symbols (void);
 
 void           mono_debug_write_symbols (MonoDebugHandle* debug);
 
+/* Update all symbol files.  Returns TRUE if the symbol have changed and FALSE if not. */
+int            mono_debugger_update_symbol_file_table (void);
+
 /*
  * Address of the x86 trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
  */
 extern guint8 *mono_generic_trampoline_code;
 
-/*
- * Do not use these two functions unless you know exactly what you're doing.
- *
- * Returns a pointer to a region of memory within the JIT's address space.  The Mono
- * Debugger uses this data to get information about the symbol files.
+/* This is incremented each time the symbol table is modified.
+ * The debugger looks at this variable and if it has a higher value than its current
+ * copy of the symbol table, it must call mono_debugger_update_symbol_file_table().
  */
-MonoSymbolFile *mono_debugger_internal_get_symbol_files (void);
-void mono_debugger_internal_free_symbol_files (gpointer data);
-extern int mono_debugger_internal_symbol_files_changed;
+
+extern guint32 mono_debugger_symbol_file_table_generation;
+
+/* Caution: This variable may be accessed at any time from the debugger;
+ *          it is very important not to modify the memory it is pointing to
+ *          without previously setting this pointer back to NULL.
+ */
+extern guint8 *mono_debugger_symbol_file_table;
 
 #endif /* __MONO_JIT_DEBUG_H__ */
