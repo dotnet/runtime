@@ -114,7 +114,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 			printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, 
 				amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 #endif
-			active = g_list_remove_link (active, active);
+			active = g_list_delete_link (active, active);
 			regs = g_list_prepend (regs, (gpointer)amv->reg);
 			gains [amv->reg] += amv->spill_costs;
 		}
