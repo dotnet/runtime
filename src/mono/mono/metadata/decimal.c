@@ -28,7 +28,7 @@
 #endif
 
 #define LIT_GUINT32(x) x
-#define LIT_GUINT64(x) x##L
+#define LIT_GUINT64(x) x##LL
 
 
 /* we need a UInt64 type => guint64 */

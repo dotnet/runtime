@@ -21,7 +21,7 @@ void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime)
 {
 	guint64 ticks;
 	
-	ticks = ((guint64)timeval * 10000000) + 116444736000000000UL;
+	ticks = ((guint64)timeval * 10000000) + 116444736000000000ULL;
 	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
 	filetime->dwHighDateTime = ticks >> 32;
 }
@@ -31,7 +31,7 @@ void _wapi_timeval_to_filetime (struct timeval *tv, WapiFileTime *filetime)
 	guint64 ticks;
 	
 	ticks = ((guint64)tv->tv_sec * 10000000) +
-		((guint64)tv->tv_usec * 10) + 116444736000000000UL;
+		((guint64)tv->tv_usec * 10) + 116444736000000000ULL;
 	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
 	filetime->dwHighDateTime = ticks >> 32;
 }

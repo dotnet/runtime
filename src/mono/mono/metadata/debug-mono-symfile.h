@@ -119,7 +119,7 @@ struct _MonoSymbolFile {
 };
 
 #define MONO_SYMBOL_FILE_VERSION		36
-#define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614UL
+#define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614ULL
 
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file   (MonoDebugHandle           *handle,

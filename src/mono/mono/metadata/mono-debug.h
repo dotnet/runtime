@@ -76,7 +76,7 @@ struct _MonoDebugVarInfo {
 };
 
 #define MONO_DEBUGGER_VERSION				40
-#define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427
+#define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;

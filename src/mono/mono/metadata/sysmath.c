@@ -60,9 +60,9 @@ gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits) {
 	p = pow(10, digits);
 	int_part = floor(value);
 	dec_part = value - int_part;
-	dec_part *= 1000000000000000;
+	dec_part *= 1000000000000000ULL;
 	dec_part = floor(dec_part);
-	dec_part /= (1000000000000000 / p);
+	dec_part /= (1000000000000000ULL / p);
 	dec_part = ves_icall_System_Math_Round(dec_part);
 	dec_part /= p;
 	return int_part + dec_part;

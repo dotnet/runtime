@@ -948,14 +948,14 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 	 */
 	if(statbuf.st_atime < statbuf.st_ctime) {
 		create_ticks=((guint64)statbuf.st_atime*10000000)
-			+ 116444736000000000UL;
+			+ 116444736000000000ULL;
 	} else {
 		create_ticks=((guint64)statbuf.st_ctime*10000000)
-			+ 116444736000000000UL;
+			+ 116444736000000000ULL;
 	}
 	
-	access_ticks=((guint64)statbuf.st_atime*10000000)+116444736000000000UL;
-	write_ticks=((guint64)statbuf.st_mtime*10000000)+116444736000000000UL;
+	access_ticks=((guint64)statbuf.st_atime*10000000)+116444736000000000ULL;
+	write_ticks=((guint64)statbuf.st_mtime*10000000)+116444736000000000ULL;
 	
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1040,7 +1040,7 @@ static gboolean file_setfiletime(gpointer handle,
 	if(last_access!=NULL) {
 		access_ticks=((guint64)last_access->dwHighDateTime << 32) +
 			last_access->dwLowDateTime;
-		utbuf.actime=(access_ticks - 116444736000000000) / 10000000;
+		utbuf.actime=(access_ticks - 116444736000000000ULL) / 10000000;
 	} else {
 		utbuf.actime=statbuf.st_atime;
 	}
@@ -1048,7 +1048,7 @@ static gboolean file_setfiletime(gpointer handle,
 	if(last_write!=NULL) {
 		write_ticks=((guint64)last_write->dwHighDateTime << 32) +
 			last_write->dwLowDateTime;
-		utbuf.modtime=(write_ticks - 116444736000000000) / 10000000;
+		utbuf.modtime=(write_ticks - 116444736000000000ULL) / 10000000;
 	} else {
 		utbuf.modtime=statbuf.st_mtime;
 	}
@@ -2268,8 +2268,8 @@ gboolean SetFileTime(gpointer handle, const WapiFileTime *create_time,
 #define TICKS_PER_MILLISECOND 10000L
 #define TICKS_PER_SECOND 10000000L
 #define TICKS_PER_MINUTE 600000000L
-#define TICKS_PER_HOUR 36000000000L
-#define TICKS_PER_DAY 864000000000L
+#define TICKS_PER_HOUR 36000000000LL
+#define TICKS_PER_DAY 864000000000LL
 
 #define isleap(y) ((y) % 4 == 0 && ((y) % 100 != 0 || (y) % 400 == 0))
 
