@@ -204,23 +204,45 @@ newobj (MonoImage *image, guint32 token)
 	return result;
 }
 
+#undef DEBUG_VM_DISPATCH
+
 static MonoMethod*
 get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 {
 	MonoMethod *m;
 	MonoObject *obj;
 	MonoClass *klass;
+	stackval *objs;
 	int i;
 	
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_METHOD:
 	case MONO_TABLE_MEMBERREF:
 		m = mono_get_method (image, token, NULL);
-		obj = args [-(m->signature->param_count + 1)].data.p;
-		for (klass = obj->klass; klass != m->klass; klass = klass->parent) {
+		objs = &args [-(m->signature->param_count + 1)];
+		obj = objs->data.p;
+		klass = objs->data.vt.klass ? objs->data.vt.klass: obj->klass;
+#ifdef DEBUG_VM_DISPATCH
+		g_print ("%s%smethod lookup %s.%s::%s (cast class %s; real class %s)\n", 
+					m->flags & METHOD_ATTRIBUTE_VIRTUAL ? "virtual ": "",
+					m->flags & METHOD_ATTRIBUTE_FINAL ? "final ": "",
+					m->klass->name_space, m->klass->name, m->name, klass->name, obj->klass->name);
+#endif
+		if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
+			return m;
+		if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+			klass = obj->klass;
+		for (; klass && klass != m->klass; klass = klass->parent) {
 			for (i = 0; i < klass->method.count; ++i) {
-				if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature))
+				if (!klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
+					continue;
+				if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature)) {
+#ifdef DEBUG_VM_DISPATCH
+					g_print ("\tfound %s%s.%s::%s\n", klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL ? "virtual ": "",
+							klass->name_space, klass->name, klass->methods [i]->name);
+#endif
 					return klass->methods [i];
+				}
 			}
 		}
 		return m;
@@ -320,6 +342,16 @@ get_exception_execution_engine ()
 	return ex;
 }
 
+static MonoObject*
+get_exception_invalid_cast ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("InvalidCastException");
+	return ex;
+}
+
 static void
 stackval_from_data (MonoType *type, stackval *result, const char *data)
 {
@@ -331,6 +363,7 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->data.p = *(gpointer*)data;
 		return;
 	}
+	result->data.vt.klass = mono_class_from_mono_type (type);
 	switch (type->type) {
 	case MONO_TYPE_I1:
 		result->type = VAL_I32;
@@ -885,6 +918,7 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				sp->type = VAL_TP;
 				sp->data.p = LOCAL_POS (*ip);
+				sp->data.vt.klass = mono_class_from_mono_type (t);
 			}
 			++sp;
 			++ip;
@@ -901,6 +935,7 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp->type = VAL_OBJ;
 			sp->data.p = NULL;
+			sp->data.vt.klass = NULL;
 			++sp;
 			BREAK;
 		CASE (CEE_LDC_I4_M1)
@@ -1431,6 +1466,7 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp[-1].type = VAL_OBJ;
 			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
+			sp[-1].data.vt.klass = NULL;
 			BREAK;
 		CASE (CEE_STIND_REF)
 			++ip;
@@ -1784,6 +1820,7 @@ ves_exec_method (MonoInvocation *frame)
 
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
+			sp->data.vt.klass = NULL;
 
 			++sp;
 			BREAK;
@@ -1841,57 +1878,47 @@ ves_exec_method (MonoInvocation *frame)
 			 */
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
+			sp->data.vt.klass = o->klass;
 			++sp;
 			BREAK;
 		}
-		CASE (CEE_CASTCLASS) {
+		CASE (CEE_CASTCLASS) /* Fall through */
+		CASE (CEE_ISINST) {
 			MonoObject *o;
-			MonoClass *c;
+			MonoClass *c , *oclass;
 			guint32 token;
+			int do_isinst = *ip == CEE_ISINST;
 			gboolean found = FALSE;
 
 			++ip;
 			token = read32 (ip);
+			c = mono_class_get (image, token);
 
 			g_assert (sp [-1].type == VAL_OBJ);
 
 			if ((o = sp [-1].data.p)) {
-				c = o->klass;
-
 				/* 
 				 * fixme: this only works for class casts, but not for 
 				 * interface casts. 
 				 */
-				while (c) {
-					if (c->type_token == token) {
+				oclass = o->klass;
+				while (oclass) {
+					if (c == oclass) {
+						sp [-1].data.vt.klass = oclass;
 						found = TRUE;
 						break;
 					}
-					c = c->parent;
+					oclass = oclass->parent;
 				}
-
-				g_assert (found);
-
+				if (!found) {
+					if (do_isinst) {
+						sp [-1].data.p = NULL;
+						sp [-1].data.vt.klass = NULL;
+					} else
+						THROW_EX (get_exception_invalid_cast (), ip - 1);
+				}
 			}
-
 			ip += 4;
-			BREAK;
-		}
-		CASE (CEE_ISINST) {
-			MonoClass *c;
-			guint32 token;
-
-			++ip;
-			token = read32 (ip);
-			ip += 4;
-			g_assert (sp [-1].type == VAL_OBJ);
-			if (!sp [-1].data.p)
-				BREAK;
-			c = mono_class_get (image, token);
-			/* FIXME: handle interfaces... */
-			if (!mono_object_isinst (sp [-1].data.p, c))
-				sp [-1].data.p = NULL;
-
 			BREAK;
 		}
 		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
@@ -1945,6 +1972,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (load_addr) {
 				sp->type = VAL_TP;
 				sp->data.p = (char*)obj + offset;
+				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, &sp [-1]);
 				stackval_from_data (field->type, &sp [-1], (char*)obj + offset);
@@ -1996,8 +2024,8 @@ ves_exec_method (MonoInvocation *frame)
 			g_assert (field);
 			if (load_addr) {
 				sp->type = VAL_TP;
-				sp->data.p = (char*)klass + field->offset;
-				sp->data.vt.klass = klass;
+				sp->data.p = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
+				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, sp);
 				stackval_from_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
@@ -2110,6 +2138,7 @@ ves_exec_method (MonoInvocation *frame)
 			
 			sp->type = VAL_MP;
 			sp->data.p = ((MonoArrayObject *)o)->vector + (sp [1].data.i * esize);
+			sp->data.vt.klass = ((MonoArrayClass *)o->obj.klass)->element_class;
 			++sp;
 			BREAK;
 		}
@@ -2179,6 +2208,7 @@ ves_exec_method (MonoInvocation *frame)
 				break;
 			case CEE_LDELEM_REF:
 				sp [0].data.p = ((gpointer *)o->vector)[sp [1].data.i]; 
+				sp [0].data.vt.klass = NULL;
 				sp [0].type = VAL_OBJ;
 				break;
 			default:
@@ -2453,6 +2483,7 @@ ves_exec_method (MonoInvocation *frame)
 				} else {
 					sp->type = VAL_TP;
 					sp->data.p = LOCAL_POS (loc_pos);
+					sp->data.vt.klass = mono_class_from_mono_type (t);
 				}
 				++sp;
 				break;
