@@ -5936,15 +5936,12 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
 		return NULL;
 
-	/* FIXME: Enabling this causes regressions (#65577) */
-	/*
 	if (type_resolve) {
 		if (*type_resolve) 
 			return NULL;
 		else
 			*type_resolve = TRUE;
 	}
-	*/
 	
 	/* Reconstruct the type name */
 	fullName = g_string_new ("");
@@ -5956,8 +5953,7 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 		g_string_append_printf (fullName, "+%s", (char*)mod->data);
 
 	assembly = mono_domain_try_type_resolve ( mono_domain_get (), fullName->str, NULL);
-	if (assembly && (!image || (assembly->assembly->image == image))) {
-
+	if (assembly) {
 		if (assembly->assembly->dynamic) {
 			/* Enumerate all modules */
 			MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
