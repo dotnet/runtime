@@ -407,6 +407,12 @@ dwarf2_write_class_field (MonoDebugHandle *debug, MonoClass *klass, int idx,
     char start [BUFSIZ], end [BUFSIZ];
     static long label_index = 0;
 
+    // Don't include any static fields, they aren't supported yet.
+    // If a struct contains a static field which has the same type as
+    // the struct itself, we'd get a recursion loop there.
+    if (klass->fields [idx].type->attrs & FIELD_ATTRIBUTE_STATIC)
+	    return;
+
     sprintf (start, "DSF1_%ld", ++label_index);
     sprintf (end, "DSF2_%ld", label_index);
 
