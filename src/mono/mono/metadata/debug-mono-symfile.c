@@ -28,7 +28,6 @@ struct MonoSymbolFilePriv
 	GHashTable *method_table;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
-	gpointer *type_table;
 };
 
 typedef struct
@@ -41,11 +40,13 @@ typedef struct
 	gchar *name;
 } MonoSymbolFileMethodEntryPriv;
 
+static GHashTable *type_table;
+
 static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
 static MonoDebugRangeInfo *allocate_range_entry (MonoSymbolFile *symfile);
-static gpointer write_type (MonoSymbolFile *symfile, int index, MonoType *type);
+static gpointer write_type (MonoSymbolFile *symfile, MonoType *type);
 
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
@@ -136,8 +137,6 @@ load_symfile (MonoSymbolFile *symfile)
 		g_hash_table_insert (priv->method_table, method, mep);
 		g_hash_table_insert (priv->method_hash, method, minfo);
 	}
-
-	priv->type_table = g_new0 (gpointer, priv->offset_table->type_count);
 
 	if (!write_string_table (symfile))
 		return FALSE;
@@ -402,8 +401,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 			var_table++;
 		} else {
 			*var_table++ = *mep->minfo->jit->this_var;
-			*type_table++ = write_type (symfile, mep->entry->this_type_index,
-						    &method->klass->this_arg);
+			*type_table++ = write_type (symfile, &method->klass->this_arg);
 		}
 	}
 
@@ -415,8 +413,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	} else {
 		for (i = 0; i < mep->minfo->jit->num_params; i++) {
 			*var_table++ = mep->minfo->jit->params [i];
-			*type_table++ = write_type (symfile, type_index_table [i],
-						    method->signature->params [i]);
+			*type_table++ = write_type (symfile, method->signature->params [i]);
 		}
 	}
 
@@ -718,8 +715,6 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 	if (priv->error)
 		return FALSE;
 
-	priv->type_table = g_new0 (gpointer, priv->offset_table->type_count);
-
 	if (!write_string_table (symfile))
 		return FALSE;
 
@@ -851,81 +846,95 @@ allocate_range_entry (MonoSymbolFile *symfile)
 }
 
 static gpointer
-write_type (MonoSymbolFile *symfile, int index, MonoType *type)
+write_type (MonoSymbolFile *symfile, MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
 	guint32 size;
 
-	if (symfile->_priv->type_table [index])
-		return symfile->_priv->type_table [index];
+	if (!type_table)
+		type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	if (!type->byref)
-		*((guint32 *) ptr)++ = 0;
-	else {
-		switch (type->type) {
-		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_CLASS: {
-			MonoClass *klass = type->data.klass;
+	retval = g_hash_table_lookup (type_table, type);
+	if (retval)
+		return retval;
 
-			mono_class_init (klass);
-			*((guint32 *) ptr)++ = type->data.klass->instance_size;
-			break;
-		}
+	switch (type->type) {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS: {
+		MonoClass *klass = type->data.klass;
 
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-			*((guint32 *) ptr)++ = 1;
-			break;
+		mono_class_init (klass);
+		*((guint32 *) ptr)++ = type->data.klass->instance_size;
+		break;
+	}
 
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-			*((guint32 *) ptr)++ = 2;
-			break;
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		*((guint32 *) ptr)++ = 1;
+		break;
 
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_R4:
-			*((guint32 *) ptr)++ = 4;
-			break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		*((guint32 *) ptr)++ = 2;
+		break;
 
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_R8:
-			*((guint32 *) ptr)++ = 8;
-			break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		*((guint32 *) ptr)++ = 4;
+		break;
 
-		case MONO_TYPE_STRING: {
-			MonoString string;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		*((guint32 *) ptr)++ = 8;
+		break;
 
-			*((guint32 *) ptr)++ = -5;
-			*ptr++ = 1;
-			*ptr++ = sizeof (MonoString);
-			*ptr++ = (guint8*)&string.length - (guint8*)&string;
-			*ptr++ = sizeof (string.length);
-			*ptr++ = (guint8*)&string.chars - (guint8*)&string;
-			break;
-		}
+	case MONO_TYPE_STRING: {
+		MonoString string;
 
-		case MONO_TYPE_ARRAY: {
-			MonoArray array;
+		*((guint32 *) ptr)++ = -5;
+		*ptr++ = 1;
+		*ptr++ = sizeof (MonoString);
+		*ptr++ = (guint8*)&string.length - (guint8*)&string;
+		*ptr++ = sizeof (string.length);
+		*ptr++ = (guint8*)&string.chars - (guint8*)&string;
+		break;
+	}
 
-			*((guint32 *) ptr)++ = -4;
-			*ptr++ = 2;
-			*ptr++ = sizeof (MonoArray);
-			*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
-			*ptr++ = sizeof (array.max_length);
-			break;
-		}
+	case MONO_TYPE_SZARRAY: {
+		MonoArray array;
 
-		default:
-			g_message (G_STRLOC ": %d - %p - %x,%x,%x", index, type, type->attrs,
-				   type->type, type->byref);
+		*((guint32 *) ptr)++ = -5 - sizeof (gpointer);
+		*ptr++ = 2;
+		*ptr++ = sizeof (MonoArray);
+		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
+		*ptr++ = sizeof (array.max_length);
+		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
+		*((gpointer *) ptr)++ = write_type (symfile, type->data.type);
+		break;
+	}
 
-			*((guint32 *) ptr)++ = -1;
-			break;
-		}
+	case MONO_TYPE_ARRAY: {
+		MonoArray array;
+
+		*((guint32 *) ptr)++ = -5 - sizeof (gpointer);
+		*ptr++ = 3;
+		*ptr++ = sizeof (MonoArray);
+		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
+		*ptr++ = sizeof (array.max_length);
+		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
+		*((gpointer *) ptr)++ = write_type (symfile, type->data.array->type);
+		break;
+	}
+
+	default:
+		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, type->type, type->byref);
+
+		*((guint32 *) ptr)++ = -1;
+		break;
 	}
 
 	size = ptr - buffer;
@@ -934,6 +943,7 @@ write_type (MonoSymbolFile *symfile, int index, MonoType *type)
 	memcpy (retval + 4, buffer, size);
 	*((guint32 *) retval) = size;
 
-	symfile->_priv->type_table [index] = retval;
+	g_hash_table_insert (type_table, type, retval);
+
 	return retval;
 }
