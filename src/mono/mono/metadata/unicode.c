@@ -119,9 +119,14 @@ ves_icall_System_Char_IsNumber (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsPunctuation (gunichar2 c)
 {
+	GUnicodeType t = g_unichar_type (c);
 	MONO_ARCH_SAVE_REGS;
 
-	return g_unichar_ispunct (c);
+	/* The .NET spec is very specific about what IsPunctuation is */
+	return (t == G_UNICODE_CONNECT_PUNCTUATION || t == G_UNICODE_DASH_PUNCTUATION ||
+		t == G_UNICODE_OPEN_PUNCTUATION || t == G_UNICODE_CLOSE_PUNCTUATION ||
+		t == G_UNICODE_INITIAL_PUNCTUATION || t == G_UNICODE_FINAL_PUNCTUATION ||
+		t == G_UNICODE_OTHER_PUNCTUATION);
 }
 
 gboolean 
