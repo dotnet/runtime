@@ -4461,7 +4461,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 		return res;
 
 	name = g_strdup_printf ("__mono_store_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
-	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD);
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD_REMOTE);
 	g_free (name);
 
 	mb->method->save_lmf = 1;
