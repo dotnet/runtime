@@ -512,7 +512,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		_wapi_unlock_file_region (file_private_handle->fd_mapped.fd,
 					  current_pos, numbytes);
 
-		if(ret==-1) {
+		if (ret == -1 && errno != EINTR) {
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
 				  ": write of handle %p fd %d error: %s", handle,
@@ -522,6 +522,8 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 
 			_wapi_set_last_error_from_errno ();
 			return(FALSE);
+		} else {
+			ret = 0;
 		}
 		if(byteswritten!=NULL) {
 			*byteswritten=ret;
@@ -1343,7 +1345,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if(ret==-1) {
+	if (ret == -1 && errno != EINTR) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
@@ -1353,6 +1355,8 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
+	} else {
+		ret = 0;
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
@@ -1471,7 +1475,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 		
-	if(ret==-1) {
+	if (ret == -1 && errno != EINTR) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": read of handle %p fd %d error: %s", handle,
@@ -1480,6 +1484,8 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
+	} else {
+		ret = 0;
 	}
 	
 #ifdef DEBUG
@@ -1542,7 +1548,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if(ret==-1) {
+	if (ret == -1 && errno != EINTR) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
@@ -1551,6 +1557,8 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
+	} else {
+		ret = 0;
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
@@ -2219,7 +2227,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	do {
 		flags=fcntl(fd, F_GETFL);
 	}
-	while (flags==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	while (flags==-1 && errno==EINTR);
 
 	if(flags==-1) {
 		/* Invalid fd.  Not really much point checking for EBADF
@@ -4151,7 +4159,7 @@ static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length)
 	do {
 		ret = fcntl (fd, F_SETLK, &lock_data);
 	}
-	while(ret == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	while(ret == -1 && errno == EINTR);
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": fcntl returns %d", ret);
@@ -4178,7 +4186,7 @@ static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length)
 	do {
 		ret = fcntl (fd, F_SETLK, &lock_data);
 	}
-	while(ret == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	while(ret == -1 && errno == EINTR);
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": fcntl returns %d", ret);
