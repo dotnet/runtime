@@ -290,7 +290,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			bp = bp [0];
 		} else {
 			if (!lmf)
-				g_assert_not_reached ();
+				return FALSE;
 			
 			m = lmf->method;
 
