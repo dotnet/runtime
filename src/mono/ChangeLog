@@ -1,3 +1,7 @@
+Wed Aug 1 22:34:52 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, mono/tests: added some tests for the interpreter.
+
 2001-07-15  Sean MacIsaac  <macisaac@ximian.com>
 
 	* doc/download: added instructions for cygwin

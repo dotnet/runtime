@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+my $interpreter = shift;
+my $test = shift;
+my $output = $test;
+my $stdout = $test.'.stdout';
+my $stderr = $test.'.stderr';
+
+$output =~ s/\.exe$/.output/;
+
+$| = 0;
+print "Testing $test... ";
+
+my $res = system("$interpreter $test 2>/dev/null 1>$stdout");
+
+if ($res) {
+	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
+} elsif (-f $output) {
+	print "failed output.\n" if (read_file ($output) ne read_file ($stdout));
+} else {
+	print "pass.\n";
+	#unlink ($result);
+}
+exit (0);
+
+sub read_file {
+	local ($/);
+	my $out = shift;
+	open (F, "<$out") || die $!;
+	$out = <F>;
+	close(F);
+	return $out;
+}
