@@ -1031,23 +1031,6 @@ mono_test_marshal_mixed_point_2 (mixed_point *pt)
 	return 0;
 }
 
-int
-time_t_sizeof (void)
-{
-	return sizeof (time_t);
-}
-
-time_t
-mono_test_marshal_time_t (time_t *t)
-{
-	/* Skip forward an hour */
-	/* t can be unaligned on 64bit machines at present owing to the magic 4 bytes currently added
-           for custom marshaling which may or may not be correct... cope for the moment */
-	time_t s;
-	memcpy(&s, t, sizeof *t);
-	return s + 3600;
-}
-
 int 
 marshal_test_ref_bool(int i, char *b1, short *b2, int *b3)
 {
