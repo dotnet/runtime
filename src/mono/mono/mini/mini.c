@@ -2401,12 +2401,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
 
 	/* also consider num_locals? */
-	if (getenv ("MONO_INLINELIMIT"))
+	if (getenv ("MONO_INLINELIMIT")) {
 		if (header->code_size < atoi (getenv ("MONO_INLINELIMIT"))) {
 			return TRUE;
 		}
-
-	if (header->code_size < 20)
+	} else if (header->code_size < 20)
 		return TRUE;
 
 	return FALSE;
