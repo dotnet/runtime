@@ -211,7 +211,7 @@ i*86-*-*) TARGET=X86; arch_target=x86;;
 sparc*-*-*) TARGET=SPARC; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
-#powerpc-*-linux* | powerpc-*-sysv*) TARGET=POWERPC; ACCESS_UNALIGNED="no";;
+powerpc-*-linux* | powerpc-*-sysv*) TARGET=POWERPC; arch_target=ppc; ACCESS_UNALIGNED="no";;
 #arm-*-linux-*) TARGET=ARM; ACCESS_UNALIGNED="no";;
 esac
 
@@ -244,6 +244,7 @@ mono/dis/Makefile
 mono/cil/Makefile
 mono/arch/Makefile
 mono/arch/x86/Makefile
+mono/arch/ppc/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile

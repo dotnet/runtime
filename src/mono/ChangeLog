@@ -1,3 +1,9 @@
+2001-11-29  Radek Doulik  <rodo@ximian.com>
+
+	* configure.in (ACCESS_UNALIGNED): uncommented and modified
+	powerpc-*-linux* 
+	generate mono/arch/ppc/Makefile
+
 2001-11-26  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/exception3.cs: modified the test to show a bug in the
