@@ -1377,7 +1377,7 @@ static int opcode_counts[512];
 #else
 #define MINT_IN_BREAK { COUNT_OP(*ip); goto *in_labels[*ip]; }
 #endif
-#define MINT_IN_DEFAULT mint_default:
+#define MINT_IN_DEFAULT mint_default: if (0) goto mint_default; /* make gcc shut up */
 #else
 #define MINT_IN_SWITCH(op) switch (op)
 #define MINT_IN_CASE(x) case x:
@@ -4193,7 +4193,6 @@ static void
 thread_abort_handler (int signum)
 {
 	ThreadContext *context = TlsGetValue (thread_context_id);
-	MonoThread *thread;
 	MonoException *exc;
 
 	if (context == NULL)
