@@ -20,15 +20,15 @@
 
 	<ul>
 
-		* Milestone 1: Fully read and parse all CIL byte-codes
-		  and metadata tokens (ie, a disassembler).
+		* Milestone 1: <b> Done</b> Fully read and parse all CIL byte-codes
+		  and metadata tokens (ie, a disassembler).  
 
 		* Milestone 2: Complete an interpreter for CIL byte
 		  codes.  This interpreter can be used temporarly to
 		  run CIL byte code on a system where no JIT is
 		  available.
 
-		* Milestone 3: Define an <i>lburg</i> instruction
+		* Milestone 3: Define an <i>lburg</i>-like instruction
 		  selector for the JITer for Intel.  Although slower
 		  at JITing than a streaming JITer, it generates
 		  better code.  The same grammar can later be used for
@@ -87,6 +87,11 @@
 	href="http://www.amazon.com/exec/obidos/ASIN/0471941484/o/qid=992556433/sr=2-1/ref=aps_sr_b_1_1/103-5866388-0492603">Garbage
 	Collection.</a>
 
+	Another consideration is to use the same interface that ORP
+	uses to its Garbage Collection system and reuse that GC system
+	instead of rolling our own, as the ORP system is pretty advanced
+	and is independent of the rest of ORP.
+
 	Although using a conservative garbage collector like Bohem's
 	would work, all the type information is available at runtime,
 	so we can actually implement a better collector than a
@@ -114,7 +119,6 @@
 	Paolo Molaro found a few interesting links:
 
 	<ul>
-
 		* On compilation of stack-based languages:<br>
 		<a href="http://www.complang.tuwien.ac.at/projects/rafts.html">
 		http://www.complang.tuwien.ac.at/projects/rafts.html</a>
@@ -131,11 +135,10 @@
 
 ** PInvoke
 
-	PInvoke will be supported, and will be used to wrap Unix API
-	calls, these in turn are required for reusing some of the
-	GNOME libraries that will reduce the work we have to do to
-	deliver a complete class library.
+	PInvoke is the mechanism we are using to wrap Unix API calls
+	as well as talking to system libraries.
 
-	To implement PInvoke we are looking into using the <a
-	href="http://sources.redhat.com/libffi">Foreign Function
-	Interface</a> Library from Cygnus.
+	We hvae implemented PInvoke through libffi, but we are likely
+	going to roll our own system as the runtime matures, specially
+	as the interpreter is approaching completion, and we move into
+	the JITer.

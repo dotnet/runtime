@@ -181,6 +181,5 @@ Q: Why are you writing a JIT engine instead of a front-end to GCC?
 A: The JIT engine and runtime engine will be able to execute CIL
    executables generated on Windows.
 
-
 You might also want to look at the <a href="faq.html#gcc">GCC</a>
 section on the main FAQ

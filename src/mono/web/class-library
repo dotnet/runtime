@@ -131,6 +131,9 @@
 	the correctness of the class library, compiler, and JIT
 	engine.
 
+	Please write your regression tests using <a
+	href="http://nunit.sourceforge.net">NUnit</a>
+
 ** Coding conventions
 
 	Please follow the conventions on the ECMA specification (On

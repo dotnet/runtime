@@ -81,18 +81,23 @@
 		  href="http://www.icsharpcode.net/OpenSource/SD/default.asp">Sharp
 		  Develop:</a> an IDE for the C# language written in C#.
 
+		* <a 
+		  href="http://janet-js.sourceforge.net/">Janet:</a>
+		  an implemention of ECMAScript (the standarized
+		  version of JavaScript) in C#
+
 		* <a
 	          href="http://www.southern-storm.com.au/portable_net.html">Portable.NET:</a>
 		  Another implementation of the CLI and C# compiler.
 
 		* <a href="http://nunit.sourceforge.net">NUnit:</a> A
-		testing framework for .NET classes.
+		  testing framework for .NET classes.
 
 		* <a href="http://www.kaffe.org">Kaffe:</a> A popular
 		  Free Software JIT engine for Java.
 
 		* <a href="http://www.intel.com/research/mrl/orp">ORP:</a> A research
-JIT/VM/GC system from Intel.
+		  JIT/VM/GC system from Intel.
 	</ul>
 
 ** GNOME Documentation
