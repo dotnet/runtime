@@ -651,6 +651,9 @@ int
 mono_test_marshal_stringbuilder (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
+
+	if (strcmp (s, "ABCD") != 0)
+		return 1;
 	strncpy(s, m, n);
 	return 0;
 }
@@ -693,6 +696,20 @@ mono_test_marshal_string_array (char **array)
 		return 1;
 	if (strcmp (array [1], "DEF"))
 		return 2;
+
+	return 0;
+}
+
+int
+mono_test_marshal_stringbuilder_array (char **array)
+{
+	if (strcmp (array [0], "ABC"))
+		return 1;
+	if (strcmp (array [1], "DEF"))
+		return 2;
+
+	strcpy (array [0], "DEF");
+	strcpy (array [1], "ABC");
 
 	return 0;
 }
@@ -1000,6 +1017,18 @@ mono_test_marshal_mixed_point (mixed_point pt)
 		return 0;
 
 	return 1;
+}
+
+int
+mono_test_marshal_mixed_point_2 (mixed_point *pt)
+{
+	if (pt->x != 5 || pt->y != 6.75)
+		return 1;
+
+	pt->x = 10;
+	pt->y = 12.35;
+
+	return 0;
 }
 
 int
