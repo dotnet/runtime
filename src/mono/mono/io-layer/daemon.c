@@ -346,9 +346,10 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
  *
  * Create a new GIOChannel, and add it to the main loop event sources.
  */
-static void add_fd(int fd)
+static void add_fd(int fd, GMainContext *context)
 {
 	GIOChannel *io_channel;
+	GSource *source;
 	guint32 *refs;
 	
 	io_channel=g_io_channel_unix_new (fd);
@@ -387,8 +388,13 @@ static void add_fd(int fd)
 	}
 
 	channels[fd].open_handles=refs;
-	channels[fd].io_source=g_io_add_watch (io_channel, G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-					fd_activity, NULL);
+
+	source = g_io_create_watch (io_channel, 
+				    G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL);
+	g_source_set_callback (source, (GSourceFunc)fd_activity, 
+			       context, NULL);
+	channels[fd].io_source=g_source_attach (source, context);
+	g_source_unref (source);
 
 	nfds++;
 }
@@ -1128,6 +1134,7 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 {
 	int fd=g_io_channel_unix_get_fd (channel);
 	ChannelData *channel_data=&channels[fd];
+	GMainContext *context=data;
 	
 	if(condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
 #ifdef DEBUG
@@ -1156,7 +1163,7 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 			g_message ("accept returning %d", newsock);
 #endif
 
-			add_fd (newsock);
+			add_fd (newsock, context);
 		} else {
 #ifdef DEBUG
 			g_message ("reading data on fd %d", fd);
@@ -1180,6 +1187,7 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 {
 	struct sockaddr_un main_socket_address;
 	int ret;
+	GMainContext *context;
 
 #ifdef DEBUG
 	g_message ("Starting up...");
@@ -1224,7 +1232,9 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 	g_message("listening");
 #endif
 
-	add_fd(main_sock);
+	context = g_main_context_new ();
+
+	add_fd(main_sock, context);
 
 	/* We're finished setting up, let everyone else know we're
 	 * ready.  From now on, it's up to us to delete the shared
@@ -1247,6 +1257,6 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 		 * processes as soon as they die, without burning cpu
 		 * time by polling the flag.
 		 */
-		g_main_context_iteration (g_main_context_default (), TRUE);
+		g_main_context_iteration (context, TRUE);
 	}
 }
