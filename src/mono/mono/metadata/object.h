@@ -142,6 +142,8 @@ typedef struct {
 typedef struct {
 	MonoObject  object;
 	MonoReflectionType *class_to_proxy;	
+	MonoObject *context;
+	MonoObject *unwrapped_server;
 } MonoRealProxy;
 
 typedef struct {

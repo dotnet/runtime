@@ -1292,6 +1292,28 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	/* skip the this pointer */
 	params++;
 
+	if (this->klass->contextbound && this->rp->context == (MonoObject *) mono_context_get ())
+	{
+		int i;
+		MonoMethodSignature *sig = method->signature;
+		int count = sig->param_count;
+		gpointer mparams[count];
+
+		for (i=0; i<count; i++) {
+			MonoClass *class = mono_class_from_mono_type (sig->params [i]);
+			if (class->valuetype) {
+				if (sig->params [i]->byref)
+					mparams[i] = *((gpointer *)params [i]);
+				else 
+					mparams[i] = params [i];
+			} else {
+				mparams[i] = *((gpointer**)params [i]);
+			}
+		}
+
+		return mono_runtime_invoke (method, this->rp->unwrapped_server, mparams, NULL);
+	}
+
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
 	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);

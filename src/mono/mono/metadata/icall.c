@@ -1447,7 +1447,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 						memcpy ((char *)this + k->fields [i].offset, 
 							((char *)val) + sizeof (MonoObject), size);
 					} else 
-						*((gpointer *)this + k->fields [i].offset) = val;
+						*(MonoObject**)((char *)this + k->fields [i].offset) = val;
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
 					*outArgs = out_args;
@@ -1470,6 +1470,12 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 	out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
 	
+	/* fixme: handle constructors? */
+	if (!strcmp (method->method->name, ".ctor"))
+		g_assert_not_reached ();
+
+	result = mono_runtime_invoke_array (method->method, this, params, NULL);
+
 	for (i = 0, j = 0; i < mono_array_length (params); i++) {
 		if (sig->params [i]->byref) {
 			gpointer arg;
@@ -1478,12 +1484,6 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 			j++;
 		}
 	}
-
-	/* fixme: handle constructors? */
-	if (!strcmp (method->method->name, ".ctor"))
-		g_assert_not_reached ();
-
-	result = mono_runtime_invoke_array (method->method, this, params, NULL);
 
 	*outArgs = out_args;
 
@@ -2810,7 +2810,10 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
-	((MonoTransparentProxy *)res)->klass = klass;
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+		((MonoTransparentProxy *)res)->klass = mono_defaults.marshalbyrefobject_class;
+	else
+		((MonoTransparentProxy *)res)->klass = klass;
 
 	res->vtable = mono_class_proxy_vtable (domain, klass);
 

@@ -352,17 +352,31 @@ MonoVTable *
 mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 {
 	MonoVTable *vt, *pvt;
-	int i, vtsize;
+	int i, j, vtsize, interface_vtsize = 0;
+	MonoClass* iclass = NULL;
+	MonoClass* k;
 
 	if ((pvt = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class)))
 		return pvt;
 
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		int method_count;
+		iclass = class;
+		class = mono_defaults.marshalbyrefobject_class;
+
+		method_count = iclass->method.count;
+		for (i = 0; i < iclass->interface_count; i++)
+			method_count += iclass->interfaces[i]->method.count;
+
+		interface_vtsize = method_count * sizeof (gpointer);
+	}
+
 	vt = mono_class_vtable (domain, class);
 	vtsize = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
-	mono_stats.class_vtable_size += vtsize;
+	mono_stats.class_vtable_size += vtsize + interface_vtsize;
 
-	pvt = mono_mempool_alloc (domain->mp, vtsize);
+	pvt = mono_mempool_alloc (domain->mp, vtsize + interface_vtsize);
 	memcpy (pvt, vt, vtsize);
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
@@ -370,9 +384,51 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 	/* initialize vtable */
 	for (i = 0; i < class->vtable_size; ++i) {
 		MonoMethod *cm;
-	       
+		    
 		if ((cm = class->vtable [i]))
 			pvt->vtable [i] = arch_create_remoting_trampoline (cm);
+	}
+
+	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT)
+	{
+		/* create trampolines for abstract methods */
+		for (k = class; k; k = k->parent) {
+			for (i = 0; i < k->method.count; i++) {
+				int slot = k->methods [i]->slot;
+				if (!pvt->vtable [slot]) 
+					pvt->vtable [slot] = arch_create_remoting_trampoline (k->methods[i]);
+			}
+		}
+	}
+
+	if (iclass)
+	{
+		int slot;
+		MonoClass* interf;
+
+		pvt->max_interface_id = iclass->max_interface_id;
+		
+		pvt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
+				sizeof (gpointer) * (pvt->max_interface_id + 1));
+
+		/* Create trampolines for the methods of the interfaces */
+		slot = class->vtable_size;
+		interf = iclass;
+		i = -1;
+		do {
+			pvt->interface_offsets [interf->interface_id] = &pvt->vtable [slot];
+
+			for (j = 0; j < interf->method.count; ++j) {
+				MonoMethod *cm = interf->methods [j];
+				pvt->vtable [slot + j] = arch_create_remoting_trampoline (cm);
+			}
+			slot += interf->method.count;
+			if (++i < iclass->interface_count) interf = iclass->interfaces[i];
+			else interf = NULL;
+			
+		} while (interf);
+
+		class = iclass;
 	}
 
 	mono_g_hash_table_insert (domain->proxy_vtable_hash, class, pvt);
@@ -806,7 +862,10 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				pa [i] = (char *)(((gpointer *)params->vector)[i]);
+				if (sig->params [i]->byref)
+					pa [i] = &(((gpointer *)params->vector)[i]);
+				else
+					pa [i] = (char *)(((gpointer *)params->vector)[i]);
 				break;
 			default:
 				g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
@@ -1339,7 +1398,7 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 		mono_class_init (klass);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		if ((klass->interface_id <= oklass->max_interface_id) &&
+		if ((klass->interface_id <= vt->max_interface_id) &&
 		    vt->interface_offsets [klass->interface_id])
 			return obj;
 	} else {
@@ -1700,36 +1759,43 @@ MonoObject *
 mono_message_invoke (MonoObject *target, MonoMethodMessage *msg, 
 		     MonoObject **exc, MonoArray **out_args) 
 {
+	MonoDomain *domain; 
+	MonoMethod *method;
+	MonoMethodSignature *sig;
+	int i, j, outarg_count = 0;
+
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 
-		return mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)target)->rp, 
-					     msg, exc, out_args);
-
-	} else {
-		MonoDomain *domain = mono_domain_get (); 
-		MonoMethod *method = msg->method->method;
-		MonoMethodSignature *sig = method->signature;
-		int i, j, outarg_count = 0;
-
-		for (i = 0; i < sig->param_count; i++) {
-			if (sig->params [i]->byref) 
-				outarg_count++;
+		MonoTransparentProxy* tp = (MonoTransparentProxy *)target;
+		if (tp->klass->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+			target = tp->rp->unwrapped_server;
+		} else {
+			return mono_remoting_invoke ((MonoObject *)tp->rp, msg, exc, out_args);
 		}
-
-		*out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
-		*exc = NULL;
-
-		for (i = 0, j = 0; i < sig->param_count; i++) {
-			if (sig->params [i]->byref) {
-				gpointer arg;
-				arg = mono_array_get (msg->args, gpointer, i);
-				mono_array_set (*out_args, gpointer, j, arg);
-				j++;
-			}
-		}
-
-		return mono_runtime_invoke_array (method, target, msg->args, exc);
 	}
+
+	domain = mono_domain_get (); 
+	method = msg->method->method;
+	sig = method->signature;
+
+	for (i = 0; i < sig->param_count; i++) {
+		if (sig->params [i]->byref) 
+			outarg_count++;
+	}
+
+	*out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
+	*exc = NULL;
+
+	for (i = 0, j = 0; i < sig->param_count; i++) {
+		if (sig->params [i]->byref) {
+			gpointer arg;
+			arg = mono_array_get (msg->args, gpointer, i);
+			mono_array_set (*out_args, gpointer, j, arg);
+			j++;
+		}
+	}
+
+	return mono_runtime_invoke_array (method, target, msg->args, exc);
 }
 
 void
@@ -1917,7 +1983,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 			case MONO_TYPE_CLASS: 
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				*((MonoObject **)params [i]) = (MonoObject *)arg;
+				**((MonoObject ***)params [i]) = (MonoObject *)arg;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -1947,6 +2013,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 {
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
@@ -1958,6 +2025,11 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	if (!res)
 		res = &tmp;
 
+	if (tp->klass->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+		mono_field_get_value (tp->rp->unwrapped_server, field, res);
+		return res;
+	}
+	
 	if (!getter) {
 		int i;
 
@@ -1981,7 +2053,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
 
-	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
 	*res = mono_array_get (out_args, MonoObject *, 0);
 
@@ -1996,12 +2068,27 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 {
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc, *res;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	field_class = mono_class_from_mono_type (field->type);
+
+	if (tp->klass->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+		gpointer val;
+		if (field_class->valuetype) {
+			res = mono_object_new (domain, field_class);
+			val = ((gchar *) res) + sizeof (MonoObject);
+		} else {
+			val = &res;
+		}
+		mono_field_get_value (tp->rp->unwrapped_server, field, val);
+		return res;
+	}
 
 	if (!getter) {
 		int i;
@@ -2017,8 +2104,6 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 		g_assert (getter);
 	}
 	
-	field_class = mono_class_from_mono_type (field->type);
-
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
 	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
@@ -2026,7 +2111,7 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
 
-	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
 	res = mono_array_get (out_args, MonoObject *, 0);
 
@@ -2049,6 +2134,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 {
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
@@ -2056,6 +2142,14 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	MonoObject *arg;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	field_class = mono_class_from_mono_type (field->type);
+
+	if (tp->klass->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+		if (field_class->valuetype) mono_field_set_value (tp->rp->unwrapped_server, field, val);
+		else mono_field_set_value (tp->rp->unwrapped_server, field, *((MonoObject **)val));
+		return;
+	}
 
 	if (!setter) {
 		int i;
@@ -2070,8 +2164,6 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 		}
 		g_assert (setter);
 	}
-
-	field_class = mono_class_from_mono_type (field->type);
 
 	if (field_class->valuetype)
 		arg = mono_value_box (domain, field_class, val);
@@ -2086,7 +2178,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
 	mono_array_set (msg->args, gpointer, 2, arg);
 
-	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 }
 
 void
@@ -2094,11 +2186,21 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 {
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
+	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	field_class = mono_class_from_mono_type (field->type);
+
+	if (tp->klass->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+		if (field_class->valuetype) mono_field_set_value (tp->rp->unwrapped_server, field, ((gchar *) arg) + sizeof (MonoObject));
+		else mono_field_set_value (tp->rp->unwrapped_server, field, &arg);
+		return;
+	}
 
 	if (!setter) {
 		int i;
@@ -2121,6 +2223,6 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
 	mono_array_set (msg->args, gpointer, 2, arg);
 
-	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 }
 

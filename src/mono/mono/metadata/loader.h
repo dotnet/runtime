@@ -104,6 +104,7 @@ typedef struct {
 	MonoClass *serializationinfo_class;
 	MonoClass *streamingcontext_class;
 	MonoClass *typed_reference_class;
+	MonoClass *marshalbyrefobject_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

@@ -430,6 +430,10 @@ mono_init (const char *filename)
 	        mono_defaults.corlib, "System", "TypedReference");
 	g_assert (mono_defaults.typed_reference_class != 0);
 
+	mono_defaults.marshalbyrefobject_class =  mono_class_from_name (
+	        mono_defaults.corlib, "System", "MarshalByRefObject");
+	g_assert (mono_defaults.marshalbyrefobject_class != 0);
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;
