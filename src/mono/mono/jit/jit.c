@@ -1774,9 +1774,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			mono_class_init (class);
 
-			esize = mono_class_instance_size (class);
-			if (class->valuetype)
-				esize -= sizeof (MonoObject);
+			esize = mono_class_array_element_size (class);
 
 			t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);
 			t1->data.i = esize;
