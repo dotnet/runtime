@@ -4149,6 +4149,13 @@ void
 mono_jit_cleanup (MonoDomain *domain)
 {
 
+	/* 
+	 * mono_runtime_cleanup() needs to be called early since
+	 * it needs the execution engine still fully working (it will
+	 * wait for other threads to finish).
+	 */
+	mono_runtime_cleanup (domain);
+
 	mono_domain_finalize (domain);
 
 	mono_debug_cleanup ();
@@ -4156,8 +4163,6 @@ mono_jit_cleanup (MonoDomain *domain)
 #ifdef PLATFORM_WIN32
 	win32_seh_cleanup();
 #endif
-
-	mono_runtime_cleanup (domain);
 
 	mono_domain_unload (domain, TRUE);
 
