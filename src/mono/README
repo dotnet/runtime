@@ -30,10 +30,10 @@ This is Mono.
 		  You will need this one to get complete support for the international
 		  features of the .NET Framework.
 
-		* Cairo
+		* Cairo and libgdiplus
 
 		  If you want to get support for System.Drawing, you will need to get
-		  this package. 
+		  both Libgdiplus and Cairo.
 
     b. Building the Software
     ------------------------
