@@ -1805,6 +1805,13 @@ ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 	return FALSE;
 }
 
+static void
+ves_icall_EnumBuilder_setup_enum_type (MonoReflectionType *enumtype,
+									   MonoReflectionType *t)
+{
+	enumtype->type = t->type;
+}
+
 static MonoReflectionType*
 ves_icall_MonoGenericInst_GetParentType (MonoReflectionGenericInst *type)
 {
@@ -5532,6 +5539,10 @@ static const IcallEntry typebuilder_icalls [] = {
 	{"setup_internal_class", mono_reflection_setup_internal_class}
 };
 
+static const IcallEntry enumbuilder_icalls [] = {
+	{"setup_enum_type", ves_icall_EnumBuilder_setup_enum_type}
+};
+
 static const IcallEntry runtimehelpers_icalls [] = {
 	{"GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue},
 	 /* REMOVEME: no longer needed, just so we dont break things when not needed */
@@ -5854,6 +5865,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.Emit.AssemblyBuilder", assemblybuilder_icalls, G_N_ELEMENTS (assemblybuilder_icalls)},
 	{"System.Reflection.Emit.CustomAttributeBuilder", customattrbuilder_icalls, G_N_ELEMENTS (customattrbuilder_icalls)},
 	{"System.Reflection.Emit.DynamicMethod", dynamicmethod_icalls, G_N_ELEMENTS (dynamicmethod_icalls)},
+	{"System.Reflection.Emit.EnumBuilder", enumbuilder_icalls, G_N_ELEMENTS (enumbuilder_icalls)},
 	{"System.Reflection.Emit.GenericTypeParameterBuilder", generictypeparambuilder_icalls, G_N_ELEMENTS (generictypeparambuilder_icalls)},
 	{"System.Reflection.Emit.MethodBuilder", methodbuilder_icalls, G_N_ELEMENTS (methodbuilder_icalls)},
 	{"System.Reflection.Emit.ModuleBuilder", modulebuilder_icalls, G_N_ELEMENTS (modulebuilder_icalls)},
