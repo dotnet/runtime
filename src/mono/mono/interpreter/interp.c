@@ -4379,7 +4379,8 @@ mono_interp_init(const char *file)
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
-	g_thread_init (NULL);
+	if (!g_thread_supported ())
+		g_thread_init (NULL);
 
 	thread_context_id = TlsAlloc ();
 	TlsSetValue (thread_context_id, NULL);
