@@ -161,7 +161,9 @@ common_sources = \
 	debug-mini.c	\
 	linear-scan.c	\
 	aot.c		\
-	graph.c	
+	graph.c		\
+	declsec.c	\
+	declsec.h
 
 test_sources = 		\
 	basic-calls.cs 	\

@@ -18,6 +18,7 @@
 
 #include "mini-arch.h"
 #include "regalloc.h"
+#include "declsec.h"
 
 #define MONO_USE_AOT_COMPILER
 

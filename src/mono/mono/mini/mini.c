@@ -2397,6 +2397,13 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	}
 	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
 
+	/*
+	 * CAS - do not inline methods with declarative security
+	 * Note: this has to be before any possible return TRUE;
+	 */
+	if (mono_method_has_declsec (method))
+		return FALSE;
+
 	/* also consider num_locals? */
 	if (getenv ("MONO_INLINELIMIT")) {
 		if (header->code_size < atoi (getenv ("MONO_INLINELIMIT"))) {
