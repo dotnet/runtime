@@ -1695,6 +1695,8 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 		encode_type (assembly, type, p, &p);
 		break;
 	case MONO_TYPE_CLASS:
