@@ -22,8 +22,11 @@ pending-classes:
 #	for i in `cat pending-classes.in`; do x=`echo $$i | sed s/\\\.//g`; link=`echo http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrf@@@ClassTopic.asp | sed "s/@@@/$$x/"`; echo "	<a href=\"$$link\">$$i</a><br>" >> pending-classes; done
 
 
-webit: class-status
+webit: dummy
 	(cd web; make && make push)
 
 push-notes:
 	scp release-notes/mono* www@www:/web/cvsmodules/mono/archive
+
+dummy:
+
