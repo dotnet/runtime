@@ -1,3 +1,13 @@
+2004-05-20  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (AC_OUTPUT): Add tools/Makefile and
+	tools/locale-builder/Makefile.
+	* Makefile.am (SUBDIRS): Remove tools.
+	(DIST_SUBDIRS): Add 'tools'.
+	(bootstrap): Rewrite so that we get two new targets.
+	(faststrap): New two-stage build.
+	(fasterstrap): New one-stage build.
+
 2004-05-19  Jackson Harper  <jackson@ximain.com>
 
 	* tools/

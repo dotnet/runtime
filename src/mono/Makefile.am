@@ -1,9 +1,10 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = @libgc_dir@ mono @ikvm_jni_dir@ docs runtime scripts man data samples support web tools
+SUBDIRS = @libgc_dir@ mono @ikvm_jni_dir@ docs runtime scripts man data samples support web 
 
 # Keep in sync with SUBDIRS
-DIST_SUBDIRS = libgc mono ikvm-jni docs runtime scripts man data samples support web
+## 'tools' is not normally built
+DIST_SUBDIRS = libgc mono ikvm-jni docs runtime scripts man data samples support web tools
 
 EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 
@@ -23,7 +24,9 @@ DISTCLEANFILES= mono.pc mint.pc
 
 mcs_topdir=$(top_srcdir)/../mcs
 
-.PHONY: tmpinst-dir tmpinst-runtime bootstrap stage1 stage2 stage3 stage1-mono stage1-mcs bootstrap-clean bootstrap-check
+.PHONY: tmpinst-dir tmpinst-basic-build tmpinst-short-build tmpinst-full-build
+.PHONY: bootstrap faststrap fasterstrap one-stage-strap two-stage-strap three-stage-strap bootstrap-clean bootstrap-check
+.PHONY: mono-do-basic-build mcs-do-basic-build mcs-do-short-build mcs-do-full-build mcs-do-clean-profiles mcs-do-run-test
 
 if USE_JIT
 mono_runtime = mono/mini/mono
@@ -31,25 +34,58 @@ else
 mono_runtime = mono/interpreter/mint
 endif
 
-bootstrap: stage3
+bootstrap: three-stage-strap
+
+faststrap: mono-do-basic-build
+	$(MAKE) two-stage-strap
+
+fasterstrap: mono-do-basic-build
+	$(MAKE) one-stage-strap
+
+three-stage-strap: tmpinst-basic-build
+	$(MAKE) two-stage-strap
+
+two-stage-strap: tmpinst-short-build
+	$(MAKE) one-stage-strap
+
+one-stage-strap: tmpinst-full-build
 	rm -f $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
 bootstrap-check: check mcs-do-run-test
 
-.PHONY: mcs-do-clean-profiles mcs-do-run-test
-mcs-do-clean-profiles:
-	cd $(mcs_topdir) && $(MAKE) clean-profiles
+# (takes advantage of 'make -j': independent subtasks are separate dependencies)
+tmpinst-basic-build: mcs-do-basic-build mono-do-basic-build tmpinst-dir
+	mv -f $(mcs_topdir)/mcs/mcs.exe \
+	      $(mcs_topdir)/class/lib/default/mscorlib.dll \
+	      $(mcs_topdir)/class/lib/default/System.dll \
+	  _tmpinst/lib
 
-mcs-do-run-test: tmpinst-dir
-	tmpinst=`cd _tmpinst && pwd` ; mcs_topdir=`cd $(mcs_topdir) && pwd`; \
-	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
-	cd $(mcs_topdir) && $(MAKE) PROFILE=default TEST_RUNTIME="MONO_PATH=$$mcs_topdir/class/lib/default mono" run-test
+tmpinst-short-build: mcs-do-short-build
+	mv -f $(mcs_topdir)/mcs/mcs.exe \
+	      $(mcs_topdir)/class/lib/default/mscorlib.dll \
+	      $(mcs_topdir)/class/lib/default/System.dll \
+	      $(mcs_topdir)/class/lib/default/System.Xml.dll \
+	      $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll \
+	  _tmpinst/lib
+
+tmpinst-full-build: mcs-do-full-build
+	cp -f $(mcs_topdir)/mcs/mcs.exe \
+	      $(mcs_topdir)/class/lib/default/mscorlib.dll \
+	      $(mcs_topdir)/class/lib/default/System.dll \
+	      $(mcs_topdir)/class/lib/default/System.Xml.dll \
+	      $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll \
+	  _tmpinst/lib
+
+# Build enough of 'mono' to run the stage1 mcs.exe
+mono-do-basic-build: $(CONFIG_HEADER)
+	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) ; fi
+	cd mono && $(MAKE)
 
 # Build stripped down versions of 'mcs', 'mscorlib.dll' and 'System.dll' with installed 'mcs'
 ## remove System.Xml.dll since it's a soft-dependency of System.dll
-stage1-mcs: 
+mcs-do-basic-build: 
 	rm -f $(mcs_topdir)/mcs/mcs.exe $(mcs_topdir)/class/lib/default/mscorlib.dll
 	rm -f $(mcs_topdir)/class/lib/default/System.dll $(mcs_topdir)/class/lib/default/System.Xml.dll
 	cd $(mcs_topdir)/jay && $(MAKE)
@@ -57,34 +93,25 @@ stage1-mcs:
 	cd $(mcs_topdir)/class/corlib && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 	cd $(mcs_topdir)/class/System && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB" MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 
-# Build enough of 'mono' to run the stage1 mcs.exe
-stage1-mono: $(CONFIG_HEADER)
-	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) ; fi
-	cd mono && $(MAKE)
-
-# (takes advantage of 'make -j': independent subtasks are separate dependencies)
-stage1: stage1-mcs stage1-mono tmpinst-dir
-	$(MAKE) tmpinst-runtime
-
-# Use stage1 'mcs', 'mscorlib.dll' and 'System.dll' to build fuller versions
-# FIXME: Mono.CSharp.Debugger is built only on Linux in the MCS tree.
-#        At least the SymbolWriter stuff seems portable enough.  So either
-#	 fix the MCS tree, or fix it here
-stage2: stage1
-	set -e ; \
-	tmpinst=`cd _tmpinst && pwd` ; mcs_topdir=`cd $(mcs_topdir) && pwd` ; \
+mcs-do-short-build:
+	tmpinst=`cd _tmpinst && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH; export PATH ; \
-	cd $$mcs_topdir/mcs && $(MAKE) PROFILE=default ; \
-	cd $$mcs_topdir/class/corlib && $(MAKE) PROFILE=default ; \
-	cd $$mcs_topdir/class/System && $(MAKE) PROFILE=default ; \
-	cd $$mcs_topdir/class/Mono.CSharp.Debugger && $(MAKE) PROFILE=default
-	$(MAKE) tmpinst-runtime
+	for dir in mcs class/corlib class/System class/System.XML class/System class/Mono.CSharp.Debugger; do \
+	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default) || exit 1 ; \
+	done
 
-# Use stage2 binaries to build the whole tree
-stage3: stage2
+mcs-do-full-build:
 	tmpinst=`cd _tmpinst && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) all-profiles
+
+mcs-do-clean-profiles:
+	cd $(mcs_topdir) && $(MAKE) clean-profiles
+
+mcs-do-run-test: tmpinst-dir
+	tmpinst=`cd _tmpinst && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+	cd $(mcs_topdir) && $(MAKE) PROFILE=default run-test
 
 tmpinst-dir.stamp: Makefile.am
 	set -e ; \
@@ -103,12 +130,6 @@ tmpinst-dir.stamp: Makefile.am
 tmpinst-dir: tmpinst-dir.stamp
 	@if test -d _tmpinst; then :; else rm -f tmpinst-dir.stamp; $(MAKE) tmpinst-dir.stamp; fi
 
-tmpinst-runtime:
-	tmpinst=`cd _tmpinst && pwd` && \
-	mv -f $(mcs_topdir)/mcs/mcs.exe $$tmpinst/lib && \
-	mv -f $(mcs_topdir)/class/lib/default/mscorlib.dll $(mcs_topdir)/class/lib/default/System.dll $$tmpinst/lib && \
-	if test -f $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll; then \
-	  mv -f $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll $$tmpinst/lib ; else : ; fi
 
 # Obsolete target -- don't use.
 .PHONY: fullbuild
