@@ -932,7 +932,8 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 		if (!is_proxy)
 			res = vtable [klass->interface_offsets [method->klass->interface_id] + method->slot];
 	} else {
-		res = vtable [method->slot];
+		if (method->slot != -1)
+			res = vtable [method->slot];
 	}
 
 	if (is_proxy) {
