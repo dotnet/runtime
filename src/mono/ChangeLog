@@ -1,3 +1,7 @@
+2004-10-10  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add some checks for cygwin weirdness.
+
 2004-10-08  Zoltan Varga  <vargaz@freemail.hu>
 
 	* support/Makefile.am (libMonoPosixHelper_la_SOURCES): Do not build
