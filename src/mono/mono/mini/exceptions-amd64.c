@@ -277,7 +277,7 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [40];
+	static guint8 start [64];
 	static int inited = 0;
 	guint8 *code;
 
@@ -306,7 +306,7 @@ mono_arch_get_throw_exception (void)
 	amd64_call_reg (code, AMD64_R11);
 	amd64_breakpoint (code);
 
-	g_assert ((code - start) < 40);
+	g_assert ((code - start) < 64);
 	return start;
 }
 

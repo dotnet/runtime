@@ -765,7 +765,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (m->method->save_lmf) {
 		/* Reserve stack space for saving LMF + argument regs */
 		offset += sizeof (MonoLMF);
-		if (!lmf_tls_offset)
+		if (lmf_tls_offset == -1)
 			/* Need to save argument regs too */
 			offset += (AMD64_NREG * 8) + (8 * 8);
 		m->arch.lmf_offset = offset;
@@ -4234,7 +4234,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
 
-		if (lmf_tls_offset) {
+		if (lmf_tls_offset != -1) {
 			/* Load lmf quicky using the FS register */
 			x86_prefix (code, X86_FS_PREFIX);
 			amd64_mov_reg_mem (code, AMD64_RAX, 0, 8);
