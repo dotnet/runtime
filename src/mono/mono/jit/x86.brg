@@ -1842,16 +1842,16 @@ reg: LOCALLOC (CONST_I4) {
 	if (size) {
 		mono_emit_stack_alloc_const (s, tree, size);
 
+		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI) {
+			x86_push_reg (s->code, X86_EDI);
+			offset += 4;
+		}
 		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX) {
 			x86_push_reg (s->code, X86_EAX);
 			offset += 4;
 		}
 		if (tree->reg1 != X86_ECX && tree->left->reg1 != X86_ECX) {
 			x86_push_reg (s->code, X86_ECX);
-			offset += 4;
-		}
-		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI) {
-			x86_push_reg (s->code, X86_EDI);
 			offset += 4;
 		}
 		
