@@ -1521,8 +1521,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		} else if (spec [MONO_INST_CLOB] == 'd') { /* division */
 			int dest_reg = X86_EAX;
-			if (spec [MONO_INST_DEST] == 'd')
+			int clob_reg = X86_EDX;
+			if (spec [MONO_INST_DEST] == 'd') {
 				dest_reg = X86_EDX; /* reminder */
+				clob_reg = X86_EAX;
+			}
 			val = rs->iassign [ins->dreg];
 			if (0 && val >= 0 && val != dest_reg && !(rs->ifree_mask & (1 << dest_reg))) {
 				DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));
@@ -1533,7 +1536,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (val < -1) {
 					/* the register gets spilled after this inst */
 					int spill = -val -1;
-					dest_mask = 1 << (dest_reg == X86_EAX? X86_EDX: X86_EAX);
+					dest_mask = 1 << clob_reg;
 					prev_dreg = ins->dreg;
 					val = mono_regstate_alloc_int (rs, dest_mask);
 					if (val < 0)
@@ -1558,6 +1561,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				//DEBUG (g_print ("dest reg in div assigned: %s\n", mono_arch_regname (val)));
 				if (val != dest_reg) { /* force a copy */
 					create_copy_ins (cfg, val, dest_reg, ins);
+					if (!(rs->ifree_mask & (1 << dest_reg)) && rs->isymbolic [dest_reg] >= MONO_MAX_IREGS) {
+						DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));
+						get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [dest_reg]);
+						mono_regstate_free_int (rs, dest_reg);
+					}
 				}
 			}
 			src1_mask = 1 << X86_EAX;

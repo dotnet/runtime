@@ -127,5 +127,25 @@ class Tests {
 		return 1;
 	}
 
+	class helper1 {
+
+		int [] ma = new int [56];
+		const int MBIG = int.MaxValue;
+
+		public helper1 () {
+			for (int k = 1; k < 5; k++) {
+				for (int i = 1; i < 56; i++) {
+					ma [i] -= ma [1 + (i + 30) % 55];
+					if (ma [i] < 0)
+						ma [i] += MBIG;
+				}
+			}
+		}
+	}
+
+	public static int test_2_regalloc () {
+		helper1 h = new helper1 ();
+		return 2;
+	}
 }
 
