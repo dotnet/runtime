@@ -1423,12 +1423,14 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 		res = mono_thread_pool_finish (ares, &out_args, &exc);
 
 	if (exc) {
-		char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);
-		char  *tmp;
-		tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
-		g_free (strace);	
-		((MonoException*)exc)->stack_trace = mono_string_new (domain, tmp);
-		g_free (tmp);
+		if (((MonoException*)exc)->stack_trace) {
+			char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);
+			char  *tmp;
+			tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
+			g_free (strace);	
+			((MonoException*)exc)->stack_trace = mono_string_new (domain, tmp);
+			g_free (tmp);
+		}
 		mono_raise_exception ((MonoException*)exc);
 	}
 
