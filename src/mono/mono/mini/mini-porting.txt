@@ -1,0 +1,303 @@
+			Mono JIT porting guide.
+		Paolo Molaro (lupus@ximian.com)
+
+* Introduction
+
+This documents describes the process of porting the mono JIT
+to a new cpu architecture. The new mono JIT has been designed 
+to make porting easier though at the same time enable the port
+to take full advantage from the new architecture features and 
+instructions. Knowledge of the mini architecture (described in the
+mini-doc.txt file) is a requirement for understanding this guide,
+as well as an earlier document about porting the mono interpreter
+(available on the web site).
+
+There are six main areas that a port needs to implement to
+have a fully-functional JIT for a given architecture:
+
+	1) instruction selection
+	2) native code emission
+	3) call convetions and register allocation
+	4) method trampolines
+	5) exception handling
+	6) minor helper methods
+
+To take advantage of some not-so-common processor features (for example
+conditional execution of instructions as may be found on ARM or ia64), it may
+be needed to develop an high-level optimization, but doing so is not a 
+requirement for getting the JIT to work.
+
+We'll see in more details each of the steps required, note, though,
+that a new port may just as well start from a cut&paste of an existing
+port to a similar architecture (for example from x86 to amd64, or from
+powerpc to sparc).
+The architecture specific code is split from the rest of the jit,
+for example the x86 specific code and data is all included in the 
+following files in the distribution:
+
+	mini-x86.h mini-x86.c
+	inssel-x86.brg
+	cpu-pentium.md
+	tramp-x86.c 
+	exceptions-x86.c 
+
+I suggest a similar split for other architectures as well.
+
+Note that this document is still incomplete: some sections are only
+sketched and some are missing, but the important info to get a port 
+going is already described.
+
+
+* Architecture-specific instructions and instruction selection.
+
+The JIT already provides a set of instructions that can be easily
+mapped to a great variety of different processor instructions.
+Sometimes it may be necessary or advisable to add a new instruction
+that represent more closesly an instruction in the architecture.
+Note that a mini instruction can be used to represent also a short
+sequence of cpu low-level instructions, but note that each
+instruction represents the minimum amount of code the instruction 
+scheduler will handle (ie, the scheduler won't schedule the instructions
+that compose the low-level sequence as individual instructions, but just
+the whole sequence, as an indivisible block).
+New instructions are created by adding a line in the mini-ops.h file,
+assigning an opcode and a name. To specify the input and output for 
+the instruction, there are two different places, depending on the context 
+in which the instruction gets used.
+If the instruction is used in the tree representation, the input and output
+types are defined by the BURG rules in the *.brg files (the usual 
+non-terminals are 'reg' to represent a normal register, 'lreg' to 
+represent a register or two that hold a 64 bit value, freg for a
+floating point register).
+If an instruction is used as a low-level cpu instruction, the info
+is specified in a machine description file. The description file is
+processed by the genmdesc program to provide a data structure that
+can be easily used from C code to query the needed info about the 
+instruction.
+As an example, let's consider the add instruction for both x86 and ppc:
+
+x86 version:
+	add: dest:i src1:i src2:i len:2 clob:1
+ppc version:
+	add: dest:i src1:i src2:i len:4
+
+Note that the instruction takes two input integer registers on both cpu,
+but on x86 the first source register is clobbered (clob:1) and the length
+in bytes of the instruction differs.
+Note that integer adds and floating point adds use different opcodes, unlike
+the IL language (64 bit add is done with two instructions on 32 bit architectures,
+using a add that sets the carry and an add with carry).
+A specific cpu port may assign any meaning to the clob field for an instruction
+since the value will be processed in an arch-specific file anyway.
+See the top of the existing cpu-pentium.md file for more info on other fields:
+the info may or may not be applicable to a different cpu, in this latter case
+the info can be ignored.
+The code in mini.c together with the BURG rules in inssel.brg, inssel-float.brg
+and inssel-long32.brg provides general purpouse mappings from the tree representation 
+to a set of instructions that should be easily implemented in any architecture.
+To allow for additional arch-specific functionality, an arch-specific BURG file
+can be used: in this file arch-specific instructions can be selected that provide
+better performance than the general instructions or that provide functionality
+that is neded by the JIT but that cannot be expressed in a general enough way.
+As an example, x86 has the special instruction "push" to make it easier to
+implement the default call convention (passing arguments on the stack): almost
+all the other architectures don't have such an instruction (and don't need it anyway),
+so we added a special rule in the inssel-x86.brg file for it.
+
+So, one of the first things needed in a port is to write a cpu-$(arch).md machine
+description file and fill it with the needed info. As a start, only a few
+instructions can be specified, like the ones required to do simple integer
+operations. The default rules of the instruction selector will emit the common
+instructions and so we're ready to go for the next step in porting the JIT.
+
+
+*) Native code emission
+
+Since the first step in porting mono to a new cpu is to port the interpreter,
+there should be already a file that allows the emission of binary native code
+in a buffer for the architecture. This file should be placed in the 
+	mono/arch/$(arch)/
+directory.
+
+The bulk of the code emission happens in the mini-$(arch).c file, in a function
+called mono_arch_output_basic_block (). This function takes a basic block, walks the
+list of instructions in the block and emits the binary code for each.
+Optionally a peephole optimization pass is done on the basic block, but this can be
+left for later, when the port actually works.
+This function is very simple, there is just a big switch on the instruction opcode
+and in the corresponding case the functions or macros to emit the binary native code
+are used. Note that in this function the lengths of the instructions are used to
+determine if the buffer for the code needs enlarging.
+
+To complete the code emission for a method, a few other functions need
+implementing as well:
+
+	mono_arch_emit_prolog ()
+	mono_arch_emit_epilog ()
+	mono_arch_patch_code ()
+
+mono_arch_emit_prolog () will emit the code to setup the stack frame for a method,
+optionally call the callbacks used in profiling and tracing, and move the
+arguments to their home location (in a caller-save register if the variable was 
+allocated to one, or in a stack location if the argument was passed in a volatile 
+register and wasn't allocated a non-volatile one). callr-save registers used by the
+function are saved in the prolog as well.
+
+mono_arch_emit_epilog () will emit the code needed to return from the function,
+optionally calling the profiling or tracing callbacks. At this point the basic blocks
+or the code that was moved out of the normal flow for the function can be emitted 
+as well (this is usually done to provide better info for the static branch predictor).
+In the epilog, caller-save registers are restored if they were used.
+Note that, to help exception handling and stack unwinding, when there is a transition
+from managed to unmanaged code, some special processing needs to be done (basically,
+saving all the registers and setting up the links in the Last Managed Frame
+structure).
+
+When the epilog has been emitted, the upper level code arranges for the buffer of 
+memory that contains the native code to be copied in an area of executable memory
+and at this point, instructions that use relative addressing need to be patched
+to have the right offsets: this work is done by mono_arch_patch_code ().
+
+
+* Call convetions and register allocation
+
+To account for the differences in the call conventions, a few functions need to
+be implemented.
+
+mono_arch_allocate_vars () assigns to both arguments and local variables
+the offset relative to the frame register where they are stored, dead
+variables are simply discarded. The total amount of stack needed is calculated.
+
+mono_arch_call_opcode () is the function that more closely deals with the call
+convention on a given system. For each argument to a function call, an instruction
+is created that actually puts the argument where needed, be it the stack or a 
+specific register. This function can also re-arrange th order of evaluation
+when multiple arguments are involved if needed (like, on x86 arguments are pushed
+on the stack in reverse order). The function needs to carefully take into accounts
+platform specific issues, like how strcutures are returned as well as the
+differences in size and/or alignment of managed and corresponding unmanaged 
+structures.
+
+The other chunk of code that needs to deal with the call convention and other
+specifics of a cpu, is the local register allocator, implemented in a function
+named mono_arch_local_regalloc (). The local allocator deals with a bsic block 
+at a time and basically just allocates registers for temporary
+values during expression evaluation, spilling and unspilling as necessary.
+The local allocator needs to take into account clobbering information, both
+during simple instructions and during function calls and it needs to deal
+with other architecture-specific weirdnesses, like instructions that take
+inputs only in specific registers or output only is some.
+Some effor will be put later in moving most of the local register allocator to 
+a common file so that the code can be shared more for similar, risc-like cpus.
+The register allocator does a first pass on the isntructions in a block, collecting
+liveness information and in a backward pass on the same list performs the
+actual register allocation, inserting the instructions needed to spill values,
+if necessary.
+
+When this part of code is implemented, some testing can be done with the generated 
+code for the new architecture. Most helpful is the use of the --regression
+command line switch to run the regression tests (basic.cs, for example).
+Note that the JIT will try to initialize the runtime, but it may not be able yet to
+compile and execute complex code: commenting most of the code in the mini_init()
+function in mini.c is needed to let the jit just compile the regression tests.
+Also, using multiple -v switches on the command line makes the jit dump an 
+increasing amount of information during compilation.
+
+
+* Method trampolines
+
+To get better startup performance, the JIT actually compiles a method only when
+needed. To achieve this, when a call to a method is compiled, we actually emit a 
+call to a magic trampoline. The magic trampoline is a function written in assembly
+that invokes the compiler to compile the given method and jumps to the newly compiled
+code, ensuring the arguments it received are passed correctly to the actual method.
+Before jumping to the new code, though, the magic trampoline takes care of patching
+the call site so that next time the call will go directly to the method instead of the
+trampoline. How does this all work?
+mono_arch_create_jit_trampoline () creates a small function that just
+preserves the arguments passed to it and adds an additional argument (the method
+to compile) before calling the generic trampoline. This small function is called 
+the specific trampoline, because it is method-specific (the method to compile
+is hard-code in the instruction stream).
+The generic trampoline saves all the arguments that could get clobbered
+and calls a C function that will do two things: 
+
+*) actually call the JIT to compile the method
+*) identify the calling code so that it can be patched to call directly
+the actual method
+
+If the 'this' argument to a method is a boxed valuetype that is passed to
+a method that expects just a pointer to the data, an additional unboxing
+trampoline will need to be inserted as well.
+
+
+* Exception handling
+
+Exception handling is likely the most difficult part of the port, as it needs
+to deal with unwinding (both managed and unmanaged code) and calling
+catch and filter blocks. It also needs to deal with signals, because mono
+takes advantage of the MMU in the cpu and of the operation system to
+handle dereferences of the NULL pointer. Some of the function needed
+to implement the mechanisms are:
+
+mono_arch_get_throw_exception () returns a function that takes an exception object
+and invokes an arch-specific function that will enter the exception processing.
+To do so, all the relevant registers need to be saved and passed on.
+
+mono_arch_handle_exception () this function takes the exception thrown and
+a context that describes the state of the cpu at the time the exception was 
+thrown. The function needs to implement the exception handling mechanism,
+so it makes a search for an handler for the exception and if none is found,
+it follows the unhandled exception path (that can print a trace and exit or
+just abort the current thread). The difficulty here is to unwind the stack 
+correctly, by restoring the resgister state at each call site in the call chain,
+calling finally, filters and handler blocks while doing so.
+
+As part of exception handling a couple of internal calls need to be implemented
+as well.
+ves_icall_get_frame_info () returns info about a specific frame.
+mono_jit_walk_stack () walks the stack and calls a callback with info for
+each frame found.
+ves_icall_get_trace () return an array of StackFrame objects.
+
+
+* Minor helper methods
+
+A few minor helper methods are referenced from the arch-independent code.
+Some of them are:
+
+*) mono_arch_cpu_optimizazions ()
+	This function returns a mask of optimizations that should be enabled for the
+	current cpu and a mask of optimizations that should be excluded, instead.
+
+*) mono_arch_regname ()
+	Returns the name for a numeric register.
+
+*) mono_arch_get_allocatable_int_vars ()
+	Returns a list of variables that can be allocated to the integer registers
+	in the current architecture.
+
+*) mono_arch_get_global_int_regs ()
+	Returns a list of caller-save registers that can be used to allocate variables 
+	in the current method.
+
+*) mono_arch_instrument_mem_needs ()
+*) mono_arch_instrument_prolog ()
+*) mono_arch_instrument_epilog ()
+	Functions needed to implement the profiling interface.
+
+
+* Writing regression tests
+
+Regression tests for the JIT should be written for any bug found in the JIT
+in one of the *.cs files in the mini directory. Eventually all the operations
+of the JIT should be tested (including the ones that get selected only when 
+some specific optimization is enabled).
+
+
+* Platform specific optimizations
+
+An example of a platform-specific optimization is the peephole optimization:
+we look at a small window of code at a time and we replace one or more 
+instructions with others that perform better for the given architecture or cpu.
+
