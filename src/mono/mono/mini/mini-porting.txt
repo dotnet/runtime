@@ -260,6 +260,41 @@ mono_jit_walk_stack () walks the stack and calls a callback with info for
 each frame found.
 ves_icall_get_trace () return an array of StackFrame objects.
 
+** Code generation for filter/finally handlers
+
+Filter and finally handlers are called from 2 different locations:
+
+       1.) from within the method containing the exception clauses
+       2.) from the stack unwinding code
+
+To make this possible we implement them like subroutines, ending with a
+"return" statement. The subroutine does not save the base pointer, because we
+need access to the local variables of the enclosing method. Its is possible
+that instructions inside those handlers modify the stack pointer, thus we save
+the stack pointer at the start of the handler, and restore it at the end. We
+have to use a "call" instruction to execute such finally handlers. Filters
+receives the exception object inside a register (ECX on x86).
+
+The MIR code for filter and finally handlers looks like:
+
+    OP_START_HANDLER
+    ...
+    OP_END_FINALLY | OP_ENDFILTER(reg)
+
+OP_START_HANDLER: should save the stack pointer somewhere
+OP_END_FINALLY: restores the stack pointers and returns.
+OP_ENDFILTER (reg): restores the stack pointers and returns the value in "reg".
+
+** Calling finally/filter handlers 
+
+There is a special opcode to call those handler, its called OP_CALL_HANDLER. It
+simple emits a call instruction.
+
+Its a bit more complex to call handler from outside (in the stack unwinding
+code), because we have to restore the whole context of the method first. After that
+we simply emit a call instruction to invoke the handler. Its usually
+possible to use the same code to call filter and finally handlers (see
+arch_get_call_filter).
 
 * Minor helper methods
 
