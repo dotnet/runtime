@@ -1449,11 +1449,12 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "_numbers");
 	data=*(MonoArray **)(((char *)ipaddr) + field->offset);
 
+/* MacOSX doesn't provide the define... */
+#ifndef s6_addr16
+#define s6_addr16 __u6_addr.__u6_addr16
+#endif
 	for(i=0; i<8; i++)
-		/* The real member of the struct is __u6_addr.__u6_addr16, s6_addr16
-		 * is a DEFINE
-		 */
-		in6addr.__u6_addr.__u6_addr16[i] = mono_array_get (data, guint16, i);
+		in6addr.s6_addr16[i] = mono_array_get (data, guint16, i);
 
 	return(in6addr);
 }
