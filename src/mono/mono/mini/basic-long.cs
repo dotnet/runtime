@@ -263,6 +263,12 @@ class Tests {
 		return 1;
 	}
 
+	static int test_4_addcc_imm () {
+		long a = 3;
+		long b = 0;
+		return (int)(a - b + 1);
+	}
+
 	static int test_5_sub () {
 		long a = 8;
 		long b = 3;		

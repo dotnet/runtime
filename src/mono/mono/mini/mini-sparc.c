@@ -3139,6 +3139,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADD:
 			sparc_add (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
+		case OP_ADDCC_IMM:
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
 			/* according to inssel-long32.brg, this should set cc */
@@ -3161,6 +3162,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISUB:
 			sparc_sub (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
+		case OP_SUBCC_IMM:
 		case OP_SUB_IMM:
 		case OP_ISUB_IMM:
 			/* according to inssel-long32.brg, this should set cc */

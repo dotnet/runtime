@@ -2372,6 +2372,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ADC:
 			x86_alu_reg_reg (code, X86_ADC, ins->sreg1, ins->sreg2);
 			break;
+		case OP_ADDCC_IMM:
 		case OP_ADD_IMM:
 			x86_alu_reg_imm (code, X86_ADD, ins->dreg, ins->inst_imm);
 			break;
@@ -2385,6 +2386,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SBB:
 			x86_alu_reg_reg (code, X86_SBB, ins->sreg1, ins->sreg2);
 			break;
+		case OP_SUBCC_IMM:
 		case OP_SUB_IMM:
 			x86_alu_reg_imm (code, X86_SUB, ins->dreg, ins->inst_imm);
 			break;

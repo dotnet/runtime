@@ -541,6 +541,8 @@ adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
 adc_imm: dest:i src1:i len:12
+addcc_imm: dest:i src1:i len:12
+subcc_imm: dest:i src1:i len:12
 sbb: dest:i src1:i src2:i len:4
 sbb_imm: dest:i src1:i len:12
 br_reg: src1:i len:8

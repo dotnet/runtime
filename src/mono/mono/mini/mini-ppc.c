@@ -2443,6 +2443,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ADC:
 			ppc_adde (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_ADDCC_IMM:
+			if (ppc_is_imm16 (ins->inst_imm)) {
+				ppc_addic (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			} else {
+				ppc_load (code, ppc_r11, ins->inst_imm);
+				ppc_addc (code, ins->dreg, ins->sreg1, ppc_r11);
+			}
+			break;
 		case OP_ADD_IMM:
 			if (ppc_is_imm16 (ins->inst_imm)) {
 				ppc_addi (code, ins->dreg, ins->sreg1, ins->inst_imm);
@@ -2522,6 +2530,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SUBCC:
 			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
+		case OP_SUBCC_IMM:
+			ppc_load (code, ppc_r11, ins->inst_imm);
+			ppc_subfc (code, ins->dreg, ppc_r11, ins->sreg1);
+			break;
 		case CEE_SUB:
 			ppc_subf (code, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
@@ -2539,7 +2551,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SBB_IMM:
 			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_subfe (code, ins->dreg, ins->sreg2, ppc_r11);
+			ppc_subfe (code, ins->dreg, ppc_r11, ins->sreg1);
 			break;
 		case OP_PPC_SUBFIC:
 			g_assert (ppc_is_imm16 (ins->inst_imm));
