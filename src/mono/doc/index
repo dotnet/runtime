@@ -94,6 +94,34 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Oct 14th, 2002: Crypto, Database work, Debugger, Documentation.
+
+	Brian, Daniel and Rodrigo have been busy working on the ODBC
+	provider for Mono.  Daniel posted some <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-October/002755.html">updates</a>.
+
+	Also Sebastien Pouliot has been improving the various
+	cryptographic classes in Mono, something that we had not done
+	in quite some time.  We are looking for a way to handle
+	big-nums.  We need either a managed or unmanaged set of
+	classes for handling large numbers, and some volunteers to
+	expose this functionality to C# (Either as an internal
+	assembly, or as a set of P/Invoke, Internal call wrappers).
+
+	Martin has got our debugger to support adding breakpoints at
+	file/line combos.  This was more complex than generic
+	breakpoints in routines, because these breakpoints are set on
+	routines that probably have not been JITed just yet.  Martin's
+	focus now is on stabilizing our debugger and aim for a public
+	release of it.
+
+	We have also imported the ECMA documentation into a separate
+	module, and with the help from Scott Bronson we will have the
+	necessary XSLT tools to finish our native documentation
+	browser for Mono.  This together with the work from Adam will
+	be the foundation for the <a href="classlib-doc.html">Mono
+	Documentation Tools</a>. 
+
 @item Oct 9th, 2002: Various Mono updates.
 
 	Brian Ritchie, Daniel Morgan, Rodrigo Moya and Ville Palo have
