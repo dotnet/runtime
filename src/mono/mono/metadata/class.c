@@ -27,6 +27,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-endian.h>
 
 #define CSIZE(x) (sizeof (x) / 4)
 
@@ -600,10 +601,16 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
 	MonoClass *k;
 	MonoVTable *vt;
+	MonoClassField *field;
+	guint32 cindex;
+	guint32 cols [MONO_CONSTANT_SIZE];
+	const char *p;
+	char *t;
 	int i;
 
 	g_assert (class);
 
+	/* can interfaces have static fields? */
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
 		g_assert_not_reached ();
 
@@ -622,6 +629,69 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		/* align: fixme not 64 bit clean */
 		if (((guint32)vt->data) & 0x7)
 			vt->data += 8 - (((guint32)vt->data) & 0x7);
+	}
+
+	for (i = class->field.first; i < class->field.last; ++i) {
+		field = &class->fields [i - class->field.first];
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
+			continue;
+		cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1));
+		if (!cindex) {
+			g_warning ("constant for field %s not found", field->name);
+			continue;
+		}
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, cols, MONO_CONSTANT_SIZE);
+		p = mono_metadata_blob_heap (class->image, cols [MONO_CONSTANT_VALUE]);
+		mono_metadata_decode_blob_size (p, &p);
+		t = (char*)vt->data + field->offset;
+		/* should we check that the type matches? */
+		switch (cols [MONO_CONSTANT_TYPE]) {
+			case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+			*t = *p;
+			break;
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2: {
+			guint16 *val = (guint16*)t;
+			*val = read16 (p);
+			break;
+		}
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4: {
+			guint32 *val = (guint32*)t;
+			*val = read32 (p);
+			break;
+		}
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8: {
+			guint64 *val = (guint64*)t;
+			*val = read64 (p);
+			break;
+		}
+		case MONO_TYPE_R4: {
+			float *val = (float*)t;
+			readr4 (p, val);
+			break;
+		}
+		case MONO_TYPE_R8: {
+			double *val = (double*)t;
+			readr8 (p, val);
+			break;
+		}
+		case MONO_TYPE_STRING: {
+			g_warning ("we don't handle strings in constant table");
+			break;
+		}
+		case MONO_TYPE_CLASS:
+			/* nothing to do, we malloc0 the data and the value can be 0 only */
+			break;
+		default:
+			g_warning ("type 0x%02x should not be in constant table", cols [MONO_CONSTANT_TYPE]);
+		}
 	}
 
 	vt->interface_offsets = g_malloc0 (sizeof (gpointer) * (class->max_interface_id + 1));
@@ -754,7 +824,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->parent = mono_class_get (image,  mono_metadata_token_from_dor (cols [3]));
 		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0)))
 			class->valuetype = 1;
-		class->enumtype = class->parent->enumtype;
+		if (((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
+			class->valuetype = class->enumtype = 1;
+		}
+		//class->enumtype = class->parent->enumtype;
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 	}
@@ -771,7 +844,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			 * class->valuetype = 1;
 			 */
 			class->valuetype = 0;
-			class->enumtype = 1;
+			class->enumtype = 0;
 		} else if (!strcmp (name, "Object")) {
 			class->this_arg.type = class->byval_arg.type = MONO_TYPE_OBJECT;
 		} else if (!strcmp (name, "String")) {

@@ -252,6 +252,7 @@ int            mono_type_size                  (MonoType        *type,
 int            mono_type_stack_size            (MonoType        *type, 
 						int             *alignment);
 
+guint          mono_metadata_type_hash         (MonoType *t1);
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
 
 MonoMethodSignature  *mono_metadata_parse_method_signature (MonoImage            *m,

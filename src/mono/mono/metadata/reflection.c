@@ -746,6 +746,7 @@ encode_constant (MonoDynamicAssembly *assembly, MonoObject *val, guint32 *ret_ty
 
 	box_val = ((char*)val) + sizeof (MonoObject);
 	*ret_type = val->vtable->klass->byval_arg.type;
+handle_enum:
 	switch (*ret_type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
@@ -767,6 +768,12 @@ encode_constant (MonoDynamicAssembly *assembly, MonoObject *val, guint32 *ret_ty
 	case MONO_TYPE_R8:
 		len = 8;
 		break;
+	case MONO_TYPE_VALUETYPE:
+		if (val->vtable->klass->enumtype) {
+			*ret_type = val->vtable->klass->enum_basetype->type;
+			goto handle_enum;
+		} else
+			g_error ("we can't encode valuetypes");
 	case MONO_TYPE_STRING:
 	default:
 		g_error ("we don't encode constant type 0x%02x yet", *ret_type);
@@ -1673,9 +1680,11 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 }
 
 /*
- * We need to return always the same object for Type, MethodInfo, FieldInfo etc..
+ * We need to return always the same object for MethodInfo, FieldInfo etc..
+ * type uses a different hash, since it uses custom hash/equal functions.
  */
 static GHashTable *object_cache = NULL;
+static GHashTable *type_cache = NULL;
 
 #define CHECK_OBJECT(t,p)	\
 	do {	\
@@ -1707,30 +1716,80 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 	return res;
 }
 
+static gboolean
+mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
+{
+	if ((t1->type != t2->type) ||
+	    (t1->byref != t2->byref))
+		return FALSE;
+
+	switch (t1->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_OBJECT:
+		return TRUE;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		return t1->data.klass == t2->data.klass;
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+		return mymono_metadata_type_equal (t1->data.type, t2->data.type);
+	default:
+		g_error ("implement type compare for %0x!", t1->type);
+		return FALSE;
+	}
+
+	g_print ("failed\n");
+	return FALSE;
+}
+
+static guint
+mymono_metadata_type_hash (MonoType *t1)
+{
+	guint hash;
+
+	hash = t1->type;
+
+	hash |= t1->byref << 6; /* do not collide with t1->type values */
+	switch (t1->type) {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		/* check if the distribution is good enough */
+		return hash << 7 | g_str_hash (t1->data.klass->name);
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+		return hash << 7 | mymono_metadata_type_hash (t1->data.type);
+	}
+	return hash;
+}
+
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
 	MonoReflectionType *res;
-	MonoClass *klass;
 
-	/* 
-	 * FIXME: type may come from the cache in metadata.c, we hand out only
-	 * the types from a MonoClass structure: the long term fix is to just
-	 * load corlib always and remove the cache in metadata.c altogether.
-	 * Or we may still handle it this way so we can store in MonoType additional info
-	 * as we do now.
-	 */
-	klass = mono_class_from_mono_type (type);
-	if ((type != &klass->byval_arg) && (type != &klass->this_arg)) {
-		if (type->byref)
-			type = &klass->this_arg;
-		else
-			type = &klass->byval_arg;
-	}
-	CHECK_OBJECT (MonoReflectionType *, type);
+	if (!type_cache)
+		type_cache = g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
+				(GCompareFunc)mymono_metadata_type_equal);
+	if ((res = g_hash_table_lookup (type_cache, type)))
+		return res;
 	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
 	res->type = type;
-	CACHE_OBJECT (type, res);
+	g_hash_table_insert (type_cache, type, res);
 	return res;
 }
 
@@ -2026,7 +2085,7 @@ handle_enum:
 				type = sig->params [i]->data.klass->enum_basetype->type;
 				goto handle_enum;
 			} else {
-				g_warning ("generic valutype not handled in custom attr value decoding");
+				g_warning ("generic valutype %s not handled in custom attr value decoding", sig->params [i]->data.klass->name);
 			}
 			break;
 		case MONO_TYPE_STRING: {
@@ -2317,7 +2376,7 @@ handle_enum:
 				type = sig->params [i]->data.klass->enum_basetype->type;
 				goto handle_enum;
 			} else {
-				g_warning ("generic valutype not handled in custom attr value decoding");
+				g_warning ("generic valutype %s not handled in custom attr value decoding", sig->params [i]->data.klass->name);
 			}
 			break;
 		case MONO_TYPE_STRING: {

@@ -200,6 +200,12 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 	return mono_object_clone (this);
 }
 
+static MonoReflectionType *
+ves_icall_System_Object_GetType (MonoObject *obj)
+{
+	return mono_type_get_object (mono_domain_get (), &obj->vtable->klass->byval_arg);
+}
+
 static void
 mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 {
@@ -414,6 +420,39 @@ ves_icall_get_field_info (MonoReflectionField *field, MonoFieldInfo *info)
 	info->attrs = field->field->type->attrs;
 }
 
+static MonoObject *
+ves_icall_MonoField_GetValue (MonoReflectionField *field, MonoObject *obj) {
+	MonoObject *res;
+	MonoClass *klass;
+	MonoType *ftype = field->field->type;
+	int type = ftype->type;
+	char *p, *r;
+	guint32 align;
+
+	mono_class_init (field->klass);
+	if (ftype->attrs & FIELD_ATTRIBUTE_STATIC) {
+		MonoVTable *vtable;
+		vtable = mono_class_vtable (mono_domain_get (), field->klass);
+		p = (char*)(vtable->data) + field->field->offset;
+	} else {
+		p = (char*)obj + field->field->offset;
+	}
+
+	switch (type) {
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		return *(MonoObject**)p;
+	}
+	klass = mono_class_from_mono_type (ftype);
+	res = mono_object_new (mono_domain_get (), klass);
+	r = (char*)res + sizeof (MonoObject);
+	memcpy (r, p, mono_class_value_size (klass, &align));
+
+	return res;
+}
+
 static void
 ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo *info)
 {
@@ -589,12 +628,12 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 static MonoMethod*
 search_method (MonoReflectionType *type, char *name, guint32 flags, MonoArray *args)
 {
-	MonoClass *klass;
+	MonoClass *klass, *start_class;
 	MonoMethod *m;
 	MonoReflectionType *paramt;
 	int i, j;
 
-	klass = mono_class_from_mono_type (type->type);
+	start_class = klass = mono_class_from_mono_type (type->type);
 	while (klass) {
 		for (i = 0; i < klass->method.count; ++i) {
 			m = klass->methods [i];
@@ -614,7 +653,7 @@ search_method (MonoReflectionType *type, char *name, guint32 flags, MonoArray *a
 		}
 		klass = klass->parent;
 	}
-	g_print ("Method %s::%s (%d) not found\n", klass->name, name, mono_array_length (args));
+	g_print ("Method %s.%s::%s (%d) not found\n", start_class->name_space, start_class->name, name, mono_array_length (args));
 	return NULL;
 }
 
@@ -723,6 +762,9 @@ handle_parent:
 				if (bflags & BFLAGS_NonPublic)
 					match++;
 			}
+			if (!match)
+				continue;
+			match = 0;
 			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 				if (bflags & BFLAGS_Static)
 					match++;
@@ -733,6 +775,7 @@ handle_parent:
 
 			if (!match)
 				continue;
+			match = 0;
 			member = (MonoObject*)mono_method_get_object (domain, method);
 			
 			is_ctor = strcmp (method->name, ".ctor") == 0 ||
@@ -758,6 +801,9 @@ handle_parent:
 				if (bflags & BFLAGS_NonPublic)
 					match++;
 			}
+			if (!match)
+				continue;
+			match = 0;
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				if (bflags & BFLAGS_Static)
 					match++;
@@ -775,9 +821,32 @@ handle_parent:
 	if (membertypes & 16) { /* properties */
 		MonoProperty *prop;
 		for (i = 0; i < klass->property.count; ++i) {
-			match = 0;
 			prop = &klass->properties [i];
-			/* FIXME: handle bflags */
+			match = 0;
+			method = prop->get;
+			if (!method)
+				method = prop->set;
+			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+				if (bflags & BFLAGS_Public)
+					match++;
+			} else {
+				if (bflags & BFLAGS_NonPublic)
+					match++;
+			}
+			if (!match)
+				continue;
+			match = 0;
+			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+				if (bflags & BFLAGS_Static)
+					match++;
+			} else {
+				if (bflags & BFLAGS_Instance)
+					match++;
+			}
+
+			if (!match)
+				continue;
+			match = 0;
 			l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
 		}
 	}
@@ -977,6 +1046,7 @@ static gpointer icall_map [] = {
 	 * System.Object
 	 */
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
+	"System.Object::GetType", ves_icall_System_Object_GetType,
 
 	/*
 	 * System.String
@@ -1042,6 +1112,7 @@ static gpointer icall_map [] = {
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
+	"System.Reflection.MonoField::GetValue", ves_icall_MonoField_GetValue,
 	
 	/* System.Enum */
 

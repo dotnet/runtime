@@ -1974,6 +1974,24 @@ mono_type_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
+guint
+mono_metadata_type_hash (MonoType *t1)
+{
+	guint hash = t1->type;
+
+	hash |= t1->byref << 6; /* do not collide with t1->type values */
+	switch (t1->type) {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		/* check if the distribution is good enough */
+		return hash << 7 | g_str_hash (t1->data.klass->name);
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+		return hash << 7 | mono_metadata_type_hash (t1->data.type);
+	}
+	return hash;
+}
+
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
