@@ -533,6 +533,8 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	if (status)
 		*status = MONO_IMAGE_OK;
 
+	image->ref_count=1;
+
 	return image;
 
 invalid_image:
@@ -663,3 +665,128 @@ mono_image_strerror (MonoImageOpenStatus status)
 	return "Internal error";
 }
 
+static gpointer
+mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
+			       guint32 lang_id, gunichar2 *name,
+			       MonoPEResourceDirEntry *entry,
+			       MonoPEResourceDir *root, guint32 level)
+{
+	gboolean is_string=entry->name_is_string;
+
+	/* Level 0 holds a directory entry for each type of resource
+	 * (identified by ID or name).
+	 *
+	 * Level 1 holds a directory entry for each named resource
+	 * item, and each "anonymous" item of a particular type of
+	 * resource.
+	 *
+	 * Level 2 holds a directory entry for each language pointing to
+	 * the actual data.
+	 */
+
+	if(level==0) {
+		if((is_string==FALSE && entry->name_offset!=res_id) ||
+		   (is_string==TRUE)) {
+			return(NULL);
+		}
+	} else if (level==1) {
+#if 0
+		if(name!=NULL &&
+		   is_string==TRUE && name!=lookup (entry->name_offset)) {
+			return(NULL);
+		}
+#endif
+	} else if (level==2) {
+		if((is_string==FALSE && entry->name_offset!=lang_id) ||
+		   (is_string==TRUE)) {
+			return(NULL);
+		}
+	} else {
+		g_assert_not_reached ();
+	}
+
+	if(entry->is_dir==TRUE) {
+		MonoPEResourceDir *res_dir=(MonoPEResourceDir *)(((char *)root)+entry->dir_offset);
+		MonoPEResourceDirEntry *sub_entries=(MonoPEResourceDirEntry *)(res_dir+1);
+		guint32 entries, i;
+		
+		entries=res_dir->res_named_entries + res_dir->res_id_entries;
+
+		for(i=0; i<entries; i++) {
+			MonoPEResourceDirEntry *sub_entry=&sub_entries[i];
+			gpointer ret;
+			
+			ret=mono_image_walk_resource_tree (info, res_id,
+							   lang_id, name,
+							   sub_entry, root,
+							   level+1);
+			if(ret!=NULL) {
+				return(ret);
+			}
+		}
+
+		return(NULL);
+	} else {
+		MonoPEResourceDataEntry *data_entry=(MonoPEResourceDataEntry *)((char *)(root)+entry->dir_offset);
+		
+		return(data_entry);
+	}
+}
+
+gpointer
+mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, gunichar2 *name)
+{
+	MonoCLIImageInfo *info;
+	MonoDotNetHeader *header;
+	MonoPEDatadir *datadir;
+	MonoPEDirEntry *rsrc;
+	MonoPEResourceDir *resource_dir;
+	MonoPEResourceDirEntry *res_entries;
+	guint32 entries, i;
+
+	if(image==NULL) {
+		return(NULL);
+	}
+
+	info=image->image_info;
+	if(info==NULL) {
+		return(NULL);
+	}
+
+	header=&info->cli_header;
+	if(header==NULL) {
+		return(NULL);
+	}
+
+	datadir=&header->datadir;
+	if(datadir==NULL) {
+		return(NULL);
+	}
+
+	rsrc=&datadir->pe_resource_table;
+	if(rsrc==NULL) {
+		return(NULL);
+	}
+
+	resource_dir=(MonoPEResourceDir *)mono_cli_rva_map (info, rsrc->rva);
+	if(resource_dir==NULL) {
+		return(NULL);
+	}
+	
+	entries=resource_dir->res_named_entries + resource_dir->res_id_entries;
+	res_entries=(MonoPEResourceDirEntry *)(resource_dir+1);
+	
+	for(i=0; i<entries; i++) {
+		MonoPEResourceDirEntry *entry=&res_entries[i];
+		gpointer ret;
+		
+		ret=mono_image_walk_resource_tree (info, res_id, lang_id,
+						   name, entry, resource_dir,
+						   0);
+		if(ret!=NULL) {
+			return(ret);
+		}
+	}
+
+	return(NULL);
+}

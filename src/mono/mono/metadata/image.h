@@ -124,5 +124,10 @@ int           mono_image_ensure_section     (MonoImage *image,
 					     const char *section);
 int           mono_image_ensure_section_idx (MonoImage *image,
 					     int section);
+/* This actually returns a MonoPEResourceDataEntry *, but declaring it
+ * causes an include file loop.
+ */
+gpointer      mono_image_lookup_resource (MonoImage *image, guint32 res_id,
+					  guint32 lang_id, gunichar2 *name);
 	
 #endif

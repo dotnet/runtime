@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #include "mono/io-layer/wapi.h"
+#include "mono/io-layer/timefuncs.h"
 
 typedef struct _WapiSecurityAttributes WapiSecurityAttributes;
 
@@ -100,12 +101,6 @@ typedef enum {
 	GetFileExInfoStandard=0x0000,
 	GetFileExMaxInfoLevel=0x0001
 } WapiGetFileExInfoLevels;
-
-typedef struct 
-{
-	guint32 dwLowDateTime;
-	guint32 dwHighDateTime;
-} WapiFileTime;
 
 typedef struct 
 {

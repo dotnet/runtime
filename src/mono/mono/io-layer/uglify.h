@@ -35,6 +35,8 @@ typedef gunichar2 TCHAR;
 typedef gpointer HANDLE;
 typedef gpointer *LPHANDLE;
 typedef guint32 SOCKET;
+typedef gpointer HMODULE;
+
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;
@@ -61,6 +63,7 @@ typedef WapiGetFileExInfoLevels GET_FILEEX_INFO_LEVELS;
 typedef WapiStartupInfo STARTUPINFO;
 typedef WapiStartupInfo *LPSTARTUPINFO;
 typedef WapiProcessInformation PROCESS_INFORMATION;
+typedef WapiFixedFileInfo VS_FIXEDFILEINFO;
 
 #define CONST const
 #define VOID void

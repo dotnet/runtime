@@ -29,6 +29,7 @@ OTHER_H = \
 	timefuncs.h	\
 	types.h		\
 	uglify.h	\
+	versioninfo.h	\
 	wait.h		\
 	wapi.h	
 
@@ -80,12 +81,14 @@ OTHER_SRC = \
 	thread-private.h	\
 	timefuncs.c		\
 	timefuncs.h		\
+	timefuncs-private.h	\
 	timed-thread.c		\
 	timed-thread.h		\
 	types.h			\
 	uglify.h		\
 	unicode.c		\
 	unicode.h		\
+	versioninfo.h		\
 	wait.c			\
 	wait.h			\
 	wapi.h			\

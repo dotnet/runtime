@@ -27,6 +27,7 @@
 #include <mono/io-layer/system.h>
 #include <mono/io-layer/threads.h>
 #include <mono/io-layer/timefuncs.h>
+#include <mono/io-layer/versioninfo.h>
 #include <mono/io-layer/wait.h>
 
 #endif /* _WAPI_WAPI_H_ */

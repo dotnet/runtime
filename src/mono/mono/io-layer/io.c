@@ -25,9 +25,9 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
+#include <mono/io-layer/timefuncs-private.h>
 
 #undef DEBUG
-#define ACTUALLY_DO_UNICODE
 
 static void file_close_shared (gpointer handle);
 static void file_close_private (gpointer handle);
@@ -162,14 +162,6 @@ static void io_ops_init (void)
 
 /* Some utility functions.
  */
-static void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime)
-{
-	guint64 ticks;
-	
-	ticks = ((guint64)timeval * 10000000) + 116444736000000000UL;
-	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
-	filetime->dwHighDateTime = ticks >> 32;
-}
 
 static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
 {
@@ -1216,9 +1208,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 
 		return(INVALID_HANDLE_VALUE);
 	}
-	filename=_wapi_unicode_to_utf8(name);
 
-#ifdef ACTUALLY_DO_UNICODE
+	filename=_wapi_unicode_to_utf8(name);
 	if(filename==NULL) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1227,25 +1218,17 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 
 		return(INVALID_HANDLE_VALUE);
 	}
-#endif
 	
-#ifdef ACTUALLY_DO_UNICODE
 	ret=open(filename, flags, perms);
-#else
-	ret=open(name, flags, perms);
-#endif
 	
 	if(ret==-1) {
 #ifdef DEBUG
-#ifdef ACTUALLY_DO_UNICODE
 		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file %s: %s",
 			  filename, strerror(errno));
-#else
-		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file %s: %s",
-			  filename, strerror(errno));
-#endif
 #endif
 		_wapi_set_last_error_from_errno ();
+		g_free (filename);
+
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -1253,6 +1236,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating file handle");
+		g_free (filename);
+
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -1265,16 +1250,14 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
 		_wapi_handle_unlock_handle (handle);
+		g_free (filename);
+
 		return(INVALID_HANDLE_VALUE);
 	}
 
 	file_private_handle->fd=ret;
-#ifdef ACTUALLY_DO_UNICODE
 	file_handle->filename=_wapi_handle_scratch_store (filename,
 							  strlen (filename));
-#else
-	file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
-#endif
 	if(security!=NULL) {
 		file_handle->security_attributes=_wapi_handle_scratch_store (
 			security, sizeof(WapiSecurityAttributes));
@@ -1291,7 +1274,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 #endif
 
 	_wapi_handle_unlock_handle (handle);
-
+	g_free (filename);
+	
 	return(handle);
 }
 
@@ -1318,7 +1302,6 @@ gboolean DeleteFile(const gunichar2 *name)
 	}
 
 	filename=_wapi_unicode_to_utf8(name);
-#ifdef ACTUALLY_DO_UNICODE
 	if(filename==NULL) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1327,13 +1310,8 @@ gboolean DeleteFile(const gunichar2 *name)
 
 		return(FALSE);
 	}
-#endif
 	
-#ifdef ACTUALLY_DO_UNICODE
 	ret=unlink(filename);
-#else
-	ret=unlink(name);
-#endif
 	
 	g_free(filename);
 
@@ -2052,6 +2030,8 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating find handle");
+		g_free (utf8_pattern);
+		
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -2063,6 +2043,8 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up find handle %p", handle);
 		_wapi_handle_unlock_handle (handle);
+		g_free (utf8_pattern);
+		
 		return(INVALID_HANDLE_VALUE);
 	}
 	

@@ -90,6 +90,74 @@ typedef struct {
 } MonoPEHeaderNT;
 
 typedef struct {
+	guint32 rde_data_offset;
+	guint32 rde_size;
+	guint32 rde_codepage;
+	guint32 rde_reserved;
+} MonoPEResourceDataEntry;
+
+#define MONO_PE_RESOURCE_ID_CURSOR	0x01
+#define MONO_PE_RESOURCE_ID_BITMAP	0x02
+#define MONO_PE_RESOURCE_ID_ICON	0x03
+#define MONO_PE_RESOURCE_ID_MENU	0x04
+#define MONO_PE_RESOURCE_ID_DIALOG	0x05
+#define MONO_PE_RESOURCE_ID_STRING	0x06
+#define MONO_PE_RESOURCE_ID_FONTDIR	0x07
+#define MONO_PE_RESOURCE_ID_FONT	0x08
+#define MONO_PE_RESOURCE_ID_ACCEL	0x09
+#define MONO_PE_RESOURCE_ID_RCDATA	0x0a
+#define MONO_PE_RESOURCE_ID_MESSAGETABLE	0x0b
+#define MONO_PE_RESOURCE_ID_GROUP_CURSOR	0x0c
+#define MONO_PE_RESOURCE_ID_GROUP_ICON	0x0d
+#define MONO_PE_RESOURCE_ID_VERSION	0x10
+#define MONO_PE_RESOURCE_ID_DLGINCLUDE	0x11
+#define MONO_PE_RESOURCE_ID_PLUGPLAY	0x13
+#define MONO_PE_RESOURCE_ID_VXD		0x14
+#define MONO_PE_RESOURCE_ID_ANICURSOR	0x15
+#define MONO_PE_RESOURCE_ID_ANIICON	0x16
+#define MONO_PE_RESOURCE_ID_HTML	0x17
+
+typedef struct {
+	/* If the MSB is set, then the other 31 bits store the RVA of
+	 * the unicode string containing the name.  Otherwise, the
+	 * other 31 bits contain the ID of this entry.
+	 */
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	guint32 name_offset:31;
+	guint32 name_is_string:1;
+#else
+	guint32 name_is_string:1;
+	guint32 name_offset:31;
+#endif
+	
+	/* If the MSB is set, then the other 31 bits store the RVA of
+	 * another subdirectory.  Otherwise, the other 31 bits store
+	 * the RVA of the resource data entry leaf node.
+	 */
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	guint32 dir_offset:31;
+	guint32 is_dir:1;
+#else
+	guint32 is_dir:1;
+	guint32 dir_offset:31;
+#endif
+} MonoPEResourceDirEntry;
+
+typedef struct 
+{
+	guint32 res_characteristics;
+	guint32 res_date_stamp;
+	guint16 res_major;
+	guint16 res_minor;
+	guint16 res_named_entries;
+	guint16 res_id_entries;
+	/* Directory entries follow on here.  The array is
+	 * res_named_entries + res_id_entries long, containing all
+	 * named entries first.
+	 */
+} MonoPEResourceDir;
+
+typedef struct {
 	guint32 rva;
 	guint32 size;
 } MonoPEDirEntry;
