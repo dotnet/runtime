@@ -1,0 +1,159 @@
+
+The Mono Project
+
+* Background.
+
+	The GNOME project goal was to bring missing technologies to
+	Unix and make it competitive in the current market place for
+	desktop applications.  We also realized early on that language
+	independence was important, and that is why GNOME APIs were
+	coded using a standard that allowed the APIs to be easily
+	wrapper for other languages.  Our APIs are available on most
+	programming languages on Unix (Perl, Python, Scheme, C++,
+	Objective-C, Ada). 
+
+	Later on we decided to use better methods for encapsulating
+	our APIs, and we started to use CORBA to define interfaces to
+	components, and we complemented it policy and a set of
+	standard GNOME interfaces for easily creating reusable and
+	language independent components, controls and compound
+	documents.  This technology is known as <a
+	href="http://www.ximian.com/tech/bonobo.php3">Bonobo<a>, and
+	easy to use interfaces to Bonobo exist for C, Perl, Python,
+	Java.
+
+	CORBA is good when you define coarse interfaces, and most
+	Bonobo interfaces are coarse.  The only problem is that
+	Bonobo/CORBA interfaces are not good for small interfaces.
+	For example implementing an XML parser component and use it to
+	parse, create and walk an XML document would be inneficient
+	compared to a C API.
+
+* Microsoft's .NET
+
+	The Microsoft .NET initiative is confusing because it is a
+	company wide effort that ranges from development tools to end
+	user applications.  
+
+	Depending who you ask, you will probably get a different
+	answer on what .NET is, .NET is a branding name that has been
+	applied to:
+
+		* The .NET development platform, a new platform for
+		  writing software.
+
+		* Web services.
+
+		* Microsoft Server Applications.
+
+		* New tools that use the new development platform.
+
+		* Hailstorm, the Passport centralized single-signon
+		  system that is being integrated into Windows XP.
+
+	From all the above, the one I am interested in is the new .NET
+	development platform. 
+
+* The .NET development platform.
+
+	Microsoft has created a new development platform, the
+	highlights of this new development platform are:
+
+		* A runtime environment that provides garbage
+		  collection, threading and a virtual machine
+		  specification (The Virtual Execution System, VES)
+
+		* A comprehensive class library.  
+
+		* A new language, C#.  Very similar to Java, that
+		  allows programmers to use all the features available
+		  on the .NET runtime.
+
+		* A language specification that compilers can
+		  follow if they want to generate classes and code
+		  that can interoperate with other programming
+		  languages (The Common Language Specification: CLS)
+
+	The .NET development platform is similar to the goals we had
+  	in GNOME of giving language independence to programmers.  Any
+  	API that is written using a CLS provider language can be used
+  	by any language that is a CLS consumer.   Compilers generate
+  	code in a format called Common Intermediate Language (CIL)
+  	which is an intermediate representation of a compiled program
+  	and is easy to compile to native code or compiled using
+  	Just-in-Time (JIT) engines.  The restrictions placed by the
+  	runtime on the CIL byte codes ensures that it is possible to
+  	do a good job at optimizing the code in a JIT compiler. 
+
+	There is not really a lot of innovation in this platform, we
+	have seen all of these concepts before, and we are all
+	familiar with how these things work.
+
+	What makes the .NET development platform interesting is that
+	it is a good mix of technologies that have been nicely
+	integrated.   
+
+	The .NET development platform is essentially a new foundation
+	for program development that gives Microsoft a room to grow
+  	for the next years. 
+
+* ECMA standards.
+
+	Microsoft together with HP and Intel have submitted the
+  	specifications of C#, the runtime, the metadata and the
+  	other various bits of the .NET development platform to the
+  	ECMA for standarization.  
+
+* Mono: The GNU .NET implementation. 
+
+	Ximian has begun work on Mono, a project that aims to bring
+  	the .NET development platform to free systems.  
+
+	When the GNU project was launched, they picked the best
+  	operating system that was available out there, and they
+  	began to clone it: Unix.
+
+	The .NET development platform is a very rich, powerful, and
+  	well designed platform that would help improve the free
+  	software development platform.  Just like the GNU project
+  	began to clone Unix sixteen years ago, we will be cloning the
+  	.NET development platform because it is a great platform to
+  	build on.
+
+* What makes up Mono?
+
+	There are various pieces that will make up Mono:
+
+		* A C# compiler.
+
+		* A .NET executable tools.
+
+		* The Virtual Execution System: that will have the
+  		  Just-in-Time compiler, garbage collector, loader,
+  		  threading engine.
+
+		  A byte code interpreter will be provided for quickly
+  		  porting Mono to new systems. 
+
+		* An implemenation of the .NET class library.
+
+		* Visual development tools. 
+
+		* A CIL GCC frontend.
+
+* Why use GNOME components?
+
+	GNOME is an umbrella project that consists of infrastructural
+	components (GUI toolkit, XML libraries, CORBA implementation,
+	printing architecture, imaging system), a desktop environment,
+	and productivity applications.
+
+	The GNOME infrastructural components can be used to quickly
+	implement various pieces of the .NET API without reinventing
+	the wheel, and since all those components are licensed under
+	the terms of the GNU LGPL it is a perfect fit.  
+
+	Libart will be used to implement the Drawing.2D API; Gtk+ and
+	the GNOME libraries will be used to implement the WinForms
+	API and of course Glib and libxml will be used in various
+	places.

@@ -1,0 +1,114 @@
+* MCS: The Ximian C# compiler
+
+	MCS began as an experiment to learn the features of C# by
+	writing a large C# program.  MCS is currently able to parse C#
+	programs and create an internal tree representation of the
+	program.  MCS can parse itself.  
+
+	Work is progressing quickly on various fronts in the C#
+	compiler.  Recently I started using the System.Reflection API
+	to load system type definitions and avoid self-population of
+	types in the compiler and dropped my internal Type
+	representation in favor of using .NET's System.Type.  
+
+** Phases of the compiler
+
+	The compiler has a number of phases:
+
+		* Lexical analizer: hand-coded lexical analizer that
+		  provides token to the parser.
+
+		* The Parser: the parser is implemented using Jay (A
+		  Berkeley Yacc port to Java, that I ported to C#).
+		  The parser does minimal work and checking, and only
+		  constructs a parsed tree.  
+
+		  Each language element gets its own class.  The code
+		  convention is to use an uppercase name for the
+		  language element.  So a C# class and its associated
+		  information is kept in a "Class" class, a "struct"
+		  in a "Struct" class and so on.  Statements derive
+		  from the "Statement" class, and Expressions from the
+		  Expr class.
+
+		* Parent class resolution: before process can happen
+		  on the actual code generation, we need to resolve
+		  the parents for interfaces, classes and structs.
+
+		* Semantic analysis: since C# can not resolve in a
+		  top-down pass what identifiers actually mean, we
+		  have to postpone this decision until the above steps
+		  are finished.
+
+		* Code generation: nothing done so far, but I do not
+		  expect this to be hard, as I will just use
+		  System.Reflection.Emit to generate the code. 
+
+** Current pending tasks
+
+	Arrays declarations are currently being ignored, 
+
+	PInvoke is not supported.
+
+	Pre-processing is not supported.
+
+	Attribute declarations and passing is currently ignored.
+
+	Compiler does not pass around line/col information from tokenizer for error reporting.
+
+	Jay does not work correctly with `error' productions, making parser errors hard to point.
+
+** Questions and Answers
+
+Q: Why not write a C# front-end for GCC?
+
+A: I wanted to learn about C#, and this was an excercise in this
+   task.  The resulting compiler is highly object-oriented, which has
+   lead to a very nice, easy to follow and simple implementation of
+   the compiler.
+
+   I found that the design of this compiler is very similar to
+   Guavac's implementation.
+
+   Targeting the CIL/MSIL byte codes would require to re-architect
+   GCC, as GCC is mostly designed to be used for register machines.
+   
+   The GCC Java engine that generates java byte codes cheats: it does
+   not use the GCC backend, it has a special backend just for Java, so
+   you can not really generate Java bytecodes from the other languages
+   supported by GCC. 
+
+Q: If your C# compiler is written in C#, how do you plan on getting
+   this working on a non-Microsoft environment.
+
+   The compiler will have two output mechanisms: IL code or C code.
+   A compiled version of the compiler could be ran on Unix by just
+   using the JIT runtime.
+
+   The C output generation bit is just intended to be a temporary
+   measure to allow Unix hackers to contribute to the effort without
+   requiring Windows and Microsoft's .NET implementation to work on
+   the compiler.  So the MCS C# compiler will compile itself to C,
+   this code then compiled on Unix and voila!  We have a native
+   compiler for GNU/Linux. 
+
+Q: Do you use Bison?
+
+A: No, currently I am using Jay which is a port of Berkeley Yacc to
+   Java that I later ported to C#.  This means that error recovery is
+   not as nice as I would like to, and for some reason error
+   productions are not being catched.  
+
+   In the future I want to port one of the Bison/Java ports to C# for
+   the parser.
+
+Q: How do I compile it?
+
+A: Compiling MCS currently requires you to run my port of <a
+   href="http://primates.ximian.com/~miguel/code/jay.cs.tar.gz">Jay to
+   C#</a> on a Unix system to generate the parser, and then you need
+   to use Microsoft's .NET csc.exe compiler to compile the compiler.
+
+   It might be simple to port Jay.cs to Windows, but I have not tried
+   this. 
+

@@ -1,0 +1,11 @@
+* Software Availability
+
+	The Virtual Execution System is available in package `mono'. 
+
+	Currently the code for the C# compiler as well as the error
+	test suite and the class library is in package `mcs', we will
+	move this later into `mono'.
+
+	The parser generator required by `mcs' is available in the
+	module `jay'. 
+
