@@ -212,7 +212,7 @@
 		  <nobr><tt>extern char *strsignal (int sig);</tt></nobr> to
 		  <nobr><tt>extern const char *strsignal (int sig);</tt></nobr>.
 
-<pre>
+<pre class="shell">
 tar xzvf pkg-config-0.8.0.tar.gz
 cd pkg-config-0.8.0
 ./configure --prefix=/usr
