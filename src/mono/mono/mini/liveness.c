@@ -117,32 +117,53 @@ update_volatile (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int inst_
 		int idx = inst->inst_i0->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 		g_assert (idx < max_vars);
-		if (bb->region != -1) {
-			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
-		}
+		cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 	}
 } 
+
+static void
+visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
+{
+	int i, tree_num;
+	MonoInst *inst;
+
+	if (g_slist_find (*visited, bb))
+		return;
+
+	for (tree_num = 0, inst = bb->code; inst; inst = inst->next, tree_num++) {
+		update_volatile (cfg, bb, inst, tree_num);
+	}
+
+	*visited = g_slist_append (*visited, bb);
+
+	/* 
+	 * Need to visit all bblocks reachable from this one since they can be
+	 * reached during exception handling.
+	 */
+	for (i = 0; i < bb->out_count; ++i) {
+		visit_bb (cfg, bb->out_bb [i], visited);
+	}
+}
 
 static void
 handle_exception_clauses (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
+	GSList *visited = NULL;
 
 	/*
 	 * Variables in exception handler register cannot be allocated to registers
-	 * so make them volatile. See bug #42136.
+	 * so make them volatile. See bug #42136. This will not be neccessary when
+	 * the back ends could guarantee that the variables will be in the
+	 * correct registers when a handler is called.
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *inst;
-		int tree_num;
-
 		if (bb->region == -1)
 			continue;
 
-		for (tree_num = 0, inst = bb->code; inst; inst = inst->next, tree_num++) {
-			update_volatile (cfg, bb, inst, tree_num);
-		}
+		visit_bb (cfg, bb, &visited);
 	}
+	g_slist_free (visited);
 }
 
 /* generic liveness analysis code. CFG specific parts are 
