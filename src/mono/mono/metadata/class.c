@@ -1417,41 +1417,41 @@ mono_class_from_mono_type (MonoType *type)
 {
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
-		return mono_defaults.object_class;
+		return type->data.klass? type->data.klass: mono_defaults.object_class;
 	case MONO_TYPE_VOID:
-		return mono_defaults.void_class;
+		return type->data.klass? type->data.klass: mono_defaults.void_class;
 	case MONO_TYPE_BOOLEAN:
-		return mono_defaults.boolean_class;
+		return type->data.klass? type->data.klass: mono_defaults.boolean_class;
 	case MONO_TYPE_CHAR:
-		return mono_defaults.char_class;
+		return type->data.klass? type->data.klass: mono_defaults.char_class;
 	case MONO_TYPE_I1:
-		return mono_defaults.sbyte_class;
+		return type->data.klass? type->data.klass: mono_defaults.sbyte_class;
 	case MONO_TYPE_U1:
-		return mono_defaults.byte_class;
+		return type->data.klass? type->data.klass: mono_defaults.byte_class;
 	case MONO_TYPE_I2:
-		return mono_defaults.int16_class;
+		return type->data.klass? type->data.klass: mono_defaults.int16_class;
 	case MONO_TYPE_U2:
-		return mono_defaults.uint16_class;
+		return type->data.klass? type->data.klass: mono_defaults.uint16_class;
 	case MONO_TYPE_I4:
-		return mono_defaults.int32_class;
+		return type->data.klass? type->data.klass: mono_defaults.int32_class;
 	case MONO_TYPE_U4:
-		return mono_defaults.uint32_class;
+		return type->data.klass? type->data.klass: mono_defaults.uint32_class;
 	case MONO_TYPE_I:
-		return mono_defaults.int_class;
+		return type->data.klass? type->data.klass: mono_defaults.int_class;
 	case MONO_TYPE_U:
-		return mono_defaults.uint_class;
+		return type->data.klass? type->data.klass: mono_defaults.uint_class;
 	case MONO_TYPE_I8:
-		return mono_defaults.int64_class;
+		return type->data.klass? type->data.klass: mono_defaults.int64_class;
 	case MONO_TYPE_U8:
-		return mono_defaults.uint64_class;
+		return type->data.klass? type->data.klass: mono_defaults.uint64_class;
 	case MONO_TYPE_R4:
-		return mono_defaults.single_class;
+		return type->data.klass? type->data.klass: mono_defaults.single_class;
 	case MONO_TYPE_R8:
-		return mono_defaults.double_class;
+		return type->data.klass? type->data.klass: mono_defaults.double_class;
 	case MONO_TYPE_STRING:
-		return mono_defaults.string_class;
+		return type->data.klass? type->data.klass: mono_defaults.string_class;
 	case MONO_TYPE_TYPEDBYREF:
-		return mono_defaults.typed_reference_class;
+		return type->data.klass? type->data.klass: mono_defaults.typed_reference_class;
 	case MONO_TYPE_ARRAY:
 		return mono_array_class_get (type->data.array->eklass, type->data.array->rank);
 	case MONO_TYPE_PTR:
@@ -1534,13 +1534,9 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	GSList *list, *rootlist;
 	int nsize;
 	char *name;
+	gboolean corlib_type = FALSE;
 
 	g_assert (rank <= 255);
-
-	parent = mono_defaults.array_class;
-
-	if (!parent->inited)
-		mono_class_init (parent);
 
 	image = eclass->image;
 
@@ -1550,6 +1546,16 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 			if (class->rank == rank)
 				return class;
 		}
+	}
+
+	/* for the building corlib use System.Array from it */
+	if (image->assembly && image->assembly->dynamic && strcmp (image->assembly_name, "corlib") == 0) {
+		parent = mono_class_from_name (image, "System", "Array");
+		corlib_type = TRUE;
+	} else {
+		parent = mono_defaults.array_class;
+		if (!parent->inited)
+			mono_class_init (parent);
 	}
 
 	class = g_malloc0 (sizeof (MonoClass) + parent->vtable_size * sizeof (gpointer));
@@ -1599,6 +1605,9 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	}
 	class->this_arg = class->byval_arg;
 	class->this_arg.byref = 1;
+	if (corlib_type) {
+		class->inited = 1;
+	}
 
 	list = g_slist_append (rootlist, class);
 	g_hash_table_insert (image->array_cache, eclass, list);
