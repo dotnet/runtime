@@ -1373,7 +1373,6 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 			class->valuetype = class->enumtype = 1;
 		}
 		/*class->enumtype = class->parent->enumtype; */
-		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 		mono_class_setup_supertypes (class);
 	} else {
 		class->parent = NULL;
@@ -1834,7 +1833,6 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
 	class->vtable_size = parent->vtable_size;
-	class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 	mono_class_setup_supertypes (class);
 
 	class->rank = rank;
