@@ -47,6 +47,7 @@
 #include <mono/metadata/filewatcher.h>
 #include <mono/metadata/char-conversions.h>
 #include <mono/metadata/security.h>
+#include <mono/metadata/mono-config.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
