@@ -304,7 +304,11 @@ mono_mutex_unlock (mono_mutex_t *mutex)
 		if (pthread_mutex_lock (&mutex->mutex) != 0)
 			return EINVAL;
 		
-		assert (mutex->owner == pthread_self ());
+		if (mutex->owner != pthread_self()) {
+			/* Not owned by this thread */
+			pthread_mutex_unlock (&mutex->mutex);
+			return EPERM;
+		}
 		
 		mutex->depth--;
 		if (mutex->depth == 0) {
