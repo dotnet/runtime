@@ -1903,7 +1903,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		case MONO_TYPE_R8:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			/* do nothing */
+			mono_mb_emit_byte (mb, CEE_RET);
 			break;
 		case MONO_TYPE_STRING:		
 			csig->ret = &mono_defaults.int_class->byval_arg;
@@ -1911,6 +1911,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+			mono_mb_emit_byte (mb, CEE_RET);
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			int tmp;
@@ -1948,9 +1949,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			g_warning ("return type 0x%02x unknown", sig->ret->type);	
 			g_assert_not_reached ();
 		}
+	} else {
+		mono_mb_emit_byte (mb, CEE_RET);
 	}
-
-	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
