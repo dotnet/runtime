@@ -131,7 +131,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		20
+#define MONO_SYMBOL_FILE_VERSION		21
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 MonoSymbolFile *
