@@ -599,7 +599,10 @@ if test x$platform_win32 = xno; then
 	dnl ********************************
 	dnl *** Checks for semaphore lib ***
 	dnl ********************************
-	AC_CHECK_LIB(rt, sem_init, LIBS="$LIBS -lrt")
+	# 'Real Time' functions on Solaris
+	# posix4 on Solaris 2.6
+	# pthread (first!) on Linux
+	AC_SEARCH_LIBS(sem_init, pthread rt posix4) 
 
 	dnl ********************************
 	dnl *** Checks for timezone stuff **

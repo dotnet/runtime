@@ -1,3 +1,8 @@
+2003-11-26  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Applied patch from recht@netbsd.org. Avoid linking in
+	librt if not neccesary.
+
 2003-11-24  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix signbit check. Fixes #51315.
