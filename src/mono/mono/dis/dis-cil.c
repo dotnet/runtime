@@ -18,6 +18,7 @@
 #include "dump.h"
 #include "dis-cil.h"
 #include "mono/metadata/opcodes.h"
+#include "mono/utils/mono-compiler.h"
 
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>

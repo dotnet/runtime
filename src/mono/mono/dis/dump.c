@@ -17,6 +17,7 @@
 #include "get.h"
 #include "mono/metadata/loader.h"
 #include "mono/metadata/class.h"
+#include "mono/utils/mono-compiler.h"
 
 #ifdef HAVE_IEEEFP_H
 extern int isinf (double);
