@@ -26,7 +26,7 @@ struct _MBTree {
 # we must fisrt define the terminals
 # with or without numbers
 # 
-%term Assign Constant Fetch=3 Four=8 Mul=5 Plus=6
+%term Assign Constant Fetch=3 Four=8 Mul=5 Plus=6 AltFetch=7
 
 #
 # optional start nonterminal
@@ -54,6 +54,7 @@ addr: Plus(con,Mul(Four,reg)) 2
 	printf ("%s\n", mono_burg_rule_string [ern]);
 } 
 
+reg:  AltFetch(addr),
 reg:  Fetch(addr)             1 
 {
 	int ern = mono_burg_rule (tree->state, MB_NTERM_reg);

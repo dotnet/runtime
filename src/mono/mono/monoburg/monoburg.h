@@ -58,6 +58,10 @@ NonTerm *nonterm        (char *id);
 
 void     start_nonterm  (char *id);
 
+Rule    *make_rule      (char *id, Tree *tree);
+
+void     rule_add       (Rule *rule, char *code, char *cost, char *cfunc);
+
 void     create_rule    (char *id, Tree *tree, char *code, char *cost, 
 			 char *cfunc);
 

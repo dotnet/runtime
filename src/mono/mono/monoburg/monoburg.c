@@ -40,16 +40,22 @@ static void output (char *fmt, ...)
 	va_end (ap);
 }
 
-void     
-create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
+Rule*
+make_rule (char *id, Tree *tree)
 {
 	Rule *rule = g_new0 (Rule, 1);
+	rule->lhs = nonterm (id);
+	rule->tree = tree;
 
+	return rule;
+}
+
+void
+rule_add (Rule *rule, char *code, char *cost, char *cfunc)
+{
 	if (!cfunc && !cost)
 		cost = g_strdup_printf ("%d", default_cost);
 
-	rule->lhs = nonterm (id);
-	rule->tree = tree;
 	rule_list = g_list_append (rule_list, rule);
 	rule->cost = g_strdup (cost);
 	rule->cfunc = g_strdup (cfunc);
@@ -70,10 +76,18 @@ create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
 
 	rule->lhs->rules = g_list_append (rule->lhs->rules, rule);
 
-	if (tree->op)
-		tree->op->rules = g_list_append (tree->op->rules, rule);
+	if (rule->tree->op)
+		rule->tree->op->rules = g_list_append (rule->tree->op->rules, rule);
 	else 
-		tree->nonterm->chain = g_list_append (tree->nonterm->chain, rule);
+		rule->tree->nonterm->chain = g_list_append (rule->tree->nonterm->chain, rule);
+}
+
+void     
+create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
+{
+	Rule *rule = make_rule (id, tree);
+
+	rule_add (rule, code, cost, cfunc);
 }
 
 Tree *
@@ -689,12 +703,19 @@ static void
 emit_emitter_func ()
 {
 	GList *l;
-	int i;
+	int i, rulen;
+	GHashTable *cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	for (l =  rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
 		
 		if (rule->code) {
+			if ((rulen = GPOINTER_TO_INT (g_hash_table_lookup (cache, rule->code)))) {
+				emit_rule_string (rule, "");
+				output ("#define mono_burg_emit_%d mono_burg_emit_%d\n\n", i, rulen);
+				i++;
+				continue;
+			}
 			output ("static void ");
 
 			emit_rule_string (rule, "");
@@ -706,9 +727,12 @@ emit_emitter_func ()
 			output ("{\n");
 			output ("%s\n", rule->code);
 			output ("}\n\n");
+			g_hash_table_insert (cache, rule->code, GINT_TO_POINTER (i));
 		}
 		i++;
 	}
+
+	g_hash_table_destroy (cache);
 
 	output ("MBEmitFunc const mono_burg_func [] = {\n");
 	output ("\tNULL,\n");

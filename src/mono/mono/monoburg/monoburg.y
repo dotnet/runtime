@@ -27,6 +27,8 @@ static int yylinepos = 0;
   char *text;
   int   ivalue;
   Tree  *tree;
+  Rule  *rule;
+  GList *rule_list;
 }
 
 %token <text> IDENT
@@ -42,6 +44,8 @@ static int yylinepos = 0;
 %type   <text>          optcost
 %type   <text>          optcfunc
 %type   <text>          optcode
+%type   <rule>          rule
+%type   <rule_list>     rule_list
 
 %%
 
@@ -49,8 +53,19 @@ decls   : /* empty */
 	| START IDENT { start_nonterm ($2); } decls
 	| TERM  tlist decls
 	| TERMPREFIX plist decls
-	| IDENT ':' tree optcost optcode optcfunc { create_rule ($1, $3, $5, $4, $6); } decls 
+	| rule_list optcost optcode optcfunc {
+			GList *tmp;
+			for (tmp = $1; tmp; tmp = tmp->next) {
+				rule_add (tmp->data, $3, $2, $4);
+			}
+			g_list_free ($1);
+		} decls
 	;
+
+rule	: IDENT ':' tree { $$ = make_rule ($1, $3); }
+
+rule_list : rule { $$ = g_list_append (NULL, $1); }
+	| rule ',' rule_list { $$ = g_list_prepend ($3, $1); }
 
 optcode : /* empty */ { $$ = NULL; }
 	| CODE 
