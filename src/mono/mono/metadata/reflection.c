@@ -502,6 +502,7 @@ fat_header:
 		/* always use fat format for now */
 		sheader [0] = METHOD_HEADER_SECTION_FAT_FORMAT | METHOD_HEADER_SECTION_EHTABLE;
 		num_exception *= sizeof (MonoExceptionClause);
+		num_exception += 4; /* include the size of the header */
 		sheader [1] = num_exception & 0xff;
 		sheader [2] = (num_exception >> 8) & 0xff;
 		sheader [3] = (num_exception >> 16) & 0xff;
@@ -554,6 +555,7 @@ find_index_in_table (MonoDynamicAssembly *assembly, int table_idx, int col, guin
 	for (i = 1; i <= table->rows; ++i) {
 		if (values [col] == token)
 			return i;
+		values += table->columns;
 	}
 	return 0;
 }
