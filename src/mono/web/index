@@ -155,7 +155,25 @@
 <br>
 <br>
 
-@item Mar 31st, 2004: Gtk# 0.18 and MonoDoc 0.13 released
+@item Apr 02, 2004: Mono C# Compiler gets CLS support;   Basic Runtime Contribution from Mainsoft.
+
+	Marek Safar has been working for a few months on adding
+	support to the C# compiler to support the various checks required
+	by the Common Language Specification (CLS).
+
+	In the past the C# compiler was unable to flag any problems
+	related to the creation of cross-language libraries.  Today
+	with this patch the compiler will properly flag errors in CLS
+	compliance.  Tests for all of the errors have also been
+	included on CVS.
+
+	<a href="http://www.mainsoft.com">Mainsoft</a> has contributed
+	an implementation of their Basic runtime to the project.  The
+	runtime they wrote is written in Java and we are translating
+	this into C# code.  The code will reach CVS within the next
+	few weeks.
+
+@item Mar 31st, 2004: Gtk# 0.18, MonoDoc 0.13, MonoDevelop 0.2 released
 
 	New versions of Gtk# and MonoDoc have been released.
 
@@ -167,6 +185,9 @@
 	Gtk# now features [ConnectBefore] attribute for hooking up
 	signals; An automake/autoconf setup; the System.Drawing
 	dependency has been dropped and many more docs.
+
+	And <a href="http://www.monodevelop.com/">MonoDevelop 0.2</a>
+	has been released.
 
 @item Mar 18th, 2004: Mono 0.31 has been released
 
