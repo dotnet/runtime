@@ -433,7 +433,9 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 		result->context->gclass = rklass->generic_class;
 
 		mono_stats.generics_metadata_size += sizeof (MonoGenericContext);
-	} else if (rklass->generic_class)
+	} else if (method->signature->generic_param_count)
+		result->context = (MonoGenericContext *) ((MonoMethodNormal *) method)->generic_container;
+	else if (rklass->generic_class)
 		result->context = rklass->generic_class->context;
 
 	if (method->signature->is_inflated)
