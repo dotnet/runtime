@@ -17,6 +17,7 @@
 
 #undef THREAD_DEBUG
 #undef THREAD_LOCK_DEBUG
+#undef THREAD_WAIT_DEBUG
 
 struct StartInfo 
 {
@@ -517,19 +518,78 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	return(TRUE);
 }
 
-gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *handles, gint32 ms, gboolean exitContext)
+/* FIXME: exitContext isnt documented */
+gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	return(FALSE);
+	WapiHandle **handles;
+	guint32 numhandles;
+	guint32 ret;
+	guint32 i;
+	
+	numhandles=mono_array_length(mono_handles);
+	handles=g_new0(WapiHandle *, numhandles);
+	for(i=0; i<numhandles; i++) {
+		handles[i]=mono_array_get(mono_handles, WapiHandle *, i);
+	}
+	
+	ret=WaitForMultipleObjects(numhandles, handles, TRUE, ms);
+	if(ret==WAIT_FAILED) {
+#ifdef THREAD_WAIT_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Wait failed");
+#endif
+		return(FALSE);
+	} else if(ret==WAIT_TIMEOUT) {
+#ifdef THREAD_WAIT_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Wait timed out");
+#endif
+		return(FALSE);
+	}
+	
+	return(TRUE);
 }
 
-gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *handles, gint32 ms, gboolean exitContext)
+/* FIXME: exitContext isnt documented */
+gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	return(0);
+	WapiHandle **handles;
+	guint32 numhandles;
+	guint32 ret;
+	guint32 i;
+	
+	numhandles=mono_array_length(mono_handles);
+	handles=g_new0(WapiHandle *, numhandles);
+	for(i=0; i<numhandles; i++) {
+		handles[i]=mono_array_get(mono_handles, WapiHandle *, i);
+	}
+	
+	ret=WaitForMultipleObjects(numhandles, handles, FALSE, ms);
+
+#ifdef THREAD_WAIT_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", ret);
+#endif
+
+	return(ret);
 }
 
+/* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, WapiHandle *handle, gint32 ms, gboolean exitContext)
 {
-	return(FALSE);
+	guint32 ret;
+	
+	ret=WaitForSingleObject(handle, ms);
+	if(ret==WAIT_FAILED) {
+#ifdef THREAD_WAIT_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Wait failed");
+#endif
+		return(FALSE);
+	} else if(ret==WAIT_TIMEOUT) {
+#ifdef THREAD_WAIT_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Wait timed out");
+#endif
+		return(FALSE);
+	}
+	
+	return(TRUE);
 }
 
 
