@@ -1063,6 +1063,8 @@ handle_enum:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_CLASS:
 		{
@@ -3347,6 +3349,19 @@ ves_icall_Type_IsArrayImpl (MonoReflectionType *t)
 	return res;
 }
 
+static MonoReflectionType *
+ves_icall_Type_make_array_type (MonoReflectionType *type, int rank)
+{
+	MonoClass *klass, *aklass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type);
+	aklass = mono_array_class_get (klass, rank);
+
+	return mono_type_get_object (mono_object_domain (type), &aklass->byval_arg);
+}
+
 static MonoObject *
 ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
 						   MonoReflectionMethod *info)
@@ -4486,6 +4501,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
 	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,
 	"System.Type::IsArrayImpl", ves_icall_Type_IsArrayImpl,
+	"System.Type::make_array_type", ves_icall_Type_make_array_type,
 
 	/* Type generics icalls */
 	"System.Type::GetGenericArguments", ves_icall_Type_GetGenericArguments,
