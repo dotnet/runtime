@@ -804,6 +804,11 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (fname == NULL) {
+		MonoException *exc = mono_get_exception_argument_null ("assemblyFile");
+		mono_raise_exception (exc);
+	}
+		
 	name = filename = mono_string_to_utf8 (fname);
 
 	/* FIXME: move uri handling to mono_assembly_open */
