@@ -1079,6 +1079,9 @@ ves_icall_type_GetTypeCode (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (type->type->byref)
+		return TYPECODE_OBJECT;
+
 handle_enum:
 	switch (t) {
 	case MONO_TYPE_VOID:
@@ -3681,11 +3684,11 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 }
 
 static MonoObject*
-ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *assembly, MonoString *name) 
+ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean resource_modules) 
 {
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
 	MonoArray *result = NULL;
-	int i;
+	int i, count;
 	const char *val;
 	char *n;
 
@@ -3709,12 +3712,23 @@ ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *a
 		return NULL;
 	}
 
+	count = 0;
 	for (i = 0; i < table->rows; ++i) {
-		result = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, table->rows);
-		val = mono_metadata_string_heap (assembly->assembly->image, mono_metadata_decode_row_col (table, i, MONO_FILE_NAME));
-		n = g_concat_dir_and_file (assembly->assembly->basedir, val);
-		mono_array_set (result, gpointer, i, mono_string_new (mono_object_domain (assembly), n));
-		g_free (n);
+		if (resource_modules || !(mono_metadata_decode_row_col (table, i, MONO_FILE_FLAGS) & FILE_CONTAINS_NO_METADATA))
+			count ++;
+	}
+
+	result = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, count);
+
+	count = 0;
+	for (i = 0; i < table->rows; ++i) {
+		if (resource_modules || !(mono_metadata_decode_row_col (table, i, MONO_FILE_FLAGS) & FILE_CONTAINS_NO_METADATA)) {
+			val = mono_metadata_string_heap (assembly->assembly->image, mono_metadata_decode_row_col (table, i, MONO_FILE_NAME));
+			n = g_concat_dir_and_file (assembly->assembly->basedir, val);
+			mono_array_set (result, gpointer, count, mono_string_new (mono_object_domain (assembly), n));
+			g_free (n);
+			count ++;
+		}
 	}
 	return (MonoObject*)result;
 }
