@@ -2272,8 +2272,7 @@ mono_type_size (MonoType *t, gint *align)
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
 	case MONO_TYPE_TYPEDBYREF:
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer) * 2;
+		return mono_class_value_size (mono_defaults.typed_reference_class, align);
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *iclass = mono_class_from_mono_type (t);
 		return mono_type_size (&iclass->byval_arg, align);
