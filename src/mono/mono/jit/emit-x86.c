@@ -216,11 +216,11 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
 	}
 
-	if (mono_regset_reg_used (cfg->rs, X86_EDI))
-		x86_pop_reg (cfg->code, X86_EDI);
-
 	if (mono_regset_reg_used (cfg->rs, X86_ESI))
 		x86_pop_reg (cfg->code, X86_ESI);
+
+	if (mono_regset_reg_used (cfg->rs, X86_EDI))
+		x86_pop_reg (cfg->code, X86_EDI);
 
 	if (mono_regset_reg_used (cfg->rs, X86_EBX))
 		x86_pop_reg (cfg->code, X86_EBX);
@@ -687,12 +687,13 @@ arch_compile_method (MonoMethod *method)
 			x86_ret (code);
 
 			g_assert ((code - (guint8*)method->addr) < 32);
+
 		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
 			MonoMethodSignature *csig = method->signature;
 			int i, target, this_pos = 4;
 			guint8 *source;
 
-			method->addr = g_malloc (1024);
+			method->addr = g_malloc (32);
 
 			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
 				int size, align;
@@ -719,12 +720,16 @@ arch_compile_method (MonoMethod *method)
 				x86_jump_membase (code, X86_EAX, method_offset);
 			}
 
+			g_assert ((code - (guint8*)method->addr) < 32);
+
 		} else {
 			g_error ("Don't know how to exec runtime method %s.%s::%s", 
 				 method->klass->name_space, method->klass->name, method->name);
 		}
 	
 	} else {
+		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+		MonoJitInfo *ji = g_new0 (MonoJitInfo, 1);
 
 		cfg = mono_cfg_new (method, mp);
 
@@ -738,7 +743,8 @@ arch_compile_method (MonoMethod *method)
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
 		// fixme: remove limitation to 8192 bytes
-		method->addr = cfg->start = cfg->code = g_malloc (8192);
+		ji->code_size = 8192;
+		method->addr = cfg->start = cfg->code = g_malloc (ji->code_size);
 		
 		if (mono_jit_dump_forest) {
 			int i;
@@ -760,15 +766,49 @@ arch_compile_method (MonoMethod *method)
 
 		mono_emit_cfg (cfg);
 
-		g_assert ((cfg->code - cfg->start) < 8100);
-
 		arch_emit_epilogue (cfg);
+
+		g_assert ((cfg->code - cfg->start) < ji->code_size);
 
 		mono_compute_branches (cfg);
 		
 		if (mono_jit_dump_asm)
 			mono_disassemble_code (cfg->start, cfg->code - cfg->start);
 
+		ji->used_regs = cfg->rs->used_mask;
+		ji->method = method;
+		ji->code_start = method->addr;
+		mono_jit_info_table_add (mono_jit_info_table, ji);
+
+		if (header->num_clauses) {
+			int i, start_block, end_block;
+
+			ji->num_clauses = header->num_clauses;
+			ji->clauses = g_new0 (MonoJitExceptionInfo, header->num_clauses);
+
+			for (i = 0; i < header->num_clauses; i++) {
+				MonoExceptionClause *ec = &header->clauses [i];
+				MonoJitExceptionInfo *ei = &ji->clauses [i];
+			
+				ei->flags = ec->flags;
+				ei->token_or_filter = ec->token_or_filter;
+
+				g_assert (cfg->bcinfo [ec->try_offset].is_block_start);
+				start_block = cfg->bcinfo [ec->try_offset].block_id;
+				end_block = cfg->bcinfo [ec->try_offset + ec->try_len].block_id;
+				g_assert (cfg->bcinfo [ec->try_offset + ec->try_len].is_block_start);
+				
+				ei->try_start = cfg->start + cfg->bblocks [start_block].addr;
+				ei->try_end = cfg->start + cfg->bblocks [end_block].addr;
+				
+				g_assert (cfg->bcinfo [ec->handler_offset].is_block_start);
+				start_block = cfg->bcinfo [ec->handler_offset].block_id;
+				ei->handler_start = cfg->start + cfg->bblocks [start_block].addr;	
+				
+				//printf ("TEST %x %x %x\n", ei->try_start, ei->try_end, ei->handler_start);
+			}
+		}
+		
 		mono_regset_free (cfg->rs);
 
 		mono_cfg_free (cfg);

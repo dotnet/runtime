@@ -10,6 +10,8 @@
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
+#include <sys/syscall.h>
 
 #include <mono/metadata/blob.h>
 #include <mono/metadata/metadata.h>
@@ -77,6 +79,8 @@ gint64  mono_llrem     (gint64 a, gint64 b);
 guint64 mono_lldiv_un  (guint64 a, guint64 b);
 guint64 mono_llrem_un  (guint64 a, guint64 b);
 
+gpointer get_throw_exception (void);
+
 #define MB_OPT_LEVEL 1
 
 #if MB_OPT_LEVEL == 0
@@ -141,12 +145,13 @@ x86_pop_reg (s->code, X86_EAX);
 %term LDIND_U4 LDIND_OBJ
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG STRING_ARG CALL_I4 CALL_I8 CALL_R8 CALL_VOID
-%term BREAK SWITCH BR RET RETV 
+%term BREAK SWITCH BR RET RETV ENDFINALLY
 %term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R8
-%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ CPOBJ POP INITOBJ VTYPE
+%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ CPOBJ POP INITOBJ VTYPE 
+%term EXCEPTION THROW RETHROW HANDLER
 %term LDLEN
 
 #
@@ -245,6 +250,43 @@ addr: ADD (index, base) {
 		tree->right->data.ainfo.amode;
 	tree->data.ainfo.shift = tree->left->data.ainfo.shift;
 	tree->data.ainfo.indexreg = tree->left->data.ainfo.indexreg;
+}
+
+# we pass exception in ECX to catch handler
+reg: EXCEPTION {
+	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
+
+	if (tree->reg1 != X86_ECX)
+		x86_mov_reg_reg (s->code, tree->reg1, X86_ECX, 4);
+	
+	/* store it so that we can RETHROW it later */
+	x86_mov_membase_reg (s->code, X86_EBP, offset, tree->reg1, 4);
+}
+
+stmt: THROW (reg) {
+	if (tree->left->reg1 != X86_ECX)
+		x86_mov_reg_reg (s->code, X86_ECX, tree->left->reg1, 4);
+
+	x86_call_code (s->code, get_throw_exception ());
+}
+
+stmt: RETHROW {
+	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
+
+	x86_mov_reg_membase (s->code, X86_ECX, X86_EBP, offset, 4);
+
+	x86_call_code (s->code, get_throw_exception ());
+}
+
+stmt: HANDLER {
+	gint32 addr = tree->data.bb->addr - tree->addr - 5;
+	tree->is_jump = 1;    
+	
+	x86_call_imm (s->code, addr); 
+}
+
+stmt: ENDFINALLY {
+	x86_ret (s->code);
 }
 
 stmt: STIND_I4 (addr, reg) {
@@ -2234,6 +2276,57 @@ mono_ctree_new_leaf (MonoMemPool *mp, int op)
 {
 	return mono_ctree_new (mp, op, NULL, NULL);
 }
+
+static void
+throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
+		 unsigned long esi, unsigned long edi, unsigned long ebp, unsigned long eip,
+		 unsigned long esp)
+{
+	MonoObject *exc = (gpointer)ecx;
+	struct sigcontext ctx;
+	
+	ctx.esp = esp;
+	ctx.eip = eip;
+	ctx.ebp = ebp;
+	ctx.edi = edi;
+	ctx.esi = esi;
+	ctx.ebx = ebx;
+	ctx.edx = edx;
+	ctx.ecx = ecx;
+	ctx.eax = eax;
+	
+	arch_handle_exception (&ctx, exc);
+
+	g_assert_not_reached ();
+}
+
+gpointer 
+get_throw_exception (void)
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	code = start = g_malloc (1024);
+
+	x86_push_reg (code, X86_ESP);
+	x86_push_membase (code, X86_ESP, 4); /* IP */
+	x86_push_reg (code, X86_EBP);
+	x86_push_reg (code, X86_EDI);
+	x86_push_reg (code, X86_ESI);
+	x86_push_reg (code, X86_EBX);
+	x86_push_reg (code, X86_EDX);
+	x86_push_reg (code, X86_ECX);
+	x86_push_reg (code, X86_EAX);
+	x86_call_code (code, throw_exception);
+	/* we should never reach this breakpoint */
+	x86_breakpoint (code);
+
+	return start;
+}
+
 
 #ifdef DEBUG
 void *

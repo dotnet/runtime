@@ -207,7 +207,7 @@ static void wait_init(void)
 	
 	/* Wait for the monitor thread to get going */
 	while(wait_monitor_thread_running==FALSE) {
-		pthread_yield();
+		sched_yield();
 	}
 }
 

@@ -1354,6 +1354,7 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 			mh->clauses = g_new0 (MonoExceptionClause, mh->num_clauses);
 			for (i = 0; i < mh->num_clauses; ++i) {
 				MonoExceptionClause *ec = &mh->clauses [i];
+
 				if (is_fat) {
 					/* we could memcpy and byteswap */
 					ec->flags = read32 (p);
@@ -1384,6 +1385,7 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 				}
 				/* g_print ("try %d: %x %04x-%04x %04x\n", i, ec->flags, ec->try_offset, ec->try_offset+ec->try_len, ec->try_len); */
 			}
+
 		}
 		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS)
 			ptr += sect_data_len - 4; /* LAMESPEC: it seems the size includes the header */
@@ -2014,4 +2016,3 @@ mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token)
 	}
 	return 0;
 }
-

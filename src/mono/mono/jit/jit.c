@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -153,6 +154,10 @@ gboolean mono_jit_dump_forest = FALSE;
 /* Whether to print function call traces */
 gboolean mono_jit_trace_calls = FALSE;
 
+gpointer mono_end_of_stack = NULL;
+
+MonoJitInfoTable *mono_jit_info_table = NULL;
+
 /* 
  * We sometimes need static data, for example the forest generator need it to
  * store constants or class data.
@@ -168,8 +173,67 @@ mono_alloc_static0 (int size)
 	return g_malloc0 (size);
 } 
 
-
 typedef void (*MonoCCtor) (void);
+
+MonoJitInfoTable *
+mono_jit_info_table_new ()
+{
+	return g_array_new (FALSE, FALSE, sizeof (gpointer));
+}
+
+int
+mono_jit_info_table_index (MonoJitInfoTable *table, gpointer addr)
+{
+	int left = 0, right = table->len;
+
+	while (left < right) {
+		int pos = (left + right) / 2;
+		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
+		gpointer start = ji->code_start;
+		gpointer end = start + ji->code_size;
+
+		if (addr < start)
+			right = pos;
+		else if (addr >= end) 
+			left = pos + 1;
+		else
+			return pos;
+	}
+
+	return left;
+}
+
+MonoJitInfo *
+mono_jit_info_table_find (MonoJitInfoTable *table, gpointer addr)
+{
+	int left = 0, right = table->len;
+
+	while (left < right) {
+		int pos = (left + right) / 2;
+		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
+		gpointer start = ji->code_start;
+		gpointer end = start + ji->code_size;
+
+		if (addr < start)
+			right = pos;
+		else if (addr >= end) 
+			left = pos + 1;
+		else
+			return ji;
+	}
+
+	return NULL;
+}
+
+void
+mono_jit_info_table_add (MonoJitInfoTable *table, MonoJitInfo *ji)
+{
+	gpointer start = ji->code_start;
+	int pos = mono_jit_info_table_index (table, start);
+
+	printf ("TESTADD %d %p\n", pos, ji->code_start);
+	g_array_insert_val (table, pos, ji);
+}
 
 /**
  * mono_jit_init_class:
@@ -583,6 +647,18 @@ mono_allocate_intvar (MonoFlowGraph *cfg, int slot, MonoValueType type)
 	return cfg->intvars[type - 1 + slot * VAL_DOUBLE] = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, type);
 }
 
+static int
+mono_allocate_excvar (MonoFlowGraph *cfg)
+{
+	if (cfg->excvar)
+		return cfg->excvar;
+
+	cfg->excvar = arch_allocate_var (cfg, 4, 4, MONO_TEMPVAR, VAL_POINTER);
+
+	return cfg->excvar;
+}
+
+
 /**
  * ctree_create_load:
  * @cfg: pointer to the control flow graph
@@ -819,6 +895,72 @@ mono_cfg_free (MonoFlowGraph *cfg)
 	g_array_free (cfg->varinfo, TRUE);
 }
 
+
+static MonoObject*
+get_named_exception (const char *name)
+{
+	MonoClass *klass;
+	MonoMethod *method = NULL;
+	MonoObject *o;
+	void (*ctor) (gpointer this);
+	int i;
+
+	klass = mono_class_from_name (mono_defaults.corlib, "System", name);
+
+	o = mono_object_new (klass);
+	g_assert (o != NULL);
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (!strcmp (".ctor", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == 0) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	g_assert (method);
+
+	ctor = arch_compile_method (method);
+	ctor (o);
+
+	return o;
+}
+
+static MonoObject*
+get_exception_divide_by_zero ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("DivideByZeroException");
+	return ex;
+}
+
+static MonoBBlock *
+mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, int type)
+{
+	MonoMethod *method = cfg->method;
+	MonoBytecodeInfo *bcinfo = cfg->bcinfo;
+	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+	MonoExceptionClause *clause;
+	int i;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (MONO_OFFSET_IN_HANDLER (clause, ip))
+			return NULL;
+
+		if (MONO_OFFSET_IN_CLAUSE (clause, ip)) {
+			if (clause->flags & type) {
+				g_assert (bcinfo [clause->handler_offset].is_block_start);
+				return &cfg->bblocks [bcinfo [clause->handler_offset].block_id];
+			} else
+				return NULL;
+		}
+	}
+	return NULL;
+}
+
 #define CREATE_BLOCK(t) {if (!bcinfo [t].is_block_start) {block_count++;bcinfo [t].is_block_start = 1; }}
 
 void
@@ -829,6 +971,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	register const unsigned char *ip, *end;
 	MonoMethodHeader *header;
 	MonoBytecodeInfo *bcinfo;
+	MonoExceptionClause *clause;
 	MonoBBlock *bblocks, *bb;
 	gboolean block_end;
 	int i, block_count;
@@ -844,6 +987,11 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	end = ip + header->code_size;
 
 	/* fixme: add block boundaries for exceptions */
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		CREATE_BLOCK (clause->try_offset);
+		CREATE_BLOCK (clause->handler_offset);
+	}
 
 	while (ip < end) {
 		guint32 cli_addr = ip - header->code;
@@ -977,6 +1125,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			ip++;
 			break;
 		case CEE_RET:
+		case CEE_ENDFINALLY:
 			ip++;
 			block_end = 1;
 			break;
@@ -1087,6 +1236,11 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			case CEE_INITOBJ:
 			case CEE_LDFTN:
 				ip +=5;
+				break;
+			case CEE_ENDFILTER:
+			case CEE_RETHROW:
+				ip++;
+				block_end = 1;
 				break;
 			default:
 				g_error ("Unimplemented opcode at IL_%04x "
@@ -1340,6 +1494,24 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 	}
 
+	for (i = 0; i < header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &header->clauses [i];		
+		tbb = &cfg->bblocks [bcinfo [clause->handler_offset].block_id];
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
+			tbb->instack = mono_mempool_alloc (mp, sizeof (MBTree *));
+			tbb->indepth = 1;
+			tbb->instack [0] = t1 = mono_ctree_new_leaf (mp, MB_TERM_EXCEPTION);
+			t1->data.i = mono_allocate_excvar (cfg);
+			t1->svt = VAL_POINTER;
+			tbb->reached = 1;
+		} else if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+			mark_reached (cfg, tbb, NULL, 0);
+		} else {
+			g_warning ("implement me");
+			g_assert_not_reached ();
+		}
+	}
+
 	repeat_count = 0;
 
 	do {
@@ -1351,7 +1523,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		for (i = 0; i < cfg->block_count; i++) {
 			bb = &cfg->bblocks [i];
 
-			//printf ("BBS %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
+			printf ("BBS %d %05x %05x %d %d %d\n", i, bb->cli_addr, bb->cli_addr + bb->length, 
+				bb->reached, bb->finished, superblock_end);
 			
 			if (!bb->reached && !superblock_end) {
 				MonoBBlock *sbb = &cfg->bblocks [i - 1];
@@ -1392,9 +1565,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			--sp;
 			ip++;
 			
-			// fixme: 
-
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_NOP);
+			t1 = mono_ctree_new (mp, MB_TERM_THROW, *sp, NULL);
 			ADD_TREE (t1);		
 			superblock_end = TRUE;
 			break;
@@ -2201,7 +2372,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			gint32 target;
 
 			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			target = cli_addr + 2 + (signed char) *ip;
  
 			g_assert (target >= 0 && target <= header->code_size);
@@ -2210,6 +2380,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			create_outstack (cfg, bb, stack, sp - stack);
 			mark_reached (cfg, tbb, bb->outstack, bb->outdepth);
 
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
 			ADD_TREE (t1);
 			++ip;
@@ -2221,7 +2392,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			gint32 target;
 
 			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			target = cli_addr + 5 + (gint32) read32(ip);
 
 			g_assert (target >= 0 && target <= header->code_size);
@@ -2230,6 +2400,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			create_outstack (cfg, bb, stack, sp - stack);
 			mark_reached (cfg, tbb, bb->outstack, bb->outdepth);
 		      
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
 			ADD_TREE (t1);
 			ip += 4;
@@ -2237,6 +2408,38 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			superblock_end = TRUE;
 			break;
 		}
+	        case CEE_LEAVE_S: {
+			gint32 target;
+			MonoBBlock *hb;
+
+			++ip;
+			target = cli_addr + 2 + (signed char) *ip;
+ 
+			g_assert (target >= 0 && target <= header->code_size);
+			g_assert (bcinfo [target].is_block_start);
+			tbb = &cfg->bblocks [bcinfo [target].block_id];
+			g_assert ((sp - stack) == 0);
+			mark_reached (cfg, tbb, NULL, 0);
+
+			/* fixme: fault handler */
+
+			if ((hb = mono_find_final_block (cfg, cli_addr, MONO_EXCEPTION_CLAUSE_FINALLY))) {
+				mark_reached (cfg, hb, NULL, 0);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_HANDLER);
+				t1->data.p = hb;
+				ADD_TREE (t1);
+			}
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
+			t1->data.p = tbb;
+			ADD_TREE (t1);
+			
+			++ip;
+
+			superblock_end = TRUE;
+			break;
+		}
+		
 
 		MAKE_CJUMP(BGT)
 		MAKE_CJUMP(BGT_UN)
@@ -2306,7 +2509,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				--sp;
 				t1 = mono_ctree_new (mp, MB_TERM_RETV, *sp, NULL);
 			} else {
-				t1 = mono_ctree_new (mp, MB_TERM_RET, NULL, NULL);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_RET);
 			}
 
 			t1->last_instr = (ip == end);
@@ -2318,6 +2521,17 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				mono_print_ctree (sp [-1]);
 				printf ("\n");
 			}
+			superblock_end = TRUE;
+			break;
+		}
+		case CEE_ENDFINALLY: {
+			ip++;
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_ENDFINALLY);
+			ADD_TREE (t1);
+			t1->last_instr = FALSE;
+
+			g_assert (sp == stack);
 			superblock_end = TRUE;
 			break;
 		}
@@ -2466,6 +2680,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			MAKE_BI_ALU (CEQ)
 			MAKE_BI_ALU (CLT)
 
+			case CEE_RETHROW: {
+				++ip;
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_RETHROW);
+				t1->data.i = mono_allocate_excvar (cfg);
+				ADD_TREE (t1);
+				break;
+			}
 			case CEE_LDFTN: {
 				MonoMethod *cm;
 				guint32 token;
@@ -2628,6 +2849,7 @@ mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
 		MonoMainIntVoid mfunc;
 
 		mfunc = arch_compile_method (method);
+		mono_end_of_stack = &res; /* a pointer to a local variable is always < BP */
 		res = mfunc ();
 	}
 	
@@ -2650,9 +2872,207 @@ usage (char *name)
 	exit (1);
 }
 
+static gpointer
+arch_get_restore_context ()
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	/* restore_contect (struct sigcontext *ctx) */
+	/* we do not restore X86_EAX, X86_EDX */
+
+	start = code = malloc (1024);
+	
+	/* load ctx */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+
+	/* get return address, stored in EDX */
+	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, eip), 4);
+
+	/* restore EBX */
+	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebx), 4);
+	/* restore EDI */
+	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, edi), 4);
+	/* restore ESI */
+	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, esi), 4);
+	/* restore ESP */
+	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, esp), 4);
+	/* restore EBP */
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebp), 4);
+	/* restore ECX. the exception object is passed here to the catch handler */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ecx), 4);
+
+	/* jump to the saved IP */
+	x86_jump_reg (code, X86_EDX);
+
+	return start;
+}
+
+static gpointer
+arch_get_call_finally ()
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	/* call_finally (struct sigcontext *ctx, unsigned long eip) */
+	start = code = malloc (1024);
+
+	x86_push_reg (code, X86_EBP);
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+	x86_push_reg (code, X86_EBX);
+	x86_push_reg (code, X86_EDI);
+	x86_push_reg (code, X86_ESI);
+
+	/* load ctx */
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 8, 4);
+	/* load eip */
+	x86_mov_reg_membase (code, X86_ECX, X86_EBP, 12, 4);
+	/* save EBP */
+	x86_push_reg (code, X86_EBP);
+	/* set new EBP */
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebp), 4);
+	/* call the handler */
+	x86_call_reg (code, X86_ECX);
+	/* restore EBP */
+	x86_pop_reg (code, X86_EBP);
+	/* restore saved regs */
+	x86_pop_reg (code, X86_ESI);
+	x86_pop_reg (code, X86_EDI);
+	x86_pop_reg (code, X86_EBX);
+	x86_leave (code);
+	x86_ret (code);
+
+	return start;
+}
+
+void
+arch_handle_exception (struct sigcontext *ctx, gpointer obj)
+{
+	MonoJitInfo *ji;
+	gpointer ip = (gpointer)ctx->eip;
+	static void (*restore_context) (struct sigcontext *);
+	static void (*call_finally) (struct sigcontext *, unsigned long);
+	ji = mono_jit_info_table_find (mono_jit_info_table, ip);
+
+	if (!restore_context)
+		restore_context = arch_get_restore_context ();
+	
+	if (!call_finally)
+		call_finally = arch_get_call_finally ();
+
+	if (ji) { /* we are inside managed code */
+		MonoMethod *m = ji->method;
+		unsigned next_bp, next_ip;
+		int offset = 2;
+
+		g_warning ("exception inside managed code %s.%s::%s",
+			   m->klass->name_space, m->klass->name, m->name);
+
+		if (ji->num_clauses) {
+			int i;
+
+			g_assert (ji->clauses);
+			
+			for (i = 0; i < ji->num_clauses; i++) {
+				MonoJitExceptionInfo *ei = &ji->clauses [i];
+
+				if (ei->try_start <= ip && ip < (ei->try_end)) { 
+				
+					/* catch block */
+					if (ei->flags == 0 && mono_object_isinst (obj, 
+					        mono_class_get (m->klass->image, ei->token_or_filter))) {
+					
+						ctx->eip = (unsigned long)ei->handler_start;
+						ctx->ecx = (unsigned long)obj;
+						restore_context (ctx);
+						g_assert_not_reached ();
+					}
+				}
+			}
+
+			/* no handler found - we need to call all finally handlers */
+			for (i = 0; i < ji->num_clauses; i++) {
+				MonoJitExceptionInfo *ei = &ji->clauses [i];
+
+				if (ei->try_start <= ip && ip < (ei->try_end) &&
+				    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+					call_finally (ctx, ei->handler_start);
+				}
+			}
+		}
+
+		/* continue unwinding */
+
+		/* restore caller saved registers */
+		if (ji->used_regs & X86_ESI_MASK) {
+			ctx->esi = *((int *)ctx->ebp + offset);
+			offset++;
+		}
+		if (ji->used_regs & X86_EDI_MASK) {
+			ctx->edi = *((int *)ctx->ebp + offset);
+			offset++;
+		}
+		if (ji->used_regs & X86_EBX_MASK) {
+			ctx->ebx = *((int *)ctx->ebp + offset);
+		}
+
+		ctx->esp = ctx->ebp;
+
+		next_bp = *((int *)ctx->ebp);
+		next_ip = *((int *)ctx->ebp + 1);
+
+		printf ("EI %08lx %08x %p %08lx %08x\n", ctx->ebp, next_bp, 
+			mono_end_of_stack, ctx->eip, next_ip);
+		
+		if (next_bp < (unsigned)mono_end_of_stack) {
+
+			ctx->eip = next_ip;
+			ctx->ebp = next_bp;
+			arch_handle_exception (ctx, obj);
+
+		} else {
+			char *message;
+			MonoString *str = ((MonoException *)obj)->message;
+			
+			g_assert (str);
+			message = mono_string_to_utf8 (str);
+
+			g_warning ("unhandled exception \"%s\" - no more frames to unwind", message);
+			g_assert_not_reached ();
+		}
+
+	} else {
+		g_warning ("exception inside unmanaged code - not implemented %08lx", ctx->eip);
+		g_assert_not_reached ();
+	}
+
+	g_assert_not_reached ();
+}
+
+static void
+fp_signal_handler (int _dummy)
+{
+	MonoObject *exc;
+	void **_p = (void **)&_dummy;
+	struct sigcontext *ctx = (struct sigcontext *)++_p;
+
+	exc = get_exception_divide_by_zero ();
+	
+	arch_handle_exception (ctx, exc);
+
+	g_error ("we should never reach this code");
+}
+
 int 
 main (int argc, char *argv [])
 {
+	struct sigaction sa;
 	MonoAssembly *assembly;
 	int retval = 0, i;
 	char *file;
@@ -2683,10 +3103,19 @@ main (int argc, char *argv [])
 	if (!file)
 		usage (argv [0]);
 
+
+	/* catch SIGFPE */
+	sa.sa_handler = fp_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
+
 	mono_init ();
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
+
+	mono_jit_info_table = mono_jit_info_table_new ();
 
 	mono_install_trampoline (arch_create_jit_trampoline);
 

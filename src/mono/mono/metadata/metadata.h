@@ -132,6 +132,11 @@ guint32 mono_metadata_decode_blob_size (const char            *ptr,
 
 void mono_metadata_encode_value (guint32 value, char *bug, char **endbuf);
 
+#define MONO_OFFSET_IN_CLAUSE(clause,offset) \
+	((clause)->try_offset <= (offset) && (offset) < ((clause)->try_offset + (clause)->try_len))
+#define MONO_OFFSET_IN_HANDLER(clause,offset) \
+	((clause)->handler_offset <= (offset) && (offset) < ((clause)->handler_offset + (clause)->handler_len))
+
 typedef struct {
 	guint32 flags;
 	guint32 try_offset;

@@ -1,3 +1,8 @@
+2001-11-26  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/exception3.cs: modified the test to show a bug in the
+	current exception handling implementation.
+
 2001-11-13  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Some more tests for pthread features

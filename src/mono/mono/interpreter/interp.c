@@ -3160,8 +3160,6 @@ array_constructed:
 	 * Exception handling code.
 	 * The exception object is stored in frame->ex.
 	 */
-#define OFFSET_IN_CLAUSE(clause,offset) \
-	((clause)->try_offset <= (offset) && (offset) < ((clause)->try_offset + (clause)->try_len))
 
 	handle_exception:
 	{
@@ -3178,7 +3176,7 @@ array_constructed:
 			ip_offset = inv->ip - hd->code;
 			for (i = 0; i < hd->num_clauses; ++i) {
 				clause = &hd->clauses [i];
-				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
+				if (clause->flags <= 1 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
 						if (mono_object_isinst ((MonoObject*)frame->ex, mono_class_get (inv->method->klass->image, clause->token_or_filter))) {
 							/* 
@@ -3220,13 +3218,18 @@ array_constructed:
 		MonoExceptionClause *clause;
 		
 		ip_offset = frame->ip - header->code;
+
 		for (i = 0; i < header->num_clauses; ++i) {
 			clause = &header->clauses [i];
-			if (clause->flags == 2 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
-				ip = header->code + clause->handler_offset;
-				goto main_loop;
+			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+					ip = header->code + clause->handler_offset;
+					goto main_loop;
+				} else
+					break;
 			}
 		}
+
 		/*
 		 * If an exception is set, we need to execute the fault handler, too,
 		 * otherwise, we continue normally.
@@ -3245,7 +3248,7 @@ array_constructed:
 		ip_offset = frame->ip - header->code;
 		for (i = 0; i < header->num_clauses; ++i) {
 			clause = &header->clauses [i];
-			if (clause->flags == 3 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
+			if (clause->flags == 3 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 				ip = header->code + clause->handler_offset;
 				goto main_loop;
 			}

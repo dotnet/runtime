@@ -1,6 +1,8 @@
 #ifndef _MONO_JIT_JIT_H_
 #define _MONO_JIT_JIT_H_
 
+#include <signal.h>
+
 #include <mono/metadata/loader.h>
 
 #include "regset.h"
@@ -57,6 +59,7 @@ typedef struct {
 	gint32            locals_size;
 	gint32            args_size;
 	guint16          *intvars;
+	guint16           excvar;
 
 	MonoMemPool      *mp;
 	guint8           *start;
@@ -71,9 +74,46 @@ typedef struct {
 	int vtype_num;
 } MethodCallInfo;
 
+typedef struct {
+	guint32  flags;
+	gpointer try_start;
+	gpointer try_end;
+	gpointer handler_start;
+	guint32  token_or_filter;
+} MonoJitExceptionInfo;
+
+typedef struct {
+	MonoMethod *method;
+	gpointer code_start;
+	int      code_size;
+	guint32  used_regs;
+	unsigned num_clauses;
+	MonoJitExceptionInfo *clauses;
+
+} MonoJitInfo;
+
+typedef GArray MonoJitInfoTable;
+
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
 extern gboolean mono_jit_trace_calls;
+extern MonoJitInfoTable *mono_jit_info_table;
+extern gpointer mono_end_of_stack;
+
+MonoJitInfoTable *
+mono_jit_info_table_new    (void);
+
+int
+mono_jit_info_table_index  (MonoJitInfoTable *table, gpointer addr);
+
+void
+mono_jit_info_table_add    (MonoJitInfoTable *table, MonoJitInfo *ji);
+
+MonoJitInfo *
+mono_jit_info_table_find   (MonoJitInfoTable *table, gpointer addr);
+
+void
+arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
 
 MonoFlowGraph *
 mono_cfg_new               (MonoMethod *method, MonoMemPool *mp);

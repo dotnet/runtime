@@ -6,20 +6,29 @@ public class MyEx : Exception {
 
 public class Ex {
 
+	static int fin;
+
 	public static int test (int a) {
 		int res;
-		int fin = 0;
+
+		fin = 0;
+
 		try {
-			res = 10/a;
-			throw new MyEx ();
-		} catch (DivideByZeroException ex) {
-			if (fin != 1)
-				res = 34;
-			else
-				res = 33;
+			try {
+				res = 10/a;
+				throw new MyEx ();
+			} catch (DivideByZeroException ex) {
+				if (fin != 1)
+					res = 34;
+				else
+					res = 33;
+			} finally {
+				fin = 1;
+			}
 		} finally {
-			fin = 1;
+			fin += 1;
 		}
+		
 		return res;
 	}
 	public static int Main () {
@@ -31,8 +40,12 @@ public class Ex {
 		}
 		if (catched != 1)
 			return 2;
-		if (test(0) != 34)
+
+		if (fin != 2)
 			return 3;
+		
+		if (test(0) != 34)
+			return 4;
 		return 0;
 	}
 }
