@@ -688,7 +688,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	for (i = 0; i < class->vtable_size; ++i) {
 		MonoMethod *cm;
 	       
-		if ((cm = class->vtable [i]) && !cm->signature->generic_param_count)
+		if ((cm = class->vtable [i]) && !cm->signature->has_type_parameters)
 			vt->vtable [i] = arch_create_jit_trampoline (cm);
 	}
 

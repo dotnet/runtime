@@ -1411,6 +1411,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	int i, ret_attrs = 0, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
+	gboolean is_open = FALSE;
 	MonoGenericContainer *container = NULL;
 
 	if (*ptr & 0x10)
@@ -1450,6 +1451,9 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	method->call_convention = call_convention;
 	method->generic_param_count = gen_param_count;
 
+	if (gen_param_count)
+		method->has_type_parameters = 1;
+
 	if (gen_param_count && (!generic_container || !generic_container->is_method)) {
 		container = g_new0 (MonoGenericContainer, 1);
 		container->parent = generic_container;
@@ -1468,8 +1472,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	} else
 		container = generic_container;
 
-	if (call_convention != 0xa)
+	if (call_convention != 0xa) {
 		method->ret = mono_metadata_parse_type_full (m, container, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
+		is_open = mono_class_is_open_constructed_type (method->ret);
+	}
 
 	if (method->param_count) {
 		method->sentinelpos = -1;
@@ -1483,8 +1489,12 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 			}
 			method->params [i] = mono_metadata_parse_type_full (
 				m, container, MONO_PARSE_PARAM, pattrs [i], ptr, &ptr);
+			if (!is_open)
+				is_open = mono_class_is_open_constructed_type (method->params [i]);
 		}
 	}
+
+	method->has_type_parameters = is_open;
 
 	if (def && (method->call_convention == MONO_CALL_VARARG))
 		method->sentinelpos = method->param_count;

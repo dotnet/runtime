@@ -365,15 +365,22 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
 			   MonoGenericContext *context)
 {
 	MonoMethodSignature *res;
+	gboolean is_open;
 	int i;
+
 	res = mono_metadata_signature_alloc (image, sig->param_count);
 	res->ret = mono_class_inflate_generic_type (sig->ret, context);
-	for (i = 0; i < sig->param_count; ++i)
+	is_open = mono_class_is_open_constructed_type (res->ret);
+	for (i = 0; i < sig->param_count; ++i) {
 		res->params [i] = mono_class_inflate_generic_type (sig->params [i], context);
+		if (!is_open)
+			is_open = mono_class_is_open_constructed_type (res->params [i]);
+	}
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->generic_param_count = sig->generic_param_count;
+	res->has_type_parameters = is_open;
 	res->is_inflated = 1;
 	return res;
 }
