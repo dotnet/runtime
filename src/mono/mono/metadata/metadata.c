@@ -3168,6 +3168,16 @@ handle_enum:
 			case MONO_NATIVE_IUNKNOWN:
 				*conv = MONO_MARSHAL_CONV_OBJECT_IUNKNOWN;
 				return MONO_NATIVE_IUNKNOWN;
+			case MONO_NATIVE_FUNC:
+				if (t == MONO_TYPE_CLASS && (type->data.klass == mono_defaults.multicastdelegate_class ||
+											 type->data.klass == mono_defaults.delegate_class || 
+											 type->data.klass->parent == mono_defaults.multicastdelegate_class)) {
+					*conv = MONO_MARSHAL_CONV_DEL_FTN;
+					return MONO_NATIVE_FUNC;
+				}
+				else
+					/* Fall through */
+					;
 			default:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}
