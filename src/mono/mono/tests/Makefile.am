@@ -16,6 +16,8 @@ ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
 STRESS_TESTS_SRC=	\
+	abort-stress-1.cs	\
+	abort-stress-2.cs	\
 	domain-stress.cs	\
 	gchandle-stress.cs	\
 	monitor-stress.cs	\

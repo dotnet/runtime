@@ -72,6 +72,22 @@ my %tests = (
 		'arg-knob' => 0, # loops
 		'ratio' => 20,
 	},
+	'abort-stress-1' => {
+		'program' => 'abort-stress-1.exe',
+		# loops,
+		'args' => [20],
+		'arg-knob' => 0, # loops
+		'ratio' => 20,
+	}
+	# FIXME: This test deadlocks, bug 72740.
+	# We need hang detection
+	#'abort-stress-2' => {
+	#	'program' => 'abort-stress-2.exe',
+	#	# loops,
+	#	'args' => [20],
+	#	'arg-knob' => 0, # loops
+	#	'ratio' => 20,
+	#}
 );
 
 # poor man option handling
