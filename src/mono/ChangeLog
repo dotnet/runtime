@@ -1,3 +1,7 @@
+2004-12-09  Raja R Harinath  <rharinath@novell.com>
+
+	* README: Update with details about the new build setup.
+
 2004-12-08  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (get-monolite-latest): Update to new location of

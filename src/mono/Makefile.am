@@ -44,7 +44,7 @@ bootstrap-world: compiler-tests
 
 # internal targets
 mcs-do-compiler-tests:
-	cd runtime && $(MAKE) TEST_SUBDIRS="tests errors" check-local
+	cd runtime && $(MAKE) test_select='TEST_SUBDIRS="tests errors"' check-local
 
 win32getdeps:
 	wget http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip

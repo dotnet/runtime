@@ -65,10 +65,10 @@ This is Mono.
 		./autogen.sh --prefix=/usr/local
 		make
 
-    c. Building the software from CVS
+    c. Building the software from SVN
     ---------------------------------
 
-	If you are building the software from CVS, make sure that you
+	If you are building the software from SVN, make sure that you
 	have up-to-date mcs and mono sources:
 
 		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mono
@@ -78,81 +78,70 @@ This is Mono.
 
 		cd mono
 		./autogen.sh --prefix=/usr/local
-
-	Depending on whether you have an existing Mono installation or
-	not, you can try the following:
-
-	i.   If you have an existing Mono installation
-	     -----------------------------------------
-
-	First verify that you have a working installation:
-
-		echo 'class X { static void Main () { System.Console.Write("OK");}}' > x.cs
-
-	Compile:
-
-		mcs x.cs
-
-	And run:
-
-		mono x.exe
-
-	If you get the output `OK' and no errors, and you have mono
-	version 0.31 or later, continue.  Otherwise, you can try option
-	(ii) below.
-
-	You are ready to start your CVS upgrade.  Compile with
-
 		make
 
 	This will automatically go into the mcs/ tree and build the
 	binaries there, and copy them into the appropriate
 	sub-directories of  mono/runtime/.
 
-	Now, go to step (iii) below.
+	This assumes that you have a working mono installation, and that
+	there's a C# compiler named 'mcs', and a corresponding IL
+	runtime called 'mono'.  You can use two make variables
+	EXTERNAL_MCS and EXTERNAL_RUNTIME to override these.  e.g., you
+	can say
 
-	ii.  If you don't have a working Mono installation
-	     ---------------------------------------------
+	  make EXTERNAL_MCS=/foo/bar/mcs EXTERNAL_MONO=/somewhere/else/mono
+	
+	If you don't have a working Mono installation
+	---------------------------------------------
 
 	If you don't have a working Mono installation, an obvious choice
 	is to install the latest released packages of 'mono' for your
-	distribution and go back to step (i).
+	distribution and try from the beginning.
 
 	You can also try a slightly more risky approach that should work
 	almost all the time.  
 
 	This works by first getting the latest version of the 'monolite'
 	distribution, which contains just enough to run the 'mcs'
-	compiler.  You do this by
+	compiler.  You do this with:
 
 		make get-monolite-latest
 
-	This should place a monolite-latest.tar.gz in the parent
-	directory of the 'mono' source tree.  This will automatically
-	gunzip and untar the tarball, place the files appropriately,
-
-	You can then run:
+	This will download and automatically gunzip and untar the
+	tarball, and place the files appropriately so that you can then
+	just run:
 
 		make
 
-	iii. Testing and Installation
-	     ------------------------
+	To ensure that you're using the 'monolite' distribution, you can
+	also try passing EXTERNAL_MCS=false on the make command-line.
 
-	You can run the mono and mcs testsuites with the command:
+	Testing and Installation
+	 ------------------------
+
+	You can run (part of) the mono and mcs testsuites with the command:
+
+		make check
+
+	All tests should pass.  
+
+	If you want more extensive tests, including those that test the
+	class libraries, you need to re-run 'configure' with the
+	'--enable-nunit-tests' flag, and try
 
 		make -k check
 
-	Expect to find several testsuite failures, especially in the
-	mcs/ tree.  As a sanity check, you can compare the failures you
-	got with
+	Expect to find a few testsuite failures.  As a sanity check, you
+	can compare the failures you got with
 
 		http://go-mono.com/tests/displayTestResults.php
 
-	You can now install it:
+	You can now install mono with:
 
 		make install
 
-	Failure to follow these steps will result in a broken installation. 
+	Failure to follow these steps may result in a broken installation. 
 
 2. Using Mono
 =============
@@ -227,7 +216,5 @@ This is Mono.
 
 	runtime/
 
-		A directory holding a pre-compiled version of the Mono
-		runtime.
-
-
+		A directory that contains the Makefiles that link the
+		mono/ and mcs/ build systems.
