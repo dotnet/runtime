@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
@@ -26,11 +28,32 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	char buf [1024];
 	int i, mnum;
 	char *name = g_strdup_printf ("%s.il", info->name);
+	char *command = g_strdup_printf ("monodis --output=%s.il %s", info->name, info->image->name);
+	struct stat stata, statb;
 	int offset = -1;
+
+	if (stat (info->image->name, &stata)) {
+		g_warning ("cannot access assembly file (%s): %s", info->image->name, g_strerror (errno));
+		g_free (command);
+		g_free (name);
+		return;
+	}
+
+	/* If the stat() failed or the file is older. */
+	if (stat (name, &statb) || (statb.st_mtime < stata.st_mtime)) {
+		g_print ("Recreating %s from %s.\n", name, info->image->name);
+		if (system (command)) {
+			g_warning ("cannot create IL assembly file (%s): %s", command, g_strerror (errno));
+			g_free (command);
+			g_free (name);
+			return;
+		}
+	}
 
 	/* use an env var with directories for searching. */
 	if (!(f = fopen (name, "r"))) {
 		g_warning ("cannot open IL assembly file %s", name);
+		g_free (command);
 		g_free (name);
 		return;
 	}
@@ -39,6 +62,7 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	info->moffsets = g_malloc (info->total_lines * sizeof (int));
 
 	g_free (name);
+	g_free (command);
 	i = 0;
 	while (fgets (buf, sizeof (buf), f)) {
 		int pos = i;
