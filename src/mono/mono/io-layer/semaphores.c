@@ -44,12 +44,14 @@ static struct _WapiHandleOps sem_ops = {
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
+	NULL,			/* getfiletime */
+	NULL,			/* setfiletime */
 	sema_wait,		/* wait */
 	sema_wait_multiple,	/* wait_multiple */
 	sema_signal,		/* signal */
 };
 
-static void sema_close(WapiHandle *handle)
+static void sema_close(WapiHandle *handle G_GNUC_UNUSED)
 {
 	/* Not really much to do here */
 #ifdef DEBUG

@@ -53,6 +53,8 @@ static struct _WapiHandleOps thread_ops = {
 	NULL,				/* seek */
 	NULL,				/* setendoffile */
 	NULL,				/* getfilesize */
+	NULL,				/* getfiletime */
+	NULL,				/* setfiletime */
 	thread_wait,			/* wait */
 	thread_wait_multiple,		/* wait_multiple */
 	NULL,				/* signal */

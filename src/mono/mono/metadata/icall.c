@@ -18,6 +18,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/file-io.h>
 #include "decimal.h"
 
 static MonoObject *
@@ -406,6 +407,13 @@ static gpointer icall_map [] = {
 	"System.Threading.Monitor::Monitor_try_enter", ves_icall_System_Threading_Monitor_Monitor_try_enter,
 	"System.Threading.Monitor::Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait,
 
+	/*
+	 * System.Threading.WaitHandle
+	 */
+	"System.Threading.WaitHandle::WaitAll_internal", ves_icall_System_Threading_WaitHandle_WaitAll_internal,
+	"System.Threading.WaitHandle::WaitAny_internal", ves_icall_System_Threading_WaitHandle_WaitAny_internal,
+	"System.Threading.WaitHandle::WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal,
+
 	"System.Runtime.InteropServices.Marshal::ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr,
 	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
 
@@ -419,6 +427,22 @@ static gpointer icall_map [] = {
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
+
+	/*
+	 * System.PAL.OpSys I/O Services
+	 */
+	"System.PAL.OpSys::GetStdHandle", ves_icall_System_PAL_OpSys_GetStdHandle,
+	"System.PAL.OpSys::ReadFile", ves_icall_System_PAL_OpSys_ReadFile,
+	"System.PAL.OpSys::WriteFile", ves_icall_System_PAL_OpSys_WriteFile,
+	"System.PAL.OpSys::SetLengthFile", ves_icall_System_PAL_OpSys_SetLengthFile,
+	"System.PAL.OpSys::OpenFile", ves_icall_System_PAL_OpSys_OpenFile,
+	"System.PAL.OpSys::CloseFile", ves_icall_System_PAL_OpSys_CloseFile,
+	"System.PAL.OpSys::SeekFile", ves_icall_System_PAL_OpSys_SeekFile,
+	"System.PAL.OpSys::DeleteFile", ves_icall_System_PAL_OpSys_DeleteFile,
+	"System.PAL.OpSys::ExistsFile", ves_icall_System_PAL_OpSys_ExistsFile,
+	"System.PAL.OpSys::GetFileTime", ves_icall_System_PAL_OpSys_GetFileTime,
+	"System.PAL.OpSys::SetFileTime", ves_icall_System_PAL_OpSys_SetFileTime,
+
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	/*
 	 * add other internal calls here

@@ -37,7 +37,14 @@ struct _WapiHandleOps
 			gint32 *highmovedistance, WapiSeekMethod method);
 	gboolean (*setendoffile)(WapiHandle *handle);
 	guint32 (*getfilesize)(WapiHandle *handle, guint32 *highsize);
-
+	gboolean (*getfiletime)(WapiHandle *handle, WapiFileTime *create_time,
+				WapiFileTime *last_access,
+				WapiFileTime *last_write);
+	gboolean (*setfiletime)(WapiHandle *handle,
+				const WapiFileTime *create_time,
+				const WapiFileTime *last_access,
+				const WapiFileTime *last_write);
+	
 	/* WaitForSingleObject */
 	gboolean (*wait)(WapiHandle *handle, WapiHandle *signal, guint32 ms);
 

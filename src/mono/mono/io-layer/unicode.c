@@ -47,6 +47,20 @@ static iconv_t unicode_reset(void)
 	return(cd);
 }
 
+/* This is a nasty kludge */
+static guint32 unicode_len(const guchar *str)
+{
+	guint32 len=0;
+	
+	do {
+		if(str[len]=='\0' && str[len+1]=='\0') {
+			return(len);
+		}
+
+		len+=2;
+	} while(1);
+}
+
 /* Cut&pasted from glib (switch to g_convert() when glib-2 is out */
 guchar *_wapi_unicode_to_utf8(const guchar *uni)
 {
@@ -67,8 +81,8 @@ guchar *_wapi_unicode_to_utf8(const guchar *uni)
 	g_return_val_if_fail(uni != NULL, NULL);
 	g_return_val_if_fail(converter != (iconv_t) -1, NULL);
      
-	str = g_strdup(uni);
-	len = strlen(str);
+	len = unicode_len(uni);
+	str = g_memdup(uni, (guint32)len+2); /* don't forget the double NULL */
 
 	p = str;
 	inbytes_remaining = len;

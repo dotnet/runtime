@@ -85,6 +85,24 @@ typedef enum {
 	FILE_TYPE_REMOTE=0x8000,
 } WapiFileType;
 
+typedef struct 
+{
+	guint32 dwLowDateTime;
+	guint32 dwHighDateTime;
+} WapiFileTime;
+
+typedef struct 
+{
+	guint16 wYear;
+	guint16 wMonth;
+	guint16 wDayOfWeek;
+	guint16 wDay;
+	guint16 wHour;
+	guint16 wMinute;
+	guint16 wSecond;
+	guint16 wMilliseconds;
+} WapiSystemTime;
+
 #define INVALID_SET_FILE_POINTER ((guint32)-1)
 #define INVALID_FILE_SIZE ((guint32)0xFFFFFFFF)
 
@@ -93,6 +111,7 @@ extern WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 			      WapiSecurityAttributes *security,
 			      guint32 createmode,
 			      guint32 attrs, WapiHandle *template);
+extern gboolean DeleteFile(const guchar *name);
 extern WapiHandle *GetStdHandle(WapiStdHandle stdhandle);
 extern gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,
 			 guint32 *bytesread, WapiOverlapped *overlapped);
@@ -104,5 +123,8 @@ extern guint32 SetFilePointer(WapiHandle *handle, gint32 movedistance,
 			      gint32 *highmovedistance, WapiSeekMethod method);
 extern WapiFileType GetFileType(WapiHandle *handle);
 extern guint32 GetFileSize(WapiHandle *handle, guint32 *highsize);
+extern gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time, WapiFileTime *last_access, WapiFileTime *last_write);
+extern gboolean SetFileTime(WapiHandle *handle, const WapiFileTime *create_time, const WapiFileTime *last_access, const WapiFileTime *last_write);
+extern gboolean FileTimeToSystemTime(const WapiFileTime *file_time, WapiSystemTime *system_time);
 
 #endif /* _WAPI_IO_H_ */

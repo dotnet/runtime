@@ -28,6 +28,8 @@ libmetadata_a_SOURCES = \
 	threads.c	\
 	threads.h	\
 	threads-types.h	\
+	file-io.c	\
+	file-io.h	\
 	exception.c	\
 	exception.h	\
 	#

@@ -1,7 +1,7 @@
 /*
  * threads.c: Thread support internal calls
  *
- * Auther:
+ * Author:
  *	Dick Porter (dick@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
@@ -515,6 +515,21 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 #endif
 	
 	return(TRUE);
+}
+
+gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *handles, gint32 ms, gboolean exitContext)
+{
+	return(FALSE);
+}
+
+gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *handles, gint32 ms, gboolean exitContext)
+{
+	return(0);
+}
+
+gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, WapiHandle *handle, gint32 ms, gboolean exitContext)
+{
+	return(FALSE);
 }
 
 

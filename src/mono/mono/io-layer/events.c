@@ -46,6 +46,8 @@ static struct _WapiHandleOps event_ops = {
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
+	NULL,			/* getfiletime */
+	NULL,			/* setfiletime */
 	event_wait,		/* wait */
 	event_wait_multiple,	/* wait_multiple */
 	event_signal,		/* signal */
@@ -59,6 +61,10 @@ static void event_close(WapiHandle *handle)
 	g_message(G_GNUC_PRETTY_FUNCTION ": closing event handle %p",
 		  event_handle);
 #endif
+
+	pthread_mutex_destroy(&event_handle->mutex);
+	pthread_cond_destroy(&event_handle->cond);
+	pthread_rwlock_destroy(&event_handle->rwlock);
 }
 
 static gboolean event_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)

@@ -8,6 +8,7 @@
 #include "mono/io-layer/wapi.h"
 
 typedef const guchar *LPCTSTR;		/* replace this with gunichar */
+typedef guint16 WORD;
 typedef guint32 DWORD;
 typedef gpointer LPVOID;
 typedef gboolean BOOL;
@@ -22,6 +23,10 @@ typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;
 typedef WapiCriticalSection CRITICAL_SECTION;
 typedef WapiCriticalSection *LPCRITICAL_SECTION;
+typedef WapiFileTime FILETIME;
+typedef WapiFileTime *LPFILETIME;
+typedef WapiSystemTime SYSTEMTIME;
+typedef WapiSystemTime *LPSYSTEMTIME;
 
 #define CONST const
 #define VOID void

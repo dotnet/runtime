@@ -6,12 +6,15 @@
 #include <string.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <utime.h>
 
 #include "mono/io-layer/wapi.h"
 #include "unicode.h"
 #include "wapi-private.h"
 
 #undef DEBUG
+#define ACTUALLY_DO_UNICODE
 
 /* Currently used for both FILE and CONSOLE handle types.  This may
  * have to change in future.
@@ -20,6 +23,7 @@ struct _WapiHandle_file
 {
 	WapiHandle handle;
 	int fd;
+	guchar *filename;
 	WapiSecurityAttributes *security_attributes;
 	guint32 fileaccess;
 	guint32 sharemode;
@@ -38,6 +42,13 @@ static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
 			 gint32 *highmovedistance, WapiSeekMethod method);
 static gboolean file_setendoffile(WapiHandle *handle);
 static guint32 file_getfilesize(WapiHandle *handle, guint32 *highsize);
+static gboolean file_getfiletime(WapiHandle *handle, WapiFileTime *create_time,
+				 WapiFileTime *last_access,
+				 WapiFileTime *last_write);
+static gboolean file_setfiletime(WapiHandle *handle,
+				 const WapiFileTime *create_time,
+				 const WapiFileTime *last_access,
+				 const WapiFileTime *last_write);
 
 /* File handle is only signalled for overlapped IO */
 static struct _WapiHandleOps file_ops = {
@@ -48,6 +59,8 @@ static struct _WapiHandleOps file_ops = {
 	file_seek,		/* seek */
 	file_setendoffile,	/* setendoffile */
 	file_getfilesize,	/* getfilesize */
+	file_getfiletime,	/* getfiletime */
+	file_setfiletime,	/* setfiletime */
 	NULL,			/* wait */
 	NULL,			/* wait_multiple */
 	NULL,			/* signal */
@@ -66,6 +79,8 @@ static struct _WapiHandleOps console_ops = {
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
+	NULL,			/* getfiletime */
+	NULL,			/* setfiletime */
 	NULL,			/* FIXME: wait */
 	NULL,			/* FIXME: wait_multiple */
 	NULL,			/* signal */
@@ -81,6 +96,10 @@ static void file_close(WapiHandle *handle)
 #endif
 	
 	close(file_handle->fd);
+	if(file_handle->filename!=NULL) {
+		g_free(file_handle->filename);
+		file_handle->filename=NULL;
+	}
 }
 
 static WapiFileType file_getfiletype(void)
@@ -391,6 +410,164 @@ static guint32 file_getfilesize(WapiHandle *handle, guint32 *highsize)
 	return(size);
 }
 
+static gboolean file_getfiletime(WapiHandle *handle, WapiFileTime *create_time,
+				 WapiFileTime *last_access,
+				 WapiFileTime *last_write)
+{
+	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct stat statbuf;
+	guint64 create_ticks, access_ticks, write_ticks;
+	int ret;
+	
+	if(!(file_handle->fileaccess&GENERIC_READ) &&
+	   !(file_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_handle->fd, file_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+	
+	ret=fstat(file_handle->fd, &statbuf);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": handle %p fd %d fstat failed: %s", handle,
+			  file_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": atime: %ld ctime: %ld mtime: %ld",
+		  statbuf.st_atime, statbuf.st_ctime,
+		  statbuf.st_mtime);
+#endif
+
+	/* Try and guess a meaningful create time by using the older
+	 * of atime or ctime
+	 */
+	/* The magic constant comes from msdn documentation
+	 * "Converting a time_t Value to a File Time"
+	 */
+	if(statbuf.st_atime < statbuf.st_ctime) {
+		create_ticks=((guint64)statbuf.st_atime*10000000)
+			+ 116444736000000000UL;
+	} else {
+		create_ticks=((guint64)statbuf.st_ctime*10000000)
+			+ 116444736000000000UL;
+	}
+	
+	access_ticks=((guint64)statbuf.st_atime*10000000)+116444736000000000UL;
+	write_ticks=((guint64)statbuf.st_mtime*10000000)+116444736000000000UL;
+	
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": aticks: %llu cticks: %llu wticks: %llu",
+			  access_ticks, create_ticks, write_ticks);
+#endif
+
+	if(create_time!=NULL) {
+		create_time->dwLowDateTime = create_ticks & 0xFFFFFFFF;
+		create_time->dwHighDateTime = create_ticks >> 32;
+	}
+	
+	if(last_access!=NULL) {
+		last_access->dwLowDateTime = access_ticks & 0xFFFFFFFF;
+		last_access->dwHighDateTime = access_ticks >> 32;
+	}
+	
+	if(last_write!=NULL) {
+		last_write->dwLowDateTime = write_ticks & 0xFFFFFFFF;
+		last_write->dwHighDateTime = write_ticks >> 32;
+	}
+
+	return(TRUE);
+}
+
+static gboolean file_setfiletime(WapiHandle *handle,
+				 const WapiFileTime *create_time G_GNUC_UNUSED,
+				 const WapiFileTime *last_access,
+				 const WapiFileTime *last_write)
+{
+	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct utimbuf utbuf;
+	struct stat statbuf;
+	guint64 access_ticks, write_ticks;
+	int ret;
+	
+	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
+	   !(file_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+
+	if(file_handle->filename==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": handle %p fd %d unknown filename", handle,
+			  file_handle->fd);
+#endif
+
+		return(FALSE);
+	}
+	
+	/* Get the current times, so we can put the same times back in
+	 * the event that one of the FileTime structs is NULL
+	 */
+	ret=fstat(file_handle->fd, &statbuf);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": handle %p fd %d fstat failed: %s", handle,
+			  file_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+
+	if(last_access!=NULL) {
+		access_ticks=((guint64)last_access->dwHighDateTime << 32) +
+			last_access->dwLowDateTime;
+		utbuf.actime=(access_ticks - 116444736000000000) / 10000000;
+	} else {
+		utbuf.actime=statbuf.st_atime;
+	}
+
+	if(last_write!=NULL) {
+		write_ticks=((guint64)last_write->dwHighDateTime << 32) +
+			last_write->dwLowDateTime;
+		utbuf.modtime=(write_ticks - 116444736000000000) / 10000000;
+	} else {
+		utbuf.modtime=statbuf.st_mtime;
+	}
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": setting handle %p access %ld write %ld", handle,
+		  utbuf.actime, utbuf.modtime);
+#endif
+
+	ret=utime(file_handle->filename, &utbuf);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": handle %p [%s] fd %d utime failed: %s", handle,
+			  file_handle->filename, file_handle->fd,
+			  strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+
+	return(TRUE);
+}
+
 static WapiFileType console_getfiletype(void)
 {
 	return(FILE_TYPE_CHAR);
@@ -544,8 +721,6 @@ WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 	ret=open(name, flags, perms);
 #endif
 	
-	g_free(filename);
-	
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file: %s",
@@ -560,17 +735,72 @@ WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_FILE, file_ops);
 
 	file_handle->fd=ret;
+#ifdef ACTUALLY_DO_UNICODE
+	file_handle->filename=filename;
+#else
+	file_handle->filename=g_strdup(name);
+#endif
 	file_handle->security_attributes=security;
 	file_handle->fileaccess=fileaccess;
 	file_handle->sharemode=sharemode;
 	file_handle->attrs=attrs;
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": returning handle %p with fd %d",
-		  handle, file_handle->fd);
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": returning handle %p [%s] with fd %d",
+		  handle, file_handle->filename, file_handle->fd);
 #endif
 
 	return(handle);
+}
+
+/**
+ * DeleteFile:
+ * @name: a pointer to a NULL-terminated unicode string, that names
+ * the file to be deleted.
+ *
+ * Deletes file @name.
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean DeleteFile(const guchar *name)
+{
+	guchar *filename;
+	int ret;
+	
+	if(name==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		return(FALSE);
+	}
+
+	filename=_wapi_unicode_to_utf8(name);
+#ifdef ACTUALLY_DO_UNICODE
+	if(filename==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": unicode conversion returned NULL");
+#endif
+
+		return(FALSE);
+	}
+#endif
+	
+#ifdef ACTUALLY_DO_UNICODE
+	ret=unlink(filename);
+#else
+	ret=unlink(name);
+#endif
+	
+	g_free(filename);
+
+	if(ret==0) {
+		return(TRUE);
+	} else {
+		return(FALSE);
+	}
 }
 
 /**
@@ -630,6 +860,10 @@ WapiHandle *GetStdHandle(WapiStdHandle stdhandle)
 	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_CONSOLE, console_ops);
 
 	file_handle->fd=fd;
+	/* We might want to set file_handle->filename to something
+	 * like "<stdin>" if we ever want to display handle internal
+	 * details somehow
+	 */
 	file_handle->security_attributes=/*some default*/NULL;
 	file_handle->fileaccess=convert_from_flags(flags);
 	file_handle->sharemode=0;
@@ -819,4 +1053,235 @@ guint32 GetFileSize(WapiHandle *handle, guint32 *highsize)
 	}
 	
 	return(handle->ops->getfilesize(handle, highsize));
+}
+
+/**
+ * GetFileTime:
+ * @handle: The file handle to query.  The handle must have
+ * %GENERIC_READ access.
+ * @create_time: Points to a %WapiFileTime structure to receive the
+ * number of ticks since the epoch that file was created.  May be
+ * %NULL.
+ * @last_access: Points to a %WapiFileTime structure to receive the
+ * number of ticks since the epoch when file was last accessed.  May be
+ * %NULL.
+ * @last_write: Points to a %WapiFileTime structure to receive the
+ * number of ticks since the epoch when file was last written to.  May
+ * be %NULL.
+ *
+ * Finds the number of ticks since the epoch that the file referenced
+ * by @handle was created, last accessed and last modified.  A tick is
+ * a 100 nanosecond interval.  The epoch is Midnight, January 1 1601
+ * GMT.
+ *
+ * Create time isn't recorded on POSIX file systems or reported by
+ * stat(2), so that time is guessed by returning the oldest of the
+ * other times.
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time,
+		     WapiFileTime *last_access, WapiFileTime *last_write)
+{
+	if(handle->ops->getfiletime==NULL) {
+		return(FALSE);
+	}
+	
+	return(handle->ops->getfiletime(handle, create_time, last_access,
+					last_write));
+}
+
+/**
+ * SetFileTime:
+ * @handle: The file handle to set.  The handle must have
+ * %GENERIC_WRITE access.
+ * @create_time: Points to a %WapiFileTime structure that contains the
+ * number of ticks since the epoch that the file was created.  May be
+ * %NULL.
+ * @last_access: Points to a %WapiFileTime structure that contains the
+ * number of ticks since the epoch when the file was last accessed.
+ * May be %NULL.
+ * @last_write: Points to a %WapiFileTime structure that contains the
+ * number of ticks since the epoch when the file was last written to.
+ * May be %NULL.
+ *
+ * Sets the number of ticks since the epoch that the file referenced
+ * by @handle was created, last accessed or last modified.  A tick is
+ * a 100 nanosecond interval.  The epoch is Midnight, January 1 1601
+ * GMT.
+ *
+ * Create time isn't recorded on POSIX file systems, and is ignored.
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean SetFileTime(WapiHandle *handle, const WapiFileTime *create_time,
+		     const WapiFileTime *last_access,
+		     const WapiFileTime *last_write)
+{
+	if(handle->ops->setfiletime==NULL) {
+		return(FALSE);
+	}
+	
+	return(handle->ops->setfiletime(handle, create_time, last_access,
+					last_write));
+}
+
+/* A tick is a 100-nanosecond interval.  File time epoch is Midnight,
+ * January 1 1601 GMT
+ */
+
+#define TICKS_PER_MILLISECOND 10000L
+#define TICKS_PER_SECOND 10000000L
+#define TICKS_PER_MINUTE 600000000L
+#define TICKS_PER_HOUR 36000000000L
+#define TICKS_PER_DAY 864000000000L
+
+#define isleap(y) ((y) % 4 == 0 && ((y) % 100 != 0 || (y) % 400 == 0))
+
+static const guint16 mon_yday[2][13]={
+	{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+	{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366},
+};
+
+/**
+ * FileTimeToSystemTime:
+ * @file_time: Points to a %WapiFileTime structure that contains the
+ * number of ticks to convert.
+ * @system_time: Points to a %WapiSystemTime structure to receive the
+ * broken-out time.
+ *
+ * Converts a tick count into broken-out time values.
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
+			      WapiSystemTime *system_time)
+{
+	gint64 file_ticks, totaldays, rem, y;
+	const guint16 *ip;
+	
+	if(system_time==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": system_time NULL");
+#endif
+
+		return(FALSE);
+	}
+	
+	file_ticks=((gint64)file_time->dwHighDateTime << 32) +
+		file_time->dwLowDateTime;
+	
+	/* Really compares if file_ticks>=0x8000000000000000
+	 * (LLONG_MAX+1) but we're working with a signed value for the
+	 * year and day calculation to work later
+	 */
+	if(file_ticks<0) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": file_time too big");
+#endif
+
+		return(FALSE);
+	}
+
+	totaldays=(file_ticks / TICKS_PER_DAY);
+	rem = file_ticks % TICKS_PER_DAY;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": totaldays: %lld rem: %lld",
+		  totaldays, rem);
+#endif
+
+	system_time->wHour=rem/TICKS_PER_HOUR;
+	rem %= TICKS_PER_HOUR;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Hour: %d rem: %lld",
+		  system_time->wHour, rem);
+#endif
+	
+	system_time->wMinute = rem / TICKS_PER_MINUTE;
+	rem %= TICKS_PER_MINUTE;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Minute: %d rem: %lld",
+		  system_time->wMinute, rem);
+#endif
+	
+	system_time->wSecond = rem / TICKS_PER_SECOND;
+	rem %= TICKS_PER_SECOND;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Second: %d rem: %lld",
+		  system_time->wSecond, rem);
+#endif
+	
+	system_time->wMilliseconds = rem / TICKS_PER_MILLISECOND;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Milliseconds: %d",
+		  system_time->wMilliseconds);
+#endif
+
+	/* January 1, 1601 was a Monday, according to Emacs calendar */
+	system_time->wDayOfWeek = ((1 + totaldays) % 7) + 1;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Day of week: %d",
+		  system_time->wDayOfWeek);
+#endif
+	
+	/* This algorithm to find year and month given days from epoch
+	 * from glibc
+	 */
+	y=1601;
+	
+#define DIV(a, b) ((a) / (b) - ((a) % (b) < 0))
+#define LEAPS_THRU_END_OF(y) (DIV(y, 4) - DIV (y, 100) + DIV (y, 400))
+
+	while(totaldays < 0 || totaldays >= (isleap(y)?366:365)) {
+		/* Guess a corrected year, assuming 365 days per year */
+		gint64 yg = y + totaldays / 365 - (totaldays % 365 < 0);
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": totaldays: %lld yg: %lld y: %lld", totaldays, yg,
+			  y);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": LEAPS(yg): %lld LEAPS(y): %lld",
+			  LEAPS_THRU_END_OF(yg-1), LEAPS_THRU_END_OF(y-1));
+#endif
+		
+		/* Adjust days and y to match the guessed year. */
+		totaldays -= ((yg - y) * 365
+			      + LEAPS_THRU_END_OF (yg - 1)
+			      - LEAPS_THRU_END_OF (y - 1));
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": totaldays: %lld",
+			  totaldays);
+#endif
+		y = yg;
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": y: %lld", y);
+#endif
+	}
+	
+	system_time->wYear = y;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Year: %d", system_time->wYear);
+#endif
+
+	ip = mon_yday[isleap(y)];
+	
+	for(y=11; totaldays < ip[y]; --y) {
+		continue;
+	}
+	totaldays-=ip[y];
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": totaldays: %lld", totaldays);
+#endif
+	
+	system_time->wMonth = y + 1;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Month: %d", system_time->wMonth);
+#endif
+
+	system_time->wDay = totaldays + 1;
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Day: %d", system_time->wDay);
+#endif
+	
+	return(TRUE);
 }

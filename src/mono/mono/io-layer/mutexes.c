@@ -32,6 +32,8 @@ static struct _WapiHandleOps mutex_ops = {
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
+	NULL,			/* getfiletime */
+	NULL,			/* setfiletime */
 	mutex_wait,		/* wait */
 	mutex_wait_multiple,	/* wait_multiple */
 	mutex_signal,		/* signal */
@@ -45,6 +47,8 @@ static void mutex_close(WapiHandle *handle)
 	g_message(G_GNUC_PRETTY_FUNCTION ": closing mutex handle %p",
 		  mutex_handle);
 #endif
+
+	pthread_mutex_destroy(&mutex_handle->mutex);
 }
 
 static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
