@@ -215,6 +215,11 @@ AC_SUBST(GMODULE_LIBS)
 
 AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default])
 
+# Enable support for NPTL only features like fast thread-local storage
+# We can't reliably detect nptl at compile & run time
+# so this option will stay until nptl becomes more widespread
+AC_ARG_WITH(nptl, [  --with-nptl Enable support for NPTL])
+
 # assembly bundle support, see metadata/make-bundle.pl for more info
 AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
 	BUNDLE_FILE=$with_bundle
@@ -236,6 +241,8 @@ case "x$gc" in
 		fi
 		if test "x$gc_headers" != "xyes"; then
 			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
+		else
+			AC_DEFINE(HAVE_GC_GC_H)
 		fi
 
 		AC_DEFINE(HAVE_BOEHM_GC)
@@ -581,8 +588,12 @@ if test x$platform_win32 = xno; then
 			return !(res1 + res2 == 2);
 		}
 	], [
-			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_KW_THREAD)
+			if test "x$with_nptl" = "x"; then
+				AC_MSG_RESULT(disabled)
+			else
+				AC_MSG_RESULT(yes)
+				AC_DEFINE(HAVE_KW_THREAD)
+			fi
 	], [
 			AC_MSG_RESULT(no)
 	])
