@@ -152,6 +152,8 @@ static void    ensure_runtime_vtable (MonoClass *klass);
 static gpointer resolve_object (MonoImage *image, MonoObject *obj);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf);
 static guint32 type_get_signature_size (MonoType *type);
+static void get_default_param_value_blobs (MonoMethod *method, char **blobs);
+static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
 
 
 static void
