@@ -373,7 +373,7 @@ if test x$platform_win32 = xno; then
 			])
 		])
 		CPPFLAGS=$orig_CPPFLAGS
-		CPPFLAGS="$CPPFLAGS $pthread_CFLAGS"
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT $pthread_CFLAGS"
 	], [
 		AC_MSG_ERROR([libpthread is required on non-win32 hosts])
 	])
@@ -541,6 +541,9 @@ AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
 AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
+
+LIBC="libc.so.6"
+AC_SUBST(LIBC)
 
 AC_SUBST(arch_target)
 AC_SUBST(CFLAGS)
