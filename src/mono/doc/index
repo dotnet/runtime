@@ -69,7 +69,18 @@
   </tr>
 </table>
 
+** Feb 21, 2002
+
+	Paolo got our compiler natively to compile 117 of our tests.
+	Self hosting is closer every day.
+
+	Unsafe support is finished in the C# compiler.
+
 ** Feb 20, 2002
+
+	Gaurav got DataGrid and DataGridItemCollection done.
+
+	C# compiler: Unsafe support is mostly complete (only stackalloc is missing). 
 
 	New easy to run scripts for compiling Mono on Unix and Windows
 	is <a href="download.html">available</a>.  We can now easily compile
