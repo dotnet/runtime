@@ -452,15 +452,23 @@ fat_header:
 		for (i = mono_array_length (mb->ilgen->ex_handlers) - 1; i >= 0; --i) {
 			ex_info = (MonoILExceptionInfo *)mono_array_addr (mb->ilgen->ex_handlers, MonoILExceptionInfo, i);
 			if (ex_info->handlers) {
+				int finally_start = 0;
 				for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
 					ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
 					clause.flags = ex_block->type;
 					clause.try_offset = ex_info->start;
-					clause.try_len = ex_info->len;
+					/* need fault, too, probably */
+					if (clause.flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+						clause.try_len = finally_start - ex_info->start;
+					else
+						clause.try_len = ex_info->len;
 					clause.handler_offset = ex_block->start;
 					clause.handler_len = ex_block->len;
+					finally_start = clause.handler_offset + clause.handler_len;
 					clause.token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
 							mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
+					/*g_print ("out clause %d: from %d len=%d, handler at %d, %d\n", 
+							clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len);*/
 					/* FIXME: ENOENDIAN */
 					mono_image_add_stream_data (&assembly->code, (char*)&clause, sizeof (clause));
 				}
