@@ -20,7 +20,7 @@
 	      <b>JIT:</b>
 	    </td>
 	    <td>
-	      Works for Linux/x86
+	      Works for Linux/x86;  PPC is missing exceptions: Linux/PPC, MacOS X 10.3
 	    </td>
 	  </tr>
 	  <tr>
@@ -144,6 +144,33 @@
 </p>
 <br>
 <br>
+
+@item Feb 26th, 2004: Agenda: Mono Meeting in Boston.
+
+	The agenda for the Mono Meeting is now available: <a
+	href="http://primates.ximian.com/~miguel/MonoMeet.html">Mono Meeting
+	Agenda</a>
+
+@item Feb 24th, 2004: Mono Meeting in Boston.
+
+	On March 5th-6th (Friday and Saturday) there will be an
+	open-house meeting for people interested in Mono to get
+	together with the Mono developers at the Novell offices in
+	in Cambridge Massachusetts (<a
+	href="http://www.ximian.com/about_us/contact/">directions</a>).
+
+	The whole Novell Mono team will be here (Atsushi Enomoto, Dick
+	Porter, Duncan Mak, Erik Dasque, Gonzalo Paniagua, Jackson
+	Harper, Jordi Mas, Lluis Sanches, Manjula, Martin Baulig,
+	Miguel de Icaza, Mike Kestner, Paolo Molaro, Peter Bartok,
+	Sebastien Pouliot, Sachin Kumar) and hopefully Joe Shaw, Nat
+	Friedman, Peter Williams and Ravi Pratap will be joining us as
+	well.  Expect to see Todd Berman from MonoDevelop as well.
+
+	If you are coming, please notify <a
+	href="edasque@ximian.com">edasque@ximian.com</a> about it, so
+	we can add you to the security list, and use the `open house
+	confirmation' subject in your email.
 
 @item Feb 13, 2004: Mono 0.30.1 released
 
