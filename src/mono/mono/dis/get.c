@@ -738,11 +738,11 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 		GString *str = g_string_new ("");
 		int i;
 
-		for (i = 0; i < gclass->type_argc; i++){
-			char *t = dis_stringify_type (m, gclass->type_argv [i]);
+		for (i = 0; i < gclass->inst->type_argc; i++){
+			char *t = dis_stringify_type (m, gclass->inst->type_argv [i]);
 
 			g_string_append (str, t);
-			if (i+1 != gclass->type_argc)
+			if (i+1 != gclass->inst->type_argc)
 				g_string_append (str, ", ");
 			g_free (t);
 		}
@@ -843,11 +843,11 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 		int i;
 		char *generic_type = dis_stringify_type (m, type->data.generic_class->generic_type);
 
-		for (i = 0; i < type->data.generic_class->type_argc; i++){
-			char *t = dis_stringify_type (m, type->data.generic_class->type_argv [i]);
+		for (i = 0; i < type->data.generic_class->inst->type_argc; i++){
+			char *t = dis_stringify_type (m, type->data.generic_class->inst->type_argv [i]);
 
 			g_string_append (str, t);
-			if (i+1 != type->data.generic_class->type_argc)
+			if (i+1 != type->data.generic_class->inst->type_argc)
 				g_string_append (str, ", ");
 			g_free (t);
 		}
