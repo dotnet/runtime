@@ -630,7 +630,7 @@ dis_stringify_marshal_spec (MonoMarshalSpec *spec)
 		elem_type = dis_stringify_native_type (spec->data.array_data.elem_type);
 		if (num_elem == -1 && param_num == -1)
 			elems = g_strdup ("");
-		else if (param_num == -1)
+		else if ((param_num == -1) || (spec->data.array_data.elem_mult == 0))
 			elems = g_strdup_printf ("%d", num_elem);
 		else if ((num_elem == -1) || (num_elem == 0))
 			elems = g_strdup_printf ("+ %d", param_num);
