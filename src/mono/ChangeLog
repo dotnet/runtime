@@ -1,3 +1,8 @@
+2004-08-17  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Correct intl library for FreeBSD and OpenBSD.
+	Fixes bug 62884, patch by Tom McLaughlin (tmclaugh@sdf.lonestar.org).
+
 2004-07-27  John Merryweather Cooper <john_m_cooper@yahoo.com>
 	* configure.in: Disable __thread test (TLS) for FreeBSD as
 	it succeeds on FreeBSD 5.x when it should fail.  Fix pthread
