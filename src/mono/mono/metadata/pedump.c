@@ -436,9 +436,8 @@ main (int argc, char *argv [])
 		mono_init (file);
 		assembly = mono_assembly_open (file, NULL);
 		dump_verify_info (assembly->image, f);
-	}
-	
-	mono_image_close (image);
+	} else
+		mono_image_close (image);
 	
 	return 0;
 }
