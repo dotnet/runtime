@@ -43,9 +43,9 @@ create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
 	rule->lhs = nonterm (id);
 	rule->tree = tree;
 	rule_list = g_list_append (rule_list, rule);
-	rule->cost = cost;
-	rule->cfunc = cfunc;
-	rule->code = code;
+	rule->cost = g_strdup (cost);
+	rule->cfunc = g_strdup (cfunc);
+	rule->code = g_strdup (code);
 
 	if (cfunc) {
 		if (cost)
@@ -113,7 +113,7 @@ create_term (char *id, int num)
 
 	term = g_new0 (Term, 1);
 
-	term->name = id;
+	term->name = g_strdup (id);
 	term->number = num;
 	term->arity = -1;
 
@@ -135,7 +135,7 @@ nonterm (char *id)
 
 	nterm = g_new0 (NonTerm, 1);
 
-	nterm->name = id;
+	nterm->name = g_strdup (id);
 	nonterm_list = g_list_append (nonterm_list, nterm);
 	nterm->number = g_list_length (nonterm_list);
 	
