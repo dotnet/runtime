@@ -14,7 +14,7 @@
 
 #include "mono/io-layer/wapi.h"
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 #define WAPI_ATOMIC_ASM
 
 /*
@@ -41,9 +41,16 @@ static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest
 {
 	gpointer old;
 
-	__asm__ __volatile__ ("lock; cmpxchgl %2, %0"
+	__asm__ __volatile__ ("lock; "
+#ifdef __x86_64__
+			      "cmpxchgq"
+#else
+			      "cmpxchgl"
+#endif
+			      " %2, %0"
 			      : "=m" (*dest), "=a" (old)
 			      : "r" (exch), "m" (*dest), "a" (comp));	
+
 	return(old);
 }
 
@@ -96,7 +103,13 @@ static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
 {
 	gpointer ret;
 	
-	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
+	__asm__ __volatile__ ("1:; lock; "
+#ifdef __x86_64__
+			      "cmpxchgq"
+#else
+			      "cmpxchgl"
+#endif
+			      " %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
 			      : "r" (new_val), "m" (*val), "a" (*val));
 
