@@ -159,7 +159,7 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 
 	MONO_ARCH_SAVE_REGS;
 
-	g_assert (this->number_format >= 0);
+	g_assert (this->number_format != 0);
 
 	number = this->number_format;
 	nfe = &number_format_entries [this->number_index];
