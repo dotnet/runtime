@@ -1,3 +1,4 @@
+#include <config.h>
 #include <mono/jit/debug.h>
 #include <mono/jit/debug-jit.h>
 #include "debug-private.h"
