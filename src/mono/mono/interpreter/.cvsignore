@@ -1,6 +1,6 @@
 Makefile
 Makefile.in
-mono-int
+mint
 *.o
 .libs
 .deps
