@@ -7328,6 +7328,9 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 
 	tb->generic_container = g_new0 (MonoGenericContainer, 1);
 	tb->generic_container->klass = klass;
+
+	tb->generic_container->context = g_new0 (MonoGenericContext, 1);
+	tb->generic_container->context->container = tb->generic_container;
 }
 
 /*
@@ -7797,18 +7800,24 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 	ginst = g_new0 (MonoGenericInst, 1);
 
-	if (!klass->generic_inst) {
-		ginst->type_argc = type_argc;
-		ginst->type_argv = types;
+	ginst->type_argc = type_argc;
+	ginst->type_argv = types;
 
-		for (i = 0; i < ginst->type_argc; ++i) {
-			if (!ginst->is_open)
-				ginst->is_open = mono_class_is_open_constructed_type (types [i]);
-		}
+	for (i = 0; i < ginst->type_argc; ++i) {
+		if (!ginst->is_open)
+			ginst->is_open = mono_class_is_open_constructed_type (types [i]);
+	}
 
-		ginst->generic_type = &klass->byval_arg;
-	} else {
+	ginst->generic_type = &klass->byval_arg;
+
+	if (klass->generic_inst) {
 		MonoGenericInst *kginst = klass->generic_inst;
+		MonoGenericInst *oginst = ginst;
+
+		oginst->context = g_new0 (MonoGenericContext, 1);
+		oginst->context->ginst = oginst;
+
+		ginst = g_new0 (MonoGenericInst, 1);
 
 		ginst->type_argc = kginst->type_argc;
 		ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
@@ -7816,8 +7825,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		for (i = 0; i < ginst->type_argc; i++) {
 			MonoType *t = kginst->type_argv [i];
 
-			if (t->type == MONO_TYPE_VAR)
-				t = types [t->data.generic_param->num];
+			t = mono_class_inflate_generic_type (t, oginst->context);
 
 			if (!ginst->is_open)
 				ginst->is_open = mono_class_is_open_constructed_type (t);

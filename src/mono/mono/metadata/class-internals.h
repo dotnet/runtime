@@ -339,10 +339,11 @@ struct _MonoGenericContext {
 
 struct _MonoGenericContainer {
 	MonoGenericContainer *parent;
+	MonoGenericContext *context;
 	MonoClass *klass;
-	MonoMethod *method;
-	MonoMethodSignature *signature;
-	int type_argc;
+	int type_argc    : 6;
+	int is_method    : 1;
+	int is_signature : 1;
 	MonoGenericParam *type_params;
 };
 

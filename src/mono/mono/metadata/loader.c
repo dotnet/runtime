@@ -423,11 +423,11 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 }
 
 static MonoMethod *
-method_from_methodspec (MonoImage *image, MonoGenericContainer *generic_container, guint32 idx)
+method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx)
 {
 	MonoMethod *method, *inflated;
 	MonoTableInfo *tables = image->tables;
-	MonoGenericContext *context;
+	MonoGenericContext *new_context = NULL;
 	MonoGenericMethod *gmethod;
 	MonoGenericContainer *container = NULL;
 	const char *ptr;
@@ -454,9 +454,15 @@ method_from_methodspec (MonoImage *image, MonoGenericContainer *generic_containe
 		container = ((MonoMethodNormal *) ((MonoMethodInflated *) method)->declaring)->generic_container;
 	else
 		container = ((MonoMethodNormal *) method)->generic_container;
-	g_assert (container && container->method);
-	if (generic_container)
-		container->parent = generic_container;
+	g_assert (container && container->is_method);
+
+	if (context) {
+		if (context->ginst) {
+			g_assert (context->ginst->container);
+			container->parent = context->ginst->container;
+		} else
+			container->parent = context->container;
+	}
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->container = container;
@@ -471,15 +477,20 @@ method_from_methodspec (MonoImage *image, MonoGenericContainer *generic_containe
 			gmethod->is_open = mono_class_is_open_constructed_type (gmethod->mtype_argv [i]);
 	}
 
-	context = g_new0 (MonoGenericContext, 1);
-	context->gmethod = gmethod;
+	if (!context) {
+		new_context = g_new0 (MonoGenericContext, 1);
+		new_context->gmethod = gmethod;
+
+		context = new_context;
+	}
 
 	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
 	inflated = mono_class_inflate_generic_method (method, context, NULL);
 
-	context->ginst = inflated->klass->generic_inst;
+	if (new_context)
+		context->ginst = inflated->klass->generic_inst;
 	return inflated;
 }
 
@@ -794,7 +805,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 				generic_container = context->container;
 		}
 		if (table == MONO_TABLE_METHODSPEC)
-			return method_from_methodspec (image, generic_container, idx);
+			return method_from_methodspec (image, context, idx);
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
@@ -826,7 +837,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		generic_container = mono_metadata_load_generic_params (image, token);
 		if (generic_container) {
 			generic_container->parent = container;
-			generic_container->method = result;
+			generic_container->is_method = 1;
 			container = generic_container;
 		}
 	}

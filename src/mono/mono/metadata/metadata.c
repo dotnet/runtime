@@ -1450,10 +1450,13 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	method->call_convention = call_convention;
 	method->generic_param_count = gen_param_count;
 
-	if (gen_param_count && (!generic_container || !generic_container->method)) {
+	if (gen_param_count && (!generic_container || !generic_container->is_method)) {
 		container = g_new0 (MonoGenericContainer, 1);
 		container->parent = generic_container;
-		container->signature = method;
+		container->is_signature = 1;
+
+		container->context = g_new0 (MonoGenericContext, 1);
+		container->context->container = container;
 
 		container->type_argc = gen_param_count;
 		container->type_params = g_new0 (MonoGenericParam, gen_param_count);
@@ -1623,12 +1626,12 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 			 */
 			generic_container = generic_container->parent;
 		}
-		g_assert (generic_container && !generic_container->method);
+		g_assert (generic_container && !generic_container->is_method);
 		g_assert (index < generic_container->type_argc);
 
 		return &generic_container->type_params [index];
 	} else {
-		g_assert (generic_container && (generic_container->method || generic_container->signature));
+		g_assert (generic_container && (generic_container->is_method || generic_container->is_signature));
 		g_assert (index < generic_container->type_argc);
 
 		return &generic_container->type_params [index];
@@ -2706,16 +2709,6 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 		return TRUE;
 
 	/*
-	 * This should only happen for dynamic type parameters; we copy them from the
-	 * MonoReflectionGenericParam into the newly created MonoGenericContainer, so their
-	 * addresses may be different.
-	 */
-	if (p1->owner->klass && (p1->owner->klass == p2->owner->klass))
-		return TRUE;
-	if (p1->owner->method && (p1->owner->method == p2->owner->method))
-		return TRUE;
-
-	/*
 	 * If `signature_only' is true, we're comparing two (method) signatures.
 	 * In this case, the owner of two type parameters doesn't need to match.
 	 */
@@ -3607,7 +3600,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	guint32 i, owner = 0, last_num, n;
 	MonoGenericContainer *container;
-	MonoGenericContext *context;
 	MonoGenericParam *params;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
@@ -3616,6 +3608,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 		owner = MONO_TYPEORMETHOD_METHOD;
 	else {
 		g_error ("wrong token %x to load_generics_params", token);
+		return NULL;
 	}
 	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
 	if (!tdef->base)
@@ -3649,11 +3642,11 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 	container->type_argc = n;
 	container->type_params = params;
 
-	context = g_new0 (MonoGenericContext, 1);
-	context->container = container;
+	container->context = g_new0 (MonoGenericContext, 1);
+	container->context->container = container;
 
 	for (i = 0; i < n; i++)
-		params [i].constraints = get_constraints (image, i + 1, context);
+		params [i].constraints = get_constraints (image, i + 1, container->context);
 
 	return container;
 }
