@@ -1158,7 +1158,7 @@ mono_method_verify (MonoMethod *method, int level)
 		return NULL;
 	}
 	signature = method->signature;
-	header = ((MonoMethodNormal *)method)->header;
+	header = mono_method_get_header (method);
 	ip = header->code;
 	end = ip + header->code_size;
 	max_args = signature->param_count + signature->hasthis;

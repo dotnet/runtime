@@ -73,7 +73,7 @@ compute_dominators (MonoCompile *m) {
 
 #ifdef DEBUG_DOMINATORS
 	printf ("DTREE %s %d\n", mono_method_full_name (m->method, TRUE), 
-		((MonoMethodNormal *)m->method)->header->num_clauses);
+		mono_method_get_header (m->method)->num_clauses);
 	for (i = 0; i < m->num_bblocks; ++i) {
 		bb = m->bblocks [i];
 		printf ("BB%d: ", bb->block_num);

@@ -755,7 +755,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	CallInfo *cinfo;
 
-	header = ((MonoMethodNormal *)m->method)->header;
+	header = mono_method_get_header (m->method);
 
 	sig = m->method->signature;
 
@@ -1562,7 +1562,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * Only do this if the method is small since BPr only has a 16bit
 			 * displacement.
 			 */
-			if (v64 && (((MonoMethodNormal*)cfg->method)->header->code_size < 10000) && last_ins && 
+			if (v64 && (mono_method_get_header (cfg->method)->code_size < 10000) && last_ins && 
 				(last_ins->opcode == OP_COMPARE_IMM) &&
 				(last_ins->inst_imm == 0)) {
 				MonoInst *next = ins->next;

@@ -588,7 +588,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (m->flags & MONO_CFG_HAS_VARARGS)
 		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
 
-	header = ((MonoMethodNormal *)m->method)->header;
+	header = mono_method_get_header (m->method);
 
 	/* 
 	 * We use the frame register also for any method that has

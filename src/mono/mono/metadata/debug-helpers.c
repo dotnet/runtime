@@ -323,7 +323,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 static const unsigned char*
 dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned char *ip, const unsigned char *end)
 {
-	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	const MonoOpcode *opcode;
 	guint32 i, label, token;
 	gint32 sval;

@@ -76,9 +76,9 @@ mono_debug_open_method (MonoCompile *cfg)
 
 	mono_class_init (cfg->method->klass);
 
-	g_assert (((MonoMethodNormal*)cfg->method)->header);
-	header = ((MonoMethodNormal*)cfg->method)->header;
-
+	header = mono_method_get_header (cfg->method);
+	g_assert (header);
+	
 	info->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	jit->num_locals = header->num_locals;
@@ -117,7 +117,7 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 	if (!RUNNING_ON_VALGRIND)
 		return;
 
-	header = ((MonoMethodNormal*)method)->header;
+	header = mono_method_get_header (method);
 
 	full_name = mono_method_full_name (method, TRUE);
 
@@ -202,7 +202,7 @@ mono_debug_close_method (MonoCompile *cfg)
 		return;
 
 	method = cfg->method;
-	header = ((MonoMethodNormal*)method)->header;
+	header = mono_method_get_header (method);
 
 	jit = info->jit;
 	jit->code_start = cfg->native_code;
@@ -244,8 +244,8 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 	if (!info || !info->jit || !ins->cil_code)
 		return;
 
-	g_assert (((MonoMethodNormal*)cfg->method)->header);
-	header = ((MonoMethodNormal*)cfg->method)->header;
+	header = mono_method_get_header (cfg->method);
+	g_assert (header);
 
 	if ((ins->cil_code < header->code) ||
 	    (ins->cil_code > header->code + header->code_size))
@@ -432,8 +432,8 @@ deserialize_debug_info (MonoMethod *method,
 	char *p;
 	int i;
 
-	g_assert (((MonoMethodNormal*)method)->header);
-	header = ((MonoMethodNormal*)method)->header;
+	header = mono_method_get_header (method);
+	g_assert (header);
 
 	jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = code_start;

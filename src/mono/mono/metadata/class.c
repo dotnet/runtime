@@ -410,9 +410,9 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	result = g_new0 (MonoMethodInflated, 1);
 	result->nmethod = *(MonoMethodNormal*)method;
 
-	if (result->nmethod.header)
+	if (mono_method_get_header (method))
 		result->nmethod.header = inflate_generic_header (
-			result->nmethod.header, context);
+			mono_method_get_header (method), context);
 
 	if (klass)
 		result->nmethod.method.klass = klass;

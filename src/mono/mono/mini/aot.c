@@ -402,7 +402,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	MonoAotModule *aot_module;
 	MonoAotMethod *minfo;
 	MonoJitInfo *jinfo;
-	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+	MonoMethodHeader *header;
 	int i;
 
 	if (!module)
@@ -419,7 +419,9 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
-
+	
+	header = mono_method_get_header (method);
+	
 	aot_module = (MonoAotModule*)mono_g_hash_table_lookup (aot_modules, ass);
 
 	g_assert (klass->inited);
@@ -517,7 +519,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	guint code_len, used_int_regs, used_strings;
 	MonoAotMethod *minfo;
 	MonoJitInfo *jinfo;
-	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	GPtrArray *patches;
 	int i, pindex;
 
@@ -1019,7 +1021,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	tmpfp = acfg->fp;
 	method = cfg->method;
 	code = cfg->native_code;
-	header = ((MonoMethodNormal*)method)->header;
+	header = mono_method_get_header (method);
 
 	emit_section_change (tmpfp, ".text", 0);
 	mname = g_strdup_printf ("m_%x", mono_metadata_token_index (method->token));

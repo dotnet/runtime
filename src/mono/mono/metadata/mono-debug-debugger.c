@@ -503,7 +503,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 	if (!symfile->symfile->method_hash)
 		return;
 
-	header = ((MonoMethodNormal *) minfo->method)->header;
+	header = mono_method_get_header (minfo->method);
 
 	symfile->generation++;
 

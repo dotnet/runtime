@@ -233,12 +233,11 @@ static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
 {
-	MonoMethodNormal *mm = (MonoMethodNormal *)mh;
 	fprintf (stderr, "Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
-		 ip-(const unsigned short *)mm->header->code);
+		 ip-(const unsigned short *)mono_method_get_header (mh)->code);
 	g_print ("0x%04x %02x\n",
-		 ip-(const unsigned short *)mm->header->code, *ip);
+		 ip-(const unsigned short *)mono_method_get_header (mh)->code, *ip);
 	if (sp > stack)
 		printf ("\t[%d] 0x%08x %0.5f\n", sp-stack, sp[-1].data.i, sp[-1].data.f);
 }
@@ -687,7 +686,7 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 				(method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
 			il_offset = -1;
 		else {
-			hd = ((MonoMethodNormal*)method)->header;
+			hd = mono_method_get_header (method);
 			il_offset = frame->ip - (const unsigned short *)hd->code;
 			if (!method->wrapper_type)
 				managed = TRUE;
@@ -933,7 +932,7 @@ dump_frame (MonoInvocation *inv)
 
 			if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 				(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
-				MonoMethodHeader *hd = ((MonoMethodNormal *)method)->header;
+				MonoMethodHeader *hd = mono_method_get_header (method);
 
 				if (hd != NULL) {
 					if (inv->ip) {
@@ -3933,7 +3932,7 @@ die_on_ex:
 		MonoExceptionClause *clause;
 		GSList *old_list = finally_ips;
 		MonoMethod *method = frame->runtime_method->method;
-		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+		MonoMethodHeader *header = mono_method_get_header (method);
 		
 #if DEBUG_INTERP
 		if (tracing)
@@ -3987,7 +3986,7 @@ die_on_ex:
 		int i;
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
-		MonoMethodHeader *header = ((MonoMethodNormal *)frame->runtime_method->method)->header;
+		MonoMethodHeader *header = mono_method_get_header (frame->runtime_method->method);
 		
 #if DEBUG_INTERP
 		if (tracing)

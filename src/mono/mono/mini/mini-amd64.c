@@ -783,7 +783,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	CallInfo *cinfo;
 
-	header = ((MonoMethodNormal *)m->method)->header;
+	header = mono_method_get_header (m->method);
 
 	sig = m->method->signature;
 

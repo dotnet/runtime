@@ -1278,6 +1278,12 @@ mono_method_get_token (MonoMethod *method)
 	return method->token;
 }
 
+MonoMethodHeader* 
+mono_method_get_header (MonoMethod *method)
+{
+	return ((MonoMethodNormal *)method)->header;
+}
+
 guint32
 mono_method_get_flags (MonoMethod *method, guint32 *iflags)
 {

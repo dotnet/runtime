@@ -276,7 +276,7 @@ mono_ssa_compute (MonoCompile *cfg)
 	g_assert (!(cfg->comp_done & MONO_COMP_SSA));
 
 	/* we dont support methods containing exception clauses */
-	g_assert (((MonoMethodNormal *)cfg->method)->header->num_clauses == 0);
+	g_assert (mono_method_get_header (cfg->method)->num_clauses == 0);
 	g_assert (!cfg->disable_ssa);
 
 	//printf ("COMPUTS SSA %s %d\n", mono_method_full_name (cfg->method, TRUE), cfg->num_varinfo);

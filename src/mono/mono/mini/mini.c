@@ -679,7 +679,7 @@ static int
 mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 {
 	MonoMethod *method = cfg->method;
-	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoExceptionClause *clause;
 	int i;
 
@@ -712,7 +712,7 @@ static GList*
 mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *target, int type)
 {
 	MonoMethod *method = cfg->method;
-	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoExceptionClause *clause;
 	MonoBasicBlock *handler;
 	int i;
@@ -1560,7 +1560,7 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 	int pos, vnum;
 
 	/* inlining can result in deeper stacks */ 
-	if (slot >= ((MonoMethodNormal *)cfg->method)->header->max_stack)
+	if (slot >= mono_method_get_header (cfg->method)->max_stack)
 		return mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
 
 	pos = ins->type - 1 + slot * STACK_MAX;
@@ -2345,7 +2345,7 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
-	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = method->signature;
 	MonoVTable *vtable;
 	int i;
@@ -2586,7 +2586,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	}
 
 	/* allocate local variables */
-	cheader = ((MonoMethodNormal *)cmethod)->header;
+	cheader = mono_method_get_header (cmethod);
 	new_locals_offset = cfg->num_varinfo;
 	for (i = 0; i < cheader->num_locals; ++i)
 		mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
@@ -2793,7 +2793,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	guint real_offset, num_args;
 
 	image = method->klass->image;
-	header = ((MonoMethodNormal *)method)->header;
+	header = mono_method_get_header (method);
 	generic_container = ((MonoMethodNormal *)method)->generic_container;
 	sig = method->signature;
 	num_args = sig->hasthis + sig->param_count;
@@ -7079,7 +7079,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	int i;
 
-	header = ((MonoMethodNormal *)cfg->method)->header;
+	header = mono_method_get_header (cfg->method);
 
 	sig = cfg->method->signature;
 	
@@ -7645,7 +7645,7 @@ mono_local_cprop (MonoCompile *cfg)
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts)
 {
-	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	guint8 *ip = (guint8 *)header->code;
 	MonoCompile *cfg;
 	MonoJitInfo *jinfo;
@@ -7665,7 +7665,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * 
-					    ((MonoMethodNormal *)method)->header->max_stack);
+					    mono_method_get_header (method)->max_stack);
 
 	if (cfg->verbose_level > 2)
 		g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
@@ -7885,7 +7885,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_jit_stats.biggest_method_size = code_size_ratio;
 			mono_jit_stats.biggest_method = method;
 	}
-	code_size_ratio = (code_size_ratio * 100) / ((MonoMethodNormal *)method)->header->code_size;
+	code_size_ratio = (code_size_ratio * 100) / mono_method_get_header (method)->code_size;
 	if (code_size_ratio > mono_jit_stats.max_code_size_ratio) {
 		mono_jit_stats.max_code_size_ratio = code_size_ratio;
 		mono_jit_stats.max_ratio_method = method;

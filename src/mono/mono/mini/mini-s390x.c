@@ -1363,7 +1363,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int frame_reg = STK_BASE;
 	int sArg, eArg;
 
-	header  = ((MonoMethodNormal *)m->method)->header;
+	header  = mono_method_get_header (m->method);
 
 	/*---------------------------------------------------------*/	 
 	/* We use the frame register also for any method that has  */ 

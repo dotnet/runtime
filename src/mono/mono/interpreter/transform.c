@@ -611,7 +611,7 @@ get_data_item_index (TransformData *td, void *ptr)
 static void
 generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 {
-	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = method->signature;
 	MonoImage *image = method->klass->image;
 	MonoDomain *domain = mono_domain_get ();
@@ -991,7 +991,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 				(m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0) {
 				int called_inited = mono_class_vtable (domain, m->klass)->initialized;
-				MonoMethodHeader *mheader = ((MonoMethodNormal*)m)->header;
+				MonoMethodHeader *mheader = mono_method_get_header (m);
 
 				if (/*mono_metadata_signature_equal (method->signature, m->signature) */ method == m && *(td.ip + 5) == CEE_RET) {
 					int offset;
@@ -2797,7 +2797,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	int i, align, size, offset;
 	MonoMethod *method = runtime_method->method;
 	MonoImage *image = method->klass->image;
-	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = method->signature;
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
@@ -2877,7 +2877,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			return NULL;
 		}
 		method = nm;
-		header = ((MonoMethodNormal *)nm)->header;
+		header = mono_method_get_header (nm);
 		LeaveCriticalSection(&calc_section);
 	}
 	g_assert ((signature->param_count + signature->hasthis) < 1000);

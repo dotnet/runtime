@@ -26,6 +26,9 @@ mono_method_get_signature  (MonoMethod *method, MonoImage *image, guint32 token)
 MonoMethodSignature* 
 mono_method_signature      (MonoMethod *method);
 
+MonoMethodHeader* 
+mono_method_get_header     (MonoMethod *method);
+
 const char*
 mono_method_get_name       (MonoMethod *method);
 

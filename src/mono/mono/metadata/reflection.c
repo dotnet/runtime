@@ -5505,7 +5505,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return NULL;
 	mn = (MonoMethodNormal *)method;
-	header = mn->header;
+	header = mono_method_get_header (method);
 
 	ret = (MonoReflectionMethodBody*)mono_object_new (domain, System_Reflection_MethodBody);
 	/* FIXME: Other fields */

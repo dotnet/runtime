@@ -184,7 +184,7 @@ method_stats (MonoMethod *method) {
 	if (method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))
 		return;
 
-	header = ((MonoMethodNormal *)method)->header;
+	header = mono_method_get_header (method);
 	if (header->num_clauses)
 		has_exceptions++;
 	num_exceptions += header->num_clauses;
@@ -528,7 +528,7 @@ print_method (MonoMethod *method, int depth) {
 	if (method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))
 		return;
 
-	header = ((MonoMethodNormal *)method)->header;
+	header = mono_method_get_header (method);
 	ip = header->code;
 
 	hash = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -874,7 +874,7 @@ print_method_cfg (MonoMethod *method) {
 	int i, dfn;
 	char *code;
 
-	header = ((MonoMethodNormal*)method)->header;
+	header = mono_method_get_header (method);
 	bblocks = mono_method_find_bblocks (header);
 	for (i = 0; i < bblocks->len; ++i) {
 		bb = (MonoBasicBlock*)g_ptr_array_index (bblocks, i);

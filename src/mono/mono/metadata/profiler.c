@@ -399,7 +399,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	if (!info)
 		return;
 
-	header = ((MonoMethodNormal *)method)->header;
+	header = mono_method_get_header (method);
 	start = (unsigned char*)header->code;
 	end = start + header->code_size;
 	for (i = 0; i < info->entries; ++i) {

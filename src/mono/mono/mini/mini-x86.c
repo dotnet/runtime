@@ -346,7 +346,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
 
-	header = ((MonoMethodNormal *)m->method)->header;
+	header = mono_method_get_header (m->method);
 
 	sig = m->method->signature;
 
@@ -3452,7 +3452,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, max_offset, i;
 	guint8 *code;
 
-	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 256);
+	cfg->code_size =  MAX (mono_method_get_header (method)->code_size * 4, 256);
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	x86_push_reg (code, X86_EBP);
