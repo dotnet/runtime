@@ -135,8 +135,6 @@ static CRITICAL_SECTION trampoline_hash_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
 
-static GHashTable *jump_trampoline_hash = NULL;
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -6148,15 +6146,11 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	if (code)
 		return code;
 
-	EnterCriticalSection (&trampoline_hash_mutex);
-
-	if (jump_trampoline_hash) {
-		code = g_hash_table_lookup (jump_trampoline_hash, method);
-		if (code) {
-			LeaveCriticalSection (&trampoline_hash_mutex);
-			return code;
-		}
-	}
+	mono_domain_lock (domain);
+	code = mono_g_hash_table_lookup (domain->jump_trampoline_hash, method);
+	mono_domain_unlock (domain);
+	if (code)
+		return code;
 
 	ji = mono_arch_create_jump_trampoline (method);
 
@@ -6167,11 +6161,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 
 	mono_jit_info_table_add (mono_get_root_domain (), ji);
 
-	if (!jump_trampoline_hash)
-		jump_trampoline_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (jump_trampoline_hash, method, ji->code_start);
-
-	LeaveCriticalSection (&trampoline_hash_mutex);
+	mono_domain_lock (domain);
+	mono_g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
+	mono_domain_unlock (domain);
 
 	return ji->code_start;
 }
