@@ -32,7 +32,7 @@ typedef enum {
 	MONO_TYPE_BYREF      = 0x10,       /* arg: <type> token */
 	MONO_TYPE_VALUETYPE  = 0x11,       /* arg: <type> token */
 	MONO_TYPE_CLASS      = 0x12,       /* arg: <type> token */
-	MONO_TYPE_VAR	     = 0x13;	   /* number */
+	MONO_TYPE_VAR	     = 0x13,	   /* number */
 	MONO_TYPE_ARRAY      = 0x14,       /* type, rank, boundsCount, bound1, loCount, lo1 */
 	MONO_TYPE_GENERICINST= 0x15,	   /* <type> <type-arg-count> <type-1> \x{2026} <type-n> */
 	MONO_TYPE_TYPEDBYREF = 0x16,
@@ -41,7 +41,7 @@ typedef enum {
 	MONO_TYPE_FNPTR      = 0x1b,	      /* arg: full method signature */
 	MONO_TYPE_OBJECT     = 0x1c,
 	MONO_TYPE_SZARRAY    = 0x1d,       /* 0-based one-dim-array */
-	MONO_TYPE_MVAR	     = 0x1e;       /* number */
+	MONO_TYPE_MVAR	     = 0x1e,       /* number */
 	MONO_TYPE_CMOD_REQD  = 0x1f,       /* arg: typedef or typeref token */
 	MONO_TYPE_CMOD_OPT   = 0x20,       /* optional arg: typedef or typref token */
 	MONO_TYPE_INTERNAL   = 0x21,       /* CLR internal type */
