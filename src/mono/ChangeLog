@@ -1,3 +1,7 @@
+2005-02-12  Cesar Lopez Nataren  <cnataren@novell.com>
+
+	* scripts/Makefile.am: added mjs
+
 2005-02-12  Ben Maurer  <bmaurer@ximian.com>
 
 	* runtime/Makefile.am (centum_nunit_tests): Add corlib! Thanks to
