@@ -185,6 +185,9 @@ enter_method (MonoMethod *method, char *ebp)
 
 	sig = method->signature;
 
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+		g_assert (!sig->pinvoke);
+
 	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
 	arch_get_argument_info (sig, sig->param_count, arg_info);

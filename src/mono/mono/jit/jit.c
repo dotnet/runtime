@@ -3326,12 +3326,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = ctree_create_load (cfg, &class->byval_arg, *sp, &svt, FALSE);
 				t1 = mono_ctree_new (mp, MB_TERM_RET_OBJ, t1, NULL);
-				
-				if (signature->pinvoke)
-					t1->data.i = mono_class_native_size (ret->data.klass, NULL);
-				else
-					t1->data.i = mono_class_value_size (ret->data.klass, NULL);
-
+				t1->data.i = mono_class_native_size (ret->data.klass, NULL);
 				t1->last_instr = (ip == (header->code + header->code_size));
 
 				ADD_TREE (t1, cli_addr);
