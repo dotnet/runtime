@@ -13,6 +13,8 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/debug-helpers.h>
 
 #include "jit.h"
 #include "codegen.h"
@@ -145,19 +147,23 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	static void (*restore_context) (struct sigcontext *);
 	static void (*call_finally) (struct sigcontext *, unsigned long);
 	void (*cleanup) (MonoObject *exc);
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	gpointer end_of_stack;
 
 	g_assert (ctx != NULL);
 	g_assert (obj != NULL);
 
 	ji = mono_jit_info_table_find (domain, ip);
 
+	end_of_stack = jit_tls->end_of_stack;
+		
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
 	
 	if (!call_finally)
 		call_finally = arch_get_call_finally ();
 
-	cleanup = TlsGetValue (exc_cleanup_id);
+	cleanup = jit_tls->abort_func;
 
 	if (ji) { /* we are inside managed code */
 		MonoMethod *m = ji->method;
@@ -197,16 +203,18 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
-			char  *tmp;
+			char  *tmp, *tmpsig;
 
 			if (!strcmp (strace, "TODO: implement stack traces")){
 				g_free (strace);
 				strace = g_strdup ("");
 			}
 
-			tmp = g_strdup_printf ("%sin %03x %s.%s:%s ()\n", strace, ip - ji->code_start,
-					       m->klass->name_space, m->klass->name, m->name);
-
+			tmpsig = mono_signature_get_desc(m->signature, TRUE);
+			tmp = g_strdup_printf ("%sin %04x %s.%s:%s (%s)\n", strace, 
+					       (char *)ip - (char *)ji->code_start,
+					       m->klass->name_space, m->klass->name, m->name, tmpsig);
+			g_free (tmpsig);
 			g_free (strace);
 
 			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
@@ -232,7 +240,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 5;
 		ctx->SC_EBP = *((int *)ctx->SC_EBP);
 		
-		if (ctx->SC_EBP < (unsigned)mono_end_of_stack)
+		if (ctx->SC_EBP < (unsigned)end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else {
 			g_assert (cleanup);
@@ -240,12 +248,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		}
 	
 	} else {
-		gpointer *lmf_addr = TlsGetValue (lmf_thread_id);
-		MonoLMF *lmf;
+		MonoLMF *lmf = jit_tls->lmf;
 		MonoMethod *m;
-
-		g_assert (lmf_addr);
-		lmf = *((MonoLMF **)lmf_addr);
 
 		if (!lmf) {
 			g_assert (cleanup);
@@ -253,7 +257,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		}
 		m = lmf->method;
 
-		*lmf_addr = lmf->previous_lmf;
+		jit_tls->lmf = lmf->previous_lmf;
 
 		ctx->SC_ESI = lmf->esi;
 		ctx->SC_EDI = lmf->edi;
@@ -278,7 +282,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			g_free (tmp);
 		}
 
-		if (ctx->SC_EBP < (unsigned)mono_end_of_stack)
+		if (ctx->SC_EBP < (unsigned)end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else {
 			g_assert (cleanup);

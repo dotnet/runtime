@@ -33,6 +33,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/io-layer/threads.h>
 
 #include "jit.h"
 #include "regset.h"
@@ -217,6 +218,9 @@ gboolean mono_use_fast_iconv = FALSE;
 /* maximum number of worker threads */
 int mono_worker_threads = 1;
 
+/* TLS id to store jit data */
+guint32  mono_jit_tls_id;
+
 MonoDebugHandle *mono_debug_handle = NULL;
 GList *mono_debug_methods = NULL;
 
@@ -227,17 +231,6 @@ int mono_debug_insert_breakpoint = 0;
 
 /* This is the address of the last breakpoint which was inserted. */
 gchar *mono_debug_last_breakpoint_address = NULL;
-
-gpointer mono_end_of_stack = NULL;
-
-/* last managed frame (used by pinvoke) */ 
-guint32 lmf_thread_id = 0;
-
-/* used to store a function pointer called after uncatched exceptions */ 
-guint32 exc_cleanup_id = 0;
-
-/* stores a pointer to async result used by exceptions */ 
-guint32 async_result_id = 0;
 
 MonoJitStats mono_jit_stats;
 
@@ -3717,18 +3710,23 @@ sigsegv_signal_handler (int _dummy)
 	g_error ("we should never reach this code");
 }
 
+static guint32 mono_main_thread_id = 0;
+
 /**
- * mono_jit_abort:
+ * mono_thread_abort:
  * @obj: exception object
  *
- * abort the program, print exception information and stack trace
+ * abort the thread, print exception information and stack trace
  */
 static void
-mono_jit_abort (MonoObject *obj)
+mono_thread_abort (MonoObject *obj)
 {
 	const char *message = "";
 	char *trace = NULL;
-	MonoString *str; ;
+	MonoString *str; 
+	MonoClassField *field;
+	MonoDelegate *d;
+	MonoDomain *domain = mono_domain_get ();
 
 	g_assert (obj);
 
@@ -3738,16 +3736,43 @@ mono_jit_abort (MonoObject *obj)
 		if ((str = ((MonoException *)obj)->stack_trace))
 			trace = mono_string_to_utf8 (str);
 	}				
+	       
+	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, "UnhandledException");
+	g_assert (field);
+
 	
-	g_warning ("unhandled exception %s.%s: \"%s\"", obj->vtable->klass->name_space, 
-		   obj->vtable->klass->name, message);
-       
-	if (trace) {
-		g_printerr (trace);
-		g_printerr ("\n");
+	d = *(MonoDelegate **)(((char *)domain->domain) + field->offset); 
+
+	if (!d) {
+		g_warning ("unhandled exception %s.%s: \"%s\"", obj->vtable->klass->name_space, 
+			   obj->vtable->klass->name, message);
+		if (trace) {
+			g_printerr (trace);
+			g_printerr ("\n");
+		}
+	} else {
+		/* FIXME: call the event handler */ 
+		g_assert_not_reached ();
+
 	}
 
-	exit (1);
+	if (mono_main_thread_id == GetCurrentThreadId ())
+		mono_delegate_cleanup (); 
+	
+	ExitThread (-1);
+}
+		
+static void
+mono_thread_start_cb (gpointer stack_start)
+{
+	MonoJitTlsData *jit_tls;
+
+	jit_tls = g_new0 (MonoJitTlsData, 1);
+
+	TlsSetValue (mono_jit_tls_id, jit_tls);
+
+	jit_tls->end_of_stack = stack_start;
+	jit_tls->abort_func = mono_thread_abort;
 }
 
 static CRITICAL_SECTION ms;
@@ -3796,11 +3821,10 @@ mono_jit_init (char *file) {
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
 
-	lmf_thread_id = TlsAlloc ();
-	TlsSetValue (lmf_thread_id, NULL);
-	exc_cleanup_id = TlsAlloc ();
-	TlsSetValue (exc_cleanup_id, mono_jit_abort);
-	async_result_id = TlsAlloc ();
+	mono_main_thread_id = GetCurrentThreadId ();
+
+	mono_jit_tls_id = TlsAlloc ();
+	mono_thread_start_cb (&file);
 
 	mono_install_trampoline (arch_create_jit_trampoline);
 	mono_install_remoting_trampoline (arch_create_remoting_trampoline);
@@ -3809,7 +3833,7 @@ mono_jit_init (char *file) {
 
 	domain = mono_init (file);
 	mono_runtime_init (domain);
-	mono_thread_init (domain);
+	mono_thread_init (domain, mono_thread_start_cb);
 	mono_network_init ();
 	mono_delegate_init ();
 

@@ -323,6 +323,10 @@ mono_init (const char *filename)
                 mono_defaults.corlib, "System.Threading", "Thread");
 	g_assert (mono_defaults.thread_class != 0);
 
+	mono_defaults.appdomain_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "AppDomain");
+	g_assert (mono_defaults.appdomain_class != 0);
+
 	mono_defaults.transparent_proxy_class = mono_class_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "TransparentProxy");
 	g_assert (mono_defaults.transparent_proxy_class != 0);

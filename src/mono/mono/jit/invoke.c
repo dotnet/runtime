@@ -18,6 +18,19 @@
 #include "jit.h"
 #include "codegen.h"
 
+gpointer 
+arch_get_lmf_addr (void)
+{
+	MonoJitTlsData *jit_tls;	
+
+	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+		return &jit_tls->lmf;
+
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
 /*
  * this returns a helper method to invoke a method with a user supplied
  * stack frame. The returned method has the following signature:

@@ -56,12 +56,15 @@ static MonoObject *main_thread;
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key;
 
+/* function called at thread start */
+static MonoThreadStartCB mono_thread_start_cb = NULL;
+
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
 static guint32 slothash_key;
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 static CRITICAL_SECTION interlocked_mutex;
-		
+
 /* handle_store() and handle_remove() manage the array of threads that
  * still need to be waited for when the main thread exits.
  */
@@ -131,6 +134,9 @@ static guint32 start_wrapper(void *data)
 	
 	handle_store(thread);
 	mono_profiler_thread_start (thread);
+
+	if (mono_thread_start_cb)
+		mono_thread_start_cb (&thread);
 
 	start_func (this);
 
@@ -815,7 +821,7 @@ gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
 	return (ResetEvent(handle));
 }
 
-void mono_thread_init(MonoDomain *domain)
+void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 {
 	MonoClass *thread_class;
 	
@@ -849,6 +855,8 @@ void mono_thread_init(MonoDomain *domain)
 #endif
 
 	TlsSetValue(current_object_key, main_thread);
+
+	mono_thread_start_cb = start_cb;
 
 	slothash_key=TlsAlloc();
 }

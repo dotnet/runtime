@@ -195,6 +195,13 @@ typedef struct {
 	gboolean enabled;
 } MonoJitStats;
 
+typedef struct {
+	gpointer          end_of_stack;
+	MonoLMF          *lmf;
+	MonoAsyncResult  *async_result;
+	void            (*abort_func) (MonoObject *object);
+} MonoJitTlsData;
+
 extern MonoJitStats mono_jit_stats;
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
@@ -205,11 +212,8 @@ extern gboolean mono_jit_inline_code;
 extern gboolean mono_use_linear_scan;
 extern gboolean mono_use_fast_iconv;
 
-extern gpointer mono_end_of_stack;
+extern guint32  mono_jit_tls_id;
 extern int      mono_worker_threads;
-extern guint32  lmf_thread_id;
-extern guint32  exc_cleanup_id;
-extern guint32  async_result_id;
 
 extern CRITICAL_SECTION *metadata_section;
 
@@ -268,6 +272,9 @@ arch_allocate_var          (MonoFlowGraph *cfg, int size, int align,
 
 void
 mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
+
+gpointer 
+arch_get_lmf_addr          (void);
 
 /* delegate support functions */
 

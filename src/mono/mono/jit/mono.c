@@ -81,8 +81,6 @@ main (int argc, char *argv [])
 	gboolean testjit = FALSE;
 	int stack, verbose = FALSE;
 
-	mono_end_of_stack = &stack; /* a pointer to a local variable is always < BP */
-
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 	

@@ -105,8 +105,6 @@ guint64  mono_lldiv_un      (guint64 a, guint64 b);
 guint64  mono_llrem_un      (guint64 a, guint64 b);
 gpointer mono_ldsflda       (MonoClass *klass, int offset);
 
-gpointer arch_get_lmf_addr (void);
-
 void mono_emit_fast_iconv(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
 void mono_emit_fast_iconv_i8(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
 
@@ -4288,22 +4286,6 @@ MBTree *
 mono_ctree_new_leaf (MonoMemPool *mp, int op)
 {
 	return mono_ctree_new (mp, op, NULL, NULL);
-}
-
-gpointer 
-arch_get_lmf_addr (void)
-{
-	gpointer *lmf;
-
-	if ((lmf = TlsGetValue (lmf_thread_id)))
-		return lmf;
-
-	lmf = g_malloc (sizeof (gpointer));
-	*lmf = NULL;
-
-	TlsSetValue (lmf_thread_id, lmf);
-
-	return lmf;
 }
 
 MonoArray*

@@ -65,6 +65,7 @@ typedef struct {
 	MonoClass *transparent_proxy_class;
 	MonoClass *real_proxy_class;
 	MonoClass *mono_method_message_class;
+	MonoClass *appdomain_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

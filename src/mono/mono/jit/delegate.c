@@ -335,7 +335,8 @@ static void
 async_invoke_abort (MonoObject *obj)
 {
 	MonoDomain *domain = obj->vtable->domain;
-	MonoAsyncResult *ares = TlsGetValue (async_result_id);
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoAsyncResult *ares = jit_tls->async_result;
 	ASyncCall *ac = (ASyncCall *)ares->data;
 
 	ares->completed = 1;
@@ -364,13 +365,14 @@ async_invoke_thread ()
 	MonoDomain *domain;
 	static int workers = 1;
 	static HANDLE first_worker = NULL;
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
       
 	if (!first_worker) {
 		first_worker = GetCurrentThread ();
 		g_assert (first_worker);
 	}
 
-	TlsSetValue (exc_cleanup_id, async_invoke_abort);
+	jit_tls->abort_func = async_invoke_abort;
 
 	for (;;) {
 		MonoAsyncResult *ar;
@@ -411,7 +413,7 @@ async_invoke_thread ()
 		if (new_worker) 
 			mono_thread_create (domain, async_invoke_thread);
 
-		TlsSetValue (async_result_id, ar);
+		jit_tls->async_result = ar;
 
 		mono_async_invoke (ar, FALSE);
 	}

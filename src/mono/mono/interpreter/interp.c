@@ -3942,7 +3942,7 @@ main (int argc, char *argv [])
 	InitializeCriticalSection (&metadata_lock);
 	domain = mono_init (file);
 	mono_runtime_init (domain);
-	mono_thread_init (domain);
+	mono_thread_init (domain, NULL);
 	mono_network_init ();
 
 	assembly = mono_domain_assembly_open (domain, file);

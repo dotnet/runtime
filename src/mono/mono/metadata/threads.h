@@ -16,7 +16,9 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 
-extern void mono_thread_init (MonoDomain *domain);
+typedef void (*MonoThreadStartCB) (gpointer stack_start);
+
+extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb);
 extern void mono_thread_cleanup(void);
 
 MonoObject *mono_thread_create (MonoDomain *domain, gpointer func);
