@@ -5081,7 +5081,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
-	int i, j, count = 0, native_size = 0;
+	int i, j, count = 0, native_size = 0, min_align = 1;
 	MonoMarshalType *info;
 	guint32 layout;
 
@@ -5142,7 +5142,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 		case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
 			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
 						       &align, TRUE, klass->unicode);
-			align = klass->packing_size ? MIN (klass->packing_size, align): align;	
+			align = klass->packing_size ? MIN (klass->packing_size, align): align;
+			min_align = MAX (align, min_align);
 			info->fields [j].offset = info->native_size;
 			info->fields [j].offset += align - 1;
 			info->fields [j].offset &= ~(align - 1);
@@ -5161,9 +5162,9 @@ mono_marshal_load_type_info (MonoClass* klass)
 		info->native_size = MAX (native_size, info->native_size);
 	}
 
-	if (info->native_size & (klass->min_align - 1)) {
-		info->native_size += klass->min_align - 1;
-		info->native_size &= ~(klass->min_align - 1);
+	if (info->native_size & (min_align - 1)) {
+		info->native_size += min_align - 1;
+		info->native_size &= ~(min_align - 1);
 	}
 
 	return klass->marshal_info;
