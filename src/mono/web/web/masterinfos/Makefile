@@ -91,6 +91,6 @@ Microsoft.VisualBasic.xml :
 	mono-api-info $(DLL_PATH)/Microsoft.VisualBasic.dll > Microsoft.VisualBasic.xml
 
 clean:
-	rm mscorlib.xml System.xml System.Xml.xml System.Configuration.Install.xml System.Data.xml System.Data.OracleClient.xml System.Management.xml System.Messaging.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.EnterpriseServices.xml System.Runtime.Remoting.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
+	rm mscorlib.xml System.xml System.Xml.xml System.Configuration.Install.xml System.Data.xml System.Data.OracleClient.xml System.Design.xml System.Drawing.Design.xml System.Management.xml System.Messaging.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.EnterpriseServices.xml System.Runtime.Remoting.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
 
 
