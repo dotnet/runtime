@@ -127,17 +127,9 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 
 #endif /* PLATFORM_WIN32 */
 
-/*
- * Can't allocate the helper methods in static arrays as on other platforms.
- */
-static MonoCodeManager *code_manager = NULL;
-static CRITICAL_SECTION code_manager_mutex;
-
 void
 mono_amd64_exceptions_init ()
 {
-	InitializeCriticalSection (&code_manager_mutex);
-	code_manager = mono_code_manager_new ();
 }
 
 /*
@@ -157,9 +149,7 @@ mono_arch_get_restore_context (void)
 
 	/* restore_contect (MonoContext *ctx) */
 
-	EnterCriticalSection (&code_manager_mutex);
-	start = code = mono_code_manager_reserve (code_manager, 1024);
-	LeaveCriticalSection (&code_manager_mutex);
+	start = code = mono_global_codeman_reserve (256);
 
 	/* get return address */
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, rip), 8);
@@ -201,9 +191,7 @@ mono_arch_get_call_filter (void)
 	if (inited)
 		return start;
 
-	EnterCriticalSection (&code_manager_mutex);
-	start = code = mono_code_manager_reserve (code_manager, 64);
-	LeaveCriticalSection (&code_manager_mutex);
+	start = code = mono_global_codeman_reserve (64);
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	code = start;
@@ -301,9 +289,7 @@ get_throw_trampoline (gboolean rethrow)
 	guint8* start;
 	guint8 *code;
 
-	EnterCriticalSection (&code_manager_mutex);
-	start = code = mono_code_manager_reserve (code_manager, 64);
-	LeaveCriticalSection (&code_manager_mutex);
+	start = code = mono_global_codeman_reserve (64);
 
 	code = start;
 
@@ -390,9 +376,7 @@ mono_arch_get_throw_exception_by_name (void)
 	if (inited)
 		return start;
 
-	EnterCriticalSection (&code_manager_mutex);
-	start = code = mono_code_manager_reserve (code_manager, 64);
-	LeaveCriticalSection (&code_manager_mutex);
+	start = code = mono_global_codeman_reserve (64);
 
 	code = start;
 
@@ -448,9 +432,7 @@ mono_arch_get_throw_corlib_exception (void)
 	if (inited)
 		return start;
 
-	EnterCriticalSection (&code_manager_mutex);
-	start = code = mono_code_manager_reserve (code_manager, 64);
-	LeaveCriticalSection (&code_manager_mutex);
+	start = code = mono_global_codeman_reserve (64);
 
 	/* Push throw_ip */
 	amd64_push_reg (code, AMD64_RSI);

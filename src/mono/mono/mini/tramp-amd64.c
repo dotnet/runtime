@@ -36,13 +36,6 @@ typedef enum {
 guint8 *mono_generic_trampoline_code = NULL;
 
 /*
- * AMD64 processors maintain icache coherency only for pages which are marked
- * executable, so we have to alloc memory through a code manager.
- */
-static CRITICAL_SECTION tramp_codeman_mutex;
-static MonoCodeManager *tramp_codeman;
-
-/*
  * get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
@@ -220,9 +213,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		break;
 	}
 
-	EnterCriticalSection (&tramp_codeman_mutex);
-	code = buf = mono_code_manager_reserve (tramp_codeman, 512);
-	LeaveCriticalSection (&tramp_codeman_mutex);
+	code = buf = mono_global_codeman_reserve (512);
 
 	framesize = 512 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
@@ -481,9 +472,7 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 {
 	guint8 *ptr, *buf;
 
-	EnterCriticalSection (&tramp_codeman_mutex);
-	ptr = buf = mono_code_manager_reserve (tramp_codeman, 16);
-	LeaveCriticalSection (&tramp_codeman_mutex);
+	ptr = buf = mono_global_codeman_reserve (16);
 
 	x86_breakpoint (buf);
 	if (notification_address)
@@ -496,10 +485,6 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 void
 mono_amd64_tramp_init (void)
 {
-	InitializeCriticalSection (&tramp_codeman_mutex);
-
-	tramp_codeman = mono_code_manager_new ();
-
 	create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 	create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
