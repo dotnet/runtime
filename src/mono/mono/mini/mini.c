@@ -3068,7 +3068,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			    !g_list_find (dont_inline, cmethod)) {
 				int costs;
 				MonoBasicBlock *ebblock;
-				
+
  				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
 					ip += 5;
 					real_offset += 5;
@@ -6620,8 +6620,9 @@ mono_codegen (MonoCompile *cfg)
 	}
        
 	if (cfg->verbose_level > 1)
-		g_print ("Method %s::%s emmitted at %p to %p\n", cfg->method->klass->name, 
-			 cfg->method->name, cfg->native_code, cfg->native_code + cfg->code_len);
+		g_print ("Method %s emmitted at %p to %p\n", 
+				 mono_method_full_name (cfg->method, TRUE), 
+				 cfg->native_code, cfg->native_code + cfg->code_len);
 
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info);
 
