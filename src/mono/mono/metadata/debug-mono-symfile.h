@@ -18,7 +18,7 @@ typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
 typedef struct MonoDebugLineNumberEntry		MonoDebugLineNumberEntry;
 typedef struct MonoDebugRangeInfo		MonoDebugRangeInfo;
-typedef struct MonoDebugTypeInfo		MonoDebugTypeInfo;
+typedef struct MonoDebugClassInfo		MonoDebugClassInfo;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -141,7 +141,7 @@ struct MonoDebugRangeInfo {
 	guint32 dynamic_size;
 };
 
-struct MonoDebugTypeInfo {
+struct MonoDebugClassInfo {
 	MonoClass *klass;
 	guint32 rank;
 	guint32 token;
@@ -169,9 +169,9 @@ struct MonoSymbolFile {
 	guint32 range_entry_size;
 	guint32 num_range_entries;
 	/* Pointer to the malloced class table. */
-	MonoDebugTypeInfo *type_table;
-	guint32 type_entry_size;
-	guint32 num_type_entries;
+	MonoDebugClassInfo *class_table;
+	guint32 class_entry_size;
+	guint32 num_class_entries;
 	/* Private. */
 	MonoSymbolFilePriv *_priv;
 };

@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #define RANGE_TABLE_CHUNK_SIZE	256
-#define TYPE_TABLE_CHUNK_SIZE	256
+#define CLASS_TABLE_CHUNK_SIZE	256
 
 struct MonoSymbolFilePriv
 {
@@ -49,7 +49,7 @@ static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
 static MonoDebugRangeInfo *allocate_range_entry (MonoSymbolFile *symfile);
-static MonoDebugTypeInfo *allocate_type_entry (MonoSymbolFile *symfile);
+static MonoDebugClassInfo *allocate_class_entry (MonoSymbolFile *symfile);
 static gpointer write_type (MonoType *type);
 
 static void
@@ -477,7 +477,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 void
 mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
 {
-	MonoDebugTypeInfo *info;
+	MonoDebugClassInfo *info;
 
 	if (!class_table)
 		class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -488,7 +488,7 @@ mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
 
 	symfile->generation++;
 
-	info = allocate_type_entry (symfile);
+	info = allocate_class_entry (symfile);
 	info->klass = klass;
 	if (klass->rank) {
 		info->token = klass->element_class->type_token;
@@ -695,30 +695,30 @@ allocate_range_entry (MonoSymbolFile *symfile)
 	return retval;
 }
 
-static MonoDebugTypeInfo *
-allocate_type_entry (MonoSymbolFile *symfile)
+static MonoDebugClassInfo *
+allocate_class_entry (MonoSymbolFile *symfile)
 {
-	MonoDebugTypeInfo *retval;
+	MonoDebugClassInfo *retval;
 	guint32 size, chunks;
 
-	symfile->type_entry_size = sizeof (MonoDebugTypeInfo);
+	symfile->class_entry_size = sizeof (MonoDebugClassInfo);
 
-	if (!symfile->type_table) {
-		size = sizeof (MonoDebugTypeInfo) * TYPE_TABLE_CHUNK_SIZE;
-		symfile->type_table = g_malloc0 (size);
-		symfile->num_type_entries = 1;
-		return symfile->type_table;
+	if (!symfile->class_table) {
+		size = sizeof (MonoDebugClassInfo) * CLASS_TABLE_CHUNK_SIZE;
+		symfile->class_table = g_malloc0 (size);
+		symfile->num_class_entries = 1;
+		return symfile->class_table;
 	}
 
-	if (!((symfile->num_type_entries + 1) % TYPE_TABLE_CHUNK_SIZE)) {
-		chunks = (symfile->num_type_entries + 1) / TYPE_TABLE_CHUNK_SIZE;
-		size = sizeof (MonoDebugTypeInfo) * TYPE_TABLE_CHUNK_SIZE * (chunks + 1);
+	if (!((symfile->num_class_entries + 1) % CLASS_TABLE_CHUNK_SIZE)) {
+		chunks = (symfile->num_class_entries + 1) / CLASS_TABLE_CHUNK_SIZE;
+		size = sizeof (MonoDebugClassInfo) * CLASS_TABLE_CHUNK_SIZE * (chunks + 1);
 
-		symfile->type_table = g_realloc (symfile->type_table, size);
+		symfile->class_table = g_realloc (symfile->class_table, size);
 	}
 
-	retval = symfile->type_table + symfile->num_type_entries;
-	symfile->num_type_entries++;
+	retval = symfile->class_table + symfile->num_class_entries;
+	symfile->num_class_entries++;
 	return retval;
 }
 
