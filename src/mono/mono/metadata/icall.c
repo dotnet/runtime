@@ -680,7 +680,7 @@ ves_icall_type_from_name (MonoString *name)
 	
 	str = mono_string_to_utf8 (name);
 	/*g_print ("requested type %s\n", str);*/
-	type = mono_reflection_type_from_name (str);
+	type = mono_reflection_type_from_name (str, NULL);
 	g_free (str);
 	if (!type)
 		return NULL;

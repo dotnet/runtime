@@ -400,7 +400,7 @@ typedef struct {
 char*         mono_type_get_name         (MonoType *type);
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
-MonoType*     mono_reflection_type_from_name (char *name);
+MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
 
 void          mono_image_create_pefile (MonoReflectionAssemblyBuilder *assembly);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);

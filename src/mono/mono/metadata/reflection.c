@@ -3182,11 +3182,20 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	return &klass->byval_arg;
 }
 
+/*
+ * mono_reflection_type_from_name:
+ * @name: type name.
+ * @image: a metadata context (can be NULL).
+ *
+ * Retrieves a MonoType from its @name. If the name is not fully qualified,
+ * it defaults to get the type from @image or, if @image is NULL or loading
+ * from it fails, uses corlib.
+ * 
+ */
 MonoType*
-mono_reflection_type_from_name (char *name)
+mono_reflection_type_from_name (char *name, MonoImage *image)
 {
 	MonoType *type;
-	MonoImage *image;
 	MonoTypeNameParse info;
 	
 	/*g_print ("requested type %s\n", str);*/
@@ -3204,10 +3213,16 @@ mono_reflection_type_from_name (char *name)
 			g_list_free (info.nested);
 			return NULL;
 		}
-	} else
+	} else if (image == NULL) {
 		image = mono_defaults.corlib;
+	}
 
 	type = mono_reflection_get_type (image, &info, FALSE);
+	if (type == NULL && !info.assembly.name && image != mono_defaults.corlib) {
+		image = mono_defaults.corlib;
+		type = mono_reflection_get_type (image, &info, FALSE);
+	}
+	
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
 	return type;
@@ -3292,7 +3307,7 @@ handle_enum:
 			slen = mono_metadata_decode_value (p, &p);
 			n = g_memdup (p, slen + 1);
 			n [slen] = 0;
-			t = mono_reflection_type_from_name (n);
+			t = mono_reflection_type_from_name (n, image);
 			if (!t)
 				g_warning ("Cannot load type '%s'", n);
 			g_free (n);
