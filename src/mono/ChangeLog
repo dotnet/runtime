@@ -1,3 +1,10 @@
+2004-07-12  Massimiliano Mantione  <massi@ximian.com>
+
+	* mono/mini/abcremoval.c: Rewritten most of ABC removal.
+	* mono/mini/abcremoval.h: Rewritten most of ABC removal.
+	* mono/mini/build_relations_propagation_table.pl: Deleted (unneeded after the rewrite).
+	* mono/mini/propagated_relations_table.def: Deleted (unneeded after the rewrite).
+
 2004-07-03  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Add --with-tls option to replace the misnamed 
