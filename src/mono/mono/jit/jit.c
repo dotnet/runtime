@@ -1472,9 +1472,9 @@ mono_copy_used_var (MonoFlowGraph *cfg, MBTree *tree, int varnum, MBTree **copy)
 	int v, size, align;
 
 	if (tree->left)
-		mono_find_var (cfg, tree->left, varnum, copy);
+		mono_copy_used_var (cfg, tree->left, varnum, copy);
 	if (tree->right)
-		mono_find_var (cfg, tree->right, varnum, copy);
+		mono_copy_used_var (cfg, tree->right, varnum, copy);
 
 	switch (tree->op) {
 	case MB_TERM_LDIND_I1:
