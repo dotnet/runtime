@@ -39,6 +39,11 @@ typedef union {
 	gfloat fval;
 } IntFloatUnion;
  
+/*
+ * The "os_handle" field of the WaitHandle class.
+ */
+static MonoClassField *wait_handle_os_handle_field = NULL;
+
 /* Controls access to the 'threads' array */
 static CRITICAL_SECTION threads_mutex;
 
@@ -848,13 +853,23 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
-	
+	MonoObject *waitHandle;
+	MonoClass *klass;
+		
 	MONO_ARCH_SAVE_REGS;
 
-	numhandles=mono_array_length(mono_handles);
-	handles=g_new0(HANDLE, numhandles);
-	for(i=0; i<numhandles; i++) {
-		handles[i]=mono_array_get(mono_handles, HANDLE, i);
+	numhandles = mono_array_length(mono_handles);
+	handles = g_new0(HANDLE, numhandles);
+
+	if (wait_handle_os_handle_field == 0) {
+		/* Get the field os_handle which will contain the actual handle */
+		klass = mono_class_from_name(mono_defaults.corlib, "System.Threading", "WaitHandle");	
+		wait_handle_os_handle_field = mono_class_get_field_from_name(klass, "os_handle");
+	}
+		
+	for(i = 0; i < numhandles; i++) {	
+		waitHandle = mono_array_get(mono_handles, MonoObject*, i);		
+		mono_field_get_value(waitHandle, wait_handle_os_handle_field, &handles[i]);
 	}
 	
 	if(ms== -1) {
@@ -889,13 +904,23 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
-	
+	MonoObject *waitHandle;
+	MonoClass *klass;
+		
 	MONO_ARCH_SAVE_REGS;
 
-	numhandles=mono_array_length(mono_handles);
-	handles=g_new0(HANDLE, numhandles);
-	for(i=0; i<numhandles; i++) {
-		handles[i]=mono_array_get(mono_handles, HANDLE, i);
+	numhandles = mono_array_length(mono_handles);
+	handles = g_new0(HANDLE, numhandles);
+
+	if (wait_handle_os_handle_field == 0) {
+		/* Get the field os_handle which will contain the actual handle */
+		klass = mono_class_from_name(mono_defaults.corlib, "System.Threading", "WaitHandle");	
+		wait_handle_os_handle_field = mono_class_get_field_from_name(klass, "os_handle");
+	}
+		
+	for(i = 0; i < numhandles; i++) {	
+		waitHandle = mono_array_get(mono_handles, MonoObject*, i);		
+		mono_field_get_value(waitHandle, wait_handle_os_handle_field, &handles[i]);
 	}
 	
 	if(ms== -1) {
@@ -911,7 +936,18 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 		  GetCurrentThreadId (), ret);
 #endif
 
-	return(ret);
+	/*
+	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
+	 */
+	if (ret >= WAIT_OBJECT_0 && ret <= WAIT_OBJECT_0 + numhandles - 1) {
+		return ret - WAIT_OBJECT_0;
+	}
+	else if (ret >= WAIT_ABANDONED_0 && ret <= WAIT_ABANDONED_0 + numhandles - 1) {
+		return ret - WAIT_ABANDONED_0;
+	}
+	else {
+		return ret;
+	}
 }
 
 /* FIXME: exitContext isnt documented */
