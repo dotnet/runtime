@@ -5831,9 +5831,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr,
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (ptr == NULL)
+	if (ptr == NULL) {
 		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
-	else
+		g_assert_not_reached ();
+		return NULL;
+	} else
 		return mono_string_new_len (mono_domain_get (), ptr, len);
 }
 
@@ -5862,9 +5864,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *pt
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (ptr == NULL)
+	if (ptr == NULL) {
 		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
-	else
+		g_assert_not_reached ();
+		return NULL;
+	} else
 		return mono_string_new_utf16 (domain, ptr, len);
 }
 
