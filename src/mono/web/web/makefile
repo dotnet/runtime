@@ -170,7 +170,7 @@ src/%.xml: infos/%.xml $(CORCOMPARE)/mono-api-diff.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/$(notdir $<) $< > $@ || (rm -f $@ && exit 1)
 
 # corlib, corlib...
-infos/mscorlib.xml: ../../../mcs/class/lib/corlib.dll $(CORCOMPARE)/mono-api-info.exe
+infos/mscorlib.xml: ../../../mcs/class/lib/mscorlib.dll $(CORCOMPARE)/mono-api-info.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
 src/corlib.xml: infos/mscorlib.xml $(CORCOMPARE)/mono-api-diff.exe 
