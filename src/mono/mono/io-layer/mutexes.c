@@ -111,7 +111,7 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 	GPtrArray *needed;
 	int ret;
 	guint32 numhandles;
-	struct timespec timeout, locktimeout;
+	struct timespec timeout;
 	pthread_t tid=pthread_self();
 	guint32 i, iterations;
 	
@@ -122,10 +122,6 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 		  ": waiting on %d mutex handles for %d ms", numhandles,
 		  item->timeout);
 #endif
-
-	if(item->timeout!=INFINITE) {
-		_wapi_calc_timeout(&timeout, item->timeout);
-	}
 
 	/*
 	 * See which ones we need to lock
@@ -157,9 +153,10 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 		 */
 		if((item->timeout!=INFINITE) &&
 		   (item->timeout < (iterations*1000))) {
-			_wapi_calc_timeout(&locktimeout, item->timeout-((iterations-1)*1000));
+			_wapi_calc_timeout(
+				&timeout, item->timeout-((iterations-1)*1000));
 		} else {
-			_wapi_calc_timeout(&locktimeout, 1000);
+			_wapi_calc_timeout(&timeout, 1000);
 		}
 	
 		/* Try and lock as many mutexes as we can until we run
@@ -178,7 +175,7 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 #endif
 
 			ret=pthread_mutex_timedlock(&mutex_handle->mutex,
-						    &locktimeout);
+						    &timeout);
 
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION ": timedlock ret %s",
@@ -223,12 +220,12 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 			for(i=0; i<numhandles; i++) {
 				struct _WapiHandle_mutex *mutex_handle;
 
-				mutex_handle=g_ptr_array_index(needed, i);
+				mutex_handle=g_ptr_array_index(
+					item->handles[WAPI_HANDLE_MUTEX], i);
 		
 #ifdef DEBUG
 				g_message(G_GNUC_PRETTY_FUNCTION
-					  ": Updating %d mutex %p", i,
-					  mutex_handle);
+					  ": Updating mutex %p", mutex_handle);
 #endif
 				
 				if(mutex_handle->tid==tid) {
@@ -242,12 +239,23 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 				}
 			}
 		
+			g_ptr_array_free(needed, FALSE);
+
+			item->waited[WAPI_HANDLE_MUTEX]=TRUE;
+			item->waitcount[WAPI_HANDLE_MUTEX]=numhandles;
+			
 			return(numhandles);
 		}
 	} while((item->timeout==INFINITE) ||
 		(item->timeout > (iterations * 1000)));
 
 	/* Didn't get all the locks, and timeout isn't INFINITE */
+		
+	g_ptr_array_free(needed, FALSE);
+
+	item->waited[WAPI_HANDLE_MUTEX]=TRUE;
+	item->waitcount[WAPI_HANDLE_MUTEX]=0;
+	
 	return(0);
 }
 
