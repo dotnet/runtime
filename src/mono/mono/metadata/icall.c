@@ -3044,7 +3044,7 @@ static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoString *mname, MonoObject *evidence)
 {
 	gchar *name;
-	MonoReflectionAssembly *res;
+	MonoAssembly *res;
 	MonoImageOpenStatus status;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -4098,20 +4098,14 @@ ves_icall_System_Object_obj_address (MonoObject *this)
 
 /* System.Buffer */
 
-static gint32 
-ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) 
+static inline gint32 
+mono_array_get_byte_length (MonoArray *array)
 {
 	MonoClass *klass;
-	MonoTypeEnum etype;
-	int length, esize;
+	int length;
 	int i;
 
-	MONO_ARCH_SAVE_REGS;
-
 	klass = array->obj.vtable->klass;
-	etype = klass->element_class->byval_arg.type;
-	if (etype < MONO_TYPE_BOOLEAN || etype > MONO_TYPE_R8)
-		return -1;
 
 	if (array->bounds == NULL)
 		length = array->max_length;
@@ -4121,8 +4115,37 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array)
 			length *= array->bounds [i].length;
 	}
 
-	esize = mono_array_element_size (klass);
-	return length * esize;
+	switch (klass->element_class->byval_arg.type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return length;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return length << 1;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return length << 2;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return length * sizeof (gpointer);
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		return length << 3;
+	default:
+		return -1;
+	}
+}
+
+static gint32 
+ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) 
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_array_get_byte_length (array);
 }
 
 static gint8 
@@ -4141,17 +4164,22 @@ ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 idx, gint8 val
 	mono_array_set (array, gint8, idx, value);
 }
 
-static void 
+static MonoBoolean
 ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, MonoArray *dest, gint32 dest_offset, gint32 count) 
 {
 	char *src_buf, *dest_buf;
 
 	MONO_ARCH_SAVE_REGS;
 
+	if ((src_offset + count > mono_array_get_byte_length (src)) || (dest_offset + count > mono_array_get_byte_length (dest)))
+		return FALSE;
+
 	src_buf = (gint8 *)src->vector + src_offset;
 	dest_buf = (gint8 *)dest->vector + dest_offset;
 
 	memcpy (dest_buf, src_buf, count);
+
+	return TRUE;
 }
 
 static MonoObject *
