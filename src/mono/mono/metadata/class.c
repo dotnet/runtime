@@ -460,7 +460,9 @@ mono_class_init (MonoClass *class)
 	static MonoMethod *default_finalize = NULL;
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
+	gint32 onum = 0;
 	guint32 packing_size = 0;
+	MonoMethod **overrides;
 
 	g_assert (class);
 
@@ -588,7 +590,20 @@ mono_class_init (MonoClass *class)
 
 	if (class->parent && class->parent->vtable_size)
 		memcpy (vtable, class->parent->vtable,  sizeof (gpointer) * class->parent->vtable_size);
- 
+
+	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);
+
+	/* override interface methods */
+	for (i = 0; i < onum; i++) {
+		MonoMethod *decl = overrides [i*2];
+		if (decl->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			int dslot;
+			g_assert (decl->slot != -1);
+			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
+			vtable [dslot] = overrides [i*2 + 1];
+		}
+	}
+
 	for (k = class; k ; k = k->parent) {
 		for (i = 0; i < k->interface_count; i++) {
 			int j, l, io;
@@ -686,6 +701,10 @@ mono_class_init (MonoClass *class)
 					MonoMethod *im = ic->methods [l];						
 					g_assert (io + l <= max_vtsize);
 					if (!(vtable [io + l])) {
+						for (j = 0; j < onum; ++j) {
+							g_print (" at slot %d: %s (%d) overrides %s (%d)\n", io+l, overrides [j*2+1]->name, 
+								 overrides [j*2+1]->slot, overrides [j*2]->name, overrides [j*2]->slot);
+						}
 						msig = mono_signature_get_desc (im->signature, FALSE);
 						printf ("no implementation for interface method %s.%s::%s(%s) in class %s.%s\n",
 							ic->name_space, ic->name, im->name, msig, class->name_space, class->name);
@@ -758,6 +777,16 @@ mono_class_init (MonoClass *class)
 			vtable [cm->slot] = cm;
 	}
 
+	/* override non interface methods */
+	for (i = 0; i < onum; i++) {
+		MonoMethod *decl = overrides [i*2];
+		if (!(decl->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+			g_assert (decl->slot != -1);
+			vtable [decl->slot] = overrides [i*2 + 1];
+		}
+	}
+       
+	g_free (overrides);
 
 	class->vtable_size = cur_slot;
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);

@@ -2996,3 +2996,70 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }
 
+static MonoMethod*
+method_from_method_def_or_ref (MonoImage *m, guint32 tok)
+{
+	guint32 idx = tok >> METHODDEFORREF_BITS;
+	switch (tok & METHODDEFORREF_MASK) {
+	case METHODDEFORREF_METHODDEF:
+		return mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
+	case METHODDEFORREF_METHODREF:
+		return mono_get_method (m, MONO_TOKEN_MEMBER_REF | idx, NULL);
+	}
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoMethod**
+mono_class_get_overrides (MonoImage *image, guint32 type_token, gint32 *num_overrides)
+{
+	locator_t loc;
+	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_METHODIMPL];
+	guint32 start, end;
+	gint32 i, num;
+	guint32 cols [MONO_METHODIMPL_SIZE];
+	MonoMethod **result;
+
+	if (num_overrides)
+		*num_overrides = 0;
+
+	if (!tdef->base)
+		return NULL;
+
+	loc.t = tdef;
+	loc.col_idx = MONO_METHODIMPL_CLASS;
+	loc.idx = mono_metadata_token_index (type_token);
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return NULL;
+
+	start = loc.result;
+	end = start + 1;
+	/*
+	 * We may end up in the middle of the rows... 
+	 */
+	while (start > 0) {
+		if (loc.idx == mono_metadata_decode_row_col (tdef, start - 1, MONO_METHODIMPL_CLASS))
+			start--;
+		else
+			break;
+	}
+	while (end < tdef->rows) {
+		if (loc.idx == mono_metadata_decode_row_col (tdef, end, MONO_METHODIMPL_CLASS))
+			end++;
+		else
+			break;
+	}
+	num = end - start;
+	result = g_new (MonoMethod*, num * 2);
+	for (i = 0; i < num; ++i) {
+		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
+		result [i * 2] = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION]);
+		result [i * 2 + 1] = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_BODY]);
+	}
+
+	if (num_overrides)
+		*num_overrides = num;
+	return result;
+}
+
