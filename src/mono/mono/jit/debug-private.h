@@ -30,6 +30,7 @@ typedef enum {
 
 typedef struct {
 	MonoDebugMethodInfo method_info;
+	AssemblyDebugInfo *info;
 	gchar *name;
 	int source_file;
 	guint32 method_number;
@@ -42,6 +43,7 @@ typedef struct {
 struct _AssemblyDebugInfo {
 	MonoDebugFormat format;
 	MonoDebugHandle *handle;
+	MonoDebugSymbolFile *symfile;
 	char *name;
 	char *ilfile;
 	char *filename;
@@ -83,6 +85,5 @@ void           mono_debug_close_assembly_dwarf2_plus (AssemblyDebugInfo *info);
 void           mono_debug_write_stabs                (MonoDebugHandle *debug);
 
 void           mono_debug_write_dwarf2               (MonoDebugHandle *debug);
-
 
 #endif /* __MONO_JIT_DEBUG_PRIVATE_H__ */

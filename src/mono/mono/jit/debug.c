@@ -116,10 +116,10 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	debug->next = mono_debug_handles;
 	mono_debug_handles = debug;
 
-	if (!mono_default_debug_handle && (format != MONO_DEBUG_FORMAT_DWARF2_PLUS)) {
+	if (!mono_default_debug_handle && (debug->format != MONO_DEBUG_FORMAT_DWARF2_PLUS))
 		mono_default_debug_handle = debug;
-		mono_debug_add_image (debug, assembly->image);
-	}
+
+	mono_debug_add_image (debug, assembly->image);
 
 	return debug;
 }
@@ -625,6 +625,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	minfo->first_line = line;
 	minfo->last_line = end_line;
 	minfo->source_file = info->source_file;
+	minfo->info = info;
 	minfo->method_info.code_start = cfg->start + 1;
 	minfo->method_info.code_size = cfg->epilogue_end - 1;
 	minfo->method_number = method_number;
@@ -666,6 +667,21 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	g_hash_table_insert (debug->methods, method, minfo);
 }
 
+static gint32
+il_offset_from_address (DebugMethodInfo *minfo, guint32 address)
+{
+	int i;
+
+	for (i = 0; i < minfo->method_info.num_il_offsets; i++) {
+		MonoDebugILOffsetInfo *ilo = &minfo->method_info.il_offsets [i];
+
+		if (ilo->address > address)
+			return ilo->offset;
+	}
+
+	return -1;
+}
+
 gchar *
 mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
 {
@@ -680,7 +696,19 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
 			break;
 	}
 
-	if (!minfo || !minfo->line_numbers)
+	if (!minfo)
+		return NULL;
+
+	if (minfo->info->symfile) {
+		guint32 offset = il_offset_from_address (minfo, address);
+		
+		if (offset < 0)
+			return NULL;
+
+		return mono_debug_find_source_location (minfo->info->symfile, method, offset);
+	}
+
+	if (!minfo->line_numbers)
 		return NULL;
 
 	for (i = 0; i < minfo->line_numbers->len; i++) {

@@ -7,38 +7,6 @@
 
 #include "debug-private.h"
 
-typedef struct {
-	MonoDebugSymbolFile *symfile;
-} AssemblyDebugInfoPrivate;
-
-void
-mono_debug_open_assembly_dwarf2_plus (AssemblyDebugInfo *info)
-{
-	AssemblyDebugInfoPrivate *priv = g_new0 (AssemblyDebugInfoPrivate, 1);
-	char *buf;
-
-	buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
-	system (buf);
-	g_free (buf);
-
-	mono_jit_compile_image (info->image, FALSE);
-
-	priv->symfile = mono_debug_open_symbol_file (info->image, info->objfile, TRUE);
-
-	info->_priv = priv;
-}
-
-void
-mono_debug_close_assembly_dwarf2_plus (AssemblyDebugInfo *info)
-{
-	AssemblyDebugInfoPrivate *priv = info->_priv;
-
-	if (priv->symfile)
-		mono_debug_close_symbol_file (priv->symfile);
-
-	g_free (info->_priv);
-}
-
 static MonoDebugMethodInfo *
 method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_data)
 {
@@ -46,7 +14,11 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 	MonoMethod *method;
 	DebugMethodInfo *minfo;
 
+#if 0
 	method = g_hash_table_lookup (info->image->method_cache, GINT_TO_POINTER (token));
+#else
+	method = mono_get_method (info->image, token, NULL);
+#endif
 	if (!method)
 		return NULL;
 
@@ -56,10 +28,29 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 }
 
 void
+mono_debug_open_assembly_dwarf2_plus (AssemblyDebugInfo *info)
+{
+	char *buf;
+
+	buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
+	system (buf);
+	g_free (buf);
+
+	mono_jit_compile_image (info->image, FALSE);
+
+	info->symfile = mono_debug_open_symbol_file (info->image, info->objfile, TRUE);
+}
+
+void
+mono_debug_close_assembly_dwarf2_plus (AssemblyDebugInfo *info)
+{
+	if (info->symfile)
+		mono_debug_close_symbol_file (info->symfile);
+}
+
+void
 mono_debug_write_assembly_dwarf2_plus (AssemblyDebugInfo *info)
 {
-	AssemblyDebugInfoPrivate *priv = info->_priv;
-
-	if (priv->symfile)
-		mono_debug_update_symbol_file (priv->symfile, method_info_func, info);
+	if (info->symfile)
+		mono_debug_update_symbol_file (info->symfile, method_info_func, info);
 }
