@@ -574,6 +574,12 @@ ves_array_set (MonoInvocation *frame)
 		return;
 	}
 
+	if ((sp [ac->rank].type == VAL_OBJ) && sp [ac->rank].data.p && !mono_object_isinst (sp [ac->rank].data.p, mono_object_class (o)->element_class)) {
+		frame->ex = mono_get_exception_array_type_mismatch ();
+		FILL_IN_TRACE (frame->ex, frame);
+		return;
+	}
+
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);
 
@@ -3739,9 +3745,6 @@ array_constructed:
 			if (aindex >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
-			/*
-			 * FIXME: throw mono_get_exception_array_type_mismatch () if needed 
-			 */
 			switch (*ip) {
 			case CEE_STELEM_I:
 				mono_array_set (o, mono_i, aindex, sp [2].data.nati);
