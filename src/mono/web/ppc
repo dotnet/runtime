@@ -13,7 +13,8 @@
 
 *** JIT and code precompiled:
 
-	Works on MacOS X 10.2, 10.3 and Linux/PPC.   
+	Works on MacOS X 10.2, 10.3 and Linux/PPC, exception handling
+	is currently broken on the JIT.
 
 ** Documentation
 

@@ -152,8 +152,6 @@
 	<a href="http://www.nullenvoid.com/mono/wiki">Mono
 	</a> Wikis.
 </p>
-<br>
-<br>
 
 @item Apr 02, 2004: Mono C# Compiler gets CLS support;   Basic Runtime Contribution from Mainsoft.
 
@@ -172,6 +170,10 @@
 	runtime they wrote is written in Java and we are translating
 	this into C# code.  The code will reach CVS within the next
 	few weeks.
+
+	Mainsoft also contributed an extensive regression test suite
+	for the Basic runtime, a port of the NIST XML tests and their
+	own in-house developed XML tests. 
 
 @item Mar 31st, 2004: Gtk# 0.18, MonoDoc 0.13, MonoDevelop 0.2 released
 
