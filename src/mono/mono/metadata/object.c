@@ -1508,7 +1508,8 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 	return mono_runtime_invoke (im, delegate, params, exc);
 }
 
-static MonoArray* main_args;
+static char **main_args = NULL;
+static int num_main_args;
 
 /**
  * mono_runtime_get_main_args:
@@ -1518,7 +1519,19 @@ static MonoArray* main_args;
 MonoArray*
 mono_runtime_get_main_args (void)
 {
-	return main_args;
+	MonoArray *res;
+	int i;
+	MonoDomain *domain = mono_domain_get ();
+
+	if (!main_args)
+		return NULL;
+
+	res = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, num_main_args);
+
+	for (i = 0; i < num_main_args; ++i)
+		mono_array_set (res, gpointer, 0, mono_string_new (domain, main_args [i]));
+
+	return res;
 }
 
 static void
@@ -1569,7 +1582,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 
 	mono_thread_set_main (mono_thread_current ());
 
-	main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
+	main_args = g_new0 (char*, argc);
+	num_main_args = argc;
 
 	if (!g_path_is_absolute (argv [0])) {
 		gchar *basename = g_path_get_basename (argv [0]);
@@ -1599,13 +1613,11 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			exit (-1);
 		}
 	}
-		
-	mono_array_set (main_args, gpointer, 0, mono_string_new (domain, utf8_fullpath));
-	g_free (utf8_fullpath);
+
+	main_args [0] = utf8_fullpath;
 
 	for (i = 1; i < argc; ++i) {
 		gchar *utf8_arg;
-		MonoString *arg;
 
 		utf8_arg=mono_utf8_from_external (argv[i]);
 		if(utf8_arg==NULL) {
@@ -1614,10 +1626,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
-		
-		arg = mono_string_new (domain, utf8_arg);
-		mono_array_set (main_args, gpointer, i, arg);
-		g_free (utf8_arg);
+
+		main_args [i] = utf8_arg;
 	}
 	argc--;
 	argv++;
