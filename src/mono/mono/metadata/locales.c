@@ -297,6 +297,8 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	char *icu_locale;
 	int32_t str_len, ret;
 	
+	MONO_ARCH_SAVE_REGS;
+	
 	icu_locale=mono_string_to_icu_locale (locale);
 	if(icu_locale==NULL) {
 		/* Something went wrong */
@@ -364,6 +366,8 @@ void ves_icall_System_Globalization_CultureInfo_construct_compareinfo (MonoObjec
 	UCollator *coll;
 	UErrorCode ec;
 	char *icu_locale;
+	
+	MONO_ARCH_SAVE_REGS;
 	
 	icu_locale=mono_string_to_icu_locale (locale);
 	if(icu_locale==NULL) {
@@ -461,6 +465,8 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *
 	UCollationResult result;
 	UErrorCode ec;
 	
+	MONO_ARCH_SAVE_REGS;
+	
 	coll=get_field_by_name (this, "ICU_collator");
 	if(coll==NULL) {
 		return(0);
@@ -491,6 +497,8 @@ void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoObje
 {
 	UCollator *coll;
 	
+	MONO_ARCH_SAVE_REGS;
+	
 	coll=get_field_by_name (this, "ICU_collator");
 	if(coll!=NULL) {
 		ucol_close (coll);
@@ -506,6 +514,8 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this
 	MonoArray *arr;
 	char *keybuf;
 	int32_t keylen, i;
+	
+	MONO_ARCH_SAVE_REGS;
 	
 	coll=get_field_by_name (this, "ICU_collator");
 	if(coll==NULL) {
@@ -543,6 +553,8 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this
 #else /* HAVE_ICU */
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoObject *this, MonoString *locale)
 {
+	MONO_ARCH_SAVE_REGS;
+	
 	/* Always claim "unknown locale" if we don't have ICU (only
 	 * called for non-invariant locales)
 	 */
@@ -556,6 +568,8 @@ void ves_icall_System_Globalization_CultureInfo_construct_compareinfo (MonoObjec
 
 int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *this, MonoString *str1, MonoString *str2, gint32 options)
 {
+	MONO_ARCH_SAVE_REGS;
+	
 	/* Do a normal ascii string compare, as we only know the
 	 * invariant locale if we dont have ICU
 	 */
@@ -573,6 +587,8 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this
 	MonoArray *arr;
 	int32_t keylen, i;
 
+	MONO_ARCH_SAVE_REGS;
+	
 	keylen=mono_string_length (source);
 	
 	arr=mono_array_new (mono_domain_get (), mono_defaults.byte_class,
