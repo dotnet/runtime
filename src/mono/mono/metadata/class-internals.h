@@ -61,6 +61,7 @@ struct _MonoMethod {
 
 struct _MonoMethodNormal {
 	MonoMethod method;
+	MonoGenericParam *gen_params;
 	MonoMethodHeader *header;
 };
 

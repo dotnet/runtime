@@ -384,7 +384,6 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 	res->init_locals = header->init_locals;
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
-	res->gen_params = header->gen_params;
 	for (i = 0; i < header->num_locals; ++i)
 		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], context);
 	return res;

@@ -324,7 +324,6 @@ typedef struct {
 	unsigned int init_locals : 1;
 	guint16      num_locals;
 	MonoExceptionClause *clauses;
-	MonoGenericParam *gen_params;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;
 

@@ -838,7 +838,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 			g_assert (loc);
 			mn->header = mono_metadata_parse_mh (image, loc);
-			mn->header->gen_params = gen_params;
+			mn->gen_params = gen_params;
 		}
 	}
 
