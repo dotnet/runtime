@@ -38,8 +38,8 @@ gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 
-static MonoClass *
-mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
+MonoClass *
+mono_class_from_typeref (MonoImage *image, guint32 type_token)
 {
 	guint32 cols [MONO_TYPEREF_SIZE];
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
@@ -48,13 +48,17 @@ mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
 	MonoClass *res;
 
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+
+	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+	
 	idx = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
 	switch (cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK) {
 	case RESOLTION_SCOPE_MODULE:
 		if (!idx)
 			g_error ("null ResolutionScope not yet handled");
 		/* a typedef in disguise */
-		return mono_class_create_from_typedef (image, MONO_TOKEN_TYPE_DEF | (1+idx));
+		return mono_class_from_name (image, nspace, name);
 	case RESOLTION_SCOPE_MODULEREF:
 			g_error ("ModuleRef ResolutionScope not yet handled");
 	case RESOLTION_SCOPE_TYPEREF:
@@ -78,9 +82,6 @@ mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
 		return res;
 	}	
 
-	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-	
 	/* load referenced assembly */
 	image = image->references [idx-1]->image;
 
@@ -1128,8 +1129,9 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		class = mono_class_from_mono_type (type->data.type);
 		break;
 	default:
-		g_warning ("implement me: %08x (from typespec: %08x)", type->type, type_spec);
-		g_assert_not_reached ();		
+		/* it seems any type can be stored in TypeSpec as well */
+		class = mono_class_from_mono_type (type);
+		break;
 	}
 
 	mono_metadata_free_type (type);
@@ -1337,7 +1339,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		class = mono_class_create_from_typedef (image, type_token);
 		break;		
 	case MONO_TOKEN_TYPE_REF:
-		class = mono_class_create_from_typeref (image, type_token);
+		class = mono_class_from_typeref (image, type_token);
 		break;
 	case MONO_TOKEN_TYPE_SPEC:
 		class = mono_class_create_from_typespec (image, type_token);
@@ -1348,7 +1350,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 	}
 
 	if (!class)
-		g_warning ("Could not load class from token 0x%08x", type_token);
+		g_warning ("Could not load class from token 0x%08x in %s", type_token, image->name);
 	return class;
 }
 

@@ -11,6 +11,7 @@ typedef struct {
 	char *name;
 	
 	MonoImage *image;
+	MonoImage **modules;
 	/* Load files here */
 } MonoAssembly;
 

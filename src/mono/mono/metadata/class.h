@@ -157,6 +157,9 @@ mono_class_setup_parent    (MonoClass *class, MonoClass *parent);
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);
 
+MonoClass * 
+mono_class_from_typeref    (MonoImage *image, guint32 type_token);
+
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
 

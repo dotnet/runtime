@@ -212,6 +212,20 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	}
 	image->references [i] = NULL;
 
+	t = &image->tables [MONO_TABLE_MODULEREF];
+	ass->modules = g_new0 (MonoImage *, t->rows);
+	for (i = 0; i < t->rows; i++){
+		char *module_ref;
+		const char *name;
+		guint32 cols [MONO_MODULEREF_SIZE];
+
+		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
+		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
+		module_ref = g_concat_dir_and_file (base_dir, name);
+		ass->modules [i] = mono_image_open (module_ref, status);
+		g_free (module_ref);
+	}
+
 	g_free (base_dir);
 	return ass;
 }

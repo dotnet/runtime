@@ -127,12 +127,11 @@ mono_lookup_internal_call (MonoMethod *method)
 MonoClassField*
 mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass)
 {
-	MonoImage *mimage;
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
-	guint32 nindex, class, i;
-	const char *fname, *name, *nspace;
+	guint32 nindex, class;
+	const char *fname;
 	const char *ptr;
 	guint32 idx = mono_metadata_token_index (token);
 
@@ -147,64 +146,49 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 	/* we may want to check the signature here... */
 
 	switch (class) {
-	case MEMBERREF_PARENT_TYPEREF: {
-		guint32 scopeindex, scopetable;
-
-		mono_metadata_decode_row (&tables [MONO_TABLE_TYPEREF], nindex-1, cols, MONO_TYPEREF_SIZE);
-		scopeindex = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
-		scopetable = cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
-		/*g_print ("typeref: 0x%x 0x%x %s.%s\n", scopetable, scopeindex,
-			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]),
-			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]));*/
-		switch (scopetable) {
-		case RESOLTION_SCOPE_ASSEMBLYREF:
-			/*
-			 * To find the field we have the following info:
-			 * *) name and namespace of the class from the TYPEREF table
-			 * *) name and signature of the field from the MEMBERREF table
-			 */
-			nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-			name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-
-			/* this will triggered by references to mscorlib */
-			if (image->references [scopeindex-1] == NULL)
-				g_error ("Reference to mscorlib? Probably need to implement %s.%s::%s in corlib", nspace, name, fname);
-
-			mimage = image->references [scopeindex-1]->image;
-
-			klass = mono_class_from_name (mimage, nspace, name);
-			mono_class_init (klass);
-
-			/* mostly dumb search for now */
-			for (i = 0; i < klass->field.count; ++i) {
-				MonoClassField *f = &klass->fields [i];
-				if (!strcmp (fname, f->name)) {
-					if (retklass)
-						*retklass = klass;
-					return f;
-				}
-			}
-			g_warning ("Missing field %s.%s::%s", nspace, name, fname);
-			return NULL;
-		default:
+	case MEMBERREF_PARENT_TYPEREF:
+		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
+		if (!klass) {
+			g_warning ("Missing field %s in typeref index %d", fname, nindex);
 			return NULL;
 		}
-		break;
-	}
+		mono_class_init (klass);
+		if (retklass)
+			*retklass = klass;
+		return mono_class_get_field_from_name (klass, fname);
 	default:
 		return NULL;
 	}
 }
 
 static MonoMethod *
+find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
+{
+	int i;
+	while (klass) {
+		/* mostly dumb search for now */
+		for (i = 0; i < klass->method.count; ++i) {
+			MonoMethod *m = klass->methods [i];
+			if (!strcmp (name, m->name)) {
+				if (mono_metadata_signature_equal (sig, m->signature))
+					return m;
+			}
+		}
+		klass = klass->parent;
+	}
+	return NULL;
+
+}
+
+static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx)
 {
-	MonoImage *mimage;
 	MonoClass *klass;
+	MonoMethod *method;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
-	guint32 nindex, class, i;
-	const char *mname, *name, *nspace;
+	guint32 nindex, class;
+	const char *mname;
 	MonoMethodSignature *sig;
 	const char *ptr;
 
@@ -221,58 +205,19 @@ method_from_memberref (MonoImage *image, guint32 idx)
 	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
 
 	switch (class) {
-	case MEMBERREF_PARENT_TYPEREF: {
-		guint32 scopeindex, scopetable;
-
-		mono_metadata_decode_row (&tables [MONO_TABLE_TYPEREF], nindex-1, cols, MONO_TYPEREF_SIZE);
-		scopeindex = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
-		scopetable = cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
-		/*g_print ("typeref: 0x%x 0x%x %s.%s\n", scopetable, scopeindex,
-			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]),
-			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]));*/
-		switch (scopetable) {
-		case RESOLTION_SCOPE_ASSEMBLYREF:
-			/*
-			 * To find the method we have the following info:
-			 * *) name and namespace of the class from the TYPEREF table
-			 * *) name and signature of the method from the MEMBERREF table
-			 */
-			nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-			name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-
-			/* this will triggered by references to mscorlib */
-			if (image->references [scopeindex-1] == NULL)
-				g_error ("Reference to mscorlib? Probably need to implement %s.%s::%s in corlib", nspace, name, mname);
-
-			mimage = image->references [scopeindex-1]->image;
-
-			klass = mono_class_from_name (mimage, nspace, name);
-			if (!klass) {
-				g_warning ("Missing method %s.%s::%s", nspace, name, mname);
-				mono_metadata_free_method_signature (sig);
-				return NULL;
-			}
-			mono_class_init (klass);
-
-			/* mostly dumb search for now */
-			for (i = 0; i < klass->method.count; ++i) {
-				MonoMethod *m = klass->methods [i];
-				if (!strcmp (mname, m->name)) {
-					if (mono_metadata_signature_equal (sig, m->signature)) {
-						mono_metadata_free_method_signature (sig);
-						return m;
-					}
-				}
-			}
-			g_warning ("Missing method %s.%s::%s", nspace, name, mname);
-			mono_metadata_free_method_signature (sig);
-			return NULL;
-		default:
+	case MEMBERREF_PARENT_TYPEREF:
+		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
+		if (!klass) {
+			g_warning ("Missing method %s in typeref index %d", mname, nindex);
 			mono_metadata_free_method_signature (sig);
 			return NULL;
 		}
-		break;
-	}
+		mono_class_init (klass);
+		method = find_method (klass, mname, sig);
+		if (!method)
+			g_warning ("Missing method %s in typeref index %d", mname, nindex);
+		mono_metadata_free_method_signature (sig);
+		return method;
 	case MEMBERREF_PARENT_TYPESPEC: {
 		guint32 bcols [MONO_TYPESPEC_SIZE];
 		guint32 len;
