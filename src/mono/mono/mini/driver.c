@@ -621,6 +621,7 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 
 	setlocale (LC_ALL, "");
+
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
@@ -871,7 +872,14 @@ mono_main (int argc, char* argv[])
 			break;
 		}
 
-		cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, part);
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+			(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+			MonoMethod *nm;
+			nm = mono_marshal_get_native_wrapper (method);
+			cfg = mini_method_compile (nm, opt, mono_get_root_domain (), FALSE, part);
+		}
+		else
+			cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, part);
 		if ((mono_graph_options & MONO_GRAPH_CFG_SSA) && !(cfg->comp_done & MONO_COMP_SSA)) {
 			g_warning ("no SSA info available (use -O=deadce)");
 			return 1;
