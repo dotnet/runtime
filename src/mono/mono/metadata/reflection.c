@@ -5532,6 +5532,10 @@ create_custom_attr (MonoImage *image, MonoMethod *method,
 			named += type_len;
 			/* FIXME: lookup the type and check type consistency */
 		}
+		else
+			if (data_type == MONO_TYPE_SZARRAY)
+				/* The spec does not mention this */
+				named ++;
 		name_len = mono_metadata_decode_blob_size (named, &named);
 		name = g_malloc (name_len + 1);
 		memcpy (name, named, name_len);
@@ -6183,6 +6187,8 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 				g_free (str);
 			} else {
 				mono_metadata_encode_value (ptype->type, p, &p);
+				if (ptype->type == MONO_TYPE_SZARRAY)
+					mono_metadata_encode_value (ptype->data.klass->this_arg.type, p, &p);
 			}
 			len = strlen (pname);
 			mono_metadata_encode_value (len, p, &p);
