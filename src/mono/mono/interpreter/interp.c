@@ -3637,6 +3637,9 @@ main (int argc, char *argv [])
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
 
+	frame_thread_id = TlsAlloc ();
+	TlsSetValue (frame_thread_id, NULL);
+
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_runtime_exec_main (runtime_exec_main);
@@ -3644,8 +3647,8 @@ main (int argc, char *argv [])
 	mono_install_handler (interp_ex_handler);
 
 	mono_init ();
-	mono_thread_init();
 	mono_appdomain_init (file);
+	mono_thread_init();
 	mono_network_init();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
@@ -3654,9 +3657,6 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
-
-	frame_thread_id = TlsAlloc ();
-	TlsSetValue (frame_thread_id, NULL);
 
 #ifdef RUN_TEST
 	test_load_class (assembly->image);

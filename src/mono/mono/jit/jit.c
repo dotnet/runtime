@@ -3384,8 +3384,8 @@ main (int argc, char *argv [])
 	mono_install_handler (arch_get_throw_exception ());
 
 	mono_init ();
-	mono_thread_init();
 	mono_appdomain_init (file);
+	mono_thread_init();
 	mono_network_init();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
