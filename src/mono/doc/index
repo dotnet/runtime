@@ -151,6 +151,28 @@
   </tr>
 </table>
 
+@item Jul 27th, 2003: Daily Snapshots
+
+	We're now building daily snapshots of Mono.  They come in
+	three distinct flavors:
+
+	<ul>
+		* mono snapshot tarballs - These are 'release-style' tarballs and
+		  contain everything necessary to setup a new
+		  installation from scratch.  This includes the Mono
+	 	  runtime and all the assemblies we distribute.
+
+	 	* monocharge tarballs - These tarballs contain only
+		  the assemblies built on that day.
+
+		* monolite tarballs - These tarballs contain a copy of
+		  'corlib.dll', 'mcs.exe' and 'System.dll'. They can be used to
+		  re-bootstrap an out-of-sync installation.
+	<ul>
+
+	The daily builds are availble here: <a href="http://go-mono.com/daily">http://go-mono.com/daily</a>
+
+If you find that the builds are broken, please notify me.
 @item Jul 19th, 2003: Recent developments
 
 	Since Mono has matured, we have limited the news on the site
