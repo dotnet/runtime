@@ -7727,7 +7727,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	if (target_bb != NULL) {
 		int i;
 		
-		if (cfg->verbose_level > 0) {
+		if (cfg->verbose_level > 1) {
 			printf ("remove_block_if_useless %s, removed BB%d\n", mono_method_full_name (cfg->method, TRUE), bb->block_num);
 		}
 		

@@ -544,7 +544,6 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	MonoAotModule *aot_module;
 	MonoAotMethod *minfo;
 	MonoJitInfo *jinfo;
-	MonoMethodHeader *header;
 
 	if (!module)
 		return NULL;
@@ -560,8 +559,6 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
-	
-	header = mono_method_get_header (method);
 	
 	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 
@@ -580,6 +577,8 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
 		memcpy (jinfo, minfo->info, sizeof (MonoJitInfo));
 		if (jinfo->clauses) {
+			MonoMethodHeader *header = mono_method_get_header (method);
+
 			jinfo->clauses = 
 				mono_mempool_alloc0 (domain->mp, sizeof (MonoJitExceptionInfo) * header->num_clauses);
 			memcpy (jinfo->clauses, minfo->info->clauses, sizeof (MonoJitExceptionInfo) * header->num_clauses);
@@ -618,11 +617,11 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	guint code_len, used_int_regs, used_strings;
 	MonoAotMethod *minfo;
 	MonoJitInfo *jinfo;
-	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMemPool *mp;
 	GPtrArray *patches;
 	int i, pindex, got_index;
 	gboolean non_got_patches, keep_patches = TRUE;
+	gboolean has_clauses;
 	char *p;
 
 	minfo = g_new0 (MonoAotMethod, 1);
@@ -645,7 +644,9 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);
 
 	/* Exception table */
-	if (header->num_clauses) {
+	has_clauses = decode_value (p, &p);
+	if (has_clauses) {
+		MonoMethodHeader *header = mono_method_get_header (method);
 		jinfo->clauses = 
 			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitExceptionInfo) * header->num_clauses);
 		jinfo->num_clauses = header->num_clauses;
@@ -1381,6 +1382,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	encode_value (cfg->used_int_regs, p, &p);
 
 	/* Exception table */
+	encode_value (header->num_clauses ? 1 : 0, p, &p);
 	if (header->num_clauses) {
 		MonoJitInfo *jinfo = cfg->jit_info;
 
