@@ -127,10 +127,15 @@ calculate_sizes (MonoMethod *method, guint *stack_size, guint *code_size, guint 
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 			add_general (&gr, stack_size, code_size, TRUE);
+			break;
+		case MONO_TYPE_SZARRAY:
+			add_general (&gr, stack_size, code_size, TRUE);
+			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)
+				break;
+			*code_size += 4;
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
@@ -327,10 +332,23 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 			SAVE_4_IN_GENERIC_REGISTER;
+			break;
+		case MONO_TYPE_SZARRAY:
+			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
+				SAVE_4_IN_GENERIC_REGISTER;
+			} else {
+				g_warning ("untested marshaling\n");
+				if (gr < GENERAL_REGS) {
+					ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
+					ppc_lwz  (p, ppc_r3 + gr, G_STRUCT_OFFSET (MonoArray, vector), ppc_r3 + gr);
+					gr ++;
+				} else {
+					NOT_IMPLEMENTED ("save marshalled SZARRAY on stack");
+				}
+			}
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
