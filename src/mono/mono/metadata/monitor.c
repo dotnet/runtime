@@ -19,7 +19,8 @@
 
 #include <mono/os/gc_wrapper.h>
 
-#undef THREAD_LOCK_DEBUG
+/*#define LOCK_DEBUG(a) do { a; } while (0)*/
+#define LOCK_DEBUG(a)
 
 /*
  * The monitor implementation here is based on
@@ -52,69 +53,68 @@
  */
 
 
-static void mon_finalize (void *o, void *unused)
+static void 
+mon_finalize (void *o, void *unused)
 {
-	MonoThreadsSync *mon=(MonoThreadsSync *)o;
+	MonoThreadsSync *mon = o;
 	
-#ifdef THREAD_LOCK_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Finalizing sync %p", mon);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Finalizing sync %p", mon));
 
-	if(mon->entry_sem!=NULL) {
+	if (mon->entry_sem != NULL) {
 		CloseHandle (mon->entry_sem);
 	}
 	/* If this isn't empty then something is seriously broken - it
 	 * means a thread is still waiting on the object that owned
 	 * this lock, but the object has been finalized.
 	 */
-	g_assert (mon->wait_list==NULL);
+	g_assert (mon->wait_list == NULL);
 }
 
-static MonoThreadsSync *mon_new(guint32 id)
+static MonoThreadsSync *
+mon_new (guint32 id)
 {
 	MonoThreadsSync *new;
 	
 #if HAVE_BOEHM_GC
-	new=(MonoThreadsSync *)GC_MALLOC (sizeof(MonoThreadsSync));
+	new = GC_MALLOC (sizeof (MonoThreadsSync));
 	GC_REGISTER_FINALIZER (new, mon_finalize, NULL, NULL, NULL);
 #else
 	/* This should be freed when the object that owns it is
 	 * deleted
 	 */
-	new=(MonoThreadsSync *)g_new0 (MonoThreadsSync, 1);
+	new = g_new0 (MonoThreadsSync, 1);
 #endif
-	new->owner=id;
-	new->nest=1;
+	new->owner = id;
+	new->nest = 1;
 	
-	return(new);
+	return new;
 }
 
 /* If allow_interruption==TRUE, the method will be interrumped if abort or suspend
  * is requested. In this case it returns -1.
  */ 
-static gint32 mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
+static gint32 
+mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
 {
 	MonoThreadsSync *mon;
-	guint32 id=GetCurrentThreadId ();
+	guint32 id = GetCurrentThreadId ();
 	HANDLE sem;
-	guint32 then=0, now, delta;
+	guint32 then = 0, now, delta;
 	guint32 waitms;
 	guint32 ret;
 	
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": (%d) Trying to lock object %p (%d ms)", id, obj, ms);
-#endif
+	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
+		  ": (%d) Trying to lock object %p (%d ms)", id, obj, ms));
 
 retry:
-	mon=obj->synchronisation;
+	mon = obj->synchronisation;
 
 	/* If the object has never been locked... */
-	if(mon==NULL) {
-		mon=mon_new(id);
-		if(InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL)==NULL) {
+	if (mon == NULL) {
+		mon = mon_new (id);
+		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL) == NULL) {
 			/* Successfully locked */
-			return(1);
+			return 1;
 		} else {
 			/* Another thread got in first, so try again.
 			 * GC will take care of the monitor record
@@ -127,9 +127,9 @@ retry:
 	}
 
 	/* If the object is currently locked by this thread... */
-	if(mon->owner==id) {
+	if (mon->owner == id) {
 		mon->nest++;
-		return(1);
+		return 1;
 	}
 
 	/* If the object has previously been locked but isn't now... */
@@ -137,15 +137,15 @@ retry:
 	/* This case differs from Dice's case 3 because we don't
 	 * deflate locks or cache unused lock records
 	 */
-	if(mon->owner==0) {
+	if (mon->owner == 0) {
 		/* Try to install our ID in the owner field, nest
 		 * should have been left at 1 by the previous unlock
 		 * operation
 		 */
-		if(InterlockedCompareExchange (&mon->owner, id, 0)==0) {
+		if (InterlockedCompareExchange (&mon->owner, id, 0) == 0) {
 			/* Success */
-			g_assert (mon->nest==1);
-			return(1);
+			g_assert (mon->nest == 1);
+			return 1;
 		} else {
 			/* Trumped again! */
 			goto retry;
@@ -155,23 +155,19 @@ retry:
 	/* The object must be locked by someone else... */
 
 	/* If ms is 0 we don't block, but just fail straight away */
-	if(ms==0) {
-#ifdef THREAD_LOCK_DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": (%d) timed out, returning FALSE", id);
-#endif
-
-		return(0);
+	if (ms == 0) {
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) timed out, returning FALSE", id));
+		return 0;
 	}
 
 	/* The slow path begins here.  We need to make sure theres a
 	 * semaphore handle (creating it if necessary), and block on
 	 * it
 	 */
-	if(mon->entry_sem==NULL) {
+	if (mon->entry_sem == NULL) {
 		/* Create the semaphore */
-		sem=CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-		if(InterlockedCompareExchangePointer ((gpointer*)&mon->entry_sem, sem, NULL)!=NULL) {
+		sem = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+		if (InterlockedCompareExchangePointer ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
 			/* Someone else just put a handle here */
 			CloseHandle (sem);
 		}
@@ -187,115 +183,106 @@ retry:
 	 * handle technique from pulse/wait would involve locking the
 	 * lock struct and therefore slowing down the fast path.
 	 */
-	if(ms!=INFINITE) {
-		then=GetTickCount ();
-		if(ms<100) {
-			waitms=ms;
+	if (ms != INFINITE) {
+		then = GetTickCount ();
+		if (ms < 100) {
+			waitms = ms;
 		} else {
-			waitms=100;
+			waitms = 100;
 		}
 	} else {
-		waitms=100;
+		waitms = 100;
 	}
 	
 	InterlockedIncrement (&mon->entry_count);
-	ret=WaitForSingleObjectEx (mon->entry_sem, waitms, allow_interruption);
+	ret = WaitForSingleObjectEx (mon->entry_sem, waitms, allow_interruption);
 	InterlockedDecrement (&mon->entry_count);
 
-	if(ms!=INFINITE) {
-		now=GetTickCount ();
+	if (ms != INFINITE) {
+		now = GetTickCount ();
 		
-		if(now<then) {
+		if (now < then) {
 			/* The counter must have wrapped around */
-#ifdef THREAD_LOCK_DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": wrapped around! now=0x%x then=0x%x",
-				   now, then);
-#endif
+			LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+				   ": wrapped around! now=0x%x then=0x%x", now, then));
 			
-			now+=(0xffffffff - then);
-			then=0;
+			now += (0xffffffff - then);
+			then = 0;
 
-#ifdef THREAD_LOCK_DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": wrap rejig: now=0x%x then=0x%x delta=0x%x", now, then, now-then);
-#endif
+			LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": wrap rejig: now=0x%x then=0x%x delta=0x%x", now, then, now-then));
 		}
 		
-		delta=now-then;
-		if(delta >= ms) {
-			ms=0;
+		delta = now - then;
+		if (delta >= ms) {
+			ms = 0;
 		} else {
-			ms-=delta;
+			ms -= delta;
 		}
 
-		if((ret==WAIT_TIMEOUT || (ret==WAIT_IO_COMPLETION && !allow_interruption)) && ms>0) {
+		if ((ret == WAIT_TIMEOUT || (ret == WAIT_IO_COMPLETION && !allow_interruption)) && ms > 0) {
 			/* More time left */
 			goto retry;
 		}
 	} else {
-		if(ret==WAIT_TIMEOUT || (ret==WAIT_IO_COMPLETION && !allow_interruption)) {
+		if (ret == WAIT_TIMEOUT || (ret == WAIT_IO_COMPLETION && !allow_interruption)) {
 			/* Infinite wait, so just try again */
 			goto retry;
 		}
 	}
 	
-	if(ret==WAIT_OBJECT_0) {
+	if (ret == WAIT_OBJECT_0) {
 		/* retry from the top */
 		goto retry;
 	}
 	
 	/* We must have timed out */
-#ifdef THREAD_LOCK_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
-		   ": (%d) timed out waiting, returning FALSE", id);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) timed out waiting, returning FALSE", id));
 
-	if (ret==WAIT_IO_COMPLETION) return(-1);
-	else return(0);
+	if (ret == WAIT_IO_COMPLETION)
+		return -1;
+	else 
+		return 0;
 }
 
-gboolean mono_monitor_enter (MonoObject *obj)
+gboolean 
+mono_monitor_enter (MonoObject *obj)
 {
 	return mono_monitor_try_enter_internal (obj, INFINITE, FALSE) == 1;
 }
 
-gboolean mono_monitor_try_enter (MonoObject *obj, guint32 ms)
+gboolean 
+mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 {
 	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
 }
 
-void mono_monitor_exit (MonoObject *obj)
+void 
+mono_monitor_exit (MonoObject *obj)
 {
 	MonoThreadsSync *mon;
 	guint32 nest;
 	
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Unlocking %p",
-		  GetCurrentThreadId (), obj);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Unlocking %p", GetCurrentThreadId (), obj));
 
-	mon=obj->synchronisation;
+	mon = obj->synchronisation;
 
-	if(mon==NULL) {
+	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
 	}
-	if(mon->owner!=GetCurrentThreadId ()) {
+	if (mon->owner != GetCurrentThreadId ()) {
 		return;
 	}
 	
-	nest=mon->nest-1;
-	if(nest==0) {
-#ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": (%d) Object %p is now unlocked",
-			  GetCurrentThreadId (), obj);
-#endif
+	nest = mon->nest - 1;
+	if (nest == 0) {
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+			  ": (%d) Object %p is now unlocked", GetCurrentThreadId (), obj));
 	
 		/* object is now unlocked, leave nest==1 so we don't
 		 * need to set it when the lock is reacquired
 		 */
-		mon->owner=0;
+		mon->owner = 0;
 
 		/* Do the wakeup stuff.  It's possible that the last
 		 * blocking thread gave up waiting just before we
@@ -304,58 +291,47 @@ void mono_monitor_exit (MonoObject *obj)
 		 * it means we don't have to waste time locking the
 		 * struct.
 		 */
-		if(mon->entry_count>0) {
+		if (mon->entry_count > 0) {
 			ReleaseSemaphore (mon->entry_sem, 1, NULL);
 		}
 	} else {
-#ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": (%d) Object %p is now locked %d times",
-			  GetCurrentThreadId (), obj,
-			  nest);
-#endif
-		mon->nest=nest;
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+			  ": (%d) Object %p is now locked %d times", GetCurrentThreadId (), obj, nest));
+		mon->nest = nest;
 	}
 }
 
-gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
-							      guint32 ms)
+gboolean 
+ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 ms)
 {
 	gint32 res;
-	MONO_ARCH_SAVE_REGS;
 
 	do {
 		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
 		if (res == -1)
 			mono_thread_interruption_checkpoint ();
-	}
-	while (res == -1);
+	} while (res == -1);
 	
-	return(res == 1);
+	return res == 1;
 }
 
-void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
+void 
+ves_icall_System_Threading_Monitor_Monitor_exit (MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	mono_monitor_exit (obj);
 }
 
-gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
+gboolean 
+ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 {
 	MonoThreadsSync *mon;
 	
-	MONO_ARCH_SAVE_REGS;
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+		  ": Testing if %p is owned by thread %d", obj, GetCurrentThreadId()));
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Testing if %p is owned by thread %d", obj,
-		  GetCurrentThreadId());
-#endif
-	
-	mon=obj->synchronisation;
-	if(mon==NULL) {
-		return(FALSE);
+	mon = obj->synchronisation;
+	if (mon == NULL) {
+		return FALSE;
 	}
 	
 	if(mon->owner==GetCurrentThreadId ()) {
@@ -365,28 +341,24 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
 	return(FALSE);
 }
 
-gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject *obj)
+gboolean 
+ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObject *obj)
 {
 	MonoThreadsSync *mon;
-	
-	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": (%d) Testing if %p is owned by any thread",
-		  GetCurrentThreadId (), obj);
-#endif
+	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
+		  ": (%d) Testing if %p is owned by any thread", GetCurrentThreadId (), obj));
 	
-	mon=obj->synchronisation;
-	if(mon==NULL) {
-		return(FALSE);
+	mon = obj->synchronisation;
+	if (mon == NULL) {
+		return FALSE;
 	}
 	
-	if(mon->owner!=0) {
-		return(TRUE);
+	if (mon->owner != 0) {
+		return TRUE;
 	}
 	
-	return(FALSE);
+	return FALSE;
 }
 
 /* All wait list manipulation in the pulse, pulseall and wait
@@ -394,146 +366,122 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject
  * any extra struct locking
  */
 
-void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
+void
+ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 {
 	MonoThreadsSync *mon;
 	
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Pulsing %p",
-		  GetCurrentThreadId (), obj);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Pulsing %p", 
+		GetCurrentThreadId (), obj));
 	
-	mon=obj->synchronisation;
-	if(mon==NULL) {
+	mon = obj->synchronisation;
+	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
 	}
-	if(mon->owner!=GetCurrentThreadId ()) {
+	if (mon->owner != GetCurrentThreadId ()) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return;
 	}
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) %d threads waiting",
-		  GetCurrentThreadId (), g_slist_length (mon->wait_list));
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) %d threads waiting",
+		  GetCurrentThreadId (), g_slist_length (mon->wait_list)));
 	
-	if(mon->wait_list!=NULL) {
-#ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
+	if (mon->wait_list != NULL) {
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 			  ": (%d) signalling and dequeuing handle %p",
-			  GetCurrentThreadId (), mon->wait_list->data);
-#endif
+			  GetCurrentThreadId (), mon->wait_list->data));
 	
 		SetEvent (mon->wait_list->data);
-		mon->wait_list=g_slist_remove (mon->wait_list,
-					       mon->wait_list->data);
+		mon->wait_list = g_slist_remove (mon->wait_list, mon->wait_list->data);
 	}
 }
 
-void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
+void
+ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 {
 	MonoThreadsSync *mon;
 	
-	MONO_ARCH_SAVE_REGS;
+	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Pulsing all %p",
+		  GetCurrentThreadId (), obj));
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Pulsing all %p",
-		  GetCurrentThreadId (), obj);
-#endif
-	
-	mon=obj->synchronisation;
-	if(mon==NULL) {
+	mon = obj->synchronisation;
+	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
 	}
-	if(mon->owner!=GetCurrentThreadId ()) {
+	if (mon->owner != GetCurrentThreadId ()) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return;
 	}
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) %d threads waiting",
-		  GetCurrentThreadId (), g_slist_length (mon->wait_list));
-#endif
-	
-	while(mon->wait_list!=NULL) {
-#ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) %d threads waiting",
+		  GetCurrentThreadId (), g_slist_length (mon->wait_list)));
+
+	while (mon->wait_list != NULL) {
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 			  ": (%d) signalling and dequeuing handle %p",
-			  GetCurrentThreadId (), mon->wait_list->data);
-#endif
+			  GetCurrentThreadId (), mon->wait_list->data));
 	
 		SetEvent (mon->wait_list->data);
-		mon->wait_list=g_slist_remove (mon->wait_list,
-					       mon->wait_list->data);
+		mon->wait_list = g_slist_remove (mon->wait_list, mon->wait_list->data);
 	}
 }
 
-gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
-							 guint32 ms)
+gboolean
+ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 {
 	MonoThreadsSync *mon;
 	HANDLE event;
 	guint32 nest;
 	guint32 ret;
-	gboolean success=FALSE;
+	gboolean success = FALSE;
 	gint32 regain;
 	MonoThread *thread = mono_thread_current ();
-	
-	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Trying to wait for %p with timeout %dms",
-		  GetCurrentThreadId (), obj, ms);
-#endif
+		  GetCurrentThreadId (), obj, ms));
 	
-	mon=obj->synchronisation;
-	if(mon==NULL) {
+	mon = obj->synchronisation;
+	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
-		return(FALSE);
+		return FALSE;
 	}
-	if(mon->owner!=GetCurrentThreadId ()) {
+	if (mon->owner != GetCurrentThreadId ()) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
-		return(FALSE);
+		return FALSE;
 	}
 	
-	event=CreateEvent (NULL, FALSE, FALSE, NULL);
-	if(event==NULL) {
+	event = CreateEvent (NULL, FALSE, FALSE, NULL);
+	if (event == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Failed to set up wait event"));
-		return(FALSE);
+		return FALSE;
 	}
 	
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) queuing handle %p",
-		  GetCurrentThreadId (), event);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) queuing handle %p",
+		  GetCurrentThreadId (), event));
 
 	mono_monitor_enter (thread->synch_lock);
 	thread->state |= ThreadState_WaitSleepJoin;
 	mono_monitor_exit (thread->synch_lock);
 
-	mon->wait_list=g_slist_append (mon->wait_list, event);
+	mon->wait_list = g_slist_append (mon->wait_list, event);
 	
 	/* Save the nest count, and release the lock */
-	nest=mon->nest;
-	mon->nest=1;
+	nest = mon->nest;
+	mon->nest = 1;
 	mono_monitor_exit (obj);
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Unlocked %p lock %p",
-		  GetCurrentThreadId (), obj, mon);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Unlocked %p lock %p",
+		  GetCurrentThreadId (), obj, mon));
 
 	/* There's no race between unlocking mon and waiting for the
 	 * event, because auto reset events are sticky, and this event
 	 * is private to this thread.  Therefore even if the event was
 	 * signalled before we wait, we still succeed.
 	 */
-	ret=WaitForSingleObjectEx (event, ms, TRUE);
+	ret = WaitForSingleObjectEx (event, ms, TRUE);
 
 	/* Reset the thread state fairly early, so we don't have to worry
 	 * about the monitor error checking
@@ -544,38 +492,35 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	
 	if (mono_thread_interruption_requested ()) {
 		CloseHandle (event);
-		return(FALSE);
+		return FALSE;
 	}
 
 	/* Regain the lock with the previous nest count */
 	do {
-		regain=mono_monitor_try_enter_internal (obj, INFINITE, TRUE);
+		regain = mono_monitor_try_enter_internal (obj, INFINITE, TRUE);
 		if (regain == -1) 
 			mono_thread_interruption_checkpoint ();
-	}
-	while (regain == -1);
+	} while (regain == -1);
 
-	if(regain==0) {
+	if (regain == 0) {
 		/* Something went wrong, so throw a
 		 * SynchronizationLockException
 		 */
 		CloseHandle (event);
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Failed to regain lock"));
-		return(FALSE);
+		return FALSE;
 	}
 
-	mon->nest=nest;
+	mon->nest = nest;
 
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Regained %p lock %p",
-		  GetCurrentThreadId (), obj, mon);
-#endif
+	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Regained %p lock %p",
+		  GetCurrentThreadId (), obj, mon));
 
-	if(ret==WAIT_TIMEOUT) {
+	if (ret == WAIT_TIMEOUT) {
 		/* Poll the event again, just in case it was signalled
 		 * while we were trying to regain the monitor lock
 		 */
-		ret=WaitForSingleObjectEx (event, 0, FALSE);
+		ret = WaitForSingleObjectEx (event, 0, FALSE);
 	}
 
 	/* Pulse will have popped our event from the queue if it signalled
@@ -588,26 +533,20 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	 * thread.
 	 */
 	
-	if(ret==WAIT_OBJECT_0) {
-#ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Success",
-			  GetCurrentThreadId ());
-#endif
-		success=TRUE;
+	if (ret == WAIT_OBJECT_0) {
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Success",
+			  GetCurrentThreadId ()));
+		success = TRUE;
 	} else {
-#ifdef THREAD_LOCK_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
-			  GetCurrentThreadId ());
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) dequeuing handle %p",
-			  GetCurrentThreadId (), event);
-#endif
+		LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed, dequeuing handle %p",
+			  GetCurrentThreadId (), event));
 		/* No pulse, so we have to remove ourself from the
 		 * wait queue
 		 */
-		mon->wait_list=g_slist_remove (mon->wait_list, event);
+		mon->wait_list = g_slist_remove (mon->wait_list, event);
 	}
 	CloseHandle (event);
 	
-	return(success);
+	return success;
 }
 
