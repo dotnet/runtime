@@ -874,7 +874,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 {	
 	MonoObject *o;
 	MonoClass *klass;
-	MonoVTable *vtable;
+	MonoVTable *vtable = NULL;
 	gchar *v;
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
@@ -1093,7 +1093,7 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 {
 	MonoClass *klass;
 	gpointer args [2];
-	MonoMethod *method;
+	MonoMethod *method = NULL;
 	MonoBoolean is_terminating = TRUE;
 	MonoObject *obj;
 	gint i;
@@ -2004,6 +2004,7 @@ mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
 	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
 							"System",
 							"InvalidCastException"));
+	return NULL;
 }
 
 typedef struct {
