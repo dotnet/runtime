@@ -1,0 +1,27 @@
+* Status of the various pieces of the class library
+
+	You can browse the status of the class library and see who has
+	registered to work on what parts of the system.  These list
+	work-in-progress components currently.
+
+	<ul>
+		* Per <a href="class-status/per-assembly.html">Assembly</a>
+
+		* Per <a href="class-status/per-completion.html">Completion</a>
+
+		* Per <a href="class-status/per-maintainer.html">Maintainer</a>
+
+		* Per <a href="class-status/per-unimplemented.html">Unimplemented</a>
+	</ul>
+
+	A better mechanism will soon be in place, I just did this
+	really quickly, as we already got one duplicated implementation.
+
+	You can also download the XML <a
+	href="class-status/maintainers.xml">maintainers</a> file that
+	contains the actual maintainers list.  
+
+	I am sure we can generate better reports, if you are
+	interested in contributing, let <a
+	href="mailto:miguel@ximian.com">me</a> know.
+

@@ -132,10 +132,7 @@
 	For instant messaging (another pieces of the Hailstorm bit),
 	you want to use a non-centralized system like Sun's <a
 	href="http://www.jxta.org">JXTA</a>.  Some people mailed me to
-	mention Jabber as a messaging platform.  Jabber suffers from
-	the same problems that a centralized Passport has.  If you
-	want to do things right, you want to start with a fully
-	distributed system. 
+	mention Jabber as a messaging platform.  
 
 	It could also just use the user e-mail address as the `key' to
 	choose the registrar (msn.com, hotmail.com -> passport.com;

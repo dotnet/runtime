@@ -3,10 +3,29 @@
 	The Class Library should be compatible with Microsoft's .NET
 	implementation.
 
+	Please see the <a href="class-status.html">Class Status</a>
+	page for a status of who is working on which classes.
+	
 	We will write as much code as possible in C#. We may need to
 	interface with code written in C to gain access to the
-	functionality of
-        libraries like libart, Gtk+, and libc.
+	functionality of libraries like libart, Gtk+, and libc.
+
+** Contributing
+
+	We welcome contributions to the the Class Library.  To get
+	started, check the status page for information about which
+	APIs are being worked on, and how to get in touch with 
+	individual maintainers.  
+
+	If you want to work on a class, first check the <a
+	href="class-status.html"> to see if someone is already working
+	on it, and maybe contact them.
+
+	If nobody is working on it, mail <a
+	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
+   	with the class you want to implement and CC <a
+	href="mailto:miguel@ximian.com">miguel@ximian.com</a>
+
 
 ** Layout
 
@@ -139,13 +158,6 @@
 	not only stupid, but leading to unreliable code).
 
 	In those cases, use the keyword "LAMESPEC".
-
-** Contributing
-
-	We welcome contributions to the the Class Library.  To get
-	started, check the status page for information about which
-	APIs are being worked on, and how to get in touch with 
-	individual maintainers.
 
 ** FAQ
 

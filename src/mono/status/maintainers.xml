@@ -30,15 +30,21 @@
   </person>
   <person email="angryjohn69@nc.rr.com" name="John R. Hicks">
     <class name="System.Diagnostics.Switch" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.BooleanSwitch" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.TraceSwitch" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.ConditionalAttribute" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.Debug" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.DiagnosticsConfigurationHandler" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.StackFrame" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.StackTrace" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.Trace" date="Jul-15-2001"/>
-      <class name="System.Diagnostics.TraceListener" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.BooleanSwitch" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.TraceSwitch" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.ConditionalAttribute" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.Debug" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.DiagnosticsConfigurationHandler" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.StackFrame" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.StackTrace" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.Trace" date="Jul-15-2001"/>
+    <class name="System.Diagnostics.TraceListener" date="Jul-15-2001"/>
+  </person>
+  <person email="czw@home.se" name="Jens Bäckman">
+    <class name="System.IO.BinaryReader" date="Jul-15-2001"/>
+    <class name="System.IO.BinaryWriter" date="Jul-15-2001"/>
+    <class name="System.IO.FileStream" date="Jul-15-2001"/>
+    <class name="System.IO.Stream" date="Jul-15-2001"/>
   </person>
 </maintainers>
 
