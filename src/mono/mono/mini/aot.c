@@ -69,7 +69,7 @@ static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
-static guint32 mono_aot_verbose = 0;
+static guint32 mono_aot_verbose = 1;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
@@ -285,7 +285,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			memcpy (code, minfo->info->code_start, minfo->info->code_size);
 
 			if (mono_aot_verbose > 1)
-				printf ("REUSE METHOD: %s %p - %p.\n", mono_method_full_name (method, TRUE), code, (char*)code + code_len);
+				printf ("REUSE METHOD: %s %p - %p.\n", mono_method_full_name (method, TRUE), code, (char*)code + minfo->info->code_size);
 
 			/* Do this outside the lock to avoid deadlocks */
 			LeaveCriticalSection (&aot_mutex);
@@ -412,7 +412,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		gpointer *table;
 		int pages;
 		int i, err;
-		guint32 last_offset;
+		guint32 last_offset, buf_len;
 
 		if (aot_module->opts & MONO_OPT_SHARED)
 			mp = mono_mempool_new ();
@@ -544,6 +544,11 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			ji->next = patch_info;
 			patch_info = ji;
 		}
+
+		info = (gpointer)((guint8*)info + 4);
+		buf_len = *(guint32*)info;
+		info = (gpointer)((guint8*)info + 4);
+		mono_debug_add_aot_method (domain, method, code, (guint8*)info, buf_len);
 
 		if (use_loaded_code) {
 		/* disable write protection */
@@ -1033,6 +1038,21 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	 */
 	/* NULL terminated array */
 	fprintf (tmpfp, "\t.long 0\n");
+
+	{
+		guint8 *buf;
+		guint32 buf_len;
+
+		mono_debug_serialize_debug_info (cfg, &buf, &buf_len);
+
+		fprintf (tmpfp, "\t.long %d\n", buf_len);
+
+		for (i = 0; i < buf_len; ++i)
+			fprintf (tmpfp, ".byte %d\n", (unsigned int) buf [i]);
+
+		if (buf_len > 0)
+			g_free (buf);
+	}
 
 	/* fixme: save the rest of the required infos */
 

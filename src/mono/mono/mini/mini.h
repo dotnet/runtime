@@ -32,7 +32,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "6"
+#define MONO_AOT_FILE_VERSION "7"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -726,7 +726,10 @@ void      mono_debug_open_method                (MonoCompile *cfg);
 void      mono_debug_close_method               (MonoCompile *cfg);
 void      mono_debug_open_block                 (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address);
 void      mono_debug_record_line_number         (MonoCompile *cfg, MonoInst *ins, guint32 address);
-
+void      mono_debug_serialize_debug_info       (MonoCompile *cfg, guint8 **out_buf, guint32 *buf_len);
+void      mono_debug_add_aot_method            (MonoDomain *domain,
+												MonoMethod *method, guint8 *code_start, 
+												guint8 *debug_info, guint32 debug_info_len);
 
 /* Tracing */
 MonoTraceSpec *mono_trace_parse_options         (MonoAssembly *assembly, char *options);
