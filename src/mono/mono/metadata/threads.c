@@ -1158,11 +1158,17 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 static gboolean
 remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 {
-	guint32 self = GPOINTER_TO_UINT (user);
+	struct wait_data *wait=(struct wait_data *)user;
+	guint32 self = GetCurrentThreadId ();
 	MonoThread *thread = (MonoThread *) value;
 
 	/* The finalizer thread is not a background thread */
 	if (thread->tid != self && thread->state & ThreadState_Background) {
+	
+		wait->handles[wait->num]=thread->handle;
+		wait->threads[wait->num]=thread;
+		wait->num++;
+	
 		if(thread->state & ThreadState_AbortRequested ||
 		   thread->state & ThreadState_Aborted) {
 #ifdef THREAD_DEBUG
@@ -1176,6 +1182,9 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 #endif
 /* Will assert on windows */
 #ifndef __MINGW32__
+		mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
+		thread->state |= ThreadState_StopRequested;
+		mono_monitor_exit ((MonoObject *)thread);
 		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 #endif
 		return TRUE;
@@ -1221,8 +1230,6 @@ void mono_thread_manage (void)
 		}
 	} while(wait->num>0);
 	
-	g_free (wait);
-
 	mono_thread_pool_cleanup ();
 
 	EnterCriticalSection(&threads_mutex);
@@ -1231,10 +1238,17 @@ void mono_thread_manage (void)
 	 * Remove everything but the finalizer thread and self.
 	 * Also abort all the background threads
 	 * */
-	mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads,
-					  GUINT_TO_POINTER (GetCurrentThreadId ()));
+	wait->num = 0;
+	mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads, wait);
 
 	LeaveCriticalSection(&threads_mutex);
+
+	if(wait->num>0) {
+		/* Something to wait for */
+		wait_for_tids (wait, INFINITE);
+	}
+
+	g_free (wait);
 }
 
 static void terminate_thread (gpointer key, gpointer value, gpointer user)
