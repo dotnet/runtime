@@ -8632,6 +8632,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * the various flags: delegate/unicode/contextbound etc.
 	 */
 	klass->flags = tb->attrs;
+	klass->has_cctor = 1;
+	klass->has_finalize = 1;
 
 	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->run)
 		/* No need to fully construct the type */
