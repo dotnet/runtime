@@ -235,17 +235,21 @@ emit_prolog (guint32 *p, MonoMethodSignature *sig, guint stack_size)
                       sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_o0 + gr); \
                       gr++; \
               } else { \
-	              g_error("FIXME: SAVE_4_IN_GENERIC_REGISTER"); \
+		      sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0); \
+		      sparc_st_imm (p, sparc_l0, sparc_sp, stack_par_pos); \
+		      stack_par_pos += 4; \
               }
 
 #define SAVE_4_VAL_IN_GENERIC_REGISTER \
               if (gr < OUT_REGS) { \
-		      g_warning("DOCTOR! LOOK OUT: %p", p); \
                       sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0); \
                       sparc_ld_imm (p, sparc_l0, 0, sparc_o0 + gr); \
                       gr++; \
               } else { \
-                      g_error("FIXME: SAVE_4_VAL_IN_GENERIC_REGISTER"); \
+		      sparc_ld_imm (p, ARG_BASE, i*ARG_SIZE, sparc_l0); \
+		      sparc_ld_imm (p, sparc_l0, 0, sparc_l0); \
+		      sparc_st_imm (p, sparc_l0, sparc_sp, stack_par_pos); \
+		      stack_par_pos += 4; \
               }
 
 static inline guint32*
