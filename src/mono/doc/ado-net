@@ -249,7 +249,7 @@
 	to a System.Windows.Forms.DataGrid.  This may involve implementing many classes
 	in System.Windows.Forms and System.Data.
 	
-	<p><b>Integration with <a href="http://gtk-sharp.sourceforge.net/">GTK#</b> 
+	<p><b>Integration with <a href="http://gtk-sharp.sourceforge.net/">GTK#</a></b> 
 	needs to be started, such as, data binding
 	to a GtkTreeView.  This may involve creating new classes
 	to go between the glist data model and the ADO.NET data model.
