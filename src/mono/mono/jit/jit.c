@@ -33,7 +33,6 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/io-layer/io-layer.h>
-#include <mono/io-layer/threads.h>
 
 #include "jit.h"
 #include "regset.h"
