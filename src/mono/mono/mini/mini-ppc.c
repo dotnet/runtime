@@ -2165,28 +2165,12 @@ ppc_patch (guchar *code, guchar *target)
 
 	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 18) {
-		if ((glong)target >= 0){
-			if ((glong)target <= 33554431){
-				ins = (18 << 26) | ((guint32) target) | (ins & 1) | 2;
-				*(guint32*)code = ins;
-				return;
-			} 
-		} else {
-			if ((glong)target >= -33554432){
-				ins = (18 << 26) | (((guint32)target) & ~0xfc000000) | (ins & 1) | 2;
-				*(guint32*)code = ins;
-				return;
-			}
-		}
-		
+		// prefer relative branches, they are more position independent (e.g. for AOT compilation).
 		gint diff = target - code;
 		if (diff >= 0){
 			if (diff <= 33554431){
 				ins = (18 << 26) | (diff) | (ins & 1);
 				*(guint32*)code = ins;
-				return;
-			} else {
-				handle_thunk (TRUE, code, target);
 				return;
 			}
 		} else {
@@ -2195,11 +2179,26 @@ ppc_patch (guchar *code, guchar *target)
 				ins = (18 << 26) | (diff & ~0xfc000000) | (ins & 1);
 				*(guint32*)code = ins;
 				return;
-			} else {
-				handle_thunk (TRUE, code, target);
+			}
+		}
+		
+		if ((glong)target >= 0){
+			if ((glong)target <= 33554431){
+				ins = (18 << 26) | ((guint32) target) | (ins & 1) | 2;
+				*(guint32*)code = ins;
+				return;
+			}
+		} else {
+			if ((glong)target >= -33554432){
+				ins = (18 << 26) | (((guint32)target) & ~0xfc000000) | (ins & 1) | 2;
+				*(guint32*)code = ins;
 				return;
 			}
 		}
+
+		handle_thunk (TRUE, code, target);
+		return;
+
 		g_assert_not_reached ();
 	}
 	
