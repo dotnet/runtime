@@ -366,6 +366,18 @@ inverse of this mapping.
 #define idx_size(tableidx) (meta->tables [(tableidx)].rows < 65536 ? 2 : 4)
 
 /* Reference: Partition II - 23.2.6 */
+/*
+ * mono_metadata_compute_size:
+ * @meta: metadata context
+ * @tableindex: metadata table number
+ * @result_bitfield: pointer to guint32 where to store additional info
+ * 
+ * mono_metadata_compute_size() computes the lenght in bytes of a single
+ * row in a metadata table. The size of each column is encoded in the
+ * @result_bitfield return value along with the number of columns in the table.
+ * the resulting bitfield should be handed to the mono_metadata_table_size()
+ * and mono_metadata_table_count() macros.
+ */
 int
 mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bitfield)
 {
@@ -700,6 +712,14 @@ mono_metadata_locate (MonoImage *meta, int table, int idx)
 	return meta->tables [table].base + (meta->tables [table].row_size * (idx - 1));
 }
 
+/**
+ * mono_metadata_locate_token:
+ * @meta: metadata context
+ * @token: metadata token
+ *
+ * Returns a pointer to the data in the metadata represented by the
+ * token #token.
+ */
 const char *
 mono_metadata_locate_token (MonoImage *meta, guint32 token)
 {
@@ -736,6 +756,13 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 	return meta->heap_strings.data + index;
 }
 
+/**
+ * mono_metadata_user_string:
+ * @meta: metadata context
+ * @index: index into the user string heap.
+ *
+ * Returns: an in-memory pointer to the @index in the user string heap ("#US").
+ */
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
@@ -906,6 +933,15 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
 	return len;
 }
 
+/*
+ * mono_metadata_parse_typedef_or_ref:
+ * @m: a metadata context.
+ * @ptr: a pointer to an encoded TypedefOrRef in @m
+ * @rptr: pointer updated to match the end of the decoded stream
+ *
+ * Returns: a token valid in the @m metadata decoded from
+ * the compressed representation.
+ */
 guint32
 mono_metadata_parse_typedef_or_ref (MonoImage *m, const char *ptr, const char **rptr)
 {
@@ -916,6 +952,17 @@ mono_metadata_parse_typedef_or_ref (MonoImage *m, const char *ptr, const char **
 	return mono_metadata_token_from_dor (token);
 }
 
+/*
+ * mono_metadata_parse_custom_mod:
+ * @m: a metadata context.
+ * @dest: storage where the info about the custom modifier is stored (may be NULL)
+ * @ptr: a pointer to (possibly) the start of a custom modifier list
+ * @rptr: pointer updated to match the end of the decoded stream
+ *
+ * Checks if @ptr points to a type custom modifier compressed representation.
+ *
+ * Returns: #TRUE if a custom modifier was found, #FALSE if not.
+ */
 int
 mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
 {
@@ -931,6 +978,17 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
 	return FALSE;
 }
 
+/*
+ * mono_metadata_parse_array:
+ * @m: a metadata context.
+ * @ptr: a pointer to an encoded array description.
+ * @rptr: pointer updated to match the end of the decoded stream
+ *
+ * Decodes the compressed array description found in the metadata @m at @ptr.
+ *
+ * Returns: a #MonoArrayType structure describing the array type
+ * and dimensions.
+ */
 MonoArrayType *
 mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
@@ -957,6 +1015,12 @@ mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 	return array;
 }
 
+/*
+ * mono_metadata_free_array:
+ * @array: array description
+ *
+ * Frees the array description returned from mono_metadata_parse_array().
+ */
 void
 mono_metadata_free_array (MonoArrayType *array)
 {
@@ -1040,6 +1104,22 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 	return 1;
 }
 
+/*
+ * mono_metadata_parse_type:
+ * @m: metadata context
+ * @mode: king of type that may be found at @ptr
+ * @opt_attrs: optional attributes to store in the returned type
+ * @ptr: pointer to the type representation
+ * @rptr: pointer updated to match the end of the decoded stream
+ * 
+ * Decode a compressed type description found at @ptr in @m.
+ * @mode can be one of MONO_PARSE_MOD_TYPE, MONO_PARSE_PARAM, MONO_PARSE_RET,
+ * MONO_PARSE_FIELD, MONO_PARSE_LOCAL, MONO_PARSE_TYPE.
+ * This function can be used to decode type descriptions in method signatures,
+ * field signatures, locals signatures etc.
+ *
+ * Returns: a #MonoType structure representing the decoded type.
+ */
 MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
 {
@@ -1120,6 +1200,17 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 	}
 }
 
+/*
+ * mono_metadata_parse_method_signature:
+ * @m: metadata context
+ * @def: use #TRUE when parsing MethodDef, #FALSE with MethodRef signatures.
+ * @ptr: pointer to the signature metadata representation
+ * @rptr: pointer updated to match the end of the decoded stream
+ *
+ * Decode a method signature stored at @ptr.
+ *
+ * Returns: a MonoMethodSignature describing the signature.
+ */
 MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
 {
@@ -1164,15 +1255,21 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	return method;
 }
 
+/*
+ * mono_metadata_free_method_signature:
+ * @sig: signature to destroy
+ *
+ * Free the memory allocated in the signature @sig.
+ */
 void
-mono_metadata_free_method_signature (MonoMethodSignature *method)
+mono_metadata_free_method_signature (MonoMethodSignature *sig)
 {
 	int i;
-	mono_metadata_free_type (method->ret);
-	for (i = 0; i < method->param_count; ++i)
-		mono_metadata_free_type (method->params [i]);
+	mono_metadata_free_type (sig->ret);
+	for (i = 0; i < sig->param_count; ++i)
+		mono_metadata_free_type (sig->params [i]);
 
-	g_free (method);
+	g_free (sig);
 }
 
 /* 
@@ -1239,28 +1336,12 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, cons
 		*rptr = ptr;
 }
 
-#if 0
-/**
- * mono_metadata_parse_type:
- * @m: metadata context to scan
- * @ptr: pointer to encoded Type stream.
- * @rptr: the new position in the stream after parsing the type
+/*
+ * mono_metadata_free_type:
+ * @type: type to free
  *
- * Returns: A MonoType structure that has the parsed information
- * from the type stored at @ptr in the metadata table @m.
+ * Free the memory allocated for type @type.
  */
-MonoType *
-mono_metadata_parse_type (MonoImage *m, const char *ptr, const char **rptr)
-{
-	/* should probably be allocated in a memchunk */
-	MonoType *type = g_new0(MonoType, 1);
-
-	do_mono_metadata_parse_type (type, m, ptr, rptr);
-
-	return type;
-}
-#endif
-
 void
 mono_metadata_free_type (MonoType *type)
 {
@@ -1387,6 +1468,16 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 	}
 }
 
+/*
+ * mono_metadata_parse_mh:
+ * @m: metadata context
+ * @ptr: pointer to the method header.
+ *
+ * Decode the method header at @ptr, including pointer to the IL code,
+ * info about local variables and optional exception tables.
+ *
+ * Returns: a MonoMethodHeader.
+ */
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
@@ -1483,6 +1574,12 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 	return mh;
 }
 
+/*
+ * mono_metadata_free_mh:
+ * @mh: a method header
+ *
+ * Free the memory allocated for the method header.
+ */
 void
 mono_metadata_free_mh (MonoMethodHeader *mh)
 {
@@ -1497,6 +1594,7 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
  * mono_metadata_parse_field_type:
  * @m: metadata context to extract information from
  * @ptr: pointer to the field signature
+ * @rptr: pointer updated to match the end of the decoded stream
  *
  * Parses the field signature, and returns the type information for it. 
  *
@@ -1508,6 +1606,16 @@ mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr
 	return mono_metadata_parse_type (m, MONO_PARSE_FIELD, field_flags, ptr, rptr);
 }
 
+/**
+ * mono_metadata_parse_param:
+ * @m: metadata context to extract information from
+ * @ptr: pointer to the param signature
+ * @rptr: pointer updated to match the end of the decoded stream
+ *
+ * Parses the param signature, and returns the type information for it. 
+ *
+ * Returns: The MonoType that was extracted from @ptr.
+ */
 MonoType *
 mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
 {
@@ -1643,6 +1751,15 @@ table_locator (const void *a, const void *b)
 		return 1;
 }
 
+/*
+ * mono_metadata_typedef_from_field:
+ * @meta: metadata context
+ * @index: FieldDef token
+ *
+ * Returns the 1-based index into the TypeDef table of the type that
+ * declared the field described by @index.
+ * Returns 0 if not found.
+ */
 guint32
 mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 {
@@ -1663,6 +1780,15 @@ mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 	return loc.result + 1;
 }
 
+/*
+ * mono_metadata_typedef_from_method:
+ * @meta: metadata context
+ * @index: MethodDef token
+ *
+ * Returns the 1-based index into the TypeDef table of the type that
+ * declared the method described by @index.
+ * Returns 0 if not found.
+ */
 guint32
 mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 {
@@ -1683,6 +1809,14 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 	return loc.result + 1;
 }
 
+/*
+ * mono_metadata_interfaces_from_typedef:
+ * @meta: metadata context
+ * @index: typedef token
+ * 
+ * Returns and array of interfaces that the @index typedef token implements.
+ * The number of elemnts in the array is returned in @count.
+ */
 MonoClass**
 mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count)
 {
@@ -1729,8 +1863,13 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 }
 
 /*
- * Return the typedef token of the type index is defined into.
- * Return 0 if the index represents a toplevel type.
+ * mono_metadata_nested_in_typedef:
+ * @meta: metadata context
+ * @index: typedef token
+ * 
+ * Returns: the 1-based index into the TypeDef table of the type
+ * where the type described by @index is nested.
+ * Retruns 0 if @index describes a non-nested type.
  */
 guint32
 mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
@@ -1752,6 +1891,15 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
 }
 
+/*
+ * mono_metadata_nesting_typedef:
+ * @meta: metadata context
+ * @index: typedef token
+ * 
+ * Returns: the 1-based index into the TypeDef table of the first type
+ * that is nested inside the type described by @index.
+ * Retruns 0 if @index doesn't have nested types.
+ */
 guint32
 mono_metadata_nesting_typedef (MonoImage *meta, guint32 index)
 {
@@ -1783,7 +1931,12 @@ mono_metadata_nesting_typedef (MonoImage *meta, guint32 index)
 }
 
 /*
- * Return the info stored in the ClassLAyout table for the given typedef token.
+ * mono_metadata_packing_from_typedef:
+ * @meta: metadata context
+ * @index: token representing a type
+ * 
+ * Returns the info stored in the ClassLAyout table for the given typedef token
+ * into the @packing and @size pointers.
  * Returns 0 if the info is not found.
  */
 guint32
@@ -1979,6 +2132,12 @@ mono_type_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
+/*
+ * mono_metadata_type_hash:
+ * @t1: a type
+ *
+ * Computes an hash value for @t1 to be used in GHashTable.
+ */
 guint
 mono_metadata_type_hash (MonoType *t1)
 {
@@ -1997,6 +2156,14 @@ mono_metadata_type_hash (MonoType *t1)
 	return hash;
 }
 
+/*
+ * mono_metadata_type_equal:
+ * @t1: a type
+ * @t2: another type
+ *
+ * Determine if @t1 and @t2 represent the same type.
+ * Returns: #TRUE if @t1 and @t2 are equal.
+ */
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
@@ -2041,6 +2208,15 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	return FALSE;
 }
 
+/*
+ * mono_metadata_signature_equal:
+ * @sig1: a signature
+ * @sig2: another signature
+ *
+ * Determine if @sig1 and @sig2 represent the same signature, with the
+ * same number of arguments and the same types.
+ * Returns: #TRUE if @sig1 and @sig2 are equal.
+ */
 gboolean
 mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
@@ -2064,6 +2240,16 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	return TRUE;
 }
 
+/*
+ * mono_metadata_encode_value:
+ * @value: value to encode
+ * @buf: buffer where to write the compressed representation
+ * @endbuf: pointer updated to point at the end of the encoded output
+ *
+ * Encodes the value @value in the compressed representation used
+ * in metadata and stores the result in @buf. @buf needs to be big
+ * enough to hold the data (4 bytes).
+ */
 void
 mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
 {
@@ -2181,6 +2367,15 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token)
 	return 0;
 }
 
+/*
+ * mono_metadata_events_from_typedef:
+ * @meta: metadata context
+ * @index: 0-based index (in the TypeDef table) describing a type
+ *
+ * Returns: the 0-based index in the Event table for the events in the
+ * type. The last event that belongs to the type (plus 1) is stored
+ * in the @end_idx pointer.
+ */
 guint32
 mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
 {
@@ -2211,6 +2406,15 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	return start - 1;
 }
 
+/*
+ * mono_metadata_methods_from_event:
+ * @meta: metadata context
+ * @index: 0-based index (in the Event table) describing a event
+ *
+ * Returns: the 0-based index in the MethodDef table for the methods in the
+ * event. The last method that belongs to the event (plus 1) is stored
+ * in the @end_idx pointer.
+ */
 guint32
 mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_idx)
 {
@@ -2251,6 +2455,15 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 	return start;
 }
 
+/*
+ * mono_metadata_properties_from_typedef:
+ * @meta: metadata context
+ * @index: 0-based index (in the TypeDef table) describing a type
+ *
+ * Returns: the 0-based index in the Property table for the properties in the
+ * type. The last property that belongs to the type (plus 1) is stored
+ * in the @end_idx pointer.
+ */
 guint32
 mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
 {
@@ -2281,6 +2494,15 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	return start - 1;
 }
 
+/*
+ * mono_metadata_methods_from_property:
+ * @meta: metadata context
+ * @index: 0-based index (in the PropertyDef table) describing a property
+ *
+ * Returns: the 0-based index in the MethodDef table for the methods in the
+ * property. The last method that belongs to the property (plus 1) is stored
+ * in the @end_idx pointer.
+ */
 guint32
 mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end_idx)
 {
@@ -2324,6 +2546,9 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 /**
  * @image: context where the image is created
  * @type_spec:  typespec token
+ *
+ * Creates a MonoType representing the TypeSpec indexed by the @type_spec
+ * token.
  */
 MonoType *
 mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)

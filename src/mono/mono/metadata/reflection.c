@@ -1657,6 +1657,13 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	build_compressed_metadata (assembly);
 }
 
+/*
+ * mono_image_insert_string:
+ * @assembly: assembly builder object
+ * @str: a string
+ *
+ * Insert @str into the user string stream of @assembly.
+ */
 guint32
 mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str)
 {
@@ -1675,8 +1682,12 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 }
 
 /*
+ * mono_image_create_token:
+ * @assembly: a dynamic assembly
+ * @obj:
+ *
  * Get a token to insert in the IL code stream for the given MemberInfo.
- * obj can be:
+ * @obj can be one of:
  * 	ConstructorBuilder
  * 	MethodBuilder
  * 	FieldBuilder
@@ -1739,6 +1750,9 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 }
 
 /*
+ * mono_image_basic_ini:
+ * @assembly: an assembly builder object
+ *
  * Create the MonoImage that represents the assembly builder and setup some
  * of the helper hash table and the basic metadata streams.
  */
@@ -1786,10 +1800,16 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 }
 
 /*
+ * mono_image_get_heade:
+ * @assemblyb: an assembly builder object
+ * @buffer:
+ * @maxsize
+ * 
  * When we need to save an assembly, we first call this function that ensures the metadata 
  * tables are built for all the modules in the assembly. This function creates the PE-COFF
  * header, the image sections, the CLI header etc. The header is written in @buffer
  * and the length of the data written is returned.
+ * If @buffer is not big enough (@maxsize), -1 is returned.
  */
 int
 mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, int maxsize)
@@ -1928,7 +1948,14 @@ static MonoGHashTable *type_cache = NULL;
 	do {	\
 		mono_g_hash_table_insert (object_cache, p,o);	\
 	} while (0)
-	
+
+/*
+ * mono_assembly_get_object:
+ * @domain: an app domain
+ * @assembly: an assembly
+ *
+ * Return an System.Reflection.Assembly object representing the MonoAssembly @assembly.
+ */
 MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
@@ -2009,6 +2036,13 @@ mymono_metadata_type_hash (MonoType *t1)
 	return hash;
 }
 
+/*
+ * mono_type_get_object:
+ * @domain: an app domain
+ * @type: a type
+ *
+ * Return an System.MonoType object representing the type @type.
+ */
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
@@ -2032,6 +2066,13 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	return res;
 }
 
+/*
+ * mono_method_get_object:
+ * @domain: an app domain
+ * @method: a method
+ *
+ * Return an System.Reflection.MonoMethod object representing the method @method.
+ */
 MonoReflectionMethod*
 mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 {
@@ -2056,6 +2097,15 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 	return ret;
 }
 
+/*
+ * mono_field_get_object:
+ * @domain: an app domain
+ * @klass: a type
+ * @field: a field
+ *
+ * Return an System.Reflection.MonoField object representing the field @field
+ * in class @klass.
+ */
 MonoReflectionField*
 mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
 {
@@ -2071,6 +2121,15 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	return res;
 }
 
+/*
+ * mono_property_get_object:
+ * @domain: an app domain
+ * @klass: a type
+ * @property: a property
+ *
+ * Return an System.Reflection.MonoProperty object representing the property @property
+ * in class @klass.
+ */
 MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
@@ -2086,6 +2145,15 @@ mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *pr
 	return res;
 }
 
+/*
+ * mono_event_get_object:
+ * @domain: an app domain
+ * @klass: a type
+ * @event: a event
+ *
+ * Return an System.Reflection.MonoEvent object representing the event @event
+ * in class @klass.
+ */
 MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
@@ -2101,6 +2169,14 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	return res;
 }
 
+/*
+ * mono_param_get_objects:
+ * @domain: an app domain
+ * @method: a method
+ *
+ * Return an System.Reflection.ParameterInfo array object representing the parameters
+ * in the method @method.
+ */
 MonoReflectionParameter**
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
@@ -2142,6 +2218,9 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 }
 
 /*
+ * mono_reflection_parse_type:
+ * @name: type name
+ *
  * Parse a type name as accepted by the GetType () method and output the info
  * extracted in the info structure.
  * the name param will be mangled, so, make a copy before passing it to this function.
@@ -2303,6 +2382,10 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
 }
 
 /*
+ * mono_type_get_name:
+ * @type: a type
+ *
+ * Returns the string representation for type as required by System.Reflection.
  * The inverse of mono_reflection_parse_type ().
  */
 char*
@@ -2317,6 +2400,15 @@ mono_type_get_name (MonoType *type)
 	return g_string_free (result, FALSE);
 }
 
+/*
+ * mono_reflection_get_type:
+ * @image: a metadata context
+ * @info: type description structure
+ * @ignorecase: flag for case-insensitive string compares
+ *
+ * Build a MonoType from the type description in @info.
+ * 
+ */
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
 {
@@ -2557,6 +2649,13 @@ find_event_index (MonoClass *klass, MonoEvent *event) {
 	return 0;
 }
 
+/*
+ * mono_reflection_get_custom_attrs:
+ * @obj: a reflection object handle
+ *
+ * Return an array with all the custom attributes defined of the
+ * reflection handle @obj. The objects are fully build.
+ */
 MonoArray*
 mono_reflection_get_custom_attrs (MonoObject *obj)
 {
@@ -2694,8 +2793,21 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	return result;
 }
 
+/*
+ * mono_reflection_get_custom_attrs_blob:
+ * @ctor: custom attribute constructor
+ * @ctorArgs: arguments o the constructor
+ * @properties:
+ * @propValues:
+ * @fields:
+ * @fieldValues:
+ * 
+ * Creates the blob of data that needs to be saved in the metadata and that represents
+ * the custom attributed described by @ctor, @ctorArgs etc.
+ * Returns: a Byte array representing the blob of data.
+ */
 MonoArray*
-mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues) {
+mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) {
 	MonoArray *result;
 	MonoMethodSignature *sig;
 	MonoObject *arg;
@@ -2803,6 +2915,14 @@ handle_enum:
 	return result;
 }
 
+/*
+ * mono_reflection_setup_internal_class:
+ * @tb: a TypeBuilder object
+ *
+ * Creates a MonoClass that represents the TypeBuilder.
+ * This is a trick that lets us simplify a lot of reflection code
+ * (and will allow us to support Build and Run assemblies easier).
+ */
 void
 mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 {
@@ -2888,3 +3008,4 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 
 	return result;
 }
+

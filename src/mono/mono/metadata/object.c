@@ -178,6 +178,16 @@ mono_array_clone (MonoArray *array)
 	return o;
 }
 
+/*
+ * mono_array_new_full:
+ * @domain: domain where the object is created
+ * @array_class: array class
+ * @lengths: lengths for each dimension in the array
+ * @lower_bounds: lower bounds for each dimension in the array (may be NULL)
+ *
+ * This routine creates a new array objects with the given dimensions,
+ * lower bounds and type.
+ */
 MonoArray*
 mono_array_new_full (MonoDomain *domain, MonoClass *array_class, 
 		     guint32 *lengths, guint32 *lower_bounds)
@@ -225,11 +235,11 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 
 /*
  * mono_array_new:
- * @image: image where the object is being referenced
+ * @domain: domain where the object is created
  * @eclass: element class
  * @n: number of array elements
  *
- * This routine creates a new szarray with @n elements of type @token
+ * This routine creates a new szarray with @n elements of type @eclass.
  */
 MonoArray *
 mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
@@ -269,6 +279,13 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	return s;
 }
 
+/*
+ * mono_string_new_len:
+ * @text: a pointer to an utf8 string
+ * @length: number of bytes in @text to consider
+ *
+ * Returns: A newly created string object which contains @text.
+ */
 MonoString*
 mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 {
@@ -319,6 +336,12 @@ mono_string_new (MonoDomain *domain, const char *text)
 	return o;
 }
 
+/*
+ * mono_string_new_wrapper:
+ * @text: pointer to utf8 characters.
+ *
+ * Helper function to create a string object from @text in the current domain.
+ */
 MonoString*
 mono_string_new_wrapper (const char *text)
 {
@@ -457,6 +480,14 @@ mono_string_intern (MonoString *str)
 	return mono_string_is_interned_lookup (str, TRUE);
 }
 
+/*
+ * mono_ldstr:
+ * @domain: the domain where the string will be used.
+ * @image: a metadata context
+ * @idx: index into the user string table.
+ * 
+ * Implementation for the ldstr opcode.
+ */
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
@@ -488,6 +519,13 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	return o;
 }
 
+/*
+ * mono_string_to_utf8:
+ * @s: a System.String
+ *
+ * Return the UTF8 representation for @s.
+ * the resulting buffer nedds to be freed with g_free().
+ */
 char *
 mono_string_to_utf8 (MonoString *s)
 {
@@ -510,6 +548,15 @@ mono_string_to_utf8 (MonoString *s)
 	return as;
 }
 
+/*
+ * mono_string_to_utf16:
+ * @s: a MonoString
+ *
+ * Return an null-terminated array of the utf-16 chars
+ * contained in @s. The result must be freed with g_free().
+ * This is a temporary helper until our string implementation
+ * is reworked to always include the null terminating char.
+ */
 gunichar2 *
 mono_string_to_utf16 (MonoString *s)
 {
@@ -545,6 +592,12 @@ mono_install_handler        (MonoExceptionFunc func)
 	ex_handler = func? func: default_ex_handler;
 }
 
+/*
+ * mono_raise_exception:
+ * @ex: exception object
+ *
+ * Signal the runtime that the exception @ex has been raised in unmanaged code.
+ */
 void
 mono_raise_exception (MonoException *ex) 
 {
