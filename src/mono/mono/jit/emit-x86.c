@@ -733,6 +733,7 @@ mono_emit_cfg (MonoFlowGraph *cfg)
 static void
 mono_compute_branches (MonoFlowGraph *cfg)
 {
+	MonoJumpInfo *ji;
 	guint8 *end;
 	int i, j;
 
@@ -751,28 +752,54 @@ mono_compute_branches (MonoFlowGraph *cfg)
 		for (i = 0; i < top; i++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 
-			if (t1->is_jump) {
-
-				if (t1->op == MB_TERM_SWITCH) {
-					MonoBBlock **jt = (MonoBBlock **)t1->data.p;
-					guint32 *rt = (guint32 *)t1->data.p;
-
-					int m = *((guint32 *)t1->data.p) + 1;
-					int j;
-					
-					for (j = 1; j <= m; j++)
-						rt [j] = (int)(jt [j]->addr + cfg->start);
-				}
-
-				/* emit the jump instruction again to update addresses */
+			if (t1->op == MB_TERM_SWITCH) {
+				MonoBBlock **jt = (MonoBBlock **)t1->data.p;
+				guint32 *rt = (guint32 *)t1->data.p;
+				
+				int m = *((guint32 *)t1->data.p) + 1;
+				int j;
+				
+				for (j = 1; j <= m; j++)
+					rt [j] = (int)(jt [j]->addr + cfg->start);
+				
+				/* emit the switch instruction again to update addresses */
 				cfg->code = cfg->start + t1->addr;
 				((MBEmitFunc)t1->emit) (t1, cfg);
-
 			}
 		}
 	}
 
 	cfg->code = end;
+
+	for (ji = cfg->jump_info; ji; ji = ji->next) {
+		gpointer *ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ji->ip) + cfg->start);
+		gpointer target;
+
+		if (ji->target) {
+			target = ji->target;
+		} else if (ji->bb) {
+			target = ji->bb->addr + cfg->start;
+		} else {
+			/* special case - jump to epilog */
+			target = cfg->epilog + cfg->start;
+			/* check if the above is correct */
+			g_assert_not_reached ();
+		}
+		*ip = target - GPOINTER_TO_UINT(ip) - 4;
+	}
+}
+
+void
+mono_add_jump_info (MonoFlowGraph *cfg, gpointer ip, gpointer target, MonoBBlock *bb)
+{
+	MonoJumpInfo *ji = mono_mempool_alloc (cfg->mp, sizeof (MonoJumpInfo));
+
+	ji->ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ip) - GPOINTER_TO_UINT (cfg->start));
+	ji->target = target;
+	ji->next = cfg->jump_info;
+	ji->bb = bb;
+
+	cfg->jump_info = ji;
 }
 
 static int
@@ -961,7 +988,7 @@ arch_compile_method (MonoMethod *method)
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
-		cfg->code_size = 256000;
+		cfg->code_size = 256;
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 		mono_jit_stats.allocated_code_size += cfg->code_size;
 

@@ -66,6 +66,14 @@ typedef struct {
 	gint32        addr;
 } MonoBBlock;
 
+typedef struct _MonoJumpInfo MonoJumpInfo;
+struct _MonoJumpInfo {
+	MonoJumpInfo *next;
+	gpointer      ip;
+	gpointer      target;
+	MonoBBlock   *bb;
+};
+
 typedef struct {
 	MonoDomain       *domain;
 	unsigned          has_vtarg:1;
@@ -89,6 +97,8 @@ typedef struct {
 	guint32           args_start_index;
 	guint32           locals_start_index;
 	gint              invalid;
+
+	MonoJumpInfo     *jump_info;
 } MonoFlowGraph;
 
 typedef struct {
@@ -184,6 +194,10 @@ mono_analyze_flow          (MonoFlowGraph *cfg);
 
 void
 mono_analyze_stack         (MonoFlowGraph *cfg);
+
+void
+mono_add_jump_info         (MonoFlowGraph *cfg, gpointer ip, 
+			    gpointer target, MonoBBlock *bb);
 
 void
 mono_disassemble_code      (guint8 *code, int size, char *id);

@@ -46,7 +46,6 @@ typedef	struct {
 
 struct _MBTree {
 	guint16   op;
-	unsigned      is_jump:1;
 	unsigned      last_instr:1;
 	
 	MBTree   *left, *right;
@@ -300,25 +299,27 @@ reg: EXCEPTION {
 }
 
 stmt: THROW (reg) {
-	tree->is_jump = TRUE;
+	gpointer target;
 
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, arch_get_throw_exception ());
+	target = arch_get_throw_exception ();
+	mono_add_jump_info (s, s->code + 1, target, NULL);
+	x86_call_code (s->code, target);
 }
 
 stmt: RETHROW {
 	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
-
-	tree->is_jump = TRUE;
+	gpointer target;
 
 	x86_push_membase (s->code, X86_EBP, offset);
-	x86_call_code (s->code, arch_get_throw_exception ());
+	target = arch_get_throw_exception ();
+	mono_add_jump_info (s, s->code + 1, target, NULL);
+	x86_call_code (s->code, target);
 }
 
 stmt: HANDLER {
-	gint32 addr = tree->data.bb->addr - tree->addr - 5;
-	tree->is_jump = TRUE;    
-	x86_call_imm (s->code, addr); 
+	mono_add_jump_info (s, s->code + 1, NULL, tree->data.bb);
+	x86_call_imm (s->code, 0); 
 }
 
 stmt: ENDFINALLY {
@@ -326,9 +327,6 @@ stmt: ENDFINALLY {
 }
 
 stmt: SAVE_LMF {
-	tree->is_jump = TRUE;
-
-
 	/* save all caller saved regs */
 	x86_push_reg (s->code, X86_EBX);
 	x86_push_reg (s->code, X86_EDI);
@@ -341,6 +339,7 @@ stmt: SAVE_LMF {
 	/* save method info */
 	x86_push_imm (s->code, tree->data.m);
 	/* get the address of lmf for the current thread */
+	mono_add_jump_info (s, s->code + 1, arch_get_lmf_addr, NULL);
 	x86_call_code (s->code, arch_get_lmf_addr);
 	/* push lmf */
 	x86_push_reg (s->code, X86_EAX); 
@@ -1117,7 +1116,6 @@ reg: TOSTRING (reg) {
 	guint8 *start = s->code, *l1, *le;
 	int i;
 
-	tree->is_jump = TRUE;
 	l1 = le = NULL;
 
 	for (i = 0; i < 2; i++) {
@@ -1224,7 +1222,6 @@ reg: CASTCLASS (reg) {
 	guint8 *start = s->code, *l1, *l2, *le;
 	int i;
 
-	tree->is_jump = TRUE;
 	l1 = l2 = le = NULL;
 
 	for (i = 0; i < 2; i++) {
@@ -1346,208 +1343,140 @@ stmt: NOP
 stmt: POP (reg)
 
 stmt: BR {
-	gint32 addr = tree->data.bb->addr - tree->addr - 5;
-	tree->is_jump = TRUE;    
-	
-	x86_jump32 (s->code, addr); 
+	mono_add_jump_info (s, s->code + 1, NULL, tree->data.bb);
+	x86_jump32 (s->code, 0); 
 }
 
 stmt: BLT (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, TRUE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, TRUE); 
 }
 
 stmt: BLT (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, TRUE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, TRUE); 
 }
 
 stmt: BLT_UN (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, FALSE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, FALSE); 
 }
 
 stmt: BLT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, FALSE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, FALSE); 
 }
 
 stmt: BGT (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, TRUE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, TRUE); 
 }
 
 stmt: BGT (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, TRUE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, TRUE); 
 }
 
 stmt: BGT_UN (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, FALSE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, FALSE); 
 }
 
 stmt: BGT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, FALSE); 
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, FALSE); 
 }
 
 stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
 }
 
 stmt: BEQ (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
 }
 
 stmt: BNE_UN (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BNE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BGE (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GE, 0, TRUE);
 }
 
 stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GE, 0, TRUE);
 }
 
 stmt: BGE_UN (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
 }
 
 stmt: BGE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
 }
 
 stmt: BLE (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LE, 0, TRUE);
 }
 
 stmt: BLE (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LE, 0, TRUE);
 }
 
 stmt: BLE_UN (reg, reg) 1 {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
 }
 
 stmt: BLE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
 }
 
 stmt: BRTRUE (reg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, TRUE);
 }
 
 stmt: BRFALSE (reg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
 }
 
 stmt: BREAK {
@@ -1555,25 +1484,19 @@ stmt: BREAK {
 }
 
 stmt: RET (reg) {
-	gint32 offset;
-
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 
 	if (!tree->last_instr) {
-		tree->is_jump = TRUE;
-		offset = 5 + s->code - s->start;
-		x86_jump32 (s->code, s->epilog - offset);      
+		mono_add_jump_info (s, s->code + 1, NULL, NULL);
+		x86_jump32 (s->code, 0);      
 	}
 }
 
 stmt: RET_VOID {
-	gint32 offset;
-
 	if (!tree->last_instr) {
-		tree->is_jump = TRUE;
-		offset = 5 + s->code - s->start;
-		x86_jump32 (s->code, s->epilog - offset);      
+		mono_add_jump_info (s, s->code + 1, NULL, NULL);
+		x86_jump32 (s->code, 0);      
 	} 
 }
 
@@ -1703,8 +1626,6 @@ reg: CALL_I4 (this, ADDR_G) {
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
 
-	tree->is_jump = 1;
-
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
@@ -1719,7 +1640,8 @@ reg: CALL_I4 (this, ADDR_G) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_code (s->code, tree->right->data.p);
+	mono_add_jump_info (s, s->code + 1, tree->right->data.p, NULL);
+	x86_call_code (s->code, 0);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -1816,8 +1738,6 @@ stmt: CALL_VOID (this, ADDR_G) {
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
 
-	tree->is_jump = 1;
-
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
@@ -1832,7 +1752,8 @@ stmt: CALL_VOID (this, ADDR_G) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_code (s->code, tree->right->data.p);
+	mono_add_jump_info (s, s->code + 1, tree->right->data.p, NULL);
+	x86_call_code (s->code, 0);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -1897,8 +1818,6 @@ stmt: CALL_VOID (this, VFUNC_ADDR) {
 stmt: SWITCH (reg) {
 	guint32 offset;
 	guint32 *jt = (guint32 *)tree->data.p;
-
-	tree->is_jump = TRUE;
 
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, jt [0]);
 	offset = 6 + (guint32)s->code;
@@ -2145,8 +2064,6 @@ lreg: SHR (lreg, reg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, i;
 
-	tree->is_jump = TRUE;
-
 	if (tree->right->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
 
@@ -2171,8 +2088,6 @@ lreg: SHR (lreg, reg) {
 lreg: SHR_UN (lreg, reg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, i;
-
-	tree->is_jump = TRUE;
 
 	if (tree->right->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
@@ -2213,8 +2128,6 @@ lreg: SHL (lreg, CONST_I4) {
 lreg: SHL (lreg, reg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, i;
-
-	tree->is_jump = TRUE;
 
 	if (tree->right->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
@@ -2502,8 +2415,6 @@ lreg: CALL_I8 (this, ADDR_G) {
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
 
-	tree->is_jump = 1;
-
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
@@ -2518,7 +2429,8 @@ lreg: CALL_I8 (this, ADDR_G) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_code (s->code, tree->right->data.p);
+	mono_add_jump_info (s, s->code + 1, tree->right->data.p, NULL);
+	x86_call_code (s->code, 0);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -2561,8 +2473,6 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 }
 
 stmt: RET (lreg) {
-	gint32 offset;
-
 	if (tree->left->reg1 != X86_EAX) {
 		if (tree->left->reg2 != X86_EAX) {
 			x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
@@ -2578,9 +2488,8 @@ stmt: RET (lreg) {
 	}
 
 	if (!tree->last_instr) {
-		tree->is_jump = TRUE;
-		offset = 5 + s->code - s->start;
-		x86_jump32 (s->code, s->epilog - offset);      
+		mono_add_jump_info (s, s->code + 1, NULL, NULL);
+		x86_jump32 (s->code, 0);      
 	}
 }
 
@@ -2593,8 +2502,6 @@ stmt: ARG_I8 (lreg) {
 reg: CEQ (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, i;
-
-	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2611,8 +2518,6 @@ reg: CEQ (lreg, lreg) {
 reg: CLT (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, o3, o4, o5, i;
-
-	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2633,191 +2538,187 @@ reg: CLT (lreg, lreg) {
 
 stmt: BEQ (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, i;
-
-	tree->is_jump = TRUE;
+	int i;
+	gpointer o1, o2;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		o1 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, o2 - o1, FALSE);
+		o1 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - o2, TRUE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
+		o2 = s->code;
 	}
 }
 
 stmt: BNE_UN (lreg, lreg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
-
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BGE (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - o1, TRUE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GT, 0, TRUE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BGE_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - o1, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BGT (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - o1, TRUE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GT, 0, TRUE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BGT_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - o1, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BLT (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - o1, TRUE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LT, 0, TRUE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BLT_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - o1, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BLE (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - o1, TRUE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LT, 0, TRUE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
+		oe = s->code;
 	}
 }
 
 stmt: BLE_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, oe, i;
-
-	tree->is_jump = TRUE;
+	gpointer o2, oe;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - o1, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = 2 + s->code - s->start;
 		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		oe = 6 + s->code - s->start;
-		x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - oe, FALSE);
+		if (i) mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+		x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
+		oe = s->code;
 	}
 }
 
@@ -2984,127 +2885,95 @@ stmt: ARG_R8 (freg) {
 # fixme: we need to implement unordered and ordered compares
 
 stmt: BEQ (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x4000);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
 }
 
 stmt: BNE_UN (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x4000);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BLT (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, FALSE);
 }
 
 stmt: BLT_UN (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, FALSE);
 }
 
 stmt: BGE (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BGE_UN (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BGT (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, FALSE);
 }
 
 stmt: BGT_UN (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, FALSE);
 }
 
 stmt: BLE (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 stmt: BLE_UN (freg, freg) {
-	gint32 offset;
-
-	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
-	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+	mono_add_jump_info (s, s->code + 2, NULL, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, FALSE);
 }
 
 freg: CALL_R8 (this, ADDR_G) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
-
-	tree->is_jump = 1;
 
 	if (lreg == treg) 
 		treg = X86_EDX;
@@ -3120,7 +2989,8 @@ freg: CALL_R8 (this, ADDR_G) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_code (s->code, tree->right->data.p);
+	mono_add_jump_info (s, s->code + 1, tree->right->data.p, NULL);
+	x86_call_code (s->code, 0);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -3183,12 +3053,9 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 }
 
 stmt: RET (freg) {
-	gint32 offset;
-
 	if (!tree->last_instr) {
-		tree->is_jump = TRUE;
-		offset = 5 + s->code - s->start;
-		x86_jump32 (s->code, s->epilog - offset);      
+		mono_add_jump_info (s, s->code + 1, NULL, NULL);
+		x86_jump32 (s->code, 0);      
 	}
 }
 
@@ -3252,7 +3119,6 @@ stmt: ARG_OBJ (reg) {
 }
 
 stmt: RET_OBJ (reg) {
-	gint32 offset;
 	int size = tree->data.i;
 
 	x86_push_imm (s->code, size);
@@ -3265,9 +3131,8 @@ stmt: RET_OBJ (reg) {
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	if (!tree->last_instr) {
-		tree->is_jump = TRUE;
-		offset = 5 + s->code - s->start;
-		x86_jump32 (s->code, s->epilog - offset);      
+		mono_add_jump_info (s, s->code + 1, NULL, NULL);
+		x86_jump32 (s->code, 0);      
 	}
 }
 
