@@ -5676,7 +5676,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@'))
 		p++;
 	found_sep = 0;
-	while (*p == ' ' || *p == ',') {
+	while (g_ascii_isspace (*p) || *p == ',') {
 		*p++ = 0;
 		found_sep = 1;
 		continue;
@@ -5734,7 +5734,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 				p++;
 		}
 		found_sep = 0;
-		while (*p == ' ' || *p == ',') {
+		while (g_ascii_isspace (*p) || *p == ',') {
 			*p++ = 0;
 			found_sep = 1;
 			continue;
@@ -5855,7 +5855,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		case ',':
 			*p++ = 0;
 			while (*p) {
-				if (*p == ' ') {
+				if (g_ascii_isspace (*p)) {
 					++p;
 					continue;
 				}
