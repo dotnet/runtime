@@ -1,3 +1,19 @@
+2004-11-08  Jonathan Pryor <jonpryor@vt.edu>
+
+	* configure.in: Add new function/header/type checks for use by
+	  MonoPosixHelper (the support directory).
+	* support/Makefile.am: Add sys-sendfile.c to the build.
+	* support/dirent.c, support/fcntl.c, support/unistd.c: Remove compile-time
+	  checks for -64 apis (pread64, etc.), as they're superfluous.  GLibc 
+	  #defines the functions to the appropriate -64 counterpart when necessary,
+	  and Darwin is intrinsically large-file-aware, so manual checking on my
+	  part is redundant and unnecessary.
+	* support/grp.c: Add checks for non-portable functions getgrnam_r,
+	  getgrgid_r.
+	* support/pwd.c: Add checks for non-portable functions getpwnam_r,
+	  getpwuid_r.
+	* support/mph.h: Clean up macro handling for type overflow checking.
+
 2004-11-08  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (mcs_topdir, mcs_topdir_from_srcdir): New 'subst'ed

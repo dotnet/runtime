@@ -1020,6 +1020,20 @@ if test x$platform_win32 = xno; then
 		fi
 		AC_DEFINE_UNQUOTED(SIGVAL_PTR,$SIGVAL_PTR,[Pointer field name in 'union sigval'])
 	fi
+
+	dnl **********************************
+	dnl *** Checks for MonoPosixHelper ***
+	dnl **********************************
+	AC_CHECK_FUNCS(posix_fadvise)
+	AC_CHECK_FUNCS(posix_fallocate)
+	AC_CHECK_FUNCS(fgetgrent)
+	AC_CHECK_FUNCS(fgetpwent)
+	AC_CHECK_FUNCS(fgetpwent)
+	AC_CHECK_HEADERS(sys/sendfile.h)
+	AC_CHECK_FUNCS(sendfile)
+	AC_CHECK_FUNCS(stime)
+	AC_CHECK_FUNCS(ttyname_r)
+	AC_CHECK_SIZEOF(size_t)
 else
 	jdk_headers_found=no
 	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
