@@ -288,12 +288,14 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			 * construct it.
 			 */
 			cinfo = mono_custom_attrs_from_class (klass);
-			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
-			if (attr) {
-				piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
+			if (cinfo) {
+				attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
+				if (attr) {
+					piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
+				}
+				if (!cinfo->cached)
+					mono_custom_attrs_free (cinfo);
 			}
-			if (!cinfo->cached)
-				mono_custom_attrs_free (cinfo);
 		}
 
 		mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
@@ -6135,17 +6137,19 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		 * construct it.
 		 */
 		cinfo = mono_custom_attrs_from_class (delegate_klass);
-		attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
-		if (attr) {
-			memset (&piinfo, 0, sizeof (piinfo));
-			m.piinfo = &piinfo;
-			piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
-		}
-		if (!cinfo->cached)
-			mono_custom_attrs_free (cinfo);
+		if (cinfo) {
+			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
+			if (attr) {
+				memset (&piinfo, 0, sizeof (piinfo));
+				m.piinfo = &piinfo;
+				piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
+			}
+			if (!cinfo->cached)
+				mono_custom_attrs_free (cinfo);
 
-		/* FIXME: modify the calling convention */
-		g_assert_not_reached ();
+			/* FIXME: modify the calling convention */
+			g_assert_not_reached ();
+		}
 	}
 
 	/* fixme: howto handle this ? */
