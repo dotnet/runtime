@@ -58,8 +58,16 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 {
 	int i;
 	FILE *ofd;
+	const char *tmp = getenv("TMP");
+	char *as_file;
+	char *o_file;
+	char *cmd;
 
-	if (!(ofd = fopen ("/tmp/test.s", "w")))
+	if (tmp == NULL)
+		tmp = "/tmp";
+	as_file = g_strdup_printf ("%s/test.s", tmp);    
+
+	if (!(ofd = fopen (as_file, "w")))
 		g_assert_not_reached ();
 
 	for (i = 0; id [i]; ++i) {
@@ -79,6 +87,14 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 #else
 #define DIS_CMD "objdump -d"
 #endif
-	system ("as /tmp/test.s -o /tmp/test.o;" DIS_CMD " /tmp/test.o"); 
+	o_file = g_strdup_printf ("%s/test.o", tmp);    
+	cmd = g_strdup_printf ("as %s -o %s", as_file, o_file);
+	system (cmd); 
+	g_free (cmd);
+	cmd = g_strdup_printf (DIS_CMD " %s", o_file);
+	system (cmd); 
+	g_free (cmd);
+	g_free (o_file);
+	g_free (as_file);
 }
 
