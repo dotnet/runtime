@@ -38,6 +38,17 @@ stmt: CEE_STIND_I8 (reg, reg) {
 				 state->left->tree->inst_offset, state->right->reg1);
 }
 
+base: OP_LADD (base, OP_ICONST) "0" {
+	tree->inst_offset = state->left->tree->inst_offset + state->right->tree->inst_c0;
+	tree->inst_basereg = state->left->tree->inst_basereg;
+}
+
+base: OP_LADD (CEE_LDIND_REF (OP_REGVAR), OP_ICONST),
+base: OP_LADD (CEE_LDIND_I (OP_REGVAR), OP_ICONST) "0" {
+	tree->inst_offset = state->right->tree->inst_c0;
+	tree->inst_basereg = state->left->left->tree->dreg;
+}
+
 reg: OP_LADD (reg, reg) {
 	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, state->left->reg1, state->right->reg1);
 }

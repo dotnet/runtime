@@ -604,12 +604,14 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
  * Gathers information on parameters such as size, alignment and
  * padding. arg_info should be large enought to hold param_count + 1 entries. 
  *
- * Returns the size of the activation frame.
+ * Returns the size of the argument area on the stack.
  */
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k;
+	CallInfo *cinfo = get_call_info (csig, FALSE);
+	guint32 args_size = cinfo->stack_usage;
 
 	/* The arguments are saved to a stack area in mono_arch_instrument_prolog */
 	if (csig->hasthis) {
@@ -622,8 +624,9 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		arg_info [k + 1].size = 0;
 	}
 
-	/* FIXME: */
-	return 0;
+	g_free (cinfo);
+
+	return args_size;
 }
 
 static int 

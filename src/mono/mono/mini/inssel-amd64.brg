@@ -210,6 +210,7 @@ stmt: OP_OUTARG_REG (reg) {
 	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
 }
 
+stmt: OP_OUTARG_REG (OP_I8CONST),
 stmt: OP_OUTARG_REG (OP_ICONST) {	
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
 	guint64 regpair;

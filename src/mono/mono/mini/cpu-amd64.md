@@ -286,7 +286,7 @@ storei1_membase_imm: dest:b len:11
 storei1_membase_reg: dest:b src1:i len:8
 storei2_membase_imm: dest:b len:12
 storei2_membase_reg: dest:b src1:i len:8
-storei4_membase_imm: dest:b len:11
+storei4_membase_imm: dest:b len:12
 storei4_membase_reg: dest:b src1:i len:8
 storei8_membase_imm: dest:b len:17
 storer4_membase_reg: dest:b src1:f len:14
