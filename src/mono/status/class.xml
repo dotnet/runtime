@@ -2203,7 +2203,7 @@
         </maintainers>
     </class>
     <class name="System.Configuration.ConfigurationException">
-        <last-activity>Aug-21-2001</last-activity>
+        <last-activity>Aug-28-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
@@ -2221,7 +2221,7 @@
         </maintainers>
     </class>
     <class name="System.Configuration.IConfigurationSectionHandler">
-        <last-activity>Aug-21-2001</last-activity>
+        <last-activity>Aug-28-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
@@ -2230,7 +2230,7 @@
         </maintainers>
     </class>
     <class name="System.Configuration.ConfigurationSettings">
-        <last-activity>Aug-21-2001</last-activity>
+        <last-activity>Aug-28-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
@@ -2239,7 +2239,7 @@
         </maintainers>
     </class>
     <class name="System.Configuration.NameValueSectionHandler">
-        <last-activity>Aug-21-2001</last-activity>
+        <last-activity>Aug-28-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
