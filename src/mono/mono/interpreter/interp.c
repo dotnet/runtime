@@ -4040,16 +4040,14 @@ ves_exec_method (MonoInvocation *frame)
 static int 
 ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
-	MonoImage *image = assembly->image;
-	MonoCLIImageInfo *iinfo;
+	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
 	MonoObject *exc = NULL;
 	int rval;
 
-	iinfo = image->image_info;
-	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
+	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 	if (!method)
-		g_error ("No entry point method found in %s", image->name);
+		g_error ("No entry point method found in %s", mono_image_get_filename (image));
 
 	rval = mono_runtime_run_main (method, argc, argv, &exc);
 	if (exc != NULL)
