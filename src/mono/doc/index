@@ -107,6 +107,21 @@
 	    </td>
 	  </tr>
 	</table>
+
+	<table border=1>
+	  <tr>
+	    <td colspan="3">
+	      <b><center>In the news</center></b>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/netmagazine.png">
+	    </td>
+	      <a href="http://www.fawcette.com/dotnetmag/2003_TE/magazine/columns/trends/default.asp">May 31st, 2003</a>: CLI integration.
+	    </td>
+	  </tr>
+ 	</table>
     </td>
   </tr>
 </table>
