@@ -4871,7 +4871,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						    field->offset);
 					iargs [4] = sp [1];
 
-					if (cfg->opt & MONO_OPT_INLINE) {
+					/* The wrapper has LDPTR opcodes and has save_lmf set, so we can't inline it */
+					if ((cfg->opt & MONO_OPT_INLINE) && !cfg->compile_aot) {
 						costs = inline_method (cfg, stfld_wrapper, mono_method_signature (stfld_wrapper), bblock, 
 								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
@@ -4916,7 +4917,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			} else {
 				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
-					/* fixme: we need to inline that call somehow */
 					MonoMethod *ldfld_wrapper = mono_marshal_get_ldfld_wrapper (field->type); 
 					MonoInst *iargs [4];
 					int temp;
@@ -4925,7 +4925,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_CLASSCONST (cfg, iargs [1], klass);
 					NEW_FIELDCONST (cfg, iargs [2], field);
 					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
-					if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (mono_method_signature (ldfld_wrapper)->ret)) {
+					/* The wrapper has LDPTR opcodes and has save_lmf set, so we can't inline it */
+					if ((cfg->opt & MONO_OPT_INLINE) && !cfg->compile_aot && !MONO_TYPE_ISSTRUCT (mono_method_signature (ldfld_wrapper)->ret)) {
 						costs = inline_method (cfg, ldfld_wrapper, mono_method_signature (ldfld_wrapper), bblock, 
 								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
