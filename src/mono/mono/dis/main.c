@@ -885,6 +885,7 @@ struct {
 	{ "--classlayout", MONO_TABLE_CLASSLAYOUT, dump_table_class_layout },
 	{ "--constant",    MONO_TABLE_CONSTANT,    dump_table_constant },
 	{ "--customattr",  MONO_TABLE_CUSTOMATTRIBUTE,    dump_table_customattr },
+	{ "--declsec",     MONO_TABLE_DECLSECURITY, dump_table_declsec },
 	{ "--property",    MONO_TABLE_PROPERTY,    dump_table_property },
 	{ "--propertymap", MONO_TABLE_PROPERTYMAP, dump_table_property_map },
 	{ "--event",       MONO_TABLE_EVENT,       dump_table_event },

@@ -395,18 +395,23 @@ void
 dump_table_file (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FILE];
-	int i;
+	int i, j, len;
 	fprintf (output, "File Table (1..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_FILE_SIZE];
-		const char *name;
+		const char *name, *hash;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_FILE_SIZE);
 
 		name = mono_metadata_string_heap (m, cols [MONO_FILE_NAME]);
-		fprintf (output, "%d: %s %s\n", i + 1, name, 
+		fprintf (output, "%d: %s %s [", i + 1, name, 
 				cols [MONO_FILE_FLAGS] & 0x1 ? "nometadata" : "containsmetadata");
+		hash = mono_metadata_blob_heap (m, cols [MONO_FILE_HASH_VALUE]);
+		len = mono_metadata_decode_blob_size (hash, &hash);
+		for (j = 0; j < len; ++j)
+			fprintf (output, "%s%02X", j? " ": "", hash [j] & 0xff);
+		fprintf (output, "]\n");
 	}
 	
 }
@@ -919,5 +924,63 @@ dump_table_field_marshal (MonoImage *m)
 		g_free (native);
 	}
 	
+}
+
+static const char*
+get_security_action (int val) {
+	static char buf [32];
+
+	switch (val) {
+	case SECURITY_ACTION_DEMAND:
+		return "Demand";
+	case SECURITY_ACTION_ASSERT:
+		return "Assert";
+	case SECURITY_ACTION_DENY:
+		return "Deny";
+	case SECURITY_ACTION_PERMITONLY:
+		return "PermitOnly";
+	case SECURITY_ACTION_LINKDEMAND:
+		return "LinkDemand";
+	case SECURITY_ACTION_INHERITDEMAND:
+		return "InheritanceDemand";
+	case SECURITY_ACTION_REQMIN:
+		return "RequestMinimum";
+	case SECURITY_ACTION_REQOPT:
+		return "RequestOptional";
+	case SECURITY_ACTION_REQREFUSE:
+		return "RequestRefuse";
+	default:
+		g_snprintf (buf, sizeof (buf), "0x%04X", val);
+		return buf;
+	}
+}
+
+void 
+dump_table_declsec (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_DECLSECURITY];
+	guint32 cols [MONO_DECL_SECURITY_SIZE];
+	int i, len;
+	guint32 idx;
+	const char *blob, *action;
+	const char* parent[] = {
+		"TypeDef", "MethodDef", "Assembly", ""
+	};
+	
+	fprintf (output, "DeclSecurity Table (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_DECL_SECURITY_SIZE);
+		blob = mono_metadata_blob_heap (m, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
+		len = mono_metadata_decode_blob_size (blob, &blob);
+		action = get_security_action (cols [MONO_DECL_SECURITY_ACTION]);
+		idx = cols [MONO_DECL_SECURITY_PARENT];
+		fprintf (output, "%d: %s on %s %d%s", i, action, parent [idx & HAS_DECL_SECURITY_MASK], idx >> HAS_DECL_SECURITY_BITS, len? ":\n\t":"\n");
+		if (!len)
+			continue;
+		for (idx = 0; idx < len; ++idx)
+			fprintf (output, "%c", blob [idx]);
+		fprintf (output, "\n");
+	}
 }
 

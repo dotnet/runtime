@@ -5,6 +5,7 @@ void dump_table_assemblyref  (MonoImage *m);
 void dump_table_class_layout (MonoImage *m);
 void dump_table_constant     (MonoImage *m);
 void dump_table_customattr   (MonoImage *m);
+void dump_table_declsec      (MonoImage *m);
 void dump_table_property     (MonoImage *m);
 void dump_table_property_map (MonoImage *m);
 void dump_table_event        (MonoImage *m);
