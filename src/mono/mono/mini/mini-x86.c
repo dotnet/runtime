@@ -639,10 +639,10 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guchar *code = p;
 	int arg_size = 0, save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	int rtype = method->signature->ret->type;
+	MonoType *rtype = method->signature->ret;
 	
 handle_enum:
-	switch (rtype) {
+	switch (rtype->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
@@ -659,12 +659,15 @@ handle_enum:
 		save_mode = SAVE_FP;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (method->signature->ret->data.klass->enumtype) {
-			rtype = method->signature->ret->data.klass->enum_basetype->type;
+		if (rtype->data.klass->enumtype) {
+			rtype = rtype->data.klass->enum_basetype;
 			goto handle_enum;
 		}
 		save_mode = SAVE_STRUCT;
 		break;
+	case MONO_TYPE_GENERICINST:
+		rtype = rtype->data.generic_inst->generic_type;
+		goto handle_enum;
 	default:
 		save_mode = SAVE_EAX;
 		break;

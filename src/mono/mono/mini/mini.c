@@ -852,13 +852,11 @@ split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
 guint
 mono_type_to_ldind (MonoType *type)
 {
-	int t = type->type;
-
 	if (type->byref)
 		return CEE_LDIND_I;
 
 handle_enum:
-	switch (t) {
+	switch (type->type) {
 	case MONO_TYPE_I1:
 		return CEE_LDIND_I1;
 	case MONO_TYPE_U1:
@@ -893,16 +891,15 @@ handle_enum:
 		return CEE_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_LDOBJ;
 	case MONO_TYPE_GENERICINST:
-		if (type->data.generic_inst->generic_type->type == MONO_TYPE_VALUETYPE)
-			return CEE_LDOBJ;
-		return CEE_LDIND_REF;
+		type = type->data.generic_inst->generic_type;
+		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
 	}
@@ -912,13 +909,11 @@ handle_enum:
 guint
 mono_type_to_stind (MonoType *type)
 {
-	int t = type->type;
-
 	if (type->byref)
 		return CEE_STIND_I;
 
 handle_enum:
-	switch (t) {
+	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -950,16 +945,15 @@ handle_enum:
 		return CEE_STIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_STOBJ;
 	case MONO_TYPE_GENERICINST:
-		if (type->data.generic_inst->generic_type->type == MONO_TYPE_VALUETYPE)
-			return CEE_STOBJ;
-		return CEE_STIND_REF;
+		type = type->data.generic_inst->generic_type;
+		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_stind", type->type);
 	}
@@ -972,15 +966,13 @@ handle_enum:
  */
 static void
 type_to_eval_stack_type (MonoType *type, MonoInst *inst) {
-	int t = type->type;
-
 	if (type->byref) {
 		inst->type = STACK_MP;
 		return;
 	}
 
 handle_enum:
-	switch (t) {
+	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -1014,7 +1006,7 @@ handle_enum:
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		} else {
 			inst->klass = type->data.klass;
@@ -1026,13 +1018,8 @@ handle_enum:
 		inst->type = STACK_VTYPE;
 		return;
 	case MONO_TYPE_GENERICINST:
-		if (type->data.generic_inst->generic_type->type == MONO_TYPE_VALUETYPE) {
-			inst->klass = mono_class_from_mono_type (type);
-			inst->type = STACK_VTYPE;
-		} else {
-			inst->type = STACK_OBJ;
-		}
-		return;
+		type = type->data.generic_inst->generic_type;
+		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in eval stack type", type->type);
 	}
@@ -1904,7 +1891,7 @@ handle_enum:
 				return 1;
 			continue;
 		case MONO_TYPE_GENERICINST:
-			simple_type = sig->params [i]->data.generic_inst->generic_type;
+			simple_type = simple_type->data.generic_inst->generic_type;
 			goto handle_enum;
 
 		default:
