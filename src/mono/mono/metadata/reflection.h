@@ -172,9 +172,17 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	gint32 count;
+	gint32 type;
+	gint32 eltype;
+} MonoReflectionMarshal;
+
+typedef struct {
+	MonoObject object;
 	MonoObject* methodb;
 	MonoString *name;
 	MonoArray *cattrs;
+	MonoReflectionMarshal *marshal_info;
 	guint32 attrs;
 	int position;
 	guint32 table_idx;
@@ -287,6 +295,7 @@ typedef struct {
 	MonoReflectionType *typeb;
 	MonoArray *rva_data;
 	MonoArray *cattrs;
+	MonoReflectionMarshal *marshal_info;
 } MonoReflectionFieldBuilder;
 
 typedef struct {

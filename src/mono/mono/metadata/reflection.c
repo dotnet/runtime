@@ -626,6 +626,12 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 	values [MONO_METHOD_PARAMLIST] = table->next_idx;
 
 	if (mb->pinfo) {
+		MonoDynamicTable *mtable;
+		guint32 *mvalues;
+		
+		mtable = &assembly->tables [MONO_TABLE_FIELDMARSHAL];
+		mvalues = mtable->values + mtable->next_idx * MONO_FIELD_MARSHAL_SIZE;
+		
 		count = 0;
 		for (i = 0; i < mono_array_length (mb->pinfo); ++i) {
 			if (mono_array_get (mb->pinfo, gpointer, i))
@@ -643,6 +649,13 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 				values [MONO_PARAM_NAME] = string_heap_insert (&assembly->sheap, name);
 				g_free (name);
 				values += MONO_PARAM_SIZE;
+				if (pb->marshal_info) {
+					mtable->rows++;
+					alloc_table (mtable, mtable->rows);
+					mvalues = mtable->values + mtable->rows * MONO_FIELD_MARSHAL_SIZE;
+					mvalues [MONO_FIELD_MARSHAL_PARENT] = (table->next_idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_PARAMDEF;
+					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info);
+				}
 				table->next_idx++;
 				mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PARAMDEF, pb->cattrs);
 			}
@@ -905,6 +918,29 @@ handle_enum:
 	return idx;
 }
 
+static guint32
+encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo) {
+	char blob_size [64];
+	char *b = blob_size;
+	char *p, *buf;
+	guint32 idx, len;
+	
+	p = buf = g_malloc (256);
+
+	switch (minfo->type) {
+	/* FIXME: handle ARRAY and other unmanaged types that need extra info */
+	default:
+		mono_metadata_encode_value (minfo->type, p, &p);
+		break;
+	}
+	len = p-buf;
+	mono_metadata_encode_value (len, b, &b);
+	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, buf, len);
+	g_free (buf);
+	return idx;
+}
+
 static void
 mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *assembly)
 {
@@ -955,6 +991,14 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 		 */
 		rva_idx = mono_image_add_stream_data (&assembly->code, mono_array_addr (fb->rva_data, char, 0), mono_array_length (fb->rva_data));
 		values [MONO_FIELD_RVA_RVA] = rva_idx + assembly->text_rva;
+	}
+	if (fb->marshal_info) {
+		table = &assembly->tables [MONO_TABLE_FIELDMARSHAL];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_FIELD_MARSHAL_SIZE;
+		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_FIELDSREF;
+		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info);
 	}
 	mono_image_add_cattrs (assembly, fb->table_idx, CUSTOM_ATTR_FIELDDEF, fb->cattrs);
 }
@@ -1573,6 +1617,15 @@ compare_custom_attrs (const void *a, const void *b)
 	return a_values [MONO_CUSTOM_ATTR_PARENT] - b_values [MONO_CUSTOM_ATTR_PARENT];
 }
 
+static int
+compare_field_marshal (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
+
+	return a_values [MONO_FIELD_MARSHAL_PARENT] - b_values [MONO_FIELD_MARSHAL_PARENT];
+}
+
 /*
  * build_compressed_metadata() fills in the blob of data that represents the 
  * raw metadata as it will be saved in the PE file. The five streams are output 
@@ -1726,6 +1779,9 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	table = &assembly->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	if (table->rows)
 		qsort (table->values + MONO_CUSTOM_ATTR_SIZE, table->rows, sizeof (guint32) * MONO_CUSTOM_ATTR_SIZE, compare_custom_attrs);
+	table = &assembly->tables [MONO_TABLE_FIELDMARSHAL];
+	if (table->rows)
+		qsort (table->values + MONO_FIELD_MARSHAL_SIZE, table->rows, sizeof (guint32) * MONO_FIELD_MARSHAL_SIZE, compare_field_marshal);
 
 	/* compress the tables */
 	for (i = 0; i < 64; i++){
