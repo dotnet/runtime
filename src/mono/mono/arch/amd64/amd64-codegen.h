@@ -617,7 +617,7 @@ typedef union {
 #define amd64_mul_membase_size(inst,basereg,disp,is_signed,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_mul_membase((inst),((basereg)&0x7),(disp),(is_signed)); } while (0)
 #define amd64_imul_reg_reg_size(inst,dreg,reg,size) do { amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_imul_reg_reg((inst),((dreg)&0x7),((reg)&0x7)); } while (0)
 #define amd64_imul_reg_mem_size(inst,reg,mem,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_imul_reg_mem((inst),((reg)&0x7),(mem)); } while (0)
-#define amd64_imul_reg_membase_size(inst,reg,basereg,disp,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_imul_reg_membase((inst),((reg)&0x7),((basereg)&0x7),(disp)); } while (0)
+#define amd64_imul_reg_membase_size(inst,reg,basereg,disp,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_imul_reg_membase((inst),((reg)&0x7),((basereg)&0x7),(disp)); } while (0)
 #define amd64_imul_reg_reg_imm_size(inst,dreg,reg,imm,size) do { amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_imul_reg_reg_imm((inst),((dreg)&0x7),((reg)&0x7),(imm)); } while (0)
 #define amd64_imul_reg_mem_imm_size(inst,reg,mem,imm,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_imul_reg_mem_imm((inst),((reg)&0x7),(mem),(imm)); } while (0)
 #define amd64_imul_reg_membase_imm_size(inst,reg,basereg,disp,imm,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_imul_reg_membase_imm((inst),((reg)&0x7),((basereg)&0x7),(disp),(imm)); } while (0)
