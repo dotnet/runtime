@@ -129,7 +129,7 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	if (strcmp (l->name, r->name))
 		return FALSE;
 
-	if ((l->culture && !r->culture) || (!l->culture && r->culture) || strcmp (l->culture, r->culture))
+	if (l->culture && r->culture && strcmp (l->culture, r->culture))
 		return FALSE;
 
         /*
