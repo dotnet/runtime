@@ -1,5 +1,0 @@
-<configuration>
-	<dllmap dll="cygwin1.dll" target="libc.so.6" />
-	<dllmap dll="libc" target="libc.so.6" />
-</configuration>
-
