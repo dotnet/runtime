@@ -1564,6 +1564,10 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	guint32 attrs;
 	char *buffer;
 	int remain, n;
+	int fd_in, fd_out;
+	struct stat st;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 
 	attrs = GetFileAttributes (name);
 	if (attrs == INVALID_FILE_ATTRIBUTES) {
@@ -1620,7 +1624,32 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	}
 
 	g_free (buffer);
+	
+	ok=_wapi_lookup_handle (src, WAPI_HANDLE_FILE,
+				NULL, (gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", src);
 
+		goto done;
+	}
+
+	fd_in=file_private_handle->fd;
+	fstat(fd_in, &st);
+	
+	ok=_wapi_lookup_handle (dest, WAPI_HANDLE_FILE,
+				NULL, (gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", dest);
+
+		goto done;
+	}
+
+	fd_out=file_private_handle->fd;
+	fchmod(fd_out, st.st_mode);
+
+done:
 	CloseHandle (dest);
 	CloseHandle (src);
 	return TRUE;
