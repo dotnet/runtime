@@ -320,11 +320,7 @@ base: OP_REGOFFSET "0" {
 	/* nothing to do */
 }
 
-base: OP_LDADDR (OP_REGOFFSET) "0" {
-	tree->inst_offset = state->left->tree->inst_offset;
-	tree->inst_basereg = state->left->tree->inst_basereg;
-}
-
+base: OP_LDADDR (OP_REGOFFSET),
 base: CEE_LDOBJ (OP_REGOFFSET) "0" {
 	tree->inst_offset = state->left->tree->inst_offset;
 	tree->inst_basereg = state->left->tree->inst_basereg;
@@ -335,11 +331,7 @@ base: CEE_ADD (base, OP_ICONST) "0" {
 	tree->inst_basereg = state->left->tree->inst_basereg;
 }
 
-base: CEE_ADD (CEE_LDIND_REF (OP_REGVAR), OP_ICONST) "0" {
-	tree->inst_offset = state->right->tree->inst_c0;
-	tree->inst_basereg = state->left->left->tree->dreg;
-}
-
+base: CEE_ADD (CEE_LDIND_REF (OP_REGVAR), OP_ICONST),
 base: CEE_ADD (CEE_LDIND_I (OP_REGVAR), OP_ICONST) "0" {
 	tree->inst_offset = state->right->tree->inst_c0;
 	tree->inst_basereg = state->left->left->tree->dreg;
@@ -366,53 +358,28 @@ reg: CEE_LDIND_REF (base),
 reg: CEE_LDIND_I1 (base),
 reg: CEE_LDIND_U1 (base),
 reg: CEE_LDIND_I2 (base),
-reg: CEE_LDIND_U2 (base) {
+reg: CEE_LDIND_U2 (base),
+reg: CEE_LDIND_I4 (base),
+reg: CEE_LDIND_U4 (base) {
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (tree->opcode),
 				   state->reg1, state->left->tree->inst_basereg, state->left->tree->inst_offset);
 }
 
-reg: OP_LDADDR (OP_REGOFFSET) "2" {
-	/* use LEA */
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->inst_basereg;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-	if (state->left->tree->inst_offset) {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tree->dreg, tree->dreg, state->left->tree->inst_offset);
-	}
-}
-
+reg: OP_LDADDR (OP_REGOFFSET),
 reg: CEE_LDOBJ (OP_REGOFFSET) "2" {
 	/* use LEA */
-	/* FIXME: this is just an hack */
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->tree->inst_basereg;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
-	if (state->left->tree->inst_offset) {
+	if (state->left->tree->inst_offset)
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tree->dreg, tree->dreg, state->left->tree->inst_offset);
-	}
 }
 
-reg: CEE_LDOBJ (reg) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_OBJADDR (reg) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+reg: CEE_LDOBJ (reg),
+reg: OP_OBJADDR (reg),
 reg: OP_VTADDR (reg) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
 reg: CEE_LDIND_U1 (OP_REGVAR) {
@@ -423,22 +390,12 @@ reg: CEE_LDIND_U2 (OP_REGVAR) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->tree->dreg, 0xffff);
 }
 
-stmt: CEE_STIND_REF (base, reg) {
-	MONO_EMIT_STORE_MEMBASE (s, tree, OP_STORE_MEMBASE_REG, state->left->tree->inst_basereg,
-				 state->left->tree->inst_offset, state->right->reg1);
-}
-
 stmt: CEE_STIND_REF (base, CEE_LDIND_REF (OP_REGVAR)),
 stmt: CEE_STIND_REF (base, CEE_LDIND_I (OP_REGVAR)),
 stmt: CEE_STIND_I (base, CEE_LDIND_REF (OP_REGVAR)),
 stmt: CEE_STIND_I (base, CEE_LDIND_I (OP_REGVAR)) {
 	MONO_EMIT_STORE_MEMBASE (s, tree, OP_STORE_MEMBASE_REG, state->left->tree->inst_basereg,
 				 state->left->tree->inst_offset, state->right->left->tree->dreg);
-}
-
-stmt: CEE_STIND_REF (base, OP_ICONST) {
-	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STORE_MEMBASE_IMM, state->left->tree->inst_basereg,
-				     state->left->tree->inst_offset, state->right->tree->inst_c0);
 }
 
 stmt: CEE_STIND_REF (OP_REGVAR, CEE_LDIND_REF (OP_REGVAR)),
@@ -449,34 +406,23 @@ stmt: CEE_STIND_I (OP_REGVAR, CEE_LDIND_I (OP_REGVAR)) {
 }
 
 
-stmt: CEE_STIND_I (base, reg) {
+stmt: CEE_STIND_I (base, reg),
+stmt: CEE_STIND_REF (base, reg) {
 	MONO_EMIT_STORE_MEMBASE (s, tree, OP_STORE_MEMBASE_REG, state->left->tree->inst_basereg,
 				 state->left->tree->inst_offset, state->right->reg1);
 }
 
-stmt: CEE_STIND_I (base, OP_ICONST) {
+stmt: CEE_STIND_I (base, OP_ICONST),
+stmt: CEE_STIND_REF (base, OP_ICONST) {
 	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STORE_MEMBASE_IMM, state->left->tree->inst_basereg,
 				     state->left->tree->inst_offset, state->right->tree->inst_c0);
-}
-
-reg: CEE_LDIND_I4 (base) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, state->reg1, 
-				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
-}
-
-reg: CEE_LDIND_U4 (base) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU4_MEMBASE, state->reg1, 
-				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
 }
 
 reg: CEE_LDIND_REF (OP_REGVAR),
 reg: CEE_LDIND_I (OP_REGVAR),
 reg: CEE_LDIND_I4 (OP_REGVAR),
 reg: CEE_LDIND_U4 (OP_REGVAR) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->dreg;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->tree->dreg);
 }
 
 stmt: CEE_STIND_I4 (base, reg) {
@@ -492,13 +438,6 @@ stmt: CEE_STIND_I4 (base, CEE_LDIND_I4 (OP_REGVAR)) {
 stmt: CEE_STIND_I4 (base, OP_ICONST) {
 	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STOREI4_MEMBASE_IMM, state->left->tree->inst_basereg,
 				     state->left->tree->inst_offset, state->right->tree->inst_c0);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST) {
-	tree->inst_c0 = state->right->tree->inst_c0;
-	tree->opcode = OP_ICONST;
-	tree->dreg = state->left->tree->dreg;
-	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_STIND_I4 (OP_REGVAR, reg) {
@@ -543,22 +482,17 @@ stmt: CEE_STIND_I1 (OP_REGVAR, reg) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->left->tree->dreg, state->right->reg1, 0xff);
 }
 
-stmt: CEE_STIND_I1 (OP_REGVAR, CEE_LDIND_U1 (OP_REGVAR)) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->left->tree->dreg, state->right->left->tree->dreg, 0xff);
-}
-
+stmt: CEE_STIND_I1 (OP_REGVAR, CEE_LDIND_U1 (OP_REGVAR)),
 stmt: CEE_STIND_I1 (OP_REGVAR, CEE_LDIND_I1 (OP_REGVAR)) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->left->tree->dreg, state->right->left->tree->dreg, 0xff);
 }
 
-stmt: CEE_STIND_I2 (OP_REGVAR, CEE_LDIND_U2 (OP_REGVAR)) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->left->tree->dreg, state->right->left->tree->dreg, 0xffff);
-}
-
+stmt: CEE_STIND_I2 (OP_REGVAR, CEE_LDIND_U2 (OP_REGVAR)),
 stmt: CEE_STIND_I2 (OP_REGVAR, CEE_LDIND_I2 (OP_REGVAR)) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->left->tree->dreg, state->right->left->tree->dreg, 0xffff);
 }
 
+stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_I2 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_I1 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_REF (OP_REGVAR, OP_ICONST),
@@ -653,14 +587,8 @@ reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
 # conversions: conv_u can be implemented with AND, also all _ovf conversions?
 #
 
-reg: CEE_CONV_I1 (reg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
-
-reg: CEE_CONV_I2 (reg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
-
+reg: CEE_CONV_I1 (reg),
+reg: CEE_CONV_I2 (reg),
 reg: CEE_CONV_I4 (reg) {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
@@ -673,54 +601,21 @@ reg: CEE_CONV_U2 (reg) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xffff);
 }
 
-reg: CEE_CONV_U4 (reg) {
-	if (sizeof (void *) == 8) {
-		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-	} else {
-		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-	}
-}
-
-reg: CEE_CONV_U (reg) {
-	if (sizeof (void *) == 8) {
-		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-	} else {
-		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-	}
-}
-
-reg: CEE_CONV_I (reg) {
-	if (sizeof (void *) == 8) {
-		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-	} else {
-		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-	}
-}
-
+reg: CEE_CONV_U4 (reg),
+reg: CEE_CONV_U (reg),
+reg: CEE_CONV_I (reg),
 reg: CEE_CONV_OVF_I4 (reg) {
-	if (sizeof (void *) == 8) {
+	if (sizeof (void *) == 8)
 		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-	} else {
+	else
 		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-	}
 }
 
-reg: CEE_CONV_OVF_U4 (reg) {
-	if (sizeof (void *) == 8) {
-		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-	} else {
-		/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */		
-		MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0);
-		MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
-		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-	}
-}
-
+reg: CEE_CONV_OVF_U4 (reg),
 reg: CEE_CONV_OVF_I4_UN (reg) {
 	if (sizeof (void *) == 8) {
 		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-	} else {
-		/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
+	} else {	
 		MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0);
 		MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
 		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
@@ -790,26 +685,10 @@ reg: CEE_CONV_OVF_U2_UN (reg) {
 # other alu operations
 #
 
-reg: OP_CEQ (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_CLT (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_CLT_UN (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_CGT (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+reg: OP_CEQ (cflags),
+reg: OP_CLT (cflags),
+reg: OP_CLT_UN (cflags),
+reg: OP_CGT (cflags),
 reg: OP_CGT_UN (cflags) {	
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
