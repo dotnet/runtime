@@ -929,21 +929,14 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							jit_tls->lmf = lmf;
 							return 0;
 						}
-					}
-				}
-
-				/* no handler found - we need to call all finally handlers */
-				if (!test_only) {
-					for (i = 0; i < ji->num_clauses; i++) {
-						MonoJitExceptionInfo *ei = &ji->clauses [i];
-						
-						if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls)
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							call_filter (ctx, ei->handler_start, NULL);
 						}
+						
 					}
 				}
 			}
