@@ -2412,14 +2412,12 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		
 		/* Ensure that we have marshalling info for this param */
 		mono_marshal_load_type_info (mono_class_from_mono_type (t));
-		
+
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
 			MonoType *mtype;
 			MonoClass *mklass;
 			MonoMethod *marshal_native_to_managed;
 			MonoMethod *get_instance;
-
-			/* FIXME: Call CleanUpNativeData after the call */
 
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
 			g_assert (mtype != NULL);
@@ -2679,6 +2677,54 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	/* Ensure that we have marshalling info for the return */
 	mono_marshal_load_type_info (mono_class_from_mono_type (sig->ret));
 
+	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
+		MonoMarshalSpec *spec = mspecs [0];
+		MonoType *mtype;
+		MonoClass *mklass;
+		guint32 loc1;
+
+		g_assert (!sig->ret->byref);
+
+		mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
+		g_assert (mtype);
+		mklass = mono_class_from_mono_type (mtype);
+		g_assert (mklass);
+
+		loc1 = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+			
+		switch (sig->ret->type) {
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+			
+			mono_mb_emit_byte (mb, CEE_LDLOC_3);
+			mono_mb_emit_stloc (mb, loc1);
+
+			mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+			mono_mb_emit_byte (mb, CEE_CALL);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_find_method_by_name (mklass, "GetInstance", 1)));
+			mono_mb_emit_byte (mb, CEE_DUP);
+
+			mono_mb_emit_byte (mb, CEE_LDLOC_3);
+			mono_mb_emit_byte (mb, CEE_CALLVIRT);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_find_method_by_name (mklass, "MarshalManagedToNative", 1)));
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+			mono_mb_emit_ldloc (mb, loc1);
+			mono_mb_emit_byte (mb, CEE_CALLVIRT);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_find_method_by_name (mklass, "CleanUpManagedData", 1)));
+
+			break;
+		default:
+			g_warning ("custom marshalling of type %x is currently not supported", sig->ret->type);
+			g_assert_not_reached ();
+			break;
+		}
+	}
+	else
 	if (!sig->ret->byref) { 
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
@@ -2788,6 +2834,52 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	/* Convert byref arguments back */
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
+		MonoMarshalSpec *spec = mspecs [i + 1];
+
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
+			MonoType *mtype;
+			MonoClass *mklass;
+			MonoMethod *cleanup_managed;
+			MonoMethod *get_instance;
+
+			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
+			g_assert (mtype != NULL);
+			mklass = mono_class_from_mono_type (mtype);
+			g_assert (mklass != NULL);
+
+			get_instance = mono_find_method_by_name (mklass, "GetInstance", 1);
+			g_assert (get_instance);
+			cleanup_managed = mono_find_method_by_name (mklass, "CleanUpManagedData", 1);
+			g_assert (cleanup_managed);
+
+			switch (t->type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				if (t->byref)
+					g_assert_not_reached ();
+
+				/* Call CleanUpManagedData */
+
+				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+
+				mono_mb_emit_byte (mb, CEE_CALL);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_byte (mb, CEE_CALLVIRT);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
+				
+				break;
+			default:
+				g_warning ("custom marshalling of type %x is currently not supported", t->type);
+				g_assert_not_reached ();
+				break;
+			}
+			continue;
+		}
 
 		if (!t->byref)
 			continue;
@@ -3384,8 +3476,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			MonoMethod *marshal_managed_to_native;
 			MonoMethod *get_instance;
 
-			/* FIXME: Call CleanUpNativeData after the call */
-
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
 			g_assert (mtype != NULL);
 			mklass = mono_class_from_mono_type (mtype);
@@ -3892,6 +3982,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			MonoClass *mklass;
 			MonoMethod *marshal_native_to_managed;
 			MonoMethod *get_instance;
+			MonoMethod *cleanup_native;
+			guint32 loc1;
 
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
 			g_assert (mtype != NULL);
@@ -3900,8 +3992,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 			marshal_native_to_managed = mono_find_method_by_name (mklass, "MarshalNativeToManaged", 1);
 			g_assert (marshal_native_to_managed);
+			cleanup_native = mono_find_method_by_name (mklass, "CleanUpNativeData", 1);
+			g_assert (cleanup_native);
 			get_instance = mono_find_method_by_name (mklass, "GetInstance", 1);
 			g_assert (get_instance);
+
+			loc1 = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 			
 			switch (type) {
 			case MONO_TYPE_CLASS:
@@ -3909,32 +4005,26 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_VALUETYPE:
-				if (type == MONO_TYPE_VALUETYPE) {
-					/* local 3 can't hold a pointer */
-					mono_mb_emit_byte (mb, CEE_STLOC_0);
-				}
-				else
-					mono_mb_emit_byte (mb, CEE_STLOC_3);
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+				mono_mb_emit_byte (mb, CEE_LDLOC_3);
+				mono_mb_emit_stloc (mb, loc1);
 
 				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
 
 				mono_mb_emit_byte (mb, CEE_CALL);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				mono_mb_emit_byte (mb, CEE_DUP);
 
-				if (type == MONO_TYPE_VALUETYPE)
-					mono_mb_emit_byte (mb, CEE_LDLOC_0);
-				else
-					mono_mb_emit_byte (mb, CEE_LDLOC_3);
-				
+				mono_mb_emit_byte (mb, CEE_LDLOC_3);
 				mono_mb_emit_byte (mb, CEE_CALLVIRT);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
-				
-				if (type == MONO_TYPE_VALUETYPE) {
-					mono_mb_emit_byte (mb, CEE_UNBOX);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->ret)));
-				}
 				mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+				mono_mb_emit_ldloc (mb, loc1);
+				mono_mb_emit_byte (mb, CEE_CALLVIRT);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
+
 				break;
 			default:
 				g_warning ("custom marshalling of type %x is currently not supported", type);
