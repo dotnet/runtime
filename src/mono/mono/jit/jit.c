@@ -229,11 +229,6 @@ gboolean mono_break_on_exc = FALSE;
 
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 
-/* If non-zero, insert a breakpoint when compiling the next method.
- * If positive, interpret this variable as a counter and decrement
- * it after setting the breakpoint. */
-int mono_debug_insert_breakpoint = 0;
-
 MonoJitStats mono_jit_stats;
 
 CRITICAL_SECTION *metadata_section = NULL;
@@ -3856,13 +3851,10 @@ mono_jit_compile_method (MonoMethod *method)
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
-		if (mono_method_has_breakpoint (method, FALSE) || mono_debug_insert_breakpoint)
+		if (mono_method_has_breakpoint (method, FALSE))
 			x86_breakpoint (cfg->code);
 		else if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 			x86_nop (cfg->code);
-
-		if (mono_debug_insert_breakpoint > 0)
-			mono_debug_insert_breakpoint--;
 
 		if (!(ji = arch_jit_compile_cfg (target_domain, cfg))) {
 			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
@@ -4059,6 +4051,8 @@ sigusr1_signal_handler (int _dummy)
 	GET_CONTEXT
 	
 	thread = mono_thread_current ();
+
+	g_message (G_STRLOC ": %d - %p", getpid (), thread);
         
 	g_assert (thread->abort_exc);
 
@@ -4090,11 +4084,13 @@ mono_thread_abort (MonoObject *obj)
 	
 	g_free (jit_tls);
 
+	g_message (G_STRLOC ": %d", getpid ());
+
 	ExitThread (-1);
 }
 
 static void
-mono_thread_start_cb (gpointer stack_start)
+mono_thread_start_cb (MonoThread *thread, gpointer stack_start, gpointer func)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
@@ -4110,6 +4106,8 @@ mono_thread_start_cb (gpointer stack_start)
 	lmf->ebp = -1;
 
 	jit_tls->lmf = lmf;
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED, thread, func);
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -4124,7 +4122,7 @@ mono_thread_abort_dummy (MonoObject *obj)
 }
 
 static void
-mono_thread_attach_cb (gpointer stack_start)
+mono_thread_attach_cb (MonoThread *thread, gpointer stack_start)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
@@ -4218,7 +4216,7 @@ mono_jit_init (const char *file) {
 	InitializeCriticalSection (metadata_section);
 
 	mono_jit_tls_id = TlsAlloc ();
-	mono_thread_start_cb ((gpointer)-1);
+	mono_thread_start_cb (NULL, (gpointer)-1, NULL);
 
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (arch_create_jit_trampoline);
@@ -4229,8 +4227,7 @@ mono_jit_init (const char *file) {
 	mono_install_get_config_dir ();
 
 	domain = mono_init (file);
-	mono_runtime_init (domain, mono_thread_start_cb,
-			   mono_thread_attach_cb);
+	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
 
 	return domain;
 }

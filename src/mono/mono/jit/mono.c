@@ -273,8 +273,6 @@ main (int argc, char *argv [])
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
 			else if (strcmp (format, "mono") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_MONO;
-			else if (strcmp (format, "internal_mono_debugger") == 0)
-				mono_debug_format = MONO_DEBUG_FORMAT_MONO_DEBUGGER;
 			else
 				g_error ("Unknown debugging format: %s", argv [i] + 8);
 		} else if (strcmp (argv [i], "--debug") == 0) {
@@ -346,10 +344,7 @@ main (int argc, char *argv [])
 			mono_insert_breakpoint_full (desc, FALSE);
 		}
 
-		if (mono_debug_format == MONO_DEBUG_FORMAT_MONO_DEBUGGER)
-			retval = mono_debugger_jit_exec (domain, assembly, argc - i, argv + i);
-		else
-			retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
+		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 	}
 
 	mono_profiler_shutdown ();

@@ -9,51 +9,57 @@
 #include <mono/jit/jit.h>
 
 typedef struct _MonoDebugHandle			MonoDebugHandle;
-typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
 typedef struct _MonoDebuggerSymbolFileTable	MonoDebuggerSymbolFileTable;
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
+
+typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
 
 typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
 	MONO_DEBUG_FORMAT_STABS,
 	MONO_DEBUG_FORMAT_DWARF2,
-	MONO_DEBUG_FORMAT_MONO,
-	/* This format may only be used when the JIT is being run by the
-	 * Mono Debugger.
-	 */
-	MONO_DEBUG_FORMAT_MONO_DEBUGGER
+	MONO_DEBUG_FORMAT_MONO
 } MonoDebugFormat;
 
-extern MonoDebugFormat mono_debug_format;
+typedef enum {
+	MONO_DEBUGGER_EVENT_TYPE_ADDED,
+	MONO_DEBUGGER_EVENT_METHOD_ADDED,
+	MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE,
+	MONO_DEBUGGER_EVENT_THREAD_CREATED
+} MonoDebuggerEvent;
 
 /*
- * This variable is intended to be set in a debugger.
- *
- * If it's non-zero, arch_compile_method() will insert a breakpoint next time
- * it compiles a method.
- *
- * If it's positive, it acts as a counter which is decremented each time it's
- * used. Set it to a negative value to make arch_compile_method() insert a
- * breakpoint for each method.
- *
- * To use this, you should create a GDB macro like this:
- *
- *    define enter
- *      set mono_debug_insert_breakpoint = 1
- *      continue
- *      set *mono_debug_last_breakpoint_address = 0x90
- *      reload-symbol-files
- *      frame
- *    end
- *
- *    define reload-symbol-files
- *      call mono_debug_make_symbols ()
- *      add-symbol-file Test-debug.o
- *      add-symbol-file /tmp/corlib.o
- *    end
- *
+ * Functions we export to the debugger.
  */
-extern int mono_debug_insert_breakpoint;
+struct _MonoDebuggerIOLayer
+{
+	void (*InitializeCriticalSection) (WapiCriticalSection *section);
+	void (*DeleteCriticalSection) (WapiCriticalSection *section);
+	gboolean (*TryEnterCriticalSection) (WapiCriticalSection *section);
+	void (*EnterCriticalSection) (WapiCriticalSection *section);
+	void (*LeaveCriticalSection) (WapiCriticalSection *section);
+
+	guint32 (*WaitForSingleObject) (gpointer handle, guint32 timeout);
+	guint32 (*SignalObjectAndWait) (gpointer signal_handle, gpointer wait,
+					guint32 timeout, gboolean alertable);
+	guint32 (*WaitForMultipleObjects) (guint32 numobjects, gpointer *handles,
+					   gboolean waitall, guint32 timeout);
+
+	gpointer (*CreateSemaphore) (WapiSecurityAttributes *security,
+				     gint32 initial, gint32 max,
+				     const guchar *name);
+	gboolean (*ReleaseSemaphore) (gpointer handle, gint32 count, gint32 *prevcount);
+
+	gpointer (*CreateThread) (WapiSecurityAttributes *security,
+				  guint32 stacksize, WapiThreadStart start,
+				  gpointer param, guint32 create, guint32 *tid);
+};
+
+extern MonoDebuggerIOLayer mono_debugger_io_layer;
+
+extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2);
+
+extern MonoDebugFormat mono_debug_format;
 
 MonoDebugHandle* mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args);
 
@@ -80,7 +86,14 @@ int            mono_remove_breakpoint (int breakpint_id);
 
 void           mono_debugger_trampoline_breakpoint_callback (void);
 
-int            mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
+void           mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpointer data2);
+
+gpointer       mono_debug_create_notification_function (gpointer *notification_address);
+
+void           mono_debug_init (void);
+void           mono_debug_lock (void);
+void           mono_debug_unlock (void);
+int            mono_debug_update_symbol_file_table (void);
 
 
 /* DEBUGGER PUBLIC FUNCTION:
@@ -106,26 +119,18 @@ extern guint8 *mono_generic_trampoline_code;
  */
 extern guint8 *mono_breakpoint_trampoline_code;
 
-/*
- * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
- * contains pointers to global variables and functions which must be accessed
- * by the debugger.
+/* This is incremented each time the symbol table is modified.
+ * The debugger looks at this variable and if it has a higher value than its current
+ * copy of the symbol table, it must call debugger_update_symbol_file_table().
  */
-struct _MonoDebuggerInfo {
-	guint64 magic;
-	guint32 version;
-	guint32 total_size;
-	guint8 **generic_trampoline_code;
-	guint8 **breakpoint_trampoline_code;
-	guint32 *symbol_file_generation;
-	guint32 *symbol_file_modified;
-	gconstpointer *notification_address;
-	MonoDebuggerSymbolFileTable **symbol_file_table;
-	gpointer (*compile_method) (MonoMethod *method);
-	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
-	guint64 (*remove_breakpoint) (guint64 breakpoint);
-	MonoInvokeFunc runtime_invoke;
-};
+extern guint32 mono_debugger_symbol_file_table_generation;
+extern guint32 mono_debugger_symbol_file_table_modified;
+
+/* Caution: This variable may be accessed at any time from the debugger;
+ *          it is very important not to modify the memory it is pointing to
+ *          without previously setting this pointer back to NULL.
+ */
+extern MonoDebuggerSymbolFileTable *mono_debugger_symbol_file_table;
 
 struct _MonoDebuggerSymbolFileTable {
 	guint64 magic;
