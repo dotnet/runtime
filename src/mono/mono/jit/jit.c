@@ -2549,6 +2549,24 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			superblock_end = TRUE;
 			break;
 		}
+		case CEE_JMP: {
+			MonoMethod *cm;
+			guint32 token;
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+
+			cm = mono_get_method (method->klass->image, token, NULL);
+			g_assert (cm);
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_JMP);
+			/* fixme: our magic trampoline code does not work in this case,
+			 * so I need to compile the method immediately */
+			t1->data.p = mono_compile_method (cm);;
+
+			ADD_TREE (t1, cli_addr);
+			break;
+		}
 	        case CEE_LEAVE:
 	        case CEE_LEAVE_S: {
 			gint32 target;

@@ -3,6 +3,7 @@ TEST_PROG=../interpreter/mint
 JITTEST_PROG=../jit/mono
 
 CSC=csc /unsafe
+ILASM=ilasm
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -108,13 +109,19 @@ TESTSRC=			\
 	inctest.cs		\
 	bound.cs		\
 	array-invoke.cs		\
-	decimal.cs
+	decimal.cs		\
+	cpblkTest.il		\
+	jmpTest.il		
 
 
-TESTSI=$(TESTSRC:.cs=.exe)
+TESTSI_TMP=$(TESTSRC:.cs=.exe)
+TESTSI=$(TESTSI_TMP:.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 
 EXTRA_DIST=test-driver $(TESTSRC)
+
+%.exe: %.il
+	$(ILASM) $< /OUTPUT=$@
 
 %.exe: %.cs
 	$(CSC) $<

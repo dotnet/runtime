@@ -150,10 +150,11 @@ x86_pop_reg (s->code, X86_ECX); \
 x86_pop_reg (s->code, X86_EDX); \
 x86_pop_reg (s->code, X86_EAX);
 
+void *
+debug_memcopy (void *dest, const void *src, size_t n);
+
 #ifdef DEBUG
 #define MEMCOPY debug_memcpy
-void *MEMCOPY (void *dest, const void *src, size_t n);
-
 #define PRINT_REG(text,reg) REAL_PRINT_REG(text,reg)
 #else
 
@@ -217,7 +218,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8 LDIND_OBJ 
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
-%term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
+%term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY JMP
 %term ADD ADD_OVF ADD_OVF_UN SUB SUB_OVF SUB_OVF_UN MUL MUL_OVF MUL_OVF_UN 
 %term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term COMPARE CBRANCH BRTRUE BRFALSE CSET
@@ -2159,6 +2160,31 @@ reg: CHECKTHIS (reg) {
 
 stmt: CHECKTHIS (reg) {
 	x86_alu_membase_imm (s->code, X86_CMP, tree->left->reg1, 0, 0);
+}
+
+stmt: JMP
+{
+	int pos = -4;
+
+	/* restore callee saved registers */
+	if (mono_regset_reg_used (s->rs, X86_EBX)) {
+		x86_mov_reg_membase (s->code, X86_EBX, X86_EBP, pos, 4);
+		pos -= 4;
+	}
+	if (mono_regset_reg_used (s->rs, X86_EDI)) {
+		x86_mov_reg_membase (s->code, X86_EDI, X86_EBP, pos, 4);
+		pos -= 4;
+	}
+	if (mono_regset_reg_used (s->rs, X86_ESI)) {
+		x86_mov_reg_membase (s->code, X86_ESI, X86_EBP, pos, 4);
+		pos -= 4;
+	}
+	/* restore ESP/EBP */
+	x86_leave (s->code);
+
+	/* jump to the method */
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->data.p);
+	x86_jump32 (s->code, 0);
 }
 
 this: NOP
@@ -4273,9 +4299,8 @@ mono_ldsflda (MonoClass *klass, int offset)
 	return addr;
 }
 
-#ifdef DEBUG
 void *
-MEMCOPY (void *dest, const void *src, size_t n)
+debug_memcopy (void *dest, const void *src, size_t n)
 {
 	int i, l = n;
 
@@ -4287,7 +4312,6 @@ MEMCOPY (void *dest, const void *src, size_t n)
 	
 	return memcpy (dest, src, n);
 }
-#endif
 
 void mono_emit_fast_iconv (MBCGEN_TYPE* s, MBTREE_TYPE* tree)
 {
