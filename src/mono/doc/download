@@ -1,11 +1,18 @@
 * Software Availability
 
-	The Virtual Execution System is available in package `mono'. 
+	The Virtual Execution System is available in package `mono'.
+	Currently this contains a metadata library and the
+	disassembler.  Please reffer to our <a
+	href="runtime.html">Runtime</a> description for more details
+	on this part of the project.
 
-	Currently the code for the C# compiler as well as the error
-	test suite and the class library is in package `mcs', we will
-	move this later into `mono'.
+	The code for the C# compiler as well as the language error
+	test suite and the class library are in the `mcs' package, we
+	will move this later into `mono' itself. 
 
-	The parser generator required by `mcs' is available in the
-	module `jay'. 
+	The mcs compiler requires the `jay' parser generator, this is
+	available in module `jay'.
+
+
+
 
