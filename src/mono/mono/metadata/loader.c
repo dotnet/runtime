@@ -108,10 +108,11 @@ mono_lookup_internal_call (MonoMethod *method)
 		tmpsig = mono_signature_get_desc(method->signature, TRUE);
 		name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
 		if (!(res = g_hash_table_lookup (icall_hash, name))) {
+			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", name);
+
 			g_free (name);
 			g_free(tmpsig);
 
-			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", name);
 			return NULL;
 		}
 
