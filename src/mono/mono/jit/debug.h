@@ -114,6 +114,7 @@ struct _MonoDebuggerInfo {
 	gpointer (*compile_method) (MonoMethod *method);
 	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
 	guint64 (*remove_breakpoint) (guint64 breakpoint);
+	MonoInvokeFunc runtime_invoke;
 };
 
 struct _MonoDebuggerSymbolFileTable {

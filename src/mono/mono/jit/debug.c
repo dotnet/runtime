@@ -56,7 +56,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_update_symbol_file_table,
 	&mono_compile_method,
 	&debugger_insert_breakpoint,
-	&debugger_remove_breakpoint
+	&debugger_remove_breakpoint,
+	&mono_runtime_invoke
 };
 
 static void
@@ -207,6 +208,51 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
 	mono_debug_open_image (mono_debug_handle, assembly->image);
+	mono_debug_open_image (mono_debug_handle, mono_defaults.corlib);
+
+	mono_debug_add_type (mono_defaults.object_class);
+	mono_debug_add_type (mono_defaults.object_class);
+	mono_debug_add_type (mono_defaults.byte_class);
+	mono_debug_add_type (mono_defaults.void_class);
+	mono_debug_add_type (mono_defaults.boolean_class);
+	mono_debug_add_type (mono_defaults.sbyte_class);
+	mono_debug_add_type (mono_defaults.int16_class);
+	mono_debug_add_type (mono_defaults.uint16_class);
+	mono_debug_add_type (mono_defaults.int32_class);
+	mono_debug_add_type (mono_defaults.uint32_class);
+	mono_debug_add_type (mono_defaults.int_class);
+	mono_debug_add_type (mono_defaults.uint_class);
+	mono_debug_add_type (mono_defaults.int64_class);
+	mono_debug_add_type (mono_defaults.uint64_class);
+	mono_debug_add_type (mono_defaults.single_class);
+	mono_debug_add_type (mono_defaults.double_class);
+	mono_debug_add_type (mono_defaults.char_class);
+	mono_debug_add_type (mono_defaults.string_class);
+	mono_debug_add_type (mono_defaults.enum_class);
+	mono_debug_add_type (mono_defaults.array_class);
+	mono_debug_add_type (mono_defaults.multicastdelegate_class);
+	mono_debug_add_type (mono_defaults.asyncresult_class);
+	mono_debug_add_type (mono_defaults.waithandle_class);
+	mono_debug_add_type (mono_defaults.typehandle_class);
+	mono_debug_add_type (mono_defaults.fieldhandle_class);
+	mono_debug_add_type (mono_defaults.methodhandle_class);
+	mono_debug_add_type (mono_defaults.monotype_class);
+	mono_debug_add_type (mono_defaults.exception_class);
+	mono_debug_add_type (mono_defaults.threadabortexception_class);
+	mono_debug_add_type (mono_defaults.thread_class);
+	mono_debug_add_type (mono_defaults.transparent_proxy_class);
+	mono_debug_add_type (mono_defaults.real_proxy_class);
+	mono_debug_add_type (mono_defaults.mono_method_message_class);
+	mono_debug_add_type (mono_defaults.appdomain_class);
+	mono_debug_add_type (mono_defaults.field_info_class);
+	mono_debug_add_type (mono_defaults.stringbuilder_class);
+	mono_debug_add_type (mono_defaults.math_class);
+	mono_debug_add_type (mono_defaults.stack_frame_class);
+	mono_debug_add_type (mono_defaults.stack_trace_class);
+	mono_debug_add_type (mono_defaults.marshal_class);
+	mono_debug_add_type (mono_defaults.iserializeable_class);
+	mono_debug_add_type (mono_defaults.serializationinfo_class);
+	mono_debug_add_type (mono_defaults.streamingcontext_class);
 
 	return debug;
 }
@@ -641,8 +687,10 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
 			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
 		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER) {
+#if 0
 			if (!strcmp (info->name, "corlib"))
 				break;
+#endif
 			info->ilfile = g_strdup_printf ("%s.il", info->name);
 			info->always_create_il = TRUE;
 			debug_load_method_lines (info);
