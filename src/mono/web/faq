@@ -450,7 +450,33 @@ A: We are also researching <a
    href="http://www.gnu.org/software/lightning/lightning.html">GNU
    Lightning</a>.
 
+<a name="ximian-and-microsoft">
 ** Ximian and Microsoft
+
+Q: I read that Microsoft is helping out Ximian, is this true?
+
+A: Initial contact between David Stutz and Miguel de Icaza happened.
+   It was a friendly conversation.  Microsoft is interested in other
+   implementing .NET and are willing to help make the ECMA spec more
+   accurate for this purpose.
+
+   We were initially contacted by Sam Ruby at the ECMA TG3 committee
+   to discuss the same issue.  And we are glad to have good contacts
+   to ask questions about the specs. 
+
+Q: Do you fear that Microsoft will change the spec and render Mono useless?
+
+A: No.  Microsoft proved with the CLI and the C# language that it was
+   possible to create a powerful foundation for many languages to
+   interoperate.  We will always have that.  
+
+   Even if changes happened in the platform which were undocumented
+   (which is very unlikely), the existing platform has a value on its
+   own.
+
+   Miguel once explained its motivation for working on Mono to Dave
+   Winer, and his mail got posted <a
+   href="http://scriptingnews.userland.com/stories/storyReader$1275">here</a>
 
 Q: Didn't Miguel de Icaza say that `Unix Sucks'?
 

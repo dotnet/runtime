@@ -14,6 +14,10 @@
 	GNU make tools.  These may be obtained for the Windows
 	environment from <a href="www.cygwin.com">cygwin.com</a>.
 
+	You will also need to get GLIB, from: <a
+href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz</a>
+
+<a name="sources">
 ** Sources
 
 	Currently we will be providing CVS snapshots every day, until
@@ -46,6 +50,71 @@
 		</ul>
 	</ul>
 
+<a name="install">
+** Installing the software
+
+	To install and work on the compiler and the class libraries,
+	follow these instructions:
+
+	<ul>
+		* Install <a href="http://www.cygwin.org">CygWin</a> first.
+
+		* Untar the MCS distribution (see below for information).
+
+		* Go into the MCS directory and type `make windows'
+	</ul>
+
+	To compile the mono runtime on windows:
+
+	<ul>
+		* Install <a href="http://www.cygwin.org">CygWin</a> first.
+
+		* Once installed, in a terminal window or a cygwin
+		  window (a shortcut should be on your desktop), untar the glib
+		  distribution:
+
+		  <t>tar xzvf glib-1.2.10.tar.gz</t>
+
+		* Configure, compile and install glib, like this:
+
+		  <t>./configure --prefix=//c/mono</t>
+
+		  <t>make</t>
+
+		  <t>make install</t>
+
+		* Unpack the mono distribution:
+
+		  <t>tar xzvf mono-XXX.tar.gz</t>
+
+		* Configure, compile and install:
+
+		  <t>./configure --prefix=//c/mono</t>
+
+		  <t>make</t>
+
+		  <t>make install</t>
+	</ul>
+
+	To compile the mono runtime on Unix:
+
+	<ul>
+
+		* Download the mono distribution
+
+		* Unpack the mono distribution:
+
+		  <t>tar xzvf mono-XXX.tar.gz</t>
+
+		* Configure, compile and install:
+
+		  <t>./configure</t>
+
+		  <t>make</t>
+
+		  <t>make install</t>
+	</ul>
+	
 ** CVS
 
 	We are trying to figure out where to put our CVS repository.
