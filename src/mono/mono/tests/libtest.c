@@ -15,7 +15,8 @@ test_lpwstr_marshal (unsigned short* chars, long length)
 	
 	while ( i < length ) {
 		printf("X|%u|\n", chars[i]);
-		res [i] = chars[i++];
+		res [i] = chars[i];
+		i++;
 	}
 
 	res [i] = 0;
@@ -123,7 +124,7 @@ mono_invoke_delegate (SimpleDelegate3 delegate)
 int 
 mono_test_marshal_char (short a1)
 {
-	if (a1 = 'a')
+	if (a1 == 'a')
 		return 0;
 	
 	return 1;

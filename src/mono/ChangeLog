@@ -1,3 +1,8 @@
+2003-10-03  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* mono/tests/libtest.c: (test_lpwstr_marshal) remove undefined
+	behaviour of increment, (mono_test_marshal_char) = should be ==
+
 2003-09-30  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/remoting1.cs: Added test for interface casts on
