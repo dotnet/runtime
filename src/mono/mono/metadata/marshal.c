@@ -1733,7 +1733,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		case MONO_TYPE_VALUETYPE:
 			
 			klass = sig->params [i]->data.klass;
-			if (klass->enumtype)
+			if (klass->blittable || klass->enumtype)
 				break;
 
 			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
@@ -1812,7 +1812,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			break;
 		case MONO_TYPE_VALUETYPE:
 			klass = sig->params [i]->data.klass;
-			if (klass->enumtype) {
+			if (klass->blittable || klass->enumtype) {
 				mono_mb_emit_ldarg (mb, i);
 				break;
 			}
@@ -1949,7 +1949,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:			
 			klass = t->data.klass;
-			if (klass->enumtype)
+			if (klass->blittable || klass->enumtype)
 				break;
 
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -2086,7 +2086,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			break;
 		case MONO_TYPE_VALUETYPE:
 			klass = sig->params [i]->data.klass;
-			if (klass->enumtype) {
+			if (klass->blittable || klass->enumtype) {
 				mono_mb_emit_ldarg (mb, argnum);
 				break;
 			}			
@@ -2170,7 +2170,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				continue;
 	
 			klass = t->data.klass;
-			if (klass->enumtype)
+			if (klass->blittable || klass->enumtype)
 				break;
 
 			/* dst = argument */
@@ -2219,10 +2219,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			int tmp;
-			if (sig->ret->data.klass->enumtype) {
+
+			klass = sig->ret->data.klass;
+			if (klass->enumtype) {
 				type = sig->ret->data.klass->enum_basetype->type;
 				goto handle_enum;
 			}
+
+			if (klass->blittable)
+				break;
 
 			tmp = mono_mb_add_local (mb, sig->ret);
 			g_assert (tmp);
@@ -2294,26 +2299,37 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mb = mono_mb_new (klass, stoptr->name);
 
-	/* allocate local 0 (pointer) src_ptr */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	/* allocate local 1 (pointer) dst_ptr */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	/* allocate local 2 (boolean) delete_old */
-	mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-	mono_mb_emit_byte (mb, CEE_LDARG_2);
-	mono_mb_emit_byte (mb, CEE_STLOC_2);
+	if (klass->blittable) {
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_CPBLK);
+	} else {
 
-	/* initialize src_ptr to point to the start of object data */
-	mono_mb_emit_byte (mb, CEE_LDARG_0);
-	mono_mb_emit_icon (mb, sizeof (MonoObject));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_STLOC_0);
+		/* allocate local 0 (pointer) src_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		/* allocate local 1 (pointer) dst_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		/* allocate local 2 (boolean) delete_old */
+		mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
+		mono_mb_emit_byte (mb, CEE_LDARG_2);
+		mono_mb_emit_byte (mb, CEE_STLOC_2);
 
-	/* initialize dst_ptr */
-	mono_mb_emit_byte (mb, CEE_LDARG_1);
-	mono_mb_emit_byte (mb, CEE_STLOC_1);
+		/* initialize src_ptr to point to the start of object data */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
 
-	emit_struct_conv (mb, klass, FALSE);
+		/* initialize dst_ptr */
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+		emit_struct_conv (mb, klass, FALSE);
+	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
@@ -2345,22 +2361,33 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mb = mono_mb_new (klass, ptostr->name);
 
-	/* allocate local 0 (pointer) src_ptr */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	/* allocate local 1 (pointer) dst_ptr */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	if (klass->blittable) {
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_CPBLK);
+	} else {
 
-	/* initialize src_ptr to point to the start of object data */
-	mono_mb_emit_byte (mb, CEE_LDARG_0);
-	mono_mb_emit_byte (mb, CEE_STLOC_0);
+		/* allocate local 0 (pointer) src_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		/* allocate local 1 (pointer) dst_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		
+		/* initialize src_ptr to point to the start of object data */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
 
-	/* initialize dst_ptr */
-	mono_mb_emit_byte (mb, CEE_LDARG_1);
-	mono_mb_emit_icon (mb, sizeof (MonoObject));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_STLOC_1);
+		/* initialize dst_ptr */
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
 
-	emit_struct_conv (mb, klass, TRUE);
+		emit_struct_conv (mb, klass, TRUE);
+	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
 

@@ -1781,7 +1781,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = ctree_create_store (cfg, field->type, t1, sp [1], FALSE);
 			}
 
-
 			ADD_TREE (t1, cli_addr);
 			break;
 		}

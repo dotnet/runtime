@@ -934,6 +934,7 @@ mono_class_setup_mono_type (MonoClass *class)
 			case 'D':
 				if (!strcmp (name, "Double")) {
 					t = MONO_TYPE_R8;
+					class->blittable = TRUE;						
 				}
 				break;
 			case 'I':
@@ -954,6 +955,7 @@ mono_class_setup_mono_type (MonoClass *class)
 			case 'S':
 				if (!strcmp (name, "Single")) {
 					t = MONO_TYPE_R4;
+					class->blittable = TRUE;						
 				} else if (!strcmp(name, "SByte")) {
 					t = MONO_TYPE_I1;
 					class->blittable = TRUE;
@@ -1340,9 +1342,6 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	}
 	class->this_arg = class->byval_arg;
 	class->this_arg.byref = 1;
-
-	if (rank == 1 && class->element_class->blittable)
-		class->blittable = TRUE;
 
 	list = g_slist_append (list, class);
 	g_hash_table_insert (image->array_cache, &class->element_class->byval_arg, list);
