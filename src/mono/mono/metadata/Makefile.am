@@ -26,6 +26,16 @@ noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(ICU_CFLAGS) \
 	-DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
+#
+# Make sure any prefix changes are updated in the binaries too.
+#
+#  assembly.c uses MONO_ASSEMBLIES
+#  mono-config.c uses MONO_CFG_DIR
+#
+# This won't result in many more false positives than AC_DEFINEing them
+# in configure.in.
+#
+assembly.lo mono-config.lo: Makefile
 
 CLEANFILES = mono-bundle.stamp
 
