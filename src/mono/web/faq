@@ -631,21 +631,6 @@ Q: Would it be too terrible to have another corlib signed as mscorlib?
 A: We rename corlib to mscorlib also when saving the PE files, in fact, 
    the runtime can execute program created by mono just fine.  
 
-Q: How do I build corlib under Linux?
-
-A: You can build your own (see the web site on how to get the mcs 
-   project from cvs), but in order to build them using mcs you need a 
-   set of working class libraries. After building the runtime (using
-   mono-build.sh) get them from the nightly build and put them (and
-   mcs.exe) in your mono/install/lib directory. Then you should be able 
-   to do: cd mcs, then: make -f makefile.gnu, then: cp mcs/mcs.exe 
-   class/lib/*.dll ../install/lib Also, you should know that you can 
-   either get your dose of DLLs from MonoCharge, or from 
-   http://primates.ximian.com/~miguel/runtime. MonoCharge is updated 
-   automatically, while the later is only updated when Miguel is around 
-   Once you have the DLLs, you can use `make -f makefile.gnu' as described
-   before to self-host.
-
 Q: Is there a relatively straightforward way to repeat the steps taken 
    by Paolo to get Mono completely self-hosted on linux?
 
@@ -655,6 +640,7 @@ A: To build the compiler and class libraries in Linux, run:
        <li>You can also specify a prefix:</li>
        <li>make -f makefile.gnu install prefix=/opt</li>
    </ul>
+
    If you want to produce and distribute a monocharge tarball, run:
    make -f makefile.gnu dist
    Of course you have to run these in the top level mcs directory.
@@ -1038,12 +1024,23 @@ A: The C# Compiler is released under the terms of the <a
    href="http://www.opensource.org/licenses/mit-license.html">MIT X11</a>
    license.
 
+   The Mono runtime and the Mono C# Compiler are also available under
+   a proprietary license for those who can not use the LGPL and the
+   GPL in their code.  
+
+   For licensing details, contact <a
+   href="mailto:mono-licensing@ximian.com">mono-licensing@ximian.com</a>
+
+
 Q: I would like to contribute code to Mono under a particular
    license. What licenses will you accept?
 
 A: We will have to evaluate the licenses for compatibility first,
    but as a general rule, we will accept the code under the same
    terms of the "container" module. 
+
+Q: Is the Mono 
+
 
 <a name="patents"></a>
 ** Patents
