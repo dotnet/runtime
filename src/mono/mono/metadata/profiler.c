@@ -654,8 +654,12 @@ output_profile (GList *funcs)
 		if (!(gint)(p->total*1000))
 			continue;
 		m = method_get_name (p->method);
-		printf ("########################\n% 8.3f %7llu % 8.3f  %s\n",
-			(double)(p->total*1000), p->count, (double)(p->total*1000)/(double)p->count, m);
+		printf ("########################\n");
+		printf ("% 8.3f ", (double) (p->total * 1000));
+		printf ("%7llu ", p->count);
+		printf ("% 8.3f ", (double) (p->total * 1000)/(double)p->count);
+		printf ("  %s\n", m);
+
 		g_free (m);
 		/* callers */
 		output_callers (p);
