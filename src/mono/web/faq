@@ -1301,7 +1301,7 @@ A: First some background information.
    for the open source Mono platform, nor integration with today's
    Mono's rich support of Linux. 
 
-   The Mono strategy for dealing with these tehcnologies is as
+   The Mono strategy for dealing with these technologies is as
    follows: (1) work around the patent by using a different
    implementation techinque that retains the API, but changes the
    mechanism; if that is not possible, we would (2) remove the pieces

@@ -151,6 +151,47 @@
   </tr>
 </table>
 
+@item Jun 23rd, 2003: DiaCanvas#
+
+@item Jun 17th, 2003: Web Services client; Profiling hooks
+
+	Lluis and Gonzalo have checked into CVS the support for web
+	services in the Mono runtime.  This allows Mono to work as a
+	web services client.  We still require a WSDL compiler to
+	compile the initial stub, but Erik has the beginning of a WSDL
+	compiler ready and Atsushi has continued his work on his
+	experimental Xml Schema to C# class generator.  
+
+	As part of this, the Mono Http runtime has been rewritten to
+	increase reliability, scalability and conformance to the
+	specs.  Also our io-layer has been extended to not have
+	arbitrary limits.  This was done as part of our collaboration
+	with SourceGear.
+
+	Paolo has commited the new pluggable profiling API to the Mono
+	runtime: now the profiler is built as a module, and a new code
+	coverage analysis has been checked in (and Zoltan already
+	added imporvements to it).
+
+	Mark Mozilla bindings continue to improve, and we will shortly
+	migrate the Mono documentation browser to use Mozilla, to take
+	advantage of the tutorial's use of CSS.
+
+	Jackson's work on the IL assembler and Ben on running
+	regression tests have provided us with a very needed tool in
+	the Mono toolkit.  One of the last missing pieces on the SDK.
+
+	On the crypto world, we got Sebastien's certificate viewer
+	checked into CVS and the crypto code keeps advancing by leaps
+	and bounds.
+
+	Alexandre and Aleksey Work continues on Windows.Forms on top
+	of Wine and Gtk# (the former for full compatibility, the later
+	for ease-of-authoring).
+
+	Cesar checked in the beginning of the semantic analysis code
+	for his JScript compiler, and will be working on it full time.
+
 @item Jun 11th, 2003: SourceGear and Ximian announce partnership
 
 	Ximian, Inc., the leading provider of desktop and server
