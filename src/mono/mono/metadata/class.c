@@ -230,6 +230,26 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 		nt->data.klass = nclass;
 		return nt;
 	}
+	case MONO_TYPE_GENERICINST: {
+		MonoGenericInst *oginst = type->data.generic_inst;
+		MonoGenericInst *nginst;
+		MonoType *nt;
+		int i;
+
+		nginst = g_new0 (MonoGenericInst, 1);
+		*nginst = *oginst;
+
+		nginst->type_argv = g_new0 (MonoType *, oginst->type_argc);
+
+		for (i = 0; i < oginst->type_argc; i++) {
+			MonoType *t = oginst->type_argv [i];
+			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst);
+		};
+
+		nt = dup_type (type);
+		nt->data.generic_inst = nginst;
+		return nt;
+	}
 	default:
 		return type;
 	}

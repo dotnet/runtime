@@ -6966,10 +6966,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 
 	ginst->klass = mono_class_from_generic (ginst->generic_type, FALSE);
 
-	if (type_ginst->is_open)
-		inflated = method;
-	else
-		inflated = mono_class_inflate_generic_method (method, ginst);
+	inflated = mono_class_inflate_generic_method (method, ginst);
 
 	res = inflated_method_get_object (
 		mono_object_domain (reflected_type), inflated, (MonoReflectionMethod *) obj, ginst);
