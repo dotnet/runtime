@@ -269,6 +269,10 @@ mono_class_min_align       (MonoClass *klass);
 MonoClass *
 mono_class_from_mono_type  (MonoType *type);
 
+gboolean
+mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
+						   gboolean check_interfaces);
+
 gpointer
 mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
 

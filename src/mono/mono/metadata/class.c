@@ -1921,6 +1921,33 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	return class;
 }
 
+gboolean
+mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
+						   gboolean check_interfaces)
+{
+	if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && !(klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		if ((klassc->interface_id <= klass->max_interface_id) &&
+			(klass->interface_offsets [klassc->interface_id] >= 0))
+			return TRUE;
+	} else if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		int i;
+
+		for (i = 0; i < klass->interface_count; i ++) {
+			MonoClass *ic =  klass->interfaces [i];
+			if (ic == klassc)
+				return TRUE;
+		}
+	} else {
+		/*
+		 * klass->baseval is 0 for interfaces 
+		 */
+		if (klass->baseval && ((klass->baseval - klassc->baseval) <= klassc->diffval))
+			return TRUE;
+	}
+	
+	return FALSE;
+}
+
 /*
  * Returns the nnumber of bytes an element of type klass
  * uses when stored into an array.

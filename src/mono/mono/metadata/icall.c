@@ -40,6 +40,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/process.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 
@@ -519,18 +520,79 @@ ves_icall_System_Array_GetLowerBound (MonoArray *this, gint32 dimension)
 	return this->bounds [dimension].lower_bound;
 }
 
-static void
+static gboolean
 ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* dest, int dest_idx, int length)
 {
-	int element_size = mono_array_element_size (source->obj.vtable->klass);
-	void * dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
-	void * source_addr = mono_array_addr_with_size (source, element_size, source_idx);
+	int element_size;
+	void * dest_addr;
+	void * source_addr;
+	MonoClass *src_class;
+	MonoClass *dest_class;
+	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
-	g_assert (dest_idx + length <= mono_array_length (dest));
-	g_assert (source_idx + length <= mono_array_length (source));
+	if (source->obj.vtable->klass->rank != dest->obj.vtable->klass->rank)
+		return FALSE;
+
+	if (source->bounds || dest->bounds)
+		return FALSE;
+
+	if ((dest_idx + length > mono_array_length (dest)) ||
+		(source_idx + length > mono_array_length (source)))
+		return FALSE;
+
+	element_size = mono_array_element_size (source->obj.vtable->klass);
+	dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
+	source_addr = mono_array_addr_with_size (source, element_size, source_idx);
+
+	src_class = source->obj.vtable->klass->element_class;
+	dest_class = dest->obj.vtable->klass->element_class;
+
+	/*
+	 * Handle common cases.
+	 */
+
+	/* Case1: object[] -> valuetype[] (ArrayList::ToArray) */
+	if (src_class == mono_defaults.object_class && dest_class->valuetype) {
+		for (i = source_idx; i < source_idx + length; ++i) {
+			MonoObject *elem = mono_array_get (source, MonoObject*, i);
+			if (elem && !mono_object_isinst (elem, dest_class))
+				return FALSE;
+		}
+
+		element_size = mono_array_element_size (dest->obj.vtable->klass);
+		for (i = 0; i < length; ++i) {
+			MonoObject *elem = mono_array_get (source, MonoObject*, source_idx + i);
+			void *addr = mono_array_addr_with_size (dest, element_size, dest_idx + i);
+			if (!elem)
+				memset (addr, 0, element_size);
+			else
+				memcpy (addr, (char *)elem + sizeof (MonoObject), element_size);
+		}
+		return TRUE;
+	}
+
+	if (src_class != dest_class) {
+		if (dest_class->valuetype || dest_class->enumtype || src_class->valuetype || src_class->enumtype)
+			return FALSE;
+
+		if (mono_class_is_subclass_of (src_class, dest_class, FALSE))
+			;
+		/* Case2: object[] -> reftype[] (ArrayList::ToArray) */
+		else if (mono_class_is_subclass_of (dest_class, src_class, FALSE))
+			for (i = source_idx; i < source_idx + length; ++i) {
+				MonoObject *elem = mono_array_get (source, MonoObject*, i);
+				if (elem && !mono_object_isinst (elem, dest_class))
+					return FALSE;
+			}
+		else
+			return FALSE;
+	}
+
 	memmove (dest_addr, source_addr, element_size * length);
+
+	return TRUE;
 }
 
 static void
@@ -940,27 +1002,7 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
 
-	/* cut&paste from mono_object_isinst (): keep in sync */
-	if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && !(klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		if ((klassc->interface_id <= klass->max_interface_id) &&
-			(klass->interface_offsets [klassc->interface_id] >= 0))
-			return 1;
-	} else if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		int i;
-
-		for (i = 0; i < klass->interface_count; i ++) {
-			MonoClass *ic =  klass->interfaces [i];
-			if (ic == klassc)
-				return 1;
-		}
-	} else {
-		/*
-		 * klass->baseval is 0 for interfaces 
-		 */
-		if (klass->baseval && ((klass->baseval - klassc->baseval) <= klassc->diffval))
-			return 1;
-	}
-	return 0;
+	return mono_class_is_subclass_of (klass, klassc, check_interfaces);
 }
 
 static guint32
@@ -976,6 +1018,8 @@ ves_icall_get_attributes (MonoReflectionType *type)
 static MonoFieldInfo*
 ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *handle)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	g_assert (handle);
 
 	return (MonoFieldInfo*) mono_field_get_object (mono_domain_get (), 
@@ -2925,6 +2969,8 @@ static void
 ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
+
+	mono_profiler_shutdown ();
 
 	/* we may need to do some cleanup here... */
 	exit (result);
