@@ -1,3 +1,9 @@
+2005-01-20  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (centum_nunit_tests): New.  List of NUnit
+	tests that are currently passing 100%.
+	(test_select): Run those on 'make check'.
+
 2005-01-20  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* Makefile.am : removed nsys4cygwin.zip which has been 404 for a while.
