@@ -285,7 +285,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 		len = mono_metadata_decode_value (ptr, &ptr);	
 		type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-		if (type->type != MONO_TYPE_ARRAY)
+		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY)
 			g_assert_not_reached ();		
 
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
