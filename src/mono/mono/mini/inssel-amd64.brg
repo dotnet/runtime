@@ -1,17 +1,17 @@
-#define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG(cfg,basereg,offset,operand) do { \
+#define MONO_EMIT_NEW_AMD64_ICOMPARE_MEMBASE_REG(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = OP_X86_COMPARE_MEMBASE_REG; \
+		inst->opcode = OP_AMD64_ICOMPARE_MEMBASE_REG; \
 		inst->inst_basereg = basereg; \
 		inst->inst_offset = offset; \
 		inst->sreg2 = operand; \
 		mono_bblock_add_inst (cfg->cbb, inst); \
 	} while (0)
 
-#define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM(cfg,basereg,offset,operand) do { \
+#define MONO_EMIT_NEW_AMD64_ICOMPARE_MEMBASE_IMM(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = OP_X86_COMPARE_MEMBASE_IMM; \
+		inst->opcode = OP_AMD64_ICOMPARE_MEMBASE_IMM; \
 		inst->inst_basereg = basereg; \
 		inst->inst_offset = offset; \
 		inst->inst_imm = operand; \
@@ -25,14 +25,14 @@
 
 #define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
 		if (! (state->tree->flags & MONO_INST_NORANGECHECK)) { \
-			MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_reg); \
+			MONO_EMIT_NEW_AMD64_ICOMPARE_MEMBASE_REG (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_reg); \
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 		} \
 	} while (0)
 
 #define MONO_EMIT_BOUNDS_CHECK_IMM(cfg, array_reg, array_type, array_length_field, index_imm) do { \
 		if (! (state->tree->flags & MONO_INST_NORANGECHECK)) { \
-			MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_imm); \
+			MONO_EMIT_NEW_AMD64_ICOMPARE_MEMBASE_IMM (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_imm); \
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 		} \
 	} while (0)

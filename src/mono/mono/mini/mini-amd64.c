@@ -1283,7 +1283,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!ins->inst_imm)
 				ins->opcode = OP_X86_TEST_NULL;
 			break;
-		case OP_X86_COMPARE_MEMBASE_IMM:
+		case OP_AMD64_ICOMPARE_MEMBASE_IMM:
 			/* 
 			 * OP_STORE_MEMBASE_REG reg, offset(basereg)
 			 * OP_X86_COMPARE_MEMBASE_IMM offset(basereg), imm
@@ -1296,7 +1296,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG) &&
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
-					ins->opcode = OP_COMPARE_IMM;
+					ins->opcode = OP_ICOMPARE_IMM;
 					ins->sreg1 = last_ins->sreg1;
 
 					/* check if we can remove cmp reg,0 with test null */
@@ -3296,13 +3296,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				amd64_alu_reg_imm (code, X86_CMP, ins->sreg1, ins->inst_imm);
 			}
-			break;
-		case OP_X86_COMPARE_MEMBASE_REG:
-			amd64_alu_membase_reg (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->sreg2);
-			break;
-		case OP_X86_COMPARE_MEMBASE_IMM:
-			g_assert (amd64_is_imm32 (ins->inst_imm));
-			amd64_alu_membase_imm (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
 			break;
 		case OP_X86_COMPARE_REG_MEMBASE:
 			amd64_alu_reg_membase (code, X86_CMP, ins->sreg1, ins->sreg2, ins->inst_offset);
