@@ -66,7 +66,7 @@ ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
 	size = mono_array_length (buffer);
 	dest = mono_array_addr_with_size (buffer, 1, 0);
 
-	im = mono_get_delegate_invoke (delegate->vtable->klass);
+	im = mono_get_delegate_invoke (mono_object_get_class (delegate));
 	func = mono_compile_method (im);
 	return FALSE;
 	/* return ReadDirectoryChanges (handle, dest, size, includeSubdirs, filters,
