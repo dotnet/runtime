@@ -5337,8 +5337,7 @@ decompose_foreach (MonoInst *tree, gpointer data)
 			info = newarr_info;
 		}
 		else {
-			MonoVTable *vtable = mono_class_vtable (cfg->domain, 
-													mono_array_class_get (&tree->inst_newa_class->byval_arg, 1));
+			MonoVTable *vtable = mono_class_vtable (cfg->domain, mono_array_class_get (tree->inst_newa_class, 1));
 
 			NEW_PCONST (cfg, iargs [0], vtable);
 			iargs [1] = tree->inst_newa_len;

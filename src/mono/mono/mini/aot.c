@@ -54,7 +54,7 @@ decode_class_info (gpointer *data)
 		return mono_class_get (image, (guint32)data [0]);
 	} else {
 		klass = decode_class_info (data [3]);
-		return mono_array_class_get (&klass->byval_arg, (guint32)data [2]);
+		return mono_array_class_get (klass, (guint32)data [2]);
 	}
 
 	return NULL;
