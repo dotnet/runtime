@@ -850,6 +850,8 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 	debug->dirty = TRUE;
 
+	mono_debugger_symbol_file_table_generation++;
+
 	minfo->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = cfg->start;
 	jit->code_size = cfg->epilogue_end;
