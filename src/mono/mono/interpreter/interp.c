@@ -5079,6 +5079,9 @@ main (int argc, char *argv [])
 	mono_runtime_install_cleanup (quit_function);
 
 	domain = mono_init (file);
+#ifdef __hpux /* generates very big stack frames */
+	mono_threads_set_default_stacksize(32*1024*1024);
+#endif
 	mono_config_parse (config_file);
 	mono_init_icall ();
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
