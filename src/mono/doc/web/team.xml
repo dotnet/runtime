@@ -325,4 +325,20 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Lluis</first-name>
+      <last-name>Sanchez</last-name>
+    </name>
+    <e-mail>lluis@ideary.com</e-mail>
+    <image>none.png</image>
+    <location>Barcelona, Spain</location>
+    <organization>Unemployed</organization>
+    <description>Mono Hacker</description>
+    <tasks>
+      <task>Remoting</task>
+      <task>Binary serialization</task>
+    </tasks>
+  </contributor>
+
 </contributors>
