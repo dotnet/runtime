@@ -183,7 +183,7 @@ static void thread_hash_init(void)
  *
  * Return value: a new handle, or NULL
  */
-gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize G_GNUC_UNUSED,
+gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize,
 		      WapiThreadStart start, gpointer param, guint32 create,
 		      guint32 *tid) 
 {
@@ -238,7 +238,10 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	 * I'm leaving it as 2M until I'm told differently.)
 	 */
 	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, 1024*1024*2);
+	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
+	if (stacksize == 0)
+		stacksize = (SIZEOF_VOID_P / 2) * 1024 *1024;
+	pthread_attr_setstacksize(&attr, stacksize);
 
 	ret=_wapi_timed_thread_create(&thread_private_handle->thread, &attr,
 				      create, start, thread_exit, param,
