@@ -1,3 +1,8 @@
+/*
+ * This header is only installed for use by the debugger:
+ * the structures and the API declared here are not supported.
+ */
+
 #ifndef __MONO_DEBUG_MONO_SYMFILE_H__
 #define __MONO_DEBUG_MONO_SYMFILE_H__
 

@@ -1,3 +1,8 @@
+/*
+ * This header is only installed for use by the debugger:
+ * the structures and the API declared here are not supported.
+ */
+
 #ifndef __MONO_DEBUG_DEBUGGER_H__
 #define __MONO_DEBUG_DEBUGGER_H__
 
@@ -236,6 +241,9 @@ guint32         mono_debugger_lookup_type                 (const gchar *type_nam
 gint32          mono_debugger_lookup_assembly             (const gchar *name);
 gboolean        mono_debugger_unhandled_exception         (gpointer addr, MonoObject *exc);
 
+
+void *
+mono_vtable_get_static_field_data (MonoVTable *vt);
 
 
 MonoReflectionMethod *
