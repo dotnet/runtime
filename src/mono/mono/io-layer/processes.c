@@ -491,6 +491,8 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 	}
 }
 
+extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
+
 static void process_set_current (void)
 {
 	struct _WapiHandle_process *process_handle;
@@ -526,6 +528,8 @@ static void process_set_current (void)
 		/* These seem to be the defaults on w2k */
 		process_handle->min_working_set=204800;
 		process_handle->max_working_set=1413120;
+
+		_wapi_time_t_to_filetime (time (NULL), &process_handle->create_time);
 
 		process_set_name (process_handle);
 		
