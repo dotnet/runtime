@@ -2899,8 +2899,12 @@ array_constructed:
 			sp [-1].type = VAL_OBJ;
 			if (class->byval_arg.type == MONO_TYPE_VALUETYPE && !class->enumtype) 
 				sp [-1].data.p = mono_value_box (domain, class, sp [-1].data.p);
-			else
+			else {
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+				stackval_to_data (&class->byval_arg, &sp [-1], (char*)&sp [-1]);
+#endif
 				sp [-1].data.p = mono_value_box (domain, class, &sp [-1]);
+			}
 			/* need to vt_free (sp); */
 
 			ip += 4;
