@@ -1444,8 +1444,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					int new_dest = mono_regstate_alloc_int (rs, dest_mask);
 					if (new_dest < 0)
 						new_dest = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
-					/* new_dest is only used inside this opcode */
-					mono_regstate_free_int (cfg->rs, new_dest);
 					g_assert (new_dest >= 0);
 					DEBUG (g_print ("\tclob:s changing dreg from R%d to %s (val = %d)\n", ins->dreg, mono_arch_regname (new_dest), val));
 					clob_dreg = ins->dreg;
