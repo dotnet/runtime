@@ -438,26 +438,16 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	return regs;
 }
 
-// code from ppc/tramp.c, try to keep in sync
-#define MIN_CACHE_LINE 8
+#define flushi(addr)  __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
 
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
 	guint i;
-	guint8 *p;
 
-	p = code;
-	for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
-		asm ("dcbst 0,%0;" : : "r"(p) : "memory");
-	}
-	asm ("sync");
-	p = code;
-	for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
-		asm ("icbi 0,%0; sync;" : : "r"(p) : "memory");
-	}
-	asm ("sync");
-	asm ("isync");
+	for (i = 0; i < (size/2); i++)
+		flushi(code + (i*8));
+
 }
 
 #define NOT_IMPLEMENTED(x) \
@@ -1207,22 +1197,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->last_ins = last_ins;
 }
 
-/* 
- * the branch_table should maintain the order of these
- * opcodes.
-case CEE_BEQ:
-case CEE_BGE:
-case CEE_BGT:
-case CEE_BLE:
-case CEE_BLT:
-case CEE_BNE_UN:
-case CEE_BGE_UN:
-case CEE_BGT_UN:
-case CEE_BLE_UN:
-case CEE_BLT_UN:
- */
-static const guchar 
-
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
@@ -1860,7 +1834,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM:
-			sparc_ld (code, sparc_l0, ins->inst_imm);
+			sparc_ld_imm (code, sparc_l0, (ins->inst_offset), ins->inst_imm);
 //			g_assert (ppc_is_imm16 (ins->inst_offset));
 			sparc_st (code, sparc_l0, ins->inst_offset, ins->inst_destbasereg);
 			break;
@@ -1945,182 +1919,108 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		  //			ppc_break (code);
 			break;
 		case OP_ADDCC:
-			sparc_add (code, ins->dreg, ins->sreg1, ins->sreg2);
+			sparc_add (code, 1, ins->dreg, ins->sreg1, ins->sreg2);
 			//need to complement
 			break;
 		case CEE_ADD:
-			sparc_add (code, ins->dreg, ins->sreg1, ins->sreg2);
+			sparc_add (code, 0, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADC:
-			sparc_addx (code, ins->dreg, ins->sreg1, ins->sreg2);
+			sparc_addx (code, 0, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADD_IMM:
 			if (TRUE) { /* FIXME */
-				sparc_add_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
+				sparc_add_imm (code, 0, ins->dreg, ins->sreg1, ins->inst_imm);
 			} else {
 				sparc_ld (code, sparc_l0, 0, ins->inst_imm);
-				sparc_add (code, ins->dreg, 0, ins->sreg1, sparc_l0);
+				sparc_add (code, 0, ins->dreg, ins->sreg1, sparc_l0);
 			}
 			break;
 		case OP_ADC_IMM:
 			sparc_ld (code, sparc_l0, 0, ins->inst_imm);
-			sparc_addx (code, ins->dreg, 0, ins->sreg1, sparc_l0);
+			sparc_addx (code, 0, ins->dreg, ins->sreg1, sparc_l0);
 			break;
 		case OP_SUBCC:
-			sparc_sub (code, ins->dreg, ins->sreg2, ins->sreg1);
+			sparc_sub (code, 1, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
 		case CEE_SUB:
-			sparc_sub (code, ins->dreg, ins->sreg2, ins->sreg1);
+			sparc_sub (code, 0, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
 		case OP_SBB:
-			sparc_subx (code, ins->dreg, ins->sreg2, ins->sreg1);
+			sparc_subx (code, 0, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
 		case OP_SUB_IMM:
 			// we add the negated value
 		  //			g_assert (ppc_is_imm16 (-ins->inst_imm));
-			sparc_add_imm (code, ins->dreg, ins->sreg1, -ins->inst_imm);
+			sparc_add_imm (code, 0, ins->dreg, ins->sreg1, -ins->inst_imm);
 			break;
 		case OP_SBB_IMM:
-			sparc_ld (code, sparc_l0, ins->inst_imm);
-			sparc_sub (code, ins->dreg, ins->sreg2, sparc_l0);
-			break;
-		case OP_PPC_SUBFIC:
-		  //			g_assert (ppc_is_imm16 (ins->inst_imm));
-			sparc_sub (code, ins->dreg, ins->sreg1, ins->inst_imm);
-			break;
-		case OP_PPC_SUBFZE:
-			sparc_sub (code, ins->dreg, ins->sreg1);
+			sparc_ld (code, sparc_l0, 0, ins->inst_imm);
+			sparc_sub (code, 0, ins->dreg, ins->sreg2, sparc_l0);
 			break;
 		case CEE_AND:
-			sparc_and (code, ins->sreg1, ins->dreg, ins->sreg2);
 			break;
 		case OP_AND_IMM:
-			if (!(ins->inst_imm & 0xffff0000)) {
-				sparc_and_imm (code, ins->sreg1, ins->dreg, ins->inst_imm);
-			} else if (!(ins->inst_imm & 0xffff)) {
-				sparc_and_imm (code, ins->sreg1, ins->dreg, ((guint32)ins->inst_imm >> 16));
-			} else {
-				sparc_ld (code, sparc_l0, ins->inst_imm);
-				sparc_and (code, ins->sreg1, ins->dreg, ins->sreg2);
-			}
 			break;
 		case CEE_DIV:
-			sparc_sdiv (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case CEE_DIV_UN:
-			sparc_udiv (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_DIV_IMM:
-			sparc_ld (code, sparc_l0, ins->inst_imm);
-			sparc_sdiv_imm (code, ins->dreg, ins->sreg1, sparc_l0);
 			break;
 		case CEE_REM:
-			sparc_sdiv (code, sparc_l0, ins->sreg1, ins->sreg2);
-			sparc_muls (code, sparc_l0, sparc_l0, ins->sreg2);
-			sparc_sub (code, ins->dreg, sparc_l0, ins->sreg1);
 			break;
 		case CEE_REM_UN:
-			sparc_udiv (code, sparc_l0, ins->sreg1, ins->sreg2);
-			sparc_muls (code, sparc_l0, sparc_l0, ins->sreg2);
-			sparc_sub (code, ins->dreg, sparc_l0, ins->sreg1);
 			break;
 		case OP_REM_IMM:
-			sparc_ld (code, sparc_l0, ins->inst_imm);
-			sparc_sdiv (code, ins->dreg, ins->sreg1, sparc_l0);
-			sparc_smul (code, ins->dreg, ins->dreg, sparc_l0);
-			sparc_sub (code, ins->dreg, ins->dreg, ins->sreg1);
 			break;
 		case CEE_OR:
-			sparc_or (code, ins->dreg, ins->sreg1, ins->sreg2);
+			sparc_or (code, 0, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_OR_IMM:
-			if (!(ins->inst_imm & 0xffff0000)) {
-				sparc_or (code, ins->sreg1, ins->dreg, ins->inst_imm);
-			} else if (!(ins->inst_imm & 0xffff)) {
-				sparc_orn (code, ins->sreg1, ins->dreg, ((guint32)(ins->inst_imm) >> 16));
-			} else {
-				sparc_ld (code, sparc_l0, ins->inst_imm);
-				sparc_or (code, ins->sreg1, ins->dreg, ins->sreg2);
-			}
 			break;
 		case CEE_XOR:
-			sparc_xor (code, ins->dreg, ins->sreg1, ins->sreg2);
+			sparc_xor (code, 0, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_XOR_IMM:
-			if (!(ins->inst_imm & 0xffff0000)) {
-				sparc_xor_imm (code, ins->sreg1, ins->dreg, ins->inst_imm);
-			} else if (!(ins->inst_imm & 0xffff)) {
-				sparc_xor_imm (code, ins->sreg1, ins->dreg, ((guint32)(ins->inst_imm) >> 16));
-			} else {
-				sparc_ld (code, sparc_l0, ins->inst_imm);
-				sparc_xor (code, ins->sreg1, ins->dreg, ins->sreg2);
-			}
 			break;
 		case CEE_SHL:
-			sparc_ld (code, ins->sreg1, ins->dreg, ins->sreg2);
 			break;
 		case OP_SHL_IMM:
-			//ppc_rlwinm (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0xf), 0, (31 - (ins->inst_imm & 0xf)));
-			//ppc_load (code, sparc_l0, ins->inst_imm);
-			//ppc_slw (code, ins->sreg1, ins->dreg, sparc_l0);
 			break;
 		case CEE_SHR:
-			//ppc_sraw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SHR_IMM:
-			// there is also ppc_srawi
-			//ppc_load (code, sparc_l0, ins->inst_imm);
-			//ppc_sraw (code, ins->dreg, ins->sreg1, sparc_l0);
-			//ppc_srawi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case OP_SHR_UN_IMM:
-		        sparc_ld (code, sparc_l0, ins->inst_imm);
-			//ppc_srw (code, ins->dreg, ins->sreg1, sparc_l0);
-			//ppc_rlwinm (code, ins->dreg, ins->sreg1, (32 - (ins->inst_imm & 0xf)), (ins->inst_imm & 0xf), 31);
 			break;
 		case CEE_SHR_UN:
-			//ppc_srw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case CEE_NOT:
-			sparc_not (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_NEG:
-			sparc_neg (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_MUL:
-			sparc_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_MUL_IMM:
-			sparc_ld (code, sparc_l0, ins->inst_imm);
-			sparc_mul_imm (code, ins->dreg, ins->sreg1, sparc_l0);
 			break;
 		case CEE_MUL_OVF:
-			sparc_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
-			//g_assert_not_reached ();
-			//x86_imul_reg_reg (code, ins->sreg1, ins->sreg2);
-			//EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
 			break;
 		case CEE_MUL_OVF_UN:
-			sparc_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
-			//FIXME: g_assert_not_reached ();
 			break;
 		case OP_ICONST:
 		case OP_SETREGIMM:
-			sparc_ld (code, ins->dreg, ins->inst_c0);
 			break;
 		/*case OP_CLASS:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_CLASS, (gpointer)ins->inst_c0);
-			ppc_load (code, ins->dreg, 0xff00ff00);
 			break;
 		case OP_IMAGE:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_IMAGE, (gpointer)ins->inst_c0);
-			ppc_load (code, ins->dreg, 0xff00ff00);
 			break;*/
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
 		case OP_SETREG:
-			//ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_JMP:
 			g_assert_not_reached ();
@@ -2128,7 +2028,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			g_assert_not_reached ();
-			//x86_alu_membase_imm (code, X86_CMP, ins->sreg1, 0, 0);
 			break;
 		case OP_FCALL:
 		case OP_LCALL:
@@ -2140,7 +2039,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-			ppc_bl (code, 0);
+			//ppc_bl (code, 0);
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2165,10 +2064,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOCALLOC:
 			/* keep alignment */
 #define MONO_FRAME_ALIGNMENT 32
-			sparc_add_imm (code, sparc_l0, ins->sreg1, MONO_FRAME_ALIGNMENT-1);
+			sparc_add_imm (code, 0, ins->sreg1, MONO_FRAME_ALIGNMENT-1, sparc_l0);
 			//ppc_rlwinm (code, sparc_l0, sparc_l0, 0, 0, 27);
 			//ppc_lwz (code, sparc_l0, 0, ppc_sp);
-			sparc_neg (code, sparc_l0, sparc_l0);
+			// Fix semantics to negate to another reg? FIXME
+			//sparc_neg (code, sparc_l0, sparc_l0);
 			//ppc_stwux (code, ppc_sp, sparc_l0, ppc_sp);
 			//ppc_mr (code, ins->dreg, ppc_sp);
 			g_assert_not_reached ();
@@ -2216,7 +2116,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					//x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
 				} else*/ {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					ppc_b (code, 0);
+					//ppc_b (code, 0);
 				} 
 			}
 			break;
@@ -2703,7 +2603,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		for (i = 13; i < 32; ++i) {
 			if (cfg->used_int_regs & (1 << i)) {
 				pos += 4;
-				ppc_stw (code, i, -pos, ppc_sp);
+				//ppc_stw (code, i, -pos, ppc_sp);
 			}
 		}
 	}
@@ -2715,9 +2615,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->stack_usage = alloc_size;
 	if (alloc_size)
-		ppc_stwu (code, sparc_sp, -alloc_size, sparc_sp);
+		//ppc_stwu (code, sparc_sp, -alloc_size, sparc_sp);
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
-		ppc_mr (code, sparc_l7, sparc_sp);
+		//ppc_mr (code, sparc_l7, sparc_sp);
 
         /* compute max_offset in order to use short forward jumps */
 	max_offset = 0;
@@ -2751,12 +2651,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		
 		if (inst->opcode == OP_REGVAR) {
 			g_assert (!ainfo->regtype); // fine for now
-			ppc_mr (code, inst->dreg, ainfo->reg);
+			//ppc_mr (code, inst->dreg, ainfo->reg);
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
 			/* the argument should be put on the stack: FIXME handle size != word  */
-			ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+			//ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 		}
 		pos++;
 	}

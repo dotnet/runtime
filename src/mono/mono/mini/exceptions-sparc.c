@@ -36,9 +36,6 @@ typedef struct sigcontext MonoContext;
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
 
-/* disbale this for now */
-#undef MONO_USE_EXC_TABLES
-
 #ifdef MONO_USE_EXC_TABLES
 
 /*************************************/
