@@ -521,6 +521,12 @@ remove_assembly (gpointer key, gpointer value, gpointer user_data)
 	mono_assembly_close ((MonoAssembly *)value);
 }
 
+static void
+delete_jump_list (gpointer key, gpointer value, gpointer user_data)
+{
+	g_slist_free (value);
+}
+
 void
 mono_domain_unload (MonoDomain *domain, gboolean force)
 {
@@ -544,6 +550,12 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	mono_jit_info_table_free (domain->jit_info_table);
 	mono_mempool_destroy (domain->mp);
 	mono_mempool_destroy (domain->code_mp);
+	if (domain->jump_target_hash) {
+		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);
+		g_hash_table_destroy (domain->jump_target_hash);
+	}
+	if (domain->thread_static_fields)
+		g_hash_table_destroy (domain->thread_static_fields);
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;
 

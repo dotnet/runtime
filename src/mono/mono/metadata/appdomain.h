@@ -97,6 +97,7 @@ struct _MonoDomain {
 	MonoMethod         *private_invoke_method;
 	MonoAppContext     *default_context;
 	GHashTable         *thread_static_fields;
+	GHashTable         *jump_target_hash;
 };
 
 /* This is a copy of System.AppDomain */
