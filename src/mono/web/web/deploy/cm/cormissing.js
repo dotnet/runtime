@@ -153,16 +153,20 @@ function clickHandler (evt)
 		var strField;
 
 		elt = getParentDiv (elt);
-		if (elt.className == 'x')	// constructor
+		var strEltClass = elt.className;
+		if (strEltClass.charAt (strEltClass.length - 1) == '_')
+			strEltClass = strEltClass.slice (0, strEltClass.length - 1);
+
+		if (strEltClass == 'x')	// constructor
 		{
 			strField = 'ctor';
 			elt = getParentDiv (elt);
 		}
 		else
-		if (elt.className == 'm' ||	// method
-			elt.className == 'p' ||	// property
-			elt.className == 'e' ||	// event
-			elt.className == 'f')	// field
+		if (strEltClass == 'm' ||	// method
+			strEltClass == 'p' ||	// property
+			strEltClass == 'e' ||	// event
+			strEltClass == 'f')	// field
 		{
 			strField = getName (elt).toLowerCase ();
 			var match = strField.match ( /[\.A-Z0-9_]*/i );
@@ -172,19 +176,27 @@ function clickHandler (evt)
 
 		}
 
-		if (elt.className == 'c' ||	// class
-			elt.className == 's' ||	// struct
-			elt.className == 'i' ||	// struct
-			elt.className == 'd' ||	// delegate
-			elt.className == 'en')	// enum
+		var strEltClass = elt.className;
+		if (strEltClass.charAt (strEltClass.length - 1) == '_')
+			strEltClass = strEltClass.slice (0, strEltClass.length - 1);
+
+		if (strEltClass == 'c' ||	// class
+			strEltClass == 's' ||	// struct
+			strEltClass == 'i' ||	// struct
+			strEltClass == 'd' ||	// delegate
+			strEltClass == 'en')	// enum
 		{
 			strClass = getName (elt).toLowerCase () + 'class';
-			if (elt.className == 'en')
+			if (strEltClass == 'en')
 				strField = null;
 			elt = getParentDiv (elt);
 		}
 
-		if (elt.className == 'n')	// namespace
+		var strEltClass = elt.className;
+		if (strEltClass.charAt (strEltClass.length - 1) == '_')
+			strEltClass = strEltClass.slice (0, strEltClass.length - 1);
+
+		if (strEltClass == 'n')	// namespace
 		{
 			var re = /\./g ;
 			var strNamespace = getName (elt).toLowerCase ().replace (re, '');
