@@ -8,7 +8,7 @@ lib_LIBRARIES = libmetadata.a libmonoruntime.a
 assembliesdir = $(libdir)
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
-	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		
+	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\" -DMONO_CFG_DIR=\""$(sysconfdir)"\"
 
 libmonoruntime_a_SOURCES = \
 	reflection.c	\
