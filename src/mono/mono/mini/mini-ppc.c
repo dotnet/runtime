@@ -341,7 +341,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #define FP_ALSO_IN_REG(s) s
 #else
 #define ALWAYS_ON_STACK(s)
-#define FP_ALSO_IN_REG(s) s
+#define FP_ALSO_IN_REG(s)
 #define ALIGN_DOUBLES
 #endif
 
