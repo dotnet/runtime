@@ -272,8 +272,7 @@ To make this possible we implement them like subroutines, ending with a
 need access to the local variables of the enclosing method. Its is possible
 that instructions inside those handlers modify the stack pointer, thus we save
 the stack pointer at the start of the handler, and restore it at the end. We
-have to use a "call" instruction to execute such finally handlers. Filters
-receives the exception object inside a register (ECX on x86).
+have to use a "call" instruction to execute such finally handlers.
 
 The MIR code for filter and finally handlers looks like:
 
@@ -295,6 +294,18 @@ code), because we have to restore the whole context of the method first. After t
 we simply emit a call instruction to invoke the handler. Its usually
 possible to use the same code to call filter and finally handlers (see
 arch_get_call_filter).
+
+** Calling catch handlers
+
+Catch handlers are always called from the stack unwinding code. Unlike finally clauses
+or filters, catch handler never return. Instead we simply restore the whole
+context, and restart execution at the catch handler.
+
+** Passing Exception objects to catch handlers and filters.
+
+We use a local variable to store exception objects. The stack unwinding code
+must store the exception object into this variable before calling catch handler
+or filter.
 
 * Minor helper methods
 

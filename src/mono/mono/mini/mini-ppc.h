@@ -13,7 +13,6 @@
 #define MONO_ARCH_BASEREG X86_EBP
 #define MONO_ARCH_RETREG1 ppc_r3
 #define MONO_ARCH_RETREG2 ppc_r4
-#define MONO_ARCH_EXC_REG ppc_r5
 
 struct MonoLMF {
 	gpointer    previous_lmf;

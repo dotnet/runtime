@@ -511,7 +511,7 @@ arch_get_call_filter (void)
 		return start;
 
 	inited = 1;
-	/* call_filter (struct sigcontext *ctx, unsigned long eip, gpointer exc) */
+	/* call_filter (struct sigcontext *ctx, unsigned long eip) */
 	code = start;
 
 	x86_push_reg (code, X86_EBP);
@@ -526,8 +526,7 @@ arch_get_call_filter (void)
 	x86_mov_reg_membase (code, X86_ECX, X86_EBP, 12, 4);
 	/* save EBP */
 	x86_push_reg (code, X86_EBP);
-	/* push exc */
-	x86_push_membase (code, X86_EBP, 16);
+
 	/* set new EBP */
 	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
 	/* restore registers used by global register allocation (EBX & ESI) */
@@ -538,7 +537,6 @@ arch_get_call_filter (void)
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
 
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 	/* restore EBP */
 	x86_pop_reg (code, X86_EBP);
 
@@ -964,7 +962,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
-	static int (*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
+	static int (*call_filter) (MonoContext *, gpointer) = NULL;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
@@ -1038,10 +1036,17 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
+
+						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
+							/* store the exception object int cfg->excvar */
+							g_assert (ji->exvar_offset);
+							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
+						}
+
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) ||
 						    ((ei->flags == MONO_EXCEPTION_CLAUSE_FILTER &&
-						      call_filter (ctx, ei->data.filter, obj)))) {
+						      call_filter (ctx, ei->data.filter)))) {
 							if (test_only) {
 								((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 								g_list_free (trace_ips);
@@ -1051,7 +1056,6 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							if (mono_jit_trace_calls)
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;
 							g_free (trace);
 							return 0;
@@ -1061,7 +1065,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls)
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							call_filter (ctx, ei->handler_start, NULL);
+							call_filter (ctx, ei->handler_start);
 						}
 						
 					}
