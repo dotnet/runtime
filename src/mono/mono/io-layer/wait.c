@@ -57,6 +57,10 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 		return(WAIT_FAILED);
 	}
 	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", handle);
+#endif
+
 	_wapi_handle_lock_handle (handle);
 
 	if(_wapi_handle_test_capabilities (handle,
@@ -125,6 +129,11 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 	ret=WAIT_TIMEOUT;
 	
 done:
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", handle);
+#endif
+	
 	_wapi_handle_unlock_handle (handle);
 	return(ret);
 }
@@ -179,7 +188,11 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 					   WAPI_HANDLE_CAP_WAIT)==FALSE) {
 		return(WAIT_FAILED);
 	}
-	
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", wait);
+#endif
+
 	_wapi_handle_lock_handle (wait);
 
 	_wapi_handle_ops_signal (signal_handle);
@@ -249,6 +262,11 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	ret=WAIT_TIMEOUT;
 	
 done:
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", wait);
+#endif
+
 	_wapi_handle_unlock_handle (wait);
 
 	if(alertable==TRUE) {
@@ -351,6 +369,10 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		return(WAIT_FAILED);
 	}
 
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": locking handles");
+#endif
+
 	done=_wapi_handle_count_signalled_handles (numobjects, handles,
 						   waitall, &count, &lowest);
 	if(done==TRUE) {
@@ -358,6 +380,10 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 			_wapi_handle_ops_own (handles[i]);
 		}
 		
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
+#endif
+
 		_wapi_handle_unlock_handles (numobjects, handles);
 		return(WAIT_OBJECT_0+lowest);
 	}
@@ -365,20 +391,34 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 	/* Have to wait for some or all handles to become signalled
 	 */
 
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
+#endif
+
 	_wapi_handle_unlock_handles (numobjects, handles);
 
 	if(timeout!=INFINITE) {
 		_wapi_calc_timeout (&abstime, timeout);
 	}
-	
-	_wapi_handle_lock_signal_mutex ();
 
 	while(1) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": locking signal mutex");
+#endif
+
+		_wapi_handle_lock_signal_mutex ();
+
 		if(timeout==INFINITE) {
 			ret=_wapi_handle_wait_signal ();
 		} else {
 			ret=_wapi_handle_timedwait_signal (&abstime);
 		}
+
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking signal mutex");
+#endif
+
+		_wapi_handle_unlock_signal_mutex ();
 		
 		if(ret==0) {
 			/* Something was signalled ... */
@@ -391,12 +431,21 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 				for(i=0; i<numobjects; i++) {
 					_wapi_handle_ops_own (handles[i]);
 				}
-				
+
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
+#endif
+
 				_wapi_handle_unlock_handles (numobjects,
 							     handles);
-				_wapi_handle_unlock_signal_mutex ();
+
 				return(WAIT_OBJECT_0+lowest);
 			}
+
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
+#endif
+
 			_wapi_handle_unlock_handles (numobjects, handles);
 		} else {
 			/* Timeout or other error */
@@ -404,7 +453,6 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 			g_message (G_GNUC_PRETTY_FUNCTION ": wait returned error: %s", strerror (ret));
 #endif
 
-			_wapi_handle_unlock_signal_mutex ();
 			if(ret==ETIMEDOUT) {
 				return(WAIT_TIMEOUT);
 			} else {
