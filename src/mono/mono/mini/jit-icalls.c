@@ -17,7 +17,23 @@ mono_ldftn (MonoMethod *method)
 
 	MONO_ARCH_SAVE_REGS;
 
-	addr = mono_compile_method (method);
+	addr = mono_create_jump_trampoline (mono_domain_get (), method, TRUE);
+
+	return addr;
+}
+
+/*
+ * Same as mono_ldftn, but do not add a synchronized wrapper. Used in the
+ * synchronized wrappers to avoid infinite recursion.
+ */
+static void*
+mono_ldftn_nosync (MonoMethod *method)
+{
+	gpointer addr;
+
+	MONO_ARCH_SAVE_REGS;
+
+	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE);
 
 	return addr;
 }
@@ -28,8 +44,6 @@ mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 	MONO_ARCH_SAVE_REGS;
 
 	method = mono_object_get_virtual_method (obj, method);
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
 
 	return mono_ldftn (method);
 }

@@ -112,11 +112,14 @@ arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgum
 static int indent_level = 0;
 
 static void indent (int diff) {
+	if (diff < 0)
+		indent_level += diff;
 	int v = indent_level;
 	while (v-- > 0) {
 		printf (". ");
 	}
-	indent_level += diff;
+	if (diff > 0)
+		indent_level += diff;
 }
 
 static gboolean enable_trace = TRUE;
@@ -3252,7 +3255,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			GSList *list;
 
 			/* get the trampoline to the method from the domain */
-			target = mono_arch_create_jump_trampoline (patch_info->data.method);
+			target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
 			if (!domain->jump_target_hash)
 				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
 			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);

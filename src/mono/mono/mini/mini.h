@@ -693,6 +693,9 @@ MonoJitICallInfo *mono_find_jit_icall_by_addr  (gconstpointer addr);
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
 
+gpointer          mono_create_jump_trampoline (MonoDomain *domain, 
+											   MonoMethod *method, 
+											   gboolean add_sync_wrapper);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 
@@ -709,7 +712,7 @@ const char *mono_arch_regname                   (int reg);
 gpointer  mono_arch_get_throw_exception         (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
-gpointer  mono_arch_create_jump_trampoline      (MonoMethod *method);
+MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);

@@ -55,6 +55,7 @@
 gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
+static gpointer mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method);
 
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 
 			  const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native);
@@ -111,9 +112,11 @@ gboolean mono_compile_aot = FALSE;
 
 static int mini_verbose = 0;
 
-static CRITICAL_SECTION class_init_hash_mutex;
+static CRITICAL_SECTION trampoline_hash_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
+
+static GHashTable *jump_trampoline_hash = NULL;
 
 #ifdef MONO_USE_EXC_TABLES
 static gboolean
@@ -5255,20 +5258,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else {
 					cmethod = mono_get_method (image, n, NULL);
-
-					/*
-					 * We can't do this in mono_ldftn, since it is used in
-					 * the synchronized wrapper, leading to an infinite loop.
-					 */
-					if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-						cmethod = mono_marshal_get_synchronized_wrapper (cmethod);
 				}
 
 				mono_class_init (cmethod->klass);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
 				NEW_METHODCONST (cfg, argconst, cmethod);
-				temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn, &argconst, ip);
+				if (method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
+					temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn, &argconst, ip);
+				else
+					temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn_nosync, &argconst, ip);
 				NEW_TEMPLOAD (cfg, *sp, temp);
 				sp ++;
 				
@@ -6107,13 +6106,55 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 							  vtable, code);
 	mono_domain_unlock (vtable->domain);
 
-	EnterCriticalSection (&class_init_hash_mutex);
+	EnterCriticalSection (&trampoline_hash_mutex);
 	if (!class_init_hash_addr)
 		class_init_hash_addr = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (class_init_hash_addr, code, vtable);
-	LeaveCriticalSection (&class_init_hash_mutex);
+	LeaveCriticalSection (&trampoline_hash_mutex);
 
 	return code;
+}
+
+gpointer
+mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, 
+							 gboolean add_sync_wrapper)
+{
+	MonoJitInfo *ji;
+	gpointer code;
+
+	if (add_sync_wrapper && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_create_jump_trampoline (domain, mono_marshal_get_synchronized_wrapper (method), FALSE);
+
+	code = mono_jit_find_compiled_method (domain, method);
+	if (code)
+		return code;
+
+	EnterCriticalSection (&trampoline_hash_mutex);
+
+	if (jump_trampoline_hash) {
+		code = g_hash_table_lookup (jump_trampoline_hash, method);
+		if (code) {
+			LeaveCriticalSection (&trampoline_hash_mutex);
+			return code;
+		}
+	}
+
+	ji = mono_arch_create_jump_trampoline (method);
+
+	/*
+	 * mono_delegate_ctor needs to find the method metadata from the 
+	 * trampoline address, so we save it here.
+	 */
+
+	mono_jit_info_table_add (mono_root_domain, ji);
+
+	if (!jump_trampoline_hash)
+		jump_trampoline_hash = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (jump_trampoline_hash, method, ji->code_start);
+
+	LeaveCriticalSection (&trampoline_hash_mutex);
+
+	return ji->code_start;
 }
 
 MonoVTable*
@@ -6121,12 +6162,12 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 {
 	MonoVTable *res;
 
-	EnterCriticalSection (&class_init_hash_mutex);
+	EnterCriticalSection (&trampoline_hash_mutex);
 	if (class_init_hash_addr)
 		res = g_hash_table_lookup (class_init_hash_addr, addr);
 	else
 		res = NULL;
-	LeaveCriticalSection (&class_init_hash_mutex);
+	LeaveCriticalSection (&trampoline_hash_mutex);
 	return res;
 }
 
@@ -7679,6 +7720,34 @@ mono_jit_compile_method (MonoMethod *method)
 	return mono_jit_compile_method_with_opt (method, default_opt);
 }
 
+static gpointer
+mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
+{
+	MonoDomain *target_domain;
+	MonoJitInfo *info;
+	gpointer code;
+
+	if (default_opt & MONO_OPT_SHARED)
+		target_domain = mono_root_domain;
+	else 
+		target_domain = domain;
+
+	mono_domain_lock (target_domain);
+
+	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+		/* We can't use a domain specific method in another domain */
+		if (! ((domain != target_domain) && !info->domain_neutral)) {
+			mono_domain_unlock (target_domain);
+			mono_jit_stats.methods_lookups++;
+			return info->code_start;
+		}
+	}
+
+	mono_domain_unlock (target_domain);
+
+	return NULL;
+}
+
 /**
  * mono_jit_runtime_invoke:
  * @method: the method to invoke
@@ -7884,7 +7953,7 @@ mini_init (const char *filename)
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
 
-	InitializeCriticalSection (&class_init_hash_mutex);
+	InitializeCriticalSection (&trampoline_hash_mutex);
 
 	mono_burg_init ();
 
@@ -8022,6 +8091,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (g_free, "g_free", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
+	mono_register_jit_icall (mono_ldftn_nosync, "mono_ldftn_nosync", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
 	mono_register_jit_icall (mono_object_castclass_mbyref, "mono_object_castclass", helper_sig_obj_obj_cls, FALSE);
 #endif

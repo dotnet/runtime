@@ -379,36 +379,11 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 #define TRAMPOLINE_SIZE 10
 
-gpointer
+MonoJitInfo*
 mono_arch_create_jump_trampoline (MonoMethod *method)
 {
 	guint8 *code, *buf, *tramp;
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jump_trampoline (mono_marshal_get_synchronized_wrapper (method));
-
-	/* icalls use method->addr */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
-		
-		if (!method->addr) {
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-				method->addr = mono_lookup_internal_call (method);
-			if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-				mono_lookup_pinvoke_call (method, NULL, NULL);
-		}
-#ifdef MONO_USE_EXC_TABLES
-		if (mono_method_blittable (method)) {
-			return method->addr;
-		} else {
-#endif
-			nm = mono_marshal_get_native_wrapper (method);
-			return mono_compile_method (nm);
-#ifdef MONO_USE_EXC_TABLES
-		}
-#endif
-	}
+	MonoJitInfo *ji;
 	
 	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 
@@ -417,9 +392,16 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	x86_jump_code (buf, tramp);
 	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->method = method;
+	ji->code_start = code;
+	ji->code_size = buf - code;
+
+	mono_arch_flush_icache (ji->code_start, ji->code_size);
+
 	mono_jit_stats.method_trampolines++;
 
-	return code;
+	return ji;
 
 }
 
