@@ -36,10 +36,17 @@
 #include <sys/un.h>
 #endif
 
-
+#ifdef PLATFORM_WIN32
+/* This is a kludge to make this file build under cygwin:
+ * w32api/ws2tcpip.h has definitions for some AF_INET6 values and
+ * prototypes for some but not all required functions (notably
+ * inet_ntop() is missing), but the libws2_32 library is missing the
+ * actual implementations of these functions.
+ */
+#undef AF_INET6
+#endif
 
 #undef DEBUG
-
 
 static gint32 convert_family(MonoAddressFamily mono_family)
 {
