@@ -140,10 +140,12 @@ db_match_method (gpointer data, gpointer user_data)
 		debug_indent_level++;	\
 		output_indent ();	\
 		g_print ("(%d) Entering %s.%s::%s (", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
-		if (signature->hasthis) if (global_no_pointers) { \
-			g_print ("this "); \
-		} else { \
-			g_print ("%p ", frame->obj); }	\
+		if (signature->hasthis) { \
+			if (global_no_pointers) { \
+				g_print ("this "); \
+			} else { \
+				g_print ("%p ", frame->obj); } \
+		} \
 		g_print ("%s)\n", args);	\
 		g_free (args);	\
 	}	\
