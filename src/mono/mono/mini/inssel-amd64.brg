@@ -695,11 +695,17 @@ stmt: CEE_POP (freg) "0" {
 # override the rules in inssel-float.brg that work for machines with FP registers 
 
 freg: OP_FCONV_TO_R8 (freg) "0" {
-	/* nothing to do */
+	tree->opcode = OP_FMOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: OP_FCONV_TO_R4 (freg) "0" {
-	/* fixme: nothing to do ??*/
+	tree->opcode = OP_FMOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 reg: CEE_ADD(reg, CEE_LDIND_I4 (base)) {

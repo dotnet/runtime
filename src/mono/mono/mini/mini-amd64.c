@@ -32,6 +32,9 @@ static gint thread_tls_offset = -1;
 /* Use SSE2 instructions for fp arithmetic */
 static gboolean use_sse2 = FALSE;
 
+/* xmm15 is reserved for use by some opcodes */
+#define AMD64_CALLEE_FREGS 0xef
+
 #define FPSTACK_SIZE 6
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
@@ -1990,7 +1993,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	reginfo = g_malloc0 (sizeof (RegTrack) * rs->next_vireg);
 	reginfof = g_malloc0 (sizeof (RegTrack) * rs->next_vfreg);
 	rs->ifree_mask = AMD64_CALLEE_REGS;
-	rs->ffree_mask = 0xff;
+	rs->ffree_mask = AMD64_CALLEE_FREGS;
 
 	if (!use_sse2)
 		/* The fp stack is 6 entries deep */
@@ -2332,7 +2335,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 							/* the register gets spilled after this inst */
 							spill = -val -1;
 						}
-						val = mono_amd64_alloc_float_reg (cfg, tmp, ins, 0xff, ins->dreg);
+						val = mono_amd64_alloc_float_reg (cfg, tmp, ins, AMD64_CALLEE_FREGS, ins->dreg);
 						rs->fassign [ins->dreg] = val;
 						if (spill)
 							create_spilled_store (cfg, spill, val, prev_dreg, ins, TRUE);
@@ -2487,8 +2490,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 
-		if (!use_sse2 && spec [MONO_INST_DEST] == 'f' && reg_is_freeable (ins->dreg, TRUE) && prev_dreg >= 0 && reginfo [prev_dreg].born_in >= i) {
-			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_fregname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
+		if (use_sse2 && spec [MONO_INST_DEST] == 'f' && reg_is_freeable (ins->dreg, TRUE) && prev_dreg >= 0 && reginfof [prev_dreg].born_in >= i) {
+			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_fregname (ins->dreg), prev_dreg, reginfof [prev_dreg].born_in));
 			mono_regstate_free_float (rs, ins->dreg);
 		}
 		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg, FALSE) && prev_dreg >= 0 && reginfo [prev_dreg].born_in >= i) {
@@ -2529,7 +2532,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 							/* the register gets spilled after this inst */
 							spill = -val -1;
 						}
-						val = mono_amd64_alloc_float_reg (cfg, tmp, ins, 0xff, ins->sreg1);
+						val = mono_amd64_alloc_float_reg (cfg, tmp, ins, AMD64_CALLEE_FREGS, ins->sreg1);
 						rs->fassign [ins->sreg1] = val;
 						DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", mono_arch_fregname (val), ins->sreg1));
 						if (spill) {
@@ -2635,7 +2638,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				int reg2 = 0;
 
 				if (fp)
-					reg2 = mono_amd64_alloc_float_reg (cfg, tmp, ins, 0xff, ins->sreg2);
+					reg2 = mono_amd64_alloc_float_reg (cfg, tmp, ins, AMD64_CALLEE_FREGS, ins->sreg2);
 				else
 					reg2 = mono_amd64_alloc_int_reg (cfg, tmp, ins, dest_mask, ins->sreg2, 0);
 
@@ -2670,7 +2673,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 							/* the register gets spilled after this inst */
 							spill = -val -1;
 						}
-						val = mono_amd64_alloc_float_reg (cfg, tmp, ins, 0xff, ins->sreg2);
+						val = mono_amd64_alloc_float_reg (cfg, tmp, ins, AMD64_CALLEE_FREGS, ins->sreg2);
 						rs->fassign [ins->sreg2] = val;
 						DEBUG (g_print ("\tassigned sreg2 %s to R%d\n", mono_arch_fregname (val), ins->sreg2));
 						if (spill)
@@ -2747,7 +2750,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			if (use_sse2) {
-				clob_mask = 0xff;
+				clob_mask = AMD64_CALLEE_FREGS;
 
 				for (j = 0; j < MONO_MAX_FREGS; ++j) {
 					s = 1 << j;
@@ -2937,12 +2940,22 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 		/* FIXME: optimize this */
 		offset = mono_spillvar_offset_float (cfg, 0);
 		if (((MonoCallInst*)ins)->signature->ret->type == MONO_TYPE_R4) {
-			amd64_movss_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
-			amd64_fld_membase (code, AMD64_RBP, offset, FALSE);
+			if (use_sse2)
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, AMD64_XMM0);
+			else {
+				amd64_movss_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
+				amd64_fld_membase (code, AMD64_RBP, offset, FALSE);
+			}
 		}
 		else {
-			amd64_movsd_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
-			amd64_fld_membase (code, AMD64_RBP, offset, TRUE);
+			if (use_sse2) {
+				if (ins->dreg != AMD64_XMM0)
+					amd64_sse_movsd_reg_reg (code, ins->dreg, AMD64_XMM0);
+			}
+			else {
+				amd64_movsd_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
+				amd64_fld_membase (code, AMD64_RBP, offset, TRUE);
+			}
 		}
 		break;
 	case OP_VCALL:
@@ -3632,7 +3645,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_AMD64_SET_XMMREG_R8: {
 			if (use_sse2) {
 				/* ins->dreg is set to -1 by the reg allocator */
-				amd64_sse_movsd_reg_reg (code, ins->unused, ins->sreg1);
+				if (ins->unused != ins->sreg1)
+					amd64_sse_movsd_reg_reg (code, ins->unused, ins->sreg1);
 			}
 			else {
 				amd64_fst_membase (code, AMD64_RSP, -8, TRUE, TRUE);
@@ -3933,6 +3947,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, ins->inst_p0);
 					amd64_sse_movss_reg_membase (code, ins->dreg, AMD64_RIP, 0);
+					amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 				}
 			}
 			else if ((f == 0.0) && (mono_signbit (f) == 0)) {
@@ -3965,18 +3980,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORER4_MEMBASE_REG:
 			if (use_sse2) {
-				g_assert_not_reached ();
 				/* This requires a double->single conversion */
-				/* FIXME: Optimize this */
-				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
+				amd64_sse_cvtsd2ss_reg_reg (code, AMD64_XMM15, ins->sreg1);
+				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, AMD64_XMM15);
 			}
 			else
 				amd64_fst_membase (code, ins->inst_destbasereg, ins->inst_offset, FALSE, TRUE);
 			break;
 		case OP_LOADR4_MEMBASE:
 			if (use_sse2) {
-				g_assert_not_reached ();
 				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			}
 			else
 				amd64_fld_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
@@ -3998,10 +4012,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCONV_TO_R4: /* FIXME: change precision */
 		case OP_LCONV_TO_R8:
 			if (use_sse2)
-				g_assert_not_reached ();
-			amd64_push_reg (code, ins->sreg1);
-			amd64_fild_membase (code, AMD64_RSP, 0, TRUE);
-			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
+				amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, ins->sreg1);
+			else {
+				amd64_push_reg (code, ins->sreg1);
+				amd64_fild_membase (code, AMD64_RSP, 0, TRUE);
+				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
+			}
 			break;
 		case OP_X86_FP_LOAD_I8:
 			if (use_sse2)
@@ -4110,8 +4126,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, 8);
 			break;
 		case OP_FMOVE:
-			g_assert (use_sse2);
-			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			if (use_sse2 && (ins->dreg != ins->sreg1))
+				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FADD:
 			if (use_sse2)
@@ -4139,7 +4155,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;		
 		case OP_FNEG:
 			if (use_sse2) {
-				amd64_mov_reg_imm (code, AMD64_R11, 0x80);
+				amd64_mov_reg_imm_size (code, AMD64_R11, 0x8000000000000000, 8);
 				amd64_push_reg (code, AMD64_R11);
 				amd64_push_reg (code, AMD64_R11);
 				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RSP, 0);
@@ -4262,16 +4278,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_AND, AMD64_RAX, X86_FP_CC_MASK);
 			break;
 		case OP_FCEQ:
-			if (use_sse2)
-				g_assert_not_reached ();
-			if (cfg->opt & MONO_OPT_FCMOV) {
+			if (use_sse2 || (cfg->opt & MONO_OPT_FCMOV)) {
 				/* zeroing the register at the start results in 
 				 * shorter and faster code (we can also remove the widening op)
 				 */
 				guchar *unordered_check;
 				amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				amd64_fcomip (code, 1);
-				amd64_fstp (code, 0);
+				
+				if (use_sse2)
+					amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+				else {
+					amd64_fcomip (code, 1);
+					amd64_fstp (code, 0);
+				}
 				unordered_check = code;
 				x86_branch8 (code, X86_CC_P, 0, FALSE);
 				amd64_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
@@ -4292,15 +4311,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCLT:
 		case OP_FCLT_UN:
-			if (use_sse2)
-				g_assert_not_reached ();
-			if (cfg->opt & MONO_OPT_FCMOV) {
+			if (use_sse2 || (cfg->opt & MONO_OPT_FCMOV)) {
 				/* zeroing the register at the start results in 
 				 * shorter and faster code (we can also remove the widening op)
 				 */
 				amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				amd64_fcomip (code, 1);
-				amd64_fstp (code, 0);
+				if (use_sse2)
+					amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+				else {
+					amd64_fcomip (code, 1);
+					amd64_fstp (code, 0);
+				}
 				if (ins->opcode == OP_FCLT_UN) {
 					guchar *unordered_check = code;
 					guchar *jump_to_end;
@@ -4340,16 +4361,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCGT:
 		case OP_FCGT_UN:
-			if (use_sse2)
-				g_assert_not_reached ();
-			if (cfg->opt & MONO_OPT_FCMOV) {
+			if (use_sse2 || (cfg->opt & MONO_OPT_FCMOV)) {
 				/* zeroing the register at the start results in 
 				 * shorter and faster code (we can also remove the widening op)
 				 */
 				guchar *unordered_check;
 				amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				amd64_fcomip (code, 1);
-				amd64_fstp (code, 0);
+				if (use_sse2)
+					amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+				else {
+					amd64_fcomip (code, 1);
+					amd64_fstp (code, 0);
+				}
 				if (ins->opcode == OP_FCGT) {
 					unordered_check = code;
 					x86_branch8 (code, X86_CC_P, 0, FALSE);

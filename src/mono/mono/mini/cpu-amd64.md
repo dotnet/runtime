@@ -272,7 +272,7 @@ call_membase: dest:a src1:b len:64 clob:c
 trap:
 iconst: dest:i len:10
 i8const: dest:i len:17
-r4const: dest:f len:8
+r4const: dest:f len:12
 r8const: dest:f len:9
 regvar:
 reg:
@@ -288,8 +288,8 @@ storei2_membase_reg: dest:b src1:i len:8
 storei4_membase_imm: dest:b len:11
 storei4_membase_reg: dest:b src1:i len:8
 storei8_membase_imm: dest:b len:17
-storer4_membase_reg: dest:b src1:f len:8
-storer8_membase_reg: dest:b src1:f len:7
+storer4_membase_reg: dest:b src1:f len:11
+storer8_membase_reg: dest:b src1:f len:8
 load_membase: dest:i src1:b len:14
 loadi1_membase: dest:i src1:b len:9
 loadu1_membase: dest:i src1:b len:9
@@ -298,8 +298,8 @@ loadu2_membase: dest:i src1:b len:9
 loadi4_membase: dest:i src1:b len:9
 loadu4_membase: dest:i src1:b len:9
 loadi8_membase: dest:i src1:b len:17
-loadr4_membase: dest:f src1:b len:7
-loadr8_membase: dest:f src1:b len:7
+loadr4_membase: dest:f src1:b len:9
+loadr8_membase: dest:f src1:b len:8
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 move: dest:i src1:i len:4
@@ -427,7 +427,7 @@ float_div: dest:f src1:f src2:f len:5
 float_div_un: dest:f src1:f src2:f len:5
 float_rem: dest:f src1:f src2:f len:19
 float_rem_un: dest:f src1:f src2:f len:19
-float_neg: dest:f src1:f len:16
+float_neg: dest:f src1:f len:19
 float_not: dest:f src1:f len:3
 float_conv_to_i1: dest:i src1:f len:49
 float_conv_to_i2: dest:i src1:f len:49

@@ -78,7 +78,7 @@ struct sigcontext {
 
 #define MONO_MAX_IREGS 16
 
-#define MONO_MAX_FREGS 6
+#define MONO_MAX_FREGS AMD64_XMM_NREG
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
@@ -205,6 +205,7 @@ typedef struct {
 
 #define MONO_ARCH_EMULATE_CONV_R8_UN    1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
+#define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
