@@ -1242,6 +1242,34 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	return intf;
 }
 
+static void
+ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType *iface, MonoArray **targets, MonoArray **methods)
+{
+	MonoClass *class = mono_class_from_mono_type (type->type);
+	MonoClass *iclass = mono_class_from_mono_type (iface->type);
+	MonoReflectionMethod *member;
+	int i, len, ioffset;
+	MonoDomain *domain;
+
+	MONO_ARCH_SAVE_REGS;
+
+	/* type doesn't implement iface: the exception is thrown in managed code */
+	if ((iclass->interface_id > class->max_interface_id) || !class->interface_offsets [iclass->interface_id])
+			return;
+
+	len = iclass->method.count;
+	ioffset = class->interface_offsets [iclass->interface_id];
+	domain = mono_object_domain (type);
+	*targets = mono_array_new (domain, mono_defaults.method_info_class, len);
+	*methods = mono_array_new (domain, mono_defaults.method_info_class, len);
+	for (i = 0; i < len; ++i) {
+		member = mono_method_get_object (domain, iclass->methods [i], iclass);
+		mono_array_set (*methods, gpointer, i, member);
+		member = mono_method_get_object (domain, class->vtable [i + ioffset], class);
+		mono_array_set (*targets, gpointer, i, member);
+	}
+}
+
 static MonoReflectionType*
 ves_icall_MonoType_GetElementType (MonoReflectionType *type)
 {
@@ -1684,7 +1712,6 @@ ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	static MonoClass *System_Reflection_MethodInfo;
 	MonoClass *startklass, *klass;
 	MonoArray *res;
 	MonoMethod *method;
@@ -1735,10 +1762,7 @@ handle_parent:
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
-	if (!System_Reflection_MethodInfo)
-		System_Reflection_MethodInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "MethodInfo");
-	res = mono_array_new (domain, System_Reflection_MethodInfo, len);
+	res = mono_array_new (domain, mono_defaults.method_info_class, len);
 	i = 0;
 	tmp = l;
 	for (; tmp; tmp = tmp->next, ++i)
@@ -3180,6 +3204,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::Equals", ves_icall_type_Equals,
 	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
+	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,
 
 	/*
 	 * System.Runtime.CompilerServices.RuntimeHelpers

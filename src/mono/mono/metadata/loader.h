@@ -91,6 +91,7 @@ typedef struct {
 	MonoClass *mono_method_message_class;
 	MonoClass *appdomain_class;
 	MonoClass *field_info_class;
+	MonoClass *method_info_class;
 	MonoClass *stringbuilder_class;
 	MonoClass *math_class;
 	MonoClass *stack_frame_class;
