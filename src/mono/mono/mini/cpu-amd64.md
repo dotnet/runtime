@@ -339,11 +339,12 @@ cond_exc_iov: len:8
 cond_exc_ic: len:8
 long_add:
 long_sub:
-long_mul:
-long_div:
-long_div_un:
-long_rem:
-long_rem_un:
+long_mul: dest:i src1:i src2:i clob:1 len:4
+long_mul_imm: dest:i src1:i src2:i clob:1 len:8
+long_div: dest:a src1:a src2:i len:16 clob:d
+long_div_un: dest:a src1:a src2:i len:16 clob:d
+long_rem: dest:d src1:a src2:i len:16 clob:d
+long_rem_un: dest:d src1:a src2:i len:16 clob:d
 long_and:
 long_or:
 long_xor:
@@ -367,8 +368,8 @@ long_conv_to_ovf_i: dest:i src1:i src2:i len:40
 long_conv_to_ovf_u:
 long_add_ovf:
 long_add_ovf_un:
-long_mul_ovf: 
-long_mul_ovf_un:
+long_mul_ovf: dest:i src1:i src2:i clob:1 len:16
+long_mul_ovf_un: dest:i src1:i src2:i len:22
 long_sub_ovf:
 long_sub_ovf_un:
 long_conv_to_ovf_i1_un:

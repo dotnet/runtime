@@ -37,6 +37,9 @@
 		} \
 	} while (0)
 
+int cbranch_to_fcbranch (int opcode);
+int bialu_to_bialu_imm (int opcode);
+int ceq_to_fceq (int opcode);
 
 %%
 
@@ -613,122 +616,29 @@ stmt: CEE_STIND_I (OP_REGVAR, OP_I8CONST) {
 # either improve the local register allocator or
 # emit coarse opcodes which saves EAX for us.
 
-
 reg: OP_CEQ (OP_COMPARE (freg, freg)),
 reg: OP_CLT (OP_COMPARE (freg, freg)),
 reg: OP_CGT (OP_COMPARE (freg, freg)),
 reg: OP_CLT_UN (OP_COMPARE (freg, freg)),
 reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {
-	int opcode;
-
-	switch (tree->opcode) {
-	case OP_CEQ:
-		opcode = OP_FCEQ;
-		break;
-	case OP_CLT:
-		opcode = OP_FCLT;
-		break;
-	case OP_CGT:
-		opcode = OP_FCGT;
-		break;
-	case OP_CLT_UN:
-		opcode = OP_FCLT_UN;
-		break;
-	case OP_CGT_UN:
-		opcode = OP_FCGT_UN;
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-	MONO_EMIT_BIALU (s, tree, opcode, state->reg1, state->left->left->reg1,
+	MONO_EMIT_BIALU (s, tree, ceq_to_fceq (tree->opcode), state->reg1, state->left->left->reg1,
 			 state->left->right->reg1);
-}
-
-reg: OP_CEQ (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
-reg: OP_CLT (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
-reg: OP_CGT (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
-reg: OP_CGT_UN (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
-reg: OP_CLT_UN (OP_COMPARE (freg, CEE_LDIND_R8 (base))) {
-	MonoInst *base = state->left->right->left->tree;
-	int opcode;
-
-	switch (tree->opcode) {
-	case OP_CEQ:
-		opcode = OP_FCEQ_MEMBASE;
-		break;
-	case OP_CLT:
-		opcode = OP_FCLT_MEMBASE;
-		break;
-	case OP_CGT:
-		opcode = OP_FCGT_MEMBASE;
-		break;
-	case OP_CLT_UN:
-		opcode = OP_FCLT_UN_MEMBASE;
-		break;
-	case OP_CGT_UN:
-		opcode = OP_FCGT_UN_MEMBASE;
-		break;
-	default:
-		break;
-	}
-
-	MONO_EMIT_BIALU_MEMBASE (s, tree, opcode, state->reg1, state->left->left->reg1, base->inst_basereg, base->inst_offset);
-} cost {
-	MBCOND (mono_amd64_is_sse2 ());
-	return 0;
 }
 
 # fpcflags overwrites EAX, but this does not matter for statements
 # because we are the last operation in the tree.
  
-stmt: CEE_BNE_UN (fpcflags) {
-	tree->opcode = OP_FBNE_UN;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BEQ (fpcflags) {
-	tree->opcode = OP_FBEQ;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLT (fpcflags) {
-	tree->opcode = OP_FBLT;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLT_UN (fpcflags) {
-	tree->opcode = OP_FBLT_UN;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGT (fpcflags) {
-	tree->opcode = OP_FBGT;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGT_UN (fpcflags) {
-	tree->opcode = OP_FBGT_UN;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGE  (fpcflags) {
-	tree->opcode = OP_FBGE;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGE_UN (fpcflags) {
-	tree->opcode = OP_FBGE_UN;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLE  (fpcflags) {
-	tree->opcode = OP_FBLE;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+stmt: CEE_BNE_UN (fpcflags),
+stmt: CEE_BEQ (fpcflags),
+stmt: CEE_BLT (fpcflags),
+stmt: CEE_BLT_UN (fpcflags),
+stmt: CEE_BGT (fpcflags),
+stmt: CEE_BGT_UN (fpcflags),
+stmt: CEE_BGE  (fpcflags),
+stmt: CEE_BGE_UN (fpcflags),
+stmt: CEE_BLE  (fpcflags),
 stmt: CEE_BLE_UN (fpcflags) {
-	tree->opcode = OP_FBLE_UN;
+	tree->opcode = cbranch_to_fcbranch (tree->opcode);
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -771,28 +681,27 @@ reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_MUL_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
-reg: OP_LSHL (reg, reg) "0" {
+reg: OP_LSHL (reg, reg),
+reg: OP_LSHR (reg, reg),
+reg: OP_LSHR_UN (reg, reg),
+reg: OP_LMUL (reg, reg),
+reg: OP_LDIV (reg, reg),
+reg: OP_LDIV_UN (reg, reg),
+reg: OP_LREM (reg, reg),
+reg: OP_LREM_UN (reg, reg),
+reg: OP_LMUL_OVF (reg, reg),
+reg: OP_LMUL_OVF_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-reg: OP_LSHL (reg, OP_ICONST) "0" {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: OP_LSHR (reg, reg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: OP_LSHR (reg, OP_ICONST) "0" {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: OP_LSHR_UN (reg, reg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: OP_LSHR_UN (reg, OP_ICONST) "0" {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+reg: OP_LMUL (reg, OP_I8CONST),
+reg: OP_LSHL (reg, OP_ICONST),
+reg: OP_LSHR (reg, OP_ICONST),
+reg: OP_LSHR_UN (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, bialu_to_bialu_imm (tree->opcode), state->reg1, state->left->reg1, state->right->tree->inst_c0);
+} cost {
+	MBCOND (mono_arch_is_inst_imm (state->right->tree->inst_c0));
+	return 0;
 }
 
 reg: OP_ATOMIC_ADD_NEW_I4 (base, reg),
@@ -811,3 +720,74 @@ reg: OP_ATOMIC_EXCHANGE_I8 (base, reg) {
 }
 
 %%
+
+int
+bialu_to_bialu_imm (int opcode)
+{
+	switch (opcode) {
+	case OP_LMUL:
+		return OP_LMUL_IMM;
+	case OP_LSHL:
+		return OP_LSHL_IMM;
+	case OP_LSHR:
+		return OP_LSHR_IMM;
+	case OP_LSHR_UN:
+		return OP_LSHR_UN_IMM;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}
+
+int
+cbranch_to_fcbranch (int opcode)
+{
+	switch (opcode) {
+	case CEE_BNE_UN:
+		return OP_FBNE_UN;
+	case CEE_BEQ:
+		return OP_FBEQ;
+	case CEE_BLT:
+		return OP_FBLT;
+	case CEE_BLT_UN:
+		return OP_FBLT_UN;
+	case CEE_BGT:
+		return OP_FBGT;
+	case CEE_BGT_UN:
+		return OP_FBGT_UN;
+	case CEE_BGE:
+		return OP_FBGE;
+	case CEE_BGE_UN:
+		return OP_FBGE_UN;
+	case CEE_BLE:
+		return OP_FBLE;
+	case CEE_BLE_UN:
+		return OP_FBLE_UN;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}
+
+int
+ceq_to_fceq (int opcode)
+{
+	switch (opcode) {
+	case OP_CEQ:
+		return OP_FCEQ;
+	case OP_CLT:
+		return OP_FCLT;
+	case OP_CGT:
+		return OP_FCGT;
+	case OP_CLT_UN:
+		return OP_FCLT_UN;
+	case OP_CGT_UN:
+		return OP_FCGT_UN;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}

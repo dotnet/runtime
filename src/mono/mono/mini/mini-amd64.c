@@ -3427,7 +3427,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BREAK:
 			amd64_breakpoint (code);
 			break;
-
 		case OP_ADDCC:
 		case CEE_ADD:
 			amd64_alu_reg_reg (code, X86_ADD, ins->sreg1, ins->sreg2);
@@ -3466,16 +3465,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_AND, ins->sreg1, ins->inst_imm);
 			break;
 		case CEE_MUL:
+		case OP_LMUL:
 			amd64_imul_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;
 		case OP_MUL_IMM:
+		case OP_LMUL_IMM:
 			amd64_imul_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
 		case CEE_DIV:
+		case OP_LDIV:
 			amd64_cdq (code);
 			amd64_div_reg (code, ins->sreg2, TRUE);
 			break;
 		case CEE_DIV_UN:
+		case OP_LDIV_UN:
 			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
 			amd64_div_reg (code, ins->sreg2, FALSE);
 			break;
@@ -3486,10 +3489,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_div_reg (code, ins->sreg2, TRUE);
 			break;
 		case CEE_REM:
+		case OP_LREM:
 			amd64_cdq (code);
 			amd64_div_reg (code, ins->sreg2, TRUE);
 			break;
 		case CEE_REM_UN:
+		case OP_LREM_UN:
 			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
 			amd64_div_reg (code, ins->sreg2, FALSE);
 			break;
@@ -3498,6 +3503,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_imm (code, ins->sreg2, ins->inst_imm);
 			amd64_cdq (code);
 			amd64_div_reg (code, ins->sreg2, TRUE);
+			break;
+		case OP_LMUL_OVF:
+			amd64_imul_reg_reg (code, ins->sreg1, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
 			break;
 		case CEE_OR:
 			amd64_alu_reg_reg (code, X86_OR, ins->sreg1, ins->sreg2);
@@ -3637,9 +3646,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_imul_reg_reg_size (code, ins->sreg1, ins->sreg2, 4);
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
 			break;
-		case OP_IMUL_OVF_UN: {
+		case OP_IMUL_OVF_UN:
+		case OP_LMUL_OVF_UN: {
 			/* the mul operation and the exception check should most likely be split */
 			int non_eax_reg, saved_eax = FALSE, saved_edx = FALSE;
+			int size = (ins->opcode == OP_IMUL_OVF_UN) ? 4 : 8;
 			/*g_assert (ins->sreg2 == X86_EAX);
 			g_assert (ins->dreg == X86_EAX);*/
 			if (ins->sreg2 == X86_EAX) {
@@ -3652,7 +3663,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					saved_eax = TRUE;
 					amd64_push_reg (code, X86_EAX);
 				}
-				amd64_mov_reg_reg (code, X86_EAX, ins->sreg1, 4);
+				amd64_mov_reg_reg (code, X86_EAX, ins->sreg1, size);
 				non_eax_reg = ins->sreg2;
 			}
 			if (ins->dreg == X86_EDX) {
@@ -3664,10 +3675,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				saved_edx = TRUE;
 				amd64_push_reg (code, X86_EDX);
 			}
-			amd64_mul_reg_size (code, non_eax_reg, FALSE, 4);
+			amd64_mul_reg_size (code, non_eax_reg, FALSE, size);
 			/* save before the check since pop and mov don't change the flags */
 			if (ins->dreg != X86_EAX)
-				amd64_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
+				amd64_mov_reg_reg (code, ins->dreg, X86_EAX, size);
 			if (saved_edx)
 				amd64_pop_reg (code, X86_EDX);
 			if (saved_eax)

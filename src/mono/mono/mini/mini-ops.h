@@ -194,6 +194,7 @@ MINI_OP(OP_LSHR_UN_IMM,  "long_shr_un_imm")
 MINI_OP(OP_LSHL_IMM,     "long_shl_imm")
 MINI_OP(OP_LADD_IMM,     "long_add_imm")
 MINI_OP(OP_LSUB_IMM,     "long_sub_imm")
+MINI_OP(OP_LMUL_IMM,     "long_mul_imm")
 
 MINI_OP(OP_LBEQ,    "long_beq")
 MINI_OP(OP_LBNE_UN, "long_bne_un")

@@ -206,13 +206,12 @@ typedef struct {
 
 #endif
 
-/* Enables OP_LSHL, OP_LSHL_IMM, OP_LSHR, OP_LSHR_IMM, OP_LSHR_UN, OP_LSHR_UN_IMM */
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+#define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 
 #define MONO_ARCH_EMULATE_CONV_R8_UN    1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
-#define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
 #define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
@@ -231,9 +230,6 @@ mono_amd64_tramp_init (void);
 
 gboolean
 mono_amd64_is_sse2 (void);
-
-/* FIXME: */
-//#define MONO_ARCH_BIGMUL_INTRINS 1
 
 #endif /* __MONO_MINI_AMD64_H__ */  
 
