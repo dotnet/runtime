@@ -20,6 +20,7 @@
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/metadata-internals.h"
+#include <mono/os/gc_wrapper.h>
 #include <string.h>
 #include <errno.h>
 
@@ -103,6 +104,7 @@ mono_marshal_init (void)
 	if (!module_initialized) {
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
+		MONO_GC_REGISTER_ROOT (wrapper_hash);
 		wrapper_hash = mono_g_hash_table_new (NULL, NULL);
 		last_error_tls_id = TlsAlloc ();
 
@@ -2058,9 +2060,11 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	target_klass = mono_defaults.object_class;
 
 	/* to make it work with our special string constructors */
-	if (!string_dummy)
+	if (!string_dummy) {
+		MONO_GC_REGISTER_ROOT (string_dummy);
 		string_dummy = mono_string_new_wrapper ("dummy");
-
+	}
+	
 	sig = method->signature;
 
 	csig = mono_metadata_signature_alloc (method->klass->image, 4);

@@ -122,6 +122,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	ares->async_delegate = target;
 
 	if (!ares_htable) {
+		MONO_GC_REGISTER_ROOT (ares_htable);
 		ares_htable = mono_g_hash_table_new (NULL, NULL);
 		job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	}

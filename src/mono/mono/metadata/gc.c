@@ -641,6 +641,10 @@ void mono_gc_init (void)
 #ifdef WITH_INCLUDED_LIBGC
 	gc_thread_vtable = &mono_gc_thread_vtable;
 #endif
+	
+	MONO_GC_REGISTER_ROOT (gc_handles);
+	MONO_GC_REGISTER_ROOT (gc_handle_types);
+	GC_no_dls = TRUE;
 
 #ifdef ENABLE_FINALIZER_THREAD
 

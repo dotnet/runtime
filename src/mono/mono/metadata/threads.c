@@ -122,6 +122,7 @@ static void handle_store(MonoThread *thread)
 #endif
 
 	if(threads==NULL) {
+		MONO_GC_REGISTER_ROOT (threads);
 		threads=mono_g_hash_table_new(NULL, NULL);
 	}
 

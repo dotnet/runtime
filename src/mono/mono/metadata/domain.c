@@ -252,6 +252,7 @@ mono_init (const char *filename)
 	mono_loader_init ();
 
 	/* FIXME: When should we release this memory? */
+	MONO_GC_REGISTER_ROOT (appdomains_list);
 	appdomains_list = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	domain = mono_domain_create ();

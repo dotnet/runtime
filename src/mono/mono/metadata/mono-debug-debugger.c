@@ -7,6 +7,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/os/gc_wrapper.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
@@ -129,7 +130,9 @@ void
 mono_debugger_initialize (MonoDomain *domain)
 {
 	MonoDebuggerSymbolTable *symbol_table;
-
+	
+	MONO_GC_REGISTER_ROOT (last_exception);
+	
 	g_assert (!mono_debugger_initialized);
 
 	InitializeCriticalSection (&debugger_lock_mutex);
