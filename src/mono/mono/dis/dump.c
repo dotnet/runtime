@@ -316,7 +316,7 @@ dump_table_property_map (MonoImage *m)
 		
 		mono_metadata_decode_row (t, i, cols, MONO_PROPERTY_MAP_SIZE);
 		s = get_typedef (m, cols [MONO_PROPERTY_MAP_PARENT]);
-		fprintf (output, "%d: %s %d\n", i + 1, s, cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+		fprintf (output, "%d: %s (%d) %d\n", i + 1, s, cols [MONO_PROPERTY_MAP_PARENT], cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
 		g_free (s);
 	}
 }

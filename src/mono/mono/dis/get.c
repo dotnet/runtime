@@ -1345,6 +1345,7 @@ get_marshal_info (MonoImage *m, const char *blob) {
 	case MONO_NATIVE_LPTSTR:
 		return g_strdup ("lptstr");
 	case MONO_NATIVE_BYVALTSTR:
+		size = mono_metadata_decode_value (blob + 1, &blob);
 		return g_strdup_printf ("fixed sysstring [%d]", size);
 	case MONO_NATIVE_IUNKNOWN:
 		return g_strdup ("iunknown");
@@ -1357,6 +1358,7 @@ get_marshal_info (MonoImage *m, const char *blob) {
 	case MONO_NATIVE_SAFEARRAY:
 		return g_strdup ("safearray");
 	case MONO_NATIVE_BYVALARRAY:
+		size = mono_metadata_decode_value (blob + 1, &blob);
 		return g_strdup_printf ("fixed array [%d]", size);
 	case MONO_NATIVE_INT:
 		return g_strdup ("int");
