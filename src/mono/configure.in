@@ -284,7 +284,7 @@ ACCESS_UNALIGNED="yes"
 case "$host" in
 #mips-sgi-irix5.* | mips-sgi-irix6.*) TARGET=MIPS; ACCESS_UNALIGNED="no";;
 i*86-*-*) TARGET=X86; arch_target=x86;;
-sparc*-*-*) TARGET=SPARC; ACCESS_UNALIGNED="no";;
+sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
 powerpc-*-linux* | powerpc-*-sysv*) TARGET=POWERPC; arch_target=ppc;;

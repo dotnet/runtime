@@ -320,7 +320,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyMaskGenerationMethodClassTopic.asp">System.Security.Cryptography.MaskGenerationMethod</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyPasswordDeriveBytesClassTopic.asp">System.Security.Cryptography.PasswordDeriveBytes</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyPKCS1MaskGenerationMethodClassTopic.asp">System.Security.Cryptography.PKCS1MaskGenerationMethod</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyRandomNumberGeneratorClassTopic.asp">System.Security.Cryptography.RandomNumberGenerator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyRC2ClassTopic.asp">System.Security.Cryptography.RC2</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyRC2CryptoServiceProviderClassTopic.asp">System.Security.Cryptography.RC2CryptoServiceProvider</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyRijndaelClassTopic.asp">System.Security.Cryptography.Rijndael</a><br>
@@ -340,7 +339,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographySHA512ManagedClassTopic.asp">System.Security.Cryptography.SHA512Managed</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyTripleDESClassTopic.asp">System.Security.Cryptography.TripleDES</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyTripleDESCryptoServiceProviderClassTopic.asp">System.Security.Cryptography.TripleDESCryptoServiceProvider</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyX509CertificatesX509CertificateClassTopic.asp">System.Security.Cryptography.X509Certificates.X509Certificate</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityNamedPermissionSetClassTopic.asp">System.Security.NamedPermissionSet</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsEnvironmentPermissionClassTopic.asp">System.Security.Permissions.EnvironmentPermission</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsFileDialogPermissionClassTopic.asp">System.Security.Permissions.FileDialogPermission</a><br>
