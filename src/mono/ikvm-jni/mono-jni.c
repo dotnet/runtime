@@ -35,7 +35,8 @@ void mono_jni_jnienv_init (
 	void *invokemethod_func,
 	void *getmethodarglist_func,
 	void *findclass_func,
-	void *getjnienv_func);
+	void *getjnienv_func,
+	void *allocobject_func);
 
 void* mono_jni_get_func_table (void);
 
@@ -74,6 +75,7 @@ typedef struct MonoJniFunctions {
 	void * (*GetMethodArgList) (void *cookie);
 	void * (*FindClass) (void *name);
 	void * (*GetJniEnv) (void);
+	void * (*AllocObject) (void *klass);
 } MonoJniFunctions;
 
 static MonoJniFunctions jniFuncs;
@@ -95,7 +97,8 @@ mono_jni_jnienv_init (
 	void *invokemethod_func,
 	void *getmethodarglist_func,
 	void *findclass_func,
-	void *getjnienv_func)
+	void *getjnienv_func,
+	void *allocobject_func)
 {
 	jniFuncs.MakeLocalRef = makelocalref_func;
 	jniFuncs.UnwrapRef = unwrap_func;
@@ -113,6 +116,7 @@ mono_jni_jnienv_init (
 	jniFuncs.GetMethodArgList = getmethodarglist_func;
 	jniFuncs.FindClass = findclass_func;
 	jniFuncs.GetJniEnv = getjnienv_func;
+	jniFuncs.AllocObject = allocobject_func;
 }
 
 static void *jni_func_table[256];
@@ -241,7 +245,7 @@ static jboolean JNICALL IsSameObject (JNIEnv *env, jobject obj1, jobject obj2) {
 static jobject JNICALL NewLocalRef (JNIEnv *env, jobject ref) { printf ("JNI Function NewLocalRef is not implemented.\n"); g_assert_not_reached (); return 0; }
 static jint JNICALL EnsureLocalCapacity (JNIEnv *env, jint capacity) { printf ("JNI Function EnsureLocalCapacity is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-static jobject JNICALL AllocObject (JNIEnv *env, jclass clazz) { printf ("JNI Function AllocObject is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jobject JNICALL AllocObject (JNIEnv *env, jclass clazz) { printf ("JNI Function EnsureLocalCapacity is not implemented.\n"); g_assert_not_reached (); return 0; }
 
 static jclass JNICALL GetObjectClass (JNIEnv *env, jobject obj)
 {
@@ -832,6 +836,18 @@ static type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jb
 static void JNICALL Release##Type##ArrayElements(JNIEnv *env, type##Array array, type *elems, jint mode)\
 {\
     return; \
+} \
+static void JNICALL Get##Type##ArrayRegion (JNIEnv *env, type##Array array, jsize start, jsize l, type *buf) \
+{\
+    MonoArray *obj; \
+	obj = jniFuncs.UnwrapRef (env, (void*)array); \
+    memcpy (buf, mono_array_addr (obj, sizeof (type), start), (sizeof (type) * l)); \
+} \
+static void JNICALL Set##Type##ArrayRegion (JNIEnv *env, type##Array array, jsize start, jsize l, type *buf) \
+{ \
+    MonoArray *obj; \
+	obj = jniFuncs.UnwrapRef (env, (void*)array); \
+    memcpy (mono_array_addr (obj, sizeof (type), start), buf, (sizeof (type) * l)); \
 }
 
 GET_SET_ARRAY_ELEMENTS(Boolean,jboolean,gboolean)
@@ -843,23 +859,32 @@ GET_SET_ARRAY_ELEMENTS(Long,jlong,glong)
 GET_SET_ARRAY_ELEMENTS(Float,jfloat,float)
 GET_SET_ARRAY_ELEMENTS(Double,jdouble,double)
 
-static void JNICALL GetBooleanArrayRegion (JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) { printf ("JNI Function GetBooleanArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetByteArrayRegion (JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) { printf ("JNI Function GetByteArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetCharArrayRegion (JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) { printf ("JNI Function GetCharArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetShortArrayRegion (JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) { printf ("JNI Function GetShortArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetIntArrayRegion (JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) { printf ("JNI Function GetIntArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetLongArrayRegion (JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) { printf ("JNI Function GetLongArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetFloatArrayRegion (JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) { printf ("JNI Function GetFloatArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL GetDoubleArrayRegion (JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) { printf ("JNI Function GetDoubleArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void * JNICALL GetPrimitiveArrayCritical (JNIEnv *env, jarray array, jboolean *isCopy) {
+	MonoArray *obj;
 
-static void JNICALL SetBooleanArrayRegion (JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) { printf ("JNI Function SetBooleanArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetByteArrayRegion (JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) { printf ("JNI Function SetByteArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetCharArrayRegion (JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) { printf ("JNI Function SetCharArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetShortArrayRegion (JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) { printf ("JNI Function SetShortArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetIntArrayRegion (JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) { printf ("JNI Function SetIntArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetLongArrayRegion (JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) { printf ("JNI Function SetLongArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetFloatArrayRegion (JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) { printf ("JNI Function SetFloatArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-static void JNICALL SetDoubleArrayRegion (JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) { printf ("JNI Function SetDoubleArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+	obj = jniFuncs.UnwrapRef (env, (void*)array);
+    if (isCopy)
+      *isCopy = JNI_FALSE;
+    return mono_array_addr (obj, void*, 0);
+}
+
+static void JNICALL ReleasePrimitiveArrayCritical (JNIEnv *env, jarray array, void *carray, jint mode) {
+}
+
+static const jchar * JNICALL GetStringCritical (JNIEnv *env, jstring string, jboolean *isCopy) {
+	MonoString *obj;
+
+	obj = jniFuncs.UnwrapRef (env, (void*)string);
+
+	if (isCopy)
+		*isCopy = JNI_FALSE;
+
+	return mono_string_chars (obj);
+}
+
+static void JNICALL ReleaseStringCritical (JNIEnv *env, jstring string, const jchar *cstring)
+{
+}
 
 static jobject JNICALL NewObjectA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args)
 {
@@ -932,12 +957,6 @@ jint JNICALL GetJavaVM (JNIEnv *env, JavaVM **vm)
 
 static void JNICALL GetStringRegion (JNIEnv *env, jstring str, jsize start, jsize len, jchar *buf) { printf ("JNI Function GetStringRegion is not implemented.\n"); g_assert_not_reached (); }
 static void JNICALL GetStringUTFRegion (JNIEnv *env, jstring str, jsize start, jsize len, char *buf) { printf ("JNI Function GetStringUTFRegion is not implemented.\n"); g_assert_not_reached (); }
-
-static void * JNICALL GetPrimitiveArrayCritical (JNIEnv *env, jarray array, jboolean *isCopy) { printf ("JNI Function GetPrimitiveArrayCritical is not implemented.\n"); g_assert_not_reached (); return NULL; }
-static void JNICALL ReleasePrimitiveArrayCritical (JNIEnv *env, jarray array, void *carray, jint mode) { printf ("JNI Function ReleasePrimitiveArrayCritical is not implemented.\n"); g_assert_not_reached (); }
-
-static const jchar * JNICALL GetStringCritical (JNIEnv *env, jstring string, jboolean *isCopy) { printf ("JNI Function GetStringCritical is not implemented.\n"); g_assert_not_reached (); return NULL; }
-static void JNICALL ReleaseStringCritical (JNIEnv *env, jstring string, const jchar *cstring) { printf ("JNI Function ReleaseStringCritical is not implemented.\n"); g_assert_not_reached (); }
 
 static jweak JNICALL NewWeakGlobalRef (JNIEnv *env, jobject obj) { printf ("JNI Function NewWeakGlobalRef is not implemented.\n"); g_assert_not_reached (); return 0; }
 static void JNICALL DeleteWeakGlobalRef (JNIEnv *env, jweak ref) { printf ("JNI Function DeleteWeakGlobalRef is not implemented.\n"); g_assert_not_reached (); }
