@@ -1095,9 +1095,10 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
  * @open_handles: An array of handles referenced by this client
  *
  * Read a message (A WapiHandleRequest) from a client and dispatch
- * whatever it wants to the process_* calls.
+ * whatever it wants to the process_* calls.  Return TRUE if the message
+ * was read successfully, FALSE otherwise.
  */
-static void read_message (GIOChannel *channel, ChannelData *channel_data)
+static gboolean read_message (GIOChannel *channel, ChannelData *channel_data)
 {
 	WapiHandleRequest req;
 	int fds[3]={0, 1, 2};
@@ -1114,7 +1115,7 @@ static void read_message (GIOChannel *channel, ChannelData *channel_data)
 			   g_io_channel_unix_get_fd (channel));
 #endif
 		rem_fd (channel, channel_data);
-		return;
+		return(FALSE);
 	}
 	
 #ifdef DEBUG
@@ -1168,6 +1169,8 @@ static void read_message (GIOChannel *channel, ChannelData *channel_data)
 		close (fds[1]);
 		close (fds[2]);
 	}
+
+	return(TRUE);
 }
 
 /*
@@ -1219,7 +1222,7 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 			g_message ("reading data on fd %d", fd);
 #endif
 
-			read_message (channel, channel_data);
+			return(read_message (channel, channel_data));
 		}
 		return(TRUE);
 	}

@@ -258,17 +258,20 @@ try_again:
 	}
 
 	if(statbuf.st_size < wanted_size) {
-#ifdef HAVE_LARGE_FILE_SUPPORT
-		/* Keep gcc quiet... */
-		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %lld, need %d bytes)", filename, statbuf.st_size, wanted_size);
-#else
-		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %ld, need %d bytes)", filename, statbuf.st_size, wanted_size);
-#endif
-		if(created && *created==TRUE) {
-			unlink (filename);
-		}
 		close (fd);
-		return(-1);
+		if(created && *created==TRUE) {
+#ifdef HAVE_LARGE_FILE_SUPPORT
+			/* Keep gcc quiet... */
+			g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %lld, need %d bytes)", filename, statbuf.st_size, wanted_size);
+#else
+			g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %ld, need %d bytes)", filename, statbuf.st_size, wanted_size);
+#endif
+			unlink (filename);
+			return(-1);
+		} else {
+			/* We didn't create it, so just try opening it again */
+			goto try_again;
+		}
 	}
 	
 	return(fd);
@@ -362,6 +365,7 @@ map_again:
 			 * out.  This will let the calling code delete
 			 * the shared segments and try again.
 			 */
+			g_warning ("The handle daemon is stuck closing");
 			return(FALSE);
 		}
 		
@@ -418,22 +422,6 @@ map_again:
 		g_message (G_GNUC_PRETTY_FUNCTION ": Daemon pid %d", pid);
 #endif
 #endif /* !VALGRINDING */
-	} else {
-		/* Do some sanity checking on the shared memory we
-		 * attached
-		 */
-		if(!((*data)->daemon_running==DAEMON_STARTING || 
-		     (*data)->daemon_running==DAEMON_RUNNING ||
-		     (*data)->daemon_running==DAEMON_DIED_AT_STARTUP) ||
-#ifdef NEED_LINK_UNLINK
-		   (strncmp ((*data)->daemon, "/tmp/mono-handle-daemon-",
-			     24)!=0)) {
-#else
-		   (strncmp ((*data)->daemon+1, "mono-handle-daemon-", 19)!=0)) {
-#endif
-			g_warning ("Shared memory sanity check failed.");
-			return(FALSE);
-		}
 	}
 		
 	for(tries=0; (*data)->daemon_running==DAEMON_STARTING && tries < 100;
@@ -451,11 +439,33 @@ map_again:
 	}
 	if(tries==100 && (*data)->daemon_running==DAEMON_STARTING) {
 		/* Daemon didnt get going */
+		struct timespec sleepytime;
+			
 		if(data_created==TRUE) {
 			_wapi_shm_destroy ();
 		}
-		g_warning ("The handle daemon didnt start up properly");
-		return(FALSE);
+
+		/* Daemon didn't get going, give it a few ms and try
+		 * again.
+		 */
+		
+		munmap (*data, data_size);
+		munmap (*scratch, scratch_size);
+		
+		if(closing_tries++ == 5) {
+			/* Something must have gone wrong, so bail
+			 * out.  This will let the calling code delete
+			 * the shared segments and try again.
+			 */
+			g_warning ("The handle daemon didnt start up properly");
+			return(FALSE);
+		}
+		
+		sleepytime.tv_sec=0;
+		sleepytime.tv_nsec=10000000;	/* 10ms */
+			
+		nanosleep (&sleepytime, NULL);
+		goto map_again;
 	}
 	
 	if((*data)->daemon_running==DAEMON_DIED_AT_STARTUP) {
@@ -464,6 +474,26 @@ map_again:
 			_wapi_shm_destroy ();
 		}
 		g_warning ("Handle daemon failed to start");
+		return(FALSE);
+	}
+
+	/* Do some sanity checking on the shared memory we
+	 * attached
+	 */
+	if(((*data)->daemon_running!=DAEMON_RUNNING) ||
+#ifdef NEED_LINK_UNLINK
+	   (strncmp ((*data)->daemon, "/tmp/mono-handle-daemon-",
+		     24)!=0)) {
+#else
+	   (strncmp ((*data)->daemon+1, "mono-handle-daemon-", 19)!=0)) {
+#endif
+		g_warning ("Shared memory sanity check failed.");
+		g_warning("status: %d", (*data)->daemon_running);
+#ifdef NEED_LINK_UNLINK
+		g_warning("daemon: [%s]", (*data)->daemon);
+#else
+		g_warning("daemon: [%s]", (*data)->daemon+1);
+#endif
 		return(FALSE);
 	}
 		
