@@ -1104,6 +1104,16 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 		cmd=_wapi_handle_scratch_lookup (process_fork.cmd);
 		dir=_wapi_handle_scratch_lookup (process_fork.dir);
 		env=_wapi_handle_scratch_lookup_string_array (process_fork.env);
+
+		_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
+				     WAPI_HANDLE_PROCESS,
+				     (gpointer *)&process_handle_data,
+				     NULL);
+
+		_wapi_lookup_handle (GUINT_TO_POINTER (thread_handle),
+				     WAPI_HANDLE_THREAD,
+				     (gpointer *)&thread_handle_data,
+				     NULL);
 		
 		ret=g_shell_parse_argv (cmd, NULL, &argv, &gerr);
 		if(ret==FALSE) {
@@ -1115,16 +1125,6 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": forking");
 #endif
-
-			_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
-					     WAPI_HANDLE_PROCESS,
-					     (gpointer *)&process_handle_data,
-					     NULL);
-
-			_wapi_lookup_handle (GUINT_TO_POINTER (thread_handle),
-					     WAPI_HANDLE_THREAD,
-					     (gpointer *)&thread_handle_data,
-					     NULL);
 
 			/* Fork, exec cmd with args and optional env,
 			 * and return the handles with pid and blank
@@ -1214,12 +1214,20 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 
 		/* store process name, based on the last section of the cmd */
 		{
-			char *slash=strrchr (argv[0], '/');
+			char *slash;
 			
-			if(slash!=NULL) {
-				process_handle_data->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
+			/* This should never fail, but it seems it can...
+			 */
+			if (argv[0] != NULL) {
+				slash=strrchr (argv[0], '/');
+			
+				if(slash!=NULL) {
+					process_handle_data->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
+				} else {
+					process_handle_data->proc_name=_wapi_handle_scratch_store (argv[0], strlen (argv[0]));
+				}
 			} else {
-				process_handle_data->proc_name=_wapi_handle_scratch_store (argv[0], strlen (argv[0]));
+				process_handle_data->proc_name = _wapi_handle_scratch_store (cmd, strlen(cmd));
 			}
 		}
 		
