@@ -307,7 +307,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 				MonoClass *fclass = field->type->data.klass;
 				if (!fclass->enumtype) {
 					mono_class_compute_gc_descriptor (fclass);
-					bitmap |= (fclass->gc_bitmap & ~2) << pos;
+					bitmap |= (fclass->gc_bitmap >> (sizeof (MonoObject) / sizeof (gpointer))) << pos;
 				}
 				break;
 			}
