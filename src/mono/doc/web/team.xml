@@ -1432,7 +1432,11 @@
 
     <tasks>
 
-      <task>Gtk# Documentation.</task>
+      <task>Documentation.</task>
+
+      <task>Monodoc.</task>
+
+      <task>Gtk#</task>
 
     </tasks>
 
