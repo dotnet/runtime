@@ -23,6 +23,7 @@
 static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
 static gboolean mono_debugger_initialized = FALSE;
+static MonoObject *last_exception = NULL;
 
 static gboolean must_reload_symtabs = FALSE;
 
@@ -1177,7 +1178,8 @@ mono_debugger_unhandled_exception (gpointer addr, MonoObject *exc)
 	if (!mono_debugger_initialized)
 		return FALSE;
 
-	ves_icall_System_GC_SuppressFinalize (exc);
+	// Prevent the object from being finalized.
+	last_exception = exc;
 	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION, exc, addr);
 	return TRUE;
 }
