@@ -4781,6 +4781,8 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::AllocHGlobal", mono_marshal_alloc,
 	"System.Runtime.InteropServices.Marshal::FreeHGlobal", mono_marshal_free,
 	"System.Runtime.InteropServices.Marshal::ReAllocHGlobal", mono_marshal_realloc,
+	"System.Runtime.InteropServices.Marshal::AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem,
+	"System.Runtime.InteropServices.Marshal::FreeCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem,
 	"System.Runtime.InteropServices.Marshal::copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged,
 	"System.Runtime.InteropServices.Marshal::copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged,
 	"System.Runtime.InteropServices.Marshal::SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf,

@@ -4533,6 +4533,24 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	mono_struct_delete_old (klass, (char *)src);
 }
 
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
+{
+	/* FIXME: Call AllocCoTaskMem under windows */
+	MONO_ARCH_SAVE_REGS;
+
+	return g_try_malloc ((gulong)size);
+}
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
+{
+	/* FIXME: Call FreeCoTaskMem under windows */
+	MONO_ARCH_SAVE_REGS;
+
+	g_free (ptr);
+}
+
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
