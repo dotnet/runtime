@@ -828,10 +828,12 @@ reg: DIV_UN (reg, reg) {
 
 reg: REM (reg, reg) {
 	g_assert (tree->right->reg1 != X86_EAX);
+	g_assert (tree->right->reg1 != X86_EDX);
 
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 
+	/* sign extend to 64bit in EAX/EDX */
 	x86_cdq (s->code);
 	x86_div_reg (s->code, tree->right->reg1, TRUE);
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
@@ -842,11 +844,13 @@ reg: REM (reg, reg) {
 
 reg: REM_UN (reg, reg) {
 	g_assert (tree->right->reg1 != X86_EAX);
+	g_assert (tree->right->reg1 != X86_EDX);
 
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 
-	x86_cdq (s->code);
+	/* zero extend to 64bit in EAX/EDX */
+	x86_mov_reg_imm (s->code, X86_EDX, 0); 
 	x86_div_reg (s->code, tree->right->reg1, FALSE);
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
 
