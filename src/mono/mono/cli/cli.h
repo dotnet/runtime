@@ -6,7 +6,8 @@
 #include <mono/metadata/metadata.h>
 
 typedef struct {
-	guint16 flags; /* method flags */
+	guint16 flags;  /* method flags */
+	guint16 iflags; /* method implementation flags */
 	MonoImage *image;
 	MonoMethodSignature  *signature;
 	/* name is useful mostly for debugging */
@@ -20,7 +21,7 @@ typedef struct {
 
 typedef struct {
 	MonoMethod method;
-	guint16 iflags; /* method implementation flags */
+	guint16 piflags;  /* pinvoke flags */
 	ffi_cif *cif;
 	gpointer addr;
 } MonoMethodPInvoke;

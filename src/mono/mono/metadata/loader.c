@@ -162,8 +162,7 @@ ves_map_ffi_type (MonoType *type)
 }
 
 static void
-fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index, 
-		   guint16 iflags)
+fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 {
 	MonoMethod *mh = &piinfo->method;
 	metadata_tableinfo_t *tables = image->metadata.tables;
@@ -204,7 +203,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index,
 	g_assert (gmodule);
 
 	piinfo->cif = g_new (ffi_cif , 1);
-	piinfo->iflags = iflags;
+	piinfo->piflags = im_cols [0];
 	
 	g_module_symbol (gmodule, import, &piinfo->addr); 
 			
@@ -257,6 +256,7 @@ mono_get_method (MonoImage *image, guint32 token)
 
 	result->image = image;
 	result->flags = cols [2];
+	result->iflags = cols [1];
 	result->name = mono_metadata_string_heap (&image->metadata, cols [3]);
 
 	if (!sig) /* already taken from the methodref */
@@ -266,8 +266,7 @@ mono_get_method (MonoImage *image, guint32 token)
 
 
 	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
-				   index, cols [1]);
+		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = cli_rva_map ((cli_image_info_t *)image->image_info, cols [0]);
