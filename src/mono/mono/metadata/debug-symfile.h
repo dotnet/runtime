@@ -125,10 +125,5 @@ void    mono_debug_update_symbol_file (MonoDebugSymbolFile      *symbol_file,
 
 void    mono_debug_close_symbol_file  (MonoDebugSymbolFile      *symbol_file);
 
-gchar *
-mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset,
-				 guint32 *line_number);
-
-
 #endif /* __MONO_DEBUG_SYMFILE_H__ */
 

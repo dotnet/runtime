@@ -33,6 +33,8 @@ libmonoruntime_la_SOURCES = \
 	appdomain.c	\
 	debug-symfile.h	\
 	debug-symfile.c	\
+	debug-mono-symfile.h	\
+	debug-mono-symfile.c	\
 	profiler.c	\
 	profiler-private.h	\
 	rand.h		\
