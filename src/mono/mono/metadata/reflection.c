@@ -700,7 +700,7 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type,
 			break;
 		default:
 			g_warning ("got wrong token in custom attr");
-			goto next;
+			continue;
 		}
 		values [MONO_CUSTOM_ATTR_TYPE] = type;
 		p = blob_size;
@@ -709,8 +709,6 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type,
 			mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 		values += MONO_CUSTOM_ATTR_SIZE;
 		++table->next_idx;
-next:
-	break;
 	}
 }
 
