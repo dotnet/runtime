@@ -29,14 +29,18 @@ typedef enum {
 	MONO_TRAMPOLINE_CLASS_INIT
 } MonoTrampolineType;
 
-/* adapt to mini later... */
-#define mono_jit_share_code (1)
-
 /*
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
  */
 guint8 *mono_generic_trampoline_code = NULL;
+
+/*
+ * AMD64 processors maintain icache coherency only for pages which are marked
+ * executable, so we have to alloc memory through a code manager.
+ */
+static CRITICAL_SECTION tramp_codeman_mutex;
+static MonoCodeManager *tramp_codeman;
 
 /*
  * get_unbox_trampoline:
@@ -52,11 +56,14 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_reg = AMD64_RDI;
+	MonoDomain *domain = mono_domain_get ();
 
 	if (!m->signature->ret->byref && MONO_TYPE_ISSTRUCT (m->signature->ret))
 		this_reg = AMD64_RSI;
-	    
-	start = code = g_malloc (20);
+
+	mono_domain_lock (domain);
+	start = code = mono_code_manager_reserve (domain->code_mp, 20);
+	mono_domain_unlock (domain);
 
 	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
 	/* FIXME: Optimize this */
@@ -195,7 +202,9 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		break;
 	}
 
-	code = buf = g_malloc (512);
+	EnterCriticalSection (&tramp_codeman_mutex);
+	code = buf = mono_code_manager_reserve (tramp_codeman, 512);
+	LeaveCriticalSection (&tramp_codeman_mutex);
 
 	framesize = 512 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
@@ -320,6 +329,8 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	g_assert ((code - buf) <= 512);
 
+	mono_arch_flush_icache (buf, code - buf);
+
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_GENERIC:
 		mono_generic_trampoline_code = buf;
@@ -335,7 +346,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	return buf;
 }
 
-#define TRAMPOLINE_SIZE 30
+#define TRAMPOLINE_SIZE 34
 
 static MonoJitInfo*
 create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain)
@@ -400,7 +411,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	MonoJitInfo *ji;
 	MonoDomain *domain = mono_domain_get ();
 
-	/* Trampoline are arch specific, so cache only the one used in the root domain */
+	/* Trampoline are domain specific, so cache only the one used in the root domain */
 	if ((domain == mono_get_root_domain ()) && method->info)
 		return method->info;
 
@@ -448,7 +459,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	amd64_mov_reg_imm (code, AMD64_RDI, func_arg);
 	amd64_mov_reg_imm (code, AMD64_R11, func);
 
-	x86_push_imm (code, func_arg);
+	x86_push_imm (code, (guint64)func_arg);
 	amd64_call_reg (code, AMD64_R11);
 }
 
@@ -460,7 +471,10 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 {
 	guint8 *ptr, *buf;
 
-	ptr = buf = g_malloc0 (16);
+	EnterCriticalSection (&tramp_codeman_mutex);
+	ptr = buf = mono_code_manager_reserve (tramp_codeman, 16);
+	LeaveCriticalSection (&tramp_codeman_mutex);
+
 	x86_breakpoint (buf);
 	if (notification_address)
 		*notification_address = buf;
@@ -469,3 +483,14 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 	return ptr;
 }
 
+void
+mono_amd64_tramp_init (void)
+{
+	InitializeCriticalSection (&tramp_codeman_mutex);
+
+	tramp_codeman = mono_code_manager_new ();
+
+	create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+}

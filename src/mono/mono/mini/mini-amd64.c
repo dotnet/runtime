@@ -651,6 +651,7 @@ mono_arch_cpu_init (void)
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
 
 	mono_amd64_exceptions_init ();
+	mono_amd64_tramp_init ();
 }
 
 /*
@@ -5242,7 +5243,7 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-	/* not needed */
+	/* Not needed */
 }
 
 void
