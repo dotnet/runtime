@@ -328,7 +328,7 @@ mono_profiler_shutdown (void)
  * and improve it to do graphs and more accurate timestamping with rdtsc.
  */
 
-#define USE_X86TSC 1
+#define USE_X86TSC 0
 #define USE_WIN32COUNTER 0
 #if USE_X86TSC
 
