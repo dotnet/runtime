@@ -79,17 +79,17 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 }
 
 static void
-tree_emit (guint8 *cstart, guint8 **buf, MBTree *tree) 
+tree_emit (MBCodeGenStatus *s, MBTree *tree) 
 {
 	if (tree->left)
-		tree_emit (cstart, buf, tree->left);
+		tree_emit (s, tree->left);
 	if (tree->right)
-		tree_emit (cstart, buf, tree->right);
+		tree_emit (s, tree->right);
 
-	tree->addr = *buf - cstart;
+	tree->addr = s->code - s->start;
 
 	if (tree->emit)
-		((MBEmitFunc)tree->emit) (tree, buf);
+		((MBEmitFunc)tree->emit) (tree, s);
 }
 
 static gint32
@@ -125,13 +125,14 @@ get_address (GPtrArray *forest, guint32 cli_addr, gint base, gint len)
 }
 
 static void
-compute_branches (guint8 *cstart, GPtrArray *forest, guint32 epilog)
+compute_branches (MBCodeGenStatus *s)
 {
+	GPtrArray *forest = s->forest;
+	const int top = forest->len;
 	gint32 addr;
 	int i;
-	guint8 *buf;
 
-	for (i = 0; i < forest->len; i++) {
+	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 
 		if (t1->is_jump) {
@@ -148,11 +149,11 @@ compute_branches (guint8 *cstart, GPtrArray *forest, guint32 epilog)
 						 t1->data.i);
 
 			} else
-				addr = epilog;
+				addr = s->epilog;
 
 			t1->data.i = addr - t1->addr;
-			buf = cstart + t1->addr;
-			((MBEmitFunc)t1->emit) (t1, &buf);
+			s->code = s->start + t1->addr;
+			((MBEmitFunc)t1->emit) (t1, s);
 		}
 	}
 }
@@ -246,28 +247,31 @@ forest_label (GPtrArray *forest)
 }
 
 static void
-forest_emit (guint8 *cstart, guint8 **buf, GPtrArray *forest)
+forest_emit (MBCodeGenStatus *s)
 {
+	GPtrArray *forest = s->forest;
 	const int top = forest->len;
 	int i;
-	
-	
+		
 	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		t1->first_addr = *buf - cstart;
-		tree_emit (cstart, buf, t1);
+		t1->first_addr = s->code - s->start;
+		tree_emit (s, t1);
 	}
+
+	s->epilog = s->code - s->start;
 }
 
 static void
-forest_allocate_regs (GPtrArray *forest, MonoRegSet *rs)
+forest_allocate_regs (MBCodeGenStatus *s)
 {
+	GPtrArray *forest = s->forest;
 	const int top = forest->len;
 	int i;
 	
 	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		tree_allocate_regs (t1, 1, rs);
+		tree_allocate_regs (t1, 1, s->rs);
 	}
 
 }
@@ -291,28 +295,20 @@ mono_disassemble_code (guint8 *code, int size)
 }
 
 static void
-emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
+emit_method (MonoMethod *method, MBCodeGenStatus *s)
 {
-	MonoRegSet *rs = get_x86_regset ();
-	guint8 *buf, *start;
-	guint32 epilog;
+	method->addr = s->start = s->code = g_malloc (1024);
 
-	method->addr = start = buf = g_malloc (1024);
+	forest_label (s->forest);
 
-	forest_label (forest);
-	forest_allocate_regs (forest, rs);
-	arch_emit_prologue (&buf, method, locals_size, rs);
-	forest_emit (start, &buf, forest);
-	
-	epilog = buf - start;
-	arch_emit_epilogue (&buf, method, rs);
+	forest_allocate_regs (s);
+	arch_emit_prologue (s);
+	forest_emit (s);
+	arch_emit_epilogue (s);
+	compute_branches (s);
 
-	compute_branches (start, forest, epilog);
-
-	mono_regset_free (rs);
-
-	print_forest (forest);
-	mono_disassemble_code (start, buf - start);
+	print_forest (s->forest);
+	mono_disassemble_code (s->start, s->code - s->start);
 }
 
 static gpointer
@@ -365,6 +361,7 @@ create_jit_trampoline (MonoMethod *method)
 static gpointer
 mono_compile_method (MonoMethod *method)
 {
+	MBCodeGenStatus cgstat;
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
 	MonoImage *image;
@@ -797,10 +794,14 @@ mono_compile_method (MonoMethod *method)
 		}
 	}
 	
-	printf ("LOCALS ARE: %d\n", local_offset);
-	emit_method (method, forest, local_offset);
+	cgstat.forest = forest;
+	cgstat.code = NULL;
+	cgstat.locals_size = local_offset;
+	cgstat.rs = get_x86_regset ();
 
-	// printf ("COMPILED %p %p\n", method, method->addr);
+	emit_method (method, &cgstat);
+
+	mono_regset_free (cgstat.rs);
 
 	return method->addr;
 }

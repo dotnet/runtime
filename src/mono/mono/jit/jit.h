@@ -1,9 +1,9 @@
 #ifndef _MONO_JIT_JIT_H_
 #define _MONO_JIT_JIT_H_
 
-#include "regset.h"
+#include "codegen.h"
 
-void arch_emit_prologue (guint8 **buf, MonoMethod *method, int locals_size, MonoRegSet *rs);
-void arch_emit_epilogue (guint8 **buf, MonoMethod *method, MonoRegSet *rs);
+void arch_emit_prologue (MBCodeGenStatus *s);
+void arch_emit_epilogue (MBCodeGenStatus *s);
 
 #endif

@@ -222,6 +222,7 @@ emit_header ()
 	output ("#ifndef MBTREE_LEFT\n#define MBTREE_LEFT(t) ((t)->left)\n#endif\n");
 	output ("#ifndef MBTREE_RIGHT\n#define MBTREE_RIGHT(t) ((t)->right)\n#endif\n");
 	output ("#ifndef MBTREE_STATE\n#define MBTREE_STATE(t) ((t)->state)\n#endif\n");
+	output ("#ifndef MBCGEN_TYPE\n#define MBCGEN_TYPE int\n#endif\n");
 
 	output ("\n");
 	output ("#define MBMAXCOST 32768\n");
@@ -581,7 +582,7 @@ emit_emitter_func ()
 
 			emit_rule_string (rule, "");
 
-			output ("mono_burg_emit_%d (MBTREE_TYPE *tree, guint8 **code)\n", i);
+			output ("mono_burg_emit_%d (MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n", i);
 			output ("{\n");
 			output ("%s\n", rule->code);
 			output ("}\n\n");
@@ -744,7 +745,7 @@ emit_vardefs ()
 static void
 emit_prototypes ()
 {
-	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, guint8 **code);\n\n");
+	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
 
 	output ("extern char *mono_burg_term_string [];\n");
 	output ("extern char *mono_burg_rule_string [];\n");
