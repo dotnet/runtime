@@ -76,7 +76,8 @@
        };				}G_STMT_END
 
 
-#define mono_stringbuilder_capacity(sb) ((sb)->str->length)
+/* 16 == default capacity */
+#define mono_stringbuilder_capacity(sb) ((sb)->str ? ((sb)->str->length) : 16)
 
 typedef struct {
 	MonoObject obj;
