@@ -3323,6 +3323,8 @@ array_constructed:
 				break;
 			case CEE_STELEM_REF:
 				g_assert (sp [2].type == VAL_OBJ);
+				if (sp [2].data.p && !mono_object_isinst (sp [2].data.p, mono_object_class (o)->element_class))
+					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
 				mono_array_set (o, gpointer, aindex, sp [2].data.p);
 				break;
 			default:
