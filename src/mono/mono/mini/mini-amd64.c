@@ -300,17 +300,19 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 
 static void
 add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
-			   gboolean is_return,
-			   guint32 *gr, guint32 *fr, guint32 *stack_size)
+	       gboolean is_return,
+	       guint32 *gr, guint32 *fr, guint32 *stack_size)
 {
 	guint32 size, quad, nquads, i;
 	ArgumentClass args [2];
 	MonoMarshalType *info;
+	MonoClass *klass;
 
+	klass = mono_class_from_mono_type (type);
 	if (sig->pinvoke) 
-		size = mono_type_native_stack_size (&type->data.klass->byval_arg, NULL);
+		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
 	else 
-		size = mono_type_stack_size (&type->data.klass->byval_arg, NULL);
+		size = mono_type_stack_size (&klass->byval_arg, NULL);
 
 	if (!sig->pinvoke || (size == 0) || (size > 16)) {
 		/* Allways pass in memory */
