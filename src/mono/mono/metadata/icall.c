@@ -2951,14 +2951,6 @@ static gconstpointer icall_map [] = {
 	"System.Char::ToLower", ves_icall_System_Char_ToLower,
 	"System.Char::ToUpper", ves_icall_System_Char_ToUpper,
 
-	"System.Text.Encoding::IConvNewEncoder", ves_icall_iconv_new_encoder,
-	"System.Text.Encoding::IConvNewDecoder", ves_icall_iconv_new_decoder,
-	"System.Text.Encoding::IConvReset", ves_icall_iconv_reset,
-	"System.Text.Encoding::IConvGetByteCount", ves_icall_iconv_get_byte_count,
-	"System.Text.Encoding::IConvGetBytes", ves_icall_iconv_get_bytes,
-	"System.Text.Encoding::IConvGetCharCount", ves_icall_iconv_get_char_count,
-	"System.Text.Encoding::IConvGetChars", ves_icall_iconv_get_chars,
-
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	"System.CurrentTimeZone::GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData,
 

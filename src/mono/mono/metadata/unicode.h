@@ -93,31 +93,4 @@ ves_icall_System_Char_ToLower            (gunichar2 c);
 gunichar2
 ves_icall_System_Char_ToUpper            (gunichar2 c);
 
-gpointer
-ves_icall_iconv_new_encoder              (MonoString *name, MonoBoolean big_endian);
-
-gpointer
-ves_icall_iconv_new_decoder              (MonoString *name, MonoBoolean big_endian);
-
-void
-ves_icall_iconv_reset                    (gpointer converter);
-
-int
-ves_icall_iconv_get_byte_count           (gpointer converter, MonoArray *chars,
-					  gint32 idx, gint32 count);
-
-int
-ves_icall_iconv_get_bytes                (gpointer converter, MonoArray *chars,
-					  gint32 charIndex, gint32 charCount,
-					  MonoArray *bytes, gint32 byteIndex);
-
-int
-ves_icall_iconv_get_char_count           (gpointer converter, MonoArray *bytes,
-					  gint32 idx, gint32 count);
-
-int
-ves_icall_iconv_get_chars                (gpointer converter, MonoArray *bytes,
-					  gint32 byteIndex, gint32 byteCount,
-					  MonoArray *chars, gint32 charIndex);
-     
 #endif
