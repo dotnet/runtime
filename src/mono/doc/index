@@ -112,7 +112,7 @@
 	use Mono to create Mono applications using <a href="http://gtk-sharp.sf.net">Gtk#</a>
 
 	Dennis Hayes has posted and <a
-	href="http://lists.ximian.com/archives/public/mono-list/2002-December/date.html">update</a>
+	href="http://lists.ximian.com/archives/public/mono-list/2002-December/003800.html">update</a>
 	on the work to get Windows.Forms working on Mono.  There is a
 	new test application that people can use to test their
 	controls.  If you are interested in working on Windows.Forms,
