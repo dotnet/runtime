@@ -61,7 +61,7 @@ struct _MonoDomain {
 	GHashTable         *env;
 	GHashTable         *assemblies;
 	MonoAppDomainSetup *setup;
-	MonoString         *friendly_name;
+	char*              *friendly_name;
 	MonoGHashTable     *ldstr_table;
 	MonoGHashTable     *class_vtable_hash;
 	MonoGHashTable     *proxy_vtable_hash;
@@ -77,8 +77,11 @@ struct _MonoAppDomain {
 
 extern MonoDomain *mono_root_domain;
 
-MonoDomain *
+MonoDomain*
 mono_init                  (const char *filename);
+
+void
+mono_runtime_init          (MonoDomain *domain);
 
 inline MonoDomain *
 mono_domain_get            (void);

@@ -161,6 +161,7 @@ MonoDomain *mono_root_domain = NULL;
  * 
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
+ * This function is guaranteed to not run any IL code.
  *
  * Returns: the initial domain.
  */
@@ -168,11 +169,7 @@ MonoDomain *
 mono_init (const char *filename)
 {
 	static MonoDomain *domain = NULL;
-	MonoAppDomainSetup *setup;
-	MonoAppDomain *ad;
 	MonoAssembly *ass;
-	MonoClass *class;
-	MonoString *name;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 
 	if (domain)
@@ -332,20 +329,37 @@ mono_init (const char *filename)
                 mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "MonoMethodMessage");
 	g_assert (mono_defaults.mono_method_message_class != 0);
 
+	domain->friendly_name = g_path_get_basename (filename);
+
+	return domain;
+}
+
+/*
+ * mono_runtime_init:
+ * @domain: domain returned by mono_init ()
+ *
+ * Initialize the core AppDomain: this function will run also some
+ * IL initialization code, so it needs the execution engine to be fully 
+ * operational.
+ */
+void
+mono_runtime_init (MonoDomain *domain)
+{
+	MonoAppDomainSetup *setup;
+	MonoAppDomain *ad;
+	MonoClass *class;
+	
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
 	ves_icall_System_AppDomainSetup_InitAppDomainSetup (setup);
-
-	name = mono_string_new (domain, g_path_get_basename (filename));
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 	ad = (MonoAppDomain *) mono_object_new (domain, class);
 	ad->data = domain;
 	domain->domain = ad;
 	domain->setup = setup;
-	domain->friendly_name = name;
 
-	return domain;
+	return;
 }
 
 void
@@ -492,7 +506,7 @@ ves_icall_System_AppDomain_getFriendlyName (MonoAppDomain *ad)
 	g_assert (ad != NULL);
 	g_assert (ad->data != NULL);
 
-	return ad->data->friendly_name;
+	return mono_string_new (ad->data, ad->data->friendly_name);
 }
 
 /**
@@ -540,7 +554,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	ad->data = data = mono_create_domain ();
 	data->domain = ad;
 	data->setup = setup;
-	data->friendly_name = friendly_name;
+	data->friendly_name = mono_string_to_utf8 (friendly_name);
 
 	// fixme: what to do next ?
 
@@ -664,6 +678,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 		return;
 	}
 
+	g_free (domain->friendly_name);
 	g_hash_table_foreach (domain->assemblies, remove_assembly, NULL);
 
 	g_hash_table_destroy (domain->env);
