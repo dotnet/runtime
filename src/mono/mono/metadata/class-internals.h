@@ -46,7 +46,6 @@ struct _MonoMethod {
 	MonoMethodSignature *signature;
 	gpointer addr;
 	gpointer info; /* runtime info */
-	gpointer remoting_tramp; 
 	gint slot;
 	/* name is useful mostly for debugging */
 	const char *name;
