@@ -124,10 +124,8 @@ mono_assembly_setrootdir (const char *root_dir)
 	/*
 	 * Override the MONO_ASSEMBLIES directory configured at compile time.
 	 */
+	/* Leak if called more than once */
 	default_path [0] = g_strdup (root_dir);
-#ifdef PLATFORM_WIN32
-	path_inited = TRUE;
-#endif
 }
 
 /**
