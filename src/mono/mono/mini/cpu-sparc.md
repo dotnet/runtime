@@ -256,8 +256,8 @@ starg:
 ldloc:
 ldloca:
 stloc:
-# FIXME: WTF?!?
-localloc: dest:i src1:i len:30
+localloc: dest:i src1:i len:24
+sparc_localloc_imm: dest:i len:16
 endfilter:
 unaligned.:
 volatile.:
@@ -326,14 +326,14 @@ label:
 store_membase_imm: dest:b len:20
 store_membase_reg: dest:b src1:i len:12
 storei1_membase_imm: dest:b len:20
-storei1_membase_reg: dest:b src1:i len:8
+storei1_membase_reg: dest:b src1:i len:12
 storei2_membase_imm: dest:b len:20
-storei2_membase_reg: dest:b src1:i len:8
+storei2_membase_reg: dest:b src1:i len:12
 storei4_membase_imm: dest:b len:20
 storei4_membase_reg: dest:b src1:i len:12
 storei8_membase_imm: dest:b len:20
 storei8_membase_reg: dest:b src1:i len:12
-storer4_membase_reg: dest:b src1:f len:8
+storer4_membase_reg: dest:b src1:f len:20
 storer8_membase_reg: dest:b src1:f len:20
 load_membase: dest:i src1:b len:12
 loadi1_membase: dest:i src1:b len:12
