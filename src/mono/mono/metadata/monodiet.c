@@ -239,6 +239,7 @@ handle_type (MonoClass *klass, guint32 flags)
 		add_type (klass->parent);
 	if (klass->nested_in)
 		add_type (klass->nested_in);
+	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		if ((missing & TYPE_METHODS) || strcmp (klass->methods [i]->name, ".cctor") == 0)
 			add_types_from_method (klass->methods [i]);
@@ -251,10 +252,12 @@ handle_type (MonoClass *klass, guint32 flags)
 			add_field (&klass->fields [i]);
 		}
 	}
+	mono_class_setup_properties (klass);
 	for (i = 0; i < klass->property.count; ++i) {
 		cattrs = mono_custom_attrs_from_property (klass, &klass->properties [i]);
 		handle_cattrs (cattrs);
 	}
+	mono_class_setup_events (klass);
 	for (i = 0; i < klass->event.count; ++i) {
 		cattrs = mono_custom_attrs_from_event (klass, &klass->events [i]);
 		handle_cattrs (cattrs);
