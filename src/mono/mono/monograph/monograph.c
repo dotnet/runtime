@@ -959,13 +959,13 @@ usage (void) {
 	printf ("\t-f|--fullname         include namespace in type and method names\n");
 	printf ("\t-n|--neato            invoke neato directly\n");
 	printf ("\t-v|--verbose          verbose operation\n");
-	printf ("The default assembly is corlib.dll. The default method for\n");
+	printf ("The default assembly is mscorlib.dll. The default method for\n");
 	printf ("the --call and --control-flow options is the entrypoint.\n");
 	printf ("When the --neato option is used the output type info is taken\n");
 	printf ("from the output filename extension. You need the graphviz package installed\n");
 	printf ("to be able to use this option.\n");
 	printf ("Sample runs:\n");
-	printf ("\tmonograph -n -o vt.png corlib.dll System.ValueType\n");
+	printf ("\tmonograph -n -o vt.png mscorlib.dll System.ValueType\n");
 	printf ("\tmonograph -n -o expr.png mcs.exe Mono.CSharp.Expression\n");
 	printf ("\tmonograph -n -o cfg.png -C mcs.exe Driver:Main\n");
 	printf ("\tmonograph -d 3 -n -o callgraph.png -c mis.exe\n");
