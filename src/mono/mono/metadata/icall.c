@@ -1908,6 +1908,40 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAss
 	return result;
 }
 
+static MonoArray*
+ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAssembly *assembly) {
+	static MonoClass *System_Reflection_AssemblyName;
+	MonoArray *result;
+	MonoAssembly **ptr;
+	int i, count = 0;
+
+	if (!System_Reflection_AssemblyName)
+		System_Reflection_AssemblyName = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "AssemblyName");
+
+	for (ptr = assembly->assembly->image->references; ptr && *ptr; ptr++)
+		count++;
+
+	result = mono_array_new (mono_object_domain (assembly), System_Reflection_AssemblyName, count);
+
+	for (i = 0; i < count; i++) {
+		MonoAssembly *assem = assembly->assembly->image->references [i];
+		MonoReflectionAssemblyName *aname;
+
+		aname = (MonoReflectionAssemblyName *) mono_object_new (
+			mono_object_domain (assembly), System_Reflection_AssemblyName);
+
+		if (strcmp (assem->aname.name, "corlib") == 0)
+			aname->name = mono_string_new (mono_object_domain (assembly), "mscorlib");
+		else
+			aname->name = mono_string_new (mono_object_domain (assembly), assem->aname.name);
+		aname->major = assem->aname.major;
+
+		mono_array_set (result, gpointer, i, aname);
+	}
+	return result;
+}
+
 /* move this in some file in mono/util/ */
 static char *
 g_concat_dir_and_file (const char *dir, const char *file)
@@ -2914,6 +2948,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames,
 	"System.Reflection.Assembly::GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal,
 	"System.Reflection.Assembly::GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal,
+	"System.Reflection.Assembly::GetReferencedAssemblies", ves_icall_System_Reflection_Assembly_GetReferencedAssemblies,
 
 	/*
 	 * System.MonoType.
