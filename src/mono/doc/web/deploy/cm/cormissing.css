@@ -11,8 +11,9 @@
 .n, .n_,
 .c, .c_,
 .s, .s_,
+.d, .d_,
 .en, .en_,
-.m, .p, .e, .c, .f
+.m, .p, .e, .c, .f, .x
 {
 	FONT: 10px 'Verdana';
 	margin-left: 20px;
@@ -24,11 +25,16 @@
 .n_ .c_,
 .n_ .s,
 .n_ .s_,
+.n_ .d,
+.n_ .d_,
+.n_ .en,
+.n_ .en_,
 .c_ .m,
 .c_ .p,
 .c_ .e,
 .c_ .c,
-.c_ .f
+.c_ .f,
+.c_ .x
 {
 	display: none;
 }

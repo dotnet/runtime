@@ -153,14 +153,20 @@ function clickHandler (evt)
 		var strField;
 
 		elt = getParentDiv (elt);
+		if (elt.className == 'x')	// constructor
+		{
+			strField = 'ctor';
+			elt = getParentDiv (elt);
+			elt = getParentDiv (elt);
+		}
+		else
 		if (elt.className == 'm' ||	// method
 			elt.className == 'p' ||	// property
 			elt.className == 'e' ||	// event
-			elt.className == 'x' ||	// constructor
 			elt.className == 'f')	// field
 		{
 			strField = getName (elt).toLowerCase ();
-			var match = strField.match ( /[A-Z0-9_]*/i );
+			var match = strField.match ( /[\.A-Z0-9_]*/i );
 			if (match)
 				strField = match [0];
 			elt = getParentDiv (elt);
@@ -180,7 +186,8 @@ function clickHandler (evt)
 		}
 		if (elt.className == 'n')	// namespace
 		{
-			var strNamespace = getName (elt).toLowerCase ().replace ('.', '');
+			var re = /\./g ;
+			var strNamespace = getName (elt).toLowerCase ().replace (re, '');
 			if (strClass)
 				strNamespace += strClass;
 			if (strField)
