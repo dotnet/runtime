@@ -301,6 +301,15 @@ Q: Will Mono include compatibility with Bonobo components?
 A: Yes, we will provide a set of classes for implementing and using
    Bonobo components from within Mono. 
 
+Q: Does Mono replace Bonobo?
+
+A: Bonobo is very focused on cross-application component reuse.  Mono
+   will provide a Bonobo framework to allow you to develop Bonobo
+   components and use Bonobo components on Unix.  
+
+   Mono should allow you to write Bonobo components more easily, just
+   like .NET on Windows allows you to export .NET components to COM.
+
 ** Mono and the Web
 
 Q: Is Mono a way of running Java applets?

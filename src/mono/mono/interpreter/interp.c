@@ -319,6 +319,37 @@ static char *opcode_names[] = {
 };
 #endif
 
+static void
+output_indent (void)
+{
+	int h;
+
+	for (h = 0; h < level; h++)
+		g_print ("  ");
+}
+
+static void
+dump_stack (stackval *stack, stackval *sp)
+{
+	stackval *s = stack;
+	
+	if (sp == stack)
+		return;
+	
+	output_indent ();
+	g_print ("stack: ");
+		
+	while (s < sp) {
+		switch (s->type) {
+		case VAL_I32: g_print ("[%d] ", s->data.i); break;
+		case VAL_I64: g_print ("[%lld] ", s->data.l); break;
+		case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
+		default: g_print ("[%p] ", s->data.p); break;
+		}
+		++s;
+	}
+}
+
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -336,9 +367,7 @@ static char *opcode_names[] = {
 static void 
 ves_exec_method (MonoMethod *mh, stackval *args)
 {
-#if DEBUG_INTERP
-	static int level = 0;
-#endif
+	static int debug_level = 0;
 	MonoMethodManaged *mm = (MonoMethodManaged *)mh;
 	stackval *stack;
 	register const unsigned char *ip;
@@ -354,9 +383,8 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	ip = mm->header->code;
 
 #if DEBUG_INTERP
-#define INDENT() { int h; for (h=0; h < level; ++h) g_print ("  "); }
 	level++;
-	INDENT();
+	output_indent ();
 	g_print ("Entering %s\n", mh->name);
 #endif
 
@@ -383,22 +411,12 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	while (1) {
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
-		if (sp != stack){
-			stackval *s = stack;
-			INDENT(); g_print ("stack: ");
-			while (s < sp) {
-				switch (s->type) {
-				case VAL_I32: g_print ("[%d] ", s->data.i); break;
-				case VAL_I64: g_print ("[%lld] ", s->data.l); break;
-				case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
-				default: g_print ("[%p] ", s->data.p); break;
-				}
-				++s;
-			}
-		}
+		dump_stack (stack, sp);
 		g_print ("\n");
 		INDENT();
-		g_print ("0x%04x: %s\n", ip-(unsigned char*)mm->header->code, *ip == 0xfe ? opcode_names [256 + ip [1]]: opcode_names [*ip]);
+		g_print ("0x%04x: %s\n",
+			 ip-(unsigned char*)mm->header->code,
+			 *ip == 0xfe ? opcode_names [256 + ip [1]] : opcode_names [*ip]);
 #endif
 		
 		SWITCH (*ip) {
@@ -580,9 +598,9 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			if (sp > stack)
 				g_warning ("more values on stack: %d", sp-stack);
 
-			/*g_free (stack);*/
+			/* g_free (stack); */
 #if DEBUG_INTERP
-			level--;
+			debug_level--;
 #endif
 			return;
 		CASE (CEE_BR_S)
@@ -1040,13 +1058,16 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			token = read32 (ip);
 			o = newobj (mh->image, token);
 			ip += 4;
+			
 			/* call the contructor */
 			cmh = mono_get_method (mh->image, token);
 
-			/* decrement by the actual number of args */
-			/* need to pass object as first arg: we may overflow the stack here
-			 * until we use a different argument passing mechanism. */
-			/* we shift the args to make room for the object reference */
+			/*
+			 * decrement by the actual number of args 
+			 * need to pass object as first arg: we may overflow the stack here
+			 * until we use a different argument passing mechanism. 
+			 * we shift the args to make room for the object reference
+			 */
 			for (pc = 0; pc < cmh->signature->param_count; ++pc)
 				sp [-pc] = sp [-pc-1];
 			sp -= cmh->signature->param_count + 1;
@@ -1055,9 +1076,13 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
 
-			/* we need to truncate according to the type of args ... */
+			/*
+			 * we need to truncate according to the type of args ...
+			 */
 			ves_exec_method (cmh, sp);
-			/* a constructor returns void, but we need to return the object we created */
+			/*
+			 * a constructor returns void, but we need to return the object we created
+			 */
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			++sp;
