@@ -3768,6 +3768,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * potential vararg call.
 				 */
 				guint32 nregs, i;
+				nregs = 0;
 				for (i = 0; i < AMD64_XMM_NREG; ++i)
 					if (call->used_fregs & (1 << i))
 						nregs ++;
