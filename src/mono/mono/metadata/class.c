@@ -1313,6 +1313,8 @@ mono_class_init (MonoClass *class)
 			if (prop->set)
 				prop->set = mono_class_inflate_generic_method (
 					prop->set, ginst->context, ginst->klass);
+
+			prop->parent = class;
 		}
 
 		class->interface_count = gklass->interface_count;
@@ -1381,8 +1383,10 @@ mono_class_init (MonoClass *class)
 		}
 	}
 
-	init_properties (class);
-	init_events (class);
+	if (!class->generic_inst) {
+		init_properties (class);
+		init_events (class);
+	}
 
 	i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
 	while (i) {

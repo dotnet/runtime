@@ -4828,6 +4828,8 @@ mono_generic_inst_get_object (MonoDomain *domain, MonoType *geninst)
 	ginst = geninst->data.generic_inst;
 	gklass = mono_class_from_mono_type (ginst->generic_type);
 
+	mono_class_init (ginst->klass);
+
 	res = (MonoReflectionGenericInst *) mono_object_new (domain, System_Reflection_MonoGenericInst);
 
 	res->type.type = geninst;
@@ -4860,7 +4862,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		mono_domain_unlock (domain);
 		return res;
 	}
-	if (type->type == MONO_TYPE_GENERICINST) {
+	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_inst->is_dynamic) {
 		res = (MonoReflectionType *)mono_generic_inst_get_object (domain, type);
 		mono_g_hash_table_insert (domain->type_hash, type, res);
 		mono_domain_unlock (domain);
@@ -6920,7 +6922,6 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	domain = mono_object_domain (type);
 
 	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->is_dynamic = 1;
 
 	if (!klass->generic_inst) {
 		ginst->type_argc = type_argc;
@@ -6973,6 +6974,8 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 	} else
 		icount = klass->interface_count;
+
+	ginst->is_dynamic = tb != NULL;
 
 	ginst->ifaces = g_new0 (MonoType *, icount);
 	ginst->count_ifaces = icount;
