@@ -290,7 +290,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 			guint32 const_cols [MONO_CONSTANT_SIZE];
 			guint32 crow;
 			
-			if ((crow = mono_metadata_get_constant_index (m, MONO_TOKEN_FIELD_DEF | (i+1)))) {
+			if ((crow = mono_metadata_get_constant_index (m, MONO_TOKEN_FIELD_DEF | (i+1), 0))) {
 				mono_metadata_decode_row (&m->tables [MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
 				lit = get_constant (m, const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
 			} else {
