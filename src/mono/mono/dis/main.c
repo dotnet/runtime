@@ -788,7 +788,7 @@ dis_genericparam (MonoImage *m, guint32 typedef_row)
                 else
                         fprintf (output, ", %s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
 
-                for (cnst_ind = cnst_start; cnst_ind <= ct->rows; cnst_ind++) {
+                for (cnst_ind = cnst_start; cnst_ind < ct->rows; cnst_ind++) {
                         char *sig;
                         mono_metadata_decode_row (ct, cnst_ind, ccols, MONO_GENPARCONSTRAINT_SIZE);
                         if (ccols [MONO_GENPARCONSTRAINT_GENERICPAR] != i)
