@@ -309,5 +309,8 @@ mono/monoburg/Makefile
 mono/jit/Makefile
 mono/io-layer/Makefile
 runtime/Makefile
+scripts/Makefile
+scripts/mcs
+man/Makefile
 doc/Makefile
 ])

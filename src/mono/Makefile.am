@@ -1,1 +1,1 @@
-SUBDIRS = mono doc runtime
+SUBDIRS = mono doc runtime scripts man
