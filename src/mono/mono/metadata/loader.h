@@ -5,10 +5,12 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 
+typedef struct _MonoClass MonoClass;
+
 typedef struct {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
-	MonoImage *image;
+	MonoClass *klass;
 	MonoMethodSignature *signature;
 	gpointer addr;
 	/* name is useful mostly for debugging */
@@ -39,14 +41,10 @@ void
 mono_init                  (void);
 
 MonoMethod *
-mono_get_method            (MonoImage *image, guint32 token);
+mono_get_method            (MonoImage *image, guint32 token, MonoClass *klass);
 
 void               
 mono_free_method           (MonoMethod *method);
-
-guint32            
-mono_typedef_from_name     (MonoImage *image, const char *name, 
-			    const char *nspace, guint32 *mlist);
 
 MonoImage *
 mono_load_image            (const char *fname, enum MonoImageOpenStatus *status);

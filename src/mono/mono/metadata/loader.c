@@ -27,6 +27,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
+#include <mono/metadata/class.h>
 
 MonoDefaults mono_defaults;
 
@@ -51,27 +52,6 @@ mono_map_dll (const char *name)
 	return name;
 }
 
-guint32
-mono_typedef_from_name (MonoImage *image, const char *name, 
-			const char *nspace, guint32 *mlist)
-{
-	MonoTableInfo *t = &image->tables [MONO_TABLE_TYPEDEF];
-	guint32 i;
-	guint32 cols [MONO_TYPEDEF_SIZE];
-
-	for (i=0; i < t->rows; ++i) {
-		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
-		if (strcmp (name, mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME])) == 0 
-				&& strcmp (nspace, mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
-			if (mlist)
-				*mlist = cols [MONO_TYPEDEF_METHOD_LIST];
-			return MONO_TOKEN_TYPE_DEF | (i + 1);
-		}
-	}
-	g_assert_not_reached ();
-	return 0;
-}
-
 void
 mono_init ()
 {
@@ -88,16 +68,16 @@ mono_init ()
 	g_assert (ass != NULL);
 	mono_defaults.corlib = ass->image;
 
-	mono_defaults.array_token = mono_typedef_from_name (
-                mono_defaults.corlib, "Array", "System", NULL);
+	mono_defaults.array_token = mono_class_token_from_name (
+                mono_defaults.corlib, "System", "Array");
 	g_assert (mono_defaults.array_token != 0);
 
-	mono_defaults.char_token = mono_typedef_from_name (
-                mono_defaults.corlib, "Char", "System", NULL);
+	mono_defaults.char_token = mono_class_token_from_name (
+                mono_defaults.corlib, "System", "Char");
 	g_assert (mono_defaults.char_token != 0);
 
-	mono_defaults.string_token = mono_typedef_from_name (
-                mono_defaults.corlib, "String", "System", NULL);
+	mono_defaults.string_token = mono_class_token_from_name (
+                mono_defaults.corlib, "System", "String");
 	
 	g_assert (mono_defaults.string_token != 0);
 
@@ -136,11 +116,12 @@ static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 index)
 {
 	MonoImage *mimage;
+	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
 	guint32 nindex, class, i;
 	const char *mname, *name, *nspace;
-	MonoMethodSignature *sig, *msig;
+	MonoMethodSignature *sig;
 	const char *ptr;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, 3);
@@ -180,27 +161,19 @@ method_from_memberref (MonoImage *image, guint32 index)
 
 			mimage = image->references [scopeindex-1]->image;
 
-			tables = &mimage->tables [MONO_TABLE_METHOD];
-			mono_typedef_from_name (mimage, name, nspace, &i);
+			i = mono_class_token_from_name (mimage, nspace, name);
+			klass = mono_class_get (mimage, i);
 			/* mostly dumb search for now */
-			for (i--; i < tables->rows; ++i) {
-
-				mono_metadata_decode_row (tables, i, cols, MONO_METHOD_SIZE);
-
-				if (!strcmp (mname, mono_metadata_string_heap (mimage, cols [MONO_METHOD_NAME]))) {
-					
-					ptr = mono_metadata_blob_heap (mimage, cols [MONO_METHOD_SIGNATURE]);
-					mono_metadata_decode_blob_size (ptr, &ptr);
-					msig = mono_metadata_parse_method_signature (mimage, 1, ptr, NULL);
-
-					if (mono_metadata_signature_equal (image, sig, mimage, msig)) {
+			for (i = 0; i < klass->method.count; ++i) {
+				MonoMethod *m = klass->methods [i];
+				if (!strcmp (mname, m->name)) {
+					if (mono_metadata_signature_equal (image, sig, mimage, m->signature)) {
 						mono_metadata_free_method_signature (sig);
-						mono_metadata_free_method_signature (msig);
-						return mono_get_method (mimage, MONO_TOKEN_METHOD_DEF | (i + 1));
+						return m;
 					}
 				}
 			}
-			g_warning ("cant find method %s.%s::%s",nspace, name, mname);
+			g_warning ("can't find method %s.%s::%s", nspace, name, mname);
 			g_assert_not_reached ();
 			break;
 		default:
@@ -224,7 +197,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			g_assert_not_reached ();		
 
 		result = (MonoMethod *)g_new0 (MonoMethod, 1);
-		result->image = image;
+		result->klass = mono_class_get (mono_defaults.corlib, mono_defaults.array_token);
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		result->signature = sig;
 		
@@ -376,7 +349,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 }
 
 MonoMethod *
-mono_get_method (MonoImage *image, guint32 token)
+mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 {
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
@@ -385,7 +358,7 @@ mono_get_method (MonoImage *image, guint32 token)
 	const char *loc, *sig = NULL;
 	char *name;
 	int size;
-	guint32 cols[MONO_TYPEDEF_SIZE];
+	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	if (table == MONO_TABLE_METHOD && (result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
 			return result;
@@ -432,7 +405,7 @@ mono_get_method (MonoImage *image, guint32 token)
 		result = (MonoMethod *)g_new0 (MonoMethodNormal, 1);
 	}
 
-	result->image = image;
+	result->klass = klass;
 	result->flags = cols [2];
 	result->iflags = cols [1];
 	result->name = mono_metadata_string_heap (image, cols [3]);
@@ -449,6 +422,10 @@ mono_get_method (MonoImage *image, guint32 token)
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
 		g_assert (loc);
+		if (!result->klass) {
+			guint32 type = mono_metadata_typedef_from_method (image, token);
+			result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+		}
 		((MonoMethodNormal *)result)->header = 
 			mono_metadata_parse_mh (image, loc);
 	}

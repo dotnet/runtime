@@ -29,31 +29,19 @@
 static void
 typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, guint32 *index)
 {
-	guint32 cols[MONO_TYPEDEF_SIZE];
-	MonoTableInfo  *t = &image->tables[MONO_TABLE_TYPEREF];
-	guint32 idx, i;
+	guint32 cols [MONO_TYPEREF_SIZE];
+	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
+	guint32 idx;
 	const char *name, *nspace;
 	
-	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, 3);
-	g_assert ((cols [0] & 0x3) == 2);
-	idx = cols [0] >> 2;
-	name = mono_metadata_string_heap (image, cols [1]);
-	nspace = mono_metadata_string_heap (image, cols [2]);
+	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+	g_assert ((cols [MONO_TYPEREF_SCOPE] & 0x3) == 2);
+	idx = cols [MONO_TYPEREF_SCOPE] >> 2;
+	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
 	/* load referenced assembly */
-	image = image->references [idx-1]->image;
-	t = &image->tables [MONO_TABLE_TYPEDEF];
-	/* dumb search for now */
-	for (i=0; i < t->rows; ++i) {
-		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
-
-		if (!strcmp (name, mono_metadata_string_heap (image, cols [1])) &&
-		    !strcmp (nspace, mono_metadata_string_heap (image, cols [2]))) {
-			*rimage = image;
-			*index =  MONO_TOKEN_TYPE_DEF | (i + 1);
-			return;
-		}
-	}
-	g_assert_not_reached ();
+	*rimage = image = image->references [idx-1]->image;
+	*index = mono_class_token_from_name (image, nspace, name);
 	
 }
 
@@ -163,8 +151,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	memset (class, 0, sizeof (MonoClass));
 
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
-	name = mono_metadata_string_heap (image, cols[1]);
-	nspace = mono_metadata_string_heap (image, cols[2]);
+	class->name = name = mono_metadata_string_heap (image, cols[1]);
+	class->name_space = nspace = mono_metadata_string_heap (image, cols[2]);
 	/*g_print ("Init class %s\n", name);*/
  
 	/* if root of the hierarchy */
@@ -229,16 +217,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		g_assert (class->instance_size == sizeof (MonoArrayObject));
 	}
 
+	class = g_malloc0 (class->class_size);
+	*class = stack_class;
+
 	if (class->method.count > 0) {
 		int i;
 		class->methods = g_new (MonoMethod*, class->method.count);
 		for (i = class->method.first; i < class->method.last; ++i)
 			class->methods [i - class->method.first] = mono_get_method (image,
-							MONO_TOKEN_METHOD_DEF | (i + 1));
+							MONO_TOKEN_METHOD_DEF | (i + 1), class);
 	}
 	
-	class = g_malloc0 (class->class_size);
-	*class = stack_class;
 	return class;
 }
 
@@ -252,37 +241,37 @@ mono_type_to_tydedef (MonoImage *image, MonoType *type, MonoImage **rimage)
 
 	switch (type->type) {
 	case MONO_TYPE_BOOLEAN:
-		etype = mono_typedef_from_name (corlib, "Boolean", "System", NULL);
+		etype = mono_class_token_from_name (corlib, "System", "Boolean");
 		break;
 	case MONO_TYPE_CHAR:
-		etype = mono_typedef_from_name (corlib, "Char", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "Char");
 		break;
 	case MONO_TYPE_I1:
-		etype = mono_typedef_from_name (corlib, "Byte", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "Byte");
 		break;
 	case MONO_TYPE_I2:
-		etype = mono_typedef_from_name (corlib, "Int16", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "Int16");
 		break;
 	case MONO_TYPE_U2:
-		etype = mono_typedef_from_name (corlib, "UInt16", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "UInt16");
 		break;
 	case MONO_TYPE_I4:
-		etype = mono_typedef_from_name (corlib, "Int32", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "Int32");
 		break;
 	case MONO_TYPE_U4:
-		etype = mono_typedef_from_name (corlib, "UInt32", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "UInt32");
 		break;
 	case MONO_TYPE_I8:
-		etype = mono_typedef_from_name (corlib, "Int64", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "Int64");
 		break;
 	case MONO_TYPE_U8:
-		etype = mono_typedef_from_name (corlib, "UInt64", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "UInt64");
 		break;
 	case MONO_TYPE_R8:
-		etype = mono_typedef_from_name (corlib, "Double", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "Double");
 		break;
 	case MONO_TYPE_STRING:
-		etype = mono_typedef_from_name (corlib, "String", "System", NULL); 
+		etype = mono_class_token_from_name (corlib, "System", "String");
 		break;
 	case MONO_TYPE_CLASS:
 		etype = type->data.token;
@@ -381,6 +370,8 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	class = (MonoClass *)aclass;
        
 	class->image = image;
+	class->name_space = "System";
+	class->name = "Array";
 	class->type_token = 0;
 	class->flags = TYPE_ATTRIBUTE_CLASS;
 	class->parent = parent;
@@ -476,6 +467,21 @@ mono_class_get (MonoImage *image, guint32 type_token)
 	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
 	return class;
+}
+
+guint32
+mono_class_token_from_name (MonoImage *image, const char* name_space, const char *name)
+{
+	GHashTable *nspace_table;
+	guint32 token;
+
+	nspace_table = g_hash_table_lookup (image->name_cache, name_space);
+	if (!nspace_table)
+		return 0;
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
+	if (!token)
+		return 0;
+	return MONO_TOKEN_TYPE_DEF | token;
 }
 
 /**

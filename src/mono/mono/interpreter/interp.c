@@ -112,7 +112,7 @@ init_class (MonoClass *klass)
 		
 		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0) {
 			INIT_FRAME (&call, NULL, NULL, NULL, NULL,
-					mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1)));
+					mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1), klass));
 	
 			ves_exec_method (&call);
 			mono_free_method (call.method);
@@ -194,7 +194,7 @@ get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_METHOD:
 	case MONO_TABLE_MEMBERREF:
-		return mono_get_method (image, token);
+		return mono_get_method (image, token, NULL);
 	}
 	g_error ("got virtual method: 0x%x\n", token);
 	return NULL;
@@ -241,7 +241,7 @@ get_named_exception (const char *name)
 	int i;
 	guint32 tdef;
 
-	tdef = mono_typedef_from_name (mono_defaults.corlib, name, "System", NULL);
+	tdef = mono_class_token_from_name (mono_defaults.corlib, "System", name);
 
 	o = mono_object_new (mono_defaults.corlib, tdef);
 	g_assert (o != NULL);
@@ -579,14 +579,16 @@ dump_stack (stackval *stack, stackval *sp)
 
 #define DEBUG_ENTER()	\
 	do {	\
+		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
 		output_indent ();	\
-		g_print ("Entering %s\n", frame->method->name);	\
+		g_print ("Entering %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
 	} while (0)
 #define DEBUG_LEAVE()	\
 	do {	\
+		MonoClass *klass = frame->method->klass;	\
 		output_indent ();	\
-		g_print ("Leaving %s\n", frame->method->name);	\
+		g_print ("Leaving %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
 		debug_indent_level--;	\
 	} while (0)
 
@@ -661,7 +663,7 @@ ves_exec_method (MonoInvocation *frame)
 		
 	header = ((MonoMethodNormal *)frame->method)->header;
 	signature = frame->method->signature;
-	image = frame->method->image;
+	image = frame->method->klass->image;
 
 	DEBUG_ENTER ();
 
@@ -899,7 +901,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (virtual)
 				child_frame.method = get_virtual_method (image, token, sp);
 			else
-				child_frame.method = mono_get_method (image, token);
+				child_frame.method = mono_get_method (image, token, NULL);
 			csignature = child_frame.method->signature;
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
 
@@ -1534,7 +1536,7 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 4;
 			
 			/* call the contructor */
-			child_frame.method = mono_get_method (image, token);
+			child_frame.method = mono_get_method (image, token, o->klass);
 			csig = child_frame.method->signature;
 
 			/*
@@ -2049,7 +2051,7 @@ ves_exec_method (MonoInvocation *frame)
 			case CEE_STLOC: ves_abort(); break;
 			case CEE_LOCALLOC:
 				if (sp != frame->stack)
-					THROW_EX (get_exception_execution_engine (), ip);
+					THROW_EX (get_exception_execution_engine (), ip - 1);
 				++ip;
 				sp->data.p = alloca (sp->data.i);
 				sp->type = VAL_TP;
@@ -2086,9 +2088,13 @@ ves_exec_method (MonoInvocation *frame)
 				 * start the search from the last found handler in
 				 * this method or continue in the caller or what.
 				 * Also, do we need to run finally/fault handlers after a retrow?
+				 * Well, this implementation will follow the usual search
+				 * for an handler, considering the current ip as throw spot.
+				 * We need to NULL frame->ex_handler for the later code to
+				 * actually run the new found handler.
 				 */
-				ves_abort ();
-				THROW_EX (frame->ex, ip);
+				frame->ex_handler = NULL;
+				THROW_EX (frame->ex, ip - 1);
 				break;
 			case CEE_UNUSED: ves_abort(); break;
 			case CEE_SIZEOF: ves_abort(); break;
@@ -2129,7 +2135,7 @@ ves_exec_method (MonoInvocation *frame)
 				clause = &hd->clauses [i];
 				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
-							if (mono_object_isinst (frame->ex, mono_class_get (inv->method->image, clause->token_or_filter))) {
+							if (mono_object_isinst (frame->ex, mono_class_get (inv->method->klass->image, clause->token_or_filter))) {
 								/* 
 								 * OK, we found an handler, now we need to execute the finally
 								 * and fault blocks before branching to the handler code.
@@ -2149,10 +2155,13 @@ ves_exec_method (MonoInvocation *frame)
 		 */
 		g_print ("Unhandled exception.\n");
 		for (inv = frame, i = 0; inv; inv = inv->parent, ++i) {
+			MonoClass *k = inv->method->klass;
+			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
 			/*
 			 * FIXME: print out also the arguments passed to the func.
 			 */
-			g_print ("$%d: %s ()\n", i, inv->method->name);
+			g_print ("#%d: 0x%05x in %s.%s::%s ()\n", i, inv->ip - hd->code, 
+							k->name_space, k->name, inv->method->name);
 		}
 		exit (1);
 	}
@@ -2224,7 +2233,7 @@ ves_exec (MonoAssembly *assembly)
 	MonoMethod *method;
 
 	iinfo = image->image_info;
-	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
+	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
 	INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
 	

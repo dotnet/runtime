@@ -67,6 +67,10 @@ struct _MonoImage {
 	 */
 	GHashTable *method_cache;
 	GHashTable *class_cache;
+	/*
+	 * Indexes namespaces to hash tables that map class name to typedef token.
+	 */
+	GHashTable *name_cache;
 
 	/*
 	 * Indexed by ((rank << 24) | (typedef & 0xffffff)), which limits us to a

@@ -13,8 +13,6 @@ typedef struct {
 	guint32        flags;
 } MonoClassField;
 
-typedef struct _MonoClass MonoClass;
-
 struct _MonoClass {
 	MonoImage *image;
 	guint32    type_token;
@@ -23,6 +21,9 @@ struct _MonoClass {
 	guint valuetype : 1; /* derives from System.ValueType */
 
 	MonoClass *parent;
+
+	const char *name;
+	const char *name_space;
 	
 	/*
 	 * Computed object instance size, total.
@@ -59,6 +60,9 @@ typedef struct {
 
 MonoClass *
 mono_class_get          (MonoImage *image, guint32 type_token);
+
+guint32
+mono_class_token_from_name (MonoImage *image, const char* name_space, const char *name);
 
 MonoClass *
 mono_array_class_get    (MonoImage *image, guint32 etype, guint32 rank);

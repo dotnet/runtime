@@ -314,6 +314,28 @@ load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 	return load_tables (image);
 }
 
+static void
+load_class_names (MonoImage *image) {
+	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
+	guint32 cols [MONO_TYPEDEF_SIZE];
+	const char* name;
+	const char *nspace;
+	GHashTable *nspace_table;
+	GHashTable *name_cache = image->name_cache;
+	guint32 i;
+
+	for (i = 1; i <= t->rows; ++i) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
+		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
+		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+		if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {
+			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+			g_hash_table_insert (name_cache, nspace, nspace_table);
+		}
+		g_hash_table_insert (nspace_table, name, GUINT_TO_POINTER (i));
+	}
+}
+
 static MonoImage *
 do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 {
@@ -331,6 +353,7 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	header = &iinfo->cli_header;
@@ -382,7 +405,9 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 
 	if (!load_metadata (image, iinfo))
 		goto invalid_image;
-	
+
+	load_class_names (image);
+
 	if (status)
 		*status = MONO_IMAGE_OK;
 
@@ -427,6 +452,12 @@ mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	return image;
 }
 
+static void
+free_hash_table(gpointer key, gpointer val, gpointer user_data)
+{
+	g_hash_table_destroy ((GHashTable*)val);
+}
+
 /**
  * mono_image_close:
  * @image: The image file we wish to close
@@ -448,6 +479,12 @@ mono_image_close (MonoImage *image)
 		fclose (image->f);
 
 	g_free (image->name);
+
+	g_hash_table_destroy (image->method_cache);
+	g_hash_table_destroy (image->class_cache);
+	g_hash_table_destroy (image->array_cache);
+	g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
+	g_hash_table_destroy (image->name_cache);
 	
 	if (image->raw_metadata != NULL)
 		mono_raw_buffer_free (image->raw_metadata);
