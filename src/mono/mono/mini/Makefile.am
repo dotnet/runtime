@@ -11,6 +11,16 @@ libs=	\
 	$(LIBGC_LIBS)	\
 	$(ICU_LIBS)
 
+static_libs=	\
+	$(monodir)/mono/metadata/libmonoruntime-static.la	\
+	$(monodir)/mono/metadata/libmetadata-static.la	\
+	$(monodir)/mono/io-layer/libwapi.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GMODULE_LIBS)	\
+	$(GLIB_LIBS)	\
+	$(LIBGC_LIBS)	\
+	$(ICU_LIBS)
+
 MCS=mcs
 RUNTIME=mono
 
@@ -43,6 +53,7 @@ bin_PROGRAMS = mono
 noinst_PROGRAMS = genmdesc
 
 lib_LTLIBRARIES = libmono.la
+noinst_LTLIBRARIES = libmono-static.la
 endif
 
 mono_SOURCES = \
@@ -51,10 +62,10 @@ mono_SOURCES = \
 if AMD64
 # Link libmono into mono statically on platforms where it is possible
 # This leads to higher performance, especially with TLS
-MONO_LIB=.libs/libmono.a
+MONO_LIB=libmono-static.la
 else 
 if X86
-MONO_LIB=.libs/libmono.a
+MONO_LIB=libmono-static.la
 else
 MONO_LIB=libmono.la
 endif
@@ -213,6 +224,11 @@ arch_built=cpu-s390x.h
 endif
 
 nodist_libmono_la_SOURCES = inssel.c inssel.h
+
+libmono_static_la_SOURCES = $(libmono_la_SOURCES)
+nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
+libmono_static_la_LDFLAGS = -static
+libmono_static_la_LIBADD = $(static_libs)
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
