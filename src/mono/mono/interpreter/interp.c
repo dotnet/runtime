@@ -1,4 +1,7 @@
 /*
+ * PLEASE NOTE: This is a research prototype.
+ *
+ *
  * interp.c: Interpreter for CIL byte codes
  *
  * Author:
@@ -43,10 +46,11 @@ typedef gint32 nati_t;
 
 static int count = 0;
 
-/* Attempt at using the goto label construct of GNU GCC:
+/*
+ * Attempt at using the goto label construct of GNU GCC:
  * it turns out this does give some benefit: 5-15% speedup.
  * Don't look at these macros, it hurts...
-*/
+ */
 #define GOTO_LABEL
 #ifdef GOTO_LABEL
 #define SWITCH(a) goto *goto_map[a];
@@ -97,31 +101,34 @@ static int count = 0;
 #endif
 
 /*
- * Need to optimize ALU ops when natural int == int32 */
-/*
- * Need to design how exceptions are supposed to work... */
-/*
+ * Need to optimize ALU ops when natural int == int32 
+ *
+ * Need to design how exceptions are supposed to work...
+ *
  * IDEA: if we maintain a stack of ip, sp to be checked
  * in the return opcode, we could inline simple methods that don't
  * use the stack or local variables....
- * */
-/* The {,.S} versions of many opcodes can/should be merged to reduce code
+ * 
+ * The {,.S} versions of many opcodes can/should be merged to reduce code
  * duplication.
- * */
-void 
+ *
+ */
+static void 
 ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *args)
 {
 	/*
 	 * with alloca we get the expected huge performance gain
-	 * stackval *stack = g_new0(stackval, mh->max_stack);*/
+	 * stackval *stack = g_new0(stackval, mh->max_stack);
+	 */
 	stackval *stack = alloca(sizeof(stackval) * mh->max_stack);
-	register unsigned char *ip = mh->code;
-	unsigned char *end = ip+mh->code_size;
+	register const unsigned char *ip = mh->code;
 	register stackval *sp = stack;
 	/* FIXME: remove this hack */
 	static int fake_field = 42;
+
 	/* need to figure out how many of these, too */
 	stackval locals [16];
+
 #ifdef GOTO_LABEL
 	const static void * const goto_map [] = {
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -132,8 +139,10 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 	};
 #endif
 
-	/* using while (ip < end) may result in a 15% performance drop, 
-	 * but it may be useful for debug */
+	/*
+	 * using while (ip < end) may result in a 15% performance drop, 
+	 * but it may be useful for debug
+	 */
 	while (1) {
 		/*count++;*/
 #ifdef GOTO_LABEL
@@ -823,10 +832,11 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 #endif
 		}
 	}
+
 	g_assert_not_reached();
 }
 
-int 
+static int 
 ves_exec (cli_image_info_t *iinfo)
 {
 	gint32 entryp;
@@ -843,6 +853,7 @@ ves_exec (cli_image_info_t *iinfo)
 	ves_exec_method (iinfo, mh, &result);
 	mono_metadata_free_mh (mh);
 	fprintf (stderr, "result: %d\n", result.data.i);
+
 	return 0;
 }
 
@@ -863,6 +874,7 @@ main (int argc, char *argv [])
 	retval = ves_exec (iinfo);
 	mono_assembly_close (assembly);
 	printf("count: %d\n", count);
+
 	return retval;
 }
 

@@ -13,12 +13,14 @@ libmetadataincludedir = $(includedir)/mono/metadata
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
+	blobsig.h	\
 	cil-coff.h	\
 	eltype.h	\
 	endian.h	\
 	fieldattr.h	\
 	metadata.h	\
 	methodattr.h	\
+	methodheader.h	\
 	methodsem.h	\
 	paramattr.h	\
 	propertyattr.h	\
