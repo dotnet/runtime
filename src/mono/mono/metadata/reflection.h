@@ -525,6 +525,8 @@ MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionType
 
 MonoClass*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);
+MonoReflectionMethod*
+mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

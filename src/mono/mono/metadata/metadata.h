@@ -301,7 +301,6 @@ struct _MonoMethodSignature {
 	guint16       param_count;
 	guint16       sentinelpos;
 	guint16       generic_param_count;
-	MonoGenericParam *gen_params;
 	MonoType     *ret;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
@@ -315,6 +314,7 @@ typedef struct {
 	unsigned int init_locals : 1;
 	guint16      num_locals;
 	MonoExceptionClause *clauses;
+	MonoGenericParam *gen_params;
 	MonoGenericInst *geninst;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;

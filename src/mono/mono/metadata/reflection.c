@@ -1803,7 +1803,8 @@ mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoType *type, c
 		pclass = MEMBERREF_PARENT_TYPESPEC;
 		break;
 	case TYPEDEFORREF_TYPEDEF:
-		/* should never get here */
+		pclass = MEMBERREF_PARENT_TYPEDEF;
+		break;
 	default:
 		g_warning ("unknown typeref or def token 0x%08x for %s", parent, name);
 		return 0;
@@ -1898,8 +1899,16 @@ method_encode_methodspec (MonoDynamicAssembly *assembly, MonoGenericInst *ginst)
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
-	g_assert (ginst && ginst->generic_method);
-	mtoken = mono_image_get_methodref_token (assembly, ginst->generic_method);
+	g_assert (ginst);
+	if (ginst->generic_method)
+		return mono_image_get_methodref_token (assembly, ginst->generic_method);
+	else if (ginst->mbuilder) {
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *) ginst->mbuilder;
+
+		g_assert (mb->mhandle);
+		mtoken = mono_image_get_methodref_token (assembly, mb->mhandle);
+	} else
+		g_assert_not_reached ();
 
 	switch (mono_metadata_token_table (mtoken)) {
 	case MONO_TABLE_MEMBERREF:
@@ -2677,6 +2686,15 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 				g_assert_not_reached ();
 			}
 			break;
+		case MONO_TABLE_METHODSPEC:
+			if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod")) {
+				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
+				g_assert (m->signature->generic_param_count);
+				continue;
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
 		default:
 			g_error ("got unexpected table 0x%02x in fixup", target [3]);
 		}
@@ -3024,8 +3042,10 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		if ((m->method->klass->image == assembly->assembly.image) &&
-		    !m->method->klass->generic_inst) {
+		if (m->method->signature->generic_param_count)
+			token = mono_image_get_methodspec_token (assembly, m->method);
+		else if ((m->method->klass->image == assembly->assembly.image) &&
+			 !m->method->klass->generic_inst) {
 			static guint32 method_table_idx = 0xffffff;
 			/*
 			 * Each token should have a unique index, but the indexes are
@@ -3034,9 +3054,7 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 			 */
 			method_table_idx --;
 			token = MONO_TOKEN_METHOD_DEF | method_table_idx;
-		} else if (m->method->signature->generic_param_count)
-			token = mono_image_get_methodspec_token (assembly, m->method);
-		else
+		} else
 			token = mono_image_get_methodref_token (assembly, m->method);
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	}
@@ -4874,7 +4892,8 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	method_index = find_method_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
 
-	if (method->klass->generic_inst || method->klass->gen_params) {
+	if (method->klass->generic_inst || method->klass->gen_params ||
+	    method->signature->generic_param_count) {
 		// FIXME FIXME FIXME
 		return NULL;
 	}
@@ -4995,6 +5014,7 @@ method_builder_to_signature (MonoReflectionMethodBuilder *method) {
 	sig = parameters_to_signature (method->parameters);
 	sig->hasthis = method->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	sig->ret = method->rtype? method->rtype->type: &mono_defaults.void_class->byval_arg;
+	sig->generic_param_count = method->generic_params ? mono_array_length (method->generic_params) : 0;
 	return sig;
 }
 
@@ -5793,18 +5813,34 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	return iklass;
 }
 
-MonoMethod*
-mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types)
+MonoReflectionMethod*
+mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoArray *types)
 {
+	MonoMethod *method, *inflated;
+	MonoReflectionMethodBuilder *mb = NULL;
 	MonoGenericInst *ginst;
 	int count, i;
 
-	count = method->method->signature->generic_param_count;
+	MONO_ARCH_SAVE_REGS;
+	if (!strcmp (rmethod->object.vtable->klass->name, "MethodBuilder")) {
+		MonoReflectionTypeBuilder *tb;
+		MonoClass *klass;
+
+		mb = (MonoReflectionMethodBuilder *) rmethod;
+		tb = (MonoReflectionTypeBuilder *) mb->type;
+		klass = mono_class_from_mono_type (tb->type.type);
+
+		method = methodbuilder_to_mono_method (klass, mb);
+	} else
+		method = rmethod->method;
+
+	count = method->signature->generic_param_count;
 	if (count != mono_array_length (types))
 		return NULL;
 
 	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->generic_method = method->method;
+	ginst->generic_method = method;
+	ginst->mbuilder = rmethod;
 	ginst->type_argc = count;
 	ginst->type_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
@@ -5812,7 +5848,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, Mo
 		ginst->type_argv [i] = garg->type;
 	}
 
-	return mono_class_inflate_generic_method (method->method, NULL, ginst);
+	inflated = mono_class_inflate_generic_method (method, NULL, ginst);
+
+	return mono_method_get_object (mono_object_domain (rmethod), inflated, inflated->klass);
 }
 
 static void
@@ -6060,19 +6098,16 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 	MonoClass *klass;
 	MonoImage *image;
 	MonoGenericParam *param;
-	MonoMethod *method = NULL;
 	int count, i;
 
-	if (mb) {
-		tb = (MonoReflectionTypeBuilder *) mb->type;
+	param = gparam->param = g_new0 (MonoGenericParam, 1);
 
-		method = methodbuilder_to_mono_method (mono_class_from_mono_type (tb->type.type), mb);
-	}
+	if (mb)
+		tb = (MonoReflectionTypeBuilder *) mb->type;
 
 	image = tb->module->assemblyb->dynamic_assembly->assembly.image;
 
-	param = gparam->param = g_new0 (MonoGenericParam, 1);
-	param->method = method;
+	param->method = mb;
 	param->name = mono_string_to_utf8 (gparam->name);
 	param->num = index;
 

@@ -212,8 +212,8 @@ inflate_generic_type (MonoType *type, MonoGenericInst *tgen, MonoGenericInst *mg
 	return type;
 }
 
-static MonoMethodSignature*
-inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *tgen, MonoGenericInst *mgen)
+MonoMethodSignature*
+mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *tgen, MonoGenericInst *mgen)
 {
 	MonoMethodSignature *res;
 	int i;
@@ -226,7 +226,6 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGener
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->generic_param_count = sig->generic_param_count;
-	res->gen_params = sig->gen_params;
 	return res;
 }
 
@@ -243,6 +242,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *tgen, MonoGen
 	res->init_locals = header->init_locals;
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
+	res->gen_params = header->gen_params;
 	res->geninst = mgen;
 	for (i = 0; i < header->num_locals; ++i) {
 		res->locals [i] = inflate_generic_type (header->locals [i], tgen, mgen);
@@ -264,7 +264,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, Mo
 		result = (MonoMethod*)nmethod;
 		nmethod->header = inflate_generic_header (((MonoMethodNormal*)method)->header, tgen, mgen);
 	}
-	result->signature = inflate_generic_signature (method->klass->image, result->signature, tgen, mgen);
+	result->signature = mono_class_inflate_generic_signature (method->klass->image, result->signature, tgen, mgen);
 	return result;
 }
 
@@ -1688,6 +1688,32 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	return klass;
 }
 
+static MonoClass *
+my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
+{
+	MonoClass *klass;
+
+	if (param->pklass)
+		return param->pklass;
+
+	klass = g_new0 (MonoClass, 1);
+
+	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
+	klass->name_space = "";
+	klass->image = mono_defaults.corlib;
+	klass->cast_class = klass->element_class = klass;
+	klass->enum_basetype = &klass->element_class->byval_arg;
+	klass->flags = TYPE_ATTRIBUTE_INTERFACE;
+
+	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
+	klass->this_arg.byref = TRUE;
+
+	mono_class_init (klass);
+
+	return klass;
+}
+
 MonoClass *
 mono_ptr_class_get (MonoType *type)
 {
@@ -1825,9 +1851,9 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_GENERICINST:
 		return mono_class_from_generic (type, TRUE);
 	case MONO_TYPE_VAR:
+		return my_mono_class_from_generic_parameter (type->data.generic_param, FALSE);
 	case MONO_TYPE_MVAR:
-		g_assert (type->data.generic_param->pklass);
-		return type->data.generic_param->pklass;
+		return my_mono_class_from_generic_parameter (type->data.generic_param, TRUE);
 	default:
 		g_warning ("implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();

@@ -215,6 +215,7 @@ struct MonoVTable {
 struct _MonoGenericInst {
 	MonoType *generic_type;
 	MonoMethod *generic_method;
+	gpointer mbuilder;
 	int type_argc;
 	MonoType **type_argv;
 };
@@ -288,6 +289,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 MonoClass*
 mono_class_from_generic    (MonoType *gtype, gboolean inflate_methods);
+
+MonoMethodSignature*
+mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *tgen, MonoGenericInst *mgen);
 
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, MonoGenericInst *mgen);

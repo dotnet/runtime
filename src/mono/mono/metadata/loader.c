@@ -310,6 +310,18 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 	if (!table || table == MONO_TABLE_METHOD)
 		return method->signature;
 
+	if (table == MONO_TABLE_METHODSPEC) {
+		MonoMethodNormal *mn;
+
+		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
+			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+			  method->signature);
+		mn = (MonoMethodNormal *) method;
+		g_assert (mn->header->geninst);
+
+		return method->signature;
+	}
+
 	if (method->klass->generic_inst)
 		return method->signature;
 
@@ -447,6 +459,42 @@ method_from_memberref (MonoImage *image, guint32 idx)
 	}
 
 	return NULL;
+}
+
+static MonoMethod *
+method_from_methodspec (MonoImage *image, guint32 idx)
+{
+	MonoMethod *method;
+	MonoTableInfo *tables = image->tables;
+	MonoGenericInst *ginst;
+	const char *ptr;
+	guint32 cols[6];
+	guint32 token, param_count, i;
+
+	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
+	token = cols [MONO_METHODSPEC_METHOD];
+	if ((token & METHODDEFORREF_MASK) == METHODDEFORREF_METHODDEF)
+		token = MONO_TOKEN_METHOD_DEF | (token >> METHODDEFORREF_BITS);
+	else
+		token = MONO_TOKEN_MEMBER_REF | (token >> METHODDEFORREF_BITS);
+
+	method = mono_get_method (image, token, NULL);
+
+	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
+	
+	mono_metadata_decode_value (ptr, &ptr);
+	ptr++;
+	param_count = mono_metadata_decode_value (ptr, &ptr);
+
+	ginst = g_new0 (MonoGenericInst, 1);
+	ginst->generic_method = method;
+	ginst->type_argc = param_count;
+	ginst->type_argv = g_new0 (MonoType *, param_count);
+	
+	for (i = 0; i < param_count; i++)
+		ginst->type_argv [i] = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+
+	return mono_class_inflate_generic_method (method, NULL, ginst);
 }
 
 typedef struct MonoDllMap MonoDllMap;
@@ -618,23 +666,15 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 	int idx = mono_metadata_token_index (token);
 	MonoTableInfo *tables = image->tables;
 	const char *loc, *sig = NULL;
-	int size;
+	int size, i;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	if (image->assembly->dynamic)
 		return mono_lookup_dynamic_token (image, token);
 
 	if (table != MONO_TABLE_METHOD) {
-		if (table == MONO_TABLE_METHODSPEC) {
-			/* just a temporary hack */
-			mono_metadata_decode_row (&tables [table], idx - 1, cols, MONO_METHODSPEC_SIZE);
-			token = cols [MONO_METHODSPEC_METHOD];
-			if ((token & METHODDEFORREF_MASK) == METHODDEFORREF_METHODDEF)
-				token = MONO_TOKEN_METHOD_DEF | (token >> METHODDEFORREF_BITS);
-			else
-				token = MONO_TOKEN_MEMBER_REF | (token >> METHODDEFORREF_BITS);
-			return mono_get_method (image, token, klass);
-		}
+		if (table == MONO_TABLE_METHODSPEC)
+			return method_from_methodspec (image, idx);
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
@@ -716,6 +756,13 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 
 			g_assert (loc);
 			mn->header = mono_metadata_parse_mh (image, loc);
+
+			if (result->signature->generic_param_count) {
+				mn->header->gen_params = mono_metadata_load_generic_params (image, token, NULL);
+
+				for (i = 0; i < result->signature->generic_param_count; i++)
+					mn->header->gen_params [i].method = result;
+			}
 		}
 	}
 
