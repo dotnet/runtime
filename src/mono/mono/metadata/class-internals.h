@@ -297,6 +297,7 @@ struct MonoVTable {
  * Generic instantiation data type encoding.
  */
 struct _MonoGenericInst {
+	MonoGenericContainer *container;
 	MonoGenericContext *context;
 	MonoClass *klass;
 	MonoType *parent;
@@ -326,6 +327,7 @@ struct _MonoDynamicGenericInst {
 };
 
 struct _MonoGenericMethod {
+	MonoGenericContainer *container;
 	gpointer reflection_info;
 	int mtype_argc;
 	MonoType **mtype_argv;
@@ -333,16 +335,22 @@ struct _MonoGenericMethod {
 };
 
 struct _MonoGenericContext {
+	MonoGenericContainer *container;
 	MonoGenericInst *ginst;
 	MonoGenericMethod *gmethod;
 };
 
 struct _MonoGenericContainer {
+	MonoGenericContainer *parent;
+	MonoClass *klass;
+	MonoMethod *method;
+	MonoMethodSignature *signature;
 	int type_argc;
 	MonoGenericParam *type_params;
 };
 
 struct _MonoGenericParam {
+	MonoGenericContainer *owner;
 	MonoClass *pklass;
 	MonoMethod *method;
 	const char *name;
@@ -493,6 +501,8 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 
 void
 mono_install_stack_walk (MonoStackWalkImpl func);
+
+gboolean _mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
 
 MonoGenericContainer *mono_metadata_load_generic_params (MonoImage *image, guint32 token);
 

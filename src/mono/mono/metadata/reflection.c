@@ -7268,12 +7268,15 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 
 	klass->generic_container = container = g_new0 (MonoGenericContainer, 1);
 
+	container->klass = klass;
 	container->type_argc = count;
 	container->type_params = g_new0 (MonoGenericParam, count);
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
 		container->type_params [i] = *gparam->type.type->data.generic_param;
+		gparam->type.type->data.generic_param->owner = container;
+		container->type_params [i].owner = container;
 	}
 }
 
@@ -7691,7 +7694,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 static MonoType*
 do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types)
 {
-	MonoClass *klass;
+	MonoClass *klass, *gklass;
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericInst *ginst, *cached;
 	MonoDomain *domain;
@@ -7750,6 +7753,9 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		geninst->data.generic_inst = cached;
 		return geninst;
 	}
+
+	gklass = mono_class_from_mono_type (ginst->generic_type);
+	g_assert ((ginst->container = gklass->generic_container) != NULL);
 
 	geninst->data.generic_inst = ginst;
 
@@ -8352,6 +8358,19 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	MONO_ARCH_SAVE_REGS;
 
 	param = g_new0 (MonoGenericParam, 1);
+
+	if (gparam->mbuilder) {
+		if (!gparam->mbuilder->generic_container)
+			gparam->mbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
+		param->owner = gparam->mbuilder->generic_container;
+	} else if (gparam->tbuilder) {
+		if (!gparam->tbuilder->generic_container) {
+			MonoClass *klass = my_mono_class_from_mono_type (gparam->tbuilder->type.type);
+			gparam->tbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
+			gparam->tbuilder->generic_container->klass = klass;
+		}
+		param->owner = gparam->tbuilder->generic_container;
+	}
 
 	param->method = NULL;
 	param->name = mono_string_to_utf8 (gparam->name);

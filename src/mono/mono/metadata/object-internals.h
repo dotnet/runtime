@@ -628,6 +628,7 @@ typedef struct {
 	guint32 native_cc;
 	guint32 call_conv;
 	MonoBoolean init_locals;
+	MonoGenericContainer *generic_container;
 	MonoArray *generic_params;
 	MonoArray *return_modreq;
 	MonoArray *return_modopt;
@@ -771,6 +772,7 @@ typedef struct {
 	MonoReflectionModuleBuilder *module;
 	gint32 class_size;
 	gint32 packing_size;
+	MonoGenericContainer *generic_container;
 	MonoArray *generic_params;
 	MonoArray *permissions;
 	MonoReflectionType *created;

@@ -227,6 +227,47 @@ struct _MonoDynamicImage {
 	MonoDynamicTable tables [64];
 };
 
+MonoClass**
+mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
+					     guint32                table_index,
+					     guint                 *count,
+					     MonoGenericContext    *context);
+
+MonoArrayType *
+mono_metadata_parse_array_full              (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     const char            *ptr,
+					     const char           **rptr);
+
+MonoType *
+mono_metadata_parse_type_full               (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     MonoParseTypeMode      mode,
+					     short                  opt_attrs,
+					     const char            *ptr,
+					     const char           **rptr);
+
+MonoType *
+mono_type_create_from_typespec_full         (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     guint32                type_spec);
+
+MonoMethodSignature *
+mono_metadata_parse_signature_full          (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     guint32                token);
+
+MonoMethodSignature *
+mono_metadata_parse_method_signature_full   (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     int                     def,
+					     const char             *ptr,
+					     const char            **rptr);
+
+MonoMethodHeader *
+mono_metadata_parse_mh_full                 (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     const char            *ptr);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
