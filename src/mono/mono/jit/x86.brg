@@ -1966,10 +1966,10 @@ reg: CASTCLASS (reg) {
 
 			x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoClass, rank), klass->rank);
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "InvalidCastException");
-			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, element_class), 4);
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, cast_class), 4);
 			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
-			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->element_class->baseval);
-			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->element_class->diffval);
+			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->cast_class->baseval);
+			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->cast_class->diffval);
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, FALSE, "InvalidCastException");
 
 		} else {
@@ -2033,10 +2033,10 @@ reg: ISINST (reg) {
 
 			x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoClass, rank), klass->rank);
 			br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
-			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, element_class), 4);
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, cast_class), 4);
 			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
-			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->element_class->baseval);
-			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->element_class->diffval);
+			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->cast_class->baseval);
+			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->cast_class->diffval);
 			br [2] = s->code; x86_branch8 (s->code, X86_CC_LE, 0, FALSE);
 			x86_patch (br [1], s->code);
 			x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);

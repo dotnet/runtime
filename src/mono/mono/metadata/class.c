@@ -261,7 +261,7 @@ class_compute_field_layout (MonoClass *class)
 
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC)) {
 			class->enum_basetype = class->fields [i].type;
-			class->element_class = mono_class_from_mono_type (class->enum_basetype);
+			class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
 			blittable = class->element_class->blittable;
 		}
 	}
@@ -1173,7 +1173,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->unicode = 1;
 	*/
 
-	class->element_class = class;
+	class->cast_class = class->element_class = class;
 
 	/*g_print ("Init class %s\n", name);*/
 
@@ -1246,7 +1246,7 @@ mono_ptr_class_get (MonoType *type)
 	/*
 	 * baseval, diffval: need them to allow casting ?
 	 */
-	result->element_class = el_class;
+	result->cast_class = result->element_class = el_class;
 	result->enum_basetype = &result->element_class->byval_arg;
 
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_PTR;
@@ -1406,7 +1406,14 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 
 	class->rank = rank;
+	
+	if (eclass->enumtype)
+		class->cast_class = eclass->element_class;
+	else
+		class->cast_class = eclass;
+
 	class->element_class = eclass;
+	
 	if (rank > 1) {
 		MonoArrayType *at = g_new0 (MonoArrayType, 1);
 		class->byval_arg.type = MONO_TYPE_ARRAY;

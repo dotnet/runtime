@@ -2704,8 +2704,10 @@ array_constructed:
 						oclass = mono_class_from_mono_type (type);
 					}
 					/* handle array casts */
-					if (oclass->rank && oclass->rank == c->rank) {
-						if ((oclass->element_class->baseval - c->element_class->baseval) <= c->element_class->diffval) {
+					if (oclass->rank) {
+						if ((oclass->rank == c->rank) &&
+						    (oclass->cast_class->baseval - c->cast_class->baseval) <= 
+						    c->cast_class->diffval) {
 							sp [-1].data.vt.klass = c;
 							found = TRUE;
 						}

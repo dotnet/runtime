@@ -58,6 +58,8 @@ struct _MonoClass {
 	MonoType *enum_basetype;
 	/* element class for arrays and enum */
 	MonoClass *element_class; 
+	/* used for subtype checks */
+	MonoClass *cast_class; 
 	/* array dimension */
 	guint32    rank;          
 

@@ -1193,8 +1193,8 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 		}
 		if (klass->rank) {
 			if (oklass->rank == klass->rank && 
-			    (oklass->element_class->baseval - klass->element_class->baseval) <= 
-			    klass->element_class->diffval)
+			    (oklass->cast_class->baseval - klass->cast_class->baseval) <= 
+			    klass->cast_class->diffval)
 				return obj;
 			
 		} else if ((oklass->baseval - klass->baseval) <= klass->diffval)
