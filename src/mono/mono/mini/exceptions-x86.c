@@ -994,6 +994,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
+	MonoException *mono_ex;
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -1003,7 +1004,13 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		obj = (MonoObject *)ex;
 	} 
 
-	g_assert (mono_object_isinst (obj, mono_defaults.exception_class));
+	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+		mono_ex = (MonoException*)mono_ex;
+		mono_ex->stack_trace = NULL;
+	} else {
+		mono_ex = NULL;
+	}
+
 
 	if (!call_filter)
 		call_filter = arch_get_call_filter ();
@@ -1035,20 +1042,20 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 		if (ji != (gpointer)-1) {
 			
-			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				char *tmp, *strace;
 
 				trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
-				if (!((MonoException*)obj)->stack_trace)
+				if (!mono_ex->stack_trace)
 					strace = g_strdup ("");
 				else
-					strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+					strace = mono_string_to_utf8 (mono_ex->stack_trace);
 			
 				tmp = g_strdup_printf ("%s%s\n", strace, trace);
 				g_free (strace);
 
-				((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
+				mono_ex->stack_trace = mono_string_new (domain, tmp);
 
 				g_free (tmp);
 			}
@@ -1076,7 +1083,8 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						    ((ei->flags == MONO_EXCEPTION_CLAUSE_FILTER &&
 						      call_filter (ctx, ei->data.filter)))) {
 							if (test_only) {
-								((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
+								if (mono_ex)
+									mono_ex->trace_ips = glist_to_array (trace_ips);
 								g_list_free (trace_ips);
 								g_free (trace);
 								return TRUE;
@@ -1111,7 +1119,8 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
-				((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
+				if (mono_ex)
+					mono_ex->trace_ips = glist_to_array (trace_ips);
 				g_list_free (trace_ips);
 				return FALSE;
 			}
