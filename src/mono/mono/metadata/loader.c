@@ -72,6 +72,10 @@ mono_init ()
                 mono_defaults.corlib, "System", "Object");
 	g_assert (mono_defaults.object_class != 0);
 
+	mono_defaults.void_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Void");
+	g_assert (mono_defaults.void_class != 0);
+
 	mono_defaults.boolean_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Boolean");
 	g_assert (mono_defaults.boolean_class != 0);

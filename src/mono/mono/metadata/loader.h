@@ -30,6 +30,7 @@ typedef struct {
 	MonoImage *corlib;
 	MonoClass *object_class;
 	MonoClass *byte_class;
+	MonoClass *void_class;
 	MonoClass *boolean_class;
 	MonoClass *sbyte_class;
 	MonoClass *int16_class;

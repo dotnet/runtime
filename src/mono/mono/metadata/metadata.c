@@ -1494,7 +1494,8 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 	mh->code_size = code_size;
 	mh->max_stack = max_stack;
 	mh->init_locals = init_locals;
-	parse_section_data (mh, (const unsigned char*)ptr);
+	if (fat_flags & METHOD_HEADER_MORE_SECTS)
+		parse_section_data (mh, (const unsigned char*)ptr);
 	return mh;
 }
 

@@ -284,6 +284,12 @@ mono_class_from_mono_type (MonoType *type)
 	corlib = mono_defaults.corlib;
 
 	switch (type->type) {
+	case MONO_TYPE_OBJECT:
+		res = mono_defaults.object_class;
+		break;
+	case MONO_TYPE_VOID:
+		res = mono_defaults.void_class;
+		break;
 	case MONO_TYPE_BOOLEAN:
 		res = mono_defaults.boolean_class;
 		break;
@@ -329,11 +335,16 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_STRING:
 		res = mono_defaults.string_class;
 		break;
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
+		res = mono_class_from_mono_type (type->data.type);
+		break;
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
 		res = type->data.klass;
 		break;
 	default:
-		g_warning ("implement me %08x\n", type->type);
+		g_warning ("implement me %02x\n", type->type);
 		g_assert_not_reached ();
 	}
 	
