@@ -21,7 +21,7 @@ void
 mono_set_rootdir (const char *vm_filename)
 {
 	char *dir = g_dirname (vm_filename);
-	char *root = g_strconcat (dir, "/lib", NULL);
+	char *root = g_strconcat (dir, "/../lib", NULL);
 
 	mono_assembly_setrootdir (root);
 	g_free (root);
