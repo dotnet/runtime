@@ -13,11 +13,12 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/threadpool.h>
 
 #include "jit.h"
 #include "codegen.h"
 
-gpointer 
+static gpointer 
 arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
 {
 	MonoMethodMessage *msg;
@@ -29,6 +30,22 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
 	msg = arch_method_call_message_new (method, &delegate, im, &async_callback, &state);
 
 	return mono_thread_pool_add (delegate, msg, async_callback, state);
+}
+
+gpointer
+arch_get_delegate_begin_invoke (MonoMethod *method)
+{
+	guint8 *code, *addr;
+
+	code = addr = g_malloc (32);
+
+	x86_push_imm (code, method);
+	x86_call_code (code, arch_begin_invoke);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+	x86_ret (code);
+	g_assert ((code - addr) <= 32);
+
+	return addr;
 }
 
 void
@@ -68,7 +85,7 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 }
 
 gpointer
-arch_get_delegate_invoke (MonoMethod *method, int *size)
+arch_get_delegate_invoke (MonoMethod *method)
 {
 	/*
 	 *	Invoke( args .. ) {
@@ -174,9 +191,6 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 	x86_ret (code);
 	
 	g_assert ((code - addr) < (64 + arg_size * 2));
-
-	if (size)
-		*size = code - addr;
 
 	return addr;
 }

@@ -1065,23 +1065,9 @@ arch_compile_method (MonoMethod *method)
 		if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
 			addr = (gpointer)mono_delegate_ctor;
 		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			int size;
-
-			addr = arch_get_delegate_invoke (method, &size);
-
-			if (mono_jit_dump_asm) {
-				char *id = g_strdup_printf ("%s.%s_%s", method->klass->name_space,
-							    method->klass->name, method->name);
-				mono_disassemble_code (addr, size, id);
-				g_free (id);
-			}
+			addr = arch_get_delegate_invoke (method);
 		} else if (delegate && *name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-			code = addr = g_malloc (32);
-			x86_push_imm (code, method);
-			x86_call_code (code, arch_begin_invoke);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-			x86_ret (code);
-			g_assert ((code - addr) <= 32);
+			addr = arch_get_delegate_begin_invoke (method);
 		} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 			/* this can raise exceptions, so we need a wrapper to save/restore LMF */
 			method->addr = (gpointer)arch_end_invoke;

@@ -278,14 +278,14 @@ arch_get_lmf_addr          (void);
 
 /* delegate support functions */
 
-gpointer 
-arch_begin_invoke          (MonoMethod *method, gpointer ret_ip, MonoObject *delegate);
+gpointer
+arch_get_delegate_begin_invoke (MonoMethod *method);
 
 void
 arch_end_invoke            (MonoMethod *method, gpointer first_arg, ...);
 
 gpointer
-arch_get_delegate_invoke   (MonoMethod *method, int *size);
+arch_get_delegate_invoke   (MonoMethod *method);
 
 gpointer
 mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res);
