@@ -3918,6 +3918,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_cmp_imm (code, ins->sreg2, -1);
 			br [2] = code;
 			sparc_branch (code, 1, sparc_bne, 0);
+			sparc_nop (code);
 			sparc_patch (br [2], label [0]);
 
 			/* Ok */
@@ -4369,8 +4370,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		sparc_save_imm (code, sparc_sp, - cfg->stack_offset, sparc_sp);
 
 /*
-	if (strstr (cfg->method->name, "test_marshal_struct")) {
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_ABS, mono_sparc_break);
+	if (strstr (cfg->method->name, "foo")) {
+		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_ABS, mono_sparc_break);
 		sparc_call_simple (code, 0);
 		sparc_nop (code);
 	}
