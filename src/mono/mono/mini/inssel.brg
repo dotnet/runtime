@@ -1532,6 +1532,22 @@ reg: CEE_LDLEN (reg) {
 				   state->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
 }
 
+reg: OP_CHECK_ARRAY_TYPE (reg) {
+	int vtable_reg = mono_regstate_next_int (s->rs);
+	int class_reg = mono_regstate_next_int (s->rs);
+	int elclass_reg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, vtable_reg, 
+				       state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, class_reg, 
+				       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, elclass_reg, 
+				       class_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, elclass_reg, tree->klass);
+	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "ArrayTypeMismatchException");
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
+}
+
 reg: CEE_LDELEMA (reg, OP_ICONST) "15" {
 	int length_reg = mono_regstate_next_int (s->rs);
 	guint32 size = mono_class_array_element_size (tree->klass);

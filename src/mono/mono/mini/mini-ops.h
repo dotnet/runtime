@@ -51,6 +51,7 @@ MINI_OP(OP_REGVAR,	"regvar")
 MINI_OP(OP_REG,		"reg")
 MINI_OP(OP_REGOFFSET,	"regoffset")
 MINI_OP(OP_LABEL,	"label")
+MINI_OP(OP_CHECK_ARRAY_TYPE,	"check_array_type")
 
 MINI_OP(OP_STORE_MEMBASE_IMM,"store_membase_imm")
 MINI_OP(OP_STORE_MEMBASE_REG,"store_membase_reg")

@@ -1630,6 +1630,104 @@ handle_loaded_temps (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst **stack,
 	}
 }
 
+/*
+ * Prepare arguments for passing to a function call.
+ * Return a non-zero value if the arguments can't be passed to the given
+ * signature.
+ * The type checks are not yet complete and some conversions may need
+ * casts on 32 or 64 bit architectures.
+ */
+static int
+check_call_signature (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args)
+{
+	int i, simple_type;
+
+	if (sig->hasthis) {
+		if (args [0]->type != STACK_OBJ && args [0]->type != STACK_MP && args [0]->type != STACK_PTR)
+			return 1;
+		args++;
+	}
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->params [i]->byref) {
+			/* 
+			 * check the result of ldelema is only passed as an argument if the byref
+			 * type matches exactly the array element type.
+			 * FIXME: if the argument as been saved on the stack as part of the
+			 * interface variable code (the value was on the stack at a basic block boundary)
+			 * we need to add the check in that case, too.
+			 */
+			if (args [i]->opcode == CEE_LDELEMA) {
+				MonoInst *check;
+				MonoClass *exact_class = mono_class_from_mono_type (sig->params [i]);
+				if (!exact_class->valuetype) {
+					MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
+					check->cil_code = args [i]->cil_code;
+					check->klass = exact_class;
+					check->inst_left = args [i]->inst_left;
+					check->type = STACK_OBJ;
+					args [i]->inst_left = check;
+				}
+			}
+			if (args [i]->type != STACK_MP && args [i]->type != STACK_PTR)
+				return 1;
+			continue;
+		}
+		simple_type = sig->params [i]->type;
+handle_enum:
+		switch (simple_type) {
+		case MONO_TYPE_VOID:
+			return 1;
+			continue;
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR)
+				return 1;
+			continue;
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR && args [i]->type != STACK_MP)
+				return 1;
+			continue;
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:    
+			if (args [i]->type != STACK_OBJ)
+				return 1;
+			continue;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			if (args [i]->type != STACK_I8)
+				return 1;
+			continue;
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			if (args [i]->type != STACK_R8)
+				return 1;
+			continue;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->params [i]->data.klass->enumtype) {
+				simple_type = sig->params [i]->data.klass->enum_basetype->type;
+				goto handle_enum;
+			}
+			if (args [i]->type != STACK_VTYPE)
+				return 1;
+			continue;
+		default:
+			g_error ("unknown type 0x%02x in check_call_signature", simple_type);
+		}
+	}
+	return 0;
+}
+
 inline static int
 mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, MonoMethodSignature *sig, gboolean ret_object, 
 		 const guint8 *ip, gboolean to_end)
@@ -2821,6 +2919,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			//g_assert (!virtual || fsig->hasthis);
 
 			sp -= n;
+
+			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
+				goto unverified;
 
 			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL)) {
 				int i;

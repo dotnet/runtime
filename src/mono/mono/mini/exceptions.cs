@@ -1489,5 +1489,31 @@ class Tests {
 			return 0;
 		return 200;
 	}
+
+	static void helper_out_obj (out object o) {
+		o = (object)"buddy";
+	}
+
+	static void helper_out_string (out string o) {
+		o = "buddy";
+	}
+
+	static int test_2_array_mismatch () {
+		string[] a = { "hello", "world" };
+		object[] b = a;
+		bool passed = false;
+
+		try {
+			helper_out_obj (out b [1]);
+		} catch (ArrayTypeMismatchException) {
+			passed = true;
+		}
+		if (!passed)
+			return 0;
+		helper_out_string (out a [1]);
+		if (a [1] != "buddy")
+			return 1;
+		return 2;
+	}
 }
 
