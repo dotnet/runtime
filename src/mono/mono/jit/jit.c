@@ -3830,7 +3830,11 @@ mono_jit_compile_method (MonoMethod *method)
 #ifdef MONO_USE_EXC_TABLES
 			}
 #endif
+
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
+				mono_debug_add_wrapper (method);
 		}
+
 		return method->info;
 	}
 

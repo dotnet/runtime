@@ -1167,6 +1167,49 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	mono_debug_unlock ();
 }
 
+void
+mono_debug_add_wrapper (MonoMethod *method)
+{
+	MonoClass *klass = method->klass;
+	AssemblyDebugInfo* info;
+	MonoDebugMethodInfo *minfo;
+	MonoDebugMethodJitInfo *jit;
+
+	if (!mono_debug_handle)
+		return;
+
+	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return;
+
+	mono_class_init (klass);
+
+	info = mono_debug_get_image (mono_debug_handle, klass->image);
+	g_assert (info);
+
+	minfo = lookup_method (method);
+	if (!minfo || minfo->jit)
+		return;
+
+	mono_debug_lock ();
+
+	mono_debug_handle->dirty = TRUE;
+
+	minfo->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
+	jit->code_start = method->info;
+	jit->code_size = 10;
+	jit->prologue_end = 0;
+	jit->epilogue_begin = 10;
+	jit->num_params = 0;
+	jit->wrapper_addr = method->addr;
+
+	if (info->symfile) {
+		mono_debug_symfile_add_method (info->symfile, method);
+		mono_debugger_event (MONO_DEBUGGER_EVENT_METHOD_ADDED, info->symfile, method);
+	}
+
+	mono_debug_unlock ();
+}
+
 gchar *
 mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number)
 {

@@ -71,6 +71,8 @@ void           mono_debug_cleanup (void);
 
 void           mono_debug_add_method (MonoFlowGraph *cfg);
 
+void           mono_debug_add_wrapper (MonoMethod *method);
+
 void           mono_debug_add_type (MonoClass *klass);
 
 gchar *        mono_debug_source_location_from_address (MonoMethod *method, guint32 address,
