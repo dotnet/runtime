@@ -377,7 +377,5 @@ ves_icall_System_IO_FileStream_FileFlush (HANDLE handle)
 	if (handle == INVALID_HANDLE_VALUE)
 		mono_raise_exception (mono_get_exception_io ("Invalid handle"));
 
-	result = FlushFileBuffers (handle);
-	if (result == FALSE)
-		mono_raise_exception (mono_get_exception_io ("IO Exception"));
+	FlushFileBuffers (handle);	/* discard result */
 }
