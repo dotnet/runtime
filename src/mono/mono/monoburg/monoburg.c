@@ -57,9 +57,14 @@ create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
 	if (cfunc) {
 		if (cost)
 			yyerror ("duplicated costs (constant costs and cost function)");
-		else 
-			rule->cost = g_strdup_printf ("mono_burg_cost_%d (tree, data)",
-						      g_list_length (rule_list));
+		else {
+			if (dag_mode)
+				rule->cost = g_strdup_printf ("mono_burg_cost_%d (p, data)",
+							      g_list_length (rule_list));
+			else
+				rule->cost = g_strdup_printf ("mono_burg_cost_%d (tree, data)",
+							      g_list_length (rule_list));
+		}
 	}
 
 	rule->lhs->rules = g_list_append (rule->lhs->rules, rule);
@@ -720,8 +725,11 @@ emit_cost_func ()
 			output ("inline static guint16\n");
 
 			emit_rule_string (rule, "");
-
-			output ("mono_burg_cost_%d (MBTREE_TYPE *tree, MBCOST_DATA *data)\n", i + 1);
+			
+			if (dag_mode)
+				output ("mono_burg_cost_%d (MBState *state, MBCOST_DATA *data)\n", i + 1);
+			else
+				output ("mono_burg_cost_%d (MBTREE_TYPE *tree, MBCOST_DATA *data)\n", i + 1);
 			output ("{\n");
 			output ("%s\n", rule->cfunc);
 			output ("}\n\n");
