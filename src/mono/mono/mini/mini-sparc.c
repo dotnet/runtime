@@ -308,6 +308,12 @@ mono_arch_flush_register_windows (void)
 }
 
 gboolean 
+mono_arch_is_inst_imm (gint64 imm)
+{
+	return sparc_is_imm13 (imm);
+}
+
+gboolean 
 mono_sparc_is_v9 (void) {
 	return sparcv9;
 }
