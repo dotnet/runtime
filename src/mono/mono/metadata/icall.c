@@ -1545,6 +1545,16 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	}
 }
 
+static void
+ves_icall_Type_GetPacking (MonoReflectionType *type, guint32 *packing, guint32 *size)
+{
+	MonoClass *klass = mono_class_from_mono_type (type->type);
+
+	g_assert (!klass->image->dynamic);
+
+	mono_metadata_packing_from_typedef (klass->image, klass->type_token, packing, size);
+}
+
 static MonoReflectionType*
 ves_icall_MonoType_GetElementType (MonoReflectionType *type)
 {
@@ -6183,6 +6193,7 @@ static const IcallEntry type_icalls [] = {
 	{"GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition},
 	{"GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl},
 	{"GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData},
+	{"GetPacking", ves_icall_Type_GetPacking},
 	{"GetTypeCode", ves_icall_type_GetTypeCode},
 	{"IsArrayImpl", ves_icall_Type_IsArrayImpl},
 	{"IsInstanceOfType", ves_icall_type_IsInstanceOfType},
