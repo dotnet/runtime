@@ -8,10 +8,6 @@
  */
 
 #include <config.h>
-#if HAVE_BOEHM_GC
-#include <mono/os/gc_wrapper.h>
-#include "mono/utils/mono-hash.h"
-#endif
 #include <glib.h>
 #include <string.h>
 #include <pthread.h>
