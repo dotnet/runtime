@@ -695,7 +695,7 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
 		output_indent ();	\
-		g_print ("Entering %s.%s::%s (", klass->name_space, klass->name, frame->method->name);	\
+		g_print ("Entering %s.%s::%s %p (", klass->name_space, klass->name, frame->method->name, frame->obj);	\
 		dump_stack (frame->stack_args, frame->stack_args+frame->method->signature->param_count);	\
 		g_print (")\n");	\
 	}	\

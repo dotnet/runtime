@@ -24,6 +24,15 @@ typedef struct {
 	guint32 attrs;
 } MonoProperty;
 
+typedef struct {
+	const char *name;
+	MonoMethod *add;
+	MonoMethod *remove;
+	MonoMethod *raise;
+	MonoMethod **other;
+	guint32 attrs;
+} MonoEvent;
+
 struct _MonoClass {
 	MonoImage *image;
 	guint32    type_token;
@@ -68,7 +77,7 @@ struct _MonoClass {
 	struct {
 		guint32 first, last;
 		int count;
-	} field, method, property;
+	} field, method, property, event;
 
 	/*
 	 * Field information: Type and location from object base
@@ -76,6 +85,8 @@ struct _MonoClass {
 	MonoClassField *fields;
 
 	MonoProperty *properties;
+	
+	MonoEvent *events;
 
 	MonoMethod **methods;
 

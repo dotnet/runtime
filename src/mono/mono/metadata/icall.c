@@ -740,133 +740,236 @@ enum {
 	BFLAGS_OptionalParamBinding = 0x40000
 };
 
-
-/*
- * Note: the filter is applied from within corlib.
- */
 static MonoArray*
-ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags)
+ves_icall_Type_GetFields (MonoReflectionType *type, guint32 bflags)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	static MonoClass *System_Reflection_MemberInfo;
+	static MonoClass *System_Reflection_FieldInfo;
 	MonoClass *startklass, *klass;
 	MonoArray *res;
-	MonoMethod *method;
 	MonoObject *member;
-	int i, is_ctor, len, match;
+	int i, len, match;
+	MonoClassField *field;
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 
-	/* FIXME: check the bindingflags */
 handle_parent:	
-	if (membertypes & (1|8)) { /* constructors and methods */
-		for (i = 0; i < klass->method.count; ++i) {
-			match = 0;
-			method = klass->methods [i];
-			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
-				if (bflags & BFLAGS_Public)
-					match++;
-			} else {
-				if (bflags & BFLAGS_NonPublic)
-					match++;
-			}
-			if (!match)
-				continue;
-			match = 0;
-			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-				if (bflags & BFLAGS_Static)
-					match++;
-			} else {
-				if (bflags & BFLAGS_Instance)
-					match++;
-			}
-
-			if (!match)
-				continue;
-			match = 0;
-			member = (MonoObject*)mono_method_get_object (domain, method);
-			
-			is_ctor = strcmp (method->name, ".ctor") == 0 ||
-					strcmp (method->name, ".cctor") == 0;
-			if (is_ctor && (membertypes & 1)) {
-				l = g_slist_prepend (l, member);
-				continue;
-			}
-			if (!is_ctor && (membertypes & 8)) {
-				l = g_slist_prepend (l, member);
-			}
+	for (i = 0; i < klass->field.count; ++i) {
+		match = 0;
+		field = &klass->fields [i];
+		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
 		}
-	}
-	if (membertypes & 4) { /* fields */
-		MonoClassField *field;
-		for (i = 0; i < klass->field.count; ++i) {
-			match = 0;
-			field = &klass->fields [i];
-			if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
-				if (bflags & BFLAGS_Public)
-					match++;
-			} else {
-				if (bflags & BFLAGS_NonPublic)
-					match++;
-			}
-			if (!match)
-				continue;
-			match = 0;
-			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-				if (bflags & BFLAGS_Static)
-					match++;
-			} else {
-				if (bflags & BFLAGS_Instance)
-					match++;
-			}
-
-			if (!match)
-				continue;
-			member = (MonoObject*)mono_field_get_object (domain, klass, field);
-			l = g_slist_prepend (l, member);
+		if (!match)
+			continue;
+		match = 0;
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+			if (bflags & BFLAGS_Static)
+				match++;
+		} else {
+			if (bflags & BFLAGS_Instance)
+				match++;
 		}
-	}
-	if (membertypes & 16) { /* properties */
-		MonoProperty *prop;
-		for (i = 0; i < klass->property.count; ++i) {
-			prop = &klass->properties [i];
-			match = 0;
-			method = prop->get;
-			if (!method)
-				method = prop->set;
-			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
-				if (bflags & BFLAGS_Public)
-					match++;
-			} else {
-				if (bflags & BFLAGS_NonPublic)
-					match++;
-			}
-			if (!match)
-				continue;
-			match = 0;
-			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-				if (bflags & BFLAGS_Static)
-					match++;
-			} else {
-				if (bflags & BFLAGS_Instance)
-					match++;
-			}
 
-			if (!match)
-				continue;
-			match = 0;
-			l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
-		}
+		if (!match)
+			continue;
+		member = (MonoObject*)mono_field_get_object (domain, klass, field);
+		l = g_slist_prepend (l, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 	len = g_slist_length (l);
-	if (!System_Reflection_MemberInfo)
-		System_Reflection_MemberInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "MemberInfo");
-	res = mono_array_new (domain, System_Reflection_MemberInfo, len);
+	if (!System_Reflection_FieldInfo)
+		System_Reflection_FieldInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "FieldInfo");
+	res = mono_array_new (domain, System_Reflection_FieldInfo, len);
+	i = 0;
+	tmp = l;
+	for (; tmp; tmp = tmp->next, ++i)
+		mono_array_set (res, gpointer, i, tmp->data);
+	g_slist_free (l);
+	return res;
+}
+
+static MonoArray*
+ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
+{
+	MonoDomain *domain; 
+	GSList *l = NULL, *tmp;
+	static MonoClass *System_Reflection_MethodInfo;
+	MonoClass *startklass, *klass;
+	MonoArray *res;
+	MonoMethod *method;
+	MonoObject *member;
+	int i, len, match;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+
+handle_parent:	
+	for (i = 0; i < klass->method.count; ++i) {
+		match = 0;
+		method = klass->methods [i];
+		if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
+			continue;
+		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		match = 0;
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			if (bflags & BFLAGS_Static)
+				match++;
+		} else {
+			if (bflags & BFLAGS_Instance)
+				match++;
+		}
+
+		if (!match)
+			continue;
+		match = 0;
+		member = (MonoObject*)mono_method_get_object (domain, method);
+			
+		l = g_slist_prepend (l, member);
+	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+	len = g_slist_length (l);
+	if (!System_Reflection_MethodInfo)
+		System_Reflection_MethodInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MethodInfo");
+	res = mono_array_new (domain, System_Reflection_MethodInfo, len);
+	i = 0;
+	tmp = l;
+	for (; tmp; tmp = tmp->next, ++i)
+		mono_array_set (res, gpointer, i, tmp->data);
+	g_slist_free (l);
+	return res;
+}
+
+static MonoArray*
+ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
+{
+	MonoDomain *domain; 
+	GSList *l = NULL, *tmp;
+	static MonoClass *System_Reflection_ConstructorInfo;
+	MonoClass *startklass, *klass;
+	MonoArray *res;
+	MonoMethod *method;
+	MonoObject *member;
+	int i, len, match;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+
+handle_parent:	
+	for (i = 0; i < klass->method.count; ++i) {
+		match = 0;
+		method = klass->methods [i];
+		if (strcmp (method->name, ".ctor") && strcmp (method->name, ".cctor"))
+			continue;
+		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		match = 0;
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			if (bflags & BFLAGS_Static)
+				match++;
+		} else {
+			if (bflags & BFLAGS_Instance)
+				match++;
+		}
+
+		if (!match)
+			continue;
+		member = (MonoObject*)mono_method_get_object (domain, method);
+			
+		l = g_slist_prepend (l, member);
+	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+	len = g_slist_length (l);
+	if (!System_Reflection_ConstructorInfo)
+		System_Reflection_ConstructorInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
+	res = mono_array_new (domain, System_Reflection_ConstructorInfo, len);
+	i = 0;
+	tmp = l;
+	for (; tmp; tmp = tmp->next, ++i)
+		mono_array_set (res, gpointer, i, tmp->data);
+	g_slist_free (l);
+	return res;
+}
+
+static MonoArray*
+ves_icall_Type_GetProperties (MonoReflectionType *type, guint32 bflags)
+{
+	MonoDomain *domain; 
+	GSList *l = NULL, *tmp;
+	static MonoClass *System_Reflection_PropertyInfo;
+	MonoClass *startklass, *klass;
+	MonoArray *res;
+	MonoMethod *method;
+	MonoProperty *prop;
+	int i, len, match;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+
+handle_parent:	
+	for (i = 0; i < klass->property.count; ++i) {
+		prop = &klass->properties [i];
+		match = 0;
+		method = prop->get;
+		if (!method)
+			method = prop->set;
+		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		match = 0;
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			if (bflags & BFLAGS_Static)
+				match++;
+		} else {
+			if (bflags & BFLAGS_Instance)
+				match++;
+		}
+
+		if (!match)
+			continue;
+		match = 0;
+		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
+	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+	len = g_slist_length (l);
+	if (!System_Reflection_PropertyInfo)
+		System_Reflection_PropertyInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
+	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 	i = 0;
 	tmp = l;
 	for (; tmp; tmp = tmp->next, ++i)
@@ -1140,6 +1243,11 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 }
 
 
+static gpointer
+ves_icall_System_Object_obj_address (MonoObject *this) {
+	return this;
+}
+
 static gpointer icall_map [] = {
 	/*
 	 * System.Array
@@ -1158,6 +1266,7 @@ static gpointer icall_map [] = {
 	 */
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
 	"System.Object::GetType", ves_icall_System_Object_GetType,
+	"System.Object::obj_address", ves_icall_System_Object_obj_address,
 
 	/*
 	 * System.String
@@ -1253,7 +1362,6 @@ static gpointer icall_map [] = {
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::Equals", ves_icall_type_Equals,
-	"System.Type::FindMembers", ves_icall_type_find_members,
 
 	/*
 	 * System.Runtime.CompilerServices.RuntimeHelpers
@@ -1303,6 +1411,10 @@ static gpointer icall_map [] = {
 	"System.MonoType::assQualifiedName", ves_icall_System_MonoType_assQualifiedName,
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 	"System.MonoType::get_type_info", ves_icall_get_type_info,
+	"System.MonoType::GetFields", ves_icall_Type_GetFields,
+	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
+	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
+	"System.MonoType::GetProperties", ves_icall_Type_GetProperties,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
 

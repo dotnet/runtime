@@ -225,9 +225,6 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 static void
 encode_reflection_type (MonoDynamicAssembly *assembly, MonoReflectionType *type, char *p, char **endbuf)
 {
-	MonoReflectionTypeBuilder *tb;
-	guint32 token;
-
 	if (!type) {
 		mono_metadata_encode_value (MONO_TYPE_VOID, p, endbuf);
 		return;
@@ -1806,12 +1803,18 @@ MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
 	MonoReflectionType *res;
+	MonoClass *klass = mono_class_from_mono_type (type);
 
 	if (!type_cache)
 		type_cache = g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
 				(GCompareFunc)mymono_metadata_type_equal);
 	if ((res = g_hash_table_lookup (type_cache, type)))
 		return res;
+	if (klass->reflection_info) {
+		/* should this be considered an error condition? */
+		if (!type->byref)
+			return klass->reflection_info;
+	}
 	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
 	res->type = type;
 	g_hash_table_insert (type_cache, type, res);
@@ -2467,5 +2470,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	 */
 
 	tb->type.type = &klass->byval_arg;
+
+	/*g_print ("setup %s as %s (%p)\n", klass->name, ((MonoObject*)tb)->vtable->klass->name, tb);*/
 }
 
