@@ -15,6 +15,8 @@ all: \
 	System.Drawing.xml \
 	System.Security.xml \
 	System.DirectoryServices.xml \
+	System.EnterpriseServices.xml \
+	System.Runtime.Remoting.xml \
 	System.Windows.Forms.xml \
 	Microsoft.VisualBasic.xml \
 	Cscompmgd.xml
@@ -37,6 +39,9 @@ System.Web.xml :
 System.Web.Services.xml :
 	mono-api-info $(DLL_PATH)/System.Web.Services.dll > System.Web.Services.xml
 
+System.Runtime.Remoting.xml :
+	mono-api-info $(DLL_PATH)/System.Runtime.Remoting.dll > System.Runtime.Remoting.xml
+
 System.Runtime.Serialization.Formatters.Soap.xml :
 	mono-api-info $(DLL_PATH)/System.Runtime.Serialization.Formatters.Soap.dll > System.Runtime.Serialization.Formatters.Soap.xml
 
@@ -49,6 +54,9 @@ System.Security.xml :
 System.DirectoryServices.xml :
 	mono-api-info $(DLL_PATH)/System.DirectoryServices.dll > System.DirectoryServices.xml
 
+System.EnterpriseServices.xml :
+	mono-api-info $(DLL_PATH)/System.EnterpriseServices.dll > System.EnterpriseServices.xml
+
 System.Windows.Forms.xml :
 	mono-api-info $(DLL_PATH)/System.Windows.Forms.dll > System.Windows.Forms.xml
 
@@ -59,6 +67,6 @@ Microsoft.VisualBasic.xml :
 	mono-api-info $(DLL_PATH)/Microsoft.VisualBasic.dll > Microsoft.VisualBasic.xml
 
 clean:
-	rm mscorlib.xml System.xml System.Xml.xml System.Data.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
+	rm mscorlib.xml System.xml System.Xml.xml System.Data.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.EnterpriseServices.xml System.Runtime.Remoting.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
 
 
