@@ -3340,10 +3340,11 @@ array_constructed:
 			vt = mono_class_vtable (domain, field->parent);
 			if (!vt->initialized)
 				mono_runtime_class_init (vt);
-			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
-				addr = (char*)(vt->data) + field->offset;
+			
+			if (domain->special_static_fields && (addr = g_hash_table_lookup (domain->special_static_fields, field)))
+				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
+				addr = (char*)(vt->data) + field->offset;
 
 			if (load_addr) {
 				sp->type = VAL_MP;
@@ -3370,10 +3371,11 @@ array_constructed:
 			vt = mono_class_vtable (domain, field->parent);
 			if (!vt->initialized)
 				mono_runtime_class_init (vt);
-			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
-				addr = (char*)(vt->data) + field->offset;
+			
+			if (domain->special_static_fields && (addr = g_hash_table_lookup (domain->special_static_fields, field)))
+				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
+				addr = (char*)(vt->data) + field->offset;
 
 			stackval_to_data (field->type, sp, addr, FALSE);
 			vt_free (sp);
