@@ -1380,13 +1380,6 @@ mono_class_init (MonoClass *class)
 		gklass = mono_class_from_mono_type (ginst->generic_type);
 		mono_class_init (gklass);
 
-		if (ginst->parent)
-			class->parent = mono_class_from_mono_type (ginst->parent);
-		else
-			class->parent = gklass->parent;
-
-		mono_class_setup_parent (class, class->parent);
-
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
 
@@ -1964,6 +1957,7 @@ mono_class_create_generic (MonoGenericInst *ginst)
 		klass->instance_size = gklass->instance_size;
 		klass->class_size = gklass->class_size;
 		klass->size_inited = 1;
+		klass->inited = 1;
 
 		klass->valuetype = gklass->valuetype;
 	}
@@ -1975,6 +1969,9 @@ mono_class_create_generic_2 (MonoGenericInst *ginst)
 	MonoClass *klass, *gklass;
 	GList *list;
 	int i;
+
+	if (ginst->is_dynamic)
+		return;
 
 	klass = ginst->klass;
 	gklass = mono_class_from_mono_type (ginst->generic_type);
@@ -1995,6 +1992,13 @@ mono_class_create_generic_2 (MonoGenericInst *ginst)
 	for (list = gklass->nested_classes; list; list = list->next)
 		klass->nested_classes = g_list_append (
 			klass->nested_classes, list->data);
+
+	if (ginst->parent)
+		klass->parent = mono_class_from_mono_type (ginst->parent);
+	else
+		klass->parent = gklass->parent;
+
+	mono_class_setup_parent (klass, klass->parent);
 }
 
 MonoClass *

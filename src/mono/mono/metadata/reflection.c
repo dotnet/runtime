@@ -7777,7 +7777,8 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 }
 
 static MonoType*
-do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types)
+do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types,
+					    MonoType *parent)
 {
 	MonoClass *klass, *gklass;
 	MonoReflectionTypeBuilder *tb = NULL;
@@ -7849,6 +7850,8 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 	geninst->data.generic_inst = ginst;
 
+	ginst->parent = parent;
+
 	ginst->context = g_new0 (MonoGenericContext, 1);
 	ginst->context->ginst = ginst;
 
@@ -7900,7 +7903,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 {
 	MonoClass *klass, *pklass = NULL;
 	MonoReflectionType *parent = NULL;
-	MonoType *geninst;
+	MonoType *the_parent = NULL, *geninst;
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericInst *ginst;
 	MonoDomain *domain;
@@ -7925,14 +7928,14 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		}
 	}
 
-	geninst = do_mono_reflection_bind_generic_parameters (type, type_argc, types);
+	if (pklass && pklass->generic_inst)
+		the_parent = mono_reflection_bind_generic_parameters (parent, type_argc, types);
+
+	geninst = do_mono_reflection_bind_generic_parameters (type, type_argc, types, the_parent);
 	if (!geninst)
 		return NULL;
 
 	ginst = geninst->data.generic_inst;
-
-	if (pklass && pklass->generic_inst)
-		ginst->parent = mono_reflection_bind_generic_parameters (parent, type_argc, types);
 
 	return geninst;
 }
