@@ -36,7 +36,7 @@
  * Uncomment this to enable GC aware auto layout: in this mode, reference
  * fields are grouped together inside objects, increasing collector 
  * performance.
- * Requires that all classes whose layout is known to the runtime be annotated
+ * Requires that all classes whose layout is known to native code be annotated
  * with [StructLayout (LayoutKind.Sequential)]
  */
 //#define GC_AWARE_AUTO_LAYOUT
@@ -274,12 +274,12 @@ mono_class_layout_fields (MonoClass *class)
 		if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT)
 			passes = 1;
 
-		for (pass = 0; pass < passes; ++pass) {
-			if (class->parent)
-				real_size = class->parent->instance_size;
-			else
-				real_size = sizeof (MonoObject);
+		if (class->parent)
+			real_size = class->parent->instance_size;
+		else
+			real_size = sizeof (MonoObject);
 
+		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				int size, align;
 
@@ -326,6 +326,7 @@ mono_class_layout_fields (MonoClass *class)
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
+		real_size = 0;
 		for (i = 0; i < top; i++) {
 			int size, align;
 
@@ -553,6 +554,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		}
 		g_ptr_array_free (ifaces, TRUE);
 	}
+
 	return cur_slot;
 }
 
@@ -814,7 +816,6 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 				vtable [i] = cm;
 		}
 	mono_g_hash_table_destroy (override_map);
-
        
 	class->vtable_size = cur_slot;
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
