@@ -6580,8 +6580,9 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guin
 		return NULL;
 
 	/*g_print ("got attr %s\n", method->klass->name);*/
-	
-	params = g_new (void*, mono_method_signature (method)->param_count);
+
+	/* Allocate using alloca so it gets GC tracking */
+	params = alloca (mono_method_signature (method)->param_count * sizeof (void*));	
 
 	/* skip prolog */
 	p += 2;
@@ -6593,7 +6594,6 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guin
 	attr = mono_object_new (mono_domain_get (), method->klass);
 	mono_runtime_invoke (method, attr, params, NULL);
 	free_param_data (method->signature, params);
-	g_free (params);
 	num_named = read16 (named);
 	named += 2;
 	for (j = 0; j < num_named; j++) {
