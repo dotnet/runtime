@@ -66,6 +66,22 @@
 
   <contributor>
     <name>
+      <first-name>Gaurav</first-name>
+      <last-name>Vaish</last-name>
+    </name>
+    <e-mail>gvaish_mono@lycos.com</e-mail>
+    <image>gvaish.png</image>
+    <location>Noida, India</location>
+    <organization>Adobe Systems Inc.</organization>
+    <description>MTS</description>
+    <tasks>
+      <task>WebControls</task>
+      <task>MobileControls</task>
+    </tasks>
+  </contributor>
+
+  <contributor>
+    <name>
       <first-name>Paolo</first-name>
       <last-name>Molaro</last-name>
     </name>
