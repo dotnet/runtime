@@ -605,11 +605,11 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	guint32 im_cols [MONO_IMPLMAP_SIZE];
 	guint32 scope_token;
 	const char *import = NULL;
-	char *scope = NULL;
 	const char *orig_scope;
 	const char *new_scope;
-	char *full_name;
-	GModule *gmodule;
+	char *full_name, *file_name;
+	int i;
+	GModule *gmodule = NULL;
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
@@ -632,39 +632,55 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	mono_dllmap_lookup (orig_scope, import, &new_scope, &import);
 
-	scope = g_strdup (new_scope);
-	
-	if (strstr (scope, ".dll") == (scope + strlen (scope) - 4)) {
-		// FIXME: This won't work for libraries named lib<FOO>.dll.so
-		//scope [strlen (scope) - 4] = '\0';
-	}
+	/*
+	 * Try loading the module using a variety of names
+	 */
+	for (i = 0; i < 2; ++i) {
+		if (i == 0)
+			/* Try the original name */
+			file_name = g_strdup (new_scope);
+		else {
+			/* Try trimming the .dll extension */
+			if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
+				file_name = g_strdup (new_scope);
+				file_name [strlen (new_scope) - 4] = '\0';
+			}
+			else
+				break;
+		}
 
-	full_name = g_module_build_path (NULL, scope);
-	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+		if (!gmodule) {
+			full_name = g_module_build_path (NULL, file_name);
+			gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+			g_free (full_name);
+		}
 
-	if (!gmodule) {
-		g_free (full_name);
-		full_name = g_module_build_path (".", scope);
-		gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+		if (!gmodule) {
+			full_name = g_module_build_path (".", file_name);
+			gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+			g_free (full_name);
+		}
+
+		if (!gmodule) {
+			gmodule=g_module_open (file_name, G_MODULE_BIND_LAZY);
+		}
+
+		g_free (file_name);
+
+		if (gmodule)
+			break;
 	}
 
 	if (!gmodule) {
 		gchar *error = g_strdup (g_module_error ());
-		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
-			if (exc_class) {
-				*exc_class = "DllNotFoundException";
-				*exc_arg = orig_scope;
-			}
-			g_free (error);
-			g_free (full_name);
-			g_free (scope);
-			return NULL;
+
+		if (exc_class) {
+			*exc_class = "DllNotFoundException";
+			*exc_arg = orig_scope;
 		}
 		g_free (error);
+		return NULL;
 	}
-
-	g_free (full_name);
-	g_free (scope);
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		g_module_symbol (gmodule, import, &method->addr); 
