@@ -126,7 +126,7 @@ struct _WapiHandleOps _wapi_pipe_ops = {
 	NULL,			/* is_owned */
 };
 
-static struct {
+static const struct {
 	/* File, console and pipe handles */
 	WapiFileType (*getfiletype)(void);
 	
