@@ -73,8 +73,33 @@
 
 		* Code generation: The code generation is done through
 		  the System.Reflection.Emit API.
-
 	</ul>
+
+** CIL Optimizations.
+
+	The compiler performs a number of simple optimizations on its input:
+	constant folding (this is required by the C# language spec) and 
+	can perform dead code elimination.
+
+	Other more interesting optimizations like hoisting are not possible
+	at this point since the compiler output at this point does not
+	generate an intermediate representation that is suitable to
+	perform basic block computation.  
+
+	Adding an intermediate layer to enable the basic block
+	computation to the compiler should be a simple task, but we
+	are considering having a generic CIL optimizer.  Since all the
+	information that is required to perform basic block-based
+	optimizations is available at the CIL level, we might just skip
+	this step altogether and have just a generic IL optimizer that
+	would perform hoisting on arbitrary CIL programs, not only
+	those produced by MCS.  
+
+	If this tool is further expanded to perform constant folding
+	(not needed for our C# compiler, as it is already in there)
+	and dead code elimination, other compiler authors might be
+	able to use this generic CIL optimizer in their projects
+	reducing their time to develop a production compiler. 
 
 <a name="tasks">
 ** Current pending tasks

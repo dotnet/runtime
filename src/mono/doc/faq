@@ -607,7 +607,7 @@ A: The C# Compiler is released under the terms of the <a
    href="http://www.opensource.org/licenses/lgpl-license.html">GNU
    Library GPL</a>.  And the class libraries are released
    under the terms of the <a
-   href="www.opensource.org/licenses/mit-license.html">MIT X11</a>
+   href="http://www.opensource.org/licenses/mit-license.html">MIT X11</a>
    license.
 
 Q: I would like to contribute code to Mono under a particular
