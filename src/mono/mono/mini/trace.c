@@ -104,42 +104,43 @@ enum Token {
 static int
 get_token (void)
 {
-	while (*input != 0){
-		if (input [0] == 'M' && input [1] == ':'){
-			input += 2;
-			get_string ();
-			return TOKEN_METHOD;
-		}
-		if (input [0] == 'N' && input [1] == ':'){
-			input += 2;
-			get_string ();
-			return TOKEN_NAMESPACE;
-		}
-		if (input [0] == 'T' && input [1] == ':'){
-			input += 2;
-			get_string ();
-			return TOKEN_CLASS;
-		}
-		if (is_filenamechar (*input)){
-			get_string ();
-			if (strcmp (value, "all") == 0)
-				return TOKEN_ALL;
-			if (strcmp (value, "program") == 0)
-				return TOKEN_PROGRAM;
-			return TOKEN_STRING;
-		}
-		if (*input == '-'){
-			input++;
-			return TOKEN_EXCLUDE;
-		}
-		if (*input == ','){
-			input++;
-			return TOKEN_SEPARATOR;
-		}
-		input++;
-			
+	if (input [0] == '\0') {
+		return TOKEN_END;
 	}
-	return TOKEN_END;
+	if (input [0] == 'M' && input [1] == ':'){
+		input += 2;
+		get_string ();
+		return TOKEN_METHOD;
+	}
+	if (input [0] == 'N' && input [1] == ':'){
+		input += 2;
+		get_string ();
+		return TOKEN_NAMESPACE;
+	}
+	if (input [0] == 'T' && input [1] == ':'){
+		input += 2;
+		get_string ();
+		return TOKEN_CLASS;
+	}
+	if (is_filenamechar (*input)){
+		get_string ();
+		if (strcmp (value, "all") == 0)
+			return TOKEN_ALL;
+		if (strcmp (value, "program") == 0)
+			return TOKEN_PROGRAM;
+		return TOKEN_STRING;
+	}
+	if (*input == '-'){
+		input++;
+		return TOKEN_EXCLUDE;
+	}
+	if (*input == ','){
+		input++;
+		return TOKEN_SEPARATOR;
+	}
+
+	fprintf (stderr, "Syntax error at or around '%s'\n", input);	
+	return TOKEN_ERROR;
 }
 
 static void
