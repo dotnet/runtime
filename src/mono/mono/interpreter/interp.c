@@ -33,6 +33,7 @@
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
+#include <mono/metadata/threads.h>
 #include <mono/arch/x86/x86-codegen.h>
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
@@ -3165,6 +3166,8 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
+	mono_thread_init();
+
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
 #else
@@ -3174,6 +3177,8 @@ main (int argc, char *argv [])
 	++i;
 	retval = ves_exec (assembly, argc - i, argv + i);
 #endif
+	mono_thread_cleanup();
+	
 	mono_assembly_close (assembly);
 
 #if DEBUG_INTERP

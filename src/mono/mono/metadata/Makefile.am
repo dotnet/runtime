@@ -21,6 +21,7 @@ libmetadata_a_SOURCES = \
 	class.c		\
 	object.c	\
 	icall.c		\
+	threads.h	\
 	threads-pthread.c	\
 	threads-pthread.h	\
 	#
