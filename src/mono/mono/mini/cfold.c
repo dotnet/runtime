@@ -118,11 +118,13 @@ is_power_of_two (guint32 val)
 
 #define FOLD_UNOP(name,op)	\
 	case name:	\
-		if (inst->inst_i0->opcode != OP_ICONST)	\
-			return;	\
-		inst->opcode = OP_ICONST;	\
-		inst->inst_c0 = op inst->inst_i0->inst_c0; \
-                return;
+		if (inst->inst_i0->opcode == OP_ICONST) {	\
+ 		        inst->opcode = OP_ICONST;	\
+		        inst->inst_c0 = op inst->inst_i0->inst_c0; \
+                } else if (inst->inst_i0->opcode == OP_I8CONST) { \
+ 		        inst->opcode = OP_I8CONST;	\
+		        inst->inst_l = op inst->inst_i0->inst_l; \
+                } return;
 
 #define FOLD_BRBINOP(name,op,cast)	\
 	case name:	\
@@ -188,6 +190,12 @@ mono_constant_fold_inst (MonoInst *inst, gpointer data)
 	FOLD_CXX (OP_CGT_UN,>,guint32)
 	FOLD_CXX (OP_CLT,<,gint32)
 	FOLD_CXX (OP_CLT_UN,<,guint32)
+	case CEE_CONV_I8:
+		if (inst->inst_i0->opcode == OP_ICONST) {
+			inst->opcode = OP_I8CONST;
+			inst->inst_l = inst->inst_i0->inst_c0;
+		}
+	return;
 	/* we should be able to handle isinst and castclass as well */
 	case CEE_ISINST:
 	case CEE_CASTCLASS:

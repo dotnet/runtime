@@ -729,6 +729,37 @@ simulate_compare (int opcode, int a, int b)
 	return 0;
 }
 
+static int
+simulate_long_compare (int opcode, gint64 a, gint64 b)
+{
+	switch (opcode) {
+	case CEE_BEQ:
+		return a == b;
+	case CEE_BGE:
+		return a >= b;
+	case CEE_BGT:
+		return a > b;
+	case CEE_BLE:
+		return a <= b;
+	case CEE_BLT:
+		return a < b;
+	case CEE_BNE_UN:
+		return a != b;
+	case CEE_BGE_UN:
+		return (unsigned)a >= (unsigned)b;
+	case CEE_BGT_UN:
+		return (unsigned)a > (unsigned)b;
+	case CEE_BLE_UN:
+		return (unsigned)a <= (unsigned)b;
+	case CEE_BLT_UN:
+		return (unsigned)a < (unsigned)b;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return 0;
+}
+
 #define EVAL_CXX(name,op,cast)	\
 	case name:	\
 		if (inst->inst_i0->opcode == OP_COMPARE) { \
@@ -756,6 +787,7 @@ simulate_compare (int opcode, int a, int b)
 		break;
 
 
+/* fixme: this only works for interger constants, but not for other types (long, float) */
 static int
 evaluate_const_tree (MonoCompile *cfg, MonoInst *inst, int *res, MonoInst **carray)
 {
@@ -834,11 +866,19 @@ fold_tree (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **carr
 	    inst->inst_i0->opcode == OP_COMPARE) {
 		MonoInst *v0 = inst->inst_i0->inst_i0;
 		MonoInst *v1 = inst->inst_i0->inst_i1;
+		MonoBasicBlock *target = NULL;
 
-		if (evaluate_const_tree (cfg, v0, &a, carray) == 1 &&
-		    evaluate_const_tree (cfg, v1, &b, carray) == 1) {
-			MonoBasicBlock *target;
-				
+		/* hack for longs to optimize the simply cases */
+		if (v0->opcode == OP_I8CONST && v1->opcode == OP_I8CONST) {
+			if (simulate_long_compare (inst->opcode, v0->inst_l, v1->inst_l)) {
+				//unlink_target (bb, inst->inst_false_bb);
+				target = inst->inst_true_bb;
+			} else {
+				//unlink_target (bb, inst->inst_true_bb);
+				target = inst->inst_false_bb;
+			}			
+		} else if (evaluate_const_tree (cfg, v0, &a, carray) == 1 &&
+			   evaluate_const_tree (cfg, v1, &b, carray) == 1) {				
 			if (simulate_compare (inst->opcode, a, b)) {
 				//unlink_target (bb, inst->inst_false_bb);
 				target = inst->inst_true_bb;
@@ -846,7 +886,9 @@ fold_tree (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **carr
 				//unlink_target (bb, inst->inst_true_bb);
 				target = inst->inst_false_bb;
 			}
-			
+		}
+
+		if (target) {
 			bb->out_bb [0] = target;
 			bb->out_count = 1;
 			inst->opcode = CEE_BR;

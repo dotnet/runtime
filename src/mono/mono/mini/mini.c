@@ -3345,17 +3345,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CONV_I1:
 		case CEE_CONV_I2:
 		case CEE_CONV_I4:
-		case CEE_CONV_I8:
 		case CEE_CONV_R4:
 		case CEE_CONV_R8:
 		case CEE_CONV_U4:
+		case CEE_CONV_I8:
 		case CEE_CONV_U8:
 		case CEE_CONV_OVF_I8:
 		case CEE_CONV_OVF_U8:
 		case CEE_CONV_R_UN:
 			CHECK_STACK (1);
 			ADD_UNOP (*ip);
-			ip++;
+			ip++;			
 			break;
 		case CEE_CONV_OVF_I4:
 		case CEE_CONV_OVF_I1:
@@ -3864,17 +3864,83 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else
 					MONO_ADD_INS (bblock, store);
 			} else {
-				MonoInst *load;
-				CHECK_STACK_OVF (1);
-				MONO_INST_NEW (cfg, load, mono_type_to_ldind (field->type));
-				type_to_eval_stack_type (field->type, load);
-				load->cil_code = ip;
-				load->inst_left = ins;
-				*sp++ = load;
-				load->flags |= ins_flag;
-				ins_flag = 0;
-			/* fixme: dont see the problem why this does not work */
-				//cfg->disable_aot = TRUE;
+				gboolean is_const = FALSE;
+				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+				if (!((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) && 
+				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
+					gpointer addr = (char*)vtable->data + field->offset;
+					/* g_print ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, field->name);*/
+					is_const = TRUE;
+					switch (field->type->type) {
+					case MONO_TYPE_BOOLEAN:
+					case MONO_TYPE_U1:
+						NEW_ICONST (cfg, *sp, *((guint8 *)addr));
+						sp++;
+						break;
+					case MONO_TYPE_I1:
+						NEW_ICONST (cfg, *sp, *((gint8 *)addr));
+						sp++;
+						break;						
+					case MONO_TYPE_CHAR:
+					case MONO_TYPE_U2:
+						NEW_ICONST (cfg, *sp, *((guint16 *)addr));
+						sp++;
+						break;
+					case MONO_TYPE_I2:
+						NEW_ICONST (cfg, *sp, *((gint16 *)addr));
+						sp++;
+						break;
+						break;
+					case MONO_TYPE_I4:
+						NEW_ICONST (cfg, *sp, *((gint32 *)addr));
+						sp++;
+						break;						
+					case MONO_TYPE_U4:
+						NEW_ICONST (cfg, *sp, *((guint32 *)addr));
+						sp++;
+						break;
+					case MONO_TYPE_I:
+					case MONO_TYPE_U:
+					case MONO_TYPE_STRING:
+					case MONO_TYPE_OBJECT:
+					case MONO_TYPE_CLASS:
+					case MONO_TYPE_SZARRAY:
+					case MONO_TYPE_PTR:
+					case MONO_TYPE_FNPTR:
+					case MONO_TYPE_ARRAY:
+						NEW_PCONST (cfg, *sp, *((gpointer *)addr));
+						type_to_eval_stack_type (field->type, *sp);
+						sp++;
+						break;
+					case MONO_TYPE_I8:
+					case MONO_TYPE_U8:
+						MONO_INST_NEW (cfg, *sp, OP_I8CONST);
+						sp [0]->type = STACK_I8;
+						sp [0]->inst_l = *((gint64 *)addr);
+						sp++;
+						break;
+					case MONO_TYPE_R4:
+					case MONO_TYPE_R8:
+					case MONO_TYPE_VALUETYPE:
+					default:
+						is_const = FALSE;
+						break;
+					}
+				}
+
+				if (!is_const) {
+					MonoInst *load;
+					CHECK_STACK_OVF (1);
+					MONO_INST_NEW (cfg, load, mono_type_to_ldind (field->type));
+					type_to_eval_stack_type (field->type, load);
+					load->cil_code = ip;
+					load->inst_left = ins;
+					*sp++ = load;
+					load->flags |= ins_flag;
+					ins_flag = 0;
+					/* fixme: dont see the problem why this does not work */
+					//cfg->disable_aot = TRUE;
+				}
 			}
 			ip += 5;
 			break;

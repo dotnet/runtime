@@ -21,6 +21,7 @@ TESTSRC=			\
 	logic.cs		\
 	switch.cs		\
 	ctor-bench.cs		\
+	readonly.cs		\
 	bulkcpy.il		\
 	math.cs
 
