@@ -6394,7 +6394,8 @@ static const IcallEntry remotingservices_icalls [] = {
 static const IcallEntry rng_icalls [] = {
 	{"RngClose", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose},
 	{"RngGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes},
-	{"RngInitialize", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize}
+	{"RngInitialize", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize},
+	{"RngOpen", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen}
 };
 
 static const IcallEntry methodhandle_icalls [] = {

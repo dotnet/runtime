@@ -7,7 +7,7 @@
  *	Sebastien Pouliot (sebastien@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
- * (C) 2004 Novell (http://www.novell.com)
+ * Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
  */
 
 #include <config.h>
@@ -103,6 +103,13 @@ get_entropy_from_server (const char *path, guchar *buf, int len)
 #define CRYPT_VERIFY_CONTEXT	0xF0000000
 #endif
 
+MonoBoolean
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (void)
+{
+	/* FALSE == Local (instance) handle for randomness */
+	return FALSE;
+}
+
 gpointer
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
 {
@@ -173,14 +180,13 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpoint
 #endif
 
 static gboolean egd = FALSE;
+static gint file = -1;
 
-gpointer
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
+MonoBoolean
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (void)
 {
-	gint file = -1;
-
-	if (egd)
-		return (gpointer) -1;
+	if (egd || (file >= 0))
+		return TRUE;
 
 #if defined (NAME_DEV_URANDOM)
 	file = open (NAME_DEV_URANDOM, O_RDONLY);
@@ -194,11 +200,17 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (M
 	if (file < 0) {
 		const char *socket_path = g_getenv("MONO_EGD_SOCKET");
 		egd = (socket_path != NULL);
-	        return (gpointer) -1;
 	}
 
+	/* TRUE == Global handle for randomness */
+	return TRUE;
+}
+
+gpointer
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
+{
 	/* if required exception will be thrown in managed code */
-	return ((file < 0) ? NULL : GINT_TO_POINTER (file));
+	return ((!egd && (file < 0)) ? NULL : GINT_TO_POINTER (file));
 }
 
 gpointer 
@@ -241,8 +253,6 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 void
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle) 
 {
-	if (!egd)
-		close (GPOINTER_TO_INT (handle));
 }
 
 #endif /* OS definition */
