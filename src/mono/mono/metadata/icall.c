@@ -35,7 +35,6 @@
 #include <mono/metadata/gc.h>
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
-#include <mono/metadata/debug-symfile.h>
 #include <mono/metadata/string-icalls.h>
 #include <mono/metadata/process.h>
 #include <mono/io-layer/io-layer.h>

@@ -35,8 +35,6 @@ libmonoruntime_la_SOURCES = \
 	unicode.c	\
 	unicode.h	\
 	appdomain.c	\
-	debug-symfile.h	\
-	debug-symfile.c	\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
 	profiler.c	\

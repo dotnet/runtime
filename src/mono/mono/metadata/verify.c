@@ -1210,7 +1210,7 @@ mono_method_verify (MonoMethod *method, int level)
 #if 0
 		{
 			char *discode;
-			discode = mono_disasm_code_one (NULL, method, ip);
+			discode = mono_disasm_code_one (NULL, method, ip, NULL);
 			discode [strlen (discode) - 1] = 0; /* no \n */
 			g_print ("%-29s (%d)\n", discode, cur_stack);
 			g_free (discode);

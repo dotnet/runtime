@@ -4,7 +4,6 @@
 #include <glib.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/debug-symfile.h>
 
 typedef struct MonoSymbolFile			MonoSymbolFile;
 typedef struct MonoSymbolFilePriv		MonoSymbolFilePriv;
@@ -12,6 +11,10 @@ typedef struct MonoSymbolFileOffsetTable	MonoSymbolFileOffsetTable;
 typedef struct MonoSymbolFileLineNumberEntry	MonoSymbolFileLineNumberEntry;
 typedef struct MonoSymbolFileMethodEntry	MonoSymbolFileMethodEntry;
 typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
+
+typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
+typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
+typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -49,10 +52,61 @@ struct MonoSymbolFileLineNumberEntry {
 	guint32 offset;
 };
 
+struct MonoDebugMethodInfo {
+	MonoMethod *method;
+	MonoSymbolFile *symfile;
+	guint32 num_il_offsets;
+	MonoSymbolFileLineNumberEntry *il_offsets;
+	MonoDebugMethodJitInfo *jit;
+	gpointer user_data;
+};
+
+struct MonoDebugMethodJitInfo {
+	const guint8 *code_start;
+	guint32 code_size;
+	guint32 prologue_end;
+	guint32 epilogue_begin;
+	guint32 *il_addresses;
+	guint32 num_params;
+	MonoDebugVarInfo *this_var;
+	MonoDebugVarInfo *params;
+	guint32 num_locals;
+	MonoDebugVarInfo *locals;
+};
+
+/*
+ * These bits of the MonoDebugLocalInfo's "index" field are flags specifying
+ * where the variable is actually stored.
+ *
+ * See relocate_variable() in debug-symfile.c for more info.
+ */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS		0xf0000000
+
+/* If "index" is zero, the variable is at stack offset "offset". */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_STACK		0
+
+/* The variable is in the register whose number is contained in bits 0..4 of the
+ * "index" field plus an offset of "offset" (which can be zero).
+ */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER		0x10000000
+
+/* The variables in in the two registers whose numbers are contained in bits 0..4
+ * and 5..9 of the "index" field plus an offset of "offset" (which can be zero).
+ */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS	0x20000000
+
+struct MonoDebugVarInfo {
+	guint32 index;
+	guint32 offset;
+	guint32 begin_scope;
+	guint32 end_scope;
+};
+
 struct MonoSymbolFile {
 	guint64 magic;
 	guint32 version;
 	guint32 is_dynamic;
+	char *image_file;
 	/* Pointer to the mmap()ed contents of the file. */
 	char *raw_contents;
 	guint32 raw_contents_size;
@@ -63,14 +117,8 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		17
+#define MONO_SYMBOL_FILE_VERSION		18
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
-
-/* Tries to load `filename' as a debugging information file, if `emit_warnings" is set,
- * use g_warning() to signal error messages on failure, otherwise silently return NULL. */
-typedef MonoDebugMethodInfo * (*MonoDebugGetMethodFunc) (MonoSymbolFile      *symbol_file,
-							 MonoMethod          *method,
-							 gpointer             user_data);
 
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file   (MonoImage                 *image,
@@ -78,21 +126,23 @@ mono_debug_open_mono_symbol_file   (MonoImage                 *image,
 				    gboolean                   emit_warnings);
 
 void
-mono_debug_update_mono_symbol_file (MonoSymbolFile           *symbol_file,
-				    GHashTable               *method_hash);
+mono_debug_update_mono_symbol_file (MonoSymbolFile           *symbol_file);
 
 void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
 
 MonoSymbolFile *
-mono_debug_create_mono_symbol_file (MonoImage                *image,
-				    const char               *source_file);
+mono_debug_create_mono_symbol_file (MonoImage                *image);
 
 gchar *
 mono_debug_find_source_location    (MonoSymbolFile           *symfile,
 				    MonoMethod               *method,
 				    guint32                   offset,
 				    guint32                  *line_number);
+
+MonoDebugMethodInfo *
+mono_debug_find_method             (MonoSymbolFile           *symfile,
+				    MonoMethod               *method);
 
 #endif /* __MONO_SYMFILE_H__ */
 

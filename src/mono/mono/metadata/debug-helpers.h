@@ -18,7 +18,7 @@ struct MonoDisHelper {
 	gpointer user_data;
 };
 
-char* mono_disasm_code_one (MonoDisHelper *dh, MonoMethod *method, const guchar *ip);
+char* mono_disasm_code_one (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const guchar** endp);
 char* mono_disasm_code     (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const guchar* end);
 
 typedef struct MonoMethodDesc MonoMethodDesc;
