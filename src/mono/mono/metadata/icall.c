@@ -2795,7 +2795,7 @@ ves_icall_System_Environment_get_MachineName (void)
 	buf = g_new (gchar, len);
 
 	result = NULL;
-	if (gethostname (buf, len) != 0)
+	if (gethostname (buf, len) == 0)
 		result = mono_string_new (mono_domain_get (), buf);
 	
 	g_free (buf);
