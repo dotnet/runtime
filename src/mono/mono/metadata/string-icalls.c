@@ -24,7 +24,6 @@ mono_string_Internal_ctor_charp (gpointer dummy, gunichar2 *value)
 {
 	gint32 i, length;
 	MonoDomain *domain;
-	MonoString *res;
 
 	domain = mono_domain_get ();
 
@@ -49,7 +48,7 @@ mono_string_Internal_ctor_char_int (gpointer dummy, gunichar2 value, gint32 coun
 	domain = mono_domain_get ();
 	res = mono_string_new_size (domain, count);
 
-	chars = (gunichar2 *) mono_string_chars (res);
+	chars = mono_string_chars (res);
 	for (i = 0; i < count; i++)
 		chars [i] = value;
 	
@@ -97,7 +96,9 @@ MonoString *
 mono_string_Internal_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint32 sindex, gint32 length)
 {
 	gunichar2 *begin;
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *domain;
+	
+	domain = mono_domain_get ();
 
 	if ((value == NULL) && (sindex != 0) && (length != 0))
 		mono_raise_exception (mono_get_exception_argument_null ("Argument null"));
@@ -117,9 +118,9 @@ mono_string_Internal_ctor_chara (gpointer dummy, MonoArray *value)
 
 	MONO_CHECK_ARG_NULL (value);
 	
-	domain = ((MonoObject *)value)->vtable->domain;
+	domain = mono_domain_get ();
 	
-	return mono_string_new_utf16 (domain, mono_array_addr(value, gunichar2, 0),  value->max_length);
+	return mono_string_new_utf16 (domain, (gunichar2 *) mono_array_addr(value, gunichar2, 0),  value->max_length);
 }
 
 MonoString *
@@ -132,7 +133,7 @@ mono_string_Internal_ctor_chara_int_int (gpointer dummy, MonoArray *value,
 
 	domain = ((MonoObject *) value)->vtable->domain;
 	
-	return mono_string_new_utf16 (domain, mono_array_addr(value, gunichar2, sindex), length);
+	return mono_string_new_utf16 (domain, (gunichar2 *) mono_array_addr(value, gunichar2, sindex), length);
 }
 
 MonoString *
@@ -227,10 +228,12 @@ mono_string_InternalRemove (MonoString *me, gint32 sindex, gint32 count)
 	MonoString * ret;
 	gint32 count_bytes;
 	gint32 index_bytes;
+	gint32 me_bytes;
 	gunichar2 *dest;
 	gunichar2 *src;
 
-	ret = mono_string_InternalAllocateStr(mono_string_length(me) - count);
+	me_bytes = mono_string_length(me);
+	ret = mono_string_InternalAllocateStr(me_bytes - count);
 	index_bytes = sindex * sizeof(gunichar2);
 	count_bytes = count * sizeof(gunichar2);
 
@@ -238,7 +241,7 @@ mono_string_InternalRemove (MonoString *me, gint32 sindex, gint32 count)
 	dest = mono_string_chars(ret);
 
 	memcpy(dest, src, index_bytes);
-	memcpy(dest + sindex, src + sindex + count, index_bytes - count_bytes);
+	memcpy(dest + sindex, src + sindex + count, me_bytes - count_bytes);
 
 	return ret;
 }
@@ -578,8 +581,8 @@ mono_string_InternalStrcpyStr (MonoString *dest, gint32 destPos, MonoString *src
 	gunichar2 *srcptr;
 	gunichar2 *destptr;
 
-	srcptr = mono_string_chars(src);
-	destptr = mono_string_chars(dest);
+	srcptr = mono_string_chars (src);
+	destptr = mono_string_chars (dest);
 
 	memcpy(destptr + destPos, srcptr, mono_string_length(src) * sizeof(gunichar2));
 }
@@ -590,8 +593,8 @@ mono_string_InternalStrcpyStrN (MonoString *dest, gint32 destPos, MonoString *sr
 	gunichar2 *srcptr;
 	gunichar2 *destptr;
 
-	srcptr = mono_string_chars(src);
-	destptr = mono_string_chars(dest);
+	srcptr = mono_string_chars (src);
+	destptr = mono_string_chars (dest);
 	memcpy(destptr + destPos, srcptr + startPos, count * sizeof(gunichar2));
 }
 

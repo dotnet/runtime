@@ -168,7 +168,7 @@ typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, voi
 		*__p = (value);	\
 	} while (0)
 
-#define mono_string_chars(s) ((gushort*)(s)->chars)
+#define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
 
 extern MonoStats mono_stats;
