@@ -9352,6 +9352,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		return;
 	mono_domain_lock (domain);
 	g_hash_table_remove (domain->dynamic_code_hash, method);
+	g_hash_table_remove (domain->jit_code_hash, method);
 	mono_domain_unlock (domain);
 
 	mono_code_manager_destroy (ji->code_mp);
