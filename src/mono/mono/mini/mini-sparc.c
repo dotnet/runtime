@@ -55,17 +55,10 @@
 /*
  * The following things are not implemented or do not work:
  *  - some fp arithmetic corner cases
- *  - Thread Abort
  * The following tests in mono/mini are expected to fail:
  *  - test_0_simple_double_casts
  *      This test casts (guint64)-1 to double and then back to guint64 again.
  *    Under x86, it returns 0, while under sparc it returns -1.
- * The following tests in mono/tests are expected to fail:
- * appdomain-unload.exe (fails on x86)
- * remoting2.exe (fails on x86)
- * remoting3.exe (fails on x86)
- * thread5.exe (fails on x86)
- * thread6.exe (thread abort)
  *
  * In addition to this, the runtime requires the truncl function, or its 
  * solaris counterpart, aintl, to do some double->int conversions. If this 
