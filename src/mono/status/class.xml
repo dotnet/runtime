@@ -1370,5 +1370,13 @@
         <maintainers>
             <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
     </maintainers>
+    <class name="System.Random">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+    </maintainers>
 </classes>
 
