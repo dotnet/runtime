@@ -3243,6 +3243,7 @@ static gconstpointer icall_map [] = {
 	 * ModuleBuilder
 	 */
 	"System.Reflection.Emit.ModuleBuilder::create_modified_type", ves_icall_ModuleBuilder_create_modified_type,
+	"System.Reflection.Emit.ModuleBuilder::basic_init", mono_image_module_basic_init,
 	
 	/*
 	 * AssemblyBuilder

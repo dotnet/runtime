@@ -442,6 +442,7 @@ void          mono_image_create_pefile (MonoReflectionAssemblyBuilder *assembly)
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObject *obj);
+void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);

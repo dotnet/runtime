@@ -2528,6 +2528,45 @@ typedef struct {
 	guint32 flags;
 } MonoILT;
 
+static void register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
+
+static MonoImage*
+create_dynamic_mono_image (char *assembly_name, char *module_name)
+{
+	MonoImage *image;
+
+	image = g_new0 (MonoImage, 1);
+	
+	/* keep in sync with image.c */
+	image->name = assembly_name;
+	image->assembly_name = image->name; /* they may be different */
+	image->module_name = module_name;
+	image->references = g_new0 (MonoAssembly*, 1);
+	image->references [0] = NULL;
+
+	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	image->delegate_begin_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+	image->delegate_end_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+	image->delegate_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+
+	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	return image;
+}
+
 /*
  * mono_image_basic_init:
  * @assembly: an assembly builder object
@@ -2582,37 +2621,12 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 		assembly->tables [i].columns = table_sizes [i];
 	}
 
-	image = g_new0 (MonoImage, 1);
-	
-	/* keep in sync with image.c */
-	assembly->assembly.aname.name = image->name = mono_string_to_utf8 (assemblyb->name);
-	image->assembly_name = image->name; /* they may be different */
-	image->module_name = g_strdup ("RefEmit_YouForgotToDefineAModule");
+	image = create_dynamic_mono_image (mono_string_to_utf8 (assemblyb->name), g_strdup ("RefEmit_YouForgotToDefineAModule"));
+	assembly->assembly.aname.name = image->name;
 	image->assembly = (MonoAssembly*)assembly;
-	image->references = g_new0 (MonoAssembly*, 1);
-	image->references [0] = NULL;
-
-	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-	image->delegate_begin_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	image->delegate_end_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	image->delegate_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-
-	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->assembly.image = image;
 
+	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
 	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
 }
 
@@ -2985,6 +2999,39 @@ reflected_hash (gconstpointer a) {
 		mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
 		mono_domain_unlock (domain);	\
 	} while (0)
+
+static void 
+register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
+{
+	/* this is done only once */
+	mono_domain_lock (domain);
+	CACHE_OBJECT (assembly, res, NULL);
+}
+
+static void
+register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoImage *module)
+{
+	/* this is done only once */
+	mono_domain_lock (domain);
+	CACHE_OBJECT (module, res, NULL);
+}
+
+void
+mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
+{
+	MonoImage *image = moduleb->module.image;
+	MonoReflectionAssemblyBuilder *ab = moduleb->assemblyb;
+	if (!image) {
+		if (!ab->modules) {
+			/* a MonoImage was already created in mono_image_basic_init () */
+			image = ab->dynamic_assembly->assembly.image;
+		} else {
+			image = create_dynamic_mono_image (mono_string_to_utf8 (ab->name), mono_string_to_utf8 (moduleb->module.name));
+		}
+		moduleb->module.image = image;
+		register_module (mono_object_domain (moduleb), moduleb, image);
+	}
+}
 
 /*
  * mono_assembly_get_object:
