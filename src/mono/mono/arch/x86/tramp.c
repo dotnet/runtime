@@ -184,10 +184,26 @@ enum_marshal:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_R4:
 			x86_push_membase (p, X86_EDX, arg_pos);
+			break;
+		case MONO_TYPE_R4:
+			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 4);
+			x86_fld_membase (p, X86_EDX, arg_pos, TRUE);
+			x86_fst_membase (p, X86_ESP, 0, FALSE, TRUE);
+			break;
+		case MONO_TYPE_CLASS:
+			if (need_marshal) {
+				if (sig->params [i - 1]->data.klass->delegate) {
+					/* should we use a wrapper to invoke the multicast delegates? */
+					x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
+					x86_alu_reg_imm (p, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+					x86_push_reg (p, X86_EAX);
+				} else
+					g_error ("unhandled case");
+			} else {
+				x86_push_membase (p, X86_EDX, arg_pos);
+			}
 			break;
 		case MONO_TYPE_SZARRAY:
 			if (need_marshal) {
