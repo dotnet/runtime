@@ -12,7 +12,7 @@
 
 #include <config.h>
 #include <glib.h>
-#include <glob.h>
+#include <dirent.h>
 #include <mono/io-layer/io.h>
 
 extern struct _WapiHandleOps _wapi_file_ops;
@@ -45,13 +45,15 @@ struct _WapiHandlePrivate_file
 
 struct _WapiHandle_find
 {
-	glob_t glob;
-	size_t count;
+	int dummy;
 };
 
 struct _WapiHandlePrivate_find
 {
-	int dummy;
+	struct dirent **namelist;
+	gchar *dir_part;
+	int num;
+	size_t count;
 };
 
 G_BEGIN_DECLS

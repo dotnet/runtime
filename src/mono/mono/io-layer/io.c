@@ -15,7 +15,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <glob.h>
+#include <dirent.h>
+#include <fnmatch.h>
 #include <stdio.h>
 #include <utime.h>
 #ifdef HAVE_AIO_H
@@ -2406,20 +2407,46 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	return(TRUE);
 }
 
+/* This is here because I can't pass user data to the select function
+ * in scandir :(
+ */
+static mono_once_t file_key_once=MONO_ONCE_INIT;
+static pthread_key_t file_key;
+
+static void file_once_init (void)
+{
+	pthread_key_create (&file_key, NULL);
+}
+
+static int file_select (const struct dirent *dir)
+{
+	char *fullname=pthread_getspecific (file_key);
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Checking [%s] against [%s]",
+		   dir->d_name, fullname);
+#endif
+
+	return(!fnmatch (fullname, dir->d_name, FNM_PATHNAME));
+}
+
 gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
-	struct _WapiHandle_find *find_handle;
+	struct _WapiHandlePrivate_find *find_handle;
 	gpointer handle;
 	gboolean ok;
-	gchar *utf8_pattern = NULL;
+	gchar *utf8_pattern = NULL, *dir_part, *entry_part;
 	int result;
+	
+	mono_once (&file_key_once, file_once_init);
 	
 	if (pattern == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": pattern is NULL");
 #endif
 
-		return INVALID_HANDLE_VALUE;
+		SetLastError (ERROR_PATH_NOT_FOUND);
+		return(INVALID_HANDLE_VALUE);
 	}
 
 	utf8_pattern = mono_unicode_to_external (pattern);
@@ -2428,13 +2455,23 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
 #endif
 		
-		return INVALID_HANDLE_VALUE;
+		SetLastError (ERROR_INVALID_NAME);
+		return(INVALID_HANDLE_VALUE);
 	}
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": looking for [%s]",
 		utf8_pattern);
 #endif
+	
+	/* Figure out which bit of the pattern is the directory */
+	dir_part=g_path_get_dirname (utf8_pattern);
+	entry_part=g_path_get_basename (utf8_pattern);
+
+	if (strchr (dir_part, '*') || strchr (dir_part, '?')) {
+		SetLastError (ERROR_INVALID_NAME);
+		return(INVALID_HANDLE_VALUE);
+	}
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_FIND);
 	if(handle==_WAPI_HANDLE_INVALID) {
@@ -2447,8 +2484,8 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 
 	_wapi_handle_lock_handle (handle);
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
-				(gpointer *)&find_handle, NULL);
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
+				(gpointer *)&find_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up find handle %p", handle);
@@ -2457,76 +2494,68 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		
 		return(INVALID_HANDLE_VALUE);
 	}
+
+	/* The pattern can specify a directory or a set of files.
+	 *
+	 * The pattern can have wildcard characters ? and *, but only
+	 * in the section after the last directory delimiter.  (Return
+	 * ERROR_INVALID_NAME if there are wildcards in earlier path
+	 * sections.)  "*" has the usual 0-or-more chars meaning.  "?" 
+	 * means "match one character", "??" seems to mean "match one
+	 * or two characters", "???" seems to mean "match one, two or
+	 * three characters", etc.  Windows will also try and match
+	 * the mangled "short name" of files, so 8 character patterns
+	 * with wildcards will show some surprising results.
+	 *
+	 * All the written documentation I can find says that '?' 
+	 * should only match one character, and doesn't mention '??',
+	 * '???' etc.  I'm going to assume that the strict behaviour
+	 * (ie '???' means three and only three characters) is the
+	 * correct one, because that lets me use fnmatch(3) rather
+	 * than mess around with regexes.
+	 */
+
+	pthread_setspecific (file_key, entry_part);
 	
-#ifdef GLOB_PERIOD
-	/* glibc extension */
-	result = glob (utf8_pattern, GLOB_PERIOD, NULL, &find_handle->glob);
-#else
-	result = glob (utf8_pattern, 0, NULL, &find_handle->glob);
-	if (result == 0) {
-		/* If the last element of the pattern begins
-		 * '<slash>*' (stupid compiler) then add a '/.*'
-		 * pattern too.
-		 */
-		int len=strlen(utf8_pattern);
-		if(len==1 && utf8_pattern[0]=='*') {
-			result = glob (".*", GLOB_APPEND, NULL,
-					&find_handle->glob);
-		} else {
-			gchar *last_star=g_strrstr(utf8_pattern, "/*");
-			gchar *last_slash=g_strrstr(utf8_pattern, "/");
-			if(last_star==last_slash) {
-				gchar *append_pattern;
-				int dotpos=(int)(last_slash-utf8_pattern)+1;
-
-				append_pattern=g_new0(gchar, len+2);
-				strncpy(append_pattern, utf8_pattern, dotpos);
-				append_pattern[dotpos]='.';
-				strcpy(append_pattern+dotpos+1, last_slash+1);
-
-#ifdef DEBUG
-				g_message (G_GNUC_PRETTY_FUNCTION ": appending glob [%s]", append_pattern);
-#endif
-				result = glob (append_pattern, GLOB_APPEND,
-						NULL, &find_handle->glob);
-
-				g_free (append_pattern);
-			}
-		}
-	}
-#endif /* !GLOB_PERIOD */
-
+	/* glibc allows the two last parameters to be NULL here: check
+	 * that other systems do too.  (If some break, just make the
+	 * last parameter "alphasort" - I don't care about the order
+	 * so it's NULL for now to avoid the call to qsort(3).)
+	 */
+	result = scandir (dir_part, &find_handle->namelist, file_select, NULL);
 	g_free (utf8_pattern);
+	g_free (entry_part);
+	
+	if (result <= 0) {
+		if (result == 0) {
+			SetLastError (ERROR_FILE_NOT_FOUND);
+		} else {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": scandir error: %s", g_strerror (errno));
+#endif
 
-	if (result != 0) {
-		globfree (&find_handle->glob);
+			SetLastError (ERROR_INVALID_PARAMETER);
+		}
+		
+		g_free (dir_part);
 		_wapi_handle_unlock_handle (handle);
 		_wapi_handle_unref (handle);
-
-		switch (result) {
-#ifdef GLOB_NOMATCH
-		case GLOB_NOMATCH:
-			SetLastError (ERROR_NO_MORE_FILES);
-			break;
-#endif
-
-		default:
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": glob failed with code %d.", result);
-#endif
-
-			break;
-		}
-
-		return INVALID_HANDLE_VALUE;
+		return(INVALID_HANDLE_VALUE);
 	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Got %d matches", result);
+#endif
 
+	find_handle->dir_part = dir_part;
+	find_handle->num = result;
 	find_handle->count = 0;
+
 	if (!FindNextFile (handle, find_data)) {
 		_wapi_handle_unlock_handle (handle);
 		FindClose (handle);
 		SetLastError (ERROR_NO_MORE_FILES);
-		return INVALID_HANDLE_VALUE;
+		return(INVALID_HANDLE_VALUE);
 	}
 
 	_wapi_handle_unlock_handle (handle);
@@ -2536,17 +2565,17 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 
 gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 {
-	struct _WapiHandle_find *find_handle;
+	struct _WapiHandlePrivate_find *find_handle;
 	gboolean ok;
 	struct stat buf;
-	const gchar *filename;
+	gchar *filename;
 	gchar *utf8_filename, *utf8_basename;
 	gunichar2 *utf16_basename;
 	time_t create_time;
 	glong bytes;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
-				(gpointer *)&find_handle, NULL);
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
+				(gpointer *)&find_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up find handle %p", handle);
@@ -2555,19 +2584,20 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	}
 
 retry:
-	if (find_handle->count >= find_handle->glob.gl_pathc) {
+	if (find_handle->count >= find_handle->num) {
 		SetLastError (ERROR_NO_MORE_FILES);
 		return FALSE;
 	}
 
-	/* stat next glob match */
+	/* stat next match */
 
-	filename = find_handle->glob.gl_pathv [find_handle->count ++];
+	filename = g_build_filename (find_handle->dir_part, find_handle->namelist[find_handle->count ++]->d_name, NULL);
 	if (lstat (filename, &buf) != 0) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": stat failed: %s", filename);
 #endif
 
+		g_free (filename);
 		SetLastError (ERROR_NO_MORE_FILES);
 		return FALSE;
 	}
@@ -2579,6 +2609,7 @@ retry:
 	 */
 	if(S_ISLNK (buf.st_mode)) {
 		if(stat (filename, &buf) != 0) {
+			g_free (filename);
 			goto retry;
 		}
 	}
@@ -2589,8 +2620,14 @@ retry:
 		 * encoding of the name wasn't convertible), so just
 		 * ignore it.
 		 */
+		g_free (filename);
 		goto retry;
 	}
+	g_free (filename);
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Found [%s]", utf8_filename);
+#endif
 	
 	/* fill data block */
 
@@ -2642,6 +2679,7 @@ retry:
 	g_free (utf8_basename);
 	g_free (utf8_filename);
 	g_free (utf16_basename);
+
 	return TRUE;
 }
 
@@ -2655,11 +2693,12 @@ retry:
  */
 gboolean FindClose (gpointer handle)
 {
-	struct _WapiHandle_find *find_handle;
+	struct _WapiHandlePrivate_find *find_handle;
 	gboolean ok;
+	int i;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
-				(gpointer *)&find_handle, NULL);
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
+				(gpointer *)&find_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up find handle %p", handle);
@@ -2667,7 +2706,12 @@ gboolean FindClose (gpointer handle)
 		return(FALSE);
 	}
 	
-	globfree (&find_handle->glob);
+	for(i = 0; i < find_handle->num; i++) {
+		free (find_handle->namelist[i]);
+	}
+	free (find_handle->namelist);
+	g_free (find_handle->dir_part);
+	
 	_wapi_handle_unref (handle);
 
 	return TRUE;

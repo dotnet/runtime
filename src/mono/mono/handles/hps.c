@@ -188,13 +188,8 @@ static const guchar *socket_details (struct _WapiHandleShared *handle)
 
 static const guchar *find_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
-	struct _WapiHandle_find *find=&handle->u.find;
-	
-	g_snprintf (buf, sizeof(buf), "count: %5d",
-		    find->count);
-	
-	return(buf);
+	/* Nothing to see here either */
+	return("");
 }
 
 static const guchar *process_details (struct _WapiHandleShared *handle)
