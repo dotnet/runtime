@@ -2275,6 +2275,12 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	MonoVTable *vtable;
 	int i;
 
+#ifdef MONO_ARCH_HAVE_LMF_OPS
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+	    !MONO_TYPE_ISSTRUCT (signature->ret) && (method->klass->parent != mono_defaults.array_class))
+		return TRUE;
+#endif
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
@@ -2478,8 +2484,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	if (cfg->verbose_level > 2)
 		g_print ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
-	cheader = ((MonoMethodNormal *)cmethod)->header;
-
 	if (!cmethod->inline_info) {
 		mono_jit_stats.inlineable_methods++;
 		cmethod->inline_info = 1;
@@ -2490,6 +2494,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	}
 
 	/* allocate local variables */
+	cheader = ((MonoMethodNormal *)cmethod)->header;
 	new_locals_offset = cfg->num_varinfo;
 	for (i = 0; i < cheader->num_locals; ++i)
 		mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
@@ -3314,9 +3319,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 			    (!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || (cmethod->flags & METHOD_ATTRIBUTE_FINAL)) && 
 			    mono_method_check_inlining (cfg, cmethod) &&
-			    !g_list_find (dont_inline, cmethod)) {
+				 !g_list_find (dont_inline, cmethod)) {
 				int costs;
 				MonoBasicBlock *ebblock;
+
+				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+					cmethod = mono_marshal_get_native_wrapper (cmethod);
 
  				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
 					ip += 5;
@@ -5360,6 +5368,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				break;
 			}
+			case CEE_MONO_SAVE_LMF:
+			case CEE_MONO_RESTORE_LMF:
+#ifdef MONO_ARCH_HAVE_LMF_OPS
+				MONO_INST_NEW (cfg, ins, (ip [1] == CEE_MONO_SAVE_LMF) ? OP_SAVE_LMF : OP_RESTORE_LMF);
+				MONO_ADD_INS (bblock, ins);
+				cfg->need_lmf_area = TRUE;
+#endif
+				ip += 2;
+				break;
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;

@@ -521,7 +521,9 @@ typedef struct {
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
 	gboolean         run_cctors;
+	gboolean         need_lmf_area;
 	gpointer         debug_info;
+	guint32          lmf_offset;
 	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
 	MonoCompileArch  arch;
