@@ -2275,6 +2275,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	//	if (ins->cil_code)
 	//		g_print ("cil code\n");
+		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
 		case OP_BIGMUL:
