@@ -115,7 +115,22 @@ typedef struct {
 	gint32 max_stack;
 	gint32 cur_stack;
 	MonoArray *locals;
+	MonoArray *ex_handlers;
 } MonoReflectionILGen;
+
+typedef struct {
+	MonoArray *handlers;
+	gint32 start;
+	gint32 len;
+} MonoILExceptionInfo;
+
+typedef struct {
+	MonoReflectionType *extype;
+	gint32 type;
+	gint32 start;
+	gint32 len;
+	gint32 filter_offset;
+} MonoILExceptionBlock;
 
 typedef struct {
 	MonoObject object;

@@ -162,6 +162,17 @@ mono_image_add_stream_data (MonoDynamicStream *stream, char *data, guint32 len)
 }
 
 static void
+stream_data_align (MonoDynamicStream *stream)
+{
+	char buf [4] = {0};
+	guint32 count = stream->index % 4;
+
+	/* we assume the stream data will be aligned */
+	if (count)
+		mono_image_add_stream_data (stream, buf, 4 - count);
+}
+
+static void
 encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endbuf)
 {
 	if (!type) {
@@ -345,7 +356,7 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 	char flags = 0;
 	guint32 idx;
 	guint32 code_size;
-	gint32 max_stack;
+	gint32 max_stack, i;
 	gint32 num_locals = 0;
 	gint32 num_exception = 0;
 	gint maybe_small;
@@ -370,6 +381,16 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 		code_size = mb->ilgen->code_len;
 		max_stack = mb->ilgen->max_stack;
 		num_locals = mb->ilgen->locals ? mono_array_length (mb->ilgen->locals) : 0;
+		if (mb->ilgen->ex_handlers) {
+			MonoILExceptionInfo *ex_info;
+			for (i = 0; i < mono_array_length (mb->ilgen->ex_handlers); ++i) {
+				ex_info = (MonoILExceptionInfo*)mono_array_addr (mb->ilgen->ex_handlers, MonoILExceptionInfo, i);
+				if (ex_info->handlers)
+					num_exception += mono_array_length (ex_info->handlers);
+				else
+					num_exception++;
+			}
+		}
 	} else {
 		code = mb->code;
 		code_size = mono_array_length (code);
@@ -398,8 +419,10 @@ fat_header:
 	 * (and more sects and init locals flags)
 	 */
 	fat_flags =  0x03;
-	shortp = (guint16*)(fat_header);
-	*shortp = fat_flags | ((header_size / 4 ) << 12);
+	if (num_exception)
+		fat_flags |= METHOD_HEADER_MORE_SECTS;
+	fat_header [0] = fat_flags;
+	fat_header [1] = (header_size / 4 ) << 4;
 	shortp = (guint16*)(fat_header + 2);
 	*shortp = max_stack;
 	intp = (guint32*)(fat_header + 4);
@@ -408,6 +431,43 @@ fat_header:
 	*intp = local_sig;
 	idx = mono_image_add_stream_data (&assembly->code, fat_header, 12);
 	mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
+	if (num_exception) {
+		unsigned char sheader [4];
+		MonoExceptionClause clause;
+		MonoILExceptionInfo * ex_info;
+		MonoILExceptionBlock * ex_block;
+		int j;
+
+		stream_data_align (&assembly->code);
+		/* always use fat format for now */
+		sheader [0] = METHOD_HEADER_SECTION_FAT_FORMAT | METHOD_HEADER_SECTION_EHTABLE;
+		num_exception *= sizeof (MonoExceptionClause);
+		sheader [1] = num_exception & 0xff;
+		sheader [2] = (num_exception >> 8) & 0xff;
+		sheader [3] = (num_exception >> 16) & 0xff;
+		mono_image_add_stream_data (&assembly->code, sheader, 4);
+		/* fat header, so we are already aligned */
+		/* reverse order */
+		for (i = mono_array_length (mb->ilgen->ex_handlers) - 1; i >= 0; --i) {
+			ex_info = (MonoILExceptionInfo *)mono_array_addr (mb->ilgen->ex_handlers, MonoILExceptionInfo, i);
+			if (ex_info->handlers) {
+				for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
+					ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
+					clause.flags = ex_block->type;
+					clause.try_offset = ex_info->start;
+					clause.try_len = ex_info->len;
+					clause.handler_offset = ex_block->start;
+					clause.handler_len = ex_block->len;
+					clause.token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
+							mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
+					/* FIXME: ENOENDIAN */
+					mono_image_add_stream_data (&assembly->code, (char*)&clause, sizeof (clause));
+				}
+			} else {
+				g_error ("No clauses");
+			}
+		}
+	}
 	return assembly->text_rva + idx + CLI_H_SIZE;
 }
 
@@ -1078,11 +1138,13 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	 * write the stream info.
 	 */
 	table_offset = (p - (unsigned char*)meta->raw_metadata) + 5 * 8 + 40; /* room needed for stream headers */
+	table_offset += 3; table_offset &= ~3;
 	
 	int32val = (guint32*)p;
 	*int32val++ = assembly->tstream.offset = table_offset;
 	*int32val = heapt_size;
 	table_offset += *int32val;
+	table_offset += 3; table_offset &= ~3;
 	p += 8;
 	strcpy (p, "#~");
 	p += 3;
@@ -1092,6 +1154,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	*int32val++ = assembly->sheap.offset = table_offset;
 	*int32val = assembly->sheap.index;
 	table_offset += *int32val;
+	table_offset += 3; table_offset &= ~3;
 	p += 8;
 	strcpy (p, "#Strings");
 	p += 9;
@@ -1101,6 +1164,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	*int32val++ = assembly->us.offset = table_offset;
 	*int32val = assembly->us.index;
 	table_offset += *int32val;
+	table_offset += 3; table_offset &= ~3;
 	p += 8;
 	strcpy (p, "#US");
 	p += 4;
@@ -1110,6 +1174,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	*int32val++ = assembly->blob.offset = table_offset;
 	*int32val = assembly->blob.index;
 	table_offset += *int32val;
+	table_offset += 3; table_offset &= ~3;
 	p += 8;
 	strcpy (p, "#Blob");
 	p += 6;
@@ -1119,6 +1184,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	*int32val++ = assembly->guid.offset = table_offset;
 	*int32val = assembly->guid.index;
 	table_offset += *int32val;
+	table_offset += 3; table_offset &= ~3;
 	p += 8;
 	strcpy (p, "#GUID");
 	p += 6;
