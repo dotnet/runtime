@@ -2754,6 +2754,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		argnum = i + sig->hasthis;
 
 		switch (t->type) {
+		case MONO_TYPE_STRING:
+			if (t->byref)
+				continue;
+
+			mono_mb_emit_ldloc (mb, tmp_locals [i]);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_FREE);
+
+			break;
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:			
 			if (t->byref)
