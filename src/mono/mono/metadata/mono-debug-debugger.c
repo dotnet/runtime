@@ -623,6 +623,7 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		*ptr++ = (guint8*)&string.length - (guint8*)&string;
 		*ptr++ = sizeof (string.length);
 		*ptr++ = (guint8*)&string.chars - (guint8*)&string;
+
 		break;
 	}
 
@@ -740,7 +741,7 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		g_ptr_array_free (methods, FALSE);
 
 		if (kind == MONO_TYPE_CLASS) {
-			if (klass->parent)
+			if (klass->parent && (klass->parent != mono_defaults.object_class))
 				*((guint32 *) ptr)++ = write_type (table, &klass->parent->this_arg);
 			else
 				*((guint32 *) ptr)++ = 0;
