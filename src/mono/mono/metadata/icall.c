@@ -2675,6 +2675,32 @@ ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
 	return mono_compile_method (method);
 }
 
+static MonoString *
+ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
+{
+	static MonoString *mcpath;
+	gchar *path;
+
+	if (mcpath != NULL)
+		return mcpath;
+
+	path = g_build_path (G_DIR_SEPARATOR_S, MONO_CFG_DIR, "mono", "machine.config", NULL);
+
+#if defined (PLATFORM_WIN32)
+	/* Avoid mixing '/' and '\\' */
+	{
+		gint i;
+		for (i = strlen (path) - 1; i >= 0; i--)
+			if (path [i] == '/')
+				path [i] = '\\';
+	}
+#endif
+	mcpath = mono_string_new (mono_domain_get (), path);
+	g_free (path);
+
+	return mcpath;
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3199,6 +3225,12 @@ static gconstpointer icall_map [] = {
 
 	"System.Reflection.Assembly::MonoDebugger_GetType",
 	ves_icall_MonoDebugger_GetType,
+
+	/*
+	 * System.Configuration
+	 */
+	"System.Configuration.DefaultConfig::get_machine_config_path",
+	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path,
 
 	/*
 	 * add other internal calls here
