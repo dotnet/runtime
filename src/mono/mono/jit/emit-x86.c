@@ -531,7 +531,7 @@ tree_preallocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, tree->exclude_mask);
 			if (goal == MB_NTERM_reg) {
 				tree->left->exclude_mask |= (1 << X86_EDX);
-				tree->right->exclude_mask |= (1 << X86_EDX);
+				tree->right->exclude_mask |= (1 << X86_EDX) | (1 << X86_EAX);
 			}
 			break;
 		default:
