@@ -3345,7 +3345,7 @@ mono_arch_get_lmf_addr (void)
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
-#ifndef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	pthread_t self = pthread_self();
 	pthread_attr_t attr;
 	void *staddr = NULL;
@@ -3375,7 +3375,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 		}
 	}		
 
-#ifndef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
 	/* Determine stack boundaries */
 	if (!mono_running_on_valgrind ()) {
