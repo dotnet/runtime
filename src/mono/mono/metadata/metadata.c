@@ -1140,19 +1140,16 @@ mono_get_method (cli_image_info_t *iinfo, guint32 token)
 	 */
 	if (table != META_TABLE_METHOD) {
 		g_assert (table == META_TABLE_MEMBERREF);
-		g_print ("method token -> 0x%08x\n", token);
 		mono_metadata_decode_row (&tables [table], index, cols, 3);
 		g_assert ((cols [0] & 0x07) != 3);
 		table = META_TABLE_METHOD;
 		index = cols [0] >> 3;
 		sig = mono_metadata_blob_heap (&iinfo->cli_metadata, cols [2]);
-		method->name = cols [1];
-		g_print ("decode methodref: %s\n", mono_metadata_string_heap (&iinfo->cli_metadata, cols [1]));
+		result->name = cols [1];
 	}
 	
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
-	method->name = cols [3];
-	g_print ("decode method: %s\n", mono_metadata_string_heap (&iinfo->cli_metadata, cols [3]));
+	result->name = cols [3];
 	/* if this is a methodref from another module/assembly, this fails */
 	loc = cli_rva_map (iinfo, cols [0]);
 	g_assert (loc);
