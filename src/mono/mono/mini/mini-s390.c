@@ -1318,33 +1318,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 			inst->inst_offset  = offset;
 			offset 		  += sizeof (gpointer);
 		}
-	}
-
-	curinst = m->locals_start;
-	for (iVar = curinst; iVar < m->num_varinfo; ++iVar) {
-		inst = m->varinfo [iVar];
-		if (inst->opcode == OP_REGVAR)
-			continue;
-
-		/* inst->unused indicates native sized value types, this is used by the
-		* pinvoke wrappers when they call functions returning structure */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
-			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
-		else
-			size = mono_type_size (inst->inst_vtype, &align);
-
-		offset 		   = S390_ALIGN(offset, align);
-		inst->inst_offset  = offset;
-		inst->opcode 	   = OP_REGOFFSET;
-		inst->inst_basereg = frame_reg;
-		offset 		  += size;
-		//DEBUG (g_print("allocating local %d to %d\n", iVar, inst->inst_offset));
-	}
-
-	if (sig->hasthis) 
 		curinst = sArg = 1;
-	else 
+	} else {
 		curinst = sArg = 0;
+	}
 
 	eArg = sig->param_count + sArg;
 
@@ -1391,6 +1368,33 @@ mono_arch_allocate_vars (MonoCompile *m)
 		}
 		curinst++;
 	}
+
+	curinst = m->locals_start;
+	for (iVar = curinst; iVar < m->num_varinfo; ++iVar) {
+		inst = m->varinfo [iVar];
+		if (inst->opcode == OP_REGVAR)
+			continue;
+
+		/* inst->unused indicates native sized value types, this is used by the
+		* pinvoke wrappers when they call functions returning structure */
+		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
+			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
+		else
+			size = mono_type_size (inst->inst_vtype, &align);
+
+		offset 		   = S390_ALIGN(offset, align);
+		inst->inst_offset  = offset;
+		inst->opcode 	   = OP_REGOFFSET;
+		inst->inst_basereg = frame_reg;
+		offset 		  += size;
+		//DEBUG (g_print("allocating local %d to %d\n", iVar, inst->inst_offset));
+	}
+
+//	if (sig->hasthis) 
+//		curinst = sArg = 1;
+//	else 
+//		curinst = sArg = 0;
+//
 
 	/*------------------------------------------------------*/
 	/* Allow space for the trace method stack area if needed*/
@@ -1440,6 +1444,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
+	DEBUG (g_print ("Call requires: %d parameters\n",n));
 	
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 	if (cinfo->struct_ret)
@@ -1447,6 +1452,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
+		DEBUG (g_print ("Parameter %d - Register: %d Type: %d\n",
+				i+1,ainfo->reg,ainfo->regtype));
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
 			in = call->args [i];
@@ -1483,14 +1490,14 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						break;
 					}
 				} 
-				arg->sreg2    = ainfo->reg;
+				arg->sreg1    = ainfo->reg;
 				arg->opcode   = OP_OUTARG_VT;
 				if (ainfo->vtsize != 0)
 					arg->unused = -ainfo->vtsize;
 				else
 					arg->unused = ainfo->size;
 				arg->inst_imm     = ainfo->offset;
-				arg->sreg1        = ainfo->offparm;
+				arg->sreg2        = ainfo->offparm;
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->opcode = OP_OUTARG;
 				arg->unused = ainfo->reg | (ainfo->size << 8);
@@ -2390,6 +2397,7 @@ static int
 alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, guint32 allow_mask)
 {
 	int val = cfg->rs->iassign [sym_reg];
+	DEBUG (g_print ("Allocating a general register for %d (%d) with mask %08x\n",val,sym_reg,allow_mask));
 	if (val < 0) {
 		int spill = 0;
 		if (val < -1) {
@@ -2404,6 +2412,7 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 		if (spill)
 			create_spilled_store (cfg, spill, val, sym_reg, ins);
 	}
+	DEBUG (g_print ("Allocated %d for %d\n",val,sym_reg));
 	cfg->rs->isymbolic [val] = sym_reg;
 	return val;
 }
@@ -2526,19 +2535,24 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			DEBUG (g_print ("adding %d to cur_fregs\n", ins->dreg));
 		} else if (spec [MONO_INST_CLOB] == 'c') {
 			MonoCallInst *cinst = (MonoCallInst*)ins;
-			DEBUG (g_print ("excluding regs 0x%x from cur_iregs (0x%x)\n", cinst->used_iregs, cur_iregs));
-			DEBUG (g_print ("excluding fpregs 0x%x from cur_fregs (0x%x)\n", cinst->used_fregs, cur_fregs));
+			DEBUG (g_print ("excluding regs 0x%x from cur_iregs (0x%x)\n", 
+					cinst->used_iregs, cur_iregs));
+			DEBUG (g_print ("excluding fpregs 0x%x from cur_fregs (0x%x)\n", 
+					cinst->used_fregs, cur_fregs));
 			cur_iregs &= ~cinst->used_iregs;
 			cur_fregs &= ~cinst->used_fregs;
 			DEBUG (g_print ("available cur_iregs: 0x%x\n", cur_iregs));
 			DEBUG (g_print ("available cur_fregs: 0x%x\n", cur_fregs));
-			/* registers used by the calling convention are excluded from 
-			 * allocation: they will be selectively enabled when they are 
-			 * assigned by the special SETREG opcodes.
-			 */
+			/*------------------------------------------------------------*/
+			/* registers used by the calling convention are excluded from */ 
+			/* allocation: they will be selectively enabled when they are */ 
+			/* assigned by the special SETREG opcodes.		      */
+			/*------------------------------------------------------------*/
 		}
 		dest_mask = src1_mask = src2_mask = cur_iregs;
-		/* update for use with FP regs... */
+		/*------------------------------------------------------*/
+		/* update for use with FP regs... 			*/
+		/*------------------------------------------------------*/
 		if (spec [MONO_INST_DEST] == 'f') {
 			dest_mask = cur_fregs;
 			if (ins->dreg >= MONO_MAX_FREGS) {
@@ -2557,7 +2571,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					if (spill)
 						create_spilled_store_float (cfg, spill, val, prev_dreg, ins);
 				}
-				DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", mono_arch_regname (val), ins->dreg));
+				DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", 
+						mono_arch_regname (val), ins->dreg));
 				rs->fsymbolic [val] = prev_dreg;
 				ins->dreg = val;
 				if (spec [MONO_INST_CLOB] == 'c' && ins->dreg != s390_f0) {
@@ -2567,7 +2582,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				prev_dreg = -1;
 			}
-			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
+			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
 				DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 				mono_regstate_free_float (rs, ins->dreg);
 			}
@@ -2587,7 +2602,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (spill)
 					create_spilled_store (cfg, spill, val, prev_dreg, ins);
 			}
-			DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", mono_arch_regname (val), ins->dreg));
+			DEBUG (g_print ("\tassigned dreg %s to dest R%d (prev: R%d)\n", 
+					mono_arch_regname (val), ins->dreg, prev_dreg));
 			rs->isymbolic [val] = prev_dreg;
 			ins->dreg = val;
 			if (spec [MONO_INST_DEST] == 'l') {
@@ -3076,16 +3092,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_nr   (code, s390_r0, ins->sreg1);
-			s390_jl   (code, 9);
+			s390_jl   (code, 7);
 			s390_lhi  (code, s390_r13, -1);
 			s390_sll  (code, s390_r13, 0, 8);
 			s390_or	  (code, ins->dreg, s390_r13);
 			break;
 		case CEE_CONV_I2:
 			s390_lhi  (code, s390_r0, 0x80);
-			s390_lr   (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1) {
+				s390_lr   (code, ins->dreg, ins->sreg1);
+			}
 			s390_nr   (code, s390_r0, ins->sreg1);
-			s390_jl   (code, 9);
+			s390_jl   (code, 7);
 			s390_lhi  (code, s390_r13, -1);
 			s390_sll  (code, s390_r13, 0, 16);
 			s390_or	  (code, ins->dreg, s390_r13);

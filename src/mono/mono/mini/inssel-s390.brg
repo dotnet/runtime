@@ -182,7 +182,7 @@ stmt: OP_OUTARG_R8 (freg) {
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	MonoInst *vt  = state->left->left->tree;
-	int start_reg = tree->sreg2;
+	int start_reg = tree->sreg1;
 	int size      = tree->unused;
 	int nregs     = size / 4;
 	int soffset   = vt->inst_offset;
@@ -193,7 +193,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 				  vt->inst_basereg, soffset, size, 0);
 		if (start_reg != STK_BASE) {
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
-						 s->frame_reg, tree->sreg1);
+						 s->frame_reg, tree->sreg2);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
@@ -212,7 +212,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
-	int start_reg = tree->sreg2;
+	int start_reg = tree->sreg1;
 	int size      = tree->unused;
 	int nregs     = size / 4;
 	int i;
@@ -230,24 +230,36 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 }
 
 stmt: OP_OUTARG_VT (reg) {
-	int start_reg = tree->sreg2;
+	int start_reg = tree->sreg1;
 	int size      = tree->unused;
 	int nregs     = size / 4;
-	int soffset   = tree->inst_imm;
+	int soffset   = tree->inst_offset;
 	int i;
-	if (start_reg != STK_BASE) {
-		for (i = 0; i < nregs; ++i) {
-			MONO_EMIT_NEW_LOAD_MEMBASE(s, start_reg, s->frame_reg, 
-						   tree->inst_offset);
-			soffset += sizeof(gpointer);
+
+	if (size < 0) { 
+		size = -size;
+		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm,
+				  tree->inst_basereg, soffset, size, 0);
+		if (start_reg != STK_BASE) {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
+						 s->frame_reg, tree->sreg2);
 		}
 	} else {
-		int tmpr;
-		tmpr = mono_regstate_next_int (s->rs);
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
-					s->stack_offset);
-		mini_emit_memcpy (s, s->frame_reg, soffset, tmpr, 
-				  tree->sreg1, size, 0);
+		if (start_reg != STK_BASE) {
+			for (i = 0; i < nregs; ++i) {
+				MONO_EMIT_NEW_LOAD_MEMBASE(s, start_reg + i, 
+							   s->frame_reg, 
+							   soffset);
+				soffset += sizeof(gpointer);
+			}
+		} else {
+			int tmpr;
+			tmpr = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+						s->stack_offset);
+			mini_emit_memcpy (s, s->frame_reg, soffset, tmpr, 
+					  tree->sreg2, size, 0);
+		}
 	}
 }
 
