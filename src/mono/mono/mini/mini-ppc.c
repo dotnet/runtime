@@ -255,8 +255,6 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #define NOT_IMPLEMENTED(x) \
                 g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
 
-#define FLOAT_REGS 8
-#define GENERAL_REGS 8
 #ifdef __APPLE__
 #define ALWAYS_ON_STACK(s) s
 #define FP_ALSO_IN_REG(s) s
@@ -296,7 +294,7 @@ static void inline
 add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 {
 	if (simple) {
-		if (*gr >= 3 + GENERAL_REGS) {
+		if (*gr >= 3 + PPC_NUM_REG_ARGS) {
 			ainfo->offset = PPC_STACK_PARAM_OFFSET + *stack_size;
 			ainfo->reg = ppc_sp; /* in the caller */
 			ainfo->regtype = RegTypeBase;
@@ -306,7 +304,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg = *gr;
 		}
 	} else {
-		if (*gr >= 3 + GENERAL_REGS - 1) {
+		if (*gr >= 3 + PPC_NUM_REG_ARGS - 1) {
 #ifdef ALIGN_DOUBLES
 			//*stack_size += (*stack_size % 8);
 #endif
@@ -467,7 +465,9 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			break;
 		case MONO_TYPE_R4:
 			cinfo->args [n].size = 4;
-			if (fr < 7) {
+
+			/* It was 7, now it is 8 in LinuxPPC */
+			if (fr <= PPC_LAST_FPARG_REG) {
 				cinfo->args [n].regtype = RegTypeFP;
 				cinfo->args [n].reg = fr;
 				fr ++;
@@ -480,7 +480,8 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			break;
 		case MONO_TYPE_R8:
 			cinfo->args [n].size = 8;
-			if (fr < 7) {
+			/* It was 7, now it is 8 in LinuxPPC */
+			if (fr <= PPC_LAST_FPARG_REG) {
 				cinfo->args [n].regtype = RegTypeFP;
 				cinfo->args [n].reg = fr;
 				fr ++;
