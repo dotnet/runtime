@@ -352,34 +352,14 @@ reg: OP_AOTCONST {
 # load/store operations
 #
 
-reg: CEE_LDIND_I (base) {
-	MONO_EMIT_LOAD_MEMBASE (s, tree, state->reg1, state->left->tree->inst_basereg, 
-				state->left->tree->inst_offset);
-}
-
-reg: CEE_LDIND_REF (base) {
-	MONO_EMIT_LOAD_MEMBASE (s, tree, state->reg1, state->left->tree->inst_basereg, 
-				state->left->tree->inst_offset);
-}
-
-reg: CEE_LDIND_I1 (base) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI1_MEMBASE, state->reg1, 
-				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
-}
-
-reg: CEE_LDIND_U1 (base) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU1_MEMBASE, state->reg1, 
-				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
-}
-
-reg: CEE_LDIND_I2 (base) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI2_MEMBASE, state->reg1, 
-				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
-}
-
+reg: CEE_LDIND_I (base),
+reg: CEE_LDIND_REF (base),
+reg: CEE_LDIND_I1 (base),
+reg: CEE_LDIND_U1 (base),
+reg: CEE_LDIND_I2 (base),
 reg: CEE_LDIND_U2 (base) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU2_MEMBASE, state->reg1, 
-				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (tree->opcode),
+				   state->reg1, state->left->tree->inst_basereg, state->left->tree->inst_offset);
 }
 
 reg: OP_LDADDR (OP_REGOFFSET) "2" {
@@ -422,15 +402,6 @@ reg: OP_OBJADDR (reg) {
 reg: OP_VTADDR (reg) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: CEE_LDIND_REF (OP_REGVAR),
-reg: CEE_LDIND_I4 (OP_REGVAR),
-reg: CEE_LDIND_U4 (OP_REGVAR) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->dreg;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
@@ -483,16 +454,14 @@ reg: CEE_LDIND_U4 (base) {
 				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
 }
 
-reg: CEE_LDIND_I4 (OP_REGVAR) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->tree->dreg);
-}
-
+reg: CEE_LDIND_REF (OP_REGVAR),
+reg: CEE_LDIND_I (OP_REGVAR),
+reg: CEE_LDIND_I4 (OP_REGVAR),
 reg: CEE_LDIND_U4 (OP_REGVAR) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->tree->dreg);
-}
-
-reg: CEE_LDIND_I (OP_REGVAR) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->tree->dreg);
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->tree->dreg;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_STIND_I4 (base, reg) {
@@ -508,6 +477,27 @@ stmt: CEE_STIND_I4 (base, CEE_LDIND_I4 (OP_REGVAR)) {
 stmt: CEE_STIND_I4 (base, OP_ICONST) {
 	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STOREI4_MEMBASE_IMM, state->left->tree->inst_basereg,
 				     state->left->tree->inst_offset, state->right->tree->inst_c0);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST) {
+	tree->inst_c0 = state->right->tree->inst_c0;
+	tree->opcode = OP_ICONST;
+	tree->dreg = state->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, reg) {
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->reg1);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (OP_REGVAR)) {
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->left->tree->dreg);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (base)) {
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, state->left->tree->dreg, 
+				   state->right->left->tree->inst_basereg, 
+				   state->right->left->tree->inst_offset);
 }
 
 stmt: CEE_STIND_I1 (base, reg) {
@@ -528,10 +518,6 @@ stmt: CEE_STIND_I2 (base, reg) {
 stmt: CEE_STIND_I2 (base, OP_ICONST) {
 	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STOREI2_MEMBASE_IMM, state->left->tree->inst_basereg,
 				     state->left->tree->inst_offset, state->right->tree->inst_c0);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, reg) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->reg1);
 }
 
 stmt: CEE_STIND_I2 (OP_REGVAR, reg) {
@@ -558,17 +544,6 @@ stmt: CEE_STIND_I2 (OP_REGVAR, CEE_LDIND_I2 (OP_REGVAR)) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->left->tree->dreg, state->right->left->tree->dreg, 0xffff);
 }
 
-stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (OP_REGVAR)) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->left->tree->dreg);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (base)) {
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, state->left->tree->dreg, 
-				   state->right->left->tree->inst_basereg, 
-				   state->right->left->tree->inst_offset);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_I2 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_I1 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_REF (OP_REGVAR, OP_ICONST),
@@ -630,7 +605,7 @@ reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
 	index2 = state->right->right->reg1;
 
 	/* range checking */
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, bounds_reg, 
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, bounds_reg, 
 				       state->left->reg1, G_STRUCT_OFFSET (MonoArray, bounds));
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, low1_reg, 
@@ -794,82 +769,6 @@ reg: CEE_CONV_OVF_U2_UN (reg) {
 }
 
 #
-# basic alu operations
-#
-
-reg: CEE_AND (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_AND (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_OR (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_OR (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_OR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_XOR (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_XOR (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_XOR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_NEG (reg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
-
-reg: CEE_NOT (reg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
-
-reg: CEE_ADD (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_ADD (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_ADD_OVF (reg, reg) {
-	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_COND_EXC (s, OV, "OverflowException");
-}
-
-reg: CEE_ADD_OVF_UN (reg, reg) {
-	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");
-}
-
-reg: CEE_SUB (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_SUB (reg, CEE_LDIND_I4 (OP_REGVAR)) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->left->tree->dreg);
-}
-
-reg: CEE_SUB (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_SUB_OVF (reg, reg) {
-	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_COND_EXC (s, OV, "OverflowException");
-}
-
-reg: CEE_SUB_OVF_UN (reg, reg) {
-	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");
-}
-
-#
 # mult/div operations
 #
 
@@ -1005,11 +904,19 @@ stmt: CEE_SWITCH (reg) {
 
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, n);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGE_UN, tree->inst_many_bb [n]);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
+	if (sizeof (gpointer) == 8)
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 3);
+	else
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
 	mono_bblock_add_inst (s->cbb, label);
 	 /* the backend must patch the address. we use 0xf0f0f0f0 to avoid the usage 
 	  * of special (short) opcodes on x86 */
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0);
+	if (sizeof (gpointer) == 8) {
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0f0f0f0f1LL);
+	}
+	else {
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0);
+	}
 	MONO_EMIT_UNALU (s, tree, OP_BR_REG, -1, target_reg);
 }
 
@@ -1033,10 +940,6 @@ reg: CEE_CALLVIRT (reg) {
 
 stmt: OP_VOIDCALLVIRT (reg) {
 	mini_emit_virtual_call (s, state, tree, OP_VOIDCALL, OP_VOIDCALL_MEMBASE);
-}
-
-lreg: OP_LCALLVIRT (reg) {
-	mini_emit_virtual_call (s, state, tree, OP_LCALL, OP_LCALL_MEMBASE);
 }
 
 freg: OP_FCALLVIRT (reg) {
@@ -1068,17 +971,6 @@ freg: OP_FCALL {
 }
 
 freg: OP_FCALL_REG (reg) {
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-lreg: OP_LCALL {
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-lreg: OP_LCALL_REG (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -1120,86 +1012,7 @@ freg: OP_FCALL_REG (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-lreg: OP_LCALL_REG (OP_ICONST) {
-	tree->opcode = OP_LCALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 stmt: CEE_RET "0" {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-cflags: OP_COMPARE (reg, reg) {
-	tree->sreg1 = state->left->reg1;
-	tree->sreg2 = state->right->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), reg) {
-	tree->sreg1 = state->left->left->tree->dreg;
-	tree->sreg2 = state->right->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-cflags: OP_COMPARE (CEE_LDIND_I (OP_REGVAR), CEE_LDIND_I (OP_REGVAR)) {
-	tree->sreg1 = state->left->left->tree->dreg;
-	tree->sreg2 = state->right->left->tree->dreg;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST) {
-	tree->opcode = OP_COMPARE_IMM;
-	tree->sreg1 = state->left->left->tree->dreg;
-	tree->inst_imm = state->right->tree->inst_c0;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-cflags: OP_COMPARE (reg, OP_ICONST) {
-	tree->opcode = OP_COMPARE_IMM;
-	tree->sreg1 = state->left->reg1;
-	tree->inst_imm = state->right->tree->inst_c0;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BNE_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BEQ (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLT (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLT_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGT (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGT_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGE  (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGE_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLE  (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLE_UN (cflags) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -1287,7 +1100,7 @@ reg: CEE_ISINST (reg) {
 			int rank_reg = mono_regstate_next_int (s->rs);
 			int eclass_reg = mono_regstate_next_int (s->rs);
 
-			MONO_EMIT_NEW_LOAD_MEMBASE (s, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 			MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
@@ -1459,7 +1272,7 @@ reg: OP_UNBOXCAST (reg) {
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
 
 	/* FIXME: generics */
@@ -1506,7 +1319,7 @@ reg: CEE_CASTCLASS (reg) {
 			int rank_reg = mono_regstate_next_int (s->rs);
 			int eclass_reg = mono_regstate_next_int (s->rs);
 
-			MONO_EMIT_NEW_LOAD_MEMBASE (s, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 			MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
@@ -1663,6 +1476,7 @@ reg: OP_CCASTCLASS (reg) {
 }
 
 reg: CEE_NEWARR (reg),
+
 lreg: OP_LMUL (lreg, lreg),
 lreg: OP_LMUL_OVF (lreg, lreg),
 lreg: OP_LMUL_OVF_UN (lreg, lreg),
@@ -1828,7 +1642,7 @@ mini_emit_max_iid_check_vtable (MonoCompile *s, int vtable_reg, MonoClass *klass
 {
 	int max_iid_reg = mono_regstate_next_int (s->rs);
 		
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
 	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
 }
 
@@ -1839,7 +1653,7 @@ mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
 {
 	int max_iid_reg = mono_regstate_next_int (s->rs);
 
- 	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));		
+ 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));		
 	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
 }
 
@@ -2114,5 +1928,4 @@ ldind_to_load_membase (int opcode)
 
 	return -1;
 }
-
 

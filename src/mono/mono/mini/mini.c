@@ -59,7 +59,7 @@
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
  * because they have weird semantics with NaNs.
  */
-#define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN))
+#define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
 #define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
 
 #define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
@@ -173,6 +173,12 @@ print_method_from_ip (void *ip)
 
 }
 
+G_GNUC_UNUSED void
+mono_print_method_from_ip (void *ip)
+{
+	print_method_from_ip (ip);
+}
+	
 /* 
  * mono_method_same_domain:
  *
@@ -252,17 +258,31 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->type = STACK_I4;	\
 	} while (0)
 
-/* FIXME: have a different definition of NEW_PCONST for 64 bit systems */
+#if SIZEOF_VOID_P == 8
+#define NEW_PCONST(cfg,dest,val) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_I8CONST;	\
+		(dest)->inst_p0 = (val);	\
+		(dest)->type = STACK_PTR;	\
+	} while (0)
+#else
 #define NEW_PCONST(cfg,dest,val) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_ICONST;	\
 		(dest)->inst_p0 = (val);	\
 		(dest)->type = STACK_PTR;	\
 	} while (0)
+#endif
+
+#if SIZEOF_VOID_P == 8
+#define OP_PCONST OP_I8CONST
+#else
+#define OP_PCONST OP_ICONST
+#endif
 
 #define NEW_CLASSCONST(cfg,dest,val) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (val);	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_CLASS; \
 		(dest)->type = STACK_PTR;	\
@@ -270,7 +290,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_IMAGECONST(cfg,dest,val) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (val);	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_IMAGE; \
 		(dest)->type = STACK_PTR;	\
@@ -278,7 +298,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_FIELDCONST(cfg,dest,field) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (field);	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_FIELD; \
 		(dest)->type = STACK_PTR;	\
@@ -286,7 +306,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_METHODCONST(cfg,dest,val) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (val);	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_METHODCONST; \
 		(dest)->type = STACK_PTR;	\
@@ -294,7 +314,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_VTABLECONST(cfg,dest,vtable) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable);	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_VTABLE; \
 		(dest)->type = STACK_PTR;	\
@@ -302,7 +322,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_SFLDACONST(cfg,dest,field) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (field);	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_SFLDA; \
 		(dest)->type = STACK_PTR;	\
@@ -485,8 +505,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define ADD_BINCOND(next_block) do {	\
 		MonoInst *cmp;	\
-		MONO_INST_NEW(cfg, cmp, OP_COMPARE);	\
 		sp -= 2;		\
+		MONO_INST_NEW(cfg, cmp, OP_COMPARE);	\
 		cmp->inst_i0 = sp [0];	\
 		cmp->inst_i1 = sp [1];	\
 		cmp->cil_code = ins->cil_code;	\
@@ -514,8 +534,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 /* FIXME: handle float, long ... */
 #define ADD_UNCOND(istrue) do {	\
 		MonoInst *cmp;	\
-		MONO_INST_NEW(cfg, cmp, OP_COMPARE);	\
 		sp--;		\
+		MONO_INST_NEW(cfg, cmp, OP_COMPARE);	\
 		cmp->inst_i0 = sp [0];	\
                 switch (cmp->inst_i0->type) { \
 		case STACK_I8: \
@@ -1148,8 +1168,11 @@ type_from_op (MonoInst *ins) {
 		ins->opcode += binops_op_map [ins->type];
 		return;
 	case OP_COMPARE:
+	case OP_LCOMPARE:
 		/* FIXME: handle some specifics with ins->next->type */
 		ins->type = bin_comp_table [ins->inst_i0->type] [ins->inst_i1->type] ? STACK_I4: STACK_INV;
+		if ((ins->inst_i0->type == STACK_I8) || ((sizeof (gpointer) == 8) && ((ins->inst_i0->type == STACK_PTR) || (ins->inst_i0->type == STACK_OBJ) || (ins->inst_i0->type == STACK_MP))))
+			ins->opcode = OP_LCOMPARE;
 		return;
 	case OP_CEQ:
 	case OP_CGT:
@@ -5377,7 +5400,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmp->cil_code = ip;
 				type_from_op (cmp);
 				CHECK_TYPE (cmp);
-				cmp->opcode = OP_COMPARE;
+				if ((sp [0]->type == STACK_I8) || ((sizeof (gpointer) == 8) && ((sp [0]->type == STACK_PTR) || (sp [0]->type == STACK_OBJ) || (sp [0]->type == STACK_MP))))
+					cmp->opcode = OP_LCOMPARE;
+				else
+					cmp->opcode = OP_COMPARE;
 				ins->cil_code = ip;
 				ins->type = STACK_I4;
 				ins->inst_i0 = cmp;
@@ -7240,6 +7266,10 @@ mini_select_instructions (MonoCompile *cfg)
 		OP_LBNE_UN, OP_LBLT, OP_LBLE, OP_LBGT, OP_LBGE,
 		OP_LBEQ, OP_LBLT_UN, OP_LBLE_UN, OP_LBGT_UN, OP_LBGE_UN
 	};
+	static const int reverse_imap [] = {
+		OP_IBNE_UN, OP_IBLT, OP_IBLE, OP_IBGT, OP_IBGE,
+		OP_IBEQ, OP_IBLT_UN, OP_IBLE_UN, OP_IBGT_UN, OP_IBGE_UN
+	};
 
 	MonoBasicBlock *bb;
 	
@@ -7264,6 +7294,8 @@ mini_select_instructions (MonoCompile *cfg)
 					bb->last_ins->opcode = reverse_fmap [bb->last_ins->opcode - OP_FBEQ];
 				} else if (bb->last_ins->opcode >= OP_LBEQ && bb->last_ins->opcode <= OP_LBLT_UN) {
 					bb->last_ins->opcode = reverse_lmap [bb->last_ins->opcode - OP_LBEQ];
+				} else if (bb->last_ins->opcode >= OP_IBEQ && bb->last_ins->opcode <= OP_IBLT_UN) {
+					bb->last_ins->opcode = reverse_imap [bb->last_ins->opcode - OP_IBEQ];
 				}
 			} else {			
 				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
