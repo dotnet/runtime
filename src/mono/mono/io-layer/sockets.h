@@ -44,5 +44,10 @@ extern int WSAGetLastError(void);
 extern int closesocket(guint32 handle);
 
 extern int ioctlsocket(guint32 handle, gint32 command, gpointer arg);
+extern int WSAIoctl (guint32 handle, gint32 command,
+		     gchar *input, gint i_len,
+		     gchar *output, gint o_len, gint32 *written,
+		     void *unused1, void *unused2);
+
 
 #endif /* _WAPI_SOCKETS_H_ */

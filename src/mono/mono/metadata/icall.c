@@ -5050,7 +5050,8 @@ static const IcallEntry socket_icalls [] = {
 	{"Send_internal", ves_icall_System_Net_Sockets_Socket_Send_internal},
 	{"SetSocketOption_internal", ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal},
 	{"Shutdown_internal", ves_icall_System_Net_Sockets_Socket_Shutdown_internal},
-	{"Socket_internal", ves_icall_System_Net_Sockets_Socket_Socket_internal}
+	{"Socket_internal", ves_icall_System_Net_Sockets_Socket_Socket_internal},
+	{"WSAIoctl", ves_icall_System_Net_Sockets_Socket_WSAIoctl}
 };
 
 static const IcallEntry socketex_icalls [] = {

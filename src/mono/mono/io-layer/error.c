@@ -101,12 +101,12 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 	case EOPNOTSUPP: result = WSAEOPNOTSUPP; break;
 	case EPERM: result = WSAEACCES; break;
 	case EPIPE: result = WSAESHUTDOWN; break;
-	case EPROTONOSUPPORT: result = WSAENETDOWN; break;
+	case EPROTONOSUPPORT: result = WSAEPROTONOSUPPORT; break;
 #if ERESTARTSYS
 	case ERESTARTSYS: result = WSAENETDOWN; break;
 #endif
 	/*FIXME: case EROFS: result = WSAE????; break; */
-	case ESOCKTNOSUPPORT: result = WSAENETDOWN; break;
+	case ESOCKTNOSUPPORT: result = WSAESOCKTNOSUPPORT; break;
 	case ETIMEDOUT: result = WSAENETDOWN; break;
 	case EWOULDBLOCK: result = WSAEWOULDBLOCK; break;
 	default:

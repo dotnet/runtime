@@ -727,7 +727,12 @@ guint32 _wapi_socket(int domain, int type, int protocol)
 	int fd;
 	
 	fd=socket(domain, type, protocol);
-	if(fd==-1) {
+	if (fd==-1 && domain == AF_INET && type == SOCK_RAW && protocol == 0) {
+		/* Retry with protocol == 4 (see bug #54565) */
+		fd = socket (AF_INET, SOCK_RAW, 4);
+	}
+	
+	if (fd == -1) {
 		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": socket error: %s", strerror(errno));
@@ -810,6 +815,63 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 	}
 	
 	return(he);
+}
+
+int
+WSAIoctl (guint32 handle, gint32 command,
+		gchar *input, gint i_len,
+		gchar *output, gint o_len, gint32 *written,
+		void *unused1, void *unused2)
+{
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
+	int ret;
+	gchar *buffer = NULL;
+
+	if(startup_count==0) {
+		WSASetLastError(WSANOTINITIALISED);
+		return(SOCKET_ERROR);
+	}
+
+	ok = _wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+					NULL, (gpointer *)&socket_private_handle);
+
+	if (ok == FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError (WSAENOTSOCK);
+		return SOCKET_ERROR;
+	}
+
+	if (i_len > 0)
+		buffer = g_memdup (input, i_len);
+
+	ret = ioctl (socket_private_handle->fd, command, buffer);
+	if (ret == -1) {
+		gint errnum = errno;
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": WSAIoctl error: %s",
+			  strerror(errno));
+#endif
+
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
+		
+		return SOCKET_ERROR;
+	}
+
+	if (buffer == NULL) {
+		*written = 0;
+	} else {
+		/* We just copy the buffer to the output. Some ioctls
+		 * don't even output any data, but, well... */
+		i_len = (i_len > o_len) ? o_len : i_len;
+		memcpy (output, buffer, i_len);
+		g_free (buffer);
+		*written = i_len;
+	}
+
+	return 0;
 }
 
 int ioctlsocket(guint32 handle, gint32 command, gpointer arg)

@@ -1651,6 +1651,45 @@ void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 	}
 }
 
+gint
+ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
+					      MonoArray *input, MonoArray *output)
+{
+	gint output_bytes = 0;
+	gchar *i_buffer, *o_buffer;
+	gint i_len, o_len;
+	gint ret;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (code == FIONBIO) {
+		/* Invalid command. Must use Socket.Blocking */
+		return -1;
+	}
+
+	if (input == NULL) {
+		i_buffer = NULL;
+		i_len = 0;
+	} else {
+		i_buffer = mono_array_addr (input, gchar, 0);
+		i_len = mono_array_length (input);
+	}
+
+	if (output == NULL) {
+		o_buffer = NULL;
+		o_len = 0;
+	} else {
+		o_buffer = mono_array_addr (output, gchar, 0);
+		o_len = mono_array_length (output);
+	}
+
+	ret = WSAIoctl (sock, code, i_buffer, i_len, o_buffer, o_len, &output_bytes, NULL, NULL);
+	if (ret == SOCKET_ERROR)
+		mono_raise_exception (get_socket_exception (WSAGetLastError()));
+
+	return output_bytes;
+}
+
 #ifndef AF_INET6
 static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 				       MonoArray **h_aliases,
