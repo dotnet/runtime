@@ -141,6 +141,12 @@
   </tr>
 </table>
 
+@item Dec 10th: Mono Debugger 0.5 released
+
+	Martin Baulig has <a
+	href="http://primates.ximian.com/~martin/blog/archives/000231.html">released</a>
+	a new version of the Mono Debugger.  
+
 @item Dec 2nd: Mono 0.29 has been released
 
 	Check out the <a

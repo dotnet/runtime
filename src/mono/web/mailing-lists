@@ -126,6 +126,15 @@
 	Used to discuss the Gtk bindings for Mono (<a href="http://gtk-sharp.sf.net">Gtk#</a>).
 	    </td>
 	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-vb">mono-vb</a></b>
+	    </td>
+	    <td>
+	Mono's implementation of Visual Basic.NET.
+	    </td>
+	  </tr>
 	</table>
 
 	Other mailing lists of interest:
