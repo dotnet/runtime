@@ -2013,8 +2013,8 @@ mono_ptr_class_get (MonoType *type)
 	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL; /* no parent for PTR types */
-	result->name = "System";
-	result->name_space = "MonoPtrFakeClass";
+	result->name_space = el_class->name_space;
+	result->name = g_strdup_printf ("%s*", el_class->name);
 	result->image = el_class->image;
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
