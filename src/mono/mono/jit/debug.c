@@ -477,7 +477,7 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 
 			while (minfo->il_offsets [index].offset < t->cli_addr) {
 				minfo->jit->il_addresses [index] = old_address;
-				if (index++ >= minfo->num_il_offsets)
+				if (++index >= minfo->num_il_offsets)
 					return;
 			}
 
