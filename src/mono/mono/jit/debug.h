@@ -17,7 +17,7 @@ typedef enum {
 extern MonoDebugHandle *mono_debug_handle;
 extern GList *mono_debug_methods;
 
-MonoDebugHandle* mono_debug_open_file (char *filename, MonoDebugFormat format);
+MonoDebugHandle* mono_debug_open_file (const char *filename, MonoDebugFormat format);
 
 void           mono_debug_close (MonoDebugHandle* debug);
 

@@ -9,7 +9,7 @@
 #include "debug-private.h"
 
 MonoDebugHandle*
-mono_debug_open_file (char *filename, MonoDebugFormat format)
+mono_debug_open_file (const char *filename, MonoDebugFormat format)
 {
 	MonoDebugHandle *debug;
 	

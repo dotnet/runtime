@@ -225,4 +225,9 @@ mono_print_ctree           (MBTree *tree);
 void
 mono_print_forest          (GPtrArray *forest);
 
+
+MonoDomain* mono_jit_init (char *file);
+int         mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
+void        mono_jit_cleanup (MonoDomain *domain);
+
 #endif

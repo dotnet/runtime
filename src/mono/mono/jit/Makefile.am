@@ -5,9 +5,10 @@ INCLUDES = 				\
 
 if X86
 bin_PROGRAMS = mono
+lib_LIBRARIES = libmono.a
 endif
 
-mono_SOURCES =			\
+libmono_a_SOURCES =			\
 	codegen.h		\
 	codegen-x86.c		\
 	emit-x86.c		\
@@ -27,7 +28,10 @@ mono_SOURCES =			\
 	invoke.c		\
 	message.c
 
+mono_SOURCES = mono.c
+
 mono_LDADD =				\
+	libmono.a			\
 	../metadata/libmetadata.a	\
 	../io-layer/libwapi.a		\
 	../utils/libmonoutils.a 	\
