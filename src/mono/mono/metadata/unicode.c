@@ -311,7 +311,6 @@ ves_icall_iconv_get_byte_count (gpointer converter, MonoArray *chars, gint32 idx
 
 	g_assert (cd);
 	g_assert (chars);
-	g_assert (mono_array_length (chars) > idx);
 	g_assert (mono_array_length (chars) >= (idx + count));
 
 	if (!(len = (mono_array_length (chars) - idx) * 2))

@@ -1178,6 +1178,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	/*class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count); */
 
 	if (class->enumtype) {
+		class->instance_size = sizeof (MonoObject);
 		class->fields = g_new0 (MonoClassField, class->field.count);
 		class_compute_field_layout (class);
 	} 
