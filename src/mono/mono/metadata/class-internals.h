@@ -31,6 +31,9 @@ typedef enum {
 	MONO_WRAPPER_STFLD,
 	MONO_WRAPPER_SYNCHRONIZED,
 	MONO_WRAPPER_DYNAMIC_METHOD,
+	MONO_WRAPPER_ISINST,
+	MONO_WRAPPER_CASTCLASS,
+	MONO_WRAPPER_PROXY_ISINST,
 	MONO_WRAPPER_UNKNOWN
 } MonoWrapperType;
 
@@ -49,7 +52,7 @@ struct _MonoMethod {
 	/* this is used by the inlining algorithm */
 	unsigned int inline_info:1;
 	unsigned int uses_this:1;
-	unsigned int wrapper_type:4;
+	unsigned int wrapper_type:5;
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	gint16 inline_count;
@@ -341,6 +344,13 @@ struct _MonoGenericParam {
 	MonoClass** constraints; /* NULL means end of list */
 };
 
+typedef struct {
+	const char *name;
+	gconstpointer func;
+	gconstpointer wrapper;
+	MonoMethodSignature *sig;
+} MonoJitICallInfo;
+
 #define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
 
 typedef struct {
@@ -474,6 +484,21 @@ void
 mono_install_stack_walk (MonoStackWalkImpl func);
 
 MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num);
+
+MonoMethodSignature*
+mono_create_icall_signature (const char *sigstr);
+
+MonoJitICallInfo *
+mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
+
+void
+mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
+
+MonoJitICallInfo *
+mono_find_jit_icall_by_name (const char *name);
+
+MonoJitICallInfo *
+mono_find_jit_icall_by_addr (gconstpointer addr);
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

@@ -29,6 +29,9 @@ static const char *wrapper_type_names [] = {
 	"stfld",
 	"synchronized",
 	"dynamic-method",
+	"isinst",
+	"cancast",
+	"proxy_isinst",
 	"unknown"
 };
 

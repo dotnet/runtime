@@ -5909,6 +5909,8 @@ static const IcallMap icall_entries [] = {
 };
 
 static GHashTable *icall_hash = NULL;
+static GHashTable *jit_icall_hash_name = NULL;
+static GHashTable *jit_icall_hash_addr = NULL;
 
 void
 mono_init_icall (void)
@@ -6083,3 +6085,157 @@ mono_lookup_internal_call (MonoMethod *method)
 	return NULL;
 }
 
+static MonoType*
+type_from_typename (char *typename)
+{
+	MonoClass *klass;
+
+	if (!strcmp (typename, "int"))
+		klass = mono_defaults.int_class;
+	else if (!strcmp (typename, "ptr"))
+		klass = mono_defaults.int_class;
+	else if (!strcmp (typename, "void"))
+		klass = mono_defaults.void_class;
+	else if (!strcmp (typename, "int32"))
+		klass = mono_defaults.int32_class;
+	else if (!strcmp (typename, "uint32"))
+		klass = mono_defaults.uint32_class;
+	else if (!strcmp (typename, "long"))
+		klass = mono_defaults.int64_class;
+	else if (!strcmp (typename, "ulong"))
+		klass = mono_defaults.uint64_class;
+	else if (!strcmp (typename, "float"))
+		klass = mono_defaults.single_class;
+	else if (!strcmp (typename, "double"))
+		klass = mono_defaults.double_class;
+	else if (!strcmp (typename, "object"))
+		klass = mono_defaults.object_class;
+	else if (!strcmp (typename, "obj"))
+		klass = mono_defaults.object_class;
+	else {
+		g_error (typename);
+		g_assert_not_reached ();
+	}
+	return &klass->byval_arg;
+}
+
+MonoMethodSignature*
+mono_create_icall_signature (const char *sigstr)
+{
+	gchar **parts;
+	int i, len;
+	gchar **tmp;
+	MonoMethodSignature *res;
+
+	mono_loader_lock ();
+	res = g_hash_table_lookup (mono_defaults.corlib->helper_signatures, sigstr);
+	if (res) {
+		mono_loader_unlock ();
+		return res;
+	}
+
+	parts = g_strsplit (sigstr, " ", 256);
+
+	tmp = parts;
+	len = 0;
+	while (*tmp) {
+		len ++;
+		tmp ++;
+	}
+
+	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
+	res->pinvoke = 1;
+
+#ifdef PLATFORM_WIN32
+	/* 
+	 * Under windows, the default pinvoke calling convention is STDCALL but
+	 * we need CDECL.
+	 */
+	res->call_convention = MONO_CALL_C;
+#endif
+
+	res->ret = type_from_typename (parts [0]);
+	for (i = 1; i < len; ++i) {
+		res->params [i - 1] = type_from_typename (parts [i]);
+	}
+
+	g_strfreev (parts);
+
+	g_hash_table_insert (mono_defaults.corlib->helper_signatures, sigstr, res);
+
+	mono_loader_unlock ();
+
+	return res;
+}
+
+MonoJitICallInfo *
+mono_find_jit_icall_by_name (const char *name)
+{
+	MonoJitICallInfo *info;
+	g_assert (jit_icall_hash_name);
+
+	mono_loader_lock ();
+	info = g_hash_table_lookup (jit_icall_hash_name, name);
+	mono_loader_unlock ();
+	return info;
+}
+
+MonoJitICallInfo *
+mono_find_jit_icall_by_addr (gconstpointer addr)
+{
+	MonoJitICallInfo *info;
+	g_assert (jit_icall_hash_addr);
+
+	mono_loader_lock ();
+	info = g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
+	mono_loader_unlock ();
+
+	return info;
+}
+
+void
+mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
+{
+	mono_loader_lock ();
+	g_hash_table_insert (jit_icall_hash_addr, (gpointer)info->wrapper, info);	
+	mono_loader_unlock ();
+}
+
+MonoJitICallInfo *
+mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+{
+	MonoJitICallInfo *info;
+	
+	g_assert (func);
+	g_assert (name);
+
+	mono_loader_lock ();
+
+	if (!jit_icall_hash_name) {
+		jit_icall_hash_name = g_hash_table_new (g_str_hash, g_str_equal);
+		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
+	}
+
+	if (g_hash_table_lookup (jit_icall_hash_name, name)) {
+		g_warning ("jit icall already defined \"%s\"\n", name);
+		g_assert_not_reached ();
+	}
+
+	info = g_new (MonoJitICallInfo, 1);
+	
+	info->name = name;
+	info->func = func;
+	info->sig = sig;
+
+	if (is_save) {
+		info->wrapper = func;
+	} else {
+		info->wrapper = NULL;
+	}
+
+	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
+	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
+
+	mono_loader_unlock ();
+	return info;
+}

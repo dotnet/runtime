@@ -10,7 +10,7 @@
 #include <stddef.h> /* for NULL */
 
 #define MONO_PREFIX1_OFFSET MONO_CEE_ARGLIST
-#define MONO_CUSTOM_PREFIX_OFFSET MONO_CEE_MONO_FUNC1
+#define MONO_CUSTOM_PREFIX_OFFSET MONO_CEE_MONO_ICALL
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	{ Mono ## e, MONO_FLOW_ ## j, MONO_ ## a },
