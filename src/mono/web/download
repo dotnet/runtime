@@ -122,7 +122,7 @@
                     <img src="images/macos-36.gif"><b>Mac OS X package</b>
 		  </td>
 		  <td>
-		    <a href="archive/beta2/macos/Mono_0.95_Beta_2.dmg">Mono_0.95_Beta_2.dmg</a>: on /Library/Framework.
+		    <a href="archive/beta2/macos/Mono_0.95_Beta_2.dmg">Mono_0.95_Beta_2.dmg</a>: on /Library/Framework.<br>
 		    <a href="archive/beta2/macos/mono-0.95.dmg">mono-0.95.dmg</a> On /opt.
 		  </td>
 		</tr>
