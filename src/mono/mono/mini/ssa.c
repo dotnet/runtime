@@ -338,6 +338,8 @@ mono_ssa_compute (MonoCompile *cfg)
 	     
 			store->next = bb->code;
 			bb->code = store;
+			if (!bb->last_ins)
+				bb->last_ins = bb->code;
 
 #ifdef DEBUG_SSA
 			printf ("ADD PHI BB%d %s\n", cfg->bblocks [idx]->block_num, mono_method_full_name (cfg->method, TRUE));

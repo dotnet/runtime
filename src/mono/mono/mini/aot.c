@@ -1915,7 +1915,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_global (tmpfp, symbol, FALSE);
 	emit_alignment (tmpfp, 8);
 	emit_label(tmpfp, symbol);
-	fprintf (tmpfp, ".long %d\n", acfg->got_offset * sizeof (gpointer));
+	fprintf (tmpfp, ".long %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
 #endif
 
 	symbol = g_strdup_printf ("method_offsets");
