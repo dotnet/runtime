@@ -80,6 +80,29 @@
   </tr>
 </table>
 
+@item Jun 30, 2002
+
+	Martin Baulig fixed the remaining bugs that prevented MCS to
+	compile our corlib.  The compilation was tricky because of the way
+	MCS bootstraps the compile (internally mcs uses the types that are
+	being defined at that point to perform compares).
+
+	Martin and Paolo have been working hard on fixing the
+	remaining issues.  Currently 102 test pass and 15 fail with
+	our resulting corlib.
+
+	Jesus' SoapFormatter classes are now in CVS.
+
+	I have been redoing the type lookup system for MCS.  The
+	interesting bit is that I did most of this work on an airplane
+	using MCS itself.  Which is a good test that the compiler is 
+	now a good development tool.
+
+	Duncan, Mike and Rachel have been hard at work with Gtk#, now
+	there are bindings for the GtkHTML widget (the one used by
+	Evolution's composer).  And Rachel also got the beginning of GNOME
+	bindings, that should simplify application development.
+
 @item Jun 24, 2002
 
         Duncan has written a few sample <a
