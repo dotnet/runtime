@@ -1421,7 +1421,7 @@ type_get_fully_qualified_name (MonoType *type) {
 		name, ta->aname.name,
 		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
 		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral",
-		ta->aname.public_key_token [0] ? ta->aname.public_key_token : "null");
+		ta->aname.public_key_token [0] ? (char *)ta->aname.public_key_token : "null");
 	g_free (name);
 	return result;
 }
