@@ -569,7 +569,7 @@ void
 dump_table_methodimpl (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODIMPL];
-	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
+	/*MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];*/
 	int i;
 
 	fprintf (output, "MethodImpl Table (1..%d)\n", t->rows);
