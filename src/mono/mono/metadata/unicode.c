@@ -203,7 +203,7 @@ ves_icall_iconv_reset (gpointer converter)
 }
 
 static int
-iconv_get_length (iconv_t cd, guchar *src, int len)
+iconv_get_length (iconv_t cd, guchar *src, int len, gboolean encode)
 {
 	guchar buf [512];
 	int i, res;
@@ -219,7 +219,7 @@ iconv_get_length (iconv_t cd, guchar *src, int len)
 	g_assert (src);
 
 #ifndef HAVE_NEW_ICONV
-	if (G_BYTE_ORDER == G_LITTLE_ENDIAN) {
+	if (G_BYTE_ORDER == G_LITTLE_ENDIAN && encode) {
 		src = g_memdup (src, len);
 		for (i = 0; i < len; i += 2) {
 			char t = src [i];
@@ -268,7 +268,7 @@ again:
 	}
 
 #ifndef HAVE_NEW_ICONV
-	if (G_BYTE_ORDER == G_LITTLE_ENDIAN)
+	if (G_BYTE_ORDER == G_LITTLE_ENDIAN && encode)
 		g_free (src);
 #endif
 
@@ -297,11 +297,11 @@ ves_icall_iconv_get_byte_count (gpointer converter, MonoArray *chars, gint32 ind
 
 	src =  mono_array_addr (chars, guint16, index);
 
-	return iconv_get_length (cd, src, len);
+	return iconv_get_length (cd, src, len, TRUE);
 }
 
 static int
-iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len)
+iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len, gboolean encode)
 {
 	int i;
 	guchar *p, *outp;
@@ -316,7 +316,7 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len)
 	g_assert (dest);
 
 #ifndef HAVE_NEW_ICONV
-	if (G_BYTE_ORDER == G_LITTLE_ENDIAN) {
+	if (G_BYTE_ORDER == G_LITTLE_ENDIAN && encode) {
 		src = g_memdup (src, len);
 		for (i = 0; i < len; i += 2) {
 			char t = src [i];
@@ -350,8 +350,18 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len)
 	}
 
 #ifndef HAVE_NEW_ICONV
-	if (G_BYTE_ORDER == G_LITTLE_ENDIAN)
-		g_free (src);
+	if (G_BYTE_ORDER == G_LITTLE_ENDIAN) {
+		if (encode) {
+			g_free (src);
+		} else {
+			int mb = max_len - outbytes_remaining;
+			for (i = 0; i < mb; i+=2) {
+				char t = dest [i];
+				dest [i] = dest [i + 1];
+				dest [i + 1] = t;
+			}
+		}
+}
 #endif
 	if (have_error) {
 		g_assert_not_reached ();
@@ -389,7 +399,7 @@ ves_icall_iconv_get_bytes (gpointer converter, MonoArray *chars, gint32 charInde
 
 	max_len = mono_array_length (bytes) - byteIndex;
 
-	return iconv_convert (cd, src, len, dest, max_len);
+	return iconv_convert (cd, src, len, dest, max_len, TRUE);
 }
 
 int
@@ -409,7 +419,7 @@ ves_icall_iconv_get_char_count (gpointer converter, MonoArray *bytes, gint32 ind
 
 	src =  mono_array_addr (bytes, char, index);
 
-	return iconv_get_length (cd, src, len);
+	return iconv_get_length (cd, src, len, FALSE);
 }
 
 int
@@ -436,5 +446,5 @@ ves_icall_iconv_get_chars (gpointer converter, MonoArray *bytes, gint32 byteInde
 	max_len = (mono_array_length (chars) - charIndex) * 2;
 
 	/* iconv_convert () returns the number of bytes */
-	return iconv_convert (cd, src, len, dest, max_len) / 2;
+	return iconv_convert (cd, src, len, dest, max_len, FALSE) / 2;
 }
