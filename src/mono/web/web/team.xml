@@ -455,4 +455,17 @@
       <task>System.DirectoryServices</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Atsushi</first-name>
+      <last-name>Enomoto</last-name>
+    </name>
+    <e-mail>ginga@kit.hi-ho.ne.jp</e-mail>
+    <image>none.png</image>
+    <location>Tokyo, Japan</location>
+    <description>MIDI Programmer</description>
+    <tasks>
+      <task>XML</task>
+    </tasks>
+  </contributor>
 </contributors>
