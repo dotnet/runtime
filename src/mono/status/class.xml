@@ -885,6 +885,123 @@
 			<maintainer>angryjohn69@nc.rr.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Diagnostics.EntryWrittenEventArgs">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EntryWrittenEventHandler">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLog">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>1</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogEntry">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>1</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogEntryCollection">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>90</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogEntryType">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogInstaller">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>01</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogPermission">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>01</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogPermissionAccess">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogPermissionAttribute">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>01</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogPermissionEntry">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>01</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogPermissionEntryCollection">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>01</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.EventLogTraceListener">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>01</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Diagnostics.FileVersionInfo">
 		<last-activity>Apr-03-2002</last-activity>
 		<implementation>yes</implementation>
@@ -892,6 +1009,15 @@
 		<completion>??</completion>
 		<maintainers>
 			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ICollectData">
+		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.Process">
