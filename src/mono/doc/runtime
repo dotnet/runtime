@@ -40,7 +40,7 @@
 		* Milestone 5: Port of the JITer to non IA32 systems.
 	</ul>
 
-	A setup similar to the Kaffe JIT engine can be used to
+	A setup similar to the Kaffe JIT engine will be used to
 	layout the code to support non-IA32 architectures.  Our work
 	will be focused on getting a IA32 version running first.  
 

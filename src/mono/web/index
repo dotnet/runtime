@@ -25,12 +25,15 @@
 
 ** Nov 16, 2001
 
+<blockquote>
 	Mike Kestner has posted an <a
 	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2001-November/000015.html">update</a>
 	on Gtk# development.
+</blockquote>
 
 ** Nov 14, 2001
 
+<blockquote>
 	Paolo today got the Mono C# compiler running <a
 	href="http://mail.ximian.com/archives/public/mono-list/2001-November/001941.html">on
 	Linux</a>.  It compiles a sample program and then the sample
@@ -61,29 +64,37 @@
 
 	At the same time, Dietmar is working on the JIT engine which will
 	replace our interpreter in production.
+</blockquote>
 
 ** Nov 12, 2001
 
+<blockquote>
 	Dietmar got value types working on the JIT engine.  Sean has
 	got assembly loading in the runtime (required for NUnit).
 
 	More progress on enumerations and attributes from Ravi.
 
 	Nick keeps working on improving our class libraries. 
+</blockquote>
 
 ** Nov 8, 2001
 
+<blockquote>
 	Enumerations, array access and attributes for the C# compiler are into the CVS now.
 
 	Full array support is not complete, but moving along.
+</blockquote>
 
 ** Nov 5, 2001
 
+<blockquote>
 	Dietmar's new set of patches to the JIT have 20 out of 33
 	tests running now.
+</blockquote>
 
 ** Nov 4, 2001
 
+<blockquote>
 	Mike Kestner, main Gtk# contributor has posted a very interesting <a
 	href="http://mail.ximian.com/archives/public/gtk-sharp-list/2001-November/000013.html">
 	update</a> on his work on Gtk#.  
@@ -98,9 +109,11 @@
 	steadily on this huge task for a few weeks now.  This is the
 	foundation for the Mono C# compiler, and hence a very
 	important piece of the puzzle.
+</blockquote>
 
 ** Nov 3, 2001
 
+<blockquote>
 	Many clean ups have been going into the class library by Nick Drochak. 
 
 	Mega patch from Dietmar: he commited the flow analysis code
@@ -108,15 +121,19 @@
 
 	A lot of work has been going into the WebControls by Gaurav (4
 	new controls plus improved and bug fixed base classes).
+</blockquote>
 
 ** Nov 1, 2001
 
+<blockquote>
 	Ravi commited the caller-side method selection of methods with
 	variable length arguments.  Now he depends on Miguel finishing
 	the array handling support. 
+</blockquote>
 
 ** Oct 27, 2001
 
+<blockquote>
 	Lots of classes for System.Web from Gaurav were commited this
 	morning.
 
@@ -145,9 +162,11 @@
 
 	Mike Kestner is busy working on Gtk# which is now using the
 	.defs files to quickly wrap the API.
+</blockquote>
 
 ** Oct 18, 2001
 
+<blockquote>
 	Reworking expressions to support cleanly indexers and
 	properties.  <a href="http://www.nat.org/evolution.php3">11
 	days</a> until Evolution 1.0 ships.  
@@ -155,14 +174,18 @@
 	Ximian users around the world <!--a
 	href="http://www.bez.it/IMAGES/nora.jpg"-->rejoice<!--/a--> with
 	recent C# compiler progress.
+</blockquote>
 
 ** Oct 17, 2001
 
+<blockquote>
 	Delegate support has been checked into the compiler
 	(definition and invocation); break/continue implemented.
+</blockquote>
 
 ** Oct 15, 2001
 
+<blockquote>
 	JIT engine supports many of the object constructs now (object
 	creation, vtable setup, interface table setup).  
 
@@ -173,9 +196,11 @@
 
 	System.Decimal implementation is in, as well as many crypto
 	classes.
+</blockquote>
 
 ** Oct 5, 2001
 
+<blockquote>
 	Sergey has released his first version of the <b>ilasm</b>
 	assembler written in C#.  You can get it from his web page:
 	<a
@@ -184,9 +209,11 @@
 	The plan is to integrate ildasm into the Mono CVS soon.  This
 	component should in theory also be reusable for SharpDevelop
 	eventually.
+</blockquote>
 
 ** Oct 4, 2001
 
+<blockquote>
 	Our System.Reflection.Emit implementation created its first
 	executable today.  This means that a very simple .NET program
 	that was compiled on Windows was able to generate a .NET program
@@ -195,15 +222,19 @@
 	The various piece of the puzzle are starting to get together:
 	the compiler can compile simple programs now and we are
 	basically focusing on completeness now.  
+</blockquote>
 
 ** Sep 28, 2001
 
+<blockquote>
 	<a
 	href="http://www.icsharpcode.net/OpenSource/SD/default.asp">Sharp
 	Develop 0.80</a> was released today.
+</blockquote>
 
 ** Sep 26, 2001
 
+<blockquote>
 	More progress: more opcodes are working (Paolo); The compiler
 	runs up to a point in Mint (Paolo); operator overloading works
 	(both unary and binary) all over the place (Miguel); Completed decimal
@@ -211,57 +242,73 @@
 	Ant (Sean and Sergey);  Refactored and documented the
 	internals of the JIT engine (Dietmar);  StatementExpressions
 	handled correctly (Miguel).
+</blockquote>
 
 ** Sep 21, 2001
 
+<blockquote>
 	A couple of news-worthy items: Dick got the initial thread
 	support into mint; Paolo implemented many new opcodes; Dietmar
 	got long operations and mul/div working on the JITer; Ravi rewrote
 	the Method selector for expressions to be conformant; Miguel
 	got i++ working.   All in tonight's snapshot
+</blockquote>
 
 ** Sep 19, 2001
 
+<blockquote>
 	Paolo has written a section on <a href="porting.html">Porting
 	Mono</a> to othre architectures.
+</blockquote>
 
 ** Sep 18, 2001
 
+<blockquote>
 	<A a href="download.html#sep-18">Mono 0.7</a> has been
 	released (runtime engine, class libraries
 	and C# compiler).  Check the <a href="archive/mono-0.7">Mono
 	0.7 announcement</a> for details
+</blockquote>
 
 ** Sep 17, 2001
 
+<blockquote>
 	Mike Kestner's Gtk# (Gtk-sharp) was checked into the CVS
 	repository.  Gtk# can run a simple hello world application.
 	The binding is nice, as it maps Gtk+ signals to delegates in
 	C#.  You can see the Gtk# Hello World program <a href="src/HelloWorld.cs">here</a>
 
 	Gtk-sharp should be available on the next snapshot set.
+</blockquote>
 
 ** Sep 10, 2001
 
+<blockquote>
 	Dietmar checked in his CIL tree/forest regeneration and most
 	importantly, the x86 instruction selector burg grammar.
+</blockquote>
 
 
 ** Sep 5, 2001
 
+<blockquote>
 	The MCS compiler <b>can compile the sample Hello World</b>
 	application and generate a Windows/CIL executable that runs!
 
 	This executable runs with the Mono Interpreter of course (see
 	August 28)
+</blockquote>
 
 ** Sep 4, 2001
 
+<blockquote>
 	Dietmar checked into CVS the `monoburg' architecture
 	independent instruction selector for the JIT engine.
+</blockquote>
 
 ** Aug 28, 2001
 
+<blockquote>
 	<b>.NET Hello World is working under Mono!</b>  The latest snapshots
 	will let you run it.   
 
@@ -269,60 +316,78 @@
         performs 66 subroutine calls and loads 12 classes from the corlib.dll
 
 	Good work Mono team!
+</blockquote>
 
 ** Aug 23, 2001
 
+<blockquote>
 	Lloyd Dupont has announced his OpenGL bindings for C#, they
 	are available here: <a
 	href="http://csgl.sourceforge.net">http://csgl.sourceforge.net</a>
+</blockquote>
 
 ** Aug 22, 2001
 
+<blockquote>
 	New version of the Mono Runtime, Compiler and Classes has been
 	<a
 	href="download.html#august-22">released.</a> Check the <a
 	href="archive/mono-0.6">0.6 announcement</a>.
+</blockquote>
 	
 ** Aug 20, 2001
 
+<blockquote>
 	A new <a href="contributing.html#compile-service">Compilation
 	service</a> has been made available by Derek to allow people
 	without access to the <a
 	href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">.NET SDK</a>
+</blockquote>
 
 ** Aug 3, 2001
 
+<blockquote>
 	Daily snapshots of mcs and mono are now available, they will
 	run every night at 10pm Boston time.  
+</blockquote>
 
 ** Jul 29, 2001
 
+<blockquote>
 	Mono Runtime 0.5 has been <a
 	href="download.html#july-29">released.</a> Check the <a
 	href="archive/mono-0.5">release notes</a>
+</blockquote>
 
 ** Jul 25, 2001
 
+<blockquote>
 	The slides for <A href="Presentations/O-Reilly">my
 	presentation</a> at <a href="http://www.oreilly.com">O'Reilly
 	Open Source Software Convention</a>
+</blockquote>
 
 ** Jul 22, 2001
 
+<blockquote>
 	Another release of the class libraries is out, check the <a
 	href="archive/mcs-22">MCS 22-July Release Notes</a>.  You can
 	get the new class libraries from <a
 	href="download.html#july-22">here</a>
+</blockquote>
 
 ** Jul 19, 2001
 
+<blockquote>
 	Another release of the class libraries is out, check the <a
 	href="archive/mcs-19">MCS 19-July Release Notes</a>.  You can
 	get the new class libraries from <a
 	href="download.html#july-19">here</a>
+</blockquote>
 	
 ** Jul 17, 2001
 
+<blockquote>
 	Another release of the class libraries is out, check the <a
 	href="archive/mcs-17">MCS 17-July Release Notes</a>.  You can
 	get the new class libraries from <a
@@ -333,31 +398,42 @@
 	Got Sean's new <a href="class-status/index.html">Class
 	Status</a> web pages up.  These are a lot better than mine, and
 	we are now keeping better track of contributors.
+</blockquote>
 
 ** Jul 15, 2001
 
+<blockquote>
 	Another release of Mono is out, check the <a
 	href="archive/mono-0.4">Mono 0.4 Release Notes</a>.  Get it <a
 	href="download.html#july-15">here</a>.
+</blockquote>
 
 ** Jul 14, 2001
 
+<blockquote>
 	A <a
 	href="http://mail.ximian.com/archives/public/mono-list/2001-July/000399.html">new
 	release</a> of the
 	runtime, compiler and classes has been made.  Get it <a href="download.html#july-14">here</a>
+</blockquote>
 
 ** Jul 12, 2001
 
+<blockquote>
 	I keep getting questions about my opinion on Passport, even when
 	Mono has <b>nothing</b> to do with it.  I finally <a
 	href="passport.html">wrote something.</a>
+</blockquote>
 
 ** Jul 9, 2001
 
+<blockquote>
 	Project launched.
+</blockquote>
 
 ** O'Reilly
 
+<blockquote>
 	Brian posted a story on <a
 	href="http://www.oreillynet.com/dotnet">O'Reilly Network .NET</a>
+</blockquote>
