@@ -18,6 +18,7 @@ SOURCES=	\
 	../runtime		\
 	../status		\
 	../testing		\
+	../porting		\
 	../tools
 
 all:

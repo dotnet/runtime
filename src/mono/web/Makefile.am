@@ -1,7 +1,7 @@
 WEB_FILES=  \
 	c-sharp class-library contact contributing documentation download \
 	faq gcc-frontend ideas index  passport rationale resources \
-	roadmap runtime status team testing thanks tools
+	roadmap runtime status team testing thanks tools porting
 
 OTHERS= pending resources-pending todo
 
