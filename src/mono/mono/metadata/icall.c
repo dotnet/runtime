@@ -1804,8 +1804,16 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	start.tm_year = year-1900;
 
 	t = mktime (&start);
-	gmtoff = start.tm_gmtoff;
-
+#if defined (HAVE_TIMEZONE)
+#define gmt_offset(x) (-1 * (((timezone / 60 / 60) - daylight) * 100))
+#elif defined (HAVE_TM_GMTOFF)
+#define gmt_offset(x) x.tm_gmtoff
+#else
+#error Neither HAVE_TIMEZONE nor HAVE_TM_GMTOFF defined. Rerun autoheader, autoconf, etc.
+#endif
+	
+	gmtoff = gmt_offset (start);
+	
 	MONO_CHECK_ARG_NULL (data);
 	MONO_CHECK_ARG_NULL (names);
 
@@ -1819,7 +1827,8 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 		tt = *localtime (&t);
 
 		/* Daylight saving starts or ends here. */
-		if (tt.tm_gmtoff != gmtoff) {
+		if (gmt_offset (tt) != gmtoff) {
+			char tzone[10];
 			struct tm tt1;
 			time_t t1;
 
@@ -1828,33 +1837,35 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 			do {
 				t1 -= 3600;
 				tt1 = *localtime (&t1);
-			} while (tt1.tm_gmtoff != gmtoff);
+			} while (gmt_offset (tt1) != gmtoff);
 
 			/* Try to find the exact minute when daylight saving starts/ends. */
 			do {
 				t1 += 60;
 				tt1 = *localtime (&t1);
-			} while (tt1.tm_gmtoff == gmtoff);
-
+			} while (gmt_offset (tt1) == gmtoff);
+			
+			strftime (tzone, 10, "%Z", &tt);
+			
 			/* Write data, if we're already in daylight saving, we're done. */
 			if (is_daylight) {
-				mono_array_set ((*names), gpointer, 0, mono_string_new (domain, tt.tm_zone));
+				mono_array_set ((*names), gpointer, 0, mono_string_new (domain, tzone));
 				mono_array_set ((*data), gint64, 1, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
 				return 1;
 			} else {
-				mono_array_set ((*names), gpointer, 1, mono_string_new (domain, tt.tm_zone));
+				mono_array_set ((*names), gpointer, 1, mono_string_new (domain, tzone));
 				mono_array_set ((*data), gint64, 0, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
 				is_daylight = 1;
 			}
 
 			/* This is only set once when we enter daylight saving. */
 			mono_array_set ((*data), gint64, 2, (gint64)gmtoff * 10000000L);
-			mono_array_set ((*data), gint64, 3, (gint64)(tt.tm_gmtoff - gmtoff) * 10000000L);
+			mono_array_set ((*data), gint64, 3, (gint64)(gmt_offset (tt) - gmtoff) * 10000000L);
 
-			gmtoff = tt.tm_gmtoff;
+			gmtoff = gmt_offset (tt);
 		}
 
-		gmtoff = tt.tm_gmtoff;
+		gmtoff = gmt_offset (tt);
 	}
 	return 1;
 #else

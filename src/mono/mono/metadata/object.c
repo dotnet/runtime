@@ -991,7 +991,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		int i;
-		guint16 *p2 = (guint16*)mono_array_addr (o->c_str, guint16, 0);
+		guint16 *p2 = (guint16*)mono_string_chars (o);
 		for (i = 0; i < len2; ++i) {
 			*p2 = GUINT16_FROM_LE (*p2);
 			++p2;
