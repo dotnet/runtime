@@ -23,6 +23,8 @@ extern gboolean substitute_with_mscorlib_p;
 static char *
 get_memberref_parent (MonoImage *m, guint32 mrp_token);
 
+GHashTable *key_table = NULL;
+
 char *
 get_typedef (MonoImage *m, int idx)
 {
@@ -152,6 +154,10 @@ get_typespec (MonoImage *m, guint32 idx)
 	GString *res = g_string_new ("");
 	int len;
 
+	MonoType *type;
+
+	type = mono_type_create_from_typespec (m, idx);
+		
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (m, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
@@ -206,10 +212,17 @@ get_typespec (MonoImage *m, guint32 idx)
 		g_string_append (res, s);
 		g_string_append (res, "[]");
 		g_free (s);
+		break;
 
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		ptr = get_type (m, ptr-1, &s);
+		g_string_append (res, s);
+		g_free (s);
+		break;
+		
+	default:
+		s = dis_stringify_type (m, type);
 		g_string_append (res, s);
 		g_free (s);
 		break;
@@ -548,9 +561,9 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	guint32 param_index = 0;
 	const char *name = "";
 	int free_method = 0;
-	char *retval;
+	char *retval, *esname;
 	char *type = NULL;
-        char *gen_param;
+	char *gen_param = NULL;
 	GString *result = g_string_new ("");
 	int i;
         
@@ -576,9 +589,14 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		g_string_append (result, "instance ");
 	g_string_append (result, map (method->call_convention, call_conv_type_map));
 	g_string_sprintfa (result, " %s ", retval);
-	if (type)
-		g_string_sprintfa (result, "%s::", type);
-        g_string_append (result, name);
+	if (type) {
+		char *estype = get_escaped_name (type);
+		g_string_sprintfa (result, "%s::", estype);
+		g_free (estype);
+	}
+	esname = get_escaped_name (name);
+	g_string_append (result, esname);
+	g_free (esname);
         if (gen_param) {
                 g_string_append (result, gen_param);
                 g_free (gen_param);
@@ -597,8 +615,10 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		if (i)
 			g_string_append (result, ", ");
 		retval = dis_stringify_param (m, method->params [i]);
-		g_string_sprintfa (result, "%s '%s'", retval, name);
+		esname = get_escaped_name (name);
+		g_string_append_printf (result, "%s %s", retval, esname);
 		g_free (retval);
+		g_free (esname);
 	}
 	g_string_append (result, ") ");
 
@@ -615,7 +635,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = c->byval_arg.type == MONO_TYPE_CLASS? "class" : "valuetype";
-	char *assemblyref = NULL, *result;
+	char *assemblyref = NULL, *result, *esname;
 	if (m != c->image) {
 		if (c->image->assembly_name) {
 			/* we cheat */
@@ -627,9 +647,24 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 			assemblyref = g_strdup_printf ("[.module %s]", c->image->module_name);
 		}
 	}
-	result = g_strdup_printf ("%s %s%s%s%s", otype, assemblyref?assemblyref:"", c->name_space, 
+
+	if (c->nested_in) {
+		result = g_strdup_printf ("%s%s%s/%s", c->nested_in->name_space, 
+				*c->nested_in->name_space?".":"", c->nested_in->name,
+				c->name);
+	} else {
+		result = g_strdup_printf ("%s%s%s", c->name_space, 
 				*c->name_space?".":"", c->name);
+	}
+	
+	esname = get_escaped_name (result);
+	g_free (result);
+
+	result = g_strdup_printf ("%s %s%s", otype, assemblyref?assemblyref:"", esname);
+	
 	g_free (assemblyref);
+	g_free (esname);
+	
 	return result;
 }
 
@@ -906,18 +941,51 @@ get_param (MonoImage *m, const char *ptr, char **retval)
 		g_string_append (str, " typedbyref ");
 		ptr++;
 	} else {
+		gboolean by_ref = 0;
 		 if (*ptr == MONO_TYPE_BYREF){
 			g_string_append (str, "[out] ");
 			ptr++;
+			by_ref = 1;
 		}
 		ptr = get_type (m, ptr, &allocated_type_string);
 		g_string_append (str, allocated_type_string);
+		if (by_ref)
+			g_string_append_c (str, '&');
 		g_free (allocated_type_string);
 	}
 
 	*retval = str->str;
 	g_string_free (str, FALSE);
 	return ptr;
+}
+
+/**
+ * get_escaped_name
+ *
+ * Returns: An allocated escaped name. A name needs to be escaped
+ * because it might be an ilasm keyword.
+ */
+char*
+get_escaped_name (const char *name)
+{
+	const char *s;
+
+	g_assert (key_table);
+
+	if (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0)
+		return g_strdup (name);
+
+	s = name;
+	while (s++) {
+		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' || *s == '?' || *s == '.')
+			continue;
+		return g_strdup_printf ("'%s'", name);
+	}
+	
+	if (g_hash_table_lookup (key_table, name))
+		return g_strdup_printf ("'%s'", name);
+			
+	return g_strdup (name);
 }
 
 static map_t param_map [] = {
@@ -955,8 +1023,6 @@ static map_t field_flags_map [] = {
 	{ FIELD_ATTRIBUTE_PINVOKE_IMPL,        "FIXME:pinvokeimpl " },
 	{ FIELD_ATTRIBUTE_RT_SPECIAL_NAME,        "rtspecialname " },
 	{ FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL,        "hasfieldmarshal " },
-	{ FIELD_ATTRIBUTE_HAS_DEFAULT,        "hasdefault " },
-	{ FIELD_ATTRIBUTE_HAS_FIELD_RVA,        "hasfieldrva " },
 	{ 0, NULL }
 };
 
@@ -1090,7 +1156,7 @@ get_field (MonoImage *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 cols [MONO_FIELD_SIZE];
-	char *sig, *res, *type;
+	char *sig, *res, *type, *estype, *esname;
 	guint32 type_idx;
 
 	/*
@@ -1112,11 +1178,15 @@ get_field (MonoImage *m, guint32 token)
 	type_idx = mono_metadata_typedef_from_field (m, idx);
 
 	type = get_typedef (m, type_idx);
+	estype = get_escaped_name (type);
+	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
 	res = g_strdup_printf ("%s %s::%s",
-			       sig, type,
-			       mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
+			sig, estype, esname);
+
 	g_free (type);
 	g_free (sig);
+	g_free (estype);
+	g_free (esname);
 
 	return res;
 }
@@ -1164,16 +1234,18 @@ get_method (MonoImage *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
-	char *sig;
+	char *sig, *esname;
 	const char *name;
 
 	MonoMethod *mh;
 
 	mh = mono_get_method (m, token, NULL);
 	if (mh) {
+		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_object_with_class (m, mh->klass);
-		name = g_strdup_printf ("%s::%s", sig, mh->name);
+		name = g_strdup_printf ("%s::%s", sig, esname);
 		g_free (sig);
+		g_free (esname);
 	} else
 		name = NULL;
 
@@ -1469,11 +1541,15 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 char *
 get_token (MonoImage *m, guint32 token)
 {
+	char *temp, *result;
 	guint32 idx = mono_metadata_token_index (token);
 
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_FIELD_DEF:
-		return (get_field (m, token));
+		temp = get_field (m, token);
+		result = g_strdup_printf ("field %s", temp);
+		g_free (temp);
+		return result;
 	case MONO_TOKEN_TYPE_DEF:
 		return get_typedef (m, idx);
 	case MONO_TOKEN_TYPE_REF:
@@ -1703,3 +1779,373 @@ get_marshal_info (MonoImage *m, const char *blob) {
 	}
 }
 
+void
+init_key_table (void)
+{
+	key_table = g_hash_table_new (g_str_hash, g_str_equal);
+
+	/* auto generated */
+	g_hash_table_insert (key_table, (char *) "abstract", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "add", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "add.ovf", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "add.ovf.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "algorithm", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "alignment", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "and", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ansi", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "any", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "arglist", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "array", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "as", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "assembly", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "assert", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "at", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "auto", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "autochar", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "beforefieldinit", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "beq", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "beq.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bge", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bge.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bge.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bge.un.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bgt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bgt.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bgt.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "9", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bgt.un.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ble", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ble.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ble.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ble.un.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "blob", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "blob_object", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "blt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "blt.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "blt.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "blt.un.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bne.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bne.un.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bool", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "box", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "br", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "br.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "break", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brfalse", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brfalse.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brinst", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brinst.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brnull", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brnull.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brtrue", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brtrue.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brzero", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "brzero.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bstr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "bytearray", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "byvalstr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "call", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "calli", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "callmostderived", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "callvirt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "carray", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "castclass", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "catch", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cdecl", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ceq", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cf", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cgt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cgt.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "char", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cil", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ckfinite", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "class", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "clsid", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "clt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "clt.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "const", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.i", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.i1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.i2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i1.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i2.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i4.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.i8.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u1.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u2.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u4.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.ovf.u8.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.r.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.r4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.u", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.u1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.u2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.u4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "conv.u8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cpblk", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "cpobj", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "currency", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "custom", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "date", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "decimal", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "default", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "default", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "demand", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "deny", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "div", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "div.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "dup", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "endfault", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "endfilter", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "endfinally", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "endmac", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "enum", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "error", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "explicit", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "extends", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "extern", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "false", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "famandassem", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "family", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "famorassem", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "fastcall", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "fastcall", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "fault", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "field", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "filetime", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "filter", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "final", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "finally", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "fixed", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "float", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "float32", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "float64", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "forwardref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "fromunmanaged", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "handler", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "hidebysig", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "hresult", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "idispatch", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "il", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "illegal", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "implements", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "implicitcom", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "implicitres", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "import", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "in", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "inheritcheck", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "init", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "initblk", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "initobj", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "initonly", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "instance", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "int", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "int16", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "int32", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "int64", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "int8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "interface", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "internalcall", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "isinst", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "iunknown", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "jmp", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lasterr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lcid", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarg", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarg.0", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarg.1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarg.2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarg.3", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarg.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarga", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldarga.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.0", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.3", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.5", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.6", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.7", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.M1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.m1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i4.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.r4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldc.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.i", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.i1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.i2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.r4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.ref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.u1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.u2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.u4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem.u8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelema", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldfld", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldflda", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldftn", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.i", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.i1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.i2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.r4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.ref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.u1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.u2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.u4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldind.u8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldlen", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloc", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloc.0", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloc.1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloc.2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloc.3", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloc.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloca", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldloca.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldnull", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldobj", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldsfld", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldsflda", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldstr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldtoken", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldvirtftn", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "leave", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "leave.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "linkcheck", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "literal", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "localloc", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lpstr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lpstruct", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lptstr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lpvoid", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "lpwstr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "managed", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "marshal", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "method", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "mkrefany", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "modopt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "modreq", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "mul", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "mul.ovf", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "mul.ovf.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "native", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "neg", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "nested", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "newarr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "newobj", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "newslot", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "noappdomain", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "noinlining", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "nomachine", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "nomangle", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "nometadata", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "noncasdemand", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "noncasinheritance", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "noncaslinkdemand", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "nop", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "noprocess", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "not", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "not_in_gc_heap", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "notremotable", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "notserialized", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "null", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "nullref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "object", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "objectref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "opt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "optil", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "or", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "out", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "permitonly", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "pinned", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "pinvokeimpl", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "pop", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix3", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix5", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix6", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefix7", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prefixref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prejitdeny", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "prejitgrant", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "preservesig", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "private", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "Compilercontrolled", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "protected", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "public", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "readonly", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "record", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "refany", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "refanytype", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "refanyval", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "rem", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "rem.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "reqmin", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "reqopt", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "reqrefuse", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "reqsecobj", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "request", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ret", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "rethrow", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "retval", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "rtspecialname", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "runtime", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "safearray", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "sealed", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "sequential", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "serializable", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "shl", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "shr", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "shr.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "sizeof", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "special", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "specialname", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "starg", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "starg.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "static", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stdcall", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stdcall", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.i", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.i1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.i2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.r4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem.ref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stfld", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.i", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.i1", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.i2", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.i4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.i8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.r4", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stind.r8", GINT_TO_POINTER (TRUE));
+}

@@ -25,7 +25,8 @@ char *get_method              (MonoImage *m, guint32 token);
 char *get_method_type_param   (MonoImage *m, guint32 blob_signature);
 char *get_guid                (MonoImage *m, guint32 guid_index);
 char *get_marshal_info        (MonoImage *m, const char *blob);
-char* get_generic_param       (MonoImage *m, int table_type, guint32 row);
+char *get_generic_param       (MonoImage *m, int table_type, guint32 row);
+char *get_escaped_name        (const char *name);
 
 GList *dis_get_custom_attrs   (MonoImage *m, guint32 token);
 
@@ -61,3 +62,7 @@ const char *get_blob_encoded_size      (const char *ptr, int *size);
 
 MonoTypeEnum get_field_literal_type (MonoImage *m, guint32 blob_signature);
 
+/**
+ * This is called to initialize the table containing keyword names
+ */
+void init_key_table (void);

@@ -122,7 +122,7 @@ static map_t visibility_map [] = {
 	{ TYPE_ATTRIBUTE_PUBLIC,               "public " },
 	{ TYPE_ATTRIBUTE_NESTED_PUBLIC,        "nested public " },
 	{ TYPE_ATTRIBUTE_NESTED_PRIVATE,       "nested private " },
-	{ TYPE_ATTRIBUTE_NESTED_FAMILY,        "family " },
+	{ TYPE_ATTRIBUTE_NESTED_FAMILY,	       "nested family " },
 	{ TYPE_ATTRIBUTE_NESTED_ASSEMBLY,      "nested assembly" },
 	{ TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM, "nested famandassem" },
 	{ TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM,  "nested famorassem" },
@@ -186,6 +186,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	guint32 cols [MONO_FIELD_SIZE];
+	char *esname;
 	char rva_desc [32];
 	guint32 rva;
 	int i;
@@ -213,6 +214,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 		mono_metadata_field_info (m, i, &field_offset, NULL, NULL);
 		if (field_offset != -1)
 			attrs = g_strdup_printf ("[%d]", field_offset);
+		esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_LITERAL){
 			char *lit;
 			guint32 const_cols [MONO_CONSTANT_SIZE];
@@ -225,18 +227,18 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 				lit = g_strdup ("not found");
 			}
 			
+			
 			fprintf (output, "    .field %s %s %s = ",
-				 flags, sig,
-				 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
+				 flags, sig, esname);
 			fprintf (output, "%s\n", lit);
 			g_free (lit);
 		} else
 			fprintf (output, "    .field %s %s %s %s%s\n",
-				 attrs? attrs: "", flags, sig,
-				 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]), rva_desc);
+				 attrs? attrs: "", flags, sig, esname, rva_desc);
 		g_free (attrs);
 		g_free (flags);
 		g_free (sig);
+		g_free (esname);
 		dump_cattrs (m, MONO_TOKEN_FIELD_DEF | (i + 1), "    ");
 	}
 }
@@ -656,16 +658,16 @@ static char*
 dis_event_signature (MonoImage *m, guint32 event_idx)
 {
 	MonoTableInfo *et = &m->tables [MONO_TABLE_EVENT];
-	const char *name;
-	char *type, *res;
+	char *type, *res, *esname;
 	guint32 cols [MONO_EVENT_SIZE];
 	
 	mono_metadata_decode_row (et, event_idx, cols, MONO_EVENT_SIZE);
-	name = mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]);
+	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]));
 	type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE]);
 
-	res = g_strdup_printf ("%s %s", type, name);
+	res = g_strdup_printf ("%s %s", type, esname);
 	g_free (type);
+	g_free (esname);
 	return res;
 }
 
@@ -837,6 +839,7 @@ dis_type (MonoImage *m, int n)
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	const char *name, *nspace;
+	char *esname;
 	guint32 packing_size, class_size;
 	gboolean next_is_valid, last;
 	guint32 nested;
@@ -849,13 +852,15 @@ dis_type (MonoImage *m, int n)
 	} else
 		next_is_valid = 0;
 
+	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
 	if (*nspace)
 		fprintf (output, ".namespace %s\n{\n", nspace);
-	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 
+	esname = get_escaped_name (name);
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
-		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
+		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), esname);
+		
                 cnst_block = dis_generic_param_and_constraints (m, MONO_TYPEORMETHOD_TYPE, n+1);
                 fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
@@ -864,8 +869,8 @@ dis_type (MonoImage *m, int n)
 			g_free (base);
 		}
 	} else
-		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
-	
+		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), esname);
+	g_free (esname);
 	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");
         if (cnst_block) {
@@ -1020,7 +1025,7 @@ dis_data (MonoImage *m)
 		for (b = 0; b < size; ++b) {
 			if (!(b % 16))
 				fprintf (output, "\n\t");
-			fprintf (output, " %02x", rva [b] & 0xff);
+			fprintf (output, " %02X", rva [b] & 0xff);
 		}
 		fprintf (output, ") // size: %d\n", size);
 	}
@@ -1122,6 +1127,7 @@ main (int argc, char *argv [])
 	int i, j;
 
 	output = stdout;
+	init_key_table ();
 	for (i = 1; i < argc; i++){
 		if (argv [i][0] == '-'){
 			if (argv [i][1] == 'h')
