@@ -221,8 +221,9 @@ handle_enum_2:
 		if (sig->ret->data.klass->enumtype) {
 			type = sig->ret->data.klass->enum_basetype->type;
 			goto handle_enum_2;
-		} else 
-			invoke_int64 (code, frame, frame_size);		
+		} else { 
+			invoke_int64 (code, frame, frame_size);	
+		}
 		break;
 	default:
 		g_error ("type 0x%x not handled in invoke", type);

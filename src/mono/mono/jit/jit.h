@@ -188,6 +188,9 @@ arch_compile_method        (MonoMethod *method);
 gpointer
 arch_create_jit_trampoline (MonoMethod *method);
 
+gpointer
+arch_create_remoting_trampoline (MonoMethod *method);
+
 MonoObject*
 arch_runtime_invoke        (MonoMethod *method, void *obj, void **params);
 

@@ -28,6 +28,9 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-endian.h>
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
 
 #define CSIZE(x) (sizeof (x) / 4)
 
@@ -41,6 +44,13 @@ default_trampoline (MonoMethod *method)
 	return method;
 }
 
+static gpointer
+default_remoting_trampoline (MonoMethod *method)
+{
+	g_error ("remoting not installed");
+	return NULL;
+}
+
 static void
 default_runtime_class_init (MonoClass *klass)
 {
@@ -48,12 +58,19 @@ default_runtime_class_init (MonoClass *klass)
 }
 
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
+static MonoTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
 static MonoRuntimeClassInit mono_runtime_class_init = default_runtime_class_init;
 
 void
 mono_install_trampoline (MonoTrampoline func) 
 {
 	arch_create_jit_trampoline = func? func: default_trampoline;
+}
+
+void
+mono_install_remoting_trampoline (MonoTrampoline func) 
+{
+	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
 }
 
 void
@@ -855,6 +872,53 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	return vt;
 }
 
+/**
+ * mono_class_proxy_vtable:
+ * @domain: the application domain
+ * @class: the class to proxy
+ *
+ * Creates a vtable for transparent proxies. It is basically
+ * a copy of the real vtable of @class, but all function pointers invoke
+ * the remoting functions, and vtable->klass points to the 
+ * transparent proxy class, and not to @class.
+ */
+MonoVTable *
+mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
+{
+	MonoVTable *vt, *pvt;
+	int i, vtsize;
+
+	if ((pvt = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class)))
+		return pvt;
+
+	vt = mono_class_vtable (domain, class);
+	vtsize = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+
+#if HAVE_BOEHM_GC
+	pvt = GC_malloc (vtsize);
+	GC_register_finalizer (vt, vtable_finalizer, "vtable", NULL, NULL);
+#else
+	pvt = g_malloc0 (vtsize);
+#endif
+	
+	memcpy (pvt, vt, vtsize);
+
+	pvt->klass = mono_defaults.transparent_proxy_class;
+
+	/* initialize vtable */
+	for (i = 0; i < class->vtable_size; ++i) {
+		MonoMethod *cm;
+	       
+		if ((cm = class->vtable [i]))
+			pvt->vtable [i] = arch_create_remoting_trampoline (cm);
+	}
+
+	mono_g_hash_table_insert (domain->proxy_vtable_hash, class, pvt);
+
+	return pvt;
+}
+
+
 /*
  * Compute a relative numbering of the class hierarchy as described in
  * "Java for Large-Scale Scientific Computations?"
@@ -972,14 +1036,35 @@ mono_class_setup_mono_type (MonoClass *class)
 void
 mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 {
+	gboolean system;
+
+	system = !strcmp (class->name_space, "System");
+
 	/* if root of the hierarchy */
-	if (!strcmp (class->name_space, "System") && !strcmp (class->name, "Object")) {
+	if (system && !strcmp (class->name, "Object")) {
 		class->parent = NULL;
 		class->instance_size = sizeof (MonoObject);
-	} else if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		return;
+	}
+
+	if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 		int rnum = 0;
 		class->parent = parent;
-		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0)))
+
+		if (system && *class->name == 'M' && !strcmp (class->name, "MarshalByRefObject")) {
+			class->marshalbyref = 1;
+		} else {
+			class->marshalbyref = parent->marshalbyref;
+		}
+
+		if (system && *class->name == 'M' && !strcmp (class->name, "ContextBoundObject")) {
+			class->contextbound  = 1;
+		} else {
+			class->contextbound  = parent->contextbound ;
+		}
+
+		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && 
+						(strcmp (class->parent->name_space, "System") == 0)))
 			class->valuetype = 1;
 		if (((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
 			class->valuetype = class->enumtype = 1;

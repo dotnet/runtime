@@ -24,6 +24,9 @@
 #include "rawbuffer.h"
 #include "mono-endian.h"
 #include "private.h"
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
 
 #define TEXT_OFFSET 512
 #define CLI_H_SIZE 136

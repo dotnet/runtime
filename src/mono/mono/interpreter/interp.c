@@ -2426,6 +2426,13 @@ array_constructed:
 					    vt->interface_offsets [c->interface_id])
 						found = TRUE;
 				} else {
+					if (oclass == mono_defaults.transparent_proxy_class) {
+						/* fixme: add check for IRemotingTypeInfo */
+						MonoRealProxy *rp = ((MonoTransparentProxy *)o)->rp;
+						MonoType *type;
+						type = ((MonoReflectionType *)rp->class_to_proxy)->type;
+						oclass = mono_class_from_mono_type (type);
+					}
 					/* handle array casts */
 					if (oclass->rank && oclass->rank == c->rank) {
 						if ((oclass->element_class->baseval - c->element_class->baseval) <= c->element_class->diffval) {

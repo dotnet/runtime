@@ -86,7 +86,8 @@ TESTSRC=			\
 	hashcode.cs		\
 	delegate1.cs		\
 	delegate2.cs		\
-	delegate3.cs
+	delegate3.cs		\
+	remoting1.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)

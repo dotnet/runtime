@@ -24,7 +24,8 @@ mono_SOURCES =			\
 	trampoline.c		\
 	delegate.c		\
 	exception.c		\
-	invoke.c	
+	invoke.c		\
+	message.c
 
 mono_LDADD =				\
 	../metadata/libmetadata.a	\

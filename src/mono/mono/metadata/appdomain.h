@@ -63,7 +63,8 @@ struct _MonoDomain {
 	MonoAppDomainSetup *setup;
 	MonoString         *friendly_name;
 	MonoGHashTable     *ldstr_table;
-	MonoGHashTable         *class_vtable_hash;
+	MonoGHashTable     *class_vtable_hash;
+	MonoGHashTable     *proxy_vtable_hash;
 	GHashTable         *jit_code_hash;
 	MonoJitInfoTable   *jit_info_table;
 };

@@ -38,6 +38,7 @@
 #include "regset.h"
 #include "codegen.h"
 #include "debug.h"
+#include "message.h"
 
 /*
  * Pull the list of opcodes
@@ -2027,6 +2028,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean array_set = FALSE;
 			gboolean array_get = FALSE;
+
 			int nargs, vtype_num = 0;
 
 			++ip;
@@ -2136,7 +2138,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					t2->data.m = cm;
 
 				} else {
-			
 					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 					t2->data.p = arch_create_jit_trampoline (cm);
 				}
@@ -3320,18 +3321,20 @@ main (int argc, char *argv [])
 	sa.sa_flags = 0;
 	g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
 
-#ifndef HAVE_BOEHM_GC
+#if 1
 	/* catch SIGSEGV */
 	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 #endif
 
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
 	mono_add_internal_call ("__array_Address", ves_array_element_address);
+	mono_add_internal_call ("System.Runtime.Remoting.Messaging.MonoMethodMessage::InitMessage", 
+				ves_icall_MonoMethodMessage_InitMessage);
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
@@ -3343,6 +3346,7 @@ main (int argc, char *argv [])
 	async_result_id = TlsAlloc ();
 
 	mono_install_trampoline (arch_create_jit_trampoline);
+	mono_install_remoting_trampoline (arch_create_remoting_trampoline);
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_runtime_exec_main (jit_exec_main);

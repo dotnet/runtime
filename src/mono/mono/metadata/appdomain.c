@@ -147,6 +147,7 @@ mono_create_domain ()
 	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
+	domain->proxy_vtable_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
@@ -318,6 +319,18 @@ mono_init (const char *filename)
 	mono_defaults.thread_class = mono_class_from_name (
                 mono_defaults.corlib, "System.Threading", "Thread");
 	g_assert (mono_defaults.thread_class != 0);
+
+	mono_defaults.transparent_proxy_class = mono_class_from_name (
+                mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "TransparentProxy");
+	g_assert (mono_defaults.transparent_proxy_class != 0);
+
+	mono_defaults.real_proxy_class = mono_class_from_name (
+                mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "RealProxy");
+	g_assert (mono_defaults.real_proxy_class != 0);
+
+	mono_defaults.mono_method_message_class = mono_class_from_name (
+                mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "MonoMethodMessage");
+	g_assert (mono_defaults.mono_method_message_class != 0);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
@@ -656,6 +669,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	g_hash_table_destroy (domain->env);
 	g_hash_table_destroy (domain->assemblies);
 	mono_g_hash_table_destroy (domain->class_vtable_hash);
+	mono_g_hash_table_destroy (domain->proxy_vtable_hash);
 	g_hash_table_destroy (domain->jit_code_hash);
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	mono_jit_info_table_free (domain->jit_info_table);

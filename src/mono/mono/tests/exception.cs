@@ -2,6 +2,19 @@ using System;
 
 public class Ex {
 
+	int p;
+	
+	public static int test1 () {
+                Ex x = null;
+		
+		try {
+			x.p = 1;
+		} catch (NullReferenceException) {
+			return 0;
+		}
+		return 1;
+	}
+	
 	public static int test (int a) {
 		int res;
 		int fin = 0;
@@ -27,6 +40,9 @@ public class Ex {
 			return 1;
 		if (test(0) != 34)
 			return 2;
+		if (test1() != 0)
+			return 3;
+		
 		return 0;
 	}
 }

@@ -380,6 +380,13 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 		    vt->interface_offsets [klass->interface_id])
 			return obj;
 	} else {
+		if (oklass == mono_defaults.transparent_proxy_class) {
+			/* fixme: add check for IRemotingTypeInfo */
+			MonoRealProxy *rp = ((MonoTransparentProxy *)obj)->rp;
+			MonoType *type;
+			type = ((MonoReflectionType *)rp->class_to_proxy)->type;
+			oklass = mono_class_from_mono_type (type);
+		}
 		if (oklass->rank && oklass->rank == klass->rank) {
 			if ((oklass->element_class->baseval - klass->element_class->baseval) <= 
 			    klass->element_class->diffval)

@@ -11,6 +11,7 @@ typedef struct {
 	MonoMethodSignature *signature;
 	gpointer addr;
 	gpointer info; /* runtime info */
+	gpointer remoting_tramp; 
 	gint slot;
 	/* name is useful mostly for debugging */
 	const char *name; 
@@ -57,6 +58,9 @@ typedef struct {
 	MonoClass *monotype_class;
 	MonoClass *exception_class;
 	MonoClass *thread_class;
+	MonoClass *transparent_proxy_class;
+	MonoClass *real_proxy_class;
+	MonoClass *mono_method_message_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

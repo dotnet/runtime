@@ -1956,9 +1956,41 @@ system_classes_to_check [] = {
 	{NULL, NULL}
 };
 
+static FieldDesc 
+mono_method_message_fields[] = {
+	{"method", G_STRUCT_OFFSET (MonoMethodMessage, method)},
+	{"args", G_STRUCT_OFFSET (MonoMethodMessage, args)},
+	{"names", G_STRUCT_OFFSET (MonoMethodMessage, names)},
+	{"arg_types", G_STRUCT_OFFSET (MonoMethodMessage, arg_types)},
+	{"ctx", G_STRUCT_OFFSET (MonoMethodMessage, ctx)},
+	{"rval", G_STRUCT_OFFSET (MonoMethodMessage, rval)},
+	{"exc", G_STRUCT_OFFSET (MonoMethodMessage, exc)},
+	{NULL, 0}
+};
+
 static const ClassDesc
 messaging_classes_to_check [] = {
 	{"AsyncResult", async_result_fields},
+	{"MonoMethodMessage", mono_method_message_fields},
+	{NULL, NULL}
+};
+
+static FieldDesc 
+transparent_proxy_fields[] = {
+	{"_rp", G_STRUCT_OFFSET (MonoTransparentProxy, rp)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+real_proxy_fields[] = {
+	{"class_to_proxy", G_STRUCT_OFFSET (MonoRealProxy, class_to_proxy)},
+	{NULL, 0}
+};
+
+static const ClassDesc
+proxy_classes_to_check [] = {
+	{"TransparentProxy", transparent_proxy_fields},
+	{"RealProxy", real_proxy_fields},
 	{NULL, NULL}
 };
 
@@ -1982,6 +2014,7 @@ typedef struct {
 
 static const NameSpaceDesc
 namespaces_to_check[] = {
+	{"System.Runtime.Remoting.Proxies", proxy_classes_to_check},
 	{"System.Runtime.Remoting.Messaging", messaging_classes_to_check},
 	{"System.Reflection.Emit", emit_classes_to_check},
 	{"System.Reflection", reflection_classes_to_check},

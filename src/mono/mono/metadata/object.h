@@ -115,6 +115,16 @@ typedef struct {
 	MonoBoolean  disposed;
 } MonoWaitHandle;
 
+typedef struct {
+	MonoObject  object;
+	MonoObject *rp;	
+} MonoTransparentProxy;
+
+typedef struct {
+	MonoObject  object;
+	MonoObject *class_to_proxy;	
+} MonoRealProxy;
+
 typedef void   (*MonoRuntimeObjectInit) (MonoObject *o);
 typedef gint32 (*MonoRuntimeExecMain)   (MonoMethod *method, MonoArray *args);
 

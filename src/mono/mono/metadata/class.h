@@ -55,6 +55,8 @@ struct _MonoClass {
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
+	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
+	guint contextbound    : 1; /* calss is a ContextBoundObject */
 	guint min_align       : 4;
 
 	MonoClass  *parent;
@@ -141,6 +143,9 @@ mono_class_init            (MonoClass *klass);
 MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *class);
 
+MonoVTable *
+mono_class_proxy_vtable    (MonoDomain *domain, MonoClass *class);
+
 void
 mono_class_setup_mono_type (MonoClass *class);
 
@@ -185,6 +190,9 @@ mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclas
 
 void
 mono_install_trampoline (MonoTrampoline func);
+
+void
+mono_install_remoting_trampoline (MonoTrampoline func);
 
 void
 mono_install_runtime_class_init (MonoRuntimeClassInit func);

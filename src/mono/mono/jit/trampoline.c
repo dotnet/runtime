@@ -10,12 +10,68 @@
 #include <config.h>
 #include <glib.h>
 
-#include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/arch/x86/x86-codegen.h>
 
 #include "jit.h"
 #include "codegen.h"
+#include "message.h"
+
+static void
+arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
+{
+	MonoMethodSignature *sig = method->signature;
+	MonoMethodMessage *msg;
+	MonoTransparentProxy *this;
+	MonoObject *res, *exc;
+	MonoArray *out_args;
+	int this_pos = 0;
+	static MonoObject *(*invoke) (gpointer proxy, gpointer msg, 
+				      MonoObject **exc, MonoArray **out_args) = NULL;
+
+	printf ("REMOTING %s.%s:%s\n", method->klass->name_space, method->klass->name,
+		method->name);
+
+	if (ISSTRUCT (sig->ret))
+		this_pos += 4;
+
+	this = *(MonoTransparentProxy **)(((char *)&first_arg) + this_pos);
+
+	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	msg = mono_method_call_message_new (method, &first_arg);
+
+	/* fixme: make this domain dependent */
+	if (!invoke) {
+		MonoClass *klass;
+		int i;
+
+		klass = mono_defaults.real_proxy_class; 
+		       
+		for (i = 0; i < klass->method.count; ++i) {
+			if (!strcmp ("PrivateInvoke", klass->methods [i]->name) &&
+			    klass->methods [i]->signature->param_count == 4) {
+				invoke = arch_compile_method (klass->methods [i]);
+				break;
+			}
+		}
+	
+		g_assert (invoke);
+	}
+
+
+	res = invoke (this->rp, msg, &exc, &out_args);
+
+	if (exc)
+		mono_raise_exception ((MonoException *)exc);
+
+	mono_method_return_message_restore (method, &first_arg, res, out_args);
+
+	/* WARNING: do not write any code here, because that would destroy 
+	 * the return value 
+	 */
+}
 
 /*
  * get_unbox_trampoline:
@@ -77,7 +133,6 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	addr = arch_compile_method (m);
 	LeaveCriticalSection (metadata_section);
 	g_assert (addr);
-
 
 	/* go to the start of the call instruction
 	 *
@@ -255,10 +310,41 @@ arch_create_jit_trampoline (MonoMethod *method)
 		g_assert ((buf - vc) <= 256);
 	}
 
-	code = buf = g_malloc (16);
-	x86_push_imm (buf, method);
-	x86_jump_code (buf, vc);
-	g_assert ((buf - code) <= 16);
+	if (method->klass->marshalbyref && method->signature->hasthis) {
+		int thispos = 4;
+
+		if (ISSTRUCT (method->signature->ret))
+			thispos = 8;
+
+		code = buf = g_malloc (40);
+		/* load the this pointer */
+		x86_mov_reg_membase (buf, X86_EAX, X86_ESP, thispos, 4);
+		/* load the method pointer */
+		x86_push_imm (buf, method);
+		/* load vtable */
+		x86_mov_reg_membase (buf, X86_EAX, X86_EAX, 0, 4);
+		/* class = transparent proxy */
+		x86_alu_membase_imm (buf, X86_CMP, X86_EAX, 0, ((int)mono_defaults.transparent_proxy_class));
+		x86_branch8 (buf, X86_CC_EQ, 10, FALSE);
+
+		/* jump to normal code - we need a faster way to lookup that code */
+		x86_call_code (buf, arch_compile_method);
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
+		x86_jump_reg (buf, X86_EAX);
+		
+		/* call remoting invoke */
+		x86_call_code (buf, arch_remoting_invoke);
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
+		x86_ret (buf);
+
+		g_assert ((buf - code) <= 40);
+
+	} else {
+		code = buf = g_malloc (16);
+		x86_push_imm (buf, method);
+		x86_jump_code (buf, vc);
+		g_assert ((buf - code) <= 16);
+	}
 
 	/* store trampoline address */
 	method->info = code;
@@ -268,3 +354,31 @@ arch_create_jit_trampoline (MonoMethod *method)
 	return code;
 }
 
+/* arch_create_remoting_trampoline:
+ * @method: pointer to the method info
+ *
+ * Creates a trampoline which calls the remoting functions. This
+ * is used in the vtable of transparent proxies.
+ * 
+ * Returns: a pointer to the newly created code 
+ */
+gpointer
+arch_create_remoting_trampoline (MonoMethod *method)
+{
+	guint8 *code, *buf;
+
+	if (method->remoting_tramp)
+		return method->remoting_tramp;
+	
+	code = buf = g_malloc (16);
+	x86_push_imm (buf, method);
+	x86_call_code (buf, arch_remoting_invoke);
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
+	x86_ret (buf);
+	
+	g_assert ((buf - code) <= 16);
+
+	method->remoting_tramp = code;
+
+	return code;
+}

@@ -39,6 +39,17 @@ typedef struct {
 } MonoReflectionMethod;
 
 typedef struct {
+	MonoObject obj;
+	MonoReflectionMethod *method;
+	MonoArray  *args;		
+	MonoArray  *names;		
+	MonoArray  *arg_types;	
+	MonoObject *ctx;
+	MonoObject *rval;
+	MonoObject *exc;
+} MonoMethodMessage;
+
+typedef struct {
 	MonoObject object;
 	MonoObject *target_type;
 	MonoObject *target;

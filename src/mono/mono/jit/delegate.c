@@ -155,7 +155,8 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...)
 	ASyncCall *ac;
 	int i, align, arg_size = 4;
 
-	if (csig->ret->type == MONO_TYPE_VALUETYPE) {
+
+	if (ISSTRUCT (csig->ret)) {
 		g_assert (!csig->ret->byref);
 		arg_size += sizeof (gpointer);
 	}
@@ -314,9 +315,10 @@ handle_enum:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 		resp = &res_eax;
-		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
-		resp = &res_edx;
-		asm ("movl (%0),%%edx" : : "r" (resp) : "edx");
+		asm ("movl 0(%0),%%eax;"
+		     "movl 4(%0),%%edx" 
+		     : : "r"(resp)
+		     : "eax", "edx");
 		break;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
@@ -367,7 +369,7 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 	}
 
 	code = addr = g_malloc (64 + arg_size * 2);
-	
+
 	/* load the this pointer */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
 	
@@ -485,6 +487,12 @@ async_invoke_thread ()
 	MonoDomain *domain;
 	void (*async_invoke) (MonoAsyncResult *ar) = arch_get_async_invoke ();
 	static int workers = 1;
+	static HANDLE first_worker = NULL;
+
+	if (!first_worker) {
+		first_worker = GetCurrentThread ();
+		g_assert (first_worker);
+	}
 
 	TlsSetValue (exc_cleanup_id, async_invoke_abort);
 
@@ -492,7 +500,10 @@ async_invoke_thread ()
 		MonoAsyncResult *ar;
 		gboolean new_worker = FALSE;
 
-		WaitForSingleObject (delegate_semaphore, INFINITE);
+		if (WaitForSingleObject (delegate_semaphore, 3000) == WAIT_TIMEOUT) {
+			if (GetCurrentThread () != first_worker)
+				ExitThread (0);
+		}
 		
 		ar = NULL;
 		EnterCriticalSection (&delegate_section);

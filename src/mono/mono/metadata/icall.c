@@ -838,7 +838,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	info->isprimitive = (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8);
 }
 
-static MonoObject*
+static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
 	MonoMethodSignature *sig = method->method->signature;
@@ -849,8 +849,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	for (i = 0; i < params->bounds->length; i++) {
 		if (sig->params [i]->byref) {
-			/* fixme: don't know how to handle this */
-			g_assert_not_reached ();
+			/* nothing to do */
 		}
 
 		switch (sig->params [i]->type) {
@@ -883,6 +882,42 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		return this;
 	} else
 		return mono_runtime_invoke (method->method, this, pa);
+}
+
+static MonoObject *
+ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoArray **outArgs) 
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoMethodSignature *sig = method->method->signature;
+	MonoArray *out_args;
+	MonoObject *result;
+	int i, j, outarg_count = 0;
+
+	for (i = 0; i < params->bounds->length; i++) {
+		if (sig->params [i]->byref) 
+			outarg_count++;
+	}
+
+	out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
+	
+	for (i = 0, j = 0; i < params->bounds->length; i++) {
+		if (sig->params [i]->byref) {
+			gpointer arg;
+			arg = mono_array_get (params, gpointer, i);
+			mono_array_set (out_args, gpointer, j, arg);
+			j++;
+		}
+	}
+
+	/* fixme: handle constructors? */
+	if (!strcmp (method->method->name, ".ctor"))
+		g_assert_not_reached ();
+
+	result = ves_icall_InternalInvoke (method, this, params);
+
+	*outArgs = out_args;
+
+	return result;
 }
 
 static MonoObject *
@@ -1718,6 +1753,26 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 	memcpy (dest_buf, src_buf, count);
 }
 
+static MonoObject *
+ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoObject *res;
+	MonoRealProxy *rp = ((MonoRealProxy *)this);
+	MonoType *type;
+	MonoClass *klass;
+
+	res = mono_object_new (domain, mono_defaults.transparent_proxy_class);
+	
+	((MonoTransparentProxy *)res)->rp = this;
+	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
+	klass = mono_class_from_mono_type (type);
+
+	res->vtable = mono_class_proxy_vtable (domain, klass);
+
+	return res;
+}
+
 /* System.Environment */
 
 static MonoString *
@@ -2143,9 +2198,25 @@ static gpointer icall_map [] = {
 	/*
 	 * Mono.CSharp.Debugger
 	 */
-	"Mono.CSharp.Debugger.MonoSymbolWriter::get_local_type_from_sig", ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig,
-	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method", ves_icall_Debugger_MonoSymbolWriter_method_from_token,
-	"Mono.CSharp.Debugger.DwarfFileWriter::get_type_token", ves_icall_Debugger_DwarfFileWriter_get_type_token,
+	"Mono.CSharp.Debugger.MonoSymbolWriter::get_local_type_from_sig", 
+	ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig,
+	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method", 
+	ves_icall_Debugger_MonoSymbolWriter_method_from_token,
+	"Mono.CSharp.Debugger.DwarfFileWriter::get_type_token", 
+	ves_icall_Debugger_DwarfFileWriter_get_type_token,
+
+
+	/*
+	 * System.Runtime.Remoting
+	 */	
+	"System.Runtime.Remoting.RemotingServices::InternalExecute",
+	ves_icall_InternalExecute,
+
+	/*
+	 * System.Runtime.Remoting.Proxies
+	 */	
+	"System.Runtime.Remoting.Proxies.RealProxy::GetTransparentProxy", 
+	ves_icall_Remoting_RealProxy_GetTransparentProxy,
 
 	/*
 	 * add other internal calls here
