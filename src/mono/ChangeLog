@@ -1,8 +1,9 @@
-2004-07-03  Zoltan Varga  <vargaz@freemail.hu>
+2004-06-30  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Fix trunc check + add SPARC64 defines.	
 
        * marshal.c (mono_marshal_get_managed_wrapper): Handle returning
-       delegates from a delegate. Fixes #61033.
-       
+       delegates from a delegate. Fixes #61033.       
 
 2004-06-29  Jackson Harper  <jackson@ximian.com>
 

@@ -954,8 +954,9 @@ ac_cv_c_socklen_t=yes
 ])
 
 AC_CHECK_FUNCS(trunc, , AC_MSG_CHECKING(for trunc in math.h)
+	# Simply calling trunc (0.0) is no good since gcc will optimize the call away
 	AC_TRY_LINK([#include <math.h>], 
-	[ trunc(0.0); ], 
+	[ static void *p = &trunc; ],
 	[
 		AC_DEFINE(HAVE_TRUNC) 
 		AC_MSG_RESULT(yes)
@@ -1096,7 +1097,11 @@ case "$host" in
 		JIT_SUPPORTED=no
 		;;
 	sparc*-*-*)
-		TARGET=SPARC;
+		if test "x$ac_cv_sizeof_void_p" = "x8"; then
+		   TARGET=SPARC64
+		else
+			TARGET=SPARC
+		fi
 		arch_target=sparc;
 		JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
@@ -1227,6 +1232,7 @@ AM_CONDITIONAL(INSTALL_2_0, test x$PREVIEW = xyes)
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
 AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
+AM_CONDITIONAL(SPARC64, test x$TARGET = xSPARC64)
 AM_CONDITIONAL(X86, test x$TARGET = xX86)
 AM_CONDITIONAL(AMD64, test x$TARGET = xAMD64)
 AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
