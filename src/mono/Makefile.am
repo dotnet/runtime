@@ -139,7 +139,7 @@ get-monolite-latest:
 tmpinst-monolite: tmpinst-dir
 	-rm -f _tmpinst/lib/mcs.exe _tmpinst/lib/*.dll
 	-rm -fr _tmpinst/monolite-*
-	srcdir=`cd $(srcdir) && pwd` && cd _tmpinst && (gzip -d $$srcdir/../monolite-latest.tar.gz | tar xf -)
+	srcdir=`cd $(srcdir) && pwd` && cd _tmpinst && ( gzip -d -c $$srcdir/../monolite-latest.tar.gz | tar xf - )
 	mv -f _tmpinst/monolite-*/mcs.exe _tmpinst/monolite-*/*.dll _tmpinst/lib
 	rm -fr _tmpinst/monolite-*
 
