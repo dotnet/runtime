@@ -5,12 +5,20 @@
 	Here is the status of the different assemblies:
 	<ul>
 		<li><a href="http://www.go-mono.com/class-status-corlib.html">corlib</a>: The core library.
+		<li><a href="http://www.go-mono.com/class-status-cscompmgd.html">cscompmgd</a>:
+		Managed interface for C# compiler.
 		<li><a href="http://www.go-mono.com/class-status-System.html">System</a>: Extra modules
 		<li><a href="http://www.go-mono.com/class-status-System.Xml.html">System.Xml</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Configuration.Install.html">System.Configuration.Install</a>.
 		<li><a
 		href="http://www.go-mono.com/class-status-System.Data.html">System.Data</a>:
 		Database access functionality (also check the <a href="ado-net.html">Mono ADO.NET status</a> pages).
+		<li><a href="http://www.go-mono.com/class-status-System.Data.OracleClient.html">System.Data.OracleClient</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Design.html">System.Design</a>.
 		<li><a href="http://www.go-mono.com/class-status-System.Drawing.html">System.Drawing</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Drawing.Design.html">System.Drawing.Design</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Management.html">System.Management</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Messaging.html">System.Messaging</a>.
 		<li><a
 		href="http://www.go-mono.com/class-status-System.Web.html">System.Web</a>:
 		ASP.NET classes, also check the <a href="asp-net.html">Mono ASP.NET status pages</a>

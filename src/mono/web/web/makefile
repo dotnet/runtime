@@ -3,6 +3,7 @@ CSC=mcs
 RUN_MONO=mono
 else
 CSC=csc /nologo
+RUN_MONO=mono
 endif
 
 CORCOMPARE=../../../mcs/tools/corcompare
@@ -77,11 +78,17 @@ OBJECTS=									\
 	deploy/class-status-corlib.html 					\
 	deploy/class-status-System.html 					\
 	deploy/class-status-System.Xml.html 					\
+	deploy/class-status-System.Configuration.Install.html			\
 	deploy/class-status-System.Data.html 					\
+	deploy/class-status-System.Data.OracleClient.html			\
+	deploy/class-status-System.Design.html					\
+	deploy/class-status-System.Management.html				\
+	deploy/class-status-System.Messaging.html				\
 	deploy/class-status-System.Security.html				\
 	deploy/class-status-System.Web.html 					\
 	deploy/class-status-System.Web.Services.html				\
 	deploy/class-status-System.Drawing.html					\
+	deploy/class-status-System.Drawing.Design.html				\
 	deploy/class-status-Microsoft.VisualBasic.html				\
 	deploy/class-status-System.Windows.Forms.html				\
 	deploy/class-status-System.DirectoryServices.html			\

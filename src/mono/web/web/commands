@@ -65,8 +65,14 @@
 1,corlib,class-status-corlib.html,class-status-corlib.src,cm/cormissing.css,cm/cormissing.js
 1,System,class-status-System.html,class-status-System.src,cm/cormissing.css,cm/cormissing.js
 1,Xml,class-status-System.Xml.html,class-status-System.Xml.src,cm/cormissing.css,cm/cormissing.js
+1,Configuration.Install,class-status-System.Configuration.Install.html,class-status-System.Configuration.Install.src,cm/cormissing.css,cm/cormissing.js
 1,Data,class-status-System.Data.html,class-status-System.Data.src,cm/cormissing.css,cm/cormissing.js
+1,Data.OracleClient,class-status-System.Data.OracleClient.html,class-status-System.Data.OracleClient.src,cm/cormissing.css,cm/cormissing.js
+1,Design,class-status-System.Design.html,class-status-System.Design.src,cm/cormissing.css,cm/cormissing.js
 1,Drawing,class-status-System.Drawing.html,class-status-System.Drawing.src,cm/cormissing.css,cm/cormissing.js
+1,Drawing.Design,class-status-System.Drawing.Design.html,class-status-System.Drawing.Design.src,cm/cormissing.css,cm/cormissing.js
+1,Management,class-status-System.Management.html,class-status-System.Management.src,cm/cormissing.css,cm/cormissing.js
+1,Messaging,class-status-System.Messaging.html,class-status-System.Messaging.src,cm/cormissing.css,cm/cormissing.js
 1,Web,class-status-System.Web.html,class-status-System.Web.src,cm/cormissing.css,cm/cormissing.js
 1,Web.Services,class-status-System.Web.Services.html,class-status-System.Web.Services.src,cm/cormissing.css,cm/cormissing.js
 1,Microsoft.VisualBasic,class-status-Microsoft.VisualBasic.html,class-status-Microsoft.VisualBasic.src,cm/cormissing.css,cm/cormissing.js

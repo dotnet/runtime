@@ -8,11 +8,17 @@ all: \
 	mscorlib.xml \
 	System.xml \
 	System.Xml.xml \
+	System.Configuration.Install.xml \
 	System.Data.xml \
+	System.Data.OracleClient.xml \
+	System.Design.xml \
+	System.Management.xml \
+	System.Messaging.xml \
 	System.Web.xml \
 	System.Web.Services.xml \
 	System.Runtime.Serialization.Formatters.Soap.xml \
 	System.Drawing.xml \
+	System.Drawing.Design.xml \
 	System.Security.xml \
 	System.DirectoryServices.xml \
 	System.EnterpriseServices.xml \
@@ -30,8 +36,23 @@ System.xml :
 System.Xml.xml :
 	mono-api-info $(DLL_PATH)/System.Xml.dll > System.Xml.xml
 
+System.Configuration.Install.xml :
+	mono-api-info $(DLL_PATH)/System.Configuration.Install.dll > System.Configuration.Install.xml
+
 System.Data.xml :
 	mono-api-info $(DLL_PATH)/System.Data.dll > System.Data.xml
+
+System.Data.OracleClient.xml :
+	mono-api-info $(DLL_PATH)/System.Data.OracleClient.dll > System.Data.OracleClient.xml
+
+System.Design.xml :
+	mono-api-info $(DLL_PATH)/System.Design.dll > System.Design.xml
+
+System.Management.xml :
+	mono-api-info $(DLL_PATH)/System.Management.dll > System.Management.xml
+
+System.Messaging.xml :
+	mono-api-info $(DLL_PATH)/System.Messaging.dll > System.Messaging.xml
 
 System.Web.xml :
 	mono-api-info $(DLL_PATH)/System.Web.dll > System.Web.xml
@@ -47,6 +68,9 @@ System.Runtime.Serialization.Formatters.Soap.xml :
 
 System.Drawing.xml :
 	mono-api-info $(DLL_PATH)/System.Drawing.dll > System.Drawing.xml
+
+System.Drawing.Design.xml :
+	mono-api-info $(DLL_PATH)/System.Drawing.Design.dll > System.Drawing.Design.xml
 
 System.Security.xml :
 	mono-api-info $(DLL_PATH)/System.Security.dll > System.Security.xml
@@ -67,6 +91,6 @@ Microsoft.VisualBasic.xml :
 	mono-api-info $(DLL_PATH)/Microsoft.VisualBasic.dll > Microsoft.VisualBasic.xml
 
 clean:
-	rm mscorlib.xml System.xml System.Xml.xml System.Data.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.EnterpriseServices.xml System.Runtime.Remoting.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
+	rm mscorlib.xml System.xml System.Xml.xml System.Configuration.Install.xml System.Data.xml System.Data.OracleClient.xml System.Management.xml System.Messaging.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.EnterpriseServices.xml System.Runtime.Remoting.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
 
 
