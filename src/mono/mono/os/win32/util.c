@@ -9,6 +9,7 @@
 #include <config.h>
 #include <windows.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/assembly.h>
 #include <mono/os/util.h>
 
 #ifdef UNDER_CE
@@ -41,7 +42,7 @@ mono_set_rootdir (void)
 	gunichar2 moddir [MAXPATHLEN];
 	gchar *bindir, *installdir, *root, *utf8name;
 
-	GetModuleFileName (NULL, moddir, sizeof(moddir));
+	GetModuleFileNameW (NULL, moddir, sizeof(moddir));
 	utf8name = g_utf16_to_utf8 (moddir, -1, NULL, NULL, NULL);
 	bindir = g_path_get_dirname (utf8name);
 	installdir = g_path_get_dirname (bindir);
