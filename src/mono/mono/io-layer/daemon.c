@@ -28,21 +28,23 @@
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/io-layer/daemon-private.h>
 
-#undef DEBUG
+#define DEBUG
 
-/* Array to hold the file descriptor we are currently polling */
-static struct pollfd *pollfds=NULL;
-/* Keep track of the size and usage of pollfds */
-static int nfds=0, maxfds=0;
-/* Array to keep track of arrays of handles that belong to a given
- * client. handle_refs[0] is used by the daemon itself
+/* Keep track of the number of clients */
+static int nfds=0;
+/* Array to keep track of handles that have been referenced by the
+ * daemon.
  */
-static guint32 **handle_refs=NULL;
+static guint32 *daemon_handles=NULL;
 /* The socket which we listen to new connections on */
 static int main_sock;
 
 /* Set to TRUE by the SIGCHLD signal handler */
 static volatile gboolean check_processes=FALSE;
+
+static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
+			     gpointer data);
+
 
 /* Deletes the shared memory segment.  If we're exiting on error,
  * clients will get EPIPEs.
@@ -58,7 +60,7 @@ static void cleanup (void)
  */
 static void maybe_exit (void)
 {
-	guint32 *open_handles=handle_refs[0], i;
+	guint32 i;
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Seeing if we should exit");
@@ -72,7 +74,7 @@ static void maybe_exit (void)
 	}
 
 	for(i=0; i<_WAPI_MAX_HANDLES; i++) {
-		if(open_handles[i]>0) {
+		if(daemon_handles[i]>0) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
 				   ": Still got handle references");
@@ -153,7 +155,7 @@ static void startup (void)
 	 * The name is intended to be unique, not cryptographically
 	 * secure...
 	 */
-	snprintf (_wapi_shared_data->daemon+1, 106,
+	snprintf (_wapi_shared_data->daemon+1, MONO_SIZEOF_SUNPATH-2,
 		  "mono-handle-daemon-%d-%d-%ld", getuid (), getpid (),
 		  time (NULL));
 }
@@ -161,16 +163,14 @@ static void startup (void)
 
 /*
  * ref_handle:
- * @idx: idx into pollfds
+ * @open_handles: An array of handles referenced by the calling client
  * @handle: handle to inc refcnt
  *
- * Increase ref count of handle for idx's filedescr. and the
- * shm. Handle 0 is ignored.
+ * Increase ref count of handle for the calling client.  Handle 0 is
+ * ignored.
  */
-static void ref_handle (guint32 idx, guint32 handle)
+static void ref_handle (guint32 *open_handles, guint32 handle)
 {
-	guint32 *open_handles=handle_refs[idx];
-	
 	if(handle==0) {
 		return;
 	}
@@ -188,16 +188,15 @@ static void ref_handle (guint32 idx, guint32 handle)
 
 /*
  * unref_handle:
- * @idx: idx into pollfds
+ * @open_handles: An array of handles referenced by the calling client
  * @handle: handle to inc refcnt
  *
- * Decrease ref count of handle for idx's filedescr. and the shm. If
- * global ref count reaches 0 it is free'ed. Return TRUE if the local
- * ref count is 0. Handle 0 is ignored.
+ * Decrease ref count of handle for the calling client. If global ref
+ * count reaches 0 it is free'ed. Return TRUE if the local ref count
+ * is 0. Handle 0 is ignored.
  */
-static gboolean unref_handle (guint32 idx, guint32 handle)
+static gboolean unref_handle (guint32 *open_handles, guint32 handle)
 {
-	guint32 *open_handles=handle_refs[idx];
 	gboolean destroy=FALSE;
 	
 	if(handle==0) {
@@ -243,7 +242,7 @@ static gboolean unref_handle (guint32 idx, guint32 handle)
 		memset (&_wapi_shared_data->handles[handle].u, '\0', sizeof(_wapi_shared_data->handles[handle].u));
 	}
 
-	if(idx==0) {
+	if(open_handles==daemon_handles) {
 		/* The daemon released a reference, so see if it's
 		 * ready to exit
 		 */
@@ -257,42 +256,47 @@ static gboolean unref_handle (guint32 idx, guint32 handle)
  * add_fd:
  * @fd: Filehandle to add
  *
- * Add filedescriptor to the pollfds array, expand if necessary
+ * Create a new GIOChannel, and add it to the main loop event sources.
  */
 static void add_fd(int fd)
 {
-	if(nfds==maxfds) {
-		/* extend the array */
-		maxfds+=10;
-		/* no need to memset the extra memory, we init it
-		 * before use anyway */
-		pollfds=g_renew (struct pollfd, pollfds, maxfds);
-		handle_refs=g_renew (guint32*, handle_refs, maxfds);
-	}
-
-	pollfds[nfds].fd=fd;
-	pollfds[nfds].events=POLLIN;
-	pollfds[nfds].revents=0;
+	GIOChannel *io_channel;
+	guint32 *refs;
 	
-	handle_refs[nfds]=g_new0 (guint32, _WAPI_MAX_HANDLES);
+	io_channel=g_io_channel_unix_new (fd);
+	
+	/* Turn off all encoding and buffering crap */
+	g_io_channel_set_encoding (io_channel, NULL, NULL);
+	g_io_channel_set_buffered (io_channel, FALSE);
+	
+	refs=g_new0 (guint32, _WAPI_MAX_HANDLES);
+	if(daemon_handles==NULL) {
+		/* We rely on the daemon channel being created first.
+		 * That's safe, because every other channel is the
+		 * result of an accept() on the daemon channel.
+		 */
+		daemon_handles=refs;
+	}
+	
+	g_io_add_watch (io_channel, G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
+			fd_activity, refs);
 
 	nfds++;
 }
 
 /*
  * rem_fd:
- * @idx: idx into pollfds to remove
+ * @channel: GIOChannel to close
  *
- * Close filedescriptor and remove it from the pollfds array. Closes
- * all handles that it may have open. If only main_sock is open, the
- * daemon is shut down.
+ * Closes the IO channel. Closes all handles that it may have open. If
+ * only main_sock is left, the daemon is shut down.
  */
-static void rem_fd(int idx)
+static void rem_fd(GIOChannel *channel, guint32 *open_handles)
 {
-	guint32 *open_handles=handle_refs[idx], handle_count;
+	guint32 handle_count;
 	int i, j;
 	
-	if(idx==0) {
+	if(g_io_channel_unix_get_fd (channel) == main_sock) {
 		/* We shouldn't be deleting the daemon's fd */
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Deleting daemon fd!");
 		cleanup ();
@@ -300,24 +304,27 @@ static void rem_fd(int idx)
 	}
 	
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Removing client at %d", idx);
+	g_message (G_GNUC_PRETTY_FUNCTION ": Removing client fd %d",
+		   g_io_channel_unix_get_fd (channel));
 #endif
 
-	close(pollfds[idx].fd);
+	g_io_channel_shutdown (channel, TRUE, NULL);
 
 	for(i=0; i<_WAPI_MAX_HANDLES; i++) {
 		handle_count=open_handles[i];
 		
 		for(j=0; j<handle_count; j++) {
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": closing handle 0x%x for client at index %d", i, idx);
+			g_message (G_GNUC_PRETTY_FUNCTION ": closing handle 0x%x for client at index %d", i, g_io_channel_unix_get_fd (channel));
 #endif
 			/* Ignore the hint to the client to destroy
 			 * the handle private data
 			 */
-			unref_handle (idx, i);
+			unref_handle (open_handles, i);
 		}
 	}
+	
+	g_free (open_handles);
 	
 	nfds--;
 	if(nfds==1) {
@@ -325,16 +332,6 @@ static void rem_fd(int idx)
 		 * cleanup and exit
 		 */
 		maybe_exit ();
-	}
-	
-	memset(&pollfds[idx], '\0', sizeof(struct pollfd));
-	g_free (handle_refs[idx]);
-	
-	if(idx<nfds) {
-		memmove(&pollfds[idx], &pollfds[idx+1],
-			sizeof(struct pollfd) * (nfds-idx));
-		memmove (&handle_refs[idx], &handle_refs[idx+1],
-			 sizeof(guint32) * (nfds-idx));
 	}
 }
 
@@ -465,8 +462,9 @@ static void process_post_mortem (pid_t pid, int status)
 	(void)_wapi_search_handle (WAPI_HANDLE_THREAD, process_thread_compare,
 				   process_handle, NULL, NULL);
 
-	unref_handle (0, GPOINTER_TO_UINT (process_handle_data->main_thread));
-	unref_handle (0, GPOINTER_TO_UINT (process_handle));
+	unref_handle (daemon_handles,
+		      GPOINTER_TO_UINT (process_handle_data->main_thread));
+	unref_handle (daemon_handles, GPOINTER_TO_UINT (process_handle));
 }
 
 static void process_died (void)
@@ -502,33 +500,35 @@ static void process_died (void)
 
 /*
  * send_reply:
- * @idx: idx into pollfds.
- * @rest: Package to send
+ * @channel: channel to send reply to
+ * @resp: Package to send
  *
  * Send a package to a client
  */
-static void send_reply (guint32 idx, WapiHandleResponse *resp)
+static void send_reply (GIOChannel *channel, WapiHandleResponse *resp)
 {
 	/* send message */
-	_wapi_daemon_response (pollfds[idx].fd, resp);
+	_wapi_daemon_response (g_io_channel_unix_get_fd (channel), resp);
 }
 
 /*
  * process_new:
- * @idx: idx into pollfds.
+ * @channel: The client making the request
+ * @open_handles: An array of handles referenced by this client
  * @type: type to init handle to
  *
  * Find a free handle and initialize it to 'type', increase refcnt and
  * send back a reply to the client.
  */
-static void process_new (guint32 idx, WapiHandleType type)
+static void process_new (GIOChannel *channel, guint32 *open_handles,
+			 WapiHandleType type)
 {
 	guint32 handle;
 	WapiHandleResponse resp;
 	
 	/* handle might be set to 0.  This is handled at the client end */
 	handle=_wapi_handle_new_internal (type);
-	ref_handle (idx, handle);
+	ref_handle (open_handles, handle);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning new handle 0x%x",
@@ -539,24 +539,26 @@ static void process_new (guint32 idx, WapiHandleType type)
 	resp.u.new.type=type;
 	resp.u.new.handle=handle;
 			
-	send_reply (idx, &resp);
+	send_reply (channel, &resp);
 }
 
 /*
  * process_open:
- * @idx: idx into pollfds.
+ * @channel: The client making the request
+ * @open_handles: An array of handles referenced by this client
  * @handle: handle no.
  *
  * Increase refcnt on a previously created handle and send back a
  * response to the client.
  */
-static void process_open (guint32 idx, guint32 handle)
+static void process_open (GIOChannel *channel, guint32 *open_handles,
+			  guint32 handle)
 {
 	WapiHandleResponse resp;
 	struct _WapiHandleShared *shared=&_wapi_shared_data->handles[handle];
 		
 	if(shared->type!=WAPI_HANDLE_UNUSED && handle!=0) {
-		ref_handle (idx, handle);
+		ref_handle (open_handles, handle);
 
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
@@ -567,7 +569,7 @@ static void process_open (guint32 idx, guint32 handle)
 		resp.u.new.type=shared->type;
 		resp.u.new.handle=handle;
 			
-		send_reply (idx, &resp);
+		send_reply (channel, &resp);
 
 		return;
 	}
@@ -575,39 +577,41 @@ static void process_open (guint32 idx, guint32 handle)
 	resp.type=WapiHandleResponseType_Open;
 	resp.u.new.handle=0;
 			
-	send_reply (idx, &resp);
+	send_reply (channel, &resp);
 }
 
 /*
  * process_close:
- * @idx: idx into pollfds.
+ * @channel: The client making the request
+ * @open_handles: An array of handles referenced by this client
  * @handle: handle no.
  *
  * Decrease refcnt on a previously created handle and send back a
  * response to the client with notice of it being destroyed.
  */
-static void process_close (guint32 idx, guint32 handle)
+static void process_close (GIOChannel *channel, guint32 *open_handles,
+			   guint32 handle)
 {
 	WapiHandleResponse resp;
 	
 	resp.type=WapiHandleResponseType_Close;
-	resp.u.close.destroy=unref_handle (idx, handle);
+	resp.u.close.destroy=unref_handle (open_handles, handle);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unreffing handle 0x%x", handle);
 #endif
 			
-	send_reply (idx, &resp);
+	send_reply (channel, &resp);
 }
 
 /*
  * process_scratch:
- * @idx: idx into pollfds.
+ * @channel: The client making the request
  * @length: allocate this much scratch space
  *
  * Allocate some scratch space and send a reply to the client.
  */
-static void process_scratch (guint32 idx, guint32 length)
+static void process_scratch (GIOChannel *channel, guint32 length)
 {
 	WapiHandleResponse resp;
 	
@@ -619,17 +623,17 @@ static void process_scratch (guint32 idx, guint32 length)
 		   resp.u.scratch.idx);
 #endif
 			
-	send_reply (idx, &resp);
+	send_reply (channel, &resp);
 }
 
 /*
  * process_scratch_free:
- * @idx: idx into pollfds.
+ * @channel: The client making the request
  * @scratch_idx: deallocate this scratch space
  *
  * Deallocate scratch space and send a reply to the client.
  */
-static void process_scratch_free (guint32 idx, guint32 scratch_idx)
+static void process_scratch_free (GIOChannel *channel, guint32 scratch_idx)
 {
 	WapiHandleResponse resp;
 	
@@ -641,10 +645,20 @@ static void process_scratch_free (guint32 idx, guint32 scratch_idx)
 		   scratch_idx);
 #endif
 			
-	send_reply (idx, &resp);
+	send_reply (channel, &resp);
 }
 
-static void process_process_fork (guint32 idx,
+/*
+ * process_process_fork:
+ * @channel: The client making the request
+ * @open_handles: An array of handles referenced by this client
+ * @process_fork: Describes the process to fork
+ * @fds: stdin, stdout, and stderr for the new process
+ *
+ * Forks a new process, and returns the process and thread data to the
+ * client.
+ */
+static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 				  WapiHandleRequest_ProcessFork process_fork,
 				  int *fds)
 {
@@ -663,19 +677,19 @@ static void process_process_fork (guint32 idx,
 	 * appropriate error handling action.
 	 */
 	process_handle=_wapi_handle_new_internal (WAPI_HANDLE_PROCESS);
-	ref_handle (0, process_handle);
-	ref_handle (idx, process_handle);
+	ref_handle (daemon_handles, process_handle);
+	ref_handle (open_handles, process_handle);
 	
 	thread_handle=_wapi_handle_new_internal (WAPI_HANDLE_THREAD);
-	ref_handle (0, thread_handle);
-	ref_handle (idx, thread_handle);
+	ref_handle (daemon_handles, thread_handle);
+	ref_handle (open_handles, thread_handle);
 	
 	if(process_handle==0 || thread_handle==0) {
 		/* unref_handle() copes with the handle being 0 */
-		unref_handle (0, process_handle);
-		unref_handle (idx, process_handle);
-		unref_handle (0, thread_handle);
-		unref_handle (idx, thread_handle);
+		unref_handle (daemon_handles, process_handle);
+		unref_handle (open_handles, process_handle);
+		unref_handle (daemon_handles, thread_handle);
+		unref_handle (open_handles, thread_handle);
 		process_handle=0;
 		thread_handle=0;
 	} else {
@@ -799,48 +813,63 @@ static void process_process_fork (guint32 idx,
 	resp.u.process_fork.process_handle=process_handle;
 	resp.u.process_fork.thread_handle=thread_handle;
 
-	send_reply (idx, &resp);
+	send_reply (channel, &resp);
 }
 
 /*
  * read_message:
- * @idx: idx into pollfds.
+ * @channel: The client to read the request from
+ * @open_handles: An array of handles referenced by this client
  *
  * Read a message (A WapiHandleRequest) from a client and dispatch
  * whatever it wants to the process_* calls.
  */
-static void read_message (guint32 idx)
+static void read_message (GIOChannel *channel, guint32 *open_handles)
 {
 	WapiHandleRequest req;
 	int fds[3]={0, 1, 2};
+	int ret;
 	gboolean has_fds=FALSE;
 	
 	/* Reading data */
-	_wapi_daemon_request (pollfds[idx].fd, &req, fds, &has_fds);
+	ret=_wapi_daemon_request (g_io_channel_unix_get_fd (channel), &req,
+				  fds, &has_fds);
+	if(ret==0) {
+		/* Other end went away */
+#ifdef DEBUG
+		g_message ("Read 0 bytes on fd %d, closing it",
+			   g_io_channel_unix_get_fd (channel));
+#endif
+
+		rem_fd (channel, open_handles);
+		return;
+	}
+	
 	switch(req.type) {
 	case WapiHandleRequestType_New:
-		process_new (idx, req.u.new.type);
+		process_new (channel, open_handles, req.u.new.type);
 		break;
 	case WapiHandleRequestType_Open:
 #ifdef DEBUG
 		g_assert(req.u.open.handle < _WAPI_MAX_HANDLES);
 #endif
-		process_open (idx, req.u.open.handle);
+		process_open (channel, open_handles, req.u.open.handle);
 		break;
 	case WapiHandleRequestType_Close:
 #ifdef DEBUG
 		g_assert(req.u.close.handle < _WAPI_MAX_HANDLES);
 #endif
-		process_close (idx, req.u.close.handle);
+		process_close (channel, open_handles, req.u.close.handle);
 		break;
 	case WapiHandleRequestType_Scratch:
-		process_scratch (idx, req.u.scratch.length);
+		process_scratch (channel, req.u.scratch.length);
 		break;
 	case WapiHandleRequestType_ScratchFree:
-		process_scratch_free (idx, req.u.scratch_free.idx);
+		process_scratch_free (channel, req.u.scratch_free.idx);
 		break;
 	case WapiHandleRequestType_ProcessFork:
-		process_process_fork (idx, req.u.process_fork, fds);
+		process_process_fork (channel, open_handles,
+				      req.u.process_fork, fds);
 		break;
 	case WapiHandleRequestType_Error:
 		/* fall through */
@@ -861,6 +890,59 @@ static void read_message (guint32 idx)
 		close (fds[1]);
 		close (fds[2]);
 	}
+}
+
+/*
+ * fd_activity:
+ * @channel: The IO channel that is active
+ * @condition: The condition that has been satisfied
+ * @data: A pointer to an array of handles referenced by this client
+ *
+ * The callback called by the main loop when there is activity on an
+ * IO channel.
+ */
+static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
+			     gpointer data)
+{
+	if(condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
+#ifdef DEBUG
+		g_message ("fd %d error", g_io_channel_unix_get_fd (channel));
+#endif
+
+		rem_fd (channel, data);
+		return(FALSE);
+	}
+
+	if(condition & (G_IO_IN | G_IO_PRI)) {
+		if(g_io_channel_unix_get_fd (channel)==main_sock) {
+			int newsock;
+			struct sockaddr addr;
+			socklen_t addrlen=sizeof(struct sockaddr);
+			
+			newsock=accept (main_sock, &addr, &addrlen);
+			if(newsock==-1) {
+				g_critical ("accept error: %s", strerror (errno));
+				cleanup ();
+				exit (-1);
+			}
+
+#ifdef DEBUG
+			g_message ("accept returning %d", newsock);
+#endif
+
+			add_fd (newsock);
+		} else {
+#ifdef DEBUG
+			g_message ("reading data on fd %d",
+				   g_io_channel_unix_get_fd (channel));
+#endif
+
+			read_message (channel, data);
+		}
+		return(TRUE);
+	}
+	
+	return(FALSE);	/* remove source */
 }
 
 /*
@@ -918,8 +1000,6 @@ void _wapi_daemon_main(void)
 	_wapi_shared_data->daemon_running=DAEMON_RUNNING;
 
 	while(TRUE) {
-		int i;
-
 		if(check_processes==TRUE) {
 			process_died ();
 		}
@@ -928,56 +1008,13 @@ void _wapi_daemon_main(void)
 		g_message ("polling");
 #endif
 
-		/* Block until something happens */
-		ret=poll(pollfds, nfds, -1);
-		if(ret==-1 && errno!=EINTR) {
-			g_critical ("poll error: %s", strerror (errno));
-			cleanup ();
-			exit(-1);
-		}
-
-		for(i=0; i<nfds; i++) {
-			if(((pollfds[i].revents&POLLHUP)==POLLHUP) ||
-			   ((pollfds[i].revents&POLLERR)==POLLERR) ||
-			   ((pollfds[i].revents&POLLNVAL)==POLLNVAL)) {
-#ifdef DEBUG
-			   	g_message ("fd[%d] %d error", i,
-					   pollfds[i].fd);
-#endif
-				rem_fd(i);
-			} else if((pollfds[i].revents&POLLIN)==POLLIN) {
-				/* If a client is connecting, accept
-				 * it and begin listening to that
-				 * socket too.  Otherwise it must be a
-				 * client we already have that wants
-				 * something.
-				 */
-				/* FIXME: Make sure i==0 too? */
-				if(pollfds[i].fd==main_sock) {
-					int newsock;
-					struct sockaddr addr;
-					socklen_t addrlen=sizeof(struct sockaddr);
-					newsock=accept(main_sock, &addr,
-						       &addrlen);
-					if(newsock==-1) {
-						g_critical("accept error: %s",
-							   strerror (errno));
-						cleanup ();
-						exit(-1);
-					}
-#ifdef DEBUG
-					g_message ("accept returning %d",
-						   newsock);
-#endif
-					add_fd(newsock);
-				} else {
-#ifdef DEBUG
-					g_message ("reading data on fd %d",
-						   pollfds[i].fd);
-#endif
-					read_message (i);
-				}
-			}
-		}
+		/* Block until something happens. We don't use
+		 * g_main_loop_run() because we rely on the SIGCHLD
+		 * signal interrupting poll() so we can reap child
+		 * processes as soon as they die, without burning cpu
+		 * time by polling the flag.
+		 */
+		g_main_context_iteration (g_main_context_default (), TRUE);
 	}
 }
+

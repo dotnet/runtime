@@ -151,8 +151,8 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 }
 
 /* Read request on fd (called by the daemon) */
-void _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
-			   gboolean *has_fds)
+int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
+			  gboolean *has_fds)
 {
 	int ret;
 	struct msghdr msg;
@@ -222,10 +222,12 @@ void _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 #endif
 		*has_fds=FALSE;
 	}
+
+	return(ret);
 }
 
 /* Send response on fd (called by the daemon) */
-void _wapi_daemon_response (int fd, WapiHandleResponse *resp)
+int _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 {
 	int ret;
 	
@@ -241,4 +243,6 @@ void _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 		/* The next loop around poll() should tidy up */
 	}
 #endif
+
+	return(ret);
 }
