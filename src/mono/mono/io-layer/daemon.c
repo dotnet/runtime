@@ -973,13 +973,11 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 #endif
 			
 				/* set cwd */
-printf("set cwd\n");
 				if(chdir (dir)==-1) {
 					process_handle_data->exec_errno=errno;
 					exit (-1);
 				}
 				
-printf("do exec\n");
 				/* exec */
 				execve (argv[0], argv, env);
 		
