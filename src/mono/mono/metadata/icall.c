@@ -407,6 +407,57 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	info->interfaces = intf;
 }
 
+static MonoObject *
+ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
+{
+	MonoClass *enumc;
+	gint32 s1, s2;
+	MonoObject *res;
+
+	MONO_CHECK_ARG_NULL (type);
+	MONO_CHECK_ARG_NULL (obj);
+
+	enumc = mono_class_from_mono_type (type->type);
+
+	MONO_CHECK_ARG (obj, enumc->enumtype == TRUE);
+	MONO_CHECK_ARG (obj, obj->klass->byval_arg.type >= MONO_TYPE_I1 &&  
+			obj->klass->byval_arg.type <= MONO_TYPE_U8);
+
+	
+	s1 = mono_class_value_size (enumc, NULL);
+	s2 = mono_class_value_size (obj->klass, NULL);
+
+	res = mono_object_new (enumc);
+	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject), MIN (s1, s2));
+
+	return res;
+}
+
+static MonoObject *
+ves_icall_System_Enum_get_value (MonoObject *this)
+{
+	MonoObject *res;
+	MonoClass *enumc;
+	gpointer dst;
+	gpointer src;
+	int size;
+
+	if (!this)
+		return NULL;
+
+	g_assert (this->klass->enumtype);
+	
+	enumc = mono_class_from_mono_type (this->klass->enum_basetype);
+	res = mono_object_new (enumc);
+	dst = (gpointer)res + sizeof (MonoObject);
+	src = (gpointer)this + sizeof (MonoObject);
+	size = mono_class_value_size (enumc, NULL);
+
+	memcpy (dst, src, size);
+
+	return res;
+}
+
 static void
 ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 {
@@ -885,8 +936,13 @@ static gpointer icall_map [] = {
 	"System.Reflection.MonoMethodInfo::get_parameter_info", ves_icall_get_parameter_info,
 	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
-	"System.MonoEnumInfo::get_enum_info", ves_icall_get_enum_info,
 	
+	/* System.Enum */
+
+	"System.MonoEnumInfo::get_enum_info", ves_icall_get_enum_info,
+	"System.Enum::get_value", ves_icall_System_Enum_get_value,
+	"System.Enum::ToObject", ves_icall_System_Enum_ToObject,
+
 	/*
 	 * TypeBuilder
 	 */

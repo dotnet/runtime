@@ -3331,7 +3331,7 @@ sigfpe_signal_handler (int _dummy)
 	void **_p = (void **)&_dummy;
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 
-	exc = get_exception_divide_by_zero ();
+	exc = mono_get_exception_divide_by_zero ();
 	
 	arch_handle_exception (ctx, exc);
 
@@ -3345,7 +3345,7 @@ sigsegv_signal_handler (int _dummy)
 	void **_p = (void **)&_dummy;
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 
-	exc = get_exception_execution_engine ();
+	exc = mono_get_exception_execution_engine ();
 	
 	arch_handle_exception (ctx, exc);
 

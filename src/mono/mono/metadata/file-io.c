@@ -147,20 +147,6 @@ static guint32 convert_seekorigin(MonoSeekOrigin origin)
 	return(w32origin);
 }
 
-static MonoException *get_io_exception(const guchar *msg)
-{
-	static MonoException *ex = NULL;
-
-	if(ex==NULL) {
-		ex=(MonoException *)mono_exception_from_name(
-			mono_defaults.corlib, "System.IO", "IOException");
-	}
-
-	ex->message=mono_string_new(msg);
-	
-	return(ex);
-}
-
 /* fd must be one of stdin (value 0), stdout (1) or stderr (2).  These
  * values must be hardcoded in corlib.
  */
@@ -171,7 +157,7 @@ HANDLE ves_icall_System_PAL_OpSys_GetStdHandle(MonoObject *this,
 
 	if(fd!=0 && fd!=1 && fd!=2) {
 		mono_raise_exception(
-			get_io_exception("Invalid file descriptor"));
+			mono_get_exception_io("Invalid file descriptor"));
 	}
 	
 	handle=GetStdHandle(convert_stdhandle(fd));
@@ -187,7 +173,7 @@ gint32 ves_icall_System_PAL_OpSys_ReadFile(MonoObject *this, HANDLE handle, Mono
 	gint32 alen;
 
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	alen=mono_array_length(buffer);
@@ -210,7 +196,7 @@ gint32 ves_icall_System_PAL_OpSys_WriteFile(MonoObject *this, HANDLE handle,  Mo
 	gint32 alen;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	alen=mono_array_length(buffer);
@@ -236,7 +222,7 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 	gint32 lenlo, lenhi, retlo;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	lenlo=length & 0xFFFFFFFF;
@@ -246,7 +232,7 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 	ret=SetEndOfFile(handle);
 	
 	if(ret==FALSE) {
-		mono_raise_exception(get_io_exception("IO Exception"));
+		mono_raise_exception(mono_get_exception_io("IO Exception"));
 	}
 	
 	return(0);
@@ -267,7 +253,7 @@ HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, g
 	
 	/* fixme: raise mor appropriate exceptions (errno) */
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	return(handle);
@@ -276,7 +262,7 @@ HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, g
 void ves_icall_System_PAL_OpSys_CloseFile(MonoObject *this, HANDLE handle)
 {
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	CloseHandle(handle);
@@ -289,7 +275,7 @@ gint64 ves_icall_System_PAL_OpSys_SeekFile(MonoObject *this, HANDLE handle,
 	gint32 offsetlo, offsethi, retlo;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	offsetlo=offset & 0xFFFFFFFF;
@@ -325,7 +311,7 @@ gboolean ves_icall_System_PAL_OpSys_GetFileTime(HANDLE handle, gint64 *createtim
 	FILETIME cr, ac, wr;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	ret=GetFileTime(handle, &cr, &ac, &wr);
@@ -351,7 +337,7 @@ gboolean ves_icall_System_PAL_OpSys_SetFileTime(HANDLE handle, gint64 createtime
 	FILETIME cr, ac, wr;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(get_io_exception("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
 
 	cr.dwLowDateTime= createtime & 0xFFFFFFFF;

@@ -151,7 +151,7 @@ ves_real_abort (int line, MonoMethod *mh,
 	if (sp > stack)
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 }
-#define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (get_exception_execution_engine (), ip);} while (0);
+#define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (mono_get_exception_execution_engine (), ip);} while (0);
 
 /*
  * runtime_class_init:
@@ -834,7 +834,7 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (!frame->method->addr) {
-			frame->ex = (MonoException*)get_exception_missing_method ();
+			frame->ex = (MonoException*)mono_get_exception_missing_method ();
 			DEBUG_LEAVE ();
 			return;
 		}
@@ -852,7 +852,7 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		if (!frame->method->addr) {
-			frame->ex = (MonoException*)get_exception_missing_method ();
+			frame->ex = (MonoException*)mono_get_exception_missing_method ();
 			DEBUG_LEAVE ();
 			return;
 		}
@@ -1176,15 +1176,15 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				child_frame.method = mono_get_method (image, token, NULL);
 				if (!child_frame.method)
-					THROW_EX (get_exception_missing_method (), ip -5);
+					THROW_EX (mono_get_exception_missing_method (), ip -5);
 				csignature = child_frame.method->signature;
 				if (virtual) {
 					stackval *this_arg = &sp [-csignature->param_count-1];
 					if (!this_arg->data.p)
-						THROW_EX (get_exception_null_reference(), ip - 5);
+						THROW_EX (mono_get_exception_null_reference(), ip - 5);
 					child_frame.method = get_virtual_method (child_frame.method, this_arg);
 					if (!child_frame.method)
-						THROW_EX (get_exception_missing_method (), ip -5);
+						THROW_EX (mono_get_exception_missing_method (), ip -5);
 				}
 			}
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
@@ -1733,11 +1733,11 @@ ves_exec_method (MonoInvocation *frame)
 			--sp;
 			if (sp->type == VAL_I32) {
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.i /= (gint)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.l /= sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE) {
 				/* set NaN is divisor is 0.0 */
@@ -1750,21 +1750,21 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp->type == VAL_I32) {
 				guint32 val;
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				val = sp [-1].data.i;
 				val /= (guint32)GET_NATI (sp [0]);
 				sp [-1].data.i = val;
 			} else if (sp->type == VAL_I64) {
 				guint64 val;
 				if (sp [0].data.l == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				val = sp [-1].data.l;
 				val /= (guint64)sp [0].data.l;
 				sp [-1].data.l = val;
 			} else if (sp->type == VAL_NATI) {
 				mono_u val;
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				val = (mono_u)sp [-1].data.p;
 				val /= (gulong)sp [0].data.p;
 				sp [-1].data.p = (gpointer)val;
@@ -1775,18 +1775,18 @@ ves_exec_method (MonoInvocation *frame)
 			--sp;
 			if (sp->type == VAL_I32) {
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.i %= (gint)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.l %= sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE) {
 				/* FIXME: what do we actually do here? */
 				sp [-1].data.f = fmod (sp [-1].data.f, sp [0].data.f);
 			} else {
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				(gint)GET_NATI (sp [-1]) %= (gint)GET_NATI (sp [0]);
 			}
 			BREAK;
@@ -1795,17 +1795,17 @@ ves_exec_method (MonoInvocation *frame)
 			--sp;
 			if (sp->type == VAL_I32) {
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				(guint)sp [-1].data.i %= (guint)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				(gulong)sp [-1].data.l %= (gulong)sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE) {
 				/* unspecified behaviour according to the spec */
 			} else {
 				if (GET_NATI (sp [0]) == 0)
-					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				(gulong)GET_NATI (sp [-1]) %= (gulong)GET_NATI (sp [0]);
 			}
 			BREAK;
@@ -2081,7 +2081,7 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 4;
 
 			if (!(child_frame.method = mono_get_method (image, token, NULL)))
-				THROW_EX (get_exception_missing_method (), ip -5);
+				THROW_EX (mono_get_exception_missing_method (), ip -5);
 
 			csig = child_frame.method->signature;
 
@@ -2170,7 +2170,7 @@ array_constructed:
 						sp [-1].data.p = NULL;
 						sp [-1].data.vt.klass = NULL;
 					} else
-						THROW_EX (get_exception_invalid_cast (), ip - 1);
+						THROW_EX (mono_get_exception_invalid_cast (), ip - 1);
 				}
 			}
 			ip += 4;
@@ -2208,10 +2208,10 @@ array_constructed:
 			
 			o = sp [-1].data.p;
 			if (!o)
-				THROW_EX (get_exception_null_reference(), ip - 1);
+				THROW_EX (mono_get_exception_null_reference(), ip - 1);
 
-			if (o->klass->type_token != c->type_token)
-				THROW_EX (get_exception_invalid_cast (), ip - 1);
+			if (o->klass->element_class->type_token != c->type_token)
+				THROW_EX (mono_get_exception_invalid_cast (), ip - 1);
 
 			sp [-1].type = VAL_MP;
 			sp [-1].data.p = (char *)o + sizeof (MonoObject);
@@ -2231,7 +2231,7 @@ array_constructed:
 			int load_addr = *ip == CEE_LDFLDA;
 
 			if (!sp [-1].data.p)
-				THROW_EX (get_exception_null_reference (), ip);
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			
 			++ip;
 			token = read32 (ip);
@@ -2358,12 +2358,12 @@ array_constructed:
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
 				if (sp [-1].data.f < 0 || sp [-1].data.f > 9223372036854775807L)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.f;
 				break;
 			case VAL_I64:
 				if (sp [-1].data.l < 0)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				break;
 			case VAL_VALUET:
 				ves_abort();
@@ -2373,7 +2373,7 @@ array_constructed:
 				break;
 			default:
 				if ((gint64)sp [-1].data.nati < 0)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.nati;
 				break;
 			}
@@ -2388,7 +2388,7 @@ array_constructed:
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
 				if (sp [-1].data.f < 0 || sp [-1].data.f > 18446744073709551615UL)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.f;
 				break;
 			case VAL_I64:
@@ -2439,13 +2439,13 @@ array_constructed:
 			switch (*ip) {
 			case CEE_CONV_OVF_I1_UN:
 				if (value > 127)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
 				break;
 			case CEE_CONV_OVF_I2_UN:
 				if (value > 32767)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
 				break;
@@ -2454,19 +2454,19 @@ array_constructed:
 #endif
 			case CEE_CONV_OVF_I4_UN:
 				if (value > 2147483647)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
 				break;
 			case CEE_CONV_OVF_U1_UN:
 				if (value > 255)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
 				break;
 			case CEE_CONV_OVF_U2_UN:
 				if (value > 65535)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
 				break;
@@ -2475,7 +2475,7 @@ array_constructed:
 #endif
 			case CEE_CONV_OVF_U4_UN:
 				if (value > 4294967295U)
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
 				break;
@@ -2531,7 +2531,7 @@ array_constructed:
 
 			o = sp [-1].data.p;
 			if (!o)
-				THROW_EX (get_exception_null_reference (), ip - 1);
+				THROW_EX (mono_get_exception_null_reference (), ip - 1);
 			
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 
@@ -2555,7 +2555,7 @@ array_constructed:
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			
 			if (sp [1].data.nati >= mono_array_length (o))
-				THROW_EX (get_exception_index_out_of_range (), ip - 5);
+				THROW_EX (mono_get_exception_index_out_of_range (), ip - 5);
 
 			/* check the array element corresponds to token */
 			esize = mono_array_element_size (o->obj.klass);
@@ -2586,16 +2586,16 @@ array_constructed:
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
 			if (!o)
-				THROW_EX (get_exception_null_reference (), ip);
+				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			
 			aindex = sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
-				THROW_EX (get_exception_index_out_of_range (), ip);
+				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 			
 			/*
-			 * FIXME: throw get_exception_array_type_mismatch () if needed 
+			 * FIXME: throw mono_get_exception_array_type_mismatch () if needed 
 			 */
 			switch (*ip) {
 			case CEE_LDELEM_I1:
@@ -2668,17 +2668,17 @@ array_constructed:
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
 			if (!o)
-				THROW_EX (get_exception_null_reference (), ip);
+				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			ac = o->obj.klass;
 		    
 			aindex = sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
-				THROW_EX (get_exception_index_out_of_range (), ip);
+				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
 			/*
-			 * FIXME: throw get_exception_array_type_mismatch () if needed 
+			 * FIXME: throw mono_get_exception_array_type_mismatch () if needed 
 			 */
 			switch (*ip) {
 			case CEE_STELEM_I:
@@ -2774,7 +2774,7 @@ array_constructed:
 		CASE (CEE_REFANYVAL) ves_abort(); BREAK;
 		CASE (CEE_CKFINITE)
 			if (!finite(sp [-1].data.f))
-				THROW_EX (get_exception_arithmetic (), ip);
+				THROW_EX (mono_get_exception_arithmetic (), ip);
 			++ip;
 			BREAK;
 		CASE (CEE_UNUSED24) ves_abort(); BREAK;
@@ -2829,11 +2829,11 @@ array_constructed:
 			/* FIXME: check overflow, make unsigned */
 			if (sp->type == VAL_I32) {
 				if (CHECK_ADD_OVERFLOW_UN (sp [-1].data.i, GET_NATI (sp [0])))
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = (guint32)sp [-1].data.i + (guint32)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (CHECK_ADD_OVERFLOW64_UN (sp [-1].data.l, sp [0].data.l))
-					THROW_EX (get_exception_overflow (), ip);
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.l + (guint64)sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f += sp [0].data.f;
@@ -3064,11 +3064,11 @@ array_constructed:
 				ip += 4;
 				m = mono_get_method (image, token, NULL);
 				if (!m)
-					THROW_EX (get_exception_missing_method (), ip - 5);
+					THROW_EX (mono_get_exception_missing_method (), ip - 5);
 				if (virtual) {
 					--sp;
 					if (!sp->data.p)
-						THROW_EX (get_exception_null_reference (), ip - 5);
+						THROW_EX (mono_get_exception_null_reference (), ip - 5);
 					m = get_virtual_method (m, sp);
 				}
 				sp->type = VAL_NATI;
@@ -3163,7 +3163,7 @@ array_constructed:
 			}
 			case CEE_LOCALLOC:
 				if (sp != frame->stack)
-					THROW_EX (get_exception_execution_engine (), ip - 1);
+					THROW_EX (mono_get_exception_execution_engine (), ip - 1);
 				++ip;
 				sp->data.p = alloca (sp->data.i);
 				sp->type = VAL_TP;
@@ -3200,7 +3200,7 @@ array_constructed:
 			case CEE_CPBLK:
 				sp -= 3;
 				if (!sp [0].data.p || !sp [1].data.p)
-					THROW_EX (get_exception_null_reference(), ip - 1);
+					THROW_EX (mono_get_exception_null_reference(), ip - 1);
 				++ip;
 				/* FIXME: value and size may be int64... */
 				memcpy (sp [0].data.p, sp [1].data.p, sp [2].data.i);
@@ -3208,7 +3208,7 @@ array_constructed:
 			case CEE_INITBLK:
 				sp -= 3;
 				if (!sp [0].data.p)
-					THROW_EX (get_exception_null_reference(), ip - 1);
+					THROW_EX (mono_get_exception_null_reference(), ip - 1);
 				++ip;
 				/* FIXME: value and size may be int64... */
 				memset (sp [0].data.p, sp [1].data.i, sp [2].data.i);

@@ -30,7 +30,7 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
 }
 
 MonoObject*
-get_exception_divide_by_zero ()
+mono_get_exception_divide_by_zero ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -41,7 +41,7 @@ get_exception_divide_by_zero ()
 }
 
 MonoObject*
-get_exception_security ()
+mono_get_exception_security ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -52,7 +52,7 @@ get_exception_security ()
 }
 
 MonoObject*
-get_exception_arithmetic ()
+mono_get_exception_arithmetic ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -63,7 +63,7 @@ get_exception_arithmetic ()
 }
 
 MonoObject*
-get_exception_overflow ()
+mono_get_exception_overflow ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -74,7 +74,7 @@ get_exception_overflow ()
 }
 
 MonoObject*
-get_exception_null_reference ()
+mono_get_exception_null_reference ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -85,7 +85,7 @@ get_exception_null_reference ()
 }
 
 MonoObject*
-get_exception_execution_engine ()
+mono_get_exception_execution_engine ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -96,7 +96,7 @@ get_exception_execution_engine ()
 }
 
 MonoObject*
-get_exception_invalid_cast ()
+mono_get_exception_invalid_cast ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -107,7 +107,7 @@ get_exception_invalid_cast ()
 }
 
 MonoObject*
-get_exception_index_out_of_range ()
+mono_get_exception_index_out_of_range ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -118,7 +118,7 @@ get_exception_index_out_of_range ()
 }
 
 MonoObject*
-get_exception_array_type_mismatch ()
+mono_get_exception_array_type_mismatch ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -129,7 +129,7 @@ get_exception_array_type_mismatch ()
 }
 
 MonoObject*
-get_exception_missing_method ()
+mono_get_exception_missing_method ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
@@ -138,4 +138,51 @@ get_exception_missing_method ()
 				       "MissingMethodException");
 	return ex;
 }
+
+MonoException*
+mono_get_exception_argument_null (const guchar *arg)
+{
+	MonoException *ex;
+
+	ex = (MonoException *)mono_exception_from_name (
+	        mono_defaults.corlib, "System", "ArgumentNullException");
+
+	if (arg)
+		((MonoArgumentException *)ex)->param_name =
+			mono_string_new (arg);
+	
+	return ex;
+}
+
+MonoException *
+mono_get_exception_argument (const guchar *arg, const guchar *msg)
+{
+	MonoException *ex;
+
+	ex = (MonoException *)mono_exception_from_name (
+	        mono_defaults.corlib, "System", "ArgumentException");
+
+	if (msg)
+		ex->message = mono_string_new (msg);
+	
+	if (arg)
+		((MonoArgumentException *)ex)->param_name =
+			mono_string_new (arg);
+	
+	return ex;
+}
+
+MonoException *
+mono_get_exception_io (const guchar *msg)
+{
+	MonoException *ex;
+
+	ex=(MonoException *)mono_exception_from_name(
+	        mono_defaults.corlib, "System.IO", "IOException");
+
+	ex->message=mono_string_new(msg);
+	
+	return(ex);
+}
+
 

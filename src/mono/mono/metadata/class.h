@@ -81,9 +81,10 @@ struct _MonoClass {
 
 	/* The underlying type of the enum */
 	MonoType *enum_basetype;
-	/* for arrays */
-	MonoClass *element_class; /* element class */
-	guint32    rank;          /* array dimension */
+	/* element class for arrays and enum */
+	MonoClass *element_class; 
+	/* array dimension */
+	guint32    rank;          
 
 	/* used as the type of the this argument and when passing the arg by value */
 	MonoType this_arg;

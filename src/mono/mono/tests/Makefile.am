@@ -31,6 +31,7 @@ TESTSRC=			\
 	box.cs			\
 	array.cs		\
 	enum.cs			\
+	enum2.cs		\
 	property.cs		\
 	reflection.cs		\
 	interface.cs		\

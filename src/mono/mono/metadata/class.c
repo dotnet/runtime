@@ -135,8 +135,10 @@ class_compute_field_layout (MonoClass *class)
 			if (!class->fields [i].data)
 				g_warning ("field %s in %s should have RVA data, but hasn't", class->fields [i].name, class->name);
 		}
-		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC))
+		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC)) {
 			class->enum_basetype = class->fields [i].type;
+			class->element_class = mono_class_from_mono_type (class->enum_basetype);
+		}
 	}
 	if (class->enumtype && !class->enum_basetype) {
 		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
@@ -613,6 +615,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->type_token = type_token;
 	class->flags = cols [0];
 
+	class->element_class = class;
+
 	/*g_print ("Init class %s\n", name);*/
 
 	/* if root of the hierarchy */
@@ -622,10 +626,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	} else if (!(cols [0] & TYPE_ATTRIBUTE_INTERFACE)) {
 		int rnum = 0;
 		class->parent = mono_class_get (image,  mono_metadata_token_from_dor (cols [3]));
-		if ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0))
+		if (class->parent->enumtype || (strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0))
 			class->valuetype = 1;
-		else
-			class->valuetype = class->parent->valuetype;
 		class->enumtype = class->parent->enumtype;
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
@@ -635,10 +637,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		if (!strcmp (name, "ValueType")) {
 			/*
 			 * do not set the valuetype bit for System.ValueType.
-			 * class->valuetype = 1;i
+			 * class->valuetype = 1;
 			 */
 		} else if (!strcmp (name, "Enum")) {
-			class->valuetype = 1;
+			/*
+			 * do not set the valuetype bit for System.Enum.
+			 * class->valuetype = 1;
+			 */
+			class->valuetype = 0;
 			class->enumtype = 1;
 		} else if (!strcmp (name, "Object")) {
 			class->this_arg.type = class->byval_arg.type = MONO_TYPE_OBJECT;

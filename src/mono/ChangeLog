@@ -1,3 +1,7 @@
+2002-02-05  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/enum2.cs: new file with more enum tests.
+
 2002-02-01  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/jit-long.cs: added some SHL/SHR tests
