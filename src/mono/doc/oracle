@@ -1,84 +1,77 @@
 * Oracle Data Provider
 
 <ul>
+	<li>ADO.NET Data Provider for <a href="http://www.oracle.com/">Oracle</a> databases</li>
 	<li>Exists in namespace System.Data.OracleClient and assembly System.Data.OracleClient</li>
-
-	<li>Works on Windows</li>
-	
+	<li>Works on Windows and Linux</li>
 	<li>Works with Oracle 8i</li>
-	
-	<li>More information about Oracle can be found at <a href="http://www.oracle.com/"/>here</a></li>
-	
-	<li>Created by Daniel Morgan.</li>
-	
+	<li>Uses the Oracle CLI (Call Level Interface) which is a C library (API) for the Oracle Client 
+		software</li>
+	<li>Internally, the OracleClient provider has OCI abstracted to an object-oriented programming model</li>
+	<li>Created by Daniel Morgan and Tim Coleman</li>
 	<li>Does not support trusted connections</li>
-
 </ul>
 	
 ** Current Status
 
 <ul>
-	<li>OracleConnection can connect to an Oracle 8i database on 
-	Windows via oci.dll</li>
+	<li>OracleConnection can connect and disconnect to an Oracle 8i database on 
+	Windows and Linux via OCI (Oracle Call-level Interface)</li>
 	
-	<li>The native glue library only has makefiles for Borland C++ and
-	Microsoft Visual C++ command line compilers.  Only the makefile for
-	Microsoft Visual C++ command-line compiler has been tested.</li>
+	<li>No longer uses a glue library (a library between the System.Data.OracleClient.dll
+	assembly and the oci library).  In Current Mono cvs, System.Data.OracleClient 
+	directly platform invokes into the oci library thanks to Tim Coleman.</li>
 	
 	<li>Can execute simple DML SQL statements, such as, 
 	INSERT a row into the EMP table via the OracleCommand's ExecuteNonQuery method</li>
 	
 	<li>The System.Data.OracleClient.dll assembly can be built with mcs/mono via
 	the makefile.gnu for System.Data.OracleClient or csc/.net via the
-	System.Data.OracleClient.build nant build file.   There is also a Visual Studio.NET 
-	solution it too.
+	System.Data.OracleClient.build nant build file.</li>
 	
 	<li>Can NOT retrieve data yet.  ExecuteReader() and ExecuteScalar() in OracleCommand
 	and OracleDataReader need to be implemented.</li>
+	
+	<li>Lots of missing functionality and bugs.</li>
+	
+	<li>Error handling has been started.</li>
 	   
 </ul>
 	
 ** Action Plan
 
 <ul>
-	<li>Get the makefile for the Borland C++ compiler to work 
-	since the <a href="http://www.borland.com/">Borland</a> C++ compiler is
-	a free download</li>
-	<li>Get the native glue lib System.Data.OracleClient.ocigule.dll to be built
-	using gcc on Linux.  This would require that Oracle 8i client software be installed
-	on Linux with the oci headers and shared libraries</li>
 	<li>Be able to retrieve results via a data reader</li>
 	<li>Parameters support</li>
+	<li>transactions</li>
 	<li>Stored Procedures, Functions, and Packages support</li>
 	<li>Be able to fill a DataTable in a DataSet via a data adapter</li>
-	<li>Support for Oracle 9i</li>
-	<li>Figure out how to move the unmanaged OCI handling code in 
-	the oci glue C library to the managed C# assembly.  I have been unable 
-	to successfully connect to an Oracle 8i database by using Platform Invoke and
-	Marshalling in C# to the oci shared library (oci.dll on Windows)</li>
+	<li>Support for Oracle 8i and 9i</li>
+	<li>Support LOBs</li>
+	<li>Support all the data types</li>
+	<li>Implement Connection pooling</li>
+	<li>Security</li>
 	
 </ul>
 
-** Testing Mono.Data.OracleClient
+** Testing System.Data.OracleClient
 
 <ul>
 	<li>Have a working mono and mcs</li>
 	
 	<li>Have access to an Oracle 8i database or download it from
-	<a href="http://www.oracle.com/">Oracle</a>.  Registration to the
-	Oracle Technology Network is free.  If installing on Linux, I suggest you
-	do a lot of searching to see how others installed Oracle on Linux.</li>
+	<a href="http://www.oracle.com/">Oracle</a>.  If you are connecting
+	remotely to an Oracle database, you need the Oracle client software.
+	Registration to the	Oracle Technology Network is free.  If installing on Linux, 
+	I suggest you do a lot of searching to see how others installed Oracle on Linux.</li>
 	
-	<li>Make sure Mono.Data.OracleClient.dll assembly is built, if not, go
-	into Mono.Data.OracleClient and do a make -f makefile.gnu (on Linux) or
-	../../nant/NAnt.exe (on Cygwin).</li>
-	
-	<li>The OCI Glue Library Mono.Data.OracleClient.ociglue.dll will need to be
-	created as well.  Has only been tested with lc (Microsoft Visual C++ command-line compiler).
-	There is a make file for Microsoft C++ and Borland C++.  I'm sure it wouldn't be hard
-	to create a makefile for gcc if installing on Linux.</li>
+	<li>Make sure System.Data.OracleClient.dll assembly is built, if not, go
+	into System.Data.OracleClient and do a make -f makefile.gnu (on Linux) or
+	../../nant/NAnt.exe (on Windows using Cygwin).</li>
 	
 	<li>Take a look at TestOracleClient.cs found at mcs/class/System.Data.OracleClient/Test</li>
+	
+	<li>The Data Source is an Oracle TNSNAME</li>
 	
 	<li>Has a connection string format:
 <pre>

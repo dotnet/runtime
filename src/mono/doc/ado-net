@@ -8,7 +8,7 @@
 	<li><b>Daniel Morgan</b> - danmorg -AT- sc.rr.comNOSPAM - works on
 	the MySQL, PostgreSQL, Oracle providers, and tests</li>
 	<li><b>Tim Coleman</b> - tim -AT- timcoleman.comNOSPAM - works on
-	the Microsoft SQL Server, Sybase, TDS providers, and tests</li>
+	the Microsoft SQL Server, Sybase, TDS providers, Oracle, and tests</li>
 	<li><b>Brian Ritchie</b> - brianlritchie -AT- hotmail.comNOSPAM - works on
 	the ODBC provider and the ProviderFactory</li>
 	<li><b>Vladimir Vukicevic</b> - vladimir -AT- pobox.comNOSPAM - works on
@@ -21,6 +21,7 @@
 	between System.Web and System.Data</li>
 	<li><b>Gaurav Vaish</b> - gvaish -AT- iitk.ac.in - works on data binding of
 	web controls</li>
+	<li><b>Phillip Jerkins</b> - Named Instance support in System.Data.SqlClient</li>
 	</ul>
 	
 * Action plan
@@ -82,7 +83,7 @@
 	
 	<ul>
 		<li><b>XML Schema Definition tool</b> <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cptools/html/cpconxmlschemadefinitiontoolxsdexe.asp">xsd.exe</a> needs 
-			to be created.
+			to be created.  Maybe this TODO item should be at the System.XML web page instead.
 			
 			<ul>
 				<li>This tool
@@ -120,29 +121,32 @@
 						are implemented fully</li>
 					</ul>
 				</li>	
-					
-				<li>
+				
 			</li>
 			</ul>
 		</li>
 	
-		<li><b>SQL# CLI - a command-line tool</b> written in C# to 
-		  execute SQL commands,
-		  test connection strings, and connect to various ADO.NET
-		  providers in Mono.  Not all the ADO.NET providers work in SQL#, so various
-		  data providers need work to be able to retrieve data in SQL#.
-		  The SQL# CLI can be found in
-		  mcs/tools/SqlSharp/SqlSharpCli.cs</li>
+		<li><b>SQL# CLI</b> - a SQL query tool with a command-line interface.
+		    It can be used to enter and execute SQL statements or 
+		    execute a batch of SQL commands from a file.   It can
+		  be used to test connection strings, connect to various ADO.NET
+		  providers, save output to text, html, or xml.  It is a work-in-progress.
+		  The SQL# CLI is distributed with the
+		  Mono runtime and class libraries as an executable assembly sqlsharp.exe.
+		  The source to SQL# CLI can be found in the mcs source at
+		  mcs/tools/SqlSharp/SqlSharpCli.cs
+		  </li>
 		  
-		<li><p><b>SQL# GUI tool</b> written in C# to 
-		  execute SQL commands. 
-		  Currently, there is SQL# For GTK# which
-		  can be found at 
-		  mcs/tools/SqlSharp/gui/gtk-sharp  
-		  It has a SQL editor with 
-		  syntax hi lighting of SQL keywords.  This will be
-		  moving to its own cvs module sqlsharpgtk. A GUI version
-		  for QT# or System.Windows.Forms could be created too.</li>	  
+		<li><p><b>SQL# GUI - a graphical SQL query tool</b> allows a user
+		  to enter SQL commands in a top panel which is a text editor.  It
+		  has a toolbar and menu for various tasks, such as, executing
+		  SQL commands one-at-a-time or in a batch.  The results would appear
+		  in a bottom panel in a grid or could be saved to a file (xml, html, csv).
+		  Also, the bottom panel would allow logging of SQL command executed.
+		  Currently, there is a <a href="http://go-mono.com/images/sqlsharp.png">SQL# For GTK#</a> which
+		  provides a GUI interface using the <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> toolkit.  SQL# For GTK#
+		  is a work-in-progress and can be found in the mcs source at 
+		  mcs/tools/SqlSharp/gui/gtk-sharp</li>  
 		
 		<li><b>Application XML Configuration File Editor</b> - a tool
 		to create and edit an application configuration file, such as,
@@ -172,13 +176,11 @@
 	
 * Current Status
 
-	<p>Variouls ADO.NET Providers have been created at various stages of 
+	<p>Various ADO.NET Providers have been created at various stages of 
 	development including: 
-	Firebird, IBM DB2 Universal Database, MySQL, ODBC, OLE DB, Oracle,
-	PostgreSQL, Sybase, SQL Lite,
-	Microsoft SQL Server, and TDS Generic.  
-	See their respective web page for
-	more information.
+	Firebird/Interbase, IBM DB2 Universal Database, MySQL, ODBC, OLE DB, Oracle,
+	PostgreSQL, SQL Lite, Sybase, Microsoft SQL Server, and TDS Generic.  
+	See their respective web page for more information.
 	
 	<p><b>Constraints</b> need lots of work
 	

@@ -19,7 +19,11 @@
 	
 ** GTK# On Linux
 
-<p>Where to get distributions of GTK# for Linux: TODO
+<p>Where to get distributions of GTK# for Linux: 
+	<ul>
+		<li><a href="http://gtk-sharp.sourceforge.net">RPMs</a></li>
+		<li><a href="http://www.debianplanet.org/mono/">Debs</a></li>
+	</ul>
 
 <p>Buidling on Linux:
 
@@ -137,11 +141,14 @@ you will need to create them.  Or get them from somewhere like the dev
 packages at
 <a href="http://www.gimp.org/~tml/gimp/win32/downloads.html">here</a>
 
+** GTK# On FreeBSD
+
+ TODO.  Any volunteers?
 
 ** GTK# On Solaris
 
- TODO
+ TODO.  Any volunteers?
 
 ** GTK# On AIX
 
- TODO
+ TODO.  Any volunteers?

@@ -18,21 +18,6 @@ OBJECTS=									\
 	deploy/asp-net.html							\
 	deploy/books.html							\
 	deploy/contributing.html						\
-	deploy/class-status.html						\
-        deploy/class-status-corlib.html						\
-        deploy/class-status-System.html						\
-        deploy/class-status-System.Xml.html					\
-        deploy/class-status-System.Drawing.html					\
-        deploy/class-status-System.Data.html					\
-        deploy/class-status-System.Web.html					\
-        deploy/class-status-System.Web.Services.html				\
-	deploy/class-status-Microsoft.VisualBasic.html				\
-	deploy/class-status-System.EnterpriseServices.html			\
-	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html	\
-	deploy/class-status-System.Windows.Forms.html				\
-	deploy/class-status-Cscompmgd.html					\
-	deploy/class-library.html						\
-	deploy/classlib-doc.html						\
 	deploy/contact.html							\
 	deploy/c-sharp.html							\
 	deploy/ccvs.html							\
@@ -72,7 +57,23 @@ OBJECTS=									\
 	deploy/status.html							\
 	deploy/testing.html							\
 	deploy/tools.html							\
-	deploy/winforms.html
+	deploy/winforms.html							\
+	deploy/class-status.html						\
+        deploy/class-status-corlib.html						\
+        deploy/class-status-System.html						\
+        deploy/class-status-System.Xml.html					\
+        deploy/class-status-System.Drawing.html					\
+        deploy/class-status-System.Data.html					\
+        deploy/class-status-System.Web.html					\
+        deploy/class-status-System.Web.Services.html				\
+	deploy/class-status-Microsoft.VisualBasic.html				\
+	deploy/class-status-System.EnterpriseServices.html			\
+	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html	\
+	deploy/class-status-System.Windows.Forms.html				\
+	deploy/class-status-Cscompmgd.html					\
+	deploy/class-library.html						\
+	deploy/classlib-doc.html
+	
 #2,Configuration.Install,class-status-System.Configuration.Install.html,class-status-System.Configuration.Install.src,cm/cormissing.css,cm/cormissing.js
 #2,Runtime.Remoting,class-status-System.Runtime.Remoting.html,class-status-System.Runtime.Remoting.src,cm/cormissing.css,cm/cormissing.js
 

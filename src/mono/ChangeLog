@@ -1,3 +1,10 @@
+2003-02-13  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/screenshots
+	* doc/ado-net
+	* doc/oracle
+	* doc/gtk-sharp: update web pages
+	
 2003-02-13  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* data/machine.config: added sample globalization section.
