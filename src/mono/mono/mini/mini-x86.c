@@ -238,6 +238,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
@@ -331,6 +332,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
@@ -356,6 +358,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_float (&fr, &stack_size, ainfo, TRUE);
 			break;
 		default:
+			g_error ("unexpected type 0x%x", ptype->type);
 			g_assert_not_reached ();
 		}
 	}
@@ -591,6 +594,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
