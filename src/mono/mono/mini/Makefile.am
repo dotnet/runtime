@@ -85,6 +85,7 @@ endif
 
 mono_LDADD = \
 	$(MONO_LIB)			\
+	$(PLATFORM_LIB)		\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS) -lm	\
 	$(ICU_LIBS)
@@ -255,7 +256,8 @@ libmonoincludedir = $(includedir)/mono/jit
 libmonoinclude_HEADERS = jit.h
 
 libmono_la_LIBADD = \
-	$(libs)
+	$(libs) \
+	$(PLATFORM_LIB)
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) /out:$*.exe /unsafe $< /r:TestDriver.dll
