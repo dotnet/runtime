@@ -1584,6 +1584,10 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 			*share_info = file_share;
 		}
 	}
+
+	if (*share_info != NULL) {
+		InterlockedExchange (&(*share_info)->timestamp, now);
+	}
 	
 	thr_ret = _wapi_timestamp_release (&_wapi_fileshare_layout->share_check, now);
 
