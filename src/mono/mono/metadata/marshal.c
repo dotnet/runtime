@@ -2082,11 +2082,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_byte (mb, CEE_BRFALSE);
-			pos = mb->pos;
-			mono_mb_emit_i4 (mb, 0);
-
 			if (t->data.klass->delegate) {
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -2107,8 +2102,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			}
 
-			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
-			
 			break;
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
