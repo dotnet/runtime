@@ -5931,13 +5931,13 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		cinfo = mono_custom_attrs_from_module (module->image);
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
 		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
-		cinfo = mono_custom_attrs_from_property (rprop->klass, rprop->property);
+		cinfo = mono_custom_attrs_from_property (rprop->property->parent, rprop->property);
 	} else if (strcmp ("MonoEvent", klass->name) == 0) {
 		MonoReflectionEvent *revent = (MonoReflectionEvent*)obj;
-		cinfo = mono_custom_attrs_from_event (revent->klass, revent->event);
+		cinfo = mono_custom_attrs_from_event (revent->event->parent, revent->event);
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
-		cinfo = mono_custom_attrs_from_field (rfield->klass, rfield->field);
+		cinfo = mono_custom_attrs_from_field (rfield->field->parent, rfield->field);
 	} else if ((strcmp ("MonoMethod", klass->name) == 0) || (strcmp ("MonoCMethod", klass->name) == 0)) {
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
 		cinfo = mono_custom_attrs_from_method (rmethod->method);
