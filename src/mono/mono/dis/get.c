@@ -1324,7 +1324,7 @@ get_fieldref_signature (MonoImage *m, int idx, MonoGenericContext *context)
 {
 	guint32 cols [MONO_MEMBERREF_SIZE];
 	MonoGenericContext *new_context;
-	char *type, *estype, *esname;
+	char *type, *esname;
         char *sig;
 	char *full_sig;
 
@@ -1335,14 +1335,11 @@ get_fieldref_signature (MonoImage *m, int idx, MonoGenericContext *context)
         sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], new_context);
 
 	type = get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS], context);
-
-	estype = get_escaped_name (type);
 	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));
 
-        full_sig = g_strdup_printf ("%s %s::%s", sig, estype, esname);
+        full_sig = g_strdup_printf ("%s %s::%s", sig, type, esname);
         g_free (sig);
 	g_free (type);
-	g_free (estype);
 	g_free (esname);
         
         return full_sig;
