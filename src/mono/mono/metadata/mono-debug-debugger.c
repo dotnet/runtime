@@ -250,7 +250,6 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 		g_warning (G_STRLOC ": Method %s.%s has %d parameters, but symbol file claims it has %d.",
 			   minfo->method->klass->name, minfo->method->name, minfo->jit->num_params,
 			   minfo->entry->num_parameters);
-		G_BREAKPOINT ();
 		var_table += minfo->entry->num_parameters;
 	} else {
 		for (i = 0; i < minfo->jit->num_params; i++) {
