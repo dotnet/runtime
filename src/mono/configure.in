@@ -472,6 +472,7 @@ sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
 macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | powerpc-*-sysv*) TARGET=POWERPC; arch_target=ppc;;
 arm-*-linux-* | armv4l-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
+s390-*-linux*) TARGET=S390; arch_target=s390; ACCESS_UNALIGNED="no";;
 esac
 
 if test ${TARGET} = unknown; then
@@ -491,6 +492,7 @@ AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
 AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
+AM_CONDITIONAL(S390, test x$TARGET = xS390)
 
 LIBC="libc.so.6"
 AC_SUBST(LIBC)
@@ -514,6 +516,7 @@ mono/os/unix/Makefile
 mono/arch/x86/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
+mono/arch/s390/Makefile
 mono/arch/arm/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile

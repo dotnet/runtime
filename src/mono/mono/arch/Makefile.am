@@ -1,5 +1,5 @@
 SUBDIRS = $(arch_target)
-DIST_SUBDIRS = x86 ppc sparc arm
+DIST_SUBDIRS = x86 ppc sparc arm s390
 
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
