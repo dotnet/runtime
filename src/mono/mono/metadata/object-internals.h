@@ -456,6 +456,7 @@ typedef struct {
 	MonoString *NameImpl;
 	gint32 PositionImpl;
 	guint32 AttrsImpl;
+	MonoObject *MarshalAsImpl;
 } MonoReflectionParameter;
 
 struct _MonoReflectionAssembly {
@@ -916,6 +917,8 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig);
+
+MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec);
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token);

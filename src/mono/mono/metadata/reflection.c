@@ -5376,12 +5376,12 @@ MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_ParameterInfo;
-	MonoClass *klass;
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
 	char **names, **blobs = NULL;
 	MonoObject *dbnull = mono_get_dbnull_object (domain);
+	MonoMarshalSpec **mspecs;
 	int i;
 
 	if (!System_Reflection_ParameterInfo)
@@ -5399,6 +5399,9 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	member = mono_method_get_object (domain, method, NULL);
 	names = g_new (char *, method->signature->param_count);
 	mono_method_get_param_names (method, (const char **) names);
+
+	mspecs = g_new (MonoMarshalSpec*, method->signature->param_count + 1);
+	mono_method_get_marshal_info (method, mspecs);
 
 	res = mono_array_new (domain, System_Reflection_ParameterInfo, method->signature->param_count);
 	for (i = 0; i < method->signature->param_count; ++i) {
@@ -5425,11 +5428,19 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 				param->DefaultValueImpl = dbnull;
 			}
 		}
+
+		if (mspecs [i + 1])
+			param->MarshalAsImpl = (MonoObject*)mono_reflection_marshal_from_marshal_spec (domain, method->klass, mspecs [i + 1]);
 		
 		mono_array_set (res, gpointer, i, param);
 	}
 	g_free (names);
 	g_free (blobs);
+
+	for (i = method->signature->param_count; i >= 0; i--)
+		if (mspecs [i])
+			mono_metadata_free_marshal_spec (mspecs [i]);
+	g_free (mspecs);
 	
 	CACHE_OBJECT (&(method->signature), res, NULL);
 	return res;
@@ -5463,7 +5474,6 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs)
 
 	MonoClass *klass = method->klass;
 	MonoImage *image = klass->image;
-	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *methodsig = method->signature;
 
 	MonoTableInfo *constt;
@@ -7316,6 +7326,53 @@ mono_marshal_spec_from_builder (MonoAssembly *assembly,
 	}
 
 	return res;
+}
+
+MonoReflectionMarshal*
+mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
+										   MonoMarshalSpec *spec)
+{
+	static MonoClass *System_Reflection_Emit_UnmanagedMarshalClass;
+	MonoReflectionMarshal *minfo;
+	MonoType *mtype;
+
+	if (!System_Reflection_Emit_UnmanagedMarshalClass) {
+		System_Reflection_Emit_UnmanagedMarshalClass = mono_class_from_name (
+		   mono_defaults.corlib, "System.Reflection.Emit", "UnmanagedMarshal");
+		g_assert (System_Reflection_Emit_UnmanagedMarshalClass);
+	}
+
+	minfo = (MonoReflectionMarshal*)mono_object_new (domain, System_Reflection_Emit_UnmanagedMarshalClass);
+	minfo->type = spec->native;
+
+	switch (minfo->type) {
+	case MONO_NATIVE_LPARRAY:
+		minfo->eltype = spec->data.array_data.elem_type;
+		minfo->count = spec->data.array_data.num_elem;
+		break;
+
+	case MONO_NATIVE_BYVALTSTR:
+	case MONO_NATIVE_BYVALARRAY:
+		minfo->count = spec->data.array_data.num_elem;
+		break;
+
+	case MONO_NATIVE_CUSTOM:
+		if (spec->data.custom_data.custom_name) {
+			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, klass->image);
+			if (mtype)
+				minfo->marshaltyperef = mono_type_get_object (domain, mtype);
+
+			minfo->marshaltype = mono_string_new (domain, spec->data.custom_data.custom_name);
+		}
+		if (spec->data.custom_data.cookie)
+			minfo->mcookie = mono_string_new (domain, spec->data.custom_data.cookie);
+		break;
+
+	default:
+		break;
+	}
+
+	return minfo;
 }
 
 static MonoMethod*
