@@ -149,6 +149,12 @@
   </tr>
 </table>
 
+@item Jan 18th, 2004: LDAP class libraries in Mono tutorial.
+
+	Sunil Kumar has written an <a
+	href="http://www.novell.com/coolsolutions/cooldev/features/a_net_cplus_ldap_library_cdev.html">introduction
+	to Novell.LDAP</a> class libraries, which are part of Mono.
+
 @item Jan 13th, 2004: MonoDoc 0.9 released.
 
 	A new edition of MonoDoc, the Mono Documentation Browser, has been released, available in source form from:
