@@ -1,3 +1,7 @@
+2004-01-22  Zoltan Varga  <vargaz@freemail.hu>
+
+	* Makefile.am: Do not install mono.pc on platforms without a JIT.
+
 2004-01-21  Zoltan Varga  <vargaz@freemail.hu>
 
 	* Makefile.am (remove-binaries): Get rid of non-portable >& construct.

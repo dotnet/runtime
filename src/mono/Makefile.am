@@ -7,7 +7,11 @@ SUBDIRS = @libgc_dir@ mono doc docs runtime scripts man data samples
 EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
+if JIT_SUPPORTED
 pkgconfig_DATA= mono.pc mint.pc
+else
+pkgconfig_DATA= mint.pc
+endif
 DISTCLEANFILES= mono.pc mint.pc
 
 #
