@@ -1,3 +1,9 @@
+2005-03-14  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (clean_profiles): Remove.
+	(clean-local): Use $(build_profiles).
+	(install-local, uninstall-local): Don't override $(prefix).
+
 2005-03-02  Zoltan Varga  <vargaz@freemail.hu>
 
 	* docs/aot-compiler.txt: Add some more documentation.
