@@ -176,6 +176,10 @@ typedef struct {
 	gint32 count;
 	gint32 type;
 	gint32 eltype;
+	MonoString *guid;
+	MonoString *mcookie;
+	MonoString *marshaltype;
+	MonoReflectionType *marshaltyperef;
 } MonoReflectionMarshal;
 
 typedef struct {

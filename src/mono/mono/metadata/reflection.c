@@ -116,6 +116,7 @@ static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoTyp
 static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method);
 static guint32 mono_image_get_sighelper_token (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper);
 static guint32 encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo);
+static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
@@ -1157,10 +1158,10 @@ static guint32
 encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo) {
 	char blob_size [64];
 	char *b = blob_size;
-	char *p, *buf;
-	guint32 idx, len;
+	char *p, *buf, *str;
+	guint32 idx, len, bufsize = 256;
 	
-	p = buf = g_malloc (256);
+	p = buf = g_malloc (bufsize);
 
 	switch (minfo->type) {
 	case MONO_NATIVE_BYVALTSTR:
@@ -1169,6 +1170,59 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 		mono_metadata_encode_value (minfo->count, p, &p);
 		break;
 		/* FIXME: handle ARRAY and other unmanaged types that need extra info */
+	case MONO_NATIVE_CUSTOM:
+		mono_metadata_encode_value (minfo->type, p, &p);
+		if (minfo->guid) {
+			str = mono_string_to_utf8 (minfo->guid);
+			len = strlen (str);
+			mono_metadata_encode_value (len, p, &p);
+			memcpy (p, str, len);
+			p += len;
+			g_free (str);
+		}
+		if (minfo->marshaltype) {
+			str = mono_string_to_utf8 (minfo->marshaltype);
+			len = strlen (str);
+			mono_metadata_encode_value (len, p, &p);
+			if (p + len >= buf + bufsize) {
+				idx = p - buf;
+				bufsize *= 2;
+				buf = g_realloc (buf, bufsize);
+				p = buf + idx;
+			}
+			memcpy (p, str, len);
+			p += len;
+			g_free (str);
+		}
+		if (minfo->marshaltyperef) {
+			str = type_get_qualified_name (minfo->marshaltyperef->type, &assembly->assembly);
+			len = strlen (str);
+			mono_metadata_encode_value (len, p, &p);
+			if (p + len >= buf + bufsize) {
+				idx = p - buf;
+				bufsize *= 2;
+				buf = g_realloc (buf, bufsize);
+				p = buf + idx;
+			}
+			memcpy (p, str, len);
+			p += len;
+			g_free (str);
+		}
+		if (minfo->mcookie) {
+			str = mono_string_to_utf8 (minfo->mcookie);
+			len = strlen (str);
+			mono_metadata_encode_value (len, p, &p);
+			if (p + len >= buf + bufsize) {
+				idx = p - buf;
+				bufsize *= 2;
+				buf = g_realloc (buf, bufsize);
+				p = buf + idx;
+			}
+			memcpy (p, str, len);
+			p += len;
+			g_free (str);
+		}
+		break;
 	default:
 		mono_metadata_encode_value (minfo->type, p, &p);
 		break;
