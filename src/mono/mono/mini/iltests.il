@@ -451,5 +451,23 @@
         	ldc.i4.1
 	        ret
 	}
-
+	
+	.method public static int32 test_1_bug60056  () {
+		.locals init (int32 m5)
+			
+		ldc.i4.m1
+		stloc.0
+		
+		ldc.i4.1
+		conv.u8
+		
+		ldloc.0
+		conv.i8
+		mul
+		
+		ldc.i4.m1
+		conv.i8
+		ceq
+		ret
+	}
 }
