@@ -1609,7 +1609,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": read failed.");
 #endif
-			
+			g_free (buffer);	
 			CloseHandle (dest);
 			CloseHandle (src);
 			return FALSE;
@@ -1624,7 +1624,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 #ifdef DEBUG
 				g_message (G_GNUC_PRETTY_FUNCTION ": write failed.");
 #endif
-				
+				g_free (buffer);	
 				CloseHandle (dest);
 				CloseHandle (src);
 				return FALSE;

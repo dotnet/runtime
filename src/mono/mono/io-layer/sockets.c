@@ -856,6 +856,7 @@ WSAIoctl (guint32 handle, gint32 command,
 
 		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
 		WSASetLastError (errnum);
+		g_free (buffer);
 		
 		return SOCKET_ERROR;
 	}
