@@ -1199,6 +1199,38 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->last_ins = last_ins;
 }
 
+/*
+ * returns the offset used by spillvar. It allocates a new
+ * spill variable if necessary. Likely incorrect for sparc.
+ */
+static int
+mono_spillvar_offset (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+			cfg->stack_offset -= sizeof (gpointer);
+			info->offset = cfg->stack_offset;
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)

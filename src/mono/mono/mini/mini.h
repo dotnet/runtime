@@ -463,7 +463,8 @@ typedef struct {
 	guint            varinfo_count; /* total storage in varinfo */
 	gint             stack_offset;
 	MonoRegState    *rs;
-	MonoSpillInfo   *spill_info;
+	MonoSpillInfo   *spill_info; /* machine register spills */
+	MonoSpillInfo   *spill_info_float; /* fp register spills */
 	gint             spill_count;
 	// unsigned char   *cil_code;
 
@@ -639,7 +640,6 @@ void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, 
 void      mono_print_tree                   (MonoInst *tree);
 void      mono_print_tree_nl                (MonoInst *tree);
 void      mono_print_code                   (MonoCompile *cfg);
-int       mono_spillvar_offset              (MonoCompile *cfg, int spillvar);
 void      mono_select_instructions          (MonoCompile *cfg);
 const char* mono_inst_name                  (int op);
 void      mono_inst_foreach                 (MonoInst *tree, MonoInstFunc func, gpointer data);

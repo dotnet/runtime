@@ -1135,6 +1135,38 @@ branch_cc_table [] = {
 	X86_CC_O, X86_CC_NO, X86_CC_C, X86_CC_NC
 };
 
+/*
+ * returns the offset used by spillvar. It allocates a new
+ * spill variable if necessary. 
+ */
+static int
+mono_spillvar_offset (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+			cfg->stack_offset -= sizeof (gpointer);
+			info->offset = cfg->stack_offset;
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
 #define reg_is_freeable(r) ((r) >= 0 && (r) <= 7 && X86_IS_CALLEE ((r)))

@@ -1237,6 +1237,68 @@ branch_b1_table [] = {
 	PPC_BR_LT 
 };
 
+/*
+ * returns the offset used by spillvar. It allocates a new
+ * spill variable if necessary. 
+ */
+static int
+mono_spillvar_offset (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+			info->offset = cfg->stack_offset;
+			cfg->stack_offset += sizeof (gpointer);
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
+static int
+mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info_float; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+			cfg->stack_offset += 7;
+			cfg->stack_offset &= ~7;
+			info->offset = cfg->stack_offset;
+			cfg->stack_offset += sizeof (double);
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
@@ -1411,12 +1473,6 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 
 	g_assert (i == sel);
 	
 	return sel;
-}
-
-static int
-mono_spillvar_offset_float (MonoCompile *cfg, int spill)
-{
-	return mono_spillvar_offset (cfg, spill); /* FIXME */
 }
 
 static int
