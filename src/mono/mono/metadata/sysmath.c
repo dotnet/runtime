@@ -110,7 +110,7 @@ gdouble
 ves_icall_System_Math_Sqrt (gdouble x)
 {
 	if (x < 0)
-		return NAN;
+		return MONO_NAN;
 
 	return sqrt (x);
 }
