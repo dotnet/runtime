@@ -25,9 +25,7 @@ TESTSRC=			\
 	bulkcpy.il		\
 	math.cs			\
 	boxtest.cs		\
-	valuetype1.cs		\
-	valuetype2.cs		\
-	valuetype3.cs
+	valuetype-hash-equals.cs
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
 TESTSI=$(TESTSI_TMP:.il=.exe)
