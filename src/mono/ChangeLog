@@ -1,3 +1,7 @@
+2004-07-02  Zoltan Varga  <vargaz@freemail.hu>
+
+	* man/mono.1: Added 'aot' to trace options.
+
 2004-06-30  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix trunc check + add SPARC64 defines.
