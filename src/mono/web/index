@@ -69,6 +69,19 @@
   </tr>
 </table>
 
+** Feb 22, 2002
+
+	<b>Mono 0.9 has been released!</b>
+
+	A new version of the runtime, compiler and class libraries has
+	been packaged for your download pleasure.  The <a
+	href="archive/mono-0.9">Release Notes</a>
+
+	You can get it <a
+	href="download.html#feb-22">Here</a> (quick links: <a
+	href="archive/mono-0.9.tar.gz">runtime</a> and <a
+	href="archive/mcs-0.9.tar.gz">compiler/classes</a>).
+
 ** Feb 21, 2002
 
 	Paolo got our compiler natively to compile 117 of our tests.

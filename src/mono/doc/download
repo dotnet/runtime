@@ -23,14 +23,16 @@
 	<a href="http://lists.ximian.com/mailman/listinfo/mono-cvs-list">
 	mono-cvs-list</a> mailing list.
 
-<a name="feb-11">
+<a name="feb-22">
 	New packaged versions of the Mono C# compiler and Mono runtime
-	are now available.  The latest version is 0.8.
+	are now available.  The latest version is 0.9.
 
 	<ul>
-		* <a href="archive/mcs-0.8.tar.gz">mcs-0.8.tar.gz</a>
+		* a <href="archive/mono-0.9">Mono 0.9 release notes</a>
+
+		* <a href="archive/mcs-0.9.tar.gz">mcs-0.9.tar.gz</a>
 		Mono C# compiler
-		* <a href="archive/mono-0.8.tar.gz">mono-0.8.tar.gz</a>
+		* <a href="archive/mono-0.9.tar.gz">mono-0.9.tar.gz</a>
 		Mono runtime
 	</ul>
 	
@@ -237,7 +239,16 @@ make install</strong>
 <a name="oldreleases">
 
 *** Very old releases.
-	<ul>
+
+		<ul>
+		<a name="feb-11">
+		<b>February 11, 2002</b>
+		* <a href="archive/mcs-0.8.tar.gz">mcs-0.8.tar.gz</a>
+		Mono C# compiler
+		* <a href="archive/mono-0.8.tar.gz">mono-0.8.tar.gz</a>
+		Mono runtime
+		</ul>
+
 		<a name="sep-18">
 		<b>September 18, 2001</b>
 		<ul>
