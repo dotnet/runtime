@@ -36,6 +36,12 @@ char *opcode_names [] = {
 };
 #undef OPDEF
 
+/* Whether to dump the assembly code after genreating it */
+gboolean dump_asm    = FALSE;
+
+/* Whether to dump the forest */
+gboolean dump_forest = FALSE;
+
 static gpointer mono_compile_method (MonoMethod *method);
 
 static MonoRegSet *
@@ -290,8 +296,7 @@ mono_disassemble_code (guint8 *code, int size)
 
 	fclose (ofd);
 
-	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o");
-
+	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o"); 
 }
 
 static void
@@ -307,8 +312,11 @@ emit_method (MonoMethod *method, MBCodeGenStatus *s)
 	arch_emit_epilogue (s);
 	compute_branches (s);
 
-	print_forest (s->forest);
-	mono_disassemble_code (s->start, s->code - s->start);
+	if (dump_forest)
+		print_forest (s->forest);
+
+	if (dump_asm)
+		mono_disassemble_code (s->start, s->code - s->start);
 }
 
 static gpointer
@@ -862,8 +870,10 @@ usage (char *name)
 		 "Usage is: %s [options] executable args...\n", name,  VERSION, name);
 	fprintf (stderr,
 		 "Valid Options are:\n"
-		 "-d         debug the jit, show disassembler output.\n"
-		 "--help     print this help message\n");
+		 "-d            debug the jit, show disassembler output.\n"
+		 "--dump-asm    dumps the assembly code generated\n"
+		 "--dump-forest dumps the reconstructed forest\n"
+		 "--help        print this help message\n");
 	exit (1);
 }
 
@@ -879,11 +889,17 @@ main (int argc, char *argv [])
 		usage (argv [0]);
 
 	for (i = 1; i < argc - 1 && argv [i][0] == '-'; i++){
-		if (!strcmp (argv [i], "--help")) {
+		if (strcmp (argv [i], "--help") == 0) {
 			usage (argv [0]);
-		} else if (!strcmp (argv [i], "-d")) {
+		} else if (strcmp (argv [i], "-d") == 0) {
 			testjit = TRUE;
-		} else
+			dump_asm = TRUE;
+			dump_forest = TRUE;
+		} else if (strcmp (argv [i], "--dump-asm") == 0)
+			dump_asm = TRUE;
+		else if (strcmp (argv [i], "--dump-forest") == 0)
+			dump_forest = TRUE;
+		else
 			usage (argv [0]);
 	}
 	
