@@ -48,9 +48,14 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 	ac = (MonoClass *)ao->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	MONO_CHECK_ARG (idxs, io->bounds [0].length == ac->rank);
+	if (io->bounds [0].length != ac->rank)
+		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
 
 	ind = (guint32 *)io->vector;
+	for (i = 0; i < ac->rank; i++)
+		if ((ind [i] < ao->bounds [i].lower_bound) ||
+		    (ind [i] >= ao->bounds [i].length + ao->bounds [i].lower_bound))
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
 	pos = ind [0] - ao->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
@@ -91,14 +96,19 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	ac = (MonoClass *)ao->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	MONO_CHECK_ARG (idxs, io->bounds [0].length == ac->rank);
+	if (io->bounds [0].length != ac->rank)
+		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
+
+	ind = (guint32 *)io->vector;
+	for (i = 0; i < ac->rank; i++)
+		if ((ind [i] < ao->bounds [i].lower_bound) ||
+		    (ind [i] >= ao->bounds [i].length + ao->bounds [i].lower_bound))
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
 	if (vo && !mono_object_isinst (value, ac->element_class)) {
 		mono_raise_exception (mono_get_exception_array_type_mismatch ());
 		return;
 	}
-
-	ind = (guint32 *)io->vector;
 
 	pos = ind [0] - ao->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
@@ -136,7 +146,8 @@ static gint32
 ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 {
 	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
-	MONO_CHECK_ARG (dimension, (dimension >= 0) && (dimension <= rank));
+	if ((dimension < 0) || (dimension >= rank))
+		mono_raise_exception (mono_get_exception_index_out_of_range ());
 	return this->bounds [dimension].length;
 }
 
@@ -144,7 +155,8 @@ static gint32
 ves_icall_System_Array_GetLowerBound (MonoArray *this, gint32 dimension)
 {
 	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
-	MONO_CHECK_ARG (dimension, (dimension >= 0) && (dimension <= rank));
+	if ((dimension < 0) || (dimension >= rank))
+		mono_raise_exception (mono_get_exception_index_out_of_range ());
 	return this->bounds [dimension].lower_bound;
 }
 
