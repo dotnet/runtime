@@ -21,7 +21,7 @@
 #include "codegen.h"
 #include "debug.h"
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # define SC_EAX sc_eax
 # define SC_EBX sc_ebx
 # define SC_ECX sc_ecx
