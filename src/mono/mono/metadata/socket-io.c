@@ -2068,7 +2068,7 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 
 		mono_array_set(*h_addr_list, MonoString *, i, addr_string);
 
-		if(!i) {
+		if(!i && ai->ai_canonname != NULL) {
 			*h_name=mono_string_new(domain, ai->ai_canonname);
 		}
 
