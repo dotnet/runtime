@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = $(libgc_dir) mono docs data runtime scripts man samples support web 
+SUBDIRS = $(libgc_dir) mono support docs data runtime scripts man samples web 
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built

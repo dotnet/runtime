@@ -1,5 +1,11 @@
 2005-01-03  Jonathan Pryor  <jonpryor@vt.edu>
 
+	* Makefile.am: Change build order so that support is built before runtime.
+	  This is primarily so that I don't have to wait N hours for mcs to finish
+	  building to find out if I broke the sparc build (again).
+
+2005-01-03  Jonathan Pryor  <jonpryor@vt.edu>
+
 	* configure.in: Add checks for getdomainname and setdomainname.
 
 2005-01-03  Jonathan Pryor  <jonpryor@vt.edu>
