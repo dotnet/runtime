@@ -13,7 +13,7 @@ namespace RSS {
 	public class Item {
 		XmlDocument doc;
 		XmlNode item;
-		XmlText title, link, description;
+		XmlText title, link, description, pubdate;
 		
 		public Item (XmlDocument doc, XmlNode item)
 		{
@@ -74,6 +74,21 @@ namespace RSS {
 				if (description == null)
 					description = MakeTextElement ("description");
 				description.Value = value;
+			}
+		}
+		
+		public string PubDate {
+			get {
+				if (pubdate == null)
+					return null;
+
+				return pubdate.Value;
+			}
+
+			set {
+				if (pubdate == null)
+					pubdate = MakeTextElement ("pubdate");
+				pubdate.Value = value;
 			}
 		}
 	}

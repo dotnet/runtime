@@ -52,6 +52,7 @@ class X {
 				i = c.NewItem ();
 				i.Title = title;
 				i.Link = link;
+				i.PubDate = s.Substring (6, s.IndexOf (":") - 6) + ", 2003";
 			} else {
 				description += "\n" + (s == "\n" ? "<p>" : s);
 			}
