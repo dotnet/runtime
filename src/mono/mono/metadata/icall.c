@@ -2733,6 +2733,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	MonoProperty *prop;
 	int i, match;
 	int len = 0;
+	guint32 flags;
 	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
@@ -2753,7 +2754,11 @@ handle_parent:
 		method = prop->get;
 		if (!method)
 			method = prop->set;
-		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+		if (method)
+			flags = method->flags;
+		else
+			flags = 0;
+		if ((flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
 		} else {
@@ -2763,7 +2768,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+		if (flags & METHOD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
 				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
 					match++;
@@ -2940,6 +2945,7 @@ handle_parent:
 	g_slist_free (l);
 	return res;
 }
+	guint32 flags;
 
 static MonoReflectionType *
 ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint32 bflags)
