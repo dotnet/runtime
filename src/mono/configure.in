@@ -652,7 +652,7 @@ if test x$platform_win32 = xno; then
 	dnl *** Check for signbit ***
 	dnl *************************
 	AC_MSG_CHECKING(for signbit)
-	AC_TRY_COMPILE([#include <math.h>], [
+	AC_TRY_LINK([#include <math.h>], [
 		int s = signbit(1.0);
 	], [
 		AC_MSG_RESULT(yes)
