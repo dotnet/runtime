@@ -304,7 +304,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	if (domain)
 		g_assert_not_reached ();
-	
+
+	MONO_GC_PRE_INIT ();
+
 	appdomain_thread_id = TlsAlloc ();
 	context_thread_id = TlsAlloc ();
 
