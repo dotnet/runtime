@@ -76,9 +76,9 @@ typedef struct {
 } MonoArray;
 
 typedef struct {
-	MonoObject obj;
-	MonoArray *c_str;
+	MonoObject object;
 	gint32 length;
+	gunichar2 chars [MONO_ZERO_LEN_ARRAY];
 } MonoString;
 
 typedef struct {
@@ -168,7 +168,7 @@ typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, voi
 		*__p = (value);	\
 	} while (0)
 
-#define mono_string_chars(s) ((gushort*)(s)->c_str->vector)
+#define mono_string_chars(s) ((gushort*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
 
 extern MonoStats mono_stats;

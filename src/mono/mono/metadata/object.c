@@ -208,7 +208,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			break;
 		}
 		case MONO_TYPE_STRING: {
-			gpointer *val = (gpointer*)t;
+			//gpointer *val = (gpointer*)t;
 			//*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);
 			break;
 		}
@@ -618,12 +618,11 @@ MonoString *
 mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 {
 	MonoString *s;
-	MonoArray *ca;
 	
 	s = mono_string_new_size (domain, len);
 	g_assert (s != NULL);
 
-	memcpy (s->c_str->vector, text, len * 2);
+	memcpy (mono_string_chars (s), text, len * 2);
 
 	return s;
 }
@@ -639,15 +638,12 @@ MonoString *
 mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
-	MonoArray *ca;
 
-	s = (MonoString*)mono_object_new (domain, mono_defaults.string_class);
-	g_assert (s != NULL);
+	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + (len * 2));
+	if (!s)
+		G_BREAKPOINT ();
 
-	ca = (MonoArray *)mono_array_new (domain, mono_defaults.char_class, len);
-	g_assert (ca != NULL);
-	
-	s->c_str = ca;
+	s->object.vtable = mono_class_vtable (domain, mono_defaults.string_class);
 	s->length = len;
 
 	return s;
@@ -819,7 +815,7 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		int i;
-		char *p2 = mono_array_addr (str->c_str, char, 0);
+		char *p2 = mono_string_chars (str);
 		for (i = 0; i < str->length; ++i) {
 			*p++ = p2 [1];
 			*p++ = p2 [0];
@@ -827,7 +823,7 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 		}
 	}
 #else
-	memcpy (p, str->c_str->vector, str->length * 2);
+	memcpy (p, mono_string_chars (str), str->length * 2);
 #endif
 	domain = ((MonoObject *)str)->vtable->domain;
 	ldstr_table = domain->ldstr_table;
@@ -912,19 +908,15 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 char *
 mono_string_to_utf8 (MonoString *s)
 {
-	char *as, *vector;
+	char *as;
 	GError *error = NULL;
 
 	g_assert (s != NULL);
 
-	if (!s->length || !s->c_str)
+	if (!s->length)
 		return g_strdup ("");
 
-	vector = (char*)s->c_str->vector;
-
-	g_assert (vector != NULL);
-
-	as = g_utf16_to_utf8 ((gunichar2 *)vector, s->length, NULL, NULL, &error);
+	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, NULL, &error);
 	if (error)
 		g_warning (error->message);
 
@@ -951,7 +943,7 @@ mono_string_to_utf16 (MonoString *s)
 	as [(s->length * 2)] = '\0';
 	as [(s->length * 2) + 1] = '\0';
 
-	if (!s->length || !s->c_str) {
+	if (!s->length) {
 		return (gunichar2 *)(as);
 	}
 	
@@ -1124,7 +1116,6 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 		MonoDomain *domain = mono_domain_get (); 
 		MonoMethod *method = msg->method->method;
 		MonoMethodSignature *sig = method->signature;
-		MonoObject *res;
 		int i, j, outarg_count = 0;
 
 		for (i = 0; i < sig->param_count; i++) {

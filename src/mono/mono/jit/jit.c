@@ -2250,6 +2250,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			guint32 token;
 			int k, align, size, args_size = 0;
 			int newarr = FALSE;
+			int newstr = FALSE;
 
 			++ip;
 			token = read32 (ip);
@@ -2270,6 +2271,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (cm->klass->parent == mono_defaults.array_class) {
 				newarr = TRUE;
+				this = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				this->data.m = cm;
+			} else if (cm->klass == mono_defaults.string_class) {
+				newstr = TRUE;
 				this = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				this->data.m = cm;
 			} else {				
@@ -2301,10 +2306,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 
-			if (newarr) {
+			if (newarr || newstr) {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-				t2->data.p = mono_array_new_va;
+				if (newarr) {
+					t2->data.p = mono_array_new_va;
+				} else {
+					t2->data.p = arch_create_jit_trampoline (cm);
+				}
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
 				t1->data.ci.m = cm;
@@ -2362,6 +2371,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			cm = mono_get_method (image, token, NULL);
 			g_assert (cm);
+
+			if (cm->klass == mono_defaults.string_class &&
+			    *cm->name == '.' && !strcmp (cm->name, ".ctor"))
+				g_assert_not_reached ();
 
 			arg_sp = sp -= cm->signature->param_count;
 

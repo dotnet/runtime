@@ -716,7 +716,9 @@ dwarf2_write_string_type (AssemblyDebugInfo *info, MonoClass *klass, int idx)
 	dwarf2_write_byte (info->f, DW_ACCESS_public);
 	dwarf2_write_long (info->f, 2);
 	dwarf2_write_byte (info->f, DW_OP_const1u);
-	dwarf2_write_byte (info->f, (guchar *) &string.c_str - (guchar *) &string);
+	//fixme: don't know how to handle this
+	//dwarf2_write_byte (info->f, (guchar *) &string.c_str - (guchar *) &string);
+	g_assert_not_reached ();
 	dwarf2_write_long (info->f, 4);
 
 	dwarf2_write_byte (info->f, 0);

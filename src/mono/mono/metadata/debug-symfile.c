@@ -558,7 +558,9 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				break;
 
 			case MRI_string_offset_vector:
-				off = (guchar *) &string.c_str - (guchar *) &string;
+				// fixme: don know how to fix this
+				g_assert_not_reached ();
+				//off = (guchar *) &string.c_str - (guchar *) &string;
 				break;
 
 			default:
@@ -700,7 +702,9 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				break;
 
 			case MRI_string_offset_vector:
-				fieldsize = sizeof (string.c_str);
+				// fixme:
+				//fieldsize = sizeof (string.c_str);
+				g_assert_not_reached ();
 				break;
 
 			default:

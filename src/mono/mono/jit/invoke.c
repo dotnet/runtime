@@ -334,13 +334,6 @@ arch_create_native_wrapper (MonoMethod *method)
 	gboolean pinvoke = FALSE;
 	GList *free_list = NULL;
 	gboolean end_invoke = FALSE;
-
-	/* this save some time, but then we cant raise exceptions
-	 * in those internal calls */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-	    (/* method->klass == mono_defaults.array_class || */
-	     method->klass == mono_defaults.string_class))
-		return method->addr;
 	
 	mono_profiler_method_jit (method);
 

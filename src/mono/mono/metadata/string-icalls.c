@@ -17,6 +17,92 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/unicode.h>
+#include <mono/metadata/exception.h>
+
+MonoString *
+mono_string_Internal_ctor_charp (gpointer dummy, gunichar2 *value)
+{
+	MONO_CHECK_ARG_NULL (value);
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoString *
+mono_string_Internal_ctor_char_int (gpointer dummy, gunichar2 value, gint32 count)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoString *res = mono_string_new_size (domain, count);
+	gushort *chars;
+	int i;
+
+	chars =  mono_string_chars (res);
+	for (i = 0; i < count; i++)
+		chars [i] = value;
+		
+	
+	return res;
+}
+
+MonoString *
+mono_string_Internal_ctor_charp_int_int (gpointer dummy, gunichar2 *value, gint32 sindex, gint32 length)
+{
+	MONO_CHECK_ARG_NULL (value);
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoString *
+mono_string_Internal_ctor_sbytep (gpointer dummy, gint8 *value)
+{
+	MONO_CHECK_ARG_NULL (value);
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoString *
+mono_string_Internal_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint32 sindex, gint32 length)
+{
+	MONO_CHECK_ARG_NULL (value);
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoString *
+mono_string_Internal_ctor_chara (gpointer dummy, MonoArray *value)
+{
+	MonoDomain *domain;
+
+	MONO_CHECK_ARG_NULL (value);
+	
+	domain = ((MonoObject *)value)->vtable->domain;
+	
+	return mono_string_new_utf16 (domain, mono_array_addr(value, gunichar2, 0),  value->max_length);
+}
+
+MonoString *
+mono_string_Internal_ctor_chara_int_int (gpointer dummy, MonoArray *value, 
+					 gint32 sindex, gint32 length)
+{
+	MonoDomain *domain;
+
+	MONO_CHECK_ARG_NULL (value);
+
+	domain = ((MonoObject *)value)->vtable->domain;
+	
+	return mono_string_new_utf16 (domain, mono_array_addr(value, gunichar2, sindex), length);
+}
+
+MonoString *
+mono_string_Internal_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex, 
+				    gint32 length, MonoObject *enc)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
 
 MonoString * 
 mono_string_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count)

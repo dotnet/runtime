@@ -114,7 +114,7 @@ mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 	} else if (klass == mono_defaults.string_class) {
 		MonoString *str = (MonoString *)obj;
 		res = (MonoObject *)mono_string_new_utf16 (dst, 
-		        (const guint16 *)str->c_str->vector, str->length); 
+		        (const guint16 *)mono_string_chars (str), str->length); 
 	} else {
 		// fixme: we need generic marshalling code here */
 		g_assert_not_reached ();

@@ -2106,6 +2106,14 @@ static gconstpointer icall_map [] = {
 	 * System.String
 	 */
 	
+	"System.String::.ctor(char*)", mono_string_Internal_ctor_charp,
+	"System.String::.ctor(char*,uint,uint)", mono_string_Internal_ctor_charp_int_int,
+	"System.String::.ctor(sbyte*)", mono_string_Internal_ctor_sbytep,
+	"System.String::.ctor(sbyte*,uint,uint)", mono_string_Internal_ctor_sbytep_int_int,
+	"System.String::.ctor(sbyte*,uint,uint,System.Text.Encoding)", mono_string_Internal_ctor_encoding,
+	"System.String::.ctor(char[])", mono_string_Internal_ctor_chara,
+	"System.String::.ctor(char[],uint,uint)", mono_string_Internal_ctor_chara_int_int,
+	"System.String::.ctor(char,uint)", mono_string_Internal_ctor_char_int,
 	"System.String::InternalJoin", mono_string_InternalJoin,
 	"System.String::InternalInsert", mono_string_InternalInsert,
 	"System.String::InternalReplace(char,char)", mono_string_InternalReplaceChar,

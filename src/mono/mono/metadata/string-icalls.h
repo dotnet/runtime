@@ -13,6 +13,30 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
 
+MonoString *
+mono_string_Internal_ctor_charp (gpointer dummy, gunichar2 *value);
+
+MonoString *
+mono_string_Internal_ctor_char_int (gpointer dummy, gunichar2 value, gint32 count);
+
+MonoString *
+mono_string_Internal_ctor_charp_int_int (gpointer dummy, gunichar2 *value, gint32 sindex, gint32 length);
+
+MonoString *
+mono_string_Internal_ctor_sbytep (gpointer dummy, gint8 *value);
+
+MonoString *
+mono_string_Internal_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint32 sindex, gint32 length);
+
+MonoString *
+mono_string_Internal_ctor_chara (gpointer dummy, MonoArray *value);
+
+MonoString *
+mono_string_Internal_ctor_chara_int_int (gpointer dummy, MonoArray *value,  gint32 sindex, gint32 length);
+
+MonoString *
+mono_string_Internal_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex, gint32 length, MonoObject *enc);
+
 MonoString * 
 mono_string_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count);
 
