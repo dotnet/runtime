@@ -193,11 +193,11 @@ void
 mono_delegate_free_ftnptr (MonoDelegate *delegate)
 {
 	MonoJitInfo *ji;
-	void *ptr2;
+	void *ptr, *ptr2;
 
 	ptr2 = delegate->delegate_trampoline;
 
-	void *ptr = InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
+	ptr = InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
 	ji = mono_jit_info_table_find (mono_domain_get (), ptr);
 	g_assert (ji);
 
