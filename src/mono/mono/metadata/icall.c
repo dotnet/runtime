@@ -1398,7 +1398,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 }
 
 static MonoArray*
-ves_icall_Type_GetGenericParameters (MonoReflectionType *type)
+ves_icall_Type_GetGenericArguments (MonoReflectionType *type)
 {
 	MonoArray *res;
 	MonoClass *klass, *pklass;
@@ -1427,8 +1427,21 @@ ves_icall_Type_GetGenericParameters (MonoReflectionType *type)
 	return res;
 }
 
+static gboolean
+ves_icall_Type_get_IsGenericTypeDefinition (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return FALSE;
+	klass = mono_class_from_mono_type (type->type);
+
+	return klass->gen_params != NULL;
+}
+
 static MonoReflectionType*
-ves_icall_Type_GetGenericTypeDefinition (MonoReflectionType *type)
+ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 {
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
@@ -1490,7 +1503,7 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 }
 
 static MonoBoolean
-ves_icall_MonoType_get_HasGenericParameteres (MonoReflectionType *type)
+ves_icall_MonoType_get_HasGenericArguments (MonoReflectionType *type)
 {
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
@@ -1504,7 +1517,7 @@ ves_icall_MonoType_get_HasGenericParameteres (MonoReflectionType *type)
 }
 
 static MonoBoolean
-ves_icall_MonoType_get_IsUnboundGenericParameter (MonoReflectionType *type)
+ves_icall_MonoType_get_IsGenericParameter (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
 
@@ -1516,21 +1529,7 @@ ves_icall_MonoType_get_IsUnboundGenericParameter (MonoReflectionType *type)
 }
 
 static MonoBoolean
-ves_icall_MonoType_get_HasUnboundGenericParameters (MonoReflectionType *type)
-{
-	MonoClass *klass;
-	MONO_ARCH_SAVE_REGS;
-
-	if (type->type->byref)
-		return FALSE;
-	klass = mono_class_from_mono_type (type->type);
-	if (klass->gen_params)
-		return TRUE;
-	return FALSE;
-}
-
-static MonoBoolean
-ves_icall_TypeBuilder_get_IsUnboundGenericParameter (MonoReflectionTypeBuilder *tb)
+ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 {
 	MONO_ARCH_SAVE_REGS;
 
@@ -4085,7 +4084,7 @@ static gconstpointer icall_map [] = {
 	/*
 	 * TypeBuilder generics icalls.
 	 */
-	"System.Reflection.Emit.TypeBuilder::get_IsUnboundGenericParameter", ves_icall_TypeBuilder_get_IsUnboundGenericParameter,
+	"System.Reflection.Emit.TypeBuilder::get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter,
 	"System.Reflection.Emit.TypeBuilder::define_generic_parameter", ves_icall_TypeBuilder_define_generic_parameter,
 	
 	/*
@@ -4107,15 +4106,15 @@ static gconstpointer icall_map [] = {
 	"System.Type::IsArrayImpl", ves_icall_Type_IsArrayImpl,
 
 	/* Type generics icalls */
-	"System.Type::GetGenericParameters", ves_icall_Type_GetGenericParameters,
+	"System.Type::GetGenericArguments", ves_icall_Type_GetGenericArguments,
 	"System.Type::GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition,
-	"System.Type::GetGenericTypeDefinition", ves_icall_Type_GetGenericTypeDefinition,
+	"System.Type::get_IsGenericTypeDefinition", ves_icall_Type_get_IsGenericTypeDefinition,
+	"System.Type::GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl,
 	"System.Type::BindGenericParameters", ves_icall_Type_BindGenericParameters,
 	"System.Type::get_IsGenericInstance", ves_icall_Type_get_IsGenericInstance,
 	
-	"System.MonoType::get_HasGenericParameters", ves_icall_MonoType_get_HasGenericParameteres,
-	"System.MonoType::get_HasUnboundGenericParameters", ves_icall_MonoType_get_HasUnboundGenericParameters,
-	"System.MonoType::get_IsUnboundGenericParameter", ves_icall_MonoType_get_IsUnboundGenericParameter,
+	"System.MonoType::get_HasGenericArguments", ves_icall_MonoType_get_HasGenericArguments,
+	"System.MonoType::get_IsGenericParameter", ves_icall_MonoType_get_IsGenericParameter,
 
 
 	/*
