@@ -2,7 +2,7 @@
 using System;
 using System.Threading;
 
-public class Test {
+public class Test : MarshalByRefObject {
 	static LocalDataStoreSlot[] slot = new LocalDataStoreSlot[102400];
 	
 	private void Thread_func() {
@@ -27,6 +27,19 @@ public class Test {
 		Console.WriteLine("slot 96801 contains " + Thread.GetData(slot[96801]));
 	}
 
+	static LocalDataStoreSlot slot2;
+	static string slot_value;
+	
+	public void Foo (AppDomain ad)
+	{
+		ad.DoCallBack (new CrossAppDomainDelegate (Bar));
+	}
+	
+	public static void Bar ()
+	{
+		 slot_value = (string)Thread.GetData (slot2);
+	}
+
 	public static int Main () {
 		Console.WriteLine ("Hello, World!");
 		Test test=new Test();
@@ -47,6 +60,18 @@ public class Test {
 		Console.WriteLine("slot 16801 contains " + Thread.GetData(slot[16801]));
 		Console.WriteLine("slot 26801 contains " + Thread.GetData(slot[26801]));
 		Console.WriteLine("slot 76801 contains " + Thread.GetData(slot[76801]));
+
+		// Test appdomain transitions
+		AppDomain ad = AppDomain.CreateDomain ("MyFriendlyDomain");
+		Test o = (Test) ad.CreateInstanceFromAndUnwrap ("dataslot.exe", "Test");
+		
+		slot2 = Thread.AllocateDataSlot ();
+		Thread.SetData (slot2, "hello");
+		
+		o.Foo (AppDomain.CurrentDomain);
+
+		if (Test.slot_value != "hello")
+			return 1;
 
 		return 0;
 	}
