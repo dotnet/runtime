@@ -1,3 +1,8 @@
+2005-02-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add -Wdeclaration-after-statement option to CFLAGS if
+	gcc supports it to weed out pre ISO C99 code.
+
 2005-02-07  Lluis Sanchez Gual  <lluis@novell.com>
 
 	* data/net_1_1/DefaultWsdlHelpGenerator.aspx:
