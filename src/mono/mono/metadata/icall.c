@@ -5518,6 +5518,19 @@ mono_TypedReference_ToObject (MonoTypedRef tref)
 	return mono_value_box (mono_domain_get (), tref.klass, tref.value);
 }
 
+static MonoObject*
+mono_TypedReference_ToObjectInternal (MonoType *type, gpointer value, MonoClass *klass)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (MONO_TYPE_IS_REFERENCE (type)) {
+		MonoObject** objp = value;
+		return *objp;
+	}
+
+	return mono_value_box (mono_domain_get (), klass, value);
+}
+
 static void
 prelink_method (MonoMethod *method)
 {
@@ -6360,7 +6373,8 @@ static const IcallEntry type_icalls [] = {
 };
 
 static const IcallEntry typedref_icalls [] = {
-	{"ToObject",	mono_TypedReference_ToObject}
+	{"ToObject",	mono_TypedReference_ToObject},
+	{"ToObjectInternal",	mono_TypedReference_ToObjectInternal}
 };
 
 static const IcallEntry valuetype_icalls [] = {
