@@ -5854,20 +5854,11 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 		klass->parent = mono_defaults.object_class;
 
 	if (count - pos > 0) {
-		int j;
-
 		klass->interface_count = count - pos;
 		klass->interfaces = g_new0 (MonoClass *, count - pos);
 		for (i = pos; i < count; i++) {
 			klass->interfaces [i - pos] = param->constraints [i];
 			klass->method.count += param->constraints [i]->method.count;
-		}
-
-		klass->methods = g_new0 (MonoMethod *, klass->method.count);
-		for (i = pos; i < count; i++) {
-			MonoClass *iface = klass->interfaces [i - pos];
-			for (j = 0; j < iface->method.count; j++)
-				klass->methods [klass->method.last++] = iface->methods [j];
 		}
 	}
 
@@ -5876,7 +5867,7 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 	klass->image = image;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
-	klass->flags = TYPE_ATTRIBUTE_ABSTRACT;
+	klass->flags = TYPE_ATTRIBUTE_INTERFACE;
 
 	klass->this_arg.type = klass->byval_arg.type = MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
