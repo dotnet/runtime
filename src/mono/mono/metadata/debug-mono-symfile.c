@@ -102,6 +102,34 @@ open_symfile (MonoImage *image, guint32 *size)
 	return mono_image_get_resource (image, cols [MONO_MANIFEST_OFFSET], size);
 }
 
+static gconstpointer
+open_external_symfile (MonoImage *image, guint32 *size)
+{
+	const gchar *filename;
+	gchar *basename, *name;
+	gchar *contents;
+
+	filename = mono_image_get_filename (image);
+
+	if (strstr (filename, ".dll") || strstr (filename, ".exe")) {
+		int len = strlen (filename) - 4;
+		basename = g_malloc0 (len);
+		strncpy (basename, filename, len);
+	} else {
+		basename = g_strdup (filename);
+	}
+
+	name = g_strdup_printf ("%s.mdb", basename);
+
+	if (!g_file_get_contents (name, &contents, size, NULL))
+		contents = NULL;
+
+	g_free (basename);
+	g_free (name);
+
+	return contents;
+}
+
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfile)
 {
@@ -110,6 +138,9 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 	symfile = g_new0 (MonoSymbolFile, 1);
 
 	symfile->raw_contents = open_symfile (handle->image, &symfile->raw_contents_size);
+	if (!symfile->raw_contents)
+		symfile->raw_contents = open_external_symfile (
+			handle->image, &symfile->raw_contents_size);
 
 	if (load_symfile (handle, symfile))
 		return symfile;

@@ -43,7 +43,7 @@ struct MonoSymbolFileMethodEntry {
 	guint32 _token;
 	guint32 _start_row;
 	guint32 _end_row;
-	guint32 _class_type_index;
+	guint32 __removed__class_type_index;
 	guint32 _num_parameters;
 	guint32 _num_locals;
 	guint32 _num_line_numbers;
