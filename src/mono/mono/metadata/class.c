@@ -198,7 +198,6 @@ class_compute_field_layout (MonoClass *class)
 		if (!class->parent->size_inited)
 			class_compute_field_layout (class->parent);
 		class->instance_size += class->parent->instance_size;
-		class->class_size += class->parent->class_size;
 		class->min_align = class->parent->min_align;
 	} else {
 		class->instance_size = sizeof (MonoObject);
@@ -372,7 +371,6 @@ mono_class_layout_fields (MonoClass *class)
 			 * There must be info about all the fields in a type if it
 			 * uses explicit layout.
 			 */
-
 			
 			if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
 				continue;
@@ -486,6 +484,58 @@ mono_get_unique_iid (MonoClass *class)
 	return iid - 1;
 }
 
+static int
+setup_interface_offsets (MonoClass *class, int cur_slot)
+{
+	MonoClass *k, *ic;
+	int i, max_iid;
+
+	/* compute maximum number of slots and maximum interface id */
+	max_iid = 0;
+	for (k = class; k ; k = k->parent) {
+		for (i = 0; i < k->interface_count; i++) {
+			ic = k->interfaces [i];
+
+			if (!ic->inited)
+				mono_class_init (ic);
+
+			if (max_iid < ic->interface_id)
+				max_iid = ic->interface_id;
+		}
+	}
+
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (max_iid < class->interface_id)
+			max_iid = class->interface_id;
+	}
+	class->max_interface_id = max_iid;
+	/* compute vtable offset for interfaces */
+	class->interface_offsets = g_malloc (sizeof (gpointer) * (max_iid + 1));
+
+	for (i = 0; i <= max_iid; i++)
+		class->interface_offsets [i] = -1;
+
+	for (i = 0; i < class->interface_count; i++) {
+		ic = class->interfaces [i];
+		class->interface_offsets [ic->interface_id] = cur_slot;
+		cur_slot += ic->method.count;
+	}
+
+	for (k = class->parent; k ; k = k->parent) {
+		for (i = 0; i < k->interface_count; i++) {
+			ic = k->interfaces [i]; 
+			if (class->interface_offsets [ic->interface_id] == -1) {
+				int io = k->interface_offsets [ic->interface_id];
+
+				g_assert (io >= 0);
+
+				class->interface_offsets [ic->interface_id] = io;
+			}
+		}
+	}
+	return cur_slot;
+}
+
 void
 mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 {
@@ -514,46 +564,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 	/* printf ("METAINIT %s.%s\n", class->name_space, class->name); */
 
-	/* compute maximum number of slots and maximum interface id */
-	max_iid = 0;
-	for (k = class; k ; k = k->parent) {
-		for (i = 0; i < k->interface_count; i++) {
-			ic = k->interfaces [i];
-
-			if (!ic->inited)
-				mono_class_init (ic);
-
-			if (max_iid < ic->interface_id)
-				max_iid = ic->interface_id;
-		}
-	}
-	
-	class->max_interface_id = max_iid;
-	/* compute vtable offset for interfaces */
-	class->interface_offsets = g_malloc (sizeof (gpointer) * (max_iid + 1));
-
-	for (i = 0; i <= max_iid; i++)
-		class->interface_offsets [i] = -1;
-
-	for (i = 0; i < class->interface_count; i++) {
-		ic = class->interfaces [i];
-		class->interface_offsets [ic->interface_id] = cur_slot;
-		cur_slot += ic->method.count;
-	}
-
-	for (k = class->parent; k ; k = k->parent) {
-		for (i = 0; i < k->interface_count; i++) {
-			ic = k->interfaces [i]; 
-			if (class->interface_offsets [ic->interface_id] == -1) {
-				int io = k->interface_offsets [ic->interface_id];
-
-				g_assert (io >= 0);
-				g_assert (io <= max_vtsize);
-
-				class->interface_offsets [ic->interface_id] = io;
-			}
-		}
-	}
+	cur_slot = setup_interface_offsets (class, cur_slot);
+	max_iid = class->max_interface_id;
 
 	if (class->parent && class->parent->vtable_size)
 		memcpy (vtable, class->parent->vtable,  sizeof (gpointer) * class->parent->vtable_size);
@@ -872,6 +884,11 @@ mono_class_init (MonoClass *class)
 			class->methods [i]->slot = i;
 		class->init_pending = 0;
 		class->inited = 1;
+		/* 
+		 * class->interface_offsets is needed for the castclass/isinst code, so
+		 * we have to setup them for interfaces, too.
+		 */
+		setup_interface_offsets (class, 0);
 		return;
 	}
 
@@ -989,6 +1006,8 @@ mono_class_setup_mono_type (MonoClass *class)
 			class->this_arg.type = class->byval_arg.type = MONO_TYPE_OBJECT;
 		} else if (!strcmp (name, "String")) {
 			class->this_arg.type = class->byval_arg.type = MONO_TYPE_STRING;
+		} else if (!strcmp (name, "TypedReference")) {
+			class->this_arg.type = class->byval_arg.type = MONO_TYPE_TYPEDBYREF;
 		}
 	}
 	
