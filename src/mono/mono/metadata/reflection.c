@@ -2157,21 +2157,22 @@ encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericMethod *gmetho
 }
 
 static guint32
-method_encode_methodspec (MonoDynamicImage *assembly, MonoGenericMethod *gmethod)
+method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, mtoken = 0, sig;
+	MonoGenericMethod *gmethod;
 	MonoMethod *declaring;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
-	g_assert (gmethod);
+	g_assert ((gmethod = method->signature->gen_method) != NULL);
 	declaring = gmethod->generic_method;
 	if (declaring->signature->gen_method)
 		declaring = declaring->signature->gen_method->generic_method;
 	sig = method_encode_signature (assembly, declaring->signature);
-	mtoken = mono_image_get_memberref_token (assembly, &gmethod->klass->byval_arg,
+	mtoken = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
 						 declaring->name, sig);
 
 	if (!gmethod->generic_method->signature->generic_param_count)
@@ -2216,11 +2217,11 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *m)
 	g_assert ((gmethod = m->signature->gen_method) != NULL);
 
 	if (gmethod->generic_method->signature->generic_param_count)
-		token = method_encode_methodspec (assembly, gmethod);
+		token = method_encode_methodspec (assembly, m);
 	else {
 		guint32 sig = method_encode_signature (assembly, gmethod->generic_method->signature);
 		token = mono_image_get_memberref_token (
-			assembly, &gmethod->klass->byval_arg, gmethod->generic_method->name, sig);
+			assembly, &m->klass->byval_arg, gmethod->generic_method->name, sig);
 	}
 
 	g_hash_table_insert (assembly->handleref, m, GUINT_TO_POINTER(token));
@@ -6940,7 +6941,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	gmethod->generic_inst = method->klass->generic_inst;
 
-	inflated = mono_class_inflate_generic_method (method, gmethod);
+	inflated = mono_class_inflate_generic_method (method, gmethod, NULL);
 
 	return mono_method_get_object (
 		mono_object_domain (rmethod), inflated, NULL);
@@ -6957,9 +6958,8 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method)
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->generic_method = method;
 	gmethod->generic_inst = ginst;
-	gmethod->klass = ginst->klass;
 
-	return mono_class_inflate_generic_method (method, gmethod);
+	return mono_class_inflate_generic_method (method, gmethod, ginst->klass);
 }
 
 static MonoMethod *

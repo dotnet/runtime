@@ -329,11 +329,10 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			else if (klass->generic_inst) {
 				MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
 
-				gmethod->klass = klass;
 				gmethod->generic_method = method;
 				gmethod->generic_inst = klass->generic_inst;
 
-				method = mono_class_inflate_generic_method (method, gmethod);
+				method = mono_class_inflate_generic_method (method, gmethod, klass);
 			}
 			mono_metadata_free_method_signature (sig);
 			return method;
@@ -428,7 +427,6 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->klass = method->klass;
 	gmethod->generic_method = method;
 	gmethod->mtype_argc = param_count;
 	gmethod->mtype_argv = g_new0 (MonoType *, param_count);
@@ -440,7 +438,7 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 			gmethod->is_open = mono_class_is_open_constructed_type (gmethod->mtype_argv [i]);
 	}
 
-	return mono_class_inflate_generic_method (method, gmethod);
+	return mono_class_inflate_generic_method (method, gmethod, NULL);
 }
 
 typedef struct MonoDllMap MonoDllMap;

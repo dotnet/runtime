@@ -250,7 +250,6 @@ struct _MonoDynamicGenericInst {
 struct _MonoGenericMethod {
 	MonoGenericInst *generic_inst;
 	MonoMethod *generic_method;
-	MonoClass *klass;
 	int mtype_argc;
 	MonoType **mtype_argv;
 	guint is_open       : 1;
@@ -336,7 +335,7 @@ MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst, MonoGenericMethod *gmethod);
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod);
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod, MonoClass *klass);
 
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
