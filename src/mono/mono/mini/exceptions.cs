@@ -1039,6 +1039,19 @@ class Tests {
 		if (failed)
 			return 8;
 
+		try {
+			uint ui = System.UInt32.MaxValue;
+			failed = true;
+			checked {
+				a = (int)ui;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 9;
+
 		{
 			int i; 
 			float f = 1.1f;
@@ -1150,6 +1163,19 @@ class Tests {
 		}
 		if (failed)
 			return 8;
+
+		try {
+			int i = -1;
+			failed = true;
+			checked {
+				a = (uint)i;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 9;
 
 		{
 			uint i; 
