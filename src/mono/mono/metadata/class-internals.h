@@ -387,6 +387,7 @@ typedef struct {
 	gulong class_vtable_size;
 	gulong class_static_data_size;
 	gulong generic_instance_count;
+	gulong generic_class_count;
 	gulong inflated_method_count;
 	gulong inflated_method_count_2;
 	gulong inflated_type_count;

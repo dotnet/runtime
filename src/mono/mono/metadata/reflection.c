@@ -6755,8 +6755,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	method_index = find_method_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
 
-	if (method->klass->generic_class || method->klass->generic_container ||
-	    method->signature->generic_param_count) {
+	if (method->klass->generic_class || method->signature->generic_param_count) {
 		/* FIXME FIXME FIXME */
 		return NULL;
 	}

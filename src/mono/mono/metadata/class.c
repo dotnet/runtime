@@ -1432,6 +1432,8 @@ mono_class_init (MonoClass *class)
 		MonoGenericClass *gclass = class->generic_class;
 		MonoClass *gklass = gclass->container_class;
 
+		mono_stats.generic_class_count++;
+
 		mono_class_init (gklass);
 
 		if (MONO_CLASS_IS_INTERFACE (class))

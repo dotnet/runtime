@@ -1429,7 +1429,7 @@ ves_icall_MonoField_Mono_GetGenericFieldDefinition (MonoReflectionField *field)
 }
 
 static MonoReflectionType*
-ves_icall_MonoGenericMethod_get_reflected_type (MonoReflectionGenericMethod *rmethod)
+ves_icall_MonoGenericMethod_get_ReflectedType (MonoReflectionGenericMethod *rmethod)
 {
 	MonoMethod *method = mono_get_inflated_method (rmethod->method.method);
 
@@ -6058,7 +6058,7 @@ static const IcallEntry monogenericclass_icalls [] = {
 };
 
 static const IcallEntry monogenericmethod_icalls [] = {
-	{"get_reflected_type", ves_icall_MonoGenericMethod_get_reflected_type}
+	{"get_ReflectedType", ves_icall_MonoGenericMethod_get_ReflectedType}
 };
 
 static const IcallEntry generictypeparambuilder_icalls [] = {
@@ -6536,6 +6536,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.MonoCMethod", monocmethod_icalls, G_N_ELEMENTS (monocmethod_icalls)},
 	{"System.Reflection.MonoEventInfo", monoeventinfo_icalls, G_N_ELEMENTS (monoeventinfo_icalls)},
 	{"System.Reflection.MonoField", monofield_icalls, G_N_ELEMENTS (monofield_icalls)},
+	{"System.Reflection.MonoGenericCMethod", monogenericmethod_icalls, G_N_ELEMENTS (monogenericmethod_icalls)},
 	{"System.Reflection.MonoGenericClass", monogenericclass_icalls, G_N_ELEMENTS (monogenericclass_icalls)},
 	{"System.Reflection.MonoGenericMethod", monogenericmethod_icalls, G_N_ELEMENTS (monogenericmethod_icalls)},
 	{"System.Reflection.MonoMethod", monomethod_icalls, G_N_ELEMENTS (monomethod_icalls)},

@@ -222,21 +222,6 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		klass = klass->parent;
 	}
 
-	if (sclass->generic_class) {
-		MonoMethod *res;
-
-		mono_class_init (sclass->generic_class->container_class);
-
-		res = find_method (sclass->generic_class->container_class, ic, name, sig);
-		if (!res)
-			return NULL;
-		for (i = 0; i < res->klass->method.count; ++i) {
-			if (res == res->klass->methods [i]) {
-				return sclass->methods [i];
-			}
-		}
-	}
-
 	return NULL;
 }
 
@@ -296,10 +281,11 @@ static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context)
 {
 	MonoClass *klass = NULL;
-	MonoMethod *method;
+	MonoMethod *method = NULL;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
 	guint32 nindex, class;
+	MonoGenericClass *gclass = NULL;
 	MonoGenericContainer *container = NULL;
 	const char *mname;
 	MonoMethodSignature *sig;
@@ -342,14 +328,14 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		g_assert_not_reached ();
 	}
 	g_assert (klass);
-	mono_class_init (klass);
 
+	if (klass->generic_class) {
+		gclass = klass->generic_class;
+		klass = gclass->container_class;
+	}
 	if (klass->generic_container)
 		container = klass->generic_container;
-	else if (klass->generic_class) {
-		container = klass->generic_class->container_class->generic_container;
-		g_assert (container);
-	}
+	mono_class_init (klass);
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
@@ -361,7 +347,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		if (!method)
 			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 		mono_metadata_free_method_signature (sig);
-		return method;
+		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		MonoType *type;
 		MonoMethod *result;
@@ -376,7 +362,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 				method = mono_class_inflate_generic_method (
 					method, klass->generic_class->context, klass);
 			mono_metadata_free_method_signature (sig);
-			return method;
+			break;
 		}
 
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
@@ -419,13 +405,16 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		if (!method)
 			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 		mono_metadata_free_method_signature (sig);
-		return method;
+		break;
 	default:
 		g_error ("Memberref parent unknown: class: %d, index %d", class, nindex);
 		g_assert_not_reached ();
 	}
 
-	return NULL;
+	if (gclass)
+		method = mono_class_inflate_generic_method (method, gclass->context, gclass);
+
+	return method;
 }
 
 static MonoMethod *
@@ -981,6 +970,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 {
 	MonoMethod *method, *result;
 	MonoClass *ic = NULL;
+	MonoGenericClass *gclass = NULL;
 
 	mono_loader_lock ();
 
@@ -991,14 +981,23 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	}
 
 	mono_class_init (constrained_class);
+	method = mono_get_inflated_method (method);
 
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
 		ic = method->klass;
+
+	if (constrained_class->generic_class) {
+		gclass = constrained_class->generic_class;
+		constrained_class = gclass->container_class;
+	}
 
 	result = find_method (constrained_class, ic, method->name, method->signature);
 	if (!result)
 		g_warning ("Missing method %s in assembly %s token %x", method->name,
 			   image->name, token);
+
+	if (gclass)
+		result = mono_class_inflate_generic_method (result, gclass->context, gclass->klass);
 
 	mono_loader_unlock ();
 	return result;
