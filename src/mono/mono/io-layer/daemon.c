@@ -571,11 +571,14 @@ static void process_post_mortem (pid_t pid, int status)
 			   WEXITSTATUS (status));
 #endif
 		
-		/* Technically WEXITSTATUS is only valid if the
-		 * process exited normally, but I don't care if the
-		 * process caught a signal or not.
+		/* If the child terminated due to the receipt of a signal,
+		 * the exit status must be based on WTERMSIG, since WEXITSTATUS
+		 * returns 0 in this case.
 		 */
-		process_handle_data->exitstatus=WEXITSTATUS (status);
+		if (WIFSIGNALED(status))
+			process_handle_data->exitstatus=128 + WTERMSIG (status);
+		else
+			process_handle_data->exitstatus=WEXITSTATUS (status);
 
 		/* Ignore errors */
 		gettimeofday (&tv, NULL);
