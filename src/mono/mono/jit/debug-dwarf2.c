@@ -843,12 +843,12 @@ write_method_lines_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 
 	// Start of statement program
 	dwarf2_write_dw_lns_advance_line (info->f, minfo->start_line - 1);
-	dwarf2_write_dw_lne_set_address (info->f, minfo->code_start);
+	dwarf2_write_dw_lne_set_address (info->f, minfo->method_info.code_start);
 	dwarf2_write_dw_lns_negate_stmt (info->f);
 	dwarf2_write_dw_lns_copy (info->f);
 
 	st_line = minfo->start_line;
-	st_address = minfo->code_start;
+	st_address = minfo->method_info.code_start;
 
 	for (i = 1; i < minfo->line_numbers->len; i++) {
 		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
@@ -889,7 +889,9 @@ write_method_lines_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		st_address += addr_inc;
 	}
 
-	dwarf2_write_dw_lne_set_address (info->f, minfo->code_start + minfo->code_size);
+	dwarf2_write_dw_lne_set_address (info->f,
+					 minfo->method_info.code_start +
+					 minfo->method_info.code_size);
 	dwarf2_write_dw_lns_copy (info->f);
 	dwarf2_write_dw_lne_end_sequence (info->f);
 }
@@ -1012,8 +1014,8 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	MonoType *ret_type = NULL;
 	gchar **names;
 
-	if (minfo->method->signature->ret->type != MONO_TYPE_VOID)
-		ret_type = minfo->method->signature->ret;
+	if (minfo->method_info.method->signature->ret->type != MONO_TYPE_VOID)
+		ret_type = minfo->method_info.method->signature->ret;
 
 	// DW_TAG_subprogram
 	if (ret_type)
@@ -1022,8 +1024,8 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		dwarf2_write_byte (info->f, ABBREV_SUBPROGRAM);
 	dwarf2_write_string (info->f, minfo->name);
 	dwarf2_write_byte (info->f, is_external);
-	dwarf2_write_address (info->f, minfo->code_start);
-	dwarf2_write_address (info->f, minfo->code_start + minfo->code_size);
+	dwarf2_write_address (info->f, minfo->method_info.code_start);
+	dwarf2_write_address (info->f, minfo->method_info.code_start + minfo->method_info.code_size);
 	dwarf2_write_byte (info->f, DW_CC_nocall);
 	if (ret_type) {
 		MonoClass *klass = mono_class_from_mono_type (ret_type);
@@ -1031,28 +1033,28 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		dwarf2_write_type_ref (info->f, type_index);
 	}
 
-	if (minfo->method->signature->hasthis)
-		dwarf2_write_parameter (info, minfo, "this", 8, minfo->method->klass);
+	if (minfo->method_info.method->signature->hasthis)
+		dwarf2_write_parameter (info, minfo, "this", 8, minfo->method_info.method->klass);
 
-	names = g_new (char *, minfo->method->signature->param_count);
-	mono_method_get_param_names (minfo->method, (const char **) names);
+	names = g_new (char *, minfo->method_info.method->signature->param_count);
+	mono_method_get_param_names (minfo->method_info.method, (const char **) names);
 
-	for (i = 0; i < minfo->method->signature->param_count; i++) {
-		MonoType *type = minfo->method->signature->params [i];
+	for (i = 0; i < minfo->method_info.num_params; i++) {
+		MonoType *type = minfo->method_info.method->signature->params [i];
 		MonoClass *klass = mono_class_from_mono_type (type);
 
-		dwarf2_write_parameter (info, minfo, names [i], minfo->params [i].offset, klass);
+		dwarf2_write_parameter (info, minfo, names [i], minfo->method_info.param_offsets [i], klass);
 	}
 
 	g_free (names);
 
-	for (i = 0; i < minfo->num_locals; i++) {
-		MonoMethodHeader *header = ((MonoMethodNormal*) minfo->method)->header;
+	for (i = 0; i < minfo->method_info.num_locals; i++) {
+		MonoMethodHeader *header = ((MonoMethodNormal*) minfo->method_info.method)->header;
 		MonoClass *klass = mono_class_from_mono_type (header->locals [i]);
 		char name [BUFSIZ];
 
 		sprintf (name, "V_%d", i);
-		dwarf2_write_variable (info, minfo, name, minfo->locals [i].offset, klass);
+		dwarf2_write_variable (info, minfo, name, minfo->method_info.local_offsets [i], klass);
 	}
 
 	dwarf2_write_byte (info->f, 0);
@@ -1069,6 +1071,10 @@ void
 mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 {
 	gchar *source_file = g_ptr_array_index (info->source_files, 0);
+	char *buf;
+
+	if (!(info->f = fopen (info->filename, "w")))
+		return;
 
 	// DWARF 2 Abbreviation table.
 	dwarf2_write_section_start (info->f, "debug_abbrev");
@@ -1294,4 +1300,12 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_label (info->f, "debug_info_e");
 
 	dwarf2_write_section_end (info->f);
+
+	fclose (info->f);
+	info->f = NULL;
+
+	/* yes, it's completely unsafe */
+	buf = g_strdup_printf ("as %s -o /tmp/%s.o", info->filename, info->name);
+	system (buf);
+	g_free (buf);
 }

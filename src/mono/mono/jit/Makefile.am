@@ -19,6 +19,7 @@ mono_SOURCES =			\
 	debug.c			\
 	debug-stabs.c		\
 	debug-dwarf2.c		\
+	debug-dwarf2-plus.c	\
 	jit.c			\
 	trampoline.c		\
 	delegate.c		\

@@ -66,7 +66,7 @@ static void
 write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 {
 	int i;
-	MonoMethod *method = minfo->method;
+	MonoMethod *method = minfo->method_info.method;
 	MonoClass *klass = method->klass;
 	MonoMethodSignature *sig = method->signature;
 	char **names = g_new (char*, sig->param_count);
@@ -76,15 +76,15 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	 * fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", klass->image->assembly_name);
 	 */
 	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", minfo->name, sig->ret->type,
-		 minfo->start_line, minfo->code_start);
+		 minfo->start_line, minfo->method_info.code_start);
 
 	/* params */
 	mono_method_get_param_names (method, (const char **)names);
 	if (sig->hasthis)
 		fprintf (info->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
 			 info->next_idx++, klass->byval_arg.type, minfo->start_line, 8); /* FIXME */
-	for (i = 0; i < minfo->num_params; i++) {
-		int stack_offset = minfo->params [i].offset;
+	for (i = 0; i < minfo->method_info.num_params; i++) {
+		int stack_offset = minfo->method_info.param_offsets [i];
 
 		fprintf (info->f, ".stabs \"%s:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
 			 names [i], info->next_idx++, sig->params [i]->type,
@@ -92,9 +92,9 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	}
 
 	/* local vars */
-	for (i = 0; i < minfo->num_locals; ++i) {
+	for (i = 0; i < minfo->method_info.num_locals; ++i) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
-		int stack_offset = minfo->locals [i].offset;
+		int stack_offset = minfo->method_info.local_offsets [i];
 
 		fprintf (info->f, ".stabs \"local_%d:(0,%d)=(0,%d)\",128,0,%d,%d\n",
 			 i, info->next_idx++, header->locals [i]->type, minfo->start_line, stack_offset);
@@ -105,11 +105,12 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	for (i = 1; i < minfo->line_numbers->len; i++) {
 		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
 
-		fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line, lni->address - minfo->code_start);
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line,
+			 lni->address - minfo->method_info.code_start);
 	}
 
 	/* end of function */
-	fprintf (info->f, ".stabs \"\",36,0,0,%d\n", minfo->code_size);
+	fprintf (info->f, ".stabs \"\",36,0,0,%d\n", minfo->method_info.code_size);
 
 	g_free (names);
 	fflush (info->f);
@@ -176,7 +177,12 @@ write_class (gpointer key, gpointer value, gpointer user_data)
 void
 mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
 {
+	char *buf;
 	int i;
+
+	if (!(info->f = fopen (info->filename, "w")))
+		return;
+
 	for (i = 0; base_types [i].name; ++i) {
 		if (! base_types [i].spec)
 			continue;
@@ -192,4 +198,12 @@ mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
 	g_hash_table_foreach (info->methods, write_method_func, info);
 
 	g_hash_table_foreach (info->type_hash, write_class, info);
+
+	fclose (info->f);
+	info->f = NULL;
+
+	/* yes, it's completely unsafe */
+	buf = g_strdup_printf ("as %s -o /tmp/%s.o", info->filename, info->name);
+	system (buf);
+	g_free (buf);
 }

@@ -3144,6 +3144,7 @@ usage (char *name)
 		 "--workers n      maximum number of worker threads\n"
 		 "--stabs          write stabs debug information\n"
 		 "--dwarf          write dwarf2 debug information\n"
+		 "--dwarf-plus     write extended dwarf2 debug information\n"
 		 "--stats          print statistics about the jit operations\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
@@ -3317,6 +3318,10 @@ main (int argc, char *argv [])
 			if (mono_debug_handle)
 				g_error ("You can use either --stabs or --dwarf, but not both.");
 			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_DWARF2);
+		} else if (strcmp (argv [i], "--dwarf-plus") == 0) {
+			if (mono_debug_handle)
+				g_error ("You can use either --stabs or --dwarf, but not both.");
+			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_DWARF2_PLUS);
 		} else if (strcmp (argv [i], "--verbose") == 0) {
 			verbose = TRUE;;
 		} else

@@ -10,7 +10,8 @@ typedef struct _MonoDebugHandle MonoDebugHandle;
 
 typedef enum {
 	MONO_DEBUG_FORMAT_STABS,
-	MONO_DEBUG_FORMAT_DWARF2
+	MONO_DEBUG_FORMAT_DWARF2,
+	MONO_DEBUG_FORMAT_DWARF2_PLUS
 } MonoDebugFormat;
 
 extern MonoDebugHandle *mono_debug_handle;
