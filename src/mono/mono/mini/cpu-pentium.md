@@ -354,7 +354,9 @@ loadr8_membase: dest:f src1:b len:6
 loadr8_spill_membase: src1:b len:8
 loadu4_mem: dest:i len:9
 move: dest:i src1:i len:2
+addcc_imm: dest:i src1:i len:6 clob:1
 add_imm: dest:i src1:i len:6 clob:1
+subcc_imm: dest:i src1:i len:6 clob:1
 sub_imm: dest:i src1:i len:6 clob:1
 mul_imm: dest:i src1:i len:6
 # there is no actual support for division or reminder by immediate

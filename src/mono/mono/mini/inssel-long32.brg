@@ -108,7 +108,7 @@ lreg: OP_LADD_OVF_UN (lreg, lreg) {
 }
 
 lreg: OP_LADD (lreg, i8con) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADDCC_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
 	MONO_EMIT_BIALU_IMM (s, tree, OP_ADC_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 
@@ -118,7 +118,7 @@ lreg: OP_LSUB (lreg, lreg) {
 }
 
 lreg: OP_LSUB (lreg, i8con) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUBCC_IMM, state->reg1, state->left->reg1, state->right->tree->inst_ls_word);
 	MONO_EMIT_BIALU_IMM (s, tree, OP_SBB_IMM, state->reg2, state->left->reg2, state->right->tree->inst_ms_word);
 }
 

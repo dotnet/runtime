@@ -349,7 +349,9 @@ loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 fmove: dest:f src1:f len:4
 add_imm: dest:i src1:i len:18
+addcc_imm: dest:i src1:i len:18
 sub_imm: dest:i src1:i len:18
+subcc_imm: dest:i src1:i len:18
 mul_imm: dest:i src1:i len:18
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 

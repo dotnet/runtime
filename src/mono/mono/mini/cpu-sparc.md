@@ -356,7 +356,9 @@ loadr8_membase: dest:f src1:b len:20
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 add_imm: dest:i src1:i len:12
+addcc_imm: dest:i src1:i len:64
 sub_imm: dest:i src1:i len:12
+subcc_imm: dest:i src1:i len:64
 mul_imm: dest:i src1:i len:12
 div_imm: dest:a src1:i src2:i len:28
 div_un_imm: dest:a src1:i src2:i len:12

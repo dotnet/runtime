@@ -3228,6 +3228,7 @@ guint8 cond;
 			s390_alcr (code, ins->dreg, ins->sreg2);
 		}
 			break;
+		case OP_ADDCC_IMM:
 		case OP_ADD_IMM: {
 			if ((ins->next) &&
 			    (ins->next->opcode == OP_ADC_IMM)) {
@@ -3293,6 +3294,7 @@ guint8 cond;
 			s390_slbr (code, ins->dreg, ins->sreg2);
 		}
 			break;
+		case OP_SUBCC_IMM:
 		case OP_SUB_IMM: {
 			if (s390_is_imm16 (-ins->inst_imm)) {
 				if (ins->dreg != ins->sreg1) {
