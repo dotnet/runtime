@@ -428,7 +428,7 @@ dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod)
 		char *tok = dis_stringify_token (m, mod[i].token);
 		if (i > 0)
 			g_string_sprintfa (s, " ");
-		g_string_sprintfa (s, "%s %s", mod[i].required ? "opt": "reqd", tok);
+		g_string_sprintfa (s, "%s (%s)", mod[i].required ? "modopt": "modreq", tok);
 		g_free (tok);
 	}
 	g_string_append_c (s, ' ');
