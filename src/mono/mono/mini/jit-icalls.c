@@ -49,14 +49,6 @@ mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 }
 
 static void
-helper_memcpy (void *addr, void *src, int size)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	memcpy (addr, src, size);
-}
-
-static void
 helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 {
 	MONO_ARCH_SAVE_REGS;

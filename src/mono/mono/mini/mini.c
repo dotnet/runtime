@@ -112,7 +112,6 @@ static MonoMethodSignature *helper_sig_ptr_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj_int = NULL;
 static MonoMethodSignature *helper_sig_ptr_int = NULL;
-static MonoMethodSignature *helper_sig_memcpy = NULL;
 static MonoMethodSignature *helper_sig_ulong_double = NULL;
 static MonoMethodSignature *helper_sig_long_double = NULL;
 static MonoMethodSignature *helper_sig_double_long = NULL;
@@ -2182,13 +2181,13 @@ mono_emit_calli (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *
 }
 
 static MonoCallInst*
-mono_emit_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method, MonoMethodSignature *sig,
-		       MonoInst **args, const guint8 *ip, MonoInst *this)
+mono_emit_method_call_full (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method, MonoMethodSignature *sig,
+		       MonoInst **args, const guint8 *ip, MonoInst *this, gboolean to_end)
 {
 	gboolean virtual = this != NULL;
 	MonoCallInst *call;
 
-	call = mono_emit_call_args (cfg, bblock, sig, args, FALSE, virtual, ip, FALSE);
+	call = mono_emit_call_args (cfg, bblock, sig, args, FALSE, virtual, ip, to_end);
 
 	if (this && sig->hasthis && 
 	    (method->klass->marshalbyref || method->klass == mono_defaults.object_class) && 
@@ -2209,6 +2208,13 @@ mono_emit_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *met
 	return call;
 }
 
+static MonoCallInst*
+mono_emit_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method, MonoMethodSignature *sig,
+		       MonoInst **args, const guint8 *ip, MonoInst *this)
+{
+	return mono_emit_method_call_full (cfg, bblock, method, sig, args, ip, this, FALSE);
+}
+
 inline static int
 mono_emit_method_call_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method,  
 		       MonoMethodSignature *signature, MonoInst **args, const guint8 *ip, MonoInst *this)
@@ -2216,6 +2222,16 @@ mono_emit_method_call_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMet
 	MonoCallInst *call = mono_emit_method_call (cfg, bblock, method, signature, args, ip, this);
 
 	return mono_spill_call (cfg, bblock, call, signature, method->string_ctor, ip, FALSE);
+}
+
+inline static int
+mono_emit_method_call_spilled_full (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method,  
+		       MonoMethodSignature *signature, MonoInst **args, const guint8 *ip, MonoInst *this,
+		       gboolean ret_object, gboolean to_end)
+{
+	MonoCallInst *call = mono_emit_method_call_full (cfg, bblock, method, signature, args, ip, this, to_end);
+
+	return mono_spill_call (cfg, bblock, call, signature, ret_object, ip, to_end);
 }
 
 inline static int
@@ -2383,11 +2399,24 @@ mono_get_array_new_va_signature (int arity)
 	return res;
 }
 
+static MonoMethod*
+get_memcpy_method (void)
+{
+	static MonoMethod *memcpy_method = NULL;
+	if (!memcpy_method) {
+		memcpy_method = mono_class_get_method_from_name (mono_defaults.string_class, "memcpy", 3);
+		if (!memcpy_method)
+			g_error ("Old corlib found. Install a new one");
+	}
+	return memcpy_method;
+}
+
 static void
 handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native) {
 	MonoInst *iargs [3];
 	int n;
 	guint32 align = 0;
+	MonoMethod *memcpy_method;
 
 	g_assert (klass);
 	/*
@@ -2419,7 +2448,8 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 	iargs [1] = src;
 	NEW_ICONST (cfg, iargs [2], n);
 
-	mono_emit_native_call (cfg, bblock, helper_memcpy, helper_sig_memcpy, iargs, ip, FALSE, to_end);
+	memcpy_method = get_memcpy_method ();
+	mono_emit_method_call_spilled_full (cfg, bblock, memcpy_method, memcpy_method->signature, iargs, ip, NULL, FALSE, to_end);
 }
 
 static MonoMethod*
@@ -4387,13 +4417,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					copy->unused = n;
 					MONO_ADD_INS (bblock, copy);
 				} else {
+					MonoMethod *memcpy_method = get_memcpy_method ();
 					MonoInst *iargs [3];
 					iargs [0] = sp [0];
 					iargs [1] = sp [1];
 					NEW_ICONST (cfg, iargs [2], n);
 					iargs [2]->cil_code = ip;
 
-					mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+					mono_emit_method_call_spilled (cfg, bblock, memcpy_method, memcpy_method->signature, iargs, ip, NULL);
 				}
 			}
 			ins_flag = 0;
@@ -4470,11 +4501,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				copy->unused = n;
 				MONO_ADD_INS (bblock, copy);
 			} else {
+				MonoMethod *memcpy_method = get_memcpy_method ();
 				iargs [1] = *sp;
 				NEW_ICONST (cfg, iargs [2], n);
 				iargs [2]->cil_code = ip;
 
-				mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+				mono_emit_method_call_spilled (cfg, bblock, memcpy_method, memcpy_method->signature, iargs, ip, NULL);
 			}
 			NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
 			++sp;
@@ -4760,11 +4792,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				copy->unused = n;
 				MONO_ADD_INS (bblock, copy);
 			} else {
+				MonoMethod *memcpy_method = get_memcpy_method ();
 				iargs [1] = *sp;
 				NEW_ICONST (cfg, iargs [2], n);
 				iargs [2]->cil_code = ip;
 
-				mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+				mono_emit_method_call_spilled (cfg, bblock, memcpy_method, memcpy_method->signature, iargs, ip, NULL);
 			}
 			NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
 			++sp;
@@ -6210,7 +6243,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [2] = sp [2];
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 				if (ip [1] == CEE_CPBLK) {
-					mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+					MonoMethod *memcpy_method = get_memcpy_method ();
+					mono_emit_method_call_spilled (cfg, bblock, memcpy_method, memcpy_method->signature, iargs, ip, NULL);
 				} else {
 					MonoMethod *memset_method = get_memset_method ();
 					mono_emit_method_call_spilled (cfg, bblock, memset_method, memset_method->signature, iargs, ip, NULL);
@@ -6660,9 +6694,6 @@ create_helper_signature (void)
 
 	/* int amethod (double) */
 	helper_sig_int_double = make_icall_sig ("int32 double");
-
-	/* void  memcpy (intptr, intptr, int size) */
-	helper_sig_memcpy = make_icall_sig ("void ptr ptr int32");
 
 	helper_sig_class_init_trampoline = make_icall_sig ("void");
 }
@@ -9765,7 +9796,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_get_special_static_data, "mono_get_special_static_data", helper_sig_ptr_int, FALSE);
 	mono_register_jit_icall (mono_ldstr, "mono_ldstr", helper_sig_ldstr, FALSE);
-	mono_register_jit_icall (helper_memcpy, "helper_memcpy", helper_sig_memcpy, FALSE);
 	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
 	mono_register_jit_icall (helper_stelem_ref_check, "helper_stelem_ref_check", helper_sig_stelem_ref_check, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
