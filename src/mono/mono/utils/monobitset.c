@@ -163,7 +163,7 @@ mono_bitset_count (MonoBitSet *set) {
 
 #endif
 
-#if defined (__i386__) && defined (__GNUC__) && __GNUC__ >= 2
+#if 0
 const static int 
 bitstart_mask [] = {
 	0xffffffff, 0xfffffffe, 0xfffffffc, 0xfffffff8,
@@ -191,7 +191,7 @@ my_g_bit_nth_lsf (gulong mask, gint nth_bit)
 	} while (nth_bit < 31);
 	return -1;
 }
-#define my_g_bit_nth_lsf_nomask(m) (my_g_bit_nth_lsf((m)),-1)
+#define my_g_bit_nth_lsf_nomask(m) (my_g_bit_nth_lsf((m),-1))
 #endif
 
 int
