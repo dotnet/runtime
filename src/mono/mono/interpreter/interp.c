@@ -1593,17 +1593,14 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (!frame->method->addr) {
-			/* ugly, but needed by the iflags setting in loader.c */
-			if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+			/* assumes all internal calls with an array this are built in... */
+			if (signature->hasthis && frame->method->klass->rank) {
 				ves_runtime_method (frame, context);
 				if (frame->ex)
 					goto handle_exception;
 				goto exit_frame;
 			}
-			if (frame->method->addr) {
-				frame->ex = (MonoException*)mono_get_exception_missing_method ();
-				goto handle_exception;
-			}
+			frame->method->addr = mono_lookup_internal_call (frame->method);
 		}
 		ves_pinvoke_method (frame, frame->method->signature, frame->method->addr, 
 			    frame->method->string_ctor, context);
@@ -1611,13 +1608,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			goto handle_exception;
 		goto exit_frame;
 	} 
-
-	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+	else if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
 		ves_runtime_method (frame, context);
 		if (frame->ex)
 			goto handle_exception;
 		goto exit_frame;
-	} 
+	}
 
 	/*verify_method (frame->method);*/
 
@@ -4606,7 +4602,6 @@ array_constructed:
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					sp->data.i = mono_type_size (type, &align);
-					mono_metadata_free_type (type);
 				} else {
 					MonoClass *szclass = mono_class_get (image, token);
 					mono_class_init (szclass);
