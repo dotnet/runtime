@@ -1,3 +1,8 @@
+2005-04-02  Raja R Harinath  <harinath@gmail.com>
+
+	* configure.in (pkg_config_path): Rename from PKG_PATH.  Fix build
+	with pkgconfig 0.16.0.
+
 2005-04-01  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix sigaltstack detection on solaris.

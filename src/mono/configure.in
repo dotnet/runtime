@@ -332,15 +332,15 @@ BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
 AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
 
-PKG_PATH=
+pkg_config_path=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 	if test x$with_crosspkgdir = "x"; then
 		if test -s $PKG_CONFIG_PATH; then
-			PKG_PATH=$PKG_CONFIG_PATH
+			pkg_config_path=$PKG_CONFIG_PATH
 		fi
 	else
-		PKG_PATH=$with_crosspkgdir
-		PKG_CONFIG_PATH=$PKG_PATH
+		pkg_config_path=$with_crosspkgdir
+		PKG_CONFIG_PATH=$pkg_config_path
 		export PKG_CONFIG_PATH
 	fi
 )
