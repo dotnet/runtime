@@ -123,9 +123,6 @@ static GHashTable *class_init_hash_addr = NULL;
 
 static GHashTable *jump_trampoline_hash = NULL;
 
-static MonoGetLmfAddrFunc get_lmf_addr_func = NULL;
-static MonoSetLmfAddrFunc set_lmf_addr_func = NULL;
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -6484,9 +6481,16 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_free (cfg);
 }
 
+#ifdef HAVE_KW_THREAD
+static __thread gpointer mono_lmf_addr;
+#endif
+
 MonoLMF **
 mono_get_lmf_addr (void)
 {
+#ifdef HAVE_KW_THREAD
+	return mono_lmf_addr;
+#else
 	MonoJitTlsData *jit_tls;
 
 	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
@@ -6494,6 +6498,7 @@ mono_get_lmf_addr (void)
 
 	g_assert_not_reached ();
 	return NULL;
+#endif
 }
 
 /**
@@ -6535,8 +6540,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls->lmf = jit_tls->first_lmf = lmf;
 
-	if (set_lmf_addr_func)
-		set_lmf_addr_func (&jit_tls->lmf);
+#ifdef HAVE_KW_THREAD
+	mono_lmf_addr = &jit_tls->lmf;
+#endif
 
 	mono_arch_setup_jit_tls_data (jit_tls);
 
@@ -8326,11 +8332,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_profiler_method_leave, "mono_profiler_method_leave", NULL, TRUE);
 	mono_register_jit_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	mono_register_jit_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
-
-	if (get_lmf_addr_func)
-		mono_register_jit_icall (get_lmf_addr_func, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
-	else
-		mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
+	mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
 
 	/* fixme: we cant handle vararg methods this way, because the signature is not constant */
@@ -8517,25 +8519,6 @@ mono_set_defaults (int verbose_level, guint32 opts)
 {
 	mini_verbose = verbose_level;
 	default_opt = opts;
-}
-
-void
-mono_install_lmf_accessors (MonoGetLmfAddrFunc get_func, MonoSetLmfAddrFunc set_func)
-{
-	get_lmf_addr_func = get_func;
-	set_lmf_addr_func = set_func;
-}
-
-MonoGetLmfAddrFunc
-mono_get_lmf_accessor_get (void)
-{
-	return get_lmf_addr_func;
-}
-
-MonoSetLmfAddrFunc
-mono_get_lmf_accessor_set (void)
-{
-	return set_lmf_addr_func;
 }
 
 static void

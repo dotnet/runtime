@@ -33,8 +33,6 @@ static gint lmf_tls_offset = -1;
 
 #define SIGNAL_STACK_SIZE (64 * 1024)
 
-static gpointer mono_arch_get_lmf_addr (void);
-
 const char*
 mono_arch_regname (int reg) {
 	switch (reg) {
@@ -3694,9 +3692,9 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 
 		tls_offset_inited = TRUE;
 
-		code = (guint8*)(mono_get_lmf_accessor_get ());
+		code = (guint8*)mono_get_lmf_addr;
 
-		if (getenv ("MONO_NPTL") && code) {
+		if (getenv ("MONO_NPTL")) {
 			/* 
 			 * Determine the offset of mono_lfm_addr inside the TLS structures
 			 * by disassembling the function above.
