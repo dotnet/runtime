@@ -1,5 +1,6 @@
 2004-11-26  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am ($(symlinks)): Depend on config.status too.
 	* configure.in (runtime/etc/mono/1.0/machine.config): Use custom
 	command to create.
 	(runtime/etc/mono/2.0/machine.config): Likewise.
