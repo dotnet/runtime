@@ -33,7 +33,7 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 {
 	MonoMethodSignature *sig;
 	unsigned char *p, *code_buffer;
-	guint32 local_size = 0, stack_size = 0, code_size = 30;
+	guint32 local_size = 0, stack_size = 0, code_size = 50;
 	guint32 arg_pos, simpletype;
 	int i, stringp;
 	int need_marshal;
@@ -350,6 +350,7 @@ enum_retvalue:
 	x86_leave (p);
 	x86_ret (p);
 
+	g_assert (p - code_buffer < code_size);
 	return g_memdup (code_buffer, p - code_buffer);
 }
 
