@@ -11,9 +11,11 @@ export HOST_CC
 AM_CFLAGS = -O
 endif
 
+if INTERP_SUPPORTED
 bin_PROGRAMS = mint
 
 lib_LTLIBRARIES = libmint.la
+endif
 
 mint_SOURCES =		\
 	main.c

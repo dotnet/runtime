@@ -1278,10 +1278,12 @@ TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
 JIT_SUPPORTED=no
+INTERP_SUPPORTED=no
 LIBC="libc.so.6"
 INTL="libc.so.6"
 
 jit_wanted=false
+interp_wanted=false
 case "$host" in
 #	mips-sgi-irix5.* | mips-sgi-irix6.*)
 #		TARGET=MIPS;
@@ -1319,6 +1321,8 @@ case "$host" in
 		TARGET=ALPHA;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=no
+		INTERP_SUPPORTED=yes
+		interp_wanted=true
 		arch_target=alpha;
 	       ;;
 #	ia64-*-linux* | ia64-*-hpux*)
@@ -1339,11 +1343,15 @@ case "$host" in
 		arch_target=hppa; 
 		LIBC="libc.sl"
 		ACCESS_UNALIGNED="no"
+		INTERP_SUPPORTED=yes
+		interp_wanted=true
 		;;
 	hppa*linux*)
 		TARGET=HPPA;
 		arch_target=hppa; 
 		ACCESS_UNALIGNED="no"
+		INTERP_SUPPORTED=yes
+		interp_wanted=true
 		;;
 	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin*)
@@ -1357,6 +1365,8 @@ case "$host" in
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
+		INTERP_SUPPORTED=yes
+		interp_wanted=true
 		;;
 	s390-*-linux*)
 		TARGET=S390;
@@ -1382,16 +1392,32 @@ AC_ARG_WITH(jit, [  --with-jit=yes,no       If you want to build scripts that de
 	fi
 ])
 
+AC_ARG_WITH(interp, [  --with-interp=yes,no    If you want to build scripts that default to the interpreter],[
+	if test x$withval = xyes; then
+	   interp_wanted=true
+	else
+	   interp_wanted=false
+	fi
+])
+
 USEJIT=false
 if test x$JIT_SUPPORTED = xyes; then
    if $jit_wanted; then
       USEJIT=true
       jit_status="Building and using the JIT"
    else
-      jit_status="Building the JIT, defaulting to the interpreter"
+      if $interp_wanted; then
+         jit_status="Building the JIT, defaulting to the interpreter"
+      else
+         AC_ERROR(No JIT or interpreter support available or selected.)
+      fi
    fi
 else
-   jit_status="interpreter"
+   if $interp_wanted; then
+      jit_status="interpreter"
+   else
+      AC_ERROR(No JIT or interpreter support available or selected.)
+   fi
 fi
 
 AM_CONDITIONAL(USE_JIT, test x$USEJIT = xtrue)
@@ -1503,6 +1529,7 @@ AM_CONDITIONAL(S390x, test x$TARGET = xS390x)
 AM_CONDITIONAL(HPPA, test x$TARGET = xHPPA)
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
+AM_CONDITIONAL(INTERP_SUPPORTED, test x$interp_wanted = xtrue)
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$gc = xincluded)
 
 AC_SUBST(LIBC)
