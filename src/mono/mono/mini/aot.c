@@ -124,8 +124,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	assembly->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
 
-	if (!assembly->aot_module)
+	if (!assembly->aot_module) {
+		g_free (aot_name);
 		return;
+	}
 
 	g_module_symbol (assembly->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
 	g_module_symbol (assembly->aot_module, "mono_aot_version", (gpointer *) &aot_version);

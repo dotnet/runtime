@@ -3043,7 +3043,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		case CEE_LDC_R4: {
-			float *f = g_malloc (sizeof (float));
+			float *f = mono_mempool_alloc (cfg->domain->mp, sizeof (float));
 			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R4CONST);
@@ -3056,7 +3056,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_LDC_R8: {
-			double *d = g_malloc (sizeof (double));
+			double *d = mono_mempool_alloc (cfg->domain->mp, sizeof (double));
 			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R8CONST);
