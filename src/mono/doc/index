@@ -102,13 +102,20 @@
   </tr>
 </table>
 
-@item Apr 3rd, 2003: NUnit 2.0 GTK# GUI
+@item Apr 3rd, 2003: NUnit 2.0 GTK# GUI;  GtkMozEmbed; SWT#
 
 	Gonzalo has checked in his <a href="http://gtk-sharp.sf.net">Gtk#</a>-based
 	<a href="http://nunit.org">NUnit</a> tool.  Screenshots are <a
 	href="http://primates.ximian.com/~gonzalo/mono/shots/running.png">here</a>
 	and <a
 	href="http://primates.ximian.com/~gonzalo/mono/shots/finished.png">here</a>
+
+	Mark has checked his bindings for Gtk-based Mozilla into CVS,
+	module name: `GtkMozEmbed'.
+
+	The SWT port to C# using Gtk is <a
+	href="http://lists.ximian.com/archives/public/sd-mono-port/2003-March/000114.html">progressing</a>.  Screenshots are
+	<a href="http://www.roboto.ch/swt">here</a>. 
 
 @item Mar 28th: Mono community site.
 
