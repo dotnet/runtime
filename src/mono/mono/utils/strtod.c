@@ -1919,12 +1919,15 @@ __bsd_dtoa
 #endif
 	{
 		/* Infinity or NaN */
+		const char *ss;
 		*decpt = 9999;
-		s =
+		ss =
 #ifdef IEEE_Arith
 			!word1(d) && !(word0(d) & 0xfffff) ? "Infinity" :
 #endif
 				"NaN";
+		*resultp = s = malloc (strlen (ss) + 1);
+		strcpy (s, ss);
 		if (rve)
 			*rve =
 #ifdef IEEE_Arith
@@ -1939,7 +1942,9 @@ __bsd_dtoa
 #endif
 	if (!d) {
 		*decpt = 1;
-		s = "0";
+		*resultp = s = malloc (2);
+		s [0] = '0';
+		s [1] = 0;
 		if (rve)
 			*rve = s + 1;
 		return s;
