@@ -816,7 +816,7 @@ ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
 
 	klass = g_hash_table_lookup (assembly->assembly->image->class_cache, GUINT_TO_POINTER (token));
 	if (!klass) {
-		g_warning (G_STRLOC ": %x", token);
+		g_message (G_STRLOC ": %x", token);
 		return NULL;
 	}
 
