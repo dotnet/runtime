@@ -272,11 +272,11 @@ main (int argc, char *argv [])
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 				g_error ("You can only use one debugging format.");
-			if (strcmp (argv [++i], "stabs"))
+			if (strcmp (argv [++i], "stabs") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_STABS;
-			else if (strcmp (argv [i], "--dwarf") == 0)
+			else if (strcmp (argv [i], "dwarf") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
-			else if (strcmp (argv [i], "--dwarf-plus") == 0)
+			else if (strcmp (argv [i], "dwarf-plus") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
 			else
 				g_error ("Unknown debugging format: %s", argv [i]);
