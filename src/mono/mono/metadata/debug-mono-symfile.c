@@ -321,6 +321,7 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
 	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
 	MonoSymbolFileMethodAddress *address;
+	MonoDebugVarInfo *var_table;
 	MonoSymbolFileLineNumberEntry *lne;
 	MonoDebugRangeInfo *range;
 	int i;
@@ -345,6 +346,36 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	range->start_address = address->start_address;
 	range->end_address = address->end_address;
 	range->file_offset = mep->minfo->file_offset;
+
+	var_table = (MonoDebugVarInfo *)
+		(symfile->address_table + mep->entry->variable_table_offset);
+
+	if (mep->entry->has_this) {
+		if (!mep->minfo->jit->this_var) {
+			g_warning (G_STRLOC ": Method %s.%s doesn't have `this'.",
+				   mep->method->klass->name, mep->method->name);
+			var_table++;
+		} else
+			*var_table++ = *mep->minfo->jit->this_var;
+	}
+
+	if (mep->minfo->jit->num_params != mep->entry->num_parameters) {
+		g_warning (G_STRLOC ": Method %s.%s has %d parameters, but symbol file claims it has %d.",
+			   mep->method->klass->name, mep->method->name, mep->minfo->jit->num_params,
+			   mep->entry->num_parameters);
+		var_table += mep->entry->num_parameters;
+	} else
+		for (i = 0; i < mep->minfo->jit->num_params; i++)
+			*var_table++ = mep->minfo->jit->params [i];
+
+	if (mep->minfo->jit->num_locals != mep->entry->num_locals) {
+		g_warning (G_STRLOC ": Method %s.%s has %d locals, but symbol file claims it has %d.",
+			   mep->method->klass->name, mep->method->name, mep->minfo->jit->num_locals,
+			   mep->entry->num_locals);
+		var_table += mep->entry->num_locals;
+	} else
+		for (i = 0; i < mep->minfo->jit->num_locals; i++)
+			*var_table++ = mep->minfo->jit->locals [i];
 
 	g_ptr_array_add (symfile->_priv->range_table, range);
 

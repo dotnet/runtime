@@ -34,10 +34,14 @@ struct MonoSymbolFileMethodEntry {
 	guint32 token;
 	guint32 start_row;
 	guint32 end_row;
+	guint32 has_this;
+	guint32 num_parameters;
+	guint32 num_locals;
 	guint32 num_line_numbers;
 	guint32 source_file_offset;
 	guint32 line_number_table_offset;
 	guint32 address_table_offset;
+	guint32 variable_table_offset;
 	guint32 address_table_size;
 };
 
@@ -131,7 +135,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		21
+#define MONO_SYMBOL_FILE_VERSION		22
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 MonoSymbolFile *
