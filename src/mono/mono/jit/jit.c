@@ -1755,6 +1755,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t1->data.i = klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset;
 				t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
+				t1 = mono_ctree_new (mp, MB_TERM_CHECKTHIS, t1, NULL);
 				t1 = ctree_create_store (cfg, field->type, t1, sp [1], FALSE);
 			}
 
