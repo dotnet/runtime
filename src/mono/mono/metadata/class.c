@@ -1531,7 +1531,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	MonoImage *image;
 	MonoClass *class;
 	MonoClass *parent = NULL;
-	GSList *list;
+	GSList *list, *rootlist;
 	int nsize;
 	char *name;
 
@@ -1545,14 +1545,14 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 
 	image = eclass->image;
 
-	if ((list = g_hash_table_lookup (image->array_cache, &eclass->byval_arg))) {
+	if ((rootlist = list = g_hash_table_lookup (image->array_cache, &eclass->byval_arg))) {
 		for (; list; list = list->next) {
 			class = list->data;
 			if (class->rank == rank)
 				return class;
 		}
 	}
-	
+
 	class = g_malloc0 (sizeof (MonoClass) + parent->vtable_size * sizeof (gpointer));
 
 	class->image = image;
@@ -1601,7 +1601,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	class->this_arg = class->byval_arg;
 	class->this_arg.byref = 1;
 
-	list = g_slist_append (list, class);
+	list = g_slist_append (rootlist, class);
 	g_hash_table_insert (image->array_cache, &class->element_class->byval_arg, list);
 	return class;
 }
