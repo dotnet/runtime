@@ -1,3 +1,7 @@
+2003-11-20  Jackson Harper <jackson@ximian.com>
+
+	* data/machine.config: Add OutputCacheModule
+	
 2003-11-19  Jackson Harper <jackson@ximian.com>
 
 	* doc/web/team.xml: New email address and job description
