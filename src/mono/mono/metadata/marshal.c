@@ -512,7 +512,7 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 	m->inline_info = 1;
 	m->wrapper_type = type;
 
-	mb->code_size = 256;
+	mb->code_size = 40;
 	mb->code = g_malloc (mb->code_size);
 	
 	return mb;
@@ -558,6 +558,14 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 
+	/*{
+		static int total_code = 0;
+		static int total_alloc = 0;
+		total_code += mb->pos;
+		total_alloc += mb->code_size;
+		g_print ("code size: %d of %d (allocated: %d)\n", mb->pos, total_code, total_alloc);
+	}*/
+
 #ifdef DEBUG_RUNTIME_CODE
 	printf ("RUNTIME CODE FOR %s\n", mono_method_full_name (mb->method, TRUE));
 	printf ("%s\n", mono_disasm_code (&marshal_dh, mb->method, mb->code, mb->code + mb->pos));
@@ -599,7 +607,7 @@ void
 mono_mb_emit_byte (MonoMethodBuilder *mb, guint8 op)
 {
 	if (mb->pos >= mb->code_size) {
-		mb->code_size += 64;
+		mb->code_size += mb->code_size >> 1;
 		mb->code = g_realloc (mb->code, mb->code_size);
 	}
 
@@ -655,7 +663,7 @@ void
 mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data)
 {
 	if ((mb->pos + 4) >= mb->code_size) {
-		mb->code_size += 64;
+		mb->code_size += mb->code_size >> 1;
 		mb->code = g_realloc (mb->code, mb->code_size);
 	}
 
@@ -667,7 +675,7 @@ void
 mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 {
 	if ((mb->pos + 2) >= mb->code_size) {
-		mb->code_size += 64;
+		mb->code_size += mb->code_size >> 1;
 		mb->code = g_realloc (mb->code, mb->code_size);
 	}
 
