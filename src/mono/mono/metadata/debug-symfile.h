@@ -61,6 +61,7 @@ struct MonoDebugVarInfo {
 };
 
 struct MonoDebugILOffsetInfo {
+	guint32 line;
 	guint32 offset;
 	guint32 address;
 };
