@@ -679,6 +679,16 @@
         </maintainers>
     </class>
 
+    <class name="System.IO.Path">
+        <last-activity>Jun-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcins@zipworld.com.au</maintainer>
+        </maintainers>
+    </class>
+  
     <class name="System.Text.UnicodeEncoding">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
@@ -1086,6 +1096,34 @@
         </maintainers>
     </class>
 
+    <class name="System.Collections.Specialized.NameObjectCollectionBase">
+        <last-activity>Jun-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>gleb@eurosoft.od.ua</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.KeysCollection">
+        <last-activity>Jun-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>gleb@eurosoft.od.ua</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.NameValueCollection">
+        <last-activity>Jun-20-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>gleb@eurosoft.od.ua</maintainer>
+        </maintainers>
+    </class>
+  
     <class name="System.Uri">
         <last-activity>Jun-17-2001</last-activity>
         <implementation>no</implementation>
