@@ -1215,6 +1215,10 @@ ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal (MonoReflectionField *
 	MonoMarshalType *info;
 	int i;
 
+	if (klass->gen_params ||
+	    (klass->generic_inst && klass->generic_inst->is_open))
+		return NULL;
+
 	info = mono_marshal_load_type_info (klass);
 
 	for (i = 0; i < info->num_fields; ++i) {
