@@ -342,7 +342,7 @@ mono_create_method_pointer (MonoMethod *method)
 	gint32 local_size;
 	gint32 stackval_pos, arg_pos = 8;
 	int i, size, align, cpos;
-	int vtbuf [sig->param_count];
+	int *vtbuf;
 
 	/*
 	 * If it is a static P/Invoke method, we can just return the pointer
@@ -361,6 +361,7 @@ mono_create_method_pointer (MonoMethod *method)
 	sig = method->signature;
 
 	code_buffer = p = alloca (512); /* FIXME: check for overflows... */
+	vtbuf = alloca (sizeof(int)*sig->param_count);
 
 	local_size = sizeof (MonoInvocation) + sizeof (stackval) * (sig->param_count + 1);
 
