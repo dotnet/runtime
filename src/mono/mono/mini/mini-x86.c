@@ -517,7 +517,8 @@ handle_enum:
 						arg->unused = sig->pinvoke;
 						arg->inst_imm = size; 
 					} else {
-						type = ptype->data.klass->enum_basetype->type;
+						ptype = ptype->data.klass->enum_basetype;
+						type = ptype->type;
 						goto handle_enum;
 					}
 					break;
@@ -529,7 +530,8 @@ handle_enum:
 					arg->inst_imm = sizeof (MonoTypedRef); 
 					break;
 				case MONO_TYPE_GENERICINST:
-					type = ptype->data.generic_inst->generic_type->type;
+					ptype = ptype->data.generic_inst->generic_type;
+					type = ptype->type;
 					goto handle_enum;
 
 				default:
