@@ -306,17 +306,6 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 
 static CRITICAL_SECTION allocator_section;
 static CRITICAL_SECTION handle_section;
-static guint32 next_handle = 0;
-static gpointer *gc_handles = NULL;
-static guint8 *gc_handle_types = NULL;
-static guint32 array_size = 0;
-
-/*
- * The handle type is encoded in the lower two bits of the handle value:
- * 0 -> normal
- * 1 -> pinned
- * 2 -> weak
- */
 
 typedef enum {
 	HANDLE_WEAK,
@@ -325,197 +314,280 @@ typedef enum {
 	HANDLE_PINNED
 } HandleType;
 
-/*
- * FIXME: make thread safe and reuse the array entries.
- */
+static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
+
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
 {
-	MonoObject *obj;
-	gint32 type;
-
-	MONO_ARCH_SAVE_REGS;
-
-	if (gc_handles) {
-		type = handle & 0x3;
-		EnterCriticalSection (&handle_section);
-		g_assert (type == gc_handle_types [handle >> 2]);
-		obj = gc_handles [handle >> 2];
-		LeaveCriticalSection (&handle_section);
-		if (!obj)
-			return NULL;
-
-		if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK))
-			return REVEAL_POINTER (obj);
-		else
-			return obj;
-	}
-	return NULL;
+	return mono_gchandle_get_target (handle);
 }
 
+/*
+ * if type == -1, change the target of the handle, otherwise allocate a new handle.
+ */
 guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
 {
-	gpointer val = obj;
-	guint32 h, idx;
-
-	MONO_ARCH_SAVE_REGS;
-
-	EnterCriticalSection (&handle_section);
-	/* Indexes start from 1 since 0 means the handle is not allocated */
-	idx = ++next_handle;
-	if (idx >= array_size) {
-		gpointer *new_array;
-		guint8 *new_type_array;
-		if (!array_size)
-			array_size = 16;
-#if HAVE_BOEHM_GC
-		new_array = GC_MALLOC (sizeof (gpointer) * (array_size * 2));
-		new_type_array = GC_MALLOC (sizeof (guint8) * (array_size * 2));
-#else
-		new_array = g_malloc0 (sizeof (gpointer) * (array_size * 2));
-		new_type_array = g_malloc0 (sizeof (guint8) * (array_size * 2));
-#endif
-		if (gc_handles) {
-			int i;
-			memcpy (new_array, gc_handles, sizeof (gpointer) * array_size);
-			memcpy (new_type_array, gc_handle_types, sizeof (guint8) * array_size);
-			/* need to re-register links for weak refs. test if GC_realloc needs the same */
-			for (i = 0; i < array_size; ++i) {
-#if 0 /* This breaks the threaded finalizer, by causing segfaults deep
-       * inside libgc.  I assume it will also break without the
-       * threaded finalizer, just that the stress test (bug 31333)
-       * deadlocks too early without it.  Reverting to the previous
-       * version here stops the segfault.
-       */
-				if ((gc_handle_types[i] == HANDLE_WEAK) || (gc_handle_types[i] == HANDLE_WEAK_TRACK)) { /* all and only disguised pointers have it set */
-#else
-				if (((gulong)new_array [i]) & 0x1) {
-#endif
-#if HAVE_BOEHM_GC
-					if (gc_handles [i] != (gpointer)-1)
-						GC_unregister_disappearing_link (&(gc_handles [i]));
-					if (new_array [i] != (gpointer)-1)
-						GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(new_array [i]), REVEAL_POINTER (new_array [i]));
-#endif
-				}
-			}
-		}
-		array_size *= 2;
-#ifndef HAVE_BOEHM_GC
-		g_free (gc_handles);
-		g_free (gc_handle_types);
-#endif
-		gc_handles = new_array;
-		gc_handle_types = new_type_array;
+	if (type == -1) {
+		mono_gchandle_set_target (handle, obj);
+		/* the handle doesn't change */
+		return handle;
 	}
-
-	/* resuse the type from the old target */
-	if (type == -1)
-		type =  handle & 0x3;
-	h = (idx << 2) | type;
 	switch (type) {
 	case HANDLE_WEAK:
+		return mono_gchandle_new_weakref (obj, FALSE);
 	case HANDLE_WEAK_TRACK:
-		val = (gpointer)HIDE_POINTER (val);
-		gc_handles [idx] = val;
-		gc_handle_types [idx] = type;
-#if HAVE_BOEHM_GC
-		if (gc_handles [idx] != (gpointer)-1)
-			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(gc_handles [idx]), obj);
-#endif
-		break;
+		return mono_gchandle_new_weakref (obj, TRUE);
+	case HANDLE_NORMAL:
+		return mono_gchandle_new (obj, FALSE);
+	case HANDLE_PINNED:
+		return mono_gchandle_new (obj, TRUE);
 	default:
-		gc_handles [idx] = val;
-		gc_handle_types [idx] = type;
-		break;
+		g_assert_not_reached ();
 	}
-	LeaveCriticalSection (&handle_section);
-	return h;
+	return -1;
 }
 
 void
 ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
-	int idx = handle >> 2;
-	int type = handle & 0x3;
-
-	MONO_ARCH_SAVE_REGS;
-
-	EnterCriticalSection (&handle_section);
-
-#ifdef HAVE_BOEHM_GC
-	g_assert (type == gc_handle_types [idx]);
-	if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK)) {
-		if (gc_handles [idx] != (gpointer)-1)
-			GC_unregister_disappearing_link (&(gc_handles [idx]));
-	}
-#endif
-
-	gc_handles [idx] = (gpointer)-1;
-	gc_handle_types [idx] = (guint8)-1;
-	LeaveCriticalSection (&handle_section);
+	mono_gchandle_free (handle);
 }
 
 gpointer
 ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	MonoObject *obj;
-	int type = handle & 0x3;
 
-	MONO_ARCH_SAVE_REGS;
-
-	if (gc_handles) {
-		EnterCriticalSection (&handle_section);
-		obj = gc_handles [handle >> 2];
-		g_assert (gc_handle_types [handle >> 2] == type);
-		LeaveCriticalSection (&handle_section);
-		if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK)) {
-			obj = REVEAL_POINTER (obj);
-			if (obj == (MonoObject *) -1)
-				return NULL;
-		}
-		if (obj) {
-			MonoClass *klass = mono_object_class (obj);
-			if (klass == mono_defaults.string_class) {
-				return mono_string_chars ((MonoString*)obj);
-			} else if (klass->rank) {
-				return mono_array_addr ((MonoArray*)obj, char, 0);
-			} else {
-				/* the C# code will check and throw the exception */
-				/* FIXME: missing !klass->blittable test, see bug #61134 */
-				if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
-					return (gpointer)-1;
-				return (char*)obj + sizeof (MonoObject);
-			}
+	obj = mono_gchandle_get_target (handle);
+	if (obj) {
+		MonoClass *klass = mono_object_class (obj);
+		if (klass == mono_defaults.string_class) {
+			return mono_string_chars ((MonoString*)obj);
+		} else if (klass->rank) {
+			return mono_array_addr ((MonoArray*)obj, char, 0);
+		} else {
+			/* the C# code will check and throw the exception */
+			/* FIXME: missing !klass->blittable test, see bug #61134 */
+			if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+				return (gpointer)-1;
+			return (char*)obj + sizeof (MonoObject);
 		}
 	}
 	return NULL;
 }
 
+typedef struct {
+	guint32  *bitmap;
+	gpointer *entries;
+	guint32   size;
+	guint8    type;
+	guint     slot_hint : 24; /* starting slot for search */
+} HandleData;
+
+/* weak and weak-track arrays will be allocated in malloc memory 
+ * (sadly libgc still requires REVEAL/HIDE_POINTER)
+ */
+static HandleData gc_handles [] = {
+	{NULL, NULL, 0, HANDLE_WEAK, 0},
+	{NULL, NULL, 0, HANDLE_WEAK_TRACK, 0},
+	{NULL, NULL, 0, HANDLE_NORMAL, 0},
+	{NULL, NULL, 0, HANDLE_PINNED, 0}
+};
+
+#define lock_handles(handles) EnterCriticalSection (&handle_section)
+#define unlock_handles(handles) LeaveCriticalSection (&handle_section)
+
+static int
+find_first_unset (guint32 bitmap)
+{
+	int i;
+	for (i = 0; i < 32; ++i) {
+		if (!(bitmap & (1 << i)))
+			return i;
+	}
+	return -1;
+}
+
+static guint32
+alloc_handle (HandleData *handles, MonoObject *obj)
+{
+	gint slot, i;
+	lock_handles (handles);
+	if (!handles->size) {
+		handles->size = 32;
+		if (handles->type > HANDLE_WEAK_TRACK) {
+#ifdef HAVE_BOEHM_GC
+			handles->entries = GC_MALLOC (sizeof (gpointer) * handles->size);
+#else
+			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
+#endif
+		} else {
+			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
+		}
+		handles->bitmap = g_malloc0 (handles->size / 8);
+	}
+	i = -1;
+	for (slot = handles->slot_hint; slot < handles->size / 32; ++slot) {
+		if (handles->bitmap [slot] != 0xffffffff) {
+			i = find_first_unset (handles->bitmap [slot]);
+			handles->slot_hint = slot;
+			break;
+		}
+	}
+	if (i == -1 && handles->slot_hint != 0) {
+		for (slot = 0; slot < handles->slot_hint; ++slot) {
+			if (handles->bitmap [slot] != 0xffffffff) {
+				i = find_first_unset (handles->bitmap [slot]);
+				handles->slot_hint = slot;
+				break;
+			}
+		}
+	}
+	if (i == -1) {
+		guint32 *new_bitmap;
+		guint32 new_size = handles->size * 2; /* always double: we memset to 0 based on this below */
+
+		/* resize and copy the bitmap */
+		new_bitmap = g_malloc0 (new_size / 8);
+		memcpy (new_bitmap, handles->bitmap, handles->size / 8);
+		g_free (handles->bitmap);
+		handles->bitmap = new_bitmap;
+
+		/* resize and copy the entries */
+		if (handles->type > HANDLE_WEAK_TRACK) {
+#ifdef HAVE_BOEHM_GC
+			gpointer *entries;
+			entries = GC_MALLOC (sizeof (gpointer) * new_size);
+			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
+			handles->entries = entries;
+#else
+			handles->entries = g_realloc (handles->entries, sizeof (gpointer) * new_size);
+			memset (handles->entries + handles->size, 0, sizeof (gpointer) * handles->size);
+#endif
+		} else {
+#ifdef HAVE_BOEHM_GC
+			gpointer *entries;
+			entries = g_malloc (sizeof (gpointer) * new_size);
+			/* we disable GC because we could lose some disappearing link updates */
+			mono_gc_disable ();
+			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
+			memset (entries + handles->size, 0, sizeof (gpointer) * handles->size);
+			for (i = 0; i < handles->size; ++i) {
+				GC_unregister_disappearing_link (&(handles->entries [i]));
+				/*g_print ("reg/unreg entry %d of type %d at %p to object %p (%p), was: %p\n", i, handles->type, &(entries [i]), REVEAL_POINTER (entries [i]), entries [i], handles->entries [i]);*/
+				if (entries [i] && entries [i] != (gpointer)-1) {
+					GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(entries [i]), REVEAL_POINTER (entries [i]));
+				}
+			}
+			g_free (handles->entries);
+			handles->entries = entries;
+			mono_gc_enable ();
+#else
+			handles->entries = g_realloc (handles->entries, sizeof (gpointer) * new_size);
+			memset (handles->entries + handles->size, 0, sizeof (gpointer) * handles->size);
+#endif
+		}
+
+		/* set i and slot to the next free position */
+		i = 0;
+		slot = (handles->size + 1) / 32;
+		handles->slot_hint = handles->size + 1;
+		handles->size = new_size;
+	}
+	handles->bitmap [slot] |= 1 << i;
+	slot = slot * 32 + i;
+	handles->entries [slot] = obj;
+#ifdef HAVE_BOEHM_GC
+	if (handles->type <= HANDLE_WEAK_TRACK) {
+		handles->entries [slot] = (void*)HIDE_POINTER (obj);
+		GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(handles->entries [slot]), obj);
+	}
+#endif
+
+	unlock_handles (handles);
+	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
+	return (slot << 2) | handles->type;
+}
+
 guint32
 mono_gchandle_new (MonoObject *obj, gboolean pinned)
 {
-	return ves_icall_System_GCHandle_GetTargetHandle (obj, 0, pinned? HANDLE_PINNED: HANDLE_NORMAL);
+	return alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj);
 }
 
 guint32
 mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 {
-	return ves_icall_System_GCHandle_GetTargetHandle (obj, 0, track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK);
+	return alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj);
 }
 
 /* This will return NULL for a collected object if using a weakref handle */
 MonoObject*
 mono_gchandle_get_target (guint32 gchandle)
 {
-	return ves_icall_System_GCHandle_GetTarget (gchandle);
+	guint slot = gchandle >> 2;
+	HandleData *handles = &gc_handles [gchandle & 3];
+	MonoObject *obj = NULL;
+	lock_handles (handles);
+	if (slot < handles->size) {
+		obj = handles->entries [slot];
+		if (handles->type <= HANDLE_WEAK_TRACK) {
+			obj = REVEAL_POINTER (obj);
+			if (obj == (MonoObject *) -1)
+				obj = NULL;
+		}
+	} else {
+		/* print a warning? */
+	}
+	unlock_handles (handles);
+	/*g_print ("get target of entry %d of type %d: %p\n", slot, handles->type, obj);*/
+	return obj;
+}
+
+static void
+mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
+{
+	guint slot = gchandle >> 2;
+	HandleData *handles = &gc_handles [gchandle & 3];
+	lock_handles (handles);
+	if (slot < handles->size) {
+#ifdef HAVE_BOEHM_GC
+		if (handles->type <= HANDLE_WEAK_TRACK) {
+			GC_unregister_disappearing_link (&handles->entries [slot]);
+			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(handles->entries [slot]), obj);
+			handles->entries [slot] = (void*)HIDE_POINTER (obj);
+		} else {
+			handles->entries [slot] = obj;
+		}
+#else
+		handles->entries [slot] = obj;
+#endif
+	} else {
+		/* print a warning? */
+	}
+	/*g_print ("changed entry %d of type %d to object %p (in slot: %p)\n", slot, gchandle & 3, obj, handles->entries [slot]);*/
+	unlock_handles (handles);
 }
 
 void
 mono_gchandle_free (guint32 gchandle)
 {
-	ves_icall_System_GCHandle_FreeHandle (gchandle);
+	guint slot = gchandle >> 2;
+	HandleData *handles = &gc_handles [gchandle & 3];
+	lock_handles (handles);
+	if (slot < handles->size) {
+#ifdef HAVE_BOEHM_GC
+		if (handles->type <= HANDLE_WEAK_TRACK)
+			GC_unregister_disappearing_link (&handles->entries [slot]);
+#endif
+		handles->entries [slot] = NULL;
+		handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
+	} else {
+		/* print a warning? */
+	}
+	/*g_print ("freed entry %d of type %d\n", slot, gchandle & 3);*/
+	unlock_handles (handles);
 }
 
 #if HAVE_BOEHM_GC
@@ -682,8 +754,8 @@ void mono_gc_init (void)
 	gc_thread_vtable = &mono_gc_thread_vtable;
 #endif
 	
-	MONO_GC_REGISTER_ROOT (gc_handles);
-	MONO_GC_REGISTER_ROOT (gc_handle_types);
+	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_NORMAL].entries);
+	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_PINNED].entries);
 	GC_no_dls = TRUE;
 
 	GC_oom_fn = mono_gc_out_of_memory;
