@@ -5022,7 +5022,8 @@ mono_marshal_get_stelemref ()
 	mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
 	
 	mono_mb_emit_byte (mb, CEE_RET);
-	return mono_mb_create_method (mb, sig, 4);	
+	ret = mono_mb_create_method (mb, sig, 4);
+	return ret;
 }
 
 /* FIXME: on win32 we should probably use GlobalAlloc(). */
