@@ -23,11 +23,20 @@
 #define MBCOST_DATA  MBCodeGenStatus
 #define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
 
+typedef enum {
+	AMInvalid         = 0,
+	AMBase            = 1,  // [REG]  
+	AMIndex           = 2,  // [REG*X] 
+	AMBaseIndex       = 3,  // [REG*X][REG] 
+	AMImmediate       = 4,  // ptr
+	AMBaseOffset      = 5,  // V[REG] 
+	AMIndexOffset     = 6,  // V[REG*X] 
+	AMBaseIndexOffset = 7,  // V[REG*X][REG] 
+} X86AddMode;
+
 typedef	struct {
 	int offset;
-	unsigned int has_basereg:1;
-	unsigned int has_indexreg:1;
-	unsigned int has_offset:1;		
+	X86AddMode amode:3;
 	unsigned int shift:2;
 	gint8 basereg;
 	gint8 indexreg;
@@ -126,56 +135,50 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 
 acon: CONST_I4 {
 	tree->data.ainfo.offset = tree->data.i;
-	tree->data.ainfo.has_offset = 1;
+	tree->data.ainfo.amode = 4;
 }
 
 acon: ADDR_G {
 	tree->data.ainfo.offset = tree->data.i;
-	tree->data.ainfo.has_offset = 1;
+	tree->data.ainfo.amode = 4;
 }
 
 base: acon
 
 base: reg {
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.has_offset = 0;
 	tree->data.ainfo.basereg = tree->reg1;
-	tree->data.ainfo.has_basereg = 1;
+	tree->data.ainfo.amode = 1;
 }
 
 base: ADD (reg, acon) {
 	tree->data.ainfo.offset = tree->right->data.i;
-	tree->data.ainfo.has_offset = 1;
 	tree->data.ainfo.basereg = tree->left->reg1;
-	tree->data.ainfo.has_basereg = 1;
+	tree->data.ainfo.amode = 5;
 }
 
 base: ADDR_L {
 	tree->data.ainfo.offset = tree->data.i;
-	tree->data.ainfo.has_offset = 1;
 	tree->data.ainfo.basereg = X86_EBP;
-	tree->data.ainfo.has_basereg = 1;
+	tree->data.ainfo.amode = 5;
 }
 
 base: ADDR_A {
 	tree->data.ainfo.offset = tree->data.i + 8;
-	tree->data.ainfo.has_offset = 1;
 	tree->data.ainfo.basereg = X86_EBP;
-	tree->data.ainfo.has_basereg = 1;
+	tree->data.ainfo.amode = 5;
 }
 
 index: reg {
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.has_offset = 1;
-	tree->data.ainfo.has_indexreg = 1;
 	tree->data.ainfo.indexreg = tree->left->reg1;
 	tree->data.ainfo.shift = 0;
+	tree->data.ainfo.amode = 2;
 }
 
 index: SHL (reg, CONST_I4) {
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.has_offset = 1;
-	tree->data.ainfo.has_indexreg = 1;
+	tree->data.ainfo.amode = 2;
 	tree->data.ainfo.indexreg = tree->left->reg1;
 	tree->data.ainfo.shift = tree->right->data.i;
 } cost {
@@ -191,8 +194,7 @@ index: MUL (reg, CONST_I4) {
 	static int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
   
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.has_offset = 1;
-	tree->data.ainfo.has_indexreg = 1;
+	tree->data.ainfo.amode = 2;
 	tree->data.ainfo.indexreg = tree->left->reg1;
 	tree->data.ainfo.shift = fast_log2 [tree->right->data.i];
 } cost {
@@ -211,50 +213,42 @@ addr: index
 addr: ADD (index, base) {
 	tree->data.ainfo.offset = tree->right->data.ainfo.offset;
 	tree->data.ainfo.basereg = tree->right->data.ainfo.basereg;
-	tree->data.ainfo.has_basereg = tree->right->data.ainfo.has_basereg;
-	tree->data.ainfo.has_offset = tree->right->data.ainfo.has_offset;
-
+	tree->data.ainfo.amode = tree->left->data.ainfo.amode | 
+		tree->right->data.ainfo.amode;
 	tree->data.ainfo.shift = tree->left->data.ainfo.shift;
 	tree->data.ainfo.indexreg = tree->left->data.ainfo.indexreg;
-	tree->data.ainfo.has_indexreg = tree->left->data.ainfo.has_indexreg;
 }
 
 stmt: STIND_I4 (addr, reg) {
-	int d;
+	switch (tree->left->data.ainfo.amode) {
 
-	d = (tree->left->data.ainfo.has_offset << 2 |
-	     tree->left->data.ainfo.has_indexreg << 1 |
-	     tree->left->data.ainfo.has_basereg);
-
-	switch (d) {
-
-	case 1:
+	case AMBase:
 		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg, 0, tree->right->reg1, 4);
 		break;		
-	case 2:
+	case AMIndex:
 		x86_mov_memindex_reg (s->code, X86_NOBASEREG, 0,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
 				      tree->right->reg1, 4);
 		break;		
-	case 3:
+	case AMBaseIndex:
 		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, 0,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
 				      tree->right->reg1, 4);
 		break;		
-	case 6:
+	case AMImmediate:
+		x86_mov_mem_reg (s->code, tree->left->data.ainfo.offset, tree->right->reg1, 4);
+		break;
+		
+	case AMBaseOffset:
+		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg,
+				     tree->left->data.ainfo.offset, tree->right->reg1, 4);
+		break;		
+	case AMIndexOffset:
 		x86_mov_memindex_reg (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
 				      tree->right->reg1, 4);
 		break;		
-	case 4:
-		x86_mov_mem_reg (s->code, tree->left->data.ainfo.offset, tree->right->reg1, 4);
-		break;
-		
-	case 5:
-		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg,
-				     tree->left->data.ainfo.offset, tree->right->reg1, 4);
-		break;		
-	case 7:
+	case AMBaseIndexOffset:
 		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
 				      tree->right->reg1, 4);
@@ -267,39 +261,33 @@ stmt: STIND_I4 (addr, reg) {
 }
 
 reg: LDIND_I4 (addr) {
-	int d;
+	switch (tree->left->data.ainfo.amode) {
 
-	d = (tree->left->data.ainfo.has_offset << 2 |
-	     tree->left->data.ainfo.has_indexreg << 1 |
-	     tree->left->data.ainfo.has_basereg);
-
-	switch (d) {
-
-	case 1:
+	case AMBase:
 		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 0, 4);
 		break;		
-	case 2:
+	case AMIndex:
 		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, 0, tree->left->data.ainfo.indexreg, 
 				      tree->left->data.ainfo.shift, 4);
 		break;		
-	case 3:
+	case AMBaseIndex:
 		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 0,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
 		break;		
-	case 6:
+	case AMImmediate:
+		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
+		break;
+		
+	case AMBaseOffset:
+		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg,
+				     tree->left->data.ainfo.offset, 4);
+		break;		
+	case AMIndexOffset:
 		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, 
 				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
 				      tree->left->data.ainfo.shift, 4);
 		break;		
-	case 4:
-		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
-		break;
-		
-	case 5:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg,
-				     tree->left->data.ainfo.offset, 4);
-		break;		
-	case 7:
+	case AMBaseIndexOffset:
 		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
 				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
 				      tree->left->data.ainfo.shift, 4);
@@ -848,8 +836,8 @@ stmt: SWITCH (reg) {
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_GE, jt [jt [0] + 1] - offset, FALSE);
 
-	my_x86_mov_reg_memindex (s->code, X86_EAX, tree->data.i + 4, 
-				 tree->left->reg1, 2, 4);	
+	x86_mov_reg_memindex (s->code, X86_EAX, X86_NOBASEREG, 
+			      tree->data.i + 4, tree->left->reg1, 2, 4);	
 	x86_jump_reg (s->code, X86_EAX);
 }
 
