@@ -1164,8 +1164,6 @@ unload_thread_main (void *arg)
 	mono_domain_lock (domain);
 	mono_g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable,
 							   domain);
-	mono_g_hash_table_foreach (domain->proxy_vtable_hash, clear_cached_vtable,
-							   domain);
 	mono_domain_unlock (domain);
 
 	domain->state = MONO_APPDOMAIN_UNLOADED;
