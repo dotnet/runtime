@@ -54,6 +54,9 @@ extern MonoDefaults mono_defaults;
 void
 mono_init                  (void);
 
+void 
+mono_init_icall            (void);
+
 MonoMethod *
 mono_get_method            (MonoImage *image, guint32 token, MonoClass *klass);
 

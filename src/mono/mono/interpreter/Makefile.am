@@ -1,6 +1,5 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
-	-I$(top_srcdir)/libffi/include	\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)			
 

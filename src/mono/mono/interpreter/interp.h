@@ -68,4 +68,3 @@ typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stack
  */
 MonoPIFunc mono_create_trampoline (MonoMethod *method);
 void *mono_create_method_pointer (MonoMethod *method);
-

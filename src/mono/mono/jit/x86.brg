@@ -1,0 +1,206 @@
+#include <glib.h>
+#include <stdio.h>
+
+#include <mono/metadata/blob.h>
+#include <mono/metadata/metadata.h>
+
+#define MBTREE_TYPE  MBTree
+
+typedef struct _MBTree MBTree;
+struct _MBTree {
+	guint16 op;
+	MBTree *left, *right;
+	gpointer state;
+
+	int reg;
+	MonoTypeEnum type;
+
+	union {
+		int i;
+	} data;
+};
+
+gboolean same_tree (MBTree *t1, MBTree *t2);
+
+%%
+
+#
+# terminal definitions
+#
+
+# constatnts
+%term CONST LDLOC LDARG STLOC BR RET RETV ARG CALL
+%term ADD SUB MUL
+%term BLT BEQ BGE 
+#
+# we start at stmt
+#
+%start stmt
+
+#
+# tree definitions
+#
+
+con: CONST
+
+reg: LDLOC {
+	switch (tree->type) {
+	case MONO_TYPE_I4:
+		printf ("mov R%d, dword ptr %d[EBP]\n", tree->reg, 
+			tree->data.i);
+		break;
+	default:
+		g_warning ("unknown type %02x", tree->type);
+		g_assert_not_reached ();
+	}
+}
+
+reg: LDARG {
+	switch (tree->type) {
+	case MONO_TYPE_I:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_PTR:
+		printf ("mov R%d, dword ptr %d[EBP]\n", tree->reg, 
+			-tree->data.i);
+		break;
+	default:
+		g_warning ("unknown type %02x", tree->type);
+		g_assert_not_reached ();
+	}
+}
+
+reg: MUL (reg, reg) {
+	printf ("mov R%d, R%d\nimul R%d, R%d\n", tree->reg, tree->left->reg,
+		tree->reg, tree->right->reg);
+} cost {
+	MBCOND (tree->right->type == MONO_TYPE_I4);
+	return 0;
+}
+
+reg: ADD (reg, con) {
+	printf ("mov R%d, R%d\nadd R%d, %d\n", tree->reg, tree->left->reg,
+		tree->reg, tree->right->data.i);
+} cost {
+	MBCOND (tree->right->type == MONO_TYPE_I4);
+	return 0;
+}
+
+reg: ADD (reg, reg) {
+	printf ("mov R%d, R%d\nadd R%d, R%d\n", tree->reg, tree->left->reg,
+		tree->reg, tree->right->reg);
+} cost {
+	MBCOND (tree->right->type == MONO_TYPE_I4);
+	return 0;
+}
+
+reg: SUB (reg, con) {
+	printf ("mov R%d, R%d\nsub R%d, %d\n", tree->reg, tree->left->reg,
+		tree->reg, tree->right->data.i);
+} cost {
+	MBCOND (tree->right->type == MONO_TYPE_I4);
+	return 0;
+}
+
+reg: SUB (reg, reg) {
+	printf ("mov R%d, R%d\nsub R%d, R%d\n", tree->reg, tree->left->reg,
+		tree->reg, tree->right->reg);
+} cost {
+	MBCOND (tree->right->type == MONO_TYPE_I4);
+	return 0;
+}
+
+stmt: STLOC (con) {
+	printf ("mov dword ptr %d[EBP], %d\n", tree->data.i,
+		tree->left->data.i);
+} cost {
+	MBCOND (tree->left->type == MONO_TYPE_I4);
+	return 0;
+}
+
+stmt: STLOC (reg) {	
+	switch (tree->type) {
+	case MONO_TYPE_I4:
+		printf ("mov dword ptr %d[EBP], R%d\n", tree->data.i,
+			tree->left->reg);
+		break;
+	default:
+		g_warning ("unknown type %02x", tree->type);
+		g_assert_not_reached ();
+	}
+}
+
+stmt: BR {
+
+	printf ("jmp %d[EIP]\n", tree->data.i);
+}
+
+stmt: BLT (reg, con) {
+
+	printf ("blt R%d, %d\n", tree->left->reg, tree->right->data.i);
+}
+
+stmt: BEQ (reg, con) {
+
+	printf ("beq R%d, %d\n", tree->left->reg, tree->right->data.i);
+}
+
+stmt: BGE (reg, con) {
+
+	printf ("bge R%d, %d\n", tree->left->reg, tree->right->data.i);
+}
+
+stmt: RETV (reg) {
+
+	printf ("ret R%d\n", tree->left->reg);
+}
+
+stmt: RET {
+
+	printf ("ret\n");
+}
+
+stmt: ARG (con) {
+       
+      printf ("push %d\n", tree->left->data.i);
+}
+
+stmt: ARG (reg) {
+      printf ("push R%d\n", tree->left->reg);
+}
+
+reg: CALL {
+	switch (tree->type) {
+	case MONO_TYPE_I4:
+		printf ("R%d = call\n", tree->reg);
+		break;
+	default:
+		g_warning ("unknown type %02x", tree->type);
+		g_assert_not_reached ();
+	}
+}
+
+stmt: CALL {
+     printf ("call\n");
+}
+
+%% 
+
+gboolean 
+same_tree (MBTree *t1, MBTree *t2)
+{
+	if (t1 == t2)
+		return TRUE;
+	if (!t1 || !t2)
+		return FALSE;
+
+	if (t1->op == t2->op &&
+	    t1->type == t2->type &&
+	    t1->data.i == t2->data.i) {
+		if (!same_tree (t1->left, t2->left))
+			return FALSE;
+		return same_tree (t1->right, t2->right);
+	}
+	return FALSE;
+}

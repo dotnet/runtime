@@ -1,0 +1,8 @@
+Makefile
+Makefile.in
+*.o
+.libs
+.deps
+testjit
+codegen-x86.c
+codegen.h

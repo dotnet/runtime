@@ -1,1 +1,2 @@
-SUBDIRS = monoburg metadata cil dis arch interpreter wrapper 
+SUBDIRS = monoburg metadata cil dis arch interpreter jit wrapper
+
