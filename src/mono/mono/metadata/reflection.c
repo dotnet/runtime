@@ -5667,12 +5667,15 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
 		return NULL;
 
+	/* FIXME: Enabling this causes regressions (#65577) */
+	/*
 	if (type_resolve) {
 		if (*type_resolve) 
 			return NULL;
 		else
 			*type_resolve = TRUE;
 	}
+	*/
 	
 	/* Reconstruct the type name */
 	fullName = g_string_new ("");
