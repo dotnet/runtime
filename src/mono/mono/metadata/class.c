@@ -2632,6 +2632,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
 	mono_class_setup_supertypes (class);
+	if (eclass->generic_class)
+		mono_class_init (eclass);
 	if (!eclass->size_inited)
 		class_compute_field_layout (eclass);
 	class->has_references = MONO_TYPE_IS_REFERENCE (&eclass->byval_arg) || eclass->has_references? TRUE: FALSE;
