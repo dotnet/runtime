@@ -1885,6 +1885,20 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	return res;
 }
 
+static MonoString *
+ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assembly)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoString *res;
+	char *name = g_strconcat (
+		assembly->assembly->basedir, G_DIR_SEPARATOR_S,
+		assembly->assembly->image->module_name, NULL);
+
+	res = mono_string_new (domain, name);
+	g_free (name);
+	return res;
+}
+
 static MonoReflectionMethod*
 ves_icall_System_Reflection_Assembly_get_EntryPoint (MonoReflectionAssembly *assembly) {
 	guint32 token = mono_image_get_entry_point (assembly->assembly->image);
@@ -2884,6 +2898,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::GetTypes", ves_icall_System_Reflection_Assembly_GetTypes,
 	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
+	"System.Reflection.Assembly::get_location", ves_icall_System_Reflection_Assembly_get_location,
 	"System.Reflection.Assembly::GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly,
 	"System.Reflection.Assembly::GetEntryAssembly", ves_icall_System_Reflection_Assembly_GetEntryAssembly,
 	"System.Reflection.Assembly::GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly,
