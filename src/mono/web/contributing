@@ -51,6 +51,11 @@
 	  	  but there is a lot to be done here).
 	</ul>
 
+* Emacs support
+
+	Brad Merryl's C# mode for Emacs is available: <a
+	href="http://www.cybercom.net/~zbrad/DotNet/Emacs/">http://www.cybercom.net/~zbrad/DotNet/Emacs/</a>
+
 * Books on C# and DotNet.
 
 	<ul>
@@ -64,6 +69,7 @@
 
 	* O'Really .NET Essentials (<a href="http://www.oreilly.com/catalog/dotnetfrmess/">
 	  http://www.oreally.com/catalog/dotnetfrmess</a>)
+	</ul>
 
 * Special note
 

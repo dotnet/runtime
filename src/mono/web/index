@@ -1,3 +1,6 @@
+<table>
+  <tr>
+    <td>
 	<a href="http://www.ximian.com">Ximian</a> announced the
 	launch of the Mono project, an effort to create an Open Source
 	implementation of the .NET Development Framework.  
@@ -22,6 +25,49 @@
 
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
+    </td>
+    <td>
+	<table border=1 bgcolor>
+	  <tr>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b><a href="c-sharp.html">Compiler</a></b>
+	    </td>
+	    <td>
+	      Self hosting on .NET.<br>
+	      Classes need work to run on Mono.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b>JIT</b>
+	    </td>
+	    <td>
+	      Linux/x86 working.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b>Interpreter</b>
+	    </td>
+	    <td>
+	      Linux/PPC working<br>
+	      In progress: StrongARM, SPARC.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b><a href="class-status.html">Classes</a></b>
+	    </td>
+	    <td>
+	      Corlib for self hosting mostly done
+	    </td>
+	  </tr>
+	</table>
+    </td>
+  </tr>
+</table>
 
 ** Feb 11, 2002
 
