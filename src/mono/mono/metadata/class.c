@@ -252,7 +252,8 @@ mono_class_init (MonoClass *class)
 		class->class_size += class->parent->class_size;
 		class->min_align = class->parent->min_align;
 		cur_slot = class->parent->vtable_size;
-	}
+	} else
+		class->min_align = 1;
 
 	/*
 	 * Computes the size used by the fields, and their locations
@@ -918,12 +919,8 @@ mono_class_value_size      (MonoClass *klass, guint32 *align)
 
 	size = mono_class_instance_size (klass) - sizeof (MonoObject);
 
-	if (align) {
-		if (size <= 4)
-			*align = 4;
-		else
-			*align = 8;
-	}
+	if (align)
+		*align = klass->min_align;
 
 	return size;
 }

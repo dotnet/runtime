@@ -718,9 +718,9 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 	switch (kind) {
 	case MONO_TEMPVAR:
 	case MONO_LOCALVAR: {
+		cfg->locals_size += size;
 		cfg->locals_size += align - 1;
 		cfg->locals_size &= ~(align - 1);
-		cfg->locals_size += size;
 
 		SET_VARINFO (vi, type, kind, - cfg->locals_size, size);
 		g_array_append_val (cfg->varinfo, vi);
@@ -729,19 +729,14 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 	case MONO_ARGVAR: {
 		int arg_start = 8 + cfg->has_vtarg*4;
 
-		/* fixme: we need to align stack values somehow
-		int opos, cpos, padding;
-		opos = cpos = arg_start + cfg->args_size;
-		cpos += align - 1;
-		cpos &= ~(align - 1);
-		padding = cpos - opos;
-		cfg->args_size += padding;
-		*/
+		g_assert (align == 4); /* must be true on x86 */
 
 		SET_VARINFO (vi, type, kind, cfg->args_size + arg_start, size);
 		g_array_append_val (cfg->varinfo, vi);
 		
 		cfg->args_size += size;
+		cfg->args_size += 3;
+		cfg->args_size &= ~3;
 		break;
 	}
 	default:
@@ -1582,7 +1577,7 @@ mark_reached (MonoFlowGraph *cfg, MonoBBlock *target, MBTree **stack, int depth)
 #define MARK_REACHED(bb) do { if (!bb->reached) { bb->reached = 1; }} while (0)
 
 /**
- * mono_create_cfg:
+ * mono_analyze_stack:
  * @cfg: control flow graph
  *
  * This is the architecture independent part of JIT compilation.
@@ -2637,7 +2632,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			g_assert (target >= 0 && target <= header->code_size);
 			g_assert (bcinfo [target].is_block_start);
 			tbb = &cfg->bblocks [bcinfo [target].block_id];
-			g_assert ((sp - stack) == 0);
+
+			/* empty the stack */
+			sp = stack;
+
 			mark_reached (cfg, tbb, NULL, 0);
 
 			/* fixme: fault handler */

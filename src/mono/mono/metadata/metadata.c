@@ -1869,8 +1869,18 @@ mono_type_stack_size (MonoType *t, gint *align)
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-		*align = __alignof__(gint32);
-		return 4;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_TYPEDBYREF:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
 	case MONO_TYPE_R4:
 		*align = __alignof__(float);
 		return 4;
@@ -1882,27 +1892,14 @@ mono_type_stack_size (MonoType *t, gint *align)
 		*align = __alignof__(double);
 		return 8;
 		
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer);
-		
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 
 		size = mono_class_value_size (t->data.klass, align);
+		*align = __alignof__(gpointer);
+
 		return size;
 	}
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_TYPEDBYREF: /* we may want to use a struct {MonoType* type, void *data } instead ...*/
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer);
 	default:
 		g_error ("type 0x%02x unknown", t->type);
 	}
