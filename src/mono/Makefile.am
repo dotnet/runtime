@@ -160,7 +160,8 @@ populate-runtime-subdir:
 	    cd $(mcs_topdir) && \
 	    $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime PROFILE=$$2 LIBRARY_INSTALL_DIR=$$srcdir/runtime/$$3 prefix=$$tmpinst/prefix install ) || exit 1 ; \
 	done
-	find $(tmpinst)/prefix -type f -path '*/jay*' -exec rm -f '{}' ';'
+	find $(tmpinst)/prefix -type f -name '*jay*' -exec rm -f '{}' ';'
+	for i in `find $(tmpinst)/prefix -type d -name '*jay*' -print`; do rm -f $$i/*; done
 	test -z "`find $(tmpinst)/prefix -type f -print`"
 	rm -rf $(tmpinst)/prefix
 

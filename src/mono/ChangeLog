@@ -1,3 +1,8 @@
+2004-09-10  Zoltan Varga  <vargaz@freemail.hu>
+
+	* Makefile.am (populate-runtime-subdir): Avoid -path argument to find
+	since it is not supported on solaris.
+
 2004-09-03  Martin Baulig  <martin@ximian.com>
 
 	* Makefile.am (bootstrap-world): New target.
