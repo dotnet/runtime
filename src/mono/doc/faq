@@ -5,6 +5,7 @@
 <a href="#msft">Mono and Microsoft</a><br>
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
+<a href="#asp">Mono and ASP.NET</a><br>
 <a href="#devel">Development Tools and Issues</a><br>
 <a href="#java">Mono and Java</a><br>
 <a href="#extending">Extending Mono</a><br>
@@ -139,6 +140,10 @@ A: We are interested in providing the best tools for programmers to
    Project white paper</a>.
    the project.
 
+Q: Miguel said once that Mono was being implemented in COBOL. Is that true?.
+
+A: No. It was a joke.
+
 
 <a name="ximian"></a> 
 
@@ -252,6 +257,23 @@ Q: Will I be able to run my smart clients on systems powered by Mono?
 A: As long as your applications are 100% .NET and do not make use
    of P/Invoke to call Win32 functions, your smart client applications
    will run on Mono platforms.
+
+Q: Where can I learn mora about Gtk#?
+
+A: The following <a href="http://gtk-sharp.sourceforge.net>link</a> sends you to the page of the project.
+
+Q: What can I do with Gtk#?. 
+
+A: Gtk# is becoming very usable and you can create applications and
+   applets like those you see in a GNOME desktop environment. It's 
+   easy to install so it's worth a try. 
+
+Q: How can I compile my HelloWorld.cs which uses Gtk#?.
+
+A: Try: mcs --unsafe -o HelloWorld.exe -r glib-sharp -r pango-sharp -r
+        atk-sharp -r gdk-sharp -r gtk-sharp -r gdk-imaging-sharp
+        HelloWorld.cs
+
 
 <a name="msft"></a>
 ** Mono and Microsoft
@@ -518,6 +540,24 @@ A: The webserver turned out to be very simple compared to the rest of the
    Patrik has done a lot of the work to get the ProcessRequest to work.
    You can try to help in the final touches to the System.Web classes and
    writing regression tests for the widgets we have.
+
+<a name="asp">
+** Mono and ASP.NET
+
+Q: Is Mono supporting ASP.NET?
+
+A: Yes. The development of the support for ASP.NET comes in various stages, 
+   here is what Gonzalo has been working on: 1. The Parser. 2. Getting the 
+   parser to generate output compatible with ASP.NET. 3. Running the sample 
+   output with the real Microsoft runtime but using our generated page. 4. 
+   Running the sample with our classes with the .NET runtime. 5. Running 
+   our sample code with our classes with our runtime. This is the process 
+   we are following. Currently Gonzalo has reached point 3.
+
+Q: I have heard that their is a webserver developed with Mono. Is it true?.
+
+A: Yes. You can find it <a href="http://home.adelphia.net/~aljames/webserver.htm">here</a>
+   Read the README for more info.
 
 <a name="java">
 ** Mono and Java
@@ -813,4 +853,8 @@ A: The runtime will support XPCOM on Unix systems and COM on Windows.
 Q: Will Ximian offer certifications on Mono or related technologies?. 
 
 A: It's possible. But there is no plan about this. So the short answer is no.
+
+Q: Are there any Boehm's gc binaries?
+
+A: Yes. You can find them <a href="http://java.thn.htu.se/~toor/">here</a>
 
