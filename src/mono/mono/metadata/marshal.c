@@ -1969,6 +1969,14 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	return res;
 }
 
+/*
+ * mono_marshal_get_ldfld_wrapper:
+ * @type: the type of the field
+ *
+ * This method generates a function which can be use to load a field with type
+ * @type from an object. The generated function has the following signature:
+ * <@type> ldfld_wrapper (MonoObject *this, MonoClass *class, MonoClassField *field, int offset)
+ */
 MonoMethod *
 mono_marshal_get_ldfld_wrapper (MonoType *type)
 {
@@ -2016,7 +2024,6 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 
 	mb->method->save_lmf = 1;
 
-	/* <restype> ldfld (MonoObject *this, gpointer class, gpointer field, int offset); */
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
@@ -2130,6 +2137,14 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	return res;
 }
 
+/*
+ * mono_marshal_get_stfld_wrapper:
+ * @type: the type of the field
+ *
+ * This method generates a function which can be use to store a field with type
+ * @type. The generated function has the following signature:
+ * void stfld_wrapper (MonoObject *this, MonoClass *class, MonoClassField *field, int offset, <@type> val)
+ */
 MonoMethod *
 mono_marshal_get_stfld_wrapper (MonoType *type)
 {
@@ -2176,7 +2191,6 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 
 	mb->method->save_lmf = 1;
 
-	/* void stfld (MonoObject *this, gpointer class, gpointer field, int offset, gpointer val); */
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 5);
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
