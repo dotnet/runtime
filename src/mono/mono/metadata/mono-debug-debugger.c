@@ -591,9 +591,9 @@ static guint32
 write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *old_ptr;
-	GPtrArray *methods = NULL;
-	int num_fields = 0, num_properties = 0, num_methods = 0;
-	int num_params = 0, base_offset = 0;
+	GPtrArray *methods = NULL, *static_methods = NULL;
+	int num_fields = 0, num_static_fields = 0, num_properties = 0, num_static_properties = 0;
+	int num_methods = 0, num_static_methods = 0, num_params = 0, num_static_params = 0, base_offset = 0;
 	guint32 size, data_size, offset;
 	GHashTable *method_slots = NULL;
 	int i;
@@ -619,20 +619,25 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	for (i = 0; i < klass->field.count; i++)
 		if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
 			++num_fields;
+		else
+			++num_static_fields;
 
 	for (i = 0; i < klass->property.count; i++)
 		if (!property_is_static (&klass->properties [i]))
 			++num_properties;
+		else
+			++num_static_properties;
 
 	method_slots = g_hash_table_new (NULL, NULL);
 	methods = g_ptr_array_new ();
+	static_methods = g_ptr_array_new ();
 
 	for (i = 0; i < klass->method.count; i++) {
 		MonoMethod *method = klass->methods [i];
 
 		if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
 			continue;
-		if (method->flags & (METHOD_ATTRIBUTE_STATIC | METHOD_ATTRIBUTE_SPECIAL_NAME))
+		if (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME)
 			continue;
 		if (!((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))
 			continue;
@@ -640,16 +645,22 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
 
-		++num_methods;
-		num_params += method->signature->param_count;
-
-		g_ptr_array_add (methods, method);
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			++num_static_methods;
+			num_static_params += method->signature->param_count;
+			g_ptr_array_add (static_methods, method);
+		} else {
+			++num_methods;
+			num_params += method->signature->param_count;
+			g_ptr_array_add (methods, method);
+		}
 	}
 
 	g_hash_table_destroy (method_slots);
 
-	size = 34 + sizeof (gpointer) + num_fields * 8 + num_properties * (4 + 2 * sizeof (gpointer)) +
-		num_methods * (8 + sizeof (gpointer)) + num_params * 4;
+	size = 58 + sizeof (gpointer) + num_fields * 8 + num_static_fields * 8 + num_properties * (4 + 2 * sizeof (gpointer)) +
+		num_static_properties * (4 + 2 * sizeof (gpointer)) + num_methods * (8 + sizeof (gpointer)) + num_params * 4 +
+		num_static_methods * (8 + sizeof (gpointer)) + num_static_params * 4;
 
 	data_size = size;
 
@@ -667,11 +678,17 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	*ptr++ = klass->valuetype;
 	WRITE_POINTER (ptr, klass);
 	WRITE_UINT32 (ptr, num_fields);
-	WRITE_UINT32 (ptr, num_fields * (4 + sizeof (gpointer)));
+	WRITE_UINT32 (ptr, num_fields * 8);
+	WRITE_UINT32 (ptr, num_static_fields);
+	WRITE_UINT32 (ptr, num_static_fields * 8);
 	WRITE_UINT32 (ptr, num_properties);
-	WRITE_UINT32 (ptr, num_properties * 3 * sizeof (gpointer));
+	WRITE_UINT32 (ptr, num_properties * (4 + 2 * sizeof (gpointer)));
+	WRITE_UINT32 (ptr, num_static_properties);
+	WRITE_UINT32 (ptr, num_static_properties * (4 + 2 * sizeof (gpointer)));
 	WRITE_UINT32 (ptr, num_methods);
 	WRITE_UINT32 (ptr, num_methods * (4 + 2 * sizeof (gpointer)) + num_params * sizeof (gpointer));
+	WRITE_UINT32 (ptr, num_static_methods);
+	WRITE_UINT32 (ptr, num_static_methods * (4 + 2 * sizeof (gpointer)) + num_static_params * sizeof (gpointer));
 	for (i = 0; i < klass->field.count; i++) {
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
@@ -707,6 +724,40 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	}
 
 	g_ptr_array_free (methods, FALSE);
+
+	for (i = 0; i < klass->field.count; i++) {
+		if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
+
+		WRITE_UINT32 (ptr, klass->fields [i].offset);
+		WRITE_UINT32 (ptr, write_type (table, klass->fields [i].type));
+	}
+
+	for (i = 0; i < klass->property.count; i++) {
+		if (!property_is_static (&klass->properties [i]))
+			continue;
+
+		if (klass->properties [i].get)
+			WRITE_UINT32 (ptr, write_type (table, klass->properties [i].get->signature->ret));
+		else
+			WRITE_UINT32 (ptr, 0);
+		WRITE_POINTER (ptr, klass->properties [i].get);
+		WRITE_POINTER (ptr, klass->properties [i].set);
+	}
+
+	for (i = 0; i < static_methods->len; i++) {
+		MonoMethod *method = g_ptr_array_index (static_methods, i);
+		int j;
+
+		WRITE_POINTER (ptr, method);
+		if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
+			WRITE_UINT32 (ptr, write_type (table, method->signature->ret));
+		else
+			WRITE_UINT32 (ptr, 0);
+		WRITE_UINT32 (ptr, method->signature->param_count);
+		for (j = 0; j < method->signature->param_count; j++)
+			WRITE_UINT32 (ptr, write_type (table, method->signature->params [j]));
+	}
 
 	if (klass->parent && (klass->parent != mono_defaults.object_class))
 		WRITE_UINT32 (ptr, write_class (table, klass->parent));
