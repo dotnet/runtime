@@ -27,7 +27,9 @@ typedef enum {
 	// Don't fallback to normal dwarf2.
 	MONO_DEBUG_FLAGS_DONT_FALLBACK		= (1 << 5),
 	// Don't precompile image.
-	MONO_DEBUG_FLAGS_DONT_PRECOMPILE	= (1 << 6)
+	MONO_DEBUG_FLAGS_DONT_PRECOMPILE	= (1 << 6),
+	// Update symbol file on exit.
+	MONO_DEBUG_FLAGS_UPDATE_ON_EXIT		= (1 << 7)
 } MonoDebugFlags;
 
 typedef struct {

@@ -63,9 +63,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 					debug_arg_warning ("The `objfile' argument can be given only once.");
 				debug->objfile = g_strdup (arg + 8);
 				continue;
-			} else if (!strcmp (arg, "dont_assemble")) {
-				debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
-				continue;
 			} else if (!strcmp (arg, "install_il_files")) {
 				debug->flags |= MONO_DEBUG_FLAGS_INSTALL_IL_FILES;
 				continue;
@@ -81,9 +78,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			if (!strcmp (arg, "dont_fallback")) {
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_FALLBACK;
 				continue;
-			} else if (!strcmp (arg, "dont_assemble")) {
-				debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
-				continue;
 			} else if (!strcmp (arg, "dont_precompile")) {
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_PRECOMPILE;
 				continue;
@@ -91,6 +85,14 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			break;
 		default:
 			break;
+		}
+
+		if (!strcmp (arg, "dont_assemble")) {
+			debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
+			continue;
+		} else if (!strcmp (arg, "update_on_exit")) {
+			debug->flags |= MONO_DEBUG_FLAGS_UPDATE_ON_EXIT;
+			continue;
 		}
 
 		message = g_strdup_printf ("Unknown argument `%s'.", arg);
@@ -459,10 +461,12 @@ mono_debug_cleanup (void)
 {
 	MonoDebugHandle *debug, *temp;
 
-	mono_debug_make_symbols ();
-
 	for (debug = mono_debug_handles; debug; debug = temp) {
 		GList *tmp;
+
+		if (debug->flags & MONO_DEBUG_FLAGS_UPDATE_ON_EXIT)
+			mono_debug_write_symbols (debug);
+
 
 		for (tmp = debug->info; tmp; tmp = tmp->next) {
 			AssemblyDebugInfo* info = (AssemblyDebugInfo*)tmp->data;

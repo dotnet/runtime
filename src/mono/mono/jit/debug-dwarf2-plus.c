@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/debug-symfile.h>
 #include <mono/jit/codegen.h>
@@ -14,7 +16,7 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 	MonoMethod *method;
 	DebugMethodInfo *minfo;
 
-#if 0
+#if 1
 	method = g_hash_table_lookup (info->image->method_cache, GINT_TO_POINTER (token));
 #else
 	method = mono_get_method (info->image, token, NULL);
@@ -31,11 +33,22 @@ void
 mono_debug_open_assembly_dwarf2_plus (AssemblyDebugInfo *info)
 {
 	if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_ASSEMBLE)) {
-		char *buf;
+		struct stat stata, statb;
 
-		buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
-		system (buf);
-		g_free (buf);
+		if (stat (info->filename, &stata)) {
+			g_warning ("cannot access assembly file (%s): %s",
+				   info->filename, g_strerror (errno));
+			return;
+		}
+
+		/* If the stat() failed or the file is older. */
+		if (stat (info->objfile, &statb) || (statb.st_mtime < stata.st_mtime)) {
+			char *buf;
+
+			buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
+			system (buf);
+			g_free (buf);
+		}
 	}
 
 	if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_PRECOMPILE))
