@@ -1015,10 +1015,13 @@ property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionProperty
 	char *b = blob_size;
 	guint32 nparams = 0;
 	MonoReflectionMethodBuilder *mb = fb->get_method;
+	MonoReflectionMethodBuilder *smb = fb->set_method;
 	guint32 idx, i, size;
 
 	if (mb && mb->parameters)
 		nparams = mono_array_length (mb->parameters);
+	if (!mb && smb && smb->parameters)
+		nparams = mono_array_length (smb->parameters) - 1;
 	size = 24 + nparams * 10;
 	buf = p = g_malloc (size);
 	*p = 0x08;
@@ -1031,7 +1034,12 @@ property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionProperty
 			encode_reflection_type (assembly, pt, p, &p);
 		}
 	} else {
-		*p++ = 1; /* void: a property should probably not be allowed without a getter */
+		/* the property type is the last param */
+		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), p, &p);
+		for (i = 0; i < nparams; ++i) {
+			MonoReflectionType *pt = mono_array_get (smb->parameters, MonoReflectionType*, i);
+			encode_reflection_type (assembly, pt, p, &p);
+		}
 	}
 	/* store length */
 	g_assert (p - buf < size);
