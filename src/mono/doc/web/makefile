@@ -1,4 +1,4 @@
-OOT=C:/WINNT
+ROOT=C:/WINNT
 CSCRIPT = $(ROOT)/system32/cscript.exe
 CSC=csc
 
