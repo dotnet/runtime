@@ -1,5 +1,13 @@
 2004-06-18  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am ($(monoone_DATA) $(monotwo_DATA) $(monobins_DATA)): 
+	Test if files exist in the mcs/ tree before creating symlinks.
+	Remove symlinks before creating them again.
+	* runtime/net_1_1/Makefile.am (mscorlib.dll $(gac_assemblies)): Likewise.
+	* runtime/net_2_0/Makefile.am (mscorlib.dll $(gac_assemblies)): Likewise.
+
+2004-06-18  Raja R Harinath  <rharinath@novell.com>
+
 	* scripts/Makefile.am (REWRITE): New.  Common rewriting 'sed' command.
 	(bin_SCRIPTS): Unify all the script generating rules into one.
 
