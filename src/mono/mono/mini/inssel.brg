@@ -912,7 +912,7 @@ stmt: CEE_SWITCH (reg) {
 	 /* the backend must patch the address. we use 0xf0f0f0f0 to avoid the usage 
 	  * of special (short) opcodes on x86 */
 	if (sizeof (gpointer) == 8) {
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0f0f0f0f1LL);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, (long)0xf0f0f0f0f0f0f0f1LL);
 	}
 	else {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0);
@@ -985,6 +985,14 @@ stmt: OP_VCALL_REG (reg, reg) {
 	mono_arch_emit_this_vret_args (s, (MonoCallInst*)tree, -1, -1, state->right->reg1);
 	
 	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SAVE_LMF {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_RESTORE_LMF {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
