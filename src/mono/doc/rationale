@@ -104,7 +104,10 @@ The Mono Project
   	other various bits of the .NET development platform to the
   	ECMA for standarization.  
 
-* Mono: The GNU .NET implementation. 
+	You can get a copy of the specifications submitted to ECMA
+	from: <a href="http://www.dotnetexperts.com/ecma">http://www.dotnetexperts.com/ecma</a>
+
+* Mono: Open Source .NET implementation. 
 
 	Ximian has begun work on Mono, a project that aims to bring
   	the .NET development platform to free systems.  
@@ -133,7 +136,9 @@ The Mono Project
   		  threading engine.
 
 		  A byte code interpreter will be provided for quickly
-  		  porting Mono to new systems. 
+  		  porting Mono to new systems and debugging the JIT
+		  purposes, but it is not intended to be the ideal
+		  execution environment.
 
 		* An implemenation of the .NET class library.
 

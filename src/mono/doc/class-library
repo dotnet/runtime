@@ -63,6 +63,13 @@
 	GNOME Foundation or the Free Software Foundation to simplify
 	defending the code in case it is used inappropiately. 
 
+** Class Library testing
+
+	We need to write regression tests that would excercise the
+	class library to verify that the class library is correct,
+	that our compiler is correct and that our JIT engine is
+	correct. 
+
 ** Contributing
 
 	We welcome contributions to the the Class Library, you can
@@ -70,4 +77,3 @@
 	are being worked on and the contact information for the
 	contributor.
 
-	

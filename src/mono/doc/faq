@@ -1,5 +1,12 @@
+** Basics
+
+Q: What does Mono stand for?
+A: Mono stands for `Monkey' in spanish, you can also think of it as
+   monocromatic as that is what my text editor looks like. 
+
 Q: .NET is evil, it will give Microsoft too much control over every desktop?
 Q: If you implement .NET, wont I depend on Microsoft Passport to run my software?
+Q: Isn't .NET something else?
 
 A: You are a bit confused.  It is easy to be confused, as Microsoft
    has been naming anything they have produced recently with `.NET'.
@@ -26,5 +33,39 @@ A: We are implementing the .NET Framework: a new development platform
   multiple languages to share the same code
    (through the CLS specification
 
-Q: 
+** Passport
+
+Q: Passport
+A: ....
+
+Q: But there is a  System.Web.Security.PassportIdentity class, that must mean
+   that it will depend on it.
+
+** Ximian
+
+Q: Why is Ximian working on .NET?
+A: 
+
+Q: How does this help the Ximian business?
+A: ...
+
+** Web Services
+
+Q: Is Mono just a new way of writing Web Services?
+A: 
+
+Q: Will this implement Web Services?
+A: 
+
+** Development Tools 
+
+Q: Will you have new development tools?
+A: 
+
+** Reusing existing Code
+
+Q: Will you guys reuse XXX?
+A:
+
+Q: What about Intel's research JIT framework, ORP?
 A: 

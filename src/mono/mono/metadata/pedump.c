@@ -8,11 +8,13 @@
  */
 #include <config.h>
 #include <stdio.h>
+#include <string.h>
 #include "assembly.h"
 #include <glib.h>
 #include "cil-coff.h"
 
 gboolean dump_data = TRUE;
+gboolean dump_tables = FALSE;
 
 static void
 hex_dump (char *buffer, int base, int count)
@@ -236,13 +238,14 @@ dump_metadata (cli_image_info_t *iinfo)
 	for (table = 0; table < 64; table++){
 		if (meta->tables [table].rows == 0)
 			continue;
-		printf ("Table %s: %p (%d, %d)\n",
+		printf ("Table %s: %d records (%d bytes, at %p)\n",
 			mono_meta_table_name (table),
-			meta->tables [table].base, 
 			meta->tables [table].rows,
-			meta->tables [table].row_size
+			meta->tables [table].row_size,
+			meta->tables [table].base
 			);
-		dump_table (meta, table);
+		if (dump_tables)
+			dump_table (meta, table);
 	}
 }
 
@@ -270,7 +273,7 @@ dump_dotnet_iinfo (cli_image_info_t *iinfo)
 static void
 usage (void)
 {
-	printf ("Usage is: pedump file.exe\n");
+	printf ("Usage is: pedump [--tables] file.exe\n");
 	exit (1);
 }
 
@@ -288,8 +291,10 @@ main (int argc, char *argv [])
 			continue;
 		}
 
-		if (argv [i][1] == 'h')
+		if (strcmp (argv [i], "--help") == 0)
 			usage ();
+		if (strcmp (argv [i], "--tables") == 0)
+			dump_tables = 1;
 	}
 	
 	if (!file)
@@ -304,7 +309,7 @@ main (int argc, char *argv [])
 
 	if (dump_data)
 		dump_dotnet_iinfo (iinfo);
-
+	
 	mono_assembly_close (assembly);
 	
 	return 0;

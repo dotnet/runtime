@@ -1,0 +1,24 @@
+* Testing 
+
+	All classes in Mono libraries should have comprehensive unit test
+	suites to go with them. Unit testing is a software engineering
+  	methodology that makes it easier to build correct code. Every
+  	method in every class should have a set of tests to verify
+  	they work correctly. Mono also needs a testing framework to
+  	make it easy to write and run lots of tests. <a
+  	href="http://www.junit.org/">JUnit</a>
+	and its spinoffs (collectively, <a
+  	href="http://www.xprogramming.com/software.htm">XUnit</a>)
+	are a well designed framework for building unit
+  	tests. Implementing JUnit in Mono is a first priority.
+
+	Why do unit testing? It becomes simple to run automated tests
+	for the whole library. Unit tests are a safety net - you can
+	change part of the code and verify that you haven't broken
+	anything. Ideally, tests are written before the actual library
+	code itself. And every time a bug is discovered, a test should
+	be written to demonstrate the bug, fix the bug, and then if
+	you ever reintroduce the bug you will know immediately. For
+	more info, read <a
+	href="http://junit.sourceforge.net/doc/testinfected/testing.htm">
+	JUnit Test Infected: Programmers Love Writing Tests</a>.
