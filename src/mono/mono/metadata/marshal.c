@@ -234,6 +234,9 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	// Add the delegate to the delegate hash table
 	delegate_hash_table_add (delegate);
 
+	/* when the object is collected, collect the dunamic method, too */
+	mono_object_register_finalizer ((MonoObject*)delegate);
+
 	return delegate->delegate_trampoline;
 }
 

@@ -20,6 +20,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/os/gc_wrapper.h>
+#include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 
 typedef struct DomainFinalizationReq {
 	MonoDomain *domain;
@@ -74,6 +75,16 @@ run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
+	/* delegates that have a native function pointer allocated are
+	 * registerd for finalization, but they don't have a Finalize
+	 * method, because in most cases it's not needed and it's just a waste.
+	 */
+	if (o->vtable->klass->delegate) {
+		MonoDelegate* del = (MonoDelegate*)o;
+		if (del->delegate_trampoline)
+			mono_delegate_free_ftnptr ((MonoDelegate*)o);
+		return;
+	}
 	if (o->vtable->klass == mono_get_thread_class ())
 		if (mono_gc_is_finalizer_thread ((MonoThread*)o))
 			/* Avoid finalizing ourselves */

@@ -4527,7 +4527,9 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 static void
 ves_icall_System_Delegate_FreeTrampoline (MonoDelegate *this)
 {
-	mono_delegate_free_ftnptr (this);
+	/*
+	Delegates have a finalizer only when needed, now.
+	mono_delegate_free_ftnptr (this);*/
 }
 
 /*
