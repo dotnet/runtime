@@ -128,7 +128,7 @@ struct _WapiHandleUnshared
 struct _WapiHandleSharedMetadata
 {
 	volatile guint32 offset;
-	guint32 ref;
+	guint32 timestamp;
 	volatile gboolean signalled;
 	volatile guint32 checking;
 };
@@ -148,10 +148,10 @@ struct _WapiHandleShared
 
 struct _WapiHandleSharedLayout
 {
-	guint32 master;
 	guint32 namespace_check;
 	volatile guint32 signal_count;
-	volatile guint32 collection_signal_done;
+
+	guint32 master_timestamp;
 	volatile guint32 collection_count;
 	
 	struct _WapiHandleSharedMetadata metadata[_WAPI_HANDLE_INITIAL_COUNT];
@@ -167,6 +167,7 @@ struct _WapiFileShare
 	guint32 sharemode;
 	guint32 access;
 	guint32 handle_refs;
+	guint32 timestamp;
 };
 
 struct _WapiFileShareLayout

@@ -127,7 +127,7 @@ static void shared_init (void)
 
 static void _wapi_handle_init_shared_metadata (struct _WapiHandleSharedMetadata *meta)
 {
-	meta->ref = 1;
+	meta->timestamp = (guint32)(time (NULL) & 0xFFFFFFFF);
 	meta->signalled = FALSE;
 }
 
@@ -303,7 +303,7 @@ again:
 
 gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 {
-	static pthread_mutex_t scan_mutex=PTHREAD_MUTEX_INITIALIZER;
+	static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 	guint32 handle_idx = 0;
 	gpointer handle;
 	int thr_ret;
@@ -317,9 +317,9 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 
 	g_assert(!_WAPI_FD_HANDLE(type));
 	
-	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
 			      (void *)&scan_mutex);
-	thr_ret = pthread_mutex_lock (&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 		
 	while ((handle_idx = _wapi_handle_new_internal (type, handle_specific)) == 0) {
@@ -337,7 +337,7 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
 	}
 		
-	thr_ret = pthread_mutex_unlock (&scan_mutex);
+	thr_ret = mono_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 		
@@ -385,7 +385,7 @@ gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 					   gpointer handle_specific,
 					   guint32 offset)
 {
-	static pthread_mutex_t scan_mutex=PTHREAD_MUTEX_INITIALIZER;
+	static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 	guint32 handle_idx = 0;
 	gpointer handle;
 	int thr_ret;
@@ -401,9 +401,9 @@ gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 	g_assert(_WAPI_SHARED_HANDLE(type));
 	g_assert(offset != 0);
 	
-	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
 			      (void *)&scan_mutex);
-	thr_ret = pthread_mutex_lock (&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 		
 	while ((handle_idx = _wapi_handle_new_internal (type, handle_specific)) == 0) {
@@ -421,7 +421,7 @@ gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
 	}
 		
-	thr_ret = pthread_mutex_unlock (&scan_mutex);
+	thr_ret = mono_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 		
@@ -1681,19 +1681,20 @@ void _wapi_handle_update_refs (void)
 	
 	for (i = 0; i < _wapi_private_handle_count; i++) {
 		struct _WapiHandleUnshared *handle = &_wapi_private_handles[i];
-		
+		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
+
 		if (_WAPI_SHARED_HANDLE(handle->type)) {
 			struct _WapiHandleSharedMetadata *shared_meta;
 			
 			shared_meta = &_wapi_shared_layout->metadata[handle->u.shared.offset];
 
 #ifdef DEBUG
-			g_message ("%s: (%d) Adding %d refs to handle 0x%x",
-				   __func__, getpid(), handle->ref,
+			g_message ("%s: (%d) Updating timstamp of handle 0x%x",
+				   __func__, getpid(),
 				   handle->u.shared.offset);
 #endif
 
-			InterlockedExchangeAdd (&shared_meta->ref, handle->ref);
+			InterlockedExchange (&shared_meta->timestamp, now);
 		} else if (handle->type == WAPI_HANDLE_FILE) {
 			struct _WapiHandle_file *file_handle = &handle->u.file;
 			
@@ -1705,7 +1706,7 @@ void _wapi_handle_update_refs (void)
 				   (file_handle->share_info - &_wapi_fileshare_layout->share_info[0]) / sizeof(struct _WapiFileShare));
 #endif
 
-			InterlockedIncrement (&file_handle->share_info->handle_refs);
+			InterlockedExchange (&file_handle->share_info->timestamp, now);
 		}
 	}
 }
