@@ -1061,12 +1061,11 @@ get_escaped_name (const char *name)
 
 	g_assert (key_table);
 
-	if (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0)
+	if (strlen (name) == 0)
 		return g_strdup (name);
 
-	s = name;
-	while (s++) {
-		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' || *s == '?' || *s == '.')
+	for (s = name; *s; s++) {
+		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' || *s == '?' || *s == '.' || *s == 0)
 			continue;
 		return g_strdup_printf ("'%s'", name);
 	}
