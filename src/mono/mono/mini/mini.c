@@ -6432,6 +6432,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	mono_jit_stats.basic_blocks += cfg->num_bblocks;
 	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
 
+	if (cfg->num_varinfo > 2000) {
+		/* 
+		 * we disable some optimizations if there are too many variables
+		 * because JIT time may become too expensive. The actual number needs 
+		 * to be tweaked and eventually the non-linear algorithms should be fixed.
+		 */
+		cfg->opt &= ~ (MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP);
+		cfg->disable_ssa = TRUE;
+	}
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
 	/* Depth-first ordering on basic blocks */
