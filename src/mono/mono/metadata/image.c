@@ -836,10 +836,10 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image2 = g_hash_table_lookup (loaded_images_hash, fname);
 	if (image2) {
 		/* Somebody else beat us to it */
+		image2->ref_count ++;
 		LeaveCriticalSection (&images_mutex);
 		mono_image_close (image);
 
-		image2->ref_count ++;
 		return image2;
 	}
 	g_hash_table_insert (loaded_images_hash, image->name, image);
