@@ -25,9 +25,9 @@ guint64 mono_read64 (const unsigned char *x);
 
 #else
 
-#define read16(x) GUINT16_FROM_LE (*((guint16 *) (x)))
-#define read32(x) GUINT32_FROM_LE (*((guint32 *) (x)))
-#define read64(x) GUINT64_FROM_LE (*((guint64 *) (x)))
+#define read16(x) GUINT16_FROM_LE (*((const guint16 *) (x)))
+#define read32(x) GUINT32_FROM_LE (*((const guint32 *) (x)))
+#define read64(x) GUINT64_FROM_LE (*((const guint64 *) (x)))
 
 #endif
 

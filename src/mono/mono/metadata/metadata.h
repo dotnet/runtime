@@ -103,28 +103,28 @@ int mono_metadata_compute_size (MonoImage   *meta,
 /*
  *
  */
-char          *mono_metadata_locate        (MonoImage *meta, int table, int idx);
-char          *mono_metadata_locate_token  (MonoImage *meta, guint32 token);
+const char    *mono_metadata_locate        (MonoImage *meta, int table, int idx);
+const char    *mono_metadata_locate_token  (MonoImage *meta, guint32 token);
 					   
-const char    *mono_metadata_string_heap   (MonoImage *meta, guint32 index);
-const char    *mono_metadata_blob_heap     (MonoImage *meta, guint32 index);
-const char    *mono_metadata_user_string   (MonoImage *meta, guint32 index);
+const char    *mono_metadata_string_heap   (MonoImage *meta, guint32 table_index);
+const char    *mono_metadata_blob_heap     (MonoImage *meta, guint32 table_index);
+const char    *mono_metadata_user_string   (MonoImage *meta, guint32 table_index);
 
-guint32 mono_metadata_typedef_from_field  (MonoImage *meta, guint32 index);
-guint32 mono_metadata_typedef_from_method (MonoImage *meta, guint32 index);
-guint32 mono_metadata_nested_in_typedef   (MonoImage *meta, guint32 index);
-guint32 mono_metadata_nesting_typedef     (MonoImage *meta, guint32 index);
+guint32 mono_metadata_typedef_from_field  (MonoImage *meta, guint32 table_index);
+guint32 mono_metadata_typedef_from_method (MonoImage *meta, guint32 table_index);
+guint32 mono_metadata_nested_in_typedef   (MonoImage *meta, guint32 table_index);
+guint32 mono_metadata_nesting_typedef     (MonoImage *meta, guint32 table_index);
 
-MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count);
+MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 table_index, guint *count);
 
-guint32     mono_metadata_events_from_typedef     (MonoImage *meta, guint32 index, guint *end_idx);
-guint32     mono_metadata_methods_from_event      (MonoImage *meta, guint32 index, guint *end);
-guint32     mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end);
-guint32     mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end);
-guint32     mono_metadata_packing_from_typedef    (MonoImage *meta, guint32 index, guint32 *packing, guint32 *size);
+guint32     mono_metadata_events_from_typedef     (MonoImage *meta, guint32 table_index, guint *end_idx);
+guint32     mono_metadata_methods_from_event      (MonoImage *meta, guint32 table_index, guint *end);
+guint32     mono_metadata_properties_from_typedef (MonoImage *meta, guint32 table_index, guint *end);
+guint32     mono_metadata_methods_from_property   (MonoImage *meta, guint32 table_index, guint *end);
+guint32     mono_metadata_packing_from_typedef    (MonoImage *meta, guint32 table_index, guint32 *packing, guint32 *size);
 
 void        mono_metadata_field_info (MonoImage *meta, 
-				      guint32       index,
+				      guint32       table_index,
 				      guint32      *offset,
 				      const char  **rva,
 				      const char  **marshal_info);

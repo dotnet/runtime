@@ -691,7 +691,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
  * Returns a pointer to the @idx element in the metadata table
  * whose code is @table.
  */
-char *
+const char *
 mono_metadata_locate (MonoImage *meta, int table, int idx)
 {
 	/* idx == 0 refers always to NULL */
@@ -700,7 +700,7 @@ mono_metadata_locate (MonoImage *meta, int table, int idx)
 	return meta->tables [table].base + (meta->tables [table].row_size * (idx - 1));
 }
 
-char *
+const char *
 mono_metadata_locate_token (MonoImage *meta, guint32 token)
 {
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
@@ -883,7 +883,7 @@ mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 guint32
 mono_metadata_decode_value (const char *_ptr, const char **rptr)
 {
-	const unsigned char *ptr = (unsigned char *) _ptr;
+	const unsigned char *ptr = (const unsigned char *) _ptr;
 	unsigned char b = *ptr;
 	guint32 len;
 	
@@ -1024,15 +1024,15 @@ static GHashTable *type_cache = NULL;
 static guint
 mono_type_hash (gconstpointer data)
 {
-	MonoType *type = (MonoType *) data;
+	const MonoType *type = (const MonoType *) data;
 	return type->type | (type->byref << 8) | (type->attrs << 9);
 }
 
 static gint
 mono_type_equal (gconstpointer ka, gconstpointer kb)
 {
-	MonoType *a = (MonoType *) ka;
-	MonoType *b = (MonoType *) kb;
+	const MonoType *a = (const MonoType *) ka;
+	const MonoType *b = (const MonoType *) kb;
 	
 	if (a->type != b->type || a->byref != b->byref || a->attrs != b->attrs || a->pinned != b->pinned)
 		return 0;
@@ -1389,7 +1389,7 @@ MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
 	MonoMethodHeader *mh;
-	unsigned char flags = *(unsigned char *) ptr;
+	unsigned char flags = *(const unsigned char *) ptr;
 	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 	guint16 fat_flags;
 	guint32 local_var_sig_tok, max_stack, code_size, init_locals;
@@ -1454,21 +1454,21 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 		       
 	if (local_var_sig_tok) {
 		MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
-		const char *ptr;
+		const char *locals_ptr;
 		guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 		int len=0, i, bsize;
 
 		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
-		ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
-		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
-		if (*ptr != 0x07)
+		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
+		bsize = mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
+		if (*locals_ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
-		ptr++;
-		len = mono_metadata_decode_value (ptr, &ptr);
+		locals_ptr++;
+		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
 		mh = g_malloc0 (sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i)
-			mh->locals [i] = mono_metadata_parse_type (m, MONO_PARSE_LOCAL, 0, ptr, &ptr);
+			mh->locals [i] = mono_metadata_parse_type (m, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
 	} else {
 		mh = g_new0 (MonoMethodHeader, 1);
 	}
@@ -1595,7 +1595,7 @@ static int
 typedef_locator (const void *a, const void *b)
 {
 	locator_t *loc = (locator_t *) a;
-	char *bb = (char *) b;
+	const char *bb = (const char *) b;
 	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
 	guint32 col, col_next;
 
@@ -1625,7 +1625,7 @@ static int
 table_locator (const void *a, const void *b)
 {
 	locator_t *loc = (locator_t *) a;
-	char *bb = (char *) b;
+	const char *bb = (const char *) b;
 	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
 	guint32 col;
 	

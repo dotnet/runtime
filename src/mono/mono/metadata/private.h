@@ -64,7 +64,7 @@ enum {
 
 typedef struct {
 	int   code;
-	char *def;
+	const char *def;
 } MonoMetaTable;
 
 const char *mono_meta_table_name (int table);

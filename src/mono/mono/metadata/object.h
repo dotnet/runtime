@@ -166,7 +166,7 @@ MonoString*
 mono_string_new_utf16       (MonoDomain *domain, const guint16 *text, gint32 len);
 
 MonoString*
-mono_ldstr                  (MonoDomain *domain, MonoImage *image, guint32 index);
+mono_ldstr                  (MonoDomain *domain, MonoImage *image, guint32 str_index);
 
 MonoString*
 mono_string_is_interned     (MonoString *str);
