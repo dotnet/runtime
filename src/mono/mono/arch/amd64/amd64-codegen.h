@@ -33,6 +33,7 @@ typedef enum {
 	AMD64_R13 = 13,
 	AMD64_R14 = 14,
 	AMD64_R15 = 15,
+	AMD64_RIP = 16,
 	AMD64_NREG
 } AMD64_Reg_No;
 
@@ -256,7 +257,9 @@ typedef union {
 		case 2: case 4: case 8: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
-		x86_mem_emit ((inst), (reg), (mem));	\
+        x86_address_byte ((inst), 0, (reg), 4); \
+        x86_address_byte ((inst), 0, 4, 5); \
+        x86_imm_emit32 ((inst), (mem)); \
 	} while (0)
 
 #define amd64_mov_reg_membase(inst,reg,basereg,disp,size)	\
@@ -341,11 +344,20 @@ typedef union {
 		}	\
 	} while (0)
 
+#define amd64_membase_emit(inst,reg,basereg,disp) do { \
+	if ((basereg) == AMD64_RIP) { \
+        x86_address_byte ((inst), 0, (reg)&0x7, 5); \
+        x86_imm_emit32 ((inst), (disp)); \
+    } \
+	else \
+		x86_membase_emit ((inst),(reg)&0x7, (basereg)&0x7, (disp)); \
+} while (0)
+
 #define amd64_lea_membase(inst,reg,basereg,disp)	\
 	do {	\
 		amd64_emit_rex(inst, 8, (reg), 0, (basereg)); \
 		*(inst)++ = (unsigned char)0x8d;	\
-		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
+		amd64_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
 /* Instruction are implicitly 64-bits so don't generate REX for just the size. */
@@ -467,6 +479,12 @@ typedef union {
 
 #define amd64_padding_size(inst,size) \
     do { if (size == 1) x86_padding ((inst),(size)); else { amd64_emit_rex ((inst),8,0,0,0); x86_padding((inst),(size) - 1); } } while (0)
+
+#define amd64_fld_membase_size(inst,basereg,disp,is_double,size) do { \
+	amd64_emit_rex ((inst),0,0,0,(basereg)); \
+    *(inst)++ = (is_double) ? (unsigned char)0xdd : (unsigned char)0xd9;	\
+	amd64_membase_emit ((inst), 0, (basereg), (disp));	\
+} while (0)
     
 /* Generated from x86-codegen.h */
 
@@ -579,7 +597,7 @@ typedef union {
 #define amd64_fucomi_size(inst,index,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fucomi((inst),(index)); } while (0)
 #define amd64_fucomip_size(inst,index,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fucomip((inst),(index)); } while (0)
 #define amd64_fld_size(inst,mem,is_double,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fld((inst),(mem),(is_double)); } while (0)
-#define amd64_fld_membase_size(inst,basereg,disp,is_double,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); x86_fld_membase((inst),((basereg)&0x7),(disp),(is_double)); } while (0)
+//#define amd64_fld_membase_size(inst,basereg,disp,is_double,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); x86_fld_membase((inst),((basereg)&0x7),(disp),(is_double)); } while (0)
 #define amd64_fld80_mem_size(inst,mem,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fld80_mem((inst),(mem)); } while (0)
 #define amd64_fld80_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_fld80_membase((inst),((basereg)&0x7),(disp)); } while (0)
 #define amd64_fild_size(inst,mem,is_long,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_fild((inst),(mem),(is_long)); } while (0)
