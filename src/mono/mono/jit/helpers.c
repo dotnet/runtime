@@ -469,6 +469,7 @@ mono_map_call_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY: 
+	case MONO_TYPE_ARRAY: 
 		*svt = VAL_POINTER;
 #if SIZEOF_VOID_P == 8
 		return MB_TERM_CALL_I8;
