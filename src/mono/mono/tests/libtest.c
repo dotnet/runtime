@@ -498,6 +498,27 @@ get_sp (void)
 }
 
 STDCALL int
+reliable_delegate (int a)
+{
+	return a;
+}
+
+/*
+ * Checks whether get_sp() works as expected. It doesn't work with gcc-2.95.3 on linux.
+ */
+static gboolean
+is_get_sp_reliable (void)
+{
+	void *sp1, *sp2;
+
+	reliable_delegate(1);
+	sp1 = get_sp();
+	reliable_delegate(1);
+	sp2 = get_sp();
+	return sp1 == sp2;
+} 
+
+STDCALL int
 mono_test_marshal_delegate (SimpleDelegate delegate)
 {
 	void *sp1, *sp2;
@@ -507,7 +528,8 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	sp1 = get_sp ();
 	delegate (2);
 	sp2 = get_sp ();
-	g_assert (sp1 == sp2);
+	if (is_get_sp_reliable())
+		g_assert (sp1 == sp2);
 
 	return delegate (2);
 }
