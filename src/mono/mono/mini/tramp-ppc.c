@@ -212,39 +212,6 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	o += offset;
 	*((gpointer *)o) = addr;
 	return addr;
-	/* Finally, replace the method-specific trampoline code (which called
-	the generic trampoline code) with a fragment that calls directly the
-	compiled method */
-	
-	start = o;
-#if 1
-	/* FIXME: make the patching thread safe */
-	ppc_b (o, 0);
-	ppc_patch (o - 4, addr);
-	/*g_print ("patching at %p to %p\n", o, addr);*/
-#else
-	ppc_stwu (o, ppc_r1, -16, ppc_r1);
-	ppc_mflr (o, ppc_r0);
-	ppc_stw  (o, ppc_r31, 12, ppc_r1);
-	ppc_stw  (o, ppc_r0,  20, ppc_r1);
-	ppc_mr   (o, ppc_r31, ppc_r1);
-	
-	ppc_lis  (o, ppc_r0, (guint32) addr >> 16);
-	ppc_ori  (o, ppc_r0, ppc_r0, (guint32) addr & 0xffff);
-	ppc_mtlr (o, ppc_r0);
-	ppc_blrl (o);
-	
-	ppc_lwz  (o, ppc_r11, 0,  ppc_r1);
-	ppc_lwz  (o, ppc_r0,  4,  ppc_r11);
-	ppc_mtlr (o, ppc_r0);
-	ppc_lwz  (o, ppc_r31, -4, ppc_r11);
-	ppc_mr   (o, ppc_r1, ppc_r11);
-	ppc_blr  (o);
-#endif	
-	mono_arch_flush_icache (start, o - start);
-	g_assert(o - start < METHOD_TRAMPOLINE_SIZE);
-	
-	return addr;
 }
 
 static void
@@ -475,7 +442,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		return, we just call the compiled code, so
 		that, when it finishes, the method returns here. */
 	
-#if 1
 		/* Restore stack pointer, r31, LR and jump to the code */
 		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
 		//ppc_lwz  (buf, ppc_r31, -4, ppc_r1);
@@ -483,19 +449,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_mtlr (buf, ppc_r11);
 		ppc_mtctr (buf, ppc_r0);
 		ppc_bcctr (buf, 20, 0);
-#else
-		ppc_mtlr (buf, ppc_r0);
-		ppc_blrl (buf);
-		
-		/* Restore stack pointer, r31, LR and return to caller */
-		ppc_lwz  (buf, ppc_r11,  0, ppc_r1);
-		ppc_lwz  (buf, ppc_r31, -4, ppc_r11);
-		ppc_mr   (buf, ppc_r1, ppc_r11);
-		ppc_lwz  (buf, ppc_r0, 4, ppc_r1);
-		ppc_mtlr (buf, ppc_r0);
-		ppc_blr  (buf);	
-#endif
-		
 		/* Flush instruction cache, since we've generated code */
 		mono_arch_flush_icache (code, buf - code);
 	
@@ -642,210 +595,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	return code;
 }
 
-#if 0
-
-/**
- * x86_magic_trampoline:
- * @eax: saved x86 register 
- * @ecx: saved x86 register 
- * @edx: saved x86 register 
- * @esi: saved x86 register 
- * @edi: saved x86 register 
- * @ebx: saved x86 register
- * @code: pointer into caller code
- * @method: the method to translate
- *
- * This method is called by the trampoline functions for virtual
- * methods. It inspects the caller code to find the address of the
- * vtable slot, then calls the JIT compiler and writes the address
- * of the compiled method back to the vtable. All virtual methods 
- * are called with: x86_call_membase (inst, basereg, disp). We always
- * use 32 bit displacement to ensure that the length of the call 
- * instruction is 6 bytes. We need to get the value of the basereg 
- * and the constant displacement.
- */
-static gpointer
-x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-		      int ebx, guint8 *code, MonoMethod *m)
-{
-	guint8 reg;
-	gint32 disp;
-	char *o;
-	gpointer addr;
-
-	addr = mono_compile_method (m);
-	g_assert (addr);
-
-	/* go to the start of the call instruction
-	 *
-	 * address_byte = (m << 6) | (o << 3) | reg
-	 * call opcode: 0xff address_byte displacement
-	 * 0xff m=1,o=2 imm8
-	 * 0xff m=2,o=2 imm32
-	 */
-	code -= 6;
-	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
-		reg = code [4] & 0x07;
-		disp = (signed char)code [5];
-	} else {
-		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
-			reg = code [1] & 0x07;
-			disp = *((gint32*)(code + 2));
-		} else if ((code [1] == 0xe8)) {
-			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
-			return addr;
-		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
-			/*
-			 * This is a interface call: should check the above code can't catch it earlier 
-			 * 8b 40 30   mov    0x30(%eax),%eax
-			 * ff 10      call   *(%eax)
-			 */
-			disp = 0;
-			reg = code [5] & 0x07;
-		} else {
-			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
-			g_assert_not_reached ();
-		}
-	}
-
-	switch (reg) {
-	case X86_EAX:
-		o = (gpointer)eax;
-		break;
-	case X86_EDX:
-		o = (gpointer)edx;
-		break;
-	case X86_ECX:
-		o = (gpointer)ecx;
-		break;
-	case X86_ESI:
-		o = (gpointer)esi;
-		break;
-	case X86_EDI:
-		o = (gpointer)edi;
-		break;
-	case X86_EBX:
-		o = (gpointer)ebx;
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-	o += disp;
-
-	if (m->klass->valuetype) {
-		return *((gpointer *)o) = get_unbox_trampoline (m, addr);
-	} else {
-		return *((gpointer *)o) = addr;
-	}
-}
-
-/**
- * mono_arch_create_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for virtual methods. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. I also replaces the
- * corresponding vtable entry (see x86_magic_trampoline).
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_jit_trampoline (MonoMethod *method)
-{
-	guint8 *code, *buf;
-
-	/* previously created trampoline code */
-	if (method->info)
-		return method->info;
-
-	if (!mono_generic_trampoline_code) {
-		mono_generic_trampoline_code = buf = g_malloc (256);
-		/* save caller save regs because we need to do a call */ 
-		x86_push_reg (buf, X86_EDX);
-		x86_push_reg (buf, X86_EAX);
-		x86_push_reg (buf, X86_ECX);
-
-		/* save LMF begin */
-
-		/* save the IP (caller ip) */
-		x86_push_membase (buf, X86_ESP, 16);
-
-		x86_push_reg (buf, X86_EBX);
-		x86_push_reg (buf, X86_EDI);
-		x86_push_reg (buf, X86_ESI);
-		x86_push_reg (buf, X86_EBP);
-
-		/* save method info */
-		x86_push_membase (buf, X86_ESP, 32);
-		/* get the address of lmf for the current thread */
-		x86_call_code (buf, mono_get_lmf_addr);
-		/* push lmf */
-		x86_push_reg (buf, X86_EAX); 
-		/* push *lfm (previous_lmf) */
-		x86_push_membase (buf, X86_EAX, 0);
-		/* *(lmf) = ESP */
-		x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
-		/* save LFM end */
-
-		/* push the method info */
-		x86_push_membase (buf, X86_ESP, 44);
-		/* push the return address onto the stack */
-		x86_push_membase (buf, X86_ESP, 52);
-
-		/* save all register values */
-		x86_push_reg (buf, X86_EBX);
-		x86_push_reg (buf, X86_EDI);
-		x86_push_reg (buf, X86_ESI);
-		x86_push_membase (buf, X86_ESP, 64); /* EDX */
-		x86_push_membase (buf, X86_ESP, 64); /* ECX */
-		x86_push_membase (buf, X86_ESP, 64); /* EAX */
-
-		x86_call_code (buf, x86_magic_trampoline);
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
-
-		/* restore LMF start */
-		/* ebx = previous_lmf */
-		x86_pop_reg (buf, X86_EBX);
-		/* edi = lmf */
-		x86_pop_reg (buf, X86_EDI);
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
-		/* discard method info */
-		x86_pop_reg (buf, X86_ESI);
-		/* restore caller saved regs */
-		x86_pop_reg (buf, X86_EBP);
-		x86_pop_reg (buf, X86_ESI);
-		x86_pop_reg (buf, X86_EDI);
-		x86_pop_reg (buf, X86_EBX);
-		/* discard save IP */
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
-		/* restore LMF end */
-
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
-
-		/* call the compiled method */
-		x86_jump_reg (buf, X86_EAX);
-
-		g_assert ((buf - mono_generic_trampoline_code) <= 256);
-	}
-
-	code = buf = g_malloc (16);
-	x86_push_imm (buf, method);
-	x86_jump_code (buf, mono_generic_trampoline_code);
-	g_assert ((buf - code) <= 16);
-
-	/* store trampoline address */
-	method->info = code;
-
-	//mono_jit_stats.method_trampolines++;
-
-	return code;
-}
-
-#endif
 
 /**
  * mono_arch_create_class_init_trampoline:
@@ -875,7 +624,6 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
 	mono_domain_unlock (vtable->domain);
 
-#if 1
 	ppc_mflr (buf, ppc_r4);
 	ppc_stw  (buf, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_sp);
 	ppc_stwu (buf, ppc_sp, -32, ppc_sp);
@@ -890,30 +638,6 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	ppc_mtlr (buf, ppc_r0);
 	ppc_addic (buf, ppc_sp, ppc_sp, 32);
 	ppc_blr (buf);
-#else
-	/* Save r11. There's nothing magic in the '44', its just an arbitrary
-	position - see above */
-	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);
-	
-	/* Now save LR - we'll overwrite it now */
-	ppc_mflr (buf, ppc_r11);
-	ppc_stw  (buf, ppc_r11, 4, ppc_r1);
-	ppc_stw  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
-	
-	/* Prepare the jump to the generic trampoline code.*/
-	ppc_lis  (buf, ppc_r11, (guint32) tramp >> 16);
-	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) tramp & 0xffff);
-	ppc_mtlr (buf, ppc_r11);
-	
-	/* And finally put 'vtable' in r11 and fly! */
-	ppc_lis  (buf, ppc_r11, (guint32) vtable >> 16);
-	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) vtable & 0xffff);
-	ppc_blrl  (buf);
-	ppc_lwz (buf, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_r1);
-	ppc_mtlr (buf, ppc_r0);
-	ppc_blr (buf);
-
-#endif
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
