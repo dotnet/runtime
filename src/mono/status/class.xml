@@ -4513,4 +4513,40 @@
 			<maintainer>jason@injektilo.org</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Security.Cryptography.TripleDES">
+		<last-activity>Jan-16-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>john.giffin@xor.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.Cryptography.TripleDESServiceProvider">
+		<last-activity>Jan-16-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>john.giffin@xor.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Runtime.Serialization.Formatters.BinaryFormatter">
+		<last-activity>Jan-16-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>kbottner@istation.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Runtime.Serialization.Formatters.SoapFormamter">
+		<last-activity>Jan-16-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>kbottner@istation.com</maintainer>
+		</maintainers>
+	</class>
 </classes>
