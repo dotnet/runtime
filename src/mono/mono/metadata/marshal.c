@@ -4845,6 +4845,8 @@ mono_marshal_alloc (gpointer size)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	if (size == NULL)
+		size = (gpointer)4;
 	return g_try_malloc ((gulong)size);
 }
 
