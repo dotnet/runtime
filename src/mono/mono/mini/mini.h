@@ -440,6 +440,7 @@ typedef struct {
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
 	gpointer         debug_info;
+	guint16          *intvars;
 } MonoCompile;
 
 typedef enum {
@@ -515,7 +516,7 @@ enum {
 #define OP_PCONV_TO_OVF_I1 CEE_CONV_OVF_I1
 #define OP_PCEQ CEE_CEQ
 
-enum {
+typedef enum {
 	STACK_INV,
 	STACK_I4,
 	STACK_I8,
@@ -525,7 +526,7 @@ enum {
 	STACK_OBJ,
 	STACK_VTYPE,
 	STACK_MAX
-};
+} MonoStackType;
 
 typedef struct {
 	union {

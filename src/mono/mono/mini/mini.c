@@ -1433,6 +1433,39 @@ mono_add_varcopy_to_end (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest
 }
 
 /*
+ * We try to share variables when possible
+ */
+static MonoInst *
+mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
+{
+	MonoInst *res;
+	int pos, vnum;
+
+	/* inlining can result in deeper stacks */ 
+	if (slot >= ((MonoMethodNormal *)cfg->method)->header->max_stack)
+		return mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+
+	pos = ins->type - 1 + slot * STACK_MAX;
+
+	switch (ins->type) {
+	case STACK_I4:
+	case STACK_I8:
+	case STACK_R8:
+	case STACK_PTR:
+	case STACK_MP:
+	case STACK_OBJ:
+		if ((vnum = cfg->intvars [pos]))
+			return cfg->varinfo [vnum];
+		res = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+		cfg->intvars [pos] = res->inst_c0;
+		break;
+	default:
+		res = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+	}
+	return res;
+}
+
+/*
  * This function is called to handle items that are left on the evaluation stack
  * at basic block boundaries. What happens is that we save the values to local variables
  * and we reload them later when first entering the target basic block (with the
@@ -1467,12 +1500,13 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
-				/* 
-				 * dietmar suggests that we can reuse temps already allocated 
-				 * for this purpouse, if they occupy the same stack slot and if 
-				 * they are of the same type.
-				 */
+#if 1
+				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
+				 * stack slot and if they are of the same type. */
+				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
+#else
 				bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
+#endif
 			}
 		}
 	}
@@ -5811,6 +5845,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	cfg->bb_hash = g_hash_table_new (g_direct_hash, NULL);
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
+	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * 
+					    ((MonoMethodNormal *)method)->header->max_stack);
 
 	/*
 	 * create MonoInst* which represents arguments and local variables
