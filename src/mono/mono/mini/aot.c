@@ -37,11 +37,13 @@
 
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
+#elif defined(__ppc__) && defined(__MACH__)
+#define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"
 #endif
 
-#if defined(sparc)
+#if defined(sparc) || defined(__ppc__)
 #define AS_STRING_DIRECTIVE ".asciz"
 #else
 /* GNU as */
@@ -120,7 +122,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *aot_version = NULL;
 	char *opt_flags = NULL;
 
-	aot_name = g_strdup_printf ("%s.so", assembly->image->name);
+	aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
 
 	assembly->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
 
@@ -642,6 +644,9 @@ emit_section_change (FILE *fp, const char *section_name, int subsection_index)
 #if defined(sparc)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (fp, ".section \"%s\"\n", section_name);
+#elif defined(__ppc__) && defined(__MACH__)
+	/* This needs to be made more precise on mach. */
+	fprintf (fp, "%s\n", subsection_index == 0 ? ".text" : ".data");
 #else
 	fprintf (fp, "%s %d\n", section_name, subsection_index);
 #endif
@@ -717,6 +722,27 @@ emit_image_index (MonoAotCompile *cfg, MonoImage *image)
 	fprintf (cfg->fp, "\t.long %d\n", image_index);
 }
 
+#if defined(__ppc__) && defined(__MACH__)
+static int
+ilog2(register int value)
+{
+    int count = -1;
+    while (value & ~0xf) count += 4, value >>= 4;
+    while (value) count++, value >>= 1;
+    return count;
+}
+#endif
+
+static void emit_alignment(FILE *fp, int size)
+{
+#if defined(__ppc__) && defined(__MACH__)
+	// the mach-o assembler specifies alignments as powers of 2.
+	fprintf (fp, "\t.align %d\t; ilog2\n", ilog2(size));
+#else
+	fprintf (fp, "\t.align %d\n", size);
+#endif
+}
+
 static char *
 cond_emit_klass_label (MonoAotCompile *cfg, MonoClass *klass)
 {
@@ -730,7 +756,8 @@ cond_emit_klass_label (MonoAotCompile *cfg, MonoClass *klass)
 		el = cond_emit_klass_label (cfg, klass->element_class);
 	}
 	
-	fprintf (cfg->fp, "\t.align %d\n", sizeof (gpointer));
+	emit_alignment(cfg->fp, sizeof (gpointer));
+
 	l1 = g_strdup_printf ("klass_p_%08x_%p", klass->type_token, klass);
 	fprintf (cfg->fp, "%s:\n", l1);
 	fprintf (cfg->fp, "\t.long 0x%08x\n", klass->type_token);
@@ -757,7 +784,7 @@ cond_emit_field_label (MonoAotCompile *cfg, MonoJumpInfo *patch_info)
 		return l1;
 
 	l2 = cond_emit_klass_label (cfg, field->parent);
-	fprintf (cfg->fp, "\t.align %d\n", sizeof (gpointer));
+	emit_alignment(cfg->fp, sizeof (gpointer));
 	token = mono_get_field_token (field);
 	g_assert (token);
 	l1 = g_strdup_printf ("klass_p_%08x_%p", token, field);
@@ -807,11 +834,11 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_section_change (tmpfp, ".text", 0);
 	mname = g_strdup_printf ("m_%x", mono_metadata_token_index (method->token));
-	fprintf (tmpfp, "\t.align %d\n", func_alignment);
+	emit_alignment(tmpfp, func_alignment);
 	fprintf (tmpfp, ".globl %s\n", mname);
 #if defined(sparc)
 	fprintf (tmpfp, "\t.type %s,#function\n", mname);
-#else
+#elif !(defined(__ppc__) && defined(__MACH__))
 	fprintf (tmpfp, "\t.type %s,@function\n", mname);
 #endif
 	fprintf (tmpfp, "%s:\n", mname);
@@ -839,7 +866,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			gpointer *table = (gpointer *)patch_info->data.target;
 			int k;
 
-			fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
+			emit_alignment(tmpfp, sizeof (gpointer));
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
 			fprintf (tmpfp, "\t.long %d\n", patch_info->table_size);
 			
@@ -892,7 +919,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			g_assert (image_index < 256);
 			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
 
-			fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
+			emit_alignment(tmpfp, sizeof (gpointer));
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
 			fprintf (tmpfp, "\t.long %d\n", patch_info->data.method->wrapper_type);
 			fprintf (tmpfp, "\t.long %d\n", (image_index << 24) + (mono_metadata_token_index (token)));
@@ -924,20 +951,20 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_R4:
-			fprintf (tmpfp, "\t.align 8\n");
+			emit_alignment(tmpfp, 8);
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
 			fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));	
 			j++;
 			break;
 		case MONO_PATCH_INFO_R8:
-			fprintf (tmpfp, "\t.align 8\n");
+			emit_alignment(tmpfp, 8);
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
 			fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));
 			fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target + 1));
 			j++;
 			break;
 		case MONO_PATCH_INFO_METHOD_REL:
-			fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
+			emit_alignment(tmpfp, sizeof (gpointer));
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
 			fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.offset);
 			j++;
@@ -954,7 +981,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		case MONO_PATCH_INFO_LDSTR:
 		case MONO_PATCH_INFO_LDTOKEN:
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-			fprintf (tmpfp, "\t.align 8\n");
+			emit_alignment(tmpfp, 8);
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
 			fprintf (tmpfp, "\t.long 0x%08x\n", get_image_index (acfg, patch_info->data.token->image));
 			fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.token->token);
@@ -967,7 +994,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	fprintf (tmpfp, ".globl %s_p\n", mname);
-	fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
+	emit_alignment(tmpfp, sizeof (gpointer));
 	fprintf (tmpfp, "%s_p:\n", mname);
 
 	fprintf (tmpfp, "\t.long %d\n", cfg->code_len);
@@ -1031,14 +1058,14 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 				fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + (offset >> 8));
 				fprintf (tmpfp, "\t.byte %d\n", offset & ((1 << 8) - 1));
 #if defined(sparc)
-				fprintf (tmpfp, "\t.align 4\n");
+				emit_alignment(tmpfp, 4);
 #endif
 			}
 			else {
 				fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + 3);
 				fprintf (tmpfp, "\t.byte %d\n", 255);
 #if defined(sparc)
-				fprintf (tmpfp, "\t.align 4\n");
+				emit_alignment(tmpfp, 4);
 #endif
 				fprintf (tmpfp, "\t.long %d\n", offset);
 			}
@@ -1244,7 +1271,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	symbol = g_strdup_printf ("mono_icall_table");
 	emit_section_change (tmpfp, ".text", 1);
 	fprintf (tmpfp, ".globl %s\n", symbol);
-	fprintf (tmpfp, "\t.align 8\n");
+	emit_alignment(tmpfp, 8);
 	fprintf (tmpfp, "%s:\n", symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->icall_table->len);
 	for (i = 0; i < acfg->icall_table->len; i++)
@@ -1255,7 +1282,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	symbol = g_strdup_printf ("mono_image_table");
 	emit_section_change (tmpfp, ".text", 1);
 	fprintf (tmpfp, ".globl %s\n", symbol);
-	fprintf (tmpfp, "\t.align 8\n");
+	emit_alignment(tmpfp, 8);
 	fprintf (tmpfp, "%s:\n", symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->image_table->len);
 	for (i = 0; i < acfg->image_table->len; i++)
@@ -1270,7 +1297,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	symbol = g_strdup_printf ("mono_methods_present_table");
 	emit_section_change (tmpfp, ".text", 1);
 	fprintf (tmpfp, ".globl %s\n", symbol);
-	fprintf (tmpfp, "\t.align 8\n");
+	emit_alignment(tmpfp, 8);
 	fprintf (tmpfp, "%s:\n", symbol);
 	{
 		guint32 k, nrows;
@@ -1300,6 +1327,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	g_free (com);
 #if defined(sparc)
 	com = g_strdup_printf ("ld -shared -G -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+#elif defined(__ppc__) && defined(__MACH__)
+	com = g_strdup_printf ("ld -dynamic -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
 #else
 	com = g_strdup_printf ("ld -shared -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
 #endif
