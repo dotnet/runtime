@@ -201,6 +201,12 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
+	    <param name="Name" value="Security API calls"/>
+	    <param name="Local" value="deploy/mono-api-security.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
 	    <param name="Name" value="Portable Windows Layer"/>
 	    <param name="Local" value="deploy/mono-api-wapi.html"/>
 	  </object>

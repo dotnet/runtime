@@ -1,0 +1,7 @@
+* Generate a table of contents at the begining of each page for APIs.
+
+* Fill in with a concept guide
+
+* Install documentation into monodoc's standard location.
+
+* Add support for inserting "api:" nodes into the index in the Monodoc XHTML provider.

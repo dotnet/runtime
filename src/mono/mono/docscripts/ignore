@@ -80,6 +80,8 @@ mono_test_marshal_unicode_string_array
 mono_test_puts_static
 mono_test_ref_vtype
 mono_test_return_string
+mono_test_marshal_blittable_struct_delegate
+mono_test_marshal_return_enum_delegate
 mono_test_return_vtype
 mono_test_split_double_arguments
 mono_test_stdcall_name_mangling
@@ -107,6 +109,17 @@ mono_return_ss
 #
 mono_jit_walk_stack
 mono_init_icall
+mono_eval_cond_branch
+mini_emit_aotconst
+mono_add_ins_to_end
+mono_type_from_stack_type
+mono_perform_ssapre">mono_perform_ssapre
+mono_get_shared_generic_class
+mono_dynamic_stream_reset">mono_dynamic_stream_reset
+mono_allocate_stack_slots
+mono_get_inflated_method
+mono_debug_read_method
+
 #
 # Most init/cleanup routines are internally called, so they do not need to be
 # documented
@@ -132,7 +145,7 @@ mono_network_init
 mono_network_cleanup
 mono_raw_buffer_init
 mono_debugger_cleanup
-api:mono_thread_pool_cleanup
+mono_thread_pool_cleanup
 mono_gc_cleanup
 mono_interp_init
 mono_context_init
@@ -140,3 +153,9 @@ mono_gc_init
 mono_debug_cleanup
 mono_image_module_basic_init
 mono_thread_pool_cleanup
+mono_icall_cleanup
+mono_icall_init
+mono_monitor_init
+mono_install_init_vtable
+mono_x86_tramp_init">mono_x86_tramp_init
+mono_install_get_cached_class_info
