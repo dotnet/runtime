@@ -2,11 +2,6 @@
 
 ** Summary
 
-	<em>
-	[This documentation is in progress.  Comments to
-	<a href="mailto:jbarn@httcb.net">jbarn@httcb.net</a>.]
-	</em>
-	
 	While using inline XML tags to document classes is certainly
 	convenient, properly verbose documentation quickly overwhelms
 	the code, making the source quite difficult to read.  Furthermore,

@@ -103,6 +103,41 @@
 	himself in the lands of the C runtime. His work is invaluable for keeping
 	Mono on the right track through the daily changes in the codebase.
 
+@item Looking for volunteers
+
+	We are looking for volunteers to help complete various pieces
+	of Mono and help move the project forward, we need
+	contributions to:
+
+	<ul>
+		* More tests to the existing class libraries.
+	
+		* Finish existing class libraries, check our <a
+		href="class-status.html">class status</a> pages to see
+		all the missing things.  There are open tasks all over
+		the place: XML, Database access, enterprise services,
+		configuration, ASP.NET, Drawing APIs, and more.
+
+		* Since we have now ASP.NET running, we would like to 
+		create an ASP.NET application to maintain our class
+		library documentation.
+
+		We have some special needs (read them <a
+	 	href="classlib-doc.html">here</a>).     There is a
+		prototype written using Windows.Forms, but we believe
+		it will be faster to have this done using ASP.NET (and
+		it is also a nice way of stress testing it).
+
+		* Support for the VB runtime: we need contributions
+		to make our VB runtime mature enough to host
+		applications compiled with the VB.NET to run with
+		Mono.
+
+		* We need people to help write the documentation: you
+		can start editing our XML files by hand, and once we
+		have the ASP.NET tool, upgrade to that. 
+	</ul> 
+
 @item July 31st, 2002: Flow Analysis
 
 	Martin has checked into CVS the data flow analysis patch for
@@ -251,41 +286,6 @@
 	Compiler engine.  By doing this, we have reduced the burden to
 	port the JITer to new architectures, and that our trampoline
 	code is cross platform.
-
-@item Looking for volunteers
-
-	We are looking for volunteers to help complete various pieces
-	of Mono and help move the project forward, we need
-	contributions to:
-
-	<ul>
-		* More tests to the existing class libraries.
-	
-		* Finish existing class libraries, check our <a
-		href="class-status.html">class status</a> pages to see
-		all the missing things.  There are open tasks all over
-		the place: XML, Database access, enterprise services,
-		configuration, ASP.NET, Drawing APIs, and more.
-
-		* Since we have now ASP.NET running, we would like to 
-		create an ASP.NET application to maintain our class
-		library documentation.
-
-		We have some special needs (read them <a
-	 	href="classlib-doc.html">here</a>).     There is a
-		prototype written using Windows.Forms, but we believe
-		it will be faster to have this done using ASP.NET (and
-		it is also a nice way of stress testing it).
-
-		* Support for the VB runtime: we need contributions
-		to make our VB runtime mature enough to host
-		applications compiled with the VB.NET to run with
-		Mono.
-
-		* We need people to help write the documentation: you
-		can start editing our XML files by hand, and once we
-		have the ASP.NET tool, upgrade to that. 
-	</ul> 
 
 @item Jul 9th, 2002
 

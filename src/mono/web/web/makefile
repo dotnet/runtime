@@ -36,7 +36,6 @@ OBJECTS=	\
 	deploy/languages.html				\
 	deploy/mailing-lists.html			\
 	deploy/mono-beginning.html			\
-	deploy/mono-beginning-xml.html			\
 	deploy/mono-contribution-howto.html		\
 	deploy/monodoc-xml.html				\
 	deploy/papers.html				\
