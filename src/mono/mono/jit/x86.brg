@@ -464,7 +464,7 @@ stmt: STIND_I4 (addr, reg) {
 }
 
 stmt: REMOTE_STIND_I4 (reg, reg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int rreg = tree->right->reg1;
@@ -478,8 +478,7 @@ stmt: REMOTE_STIND_I4 (reg, reg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 
@@ -494,15 +493,14 @@ stmt: REMOTE_STIND_I4 (reg, reg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_mov_membase_reg (s->code, lreg, offset, rreg, 4);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 stmt: STIND_REF (addr, reg) {
@@ -532,7 +530,7 @@ stmt: STIND_REF (addr, reg) {
 }
 
 stmt: REMOTE_STIND_REF (reg, reg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int rreg = tree->right->reg1;
@@ -546,8 +544,7 @@ stmt: REMOTE_STIND_REF (reg, reg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 
@@ -562,15 +559,14 @@ stmt: REMOTE_STIND_REF (reg, reg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_mov_membase_reg (s->code, lreg, offset, rreg, 4);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 stmt: STIND_I1 (addr, reg) {
@@ -600,7 +596,7 @@ stmt: STIND_I1 (addr, reg) {
 }
 
 stmt: REMOTE_STIND_I1 (reg, reg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int rreg = tree->right->reg1;
@@ -614,8 +610,7 @@ stmt: REMOTE_STIND_I1 (reg, reg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 
@@ -630,15 +625,14 @@ stmt: REMOTE_STIND_I1 (reg, reg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_mov_membase_reg (s->code, lreg, offset, rreg, 1);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 stmt: STIND_I2 (addr, reg) {
@@ -668,7 +662,7 @@ stmt: STIND_I2 (addr, reg) {
 }
 
 stmt: REMOTE_STIND_I2 (reg, reg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int rreg = tree->right->reg1;
@@ -682,8 +676,7 @@ stmt: REMOTE_STIND_I2 (reg, reg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 
@@ -698,15 +691,14 @@ stmt: REMOTE_STIND_I2 (reg, reg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_mov_membase_reg (s->code, lreg, offset, rreg, 2);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 reg: LDIND_I4 (addr) {
@@ -889,7 +881,7 @@ reg: LDIND_U4 (addr) {
 }
 
 reg: REMOTE_LDFLDA (reg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 
@@ -901,8 +893,7 @@ reg: REMOTE_LDFLDA (reg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 	if (treg != X86_EAX)
@@ -930,17 +921,16 @@ reg: REMOTE_LDFLDA (reg) {
 
 	x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 	
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	if (tree->data.fi.klass->valuetype)
 		x86_lea_membase (s->code, tree->reg1, lreg, 
 				 tree->data.fi.field->offset - sizeof (MonoObject));
 	else 
 		x86_lea_membase (s->code, tree->reg1, lreg, tree->data.fi.field->offset);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 
 	if (tree->reg1 != treg)
 		x86_pop_reg (s->code, treg);
@@ -1523,13 +1513,12 @@ reg: UNBOX (reg) {
 
 reg: CASTCLASS (reg) {
 	MonoClass *klass = tree->data.klass;
-	guint8 *br [2], *pos [2];
+	guint8 *br [2];
 	int lreg = tree->left->reg1;
 	
 	x86_push_reg (s->code, lreg);
 	x86_test_reg_reg (s->code, lreg, lreg);
 	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
-	pos [0] = s->code;
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		/* lreg = obj->vtable */
@@ -1565,14 +1554,13 @@ reg: CASTCLASS (reg) {
 				/* check for transparent_proxy */		
 				x86_alu_reg_imm (s->code, X86_CMP, lreg, (int)mono_defaults.transparent_proxy_class);
 				br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
-				pos [1] = s->code;
 		
 				/* lreg = obj */
 				x86_mov_reg_membase (s->code, lreg, X86_ESP, 0, 4);
 				x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoTransparentProxy, 
 											   klass), 4);
 
-				x86_branch8 (br [1], X86_CC_NE, s->code - pos [1], FALSE);
+				x86_patch (br [1], s->code);
 			}
 
 			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
@@ -1582,19 +1570,18 @@ reg: CASTCLASS (reg) {
 		}
 	}
 
-	x86_branch8 (br [0], X86_CC_EQ, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	x86_pop_reg (s->code, tree->reg1);
 }
 
 reg: ISINST (reg) {
 	MonoClass *klass = tree->data.klass;
-	guint8 *br [3], *pos [3];
+	guint8 *br [3];
 	int lreg = tree->left->reg1;
 	
 	x86_push_reg (s->code, lreg);
 	x86_test_reg_reg (s->code, lreg, lreg);
 	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
-	pos [0] = s->code;
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		/* lreg = obj->vtable */
@@ -1603,15 +1590,13 @@ reg: ISINST (reg) {
 		x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoVTable, max_interface_id), 
 				     klass->interface_id);
 		br [1] = s->code; x86_branch8 (s->code, X86_CC_LT, 0, FALSE);
-		pos [1] = s->code;
 		/* lreg = obj->vtable->interface_offsets */
 		x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoVTable, interface_offsets), 4);
 		x86_alu_membase_imm (s->code, X86_CMP, lreg, klass->interface_id << 2, 0);
 		br [2] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
-		pos [2] = s->code;
-		x86_branch8 (br [1], X86_CC_LT, s->code - pos [1], FALSE);
+		x86_patch (br [1], s->code);
 		x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);
-		x86_branch8 (br [2], X86_CC_NE, s->code - pos [2], FALSE);
+		x86_patch (br [2], s->code);
 
 	} else {
 
@@ -1624,16 +1609,14 @@ reg: ISINST (reg) {
 
 			x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoClass, rank), klass->rank);
 			br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
-			pos [1] = s->code;
 			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, element_class), 4);
 			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
 			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->element_class->baseval);
 			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->element_class->diffval);
 			br [2] = s->code; x86_branch8 (s->code, X86_CC_LE, 0, FALSE);
-			pos [2] = s->code;
-			x86_branch8 (br [1], X86_CC_NE, s->code - pos [1], FALSE);
+			x86_patch (br [1], s->code);
 			x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);
-			x86_branch8 (br [2], X86_CC_LE, s->code - pos [2], FALSE);
+			x86_patch (br [2], s->code);
 
 		} else {
 
@@ -1641,26 +1624,24 @@ reg: ISINST (reg) {
 				/* check for transparent_proxy */		
 				x86_alu_reg_imm (s->code, X86_CMP, lreg, (int)mono_defaults.transparent_proxy_class);
 				br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
-				pos [1] = s->code;
 		
 				/* lreg = obj */
 				x86_mov_reg_membase (s->code, lreg, X86_ESP, 0, 4);
 				x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoTransparentProxy, 
 											   klass), 4);
-				x86_branch8 (br [1], X86_CC_NE, s->code - pos [1], FALSE);
+				x86_patch (br [1], s->code);
 			}
 
 			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
 			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->baseval);
 			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->diffval);
 			br [2] = s->code; x86_branch8 (s->code, X86_CC_LE, 0, FALSE);
-			pos [2] = s->code;
 			x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);
-			x86_branch8 (br [2], X86_CC_LE, s->code - pos [2], FALSE);
+			x86_patch (br [2], s->code);
 		}
 	}
 
-	x86_branch8 (br [0], X86_CC_EQ, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	x86_pop_reg (s->code, tree->reg1);
 }
 
@@ -2287,6 +2268,40 @@ reg: CONV_OVF_I4 (lreg){
 			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	}
 }
+reg: CONV_OVF_I4 (lreg){
+	guint8 *br [3], *label [1];
+
+	/* 
+	 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
+	 */
+	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
+
+	/* If the low word top bit is set, see if we are negative */
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_LT, 0, TRUE);
+
+	/* We are not negative (no top bit set, check for our top word to be zero */
+	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
+	br [1] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, TRUE);
+	label [0] = s->code;
+
+	/* throw exception */
+	x86_push_imm (s->code, "OverflowException");
+	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, 
+			    arch_get_throw_exception_by_name ());
+	x86_call_code (s->code, 0);
+	
+	x86_patch (br [0], s->code);
+	/* our top bit is set, check that top word is 0xfffffff */
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg2, 0xffffffff);
+		
+	x86_patch (br [1], s->code);
+	/* nope, emit exception */
+	br [2] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_patch (br [2], label [0]);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
 
 reg: CONV_OVF_U4 (lreg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
@@ -2410,7 +2425,7 @@ stmt: STIND_I8 (addr, lreg) {
 }
 
 stmt: REMOTE_STIND_I8 (reg, lreg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int offset;
 
 	x86_push_reg (s->code, tree->right->reg1);
@@ -2418,8 +2433,7 @@ stmt: REMOTE_STIND_I8 (reg, lreg) {
 	x86_alu_membase_imm (s->code, X86_CMP, tree->right->reg1, 0, ((int)mono_defaults.transparent_proxy_class));
 	x86_pop_reg (s->code, tree->right->reg1);
 	
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 
@@ -2435,16 +2449,15 @@ stmt: REMOTE_STIND_I8 (reg, lreg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 24);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_mov_membase_reg (s->code, tree->left->reg1, offset, tree->right->reg1, 4);
 	x86_mov_membase_reg (s->code, tree->left->reg1, offset + 4, tree->right->reg2, 4);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 
@@ -2517,23 +2530,18 @@ lreg: SHR_UN (lreg, coni4) {
 }
 
 lreg: SHR (lreg, reg) {
-	guint8 *start = s->code;
-	gint32 o1, o2, i;
+	guint8 *br [1];
 
 	if (tree->right->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_shrd_reg (s->code, tree->left->reg1, tree->left->reg2);
-		x86_shift_reg (s->code, X86_SAR, tree->left->reg2);
-		x86_test_reg_imm (s->code, X86_ECX, 32);
-		o1 = 2 + s->code - s->start;
-		x86_branch8 (s->code, X86_CC_EQ, o2 - o1, FALSE);
-		x86_mov_reg_reg (s->code, tree->left->reg1, tree->left->reg2, 4);
-		x86_shift_reg_imm (s->code, X86_SAR, tree->reg2, 31);		
-		o2 = s->code - s->start;
-	}
+	x86_shrd_reg (s->code, tree->left->reg1, tree->left->reg2);
+	x86_shift_reg (s->code, X86_SAR, tree->left->reg2);
+	x86_test_reg_imm (s->code, X86_ECX, 32);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
+	x86_mov_reg_reg (s->code, tree->left->reg1, tree->left->reg2, 4);
+	x86_shift_reg_imm (s->code, X86_SAR, tree->reg2, 31);		
+	x86_patch (br [0], s->code);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2542,23 +2550,18 @@ lreg: SHR (lreg, reg) {
 }
 
 lreg: SHR_UN (lreg, reg) {
-	guint8 *start = s->code;
-	gint32 o1, o2, i;
+	guint8 *br [1];
 
 	if (tree->right->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_shrd_reg (s->code, tree->left->reg1, tree->left->reg2);
-		x86_shift_reg (s->code, X86_SHR, tree->left->reg2);
-		x86_test_reg_imm (s->code, X86_ECX, 32);
-		o1 = 2 + s->code - s->start;
-		x86_branch8 (s->code, X86_CC_EQ, o2 - o1, FALSE);
-		x86_mov_reg_reg (s->code, tree->left->reg1, tree->left->reg2, 4);
-		x86_shift_reg_imm (s->code, X86_SHR, tree->reg2, 31);		
-		o2 = s->code - s->start;
-	}
+	x86_shrd_reg (s->code, tree->left->reg1, tree->left->reg2);
+	x86_shift_reg (s->code, X86_SHR, tree->left->reg2);
+	x86_test_reg_imm (s->code, X86_ECX, 32);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
+	x86_mov_reg_reg (s->code, tree->left->reg1, tree->left->reg2, 4);
+	x86_shift_reg_imm (s->code, X86_SHR, tree->reg2, 31);		
+	x86_patch (br [0], s->code);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2582,23 +2585,18 @@ lreg: SHL (lreg, coni4) {
 }
 
 lreg: SHL (lreg, reg) {
-	guint8 *start = s->code;
-	gint32 o1, o2, i;
+	guint8 *br [1];
 
 	if (tree->right->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_shld_reg (s->code, tree->left->reg2, tree->left->reg1);
-		x86_shift_reg (s->code, X86_SHL, tree->left->reg1);
-		x86_test_reg_imm (s->code, X86_ECX, 32);
-		o1 = 2 + s->code - s->start;
-		x86_branch8 (s->code, X86_CC_EQ, o2 - o1, FALSE);
-		x86_mov_reg_reg (s->code, tree->left->reg2, tree->left->reg1, 4);
-		x86_alu_reg_reg (s->code, X86_XOR, tree->left->reg1, tree->left->reg1);	
-		o2 = s->code - s->start;
-	}
+	x86_shld_reg (s->code, tree->left->reg2, tree->left->reg1);
+	x86_shift_reg (s->code, X86_SHL, tree->left->reg1);
+	x86_test_reg_imm (s->code, X86_ECX, 32);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
+	x86_mov_reg_reg (s->code, tree->left->reg2, tree->left->reg1, 4);
+	x86_alu_reg_reg (s->code, X86_XOR, tree->left->reg1, tree->left->reg1);	
+	x86_patch (br [0], s->code);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2998,140 +2996,114 @@ stmt: ARG_I8 (lreg) {
 }
 
 reg: CEQ (lreg, lreg) {
-	guint8 *start = s->code;
-	gint32 o1, o2, i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		o1 = 2 + s->code - s->start;
-		x86_branch8 (s->code, X86_CC_NE, o2 - o1, FALSE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o2 = s->code - s->start;		
-		x86_set_reg (s->code, X86_CC_EQ, tree->reg1, FALSE);
-		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	x86_patch (br [0], s->code);
+	x86_set_reg (s->code, X86_CC_EQ, tree->reg1, FALSE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
 reg: CLT (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o1, *o2, *o3, *o4, *o5;
-	int i;
+	guint8 *br [4];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_GT, o4 - o1, TRUE);
-		o1 = s->code;
-		x86_branch8 (s->code, X86_CC_NE, o3 - o2, TRUE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		x86_branch8 (s->code, X86_CC_GE, o4 - o3, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_GT, 0, TRUE);
+	br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	br [2] = s->code; x86_branch8 (s->code, X86_CC_GE, 0, FALSE);
 
-		/* set result to 1 */
-		o3 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 1);
-		x86_jump8 (s->code, (o5 - o4));
-		/* set result to 0 */
-		o4 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 0);	
-		o5 = s->code;
-	}
+	/* set result to 1 */
+	x86_patch (br [1], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 1);
+	br [3] = s->code; x86_jump8 (s->code, 0);
+
+	/* set result to 0 */
+	x86_patch (br [0], s->code);
+	x86_patch (br [2], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 0);	
+
+	x86_patch (br [3], s->code);
 }
 
 reg: CLT_UN (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o1, *o2, *o3, *o4, *o5;
-	int i;
+	guint8 *br [4];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_GT, o4 - o1, FALSE);
-		o1 = s->code;
-		x86_branch8 (s->code, X86_CC_NE, o3 - o2, FALSE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		x86_branch8 (s->code, X86_CC_GE, o4 - o3, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_GT, 0, FALSE);
+	br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	br [2] = s->code; x86_branch8 (s->code, X86_CC_GE, 0, FALSE);
 
-		/* set result to 1 */
-		o3 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 1);
-		x86_jump8 (s->code, (o5 - o4));
-		/* set result to 0 */
-		o4 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 0);	
-		o5 = s->code;
-	}
+	/* set result to 1 */
+	x86_patch (br [1], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 1);
+	br [3] = s->code; x86_jump8 (s->code, 0);
+	
+	/* set result to 0 */
+	x86_patch (br [0], s->code);
+	x86_patch (br [2], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 0);	
+
+	x86_patch (br [3], s->code);	
 }
 
 reg: CGT (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o1, *o2, *o3, *o4, *o5;
-	int i;
+	guint8 *br [4];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg2, tree->left->reg2);
-		x86_branch8 (s->code, X86_CC_GT, o4 - o1, TRUE);
-		o1 = s->code;
-		x86_branch8 (s->code, X86_CC_NE, o3 - o2, TRUE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg1, tree->left->reg1);
-		x86_branch8 (s->code, X86_CC_GE, o4 - o3, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg2, tree->left->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_GT, 0, TRUE);
+	br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg1, tree->left->reg1);
+	br [2] = s->code; x86_branch8 (s->code, X86_CC_GE, 0, FALSE);
 
-		/* set result to 1 */
-		o3 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 1);
-		x86_jump8 (s->code, (o5 - o4));
-		/* set result to 0 */
-		o4 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 0);	
-		o5 = s->code;
-	}
+	/* set result to 1 */
+	x86_patch (br [1], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 1);
+	br [3] = s->code; x86_jump8 (s->code, 0);
+	
+	/* set result to 0 */
+	x86_patch (br [0], s->code);
+	x86_patch (br [2], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 0);	
+
+	x86_patch (br [3], s->code);	
 }
 
 reg: CGT_UN (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o1, *o2, *o3, *o4, *o5;
-	int i;
+	guint8 *br [4];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg2, tree->left->reg2);
-		x86_branch8 (s->code, X86_CC_GT, o4 - o1, FALSE);
-		o1 = s->code;
-		x86_branch8 (s->code, X86_CC_NE, o3 - o2, FALSE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg1, tree->left->reg1);
-		x86_branch8 (s->code, X86_CC_GE, o4 - o3, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg2, tree->left->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_GT, 0, FALSE);
+	br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg1, tree->left->reg1);
+	br [2] = s->code; x86_branch8 (s->code, X86_CC_GE, 0, FALSE);
 
-		/* set result to 1 */
-		o3 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 1);
-		x86_jump8 (s->code, (o5 - o4));
-		/* set result to 0 */
-		o4 = s->code;
-		x86_mov_reg_imm (s->code, tree->reg1, 0);	
-		o5 = s->code;
-	}
+	/* set result to 1 */
+	x86_patch (br [1], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 1);
+	br [3] = s->code; x86_jump8 (s->code, 0);
+	
+	/* set result to 0 */
+	x86_patch (br [0], s->code);
+	x86_patch (br [2], s->code);
+	x86_mov_reg_imm (s->code, tree->reg1, 0);	
+	
+	x86_patch (br [3], s->code);	
 }
 
 stmt: BEQ (lreg, lreg) {
-	guint8 *start = s->code;
-	int i;
-	guchar *o1, *o2;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		x86_branch8 (s->code, X86_CC_NE, o2 - o1, FALSE);
-		o1 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
-		o2 = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
+	x86_patch (br [0], s->code);
+	
 }
 
 stmt: BNE_UN (lreg, lreg) {
@@ -3144,163 +3116,115 @@ stmt: BNE_UN (lreg, lreg) {
 }
 
 stmt: BGE (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GT, 0, TRUE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
+	x86_patch (br [0], s->code);
 }
 
 stmt: BGE_UN (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GE, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 stmt: BGT (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GT, 0, TRUE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 stmt: BGT_UN (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_GT, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 stmt: BLT (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LT, 0, TRUE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 stmt: BLT_UN (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 stmt: BLE (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LT, 0, TRUE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, TRUE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 stmt: BLE_UN (lreg, lreg) {
-	guint8 *start = s->code;
-	guchar *o2, *oe;
-	int i;
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i ++) {
-		s->code = start;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		x86_branch8 (s->code, X86_CC_NE, oe - o2, FALSE);
-		o2 = s->code;
-		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		if (i) mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
-		x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
-		oe = s->code;
-	}
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LT, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_LE, 0, FALSE);
+	x86_patch (br [0], s->code);	
 }
 
 #
@@ -3485,38 +3409,31 @@ freg: CONV_R_UN (reg) {
 }
 
 freg: CONV_R_UN (lreg) {
-	guint8 *start = s->code, *l1, *l2;
-	int i;
-
 	static guint8 mn[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f, 0x40 };
+	guint8 *br [1];
 
-	for (i = 0; i < 2; i++) {
-		s->code = start;
+	/* load 64bit integer to FP stack */
+	x86_push_imm (s->code, 0);
+	x86_push_reg (s->code, tree->left->reg2);
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_fild_membase (s->code, X86_ESP, 0, TRUE);
+	/* store as 80bit FP value */
+	x86_fst80_membase (s->code, X86_ESP, 0);
 
-		/* load 64bit integer to FP stack */
-		x86_push_imm (s->code, 0);
-		x86_push_reg (s->code, tree->left->reg2);
-		x86_push_reg (s->code, tree->left->reg1);
-		x86_fild_membase (s->code, X86_ESP, 0, TRUE);
-		/* store as 80bit FP value */
-		x86_fst80_membase (s->code, X86_ESP, 0);
+	/* test if lreg is negative */
+	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_GEZ, 0, TRUE);
 
-		/* test if lreg is negative */
-		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-		x86_branch8 (s->code, X86_CC_GEZ, l2 - l1, TRUE);
-		l1 = s->code;
+	/* add correction constant mn */
+	x86_fld80_mem (s->code, mn);
+	x86_fld80_membase (s->code, X86_ESP, 0);
+	x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
+	x86_fst80_membase (s->code, X86_ESP, 0);
 
-		/* add correction constant mn */
-		x86_fld80_mem (s->code, mn);
-		x86_fld80_membase (s->code, X86_ESP, 0);
-		x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
-		x86_fst80_membase (s->code, X86_ESP, 0);
+	x86_patch (br [0], s->code);
 
-		l2 = s->code;
-
-		x86_fld80_membase (s->code, X86_ESP, 0);
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
-	}
+	x86_fld80_membase (s->code, X86_ESP, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 }
 
 freg: CONV_R4 (lreg) {
@@ -3614,7 +3531,7 @@ stmt: STIND_R4 (reg, freg) {
 }
 
 stmt: REMOTE_STIND_R4 (reg, freg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int offset;
@@ -3624,8 +3541,7 @@ stmt: REMOTE_STIND_R4 (reg, freg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); 
 
 	/* this is a transparent proxy - remote the call */
 
@@ -3641,15 +3557,14 @@ stmt: REMOTE_STIND_R4 (reg, freg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0); 
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_fst_membase (s->code, lreg, offset, FALSE, TRUE);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 stmt: STIND_R8 (ADDR_L, freg) {
@@ -3662,7 +3577,7 @@ stmt: STIND_R8 (reg, freg) {
 }
 
 stmt: REMOTE_STIND_R8 (reg, freg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int offset;
@@ -3672,8 +3587,7 @@ stmt: REMOTE_STIND_R8 (reg, freg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); 
 
 	/* this is a transparent proxy - remote the call */
 
@@ -3689,15 +3603,14 @@ stmt: REMOTE_STIND_R8 (reg, freg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 24);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 	x86_fst_membase (s->code, lreg, offset, TRUE, TRUE);
 
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
+	x86_patch (br [1], s->code);
 }
 
 stmt: ARG_R4 (freg) {
@@ -3904,7 +3817,7 @@ stmt: STIND_OBJ (reg, reg) {
 }
 
 stmt: REMOTE_STIND_OBJ (reg, reg) {
-	guint8 *br[2], *pos[2];
+	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
 	int rreg = tree->right->reg1;
@@ -3918,8 +3831,7 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 
 	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
 	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE); /* jump to label0 */
-	pos [0] = s->code;
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
 
 	/* this is a transparent proxy - remote the call */
 
@@ -3931,10 +3843,9 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
-	br [1] = s->code; x86_jump8 (s->code, 0); /* jump to label1 */
-	pos [1] = s->code;
+	br [1] = s->code; x86_jump8 (s->code, 0);
 
-	/* label0 */ x86_branch8 (br [0], X86_CC_NE, s->code - pos [0], FALSE);
+	x86_patch (br [0], s->code);
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 
@@ -3946,10 +3857,10 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
+	x86_patch (br [1], s->code);
+
 	/* please test this first */
 	g_assert_not_reached ();
-
-	/* label1 */ x86_jump8 (br [1], s->code - pos [1]);
 }
 
 stmt: ARG_OBJ (coni4) {
