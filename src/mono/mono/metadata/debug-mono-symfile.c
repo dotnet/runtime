@@ -151,8 +151,6 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	lne_end = ((MonoSymbolFileLineNumberEntry *) end);
 
 	for (; (lne < lne_end) && lne->row; lne++) {
-		g_message (G_STRLOC ": %d - %d", lne->row, lne->offset);
-
 		if (lne->offset < offset)
 			continue;
 
@@ -181,6 +179,7 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	MonoMethod *method = (MonoMethod *) key;
 	MonoSymbolFileLineNumberEntry *lne, *lne_end;
 	const char *ptr, *end;
+	int first = TRUE;
 
 	MonoDebugMethodInfo *minfo = mydata->get_method_func
 		(mydata->symfile, method, mydata->user_data);
@@ -201,6 +200,15 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	for (; (lne < lne_end) && lne->row; lne++) {
 		guint32 address;
 		int i;
+
+		if (first) {
+			lne->address = 0;
+			first = FALSE;
+			continue;
+		} else if (lne->offset == 0) {
+			lne->address = minfo->prologue_end;
+			continue;
+		}
 
 		address = minfo->code_size;
 
@@ -223,8 +231,6 @@ mono_debug_update_mono_symbol_file (MonoSymbolFile *symfile,
 				    MonoDebugGetMethodFunc get_method_func,
 				    gpointer user_data)
 {
-	g_message (G_STRLOC);
-
 	if (symfile->method_table) {
 		struct MyData mydata = { symfile, get_method_func, user_data };
 		g_hash_table_foreach (symfile->method_table, update_method_func, &mydata);
