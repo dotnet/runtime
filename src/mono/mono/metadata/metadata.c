@@ -795,6 +795,42 @@ mono_metadata_decode_row (MonoTableInfo *t, int idx, guint32 *res, int res_size)
 }
 
 /**
+ * mono_metadata_decode_row_col:
+ * @t: table to extract information from.
+ * @idx: index for row in table.
+ * @col: column in the row.
+ *
+ * This function returns the value of column @col from the @idx
+ * row in the table @t.
+ */
+guint32
+mono_metadata_decode_row_col (MonoTableInfo *t, int idx, guint col)
+{
+	guint32 bitfield = t->size_bitfield;
+	int i;
+	register char *data = t->base + idx * t->row_size;
+	register int n;
+	
+	g_assert (col < mono_metadata_table_count (bitfield));
+
+	n = mono_metadata_table_size (bitfield, 0);
+	for (i = 0; i < col; ++i) {
+		data += n;
+		n = mono_metadata_table_size (bitfield, i + 1);
+	}
+	switch (n){
+	case 1:
+		return *data;
+	case 2:
+		return read16 (data);
+	case 4:
+		return read32 (data);
+	default:
+		g_assert_not_reached ();
+	}
+	return 0;
+}
+/**
  * mono_metadata_decode_blob_size:
  * @ptr: pointer to a blob object
  * @rptr: the new position of the pointer
@@ -985,7 +1021,7 @@ MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method = g_new0(MonoMethodSignature, 1);
-	int i;
+	int i, align;
 
 	if (*ptr & 0x20)
 		method->hasthis = 1;
@@ -996,18 +1032,42 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 	method->param_count = mono_metadata_decode_value (ptr, &ptr);
 	method->ret = mono_metadata_parse_param (m, 1, ptr, &ptr);
 
-	method->params = g_new0(MonoParam*, method->param_count);
-	method->sentinelpos = -1;
-	for (i = 0; i < method->param_count; ++i) {
-		if (*ptr == MONO_TYPE_SENTINEL) {
-			if (method->call_convention != MONO_CALL_VARARG || def)
-					g_error ("found sentinel for methoddef or no vararg method");
-			method->sentinelpos = i;
-			ptr++;
+	if (method->param_count) {
+		int size, offset = 0;
+		
+		method->params = g_new0(MonoParam*, method->param_count);
+		method->param_offsets = g_new0(guint, method->param_count);
+		method->sentinelpos = -1;
+		
+		if (method->hasthis)
+			offset += sizeof(gpointer);
+		
+		for (i = 0; i < method->param_count; ++i) {
+			if (*ptr == MONO_TYPE_SENTINEL) {
+				if (method->call_convention != MONO_CALL_VARARG || def)
+						g_error ("found sentinel for methoddef or no vararg method");
+				method->sentinelpos = i;
+				ptr++;
+			}
+			method->params [i] = mono_metadata_parse_param (m, 0, ptr, &ptr);
+			method->param_offsets [i] = offset;
+			size = mono_type_size (method->params [i]->type, &align);
+			offset += (offset % align);
+			offset += size;
 		}
-		method->params[i] = mono_metadata_parse_param (m, 0, ptr, &ptr);
+		/*
+		 * The offset of the first item is always 0, so we use the slot
+		 * to store how much data we need in total.
+		 */
+		 method->param_offsets [0] = MAX (offset, mono_type_size (method->ret->type, &align));
+	} else {
+		/* FIXME: hasthis */
+		if (method->hasthis)
+			method->param_offsets = GUINT_TO_POINTER (MAX (sizeof (gpointer), mono_type_size (method->ret->type, &align)));
+		else
+			method->param_offsets = GUINT_TO_POINTER (mono_type_size (method->ret->type, &align));
 	}
-	
+
 	if (rptr)
 		*rptr = ptr;
 	return method;
@@ -1021,6 +1081,8 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
 	for (i = 0; i < method->param_count; ++i)
 		mono_metadata_free_param (method->params[i]);
 
+	if (method->param_count)
+		g_free (method->param_offsets);
 	g_free (method->params);
 	g_free (method);
 }
@@ -1458,22 +1520,22 @@ typedef_locator (const void *a, const void *b)
 	locator_t *loc = (locator_t *) a;
 	char *bb = (char *) b;
 	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
-	guint32 cols [6], cols_next [6];
+	guint32 col, col_next;
 
-	mono_metadata_decode_row (loc->t, typedef_index, cols, CSIZE (cols));
+	col = mono_metadata_decode_row_col (loc->t, typedef_index, loc->col_idx);
 
-	if (loc->idx < cols [loc->col_idx])
+	if (loc->idx < col)
 		return -1;
 
 	/*
 	 * Need to check that the next row is valid.
 	 */
 	if (typedef_index + 1 < loc->t->rows) {
-		mono_metadata_decode_row (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
-		if (loc->idx >= cols_next [loc->col_idx])
+		col_next = mono_metadata_decode_row_col (loc->t, typedef_index + 1, loc->col_idx);
+		if (loc->idx >= col_next)
 			return 1;
 
-		if (cols [loc->col_idx] == cols_next [loc->col_idx])
+		if (col == col_next)
 			return 1; 
 	}
 
@@ -1530,6 +1592,10 @@ mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 int
 mono_type_size (MonoType *t, gint *align)
 {
+	if (!t) {
+		*align = 1;
+		return 0;
+	}
 	if (t->byref) {
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
@@ -1583,27 +1649,17 @@ mono_type_size (MonoType *t, gint *align)
 		return sizeof (gpointer);
 		
 	case MONO_TYPE_VALUETYPE:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_VALUETYPE");
-		
+		*align = __alignof__(gpointer);
+		/*
+		 * FIXME: very bogus value
+		 */
+		return 4;
 	case MONO_TYPE_CLASS:
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer);
-		/*g_error ("FIXME: Add computation of size for MONO_TYPE_CLASS");
-		break;*/
-		
 	case MONO_TYPE_SZARRAY:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_SZARRAY");
-		break;
-		
 	case MONO_TYPE_PTR:
-		*align = __alignof__(gpointer);
-		g_error ("FIXME: Add computation of size for MONO_TYPE_PTR");
-		break;
-		
 	case MONO_TYPE_FNPTR:
 		*align = __alignof__(gpointer);
-		g_error ("FIXME: Add computation of size for MONO_TYPE_FNPTR");
-		break;
+		return sizeof (gpointer);
 		
 	case MONO_TYPE_ARRAY:
 		g_error ("FIXME: Add computation of size for MONO_TYPE_ARRAY");

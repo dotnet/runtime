@@ -103,6 +103,10 @@ void         mono_metadata_decode_row (MonoTableInfo         *t,
 				       guint32               *res,
 				       int                    res_size);
 
+guint32      mono_metadata_decode_row_col (MonoTableInfo *t, 
+					   int            idx, 
+					   guint          col);
+
 /*
  * This macro is used to extract the size of the table encoded in
  * the size_bitfield of MonoTableInfo.

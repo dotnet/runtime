@@ -448,9 +448,29 @@ dis_stringify_param (MonoMetadata *m, MonoParam *param)
 }
 
 char*
-dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method)
+dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, const char *name)
 {
-	return g_strdup ("method-signature");
+	char *retval = dis_stringify_param (m, method->ret);
+	GString *result = g_string_new (retval);
+	int i;
+
+	g_free (retval);
+	g_string_sprintfa (result, " %s (", name ? name : "");
+	for (i = 0; i < method->param_count; ++i) {
+		if (i)
+			g_string_append (result, ", ");
+		retval = dis_stringify_param (m, method->params [i]);
+		g_string_append (result, retval);
+		g_free (retval);
+	}
+	g_string_append (result, ") ");
+
+	if (method->hasthis)
+		g_string_append (result, "instance ");
+	g_string_append (result, map (method->call_convention, call_conv_type_map));
+	retval = result->str;
+	g_string_free (result, FALSE);
+	return retval;
 }
 
 char*
@@ -492,7 +512,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		break;
 		
 	case MONO_TYPE_FNPTR:
-		bare = dis_stringify_method_signature (m, type->data.method);
+		bare = dis_stringify_method_signature (m, type->data.method, NULL);
 		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY: {

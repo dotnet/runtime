@@ -19,20 +19,23 @@ void
 dump_table_assembly (MonoMetadata *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_ASSEMBLY];
-	guint32 cols [9];
+	guint32 cols [MONO_ASSEMBLY_SIZE];
 	const char *ptr;
 	int len;
 
-	mono_metadata_decode_row (t, 0, cols, CSIZE (cols));
+	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 	fprintf (output, "Assembly Table\n");
 
-	fprintf (output, "Name:          %s\n", mono_metadata_string_heap (m, cols [7]));
-	fprintf (output, "Hash Algoritm: 0x%08x\n", cols [0]);
-	fprintf (output, "Version:       %d.%d.%d.%d\n", cols [1], cols [2], cols [3], cols [4]);
-	fprintf (output, "Flags:         0x%08x\n", cols [5]);
-	fprintf (output, "PublicKey:     BlobPtr (0x%08x)\n", cols [6]);
+	fprintf (output, "Name:          %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]));
+	fprintf (output, "Hash Algoritm: 0x%08x\n", cols [MONO_ASSEMBLY_HASH_ALG]);
+	fprintf (output, "Version:       %d.%d.%d.%d\n", cols [MONO_ASSEMBLY_MAJOR_VERSION], 
+					cols [MONO_ASSEMBLY_MINOR_VERSION], 
+					cols [MONO_ASSEMBLY_BUILD_NUMBER], 
+					cols [MONO_ASSEMBLY_REV_NUMBER]);
+	fprintf (output, "Flags:         0x%08x\n", cols [MONO_ASSEMBLY_FLAGS]);
+	fprintf (output, "PublicKey:     BlobPtr (0x%08x)\n", cols [MONO_ASSEMBLY_PUBLIC_KEY]);
 
-	ptr = mono_metadata_blob_heap (m, cols [6]);
+	ptr = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
 	len = mono_metadata_decode_value (ptr, &ptr);
 	if (len > 0){
 		fprintf (output, "\tDump:");
@@ -41,7 +44,7 @@ dump_table_assembly (MonoMetadata *m)
 	} else
 		fprintf (output, "\tZero sized public key\n");
 	
-	fprintf (output, "Culture:       %s\n", mono_metadata_string_heap (m, cols [8]));
+	fprintf (output, "Culture:       %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_CULTURE]));
 	fprintf (output, "\n");
 }
 
@@ -72,11 +75,11 @@ dump_table_typedef (MonoMetadata *m)
 	
 	for (i = 1; i <= t->rows; i++){
 		char *s = get_typedef (m, i);
-		guint32 cols [6];
+		guint32 cols [MONO_TYPEDEF_SIZE];
 
-		mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], i - 1, cols, CSIZE (cols));
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
 
-		fprintf (output, "%d: %s (flist=%d, mlist=%d)\n", i, s, cols [4], cols [5]);
+		fprintf (output, "%d: %s (flist=%d, mlist=%d)\n", i, s, cols [MONO_TYPEDEF_FIELD_LIST], cols [MONO_TYPEDEF_METHOD_LIST]);
 		g_free (s);
 	}
 	fprintf (output, "\n");
@@ -93,13 +96,16 @@ dump_table_assemblyref (MonoMetadata *m)
 	for (i = 0; i < t->rows; i++){
 		const char *ptr;
 		int len;
-		guint32 cols [9];
+		guint32 cols [MONO_ASSEMBLYREF_SIZE];
 
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 		fprintf (output, "%d: Version=%d.%d.%d.%d\n\tName=%s\n", i,
-			 cols [0], cols [1], cols [2], cols [3],
-			 mono_metadata_string_heap (m, cols [6]));
-		ptr = mono_metadata_blob_heap (m, cols [6]);
+			 cols [MONO_ASSEMBLYREF_MAJOR_VERSION], 
+			 cols [MONO_ASSEMBLYREF_MINOR_VERSION], 
+			 cols [MONO_ASSEMBLYREF_BUILD_NUMBER], 
+			 cols [MONO_ASSEMBLYREF_REV_NUMBER],
+			 mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
+		ptr = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
 		len = mono_metadata_decode_value (ptr, &ptr);
 		if (len > 0){
 			fprintf (output, "\tPublic Key:");
@@ -121,13 +127,13 @@ dump_table_param (MonoMetadata *m)
 	fprintf (output, "Param Table\n");
 	
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+		guint32 cols [MONO_PARAM_SIZE];
 
 		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		fprintf (output, "%d: 0x%04x %d %s\n",
 			 i,
-			 cols [0], cols [1], 
-			 mono_metadata_string_heap (m, cols [2]));
+			 cols [MONO_PARAM_FLAGS], cols [MONO_PARAM_SEQUENCE], 
+			 mono_metadata_string_heap (m, cols [MONO_PARAM_NAME]));
 	}
 	fprintf (output, "\n");
 }
@@ -136,21 +142,37 @@ void
 dump_table_field (MonoMetadata *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
-	int i;
+	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
+	int i, current_type;
+	guint32 first_m, last_m;
 
-	fprintf (output, "Field Table (0..%d)\n", t->rows);
+	fprintf (output, "Field Table (1..%d)\n", t->rows);
 	
-	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+	current_type = 1;
+	last_m = first_m = 1;
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_FIELD_SIZE];
 		char *sig, *flags;
 
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
-		sig = get_field_signature (m, cols [2]);
-		flags = field_flags (cols [0]);
+		/*
+		 * Find the next type.
+		 */
+		while (current_type <= td->rows && i >= (last_m = mono_metadata_decode_row_col (td, current_type - 1, MONO_TYPEDEF_FIELD_LIST))) {
+			current_type++;
+		}
+		if (i == first_m) {
+			fprintf (output, "########## %s.%s\n",
+				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAMESPACE)),
+				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAME)));
+			first_m = last_m;
+		}
+		mono_metadata_decode_row (t, i - 1, cols, MONO_FIELD_SIZE);
+		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
+		flags = field_flags (cols [MONO_FIELD_FLAGS]);
 		fprintf (output, "%d: %s %s: %s\n",
 			 i,
 			 sig,
-			 mono_metadata_string_heap (m, cols [1]),
+			 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]),
 			 flags);
 		g_free (sig);
 		g_free (flags);
@@ -168,12 +190,12 @@ dump_table_memberref (MonoMetadata *m)
 	fprintf (output, "MemberRef Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+		guint32 cols [MONO_MEMBERREF_SIZE];
 
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_MEMBERREF_SIZE);
 		
-		kind = cols [0] & 7;
-		idx = cols [0] >> 3;
+		kind = cols [MONO_MEMBERREF_CLASS] & 7;
+		idx = cols [MONO_MEMBERREF_CLASS] >> 3;
 
 		x = g_strdup ("UNHANDLED CASE");
 		
@@ -183,7 +205,7 @@ dump_table_memberref (MonoMetadata *m)
 		case 1:
 			ks = "TypeRef";
 			xx = get_typeref (m, idx);
-			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [1]), NULL);
+			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
 			g_free (xx);
 			break;
 		case 2:
@@ -199,9 +221,9 @@ dump_table_memberref (MonoMetadata *m)
 		fprintf (output, "%d: %s[%d] %s\n\tResolved: %s\n\tSignature: %s\n\t\n",
 			 i,
 			 ks, idx,
-			 mono_metadata_string_heap (m, cols [1]),
+			 mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]),
 			 x ? x : "",
-			 get_methodref_signature (m, cols [2], NULL));
+			 get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL));
 
 		if (x)
 			g_free (x);
@@ -216,12 +238,14 @@ dump_table_class_layout (MonoMetadata *m)
 	fprintf (output, "ClassLayout Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+		guint32 cols [MONO_CLASS_LAYOUT_SIZE];
 		
 		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 
 		fprintf (output, "%d: PackingSize=%d  ClassSize=%d  Parent=%s\n",
-			 i, cols [0], cols [1], get_typedef (m, cols [2]));
+			 i, cols [MONO_CLASS_LAYOUT_PACKING_SIZE], 
+			 cols [MONO_CLASS_LAYOUT_CLASS_SIZE], 
+			 get_typedef (m, cols [MONO_CLASS_LAYOUT_PARENT]));
 	}
 }
 
@@ -233,12 +257,13 @@ dump_table_constant (MonoMetadata *m)
 	fprintf (output, "Constant Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [4];
+		guint32 cols [MONO_CONSTANT_SIZE];
 		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_CONSTANT_SIZE);
 
 		fprintf (output, "%d: Parent=0x%08x %s\n",
-			 i, cols [2], get_constant (m, (MonoTypeEnum) cols [0], cols [3]));
+			 i, cols [MONO_CONSTANT_PARENT], 
+			 get_constant (m, (MonoTypeEnum) cols [MONO_CONSTANT_TYPE], cols [MONO_CONSTANT_VALUE]));
 	}
 	
 }
@@ -254,20 +279,22 @@ dump_table_property (MonoMetadata *m)
 	fprintf (output, "Property Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+		guint32 cols [MONO_PROPERTY_SIZE];
 		char *type;
 		int bsize;
+		int prop_flags;
 		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_PROPERTY_SIZE);
 		flags [0] = 0;
-		if (cols [0] & 0x0200)
+		prop_flags = cols [MONO_PROPERTY_FLAGS];
+		if (prop_flags & 0x0200)
 			strcat (flags, "special ");
-		if (cols [0] & 0x0400)
+		if (prop_flags & 0x0400)
 			strcat (flags, "runtime ");
-		if (cols [0] & 0x1000)
+		if (prop_flags & 0x1000)
 			strcat (flags, "hasdefault ");
 
-		ptr = mono_metadata_blob_heap (m, cols [2]);
+		ptr = mono_metadata_blob_heap (m, cols [MONO_PROPERTY_TYPE]);
 		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 		/* ECMA claims 0x08 ... */
 		if (*ptr != 0x28 && *ptr != 0x08)
@@ -276,7 +303,7 @@ dump_table_property (MonoMetadata *m)
 		pcount = mono_metadata_decode_value (ptr, &ptr);
 		ptr = get_type (m, ptr, &type);
 		fprintf (output, "%d: %s %s (",
-			 i, type, mono_metadata_string_heap (m, cols [1]));
+			 i, type, mono_metadata_string_heap (m, cols [MONO_PROPERTY_NAME]));
 		g_free (type);
 
 		for (j = 0; j < pcount; j++){
@@ -296,16 +323,16 @@ dump_table_event (MonoMetadata *m)
 	fprintf (output, "Event Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+		guint32 cols [MONO_EVENT_SIZE];
 		const char *name;
 		char *type;
 		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_EVENT_SIZE);
 
-		name = mono_metadata_string_heap (m, cols [1]);
-		type = get_typedef_or_ref (m, cols [2]);
+		name = mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]);
+		type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE]);
 		fprintf (output, "%d: %s %s %s\n", i, type, name,
-			 cols [0] & 0x200 ? "specialname " : "");
+			 cols [MONO_EVENT_FLAGS] & 0x200 ? "specialname " : "");
 		g_free (type);
 	}
 	
@@ -319,13 +346,14 @@ dump_table_file (MonoMetadata *m)
 	fprintf (output, "File Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [3];
+		guint32 cols [MONO_FILE_SIZE];
 		const char *name;
 		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_FILE_SIZE);
 
-		name = mono_metadata_string_heap (m, cols[1]);
-		fprintf (output, "%d: %s %s\n", i, name, cols[2]&0x1?"nometadata":"containsmetadata");
+		name = mono_metadata_string_heap (m, cols [MONO_FILE_NAME]);
+		fprintf (output, "%d: %s %s\n", i, name, 
+				cols [MONO_FILE_FLAGS] & 0x1 ? "nometadata" : "containsmetadata");
 	}
 	
 }
@@ -338,12 +366,12 @@ dump_table_moduleref (MonoMetadata *m)
 	fprintf (output, "ModuleRef Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
-		guint32 cols [1];
+		guint32 cols [MONO_MODULEREF_SIZE];
 		const char *name;
 		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 
-		name = mono_metadata_string_heap (m, cols[0]);
+		name = mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]);
 		fprintf (output, "%d: %s\n", i, name);
 	}
 	
@@ -353,17 +381,41 @@ void
 dump_table_method (MonoMetadata *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
-	int i;
-	fprintf (output, "Method Table (0..%d)\n", t->rows);
+	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
+	int i, current_type;
+	guint32 first_m, last_m;
+	fprintf (output, "Method Table (1..%d)\n", t->rows);
 
-	for (i = 0; i < t->rows; i++){
-		guint32 cols [6];
+	current_type = 1;
+	last_m = first_m = 1;
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_METHOD_SIZE];
 		const char *name;
-		
-		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
+		char *sig;
+		const char *sigblob;
+		MonoMethodSignature *method;
 
-		name = mono_metadata_string_heap (m, cols[3]);
-		fprintf (output, "%d: %s\n", i, name);
+		/*
+		 * Find the next type.
+		 */
+		while (current_type <= td->rows && i >= (last_m = mono_metadata_decode_row_col (td, current_type - 1, MONO_TYPEDEF_METHOD_LIST))) {
+			current_type++;
+		}
+		if (i == first_m) {
+			fprintf (output, "########## %s.%s\n",
+				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAMESPACE)),
+				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAME)));
+			first_m = last_m;
+		}
+		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SIZE);
+		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
+		mono_metadata_decode_blob_size (sigblob, &sigblob);
+		method = mono_metadata_parse_method_signature (m, 1, sigblob, &sigblob);
+		name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
+		sig = dis_stringify_method_signature (m, method, name);
+		fprintf (output, "%d: %s\n", i, sig);
+		g_free (sig);
+		mono_metadata_free_method_signature (method);
 	}
 	
 }
