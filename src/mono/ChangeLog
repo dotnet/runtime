@@ -1,5 +1,7 @@
 2003-11-26  Zoltan Varga  <vargaz@freemail.hu>
 
+	* configure.in: Add -fno-strict-aliasing to CFLAGS.
+	
 	* configure.in: Applied patch from recht@netbsd.org. Avoid linking in
 	librt if not neccesary.
 
