@@ -915,7 +915,7 @@ typedef enum {
 	GENREIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK	= 28
 } GenericParameterAttributes;
 
-void          mono_image_create_pefile (MonoReflectionModuleBuilder *module);
+void          mono_image_create_pefile (MonoReflectionModuleBuilder *module, HANDLE file);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);

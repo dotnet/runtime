@@ -172,7 +172,16 @@ make_room_in_stream (MonoDynamicStream *stream, int size)
 	}
 	
 	stream->data = g_realloc (stream->data, stream->alloc_size);
-}	
+}
+
+static void
+mono_dynamic_stream_reset (MonoDynamicStream* stream)
+{
+	stream->alloc_size = stream->index = stream->offset = 0;
+	g_free (stream->data);
+	if (stream->hash)
+		g_hash_table_destroy (stream->hash);
+}
 
 static guint32
 string_heap_insert (MonoDynamicStream *sh, const char *str)
@@ -4541,7 +4550,7 @@ fixup_resource_directory (char *res_section, char *p, guint32 rva)
  * assembly->pefile where it can be easily retrieved later in chunks.
  */
 void
-mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
+mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	MonoMSDOSHeader *msdos;
 	MonoDotNetHeader *header;
 	MonoSectionTable *section;
@@ -4865,13 +4874,11 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	}
 	
 	/* check that the file is properly padded */
-#if 0
-	{
-		FILE *f = fopen ("mypetest.exe", "w");
-		fwrite (pefile->data, pefile->index, 1, f);
-		fclose (f);
-	}
-#endif
+	
+	if (!WriteFile (file, pefile->data, pefile->index , NULL, NULL))
+		g_error ("WriteFile returned %d\n", GetLastError ());
+	
+	mono_dynamic_stream_reset (pefile);
 }
 
 MonoReflectionModule *

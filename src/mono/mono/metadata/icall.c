@@ -920,14 +920,9 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 static void
 ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file)
 {
-	MonoDynamicImage *image = mb->dynamic_image;
-	
 	MONO_ARCH_SAVE_REGS;
 
-	mono_image_create_pefile (mb);
-
-	if (!WriteFile (file, image->pefile.data, image->pefile.index , NULL, NULL))
-		g_error ("WriteFile returned %d\n", GetLastError ());
+	mono_image_create_pefile (mb, file);
 }
 
 static void
