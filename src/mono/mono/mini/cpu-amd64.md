@@ -274,8 +274,8 @@ call_membase: dest:a src1:b len:64 clob:c
 trap:
 iconst: dest:i len:10
 i8const: dest:i len:17
-r4const: dest:f len:13
-r8const: dest:f len:13
+r4const: dest:f len:7
+r8const: dest:f len:7
 regvar:
 reg:
 regoffset:
@@ -475,7 +475,7 @@ float_clt: dest:i src1:f src2:f len:35
 float_clt_un: dest:i src1:f src2:f len:42
 float_conv_to_u: dest:i src1:f len:46
 call_handler: len:14
-aot_const: dest:i len:6
+aot_const: dest:i len:10
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:7
 x86_compare_membase_imm: src1:b len:12

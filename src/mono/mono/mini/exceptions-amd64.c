@@ -25,6 +25,8 @@
 #include "mini.h"
 #include "mini-amd64.h"
 
+#define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
+
 #ifdef PLATFORM_WIN32
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
@@ -516,7 +518,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		/* the lmf is always stored on the stack, so the following
 		 * expression points to a stack location which can be used as ESP */
-		new_ctx->SC_ESP = (guint64)&((*lmf)->rip);
+		new_ctx->SC_ESP = ALIGN_TO ((guint64)&((*lmf)->rip), 16);
 
 		*lmf = (*lmf)->previous_lmf;
 

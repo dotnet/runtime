@@ -951,7 +951,9 @@ static void
 emit_pointer (FILE *fp, const char *target)
 {
 	emit_alignment (fp, sizeof (gpointer));
-#if defined(sparc) && SIZEOF_VOID_P == 8
+#if defined(__x86_64__)
+	fprintf (fp, "\t.quad %s\n", target);
+#elif defined(sparc) && SIZEOF_VOID_P == 8
 	fprintf (fp, "\t.xword %s\n", target);
 #else
 	fprintf (fp, "\t.long %s\n", target);
@@ -1609,7 +1611,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	fclose (tmpfp);
 
-#if defined(sparc) && SIZEOF_VOID_P == 8
+#if defined(__x86_64__)
+	com = g_strdup_printf ("as --64 %s -o %s.o", tmpfname, tmpfname);
+#elif defined(sparc) && SIZEOF_VOID_P == 8
 	com = g_strdup_printf ("as -xarch=v9 %s -o %s.o", tmpfname, tmpfname);
 #else
 	com = g_strdup_printf ("as %s -o %s.o", tmpfname, tmpfname);
