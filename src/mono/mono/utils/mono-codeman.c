@@ -199,6 +199,7 @@ new_codechunk (int dynamic, int size)
 
 	}
 	else {
+#ifndef FORCE_MALLOC
 		ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 		if (ptr == (void*)-1) {
 			int fd = open ("/dev/zero", O_RDONLY);
@@ -213,6 +214,9 @@ new_codechunk (int dynamic, int size)
 				flags = CODE_FLAG_MALLOC;
 			}
 		}
+#else
+		g_assert_not_reached ();
+#endif
 	}
 
 	/* Make sure the thunks area is zeroed */
