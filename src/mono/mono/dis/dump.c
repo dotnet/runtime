@@ -25,8 +25,12 @@ dump_table_assembly (MonoImage *m)
 	const char *ptr;
 	int len;
 
-	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 	fprintf (output, "Assembly Table\n");
+
+	if (!t->rows)
+		return;
+
+	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 
 	fprintf (output, "Name:          %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]));
 	fprintf (output, "Hash Algoritm: 0x%08x\n", cols [MONO_ASSEMBLY_HASH_ALG]);
@@ -511,8 +515,7 @@ dump_table_module (MonoImage *m)
 		name = mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]);
 		guid = get_guid (m, cols [MONO_MODULE_MVID]);
 		fprintf (output, "%d: %s %d %s\n", i + 1, name, cols [MONO_MODULE_MVID], guid);
-	}
-	
+	}	
 }
 
 void

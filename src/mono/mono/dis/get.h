@@ -4,6 +4,7 @@
  */
 char *get_typedef             (MonoImage *m, int idx);
 char *get_module              (MonoImage *m, int idx);
+char *get_moduleref           (MonoImage *m, int idx);
 char *get_assemblyref         (MonoImage *m, int idx);
 char *get_typeref             (MonoImage *m, int idx);
 char *get_typedef_or_ref      (MonoImage *m, guint32 dor_token);

@@ -72,6 +72,16 @@ get_module (MonoImage *m, int idx)
 }
 
 char *
+get_moduleref (MonoImage *m, int idx)
+{
+	guint32 cols [MONO_MODULEREF_SIZE];
+	
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULEREF], idx - 1, cols, MONO_MODULEREF_SIZE);
+
+	return g_strdup (mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]));
+}
+
+char *
 get_assemblyref (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
@@ -258,7 +268,8 @@ get_typeref (MonoImage *m, int idx)
 		break;
 
 	case RESOLTION_SCOPE_MODULEREF: /* ModuleRef */
-		ret = g_strdup_printf ("TODO:TypeRef-ModuleRef (%s.%s)", s, t);
+		x = get_moduleref (m, rs_idx);
+		ret = g_strdup_printf ("[.module %s]%s%s%s", x, s, *s ? "." : "", t);
 		break;
 			      
 	case RESOLTION_SCOPE_ASSEMBLYREF: /*

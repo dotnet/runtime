@@ -117,6 +117,76 @@ dis_directive_assemblyref (MonoImage *m)
 	}
 }
 
+static void
+dis_directive_module (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_MODULE];
+	int i;
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_MODULE_SIZE];
+		const char *name;
+		char *guid;
+		
+		mono_metadata_decode_row (t, i, cols, MONO_MODULE_SIZE);
+
+		name = mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]);
+		guid = get_guid (m, cols [MONO_MODULE_MVID]);
+		fprintf (output, ".module %s // GUID = %s\n", name, guid);
+	}
+}
+
+static void
+dis_directive_moduleref (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_MODULEREF];
+	int i;
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_MODULEREF_SIZE];
+		const char *name;
+		
+		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
+
+		name = mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]);
+		fprintf (output, ".module extern %s\n", name);
+	}
+	
+}
+
+static void
+dis_directive_file (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_FILE];
+	int i, j, len;
+	guint32 entry_point;
+
+	entry_point = mono_image_get_entry_point (m);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_FILE_SIZE];
+		const char *name, *hash;
+		guint32 token;
+
+		mono_metadata_decode_row (t, i, cols, MONO_FILE_SIZE);
+
+		name = mono_metadata_string_heap (m, cols [MONO_FILE_NAME]);
+
+		hash = mono_metadata_blob_heap (m, cols [MONO_FILE_HASH_VALUE]);
+		len = mono_metadata_decode_blob_size (hash, &hash);
+
+		fprintf (output, ".file %s%s .hash = (", name,
+				cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA ? " nometadata" : "");
+
+		for (j = 0; j < len; ++j)
+			fprintf (output, " %02X", hash [j] & 0xff);
+
+		token = mono_metadata_make_token (MONO_TABLE_FILE, i + 1);
+		fprintf (output, " )%s\n", (token == entry_point) ? " .entrypoint" : "");
+	}
+	
+}
+
 static map_t visibility_map [] = {
 	{ TYPE_ATTRIBUTE_NOT_PUBLIC,           "private " },
 	{ TYPE_ATTRIBUTE_PUBLIC,               "public " },
@@ -1095,6 +1165,9 @@ disassemble_file (const char *file)
 		
 		dis_directive_assemblyref (img);
 		dis_directive_assembly (img);
+		dis_directive_file (img);
+		dis_directive_module (img);
+		dis_directive_moduleref (img);
 		dis_types (img);
 		dis_data (img);
 	}
