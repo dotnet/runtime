@@ -33,7 +33,7 @@
     <td>
 	<table border=1>
 	  <tr>
-	    <td>
+	    <td colspan="3">
 	      <b><center>Mono Status</center></b>
 	    </td>
 	    <td>
@@ -83,6 +83,14 @@
     </td>
   </tr>
 </table>
+
+@ite Aug 24th, 2002: Gtk# 0.4 released
+
+	Shortly after <a href="download.html">Mono 0.15</a> was
+	released a fresh version of <a
+	href="http://gtk-sharp.sf.net">Gtk#</a> was <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-August/001702.html">announced</a>.
+
 
 @item Aug 23rd, 2002: Mono 0.15 released
 
