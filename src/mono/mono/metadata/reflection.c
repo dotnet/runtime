@@ -1729,6 +1729,7 @@ mono_image_get_array_token (MonoDynamicAssembly *assembly, MonoReflectionArrayMe
 				mono_metadata_signature_equal (am->sig, sig)) {
 			g_free (name);
 			g_free (sig);
+			m->table_idx = am->token & 0xffffff;
 			return am->token;
 		}
 	}
@@ -2642,9 +2643,6 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	MonoClass *klass;
 	guint32 token;
 
-	if (!obj)
-		g_error ("System.Array methods not yet supported");
-	
 	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
@@ -5533,5 +5531,6 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	}
 	return result;
 }
+
 
 
