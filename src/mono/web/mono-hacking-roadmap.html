@@ -129,9 +129,50 @@ vertical-align: top;
 		<li>ECMA profile: We will like take care of this one
 		at Novell.
 
-		<li>Assembly signing: I do not know what is the state
-		of this feature currently in Mono, maybe Sebastien and
-		Zoltan could give us an update here.
+		<li>Assembly signing: There are two ways to sign 
+		assemblies.<br>
+
+			<b>StrongNames</b> - It is possible to sign
+			and verify strongname signatures using the 
+			sn.exe security tool. This same tool can also
+			create the required key pairs to sign the 
+			assemblies. What we are lacking:
+			<ul>
+				<li>The runtime doesn't check
+				strongname signatures (if present) 
+				when loading an assembly outside the
+				GAC;
+				<li>sn.exe cannot be used to sign, 
+				nor verify, an assembly that contains
+				the "ECMA public key";
+				<li>sn.exe doesn't support all options
+				to turn on/off runtime verification
+				for some assemblies;
+				<li>StrongNameIdentityPermission 
+				support isn't complete as it depends
+				on CAS.
+			</ul>
+
+			<b>Authenticode</b> - It is possible today
+			to sign assemblies (in fact any PE file) with
+			an Authenticode(r) compatible signature (with
+			or without a timestamp) using the security 
+			tools cert2spc.exe and signcode.exe. We also
+			have support to test this using the tools 
+			makecert.exe, chktrust.exe and setreg.exe.
+			What we are lacking:
+			<ul>
+				<li>Currently our X.509 certificate
+				chaining is very limited and we do 
+				not support certificate revocation 
+				in anyway;
+				<li>Not every options are implemented
+				in all tools (and some do not really
+				apply to Mono);
+				<li>PublisherIdentityPermission 
+				support isn't complete as it depends
+				on CAS.
+			</ul>
 
 		<li>ASP.NET caching: Non-existant at this point, this
 		needs to be implemented. 
