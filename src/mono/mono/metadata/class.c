@@ -156,11 +156,14 @@ mono_class_metadata_init (MonoClass *class)
 	if (class->metadata_inited)
 		return;
 
-	if (class->parent && !class->parent->metadata_inited)
-		 mono_class_metadata_init (class->parent);
+	if (class->parent) {
+		if (!class->parent->metadata_inited)
+			mono_class_metadata_init (class->parent);
+		class->instance_size = class->parent->instance_size;
+		class->class_size = class->parent->class_size;
+	}
 
 	class->metadata_inited = 1;
-
 
 	/*
 	 * Computes the size used by the fields, and their locations
@@ -210,20 +213,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->type_token = type_token;
 	class->flags = cols [0];
 
-
 	/*g_print ("Init class %s\n", name);*/
 
 	/* if root of the hierarchy */
 	if (!strcmp (nspace, "System") && !strcmp (name, "Object")) {
-		class->instance_size = sizeof (MonoObject);
 		class->parent = NULL;
+		class->instance_size = sizeof (MonoObject);
 	} else if (!(cols [0] & TYPE_ATTRIBUTE_INTERFACE)) {
 		parent_token = mono_metadata_token_from_dor (cols [3]);
 		class->parent = mono_class_get (image, parent_token);
-		class->instance_size = class->parent->instance_size;
 		class->valuetype = class->parent->valuetype;
 		class->enumtype = class->parent->enumtype;
-		g_assert (class->instance_size);
 	}
 
 	if (!strcmp (nspace, "System")) {
@@ -269,7 +269,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (!strcmp (nspace, "System") && !strcmp (name, "Array")) {
 		class->instance_size += 2 * sizeof (gpointer);
 		g_assert (class->field.count == 0);
-		g_assert (class->instance_size == sizeof (MonoArrayObject));
 	}
 
 	class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token);

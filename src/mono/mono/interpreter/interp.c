@@ -878,17 +878,19 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_LDARGA_S) {
 			MonoType *t;
+			MonoClass *c;
+
 			++ip;
 			t = ARG_TYPE (signature, *ip);
-			if (t->type == MONO_TYPE_VALUETYPE) {
+			c = mono_class_from_mono_type (t);
+			sp->data.vt.klass = c;
+			sp->data.vt.vt = ARG_POS (*ip);
+
+			if (c->valuetype)
 				sp->type = VAL_VALUETA;
-				sp->data.vt.vt = ARG_POS (*ip);
-				sp->data.vt.klass = t->data.klass;
-			} else {
+			else
 				sp->type = VAL_TP;
-				sp->data.p = ARG_POS (*ip);
-				sp->data.vt.klass = mono_class_from_mono_type (t);
-			}
+
 			++sp;
 			++ip;
 			BREAK;
@@ -909,17 +911,19 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_LDLOCA_S) {
 			MonoType *t;
+			MonoClass *c;
+
 			++ip;
 			t = LOCAL_TYPE (header, *ip);
-			if (t->type == MONO_TYPE_VALUETYPE) {
+			c =  mono_class_from_mono_type (t);
+			sp->data.vt.klass = c;
+			sp->data.p = LOCAL_POS (*ip);
+
+			if (c->valuetype)
 				sp->type = VAL_VALUETA;
-				sp->data.vt.vt = LOCAL_POS (*ip);
-				sp->data.vt.klass = t->data.klass;
-			} else {
+			else 
 				sp->type = VAL_TP;
-				sp->data.p = LOCAL_POS (*ip);
-				sp->data.vt.klass = mono_class_from_mono_type (t);
-			}
+
 			++sp;
 			++ip;
 			BREAK;
@@ -1040,7 +1044,6 @@ ves_exec_method (MonoInvocation *frame)
 				child_frame.method = mono_get_method (image, token, NULL);
 			csignature = child_frame.method->signature;
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
-
 			/* decrement by the actual number of args */
 			if (csignature->param_count) {
 				sp -= csignature->param_count;
@@ -1669,6 +1672,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_NATI)
 				sp->data.p = (gpointer)(~ (int)sp->data.p);
 			BREAK;
+		CASE (CEE_CONV_U1) // fall through
 		CASE (CEE_CONV_I1) {
 			++ip;
 			switch (sp [-1].type) {
@@ -1690,6 +1694,7 @@ ves_exec_method (MonoInvocation *frame)
 			sp [-1].type = VAL_I32;
 			BREAK;
 		}
+		CASE (CEE_CONV_U2) // fall through
 		CASE (CEE_CONV_I2) {
 			++ip;
 			switch (sp [-1].type) {
@@ -1816,8 +1821,7 @@ ves_exec_method (MonoInvocation *frame)
 			name = mono_metadata_user_string (image, index);
 			len = mono_metadata_decode_blob_size (name, &name);
 
-			o = mono_new_utf16_string (name, len);
-
+			o = mono_new_utf16_string (name, len >> 1);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = NULL;
@@ -1970,12 +1974,13 @@ ves_exec_method (MonoInvocation *frame)
 				offset = field->offset - sizeof (MonoObject);
 			}
 			if (load_addr) {
-				sp->type = VAL_TP;
-				sp->data.p = (char*)obj + offset;
-				sp->data.vt.klass = mono_class_from_mono_type (field->type);
+				sp [-1].type = VAL_TP;
+				sp [-1].data.p = (char*)obj + offset;
+				sp [-1].data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, &sp [-1]);
 				stackval_from_data (field->type, &sp [-1], (char*)obj + offset);
+				
 			}
 			BREAK;
 		}
@@ -2000,6 +2005,7 @@ ves_exec_method (MonoInvocation *frame)
 				field = mono_class_get_field (sp [0].data.vt.klass, token);
 				offset = field->offset - sizeof (MonoObject);
 			}
+
 			stackval_to_data (field->type, &sp [1], (char*)obj + offset);
 			vt_free (&sp [1]);
 			BREAK;
@@ -2345,8 +2351,6 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED66) 
 		CASE (CEE_UNUSED67) ves_abort(); BREAK;
 		CASE (CEE_LDTOKEN)
-		CASE (CEE_CONV_U2) ves_abort(); BREAK;
-		CASE (CEE_CONV_U1) ves_abort(); BREAK;
 		//CASE (CEE_CONV_I) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
@@ -2430,7 +2434,26 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			switch (*ip) {
 			case CEE_ARGLIST: ves_abort(); break;
-			case CEE_CEQ: ves_abort(); break;
+			case CEE_CEQ: {
+				gint32 result;
+				++ip;
+				sp -= 2;
+
+				if (sp->type == VAL_I32)
+					result = sp [0].data.i == GET_NATI (sp [1]);
+				else if (sp->type == VAL_I64)
+					result = sp [0].data.l == sp [1].data.l;
+				else if (sp->type == VAL_DOUBLE)
+					result = sp [0].data.f == sp [1].data.f;
+				else
+					result = GET_NATI (sp [0]) == GET_NATI (sp [1]);
+				sp->type = VAL_I32;
+				sp->data.i = result;
+
+				sp++;
+						
+				break;
+			}
 			case CEE_CGT: ves_abort(); break;
 			case CEE_CGT_UN: ves_abort(); break;
 			case CEE_CLT: ves_abort(); break;
@@ -2471,20 +2494,22 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			case CEE_LDLOCA: {
 				MonoType *t;
+				MonoClass *c;
 				guint32 loc_pos;
+
 				++ip;
 				loc_pos = read32 (ip);
 				ip += 4;
 				t = LOCAL_TYPE (header, loc_pos);
-				if (t->type == MONO_TYPE_VALUETYPE) {
+				c =  mono_class_from_mono_type (t);
+				sp->data.vt.vt = LOCAL_POS (loc_pos);
+				sp->data.vt.klass = c;
+
+				if (c->valuetype) 
 					sp->type = VAL_VALUETA;
-					sp->data.vt.vt = LOCAL_POS (loc_pos);
-					sp->data.vt.klass = t->data.klass;
-				} else {
+				else
 					sp->type = VAL_TP;
-					sp->data.p = LOCAL_POS (loc_pos);
-					sp->data.vt.klass = mono_class_from_mono_type (t);
-				}
+
 				++sp;
 				break;
 			}

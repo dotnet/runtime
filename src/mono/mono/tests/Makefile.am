@@ -14,15 +14,18 @@ TESTSRC=			\
 	exception3.cs		\
 	exception4.cs		\
 	struct.cs		\
-	static-constructor.cs		\
+	static-constructor.cs	\
 	pinvoke.cs		\
+	box.cs			\
 	array.cs		\
-	enum.cs		\
+	enum.cs			\
 	property.cs		\
 	interface.cs		\
-	virtual-method.cs		\
-	intptrcast.cs	\
-	stream.cs
+	virtual-method.cs	\
+	intptrcast.cs		\
+	stream.cs		\
+	stream-writer.cs	\
+	console.cs
 
 TESTS=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)

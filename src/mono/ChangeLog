@@ -1,3 +1,10 @@
+2001-08-28  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/console.cs: impl.
+
+	* mono/tests/box.cs: impl.
+
+	* mono/tests/stream-writer.cs: impl.
 
 Mon Aug 27 20:24:26 CEST 2001 Paolo Molaro <lupus@ximian.com>
 

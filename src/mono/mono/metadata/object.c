@@ -131,7 +131,7 @@ mono_new_szarray (MonoClass *eclass, guint32 n)
 	ao->bounds = g_malloc0 (sizeof (MonoArrayBounds));
 	ao->bounds [0].length = n;
 	ao->bounds [0].lower_bound = 0;
-	
+
 	ao->vector = g_malloc0 (n * mono_array_element_size (ac));
 
 	return o;
