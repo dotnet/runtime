@@ -102,13 +102,20 @@
   </tr>
 </table>
 
-@item Feb, 23rd, 2003: Mono 0.20 released.
+@item Feb, 23rd, 2003: Mono 0.20 released; Gtk# 0.8 released.
 
 	Mono 0.20 has been released.  Check out the <a
 	href="archive/mono-0.20">release notes</a> for an overview of
 	the changes.  You can get it <a href="download.html">here</a>.
 	There are no major features in this release, mostly bug fixes
-	and performance improvements.
+	and performance improvements.  
+
+	Gtk# 0.8 has been <a
+	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2003-February/001114.html">released</a>
+
+	<b>Important</b>: The contributed binaries for Windows
+	binaries of Mono 0.20 contain a virus.  Please read <a
+	href="virus.html">this</a> if you installed the binary.
 
 @item Feb 18th, 2003: Volunteers to document Gtk#
 

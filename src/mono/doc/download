@@ -13,6 +13,10 @@
 	section</a>, the <a
 	href="http://www.go-mono.org/faq.html">FAQ</a>.
 
+	<b>Important</b>: The contributed binaries for Windows
+	binaries of Mono 0.20 contained a virus.  Please read <a
+	href="virus.html">this</a> if you installed the binary.
+
 	<table>
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
@@ -114,11 +118,7 @@
 	        </tr>
  		<tr>
  		  <td bgcolor="#999999">
-<!-- 		    <b>Windows Setup Wizard (NT/2000/XP)</b> -->
-<!-- 		    <ul> -->
-<!-- 	              <li><a href="archive/mono-0.20-stable.exe">Mono-Setup</a> -->
-<!-- 	            </ul> -->
-<!-- 	          </td> -->
+ 	          </td>
  		  <td bgcolor="#999999">
  		    <b>Debian packages</b>
 		    <ul>
