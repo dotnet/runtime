@@ -2132,6 +2132,39 @@ mono_metadata_packing_from_typedef (MonoImage *meta, guint32 index, guint32 *pac
 	return loc.result + 1;
 }
 
+/*
+ * mono_metadata_custom_attrs_from_index:
+ * @meta: metadata context
+ * @index: token representing the parent
+ * 
+ * Returns: the 1-based index into the CustomAttribute table of the first 
+ * attribute which belongs to the metadata object described by @index.
+ * Returns 0 if no such attribute is found.
+ */
+guint32
+mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	locator_t loc;
+	
+	if (!tdef->base)
+		return 0;
+
+	loc.idx = index;
+	loc.col_idx = MONO_CUSTOM_ATTR_PARENT;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	/* Find the first entry by searching backwards */
+	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_CUSTOM_ATTR_PARENT) == index))
+		loc.result --;
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	return loc.result + 1;
+}
+
 #ifdef DEBUG
 static void
 mono_backtrace (int limit)

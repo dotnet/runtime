@@ -4586,13 +4586,18 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 	MonoCustomAttrInfo *ainfo;
 	GList *tmp, *list = NULL;
 	const char *data;
-	
+
 	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-	/* the table is not sorted */
-	for (i = 0; i < ca->rows; ++i) {
+
+	i = mono_metadata_custom_attrs_from_index (image, idx);
+	if (!i)
+		return NULL;
+	i --;
+	while (i < ca->rows) {
 		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
-			continue;
+			break;
 		list = g_list_prepend (list, GUINT_TO_POINTER (i));
+		++i;
 	}
 	len = g_list_length (list);
 	if (!len)
