@@ -333,7 +333,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			}
 
 #if 0
-			g_message ("Relocating IL offset %d in `%s' to %d (%p)",
+			g_message ("Relocating IL offset %04x in `%s' to %d (%p)",
 				   original, minfo->method->name, address,
 				   minfo->code_start + address);
 #endif
@@ -447,6 +447,9 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 					   symfile->file_name);
 				continue;
 			}
+
+			if (!klass->fields)
+				continue;
 
 			offset = klass->fields [original].offset;
 			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE)
