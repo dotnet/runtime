@@ -820,7 +820,8 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	mono_domain_lock (domain);
 	for (tmp = domain->assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
-		if (!mono_assembly_names_equal (aname, &ass->aname))
+		/* Dynamic assemblies can't match here in MS.NET */
+		if (ass->dynamic || !mono_assembly_names_equal (aname, &ass->aname))
 			continue;
 
 		mono_domain_unlock (domain);
