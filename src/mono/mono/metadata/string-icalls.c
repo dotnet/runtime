@@ -283,6 +283,9 @@ mono_string_InternalIndexOfStr (MonoString *me, MonoString *value, gint32 sindex
 	cmpstr = mono_string_chars(value);
 
 	for (pos = sindex; pos != count + sindex; pos++) {
+		if (pos + lencmpstr > count + sindex)
+			return -1;
+
 		if (0 == memcmp(src + pos, cmpstr, lencmpstr * sizeof(gunichar2)))
 			return pos;
 	}
@@ -338,7 +341,7 @@ mono_string_InternalLastIndexOfStr (MonoString *me, MonoString *value, gint32 si
 	src = mono_string_chars(me);
 	cmpstr = mono_string_chars(value);
 
-	for (pos = sindex; pos > sindex - count; pos -= lencmpstr) {
+	for (pos = sindex; pos > sindex - count; pos--) {
 		if (0 == memcmp(src + pos, cmpstr, lencmpstr * sizeof(gunichar2)))
 			return pos;
 	}
@@ -486,6 +489,7 @@ mono_string_InternalCompareStrN (MonoString *s1, gint32 i1, MonoString *s2, gint
 	*/
 	gint32 lenstr1;
 	gint32 lenstr2;
+	gint32 charcmp;
 	gunichar2 *str1;
 	gunichar2 *str2;
 
@@ -509,8 +513,9 @@ mono_string_InternalCompareStrN (MonoString *s1, gint32 i1, MonoString *s2, gint
 		if (i1 + pos >= lenstr1 || i2 + pos >= lenstr2)
 			break;
 
-		if (0 != mono_string_cmp_char(str1[i1 + pos], str2[i2 + pos], mode))
-			break;
+		charcmp = mono_string_cmp_char(str1[i1 + pos], str2[i2 + pos], mode);
+		if (charcmp != 0)
+			return charcmp;
 	}
 
 	/* the lesser wins, so if we have looped until length we just need to check the last char */
@@ -557,20 +562,24 @@ gint32
 mono_string_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode)
 {
 	gint32 result;
+	GUnicodeType c1type, c2type;
 
+	c1type = g_unichar_type (c1);
+	c2type = g_unichar_type (c2);
 	switch (mode) {
 	case 0:	
 		/* TODO: compare with culture info */
-		if (g_unichar_isupper(c1) && g_unichar_islower(c2))
+		if (c1type == G_UNICODE_UPPERCASE_LETTER && c2type == G_UNICODE_LOWERCASE_LETTER)
 			return 1;
 					
-		if (g_unichar_islower(c1) && g_unichar_isupper(c2))
+		if (c1type == G_UNICODE_LOWERCASE_LETTER && c2type == G_UNICODE_UPPERCASE_LETTER)
 			return -1;
 	
 		result = (gint32) c1 - c2;
 		break;
 	case 1:	
-		result = (gint32) g_unichar_tolower(c1) - g_unichar_tolower(c2);
+		result = (gint32) (c1type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c1) : c1) - 
+				  (c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
 		break;
 		/* fix: compare ordinal */
 	case 2:	
@@ -578,11 +587,5 @@ mono_string_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode)
 		break;
 	}
 
-	if (result < 0)
-		return -1;
-
-	if (result > 0)
-		return 1;
-
-	return 0;
+	return ((result < 0) ? -1 : (result > 0) ? 1 : 0);
 }
