@@ -3212,9 +3212,9 @@ mono_jit_init (char *file) {
 #endif /* PLATFORM_WIN32 */
 
 	mono_init_icall ();
-	mono_add_internal_call ("__array_Set", ves_array_set);
-	mono_add_internal_call ("__array_Get", ves_array_get);
-	mono_add_internal_call ("__array_Address", ves_array_element_address);
+	mono_add_internal_call ("System.Array::Set", ves_array_set);
+	mono_add_internal_call ("System.Array::Get", ves_array_get);
+	mono_add_internal_call ("System.Array::Address", ves_array_element_address);
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
