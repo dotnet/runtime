@@ -8171,7 +8171,6 @@ ensure_runtime_vtable (MonoClass *klass)
 	for (i = 0; i < num; ++i)
 		klass->methods [j++] = methodbuilder_to_mono_method (klass, mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i));
 
-	klass->wastypebuilder = TRUE;
 	if (tb->interfaces) {
 		klass->interface_count = mono_array_length (tb->interfaces);
 		klass->interfaces = g_new (MonoClass*, klass->interface_count);
@@ -8419,10 +8418,10 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 
 	typebuilder_setup_events (klass);
 
+	klass->wastypebuilder = TRUE;
+
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
-	/* with enums res == tb: need to fix that. */
-	if (!klass->enumtype)
-		g_assert (res != (MonoReflectionType*)tb);
+	g_assert (res != (MonoReflectionType*)tb);
 	return res;
 }
 
