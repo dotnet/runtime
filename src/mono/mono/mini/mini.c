@@ -3772,9 +3772,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_TEMPLOAD (cfg, ins, temp);
 			} else {
 				gpointer addr;
+				MonoVTable *vtable;
+				vtable = mono_class_vtable (cfg->domain, klass);
 				if (!cfg->domain->thread_static_fields || !(addr = g_hash_table_lookup (cfg->domain->thread_static_fields, field))) {
-					MonoVTable *vtable;
-					vtable = mono_class_vtable (cfg->domain, klass);
 					if (!vtable->initialized && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && needs_cctor_run (klass, method)) {
 						MonoInst *iargs [1];
 						NEW_PCONST (cfg, iargs [0], vtable);
