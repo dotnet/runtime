@@ -3903,33 +3903,6 @@ segv_handler (int signum)
 	mono_raise_exception (segv_exception);
 }
 
-#if HAVE_BOEHM_GC
-static void
-my_GC_free (void *p)
-{
-	/* do nothing */
-	GC_debug_free (p);
-}
-
-static void*
-my_GC_malloc (gsize n_block_bytes)
-{
-	return GC_debug_malloc (n_block_bytes, "malloc", 0);
-}
-
-static void*
-my_GC_realloc (void* ptr, gsize n_block_bytes)
-{
-	return GC_debug_realloc (ptr, n_block_bytes, "realloc", 0);
-}
-
-static void*
-my_GC_calloc (gsize n_blocks, gsize n_block_bytes)
-{
-	return GC_debug_malloc (n_block_bytes * n_blocks, "calloc", 0);
-}
-#endif
-
 int 
 main (int argc, char *argv [])
 {
@@ -3941,20 +3914,6 @@ main (int argc, char *argv [])
 
 	if (argc < 2)
 		usage ();
-
-#if 0 && HAVE_BOEHM_GC
-	{
-		static GMemVTable boehm_table = {
-			my_GC_malloc,
-			my_GC_realloc,
-			my_GC_free,
-			my_GC_calloc,
-			GC_malloc, /* try variants */
-			GC_realloc,
-		};
-		g_mem_set_vtable (&boehm_table);
-	}
-#endif
 
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)

@@ -3230,20 +3230,6 @@ mono_jit_abort (MonoObject *obj)
 	exit (1);
 }
 
-#if HAVE_BOEHM_GC
-static void
-my_GC_free (void *p)
-{
-	/* do nothing */
-}
-
-static void*
-my_GC_calloc (gsize n_blocks, gsize n_block_bytes)
-{
-	return GC_malloc (n_block_bytes * n_blocks);
-}
-#endif
-
 int 
 main (int argc, char *argv [])
 {
@@ -3262,22 +3248,6 @@ main (int argc, char *argv [])
 
 	if (argc < 2)
 		usage (argv [0]);
-
-#if HAVE_BOEHM_GC
-	{
-#if 0
-		static GMemVTable boehm_table = {
-			GC_malloc,
-			GC_realloc,
-			my_GC_free,
-			my_GC_calloc,
-			GC_malloc, /* try variants */
-			GC_realloc,
-		};
-		g_mem_set_vtable (&boehm_table);
-#endif
-	}
-#endif
 
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--help") == 0) {
