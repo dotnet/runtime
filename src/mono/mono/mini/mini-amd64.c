@@ -90,7 +90,12 @@ amd64_patch (unsigned char* code, gpointer target)
 	if ((code [0] >= 0x40) && (code [0] <= 0x4f))
 		code += 1;
 
-	x86_patch (code, (unsigned char*)target);
+	if (code [0] == 0xbb) {
+		/* amd64_set_reg_template */
+		*(guint64*)(code + 1) = (guint64)target;
+	}
+	else
+		x86_patch (code, (unsigned char*)target);
 }
 
 typedef enum {
@@ -1193,6 +1198,22 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 	amd64_fcompp (code); \
 	amd64_fnstsw (code); \
 } while (0); 
+
+/*
+ * Emitting a call and patching it later is expensive on amd64, so try to
+ * determine the patch target immediately, and emit more efficient code if
+ * possible.
+ */
+static guint8*
+emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
+{
+	/* FIXME: */
+	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
+	amd64_set_reg_template (code, GP_SCRATCH_REG);
+	amd64_call_reg (code, GP_SCRATCH_REG);
+
+	return code;
+}
 
 #define EMIT_CALL() do { \
     amd64_set_reg_template (code, GP_SCRATCH_REG); \
@@ -3417,11 +3438,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_arguments (cfg, call, code);
 
 			if (ins->flags & MONO_INST_HAS_METHOD)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD, call->method);
-			else {
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_ABS, call->fptr);
-			}
-			EMIT_CALL ();
+				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
+			else
+				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
@@ -3524,9 +3543,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_THROW: {
 			amd64_mov_reg_reg (code, AMD64_RDI, ins->sreg1, 8);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
-			EMIT_CALL ();
 			break;
 		}
 		case OP_CALL_HANDLER: 
@@ -4205,10 +4223,11 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			*((gconstpointer *)(ip + 2)) = target;
 			continue;
 		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_ABS:
-		case MONO_PATCH_INFO_INTERNAL_METHOD:
 			*((gconstpointer *)(ip + 2)) = target;
 			continue;
+		case MONO_PATCH_INFO_ABS:
+		case MONO_PATCH_INFO_INTERNAL_METHOD:
+			break;
 		default:
 			break;
 		}
@@ -4408,9 +4427,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			 * saved to the stack/global regs.
 			 */
 
-			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 								 (gpointer)"mono_get_lmf_addr");		
-			EMIT_CALL ();
 		}
 
 		gint32 lmf_offset = - cfg->arch.lmf_offset;
@@ -4662,8 +4680,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_METHODCONST, cfg->method);
 	amd64_set_reg_template (code, AMD64_RDI);
 	amd64_mov_reg_reg (code, AMD64_RSI, AMD64_RSP, 8);
-	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, (gpointer)func);
-	EMIT_CALL ();
+	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
 
 	if (enable_arguments) {
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, stack_area);
@@ -4757,8 +4774,7 @@ handle_enum:
 
 	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_METHODCONST, method);
 	amd64_set_reg_template (code, AMD64_RDI);
-	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, (gpointer)func);
-	EMIT_CALL ();
+	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
 
 	/* Restore result */
 	switch (save_mode) {
@@ -4830,6 +4846,28 @@ gboolean
 mono_arch_is_inst_imm (gint64 imm)
 {
 	return amd64_is_imm32 (imm);
+}
+
+/*
+ * Determine whenever the trap whose info is in SIGINFO is caused by
+ * integer overflow.
+ */
+gboolean
+mono_arch_is_int_overflow (void *sigctx)
+{
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	guint8* rip;
+	int i;
+
+	rip = (guint8*)ctx->uc_mcontext.gregs [REG_RIP];
+
+	if ((rip [0] == 0xf7) && (rip [1] == 0xf9)) {
+		/* idiv %ecx */
+		if (ctx->uc_mcontext.gregs [REG_RCX] == -1)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))

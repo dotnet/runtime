@@ -8008,10 +8008,17 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 static void
 SIG_HANDLER_SIGNATURE (sigfpe_signal_handler)
 {
-	MonoException *exc;
-	GET_CONTEXT
+	MonoException *exc = NULL;
+	GET_CONTEXT;
 
+#if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
+	if (mono_arch_is_int_overflow (ctx))
+		exc = mono_get_exception_arithmetic ();
+	else
+		exc = mono_get_exception_divide_by_zero ();
+#else
 	exc = mono_get_exception_divide_by_zero ();
+#endif
 	
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
