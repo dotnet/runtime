@@ -25,6 +25,9 @@
 #include "codegen.h"
 #include "debug.h"
 
+
+//#define DEBUG_REGALLOC
+
 static void
 enter_method (MonoMethod *method, char *ebp)
 {
@@ -418,84 +421,114 @@ mono_label_cfg (MonoFlowGraph *cfg)
 	}
 }
 
-static void
-tree_preallocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
-{
-	switch (tree->op) {
-	case MB_TERM_CALL_I4:
-	case MB_TERM_CALL_I8:
-	case MB_TERM_CALL_R8:
-//	case MB_TERM_CALL_VOID :
-		tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, tree->exclude_mask);
-		tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, tree->exclude_mask);
-		tree->reg3 = mono_regset_alloc_reg (rs, X86_ECX, tree->exclude_mask);
-		return;
-	default: break;
-	}
-
-	switch (goal) {
-	case MB_NTERM_reg:
-	case MB_NTERM_lreg: {
-		switch (tree->op) {
-		case MB_TERM_SHL:
-		case MB_TERM_SHR:
-		case MB_TERM_SHR_UN:
-			tree->exclude_mask |= (1 << X86_ECX);
-			tree->left->exclude_mask |= (1 << X86_ECX);
-			break;
-		case MB_TERM_MUL:
-		case MB_TERM_MUL_OVF:
-		case MB_TERM_MUL_OVF_UN:
-		case MB_TERM_DIV:
-		case MB_TERM_DIV_UN:
-		case MB_TERM_REM:
-		case MB_TERM_REM_UN:
-			tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, tree->exclude_mask);
-			tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, tree->exclude_mask);
-			if (goal == MB_NTERM_reg) {
-				tree->left->exclude_mask |= (1 << X86_EDX);
-				tree->right->exclude_mask |= (1 << X86_EDX) | (1 << X86_EAX);
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	}
-	default:
-		break;
-	}
-}
-
-static void
-tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
+static gboolean
+tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask) 
 {
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
 	const guint16 *nts = mono_burg_nts [ern];
+	guint8 left_exclude_mask = 0, right_exclude_mask = 0;
 	int i;
 	
+#ifdef DEBUG_REGALLOC
+	printf ("tree_allocate_regs start %d %08x %d %d\n",  tree->op, rs->free_mask, goal, 
+		(nts [0] && kids [0] == tree));
+#endif
+
 	mono_burg_kids (tree, ern, kids);
 
-	//printf ("RALLOC START %d %p %d %d\n",  tree->op, rs->free_mask, goal, (nts [0] && kids [0] == tree));
+	switch (tree->op) {
+	case MB_TERM_SHL:
+	case MB_TERM_SHR:
+	case MB_TERM_SHR_UN:
+		exclude_mask |= (1 << X86_ECX);
+		left_exclude_mask |= (1 << X86_ECX);
+		break;
+	case MB_TERM_MUL:
+	case MB_TERM_MUL_OVF:
+	case MB_TERM_MUL_OVF_UN:
+	case MB_TERM_DIV:
+	case MB_TERM_DIV_UN:
+	case MB_TERM_REM:
+	case MB_TERM_REM_UN:
+		if (goal == MB_NTERM_reg) {
+			left_exclude_mask |= (1 << X86_EDX);
+			right_exclude_mask |= (1 << X86_EDX) | (1 << X86_EAX);
+		}
+		break;
+	default:
+		break;
+	}
 
 	if (nts [0] && kids [0] == tree) {
 		/* chain rule */
-		tree_allocate_regs (kids [0], nts [0], rs);
+		if (!tree_allocate_regs (kids [0], nts [0], rs, exclude_mask))
+			return FALSE;
 		/* special case reg: coni4 */
 		if (goal == MB_NTERM_reg) {
 			if (tree->reg1 == -1)
-				tree->reg1 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
-			g_assert (tree->reg1 != -1);
+				tree->reg1 = mono_regset_alloc_reg (rs, -1, exclude_mask);
+			if (tree->reg1 == -1)
+				return FALSE;
 		}
-		return;
+		return TRUE;
 	}
 
-	for (i = 0; nts [i]; i++)
-		tree_preallocate_regs (kids [i], nts [i], rs);
+	tree->reg1 = -1;
+	tree->reg2 = -1;
+	tree->reg3 = -1;
+	tree->spilled = 0;
+ 
+	if (nts [0]) {
+		if (nts [1]) { /* two kids */
+			MonoRegSet saved_rs;
+			if (nts [2]) /* we cant handle tree kids */
+				g_assert_not_reached ();
 
-	for (i = 0; nts [i]; i++)
-		tree_allocate_regs (kids [i], nts [i], rs);
+			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask))
+				return FALSE;
+
+			saved_rs = *rs;
+
+			if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask)) {
+
+#ifdef DEBUG_REGALLOC
+				printf ("tree_allocate_regs try 1 failed %d %d %d %d\n", 
+					nts [1], kids [1]->reg1,
+					kids [1]->reg2,kids [1]->reg3);
+#endif
+				*rs = saved_rs;
+
+				if (kids [0]->reg1 != -1)
+					right_exclude_mask |= 1 << kids [0]->reg1;
+				if (kids [0]->reg2 != -1)
+					right_exclude_mask |= 1 << kids [0]->reg2;
+				if (kids [0]->reg3 != -1)
+					right_exclude_mask |= 1 << kids [0]->reg3;
+				
+				mono_regset_free_reg (rs, kids [0]->reg1);
+				mono_regset_free_reg (rs, kids [0]->reg2);
+				mono_regset_free_reg (rs, kids [0]->reg3);
+
+				kids [0]->spilled = 1;
+
+				if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask)) {
+#ifdef DEBUG_REGALLOC
+					printf ("tree_allocate_regs try 2 failed\n");
+#endif
+					return FALSE;
+				}
+#ifdef DEBUG_REGALLOC
+				printf ("tree_allocate_regs try 2 succesfull\n");
+#endif
+			}
+
+		} else { /* one kid */
+			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask))
+				return FALSE;			
+		}
+	}
+
 
 	for (i = 0; nts [i]; i++) {
 		mono_regset_free_reg (rs, kids [i]->reg1);
@@ -503,22 +536,60 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		mono_regset_free_reg (rs, kids [i]->reg3);
 	}
 
+	tree->emit = mono_burg_func [ern];
+
+	switch (tree->op) {
+	case MB_TERM_CALL_I4:
+	case MB_TERM_CALL_I8:
+	case MB_TERM_CALL_R8:
+	// case MB_TERM_CALL_VOID :
+		if ((tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, exclude_mask)) == -1)
+			return FALSE;
+		if ((tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, exclude_mask)) == -1)
+			return FALSE;
+		if ((tree->reg3 = mono_regset_alloc_reg (rs, X86_ECX, exclude_mask)) == -1)
+			return FALSE;
+		return TRUE;
+	}
+
 	switch (goal) {
 	case MB_NTERM_reg:
-		if (tree->reg1 < 0) { 
-			tree->reg1 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
-			g_assert (tree->reg1 != -1);
+		switch (tree->op) {
+		case MB_TERM_MUL_OVF_UN:
+		case MB_TERM_DIV:
+		case MB_TERM_DIV_UN:
+		case MB_TERM_REM:
+		case MB_TERM_REM_UN:
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, exclude_mask)) == -1)
+				return FALSE;			
+			if ((tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, exclude_mask)) == -1)
+				return FALSE;
+			break;
+		default:
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, -1, exclude_mask)) == -1)
+				return FALSE;
 		}
 		break;
 
 	case MB_NTERM_lreg:
-		if (tree->reg1 < 0) { 
-			tree->reg1 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
-			g_assert (tree->reg1 != -1);
-		}
-		if (tree->reg2 < 0) { 
-			tree->reg2 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
-			g_assert (tree->reg2 != -1);
+		switch (tree->op) {
+		case MB_TERM_MUL:
+		case MB_TERM_MUL_OVF:
+		case MB_TERM_MUL_OVF_UN:
+		case MB_TERM_DIV:
+		case MB_TERM_DIV_UN:
+		case MB_TERM_REM:
+		case MB_TERM_REM_UN:
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, exclude_mask)) == -1)
+				return FALSE;			
+			if ((tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, exclude_mask)) == -1)
+				return FALSE;
+			break;
+		default:
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, -1, exclude_mask)) == -1)
+				return FALSE;
+			if ((tree->reg2 = mono_regset_alloc_reg (rs, -1, exclude_mask)) == -1)
+				return FALSE;
 		}
 		break;
 
@@ -528,21 +599,25 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
       
 	case MB_NTERM_addr:
 		if (tree->op == MB_TERM_ADD) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
-			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, exclude_mask)) == -1)
+				return FALSE;
+			if ((tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, exclude_mask)) == -1)
+				return FALSE;
 		}
 		break;
 		
 	case MB_NTERM_base:
 		if (tree->op == MB_TERM_ADD) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, exclude_mask)) == -1)
+				return FALSE;
 		}
 		break;
 	       
 	case MB_NTERM_index:
 		if (tree->op == MB_TERM_SHL ||
 		    tree->op == MB_TERM_MUL) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+			if ((tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, exclude_mask)) == -1)
+				return FALSE;
 		}
 		break;
 	       
@@ -550,8 +625,10 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		/* do nothing */
 	}
 
-	//printf ("RALLOC END %d %p\n",  tree->op, rs->free_mask);
-	tree->emit = mono_burg_func [ern];
+#ifdef DEBUG_REGALLOC
+	printf ("tree_allocate_regs end %d %08x\n",  tree->op, rs->free_mask);
+#endif
+	return TRUE;
 }
 
 static void
@@ -570,9 +647,17 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
-			//printf ("AREGSTART %d:%d %p\n", i, j, cfg->rs->free_mask);
-			tree_allocate_regs (t1, 1, cfg->rs);
-			//printf ("AREGENDT %d:%d %p\n", i, j, cfg->rs->free_mask);
+#ifdef DEBUG_REGALLOC
+			printf ("arch_allocate_regs start %d:%d %08x\n", i, j, cfg->rs->free_mask);
+#endif
+			if (!tree_allocate_regs (t1, 1, cfg->rs, 0)) {
+				mono_print_ctree (t1);
+				g_error ("register allocation failed");
+			}
+
+#ifdef DEBUG_REGALLOC
+			printf ("arch_allocate_regs end %d:%d %08x\n", i, j, cfg->rs->free_mask);
+#endif
 			g_assert (cfg->rs->free_mask == 0xffffffff);
 		}
 	}
@@ -582,15 +667,63 @@ static void
 tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree) 
 {
 	MBTree *kids[10];
-	int i, ern = mono_burg_rule (tree->state, goal);
+	int ern = mono_burg_rule (tree->state, goal);
 	const guint16 *nts = mono_burg_nts [ern];
 	MBEmitFunc emit;
 	int offset;
 
 	mono_burg_kids (tree, ern, kids);
 
-	for (i = 0; nts [i]; i++) 
-		tree_emit (nts [i], cfg, kids [i]);
+	if (nts [0]) {
+		if (nts [1]) {
+			if (nts [2])
+				g_assert_not_reached ();
+
+			tree_emit (nts [0], cfg, kids [0]);
+
+			if (kids [0]->spilled) {
+
+#ifdef DEBUG_REGALLOC
+				printf ("SPILL_REGS %d %03x %s.%s:%s\n", 
+					nts [0], cfg->code - cfg->start,
+					cfg->method->klass->name_space,
+					cfg->method->klass->name, cfg->method->name);
+
+				mono_print_ctree (kids [0]);printf ("\n\n");
+#endif
+
+				/* fixme: we should allocate a spill location instead
+				   of using the stack to save values */
+				if (kids [0]->reg1 != -1) 
+					x86_push_reg (cfg->code, kids [0]->reg1);
+				if (kids [0]->reg2 != -1) 
+					x86_push_reg (cfg->code, kids [0]->reg2);
+				if (kids [0]->reg3 != -1) 
+					x86_push_reg (cfg->code, kids [0]->reg3);
+			}
+
+			tree_emit (nts [1], cfg, kids [1]);
+
+			if (kids [0]->spilled) {
+
+#ifdef DEBUG_REGALLOC
+				printf ("RELOAD_REGS %03x %s.%s:%s\n", 
+					cfg->code - cfg->start,
+					cfg->method->klass->name_space,
+					cfg->method->klass->name, cfg->method->name);
+#endif
+
+				if (kids [0]->reg3 != -1) 
+					x86_pop_reg (cfg->code, kids [0]->reg3);
+				if (kids [0]->reg2 != -1) 
+					x86_pop_reg (cfg->code, kids [0]->reg2);
+				if (kids [0]->reg1 != -1) 
+					x86_pop_reg (cfg->code, kids [0]->reg1);
+			}
+		} else {
+			tree_emit (nts [0], cfg, kids [0]);
+		}
+	}
 
 	tree->addr = offset = cfg->code - cfg->start;
 
@@ -841,6 +974,10 @@ arch_compile_method (MonoMethod *method)
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
+		/* we can use this regs for global register allocation */
+		mono_regset_reserve_reg (cfg->rs, X86_EBX);
+		mono_regset_reserve_reg (cfg->rs, X86_ESI);
+
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
@@ -870,11 +1007,11 @@ arch_compile_method (MonoMethod *method)
 			return NULL;
 		}
 		
-		arch_allocate_regs (cfg);
-
 		/* align to 8 byte boundary */
 		cfg->locals_size += 7;
 		cfg->locals_size &= ~7;
+
+		arch_allocate_regs (cfg);
 
 		arch_emit_prologue (cfg);
 		cfg->prologue_end = cfg->code - cfg->start;

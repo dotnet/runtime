@@ -94,6 +94,7 @@ TESTSRC=			\
 	remoting3.cs		\
 	nonvirt.cs		\
 	largeexp.cs		\
+	largeexp2.cs		\
 	marshalbyref1.cs
 
 
