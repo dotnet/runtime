@@ -1838,31 +1838,44 @@ reg: CONV_I4 (lreg) {
 } 
 
 reg: CONV_OVF_I4 (lreg){
+	guint8 *start = s->code;
+	gpointer o1, o2, o3, o4, o5;
+	int i;
+
 	/* 
 	 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
 	 */
-	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
+	for (i = 0; i < 2; i++) {
+		s->code = start;
 
-	/* If the low word top bit is set, see if we are negative */
-	x86_branch8 (s->code, X86_CC_LT, 14, TRUE);
+		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
+
+		/* If the low word top bit is set, see if we are negative */
+		x86_branch8 (s->code, X86_CC_LT, o3 - o1, TRUE);
+		o1 = s->code;
+
+		/* We are not negative (no top bit set, check for our top word to be zero */
+		x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
+		x86_branch8 (s->code, X86_CC_EQ, o4 - o2, TRUE);
+		o2 = s->code;
+
+		/* throw exception */
+		x86_push_imm (s->code, "OverflowException");
+		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception_by_name ()); 
+		x86_call_reg (s->code, X86_EAX); 
 	
-	/* We are not negative (no top bit set, check for our top word to be zero */
-	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	x86_branch8 (s->code, X86_CC_EQ, 17, TRUE);
+		o3 = s->code;
+		/* our top bit is set, check that top word is 0xfffffff */
+		x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg2, 0xffffffff);
+		
+		o4 = s->code;
+		/* nope, emit exception */
+		x86_branch8 (s->code, X86_CC_NE, o2 - o5, TRUE);
+		o5 = s->code;
 
-	/* throw exception */
-	x86_push_imm (s->code, "OverflowException");
-	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception_by_name ()); 
-	x86_call_reg (s->code, X86_EAX); 
-	
-	/* our top bit is set, check that top word is 0xfffffff */
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg2, 0xffffffff);
-
-	/* nope, emit exception */
-	x86_branch8 (s->code, X86_CC_NE, -17, TRUE);
-
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+		if (tree->reg1 != tree->left->reg1)
+			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	}
 }
 
 reg: CONV_OVF_U4 (lreg) {
@@ -2517,22 +2530,27 @@ reg: CEQ (lreg, lreg) {
 
 reg: CLT (lreg, lreg) {
 	guint8 *start = s->code;
-	gint32 o1, o2, o3, o4, o5, i;
+	gpointer o1, o2, o3, o4, o5;
+	int i;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
-		x86_alu_reg_reg (s->code, X86_XOR, tree->reg1, tree->reg1);		
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
-		o1 = 2 + s->code - s->start;
-		x86_branch8 (s->code, X86_CC_GT, o5 - o1, TRUE);
-		o2 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_GT, o4 - o1, TRUE);
+		o1 = s->code;
 		x86_branch8 (s->code, X86_CC_NE, o4 - o2, TRUE);
+		o2 = s->code;
 		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
-		o3 = 2 + s->code - s->start;
-		x86_branch8 (s->code, X86_CC_LE, o4 - o3, FALSE);
-		o5 = s->code - s->start;
+		x86_branch8 (s->code, X86_CC_GE, o4 - o3, FALSE);
+
+		/* set result to 1 */
+		o3 = s->code;
 		x86_mov_reg_imm (s->code, tree->reg1, 1);
-		o4 = s->code - s->start;
+		x86_jump8 (s->code, (o4 - o3));
+		/* set result to 0 */
+		o4 = s->code;
+		x86_mov_reg_imm (s->code, tree->reg1, 0);	
+		o5 = s->code;
 	}
 }
 

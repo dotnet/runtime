@@ -372,7 +372,8 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
 			return addr;
 		} else {
-			printf ("%x %x %x %x\n", code [0], code [1], code [2], code [3]);
+			printf ("%x %x %x %x %x %x \n", code [0], code [1], code [2], code [3],
+				code [4], code [5]);
 			g_assert_not_reached ();
 		}
 	}
@@ -986,7 +987,7 @@ arch_compile_method (MonoMethod *method)
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
-		cfg->code_size = 256;
+		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 		mono_jit_stats.allocated_code_size += cfg->code_size;
 

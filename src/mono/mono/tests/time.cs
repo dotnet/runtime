@@ -9,6 +9,9 @@ class time_test {
 		if (uepoch.Ticks != 621355968000000000)
 			return 1;
 				
+		TimeSpan ts = new TimeSpan (1, 0, 0);
+		Console.WriteLine (ts.Ticks);
+
 		return 0;
 	}
 }
