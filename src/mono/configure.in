@@ -927,7 +927,6 @@ mono/os/Makefile
 mono/os/win32/Makefile
 mono/os/unix/Makefile
 mono/arch/x86/Makefile
-mono/arch/amd64/Makefile
 mono/arch/hppa/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
