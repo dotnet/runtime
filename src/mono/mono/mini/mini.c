@@ -136,74 +136,6 @@ mono_running_on_valgrind (void)
 #endif
 }
 
-#ifdef MONO_USE_EXC_TABLES
-static gboolean
-mono_type_blittable (MonoType *type)
-{
-	if (type->byref)
-		return FALSE;
-
-	switch (type->type){
-	case MONO_TYPE_VOID:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-		return TRUE;
-	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_CLASS:
-		return type->data.klass->blittable;
-		break;
-	default:
-		break;
-	}
-
-	return FALSE;
-}
-
-gboolean
-mono_method_blittable (MonoMethod *method)
-{
-	MonoMethodSignature *sig;
-	int i;
-
-	if (!method->addr)
-		return FALSE;
-
-	if (!mono_arch_has_unwind_info (method->addr)) {
-		return FALSE;
-	}
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-		return TRUE;
-
-	sig = method->signature;
-
-	if (!mono_type_blittable (sig->ret))
-		return FALSE;
-
-	for (i = 0; i < sig->param_count; i++)
-		if (!mono_type_blittable (sig->params [i]))
-			return FALSE;
-
-	if (mono_method_has_marshal_info (method))
-		return FALSE;
-
-	 if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && ((MonoMethodPInvoke*)method)->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR)
-	 return FALSE;
-
-	return TRUE;
-}
-#endif
-
 /* debug function */
 G_GNUC_UNUSED static void
 print_method_from_ip (void *ip)
@@ -3204,16 +3136,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_class_init (cmethod->klass);
 
 				if (cmethod->signature->pinvoke) {
-#ifdef MONO_USE_EXC_TABLES
-					if (mono_method_blittable (cmethod)) {
-						fsig = cmethod->signature;
-					} else {
-#endif
 						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
 						fsig = wrapper->signature;
-#ifdef MONO_USE_EXC_TABLES
-					}
-#endif
 				} else {
 					fsig = mono_method_get_signature (cmethod, image, token);
 				}
@@ -3327,7 +3251,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 					cmethod = mono_marshal_get_native_wrapper (cmethod);
 
- 				if (costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock, FALSE)) {
+ 				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock, FALSE))) {
 					ip += 5;
 					real_offset += 5;
 
@@ -6277,11 +6201,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	info->func = func;
 	info->sig = sig;
 
-	if (is_save
-#ifdef MONO_USE_EXC_TABLES
-	    || mono_arch_has_unwind_info (func)
-#endif
-	    ) {
+	if (is_save) {
 		info->wrapper = func;
 	} else {
 		info->wrapper = NULL;
@@ -7987,19 +7907,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 				if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 					mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
-#ifdef MONO_USE_EXC_TABLES
-		if (mono_method_blittable (method)) {
-			return method->addr;
-		} else {
-#endif
 			nm = mono_marshal_get_native_wrapper (method);
 			return mono_compile_method (nm);
 
 			//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
 			//mono_debug_add_wrapper (method, nm);
-#ifdef MONO_USE_EXC_TABLES
-		}
-#endif
 	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		const char *name = method->name;
 		MonoMethod *nm;
