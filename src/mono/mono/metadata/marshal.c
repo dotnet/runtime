@@ -435,14 +435,14 @@ mono_string_to_lpstr (MonoString *s)
 gpointer
 mono_string_to_ansibstr (MonoString *string_obj)
 {
-	g_error ("implement me");
+	g_error ("UnmanagedMarshal.BStr is not implemented.");
 	return NULL;
 }
 
 gpointer
 mono_string_to_bstr (MonoString *string_obj)
 {
-	g_error ("implement me");
+	g_error ("UnmanagedMarshal.AnsiBStr is not implemented.");
 	return NULL;
 }
 
