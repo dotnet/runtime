@@ -1009,7 +1009,7 @@ write_type (MonoType *type)
 			if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
 				++num_fields;
 
-		size = 10 + sizeof (int) + num_fields * (4 + sizeof (gpointer));
+		size = 14 + sizeof (int) + num_fields * (4 + sizeof (gpointer));
 
 		if (type->type == MONO_TYPE_CLASS)
 			size += sizeof (gpointer);
@@ -1083,11 +1083,12 @@ write_type (MonoType *type)
 			break;
 		}
 
-		*((int *) ptr)++ = -10 - num_fields * (4 + sizeof (gpointer));
+		*((int *) ptr)++ = -14 - num_fields * (4 + sizeof (gpointer));
 		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
 		*ptr++ = type->type == MONO_TYPE_CLASS ? 6 : 5;
 		*ptr++ = type->type == MONO_TYPE_CLASS;
 		*((guint32 *) ptr)++ = num_fields;
+		*((guint32 *) ptr)++ = num_fields * (4 + sizeof (gpointer));
 		for (i = 0; i < klass->field.count; i++) {
 			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
