@@ -48,11 +48,16 @@ run_finalize (void *obj, void *data)
 			}
 		}
 	}
+
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 	/* speedup later... and use a timeout */
 	/*g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name);*/
 	mono_domain_set (mono_object_domain (o));
+
+	/* fixme: running the finalizer break some tests, at least on rh7.3 */
+	return;
+
 	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
 	if (exc) {
