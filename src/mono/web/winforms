@@ -48,7 +48,7 @@
 	calls to Win32 and we will then just run the result on Unix. 
 
 	In terms of integrating visually with the desktop, we are
-	hoping to contribute to the Wine project an mechanism to make
+	hoping to contribute to the Wine project a mechanism to make
 	it use the Gtk+ themes on X11 and Cocoa on MacOS to render the
 	widgets, and get the native look and feel on each of these
 	platforms. 
