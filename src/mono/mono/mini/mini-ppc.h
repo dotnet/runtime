@@ -32,6 +32,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
+#define MONO_ARCH_BIGMUL_INTRINS 1
 
 /* deal with some of the ABI differences here */
 #ifdef __APPLE__

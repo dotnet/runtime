@@ -2240,6 +2240,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	//		g_print ("cil code\n");
 
 		switch (ins->opcode) {
+		case OP_BIGMUL:
+			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
+			ppc_mulhw (code, ppc_r3, ins->sreg1, ins->sreg2);
+			break;
+		case OP_BIGMUL_UN:
+			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
+			ppc_mulhwu (code, ppc_r3, ins->sreg1, ins->sreg2);
+			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			ppc_li (code, ppc_r11, ins->inst_imm);
 			g_assert (ppc_is_imm16 (ins->inst_offset));
