@@ -151,6 +151,35 @@
   </tr>
 </table>
 
+@item Jul 19th, 2003: Recent developments
+
+	Since Mono has matured, we have limited the news on the site
+	to major accomplishments that are finished, but this week, it
+	is worth devoting some time to talk about some of the
+	work-in-progress projects that are progressing.
+
+	Jackson has added support to the IL assembler for generics as
+	well as to the PEAPI library, and it has assembled its first
+	generic program.  Support for handling images with generics
+	has been on our file format reader for a while, but the JIT
+	engine is still incomplete. 
+
+	On the XSLT world, Atsushi and Ben continue to make big
+	improvements.  Ben recently got the prototype managed XSLT
+	implementation to run its first stylesheet.  Although
+	currently Mono uses libxslt to implement the System.Xml.Xsl
+	namespace, to have a fully .NET compliant implementation we
+	will need a managed version, and this is the beginning of it.
+
+	Lluis recently posted an update on the <a
+	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001550.html">state
+	of WSDL</a> in Mono.  Now that the web services runtime is
+	ready, the WSDL compiler becomes more important as a
+	development tool.
+
+	Atsushi continues his work on the DTD validating reader in
+	System.Xml, as well as improving our XML Schema support.
+
 @item Jul 14th, 2003: New build system;  IPV6 support.
 
 	Peter Williams has contributed a new build system that
