@@ -16,7 +16,7 @@ gpointer
 mono_glob_compile (const char *glob)
 {
 	regex_t *compiled = g_new (regex_t, 1);
-	GString *str = g_string_new ("");
+	GString *str = g_string_new ("^");
 	const char *p;
 	
 	for (p = glob; *p; p++){
@@ -36,6 +36,7 @@ mono_glob_compile (const char *glob)
 			g_string_append_c (str, *p);
 		}
 	}
+	g_string_append_c (str, "$");
 	regcomp (compiled, str->str, 0);
 
 	return compiled;
