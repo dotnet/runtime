@@ -178,15 +178,28 @@ dis_directive_assemblyref (MonoImage *m)
 	for (i = 0; i < t->rows; i++){
 		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 
+		char *esc = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
+		
 		fprintf (output,
 			 ".assembly extern %s\n"
 			 "{\n"
-			 "  .ver %d:%d:%d:%d\n"
-			 "}\n",
-			 mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]),
+			 "  .ver %d:%d:%d:%d\n",
+			 esc,
 			 cols [MONO_ASSEMBLYREF_MAJOR_VERSION], cols [MONO_ASSEMBLYREF_MINOR_VERSION], 
 			 cols [MONO_ASSEMBLYREF_BUILD_NUMBER], cols [MONO_ASSEMBLYREF_REV_NUMBER]
 			);
+		if (cols [MONO_ASSEMBLYREF_CULTURE]){
+			fprintf (output, "  .locale %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_CULTURE]));
+		}
+		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]){
+			const char* b = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
+			int len = mono_metadata_decode_blob_size (b, &b);
+			char *dump = data_dump (b, len, "\t\t");
+			fprintf (output, "  .publickeytoken =%s", dump);
+			g_free (dump);
+		}
+		fprintf (output, "}\n");
+		g_free (esc);
 	}
 }
 

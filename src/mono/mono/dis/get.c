@@ -710,8 +710,12 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 			/* we cheat */
 			if (substitute_with_mscorlib_p && !strcmp ("corlib", c->image->assembly_name))
 				assemblyref = g_strdup_printf ("[%s]", "mscorlib");
-			else
-				assemblyref = g_strdup_printf ("[%s]", c->image->assembly->aname.name);
+			else {
+				char *esc = get_escaped_name (c->image->assembly->aname.name);
+				
+				assemblyref = g_strdup_printf ("[%s]", esc);
+				g_free (esc);
+			}
 		} else {
 			assemblyref = g_strdup_printf ("[.module %s]", c->image->module_name);
 		}
