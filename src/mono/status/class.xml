@@ -2256,5 +2256,24 @@
             <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Drawing.Drawing2D.MatrixOrder">
+        <last-activity>Aug-23-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.Matrix">
+        <last-activity>Aug-23-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
