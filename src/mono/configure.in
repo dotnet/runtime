@@ -1182,6 +1182,7 @@ case "$host" in
 	;;
      *-*-*netbsd*)
 	LIBC="libc.so.12"
+	INTL="libintl.so.0"
 	;;
 esac
 AC_SUBST(libsuffix)
