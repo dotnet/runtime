@@ -95,7 +95,7 @@
 
 	Mono 0.17 has been released.  Check out the <a
 	href="archive/mono-0.17">release notes</a> for a more detailed
-	list.   You can get it <a href="download.html">here</a>
+	list.   You can get it <a href="download.html">here</a>.
 
 	Many new features as well as plenty of bug fixes.  Many new
 	System.Data providers and a more mature System.Web (ASP.NET)
@@ -103,9 +103,11 @@
 	href="archive/xsp-0.2.tar.gz">test web server</a> to host
 	asp.net has been released as well.
 
+	This version also integrates Neale's s390 port.
+
 	This release also includes a new exception handling system
 	that uses the gcc exception information that vastly improves
-	our internalcall speed (15% faster mcs compilation times).  
+	our internalcall speed (15% faster mcs compilation times).   
 
 @item Dec 8th, 2002: VB.NET, Oracle Provider.
 
