@@ -80,16 +80,17 @@ static MonoRuntimeInfo *current_runtime = NULL;
 /* This is the list of runtime versions supported by this JIT.
  */
 static MonoRuntimeInfo supported_runtimes[] = {
-	{"v1.0.3705", "1.0", 1,0,5000,0},
-	{"v1.1.4322", "1.0", 1,0,5000,0},
-	{"v2.0.40607","2.0", 2,0,3600,0} 
+	{"v1.0.3705", "1.0", { {1,0,5000,0}, {7,0,5000,0} }	},
+	{"v1.1.4322", "1.0", { {1,0,5000,0}, {7,0,5000,0} }	},
+	{"v2.0.40607","2.0", { {2,0,3600,0}, {8,0,3600,0} }	}
 };
+
 
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v1.1.4322"
 
-static MonoRuntimeInfo*	
-get_runtime_from_exe (const char *exe_file);
+static void
+get_runtimes_from_exe (const char *exe_file, MonoRuntimeInfo** runtimes);
 
 static MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
@@ -327,9 +328,10 @@ static MonoDomain *
 mono_init_internal (const char *filename, const char *exe_filename, const char *runtime_version)
 {
 	static MonoDomain *domain = NULL;
-	MonoAssembly *ass;
+	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssemblyName corlib_aname;
+	MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
+	int n;
 
 	if (domain)
 		g_assert_not_reached ();
@@ -354,26 +356,30 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	SET_APPDOMAIN (domain);
 	
+	/* Get a list of runtimes supported by the exe */
 	if (exe_filename != NULL) {
-		current_runtime = get_runtime_from_exe (exe_filename);
+		get_runtimes_from_exe (exe_filename, runtimes);
 	} else if (runtime_version != NULL) {
-		current_runtime = get_runtime_by_version (runtime_version);
+		runtimes [0] = get_runtime_by_version (runtime_version);
+		runtimes [1] = NULL;
 	}
 
-	if (current_runtime == NULL) {
+	if (runtimes [0] == NULL) {
+		MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		runtimes [0] = default_runtime;
+		runtimes [1] = NULL;
 		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
-		current_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
-		g_print ("Using default runtime: %s\n", current_runtime->runtime_version);
+		g_print ("Using default runtime: %s\n", default_runtime->runtime_version);
 	}
 
-	/* find the corlib */
-	corlib_aname.name = "mscorlib";
-	corlib_aname.major = current_runtime->assembly_major;
-	corlib_aname.minor = current_runtime->assembly_minor;
-	corlib_aname.build = current_runtime->assembly_build;
-	corlib_aname.revision = current_runtime->assembly_revision;
-	
-	ass = mono_assembly_load (&corlib_aname, NULL, &status);
+	/* The selected runtime will be the first one for which there is a mscrolib.dll */
+	for (n = 0; runtimes [n] != NULL && ass == NULL; n++) {
+		current_runtime = runtimes [n];
+		ass = mono_assembly_load_corlib (current_runtime, &status);
+		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
+			break;
+	}
+
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO: {
@@ -1143,8 +1149,8 @@ get_runtime_by_version (const char *version)
 	return NULL;
 }
 
-static MonoRuntimeInfo*	
-get_runtime_from_exe (const char *exe_file)
+static void
+get_runtimes_from_exe (const char *exe_file, MonoRuntimeInfo** runtimes)
 {
 	AppConfigInfo* app_config;
 	char *version;
@@ -1161,21 +1167,26 @@ get_runtime_from_exe (const char *exe_file)
 		 * If there are no such elements, look for a requiredRuntime element.
 		 */
 		if (app_config->supported_runtimes != NULL) {
+			int n = 0;
 			GSList *list = app_config->supported_runtimes;
-			while (list != NULL && runtime == NULL) {
+			while (list != NULL) {
 				version = (char*) list->data;
 				runtime = get_runtime_by_version (version);
+				if (runtime != NULL)
+					runtimes [n++] = runtime;
 				list = g_slist_next (list);
 			}
+			runtimes [n] = NULL;
 			app_config_free (app_config);
-			return runtime;
+			return;
 		}
 		
 		/* Check the requiredRuntime element. This is for 1.0 apps only. */
 		if (app_config->required_runtime != NULL) {
-			runtime = get_runtime_by_version (app_config->required_runtime);
+			runtimes [0] = get_runtime_by_version (app_config->required_runtime);
+			runtimes [1] = NULL;
 			app_config_free (app_config);
-			return runtime;
+			return;
 		}
 		app_config_free (app_config);
 	}
@@ -1187,13 +1198,15 @@ get_runtime_from_exe (const char *exe_file)
 		 * a default runtime and leave to the initialization method the work of
 		 * reporting the error.
 		 */
-		return get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		runtimes [0] = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		runtimes [1] = NULL;
+		return;
 	}
 
-	runtime = get_runtime_by_version (image->version);
-	
-	return runtime;
+	runtimes [0] = get_runtime_by_version (image->version);
+	runtimes [1] = NULL;
 }
+
 
 /**
  * mono_get_framework_assembly_version:
@@ -1209,9 +1222,12 @@ mono_get_runtime_info (void)
 gchar *
 mono_debugger_check_runtime_version (const char *filename)
 {
+	MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
 	MonoRuntimeInfo *rinfo;
 
-	rinfo = get_runtime_from_exe (filename);
+	get_runtimes_from_exe (filename, runtimes);
+	rinfo = runtimes [0];
+
 	if (!rinfo)
 		return g_strdup_printf ("Cannot get runtime version from assembly `%s'", filename);
 

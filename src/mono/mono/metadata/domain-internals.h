@@ -130,11 +130,15 @@ struct _MonoDomain {
 	GHashTable         *finalizable_objects_hash;
 };
 
+typedef struct  {
+	guint16 major, minor, build, revision;
+} AssemblyVersionSet;
+
 /* MonoRuntimeInfo: Contains information about versions supported by this runtime */
 typedef struct  {
 	const char* runtime_version;
 	const char* framework_version;
-	guint16 assembly_major, assembly_minor, assembly_build, assembly_revision;
+	AssemblyVersionSet version_sets [2];
 } MonoRuntimeInfo;
 
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
@@ -229,6 +233,9 @@ ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
 
 MonoString *
 ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
+
+MonoAssembly *
+mono_assembly_load_corlib (MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
 
 MonoRuntimeInfo*
 mono_get_runtime_info (void);
