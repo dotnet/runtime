@@ -14,12 +14,16 @@ TESTSRC=			\
 	muldiv.cs		\
 	loops.cs		\
 	initlocals.cs		\
-	logic.cs
+	logic.cs		\
+	bulkcpy.il
 
-TESTSI=$(TESTSRC:.cs=.exe)
-TESTBS=$(BENCHSRC:.cs=.exe)
+TESTSI_TMP=$(TESTSRC:.cs=.exe)
+TESTSI=$(TESTSI_TMP:.il=.exe)
 
 EXTRA_DIST=test-driver $(TESTSRC)
+
+%.exe: %.il
+	ilasm $< /OUTPUT=$@
 
 %.exe: %.cs
 	$(CSC) $<
@@ -36,13 +40,6 @@ test: $(TEST_PROG) $(TESTSI)
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."
-
-
-testjitspeed: $(JITTEST_PROG) $(TESTBS)
-	for i in $(TESTBS); do	\
-		echo $$i;	\
-		time $(JITTEST_PROG) $$i;	\
-	done
 
 check:
 	@echo no check yet
