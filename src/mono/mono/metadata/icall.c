@@ -1758,7 +1758,7 @@ handle_parent:
 	len = g_slist_length (l);
 	res = mono_array_new (domain, mono_defaults.field_info_class, len);
 	i = 0;
-	tmp = g_slist_reverse (l);
+	tmp = l = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
@@ -1823,7 +1823,7 @@ handle_parent:
 	res = mono_array_new (domain, mono_defaults.method_info_class, len);
 	i = 0;
 #ifdef FIXED_MCS_45127
-	tmp = g_slist_reverse (l);
+	tmp = l = g_slist_reverse (l);
 #else
 	tmp = l;
 #endif
@@ -1886,7 +1886,7 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
 	res = mono_array_new (domain, System_Reflection_ConstructorInfo, len);
 	i = 0;
-	tmp = g_slist_reverse (l);
+	tmp = l = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
@@ -1956,7 +1956,7 @@ handle_parent:
 	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 	i = 0;
 #ifdef FIXED_MCS_45127
-	tmp = g_slist_reverse (l);
+	tmp = l = g_slist_reverse (l);
 #else
 	tmp = l;
 #endif
@@ -2068,7 +2068,7 @@ handle_parent:
 	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 	i = 0;
 #ifdef FIXED_MCS_45127
-	tmp = g_slist_reverse (l);
+	tmp = l = g_slist_reverse (l);
 #else
 	tmp = l;
 #endif
@@ -2152,7 +2152,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	len = g_slist_length (l);
 	res = mono_array_new (domain, mono_defaults.monotype_class, len);
 	i = 0;
-	tmp = g_slist_reverse (l);
+	tmp = l = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
