@@ -3995,10 +3995,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_class_init (klass);
 
 			/* much like NEWOBJ */
-			NEW_DOMAINCONST (cfg, iargs [0]);
-			NEW_CLASSCONST (cfg, iargs [1], klass);
-			
-			temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
+			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+				NEW_DOMAINCONST (cfg, iargs [0]);
+				NEW_CLASSCONST (cfg, iargs [1], klass);
+
+				temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
+			} else {
+				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+				NEW_PCONST (cfg, iargs [0], vtable);
+				temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+			}
 			NEW_TEMPLOAD (cfg, load, temp);
 			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
 			MONO_INST_NEW (cfg, add, CEE_ADD);
