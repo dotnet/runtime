@@ -330,6 +330,7 @@ AM_CONDITIONAL(WITH_BUNDLE, test x$with_bundle != xno)
 
 LIBGC_CFLAGS=
 LIBGC_LIBS=
+LIBGC_STATIC_LIBS=
 libgc_dir=
 case "x$gc" in
 	xboehm|xbohem|xyes)
@@ -346,6 +347,7 @@ case "x$gc" in
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
 		LIBGC_LIBS="-lgc $libdl"
+		LIBGC_STATIC_LIBS="$LIBGC_LIBS"
 
 		# AC_CHECK_FUNCS does not work for some reason...
 		AC_CHECK_LIB(gc, GC_gcj_malloc, found_gcj_malloc="yes",,$libdl)
@@ -368,6 +370,7 @@ case "x$gc" in
 
 		LIBGC_CFLAGS='-I$(top_srcdir)/libgc/include'
 		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
+		LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
 
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
@@ -395,6 +398,7 @@ ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)
 AC_SUBST(LIBGC_LIBS)
+AC_SUBST(LIBGC_STATIC_LIBS)
 AC_SUBST(libgc_dir)
 
 dnl
