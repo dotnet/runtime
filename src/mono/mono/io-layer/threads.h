@@ -53,6 +53,5 @@ extern gpointer TlsGetValue(guint32 idx);
 extern gboolean TlsSetValue(guint32 idx, gpointer value);
 extern void Sleep(guint32 ms);
 extern void SleepEx(guint32 ms, gboolean);
-extern int PosixKillThread (gpointer handle, int signum);
 
 #endif /* _WAPI_THREADS_H_ */

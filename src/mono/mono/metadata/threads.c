@@ -29,7 +29,7 @@
 struct StartInfo 
 {
 	guint32 (*func)(void *);
-	MonoObject *obj;
+	MonoThread *obj;
 	void *this;
 	MonoDomain *domain;
 };
@@ -47,8 +47,10 @@ static CRITICAL_SECTION threads_mutex;
  */
 static CRITICAL_SECTION monitor_mutex;
 
-/* The array of existing threads that need joining before exit */
-static GArray *threads=NULL;
+/* The hash of existing threads (key is thread ID) that need joining
+ * before exit
+ */
+static MonoGHashTable *threads=NULL;
 
 /* The MonoObject associated with the main thread */
 static MonoThread *main_thread;
@@ -68,50 +70,43 @@ static CRITICAL_SECTION interlocked_mutex;
 /* handle_store() and handle_remove() manage the array of threads that
  * still need to be waited for when the main thread exits.
  */
-static void handle_store(guint32 tid)
+static void handle_store(MonoThread *thread)
 {
-	guint32 idx;
-	
+	EnterCriticalSection(&threads_mutex);
+
 #ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": thread ID %d", tid);
+	g_message(G_GNUC_PRETTY_FUNCTION ": thread %p ID %d", thread,
+		  thread->tid);
 #endif
 
-	EnterCriticalSection(&threads_mutex);
 	if(threads==NULL) {
-		threads=g_array_new(FALSE, FALSE, sizeof(guint32));
+		threads=mono_g_hash_table_new(g_int_hash, g_int_equal);
 	}
 
-	/* Make sure there is only one instance in the array.  We
-	 * store the thread both in the start_wrapper (in the
-	 * subthread), and as soon as possible in the parent thread.
-	 * This is to minimise the window in which the thread exists
-	 * but we haven't recorded it.
+	/* GHashTable will remove a previous entry if a duplicate key
+	 * is stored, which is exactly what we want: we store the
+	 * thread both in the start_wrapper (in the subthread), and as
+	 * soon as possible in the parent thread.  This is to minimise
+	 * the window in which the thread exists but we haven't
+	 * recorded it.
 	 */
-	for(idx=0; idx<threads->len; idx++) {
-		if(g_array_index (threads, guint32, idx)==tid) {
-			g_array_remove_index_fast (threads, idx);
-		}
-	}
 	
-	g_array_append_val(threads, tid);
+	/* We don't need to duplicate thread->handle, because it is
+	 * only closed when the thread object is finalized by the GC.
+	 */
+	mono_g_hash_table_insert(threads, &thread->tid, thread);
 	LeaveCriticalSection(&threads_mutex);
 }
 
 static void handle_remove(guint32 tid)
 {
-	guint32 idx;
-	
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": thread ID %d", tid);
 #endif
 
 	EnterCriticalSection(&threads_mutex);
 
-	for(idx=0; idx<threads->len; idx++) {
-		if(g_array_index (threads, guint32, idx)==tid) {
-			g_array_remove_index_fast(threads, idx);
-		}
-	}
+	mono_g_hash_table_remove (threads, &tid);
 	
 	LeaveCriticalSection(&threads_mutex);
 
@@ -157,11 +152,20 @@ static guint32 start_wrapper(void *data)
 	start_func = start_info->func;
 	mono_domain_set (start_info->domain);
 	this = start_info->this;
-	g_free (start_info);
 
 	tid=GetCurrentThreadId ();
+	/* Set the thread ID here as well as in the parent thread,
+	 * because we don't know whether the thread object will
+	 * already have its ID set before we get to it.  This isn't a
+	 * race condition, because if we're not guaranteed to get the
+	 * same number in both the parent and child threads, then
+	 * something else is seriously broken.
+	 */
+	start_info->obj->tid=tid;
 	
-	handle_store(tid);
+	handle_store(start_info->obj);
+	g_free (start_info);
+
 	mono_profiler_thread_start (tid);
 
 	if (mono_thread_start_cb)
@@ -182,19 +186,16 @@ static guint32 start_wrapper(void *data)
 	return(0);
 }
 
-MonoObject *
+MonoThread *
 mono_thread_create (MonoDomain *domain, gpointer func)
 {
-	MonoClassField *field;
-	MonoObject *thread;
+	MonoThread *thread;
 	HANDLE thread_handle;
 	struct StartInfo *start_info;
 	guint32 tid;
 	
-	thread = mono_object_new (domain, mono_defaults.thread_class);
-
-	field=mono_class_get_field_from_name(mono_defaults.thread_class, "system_thread_handle");
-	g_assert (field);
+	thread = (MonoThread *)mono_object_new (domain,
+						mono_defaults.thread_class);
 
 	start_info=g_new0 (struct StartInfo, 1);
 	start_info->func = func;
@@ -209,14 +210,15 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 #endif
 	g_assert (thread_handle);
 
-	handle_store(tid);
+	thread->handle=thread_handle;
+	thread->tid=tid;
 
-	*(gpointer *)(((char *)thread) + field->offset) = thread_handle; 
+	handle_store(thread);
 
 	return thread;
 }
 
-HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
+HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 							 MonoObject *start)
 {
 	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)start;
@@ -246,6 +248,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		start_info->this = delegate;
 		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
+
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
@@ -254,7 +257,10 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 			return(NULL);
 		}
 
-		handle_store(tid);
+		this->handle=thread;
+		this->tid=tid;
+		
+		handle_store(this);
 
 #ifdef THREAD_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -265,7 +271,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 	}
 }
 
-void ves_icall_System_Threading_Thread_Thread_free_internal (MonoObject *this,
+void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 							     HANDLE thread)
 {
 #ifdef THREAD_DEBUG
@@ -276,7 +282,7 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoObject *this,
 	CloseHandle (thread);
 }
 
-void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
+void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 						      HANDLE thread)
 {
 #ifdef THREAD_DEBUG
@@ -316,7 +322,7 @@ mono_thread_current (void)
 	return (thread);
 }
 
-gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
+gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 							 int ms, HANDLE thread)
 {
 	gboolean ret;
@@ -955,7 +961,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 
 	/* fixme: store the state somewhere */
 #ifndef __MINGW32__
-	PosixKillThread (thread->handle, SIGUSR1);
+	pthread_kill (thread->tid, SIGUSR1);
 #else
 	g_assert_not_reached ();
 #endif
@@ -977,12 +983,9 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 
 void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 {
-	MonoClass *thread_class;
-	
 	/* Build a System.Threading.Thread object instance to return
 	 * for the main line's Thread.CurrentThread property.
 	 */
-	thread_class=mono_class_from_name(mono_defaults.corlib, "System.Threading", "Thread");
 	
 	/* I wonder what happens if someone tries to destroy this
 	 * object? In theory, I guess the whole program should act as
@@ -992,7 +995,7 @@ void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Starting to build main Thread object");
 #endif
-	main_thread = (MonoThread *)mono_object_new (domain, thread_class);
+	main_thread = (MonoThread *)mono_object_new (domain, mono_defaults.thread_class);
 
 #if 0
 	main_thread->handle = OpenThread(THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId());
@@ -1020,74 +1023,123 @@ void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 	slothash_key=TlsAlloc();
 }
 
-void mono_thread_cleanup(void)
+#ifdef THREAD_DEBUG
+static void print_tids (gpointer key, gpointer value, gpointer user)
 {
-	HANDLE wait[MAXIMUM_WAIT_OBJECTS];
-	guint32 i, j;
-	
-#ifndef __MINGW32__
-	/* join each thread that's still running */
-#ifdef THREAD_DEBUG
-	g_message("Joining each running thread...");
+	g_message ("Waiting for: %d", *(guint32 *)key);
+}
 #endif
+
+struct wait_data 
+{
+	HANDLE handles[MAXIMUM_WAIT_OBJECTS];
+	MonoThread *threads[MAXIMUM_WAIT_OBJECTS];
+	guint32 num;
+};
+
+static void wait_for_tids (struct wait_data *wait)
+{
+	guint32 i, ret;
 	
-	if(threads==NULL) {
 #ifdef THREAD_DEBUG
-		g_message("No threads");
+	g_message(G_GNUC_PRETTY_FUNCTION ": %d threads to wait for in this batch", wait->num);
+#endif
+
+	ret=WaitForMultipleObjects(wait->num, wait->handles, TRUE, INFINITE);
+	if(ret==WAIT_FAILED) {
+		/* See the comment in build_wait_tids() */
+#ifdef THREAD_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Wait failed");
 #endif
 		return;
 	}
 	
-	do{
-	rescan:
+
+	for(i=0; i<wait->num; i++) {
+		guint32 tid=wait->threads[i]->tid;
+		
+		if(mono_g_hash_table_lookup (threads, &tid)!=NULL) {
+			/* This thread must have been killed, because
+			 * it hasn't cleaned itself up. (It's just
+			 * possible that the thread exited before the
+			 * parent thread had a chance to store the
+			 * handle, and now there is another pointer to
+			 * the already-exited thread stored.  In this
+			 * case, we'll just get two
+			 * mono_profiler_thread_end() calls for the
+			 * same thread.)
+			 */
+	
+#ifdef THREAD_DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": cleaning up after thread %d", tid);
+#endif
+			thread_cleanup (tid);
+		}
+	}
+}
+
+static void build_wait_tids (gpointer key, gpointer value, gpointer user)
+{
+	struct wait_data *wait=(struct wait_data *)user;
+
+	if(wait->num<MAXIMUM_WAIT_OBJECTS) {
+		MonoThread *thread=(MonoThread *)value;
+		
+		/* Theres a theoretical chance that thread->handle
+		 * might be NULL if the child thread has called
+		 * handle_store() but the parent thread hasn't set the
+		 * handle pointer yet.  WaitForMultipleObjects will
+		 * fail, and we'll just go round the loop again.  By
+		 * that time the handle should be stored properly.
+		 */
+		wait->handles[wait->num]=thread->handle;
+		wait->threads[wait->num]=thread;
+		wait->num++;
+	} else {
+		/* Just ignore the rest, we can't do anything with
+		 * them yet
+		 */
+	}
+}
+
+void mono_thread_cleanup(void)
+{
+	struct wait_data *wait=g_new0 (struct wait_data, 1);
+	
+	/* join each thread that's still running */
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Joining each running thread...");
+#endif
+	
+	if(threads==NULL) {
+#ifdef THREAD_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": No threads");
+#endif
+		return;
+	}
+	
+	do {
 		EnterCriticalSection (&threads_mutex);
 #ifdef THREAD_DEBUG
-		g_message("There are %d threads to join", threads->len);
-		for(i=0; i<threads->len; i++) {
-			g_message("Waiting for: %d",
-				  g_array_index(threads, guint32, i));
-		}
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ":There are %d threads to join",
+			  mono_g_hash_table_size (threads));
+		mono_g_hash_table_foreach (threads, print_tids, NULL);
 #endif
 
-		for(i=0; i<MAXIMUM_WAIT_OBJECTS && i<threads->len; i++) {
-			wait[i]=OpenThread (THREAD_ALL_ACCESS, FALSE,
-					    g_array_index(threads, guint32, i));
-			if(wait[i]==NULL) {
-				/* The thread must have been killed */
-#ifdef THREAD_DEBUG
-				g_message (G_GNUC_PRETTY_FUNCTION
-					   ": Thread %d already dead",
-					   g_array_index (threads, guint32,
-							  i));
-#endif
-
-				LeaveCriticalSection (&threads_mutex);
-
-				for(j=0; j<i; j++) {
-					CloseHandle (wait[j]);
-				}
-
-				thread_cleanup (g_array_index (threads,
-							       guint32, i));
-				/* Start over */
-				goto rescan;
-			}
-		}
-		
-#ifdef THREAD_DEBUG
-		g_message("%d threads to wait for in this batch", i);
-#endif
-
-		LeaveCriticalSection (&threads_mutex);
-
-		WaitForMultipleObjects(i, wait, TRUE, INFINITE);
-
-		for(j=0; j<i; j++) {
-			CloseHandle (wait[j]);
-		}
-	} while(i>0);
+		wait->num=0;
+		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
 	
-	g_array_free(threads, FALSE);
+		LeaveCriticalSection (&threads_mutex);
+		if(wait->num>0) {
+			/* Something to wait for */
+			wait_for_tids (wait);
+		}
+	} while(wait->num>0);
+	
+	g_free (wait);
+	
+	mono_g_hash_table_destroy(threads);
 	threads=NULL;
-#endif /* __MINGW32__ */
 }

@@ -20,14 +20,14 @@ extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb);
 extern void mono_thread_cleanup(void);
 MonoThread *mono_thread_current (void);
 
-MonoObject *mono_thread_create (MonoDomain *domain, gpointer func);
+MonoThread *mono_thread_create (MonoDomain *domain, gpointer func);
 
-extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this, MonoObject *start);
-extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoObject *this, HANDLE thread);
-extern void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this, HANDLE thread);
+extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this, MonoObject *start);
+extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this, HANDLE thread);
+extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
 extern MonoAppDomain * ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(void);
-extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this, int ms, HANDLE thread);
+extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this, int ms, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj, int ms);

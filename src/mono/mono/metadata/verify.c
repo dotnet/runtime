@@ -2500,6 +2500,7 @@ thread_fields[] = {
 	{"state", G_STRUCT_OFFSET (MonoThread, state)},
 	{"abort_exc", G_STRUCT_OFFSET (MonoThread, abort_exc)},
 	{"abort_state", G_STRUCT_OFFSET (MonoThread, abort_state)},
+	{"thread_id", G_STRUCT_OFFSET (MonoThread, tid)},
 	{NULL, 0}
 };
 

@@ -172,8 +172,9 @@ typedef struct {
 	MonoObject *culture_info;
 	MonoBoolean threadpool_thread;
 	guint32     state;
-	MonoObject *abort_exc;
+	MonoException *abort_exc;
 	MonoObject *abort_state;
+	guint32 tid;
 } MonoThread;
 
 typedef struct {
