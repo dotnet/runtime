@@ -8227,26 +8227,17 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
-	MonoThread *thread;
-	gboolean stopRequested = FALSE;
-
+	gboolean running_managed;
+	MonoException *exc;
+	
 	GET_CONTEXT
 
-	thread = mono_thread_current ();
-
-	mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
-	stopRequested = (thread->state & ThreadState_StopRequested) != 0;
-	mono_monitor_exit ((MonoObject *)thread);
-
-	thread->abort_exc = mono_get_exception_thread_abort ();
-
-	if (stopRequested) {
-		/* Don't throw the exception, just abort the thread */
-		mono_thread_abort ((MonoObject *) thread->abort_exc);
-	}
-	else {
-		mono_arch_handle_exception (ctx, thread->abort_exc, FALSE);
-	}
+	running_managed = (mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx)) != NULL);
+	
+	exc = mono_thread_request_interruption (running_managed); 
+	if (!exc) return;
+	
+	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
 static void
