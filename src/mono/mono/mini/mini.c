@@ -3377,8 +3377,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_class_init (cmethod->klass);
 
 				if (cmethod->signature->pinvoke) {
-						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
-						fsig = wrapper->signature;
+					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
+					fsig = wrapper->signature;
+				} else if (constrained_call) {
+					fsig = cmethod->signature;
 				} else {
 					fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
 				}
