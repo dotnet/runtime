@@ -732,7 +732,11 @@ ves_icall_System_AppDomain_LoadFrom (MonoString *assName, MonoObject *evidence)
 	/* FIXME : examine evidence? */
 	char *name = mono_string_to_utf8 (assName);
 	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssembly *ass = mono_assembly_open (name, NULL, &status);
+	MonoAssembly *ass;
+
+	if (strncmp (name, "file://", 7) == 0)
+		name += 7;
+	ass = mono_assembly_open (name, NULL, &status);
 
 	if (!ass)
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.IO", "FileNotFoundException"));
