@@ -140,6 +140,20 @@
   </tr>
 </table>
 
+@item Oct 21st: Mono Community at Novell Forge
+
+	Mono Developers that are looking for a public repository for
+	hosting their projects can now use <a
+	href="http://forge.novell.com">Novell Forge's</a> which hosts
+	a <a
+	href="http://forge.novell.com/modules/xfmod/community/?monocomm">Mono
+	Community</a>.
+
+	Novell Forge offers mailing lists, cvs repository, bug
+	tracking and mailing list services and all the other services
+	you expect.  This infrastructure will come in handy for those
+	that did not get enough support from Mono CVS.
+
 @item Oct 13th: SPARC V9, HPPA, Internationalization, GdiPlus
 
 	Dick Porter has checked in our rewrite of the international

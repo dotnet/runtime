@@ -1,7 +1,12 @@
 * CVS Access
 
-	Here we describe how one obtains commit access to the CVS repository
-	and the responsibilities that come with that access privilege.
+	Here we describe how one obtains commit access to the Mono CVS
+	repository and the responsibilities that come with that access
+	privilege.
+
+	These only apply to the Mono CVS repository, and not to the <a
+	href="http://forge.novell.com/modules/xfmod/community/?monocomm">Mono
+	Community</a> repositories at Novell Forge.
 
 ** What is CVS?
 
@@ -23,9 +28,13 @@
 	mailing lists and/or bugzilla for review.
 
 	If you are not a developer, but want to access the latest sources, 
-	please see the <a href="anoncvs.html">AnonCVS</a> instructions.
+	please see the <a href="anoncvs.html">AnonCVS</a>
+	instructions.  If you are not a direct contributor to Mono,
+	but want to host your .NET or Mono-based project, you can use
+	<a href="forge.html">Novell Forge</a>.
 
-	If you feel you are ready for a CVS account send an e-mail to 
+
+	If you feel you are ready for a CVS account send an e-mail to
 	<a href="mailto:miguel@ximian.com">miguel</a> with your public OpenSSH 
 	key for this purpose.  Please specify if the key was generated with SSH
 	version 1 or version 2. Detailed instructions are below.

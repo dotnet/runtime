@@ -24,6 +24,7 @@ OBJECTS=									\
 	deploy/embedded-api.html						\
 	deploy/faq.html								\
 	deploy/firebird.html							\
+	deploy/forge.html							\
 	deploy/gcc-frontend.html						\
 	deploy/gtk-sharp.html							\
 	deploy/hackers.html							\
