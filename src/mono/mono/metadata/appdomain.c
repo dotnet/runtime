@@ -639,10 +639,12 @@ real_load (gchar **search_path, const gchar *culture, gchar *filename)
 	for (path = search_path; *path; path++) {
 		if (**path == '\0')
 			continue; /* Ignore empty ApplicationBase */
-		if (culture && (strlen (culture) > 0))
+
+		if (culture && g_strcasecmp (culture, "neutral"))
 			fullpath = g_build_filename (*path, culture, filename, NULL);
 		else
 			fullpath = g_build_filename (*path, filename, NULL);
+
 		result = mono_assembly_open (fullpath, NULL);
 		g_free (fullpath);
 		if (result)
@@ -896,8 +898,6 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	MonoReflectionAssembly *refass = NULL;
 
 	MONO_ARCH_SAVE_REGS;
-
-	memset (&aname, 0, sizeof (aname));
 
 	/* FIXME : examine evidence? */
 
