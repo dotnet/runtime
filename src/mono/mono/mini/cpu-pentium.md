@@ -212,9 +212,6 @@ stelem.i8:
 stelem.r4:
 stelem.r8:
 stelem.ref:
-unused2:
-unused3:
-unused4:
 unused5:
 unused6:
 unused7:

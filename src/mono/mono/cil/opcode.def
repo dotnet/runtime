@@ -161,9 +161,9 @@ OPDEF(CEE_STELEM_I8, "stelem.i8", PopRef+PopI+PopI8, Push0, InlineNone, X, 1, 0x
 OPDEF(CEE_STELEM_R4, "stelem.r4", PopRef+PopI+PopR4, Push0, InlineNone, X, 1, 0xFF, 0xA0, NEXT)
 OPDEF(CEE_STELEM_R8, "stelem.r8", PopRef+PopI+PopR8, Push0, InlineNone, X, 1, 0xFF, 0xA1, NEXT)
 OPDEF(CEE_STELEM_REF, "stelem.ref", PopRef+PopI+PopRef, Push0, InlineNone, X, 1, 0xFF, 0xA2, NEXT)
-OPDEF(CEE_UNUSED2, "unused2", Pop0, Push0, InlineNone, X, 1, 0xFF, 0xA3, NEXT)
-OPDEF(CEE_UNUSED3, "unused3", Pop0, Push0, InlineNone, X, 1, 0xFF, 0xA4, NEXT)
-OPDEF(CEE_UNUSED4, "unused4", Pop0, Push0, InlineNone, X, 1, 0xFF, 0xA5, NEXT)
+OPDEF(CEE_LDELEM, "ldelem", PopRef+PopI, Push1, InlineType, X, 1, 0xFF, 0xA3, NEXT)
+OPDEF(CEE_STELEM, "stelem", PopRef+PopI+Pop1, Push0, InlineType, X, 1, 0xFF, 0xA4, NEXT)
+OPDEF(CEE_UNBOX_ANY, "unbox.any", PopRef, Push1, InlineType, X, 1, 0xFF, 0xA5, NEXT)
 OPDEF(CEE_UNUSED5, "unused5", Pop0, Push0, InlineNone, X, 1, 0xFF, 0xA6, NEXT)
 OPDEF(CEE_UNUSED6, "unused6", Pop0, Push0, InlineNone, X, 1, 0xFF, 0xA7, NEXT)
 OPDEF(CEE_UNUSED7, "unused7", Pop0, Push0, InlineNone, X, 1, 0xFF, 0xA8, NEXT)
@@ -300,7 +300,7 @@ OPDEF(CEE_MONO_LDPTR, "mono_ldptr", Pop0, PushI, InlineI, X, 2, 0xF0, 0x05, NEXT
 OPDEF(CEE_MONO_VTADDR, "mono_vtaddr", Pop1, PushI, InlineNone, X, 2, 0xF0, 0x06, NEXT)
 OPDEF(CEE_MONO_NEWOBJ, "mono_newobj", Pop0, PushRef, InlineType, X, 2, 0xF0, 0x07, NEXT)
 OPDEF(CEE_MONO_RETOBJ, "mono_retobj", PopI, Push0, InlineType, X, 2, 0xF0, 0x08, RETURN)
-OPDEF(CEE_MONO_LDNATIVEOBJ, "mono_ldnativeobj", PopI, Push1, InlineType, X, 2, 0xF0, 0x09, NEXT)
+OPDEF(CEE_MONO_LDNATIVEOBJ, "mono_ldnativeobj", PopI, Push1, InlineType, X, 2, 0xF0, 0x09, RETURN)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)
