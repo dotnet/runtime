@@ -42,8 +42,130 @@
 	mailing list.
 
 <a name="packaged">
-*** Released and tested packages
 
+	At this point, you should look into using one of the <a
+	href="snapshots">nightly snapshots</a> or getting the 
+	sources from <a href="anoncvs.html">Anonymous CVS</a> 
+	as significant work has gone into Mono since our last stable
+	release in September.
+
+	We will be making a packaged release sometime in January.
+
+	
+<a name="install">
+** Installing the software
+
+	To install and work on the compiler and the class libraries,
+	follow these instructions:
+
+	<ul>
+		* Install <a href="http://www.cygwin.com">CygWin</a> first.
+
+		* Untar the MCS distribution (see below for information).
+
+		* Go into the MCS directory and type `make windows'
+	</ul>
+
+	To compile the mono runtime on windows:
+
+	<ul>	
+		* Install <a href="http://www.cygwin.com">CygWin</a> first.
+
+		* Install in /usr/local in your Cygwin world the following
+	  	  packages (compiled by <a href="mailto:alex@ximian.com">Alex Graveley</a>):
+		<ul>
+		<li><a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">
+		http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip</a>
+
+		<li><a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
+		http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip</a>
+		</ul>
+
+		These already contain libiconv linked statically. 
+
+	</ul>
+
+	If you want to compile things yourself you will need to compile and install:
+
+
+	<ul>
+		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
+                  (I had to change line 674 of
+                  <nobr><tt>pkgconfig-0.8.0/glib-1.2.8/gstrfuncs.c</tt></nobr> from 
+		  <nobr><tt>extern char *strsignal (int sig);</tt></nobr> to
+		  <nobr><tt>extern const char *strsignal (int sig);</tt></nobr>.
+
+<pre>
+tar xzvf pkgconfig-0.8.0.tar.gz
+cd pkgconfig-0.8.0
+./configure --prefix=/usr
+make
+make install
+</pre>
+
+		* Install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a>.
+		  If you dont have MS Visual C/C++ 4.0 or 5.0 or 6.0 you can also try
+		  the binary package available at <a
+		  href="http://www.gimp.org/win32/libiconv-dev-20001007.zip">here</a>.
+ 
+		* Install the newest glib (1.3 version). You can download it
+                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">here</a>.
+
+		* Unpack the mono distribution:
+
+<pre>
+tar xzvf mono-XXX.tar.gz
+</pre>
+
+		* Configure, compile and install:
+
+<pre>
+./configure --prefix=//c/mono
+make
+make install
+</pre>
+
+		* Some people observed problems with autoconf 2.52. Installing 
+		  autoconf 2.13 helped in those cases (don't forget to do a
+		  `make maintainer-clean' after the update)
+
+	</ul>
+
+	To compile the mono runtime on Unix:
+
+	<ul>
+		
+		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
+
+		* Install newest glib (cvs head version). You can download it
+                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">here</a>. Maybe you need
+                  to modify your ACLOCAL_FLAGS for pkgconfig, for example if
+                  your install prefix is /usr/local:
+<pre>
+export ACLOCAL_FLAGS="-I /usr/local/share/aclocal"
+</pre>
+
+		* Download the mono distribution
+
+		* Unpack the mono distribution:
+
+<pre>
+tar xzvf mono-XXX.tar.gz
+</pre>
+
+		* Configure, compile and install:
+<pre>
+./configure
+make
+make install
+</pre>
+	</ul>
+	
+
+
+<a name="oldreleases">
+
+*** Old releases.
 	<ul>
 		<a name="sep-18">
 		<b>September 18, 2001</b>
@@ -117,115 +239,4 @@
 		* <a href="archive/mono-08-Jul-2001.tar.gz">mono-08-Jul-2001.tar.gz</a>: CVS Snapshot
 		</ul>
 	</ul>
-
-<a name="install">
-** Installing the software
-
-	To install and work on the compiler and the class libraries,
-	follow these instructions:
-
-	<ul>
-		* Install <a href="http://www.cygwin.com">CygWin</a> first.
-
-		* Untar the MCS distribution (see below for information).
-
-		* Go into the MCS directory and type `make windows'
-	</ul>
-
-	To compile the mono runtime on windows:
-
-	<ul>	
-		* Install <a href="http://www.cygwin.com">CygWin</a> first.
-
-		* Install in /usr/local in your Cygwin world the following
-	  	  packages (compiled by <a href="mailto:alex@ximian.com">Alex Graveley</a>:
-		<ul>
-		<li><a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">
-		http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip</a>
-
-		<li><a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
-		http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip"></a>
-		</ul>
-
-		These already contain libiconv linked statically. 
-
-	</ul>
-
-	If you want to compile things yourself you will need to compile and install:
-
-
-	<ul>
-		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
-                  (I had to change line 674 of
-                  <nobr><tt>pkgconfig-0.8.0/glib-1.2.8/gstrfuncs.c</nobr> from 
-		  <nobr><tt>extern char *strsignal (int sig);</nobr> to
-		  <nobr><tt>extern const char *strsignal (int sig);</nobr>.
-
-<pre>
-tar xzvf pkgconfig-0.8.0.tar.gz
-cd pkgconfig-0.8.0
-./configure --prefix=/usr
-make
-make install
-</pre>
-
-		* Install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a>.
-		  If you dont have MS Visual C/C++ 4.0 or 5.0 or 6.0 you can also try
-		  the binary package available at <a
-		  href="http://www.gimp.org/win32/libiconv-dev-20001007.zip">here</a>.
- 
-		* Install the newest glib (1.3 version). You can download it
-                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">here</a>.
-
-		* Unpack the mono distribution:
-
-<pre>
-tar xzvf mono-XXX.tar.gz
-</pre>
-
-		* Configure, compile and install:
-
-<pre>
-./configure --prefix=//c/mono
-make
-make install
-</pre>
-
-		* Some people observed problems with autoconf 2.52. Installing 
-		  autoconf 2.13 helped in those cases (don't forget to do a
-		  `make maintainer-clean' after the update)
-
-	</ul>
-
-	To compile the mono runtime on Unix:
-
-	<ul>
-		
-		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
-
-		* Install newest glib (cvs head version). You can download it
-                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">here</a>. Maybe you need
-                  to modify your ACLOCAL_FLAGS for pkgconfig, for example if
-                  your install prefix is /usr/local:
-<pre>
-export ACLOCAL_FLAGS="-I /usr/local/share/aclocal"
-</pre>
-
-		* Download the mono distribution
-
-		* Unpack the mono distribution:
-
-<pre>
-tar xzvf mono-XXX.tar.gz
-</pre>
-
-		* Configure, compile and install:
-<pre>
-./configure
-make
-make install
-</pre>
-	</ul>
-	
-
 

@@ -30,6 +30,10 @@
 	"http://lists.ximian.com/archives/public/mono-list/2002-January/002409.html">
 	here</a>
 
+	Last minute breaking news: Paolo got our compiler in Linux to
+	compile fib.cs, patches are comming tomorrow once we have
+	ChangeLog entries.   
+
 ** Jan 4, 2002
 
 	Mike Kestner posted an update on Gtk# <a

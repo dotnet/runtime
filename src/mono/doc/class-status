@@ -15,7 +15,12 @@
 
 * List of not-implemented classes
 
-This is a list of pending classes, and links to their documentation on MSDN.Microsoft.com\n\n
+	These classes are only classes pending from the CORLIB assembly
+	other assemblies are not yet listed.  We are going to be working
+	on an improved status display for pending classes.
+
+	Please bear with us in the meantime.
+This is a list of pending classes, and links to their documentation on MSDN.Microsoft.com<p><p>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystem_AppDomainClassTopic.asp">System._AppDomain</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemActivatorClassTopic.asp">System.Activator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAppDomainSetupClassTopic.asp">System.AppDomainSetup</a><br>

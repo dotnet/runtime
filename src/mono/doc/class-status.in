@@ -15,3 +15,8 @@
 
 * List of not-implemented classes
 
+	These classes are only classes pending from the CORLIB assembly
+	other assemblies are not yet listed.  We are going to be working
+	on an improved status display for pending classes.
+
+	Please bear with us in the meantime.

@@ -40,7 +40,15 @@
 
 ** ECMA Documentation.
 
-	You can get the documentation for the ECMA specs from a number of sites:
+	You can get the documentation for the ECMA specs from:
+
+	<ul>
+		* <a href="http://www.ecma.ch/ecma1/STAND/ecma-334.htm">C# Language Specification</a>
+		* <a href="http://www.ecma.ch/ecma1/STAND/ecma-335.htm">Common Language Infrastructure</a>
+	</ul>
+
+	Older copies of the standard are available here:
+
 	<ul>
 		* <a href="http://msdn.microsoft.com/net/ecma">At MSDN</a>
 		* <a href="http://www.dotnetexperts.com">Dot Net Experts</a>
