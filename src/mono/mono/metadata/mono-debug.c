@@ -225,7 +225,11 @@ mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method, MonoDoma
 		return;
 
 	domain_data = mono_debug_get_domain_data (handle, domain);
-	g_assert (!domain_data->jit [minfo->index]);
+	if (domain_data->jit [minfo->index]) {
+		// FIXME FIXME FIXME
+		// This is bug #48591.
+		return;
+	}
 
 	jit = g_hash_table_lookup (domain_data->_priv->wrapper_info, wrapper_method);
 	g_assert (jit);
@@ -271,7 +275,11 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	mono_debugger_lock ();
 
 	domain_data = mono_debug_get_domain_data (handle, domain);
-	g_assert (!domain_data->jit [minfo->index]);
+	if (domain_data->jit [minfo->index]) {
+		// FIXME FIXME FIXME
+		// This is bug #48591.
+		return;
+	}
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		g_hash_table_insert (domain_data->_priv->wrapper_info, method, jit);
