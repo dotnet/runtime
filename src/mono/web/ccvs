@@ -1,0 +1,91 @@
+* CVS Access
+
+	If you are an active Mono developer, you can get a CVS account
+	that hosts the Mono source code.
+
+	Send an e-mail to miguel with your public SSH key for this purpose.
+
+	You will need CVS and SSH.  Windows users can get both by
+	installing Cygwin (<a
+	href="http://www.cygwin.org">http://www.cygwin.org</a>)
+
+	Unix users will probably have those tools installed already.
+
+** Checking out the sources
+
+	To check out the sources for the first time from the
+	repository, use this command:
+
+<pre>
+	export CVS_RSH=ssh
+	export CVSROOT=username@mono-cvs.ximian.com:/cvs/public
+	cvs -z3 co mcs mono
+</pre>
+
+** Updating your sources
+
+	Every day people will be making changes, to get your latest
+	updated sources, use:
+
+<pre>
+	cvs -z3 update mcs mono
+</pre>
+
+** Making patches
+
+	Usually you will want to make a patch to contribute, and let
+	other people review it before commiting it.  To obtain such a
+	"patch", you type:
+	
+<pre>
+	cd directory-you-want-to-diff
+	cvs -z3 diff -u > file.diff
+	mail mono-list@ximian.com < file.diff
+</pre>
+
+** Commiting your work
+
+	Once you get approval to commit to the CVS, or if you are
+	commiting code that you are the maintainer of, you will want
+	to commit your code to CVS. 
+
+	To do this, you have to "add" any new files that you created:
+
+<pre>
+	cvs add new-file.c
+</pre>
+
+	And then commit your changes to the repository:
+
+<pre>
+	cvs commit .
+</pre>
+
+** The Mailing List
+
+	To keep track of the various development and changes to the
+	CVS tree, you can subscribe to the mono-cvs-list@ximian.com.
+	To subscribe, send an email message to
+	mono-cvs-list-request@ximian.com and in the body of the
+	message put `subscribe'.
+
+	This will send you an email message every time a change is
+	made to the CVS repository, together with the information that
+	the author of the changes submitted.
+	
+** Recommendations
+
+	Please do not commit code that would break the compile to the
+	CVS, because that normally wastes everybody's time.  
+
+	Make sure that you add all the files before you do a commit.
+
+	Use ChangeLog entries so we can keep textual descriptions of
+	your work, and use the contents of your ChangeLog file as the
+	CVS commit message (ie, paste the contents of this into the
+	editor buffer).
+
+	If you are making changes to someone else's code, please make
+	sure you get in touch with the maintainer of that code before
+	applying patches.  You want to avoid commiting conflicting
+	work to someone else's code.
