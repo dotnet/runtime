@@ -220,10 +220,9 @@
   It contains several new classes.
 
   There are two assemblies related to System.Xml v2.0; System.Xml.dll and
-  System.Data.SqlXml.dll. Most of the important part are in System.Xml.dll
-  (you will find that the core part of XQuery is in System.Xml.dll; For
-  example, see some classes in MS.Internal.Xml namespace), so I'll still 
-  spot only on System.Xml.dll.
+  System.Data.SqlXml.dll. Now that System.Data.SqlXml.dll is little important.
+  It just contains only XQueryCommand class inside System.Xml.* namespace.
+  Most of the important part are in System.Xml.dll.
 
   Note that .NET Framework is pre-release version, so they are subject
   to change. Actually many of the pre-released classes vanished.
@@ -231,14 +230,14 @@
   System.Xml 2.0 contains several features such as:
 
 	<ul>
-		* new XPathNavigator and XPathDocument
-		* Factory method based and strongly-typed XmlReader
+		* new XPathNavigator <del>and XPathDocument</del><ins>XPathDocument is <a href="http://blogs.msdn.com/dareobasanjo/archive/2004/08/25/220251.aspx">being reverted</a></ins>
+		* XmlReaderSettings, XmlWriterSettings and factory methods
+		* Strongly typed XmlReader and XmlWriter.
 		* XML Schema design changes
 		* XSD Inference
-		* XQuery implementation
 		* Well-documented and improved XmlSerializer.
-		* XSLT IL generator (similar to Apache XSLTC) - it is 
-		  internal use
+		* XQuery execution engine
+		* XQuery and XSLT per-stylesheet assembly generator
 	</ul>
 
 *** System.Xml 2.0
@@ -271,7 +270,7 @@
 **** Sub-tree handling in XmlReader/XmlWriter/XPathNavigator
 
   Currently XmlReader.ReadSubtree(), XmlWriter.WriteSubtree() and
-  XPathNavigator.ReadSubtree() are implemented, though not so stable.
+  XPathNavigator.ReadSubtree() are implemented, though not well-tested.
   They are based on Mono.Xml.SubtreeXmlReader and
   Mono.Xml.XPath.XPathNavigatorReader classes.
 
@@ -282,14 +281,14 @@
   Microsoft had to redesign System.Xml.Schema classes. We also have to
   change many things.
 
-  1) It does not expose XmlSchemaDatatype (except for obsolete members).
-  Primitive types are represented as XmlSchemaSimpleType instances (thus
-  there are ElementSchemaType, AttributeSchemaType, BaseXmlSchemaType that
-  replace some existing properties).
+  1) It does not expose XmlSchemaDatatype anymore (except for obsolete
+  members). Primitive types are represented as XmlSchemaSimpleType
+  instances (thus there are ElementSchemaType, AttributeSchemaType,
+  BaseXmlSchemaType that replace some existing properties).
 
   2) "XQuery 1.0 and XPath 2.0 Data Model" datatypes (such as
   xdt:dayTimeDuration) are newly supported. They are partially implemented
-  yet.
+  yet. This task is partly done.
 
   3) schema structures are now bound in parent-child relationship. It is
   not yet implemented. With related to it, there seems bunch of schema
@@ -299,7 +298,7 @@
   schemas. Instead, new XmlSchemaSet class is used. It should affect on
   schema compilation design. In fact, I've implemented XmlSchemaCollection
   as more conformant to W3C specification, but there are still many changes
-  required.
+  required. This task is partly done.
 
 
 **** XSD Inference
@@ -313,10 +312,15 @@
 
 **** Editable XPathDocument
 
+  <del>
   in .NET 2.0 XPathDocument is supposed to be editable. Currently we provide
   fast document table model based implementation (DTMXPathNavigator), but
   by that design change, we (and they) cannot provide fast read only
   XPathNavigator from XPathDocument anymore.
+  </del><ins>
+  It is being reverted to the original (.NET 1.x) XPathDocument. We still have
+  them, but we'll revert them too in the future. So our XPathDocument will be still faster one.
+  </ins>
 
   Currently, new XPathDocument implementation is provided. The actual
   implementation is Mono.Xml.XPath.XPathDocument2, that is simple dom-like
@@ -325,7 +329,7 @@
   example, XPathDocument.CreateEditor() calls XPathDocument2.CreateEditor()).
 
   Currently Mono.Xml.XPath.XPathDocument2 is unstable (it does not pass
-  the standalone XSLT tests as well as existing DTMXPathDocument does). So
+  the standalone XSLT tests unlike existing DTMXPathDocument does). So
   it did not replace existing XPathDocument implementation, but you can use
   new implementation by explicitly setting environment value
   USE_XPATH_DOCUMENT_2 = yes. Currently it supports (well, is supposed 
@@ -340,35 +344,59 @@
   class as extra set (might be different mono-specific XML assembly).
 
 
-**** System.Xml.XQuery and System.Xml.Xsl 2.0
+**** System.Xml.XQuery
 
-  XQuery is a new face XML data manipulation language (well, at least new
-  face in .NET world). It is similar to SQL, but intended to manipulate and to
-  support XML. It is similar to XPath, but extended to support new features
-  such as XML Schema based datatypes.
+  In this namespace, there are two significant classes. XsltCommand and 
+  XQueryCommand.
 
-  XQuery implementation can be found mainly in System.Xml.Query and 
-  MS.Internal.Xml.Query namespaces. The implementation is mostly
-  in System.Xml.dll. System.Data.SqlXml.dll just invokes the actual XQuery
-  processor which resides in System.Xml.dll using reflection.
+  XsltCommand implements XSLT transformation. It is almost the same as
+  System.Xml.Xsl.XslTransform, but this class transforms documents twice
+  to four times as fast as XslTransform. Instead, stylesheet compilation
+  is much slower, because it generates compiled stylesheet assembly.
 
-  XQuery implementation will be done in these steps:
+  XQueryCommand implements XQuery. XQuery is a new face XML document
+  manipulation language (at least new face in .NET world). It is similar
+  to XSLT, but extended to support XML Schema based datatypes (and it is
+  not XML based langauge). It is similar to XPath, but it can construct
+  XML nodes. It has no complicated template resolution, but works like
+  functional languages.
+
+  Under MS.NET, XQuery implementation is mainly in System.Xml.Query and
+  MS.Internal.Xml.* namespaces. The implementation is mostly
+  in System.Xml.dll. It is also true to our System.Xml.dll. Our XQueryCommand
+  in System.Data.SqlXml.dll just invokes the actual XQuery processor
+  (Mono.Xml.XPath2.XQueryCommandImpl) which resides in System.Xml.dll via
+  reflection.
+
+  Currently we are not implementing MS.Internal.Xml.* classes. MS
+  implementation is based on an old version of the W3C specification, and
+  our implementation is currently based on 
+  <a href="http://www.w3.org/TR/2004/WD-xquery-20040723/">23 July 2004
+  version</a> (latest as of now) of the working draft.
+
+  XQuery implementation tasks are:
 
 	<ul>
 		* XQuery syntax parser that parses xquery string to AST 
-		  (abstract syntax tree). -> done.
+		  (abstract syntax tree). -> partly not done.
 
-		* XQuery AST compiler into runnable query command
-		  (static context)
+		* XQuery AST compiler into static context -> partly not done.
 
 		* XQuery (dynamic context) runtime = XQuery expression evaluator
-		  + sequence iterator.
+		  + sequence iterator. -> partly not done.
+
+		* XPathItem data model and (mainly) conversion support.
+		  -> partly done.
 
 		* Applied expression classes for XQuery/XPath 2.0 functions and
-		  operators.
+		  operators. -> partly done.
 
-		* XQuery data model and (mainly) conversion support.
+		* Optimization, and design per-query assembly code generator (later)
 	</ul>
+
+  It already handles some queries, while major part implementation is missing
+  or buggy (like FLWOR, expressions for sequence type handling, built-in
+  function support etc.).
 
 
 *** Relax NG and DSDL in Mono 1.2
@@ -379,13 +407,13 @@
   http://sourceforge.net/projects/dotnetopensrc/</a>). With a few changes,
   it can be used with mono.
   
-  We also don't have multi-language based validation, namely Namespace-based
-  Validation Dispatch Language (NVDL). To support unwrapping, one special
-  XmlReader implementation is required (other schema validation support will
-  be done by ReadSubtree()). Note that we had seen RELAX Namespace, Modular
-  Namespace (MNS) and Namespace Routing Language (NRL) - that is,
-  standardization effort is still ongoing (though NVDL looks mostly the same
-  as NRL).
+  We also don't have multi-language based validation support, namely
+  Namespace-based Validation Dispatch Language (NVDL). To support unwrapping,
+  one special XmlReader implementation is required (other schema validation
+  support can be done by ReadSubtree()). Note that we had seen RELAX
+  Namespace, Modular Namespace (MNS) and Namespace Routing Language (NRL)
+  - that is, standardization effort is still ongoing (though NVDL looks
+  mostly the same as NRL).
 
   In Mono 1.2, there might be improvements on Commons.Xml.Relaxng.
 
@@ -399,10 +427,10 @@
 		  would be useful for RelaxngPattern based xml serialization (if
 		  there is need).
 
-		* Because of lack of ambiguity detection, currently
-		  XmlMapping could not be provided. But If anyone is
-		  interested in such effort, integration with XmlSerializer
-		  would be interesting task.
+		* Because of lack of ambiguity detection, there is no way to
+		  provide XmlMapping (XmlTypeMapping/XmlMemberMapping). But 
+		  If anyone is interested in such effort, integration with
+		  XmlSerializer would be interesting task.
 	</ul>
 
 
@@ -411,9 +439,6 @@
 *** xsd.exe
 
   See <a href="ado-net.html">ADO.NET page</a>.
-
-  Microsoft has another inference class from XmlReader to XmlSchemaCollection
-  (Microsoft.XsdInference). It may be useful, but it won't be so easy.
 
 
 ** Miscellaneous
@@ -435,5 +460,5 @@
 
 
   Atsushi Eno <asushi@ximian.com>
-  last updated 08/03/2004
+  last updated 09/02/2004
 
