@@ -123,7 +123,7 @@ ldstr:
 newobj:
 castclass:
 isinst:
-conv.r.un:
+conv.r.un: dest:f src1:i len:8
 unbox:
 throw: src1:i len:17
 ldfld:
@@ -243,7 +243,7 @@ rename:
 compare: src1:i src2:i len:3
 lcompare: src1:i src2:i len:3
 icompare: src1:i src2:i len:3
-compare_imm: src1:i len:7
+compare_imm: src1:i len:13
 icompare_imm: src1:i len:7
 fcompare: src1:f src2:f clob:a len:12
 local:
@@ -255,22 +255,22 @@ retarg:
 setret: dest:a src1:i len:3
 setlret: dest:l src1:i src2:i len:5
 checkthis: src1:b len:5
-call: dest:a clob:c len:18
+call: dest:a clob:c len:64
 ret: len:2
-voidcall: clob:c len:18
-voidcall_reg: src1:i clob:c len:12
-voidcall_membase: src1:b clob:c len:17
-fcall: dest:f len:45 clob:c
-fcall_reg: dest:f src1:i len:12 clob:c
-fcall_membase: dest:f src1:b len:17 clob:c
-lcall: dest:l len:18 clob:c
-lcall_reg: dest:l src1:i len:12 clob:c
-lcall_membase: dest:l src1:b len:17 clob:c
-vcall: len:18 clob:c
-vcall_reg: src1:i len:12 clob:c
-vcall_membase: src1:b len:17 clob:c
-call_reg: dest:a src1:i len:12 clob:c
-call_membase: dest:a src1:b len:17 clob:c
+voidcall: clob:c len:64
+voidcall_reg: src1:i clob:c len:64
+voidcall_membase: src1:b clob:c len:64
+fcall: dest:f len:64 clob:c
+fcall_reg: dest:f src1:i len:64 clob:c
+fcall_membase: dest:f src1:b len:64 clob:c
+lcall: dest:l len:64 clob:c
+lcall_reg: dest:l src1:i len:64 clob:c
+lcall_membase: dest:l src1:b len:64 clob:c
+vcall: len:64 clob:c
+vcall_reg: src1:i len:64 clob:c
+vcall_membase: src1:b len:64 clob:c
+call_reg: dest:a src1:i len:64 clob:c
+call_membase: dest:a src1:b len:64 clob:c
 trap:
 iconst: dest:i len:10
 i8const: dest:i len:17
@@ -293,10 +293,10 @@ storei8_membase_imm: dest:b len:17
 storer4_membase_reg: dest:b src1:f len:8
 storer8_membase_reg: dest:b src1:f len:7
 load_membase: dest:i src1:b len:14
-loadi1_membase: dest:i src1:b len:8
-loadu1_membase: dest:i src1:b len:8
-loadi2_membase: dest:i src1:b len:8
-loadu2_membase: dest:i src1:b len:8
+loadi1_membase: dest:i src1:b len:9
+loadu1_membase: dest:i src1:b len:9
+loadi2_membase: dest:i src1:b len:9
+loadu2_membase: dest:i src1:b len:9
 loadi4_membase: dest:i src1:b len:7
 loadu4_membase: dest:i src1:b len:7
 loadi8_membase: dest:i src1:b len:17
@@ -336,6 +336,8 @@ cond_exc_ov: len:7
 cond_exc_no: len:7
 cond_exc_c: len:7
 cond_exc_nc: len:7
+cond_exc_iov: len:7
+cond_exc_ic: len:7
 long_add:
 long_sub:
 long_mul:
@@ -472,7 +474,7 @@ float_cgt_un: dest:i src1:f src2:f len:47
 float_clt: dest:i src1:f src2:f len:35
 float_clt_un: dest:i src1:f src2:f len:42
 float_conv_to_u: dest:i src1:f len:46
-call_handler: len:11
+call_handler: len:14
 aot_const: dest:i len:6
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:7
@@ -501,7 +503,7 @@ x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
 amd64_icompare_membase_reg: src1:b src2:i len:7
 amd64_icompare_membase_imm: src1:b len:12
 amd64_icompare_reg_membase: src1:i src2:b len:7
-amd64_set_xmmreg_r4: src1:f len:9
+amd64_set_xmmreg_r4: src1:f len:14
 amd64_set_xmmreg_r8: src1:f len:14
 adc: dest:i src1:i src2:i len:3 clob:1
 addcc: dest:i src1:i src2:i len:3 clob:1

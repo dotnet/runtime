@@ -164,7 +164,7 @@ static guchar*
 create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp;
-	int i;
+	int i, lmf_offset, offset, method_offset, saved_regs_offset, saved_fpregs_offset, framesize;
 	static guint8* generic_jump_trampoline = NULL;
 	static guint8 *generic_class_init_trampoline = NULL;
 
@@ -183,144 +183,127 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		break;
 	}
 
-	code = buf = g_malloc (256);
+	code = buf = g_malloc (512);
 
-	/* Allocate some stack space where we can save stuff */
-	amd64_alu_reg_imm (buf, X86_SUB, X86_ESP, 512);
+	framesize = 512 + sizeof (MonoLMF);
+	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
+	amd64_push_reg (code, AMD64_RBP);
+	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
+
+	offset = 0;
 
 	/* Save the method/vtable received in RAX */
-	amd64_mov_membase_reg (buf, X86_ESP, 512 - 8, AMD64_RAX, 8);
-
-	/* FIXME: save lmf */
-
-	/* FIXME: Save fp regs */
+	offset += 8;
+	method_offset = - offset;
+	amd64_mov_membase_reg (code, AMD64_RBP, method_offset, AMD64_RAX, 8);
 
 	/* Save argument registers */
 
+	offset += AMD64_NREG * 8;
+	saved_regs_offset = - offset;
 	for (i = 0; i < AMD64_NREG; ++i)
-		amd64_mov_membase_reg (buf, X86_ESP, (i * 8), i, 8);
+		amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), i, 8);
+	offset += 8 * 8;
+	saved_fpregs_offset = - offset;
+	for (i = 0; i < 8; ++i)
+		amd64_movsd_membase_reg (code, AMD64_RBP, saved_fpregs_offset + (i * 8), i);
+
+	/* Save LMF begin */
+
+	offset += sizeof (MonoLMF);
+	lmf_offset = - offset;
+	
+	/* Save ip */
+	if (tramp_type == MONO_TRAMPOLINE_JUMP)
+		amd64_mov_reg_imm (code, AMD64_R11, 0);
+	else
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, 8, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), AMD64_R11, 8);
+	/* Save fp */
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), AMD64_RBP, 8);
+	/* Save method */
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC)
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, method_offset, 8);
+	else
+		amd64_mov_reg_imm (code, AMD64_R11, 0);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
+	/* Save callee saved regs */
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
+
+	amd64_mov_reg_imm (code, AMD64_R11, mono_get_lmf_addr);
+	amd64_call_reg (code, AMD64_R11);
+
+	/* Save lmf_addr */
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, 8);
+	/* Save previous_lmf */
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, 8);
+	/* Set new lmf */
+	amd64_lea_membase (code, AMD64_R11, AMD64_RBP, lmf_offset);
+	amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, 8);
+
+	/* Save LMF end */
 
 	/* Arg1 is the pointer to the saved registers */
-	amd64_lea_membase (buf, AMD64_RDI, AMD64_RSP, 0);
+	amd64_lea_membase (code, AMD64_RDI, AMD64_RBP, saved_regs_offset);
 
 	/* Arg2 is the address of the calling code */
-	amd64_mov_reg_membase (buf, AMD64_RSI, X86_ESP, 512, 8);
+	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RBP, 8, 8);
 
 	/* Arg3 is the method/vtable ptr */
-	amd64_mov_reg_membase (buf, AMD64_RDX, X86_ESP, 512 - 8, 8);
+	amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RBP, method_offset, 8);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		tramp = amd64_class_init_trampoline;
 	else
 		tramp = amd64_magic_trampoline;
 
-	amd64_mov_reg_imm (buf, AMD64_RAX, tramp);
-	amd64_call_reg (buf, AMD64_RAX);
+	amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+	amd64_call_reg (code, AMD64_RAX);
+
+	/* Restore LMF */
+
+	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 8);
+	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, 8);
 
 	/* Restore argument registers */
 	for (i = 0; i < AMD64_NREG; ++i)
 		if (AMD64_IS_ARGUMENT_REG (i))
-			amd64_mov_reg_membase (buf, i, X86_ESP, (i * 8), 8);
+			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * 8), 8);
+
+	for (i = 0; i < 8; ++i)
+		amd64_movsd_reg_membase (code, i, AMD64_RBP, saved_fpregs_offset + (i * 8));
 
 	/* Restore stack */
-	amd64_alu_reg_imm (buf, X86_ADD, X86_ESP, 512);
+	amd64_leave (code);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		amd64_ret (buf);
+		amd64_ret (code);
 	else
 		/* call the compiled method */
-		amd64_jump_reg (buf, X86_EAX);
+		amd64_jump_reg (code, X86_EAX);
 
-#if 0
-	/* save caller save regs because we need to do a call */ 
-	x86_push_reg (buf, X86_EDX);
-	x86_push_reg (buf, X86_EAX);
-	x86_push_reg (buf, X86_ECX);
-
-	/* save LMF begin */
-
-	/* save the IP (caller ip) */
-	if (tramp_type == MONO_TRAMPOLINE_JUMP)
-		x86_push_imm (buf, 0);
-	else
-		x86_push_membase (buf, X86_ESP, 16);
-
-	x86_push_reg (buf, X86_EBP);
-	x86_push_reg (buf, X86_ESI);
-	x86_push_reg (buf, X86_EDI);
-	x86_push_reg (buf, X86_EBX);
-
-	/* save method info */
-	x86_push_membase (buf, X86_ESP, 32);
-	/* get the address of lmf for the current thread */
-	x86_call_code (buf, mono_get_lmf_addr);
-	/* push lmf */
-	x86_push_reg (buf, X86_EAX); 
-	/* push *lfm (previous_lmf) */
-	x86_push_membase (buf, X86_EAX, 0);
-	/* *(lmf) = ESP */
-	x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
-	/* save LFM end */
-
-	/* push the method info */
-	x86_push_membase (buf, X86_ESP, 44);
-	/* push the return address onto the stack */
-	if (tramp_type == MONO_TRAMPOLINE_JUMP)
-		x86_push_imm (buf, 0);
-	else
-		x86_push_membase (buf, X86_ESP, 52);
-
-	/* save all register values */
-	x86_push_reg (buf, X86_EBX);
-	x86_push_reg (buf, X86_EDI);
-	x86_push_reg (buf, X86_ESI);
-	x86_push_membase (buf, X86_ESP, 64); /* EDX */
-	x86_push_membase (buf, X86_ESP, 64); /* ECX */
-	x86_push_membase (buf, X86_ESP, 64); /* EAX */
-
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		x86_call_code (buf, amd64_class_init_trampoline);
-	else
-		x86_call_code (buf, amd64_magic_trampoline);
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
-
-	/* restore LMF start */
-	/* ebx = previous_lmf */
-	x86_pop_reg (buf, X86_EBX);
-	/* edi = lmf */
-	x86_pop_reg (buf, X86_EDI);
-	/* *(lmf) = previous_lmf */
-	x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
-	/* discard method info */
-	x86_pop_reg (buf, X86_ESI);
-	/* restore caller saved regs */
-	x86_pop_reg (buf, X86_EBX);
-	x86_pop_reg (buf, X86_EDI);
-	x86_pop_reg (buf, X86_ESI);
-	x86_pop_reg (buf, X86_EBP);
-
-	/* discard save IP */
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
-	/* restore LMF end */
-
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
-#endif
-
-	g_assert ((buf - code) <= 256);
+	g_assert ((code - buf) <= 512);
 
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_GENERIC:
-		mono_generic_trampoline_code = code;
+		mono_generic_trampoline_code = buf;
 		break;
 	case MONO_TRAMPOLINE_JUMP:
-		generic_jump_trampoline = code;
+		generic_jump_trampoline = buf;
 		break;
 	case MONO_TRAMPOLINE_CLASS_INIT:
-		generic_class_init_trampoline = code;
+		generic_class_init_trampoline = buf;
 		break;
 	}
 
-	return code;
+	return buf;
 }
 
 #define TRAMPOLINE_SIZE 24
@@ -346,7 +329,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 
 	ji = g_new0 (MonoJitInfo, 1);
 	ji->code_start = buf;
-	ji->code_size = (code - buf) * 4;
+	ji->code_size = code - buf;
 
 	mono_jit_stats.method_trampolines++;
 
@@ -379,19 +362,21 @@ gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
 	MonoJitInfo *ji;
+	MonoDomain *domain = mono_domain_get ();
 
-	/* previously created trampoline code */
-	if (method->info)
+	/* Trampoline are arch specific, so cache only the one used in the root domain */
+	if ((domain == mono_get_root_domain ()) && method->info)
 		return method->info;
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
-	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
-	method->info = ji->code_start;
+	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain);
+	if (domain == mono_get_root_domain ())
+		method->info = ji->code_start;
 	g_free (ji);
 
-	return method->info;
+	return ji->code_start;
 }
 
 /**

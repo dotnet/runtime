@@ -2,6 +2,7 @@
 #define __MONO_MINI_AMD64_H__
 
 #include <mono/arch/amd64/amd64-codegen.h>
+#include <glib.h>
 
 #ifdef PLATFORM_WIN32
 #include <windows.h>
@@ -12,15 +13,15 @@
 
 /* sigcontext surrogate */
 struct sigcontext {
-	unsigned int eax;
-	unsigned int ebx;
-	unsigned int ecx;
-	unsigned int edx;
-	unsigned int ebp;
-	unsigned int esp;
-	unsigned int esi;
-	unsigned int edi;
-	unsigned int eip;
+	guint64 eax;
+	guint64 ebx;
+	guint64 ecx;
+	guint64 edx;
+	guint64 ebp;
+	guint64 esp;
+    guint64 esi;
+	guint64 edi;
+	guint64 eip;
 };
 
 typedef void (* MonoW32ExceptionHandler) (int);
@@ -79,7 +80,7 @@ struct sigcontext {
 
 #define MONO_MAX_FREGS 6
 
-#define MONO_ARCH_FRAME_ALIGNMENT 4
+#define MONO_ARCH_FRAME_ALIGNMENT 16
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
  * reproduceable results for benchmarks */
@@ -102,17 +103,35 @@ struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
-	guint32     ebx;
-	guint32     edi;
-	guint32     esi;
-	guint32     ebp;
-	guint32     eip;
+	guint64     rip;
+	guint64     rbx;
+	guint64     ebp;
+	guint64     r12;
+	guint64     r13;
+	guint64     r14;
+	guint64     r15;
 };
 
 typedef struct MonoCompileArch {
 	gint32 lmf_offset;
 	gint32 localloc_offset;    
 } MonoCompileArch;
+
+typedef struct {
+	guint64 rax;
+	guint64 rbx;
+	guint64 rcx;
+	guint64 rdx;
+	guint64 rbp;
+	guint64 rsp;
+    guint64 rsi;
+	guint64 rdi;
+	guint64 rip;
+	guint64 r12;
+	guint64 r13;
+	guint64 r14;
+	guint64 r15;
+} MonoContext;
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # define SC_EAX sc_eax
@@ -134,6 +153,15 @@ typedef struct MonoCompileArch {
 # define SC_ESP rsp
 # define SC_EDI rdi
 # define SC_ESI rsi
+
+# define SC_RIP rip
+# define SC_RSP rsp
+# define SC_RBP rbp
+# define SC_RBX rbx
+# define SC_R12 r12
+# define SC_R13 r13
+# define SC_R14 r14
+# define SC_R15 r15
 #else
 # define SC_EAX eax
 # define SC_EBX ebx
@@ -146,15 +174,15 @@ typedef struct MonoCompileArch {
 # define SC_ESI esi
 #endif
 
-typedef struct sigcontext MonoContext;
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->rip = (long)(ip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->rbp = (long)(bp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->rsp = (long)(esp); } while (0); 
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->SC_EIP = (long)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->SC_EBP = (long)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->SC_ESP = (long)(esp); } while (0); 
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->rip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->SC_ESP))
+#define MONO_ARCH_USE_SIGACTION 1
 
 #ifndef PLATFORM_WIN32
 #ifdef HAVE_WORKING_SIGALTSTACK
@@ -166,6 +194,9 @@ typedef struct sigcontext MonoContext;
 #endif
 
 #endif
+
+#define MONO_ARCH_EMULATE_CONV_R8_UN    1
+#define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);
