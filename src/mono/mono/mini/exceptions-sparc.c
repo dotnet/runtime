@@ -365,6 +365,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	}
 }
 
+gboolean
+mono_arch_has_unwind_info (gconstpointer addr)
+{
+	return FALSE;
+}
+
 static MonoArray *
 glist_to_array (GList *list) 
 {
