@@ -718,13 +718,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		sframe = (MonoS390StackFrame *) sframe->prev;
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
 		memcpy (&new_ctx->uc_mcontext.gregs[6], sframe->regs, (8*sizeof(gint32)));
-		*res = *ji;
-		return res;
-#ifdef MONO_USE_EXC_TABLES
-	} else if ((ji = s390_unwind_native_frame (domain, jit_tls, ctx, new_ctx, *lmf, trace))) {
-		*res = *ji;
-		return res;
-#endif
+		return ji;
 	} else if (*lmf) {
 		
 		*new_ctx = *ctx;
@@ -736,7 +730,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
 		
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
-			*res = *ji;
 		} else {
 			memset (res, 0, sizeof (MonoJitInfo));
 			res->method = (*lmf)->method;
@@ -753,8 +746,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		*lmf = (*lmf)->previous_lmf;
 
-		return res;
-		
+		return ji ? ji : res;
 	}
 
 	return NULL;

@@ -8950,9 +8950,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 	
 	if (cfg->method->dynamic)
-		jinfo = g_new0 (MonoJitInfo, 1);
+		jinfo = g_malloc0 (sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)));
 	else
-		jinfo = mono_mempool_alloc0 (cfg->domain->mp, sizeof (MonoJitInfo));
+		jinfo = mono_mempool_alloc0 (cfg->domain->mp, sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)));
 
 	jinfo->method = method;
 	jinfo->code_start = cfg->native_code;
@@ -8965,8 +8965,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		int i;
 
 		jinfo->num_clauses = header->num_clauses;
-		jinfo->clauses = mono_mempool_alloc0 (cfg->domain->mp, 
-		        sizeof (MonoJitExceptionInfo) * header->num_clauses);
 
 		for (i = 0; i < header->num_clauses; i++) {
 			MonoExceptionClause *ec = &header->clauses [i];

@@ -392,8 +392,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->sp = (gpointer*)(window [sparc_i6 - 16]);
 		new_ctx->fp = (gpointer*)(MONO_SPARC_WINDOW_ADDR (new_ctx->sp) [sparc_i6 - 16]);
 
-		*res = *ji;
-		return res;
+		return ji;
 	}
 	else {
 		if (!(*lmf))
@@ -405,7 +404,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			return (gpointer)-1;
 
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->ip))) {
-			*res = *ji;
 		} else {
 			memset (res, 0, sizeof (MonoJitInfo));
 			res->method = (*lmf)->method;
@@ -417,7 +415,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		*lmf = (*lmf)->previous_lmf;
 
-		return res;
+		return ji ? ji : res;
 	}
 }
 

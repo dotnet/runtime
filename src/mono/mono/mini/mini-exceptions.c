@@ -636,8 +636,6 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 			if ((free_stack > (64 * 1024)) && ji->num_clauses) {
 				int i;
 				
-				g_assert (ji->clauses);
-			
 				for (i = 0; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;

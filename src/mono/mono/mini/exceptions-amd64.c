@@ -569,8 +569,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			new_ctx->SC_ESP += stack_to_pop;
 		}
 
-		*res = *ji;
-		return res;
+		return ji;
 	} else if (*lmf) {
 		
 		*new_ctx = *ctx;
@@ -579,7 +578,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			return (gpointer)-1;
 
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->rip))) {
-			*res = *ji;
 		} else {
 			memset (res, 0, sizeof (MonoJitInfo));
 			res->method = (*lmf)->method;
@@ -600,8 +598,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		*lmf = (*lmf)->previous_lmf;
 
-		return res;
-		
+		return ji ? ji : res;
 	}
 
 	return NULL;

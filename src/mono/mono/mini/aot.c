@@ -574,15 +574,8 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		/* This method was already loaded in another appdomain */
 
 		/* Duplicate jinfo */
-		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
-		memcpy (jinfo, minfo->info, sizeof (MonoJitInfo));
-		if (jinfo->clauses) {
-			MonoMethodHeader *header = mono_method_get_header (method);
-
-			jinfo->clauses = 
-				mono_mempool_alloc0 (domain->mp, sizeof (MonoJitExceptionInfo) * header->num_clauses);
-			memcpy (jinfo->clauses, minfo->info->clauses, sizeof (MonoJitExceptionInfo) * header->num_clauses);
-		}
+		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (minfo->info->num_clauses * sizeof (MonoJitExceptionInfo)));
+		memcpy (jinfo, minfo->info, sizeof (MonoJitInfo) + (minfo->info->num_clauses * sizeof (MonoJitExceptionInfo)));
 
 		return jinfo;
 	}
@@ -627,7 +620,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	minfo = g_new0 (MonoAotMethod, 1);
 
 	minfo->domain = domain;
-	jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
 
 	p = (char*)info;
 	code_len = decode_value (p, &p);
@@ -647,8 +639,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	has_clauses = decode_value (p, &p);
 	if (has_clauses) {
 		MonoMethodHeader *header = mono_method_get_header (method);
-		jinfo->clauses = 
-			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitExceptionInfo) * header->num_clauses);
+		jinfo = 
+			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (sizeof (MonoJitExceptionInfo) * header->num_clauses));
 		jinfo->num_clauses = header->num_clauses;
 
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -668,6 +660,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			ei->handler_start = code + decode_value (p, &p);
 		}
 	}
+	else
+		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
 
 	if (aot_module->opts & MONO_OPT_SHARED)
 		used_strings = decode_value (p, &p);
