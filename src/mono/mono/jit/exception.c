@@ -404,8 +404,10 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 		ctx_cp = *ctx;
 		if (!arch_handle_exception (&ctx_cp, obj, TRUE)) {
 			if (mono_break_on_exc) {
-				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
 					mono_debug_make_symbols ();
+					mono_debugger_update_symbol_file_table ();
+				}
 				G_BREAKPOINT ();
 			}
 			mono_unhandled_exception (obj);

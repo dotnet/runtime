@@ -7,7 +7,9 @@
 #include <mono/metadata/loader.h>
 #include <mono/jit/jit.h>
 
-typedef struct _MonoDebugHandle MonoDebugHandle;
+typedef struct _MonoDebugHandle			MonoDebugHandle;
+typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
+typedef struct _MonoDebuggerSymbolFileTable	MonoDebuggerSymbolFileTable;
 
 typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
@@ -105,22 +107,31 @@ extern guint32 mono_debugger_symbol_file_table_generation;
  *          it is very important not to modify the memory it is pointing to
  *          without previously setting this pointer back to NULL.
  */
-extern guint8 *mono_debugger_symbol_file_table;
+extern MonoDebuggerSymbolFileTable *mono_debugger_symbol_file_table;
 
 /*
  * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
  * contains pointers to global variables and functions which must be accessed
  * by the debugger.
  */
-typedef struct {
+struct _MonoDebuggerInfo {
 	guint64 magic;
 	guint32 version;
 	guint32 total_size;
 	guint8 **trampoline_code;
 	guint32 *symbol_file_generation;
-	guint8 **symbol_file_table;
+	MonoDebuggerSymbolFileTable **symbol_file_table;
 	int (*update_symbol_file_table) (void);
 	gpointer (*compile_method) (MonoMethod *method);
-} MonoDebuggerInfo;
+};
+
+struct _MonoDebuggerSymbolFileTable {
+	guint64 magic;
+	guint32 version;
+	guint32 total_size;
+	guint32 count;
+	guint32 generation;
+	MonoSymbolFile *symfiles [MONO_ZERO_LEN_ARRAY];
+};
 
 #endif /* __MONO_JIT_DEBUG_H__ */

@@ -13,7 +13,7 @@
 
 /* See debug.h for documentation. */
 guint32 mono_debugger_symbol_file_table_generation = 0;
-guint8 *mono_debugger_symbol_file_table = NULL;
+MonoDebuggerSymbolFileTable *mono_debugger_symbol_file_table = NULL;
 
 /* Caution: This function MUST be called before touching the symbol table! */
 static void release_symbol_file_table (void);
@@ -25,8 +25,8 @@ static MonoDebugHandle *mono_default_debug_handle = NULL;
  * This is a global data symbol which is read by the debugger.
  */
 MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
-	MONO_SYMBOL_FILE_MAGIC,
-	MONO_SYMBOL_FILE_VERSION,
+	MONO_SYMBOL_FILE_DYNAMIC_MAGIC,
+	MONO_SYMBOL_FILE_DYNAMIC_VERSION,
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
 	&mono_debugger_symbol_file_table_generation,
@@ -518,11 +518,6 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	if (info != NULL)
 		return info;
 
-#if 0
-	if (!strcmp (image->assembly_name, "corlib"))
-		return NULL;
-#endif
-
 	debug->dirty = TRUE;
 
 	info = g_new0 (AssemblyDebugInfo, 1);
@@ -580,8 +575,6 @@ mono_debug_add_image (MonoDebugHandle* debug, MonoImage *image)
 void
 mono_debug_write_symbols (MonoDebugHandle *debug)
 {
-	GList *tmp;
-
 	if (!debug || !debug->dirty)
 		return;
 
@@ -595,14 +588,6 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 		mono_debug_write_dwarf2 (debug);
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
-		for (tmp = debug->info; tmp; tmp = tmp->next) {
-			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
-
-			if (!info->symfile)
-				continue;
-
-			mono_debug_update_mono_symbol_file (info->symfile);
-		}
 		break;
 	default:
 		g_assert_not_reached ();
@@ -871,17 +856,19 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 			return;
 	}
 
-	release_symbol_file_table ();
+	info = mono_debug_get_image (debug, klass->image);
+	if (info == NULL) {
+		release_symbol_file_table ();
+		mono_debugger_symbol_file_table_generation++;
 
-	info = mono_debug_open_image (debug, klass->image);
+		info = mono_debug_open_image (debug, klass->image);
+	}
 
 	minfo = lookup_method (method);
 	if (!minfo || minfo->jit)
 		return;
 
 	debug->dirty = TRUE;
-
-	mono_debugger_symbol_file_table_generation++;
 
 	minfo->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = cfg->start;
@@ -949,6 +936,9 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 		jit->num_locals = header->num_locals;
 		jit->locals = locals;
 	}
+
+	if (info->symfile)
+		mono_debug_symfile_add_method (info->symfile, method);
 }
 
 gchar *
@@ -1004,10 +994,12 @@ mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset)
 static void
 release_symbol_file_table ()
 {
-	guint8 *temp;
+	MonoDebuggerSymbolFileTable *temp;
 
 	if (!mono_debugger_symbol_file_table)
 		return;
+
+	g_message (G_STRLOC);
 
 	/*
 	 * Caution: The debugger may access the memory pointed to by this variable
@@ -1024,8 +1016,8 @@ int
 mono_debugger_update_symbol_file_table (void)
 {
 	MonoDebugHandle *debug;
-	int dirty = 0, count = 0;
-	guint8 *ptr, *symfiles;
+	int count = 0, index;
+	MonoDebuggerSymbolFileTable *symfile_table;
 	guint32 size;
 
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
@@ -1033,9 +1025,6 @@ mono_debugger_update_symbol_file_table (void)
 
 		if (debug->format != MONO_DEBUG_FORMAT_MONO)
 			continue;
-
-		if (debug->dirty)
-			dirty = TRUE;
 
 		for (tmp = debug->info; tmp; tmp = tmp->next) {
 			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
@@ -1048,17 +1037,17 @@ mono_debugger_update_symbol_file_table (void)
 		}
 	}
 
-	if (!dirty)
-		return FALSE;
-
 	release_symbol_file_table ();
 
-	size = 2 * sizeof (guint32) + count * sizeof (MonoSymbolFile);
-	symfiles = ptr = g_malloc0 (size);
-	*((guint32 *) ptr)++ = size;
-	*((guint32 *) ptr)++ = count;
-	*((guint32 *) ptr)++ = mono_debugger_symbol_file_table_generation;
+	size = sizeof (MonoDebuggerSymbolFileTable) + count * sizeof (MonoSymbolFile *);
+	symfile_table = g_malloc0 (size);
+	symfile_table->magic = MONO_SYMBOL_FILE_DYNAMIC_MAGIC;
+	symfile_table->version = MONO_SYMBOL_FILE_DYNAMIC_VERSION;
+	symfile_table->total_size = size;
+	symfile_table->count = count;
+	symfile_table->generation = mono_debugger_symbol_file_table_generation;
 
+	index = 0;
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
 		GList *tmp;
 
@@ -1072,13 +1061,12 @@ mono_debugger_update_symbol_file_table (void)
 			if (!symfile)
 				continue;
 
-			if (debug->dirty)
-				mono_debug_update_mono_symbol_file (info->symfile);
-
-			*((MonoSymbolFile *) ptr)++ = *symfile;
+			symfile_table->symfiles [index++] = symfile;
 		}
 	}
-	
-	mono_debugger_symbol_file_table = symfiles;
+
+	g_message (G_STRLOC ": %p", symfile_table);
+
+	mono_debugger_symbol_file_table = symfile_table;
 	return TRUE;
 }
