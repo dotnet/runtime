@@ -35,6 +35,12 @@
 #define inst_ms_word data.op[0].const_val
 #endif
 
+#if SIZEOF_VOID_P == 8
+#define OP_PCONST OP_I8CONST
+#else
+#define OP_PCONST OP_ICONST
+#endif
+
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "15"
 
@@ -697,6 +703,12 @@ typedef struct {
 	guint8  pad;
 } MonoJitArgumentInfo;
 
+enum {
+	BRANCH_NOT_TAKEN,
+	BRANCH_TAKEN,
+	BRANCH_UNDEF
+};
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
@@ -713,6 +725,7 @@ int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);
 void      mono_constant_fold                (MonoCompile *cfg);
 void      mono_constant_fold_inst           (MonoInst *inst, gpointer data);
+int       mono_eval_cond_branch             (MonoInst *branch);
 int       mono_is_power_of_two              (guint32 val);
 void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **acp, int acp_size);
 MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode);

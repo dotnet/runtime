@@ -317,12 +317,6 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->type = STACK_I4;	\
 	} while (0)
 
-#if SIZEOF_VOID_P == 8
-#define OP_PCONST OP_I8CONST
-#else
-#define OP_PCONST OP_ICONST
-#endif
-
 #define NEW_PCONST(cfg,dest,val) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_PCONST;	\
@@ -5069,9 +5063,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
 				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
 					gpointer addr = (char*)vtable->data + field->offset;
+					int ro_type = field->type->type;
+					if (ro_type == MONO_TYPE_VALUETYPE && field->type->data.klass->enumtype) {
+						ro_type = field->type->data.klass->enum_basetype->type;
+					}
 					/* g_print ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, field->name);*/
 					is_const = TRUE;
-					switch (field->type->type) {
+					switch (ro_type) {
 					case MONO_TYPE_BOOLEAN:
 					case MONO_TYPE_U1:
 						NEW_ICONST (cfg, *sp, *((guint8 *)addr));
@@ -7542,6 +7540,23 @@ optimize_branches (MonoCompile *cfg)
 				}
 			} else if (bb->out_count == 2) {
 				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
+					int branch_result = mono_eval_cond_branch (bb->last_ins);
+					MonoBasicBlock *taken_branch_target = NULL, *untaken_branch_target = NULL;
+					if (branch_result == BRANCH_TAKEN) {
+						taken_branch_target = bb->last_ins->inst_true_bb;
+						untaken_branch_target = bb->last_ins->inst_false_bb;
+					} else if (branch_result == BRANCH_NOT_TAKEN) {
+						taken_branch_target = bb->last_ins->inst_false_bb;
+						untaken_branch_target = bb->last_ins->inst_true_bb;
+					}
+					if (taken_branch_target) {
+						bb->last_ins->opcode = CEE_BR;
+						bb->last_ins->inst_target_bb = taken_branch_target;
+						replace_out_block (bb, untaken_branch_target, NULL);
+						replace_in_block (untaken_branch_target, bb, NULL);
+						changed = TRUE;
+						break;
+					}
 					bbn = bb->last_ins->inst_true_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {

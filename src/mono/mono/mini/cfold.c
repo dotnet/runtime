@@ -254,3 +254,64 @@ mono_constant_fold (MonoCompile *cfg)
 	}
 }
 
+/*
+ * If the arguments to the cond branch are constants, eval and
+ * return BRANCH_NOT_TAKEN for not taken, BRANCH_TAKEN for taken,
+ * BRANCH_UNDEF otherwise.
+ */
+int
+mono_eval_cond_branch (MonoInst *ins)
+{
+	MonoInst *left, *right;
+	/* FIXME: handle also 64 bit ints */
+	left = ins->inst_left->inst_left;
+	if (left->opcode != OP_ICONST && left->opcode != OP_PCONST)
+		return BRANCH_UNDEF;
+	right = ins->inst_left->inst_right;
+	if (right->opcode != OP_ICONST && right->opcode != OP_PCONST)
+		return BRANCH_UNDEF;
+	switch (ins->opcode) {
+	case CEE_BEQ:
+		if (left->inst_c0 == right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BGE:
+		if (left->inst_c0 >= right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BGT:
+		if (left->inst_c0 > right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BLE:
+		if (left->inst_c0 <= right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BLT:
+		if (left->inst_c0 < right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BNE_UN:
+		if ((gsize)left->inst_c0 != (gsize)right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BGE_UN:
+		if ((gsize)left->inst_c0 >= (gsize)right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BGT_UN:
+		if ((gsize)left->inst_c0 > (gsize)right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BLE_UN:
+		if ((gsize)left->inst_c0 <= (gsize)right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	case CEE_BLT_UN:
+		if ((gsize)left->inst_c0 < (gsize)right->inst_c0)
+			return BRANCH_TAKEN;
+		return BRANCH_NOT_TAKEN;
+	}
+	return BRANCH_UNDEF;
+}
+
