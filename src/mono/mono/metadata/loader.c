@@ -740,60 +740,78 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		g_module_symbol (gmodule, import, &piinfo->addr); 
 	} else {
-		char *mangled_name;
+		char *mangled_name = NULL, *mangled_name2 = NULL;
+		int mangle_charset;
+		int mangle_stdcall;
+		int mangle_param_count;
+		int param_count;
 
-		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-		case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
-			mangled_name = g_strconcat (import, "W", NULL);
-			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
-			g_free (mangled_name);
+		/*
+		 * Search using a variety of mangled names
+		 */
+		for (mangle_stdcall = 0; mangle_stdcall <= 2; mangle_stdcall ++) {
+			for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
+				gboolean need_param_count = FALSE;
+#ifdef PLATFORM_WIN32
+				if (mangle_stdcall > 0)
+					need_param_count = TRUE;
+#endif
+				for (mangle_param_count = 0; mangle_param_count <= (need_param_count ? 256 : 0); mangle_param_count += 4) {
 
-			if (!piinfo->addr)
-				g_module_symbol (gmodule, import, &piinfo->addr); 
-			break;
-		case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-			g_module_symbol (gmodule, import, &piinfo->addr); 
-			break;
-		case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
-		default:
-			mangled_name = g_strconcat (import, "A", NULL);
-			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
-			g_free (mangled_name);
+					if (piinfo->addr)
+						continue;
 
-			if (!piinfo->addr)
-				g_module_symbol (gmodule, import, &piinfo->addr); 
-			       
-			break;					
-		}
+					if (mangle_charset == 0) {
+						switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+						case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+							mangled_name = g_strconcat (import, "W", NULL);							
+							break;
+						case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+							mangled_name = (char*)import;
+							break;
+						case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
+						default:
+							mangled_name = g_strconcat (import, "A", NULL);
+							break;
+						}
+					}
+					else
+						mangled_name = (char*)import;
 
 #ifdef PLATFORM_WIN32
-		/* Try the stdcall mangled name */
-		if (!piinfo->addr) {
-			mangled_name = g_strdup_printf ("%s@%d", import, mono_method_signature (method)->param_count * sizeof (gpointer));
-			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
-			g_free (mangled_name);
-		}
-		if (!piinfo->addr) {
-			mangled_name = g_strdup_printf ("_%s@%d", import, mono_method_signature (method)->param_count * sizeof (gpointer));
-			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
-			g_free (mangled_name);
-		}
-		if (!piinfo->addr) {
-			/* Try brute force, since it would be very hard to compute the stack usage correctly */
-			for (i = 0; i < 256; i += 4) {
-				if (!piinfo->addr) {
-					mangled_name = g_strdup_printf ("%s@%d", import, i);
-					g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
-					g_free (mangled_name);
-				}
-				if (!piinfo->addr) {
-					mangled_name = g_strdup_printf ("_%s@%d", import, i);
-					g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
-					g_free (mangled_name);
+					if (mangle_param_count == 0)
+						param_count = mono_method_signature (method)->param_count * sizeof (gpointer);
+					else
+						/* Try brute force, since it would be very hard to compute the stack usage correctly */
+						param_count = mangle_param_count;
+
+					/* Try the stdcall mangled name */
+					if (mangle_stdcall == 1)
+						mangled_name2 = g_strdup_printf ("%s@%d", mangled_name, param_count);
+					else if (mangle_stdcall == 2)
+						mangled_name2 = g_strdup_printf ("%s@%d", mangled_name, param_count);
+					else
+						mangled_name2 = mangled_name;
+#else
+					mangled_name2 = mangled_name;
+#endif
+
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+								"Probing '%s'.", mangled_name2);
+
+					g_module_symbol (gmodule, mangled_name2, &piinfo->addr);
+
+					if (piinfo->addr)
+						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+									"Found as '%s'.", mangled_name2);
+
+					if (mangled_name != mangled_name2)
+						g_free (mangled_name2);
+					if (mangled_name != import)
+						g_free (mangled_name);
 				}
 			}
 		}
-#endif
 	}
 
 	if (!piinfo->addr) {
