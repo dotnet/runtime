@@ -312,7 +312,7 @@ mono_string_InternalSplit (MonoString *me, MonoArray *separator, gint32 count)
 		return retarr;
 	}
 
-	if (splitsize + 1 < count)
+	if (splitsize != count)
 		splitsize++;
 
 	retarr = mono_array_new(mono_domain_get(), mono_defaults.string_class, splitsize);
@@ -341,7 +341,7 @@ mono_string_InternalSplit (MonoString *me, MonoArray *separator, gint32 count)
 		memcpy(tmpstrptr, src + lastpos, tmpstrsize * sizeof(gunichar2));
 		mono_array_set(retarr, MonoString *, arrpos, tmpstr);
 	}
-	
+
 	return retarr;
 }
 
