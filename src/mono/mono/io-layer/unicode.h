@@ -5,6 +5,6 @@
 
 #include <glib.h>
 
-extern guchar *_wapi_unicode_to_utf8(const guchar *uni);
+extern gchar *_wapi_unicode_to_utf8 (const gunichar2 *uni);
 
 #endif /* _WAPI_UNICODE_H_ */

@@ -8,7 +8,7 @@
 #include "unicode.h"
 
 /* This is a nasty kludge */
-static guint32 unicode_len(const guchar *str)
+static guint32 unicode_len(const gunichar2 *str)
 {
 	guint32 len=0;
 	
@@ -21,7 +21,7 @@ static guint32 unicode_len(const guchar *str)
 	} while(1);
 }
 
-guchar *_wapi_unicode_to_utf8(const guchar *uni)
+gchar *_wapi_unicode_to_utf8(const gunichar2 *uni)
 {
 	GError *error = NULL;
 	gchar *res;
@@ -29,7 +29,7 @@ guchar *_wapi_unicode_to_utf8(const guchar *uni)
 
 	len = unicode_len(uni);
 	
-	res = g_utf16_to_utf8 ((gunichar2 *)uni, len, NULL, NULL, &error);
+	res = g_utf16_to_utf8 (uni, len, NULL, NULL, &error);
 
 	g_assert (!error);
 

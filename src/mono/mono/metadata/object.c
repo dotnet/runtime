@@ -503,7 +503,7 @@ mono_string_to_utf8 (MonoString *s)
 	return as;
 }
 
-char *
+gunichar2 *
 mono_string_to_utf16 (MonoString *s)
 {
 	char *as;
@@ -515,12 +515,12 @@ mono_string_to_utf16 (MonoString *s)
 	as [(s->length * 2) + 1] = '\0';
 
 	if (!s->length || !s->c_str) {
-		return (as);
+		return (gunichar2 *)(as);
 	}
 	
 	memcpy (as, mono_string_chars(s), s->length * 2);
 	
-	return (as);
+	return (gunichar2 *)(as);
 }
 
 static void

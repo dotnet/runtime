@@ -120,8 +120,8 @@ typedef struct
 	guint32 nFileSizeLow;
 	guint32 dwReserved0;
 	guint32 dwReserved1;
-	guchar cFileName [MAX_PATH];
-	guchar cAlternateFileName [14];
+	gunichar2 cFileName [MAX_PATH];
+	gunichar2 cAlternateFileName [14];
 } WapiFindData;
 
 typedef struct
@@ -137,12 +137,12 @@ typedef struct
 #define INVALID_SET_FILE_POINTER ((guint32)-1)
 #define INVALID_FILE_SIZE ((guint32)0xFFFFFFFF)
 
-extern WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
+extern WapiHandle *CreateFile(const gunichar2 *name, guint32 fileaccess,
 			      guint32 sharemode,
 			      WapiSecurityAttributes *security,
 			      guint32 createmode,
 			      guint32 attrs, WapiHandle *tmplate);
-extern gboolean DeleteFile(const guchar *name);
+extern gboolean DeleteFile(const gunichar2 *name);
 extern WapiHandle *GetStdHandle(WapiStdHandle stdhandle);
 extern gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,
 			 guint32 *bytesread, WapiOverlapped *overlapped);
@@ -158,14 +158,17 @@ extern guint32 GetFileSize(WapiHandle *handle, guint32 *highsize);
 extern gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time, WapiFileTime *last_access, WapiFileTime *last_write);
 extern gboolean SetFileTime(WapiHandle *handle, const WapiFileTime *create_time, const WapiFileTime *last_access, const WapiFileTime *last_write);
 extern gboolean FileTimeToSystemTime(const WapiFileTime *file_time, WapiSystemTime *system_time);
-extern WapiHandle *FindFirstFile (const guchar *pattern, WapiFindData *find_data);
+extern WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data);
 extern gboolean FindNextFile (WapiHandle *handle, WapiFindData *find_data);
 extern gboolean FindClose (WapiHandle *handle);
-extern gboolean CreateDirectory (const guchar *name, WapiSecurityAttributes *security);
-extern gboolean RemoveDirectory (const guchar *name);
-extern gboolean MoveFile (const guchar *name, const guchar *dest_name);
-extern gboolean CopyFile (const guchar *name, const guchar *dest_name, gboolean fail_if_exists);
-extern guint32 GetFileAttributes (const guchar *name);
-extern gboolean GetFileAttributesEx (const guchar *name, WapiGetFileExInfoLevels level, gpointer info);
+extern gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *security);
+extern gboolean RemoveDirectory (const gunichar2 *name);
+extern gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name);
+extern gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_exists);
+extern guint32 GetFileAttributes (const gunichar2 *name);
+extern gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels level, gpointer info);
+extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs);
+extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer);
+extern gboolean SetCurrentDirectory (const gunichar2 *path);
 
 #endif /* _WAPI_IO_H_ */

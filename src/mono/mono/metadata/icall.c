@@ -14,6 +14,9 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#if defined (PLATFORM_WIN32)
+#include <stdlib.h>
+#endif
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
@@ -1556,17 +1559,6 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
 }
 
-static MonoString *
-ves_icall_System_PAL_GetCurrentDirectory (MonoObject *object)
-{
-	MonoDomain *domain = mono_domain_get (); 
-	MonoString *res;
-	gchar *path = g_get_current_dir ();
-	res = mono_string_new (domain, path);
-	g_free (path);
-	return res;
-}
-
 /*
  * Magic number to convert a time which is relative to
  * Jan 1, 1970 into a value which is relative to Jan 1, 0001.
@@ -1724,6 +1716,109 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 	dest_buf = (gint8 *)dest->vector + dest_offset;
 
 	memcpy (dest_buf, src_buf, count);
+}
+
+/* System.Environment */
+
+static MonoString *
+ves_icall_System_Environment_get_MachineName ()
+{
+#if defined (PLATFORM_WIN32)
+	gunichar2 *buf;
+	guint32 len;
+	MonoString *result;
+
+	len = MAX_COMPUTERNAME_LENGTH + 1;
+	buf = g_new (gunichar2, len);
+
+	result = NULL;
+	if (GetComputerName (buf, &len))
+		result = mono_string_new_utf16 (mono_domain_get (), buf, len);
+
+	g_free (buf);
+	return result;
+#else
+	gchar *buf;
+	int len;
+	MonoString *result;
+
+	len = 256;
+	buf = g_new (gchar, len);
+
+	result = NULL;
+	if (gethostname (buf, len) != 0)
+		result = mono_string_new (mono_domain_get (), buf);
+	
+	g_free (buf);
+	return result;
+#endif
+}
+
+static MonoString *
+ves_icall_System_Environment_get_NewLine ()
+{
+#if defined (PLATFORM_WIN32)
+	return mono_string_new (mono_domain_get (), "\r\n");
+#else
+	return mono_string_new (mono_domain_get (), "\n");
+#endif
+}
+
+static MonoString *
+ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
+{
+	const gchar *value;
+	gchar *utf8_name;
+
+	if (name == NULL)
+		return NULL;
+
+	utf8_name = mono_string_to_utf8 (name);	/* FIXME: this should be ascii */
+	value = g_getenv (utf8_name);
+	g_free (utf8_name);
+
+	if (value == 0)
+		return NULL;
+	
+	return mono_string_new (mono_domain_get (), value);
+}
+
+static MonoArray *
+ves_icall_System_Environment_GetEnvironmentVariableNames ()
+{
+	MonoArray *names;
+	MonoDomain *domain;
+	MonoString *str;
+	gchar **e, **parts;
+	int n;
+
+	n = 0;
+	for (e = environ; *e != 0; ++ e)
+		++ n;
+
+	domain = mono_domain_get ();
+	names = mono_array_new (domain, mono_defaults.string_class, n);
+
+	n = 0;
+	for (e = environ; *e != 0; ++ e) {
+		parts = g_strsplit (*e, "=", 2);
+		if (*parts != 0) {
+			str = mono_string_new (domain, *parts);
+			mono_array_set (names, MonoString *, n, str);
+		}
+
+		g_strfreev (parts);
+
+		++ n;
+	}
+
+	return names;
+}
+
+static MonoString *
+ves_icall_System_Environment_GetCommandLine ()
+{
+	return NULL;	/* FIXME */
 }
 
 /* icall map */
@@ -1911,17 +2006,6 @@ static gpointer icall_map [] = {
 	"System.MonoType::GetEvents", ves_icall_Type_GetEvents,
 	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
 
-	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
-
-	/*
-	 * System.PAL.OpSys I/O Services
-	 */
-	"System.PAL.OpSys::GetStdHandle", ves_icall_System_PAL_OpSys_GetStdHandle,
-	"System.PAL.OpSys::DeleteFile", ves_icall_System_PAL_OpSys_DeleteFile,
-	"System.PAL.OpSys::ExistsFile", ves_icall_System_PAL_OpSys_ExistsFile,
-	"System.PAL.OpSys::GetFileTime", ves_icall_System_PAL_OpSys_GetFileTime,
-	"System.PAL.OpSys::SetFileTime", ves_icall_System_PAL_OpSys_SetFileTime,
-
 	/*
 	 * System.Net.Sockets I/O Services
 	 */
@@ -1994,16 +2078,39 @@ static gpointer icall_map [] = {
 	"System.Buffer::BlockCopyInternal", ves_icall_System_Buffer_BlockCopyInternal,
 
 	/*
-	 * System.IO.FileStream
+	 * System.IO.MonoIO
 	 */
-	"System.IO.FileStream::FileOpen", ves_icall_System_IO_FileStream_FileOpen,
-	"System.IO.FileStream::FileClose", ves_icall_System_IO_FileStream_FileClose,
-	"System.IO.FileStream::FileRead", ves_icall_System_IO_FileStream_FileRead,
-	"System.IO.FileStream::FileWrite", ves_icall_System_IO_FileStream_FileWrite,
-	"System.IO.FileStream::FileSeek", ves_icall_System_IO_FileStream_FileSeek,
-	"System.IO.FileStream::FileGetLength", ves_icall_System_IO_FileStream_FileGetLength,
-	"System.IO.FileStream::FileSetLength", ves_icall_System_IO_FileStream_FileSetLength,
-	"System.IO.FileStream::FileFlush", ves_icall_System_IO_FileStream_FileFlush,
+	"System.IO.MonoIO::GetLastError", ves_icall_System_IO_MonoIO_GetLastError,
+	"System.IO.MonoIO::CreateDirectory", ves_icall_System_IO_MonoIO_CreateDirectory,
+	"System.IO.MonoIO::RemoveDirectory", ves_icall_System_IO_MonoIO_RemoveDirectory,
+	"System.IO.MonoIO::FindFirstFile", ves_icall_System_IO_MonoIO_FindFirstFile,
+	"System.IO.MonoIO::FindNextFile", ves_icall_System_IO_MonoIO_FindNextFile,
+	"System.IO.MonoIO::FindClose", ves_icall_System_IO_MonoIO_FindClose,
+	"System.IO.MonoIO::GetCurrentDirectory", ves_icall_System_IO_MonoIO_GetCurrentDirectory,
+	"System.IO.MonoIO::SetCurrentDirectory", ves_icall_System_IO_MonoIO_SetCurrentDirectory,
+	"System.IO.MonoIO::MoveFile", ves_icall_System_IO_MonoIO_MoveFile,
+	"System.IO.MonoIO::CopyFile", ves_icall_System_IO_MonoIO_CopyFile,
+	"System.IO.MonoIO::DeleteFile", ves_icall_System_IO_MonoIO_DeleteFile,
+	"System.IO.MonoIO::GetFileAttributes", ves_icall_System_IO_MonoIO_GetFileAttributes,
+	"System.IO.MonoIO::SetFileAttributes", ves_icall_System_IO_MonoIO_SetFileAttributes,
+	"System.IO.MonoIO::GetFileStat", ves_icall_System_IO_MonoIO_GetFileStat,
+	"System.IO.MonoIO::Open", ves_icall_System_IO_MonoIO_Open,
+	"System.IO.MonoIO::Close", ves_icall_System_IO_MonoIO_Close,
+	"System.IO.MonoIO::Read", ves_icall_System_IO_MonoIO_Read,
+	"System.IO.MonoIO::Write", ves_icall_System_IO_MonoIO_Write,
+	"System.IO.MonoIO::Seek", ves_icall_System_IO_MonoIO_Seek,
+	"System.IO.MonoIO::GetLength", ves_icall_System_IO_MonoIO_GetLength,
+	"System.IO.MonoIO::SetLength", ves_icall_System_IO_MonoIO_SetLength,
+	"System.IO.MonoIO::SetFileTime", ves_icall_System_IO_MonoIO_SetFileTime,
+	"System.IO.MonoIO::Flush", ves_icall_System_IO_MonoIO_Flush,
+	"System.IO.MonoIO::get_ConsoleOutput", ves_icall_System_IO_MonoIO_get_ConsoleOutput,
+	"System.IO.MonoIO::get_ConsoleInput", ves_icall_System_IO_MonoIO_get_ConsoleInput,
+	"System.IO.MonoIO::get_ConsoleError", ves_icall_System_IO_MonoIO_get_ConsoleError,
+	"System.IO.MonoIO::get_VolumeSeparatorChar", ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar,
+	"System.IO.MonoIO::get_DirectorySeparatorChar", ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar,
+	"System.IO.MonoIO::get_AltDirectorySeparatorChar", ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar,
+	"System.IO.MonoIO::get_PathSeparator", ves_icall_System_IO_MonoIO_get_PathSeparator,
+	"System.IO.MonoIO::get_InvalidPathChars", ves_icall_System_IO_MonoIO_get_InvalidPathChars,
 
 	/*
 	 * System.Math
@@ -2025,13 +2132,20 @@ static gpointer icall_map [] = {
         "System.Math::Sqrt", ves_icall_System_Math_Sqrt,
 
 	/*
+	 * System.Environment
+	 */
+	"System.Environment::get_MachineName", ves_icall_System_Environment_get_MachineName,
+	"System.Environment::get_NewLine", ves_icall_System_Environment_get_NewLine,
+	"System.Environment::GetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable,
+	"System.Environment::GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames,
+	"System.Environment::GetCommandLine", ves_icall_System_Environment_GetCommandLine,
+
+	/*
 	 * Mono.CSharp.Debugger
 	 */
 	"Mono.CSharp.Debugger.MonoSymbolWriter::get_local_type_from_sig", ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig,
 	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method", ves_icall_Debugger_MonoSymbolWriter_method_from_token,
 	"Mono.CSharp.Debugger.DwarfFileWriter::get_type_token", ves_icall_Debugger_DwarfFileWriter_get_type_token,
-
-
 
 	/*
 	 * add other internal calls here

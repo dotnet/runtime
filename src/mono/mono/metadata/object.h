@@ -176,7 +176,7 @@ mono_string_new_len         (MonoDomain *domain, const char *text, guint length)
 char *
 mono_string_to_utf8         (MonoString *string_obj);
 
-char *
+gunichar2 *
 mono_string_to_utf16        (MonoString *string_obj);
 
 void       

@@ -1,8 +1,9 @@
 /*
  * file-io.h: File IO internal calls
  *
- * Author:
+ * Authors:
  *	Dick Porter (dick@ximian.com)
+ *	Dan Lewis (dihlewis@yahoo.co.uk)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -48,43 +49,109 @@ typedef enum {
 	SeekOrigin_End=2,
 } MonoSeekOrigin;
 
+/* This is a copy of System.IO.MonoIOStat */
+typedef struct _MonoIOStat {
+	MonoString *name;
+	gint32 attributes;
+	gint64 length;
+	gint64 creation_time;
+	gint64 last_access_time;
+	gint64 last_write_time;
+} MonoIOStat;
 
-extern HANDLE ves_icall_System_PAL_OpSys_GetStdHandle(MonoObject *this, gint32 fs);
-extern gint32 ves_icall_System_PAL_OpSys_ReadFile(MonoObject *this, HANDLE handle, MonoArray *buffer, gint32 offset, gint32 count);
-extern gint32 ves_icall_System_PAL_OpSys_WriteFile(MonoObject *this, HANDLE handle,  MonoArray *buffer, gint32 offset, gint32 count);
-extern gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle, gint64 length);
-extern HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, gint32 mode, gint32 access, gint32 share);
-extern void ves_icall_System_PAL_OpSys_CloseFile(MonoObject *this, HANDLE handle);
-extern gint64 ves_icall_System_PAL_OpSys_SeekFile(MonoObject *this, HANDLE handle, gint64 offset, gint32 origin);
-extern void ves_icall_System_PAL_OpSys_DeleteFile(MonoObject *this, MonoString *path);
-extern gboolean ves_icall_System_PAL_OpSys_ExistsFile(MonoObject *this, MonoString *path);
-extern gboolean ves_icall_System_PAL_OpSys_GetFileTime(HANDLE handle, gint64 *createtime, gint64 *lastaccess, gint64 *lastwrite);
-extern gboolean ves_icall_System_PAL_OpSys_SetFileTime(HANDLE handle, gint64 createtime, gint64 lastaccess, gint64 lastwrite);
-
-/* System.IO.FileStream */
-
-extern HANDLE
-ves_icall_System_IO_FileStream_FileOpen (MonoString *filename, gint32 mode, gint32 access, gint32 share);
-
-extern void 
-ves_icall_System_IO_FileStream_FileClose (HANDLE handle);
+/* System.IO.MonoIO */
 
 extern gint32 
-ves_icall_System_IO_FileStream_FileRead (HANDLE handle, MonoArray *dest, gint32 dest_offset, gint32 count);
+ves_icall_System_IO_MonoIO_GetLastError (void);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path);
+
+extern HANDLE 
+ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_FindClose (HANDLE find);
+
+extern MonoString *
+ves_icall_System_IO_MonoIO_GetCurrentDirectory (void);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest, gboolean overwrite);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path);
 
 extern gint32 
-ves_icall_System_IO_FileStream_FileWrite (HANDLE handle, MonoArray *src, gint32 src_offset, gint32 count);
+ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path);
+
+extern gboolean
+ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat);
+
+extern HANDLE 
+ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access, gint32 share);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_Close (HANDLE handle);
+
+extern gint32 
+ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest, gint32 dest_offset, gint32 count);
+
+extern gint32 
+ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src, gint32 src_offset, gint32 count);
 
 extern gint64 
-ves_icall_System_IO_FileStream_FileSeek (HANDLE handle, gint64 offset, gint32 origin);
+ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin);
+
+extern gboolean 
+ves_icall_System_IO_MonoIO_Flush (HANDLE handle);
 
 extern gint64 
-ves_icall_System_IO_FileStream_FileGetLength (HANDLE handle);
+ves_icall_System_IO_MonoIO_GetLength (HANDLE handle);
 
-extern void 
-ves_icall_System_IO_FileStream_FileSetLength (HANDLE handle, gint64 length);
+extern gboolean 
+ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length);
 
-extern void 
-ves_icall_System_IO_FileStream_FileFlush (HANDLE handle);
+extern gboolean
+ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time, gint64 last_access_time, gint64 last_write_time);
+
+extern HANDLE 
+ves_icall_System_IO_MonoIO_get_ConsoleOutput (void);
+
+extern HANDLE 
+ves_icall_System_IO_MonoIO_get_ConsoleInput (void);
+
+extern HANDLE 
+ves_icall_System_IO_MonoIO_get_ConsoleError (void);
+
+extern gunichar2 
+ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void);
+
+extern gunichar2 
+ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void);
+
+extern gunichar2 
+ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void);
+
+extern gunichar2 
+ves_icall_System_IO_MonoIO_get_PathSeparator (void);
+
+extern MonoArray *
+ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
 
 #endif /* _MONO_METADATA_FILEIO_H_ */

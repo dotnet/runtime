@@ -25,7 +25,7 @@ struct _WapiHandle_file
 {
 	WapiHandle handle;
 	int fd;
-	guchar *filename;
+	gchar *filename;
 	WapiSecurityAttributes *security_attributes;
 	guint32 fileaccess;
 	guint32 sharemode;
@@ -838,7 +838,7 @@ static mode_t convert_perms(guint32 sharemode)
  *
  * Return value: the new handle, or %INVALID_HANDLE_VALUE on error.
  */
-WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
+WapiHandle *CreateFile(const gunichar2 *name, guint32 fileaccess,
 		       guint32 sharemode, WapiSecurityAttributes *security,
 		       guint32 createmode, guint32 attrs,
 		       WapiHandle *template G_GNUC_UNUSED)
@@ -847,7 +847,7 @@ WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 	WapiHandle *handle;
 	int flags=convert_flags(fileaccess, createmode);
 	mode_t perms=convert_perms(sharemode);
-	guchar *filename;
+	gchar *filename;
 	int ret;
 	
 	if(name==NULL) {
@@ -923,9 +923,9 @@ WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean DeleteFile(const guchar *name)
+gboolean DeleteFile(const gunichar2 *name)
 {
-	guchar *filename;
+	gchar *filename;
 	int ret;
 	
 	if(name==NULL) {
@@ -974,9 +974,9 @@ gboolean DeleteFile(const guchar *name)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean MoveFile (const guchar *name, const guchar *dest_name)
+gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 {
-	guchar *utf8_name, *utf8_dest_name;
+	gchar *utf8_name, *utf8_dest_name;
 	int result;
 
 	utf8_name = _wapi_unicode_to_utf8 (name);
@@ -1030,11 +1030,11 @@ gboolean MoveFile (const guchar *name, const guchar *dest_name)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean CopyFile (const guchar *name, const guchar *dest_name, gboolean fail_if_exists)
+gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_exists)
 {
 	WapiHandle *src, *dest;
 	guint32 attrs;
-	char buffer [2048];
+	char *buffer;
 	int remain, n;
 
 	attrs = GetFileAttributes (name);
@@ -1057,6 +1057,8 @@ gboolean CopyFile (const guchar *name, const guchar *dest_name, gboolean fail_if
 		CloseHandle (src);
 		return FALSE;
 	}
+
+	buffer = g_new (gchar, 2048);
 
 	for (;;) {
 		if (ReadFile (src, buffer,sizeof (buffer), &remain, NULL) == 0) {
@@ -1088,6 +1090,8 @@ gboolean CopyFile (const guchar *name, const guchar *dest_name, gboolean fail_if
 			remain -= n;
 		}
 	}
+
+	g_free (buffer);
 
 	CloseHandle (dest);
 	CloseHandle (src);
@@ -1597,10 +1601,10 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	return(TRUE);
 }
 
-WapiHandle *FindFirstFile (const guchar *pattern, WapiFindData *find_data)
+WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
 	struct _WapiHandle_find *handle;
-	guchar *utf8_pattern = NULL;
+	gchar *utf8_pattern = NULL;
 	int result;
 	
 	if (pattern == NULL) {
@@ -1660,10 +1664,14 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 {
 	struct _WapiHandle_find *handle;
 	struct stat buf;
-	const char *filename;
+	const gchar *filename;
+	
+	gchar *basename;
+	gunichar2 *utf16_basename;
 	time_t ctime;
+	int i;
 
-	if (wapi_handle->type != WAPI_HANDLE_FIND) {
+	if (wapi_handle == INVALID_HANDLE_VALUE || wapi_handle->type != WAPI_HANDLE_FIND) {
 		SetLastError (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
@@ -1711,9 +1719,20 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	find_data->dwReserved0 = 0;
 	find_data->dwReserved1 = 0;
 
-	g_strlcpy (find_data->cFileName, filename, MAX_PATH);
-	g_strlcpy (find_data->cAlternateFileName, filename, 14);
+	basename = g_path_get_basename (filename);
+	utf16_basename = g_utf8_to_utf16 (basename, MAX_PATH, NULL, NULL, NULL);
 
+	i = 0;
+	while (utf16_basename [i] != 0) {	/* copy basename */
+		find_data->cFileName [i] = utf16_basename [i];
+		++ i;
+	}
+
+	find_data->cFileName[i] = 0;		/* null terminate */
+	find_data->cAlternateFileName [0] = 0;	/* not used */
+
+	g_free (basename);
+	g_free (utf16_basename);
 	return TRUE;
 }
 
@@ -1729,7 +1748,7 @@ gboolean FindClose (WapiHandle *wapi_handle)
 {
 	struct _WapiHandle_find *handle;
 
-	if (wapi_handle->type != WAPI_HANDLE_FIND) {
+	if (wapi_handle == INVALID_HANDLE_VALUE || wapi_handle->type != WAPI_HANDLE_FIND) {
 		SetLastError (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
@@ -1751,9 +1770,9 @@ gboolean FindClose (WapiHandle *wapi_handle)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean CreateDirectory (const guchar *name, WapiSecurityAttributes *security)
+gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *security)
 {
-	guchar *utf8_name;
+	gchar *utf8_name;
 	int result;
 	
 	utf8_name = _wapi_unicode_to_utf8 (name);
@@ -1793,9 +1812,9 @@ gboolean CreateDirectory (const guchar *name, WapiSecurityAttributes *security)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean RemoveDirectory (const guchar *name)
+gboolean RemoveDirectory (const gunichar2 *name)
 {
-	guchar *utf8_name;
+	gchar *utf8_name;
 	int result;
 
 	utf8_name = _wapi_unicode_to_utf8 (name);
@@ -1825,9 +1844,9 @@ gboolean RemoveDirectory (const guchar *name)
  *
  * Return value: -1 on failure
  */
-guint32 GetFileAttributes (const guchar *name)
+guint32 GetFileAttributes (const gunichar2 *name)
 {
-	guchar *utf8_name;
+	gchar *utf8_name;
 	struct stat buf;
 	int result;
 	
@@ -1862,9 +1881,9 @@ guint32 GetFileAttributes (const guchar *name)
  *
  * Return value: %TRUE on success, %FALSE on failure
  */
-gboolean GetFileAttributesEx (const guchar *name, WapiGetFileExInfoLevels level, gpointer info)
+gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels level, gpointer info)
 {
-	guchar *utf8_name;
+	gchar *utf8_name;
 	WapiFileAttributesData *data;
 
 	struct stat buf;
@@ -1922,4 +1941,88 @@ gboolean GetFileAttributesEx (const guchar *name, WapiGetFileExInfoLevels level,
 	}
 
 	return TRUE;
+}
+
+/**
+ * SetFileAttributes
+ * @name: name of file
+ * @attrs: attributes to set
+ *
+ * Changes the attributes on a named file.
+ *
+ * Return value: %TRUE on success, %FALSE on failure.
+ */
+extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
+{
+	/* FIXME: think of something clever to do on unix */
+	
+	SetLastError (ERROR_INVALID_FUNCTION);
+	return FALSE;
+}
+
+/**
+ * GetCurrentDirectory
+ * @length: size of the buffer
+ * @buffer: pointer to buffer that recieves path
+ *
+ * Retrieves the current directory for the current process.
+ *
+ * Return value: number of characters in buffer on success, zero on failure
+ */
+extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
+{
+	gchar *path;
+	gunichar2 *utf16_path, *ptr;
+	glong count = 0;
+	
+	path = g_get_current_dir ();
+	if (path == NULL)
+		return 0;
+	
+	/* if buffer too small, return number of characters required.
+	 * this is plain dumb.
+	 */
+	
+	count = strlen (path) + 1;
+	if (count > length)
+		return count;
+	
+	utf16_path = g_utf8_to_utf16 (path, -1, NULL, NULL, NULL);
+	if (utf16_path == NULL)
+		return 0;
+
+	while (*ptr)
+		*buffer ++ = *ptr ++;
+	
+	*buffer = 0;
+	
+	g_free (utf16_path);
+	g_free (path);
+
+	return count;
+}
+
+/**
+ * SetCurrentDirectory
+ * @path: path to new directory
+ *
+ * Changes the directory path for the current process.
+ *
+ * Return value: %TRUE on success, %FALSE on failure.
+ */
+extern gboolean SetCurrentDirectory (const gunichar2 *path)
+{
+	gchar *utf8_path;
+	gboolean result;
+
+	utf8_path = _wapi_unicode_to_utf8 (path);
+	if (chdir (utf8_path) != 0) {
+		_wapi_set_last_error_from_errno ();
+		result = FALSE;
+	}
+	else
+		result = TRUE;
+
+	g_free (utf8_path);
+	return result;
 }
