@@ -500,8 +500,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->next = call->out_args;
 			call->out_args = arg;
 			if (i >= sig->hasthis) {
-				ptype = mono_type_get_underlying_type (sig->params [i - sig->hasthis]);
-				if (ptype->byref)
+				MonoType *t = sig->params [i - sig->hasthis];
+				ptype = mono_type_get_underlying_type (t);
+				if (t->byref)
 					type = MONO_TYPE_U;
 				else
 					type = ptype->type;
