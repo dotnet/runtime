@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
+#include <math.h>
 #include "meta.h"
 #include "util.h"
 #include "dump.h"
@@ -819,15 +820,34 @@ handle_enum:
 			break;
 		case MONO_TYPE_R4: {
 			float val;
+			int inf;
 			readr4 (p, &val);
-			g_string_sprintfa (res, "%g", val);
+			inf = isinf (val);
+			if (inf == -1) 
+				g_string_sprintfa (res, "(00 00 80 ff)"); /* negative infinity */
+			else if (inf == 1)
+				g_string_sprintfa (res, "(00 00 80 7f)"); /* positive infinity */
+			else if (isnan (val))
+				g_string_sprintfa (res, "(00 00 c0 ff)"); /* NaN */
+			else
+				g_string_sprintfa (res, "%g", val);
 			p += 4;
 			break;
 		}
 		case MONO_TYPE_R8: {
 			double val;
+			int inf;
+			
 			readr8 (p, &val);
-			g_string_sprintfa (res, "%g", val);
+			inf = isinf (val);
+			if (inf == -1) 
+				g_string_sprintfa (res, "(00 00 00 00 00 00 f0 ff)"); /* negative infinity */
+			else if (inf == 1)
+				g_string_sprintfa (res, "(00 00 00 00 00 00 f0 7f)"); /* positive infinity */
+			else if (isnan (val))
+				g_string_sprintfa (res, "(00 00 00 00 00 00 f8 ff)"); /* NaN */
+			else
+				g_string_sprintfa (res, "%g", val);
 			p += 8;
 			break;
 		}

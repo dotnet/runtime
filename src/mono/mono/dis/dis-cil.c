@@ -9,6 +9,7 @@
 #include <config.h>
 #include <glib.h>
 #include <stdio.h>
+#include <math.h>
 #ifdef	HAVE_WCHAR_H
 #include <wchar.h>
 #endif
@@ -183,8 +184,17 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 			
 		case MonoInlineR: {
 			double r;
+			int inf;
 			readr8 (ptr, &r);
-			fprintf (output, "%g", r);
+			inf = isinf (r);
+			if (inf == -1) 
+				fprintf (output, "(00 00 00 00 00 00 f0 ff)"); /* negative infinity */
+			else if (inf == 1)
+				fprintf (output, "(00 00 00 00 00 00 f0 7f)"); /* positive infinity */
+			else if (isnan (r))
+				fprintf (output, "(00 00 00 00 00 00 f8 ff)"); /* NaN */
+			else
+				fprintf (output, "%g", r);
 			ptr += 8;
 			break;
 		}
@@ -277,9 +287,19 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 
 		case MonoShortInlineR: {
 			float f;
+			int inf;
+			
 			readr4 (ptr, &f);
 
-			fprintf (output, "%g", (double) f);
+			inf = isinf (f);
+			if (inf == -1) 
+				fprintf (output, "(00 00 80 ff)"); /* negative infinity */
+			else if (inf == 1)
+				fprintf (output, "(00 00 80 7f)"); /* positive infinity */
+			else if (isnan (f))
+				fprintf (output, "(00 00 c0 ff)"); /* NaN */
+			else
+				fprintf (output, "%g", (double) f);
 			ptr += 4;
 			break;
 		}
