@@ -812,7 +812,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			g_free (t);
 			if (g_strcasecmp (aname->culture, "neutral") == 0) {
 				g_free (aname->culture);
-				aname->culture = "";
+				aname->culture = g_strdup ("");
 			}
 			continue;
 		}
