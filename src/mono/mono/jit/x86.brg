@@ -102,7 +102,7 @@ get_mono_object_isinst (void);
 #define MB_USE_OPT2(c) c
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define MEMCOPY debug_memcpy
