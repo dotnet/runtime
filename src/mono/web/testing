@@ -17,6 +17,8 @@
 
 		<li><a href="#runtime"><b>Runtime tests</b></a>: Tests for 
 		the virtual machine.
+
+		<li><a href="#aspnet"><b>ASP.NET tests</b></a>: ASP.NET tests.
 	</ul>
 
 <a name="unit"></a>
@@ -195,3 +197,26 @@
 	cd mono/mono/tests
 	make test
 </pre>
+
+<a name="aspnet"></a>
+* ASP.NET tests
+
+	XSP, the Mono ASP.NET server has tests for ASP.NET pages. It uses
+	<a href="http://nunitasp.sourceforge.net">NUnitAsp</a>. Right now
+	it only has standalone tests, ie., tests that do not need their own
+	global.asax or web.config files.
+
+	If you want to run them, get the xsp CVS module and install it. Then:
+<pre>
+	cd xsp/nunit-tests
+	make
+	cd standalone
+	xsp
+</pre>
+
+	And from another terminal:
+<pre>
+	cd xsp/nunit-tests/standalone
+	nunit-console standalone-tests.dll
+</pre>
+
