@@ -1108,8 +1108,10 @@ mono_class_setup_vtable (MonoClass *class)
 
 	mono_loader_lock ();
 
-	if (class->vtable)
+	if (class->vtable) {
+		mono_loader_unlock ();
 		return;
+	}
 
 	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);	
 	mono_class_setup_vtable_general (class, overrides, onum);
@@ -1638,14 +1640,6 @@ mono_class_init (MonoClass *class)
 			ctor->slot = -1;
 			class->methods [1] = ctor;
 		}
-	} else {
-		if (!class->generic_class && !class->methods) {
-			class->methods = g_new (MonoMethod*, class->method.count);
-			for (i = 0; i < class->method.count; ++i) {
-				class->methods [i] = mono_get_method (class->image,
-								      MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
-			}
-		}
 	}
 
 	if (!class->generic_class) {
@@ -1664,8 +1658,6 @@ mono_class_init (MonoClass *class)
 	mono_class_setup_supertypes (class);
 
 	if (MONO_CLASS_IS_INTERFACE (class)) {
-		for (i = 0; i < class->method.count; ++i)
-			class->methods [i]->slot = i;
 		class->init_pending = 0;
 		class->inited = 1;
 		/* 
@@ -3242,7 +3234,7 @@ mono_class_get_finalizer (MonoClass *klass)
 		return NULL;
 
 	if (mono_class_get_cached_class_info (klass, &cached_info))
-		return mono_get_method (klass->image, cached_info.finalize_token, klass);
+		return mono_get_method (cached_info.finalize_image, cached_info.finalize_token, NULL);
 	else {
 		mono_class_setup_vtable (klass);
 		return klass->vtable [finalize_slot];
@@ -3727,6 +3719,7 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 	if (!klass->inited)
 		mono_class_init (klass);
 	if (!*iter) {
+		mono_class_setup_methods (klass);
 		/* start from the first */
 		if (klass->method.count) {
 			*iter = &klass->methods [0];

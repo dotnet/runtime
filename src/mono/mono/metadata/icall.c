@@ -5446,6 +5446,7 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 		klass = klass->generic_class->container_class;
 
 	mono_class_setup_vtable (klass);
+	mono_class_setup_vtable (method->klass);
 	while (result == NULL && klass != NULL && (klass->vtable_size > method->slot))
 	{
 		mono_class_setup_vtable (klass);

@@ -388,6 +388,7 @@ typedef struct MonoCachedClassInfo {
 	guint ghcimpl : 1;
 	guint has_cctor : 1;
 	guint32 cctor_token;
+	MonoImage *finalize_image;
 	guint32 finalize_token;
 } MonoCachedClassInfo;
 
