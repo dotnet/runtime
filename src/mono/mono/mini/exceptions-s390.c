@@ -262,7 +262,6 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 		 gulong *int_regs, gdouble *fp_regs, gulong *acc_regs, 
 		 guint fpc, gboolean rethrow)
 {
-	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
 	int iReg;
 	
@@ -514,8 +513,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-	unsigned long *ptr;
-	char *p;
 	MonoS390StackFrame *sframe;
 
 	if (prev_ji && 
@@ -537,7 +534,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (ji != NULL) {
 		char *source_location, *tmpaddr, *fname;
 		gint32 address, iloffset;
-		int offset;
 
 		*new_ctx = *ctx;
 
@@ -825,7 +821,7 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
-		mono_ex->stack_trace = NULL;
+		initialStackTrace = mono_ex->stack_trace;
 	} else {
 		mono_ex = NULL;
 	}
@@ -995,5 +991,68 @@ mono_arch_ip_from_context (void *sigctx)
 	return context_get_ip (sigctx);
 }
 
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_is_int_overflow                         */
+/*                                                                  */
+/* Function	- Inspect the code that raised the SIGFPE signal    */
+/*		  to see if the DivideByZero or Arithmetic exception*/
+/*		  should be raised.                  		    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gboolean
+mono_arch_is_int_overflow (void *uc, void *info)
+{
+	MonoContext *ctx;
+	guint8      *code;
+	guint32     *operand;
+	gboolean    arithExc = TRUE;
+	gint	    regNo,
+	    	    offset;
+
+	ctx  = (MonoContext *) uc;
+	code =  (guint8 *) ((siginfo_t *)info)->si_addr;
+	/*----------------------------------------------------------*/
+	/* Divide operations are the only ones that will give the   */
+	/* divide by zero exception so just check for these ops.    */
+	/*----------------------------------------------------------*/
+	switch (code[0]) {
+		case 0x1d :		/* Divide Register	    */
+			regNo = code[1] & 0x0f;	
+			if (ctx->uc_mcontext.gregs[regNo] == 0)
+				arithExc = FALSE;
+		break;
+		case 0x5d :		/* Divide		    */
+			regNo   = (code[2] & 0xf0 >> 8);	
+			offset  = *((guint16 *) code+2) & 0x0fff;
+			operand = ctx->uc_mcontext.gregs[regNo] + offset;
+			if (*operand == 0)
+				arithExc = FALSE; 
+		break;
+		case 0xb9 :		/* Divide logical Register? */
+			if (code[1] == 0x97) {
+				regNo = (code[2] & 0xf0 >> 8);	
+				if (ctx->uc_mcontext.gregs[regNo] == 0)
+					arithExc = FALSE;
+			}
+		break;
+		case 0xe3 :		/* Divide logical?	    */
+			if (code[1] == 0x97) {	
+				regNo   = (code[2] & 0xf0 >> 8);	
+				offset  = *((guint32 *) code+1) & 0x000fffff;
+				operand = ctx->uc_mcontext.gregs[regNo] + offset;
+				if (*operand == 0)
+					arithExc = FALSE; 
+			}
+		break;
+		default:
+			arithExc = TRUE;
+	}
+	return (arithExc);
+}
 
 /*========================= End of Function ========================*/

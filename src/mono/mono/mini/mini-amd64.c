@@ -5279,7 +5279,7 @@ static int reg_to_ucontext_reg [] = {
  * integer overflow.
  */
 gboolean
-mono_arch_is_int_overflow (void *sigctx)
+mono_arch_is_int_overflow (void *sigctx, void *info)
 {
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	guint8* rip;

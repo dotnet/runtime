@@ -122,6 +122,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 	1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_LMUL 		1
+#define MONO_ARCH_HAVE_IS_INT_OVERFLOW  1
+#define MONO_ARCH_NEED_DIV_CHECK	1
 
 #define MONO_ARCH_USE_SIGACTION 	1
 
@@ -145,6 +147,14 @@ typedef struct MonoCompileArch {
 #define S390_CC_EQ			8
 #define S390_ALIGN(v, a)	(((a) > 0 ? (((v) + ((a) - 1)) & ~((a) - 1)) : (v)))
 
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- s390_patch                                        */
+/*                                                                  */
+/* Function	- Patch the code with a given value.		    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 static void inline
 s390_patch (guchar *code, gint32 target)
 {
@@ -154,5 +164,49 @@ s390_patch (guchar *code, gint32 target)
 		*offset = target;
 	}
 }
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- restoreLMF                                        */
+/*                                                                  */
+/* Function	- Restore the LMF state prior to exiting a method.  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+#define restoreLMF(code, frame_reg, stack_usage) do			\
+{									\
+	int lmfOffset = 0;						\
+									\
+	s390_lr  (code, s390_r13, frame_reg);				\
+									\
+	lmfOffset = stack_usage -  sizeof(MonoLMF);			\
+									\
+	/*-------------------------------------------------*/		\
+	/* r13 = my lmf					   */		\
+	/*-------------------------------------------------*/		\
+	s390_ahi (code, s390_r13, lmfOffset);				\
+									\
+	/*-------------------------------------------------*/		\
+	/* r6 = &jit_tls->lmf				   */		\
+	/*-------------------------------------------------*/		\
+	s390_l   (code, s390_r6, 0, s390_r13, 				\
+		  G_STRUCT_OFFSET(MonoLMF, lmf_addr));			\
+									\
+	/*-------------------------------------------------*/		\
+	/* r0 = lmf.previous_lmf			   */		\
+	/*-------------------------------------------------*/		\
+	s390_l   (code, s390_r0, 0, s390_r13, 				\
+		  G_STRUCT_OFFSET(MonoLMF, previous_lmf));		\
+									\
+	/*-------------------------------------------------*/		\
+	/* jit_tls->lmf = previous_lmf			   */		\
+	/*-------------------------------------------------*/		\
+	s390_l   (code, s390_r13, 0, s390_r6, 0);			\
+	s390_st  (code, s390_r0, 0, s390_r6, 0);			\
+} while (0)
+
+/*========================= End of Function ========================*/
 
 #endif /* __MONO_MINI_S390_H__ */  

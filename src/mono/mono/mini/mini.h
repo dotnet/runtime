@@ -794,7 +794,7 @@ void     mono_arch_flush_register_windows       (void);
 gboolean mono_arch_is_inst_imm                  (gint64 imm);
 MonoInst* mono_arch_get_domain_intrinsic        (MonoCompile* cfg);
 MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg);
-gboolean mono_arch_is_int_overflow              (void *sigctx);
+gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg);
 
 /* Exception handling */

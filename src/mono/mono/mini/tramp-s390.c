@@ -22,10 +22,10 @@
 
 #define GR_SAVE_SIZE		4*sizeof(long)
 #define FP_SAVE_SIZE		16*sizeof(double)
-#define CREATE_STACK_SIZE	(S390_MINIMAL_STACK_SIZE+GR_SAVE_SIZE+FP_SAVE_SIZE+2*sizeof(long))
 #define CREATE_GR_OFFSET	S390_MINIMAL_STACK_SIZE
 #define CREATE_FP_OFFSET	CREATE_GR_OFFSET+GR_SAVE_SIZE
 #define CREATE_LMF_OFFSET	CREATE_FP_OFFSET+FP_SAVE_SIZE
+#define CREATE_STACK_SIZE	(CREATE_LMF_OFFSET+2*sizeof(long)+sizeof(MonoLMF))
 #define METHOD_SAVE_OFFSET	S390_RET_ADDR_OFFSET-4
 
 /*------------------------------------------------------------------*/
@@ -263,7 +263,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	guint8 *buf, *code = NULL;
 	static guint8* generic_jump_trampoline = NULL;
 	static guint8 *generic_class_init_trampoline = NULL;
-	int i, offset;
+	int i, offset, lmfOffset;
 
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_GENERIC:
@@ -317,12 +317,71 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		s390_l    (buf, s390_r1, 0, s390_r13, 4);
 		s390_basr (buf, s390_r14, s390_r1);
 
-		/* XXX Update LMF !!! */
-		
-		/*----------------------------------------------------------
-		STEP 2: call 's390_magic_trampoline()', who will compile the
-		code and fix the method vtable entry for us
-		----------------------------------------------------------*/
+		/*---------------------------------------------------------------*/
+		/* we build the MonoLMF structure on the stack - see mini-s390.h */
+		/* Keep in sync with the code in mono_arch_emit_prolog 		 */
+		/*---------------------------------------------------------------*/
+		lmfOffset = CREATE_STACK_SIZE - sizeof(MonoLMF);
+											
+		s390_lr    (buf, s390_r13, STK_BASE);
+		s390_ahi   (buf, s390_r13, lmfOffset);	
+											
+		/*---------------------------------------------------------------*/	
+		/* Set lmf.lmf_addr = jit_tls->lmf				 */	
+		/*---------------------------------------------------------------*/	
+		s390_st    (buf, s390_r2, 0, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, lmf_addr));			
+											
+		/*---------------------------------------------------------------*/	
+		/* Get current lmf						 */	
+		/*---------------------------------------------------------------*/	
+		s390_l     (buf, s390_r0, 0, s390_r2, 0);				
+											
+		/*---------------------------------------------------------------*/	
+		/* Set our lmf as the current lmf				 */	
+		/*---------------------------------------------------------------*/	
+		s390_st	   (buf, s390_r13, 0, s390_r2, 0);				
+											
+		/*---------------------------------------------------------------*/	
+		/* Have our lmf.previous_lmf point to the last lmf		 */	
+		/*---------------------------------------------------------------*/	
+		s390_st	   (buf, s390_r0, 0, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, previous_lmf));			
+											
+		/*---------------------------------------------------------------*/	
+		/* save method info						 */	
+		/*---------------------------------------------------------------*/	
+		s390_l     (buf, s390_r1, 0, s390_r11, METHOD_SAVE_OFFSET);
+		s390_st    (buf, s390_r1, 0, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, method));				
+										
+		/*---------------------------------------------------------------*/	
+		/* save the current IP						 */	
+		/*---------------------------------------------------------------*/	
+		s390_l     (buf, s390_r1, 0, STK_BASE, 0);
+		s390_st	   (buf, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));	
+		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+			s390_lhi   (buf, s390_r1, 0);
+		} else {
+			s390_l     (buf, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
+			s390_la    (buf, s390_r1, 0, s390_r1, 0);
+		}
+		s390_st    (buf, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));	
+											
+		/*---------------------------------------------------------------*/	
+		/* Save general and floating point registers			 */	
+		/*---------------------------------------------------------------*/	
+		s390_stm   (buf, s390_r2, s390_r12, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, gregs[2]));			
+		for (i = 0; i < 16; i++) {						
+			s390_std  (buf, i, 0, s390_r13, 				
+				   G_STRUCT_OFFSET(MonoLMF, fregs[i]));			
+		}									
+
+		/*---------------------------------------------------------------*/
+		/* STEP 2: call 's390_magic_trampoline()', who will compile the  */
+		/* code and fix the method vtable entry for us			 */
+		/*---------------------------------------------------------------*/
 				
 		/* Set arguments */
 		
@@ -356,13 +415,11 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		/* OK, code address is now on r2. Move it to r1, so that we
 		can restore r2 and use it from r1 later */
 		s390_lr   (buf, s390_r1, s390_r2);
-		
 
 		/*----------------------------------------------------------
 		STEP 3: Restore the LMF
 		----------------------------------------------------------*/
-		
-		/* XXX Do it !!! */
+		restoreLMF(buf, STK_BASE, CREATE_STACK_SIZE);
 		
 		/*----------------------------------------------------------
 		STEP 4: call the compiled method

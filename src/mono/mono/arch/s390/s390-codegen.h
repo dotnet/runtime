@@ -137,9 +137,9 @@ typedef enum {
 
 #define s390_is_imm16(val) 		((gint)val >= (gint)-(1<<15) && \
 					 (gint)val <= (gint)((1<<15)-1))
-#define s390_is_uimm16(val) 		((gint)val >= 0 && (gint)val <= 65535)
+#define s390_is_uimm16(val) 		((gint)val >= 0 && (gint)val <= 32767)
 #define s390_is_imm12(val)		((gint)val >= (gint)-(1<<11) && \
-					 (gint)val <= (gint)((1<<15)-1))
+					 (gint)val <= (gint)((1<<11)-1))
 #define s390_is_uimm12(val)		((gint)val >= 0 && (gint)val <= 4095)
 
 #define STK_BASE			s390_r15
@@ -573,6 +573,8 @@ typedef struct {
 #define s390_alr(c, r1, r2)		S390_RR(c, 0x1e, r1, r2)
 #define s390_a(c, r, x, b, d)		S390_RX(c, 0x5a, r, x, b, d)
 #define s390_al(c, r, x, b, d)		S390_RX(c, 0x5e, r, x, b, d)
+#define s390_alc(c, r, x, b, d)		S390_RXY(c, 0xe398, r, x, b, d)
+#define s390_slb(c, r, x, b, d)		S390_RXY(c, 0xe399, r, x, b, d)
 #define s390_slbr(c, r1, r2)		S390_RRE(c, 0xb999, r1, r2)
 #define s390_sr(c, r1, r2)		S390_RR(c, 0x1b, r1, r2)
 #define s390_slr(c, r1, r2)		S390_RR(c, 0x1f, r1, r2)

@@ -214,7 +214,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
  * integer overflow.
  */
 gboolean
-mono_arch_is_int_overflow (void *sigctx)
+mono_arch_is_int_overflow (void *sigctx, void *info)
 {
 	struct sigcontext *ctx = (struct sigcontext*)sigctx;
 	guint8* ip;

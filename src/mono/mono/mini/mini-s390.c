@@ -209,7 +209,6 @@ typedef struct {
 
 static guint32 * emit_memcpy (guint8 *, int, int, int, int, int);
 static void indent (int);
-static guint8 * restoreLMF(MonoCompile *, guint8 *);
 static guint8 * backUpStackPtr(MonoCompile *, guint8 *);
 static void decodeParm (MonoType *, void *, int);
 static void enter_method (MonoMethod *, RegParm *, char *);
@@ -392,48 +391,6 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- restoreLMF                                        */
-/*                                                                  */
-/* Function	- Restore the LMF state prior to exiting a method.  */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-static inline guint8 * 
-restoreLMF(MonoCompile *cfg, guint8 *code)
-{
-	int lmfOffset = 0;
-
-	s390_lr  (code, s390_r13, cfg->frame_reg);
-
-	lmfOffset = cfg->stack_usage -  sizeof(MonoLMF);
-
-	/*-------------------------------------------------*/
-	/* r13 = my lmf					   */
-	/*-------------------------------------------------*/
-	s390_ahi (code, s390_r13, lmfOffset);
-
-	/*-------------------------------------------------*/
-	/* r6 = &jit_tls->lmf				   */
-	/*-------------------------------------------------*/
-	s390_l   (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
-
-	/*-------------------------------------------------*/
-	/* r0 = lmf.previous_lmf			   */
-	/*-------------------------------------------------*/
-	s390_l   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
-
-	/*-------------------------------------------------*/
-	/* jit_tls->lmf = previous_lmf			   */
-	/*-------------------------------------------------*/
-	s390_l   (code, s390_r13, 0, s390_r6, 0);
-	s390_st  (code, s390_r0, 0, s390_r6, 0);
-	return (code);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- backStackPtr.                                     */
 /*                                                                  */
 /* Function	- Restore Stack Pointer to previous frame.          */
@@ -445,7 +402,7 @@ backUpStackPtr(MonoCompile *cfg, guint8 *code)
 {
 	int stackSize = cfg->stack_usage;
 
-	if (s390_is_imm16 (cfg->stack_usage)) {
+	if (s390_is_uimm16 (cfg->stack_usage)) {
 		s390_ahi  (code, STK_BASE, cfg->stack_usage);
 	} else { 
 		while (stackSize > 32767) {
@@ -3092,7 +3049,7 @@ guint8 cond;
 			break;
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM: {
-			if (s390_is_imm16(ins->inst_imm)) {
+			if (s390_is_uimm16(ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 			} else {
 				s390_basr (code, s390_r13, 0);
@@ -3167,7 +3124,7 @@ guint8 cond;
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_l    (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
-				if (s390_is_imm16(ins->inst_offset)) {
+				if (s390_is_uimm16(ins->inst_offset)) {
 					s390_lhi (code, s390_r13, ins->inst_offset);
 					s390_l   (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 				} else {
@@ -3299,7 +3256,7 @@ guint8 cond;
 		}
 			break;
 		case OP_COMPARE_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if ((ins->next) && 
 				    ((ins->next->opcode >= CEE_BNE_UN) &&
@@ -3370,7 +3327,7 @@ guint8 cond;
 				}
 				s390_al   (code, ins->dreg, 0, s390_r13, 4);
 			} else {
-				if (s390_is_imm16 (ins->inst_imm)) {
+				if (s390_is_uimm16 (ins->inst_imm)) {
 					if (ins->dreg != ins->sreg1) {
 						s390_lr	  (code, ins->dreg, ins->sreg1);
 					}
@@ -3388,7 +3345,7 @@ guint8 cond;
 		}
 			break;
 		case OP_ADC_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				if (ins->dreg != ins->sreg1) {
 					s390_lr   (code, ins->dreg, ins->sreg1);
 				} 
@@ -3461,9 +3418,25 @@ guint8 cond;
 			s390_slbr (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case OP_SUBCC_IMM:
+		case OP_SUBCC_IMM: {
+			if (s390_is_uimm16 (-ins->inst_imm)) {
+				if (ins->dreg != ins->sreg1) {
+					s390_lr   (code, ins->dreg, ins->sreg1);
+				}
+				s390_ahi  (code, ins->dreg, -ins->inst_imm);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 4);
+				s390_word (code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lr	  (code, ins->dreg, ins->sreg1);
+				}
+				s390_sl   (code, ins->dreg, 0, s390_r13, 4);
+			}
+		}
+			break;
 		case OP_SUB_IMM: {
-			if (s390_is_imm16 (-ins->inst_imm)) {
+			if (s390_is_uimm16 (-ins->inst_imm)) {
 				if (ins->dreg != ins->sreg1) {
 					s390_lr   (code, ins->dreg, ins->sreg1);
 				}
@@ -3480,10 +3453,18 @@ guint8 cond;
 		}
 			break;
 		case OP_SBB_IMM: {
-			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 4);
-			s390_word (code, ins->inst_imm);
-			s390_sl   (code, ins->dreg, 0, s390_r13, 4);
+			if (ins->dreg != ins->sreg1) {
+				s390_lr    (code, ins->dreg, ins->sreg1);
+			}
+			if (s390_is_uimm16 (-ins->inst_imm)) {
+				s390_lhi   (code, s390_r0, ins->inst_imm);
+				s390_slbr  (code, ins->dreg, s390_r0);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 4);
+				s390_word (code, ins->inst_imm);
+				s390_slb  (code, ins->dreg, 0, s390_r13, 4);
+			}
 		}
 			break;
 		case CEE_SUB_OVF: {
@@ -3539,7 +3520,7 @@ guint8 cond;
 		}
 			break;
 		case OP_AND_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
 					s390_lr	  (code, ins->dreg, ins->sreg1);
@@ -3571,7 +3552,7 @@ guint8 cond;
 		}
 			break;
 		case OP_DIV_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r13, ins->inst_imm);
 				s390_lr   (code, s390_r0, ins->sreg1);
 			} else {
@@ -3600,7 +3581,7 @@ guint8 cond;
 		}
 			break;
 		case OP_REM_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r13, ins->inst_imm);
 				s390_lr   (code, s390_r0, ins->sreg1);
 			} else {
@@ -3631,7 +3612,7 @@ guint8 cond;
 		}
 			break;
 		case OP_OR_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
 					s390_lr	  (code, ins->dreg, ins->sreg1);
@@ -3664,7 +3645,7 @@ guint8 cond;
 		}
 			break;
 		case OP_XOR_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
 					s390_lr	  (code, ins->dreg, ins->sreg1);
@@ -3751,7 +3732,7 @@ guint8 cond;
 		}
 			break;
 		case OP_MUL_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
+			if (s390_is_uimm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r13, ins->inst_imm);
 			} else {
 				s390_basr (code, s390_r13, 0);
@@ -3810,7 +3791,7 @@ guint8 cond;
 			break;	
 		case OP_ICONST:
 		case OP_SETREGIMM: {
-			if (s390_is_imm16(ins->inst_c0)) {
+			if (s390_is_uimm16(ins->inst_c0)) {
 				s390_lhi  (code, ins->dreg, ins->inst_c0);
 			} else {
 				s390_basr (code, s390_r13, 0);
@@ -3870,7 +3851,7 @@ guint8 cond;
 		case CEE_JMP: {
 			int fParm;
 			if (cfg->method->save_lmf)
-				code = restoreLMF(cfg, code);
+				restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
 			if (cfg->flags & MONO_CFG_HAS_TAIL) {
 				s390_lm (code, s390_r2, s390_r5, STK_BASE, 
@@ -3989,7 +3970,7 @@ guint8 cond;
 			s390_brasl (code, s390_r14, 0);
 		}
 			break;
-		case CEE_RETHROW: {
+		case OP_RETHROW: {
 			s390_lr (code, s390_r2, ins->sreg1);
 			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_rethrow_exception");
@@ -4273,17 +4254,18 @@ guint8 cond;
 		case OP_LCONV_TO_OVF_I: {
 			/* Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000 */
 			short int *o[5];
-			s390_ltr  (code, ins->sreg2, ins->sreg2);
-			s390_jnl  (code, 0); CODEPTR(code, o[0]);
 			s390_ltr  (code, ins->sreg1, ins->sreg1);
+			s390_jnl  (code, 0); CODEPTR(code, o[0]);
+			s390_ltr  (code, ins->sreg2, ins->sreg2);
 			s390_jnl  (code, 0); CODEPTR(code, o[1]);
 			s390_lhi  (code, s390_r13, -1);
-			s390_cr   (code, ins->sreg1, s390_r13);
+			s390_cr   (code, ins->sreg2, s390_r13);
 			s390_jnz  (code, 0); CODEPTR(code, o[2]);
-			if (ins->dreg != ins->sreg2)
-				s390_lr   (code, ins->dreg, ins->sreg2);
+			if (ins->dreg != ins->sreg1)
+				s390_lr   (code, ins->dreg, ins->sreg1);
 			s390_j	  (code, 0); CODEPTR(code, o[3]);
 			PTRSLOT(code, o[0]);
+			s390_ltr  (code, ins->sreg2, ins->sreg2);
 			s390_jz   (code, 0); CODEPTR(code, o[4]);
 			PTRSLOT(code, o[1]);
 			PTRSLOT(code, o[2]);
@@ -4440,7 +4422,7 @@ guint8 cond;
 						   ins->inst_offset, ins->sreg1, ins->inst_imm);
 				} else {
 					s390_lr   (code, s390_r0, ins->dreg);
-					if (s390_is_imm16 (ins->inst_offset)) {
+					if (s390_is_uimm16 (ins->inst_offset)) {
 						s390_ahi  (code, s390_r0, ins->inst_offset);
 					} else {
 						s390_basr (code, s390_r13, 0);
@@ -4450,7 +4432,7 @@ guint8 cond;
 					}
 					s390_lr	  (code, s390_r14, s390_r12);
 					s390_lr   (code, s390_r12, ins->sreg1);
-					if (s390_is_imm16 (ins->inst_imm)) {
+					if (s390_is_uimm16 (ins->inst_imm)) {
 						s390_ahi  (code, s390_r12, ins->inst_imm);
 					} else {
 						s390_basr (code, s390_r13, 0);
@@ -4734,11 +4716,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i, lmfOffset;
+	int alloc_size, pos, max_offset, i;
 	guint8 *code;
 	CallInfo *cinfo;
 	size_data sz;
 	int tracing = 0;
+	int lmfOffset;								\
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -4763,7 +4746,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->stack_usage = alloc_size;
 	s390_lr   (code, s390_r11, STK_BASE);
-	if (s390_is_imm16 (-alloc_size)) {
+	if (s390_is_uimm16 (alloc_size)) {
 		s390_ahi  (code, STK_BASE, -alloc_size);
 	} else { 
 		int stackSize = alloc_size;
@@ -4934,56 +4917,61 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* we build the MonoLMF structure on the stack - see mini-s390.h */
 		/*---------------------------------------------------------------*/
-		lmfOffset = alloc_size - sizeof(MonoLMF);
-
-		s390_lr    (code, s390_r13, cfg->frame_reg);
-		s390_ahi   (code, s390_r13, lmfOffset);
-
-		/*---------------------------------------------------------------*/
-		/* Set lmf.lmf_addr = jit_tls->lmf				 */
-		/*---------------------------------------------------------------*/
-		s390_st    (code, s390_r2, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
-
-		/*---------------------------------------------------------------*/
-		/* Get current lmf						 */
-		/*---------------------------------------------------------------*/
-		s390_l     (code, s390_r0, 0, s390_r2, 0);
-
-		/*---------------------------------------------------------------*/
-		/* Set our lmf as the current lmf				 */
-		/*---------------------------------------------------------------*/
-		s390_st	   (code, s390_r13, 0, s390_r2, 0);
-
-		/*---------------------------------------------------------------*/
-		/* Have our lmf.previous_lmf point to the last lmf		 */
-		/*---------------------------------------------------------------*/
-		s390_st	   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
-
-		/*---------------------------------------------------------------*/
-		/* save method info						 */
-		/*---------------------------------------------------------------*/
-		s390_basr  (code, s390_r1, 0);
-		s390_j	   (code, 4);
-		s390_word  (code, method);
-		s390_l	   (code, s390_r1, 0, s390_r1, 4);
-		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, method));
-
-		/*---------------------------------------------------------------*/
-		/* save the current IP						 */
-		/*---------------------------------------------------------------*/
+		lmfOffset = alloc_size - sizeof(MonoLMF);	
+											
+		s390_lr    (code, s390_r13, cfg->frame_reg);		
+		s390_ahi   (code, s390_r13, lmfOffset);					
+											
+		/*---------------------------------------------------------------*/	
+		/* Set lmf.lmf_addr = jit_tls->lmf				 */	
+		/*---------------------------------------------------------------*/	
+		s390_st    (code, s390_r2, 0, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, lmf_addr));			
+											
+		/*---------------------------------------------------------------*/	
+		/* Get current lmf						 */	
+		/*---------------------------------------------------------------*/	
+		s390_l     (code, s390_r0, 0, s390_r2, 0);				
+											
+		/*---------------------------------------------------------------*/	
+		/* Set our lmf as the current lmf				 */	
+		/*---------------------------------------------------------------*/	
+		s390_st	   (code, s390_r13, 0, s390_r2, 0);				
+											
+		/*---------------------------------------------------------------*/	
+		/* Have our lmf.previous_lmf point to the last lmf		 */	
+		/*---------------------------------------------------------------*/	
+		s390_st	   (code, s390_r0, 0, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, previous_lmf));			
+											
+		/*---------------------------------------------------------------*/	
+		/* save method info						 */	
+		/*---------------------------------------------------------------*/	
+		s390_basr  (code, s390_r1, 0);						
+		s390_j	   (code, 4);							
+		s390_word  (code, method);						
+		s390_l	   (code, s390_r1, 0, s390_r1, 4);			
+		s390_st    (code, s390_r1, 0, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, method));				
+										
+		/*---------------------------------------------------------------*/	
+		/* save the current IP						 */	
+		/*---------------------------------------------------------------*/	
 		s390_lr    (code, s390_r1, cfg->frame_reg);
-		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
-		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
-		s390_la    (code, s390_r1, 0, s390_r1, 0);
-		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));
-
-		/*---------------------------------------------------------------*/
-		/* Save general and floating point registers			 */
-		/*---------------------------------------------------------------*/
-		s390_stm   (code, s390_r2, s390_r12, s390_r13, G_STRUCT_OFFSET(MonoLMF, gregs[2]));
-		for (i = 0; i < 16; i++) {
-			s390_std  (code, i, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, fregs[i]));
-		}
+		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));	
+		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);		
+		s390_la    (code, s390_r1, 0, s390_r1, 0);				
+		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));	
+											
+		/*---------------------------------------------------------------*/	
+		/* Save general and floating point registers			 */	
+		/*---------------------------------------------------------------*/	
+		s390_stm   (code, s390_r2, s390_r12, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, gregs[2]));			
+		for (i = 0; i < 16; i++) {						
+			s390_std  (code, i, 0, s390_r13, 				
+				   G_STRUCT_OFFSET(MonoLMF, fregs[i]));			
+		}									
 
 		/*---------------------------------------------------------------*/
 		/* Restore the parameter registers now that we've set up the lmf */
@@ -5018,9 +5006,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
-	MonoMethodSignature *sig = method->signature;
-	MonoInst *inst;
-	int i, tracing = 0;
+	int tracing = 0;
 	guint8 *code;
 
 	code = cfg->native_code + cfg->code_len;
@@ -5031,7 +5017,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	
 	if (method->save_lmf) 
-		code = restoreLMF(cfg, code);
+		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) 
 		s390_l	 (code, STK_BASE, 0, STK_BASE, 0);

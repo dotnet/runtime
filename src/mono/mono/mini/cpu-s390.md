@@ -417,6 +417,7 @@ not: dest:i src1:i len:8 clob:1
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 op_endfilter: src1:i len:12
+op_rethrow: src1:i len:8
 oparglist: src1:i len:18
 or: dest:i src1:i src2:i len:4 clob:1
 or_imm: dest:i src1:i len:16
@@ -446,7 +447,6 @@ rem_un_imm: dest:i src1:i src2:i len:24
 rename:
 ret:
 retarg:
-rethrow: src1:i len:8
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4 clob:r
 sbb: dest:i src1:i src2:i len:6
