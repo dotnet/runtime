@@ -26,6 +26,10 @@
 #include "mini.h"
 #include "mini-sparc.h"
 
+#ifndef REG_SP
+#define REG_SP REG_O6
+#endif
+
 /*
  * mono_arch_get_restore_context:
  *
@@ -371,7 +375,12 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	 * under documented under solaris. The code below seems to work under
 	 * Solaris 9.
 	 */
+#ifndef __linux__
 	g_assert (!ctx->uc_mcontext.gwins);
+#else
+	/* better, but doesn't work all the time.  need to rethink! */
+	g_assert (!ctx->uc_mcontext.gregs);
+#endif
 
 	mctx.ip = ctx->uc_mcontext.gregs [REG_PC];
 	mctx.sp = ctx->uc_mcontext.gregs [REG_SP];

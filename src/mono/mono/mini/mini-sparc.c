@@ -14,7 +14,13 @@
  */
 #include "mini.h"
 #include <string.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#ifndef __linux__
 #include <sys/systeminfo.h>
+#include <thread.h>
+#endif
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -79,6 +85,10 @@
 #error "Sparc V9 support not yet implemented."
 #endif
 
+#ifndef __linux__
+#define MONO_SPARC_THR_TLS 1
+#endif
+
 #define NOT_IMPLEMENTED g_assert_not_reached ();
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
@@ -87,6 +97,8 @@
 
 /* Whenever the CPU supports v9 instructions */
 gboolean sparcv9 = FALSE;
+
+static gpointer mono_arch_get_lmf_addr (void);
 
 static int
 mono_spillvar_offset_float (MonoCompile *cfg, int spillvar);
@@ -126,8 +138,21 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 
 	*exclude_mask = 0;
 
+#ifndef __linux__
 	if (!sysinfo (SI_ISALIST, buf, 1024))
 		g_assert_not_reached ();
+#else
+	/* From glibc.  If the getpagesize is 8192, we're on sparc64, which
+	 * (in)directly implies that we're a v9 or better.
+	 * Improvements to this are greatly accepted...
+	 * Also, we don't differentiate between v7 and v8.  I sense SIGILL
+	 * sniffing in my future.  
+	 */
+	if (getpagesize() == 8192)
+		strcpy (buf, "sparcv9");
+	else
+		strcpy (buf, "sparcv8");
+#endif
 
 	/* 
 	 * On some processors, the cmov instructions are even slower than the
@@ -3380,6 +3405,7 @@ void
 mono_arch_register_lowlevel_calls (void)
 {
 	mono_register_jit_icall (mono_sparc_break, "mono_sparc_break", NULL, TRUE);
+	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
 }
 
 void
@@ -3755,7 +3781,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method));
 
 		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-							 (gpointer)"mono_get_lmf_addr");		
+							 (gpointer)"mono_arch_get_lmf_addr");		
 		sparc_call_simple (code, 0);
 		sparc_nop (code);
 
@@ -3827,21 +3853,74 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 }
 
+gboolean lmf_addr_key_inited = FALSE;
+
+#ifdef MONO_SPARC_THR_TLS
+thread_key_t lmf_addr_key;
+#else
+pthread_key_t lmf_addr_key;
+#endif
+
+gpointer
+mono_arch_get_lmf_addr (void)
+{
+	/* This is perf critical so we bypass the IO layer */
+	/* The thr_... functions seem to be somewhat faster */
+#ifdef MONO_SPARC_THR_TLS
+	gpointer res;
+	thr_getspecific (lmf_addr_key, &res);
+	return res;
+#else
+	return pthread_getspecific (lmf_addr_key);
+#endif
+}
+
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#ifdef __linux__
 	struct sigaltstack sa;
-
+#else
+	stack_t         sigstk;
+#endif
+ 
 	printf ("SIGALT!\n");
 	/* Setup an alternate signal stack */
-	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE * 100);
+	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE);
 	tls->signal_stack_size = SIGNAL_STACK_SIZE;
 
+#ifdef __linux__
 	sa.ss_sp = tls->signal_stack;
-	sa.ss_size = SIGNAL_STACK_SIZE * 100;
+	sa.ss_size = SIGNAL_STACK_SIZE;
 	sa.ss_flags = 0;
 	g_assert (sigaltstack (&sa, NULL) == 0);
+#else
+	sigstk.ss_sp = tls->signal_stack;
+	sigstk.ss_size = SIGNAL_STACK_SIZE;
+	sigstk.ss_flags = 0;
+	g_assert (sigaltstack (&sigstk, NULL) == 0);
+#endif
+#endif
+
+	if (!lmf_addr_key_inited) {
+		int res;
+
+		lmf_addr_key_inited = TRUE;
+
+#ifdef MONO_SPARC_THR_TLS
+		res = thr_keycreate (&lmf_addr_key, NULL);
+#else
+		res = pthread_key_create (&lmf_addr_key, NULL);
+#endif
+		g_assert (res == 0);
+
+	}
+
+#ifdef MONO_SPARC_THR_TLS
+	thr_setspecific (lmf_addr_key, &tls->lmf);
+#else
+	pthread_setspecific (lmf_addr_key, &tls->lmf);
 #endif
 }
 
