@@ -45,7 +45,12 @@ monoldflags=
 else
 monoldflags=-Wl,-version-script=$(srcdir)/ldscript
 endif
+
+if PLATFORM_WIN32
+libmono_la_LDFLAGS=-no-undefined -version-info 1:0:0 $(monoldflags)
+else
 libmono_la_LDFLAGS=$(monoldflags)
+endif
 
 if JIT_SUPPORTED
 bin_PROGRAMS = mono
