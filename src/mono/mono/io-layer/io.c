@@ -512,7 +512,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		_wapi_unlock_file_region (file_private_handle->fd_mapped.fd,
 					  current_pos, numbytes);
 
-		if (ret == -1 && errno != EINTR) {
+		if (ret == -1) {
 			if (errno == EINTR) {
 				ret = 0;
 			} else {
