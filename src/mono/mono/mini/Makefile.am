@@ -75,6 +75,12 @@ ppc_sources = \
 	exceptions-ppc.c	\
 	tramp-ppc.c
 
+sparc_sources = \
+	mini-sparc.c		\
+	mini-sparc.h		\
+	exceptions-sparc.c	\
+	tramp-sparc.c
+
 common_sources = \
 	mini.c		\
 	mini.h		\
@@ -110,6 +116,15 @@ libmono_la_SOURCES = \
 arch_BURGSRC= $(srcdir)/inssel-ppc.brg
 endif
 
+if SPARC
+libmono_la_SOURCES = \
+	$(common_sources) $(sparc_sources)
+
+#arch_BURGSRC= $(srcdir)/inssel-ppc.brg
+# no inssel for sparc yet
+arch_BURGSRC=
+endif
+
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
 libmonoincludedir = $(includedir)/mono/jit
@@ -133,6 +148,9 @@ cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 
 cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
+
+cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
@@ -180,10 +198,10 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 documents=mini-doc.txt mini-porting.txt
 
-BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h
+BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) $(documents) inssel-x86.brg inssel-ppc.brg \
 	jit-icalls.c cprop.c \
-	cpu-pentium.md cpu-g4.md ldscript
+	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md
 
 
