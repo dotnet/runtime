@@ -458,10 +458,10 @@ static dis_map_t element_type_map [] = {
 
 static dis_map_t call_conv_type_map [] = {
 	{ MONO_CALL_DEFAULT     , "default" },
-	{ MONO_CALL_C           , "c" },
-	{ MONO_CALL_STDCALL     , "stdcall" },
-	{ MONO_CALL_THISCALL    , "thiscall" },
-	{ MONO_CALL_FASTCALL    , "fastcall" },
+	{ MONO_CALL_C           , "unmanaged cdecl" },
+	{ MONO_CALL_STDCALL     , "unmanaged stdcall" },
+	{ MONO_CALL_THISCALL    , "unmanaged thiscall" },
+	{ MONO_CALL_FASTCALL    , "unmanaged fastcall" },
 	{ MONO_CALL_VARARG      , "vararg" },
 	{ 0, NULL }
 };
@@ -1197,17 +1197,13 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	char *allocated_ret_type, *s;
-	gboolean has_vararg = 0, seen_vararg = 0;
+	const char *cconv_str;
+	gboolean seen_vararg = 0;
 	int param_count, signature_len;
 	int i, gen_count = 0;
 	int cconv;
 	
 	signature_len = mono_metadata_decode_value (ptr, &ptr);
-
-	if (*ptr & 0x05){
-		g_string_append (res, "vararg ");
-		has_vararg = 1;
-	}
 
 	if (*ptr & 0x20){
 		if (*ptr & 0x40)
@@ -1219,6 +1215,12 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	if (*ptr & 0x10)
 		gen_count = 1;
 	cconv = *ptr & 0x0f;
+	cconv_str = map (cconv, call_conv_type_map);
+	if (strcmp (cconv_str, "default") != 0) {
+		g_string_append (res, cconv_str);
+		g_string_append (res, " ");
+	}
+
 	ptr++;
 	if (gen_count)
 		gen_count = mono_metadata_decode_value (ptr, &ptr);
@@ -1610,7 +1612,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 	const unsigned char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
 	
-	len = mono_metadata_decode_value (ptr, &ptr);
+	len = mono_metadata_decode_value (ptr, (const char**)&ptr);
 	
 	switch (t){
 	case MONO_TYPE_BOOLEAN:
