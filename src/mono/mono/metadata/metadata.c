@@ -1411,23 +1411,33 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 	g_free (sig);
 }
 
-static MonoGenericInst *
-mono_metadata_parse_generic_inst (MonoImage *m, const char *ptr, const char **rptr)
+static void
+do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *ptr, const char **rptr)
 {
 	MonoGenericInst *generic_inst = g_new0 (MonoGenericInst, 1);
 	int i, count;
+
+	type->data.generic_inst = generic_inst;
 	
 	generic_inst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	generic_inst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
 	generic_inst->type_argv = g_new0 (MonoType*, count);
 
+	/*
+	 * Create the klass before parsing the type arguments.
+	 * This is required to support "recursive" definitions.
+	 * See mcs/tests/gen-23.cs for an example.
+	 */
+
+	generic_inst->klass = mono_class_create_from_generic (m, type);
+
 	for (i = 0; i < generic_inst->type_argc; i++)
 		generic_inst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	
+	mono_class_initialize_generic (generic_inst->klass, TRUE);
+	
 	if (rptr)
 		*rptr = ptr;
-
-	return generic_inst;
 }
 
 static MonoGenericParam *
@@ -1510,7 +1520,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, cons
 		break;
 
 	case MONO_TYPE_GENERICINST:
-		type->data.generic_inst = mono_metadata_parse_generic_inst (m, ptr, &ptr);
+		do_mono_metadata_parse_generic_inst (type, m, ptr, &ptr);
 		break;
 		
 	default:
@@ -2858,12 +2868,31 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	guint32 len;
 	MonoType *type;
 
+	mono_loader_lock ();
+
+	if ((type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec)))) {
+		mono_loader_unlock ();
+		return type;
+	}
+
 	t = &image->tables [MONO_TABLE_TYPESPEC];
 	
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+
+	type = g_new0 (MonoType, 1);
+
+	g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
+
+	if (*ptr == MONO_TYPE_BYREF) {
+		type->byref = 1; 
+		ptr++;
+	}
+
+	do_mono_metadata_parse_type (type, image, ptr, &ptr);
+
+	mono_loader_unlock ();
 
 	return type;
 }

@@ -1398,6 +1398,15 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		if (!parent)
 			g_assert_not_reached (); /* FIXME */
 
+		if (parent->generic_inst && !parent->name) {
+			/*
+			 * If the parent is a generic instance, we may get
+			 * called before it is fully initialized, especially
+			 * before it has its name.
+			 */
+			return;
+		}
+
 		class->marshalbyref = parent->marshalbyref;
 		class->contextbound  = parent->contextbound;
 		class->delegate  = parent->delegate;
@@ -1586,12 +1595,62 @@ get_instantiation_name (const char *name, MonoGenericInst *ginst)
 }
 
 MonoClass*
+mono_class_create_from_generic (MonoImage *image, MonoType *gtype)
+{
+	MonoClass *gklass = mono_class_from_mono_type (gtype->data.generic_inst->generic_type);
+	MonoClass *class;
+
+	mono_class_init (gklass);
+
+	class = g_new0 (MonoClass, 1);
+	class->name_space = gklass->name_space;
+	class->image = image;
+	class->flags = gklass->flags;
+
+	class->generic_inst = gtype;
+
+	class->cast_class = class->element_class = class;
+
+	return class;
+}
+
+void
+mono_class_initialize_generic (MonoClass *class, gboolean inflate_methods)
+{
+	MonoGenericInst *ginst = class->generic_inst->data.generic_inst;
+	MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
+
+	if (class->name)
+		return;
+
+	class->name = get_instantiation_name (gklass->name, ginst);
+
+	if (inflate_methods) {
+		int i;
+
+		mono_class_setup_parent (class, gklass->parent);
+		mono_class_setup_mono_type (class);
+
+		class->field = gklass->field;
+		class->method = gklass->method;
+		class->methods = g_new0 (MonoMethod *, class->method.count);
+		for (i = 0; i < class->method.count; i++)
+			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst, NULL);
+	}
+
+	g_hash_table_insert (class->image->generics_cache, ginst->generic_type, class);
+}
+
+MonoClass*
 mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 {
 	MonoGenericInst *ginst = gtype->data.generic_inst;
 	MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
 	MonoClass *class;
 	MonoImage *image;
+
+	if (ginst->klass)
+		return ginst->klass;
 
 	mono_loader_lock ();
 
@@ -1890,8 +1949,6 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		break;
 	}
 
-	mono_metadata_free_type (type);
-	
 	return class;
 }
 

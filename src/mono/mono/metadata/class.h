@@ -213,6 +213,7 @@ struct MonoVTable {
  * Generic instantiation data type encoding.
  */
 struct _MonoGenericInst {
+	MonoClass *klass;
 	MonoType *generic_type;
 	MonoMethod *generic_method;
 	gpointer mbuilder;
