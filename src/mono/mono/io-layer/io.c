@@ -1236,6 +1236,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 			  filename, strerror(errno));
 #endif
 #endif
+		_wapi_set_last_error_from_errno ();
 		return(INVALID_HANDLE_VALUE);
 	}
 
