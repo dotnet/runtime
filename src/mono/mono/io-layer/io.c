@@ -1530,8 +1530,18 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	g_free (utf8_name);
 	g_free (utf8_dest_name);
 
-	if (result == 0)
+	if (result != 0 && errno == EXDEV) {
+		/* Try a copy to the new location, and delete the source */
+		if (CopyFile (name, dest_name, TRUE)==FALSE) {
+			return(FALSE);
+		}
+		
+		return(DeleteFile (name));
+	}
+
+	if (result == 0) {
 		return TRUE;
+	}
 	
 	switch (errno) {
 	case EEXIST:
