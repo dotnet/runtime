@@ -313,7 +313,7 @@ ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 }
 
 static guint32
-ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
+ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, MonoBoolean check_interfaces)
 {
 	MonoDomain *domain; 
 	MonoClass *klass;
@@ -340,13 +340,16 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
 	klassc = mono_class_from_mono_type (c->type);
 
 	/* cut&paste from mono_object_isinst (): keep in sync */
-	if (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && !(klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 		MonoVTable *klass_vt = mono_class_vtable (domain, klass);
 		if ((klassc->interface_id <= klass->max_interface_id) &&
 		    klass_vt->interface_offsets [klassc->interface_id])
 			return 1;
 	} else {
-		if ((klass->baseval - klassc->baseval) <= klassc->diffval)
+		/*
+		 * klass->baseval is 0 for interfaces 
+		 */
+		if (klass->baseval && ((klass->baseval - klassc->baseval) <= klassc->diffval))
 			return 1;
 	}
 	return 0;
