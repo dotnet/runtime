@@ -2267,8 +2267,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			GET_BBLOCK (cfg, bbhash, tblock, ip + clause->handler_offset);
 			tblock->real_offset = clause->handler_offset;
 
-			MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
-			MONO_ADD_INS (tblock, ins);
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
+			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+				MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
+				MONO_ADD_INS (tblock, ins);
+			}
 
 			/*g_print ("clause try IL_%04x to IL_%04x handler %d at IL_%04x to IL_%04x\n", clause->try_offset, clause->try_offset + clause->try_len, clause->flags, clause->handler_offset, clause->handler_offset + clause->handler_len);
 			  while (p < end) {
