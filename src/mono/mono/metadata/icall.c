@@ -4398,7 +4398,7 @@ ves_icall_System_Text_Encoding_InternalCodePage (gint32 *int_code_page)
 	}
 	
 	if (p - codepage > 5){
-		if (strstr (codepage, "utf_8") != -1)
+		if (strstr (codepage, "utf_8") != NULL)
 			*int_code_page |= 0x10000000;
 	}
 	free (codepage);
