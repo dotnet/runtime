@@ -1504,6 +1504,7 @@ ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
 	MonoMethod *method;
 	MonoObject *member;
 	int i, len, match;
+	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
 		
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
@@ -1535,8 +1536,11 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
+		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
+			continue;
+		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
 		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
-			
+		
 		l = g_slist_prepend (l, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
@@ -1551,7 +1555,7 @@ handle_parent:
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
-
+	g_hash_table_destroy (method_slots);
 	return res;
 }
 
@@ -2739,7 +2743,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
 	"System.Reflection.MonoField::GetValueInternal", ves_icall_MonoField_GetValueInternal,
-	"System.Reflection.FieldInfo::SetValueInternal", ves_icall_FieldInfo_SetValueInternal,
+	"System.Reflection.MonoField::SetValueInternal", ves_icall_FieldInfo_SetValueInternal,
 	"System.Reflection.Emit.SignatureHelper::get_signature_local", mono_reflection_sighelper_get_signature_local,
 	"System.Reflection.Emit.SignatureHelper::get_signature_field", mono_reflection_sighelper_get_signature_field,
 

@@ -350,16 +350,18 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 	return pvt;
 }
 
-static MonoInvokeFunc default_mono_runtime_invoke = NULL;
+static MonoObject*
+dummy_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+{
+	g_error ("runtime invoke called on uninitialized runtime");
+	return NULL;
+}
+
+static MonoInvokeFunc default_mono_runtime_invoke = dummy_mono_runtime_invoke;
 
 MonoObject*
 mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
-	if (!default_mono_runtime_invoke) {
-		g_error ("runtime invoke called on uninitialized runtime");
-		return NULL;
-	}
-
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
@@ -655,7 +657,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 void
 mono_install_runtime_invoke (MonoInvokeFunc func)
 {
-	default_mono_runtime_invoke = func;
+	default_mono_runtime_invoke = func ? func: dummy_mono_runtime_invoke;
 }
 
 MonoObject*
@@ -686,6 +688,8 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U8:
 			case MONO_TYPE_I8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE:
 				pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
 				break;
