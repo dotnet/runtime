@@ -102,7 +102,25 @@
   </tr>
 </table>
 
-@item Feb 11th, 2003: Mono Weekly News
+@item Feb 12th: 2002: New assemblies, Gtk# stub documentation, Polish site.
+
+	Mono now distributes a few new assemblies: Mono.Security.Win32
+	as a layer to use the crypto functionality on Win32.  The
+	Mono.Posix assembly which contains functionality for taking
+	advantage of Unix facilities.
+
+	A <a href="http://www.go-mono.pl/">Mono site in Poland</a>.
+
+	Stubs for the Gtk# documentation have been checked into CVS.
+	If you want to contribute please read <a
+	href="FIXME">FIXME</a>
+
+	Tim and Daniel have been improving the Oracle database provider.
+
+	Plenty of new VB.NET work from Marco (compiler) and Daniel
+	(runtime).
+
+@item Feb 11th, 2003: Mono Weekly News, New assemblies.
 
 	<a href="http://monoevo.sourceforge.net/mwn/index.html">Mono
 	Weekly News</a>: Includes a new interview, software

@@ -58,6 +58,7 @@ OBJECTS=									\
 	deploy/mono-beginning.html						\
 	deploy/mono-contribution-howto.html					\
 	deploy/monodoc-xml.html							\
+	deploy/other.html							\
 	deploy/papers.html							\
 	deploy/passport.html							\
 	deploy/plans.html							\
