@@ -14,6 +14,7 @@
 #include "mono/metadata/verify.h"
 #include "mono/metadata/profiler.h"
 #include "mono/metadata/threadpool.h"
+#include "mono/metadata/mono-config.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/os/util.h>
 
@@ -204,6 +205,7 @@ usage (char *name)
 		 "                         @imagename              compile the given image\n"
 		 "\n"
 		 "Runtime:\n"
+		 "    --config filename  Load specified config file instead of the default.\n"
 		 "    --fast-iconv       Use fast floating point integer conversion\n"
 		 "    --noinline         Disable code inliner\n"
 		 "    --nointrinsic      Disable memcopy inliner\n"
@@ -223,7 +225,7 @@ main (int argc, char *argv [])
 	int compile_times = 1000;
 	char *compile_class = NULL;
 	char *debug_args = NULL;
-	char *file, *error;
+	char *file, *error, *config_file = NULL;
 	gboolean testjit = FALSE;
 	int verbose = FALSE;
 	GList *precompile_classes = NULL;
@@ -266,6 +268,8 @@ main (int argc, char *argv [])
 			mono_debug_methods = g_list_append (mono_debug_methods, desc);
 		} else if (strcmp (argv [i], "--count") == 0) {
 			compile_times = atoi (argv [++i]);
+		} else if (strcmp (argv [i], "--config") == 0) {
+			config_file = argv [++i];
 		} else if (strcmp (argv [i], "--workers") == 0) {
 			mono_worker_threads = atoi (argv [++i]);
 			if (mono_worker_threads < 1)
@@ -316,6 +320,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage (argv [0]);
 
+	mono_config_parse (config_file);
 	mono_set_rootdir (argv [0]);
 	domain = mono_jit_init (file);
 
