@@ -1129,7 +1129,7 @@ mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, int type)
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_HANDLER (clause, ip))
-			return NULL;
+			continue;
 
 		if (MONO_OFFSET_IN_CLAUSE (clause, ip)) {
 			if (clause->flags & type) {
@@ -2549,7 +2549,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_HANDLER);
 				t1->data.p = hb;
 				ADD_TREE (t1, cli_addr);
-			}
+			} 
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
