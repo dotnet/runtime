@@ -154,10 +154,10 @@ static guint32 convert_seekorigin(MonoSeekOrigin origin)
 
 static gint64 convert_filetime (const FILETIME *filetime)
 {
-	gint64 *ticks;
-
-	ticks = (gint64 *)filetime;
-	return *ticks;
+	guint64 ticks = filetime->dwHighDateTime;
+	ticks <<= 32;
+	ticks += filetime->dwLowDateTime;
+	return (gint64)ticks;
 }
 
 static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *data, const gunichar2 *name, MonoIOStat *stat)

@@ -24,6 +24,11 @@
 
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 #define ROUND_UP(VALUE,SIZE)	(ROUND_DOWN((VALUE) + (SIZE) - 1, (SIZE)))
+#if SIZEOF_VOID_P == 8
+#define UINTPTR_TYPE guint64
+#else
+#define UINTPTR_TYPE guint32
+#endif
 
 static GHashTable *mmap_map = NULL;
 static size_t alignment = 0;
@@ -185,7 +190,7 @@ mono_raw_buffer_update (void *buffer, size_t size)
 {
 	char *mmap_base;
 
-	mmap_base = GINT_TO_POINTER (ROUND_DOWN (GPOINTER_TO_INT (buffer), alignment));
+	mmap_base =  (gpointer)(ROUND_DOWN ((UINTPTR_TYPE) (buffer), alignment));
 	
 	if (mmap_map && g_hash_table_lookup (mmap_map, mmap_base))
 		mono_raw_buffer_update_mmap (mmap_base, size);
@@ -196,7 +201,7 @@ mono_raw_buffer_free (void *buffer)
 {
 	char *mmap_base;
 
-	mmap_base = GINT_TO_POINTER (ROUND_DOWN (GPOINTER_TO_INT (buffer), alignment));
+	mmap_base = (gpointer)(ROUND_DOWN ((UINTPTR_TYPE) (buffer), alignment));
 	
 	if (mmap_map && g_hash_table_lookup (mmap_map, mmap_base))
 		mono_raw_buffer_free_mmap (mmap_base);

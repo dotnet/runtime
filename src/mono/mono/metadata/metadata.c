@@ -845,7 +845,11 @@ mono_metadata_guid_heap (MonoImage *meta, guint32 index)
 static const char *
 dword_align (const char *ptr)
 {
+#if SIZEOF_VOID_P == 8
+	return (const char *) (((guint64) (ptr + 3)) & ~3);
+#else
 	return (const char *) (((guint32) (ptr + 3)) & ~3);
+#endif
 }
 
 /**

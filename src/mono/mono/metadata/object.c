@@ -94,8 +94,10 @@ mono_runtime_class_init (MonoVTable *vtable)
 	if (found) {
 		mono_domain_lock (vtable->domain);
 		/* double check... */
-		if (vtable->initialized || vtable->initializing)
+		if (vtable->initialized || vtable->initializing) {
+			mono_domain_unlock (vtable->domain);
 			return;
+		}
 		vtable->initializing = 1;
 		mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
 		vtable->initialized = 1;

@@ -2220,13 +2220,13 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	struct StreamDesc {
 		const char *name;
 		MonoDynamicStream *stream;
-	} stream_desc [] = {
-		{"#~", &assembly->tstream},
-		{"#Strings", &assembly->sheap},
-		{"#US", &assembly->us},
-		{"#Blob", &assembly->blob},
-		{"#GUID", &assembly->guid}
-	};
+	} stream_desc [5];
+
+	stream_desc[0].name  = "#~"; stream_desc[0].stream = &assembly->tstream;
+	stream_desc[1].name  = "#Strings"; stream_desc[1].stream = &assembly->sheap;
+	stream_desc[2].name  = "#US"; stream_desc[2].stream = &assembly->us;
+	stream_desc[3].name  = "#Blob"; stream_desc[3].stream = &assembly->blob;
+	stream_desc[4].name  = "#GUID"; stream_desc[4].stream = &assembly->guid;
 	
 	/* tables that are sorted */
 	sorted_mask = ((guint64)1 << MONO_TABLE_CONSTANT) | ((guint64)1 << MONO_TABLE_FIELDMARSHAL)

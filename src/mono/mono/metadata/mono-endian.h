@@ -20,9 +20,9 @@ guint32 mono_read32 (const unsigned char *x);
 guint64 mono_read64 (const unsigned char *x);
 guint64 mono_read64_swap_words (const unsigned char *x);
 
-#define read16(x) (mono_read16 ((x)))
-#define read32(x) (mono_read32 ((x)))
-#define read64(x) (mono_read64 ((x)))
+#define read16(x) (mono_read16 ((const unsigned char *)(x)))
+#define read32(x) (mono_read32 ((const unsigned char *)(x)))
+#define read64(x) (mono_read64 ((const unsigned char *)(x)))
 
 #else
 
