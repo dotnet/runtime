@@ -151,6 +151,15 @@
   </tr>
 </table>
 
+@item Aug 4th, 2003: Ximian acquired by Novell.
+
+	Today <a href="http://www.novell.com">Novell</a> acquired <a
+	href="http://www.ximian.com">Ximian</a>.  The press release is
+	available <a
+	href="http://www.ximian.com./about_us/press_center/press_releases/index.html?pr=novell">here</a>.
+
+	Mono and Gnome form an integral part of the Novell strategy.
+
 @item Jul 30th, 2003: Remoting.CORBA, Managed XSLT.
 
 	Today Lluis announced that Mono CVS contains all the fixes to
