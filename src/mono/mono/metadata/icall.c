@@ -4603,8 +4603,8 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	MONO_ARCH_SAVE_REGS;
 
 	if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-	     method->klass->flags & TYPE_ATTRIBUTE_INTERFACE ||
-	     method->flags & METHOD_ATTRIBUTE_NEW_SLOT)
+	    MONO_CLASS_IS_INTERFACE (method->klass) ||
+	    method->flags & METHOD_ATTRIBUTE_NEW_SLOT)
 		return m;
 
 	if (method->klass == NULL || (klass = method->klass->parent) == NULL)

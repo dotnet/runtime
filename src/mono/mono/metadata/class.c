@@ -759,7 +759,7 @@ mono_get_unique_iid (MonoClass *class)
 	char *str;
 	gpointer value;
 	
-	g_assert (class->flags & TYPE_ATTRIBUTE_INTERFACE);
+	g_assert (MONO_CLASS_IS_INTERFACE (class));
 
 	mono_loader_lock ();
 
@@ -829,7 +829,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		}
 	}
 
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (MONO_CLASS_IS_INTERFACE (class)) {
 		if (max_iid < class->interface_id)
 			max_iid = class->interface_id;
 	}
@@ -868,7 +868,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		}
 	}
 
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+	if (MONO_CLASS_IS_INTERFACE (class))
 		class->interface_offsets [class->interface_id] = cur_slot;
 
 	return cur_slot;
@@ -919,7 +919,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	/* override interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
-		if (decl->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
 			int dslot;
 			g_assert (decl->slot != -1);
 			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
@@ -1147,7 +1147,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	/* override non interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
-		if (!(decl->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		if (!MONO_CLASS_IS_INTERFACE (decl->klass)) {
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = overrides [i*2 + 1];
  			overrides [i * 2 + 1]->slot = decl->slot;
@@ -1287,7 +1287,7 @@ mono_class_init (MonoClass *class)
 
 		mono_class_setup_parent (class, class->parent);
 
-		if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
 
 		class->method = gklass->method;
@@ -1410,7 +1410,7 @@ mono_class_init (MonoClass *class)
 
 	mono_class_setup_supertypes (class);
 
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (MONO_CLASS_IS_INTERFACE (class)) {
 		for (i = 0; i < class->method.count; ++i)
 			class->methods [i]->slot = i;
 		class->init_pending = 0;
@@ -1495,7 +1495,7 @@ mono_class_setup_mono_type (MonoClass *class)
 	const char *name = class->name;
 	const char *nspace = class->name_space;
 
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+	if (MONO_CLASS_IS_INTERFACE (class))
 		class->interface_id = mono_get_unique_iid (class);
 
 	class->this_arg.byref = 1;
@@ -1626,7 +1626,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		return;
 	}
 
-	if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	if (!MONO_CLASS_IS_INTERFACE (class)) {
 		class->parent = parent;
 
 		if (!parent)
@@ -1889,7 +1889,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		;
 
 	pos = 0;
-	if ((count > 0) && !(param->constraints [0]->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (param->constraints [0])) {
 		klass->parent = param->constraints [0];
 		pos++;
 	} else
@@ -1909,7 +1909,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->image = image;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
-	klass->flags = TYPE_ATTRIBUTE_INTERFACE | TYPE_ATTRIBUTE_PUBLIC;
+	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
 
 	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
@@ -1938,7 +1938,7 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 	klass->image = mono_defaults.corlib;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
-	klass->flags = TYPE_ATTRIBUTE_INTERFACE | TYPE_ATTRIBUTE_PUBLIC;
+	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
 
 	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
@@ -2579,11 +2579,11 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 			   gboolean check_interfaces)
 {
  again:
-	if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && !(klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && !MONO_CLASS_IS_INTERFACE (klass)) {
 		if ((klassc->interface_id <= klass->max_interface_id) &&
 			(klass->interface_offsets [klassc->interface_id] >= 0))
 			return TRUE;
-	} else if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	} else if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && MONO_CLASS_IS_INTERFACE (klass)) {
 		int i;
 
 		for (i = 0; i < klass->interface_count; i ++) {
@@ -2592,7 +2592,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 				return TRUE;
 		}
 	} else {
-		if (!(klass->flags & TYPE_ATTRIBUTE_INTERFACE) && mono_class_has_parent (klass, klassc))
+		if (!MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_parent (klass, klassc))
 			return TRUE;
 		if (klass->generic_inst) {
 			MonoType *parent = klass->generic_inst->parent;
@@ -2625,7 +2625,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	if (!oklass->inited)
 		mono_class_init (oklass);
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (MONO_CLASS_IS_INTERFACE (klass)) {
 		if ((klass->interface_id <= oklass->max_interface_id) &&
 		    (oklass->interface_offsets [klass->interface_id] != -1))
 			return TRUE;
