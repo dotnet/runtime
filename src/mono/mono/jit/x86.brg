@@ -1650,11 +1650,7 @@ reg: LDELEMA (reg, CONST_I4) {
        
 	ind = tree->data.i * tree->right->data.i + G_STRUCT_OFFSET (MonoArray, vector);
 	
-	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, ind);
-
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
-
+	x86_lea_membase (s->code, tree->reg1, tree->left->reg1, ind);
 }
 
 reg: LDELEMA (reg, reg) {
