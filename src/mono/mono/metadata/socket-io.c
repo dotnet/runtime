@@ -31,6 +31,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/threads.h>
 /* FIXME change this code to not mess so much with the internals */
@@ -546,6 +547,11 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 #define STASH_SYS_ASS(this) \
 	if(system_assembly == NULL) { \
 		system_assembly=mono_image_loaded ("System"); \
+		if (!system_assembly) {	\
+			MonoAssembly *sa = mono_assembly_open ("System.dll", NULL);	\
+			if (!sa) g_assert_not_reached ();	\
+			else {system_assembly = mono_assembly_get_image (sa);}	\
+		}	\
 	}
 
 static MonoImage *system_assembly=NULL;
