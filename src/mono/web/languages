@@ -108,10 +108,10 @@
 	Ideally GCC could be modified to generate CIL, but it is a 
 	big task.  That would give us various compilers in one pass.
 
-	Rumor is that the next version of the LCC compiler will
-	include an IL backend.  We do not know how extensive the support
-	for integration with .NET will be, but it would be an interesting
-	excercise to add an extension to C to call into .NET code.
+	<a href="http://www.cs.princeton.edu/software/lcc">LCC</a> 4.2
+	has been recently released.  This release adds support for compiling
+	ANSI C programs to CIL.  Note that the CIL support only works on Win32
+	right now, but should be easy to convert to Mono/other architectures.
 
 	LCC is not an open source compiler, but it is free as long as you
 	do not profit from selling it. 
