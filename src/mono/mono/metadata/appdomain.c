@@ -173,7 +173,11 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 	
 	MONO_ARCH_SAVE_REGS;
 
-	assembly = domain->entry_assembly;
+	if (!domain->entry_assembly)
+		assembly = mono_root_domain->entry_assembly;
+	else 
+		assembly = domain->entry_assembly;
+
 	g_assert (assembly);
 
 	setup->application_base = mono_string_new (domain, assembly->basedir);
