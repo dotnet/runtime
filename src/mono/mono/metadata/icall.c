@@ -1208,6 +1208,27 @@ ves_icall_get_attributes (MonoReflectionType *type)
 	return klass->flags;
 }
 
+static MonoReflectionMarshal*
+ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal (MonoReflectionField *field)
+{
+	MonoClass *klass = field->field->parent;
+	MonoMarshalType *info;
+	int i;
+
+	info = mono_marshal_load_type_info (klass);
+
+	for (i = 0; i < info->num_fields; ++i) {
+		if (info->fields [i].field == field->field) {
+			if (!info->fields [i].mspec)
+				return NULL;
+			else
+				return mono_reflection_marshal_from_marshal_spec (field->object.vtable->domain, klass, info->fields [i].mspec);
+		}
+	}
+
+	return NULL;
+}
+
 static MonoReflectionField*
 ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *handle)
 {
@@ -5811,6 +5832,7 @@ static const IcallEntry enuminfo_icalls [] = {
 };
 
 static const IcallEntry fieldinfo_icalls [] = {
+	{"GetUnmanagedMarshal", ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal},
 	{"internal_from_handle", ves_icall_System_Reflection_FieldInfo_internal_from_handle}
 };
 
