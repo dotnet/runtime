@@ -65,6 +65,12 @@ typedef struct {
 	guint32           epilog;
 } MonoFlowGraph;
 
+typedef struct {
+	MonoMethod *m;
+	int args_size;
+	int vtype_num;
+} MethodCallInfo;
+
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
 extern gboolean mono_jit_trace_calls;

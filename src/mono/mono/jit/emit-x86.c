@@ -633,10 +633,10 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
-	//g_assert (!method->addr);
-	printf ("Start JIT compilation %p %p\n", method, method->addr);
-	printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
-		method->klass->name, method->name);
+	if (mono_jit_trace_calls) {
+		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
+			method->klass->name, method->name);
+	}
 
 	cfg = mono_cfg_new (method, mp);
 
@@ -681,8 +681,10 @@ arch_compile_method (MonoMethod *method)
 
 	mono_mempool_destroy (mp);
 
-	printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
-		method->klass->name, method->name, method, method->addr);
+	if (mono_jit_trace_calls) {
+		printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
+			method->klass->name, method->name, method, method->addr);
+	}
 
 	return method->addr;
 }

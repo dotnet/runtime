@@ -114,19 +114,6 @@ case CEE_##name: {                                                            \
 	break;                                                                \
 }
 
-/*	
-#define MAKE_STELEM(name, op, s)                                              \
-case CEE_##name: {                                                            \
-	++ip;                                                                 \
-	sp -= 3;                                                              \
-	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
-	t1->data.i = s;                                                       \
-	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
-	ADD_TREE (t1);                                                        \
-	break;                                                                \
-}
-*/
-
 #define MAKE_STELEM(name, op, s)                                              \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
@@ -393,6 +380,8 @@ map_call_type (MonoType *type, MonoValueType *svt)
 {
 	switch (type->type) {
 	case MONO_TYPE_VOID:
+		*svt = VAL_UNKNOWN;
+		return MB_TERM_CALL_VOID;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -402,9 +391,11 @@ map_call_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-	case MONO_TYPE_VALUETYPE:
 		*svt = VAL_I32;
 		return MB_TERM_CALL_I4;
+	case MONO_TYPE_VALUETYPE:
+		*svt = VAL_I32;
+		return MB_TERM_CALL_VOID;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
@@ -447,8 +438,11 @@ mono_print_ctree (MBTree *tree)
 	else 
 		printf (" %s", mono_burg_term_string [tree->op]);
 
-	if (tree->op == MB_TERM_ADDR_L)
+	switch (tree->op) {
+	case MB_TERM_ADDR_L:
 		printf ("[%d]", tree->data.i);
+		break;
+	}
 
 	g_assert (!(tree->right && !tree->left));
 
@@ -974,6 +968,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_LDFLDA:
 		case CEE_STSFLD: 
 		case CEE_STFLD:
+		case CEE_LDELEMA:
 		case CEE_NEWOBJ:
 		case CEE_CPOBJ:
 		case CEE_NEWARR:
@@ -1606,6 +1601,35 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ADD_TREE (t1);
 			break;
 		}
+		case CEE_LDELEMA: {
+			MonoClass *class;
+			guint32 esize, token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			sp -= 2;
+
+			class = mono_class_get (image, token);
+
+			if (!class->inited)
+				mono_jit_init_class (class);
+
+			esize = mono_class_instance_size (class);
+			if (class->valuetype)
+				esize -= sizeof (MonoObject);
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.i = esize;
+			t1 = mono_ctree_new (mp, MB_TERM_MUL, sp [1], t1);
+			t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t2->data.i = G_STRUCT_OFFSET (MonoArray, vector);
+			t2 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t2);
+			t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);
+
+			PUSH_TREE (t1, VAL_POINTER);
+			break;
+		}
 		case CEE_NOP: { 
 			++ip;
 			break;
@@ -1699,6 +1723,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 		case CEE_NEWOBJ: {
 			MonoMethodSignature *csig;
+			MethodCallInfo *ci;
 			MonoMethod *cm;
 			MBTree *this = NULL;
 			guint32 token;
@@ -1713,6 +1738,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			g_assert (cm);
 			g_assert (!strcmp (cm->name, ".ctor"));
 			
+			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
+			ci->m = cm;
+
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			g_assert (csig->hasthis);
@@ -1720,13 +1748,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			arg_sp = sp -= csig->param_count;
 
 			if (cm->klass->parent == mono_defaults.array_class) {
-
 				newarr = TRUE;
 				this = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				this->data.p = cm;
-
-			} else {
-				
+			} else {				
 				this = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
 				this->data.p = cm->klass;
 				this->svt = VAL_POINTER;
@@ -1734,7 +1759,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_store_tree (cfg, -1, this, &this);
 				g_assert (t1);
 				ADD_TREE (t1);
-
 			}
 
 			for (i = csig->param_count - 1; i >= 0; i--) {
@@ -1744,18 +1768,22 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				args_size += (size + 3) & ~3;
 			}
 
-			t1 = mono_ctree_new (mp, MB_TERM_ARG, this, NULL);	
-			ADD_TREE (t1);
-			args_size += sizeof (gpointer);
-			
+			args_size += sizeof (gpointer); /* this argument */		
+			ci->args_size = args_size;
+
 			if (newarr) {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t2->data.p = mono_array_new_va;
 
-				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t2, NULL);
-				t1->data.i = args_size;
-				t1->svt = VAL_I32;
+				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
+				t1->data.p = ci;
+				t1->svt = VAL_POINTER;
+
+				t1 = mono_store_tree (cfg, -1, t1, &t2);
+				g_assert (t1);
+				ADD_TREE (t1);
+				PUSH_TREE (t2, t2->svt);
 
 			} else {
 				
@@ -1765,30 +1793,22 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
 				t2 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t2, NULL);
-			}
 
-			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
-			t1->data.i = args_size;
-			t1->svt = svt;
-
-			if (newarr) {
-     
-				t1 = mono_store_tree (cfg, -1, t1, &t2);
-				g_assert (t1);
-				ADD_TREE (t1);
-				PUSH_TREE (t2, t2->svt);
-
-			} else {
+				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
+				t1->data.p = ci;
+				t1->svt = svt;
 
 				ADD_TREE (t1);			
 				t1 = ctree_create_dup (mp, this);		
 				PUSH_TREE (t1, t1->svt);
+
 			}
 			break;
 		}
 		case CEE_CALL: 
 		case CEE_CALLVIRT: {
 			MonoMethodSignature *csig;
+			MethodCallInfo *ci;
 			MonoMethod *cm;
 			MBTree *this = NULL;
 			guint32 token;
@@ -1796,6 +1816,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean array_set = FALSE;
 			gboolean array_get = FALSE;
+			gboolean pinvoke = FALSE;
 			int nargs, vtype_num = 0;
 
 			++ip;
@@ -1804,7 +1825,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			cm = mono_get_method (image, token, NULL);
 			g_assert (cm);
-			
+
+			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
+			ci->m = cm;
+
+			if (cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL)
+			    pinvoke = TRUE;
+
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
@@ -1829,7 +1856,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			for (i = nargs - 1; i >= 0; i--) {
-				t1 = mono_ctree_new (mp, MB_TERM_ARG, arg_sp [i], NULL);	
+				if (pinvoke && cm->signature->params [i]->type == MONO_TYPE_STRING) {
+					t1 = mono_ctree_new (mp, MB_TERM_STRING_ARG, arg_sp [i], NULL);
+				} else {
+					t1 = mono_ctree_new (mp, MB_TERM_ARG, arg_sp [i], NULL);
+				}	
 				ADD_TREE (t1);
 				size = mono_type_size (cm->signature->params [i], &align);
 				args_size += (size + 3) & ~3;
@@ -1837,31 +1868,18 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (csig->hasthis) {
 				this = *(--sp);
-				t1 = mono_ctree_new (mp, MB_TERM_ARG, this, NULL);	
-				ADD_TREE (t1);
 				args_size += sizeof (gpointer);
-			}
+			} else
+				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 
 			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
 				int size, align;
-
-				if ((size = mono_type_size (csig->ret, &align)) > 4 || size == 3) {
-
-					//printf ("VALUETYPE RETURN %s.%s::%s %d\n", cm->klass->name_space, 
-					//cm->klass->name, cm->name, size);
-				
+				if ((size = mono_type_size (csig->ret, &align)) > 4 || size == 3)
 					vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
-				
-					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
-					t2->data.i = vtype_num;
-				
-					t1 = mono_ctree_new (mp, MB_TERM_ARG, t2, NULL);	
-					ADD_TREE (t1);
-					t1->svt = VAL_POINTER;
-
-					args_size += sizeof (gpointer);
-				}
 			}
+
+			ci->args_size = args_size;
+			ci->vtype_num = vtype_num;
 
 			if (array_get) {
 				int size, align, vnum;
@@ -1869,8 +1887,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t2->data.p = ves_array_element_address;
 
-				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t2, NULL);
-				t1->data.i = args_size;
+				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
+				t1->data.p = ci;
 
 				t1 = mono_ctree_new (mp, map_ldind_type (csig->ret, &svt), t1, NULL);
 				t1->svt = svt;		
@@ -1892,8 +1910,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t2->data.p = ves_array_element_address;
 
-				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t2, NULL);
-				t1->data.i = args_size;
+				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
+				t1->data.p = ci;
 
 				t1 = mono_ctree_new (mp, map_stind_type (csig->params [nargs]), t1, arg_sp [nargs]);
 				ADD_TREE (t1);
@@ -1901,16 +1919,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else {
 
 				if (virtual) {
-				
-					t2 = ctree_create_dup (mp, this);
-			       
 					if (!cm->klass->metadata_inited)
 						mono_class_metadata_init (cm->klass);
 
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-						t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t2, NULL);
+						t2 = mono_ctree_new_leaf (mp, MB_TERM_INTF_ADDR);
 					else 
-						t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t2, NULL);
+						t2 = mono_ctree_new_leaf (mp, MB_TERM_VFUNC_ADDR);
 	 
 					t2->data.m = cm;
 
@@ -1924,8 +1939,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					t2 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t2, NULL);
 				}
 
-				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
-				t1->data.i = args_size;
+				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
+				t1->data.p = ci;
 				t1->svt = svt;
 
 				if (csig->ret->type != MONO_TYPE_VOID) {
@@ -2317,7 +2332,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			++ip;
 			--sp;
 
-			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (*ip), 
+			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, ARG_TYPE (*ip), 
 						 (gpointer)ARG_POS (*ip));
 			++ip;
 
@@ -2479,7 +2494,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			} else {
 				superblock_end = TRUE;
-				printf ("unreached block %d\n", i);
+				//printf ("unreached block %d\n", i);
 				repeat = TRUE;
 				g_assert (repeat_count < 10);
 			}
