@@ -1,0 +1,19 @@
+* Tools
+
+	We need a number of tools to make people productive using a
+	Mono-based solution.  Some of these tools can be developed on
+	Windows before Mono is fully finished.
+
+** Integrated Development Environment
+
+	There is already a project to create a C# development
+	environment (SharpDevelop).  People could work with the
+	SharpDevelop hackers to produce a unified development environment.
+
+** Help Browser
+
+	We need a good help browser that can be used to browse all the
+	Mono documentation.
+
+
+

@@ -67,5 +67,4 @@
 	PInvoke will be supported, and will be used to wrap Unix API
 	calls, these in turn are required for reusing some of the
 	GNOME libraries that will reduce the work we have to do to
-	deliver a complete class library
-
+	deliver a complete class library.

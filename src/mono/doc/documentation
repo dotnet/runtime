@@ -1,0 +1,46 @@
+* Documentation
+
+	A project like Mono will require a lot of documentation to be
+	written.  Although most of the concepts from Microsoft.NET can
+	be applied to the Mono platform once finished, we do need to
+	have a complete set of free documentation written for it.
+
+	The documentation license we have chosen is the FSF FDL which
+	is the standard for most documents on the free software
+	world. 
+
+	We need documentation to be written on a number of topics:
+
+		* The development tools (compilers, assembler tools,
+		  language reference, design time features).
+
+		* Freely redistributable Frequently Asked Question
+		  compilations.
+
+		* Freely redistributable HOWTO documents.
+
+		* The Class Libraries
+
+		* Tutorials on Mono and the specifics of running it
+		  compared to the Microsoft.NET Framework SDK
+
+		* Differences between the Microsoft.NET Framework SDK
+		  development mode and the Mono version.
+
+** Class Library documentation
+
+	When contributing to the Class Library effort, please use the
+	inline XML documentation tags to document your classes so we
+	can automatically generate the documentation from the class
+	libraries. 
+
+	If you provide examples, please do not embed them into the
+	source code, as that will make the source code harder to read
+	and maintain.  Instead put examples for your code into a
+	subdirectory of the class libraries.  Also make that sample
+	code a full standalone application that people can compile
+	(ideally our documentation browser could let you edit, modify
+	and run the sample programs, as Tcl/Tk used to let you do in
+	the past).
+
+
