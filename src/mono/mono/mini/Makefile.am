@@ -108,6 +108,7 @@ common_sources = \
 	liveness.c	\
 	ssa.c		\
 	abcremoval.c	\
+	abcremoval.h	\
 	driver.c	\
 	debug-mini.c	\
 	linear-scan.c	\
