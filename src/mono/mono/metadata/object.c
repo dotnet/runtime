@@ -243,8 +243,19 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			break;
 		}
 		case MONO_TYPE_STRING: {
-			/*gpointer *val = (gpointer*)t;
-			*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);*/
+			gpointer *val = (gpointer*)t;
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+			gunichar2 *copy = g_malloc (len);
+			int j;
+			for (j = 0; j < len/2; j++) {
+				copy [j] = read16 (p);
+				p += 2;
+			}
+			*val = mono_string_new_utf16 (domain, copy, len/2);
+			g_free (copy);
+#else
+			*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);
+#endif
 			break;
 		}
 		case MONO_TYPE_CLASS:
