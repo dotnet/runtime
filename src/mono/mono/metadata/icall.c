@@ -5534,9 +5534,11 @@ static const IcallEntry typebuilder_icalls [] = {
 
 static const IcallEntry runtimehelpers_icalls [] = {
 	{"GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue},
+	 /* REMOVEME: no longer needed, just so we dont break things when not needed */
 	{"GetOffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData},
 	{"InitializeArray", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray},
-	{"RunClassConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor}
+	{"RunClassConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor},
+	{"get_OffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData}
 };
 
 static const IcallEntry gchandle_icalls [] = {

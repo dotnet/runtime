@@ -2337,6 +2337,11 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 {
 	int pc, op;
 	MonoInst *ins;
+	
+	static MonoClass *runtime_helpers_class = NULL;
+	if (! runtime_helpers_class)
+		runtime_helpers_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Runtime.CompilerServices", "RuntimeHelpers");
 
 	if (cmethod->klass == mono_defaults.string_class) {
  		if (cmethod->name [0] != 'g')
@@ -2358,6 +2363,12 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		else if (strcmp (cmethod->name, "get_Length") == 0)
 			op = CEE_LDLEN;
 		else
+			return NULL;
+	} else if (cmethod->klass == runtime_helpers_class) {
+		if (strcmp (cmethod->name, "get_OffsetToStringData") == 0) {
+			NEW_ICONST (cfg, ins, G_STRUCT_OFFSET (MonoString, chars));
+			return ins;
+		} else
 			return NULL;
 	} else {
 		op = mono_arch_get_opcode_for_method (cfg, cmethod, fsig, args);
