@@ -52,25 +52,6 @@ delegate_hash_table_add (MonoDelegate *d);
 static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
-static MonoMethod *
-mono_find_method_by_name (MonoClass *klass, const char *name, int param_count)
-{
-	MonoMethod *res = NULL;
-	int i;
-
-	mono_class_init (klass);
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == name [0] && 
-		    !strcmp (name, klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == param_count) {
-			res = klass->methods [i];
-			break;
-		}
-	}
-	return res;
-}
-
 #ifdef DEBUG_RUNTIME_CODE
 static char*
 indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)

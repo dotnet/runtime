@@ -13,12 +13,14 @@
 #include <signal.h>
 #include <string.h>
 #include <mono/metadata/string-icalls.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/debug-helpers.h>
 
 /* Internal helper methods */
 
@@ -184,10 +186,32 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 				    gint32 length, MonoObject *enc)
 {
 	MONO_ARCH_SAVE_REGS;
+	MonoArray *arr;
+	MonoString *s;
+	MonoObject *exc;
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethod *get_string;
+	gpointer args [1];
 
-	g_warning("string.ctor with encoding obj unimplemented");
-	g_assert_not_reached ();
-	return NULL;
+	if ((value == NULL) || (length == 0))
+		return mono_string_new_size (mono_domain_get (), 0);
+	if (enc == NULL)
+		mono_raise_exception (mono_get_exception_argument_null ("enc"));
+	if (sindex < 0)
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("startIndex"));		
+	if (length < 0)
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("length"));
+
+	arr = mono_array_new (domain, mono_defaults.byte_class, length);
+	memcpy (mono_array_addr (arr, guint8*, 0), value + sindex, length);
+
+	get_string = mono_find_method_by_name (enc->vtable->klass, "GetString", 1);
+	args [0] = arr;
+	s = (MonoString*)mono_runtime_invoke (get_string, enc, args, &exc);
+	if (!s || exc)
+		mono_raise_exception (mono_get_exception_argument ("", "Unable to decode the array into a valid string."));
+
+	return s;
 }
 
 MonoString * 

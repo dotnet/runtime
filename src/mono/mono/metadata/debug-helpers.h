@@ -38,5 +38,7 @@ MonoMethod*     mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImag
 
 char*           mono_method_full_name (MonoMethod *method, gboolean signature);
 
+MonoMethod *    mono_find_method_by_name (MonoClass *klass, const char *name, int param_count);
+
 #endif /* __MONO_DEBUG_HELPERS_H__ */
 
