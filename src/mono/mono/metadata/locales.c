@@ -418,14 +418,14 @@ MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci,
 		MonoString *name)
 {
-	gchar *name;
+	gchar *locale;
 	gboolean ret;
 
 	MONO_ARCH_SAVE_REGS;
 
-	name = mono_string_to_utf8 (name);
-	ret = construct_culture_from_specific_name (ci, name);
-	g_free (name);
+	locale = mono_string_to_utf8 (name);
+	ret = construct_culture_from_specific_name (ci, locale);
+	g_free (locale);
 
 	return ret;
 }
