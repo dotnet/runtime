@@ -91,7 +91,7 @@
   </tr>
 </table>
 
-@item Jan 3rd, 2002: Glade#, Code Coverage, Apache, MBas, Debugger.
+@item Jan 3rd, 2003: Glade#, Code Coverage, Apache, MBas, Debugger.
 
 	Rachel has made Glade# use attributes so binding C# widgets to
 	the designed widgets is now easier than ever.  Alp has
