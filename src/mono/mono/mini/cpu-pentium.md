@@ -617,5 +617,6 @@ abs: dest:f src1:f len:2
 tan: dest:f src1:f len:2
 atan: dest:f src1:f len:2
 sqrt: dest:f src1:f len:2
+op_bigmul: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:i len:3
 sext_i2: dest:i src1:i len:3

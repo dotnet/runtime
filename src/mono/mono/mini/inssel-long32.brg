@@ -74,6 +74,9 @@ stmt: CEE_STIND_I8 (base, i8con) {
 					 state->left->tree->inst_offset, state->right->tree->inst_c0);
 }
 
+lreg: OP_BIGMUL (reg, reg) {
+	MONO_EMIT_NEW_BIALU (s, OP_BIGMUL, state->reg1, state->left->reg1, state->right->reg1); 
+}
 
 lreg: OP_LADD (lreg, lreg) {
 	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);

@@ -28,6 +28,29 @@ class Tests {
 	static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
 	}
+
+	static int test_1_bigmul1 () {
+		int a;
+		int b;
+		long c;
+		a = 10;
+		b = 10;
+		c = (long)a * (long)b;
+		if (c == 100)
+			return 1;
+		return 0;
+	}
+
+	static int test_1_bigmil2 () {
+                int a = System.Int32.MaxValue, b = System.Int32.MaxValue;
+                long s = System.Int64.MinValue;
+                long c;
+                c = s + (long) a * (long) b;
+		if (c == -4611686022722355199)
+			return 1;
+		return 0;
+
+	}
 	
 	static int test_0_beq () {
 		long a = 0xffffffffff;

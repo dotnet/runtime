@@ -278,6 +278,9 @@ MINI_OP(OP_CALL_HANDLER  , "call_handler")
 MINI_OP(OP_START_HANDLER  , "start_handler")
 MINI_OP(OP_ENDFILTER,  "op_endfilter")
 
+/* inline (long)int * (long)int */
+MINI_OP(OP_BIGMUL, "op_bigmul")
+
 /* opcodes most architecture have */
 MINI_OP(OP_ADC,     "adc")
 MINI_OP(OP_ADC_IMM, "adc_imm")

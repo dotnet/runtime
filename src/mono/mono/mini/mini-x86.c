@@ -1638,6 +1638,19 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 			mono_regstate_free_int (rs, ins->dreg);
 		}
+		/* put src1 in EAX if it needs to be */
+		if (spec [MONO_INST_SRC1] == 'a') {
+			if (!(rs->ifree_mask & (1 << X86_EAX))) {
+				DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [X86_EAX]));
+				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [X86_EAX]);
+				mono_regstate_free_int (rs, X86_EAX);
+			}
+			/* force-set sreg1 */
+			rs->iassign [ins->sreg1] = X86_EAX;
+			rs->isymbolic [X86_EAX] = ins->sreg1;
+			ins->sreg1 = X86_EAX;
+			rs->ifree_mask &= ~ (1 << X86_EAX);
+		}
 		if (spec [MONO_INST_SRC1] != 'f' && ins->sreg1 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg1];
 			prev_sreg1 = ins->sreg1;
@@ -1945,6 +1958,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
+		case OP_BIGMUL:
+			x86_mul_reg (code, ins->sreg2, FALSE);
+			break;
 		case OP_X86_SETEQ_MEMBASE:
 			x86_set_membase (code, X86_CC_EQ, ins->inst_basereg, ins->inst_offset, TRUE);
 			break;

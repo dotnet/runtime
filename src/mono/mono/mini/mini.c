@@ -5469,8 +5469,18 @@ dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 		}
 
 		break;
-	case 2: 
-		if ((info = mono_find_jit_opcode_emulation (tree->opcode))) {
+	case 2:
+	       	if (tree->opcode == OP_LMUL
+				&& (cfg->opt & MONO_OPT_INTRINS)
+				&& (tree->inst_left->opcode == CEE_CONV_I8)
+				&& tree->inst_left->inst_left->type == STACK_I4
+				&& (tree->inst_right->opcode == CEE_CONV_I8)
+				&& tree->inst_right->inst_left->type == STACK_I4) {
+			tree->opcode = OP_BIGMUL;
+			tree->inst_left = tree->inst_left->inst_left;
+			tree->inst_right = tree->inst_right->inst_left;
+			dec_foreach (tree, cfg);
+		} else if ((info = mono_find_jit_opcode_emulation (tree->opcode))) {
 			MonoInst *iargs [2];
 		
 			iargs [0] = tree->inst_i0;
