@@ -228,8 +228,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	ass->basedir = base_dir;
 	ass->image = image;
 
-	image->assembly = ass;
-
 	t = &image->tables [MONO_TABLE_ASSEMBLY];
 	if (t->rows) {
 		mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
@@ -252,6 +250,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 			return ass2;
 		}
 	}
+
+	image->assembly = ass;
 
 	/* register right away to prevent loops */
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
