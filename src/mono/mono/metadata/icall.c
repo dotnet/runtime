@@ -2849,25 +2849,34 @@ handle_parent:
 			method = event->remove;
 		if (!method)
 			method = event->raise;
-		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
-			if (bflags & BFLAGS_Public)
-				match++;
-		} else {
-			if (bflags & BFLAGS_NonPublic)
-				match++;
+		if (method) {
+			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+				if (bflags & BFLAGS_Public)
+					match++;
+			} else {
+				if (bflags & BFLAGS_NonPublic)
+					match++;
+			}
 		}
+		else
+			if (bflags & BFLAGS_NonPublic)
+				match ++;
 		if (!match)
 			continue;
 		match = 0;
-		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-			if (bflags & BFLAGS_Static)
-				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+		if (method) {
+			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+				if (bflags & BFLAGS_Static)
+					if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+						match++;
+			} else {
+				if (bflags & BFLAGS_Instance)
 					match++;
-		} else {
-			if (bflags & BFLAGS_Instance)
-				match++;
+			}
 		}
-
+		else
+			if (bflags & BFLAGS_Instance)
+				match ++;
 		if (!match)
 			continue;
 		match = 0;
