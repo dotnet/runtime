@@ -2251,24 +2251,10 @@ mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 origina
 	
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
 
-	parent = mono_metadata_token_index (original);
-	parent <<= MEMBERREF_PARENT_BITS;
-	switch (mono_metadata_token_table (original)) {
-	case MONO_TABLE_METHOD:
-		parent |= MEMBERREF_PARENT_METHODDEF;
-		break;
-	case MONO_TABLE_MEMBERREF:
-		parent |= MEMBERREF_PARENT_TYPEREF;
-		break;
-	default:
-		g_warning ("got wrong token in varargs method token");
-		return 0;
-	}
-
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
-		values [MONO_MEMBERREF_CLASS] = parent;
+		values [MONO_MEMBERREF_CLASS] = original;
 		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
 		values [MONO_MEMBERREF_SIGNATURE] = sig;
 	}
@@ -3837,15 +3823,13 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj,
 				MonoArray *opt_param_types)
 {
 	MonoClass *klass;
-	guint32 original_token, token = 0;
-
-	original_token = mono_image_create_token (assembly, obj);
+	guint32 token = 0;
 
 	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MonoMethod") == 0) {
 		MonoMethod *method = ((MonoReflectionMethod *)obj)->method;
 		MonoMethodSignature *sig, *old;
-		guint32 sig_token;
+		guint32 sig_token, parent;
 		int nargs, i;
 
 		g_assert (opt_param_types && (method->signature->sentinelpos >= 0));
@@ -3872,21 +3856,34 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj,
 			sig->params [old->param_count + i] = rt->type;
 		}
 
+		parent = mono_image_typedef_or_ref (assembly, &method->klass->byval_arg);
+		g_assert ((parent & TYPEDEFORREF_MASK) == MEMBERREF_PARENT_TYPEREF);
+		parent >>= TYPEDEFORREF_BITS;
+
+		parent <<= MEMBERREF_PARENT_BITS;
+		parent |= MEMBERREF_PARENT_TYPEREF;
+
 		sig_token = method_encode_signature (assembly, sig);
 		token = mono_image_get_varargs_method_token (
-			assembly, original_token, method->name, sig_token);
+			assembly, parent, method->name, sig_token);
 	} else if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		ReflectionMethodBuilder rmb;
-		guint32 sig;
+		guint32 parent, sig;
 	
 		reflection_methodbuilder_from_method_builder (&rmb, mb);
 		rmb.opt_types = opt_param_types;
 
 		sig = method_builder_encode_signature (assembly, &rmb);
 
+		parent = mono_image_create_token (assembly, obj);
+		g_assert (mono_metadata_token_table (parent) == MONO_TABLE_METHOD);
+
+		parent = mono_metadata_token_index (parent) << MEMBERREF_PARENT_BITS;
+		parent |= MEMBERREF_PARENT_METHODDEF;
+
 		token = mono_image_get_varargs_method_token (
-			assembly, original_token, mono_string_to_utf8 (rmb.name), sig);
+			assembly, parent, mono_string_to_utf8 (rmb.name), sig);
 	} else
 		g_error ("requested method token for %s\n", klass->name);
 
