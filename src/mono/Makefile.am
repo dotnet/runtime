@@ -23,25 +23,30 @@ DISTCLEANFILES= mono.pc mint.pc
 # problems by doing the compilation in the right order.
 #
 
-fullbuild: remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest install
+mcs_topdir=$(top_srcdir)/../mcs
 
-mcs-tree-safe-build:
-	(cd ../mcs/jay; $(MAKE))
-	(cd ../mcs/mcs; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs)
-	(cd ../mcs/class/corlib; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs)
-	cp ../mcs/class/lib/mscorlib.dll runtime
-	cp ../mcs/mcs/mcs.exe runtime
+.PHONY: fullbuild remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest
 
-xinstall-runtime:
-	if echo $(SUBDIRS) | grep "libgc " > /dev/null; then (cd libgc; $(MAKE) && $(MAKE) install); fi
-	(cd mono; $(MAKE) && $(MAKE) install)
-	(cd runtime; $(MAKE) install assemblies_DATA=mscorlib.dll monobins_DATA=mcs.exe)
+fullbuild: mcs-rest
+	$(MAKE) install
 
-mcs-rest:
-	(cd ../mcs/class; $(MAKE))
+mcs-tree-safe-build: remove-binaries
+	cd $(mcs_topdir)/jay; $(MAKE)
+	cd $(mcs_topdir)/mcs; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
+	cd $(mcs_topdir)/class/corlib; $(MAKE) MCS=mcs BOOTqSTRAP_MCS=mcs
+	cp $(mcs_topdir)/class/lib/mscorlib.dll $(top_srcdir)/runtime
+	cp $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime
+
+xinstall-runtime: mcs-tree-safe-build
+	if test -z "$(libgc_dir)"; then :; else cd libgc; $(MAKE) && $(MAKE) install ; fi
+	cd mono; $(MAKE) && $(MAKE) install
+	cd runtime; $(MAKE) install assemblies_DATA=mscorlib.dll monobins_DATA=mcs.exe
+
+mcs-rest: xinstall-runtime
+	cd $(mcs_topdir)/class; $(MAKE)
 
 remove-binaries:
-	rm ../mcs/class/lib/mscorlib.dll ../mcs/mcs/mcs.exe runtime/*dll runtime/*.exe > /dev/null 2>&1; echo
+	rm -f $(mcs_topdir)/class/lib/mscorlib.dll $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime/*.dll $(top_srcdir)/runtime/*.exe
 
 
 win32getdeps:

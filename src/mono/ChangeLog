@@ -1,4 +1,15 @@
+2004-04-13  Raja R Harinath  <rharinath@novell.com>
+
+	Allow 'make fullbuild' to work on non-srcdir build.
+	* Makefile.am (mcs_topdir): New variable.
+	(mcs-tree-safe-build,mcs-rest,remove-binaries): Work in non-srcdir
+	build.
+	(xinstall-runtime): Likewise.  Use $(libgc_dir) directly, don't
+	grep for 'libgc'.
+	(fullbuild): Make ordering dependencies explicit.
+	
 2004-04-12  Sachin Kumar <skumar1@novell.com>
+
 	* Makefile.am: Added 'web' in SUBDIRS
 
 2004-04-07  Gonzalo Paniagua Javier <gonzalo@ximian.com>
@@ -611,7 +622,6 @@ Thu Jul 31 16:19:07 CEST 2003 Paolo Molaro <lupus@ximian.com>
 	* man/sqlsharp.1: changed pass= to password= for the 
 	  PostgreSql provider.
 
->>>>>>> 1.166
 2003-03-31  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* data/machine.config: added SessionStateModule to httpModules section.
