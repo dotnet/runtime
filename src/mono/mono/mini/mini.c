@@ -8899,6 +8899,7 @@ mono_runtime_install_handlers (void)
 static void
 setup_stat_profiler (void)
 {
+#ifdef ITIMER_PROF
 	struct itimerval itval;
 	static int inited = 0;
 
@@ -8910,6 +8911,7 @@ setup_stat_profiler (void)
 		return;
 	inited = 1;
 	add_signal_handler (SIGPROF, sigprof_signal_handler);
+#endif
 }
 
 /* mono_jit_create_remoting_trampoline:
