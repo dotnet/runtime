@@ -61,7 +61,8 @@
 	world that only has a test suite.  
 	
 	To get started writing tests see the <a href="testing.html">Test Suite</a>
-	section.
+	section. <a href="mono-contribution-howto">Here</a> there is a good All-In-One introduction to the art of writing tests.
+
 
 *** Contributing to the runtime engine
 
