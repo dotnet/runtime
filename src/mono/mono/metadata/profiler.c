@@ -2,6 +2,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
+#include "mono/io-layer/critical-sections.h"
 #include <string.h>
 #include <gmodule.h>
 
@@ -41,6 +42,8 @@ static MonoProfileCoverageFilterFunc coverage_filter_cb;
 
 static MonoProfileFunc shutdown_callback;
 
+static CRITICAL_SECTION profiler_coverage_mutex;
+
 /* this is directly accessible to other mono libs. */
 MonoProfileFlags mono_profiler_events;
 
@@ -51,6 +54,7 @@ mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
 		g_error ("profiler already setup");
 	current_profiler = prof;
 	shutdown_callback = callback;
+	InitializeCriticalSection (&profiler_coverage_mutex);
 }
 
 void
@@ -343,6 +347,7 @@ mono_profiler_coverage_alloc (MonoMethod *method, int entries)
 		if (! (*coverage_filter_cb) (current_profiler, method))
 			return NULL;
 
+	EnterCriticalSection (&profiler_coverage_mutex);
 	if (!coverage_hash)
 		coverage_hash = g_hash_table_new (NULL, NULL);
 
@@ -351,6 +356,7 @@ mono_profiler_coverage_alloc (MonoMethod *method, int entries)
 	res->entries = entries;
 
 	g_hash_table_insert (coverage_hash, method, res);
+	LeaveCriticalSection (&profiler_coverage_mutex);
 
 	return res;
 }
@@ -360,13 +366,19 @@ void
 mono_profiler_coverage_free (MonoMethod *method)
 {
 	MonoProfileCoverageInfo* info;
-	if (!coverage_hash)
+
+	EnterCriticalSection (&profiler_coverage_mutex);
+	if (!coverage_hash) {
+		LeaveCriticalSection (&profiler_coverage_mutex);
 		return;
+	}
+
 	info = g_hash_table_lookup (coverage_hash, method);
-	if (!info)
-		return;
-	g_free (info);
-	g_hash_table_remove (coverage_hash, method);
+	if (info) {
+		g_free (info);
+		g_hash_table_remove (coverage_hash, method);
+	}
+	LeaveCriticalSection (&profiler_coverage_mutex);
 }
 
 void 
@@ -379,7 +391,10 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	MonoMethodHeader *header;
 	MonoProfileCoverageEntry entry;
 
+	EnterCriticalSection (&profiler_coverage_mutex);
 	info = g_hash_table_lookup (coverage_hash, method);
+	LeaveCriticalSection (&profiler_coverage_mutex);
+
 	if (!info)
 		return;
 
