@@ -67,9 +67,7 @@
 	    </td>
 	    <td>
 	      Working:<br>
-	      Linux/x86, Linux/PPC, S390, StrongARM<br>
-	      In progress:<br>
-	      SPARC.
+	      Linux/x86, Linux/PPC, S390, StrongARM, SPARC, HPPA, SPARC v9 <br>
 	    </td>
 	  </tr>
 	  <tr>
@@ -141,6 +139,33 @@
     </td>
   </tr>
 </table>
+
+@item Oct 13th: SPARC V9, HPPA, Internationalization, GdiPlus
+
+	Dick Porter has checked in our rewrite of the international
+	substrate in Mono that uses the <a
+	href="http://oss.software.ibm.com/icu/">International
+	Components for Unicode</a> library from IBM.  This means that
+	we got CultureInfo support through the whole code base now.
+
+	Alexandre Pigolkine has checked-in the new implementation of
+	System.Drawing.  We have now dropped the old implementation
+	with multiple-backends that we had, and replaced it with an
+	implementation that P/Invokes into GDI+.  A GDI+
+	implementation on top of <a
+	href="http://www.cairographics.org">Cairo</a> is used on Unix
+	systems.  This step vastly simplifies the development and
+	maintenance of System.Drawing. 
+
+	There are plenty of updates to Mono as well, we encourage you
+	to read the <a
+	href="http://www.go-mono.com/monologue">Monologue</a> to keep
+	an eye on recent developments.
+
+	Bernie Solomon just <a
+	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-October/002460.html">checked
+	in</a> 64-bit support for SPARC v9 and HPPA into the Mono
+	runtime.  This also improves the SPARC-32 support.
 
 @item Oct 6th: Linux s390 Mono packages available.
 
