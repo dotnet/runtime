@@ -93,6 +93,10 @@
 	href="http://lists.ximian.com/mailman/listinfo/mono-docs-list">mono-docs-list:</a></b>
 	Discussion on the documentation of Mono.
 		* <b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-patches">mono-patches:</a></b>
+	Track the development of Mono in realtime: receive patches to the Mono repository
+	by email.
+		* <b><a
 	href="http://discuss.develop.com/dotnet.html">Dotnet mailing
 	list at Develop.com:</a></b> The guys at Develop Mentor run
 	this general purpose mailing list.
