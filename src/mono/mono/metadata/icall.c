@@ -37,6 +37,9 @@
 #include <mono/metadata/string-icalls.h>
 #include <mono/io-layer/io-layer.h>
 
+#if defined (PLATFORM_WIN32)
+#include <windows.h>
+#endif
 #include "decimal.h"
 
 static MonoString *
@@ -1737,7 +1740,14 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 static gint64
 ves_icall_System_DateTime_GetNow (void)
 {
-#ifndef PLATFORM_WIN32
+#ifdef PLATFORM_WIN32
+	SYSTEMTIME st;
+	FILETIME ft;
+	
+	GetLocalTime (&st);
+	SystemTimeToFileTime (&st, &ft);
+	return (gint64)504911232000000000L + (((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime;
+#else
 	/* FIXME: put this in io-layer and call it GetLocalTime */
 	struct timeval tv;
 	gint64 res;
@@ -1746,10 +1756,9 @@ ves_icall_System_DateTime_GetNow (void)
 		res = (((gint64)tv.tv_sec + EPOCH_ADJUST)* 1000000 + tv.tv_usec)*10;
 		return res;
 	}
-
 	/* fixme: raise exception */
-#endif
 	return 0;
+#endif
 }
 
 /*
@@ -1837,9 +1846,38 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 		gmtoff = tt.tm_gmtoff;
 	}
 	return 1;
+#else
+	MonoDomain *domain = mono_domain_get ();
+	TIME_ZONE_INFORMATION tz_info;
+	FILETIME ft;
+	int i;
+
+	GetTimeZoneInformation (&tz_info);
+
+	MONO_CHECK_ARG_NULL (data);
+	MONO_CHECK_ARG_NULL (names);
+
+	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
+	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
+
+	for (i = 0; i < 32; ++i)
+		if (!tz_info.DaylightName [i])
+			break;
+	mono_array_set ((*names), gpointer, 1, mono_string_new_utf16 (domain, tz_info.DaylightName, i));
+	for (i = 0; i < 32; ++i)
+		if (!tz_info.StandardName [i])
+			break;
+	mono_array_set ((*names), gpointer, 0, mono_string_new_utf16 (domain, tz_info.StandardName, i));
+
+	SystemTimeToFileTime (&tz_info.StandardDate, &ft);
+	mono_array_set ((*data), gint64, 1, ((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime);
+	SystemTimeToFileTime (&tz_info.DaylightDate, &ft);
+	mono_array_set ((*data), gint64, 0, ((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime);
+	mono_array_set ((*data), gint64, 3, tz_info.Bias + tz_info.StandardBias);
+	mono_array_set ((*data), gint64, 2, tz_info.Bias + tz_info.DaylightBias);
+
+	return 1;
 #endif
-	/* FIXME: This is a reminder to implement this icall on windows */
-	return 0;
 }
 
 static gpointer

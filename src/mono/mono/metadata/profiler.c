@@ -314,6 +314,7 @@ mono_profiler_shutdown (void)
  */
 
 #define USE_X86TSC 0
+#define USE_WIN32COUNTER 0
 #if USE_X86TSC
 
 typedef struct {
@@ -371,15 +372,64 @@ have_rdtsc (void) {
 #define MONO_TIMER_STOP(t) rdtsc ((t).lowe, (t).highe);
 #define MONO_TIMER_ELAPSED(t) rdtsc_elapsed (&(t))
 
+#elif USE_WIN32COUNTER
+#include <windows.h>
+
+typedef struct {
+	LARGE_INTEGER start, stop;
+} MonoWin32Timer;
+
+static int freq;
+
+static double
+win32_elapsed (MonoWin32Timer *t)
+{
+	LONGLONG diff = t->stop.QuadPart - t->start.QuadPart;
+	return ((double)diff / freq) / 1000000; /* have to return the result in seconds */
+}
+
+static int 
+have_win32counter (void) {
+	LARGE_INTEGER f;
+
+	if (!QueryPerformanceFrequency (&f))
+		return 0;
+	return f.LowPart;
+}
+
+#define MONO_TIMER_STARTUP 	\
+	if (!(freq = have_win32counter ())) g_error ("Compiled with Win32 counter support, but none found");
+#define MONO_TIMER_TYPE  MonoWin32Timer
+#define MONO_TIMER_INIT(t)
+#define MONO_TIMER_DESTROY(t)
+#define MONO_TIMER_START(t) QueryPerformanceCounter (&(t).start)
+#define MONO_TIMER_STOP(t) QueryPerformanceCounter (&(t).stop)
+#define MONO_TIMER_ELAPSED(t) win32_elapsed (&(t))
+
 #else
 
+typedef struct {
+	GTimeVal start, stop;
+} MonoGLibTimer;
+
+static double
+timeval_elapsed (MonoGLibTimer *t)
+{
+	if (t->start.tv_usec > t->stop.tv_usec) {
+		t->stop.tv_usec += G_USEC_PER_SEC;
+		t->stop.tv_sec--;
+	}
+	return (t->stop.tv_sec - t->start.tv_sec) 
+		+ ((double)(t->stop.tv_usec - t->start.tv_usec))/ G_USEC_PER_SEC;
+}
+
 #define MONO_TIMER_STARTUP
-#define MONO_TIMER_TYPE GTimer *
-#define MONO_TIMER_INIT(t) (t) = g_timer_new ()
-#define MONO_TIMER_DESTROY(t) g_timer_destroy ((t))
-#define MONO_TIMER_START(t) g_timer_start ((t))
-#define MONO_TIMER_STOP(t) g_timer_stop ((t))
-#define MONO_TIMER_ELAPSED(t) g_timer_elapsed ((t), NULL)
+#define MONO_TIMER_TYPE MonoGLibTimer
+#define MONO_TIMER_INIT(t)
+#define MONO_TIMER_DESTROY(t)
+#define MONO_TIMER_START(t) g_get_current_time (&(t).start)
+#define MONO_TIMER_STOP(t) g_get_current_time (&(t).stop)
+#define MONO_TIMER_ELAPSED(t) timeval_elapsed (&(t))
 #endif
 
 struct _MonoProfiler {
@@ -398,6 +448,14 @@ typedef struct {
 	guint64 count;
 	double total;
 } MethodProfile;
+
+typedef struct _MethodCallProfile MethodCallProfile;
+
+struct _MethodCallProfile {
+	MethodCallProfile *next;
+	MONO_TIMER_TYPE timer;
+	MonoMethod *method;
+};
 
 static gint
 compare_profile (MethodProfile *profa, MethodProfile *profb)
@@ -420,11 +478,13 @@ output_profile (GList *funcs)
 	MethodProfile *p;
 	char buf [256];
 	char *sig;
+	guint64 total_calls = 0;
 
 	if (funcs)
 		g_print ("Method name\t\t\t\t\tTotal (ms) Calls Per call (ms)\n");
 	for (tmp = funcs; tmp; tmp = tmp->next) {
 		p = tmp->data;
+		total_calls += p->count;
 		if (!(gint)(p->total*1000))
 			continue;
 		sig = mono_signature_get_desc (p->u.method->signature, FALSE);
@@ -435,6 +495,7 @@ output_profile (GList *funcs)
 		printf ("%-52s %7d %7llu %7d\n", buf,
 			(gint)(p->total*1000), p->count, (gint)((p->total*1000)/p->count));
 	}
+	printf ("Total number of calls: %lld\n", total_calls);
 }
 
 typedef struct {
@@ -471,7 +532,7 @@ output_newobj_profile (GList *proflist)
 	for (tmp = proflist; tmp; tmp = tmp->next) {
 		p = tmp->data;
 		klass = p->klass;
-		if (strcmp (klass->name, "Array") == 0) {
+		if (klass->rank) {
 			isarray = "[]";
 			klass = klass->element_class;
 		} else {
@@ -510,8 +571,8 @@ simple_method_leave (MonoProfiler *prof, MonoMethod *method)
 static void
 simple_method_jit (MonoProfiler *prof, MonoMethod *method)
 {
-	MONO_TIMER_START (prof->jit_timer);
 	prof->methods_jitted++;
+	MONO_TIMER_START (prof->jit_timer);
 }
 
 static void
