@@ -122,6 +122,14 @@ class Tests {
 		return pass_bytes (0, 1, 2, 3, 4, 5, 6);
 	}
 
+	static int pass_sbytes (sbyte a, sbyte b, sbyte c, sbyte d, sbyte e, sbyte f, sbyte g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int test_21_sparc_sbyte_argument_passing () {
+		return pass_sbytes (0, 1, 2, 3, 4, 5, 6);
+	}
+
 	static int pass_shorts (short a, short b, short c, short d, short e, short f, short g) {
 		return (int)(a + b + c + d + e + f + g);
 	}
@@ -150,6 +158,37 @@ class Tests {
 	// when the argument must reside in the stack because its address is taken
 	static int test_1_sparc_takeaddr_argument_passing () {
 		return pass_takeaddr_ints_longs (1, 2, System.Int64.MaxValue, System.Int64.MinValue, System.Int64.MaxValue, 0, System.Int64.MinValue);
+	}
+
+	static void shift_un_arg (ulong value) {
+		do {
+			value = value >> 4;
+		} while (value != 0);
+	}
+
+	// Test that assignment to long arguments work
+	static int test_0_long_arg_assign ()
+	{
+		ulong c = 0x800000ff00000000;
+			
+		shift_un_arg (c >> 4);
+
+		return 0;
+	}
+
+	static unsafe void* ptr_return (void *ptr)
+	{
+		return ptr;
+	}
+
+	static unsafe int test_0_ptr_return ()
+	{
+		void *ptr = new IntPtr (55).ToPointer ();
+
+		if (byref_return (ptr) == ptr)
+			return 0;
+		else
+			return 1;
 	}
 
 	static bool isnan (float f) {
