@@ -13,7 +13,9 @@
 	Our implementation is a C# wrapper around the GDI+ C API (also
 	called the "GDI+ Flat API").  
 
+	<center>
 	<img src="images/system-drawing.png">
+	</center>
 
 	In Windows Mono uses the GDI+ library that is included
 	with the operating system, while in Unix we provide an
@@ -21,8 +23,9 @@
 	lifting. 
 
 	The implementation of GDI+ lives in mcs/class/System.Drawing
-	in the gdiplus directory and requires Cairo to be installed to
-	get the package built.
+	in the gdiplus directory and requires <a
+	href="http://www.cairographics.org">Cairo</a> to be installed
+	to get the package built.
 
 	The C# code that implement System.Drawing is the same for
 	Windows and Unix builds.

@@ -20,6 +20,7 @@ OBJECTS=									\
 	deploy/ccvs.html							\
 	deploy/documentation.html						\
 	deploy/download.html							\
+	deploy/drawing.html							\
 	deploy/crypto.html							\
 	deploy/embedded-api.html						\
 	deploy/faq.html								\
@@ -79,6 +80,7 @@ OBJECTS=									\
 	deploy/class-status-System.Drawing.html					\
 	deploy/class-status-Microsoft.VisualBasic.html				\
 	deploy/class-status-System.Windows.Forms.html				\
+	deploy/class-status-System.DirectoryServices.html			\
 	deploy/class-status-Cscompmgd.html					\
 	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html
 
@@ -189,6 +191,9 @@ infos/System.Xml.xml: ../../../mcs/class/lib/System.Xml.dll $(CORCOMPARE)/mono-a
 
 src/System.Xml.xml: infos/System.Xml.xml $(CORCOMPARE)/mono-api-diff.exe 
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.Xml.xml $< > $@ || (rm -f $@ && exit 1)
+
+src/System.DirectoryServices.xml: infos/System.DirectoryServices.xml $(CORCOMPARE)/mono-api-diff.exe 
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.DirectoryServices.xml $< > $@ || (rm -f $@ && exit 1)
 
 ../class-status: ../class-status.in
 	cp -f $< $@

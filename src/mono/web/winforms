@@ -90,9 +90,7 @@
 
 * System.Drawing
 
-	We currently have two code paths: the Wine-based
-	System.Drawing and the Cairo-based one.  We will eventually
-	unify everything to use Cairo, but currently the effort can
-	continue with the approach we have.
-
+	For details, see the <a
+	href="drawing.html">System.Drawing implementation notes</a>
+	section of the web site.
 

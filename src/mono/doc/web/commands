@@ -42,6 +42,7 @@
 1,Debugging,jit-debug.html,jit-debug.src
 0,Plans,plans.html,plans.src
 1,ADO.NET,ado-net.html,ado-net.src
+1,Drawing,drawing.html,drawing.src
 2,ProviderFactory,provider-factory.html,provider-factory.src
 2,Firebird Interbase,firebird.html,firebird.src
 2,IBM DB2,ibmdb2.html,ibmdb2.src
@@ -68,6 +69,7 @@
 1,Web.Services,class-status-System.Web.Services.html,class-status-System.Web.Services.src,cm/cormissing.css,cm/cormissing.js
 1,Microsoft.VisualBasic,class-status-Microsoft.VisualBasic.html,class-status-Microsoft.VisualBasic.src,cm/cormissing.css,cm/cormissing.js
 1,Windows.Forms,class-status-System.Windows.Forms.html,class-status-System.Windows.Forms.src,cm/cormissing.css,cm/cormissing.js
+1,DirectoryServices,class-status-System.DirectoryServices.html,class-status-System.DirectoryServices.src,cm/cormissing.css,cm/cormissing.js
 1,Formatters.Soap,class-status-System.Runtime.Serialization.Formatters.Soap.html,class-status-System.Runtime.Serialization.Formatters.Soap.src,cm/cormissing.css,cm/cormissing.js
 1,Cscompmgd,class-status-Cscompmgd.html,class-status-Cscompmgd.src,cm/cormissing.css,cm/cormissing.js
 1,System.Security,class-status-System.Security.html,class-status-System.Security.src,cm/cormissing.css,cm/cormissing.js
