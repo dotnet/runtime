@@ -782,13 +782,14 @@ dis_generic_param_and_constraints (MonoImage *m, int table_type, guint32 typedef
         guint32 ccols [MONO_GENPARCONSTRAINT_SIZE];
 	int i, own_tok, table, idx, found_count, cnst_start, cnst_ind;
 
+        g_assert (table_type != MONO_TYPEORMETHOD_TYPE || table_type != MONO_TYPEORMETHOD_METHOD);
         
         found_count = cnst_start = 0;
 	for (i = 1; i <= t->rows; i++) {
 		mono_metadata_decode_row (t, i-1, cols, MONO_GENERICPARAM_SIZE);
                 own_tok = cols [MONO_GENERICPARAM_OWNER];
-                table = own_tok & 0x01;
-                idx = own_tok >> 1;
+                table = own_tok & MONO_TYPEORMETHOD_MASK;
+                idx = own_tok >> MONO_TYPEORMETHOD_BITS;
                 
                 if (table != table_type || idx != typedef_row)
                         continue;
@@ -839,7 +840,7 @@ dis_type (MonoImage *m, int n)
 	guint32 packing_size, class_size;
 	gboolean next_is_valid, last;
 	guint32 nested;
-	
+
 	mono_metadata_decode_row (t, n, cols, MONO_TYPEDEF_SIZE);
 
 	if (t->rows > n + 1) {
@@ -855,7 +856,7 @@ dis_type (MonoImage *m, int n)
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
 		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
-                cnst_block = dis_generic_param_and_constraints (m, 0, n+1);
+                cnst_block = dis_generic_param_and_constraints (m, MONO_TYPEORMETHOD_TYPE, n+1);
                 fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
 			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);

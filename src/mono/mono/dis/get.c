@@ -266,8 +266,8 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 	/*
 	 * low 2 bits contain encoding
 	 */
-	table = dor_token & 0x03;
-	idx = dor_token >> 2;
+	table = dor_token & TYPEDEFORREF_MASK;
+	idx = dor_token >> TYPEDEFORREF_BITS;
 	
 	switch (table){
 	case 0: /* TypeDef */
@@ -308,10 +308,10 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 char *
 get_type_or_methdef (MonoImage *m, guint32 dor_token)
 {
-        if (dor_token & 0x01) /* MethodDef */
-		return get_methoddef (m, dor_token >> 1);
+        if (dor_token & MONO_TYPEORMETHOD_METHOD) /* MethodDef */
+		return get_methoddef (m, dor_token >> MONO_TYPEORMETHOD_BITS);
         else  /* TypeDef */
-                return get_typedef (m, dor_token >> 1);
+                return get_typedef (m, dor_token >> MONO_TYPEORMETHOD_BITS);
 }
 
 /** 
@@ -488,14 +488,14 @@ get_generic_param (MonoImage *m, int table_type, guint32 row)
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	int i, own_tok, table, idx, found_count;
 
-        g_assert (table_type != 0 || table_type != 1);
+        g_assert (table_type != MONO_TYPEORMETHOD_TYPE || table_type != MONO_TYPEORMETHOD_METHOD);
         
         found_count = 0;
 	for (i = 1; i <= t->rows; i++) {
 		mono_metadata_decode_row (t, i-1, cols, MONO_GENERICPARAM_SIZE);
                 own_tok = cols [MONO_GENERICPARAM_OWNER];
-                table = own_tok & 0x01;
-                idx = own_tok >> 1;
+                table = own_tok & MONO_TYPEORMETHOD_MASK;
+                idx = own_tok >> MONO_TYPEORMETHOD_BITS;
                 
                 if (table != table_type || idx != row)
                         continue;
