@@ -236,6 +236,8 @@ class_compute_field_layout (MonoClass *class)
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 
+		class->fields [i].parent = class;
+
 		if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			if (class->fields [i].type->byref) {
 				blittable = FALSE;
