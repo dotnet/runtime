@@ -206,48 +206,28 @@ newobj (MonoImage *image, guint32 token)
 #undef DEBUG_VM_DISPATCH
 
 static MonoMethod*
-get_virtual_method (MonoImage *image, guint32 token, stackval *args)
+get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
 {
-	MonoMethod *m;
 	MonoObject *obj;
 	MonoClass *klass;
-	stackval *objs;
 	int i;
 	
-	switch (mono_metadata_token_table (token)) {
-	case MONO_TABLE_METHOD:
-	case MONO_TABLE_MEMBERREF:
-		m = mono_get_method (image, token, NULL);
-		objs = &args [-(m->signature->param_count + 1)];
-		obj = objs->data.p;
-		klass = objs->data.vt.klass ? objs->data.vt.klass: obj->klass;
-#ifdef DEBUG_VM_DISPATCH
-		g_print ("%s%smethod lookup %s.%s::%s (cast class %s; real class %s)\n", 
-					m->flags & METHOD_ATTRIBUTE_VIRTUAL ? "virtual ": "",
-					m->flags & METHOD_ATTRIBUTE_FINAL ? "final ": "",
-					m->klass->name_space, m->klass->name, m->name, klass->name, obj->klass->name);
-#endif
-		if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
+	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
-		if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
-			klass = obj->klass;
-		for (; klass && klass != m->klass; klass = klass->parent) {
-			for (i = 0; i < klass->method.count; ++i) {
-				if (!klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
-					continue;
-				if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature)) {
-#ifdef DEBUG_VM_DISPATCH
-					g_print ("\tfound %s%s.%s::%s\n", klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL ? "virtual ": "",
-							klass->name_space, klass->name, klass->methods [i]->name);
-#endif
-					return klass->methods [i];
-				}
+	obj = objs->data.p;
+	klass = objs->data.vt.klass ? objs->data.vt.klass: obj->klass;
+	if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+		klass = obj->klass;
+	for (; klass && klass != m->klass; klass = klass->parent) {
+		for (i = 0; i < klass->method.count; ++i) {
+			if (!klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
+				continue;
+			if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature)) {
+				return klass->methods [i];
 			}
 		}
-		return m;
 	}
-	g_error ("got virtual method: 0x%x\n", token);
-	return NULL;
+	return m;
 }
 
 static MonoObject*
@@ -368,6 +348,16 @@ get_exception_array_type_mismatch ()
 	if (ex)
 		return ex;
 	ex = get_named_exception ("ArrayTypeMismatchException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_missing_method ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("MissingMethodException");
 	return ex;
 }
 
@@ -652,11 +642,11 @@ dump_stack (stackval *stack, stackval *sp)
 	
 	while (s < sp) {
 		switch (s->type) {
-		case VAL_I32: g_print ("[%d] ", s->data.i); break;
-		case VAL_I64: g_print ("[%lld] ", s->data.l); break;
-		case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
-		case VAL_VALUET: g_print ("[vt: %p] ", s->data.vt.vt); break;
-		default: g_print ("[%p] ", s->data.p); break;
+		case VAL_I32: printf ("[%d] ", s->data.i); break;
+		case VAL_I64: printf ("[%lld] ", s->data.l); break;
+		case VAL_DOUBLE: printf ("[%0.5f] ", s->data.f); break;
+		case VAL_VALUET: printf ("[vt: %p] ", s->data.vt.vt); break;
+		default: printf ("[%p] ", s->data.p); break;
 		}
 		++s;
 	}
@@ -1129,13 +1119,19 @@ ves_exec_method (MonoInvocation *frame)
 				/* check the signature we put in mono_create_method_pointer () */
 				g_assert (code [2] == 'M' && code [3] == 'o');
 				child_frame.method = *(gpointer*)(code + sizeof (gpointer));
+				csignature = child_frame.method->signature;
 			} else {
-				if (virtual)
-					child_frame.method = get_virtual_method (image, token, sp);
-				else
-					child_frame.method = mono_get_method (image, token, NULL);
+				child_frame.method = mono_get_method (image, token, NULL);
+				if (!child_frame.method)
+					THROW_EX (get_exception_missing_method (), ip -5);
+				csignature = child_frame.method->signature;
+				if (virtual) {
+					stackval *this_arg = &sp [-csignature->param_count-1];
+					if (!this_arg->data.p)
+						THROW_EX (get_exception_null_reference(), ip - 5);
+					child_frame.method = get_virtual_method (image, child_frame.method, this_arg);
+				}
 			}
-			csignature = child_frame.method->signature;
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
 			/* decrement by the actual number of args */
 			if (csignature->param_count) {
@@ -1148,7 +1144,10 @@ ves_exec_method (MonoInvocation *frame)
 				g_assert (sp >= frame->stack);
 				--sp;
 				g_assert (sp->type == VAL_OBJ || sp->type == VAL_VALUETA);
-				child_frame.obj = sp->data.p;
+				if (sp->type == VAL_OBJ && child_frame.method->klass->valuetype) /* unbox it */
+					child_frame.obj = (char*)sp->data.p + sizeof (MonoObject);
+				else
+					child_frame.obj = sp->data.p;
 			} else {
 				child_frame.obj = NULL;
 			}
@@ -1685,7 +1684,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp [-1].data.l %= sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE) {
 				/* FIXME: what do we actually do here? */
-				sp [-1].data.f = 0;
+				sp [-1].data.f = fmod (sp [-1].data.f, sp [0].data.f);
 			} else {
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
@@ -1773,7 +1772,7 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_NEG)
 			++ip;
-		        --sp;
+			--sp;
 			if (sp->type == VAL_I32) 
 				sp->data.i = - sp->data.i;
 			else if (sp->type == VAL_I64)
@@ -1781,19 +1780,19 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_DOUBLE)
 				sp->data.f = - sp->data.f;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(- (int)sp->data.p);
+				sp->data.p = (gpointer)(- (mono_i)sp->data.p);
 			++sp;
 			BREAK;
 		CASE (CEE_NOT)
 			++ip;
-		        --sp;
+			--sp;
 			if (sp->type == VAL_I32)
 				sp->data.i = ~ sp->data.i;
 			else if (sp->type == VAL_I64)
 				sp->data.l = ~ sp->data.l;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(~ (int)sp->data.p);
-		        ++sp;
+				sp->data.p = (gpointer)(~ (mono_i)sp->data.p);
+			++sp;
 			BREAK;
 		CASE (CEE_CONV_U1) /* fall through */
 		CASE (CEE_CONV_I1) {
@@ -1960,18 +1959,13 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		CASE (CEE_LDSTR) {
 			MonoObject *o;
-			const char *name;
-			int len;
 			guint32 index;
 
 			ip++;
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			name = mono_metadata_user_string (image, index);
-			len = mono_metadata_decode_blob_size (name, &name);
-
-			o = mono_new_utf16_string (name, len >> 1);
+			o = mono_ldstr (image, index);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = NULL;
@@ -1994,6 +1988,8 @@ ves_exec_method (MonoInvocation *frame)
 			
 			/* call the contructor */
 			child_frame.method = mono_get_method (image, token, o->klass);
+			if (!child_frame.method)
+				THROW_EX (get_exception_missing_method (), ip -5);
 			csig = child_frame.method->signature;
 
 			/*
@@ -2640,7 +2636,11 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED22) 
 		CASE (CEE_UNUSED23) ves_abort(); BREAK;
 		CASE (CEE_REFANYVAL) ves_abort(); BREAK;
-		CASE (CEE_CKFINITE) ves_abort(); BREAK;
+		CASE (CEE_CKFINITE)
+			if (!finite(sp [-1].data.f))
+				THROW_EX (get_exception_arithmetic (), ip);
+			++ip;
+			BREAK;
 		CASE (CEE_UNUSED24) ves_abort(); BREAK;
 		CASE (CEE_UNUSED25) ves_abort(); BREAK;
 		CASE (CEE_MKREFANY) ves_abort(); BREAK;
@@ -2654,7 +2654,6 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED66) 
 		CASE (CEE_UNUSED67) ves_abort(); BREAK;
 		CASE (CEE_LDTOKEN)
-		/*CASE (CEE_CONV_I) ves_abort(); BREAK; */
 		CASE (CEE_CONV_OVF_I) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
@@ -2746,9 +2745,12 @@ ves_exec_method (MonoInvocation *frame)
 					result = sp [0].data.i == (gint)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l == sp [1].data.l;
-				else if (sp->type == VAL_DOUBLE)
-					result = sp [0].data.f == sp [1].data.f;
-				else
+				else if (sp->type == VAL_DOUBLE) {
+					if (isnan (sp [0].data.f) || isnan (sp [1].data.f))
+						result = 0;
+					else
+						result = sp [0].data.f == sp [1].data.f;
+				} else
 					result = GET_NATI (sp [0]) == GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
@@ -2765,9 +2767,12 @@ ves_exec_method (MonoInvocation *frame)
 					result = sp [0].data.i > (gint)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l > sp [1].data.l;
-				else if (sp->type == VAL_DOUBLE)
-					result = sp [0].data.f > sp [1].data.f;
-				else
+				else if (sp->type == VAL_DOUBLE) {
+					if (isnan (sp [0].data.f) || isnan (sp [1].data.f))
+						result = 0;
+					else
+						result = sp [0].data.f > sp [1].data.f;
+				} else
 					result = (gint)GET_NATI (sp [0]) > (gint)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
@@ -2775,7 +2780,25 @@ ves_exec_method (MonoInvocation *frame)
 				sp++;
 				break;
 			}
-			case CEE_CGT_UN: ves_abort(); break;
+			case CEE_CGT_UN: {
+				gint32 result;
+				++ip;
+				sp -= 2;
+
+				if (sp->type == VAL_I32)
+					result = (guint32)sp [0].data.i > (mono_u)GET_NATI (sp [1]);
+				else if (sp->type == VAL_I64)
+					result = (guint64)sp [0].data.l > (guint64)sp [1].data.l;
+				else if (sp->type == VAL_DOUBLE)
+					result = isnan (sp [0].data.f) || isnan (sp [1].data.f);
+				else
+					result = (mono_u)GET_NATI (sp [0]) > (mono_u)GET_NATI (sp [1]);
+				sp->type = VAL_I32;
+				sp->data.i = result;
+
+				sp++;
+				break;
+			}
 			case CEE_CLT: {
 				gint32 result;
 				++ip;
@@ -2785,9 +2808,12 @@ ves_exec_method (MonoInvocation *frame)
 					result = sp [0].data.i < (gint)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l < sp [1].data.l;
-				else if (sp->type == VAL_DOUBLE)
-					result = sp [0].data.f < sp [1].data.f;
-				else
+				else if (sp->type == VAL_DOUBLE) {
+					if (isnan (sp [0].data.f) || isnan (sp [1].data.f))
+						result = 0;
+					else
+						result = sp [0].data.f < sp [1].data.f;
+				} else
 					result = (gint)GET_NATI (sp [0]) < (gint)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
@@ -2795,19 +2821,48 @@ ves_exec_method (MonoInvocation *frame)
 				sp++;
 				break;
 			}
-			case CEE_CLT_UN: ves_abort(); break;
-			case CEE_LDFTN: {
+			case CEE_CLT_UN: {
+				gint32 result;
+				++ip;
+				sp -= 2;
+
+				if (sp->type == VAL_I32)
+					result = (guint32)sp [0].data.i < (mono_u)GET_NATI (sp [1]);
+				else if (sp->type == VAL_I64)
+					result = (guint64)sp [0].data.l < (guint64)sp [1].data.l;
+				else if (sp->type == VAL_DOUBLE)
+					result = isnan (sp [0].data.f) || isnan (sp [1].data.f);
+				else
+					result = (mono_u)GET_NATI (sp [0]) < (mono_u)GET_NATI (sp [1]);
+				sp->type = VAL_I32;
+				sp->data.i = result;
+
+				sp++;
+				break;
+			}
+			case CEE_LDFTN:
+			case CEE_LDVIRTFTN: {
+				int virtual = *ip == CEE_LDVIRTFTN;
+				MonoMethod *m;
 				guint32 token;
 				++ip;
 				token = read32 (ip);
 				ip += 4;
+				m = mono_get_method (image, token, NULL);
+				if (!m)
+					THROW_EX (get_exception_missing_method (), ip - 5);
+				if (virtual) {
+					stackval *objs = &sp [-m->signature->param_count - 1];
+					if (!objs->data.p)
+						THROW_EX (get_exception_null_reference (), ip - 5);
+					m = get_virtual_method (image, m, objs);
+				}
 				sp->type = VAL_NATI;
-				sp->data.p = mono_create_method_pointer (mono_get_method (image, token, NULL));
+				sp->data.p = mono_create_method_pointer (m);
 				sp->data.vt.klass = NULL;
 				++sp;
 				break;
 			}
-			case CEE_LDVIRTFTN: ves_abort(); break;
 			case CEE_UNUSED56: ves_abort(); break;
 			case CEE_LDARG: {
 				guint32 arg_pos;
@@ -2819,7 +2874,28 @@ ves_exec_method (MonoInvocation *frame)
 				++sp;
 				break;
 			}
-			case CEE_LDARGA: ves_abort(); break;
+			case CEE_LDARGA: {
+				MonoType *t;
+				MonoClass *c;
+				guint32 anum;
+
+				++ip;
+				anum = read32 (ip);
+				ip += 4;
+				t = ARG_TYPE (signature, anum);
+				c = mono_class_from_mono_type (t);
+				sp->data.vt.klass = c;
+				sp->data.vt.vt = ARG_POS (anum);
+
+				if (c->valuetype)
+					sp->type = VAL_VALUETA;
+				else
+					sp->type = VAL_TP;
+
+				++sp;
+				++ip;
+				break;
+			}
 			case CEE_STARG: {
 				guint32 arg_pos;
 				++ip;
@@ -3086,6 +3162,8 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
+	if (!method)
+		g_error ("No entry point method found in %s", image->name);
 
 	if (method->signature->param_count) {
 		int i;

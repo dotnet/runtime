@@ -238,3 +238,113 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	return FALSE;
 }
 
+static GHashTable *ldstr_table = NULL;
+
+static int
+ldstr_hash (const char* str)
+{
+	guint len, h;
+	const char *end;
+	len = mono_metadata_decode_blob_size (str, &str);
+	end = str + len;
+	h = *str;
+	/*
+	 * FIXME: The distribution may not be so nice with lots of
+	 * null chars in the string.
+	 */
+	for (str += 1; str < end; str++)
+		h = (h << 5) - h + *str;
+	return h;
+}
+
+static gboolean
+ldstr_equal (const char *str1, const char *str2) {
+	int len;
+	if ((len=mono_metadata_decode_blob_size (str1, &str1)) !=
+				mono_metadata_decode_blob_size (str2, &str2))
+		return 0;
+	return memcmp (str1, str2, len) == 0;
+}
+
+typedef struct {
+	MonoObject *obj;
+	MonoObject *found;
+} InternCheck;
+
+static void
+check_interned (gpointer key, MonoObject *value, InternCheck *check)
+{
+	if (value == check->obj)
+		check->found = value;
+}
+
+MonoObject*
+mono_string_is_interned (MonoObject *o)
+{
+	InternCheck check;
+	check.obj = o;
+	check.found = NULL;
+	/*
+	 * Yes, this is slow. Our System.String implementation needs to be redone.
+	 * And GLib needs foreach() methods that can be stopped halfway.
+	 */
+	g_hash_table_foreach (ldstr_table, (GHFunc)check_interned, &check);
+	return check.found;
+}
+
+MonoObject*
+mono_string_intern (MonoObject *o)
+{
+	MonoObject *res;
+	MonoStringObject *str = (MonoStringObject*) o;
+	char *ins = g_malloc (4 + str->length * 2);
+	char *p;
+	
+	/* Encode the length */
+	p = ins;
+	if (str->length <= 127)
+		*p++ = 127;
+	else if (str->length <= 16384) {
+		p [0] = 0x80 | (str->length >> 8);
+		p [1] = str->length & 0xff;
+		p += 2;
+	} else {
+		guint32 l = str->length;
+		p [0] = (l >> 24) | 0xc0;
+		p [1] = (l >> 16) & 0xff;
+		p [2] = (l >> 8) & 0xff;
+		p [3] = l & 0xff;
+		p += 4;
+	}
+	memcpy (p, str->c_str->vector, str->length * 2);
+	
+	if ((res = g_hash_table_lookup (ldstr_table, str))) {
+		g_free (ins);
+		return res;
+	}
+	g_hash_table_insert (ldstr_table, ins, str);
+	return (MonoObject*)str;
+}
+
+MonoObject*
+mono_ldstr (MonoImage *image, guint32 index)
+{
+	const char *str, *sig;
+	MonoObject *o;
+	guint len;
+	
+	if (!ldstr_table)
+		ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
+	
+	sig = str = mono_metadata_user_string (image, index);
+	
+	if ((o = g_hash_table_lookup (ldstr_table, str)))
+		return o;
+	
+	len = mono_metadata_decode_blob_size (str, &str);
+	o = mono_new_utf16_string (str, len >> 1);
+	g_hash_table_insert (ldstr_table, sig, o);
+
+	return o;
+}
+

@@ -26,6 +26,7 @@ TESTSRC=			\
 	interface.cs		\
 	virtual-method.cs	\
 	intptrcast.cs		\
+	indexer.cs		\
 	stream.cs		\
 	stream-writer.cs	\
 	console.cs		\

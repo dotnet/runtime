@@ -36,6 +36,15 @@ mono_new_szarray            (MonoClass *eclass, guint32 n);
 MonoObject *
 mono_new_utf16_string       (const char *text, gint32 len);
 
+MonoObject*
+mono_ldstr                  (MonoImage *image, guint32 index);
+
+MonoObject*
+mono_string_is_interned     (MonoObject *o);
+
+MonoObject*
+mono_string_intern          (MonoObject *o);
+
 MonoObject *
 mono_new_string             (const char *text);
 

@@ -10,6 +10,7 @@
 #include "config.h"
 #include "x86-codegen.h"
 #include "mono/metadata/class.h"
+#include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
 
 /*
@@ -149,10 +150,12 @@ mono_create_trampoline (MonoMethod *method)
 			continue;
 		}
 		switch (sig->params [i - 1]->type) {
+		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -170,6 +173,14 @@ mono_create_trampoline (MonoMethod *method)
 			x86_fst_membase (p, X86_ESP, 0, TRUE, TRUE);
 			break;
 		case MONO_TYPE_STRING:
+			/* 
+			 * If it is an internalcall we assume it's the object we want.
+			 * Yet another reason why MONO_TYPE_STRING should not be used to indicate char*.
+			 */
+			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+				x86_push_membase (p, X86_EDX, arg_pos);
+				break;
+			}
 			/*if (frame->method->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI*/
 			x86_push_membase (p, X86_EDX, arg_pos);
 			x86_mov_reg_imm (p, X86_EDX, mono_get_ansi_string);
@@ -190,8 +201,6 @@ mono_create_trampoline (MonoMethod *method)
 			x86_push_membase (p, X86_EDX, arg_pos + 4);
 			x86_push_membase (p, X86_EDX, arg_pos);
 			break;
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
 		default:
 			g_error ("Can't trampoline 0x%x", sig->params [i - 1]->type);
 		}
@@ -256,11 +265,13 @@ mono_create_trampoline (MonoMethod *method)
 	/*
 	 * free the allocated strings.
 	 */
-	if (local_size)
-		x86_mov_reg_imm (p, X86_EDX, g_free);
-	for (i = 1; i <= local_size; ++i) {
-		x86_push_membase (p, X86_EBP, LOC_POS * i);
-		x86_call_reg (p, X86_EDX);
+	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+		if (local_size)
+			x86_mov_reg_imm (p, X86_EDX, g_free);
+		for (i = 1; i <= local_size; ++i) {
+			x86_push_membase (p, X86_EBP, LOC_POS * i);
+			x86_call_reg (p, X86_EDX);
+		}
 	}
 	/*
 	 * Standard epilog.

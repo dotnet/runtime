@@ -201,6 +201,12 @@ static gpointer icall_map [] = {
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
 
 	/*
+	 * System.String
+	 */
+	"System.String::IsInterned", mono_string_is_interned,
+	"System.String::Intern", mono_string_intern,
+
+	/*
 	 * System.Threading
 	 */
 	"System.Threading.Thread::Start_internal", ves_icall_System_Threading_Thread_Start_internal,
