@@ -10,6 +10,14 @@
 	test suite and the class library are in the `mcs' package, we
 	will move this later into `mono' itself. 
 
+	<b>Note: (Beginners read!)</b> There are a couple of documents you
+	should read before going ahead. You can reach them in the 
+	<a href="http://www.go-mono.org/mono-beginning.html">Resources/Beginning 	section</a>. And the <a href="http://www.go-mono.org/faq.html">FAQ</a> 
+	and the <a href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">
+	Mono Common Problems</a>. Might be useful too. Take the Mono Beginners
+	HOWTO for your system and proceed as it's described there.
+
+
 <a name="sources">
 *** Sources
 
@@ -36,13 +44,19 @@
 
 * Snapshots	
 
-	Volunteers package up daily the sources:
+	Already daily volunteer's made binaries:
 
 	<ul>
 		* <a href="http://www.atoker.com/mono">Debian Linux</a>
-		* <a href="http://mono.baselabs.org/index.php/software">Red Hat Linux</a>
+      	 	
+		* <a href="http://noa.tm/mono/">Red Hat (and RPM based systems)</a>
 		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> (works without cygwin!)
 	</ul>
+
+	<b>Note1:</b> Don't look for the Mono BaseLabs RPMs; they are not providing it
+	anymore.<br> 
+	<b>Note2:</b> You will find that you can get binaries for the gtk-sharp 
+	package too. 
 
 <a name="snapshots">
 	For up to date sources, it is recommended that you use the Mono 
@@ -50,17 +64,12 @@
 	<a href="http://www.go-mono.com/snapshots">nightly snapshots</a> or 
 	the <a href="anoncvs.html">Anonymous CVS</a>.  The nightly
 	snapshots are done every night at 10pm EST (Boston Time).
+	The anoncvs mirrors provided by Hispalinux are updated every six
+	hours.
 
 	The nightly snapshots are not guaranteed to build, but most of the 
 	time they should.  They should give you a window to see what we are 
 	up to.
-
-	You can download the GNU make tools and the Cygwin environment from
-	<a href="http://www.cygwin.com">www.cygwin.com</a>.
-
-	You can download Microsoft's .NET Framework SDK from
-	<a href="http://msdn.microsoft.com/downloads">
-	msdn.microsoft.com/downloads</a>.
 
 	There are scripts to help build mono for both Unix and Windows.  Get
 	<a href="mono-build.sh">mono-build.sh</a> for Unix, or <a
@@ -81,11 +90,13 @@
 	The script requires wget on either platform, and building the
 	software requires make, gcc, automake, autoconf, and libtool.
 	You should install these packages from your distribution or
-	with the cygwin installer.
+	with the cygwin installer. You should also take care of setting
+	the right environment variables as the PKG_CONFIG_FLAGS, etc.
 
 	The script will download required packages from
 	www.go-mono.com and do a cvs checkout of mono in the current
-	directory.  The cvs server chosen defaults to anonymous cvs;
+	directory.  <b>IMPORTANT!:</b> The cvs server chosen defaults to 
+	anonymous cvs;
 	set your CVSROOT environment variable before running the script to
 	select a particular cvs server.
 
@@ -97,9 +108,96 @@
 <a name="install">
 ** Building the software manually
 
-*** Download the required software.
+*** Building on Linux
 
 	<ul>
+
+		You can build mono and mcs in Linux but to do that be
+		sure to obtain the corlib.dll and install it before
+		trying to compile. 
+
+		In linux be sure you get <a href="http://www.gtk.org">glib2.0</a> 
+		(>= 2.0.4, 2.0.6 
+		recomended) and <a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a> 0.80. 
+		Also the corresponding development packages for those as
+		well as the GNU Build Tools (make, autoconf...).
+		Then download the mono packages and compile them.
+		You must start compiling mcs and then mono.
+		Be sure you set all the environment variables before
+		compiling. You can use pkg-config --list-all to see
+		if you forgot to set some of them.
+
+		Normally you should enter:
+		export ACLOCAL_FLAGS="-I /usr/local/share/aclocal"
+		if your install prefix is /usr/local.
+
+		If you downloaded the Mono nightly snapshots, untar the 
+		snapshot. 
+
+		Change directories to "<strong>mcs</strong>". 
+
+		Configure, compile and install: 
+
+		<pre>
+		<strong>./configure
+		make
+		make install</strong></pre>
+
+		Do the same in the "<strong>mono</strong>" directory.	
+
+	
+*** On Windows, to install and work on the compiler and the class libraries:
+
+**** Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
+
+	<ul>
+
+		* Install <a href="http://www.cygwin.com">Cygwin</a>.
+
+		* Install <a href="http://msdn.microsoft.com/downloads">
+		  Microsoft .NET Framework SDK</a>.
+
+		* Change to the <strong>/usr/local</strong> directory
+		  of your Cygwin installation.<br>
+		  Unzip the precompiled packages listed above.
+
+	</ul>
+	<ul>
+		
+		* If you downloaded the Mono 
+		<a href="http://www.go-mono.com/snapshots">nightly snapshot
+		</a>, untar the snapshot.
+
+		* Change directories to <strong>"mcs"</strong>.
+
+		* Compile:
+		
+		<pre>
+		<strong>make windows</strong>
+		</pre>
+
+*** On Windows, to compile the mono runtime:
+
+	<ul>
+		
+		* If you downloaded the Mono 
+		  <a href="http://www.go-mono.com/snapshots">nightly snapshot
+		  </a>, untar the snapshot.
+
+		* Change directories to <strong>"mono"</strong>.
+
+		* Configure, compile and install:
+		<pre><strong>
+		./configure --prefix=c:/mono
+		make
+		make install
+		</strong></pre>
+
+	</ul>
+
+* Software resources, notes and old releases:
+
+		The required and additional software can be downloaded here:
 
 		* Microsoft's .NET Framework SDK from 
 		  <a href="http://msdn.microsoft.com/downloads">
@@ -130,87 +228,6 @@
 
 	</ul>
 
-
-*** Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
-
-	<ul>
-
-		* Install <a href="http://www.cygwin.com">Cygwin</a>.
-
-		* Install <a href="http://msdn.microsoft.com/downloads">
-		  Microsoft .NET Framework SDK</a>.
-
-		* Change to the <strong>/usr/local</strong> directory
-		  of your Cygwin installation.<br>
-		  Unzip the precompiled packages listed above.
-
-	</ul>
-
-*** On Windows, to install and work on the compiler and the class libraries:
-
-	<ul>
-
-		* If you downloaded the Mono 
-		  <a href="http://www.go-mono.com/snapshots">nightly snapshot
-		  </a>, untar the snapshot.
-
-		* Change directories to <strong>"mcs"</strong>.
-
-		* Compile:
-
-<pre>
-<strong>make windows</strong>
-</pre>
-
-	</ul>
-
-*** On Windows, to compile the mono runtime:
-
-	<ul>	
-
-		* If you downloaded the Mono 
-		  <a href="http://www.go-mono.com/snapshots">nightly snapshot
-		  </a>, untar the snapshot.
-
-		* Change directories to <strong>"mono"</strong>.
-
-		* Configure, compile and install:
-
-<pre><strong>
-./configure --prefix=c:/mono
-make
-make install
-</strong></pre>
-		
-	</ul>
-
-*** On Unix, to compile the mono runtime:
-
-	<ul>
-		
-		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a>.
-
-		* Install glib 2.0. You can download it
-                  from <a href="ftp://ftp.gtk.org/pub/gtk/v2.0/glib-2.0.6.tar.gz">ftp.gtk.org</a>. Maybe you need
-                  to modify your ACLOCAL_FLAGS for pkg-config, for example if
-                  your install prefix is /usr/local:
-<pre>
-<strong>export ACLOCAL_FLAGS="-I /usr/local/share/aclocal"</strong>
-</pre>
-
-		* If you downloaded the Mono 
-		  <a href="http://www.go-mono.com/snapshots">nightly snapshots
-		  </a>, untar the snapshot.
-
-		* Change directories to <strong>"mono"</strong>.
-
-		* Configure, compile and install:
-<pre><strong>
-./configure
-make
-make install</strong>
-</pre>
-	</ul>
 
 *** Notes on compiling GLIB 2.0 and pkg-config from source:
 
