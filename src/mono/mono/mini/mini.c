@@ -3641,8 +3641,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				}
 			}
-			//if (sp != stack_start)
-			//		goto unverified;
+			if (sp != stack_start)
+				goto unverified;
 			MONO_INST_NEW (cfg, ins, CEE_BR);
 			ins->cil_code = ip++;
 			ins->inst_target_bb = end_bblock;
