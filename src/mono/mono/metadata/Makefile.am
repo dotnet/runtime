@@ -24,6 +24,7 @@ libmetadatainclude_HEADERS = \
 	image.h		\
 	metadata.h	\
 	rawbuffer.h	\
+	row-indexes.h	\
 	tabledefs.h	\
 	tokentype.h
 

@@ -10,6 +10,7 @@ libmonocli_a_SOURCES = 		\
 libmonocliincludedir = $(includir)/mono/cli
 
 libmonocliinclude_HEADERS = 	\
+	class.h			\
 	cli.h			\
 	object.h		\
 	types.h
