@@ -223,8 +223,8 @@ make install
 		* Download, compile and install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a> from source.<br>
 		  If you dont have MS Visual C/C++ 4.0 or 5.0 or 6.0 you can also try
 		  the binary package available at <a
-		  href="http://www.gimp.org/win32/libiconv-dev-20001007.zip">
-		  http://www.gimp.org/win32/libiconv-dev-20001007.zip</a>.
+		  href="http://www.gimp.org/~tml/gimp/win32/libiconv-1.9.1.bin.woe32.zip">
+		  http://www.gimp.org/~tml/gimp/win32/libiconv-1.9.1.bin.woe32.zip</a>
 
 
 		* Download, compile and install the 

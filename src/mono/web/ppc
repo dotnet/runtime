@@ -13,7 +13,9 @@
 
 *** Jitter
 
-	Start the port
+	Works on MacOS X 10.2 and Linux/PPC.   
+
+	There are known problems on MacOS 10.3
 
 ** Documentation
 
@@ -28,6 +30,6 @@
 
 *** Calling conventions:
 
-    <a href="http://www.esofta.com/softspecs.html">The PowerPC SystemV ABI specification</a>
+    <a href="http://refspecs.freestandards.org/elf/elfspec_ppc.pdf">The PowerPC SystemV ABI specification</a>
 
 
