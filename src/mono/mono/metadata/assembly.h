@@ -28,10 +28,20 @@ void          mono_assembly_set_main   (MonoAssembly *assembly);
 MonoAssembly *mono_assembly_get_main   (void);
 MonoImage    *mono_assembly_get_image  (MonoAssembly *assembly);
 gboolean      mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname);
+gboolean      mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r);
 
 /* Installs a function which is called each time a new assembly is loaded. */
 typedef void  (*MonoAssemblyLoadFunc)         (MonoAssembly *assembly, gpointer user_data);
 void          mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data);
+
+/* 
+ * Installs a new function which is used to search the list of loaded 
+ * assemblies for a given assembly name.
+ */
+typedef MonoAssembly *(*MonoAssemblySearchFunc)         (MonoAssemblyName *aname, gpointer user_data);
+void          mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data);
+
+MonoAssembly* mono_assembly_invoke_search_hook (MonoAssemblyName *aname);
 
 /* Installs a function which is called before a new assembly is loaded
  * The hook are invoked from last hooked to first. If any of them returns

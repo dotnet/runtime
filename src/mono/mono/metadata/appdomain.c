@@ -41,6 +41,10 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gchar **assemblies_path,
 			      gpointer user_data);
 
+static MonoAssembly *
+mono_domain_assembly_search (MonoAssemblyName *aname,
+							 gpointer user_data);
+
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
@@ -78,6 +82,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_marshal_init ();
 
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
+	mono_install_assembly_search_hook (mono_domain_assembly_search, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
@@ -406,7 +411,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 
 	/* The new appdomain should have all assemblies loaded */
 	mono_domain_lock (domain);
-	g_hash_table_foreach (domain->assemblies, add_assembly_to_domain, data);
+	g_hash_table_foreach (domain->assemblies_by_name, add_assembly_to_domain, data);
 	mono_domain_unlock (domain);
 
 	return ad;
@@ -440,13 +445,13 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
 
-	res = mono_array_new (domain, System_Reflection_Assembly, g_hash_table_size (domain->assemblies));
+	res = mono_array_new (domain, System_Reflection_Assembly, g_hash_table_size (domain->assemblies_by_name));
 
 	ah.domain = domain;
 	ah.res = res;
 	ah.idx = 0;
 	mono_domain_lock (domain);
-	g_hash_table_foreach (domain->assemblies, add_assembly, &ah);
+	g_hash_table_foreach (domain->assemblies_by_name, add_assembly, &ah);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -503,12 +508,13 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
 
 	mono_domain_lock (domain);
 
-	if (g_hash_table_lookup (domain->assemblies, ass->aname.name)) {
+	if (g_hash_table_lookup (domain->assemblies_by_name, ass->aname.name)) {
 		mono_domain_unlock (domain);
 		return; /* This is ok while no lazy loading of assemblies */
 	}
 
-	g_hash_table_insert (domain->assemblies, (gpointer) ass->aname.name, ass);
+	g_hash_table_insert (domain->assemblies_by_name, (gpointer) ass->aname.name, ass);
+	domain->assemblies = g_list_prepend (domain->assemblies, ass);
 	mono_domain_unlock (domain);
 
 	if (ass->image->references)
@@ -792,6 +798,31 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 	return NULL;
 }
 
+/*
+ * Check whenever a given assembly was already loaded in the current appdomain.
+ */
+static MonoAssembly *
+mono_domain_assembly_search (MonoAssemblyName *aname,
+							 gpointer user_data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	GList *tmp;
+	MonoAssembly *ass;
+
+	mono_domain_lock (domain);
+	for (tmp = domain->assemblies; tmp; tmp = tmp->next) {
+		ass = tmp->data;
+		if (!mono_assembly_names_equal (aname, &ass->aname))
+			continue;
+
+		mono_domain_unlock (domain);
+		return ass;
+	}
+	mono_domain_unlock (domain);
+
+	return NULL;
+}
+
 MonoReflectionAssembly *
 ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 {
@@ -1037,7 +1068,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	g_free (filename);
 
 	if (!assembly)
-		mono_raise_exception (mono_get_exception_file_not_found (filename));
+		mono_raise_exception (mono_get_exception_file_not_found (file));
 
 	image = assembly->image;
 

@@ -120,7 +120,7 @@ check_extra_gac_path_env (void) {
 	}
 }
 
-static gboolean
+gboolean
 mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 {
 	if (!l->name || !r->name)
@@ -151,24 +151,17 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	return TRUE;
 }
 
-/* assemblies_mutex must be held by the caller */
 static MonoAssembly*
 search_loaded (MonoAssemblyName* aname)
 {
 	GList *tmp;
 	MonoAssembly *ass;
 	GList *loading;
-	
-	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
-		ass = tmp->data;
-		/* g_print ("compare %s %s\n", aname->name, ass->aname.name); */
-		if (!mono_assembly_names_equal (aname, &ass->aname))
-			continue;
-		/* g_print ("success\n"); */
 
+	ass = mono_assembly_invoke_search_hook (aname);
+	if (ass)
 		return ass;
-	}
-
+	
 	/*
 	 * The assembly might be under load by this thread. In this case, it is
 	 * safe to return an incomplete instance to prevent loops.
@@ -468,6 +461,43 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	assembly_load_hook = hook;
 }
 
+typedef struct AssemblySearchHook AssemblySearchHook;
+struct AssemblySearchHook {
+	AssemblySearchHook *next;
+	MonoAssemblySearchFunc func;
+	gpointer user_data;
+};
+
+AssemblySearchHook *assembly_search_hook = NULL;
+
+MonoAssembly*
+mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
+{
+	AssemblySearchHook *hook;
+
+	for (hook = assembly_search_hook; hook; hook = hook->next) {
+		MonoAssembly *ass = hook->func (aname, hook->user_data);
+		if (ass)
+			return ass;
+	}
+
+	return NULL;
+}
+
+void          
+mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
+{
+	AssemblySearchHook *hook;
+	
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblySearchHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = assembly_search_hook;
+	assembly_search_hook = hook;
+}	
+
 typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
 struct AssemblyPreLoadHook {
 	AssemblyPreLoadHook *next;
@@ -578,16 +608,6 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	 * purpose assembly loading mechanism.
 	 */
 	EnterCriticalSection (&assemblies_mutex);
-	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
-		ass = tmp->data;
-		if (!ass->aname.name)
-			continue;
-		if (strcmp (name, ass->aname.name))
-			continue;
-		image = ass->image;
-		break;
-	}
-
 	for (i = 0; !image && bundled_assemblies [i]; ++i) {
 		if (strcmp (bundled_assemblies [i]->name, name) == 0) {
 			image = mono_image_open_from_data ((char*)bundled_assemblies [i]->data, bundled_assemblies [i]->size, FALSE, status);

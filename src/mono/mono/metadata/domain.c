@@ -277,7 +277,8 @@ mono_domain_create (void)
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
-	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
+	domain->assemblies_by_name = g_hash_table_new (g_str_hash, g_str_equal);
+	domain->assemblies = NULL;
 	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->static_data_hash = mono_g_hash_table_new (NULL, NULL);
@@ -724,7 +725,7 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	MonoAssembly *ass;
 
 	mono_domain_lock (domain);
-	if ((ass = g_hash_table_lookup (domain->assemblies, name))) {
+	if ((ass = g_hash_table_lookup (domain->assemblies_by_name, name))) {
 		mono_domain_unlock (domain);
 		return ass;
 	}
@@ -761,10 +762,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	LeaveCriticalSection (&appdomains_mutex);
 	
 	g_free (domain->friendly_name);
-	g_hash_table_foreach (domain->assemblies, remove_assembly, NULL);
+	g_hash_table_foreach (domain->assemblies_by_name, remove_assembly, NULL);
 
 	mono_g_hash_table_destroy (domain->env);
-	g_hash_table_destroy (domain->assemblies);
+	g_hash_table_destroy (domain->assemblies_by_name);
+	g_list_free (domain->assemblies);
 	mono_g_hash_table_destroy (domain->class_vtable_hash);
 	mono_g_hash_table_destroy (domain->proxy_vtable_hash);
 	mono_g_hash_table_destroy (domain->static_data_hash);
