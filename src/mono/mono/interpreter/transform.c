@@ -1012,8 +1012,8 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					td.ip += 5;
 					break;
 				} else {
-
-					if (*mheader->code == CEE_RET && called_inited) {
+					/* mheader might not exist if this is a delegate invoc, etc */
+					if (mheader && *mheader->code == CEE_RET && called_inited) {
 						if (mono_interp_traceopt)
 							g_print ("Inline (empty) call of %s.%s\n", m->klass->name, m->name);
 						for (i = 0; i < csignature->param_count; i++)
