@@ -1461,7 +1461,9 @@ initialize_debugger_support ()
 	 * Wait until the debugger thread has actually been started and we
 	 * have its pid, then actually start the background thread.
 	 */
+#ifndef PLATFORM_WIN32
 	mono_debugger_init_thread_debug (debugger_background_thread);
+#endif
 }
 
 static GPtrArray *breakpoints = NULL;
