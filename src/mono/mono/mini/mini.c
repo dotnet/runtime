@@ -4478,7 +4478,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
-				*sp = val;
+				*sp++ = val;
 				ip += 5;
 				break;
 			}
