@@ -3,7 +3,6 @@ TEST_PROG=../interpreter/mint
 JITTEST_PROG=../jit/mono
 
 CSC=csc /unsafe
-ILASM=ilasm
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -113,7 +112,8 @@ TESTSRC=			\
 	decimal.cs		\
 	cpblkTest.il		\
 	jmpTest.il		\
-	calliTest.il
+	calliTest.il		\
+	ckfiniteTest.il
 
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
@@ -123,7 +123,7 @@ TESTBS=$(BENCHSRC:.cs=.exe)
 EXTRA_DIST=test-driver $(TESTSRC)
 
 %.exe: %.il
-	$(ILASM) $< /OUTPUT=$@
+	ilasm $< /OUTPUT=$@
 
 %.exe: %.cs
 	$(CSC) $<

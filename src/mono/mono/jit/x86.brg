@@ -220,7 +220,7 @@ debug_memcopy (void *dest, const void *src, size_t n);
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY JMP
 %term ADD ADD_OVF ADD_OVF_UN SUB SUB_OVF SUB_OVF_UN MUL MUL_OVF MUL_OVF_UN 
-%term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
+%term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT CKFINITE
 %term COMPARE CBRANCH BRTRUE BRFALSE CSET
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U1 CONV_U2 CONV_U4 CONV_U8 CONV_R4 CONV_R8 CONV_R_UN
 %term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWARR_SPEC NEWOBJ NEWOBJ_SPEC NEWSTRUCT CPBLK CPSRC POP INITOBJ
@@ -3777,6 +3777,16 @@ freg: MUL (freg, freg) {
 
 freg: DIV (freg, freg) {
 	x86_fp_op_reg (s->code, X86_FDIV, 1, TRUE);
+}
+
+freg: CKFINITE (freg) {
+	x86_push_reg (s->code, X86_EAX);
+	x86_fxam (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4100);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
+	x86_pop_reg (s->code, X86_EAX);
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, FALSE, "ArithmeticException");
 }
 
 freg: REM (freg, freg) {

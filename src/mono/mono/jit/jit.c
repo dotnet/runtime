@@ -2603,7 +2603,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			tbb = &cfg->bblocks [bcinfo [target].block_id];
 
 			/* empty the stack */
-			sp = stack;
+			while (sp != stack) {
+				sp--;
+				t1 = mono_ctree_new (mp, MB_TERM_POP, *sp, NULL);
+				ADD_TREE (t1, cli_addr);
+			}
 
 			mark_reached (cfg, tbb, NULL, 0);
 
@@ -2825,6 +2829,29 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, MB_TERM_POP, *sp, NULL);
 			ADD_TREE (t1, cli_addr);
 
+			break;
+		}
+		case CEE_CKFINITE: {
+			int vnum;
+			++ip;
+			sp--;
+
+			/* this instr. can throw exceptions as side effect,
+			 * so we cant eliminate dead code which contains CKFINITE opdodes.
+			 * Spilling to memory makes sure that we always perform
+			 * this check */
+			vnum = mono_allocate_intvar (cfg, sp - stack, sp [0]->svt);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+			t1->data.i = vnum;
+		       
+			t2 = mono_ctree_new (mp, MB_TERM_CKFINITE, *sp, NULL);
+
+			t2 = mono_ctree_new (mp, map_store_svt_type (sp [0]->svt), t1, t2);
+			t2->svt = sp [0]->svt;
+			ADD_TREE (t2, cli_addr);
+
+			t1 = ctree_create_dup (mp, t2);		
+			PUSH_TREE (t1, t1->svt);
 			break;
 		}
 		case CEE_CONV_U1: 
