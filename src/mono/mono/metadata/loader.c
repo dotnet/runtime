@@ -1017,11 +1017,11 @@ mono_method_get_last_managed (void)
 void
 mono_loader_wine_init ()
 {
-	GModule *module = g_module_open ("wine-sharedlib.exe.so", G_MODULE_BIND_LAZY);
+	GModule *module = g_module_open ("winelib.exe.so", G_MODULE_BIND_LAZY);
 	int (*shared_wine_init)();
 
 	if (module == NULL){
-		fprintf (stderr, "Could not load wine-sharedlib.exe.so");
+		fprintf (stderr, "Could not load winelib.exe.so");
 		return;
 	}
 
