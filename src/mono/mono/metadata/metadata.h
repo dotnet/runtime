@@ -109,6 +109,7 @@ const char    *mono_metadata_locate_token  (MonoImage *meta, guint32 token);
 const char    *mono_metadata_string_heap   (MonoImage *meta, guint32 table_index);
 const char    *mono_metadata_blob_heap     (MonoImage *meta, guint32 table_index);
 const char    *mono_metadata_user_string   (MonoImage *meta, guint32 table_index);
+const char    *mono_metadata_guid_heap     (MonoImage *meta, guint32 table_index);
 
 guint32 mono_metadata_typedef_from_field  (MonoImage *meta, guint32 table_index);
 guint32 mono_metadata_typedef_from_method (MonoImage *meta, guint32 table_index);

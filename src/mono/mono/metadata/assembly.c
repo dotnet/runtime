@@ -154,7 +154,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Create assembly struct, and enter it into the assembly cache
 	 */
-	ass = g_new (MonoAssembly, 1);
+	ass = g_new0 (MonoAssembly, 1);
 	ass->name = fullname;
 	ass->image = image;
 
@@ -232,10 +232,10 @@ mono_assembly_close (MonoAssembly *assembly)
 		mono_image_close (image->references [i]->image);
 	g_free (image->references);
 	     
-	mono_image_close (assembly->image);
-
 	g_hash_table_remove (assemblies, assembly->name);
 			     
+	mono_image_close (assembly->image);
+
 	g_free (assembly->name);
 	g_free (assembly);
 }

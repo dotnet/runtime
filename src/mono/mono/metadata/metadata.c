@@ -784,6 +784,22 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 	return meta->heap_blob.data + index;
 }
 
+/**
+ * mono_metadata_guid_heap:
+ * @meta: metadata context
+ * @index: index into the guid heap.
+ *
+ * Returns: an in-memory pointer to the @index in the guid heap.
+ */
+const char *
+mono_metadata_guid_heap (MonoImage *meta, guint32 index)
+{
+	--index;
+	index *= 16; /* adjust for guid size and 1-based index */
+	g_return_val_if_fail (index < meta->heap_guid.size, "");
+	return meta->heap_guid.data + index;
+}
+
 static const char *
 dword_align (const char *ptr)
 {
