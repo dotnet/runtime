@@ -474,7 +474,10 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				FP_ALSO_IN_REG (gr ++);
 				ALWAYS_ON_STACK (stack_size += 4);
 			} else {
-				NOT_IMPLEMENTED ("R4 arg");
+				cinfo->args [n].offset = stack_size;
+				cinfo->args [n].regtype = RegTypeBase;
+				cinfo->args [n].reg = ppc_sp; /* in the caller*/
+				stack_size += 4;
 			}
 			n++;
 			break;
@@ -488,7 +491,10 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				FP_ALSO_IN_REG (gr += 2);
 				ALWAYS_ON_STACK (stack_size += 8);
 			} else {
-				NOT_IMPLEMENTED ("R8 arg");
+				cinfo->args [n].offset = stack_size;
+				cinfo->args [n].regtype = RegTypeBase;
+				cinfo->args [n].reg = ppc_sp; /* in the caller*/
+				stack_size += 8;
 			}
 			n++;
 			break;
@@ -1577,8 +1583,8 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 	return val;
 }
 
-/* use ppc_r3-ppc_10 as temp registers */
-#define PPC_CALLER_REGS ((0xff<<3) | USE_EXTRA_TEMPS)
+/* use ppc_r3-ppc_10,ppc_12 as temp registers */
+#define PPC_CALLER_REGS ((0xff<<3) | (1<<12) | USE_EXTRA_TEMPS)
 #define PPC_CALLER_FREGS (0xff<<2)
 
 /*
@@ -2272,8 +2278,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOADI1_MEMBASE:
 			g_assert (ppc_is_imm16 (ins->inst_offset));
-			// FIXME: sign extend
 			ppc_lbz (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+			ppc_extsb (code, ins->dreg, ins->dreg);
 			break;
 		case OP_LOADU2_MEMBASE:
 			g_assert (ppc_is_imm16 (ins->inst_offset));
