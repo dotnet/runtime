@@ -10,8 +10,6 @@
 #ifndef _WAPI_SOCKETS_H_
 #define _WAPI_SOCKETS_H_
 
-#include <config.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -25,7 +23,7 @@
 #define WSADESCRIPTION_LEN 256
 #define WSASYS_STATUS_LEN 128
 
-#ifndef HAVE_SOCKLEN_T
+#ifdef __APPLE__
 typedef unsigned int socklen_t;
 #endif
 

@@ -10,7 +10,6 @@
 #ifndef _MONO_METADATA_LOCALES_H_
 #define _MONO_METADATA_LOCALES_H_
 
-#include <config.h>
 #include <glib.h>
 
 #include <mono/metadata/object.h>
