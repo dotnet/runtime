@@ -1003,3 +1003,14 @@ MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE 
 
 	return(ret);
 }
+
+MonoBoolean
+ves_icall_System_Diagnostics_Process_Kill_internal (HANDLE process, gint32 sig)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	/* sig == 1 -> Kill, sig == 2 -> CloseMainWindow */
+
+	return TerminateProcess (process, -sig);
+}
+

@@ -940,3 +940,31 @@ gboolean SetProcessWorkingSetSize (gpointer process, size_t min, size_t max)
 	
 	return(TRUE);
 }
+
+
+gboolean
+TerminateProcess (gpointer process, gint32 exitCode)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	pid_t pid;
+	gint signo;
+	gboolean ret;
+	gint err;
+
+	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				  (gpointer *) &process_handle, NULL);
+
+	if (ok == FALSE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Can't find process %p",
+			   process);
+#endif
+		SetLastError (ERROR_INVALID_HANDLE);
+		return FALSE;
+	}
+
+	signo = (exitCode == -1) ? SIGKILL : SIGTERM;
+	return _wapi_handle_process_kill (process_handle->id, signo, &err);
+}
+

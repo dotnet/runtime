@@ -844,9 +844,40 @@ static void process_scratch_free (GIOChannel *channel, guint32 scratch_idx)
 }
 
 /*
+ * process_process_kill:
+ * @channel: The client making the request
+ * @process_kill: pid and signal to send to the pid.
+ *
+ * Sends the specified signal to the process.
+ */
+static void
+process_process_kill (GIOChannel *channel,
+		      WapiHandleRequest_ProcessKill process_kill)
+{
+	WapiHandleResponse resp = {0};
+
+	resp.type = WapiHandleResponseType_ProcessKill;
+
+#define DEBUG
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": kill (%d, %d)",
+		   process_kill.pid, process_kill.signo);
+#endif
+	if (kill (process_kill.pid, process_kill.signo) == -1) {
+		resp.u.process_kill.err = errno;
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": kill (%d, %d) failed: %d",
+		   process_kill.pid, process_kill.signo, resp.u.process_kill.err);
+#endif
+#undef DEBUG
+	}
+
+	send_reply (channel, &resp);
+}
+
+/*
  * process_process_fork:
  * @channel: The client making the request
- * @open_handles: An array of handles referenced by this client
  * @process_fork: Describes the process to fork
  * @fds: stdin, stdout, and stderr for the new process
  *
@@ -861,7 +892,7 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 	guint32 process_handle, thread_handle;
 	struct _WapiHandle_process *process_handle_data;
 	struct _WapiHandle_thread *thread_handle_data;
-	pid_t pid;
+	pid_t pid = 0;
 	
 	resp.type=WapiHandleResponseType_ProcessFork;
 	
@@ -1116,6 +1147,9 @@ static void read_message (GIOChannel *channel, ChannelData *channel_data)
 	case WapiHandleRequestType_ProcessFork:
 		process_process_fork (channel, channel_data,
 				      req.u.process_fork, fds);
+		break;
+	case WapiHandleRequestType_ProcessKill:
+		process_process_kill (channel, req.u.process_kill);
 		break;
 	case WapiHandleRequestType_Error:
 		/* fall through */

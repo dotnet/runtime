@@ -4886,6 +4886,7 @@ static const IcallEntry process_icalls [] = {
 	{"GetProcess_internal(int)", ves_icall_System_Diagnostics_Process_GetProcess_internal},
 	{"GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal},
 	{"GetWorkingSet_internal(intptr,int&,int&)", ves_icall_System_Diagnostics_Process_GetWorkingSet_internal},
+	{"Kill_internal", ves_icall_System_Diagnostics_Process_Kill_internal},
 	{"ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal},
 	{"Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal},
 	{"SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal},

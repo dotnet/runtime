@@ -1559,3 +1559,36 @@ gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env, guint32 dir,
 	
 	return(FALSE);
 }
+
+gboolean
+_wapi_handle_process_kill (gpointer process, guint32 signo, gint *errnum)
+{
+	WapiHandleRequest killproc = {0};
+	WapiHandleResponse killprocresp = {0};
+	gint result;
+	
+	if (shared != TRUE) {
+		if (errnum) *errnum = EINVAL;
+		return FALSE;
+	}
+
+	killproc.type = WapiHandleRequestType_ProcessKill;
+	killproc.u.process_kill.pid = GPOINTER_TO_UINT (process);
+	killproc.u.process_kill.signo = signo;
+	
+	_wapi_daemon_request_response (daemon_sock, &killproc, &killprocresp);
+
+	if (killprocresp.type != WapiHandleResponseType_ProcessKill) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": bogus daemon response, type %d",
+			   killprocresp.type);
+		g_assert_not_reached ();
+	}
+
+	result = killprocresp.u.process_kill.err;
+	if (result != 0 && errnum != NULL)
+		*errnum = (result == FALSE) ? result : 0;
+	
+	return (result == 0);
+}
+

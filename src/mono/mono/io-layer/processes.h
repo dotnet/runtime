@@ -126,4 +126,6 @@ extern gboolean GetProcessWorkingSetSize (gpointer process, size_t *min,
 extern gboolean SetProcessWorkingSetSize (gpointer process, size_t min,
 					  size_t max);
 
+extern gboolean TerminateProcess (gpointer process, gint32 exitCode);
+
 #endif /* _WAPI_PROCESSES_H_ */
