@@ -20,6 +20,7 @@
 #include "util.h"
 #include "dump.h"
 #include "get.h"
+#include "dis-cil.h"
 
 FILE *output;
 

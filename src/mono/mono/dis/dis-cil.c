@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include "meta.h"
+#include "get.h"
 #include "dump.h"
 #include "dis-cil.h"
 
@@ -51,6 +52,30 @@ typedef struct {
 static opcode_t opcodes [300] = {
 #include "mono/cil/opcode.def"
 };
+
+/*
+ * Strings on the US heap are encoded using UTF-16.  Poor man's
+ * UTF-16 to UTF-8.  I know its broken, use libunicode later.
+ */
+static char *
+get_encoded_user_string (const char *ptr)
+{
+	char *res;
+	int len, i, j;
+
+	ptr = get_blob_encoded_size (ptr, &len);
+	res = g_malloc (len + 1);
+
+	/*
+	 * I should really use some kind of libunicode here
+	 */
+	for (i = 0, j = 0; i < len; j++, i += 2)
+		res [j] = ptr [i];
+
+	res [j] = 0;
+		
+	return res;
+}
 
 void
 dissasemble_cil (metadata_t *m, const unsigned char *start, int size) 
@@ -125,11 +150,15 @@ dissasemble_cil (metadata_t *m, const unsigned char *start, int size)
 		
 		case InlineString: {
 			guint32 token = *(guint32 *) ptr;
-
+			
+			char *s = get_encoded_user_string (
+				mono_metadata_user_string (m, token & 0xffffff));
+			
 			/*
 			 * See section 23.1.4 on the encoding of the #US heap
 			 */
-			fprintf (output, "string-0x%08x", token);
+			fprintf (output, "\"%s\"", s);
+			g_free (s);
 			ptr += 4;
 			break;
 		}

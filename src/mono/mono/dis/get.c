@@ -566,4 +566,34 @@ field_flags (guint32 f)
 	return g_strdup (buffer);
 }
 
+/**
+ * get_blob_encoded_size:
+ * @ptr: pointer to a blob object
+ * @size: where we return the size of the object
+ *
+ * This decodes a compressed size as described by 23.1.4
+ *
+ * Returns: the position to start decoding a blob or user string object
+ * from. 
+ */
+const char *
+get_blob_encoded_size (const char *xptr, int *size)
+{
+	const unsigned char *ptr = xptr;
+	
+	if ((*ptr & 0x80) == 0){
+		*size = ptr [0] & 0x7f;
+		ptr++;
+	} else if ((*ptr & 0x40) == 0){
+		*size = ((ptr [0] & 0x3f) << 8) + ptr [1];
+		ptr += 2;
+	} else {
+		*size = ((ptr [0] & 0x1f) << 24) +
+			(ptr [1] << 16) +
+			(ptr [2] << 8) +
+			ptr [3];
+		ptr += 4;
+	}
 
+	return (char *) ptr;
+}
