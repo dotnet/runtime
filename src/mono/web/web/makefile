@@ -30,7 +30,7 @@ OBJECTS=	\
 	deploy/jit-debug-sample2.html		\
 	deploy/languages.html			\
 	deploy/mailing-lists.html		\
-	deploy/mono-contributing-howto.html	\
+	deploy/mono-contribution-howto.html	\
 	deploy/monodoc-xml.html			\
 	deploy/papers.html			\
 	deploy/passport.html			\

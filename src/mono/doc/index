@@ -70,6 +70,20 @@
   </tr>
 </table>
 
+** May 2nd, 2002
+
+	Mark Crichton csvorbis port (C# port of Vorbis player) and
+	Richard Hestilow's <a href="http://monologo.sf.net">MonoLogo compiler</a> are now
+	on the CVS, and you can get them from AnonCVS.
+
+	Dick implemented inter-process sharing of handles as well as
+	simplifying the implementation of WaitForMultipleObjects, now
+	we have a `handles' subsystem in Mono.
+
+	News from the <a
+	href="http://gtk-sharp.sourceforge.net">Gtk#</a> front: <a
+	href="http://gtk-sharp.sourceforge.net/menu.png">Menu support</a>.
+
 ** May 1st, 2002
 
 	Daily packages for <a href="http://www.debian.org">Debian</a> are available
