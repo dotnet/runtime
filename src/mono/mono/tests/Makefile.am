@@ -111,7 +111,8 @@ TESTSRC=			\
 	array-invoke.cs		\
 	decimal.cs		\
 	cpblkTest.il		\
-	jmpTest.il		
+	jmpTest.il		\
+	calliTest.il
 
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)

@@ -258,6 +258,9 @@ int            mono_type_stack_size            (MonoType        *type,
 guint          mono_metadata_type_hash         (MonoType *t1);
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
 
+MonoMethodSignature  *mono_metadata_parse_signature (MonoImage *image, 
+						     guint32    token);
+
 MonoMethodSignature  *mono_metadata_parse_method_signature (MonoImage            *m,
                                                             int                    def,
                                                             const char            *ptr,

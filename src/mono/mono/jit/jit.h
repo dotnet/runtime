@@ -175,7 +175,6 @@ typedef struct {
 } MonoFlowGraph;
 
 typedef struct {
-	MonoMethod *m;
 	gint16 args_size;
 	gint16 vtype_num;
 } MonoJitCallInfo;

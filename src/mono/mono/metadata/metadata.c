@@ -1217,6 +1217,33 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 }
 
 /*
+ * mono_metadata_parse_signature:
+ * @image: metadata context
+ * @toke: metadata token
+ *
+ * Decode a method signature stored in the STANDALONESIG table
+ *
+ * Returns: a MonoMethodSignature describing the signature.
+ */
+MonoMethodSignature *
+mono_metadata_parse_signature (MonoImage *image, guint32 token)
+{
+	MonoTableInfo *tables = image->tables;
+	guint32 idx = mono_metadata_token_index (token);
+	guint32 sig;
+	const char *ptr;
+
+	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);
+		
+	sig = mono_metadata_decode_row_col (&tables [MONO_TABLE_STANDALONESIG], idx - 1, 0);
+
+	ptr = mono_metadata_blob_heap (image, sig);
+	mono_metadata_decode_blob_size (ptr, &ptr);
+
+	return mono_metadata_parse_method_signature (image, FALSE, ptr, NULL); 
+}
+
+/*
  * mono_metadata_parse_method_signature:
  * @m: metadata context
  * @def: use #TRUE when parsing MethodDef, #FALSE with MethodRef signatures.

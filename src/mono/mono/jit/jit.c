@@ -1177,7 +1177,21 @@ check_inlining (MonoMethod *method)
 				ip++;
 				break;
 			case CEE_LDFTN:
-			case CEE_LDVIRTFTN:
+			case CEE_LDVIRTFTN: {
+				MonoMethod *cm;
+				guint32 token;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+
+				cm = mono_get_method (method->klass->image, token, NULL);
+				g_assert (cm);
+
+				if (cm == method)
+					goto fail;
+				
+				break;
+			}
 			case CEE_INITOBJ:
 			case CEE_SIZEOF:
 				ip += 5;
@@ -1932,7 +1946,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.ci.m = cm;
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = 0;
 				
@@ -1949,7 +1962,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = arch_create_jit_trampoline (cm);
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
-				t1->data.ci.m = cm;
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = 0;
 				t1->svt = svt;
@@ -1967,14 +1979,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 			break;
 		}
+		case CEE_CALLI: 
 		case CEE_CALL: 
 		case CEE_CALLVIRT: {
 			MonoMethodSignature *csig;
 			MonoMethod *cm;
-			MBTree *this = NULL;
+			MBTree *ftn, *this = NULL;
 			guint32 token;
 			int k, align, size, args_size = 0;
 			int virtual = *ip == CEE_CALLVIRT;
+			int calli = *ip == CEE_CALLI;
 			gboolean array_set = FALSE;
 			gboolean array_get = FALSE;
 			/* fixme: compute this value */
@@ -1985,20 +1999,27 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			token = read32 (ip);
 			ip += 4;
 
-			cm = mono_get_method (image, token, NULL);
-			g_assert (cm);
+			if (calli) {
+				ftn = *(--sp);
+				csig = mono_metadata_parse_signature (image, token);
+				g_assert (csig);
+				arg_sp = sp -= csig->param_count;
+			} else {
+				cm = mono_get_method (image, token, NULL);
+				g_assert (cm);
 
-			if (cm->klass == mono_defaults.string_class &&
-			    *cm->name == '.' && !strcmp (cm->name, ".ctor"))
-				g_assert_not_reached ();
+				if (cm->klass == mono_defaults.string_class &&
+				    *cm->name == '.' && !strcmp (cm->name, ".ctor"))
+					g_assert_not_reached ();
+				arg_sp = sp -= cm->signature->param_count;
 
-			arg_sp = sp -= cm->signature->param_count;
+				if ((cm->flags & METHOD_ATTRIBUTE_FINAL && 
+				     cm->klass != mono_defaults.object_class) ||
+				    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
+					virtual = 0;
+			}
 
-			if ((cm->flags & METHOD_ATTRIBUTE_FINAL && cm->klass != mono_defaults.object_class) ||
-			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
-				virtual = 0;
-
-			if (mono_jit_inline_code && !virtual && cm->inline_count != -1 &&
+			if (!calli && mono_jit_inline_code && !virtual && cm->inline_count != -1 &&
 			    (cm->inline_info || check_inlining (cm) >= 0)) {
 				MonoInlineInfo *ii = alloca (sizeof (MonoInlineInfo));
 				int args;
@@ -2033,15 +2054,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				continue;
 			}
 			
-			csig = cm->signature;
+			if (!calli)
+				csig = cm->signature;
+
 			nargs = csig->param_count;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			g_assert (!virtual || csig->hasthis);
 
-			/* fixme: we need to unbox the this pointer for value types ?*/
-			g_assert (!virtual || !cm->klass->valuetype);
-
-			if (cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+			if (!calli && cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 				if (cm->klass->parent == mono_defaults.array_class) {
 					if (!strcmp (cm->name, "Set")) { 
 						array_set = TRUE;
@@ -2052,7 +2072,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			for (k = nargs - 1; k >= 0; k--) {
-				MonoType *type = cm->signature->params [k];
+				MonoType *type = csig->params [k];
 				t1 = mono_ctree_new (mp, map_arg_type (type), arg_sp [k], NULL);
 				size = mono_type_stack_size (type, &align);
 				t1->data.i = size;
@@ -2079,7 +2099,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = ves_array_element_address;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.ci.m = cm;
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = vtype_num;
  
@@ -2104,7 +2123,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = ves_array_element_address;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.ci.m = cm;
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = vtype_num;
 
@@ -2113,7 +2131,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			
 			} else {
 
-				if (virtual || (csig->hasthis && 
+				if (calli) {
+					t2 = ftn; 
+				} else if (virtual || (csig->hasthis && 
 						!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
 						(cm->klass->marshalbyref || shared_to_unshared_call))) {
 
@@ -2132,7 +2152,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
-				t1->data.ci.m = cm;
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = vtype_num;
 				t1->svt = svt;
