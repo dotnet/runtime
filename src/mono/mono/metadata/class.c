@@ -968,6 +968,15 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			if (max_iid < ic->interface_id)
 				max_iid = ic->interface_id;
 		}
+		ifaces = mono_class_get_implemented_interfaces (k);
+		if (ifaces) {
+			for (i = 0; i < ifaces->len; ++i) {
+				ic = g_ptr_array_index (ifaces, i);
+				if (max_iid < ic->interface_id)
+					max_iid = ic->interface_id;
+			}
+			g_ptr_array_free (ifaces, TRUE);
+		}
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (class)) {
