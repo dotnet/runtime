@@ -1,3 +1,10 @@
+/*
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
+ */
+
 #ifndef _MONO_JIT_JIT_H_
 #define _MONO_JIT_JIT_H_
 
@@ -234,6 +241,24 @@ MonoObject *
 mono_remoting_invoke       (MonoObject *real_proxy, MonoMethodMessage *msg, 
 			    MonoObject **exc, MonoArray **out_args);
 
+MonoDomain * 
+mono_jit_init              (char *file);
+
+int
+mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 
+			    int argc, char *argv[]);
+
+void        
+mono_jit_cleanup           (MonoDomain *domain);
+
+MonoMethodMessage *
+arch_method_call_message_new (MonoMethod *method, gpointer stack);
+
+void
+arch_method_return_message_restore (MonoMethod *method, gpointer stack, 
+				    MonoObject *result, MonoArray *out_args);
+
+
 /* some handy debugging functions */
 
 void
@@ -241,10 +266,5 @@ mono_print_ctree           (MBTree *tree);
 
 void
 mono_print_forest          (GPtrArray *forest);
-
-
-MonoDomain* mono_jit_init (char *file);
-int         mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
-void        mono_jit_cleanup (MonoDomain *domain);
 
 #endif

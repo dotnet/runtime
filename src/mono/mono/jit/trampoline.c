@@ -16,7 +16,6 @@
 
 #include "jit.h"
 #include "codegen.h"
-#include "message.h"
 
 MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
@@ -65,14 +64,14 @@ arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
 
 	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
 
-	msg = mono_method_call_message_new (method, &first_arg);
+	msg = arch_method_call_message_new (method, &first_arg);
 
 	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
 
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);
 
-	mono_method_return_message_restore (method, &first_arg, res, out_args);
+	arch_method_return_message_restore (method, &first_arg, res, out_args);
 
 	/* WARNING: do not write any code here, because that would destroy 
 	 * the return value 

@@ -1,5 +1,5 @@
 /*
- * testjit.c: The mono JIT compiler.
+ * jit.c: The mono JIT compiler.
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)
@@ -38,7 +38,6 @@
 #include "regset.h"
 #include "codegen.h"
 #include "debug.h"
-#include "message.h"
 
 /*
  * Pull the list of opcodes

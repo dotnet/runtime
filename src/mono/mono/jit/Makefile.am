@@ -26,7 +26,6 @@ libmono_a_SOURCES =			\
 	delegate.c		\
 	exception.c		\
 	invoke.c		\
-	message.h		\
 	message.c
 
 mono_SOURCES = mono.c

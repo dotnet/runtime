@@ -14,10 +14,9 @@
 #include <mono/metadata/tabledefs.h>
 
 #include "jit.h"
-#include "message.h"
 
 /**
- * mono_method_return_message_restore:
+ * arch_method_return_message_restore:
  * @method: method info
  * @stack: pointer to the stack arguments
  * @result: result to restore
@@ -26,7 +25,7 @@
  * Restore results from message based processing back to the stack.
  */
 void
-mono_method_return_message_restore (MonoMethod *method, gpointer stack, 
+arch_method_return_message_restore (MonoMethod *method, gpointer stack, 
 				    MonoObject *result, MonoArray *out_args)
 {
 	MonoMethodSignature *sig = method->signature;
@@ -152,7 +151,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer stack,
 }
 
 /**
- * mono_method_call_message_new:
+ * arch_method_call_message_new:
  * @method: method info
  * @stack: pointer to the stack arguments
  *
@@ -160,7 +159,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer stack,
  */
 
 MonoMethodMessage *
-mono_method_call_message_new (MonoMethod *method, gpointer stack)
+arch_method_call_message_new (MonoMethod *method, gpointer stack)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = method->signature;
@@ -207,6 +206,20 @@ mono_method_call_message_new (MonoMethod *method, gpointer stack)
 	return msg;
 }
 
+/**
+ * mono_load_remote_field:
+ * @this: pointer to an object
+ * @klass: klass of the object containing @field
+ * @field: the field to load
+ * @res: a storage to store the result
+ *
+ * This method is called by the runtime on attempts to load fields of
+ * transparent proxy objects. @this points to such TP, @klass is the class of
+ * the object containing @field. @res is only a storage location which can be
+ * used to store the result.
+ *
+ * Returns: an address pointing to the value of field.
+ */
 gpointer
 mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res)
 {
@@ -252,6 +265,17 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 		return res;
 }
 
+/**
+ * mono_store_remote_field:
+ * @this: pointer to an object
+ * @klass: klass of the object containing @field
+ * @field: the field to load
+ * @val: the value/object to store
+ *
+ * This method is called by the runtime on attempts to store fields of
+ * transparent proxy objects. @this points to such TP, @klass is the class of
+ * the object containing @field. @val is the new value to store in @field.
+ */
 void
 mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val)
 {
