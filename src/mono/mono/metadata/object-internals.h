@@ -231,6 +231,7 @@ struct _MonoThread {
 	gpointer suspend_event;
 	gpointer resume_event;
 	MonoObject *synch_lock;
+	gboolean unmanaged;
 };
 
 typedef struct {
@@ -401,7 +402,7 @@ mono_type_initialization_init (void);
 /* Reflection and Reflection.Emit support */
 
 /*
- * The followinbg structure must match the C# implementation in our corlib.
+ * The following structure must match the C# implementation in our corlib.
  */
 
 struct _MonoReflectionMethod {
@@ -458,6 +459,16 @@ typedef struct {
 	guint32 AttrsImpl;
 	MonoObject *MarshalAsImpl;
 } MonoReflectionParameter;
+
+struct _MonoReflectionMethodBody {
+	MonoObject object;
+	MonoArray *clauses;
+	MonoArray *locals;
+	MonoArray *il;
+	MonoBoolean init_locals;
+	guint32 sig_token;
+	guint32 max_stack;
+};
 
 struct _MonoReflectionAssembly {
 	MonoObject object;

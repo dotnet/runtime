@@ -5469,6 +5469,42 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	return res;
 }
 
+/*
+ * mono_method_body_get_object:
+ * @domain: an app domain
+ * @method: a method
+ *
+ * Return an System.Reflection.MethodBody object representing the method @method.
+ */
+MonoReflectionMethodBody*
+mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
+{
+	static MonoClass *System_Reflection_MethodBody = NULL;
+	MonoClass *klass;
+	MonoReflectionMethodBody *ret;
+	MonoMethodNormal *mn;
+	MonoMethodHeader *header;
+
+	if (!System_Reflection_MethodBody)
+		System_Reflection_MethodBody = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MethodBody");
+
+	CHECK_OBJECT (MonoReflectionMethodBody *, method, NULL);
+
+	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return NULL;
+	mn = (MonoMethodNormal *)method;
+	header = mn->header;
+
+	ret = (MonoReflectionMethodBody*)mono_object_new (domain, System_Reflection_MethodBody);
+	/* FIXME: Other fields */
+	ret->init_locals = header->init_locals;
+	ret->il = mono_array_new (domain, mono_defaults.byte_class, header->code_size);
+	memcpy (mono_array_addr (ret->il, guint8*, 0), header->code, header->code_size);
+	CACHE_OBJECT (method, ret, NULL);
+	return ret;
+}
+
 MonoObject *
 mono_get_dbnull_object (MonoDomain *domain)
 {

@@ -59,6 +59,7 @@ MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass 
 MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
+MonoReflectionMethodBody* mono_method_body_get_object (MonoDomain *domain, MonoMethod *method);
 MonoObject* mono_get_dbnull_object (MonoDomain *domain);
 
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
