@@ -3745,7 +3745,6 @@ ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoS
 #if defined (PLATFORM_WIN32)
 	static void (*output_debug) (gchar *);
 	static gboolean tried_loading = FALSE;
-	gchar *str;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3773,9 +3772,7 @@ ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoS
 	if (output_debug == NULL)
 		return;
 	
-	str = mono_string_to_utf8 (message);
-	output_debug (str);
-	g_free (str);
+	output_debug (mono_string_chars (message));
 #else
 	g_warning ("WriteWindowsDebugString called and PLATFORM_WIN32 not defined!\n");
 #endif
