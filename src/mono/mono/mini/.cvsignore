@@ -2,6 +2,7 @@ Makefile
 Makefile.in
 *.o
 *.exe
+*.dll
 *.lo
 *.la
 .libs
