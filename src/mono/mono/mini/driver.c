@@ -87,8 +87,10 @@ opt_names [] = {
 	MONO_OPT_BRANCH |	\
 	MONO_OPT_LINEARS |	\
 	MONO_OPT_INTRINS |  \
+	MONO_OPT_LOOP |  \
     MONO_OPT_AOT)
 
+#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP)
 
 static guint32
 parse_optimizations (const char* p)
@@ -140,7 +142,7 @@ parse_optimizations (const char* p)
 				if (invert)
 					opt = 0;
 				else
-					opt = ~(MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_ABCREM | exclude);
+					opt = ~(EXCLUDED_FROM_ALL | exclude);
 				p += 3;
 				if (*p == ',')
 					p++;
