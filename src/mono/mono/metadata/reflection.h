@@ -264,6 +264,7 @@ typedef struct {
 	GHashTable *typeref;
 	GHashTable *handleref;
 	GHashTable *tokens;
+	GHashTable *blob_cache;
 	GList *array_methods;
 	MonoGHashTable *token_fixups;
 	char *strong_name;
@@ -348,6 +349,8 @@ typedef struct {
 	MonoArray *guid;
 	guint32    table_idx;
 	MonoReflectionAssemblyBuilder *assemblyb;
+	MonoArray *global_methods;
+	MonoArray *global_fields;
 } MonoReflectionModuleBuilder;
 
 typedef struct {

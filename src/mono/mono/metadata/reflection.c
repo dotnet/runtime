@@ -198,6 +198,52 @@ stream_data_align (MonoDynamicStream *stream)
 		mono_image_add_stream_data (stream, buf, 4 - count);
 }
 
+static int
+mono_blob_entry_hash (const char* str)
+{
+	guint len, h;
+	const char *end;
+	len = mono_metadata_decode_blob_size (str, &str);
+	end = str + len;
+	h = *str;
+	for (str += 1; str < end; str++)
+		h = (h << 5) - h + *str;
+	return h;
+}
+
+static gboolean
+mono_blob_entry_equal (const char *str1, const char *str2) {
+	int len, len2;
+	const char *end1;
+	const char *end2;
+	len = mono_metadata_decode_blob_size (str1, &end1);
+	len2 = mono_metadata_decode_blob_size (str2, &end2);
+	if (len != len2)
+		return 0;
+	return memcmp (end1, end2, len) == 0;
+}
+
+static guint32
+add_to_blob_cached (MonoDynamicAssembly *assembly, char *b1, int s1, char *b2, int s2)
+{
+	guint32 idx;
+	char *copy;
+	gpointer oldkey, oldval;
+	
+	copy = g_malloc (s1+s2);
+	memcpy (copy, b1, s1);
+	memcpy (copy + s1, b2, s2);
+	if (g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
+		g_free (copy);
+		idx = GPOINTER_TO_UINT (oldval);
+	} else {
+		idx = mono_image_add_stream_data (&assembly->blob, b1, s1);
+		mono_image_add_stream_data (&assembly->blob, b2, s2);
+		g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
+	}
+	return idx;
+}
+
 /* modified version needed to handle building corlib */
 static MonoClass*
 my_mono_class_from_mono_type (MonoType *type) {
@@ -320,8 +366,7 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoMethodSignature *sig
 	/* store length */
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
 	return idx;
 }
@@ -358,8 +403,7 @@ method_builder_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethod
 	/* store length */
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
 	return idx;
 }
@@ -393,8 +437,7 @@ encode_locals (MonoDynamicAssembly *assembly, MonoReflectionILGen *ilgen)
 	}
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
-	sig_idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	sig_idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
 
 	values [MONO_STAND_ALONE_SIGNATURE] = sig_idx;
@@ -662,8 +705,7 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type,
 		values [MONO_CUSTOM_ATTR_TYPE] = type;
 		p = blob_size;
 		mono_metadata_encode_value (mono_array_length (cattr->data), p, &p);
-		values [MONO_CUSTOM_ATTR_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, p - blob_size);
-		mono_image_add_stream_data (&assembly->blob,
+		values [MONO_CUSTOM_ATTR_VALUE] = add_to_blob_cached (assembly, blob_size, p - blob_size,
 			mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 		values += MONO_CUSTOM_ATTR_SIZE;
 		++table->next_idx;
@@ -846,8 +888,7 @@ fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoClassField *field)
 	encode_type (assembly, field->type, p, &p);
 	g_assert (p-buf < 64);
 	mono_metadata_encode_value (p-buf, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
 	return idx;
 }
@@ -868,8 +909,7 @@ field_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionFieldBuilde
 	encode_reflection_type (assembly, fb->type, p, &p);
 	g_assert (p-buf < 64);
 	mono_metadata_encode_value (p-buf, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
 	return idx;
 }
@@ -971,18 +1011,17 @@ handle_enum:
 		/* there is no signature */
 		len = str->length * 2;
 		mono_metadata_encode_value (len, b, &b);
-		idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 		{
 			char *swapped = g_malloc (2 * mono_string_length (str));
 			const char *p = (const char*)mono_string_chars (str);
 
 			swap_with_size (swapped, p, 2, mono_string_length (str));
-			mono_image_add_stream_data (&assembly->blob, swapped, len);
+			idx = add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
 			g_free (swapped);
 		}
 #else
-		mono_image_add_stream_data (&assembly->blob, (const char*)mono_string_chars (str), len);
+		idx = add_to_blob_cached (assembly, blob_size, b-blob_size, (const char*)mono_string_chars (str), len);
 #endif
 
 		g_free (buf);
@@ -994,12 +1033,12 @@ handle_enum:
 
 	/* there is no signature */
 	mono_metadata_encode_value (len, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 	swap_with_size (blob_size, box_val, len, 1);
 	mono_image_add_stream_data (&assembly->blob, blob_size, len);
 #else
-	mono_image_add_stream_data (&assembly->blob, box_val, len);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, box_val, len);
 #endif
 
 	g_free (buf);
@@ -1023,8 +1062,7 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 	}
 	len = p-buf;
 	mono_metadata_encode_value (len, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, len);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, len);
 	g_free (buf);
 	return idx;
 }
@@ -1127,8 +1165,7 @@ property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionProperty
 	/* store length */
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
-	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
 	return idx;
 }
@@ -1333,8 +1370,7 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	
 	g_assert (p-sig < 128);
 	mono_metadata_encode_value (p-sig, b, &b);
-	token = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, sig, p-sig);
+	token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
 
 	table = &assembly->tables [MONO_TABLE_TYPESPEC];
 	alloc_table (table, table->rows + 1);
@@ -1774,6 +1810,10 @@ module_add_cattrs (MonoDynamicAssembly *assembly, MonoReflectionModuleBuilder *m
 	
 	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_MODULE, mb->cattrs);
 	
+	/* no types in the module */
+	if (!mb->types)
+		return;
+	
 	for (i = 0; i < mono_array_length (mb->types); ++i)
 		type_add_cattrs (assembly, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i));
 }
@@ -1797,6 +1837,10 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENC] = 0;
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENCBASE] = 0;
 
+	/* no types in the module */
+	if (!mb->types)
+		return;
+	
 	/*
 	 * fill-in info in other tables as well.
 	 */
@@ -2268,8 +2312,36 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_ASSEMBLY_FLAGS] = assemblyb->flags;
 	set_version_from_string (assemblyb->version, values);
 
-	assembly->tables [MONO_TABLE_TYPEDEF].rows = 1; /* .<Module> */
-	assembly->tables [MONO_TABLE_TYPEDEF].next_idx++;
+	table = &assembly->tables [MONO_TABLE_TYPEDEF];
+	table->rows = 1; /* .<Module> */
+	table->next_idx++;
+	alloc_table (table, table->rows);
+	/*
+	 * Set the first entry.
+	 */
+	values = table->values + table->columns;
+	values [MONO_TYPEDEF_FLAGS] = 0;
+	values [MONO_TYPEDEF_NAME] = string_heap_insert (&assembly->sheap, "<Module>") ;
+	values [MONO_TYPEDEF_NAMESPACE] = string_heap_insert (&assembly->sheap, "") ;
+	values [MONO_TYPEDEF_EXTENDS] = 0;
+	values [MONO_TYPEDEF_FIELD_LIST] = 1;
+	values [MONO_TYPEDEF_METHOD_LIST] = 1;
+
+	/* 
+	 * handle global methods 
+	 * FIXME: test what to do when global methods are defined in multiple modules.
+	 */
+	if (assemblyb->modules) {
+		MonoReflectionModuleBuilder *mod = mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, 0);
+		if (mod->global_methods) {
+			table = &assembly->tables [MONO_TABLE_METHOD];
+			table->rows += mono_array_length (mod->global_methods);
+			alloc_table (table, table->rows);
+			for (i = 0; i < mono_array_length (mod->global_methods); ++i)
+				mono_image_get_method_info (
+					mono_array_get (mod->global_methods, MonoReflectionMethodBuilder*, i), assembly);
+		}
+	}
 
 	if (assemblyb->modules) {
 		len = mono_array_length (assemblyb->modules);
@@ -2285,22 +2357,9 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 		table->next_idx ++;
 	}
 
-	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	/* 
 	 * table->rows is already set above and in mono_image_fill_module_table.
 	 */
-	alloc_table (table, table->rows);
-	/*
-	 * Set the first entry.
-	 */
-	values = table->values + table->columns;
-	values [MONO_TYPEDEF_FLAGS] = 0;
-	values [MONO_TYPEDEF_NAME] = string_heap_insert (&assembly->sheap, "<Module>") ;
-	values [MONO_TYPEDEF_NAMESPACE] = string_heap_insert (&assembly->sheap, "") ;
-	values [MONO_TYPEDEF_EXTENDS] = 0;
-	values [MONO_TYPEDEF_FIELD_LIST] = 1;
-	values [MONO_TYPEDEF_METHOD_LIST] = 1;
-
 	/* add all the custom attributes at the end, once all the indexes are stable */
 	mono_image_add_cattrs (assembly, 1, CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
 
@@ -2480,10 +2539,11 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->tokens = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
+	assembly->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);
-	mono_image_add_stream_data (&assembly->blob, "", 1);
+	add_to_blob_cached (assembly, "", 1, NULL, 0);
 	/* import tables... */
 	mono_image_add_stream_data (&assembly->code, entrycode, sizeof (entrycode));
 	assembly->iat_offset = mono_image_add_stream_zero (&assembly->code, 8); /* two IAT entries */
