@@ -325,16 +325,21 @@ const char *
 get_custom_mod (MonoImage *m, const char *ptr, char **return_value)
 {
 	char *s;
+	const char *reqd;
 	
-	if ((*ptr == MONO_TYPE_CMOD_OPT) ||
-	    (*ptr == MONO_TYPE_CMOD_REQD)){
+	*return_value = NULL;
+	while ((*ptr == MONO_TYPE_CMOD_OPT) ||
+		   (*ptr == MONO_TYPE_CMOD_REQD)) {
+		reqd = (*ptr == MONO_TYPE_CMOD_REQD) ? "reqd" : "opt";
 		ptr++;
 		ptr = get_encoded_typedef_or_ref (m, ptr, &s);
 
-		*return_value = g_strconcat ("CMOD ", s, NULL);
+		if (*return_value == NULL)
+			*return_value = g_strconcat (reqd, " ", s, NULL);
+		else
+			*return_value = g_strconcat (*return_value, " ", reqd, " ", s, NULL);
 		g_free (s);
-	} else
-		*return_value = NULL;
+	}
 	return ptr;
 }
 
@@ -421,6 +426,8 @@ dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod)
 	int i;
 	for (i = 0; i < n; ++i) {
 		char *tok = dis_stringify_token (m, mod[i].token);
+		if (i > 0)
+			g_string_sprintfa (s, " ");
 		g_string_sprintfa (s, "%s %s", mod[i].required ? "opt": "reqd", tok);
 		g_free (tok);
 	}

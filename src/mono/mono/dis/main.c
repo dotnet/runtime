@@ -470,7 +470,7 @@ pinvoke_info (MonoImage *m, guint32 mindex)
  * This routine displays the methods in the Method Table from @start to @end
  */
 static void
-dis_method_list (MonoImage *m, guint32 start, guint32 end)
+dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_METHOD_SIZE];
@@ -497,7 +497,7 @@ dis_method_list (MonoImage *m, guint32 start, guint32 end)
 		mono_metadata_decode_blob_size (sig, &sig);
 		ms = mono_metadata_parse_method_signature (m, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1);
-			
+
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
 
@@ -514,7 +514,7 @@ dis_method_list (MonoImage *m, guint32 start, guint32 end)
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dis_code (m, cols [MONO_METHOD_RVA]);
-		fprintf (output, "    } // end of method %s\n\n", sig_str);
+		fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
 	}
@@ -811,7 +811,7 @@ dis_type (MonoImage *m, int n)
 		last = m->tables [MONO_TABLE_METHOD].rows;
 	
 	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
-		dis_method_list (m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
+		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
 
 	dis_property_list (m, n);
 	dis_event_list (m, n);
