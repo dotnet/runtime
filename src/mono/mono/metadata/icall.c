@@ -3195,6 +3195,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	MonoAssembly **ptr;
 	MonoDomain *domain = mono_object_domain (assembly);
 	int i, count = 0;
+	static MonoMethod *create_culture = NULL;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3205,7 +3206,15 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	for (ptr = assembly->assembly->image->references; ptr && *ptr; ptr++)
 		count++;
 
-	result = mono_array_new (mono_object_domain (assembly), System_Reflection_AssemblyName, count);
+	result = mono_array_new (domain, System_Reflection_AssemblyName, count);
+
+	if (count > 0) {
+		MonoMethodDesc *desc = mono_method_desc_new (
+			"System.Globalization.CultureInfo:CreateSpecificCulture(string)", TRUE);
+		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
+		g_assert (create_culture);
+		mono_method_desc_free (desc);
+	}
 
 	for (i = 0; i < count; i++) {
 		MonoAssembly *assem = assembly->assembly->image->references [i];
@@ -3221,6 +3230,27 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname->minor = assem->aname.minor;
 		aname->build = assem->aname.build;
 		aname->revision = assem->aname.revision;
+		aname->revision = assem->aname.revision;
+		aname->hashalg = assem->aname.hash_alg;
+		aname->flags = assem->aname.flags;
+
+		if (create_culture) {
+			gpointer args [1];
+			args [0] = mono_string_new (domain, assem->aname.culture);
+			aname->cultureInfo = mono_runtime_invoke (create_culture, NULL, args, NULL);
+		}
+
+		if (assem->aname.public_key) {
+			guint32 pkey_len;
+			const char *pkey_ptr = assem->aname.public_key;
+			pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
+
+			aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
+			memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
+		}
+
+		/* public key token isn't copied - the class library will 
+		   automatically generate it from the public key if required */
 
 		absolute = g_build_filename (assem->basedir, assem->image->module_name, NULL);
 		codebase = g_filename_to_uri (absolute, NULL, NULL);

@@ -9,12 +9,15 @@ typedef struct _MonoImage MonoImage;
 typedef struct _MonoAssembly MonoAssembly;
 typedef struct _MonoTableInfo MonoTableInfo;
 
+#define MONO_PUBLIC_KEY_TOKEN_LENGTH	17
+
 typedef struct {
 	const char *name;
 	const char *culture;
 	const char *hash_value;
 	const guint8* public_key;
-	const char *public_tok_value;
+	// string of 16 hex chars + 1 NULL
+	guchar public_key_token [MONO_PUBLIC_KEY_TOKEN_LENGTH];
 	guint32 hash_alg;
 	guint32 hash_len;
 	guint32 flags;

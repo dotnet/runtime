@@ -267,8 +267,28 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	aname->build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
 	aname->revision = cols [MONO_ASSEMBLY_REV_NUMBER];
 	aname->hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
-	if (cols [MONO_ASSEMBLY_PUBLIC_KEY])
+	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
+		gchar* token = g_malloc (8);
+		gchar* encoded;
+
 		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+		int len = mono_metadata_decode_blob_size (aname->public_key, &aname->public_key);
+
+		mono_digest_get_public_token (token, aname->public_key, len);
+		encoded = encode_public_tok (token, 8);
+		g_strlcpy (aname->public_key_token, encoded, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+
+		g_free (encoded);
+		g_free (token);
+	}
+	else {
+		aname->public_key = NULL;
+		memset (aname->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	}
+
+	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
+		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+	}
 	else
 		aname->public_key = 0;
 
@@ -338,10 +358,11 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
 
 		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-			aname.public_tok_value = assemblyref_public_tok (image,
-					cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname.flags);
+			gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname.flags);
+			g_strlcpy (aname.public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+			g_free (token);
 		} else {
-			aname.public_tok_value = NULL;
+			memset (aname.public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		} 
 
 		references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
@@ -377,13 +398,11 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 					   "     Token:       %s\n",
 					   aname.name, image->name, i,
 					   aname.major, aname.minor, aname.build, aname.revision,
-					   aname.public_tok_value);
-				g_free (aname.public_tok_value);
+					   aname.public_key_token);
 				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
 				return;
 			}
 		}
-		g_free (aname.public_tok_value);
 
 		/* 
 		 * This check is disabled since lots of people seem to have an older
@@ -860,7 +879,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	gint32 len;
 	gchar **paths;
 
-	if (!aname->public_tok_value) {
+	if (aname->public_key_token [0] == NULL) {
 		return NULL;
 	}
 
@@ -881,7 +900,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 	version = g_strdup_printf ("%d.%d.%d.%d_%s_%s", aname->major,
 			aname->minor, aname->build, aname->revision,
-			culture, aname->public_tok_value);
+			culture, aname->public_key_token);
 	
 	subpath = g_build_path (G_DIR_SEPARATOR_S, name, version, filename, NULL);
 	g_free (name);

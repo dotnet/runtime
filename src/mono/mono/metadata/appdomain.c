@@ -792,7 +792,6 @@ free_assembly_name (MonoAssemblyName *aname)
 	g_free ((void *) aname->name);
 	g_free ((void *) aname->culture);
 	g_free ((void *) aname->hash_value);
-	g_free ((void *) aname->public_tok_value);
 }
 
 static gboolean
@@ -859,7 +858,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			if (*value && strncmp (value, "null", 4)) {
 				gchar *t = g_strdup (value);
 				g_strchug (t);
-				aname->public_tok_value = g_strdup (g_strchomp (value));
+				g_strlcpy (aname->public_key_token, g_strchomp (value), MONO_PUBLIC_KEY_TOKEN_LENGTH);
 				g_free (t);
 			}
 			continue;

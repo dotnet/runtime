@@ -1409,7 +1409,7 @@ type_get_fully_qualified_name (MonoType *type) {
 		name, ta->aname.name,
 		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
 		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral",
-		ta->aname.public_tok_value ? ta->aname.public_tok_value : "null");
+		ta->aname.public_key_token [0] ? ta->aname.public_key_token : "null");
 	g_free (name);
 	return result;
 }
@@ -5270,7 +5270,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	memset (assembly, 0, sizeof (MonoAssemblyName));
 	assembly->name = p;
 	assembly->culture = "";
-	assembly->public_tok_value = NULL;
+	memset (assembly->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 
 	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@'))
 		p++;
@@ -5318,10 +5318,15 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			if (strncmp (p, "null", 4) == 0) {
 				p += 4;
 			} else {
-				assembly->public_tok_value = p;
+				int len;
+				gchar *start = p;
 				while (*p && *p != ',') {
 					p++;
 				}
+				len = (p - start + 1);
+				if (len > MONO_PUBLIC_KEY_TOKEN_LENGTH)
+					len = MONO_PUBLIC_KEY_TOKEN_LENGTH;
+				g_strlcpy (assembly->public_key_token, p, len);
 			}
 		} else {
 			while (*p && *p != ',')
