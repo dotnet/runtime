@@ -547,6 +547,28 @@ public class Tests {
 		return 0;
 	}
 
+	/* Byref String Array */
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_byref_string_array")]
+	public static extern int mono_test_marshal_byref_string_array (ref string[] data);
+
+	public static int test_0_byref_string_array () {
+
+		string[] arr = null;
+
+		if (mono_test_marshal_byref_string_array (ref arr) != 0)
+			return 1;
+
+		arr = new string[] { "Alpha", "Beta", "Gamma" };
+
+		if (mono_test_marshal_byref_string_array (ref arr) != 1)
+			return 2;
+
+		/* FIXME: Test returned array and out case */
+
+		return 0;
+	}
+
 	/*
 	 * AMD64 small structs-by-value tests.
 	 */
