@@ -27,7 +27,7 @@
 
 #define ARG_SIZE	sizeof (stackval)
 
-MonoString*
+static MonoString*
 mono_string_new_wrapper (const char *text)
 {
 	MonoDomain *domain = mono_domain_get ();

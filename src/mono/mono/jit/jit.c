@@ -3291,7 +3291,7 @@ main (int argc, char *argv [])
 	mono_install_runtime_exec_main (jit_exec_main);
 	mono_install_handler (arch_get_throw_exception ());
 
-	domain = mono_init (file);
+	domain = mono_init ();
 	mono_thread_init (domain);
 	mono_network_init ();
 
@@ -3315,7 +3315,7 @@ main (int argc, char *argv [])
 	mono_network_cleanup();
 	mono_thread_cleanup();
 
-	mono_domain_unload (domain);
+	// mono_domain_unload (domain);
 
 	return retval;
 }

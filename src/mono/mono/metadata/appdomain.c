@@ -45,7 +45,7 @@ ldstr_equal (const char *str1, const char *str2) {
 	return memcmp (str1, str2, len) == 0;
 }
 
-MonoDomain *
+static MonoDomain *
 mono_create_domain ()
 {
 	MonoDomain *domain;
@@ -63,8 +63,16 @@ mono_create_domain ()
 	return domain;
 }
 
+/**
+ * mono_init:
+ * 
+ * Creates the initial application domain and initializes the mono_defaults
+ * structure.
+ *
+ * Returns: the initial domain.
+ */
 MonoDomain *
-mono_init (const char *file)
+mono_init ()
 {
 	static MonoDomain *domain = NULL;
 	MonoAppDomainSetup *setup;
@@ -212,6 +220,15 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 	// fixme: implement me
 }
 
+/**
+ * mono_domain_transfer_object:
+ * @src: the source domain
+ * @dst: the destination domain
+ * @obj: the object to transfer
+ *
+ * This function is used to transfer objects between domains. This is done by
+ * marshalling or serialisation. 
+ */
 static MonoObject *
 mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 {
@@ -299,12 +316,23 @@ ves_icall_System_AppDomain_getFriendlyName (MonoAppDomain *ad)
 	return ad->data->friendly_name;
 }
 
+/**
+ * mono_domain_get:
+ *
+ * Returns the current domain.
+ */
 inline MonoDomain *
 mono_domain_get ()
 {
 	return ((MonoDomain *)TlsGetValue (appdomain_thread_id));
 }
 
+/**
+ * mono_domain_set:
+ * @domain: the new domain
+ *
+ * Sets the current domain to @domain.
+ */
 inline void
 mono_domain_set (MonoDomain *domain)
 {
@@ -354,10 +382,6 @@ add_assembly (gpointer key, gpointer value, gpointer user_data)
 	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (ah->domain, value));
 }
 
-//
-// This is not correct, because we return all the assemblies loaded, and not
-// those that come from the AppDomain, but its better than nothing.
-//
 MonoArray *
 ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 {
@@ -417,6 +441,13 @@ ves_icall_System_AppDomain_Unload (MonoAppDomain *ad)
 	mono_domain_unload (ad->data);
 }
 
+/**
+ * mono_domain_assembly_open:
+ * @domain: the application domain
+ * @name: file name of the assembly
+ *
+ * fixme: maybe we should integrate this with mono_assembly_open ??
+ */
 MonoAssembly *
 mono_domain_assembly_open (MonoDomain *domain, char *name)
 {
@@ -431,6 +462,7 @@ mono_domain_assembly_open (MonoDomain *domain, char *name)
 
 	g_hash_table_insert (domain->assemblies, ass->name, ass);
 
+	// fixme: maybe this must be recursive ?
 	for (i = 0; tmp = ass->image->references [i]; i++) {
 		if (!g_hash_table_lookup (domain->assemblies, tmp->name))
 			g_hash_table_insert (domain->assemblies, tmp->name, tmp);

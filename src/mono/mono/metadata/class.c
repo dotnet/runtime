@@ -269,6 +269,15 @@ mono_get_unique_iid (MonoClass *class)
 	return iid - 1;
 }
 
+/**
+ * mono_class_init:
+ * @class: the class to initialize
+ *
+ * compute the instance_size, class_size and other infos that cannot be 
+ * computed at mono_class_get() time. Also compute a generic vtable and 
+ * the method slot numbers. We use this infos later to create a domain
+ * specific vtable.  
+ */
 void
 mono_class_init (MonoClass *class)
 {
@@ -546,6 +555,14 @@ mono_class_init (MonoClass *class)
 	*/
 }
 
+/**
+ * mono_class_vtable:
+ * @domain: the application domain
+ * @class: the class to initialize
+ *
+ * VTables are domain specific because we create domain specific code, and 
+ * they contain the domain specific static class data.
+ */
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {

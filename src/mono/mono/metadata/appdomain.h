@@ -51,10 +51,7 @@ struct _MonoAppDomain {
 };
 
 MonoDomain *
-mono_init (const char *file);
-
-MonoDomain *
-mono_create_domain (void);
+mono_init (void);
 
 inline MonoDomain *
 mono_domain_get (void);

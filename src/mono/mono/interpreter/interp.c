@@ -3779,7 +3779,7 @@ main (int argc, char *argv [])
 
 	mono_install_handler (interp_ex_handler);
 
-	domain = mono_init (file);
+	domain = mono_init ();
 	mono_thread_init (domain);
 	mono_network_init ();
 
