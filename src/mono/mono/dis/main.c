@@ -133,8 +133,10 @@ dis_directive_module (MonoImage *m)
 		name = mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]);
 		ename = get_escaped_name (name);
 		guid = get_guid (m, cols [MONO_MODULE_MVID]);
-		fprintf (output, ".module %s // GUID = %s\n", ename, guid);
+		fprintf (output, ".module %s // GUID = %s\n\n", ename, guid);
 		g_free (ename);
+
+		dump_cattrs (m, MONO_TOKEN_MODULE | (i + 1), "");
 	}
 }
 

@@ -1658,6 +1658,9 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 	case MONO_TABLE_ASSEMBLY:
 		idx |= CUSTOM_ATTR_ASSEMBLY;
 		break;
+	case MONO_TABLE_MODULE:
+		idx |= CUSTOM_ATTR_MODULE;
+		break;
 	case MONO_TABLE_PROPERTY:
 		idx |= CUSTOM_ATTR_PROPERTY;
 		break;
