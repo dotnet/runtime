@@ -653,13 +653,25 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	int i, n, stack_size, type;
 	MonoType *ptype;
 
+	stack_size = 0;
+	/* add the vararg cookie before the non-implicit args */
+	if (call->signature->call_convention == MONO_CALL_VARARG) {
+		MonoInst *sig_arg;
+		MONO_INST_NEW (cfg, arg, OP_OUTARG);
+		MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+		sig_arg->inst_p0 = call->signature;
+		arg->inst_left = sig_arg;
+		arg->type = STACK_PTR;
+		/* prepend, so they get reversed */
+		arg->next = call->out_args;
+		call->out_args = arg;
+		stack_size += sizeof (gpointer);
+	}
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
-		stack_size = 4;
-	else
-		stack_size = 0;
+		stack_size += sizeof (gpointer);
 	for (i = 0; i < n; ++i) {
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
@@ -748,7 +760,6 @@ handle_enum:
 			}
 		}
 	}
-	/* they need to be pushed in reverse order */
 	/* if the function returns a struct, the called method already does a ret $0x4 */
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
 		stack_size -= 4;
@@ -2314,11 +2325,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL:
 		case CEE_CALL:
 			call = (MonoCallInst*)ins;
-			if (call->signature->call_convention == MONO_CALL_VARARG) {
-				/* FIXME: hack */
-				x86_push_imm (code, call->signature);
-				offset = code - cfg->native_code;
-			}
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else {
