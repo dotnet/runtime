@@ -6148,7 +6148,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 }
 
 MonoDelegate*
-ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (MonoReflectionType *type, void *ftn)
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type)
 {
 	return mono_ftnptr_to_delegate (mono_type_get_class (type->type), ftn);
 }
