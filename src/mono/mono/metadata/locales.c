@@ -1431,6 +1431,11 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 			 * does match properly...
 			 */
 			match_len = usearch_getMatchedLength (search);
+
+			if(match_len == 0) {
+				continue;
+			}
+			
 			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
 			usearch_getMatchedText (search, match, match_len, &ec);
 
@@ -1467,6 +1472,11 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 		    pos!=USEARCH_DONE;
 		    pos=usearch_next (search, &ec)) {
 			match_len = usearch_getMatchedLength (search);
+
+			if (match_len == 0) {
+				continue;
+			}
+			
 			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
 			usearch_getMatchedText (search, match, match_len, &ec);
 
