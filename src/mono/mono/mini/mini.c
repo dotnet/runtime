@@ -6779,6 +6779,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = handle;
 		break;
 	}
+	case MONO_PATCH_INFO_BB_OVF:
+	case MONO_PATCH_INFO_EXC_OVF:
+		break;
 	default:
 		g_assert_not_reached ();
 	}

@@ -3170,18 +3170,11 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target = NULL;
+		const unsigned char *target;
+
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_BB:
-			target = patch_info->data.bb->native_offset + code;
-			break;
-		case MONO_PATCH_INFO_ABS:
-			target = patch_info->data.target;
-			break;
-		case MONO_PATCH_INFO_LABEL:
-			target = patch_info->data.inst->inst_c0 + code;
-			break;
 		case MONO_PATCH_INFO_IP:
 			patch_lis_ori (ip, ip);
 			continue;
@@ -3189,35 +3182,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			g_assert_not_reached ();
 			*((gpointer *)(ip)) = code + patch_info->data.offset;
 			continue;
-		case MONO_PATCH_INFO_INTERNAL_METHOD: {
-			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-			if (!mi) {
-				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
-				g_assert_not_reached ();
-			}
-			target = mono_icall_get_wrapper (mi);
-			break;
-		}
-		case MONO_PATCH_INFO_METHOD_JUMP: {
-			GSList *list;
-
-			/* get the trampoline to the method from the domain */
-			target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
-			if (!domain->jump_target_hash)
-				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
-			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
-			list = g_slist_prepend (list, ip);
-			g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
-			break;
-		}
-		case MONO_PATCH_INFO_METHOD:
-			if (patch_info->data.method == method) {
-				target = code;
-			} else {
-				/* get the trampoline to the method from the domain */
-				target = mono_arch_create_jit_trampoline (patch_info->data.method);
-			}
-			break;
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table = (gpointer *)patch_info->data.target;
 			int i;
@@ -3236,76 +3200,30 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IMAGE:
 		case MONO_PATCH_INFO_FIELD:
+		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_IID:
+		case MONO_PATCH_INFO_SFLDA:
+		case MONO_PATCH_INFO_LDSTR:
+		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+		case MONO_PATCH_INFO_LDTOKEN:
 			/* from OP_AOTCONST : lis + ori */
-			patch_lis_ori (ip, patch_info->data.target);
+			patch_lis_ori (ip, target);
 			continue;
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
 			g_assert_not_reached ();
 			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
 			continue;
-		case MONO_PATCH_INFO_IID:
-			mono_class_init (patch_info->data.klass);
-			patch_lis_ori (ip, patch_info->data.klass->interface_id);
-			continue;			
-		case MONO_PATCH_INFO_VTABLE:
-			target = mono_class_vtable (domain, patch_info->data.klass);
-			patch_lis_ori (ip, target);
-			continue;
-		case MONO_PATCH_INFO_CLASS_INIT:
-			target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
-			break;
-		case MONO_PATCH_INFO_SFLDA: {
-			MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
-			if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))
-				/* Done by the generated code */
-				;
-			else {
-				if (run_cctors)
-					mono_runtime_class_init (vtable);
-			}
-			target = (char*)vtable->data + patch_info->data.field->offset;
-			patch_lis_ori (ip, target);
-			continue;
-		}
 		case MONO_PATCH_INFO_EXC_NAME:
 			g_assert_not_reached ();
 			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
 			continue;
-		case MONO_PATCH_INFO_LDSTR:
-			target = mono_ldstr (domain, patch_info->data.token->image, 
-							mono_metadata_token_index (patch_info->data.token->token));
-			patch_lis_ori (ip, target);
-			continue;
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
-			gpointer handle;
-			MonoClass *handle_class;
-
-			handle = mono_ldtoken (patch_info->data.token->image, 
-								   patch_info->data.token->token, &handle_class, NULL);
-			mono_class_init (handle_class);
-			mono_class_init (mono_class_from_mono_type (handle));
-
-			patch_lis_ori (ip, handle);
-			continue;
-		}
-		case MONO_PATCH_INFO_LDTOKEN: {
-			gpointer handle;
-			MonoClass *handle_class;
-
-			handle = mono_ldtoken (patch_info->data.token->image,
-								   patch_info->data.token->token, &handle_class, NULL);
-			mono_class_init (handle_class);
-
-			patch_lis_ori (ip, handle);
-			continue;
-		}
 		case MONO_PATCH_INFO_BB_OVF:
 		case MONO_PATCH_INFO_EXC_OVF:
 			/* everything is dealt with at epilog output time */
 			continue;
 		default:
-			g_assert_not_reached ();
+			break;
 		}
 		ppc_patch (ip, target);
 	}
