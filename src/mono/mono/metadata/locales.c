@@ -1041,6 +1041,7 @@ void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoComp
 	
 	coll=this->ICU_collator;
 	if(coll!=NULL) {
+		this->ICU_collator = NULL;
 		ucol_close (coll);
 	}
 }
