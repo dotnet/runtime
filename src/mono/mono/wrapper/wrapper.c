@@ -128,3 +128,22 @@ mono_wrapper_environ ()
 	return (gpointer)environ;
 }
 
+int
+mono_wrapper_mkdir (const char *path, int mode)
+{
+	return mkdir (path, mode);
+}
+
+int
+mono_wrapper_rmdir (const char *path)
+{
+	return rmdir (path);
+}
+
+int
+mono_wrapper_rename (const char *src, const char *dst)
+{
+	return rename (src, dst);
+}
+
+

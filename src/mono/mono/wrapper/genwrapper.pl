@@ -21,6 +21,9 @@ $cflags =~ s/\n//;
 
 $lib = "monowrapper";
 
+if ($csmode){
+   $res_struct .= "[CLSCompliant(false)]\n";
+}
 create_struct ("MonoWrapperStat", "stat",
 	       "uint", "st_dev",
 	       "uint", "st_mode",
@@ -37,6 +40,13 @@ create_func ($lib, "", "seek", "long",
 	     "IntPtr", "fd",
 	     "long", "offset",
 	     "int", "whence");
+
+create_func ($lib, "", "mkdir", "int",
+	     "string", "path",
+	     "int",    "mode");
+
+create_func ($lib, "", "rmdir", "int",
+	     "string", "path");
 
 create_func ($lib, "", "read", "int",
 	     "IntPtr", "fd",
@@ -85,6 +95,9 @@ create_func ($lib, "", "getenv", "IntPtr",
 
 create_func ($lib, "", "environ", "IntPtr");
 
+create_func ($lib, "", "rename", "int",
+	     "string", "source",
+	     "string", "target");
 
 map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "SEEK_CUR",
@@ -292,6 +305,14 @@ sub create_func {
     my (@func) = @_;
     my ($i) = 0;
     my ($res) = "";
+    my ($cls) = 1;
+    my ($j) = 4;
+    while ($j <= $#func){
+	if ($func[$j] =~ /\*/){
+		$cls = 0;
+	}
+	$j+=2;
+    }
 
     if ($func[1] eq "") {
 	$func[1] = "mono_wrapper_$func[2]";
@@ -304,6 +325,9 @@ sub create_func {
     if ($csmode) {
 
 	$res = "\t[DllImport(\"$func[0]\", EntryPoint=\"$func[1]\", CharSet=CharSet.Ansi)]\n";
+	if ($cls == 0){
+	   $res .= "\t[CLSCompliant(false)]\n";
+        }
 	$res .= "\tpublic unsafe static extern $func[3] $func[2] (";
 	$i +=4;
 	while ($i <= $#func) {
