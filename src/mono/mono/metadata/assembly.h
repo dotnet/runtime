@@ -76,5 +76,7 @@ typedef struct {
 } MonoBundledAssembly;
 
 void          mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies);
+void          mono_register_config_for_assembly (const char* assembly_name, const char* config_xml);
+
 #endif
 

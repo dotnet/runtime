@@ -217,27 +217,34 @@ mono_config_init (void)
 
 /* FIXME: error handling */
 
+static void
+mono_config_parse_xml_with_context (ParseState *state, const char *text, gsize len)
+{
+	GMarkupParseContext *context;
+
+	if (!inited)
+		mono_config_init ();
+
+	context = g_markup_parse_context_new (&mono_parser, 0, state, NULL);
+	if (g_markup_parse_context_parse (context, text, len, NULL)) {
+		g_markup_parse_context_end_parse (context, NULL);
+	}
+	g_markup_parse_context_free (context);
+}
+
 /* If assembly is NULL, parse in the global context */
 static int
 mono_config_parse_file_with_context (ParseState *state, const char *filename)
 {
-	GMarkupParseContext *context;
 	char *text;
 	gsize len;
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_CONFIG,
 			"Config attempting to parse: '%s'.", filename);
 
-	if (!inited)
-		mono_config_init ();
-
 	if (!g_file_get_contents (filename, &text, &len, NULL))
 		return 0;
-	context = g_markup_parse_context_new (&mono_parser, 0, state, NULL);
-	if (g_markup_parse_context_parse (context, text, len, NULL)) {
-		g_markup_parse_context_end_parse (context, NULL);
-	}
-	g_markup_parse_context_free (context);
+	mono_config_parse_xml_with_context (state, text, len);
 	g_free (text);
 	return 1;
 }
@@ -267,6 +274,28 @@ get_assembly_filename (MonoImage *image, int state)
 	}
 }
 
+typedef struct _BundledConfig BundledConfig;
+
+struct _BundledConfig {
+	BundledConfig *next;
+	const char* aname;
+	const char* config_xml;
+};
+
+static BundledConfig *bundled_configs = NULL;
+
+void
+mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
+{
+	BundledConfig *bconfig;
+
+	bconfig = g_new0 (BundledConfig, 1);
+	bconfig->aname = assembly_name;
+	bconfig->config_xml = config_xml;
+	bconfig->next = bundled_configs;
+	bundled_configs = bconfig;
+}
+
 void 
 mono_config_for_assembly (MonoImage *assembly)
 {
@@ -274,8 +303,15 @@ mono_config_for_assembly (MonoImage *assembly)
 	int got_it = 0, i;
 	char *aname, *cfg, *cfg_name;
 	const char *home;
+	BundledConfig *bconfig;
 	
 	state.assembly = assembly;
+
+	for (bconfig = bundled_configs; bconfig; bconfig = bconfig->next) {
+		if (bconfig->aname && strcmp (bconfig->aname, assembly->module_name) == 0)
+			mono_config_parse_xml_with_context (&state, bconfig->config_xml, strlen (bconfig->config_xml));
+	}
+
 	cfg_name = g_strdup_printf ("%s.config", mono_image_get_filename (assembly));
 	mono_config_parse_file_with_context (&state, cfg_name);
 	g_free (cfg_name);
