@@ -139,7 +139,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
 	MonoDelegate *d;
 
-	d = mono_object_new (mono_domain_get (), klass);
+	d = (MonoDelegate*)mono_object_new (mono_domain_get (), klass);
 
 	/* FIXME: Add a managed->native wrapper */
 	g_assert_not_reached ();
