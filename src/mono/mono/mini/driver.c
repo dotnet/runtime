@@ -76,11 +76,18 @@ opt_names [] = {
 	{"leaf",     "Leaf procedures optimizations"}
 };
 
+#define DEFAULT_OPTIMIZATIONS (	\
+	MONO_OPT_PEEPHOLE |	\
+	MONO_OPT_CFOLD |	\
+	MONO_OPT_BRANCH |	\
+	MONO_OPT_LINEARS |	\
+	MONO_OPT_INTRINS)
+
 static guint32
 parse_optimizations (const char* p)
 {
 	/* the default value */
-	guint32 opt = MONO_OPT_PEEPHOLE | MONO_OPT_CFOLD /* | MONO_OPT_CONSPROP | MONO_OPT_INLINE*/ | MONO_OPT_BRANCH | /* | MONO_OPT_SHARED |*/ MONO_OPT_LINEARS;
+	guint32 opt = DEFAULT_OPTIMIZATIONS;
 	guint32 exclude = 0;
 	const char *n;
 	int i, invert, len;
