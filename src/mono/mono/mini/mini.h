@@ -260,6 +260,9 @@ struct MonoCallInst {
 	gboolean virtual;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
+#ifdef __x86_64__
+	MonoInst **out_reg_args;
+#endif
 };
 
 /* 
@@ -606,6 +609,8 @@ enum {
 #define OP_PCONV_TO_OVF_I1_UN OP_LCONV_TO_OVF_I1_UN
 #define OP_PCONV_TO_OVF_I1 OP_LCONV_TO_OVF_I1
 #define OP_PCEQ CEE_CEQ
+#define OP_STOREP_MEMBASE_REG OP_STOREI8_MEMBASE_REG
+#define OP_STOREP_MEMBASE_IMM OP_STOREI8_MEMBASE_IMM
 #else
 #define OP_PADD CEE_ADD
 #define OP_PNEG CEE_NEG
@@ -613,6 +618,8 @@ enum {
 #define OP_PCONV_TO_OVF_I1_UN CEE_CONV_OVF_I1_UN
 #define OP_PCONV_TO_OVF_I1 CEE_CONV_OVF_I1
 #define OP_PCEQ CEE_CEQ
+#define OP_STOREP_MEMBASE_REG OP_STOREI4_MEMBASE_REG
+#define OP_STOREP_MEMBASE_IMM OP_STOREI4_MEMBASE_IMM
 #endif
 
 typedef enum {
