@@ -119,9 +119,6 @@ static MonoThreadCleanupFunc mono_thread_cleanup = NULL;
 /* function called when a new thread has been created */
 static MonoThreadCallbacks *mono_thread_callbacks = NULL;
 
-/* The TLS key that holds the LocalDataStoreSlot hash in each thread */
-static guint32 slothash_key = -1;
-
 /* The default stack size for each thread */
 static guint32 default_stacksize = 0;
 #define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
@@ -832,29 +829,6 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": join failed"));
 
 	return(FALSE);
-}
-
-void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Storing key %p", data));
-
-	/* Object location stored here */
-	TlsSetValue(slothash_key, data);
-}
-
-MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void)
-{
-	MonoObject *data;
-
-	MONO_ARCH_SAVE_REGS;
-
-	data=TlsGetValue(slothash_key);
-	
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Retrieved key %p", data));
-	
-	return(data);
 }
 
 /* FIXME: exitContext isnt documented */
@@ -1595,8 +1569,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
-
-	slothash_key=TlsAlloc();
 
 	/* Get a pseudo handle to the current process.  This is just a
 	 * kludge so that wapi can build a process handle if needed.

@@ -6552,8 +6552,6 @@ static const IcallEntry thread_icalls [] = {
 	{"SetSerializedCurrentCulture", ves_icall_System_Threading_Thread_SetSerializedCurrentCulture},
 	{"SetSerializedCurrentUICulture", ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture},
 	{"Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal},
-	{"SlotHash_lookup", ves_icall_System_Threading_Thread_SlotHash_lookup},
-	{"SlotHash_store", ves_icall_System_Threading_Thread_SlotHash_store},
 	{"Start_internal", ves_icall_System_Threading_Thread_Start_internal},
 	{"Suspend_internal", ves_icall_System_Threading_Thread_Suspend},
 	{"Thread_free_internal", ves_icall_System_Threading_Thread_Thread_free_internal},
