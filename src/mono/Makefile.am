@@ -4,11 +4,11 @@ SUBDIRS = @libgc_dir@ mono doc docs runtime scripts man data samples
 
 # EXTRA_SUBDIRS = libgc
 
-EXTRA_DIST= mono.pc.in mono.spec.in
+EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA= mono.pc
-DISTCLEANFILES= mono.pc
+pkgconfig_DATA= mono.pc mint.pc
+DISTCLEANFILES= mono.pc mint.pc
 
 #
 # The following target is used to compile and install

@@ -1,3 +1,8 @@
+2003-12-22  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* Makefile.am: Create mint.pc
+	mint.pc.in: Added for embedding the interpreter
+
 2003-12-16  Martin Baulig  <martin@ximian.com>
 
 	* Makefile.am: In a Makefile.am, comments are started with `#' and
