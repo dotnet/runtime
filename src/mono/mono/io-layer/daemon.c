@@ -34,7 +34,6 @@
 #include <mono/io-layer/daemon-private.h>
 
 #undef DEBUG
-#define DEBUG 1
 
 /* The shared thread codepath doesn't seem to work yet... */
 #undef _POSIX_THREAD_PROCESS_SHARED
