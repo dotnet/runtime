@@ -3338,6 +3338,7 @@ handle_enum:
 	case MONO_TYPE_CLASS: {
 		char *n;
 		MonoType *t;
+handle_type:
 		slen = mono_metadata_decode_value (p, &p);
 		n = g_memdup (p, slen + 1);
 		n [slen] = 0;
@@ -3347,6 +3348,39 @@ handle_enum:
 		g_free (n);
 		*end = p + slen;
 		return mono_type_get_object (mono_domain_get (), t);
+	}
+	case MONO_TYPE_OBJECT: {
+		char subt = *p++;
+		MonoObject *obj;
+		MonoClass *subc;
+		void *val;
+
+		if (subt == 0x50) {
+			goto handle_type;
+		} else if (subt == 0x55) {
+			char *n;
+			MonoType *t;
+			slen = mono_metadata_decode_value (p, &p);
+			n = g_memdup (p, slen + 1);
+			n [slen] = 0;
+			t = mono_reflection_type_from_name (n, image);
+			if (!t)
+				g_warning ("Cannot load type '%s'", n);
+			g_free (n);
+			p += slen;
+			subc = mono_class_from_mono_type (t);
+		} else if (subt >= MONO_TYPE_BOOLEAN && subt <= MONO_TYPE_R8) {
+			MonoType simple_type = {{0}};
+			simple_type.type = subt;
+			subc = mono_class_from_mono_type (&simple_type);
+		} else {
+			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
+		}
+		val = load_cattr_value (image, &subc->byval_arg, p, end);
+		obj = mono_object_new (mono_domain_get (), subc);
+		memcpy ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
+		g_free (val);
+		return obj;
 	}
 	default:
 		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
