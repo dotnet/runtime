@@ -58,6 +58,11 @@ reg: OP_LDADDR (OP_SPARC_INARG_VT (base)) {
 					state->left->left->tree->inst_offset);
 }
 
+reg: CEE_LDOBJ (OP_SPARC_INARG_VT (base)) {
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
+					state->left->left->tree->inst_offset);
+}
+
 base: OP_LDADDR (reg) {
 /*
 	tree->inst_basereg = mono_regstate_next_int (s->rs);
@@ -385,6 +390,11 @@ reg: OP_LDADDR (OP_REGOFFSET) "1" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+# FIXME: This rule was commented out in inssel.brg, why ?
+reg: CEE_REM (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_REM_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
 stmt: OP_MEMSET (reg) "0" {
 	int size = tree->unused;
 	int offset = 0;
@@ -398,6 +408,8 @@ stmt: OP_MEMSET (reg) "0" {
 	else
 		val_reg = sparc_g0;
 
+	/* FIXME: This assumes the destination is dword aligned */
+	/*
 	if ((tree->inst_imm == 0) && (size >= 8)) {
 		MONO_EMIT_NEW_ICONST (s, sparc_g1, 0);
 
@@ -407,6 +419,7 @@ stmt: OP_MEMSET (reg) "0" {
 			size -= 8;
 		}
 	}
+	*/
 		
 	while (size >= 4) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
