@@ -7,72 +7,181 @@
  * (C) 2001 Ximian, Inc.
  */
 #include <config.h>
+#if defined(PLATFORM_WIN32) || defined(PLATFORM_WIN32_NATIVE)
+#define USE_WIN32_API		1
+#endif
+
 #include <unistd.h>
+#ifdef USE_WIN32_API
+#include <windows.h>
+#include <io.h>
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/types.h>
 #include <glib.h>
 #include "rawbuffer.h"
 
-#define PAGESIZE 8192
+#define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
+#define ROUND_UP(VALUE,SIZE)	(ROUND_DOWN((VALUE) + (SIZE) - 1, (SIZE)))
 
-static GHashTable *malloc_map = NULL;
+#if defined(PLATFORM_WIN32_NATIVE)
+#define get_osfhandle		_get_osfhandle
+#endif
 
-void *
-mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
+static GHashTable *mmap_map = NULL;
+static size_t alignment = 0;
+
+static void
+get_alignment ()
 {
+#ifdef USE_WIN32_API
+	SYSTEM_INFO info;
+
+	GetSystemInfo (&info);
+	alignment = info.dwAllocationGranularity;
+#else
+	alignment = getpagesize ();
+#endif
+}
+
+static void *
+mono_raw_buffer_load_malloc (int fd, int is_writable, guint32 base, size_t size)
+{
+	void *ptr;
+
+	ptr = g_malloc (size);
+	if (ptr == NULL)
+		return NULL;
+
+	if (lseek (fd, base, 0) == (off_t) -1) {
+		g_free (ptr);
+		return NULL;
+	}
+
+	read (fd, ptr, size);
+	return ptr;
+}
+
+static void
+mono_raw_buffer_free_malloc (void *base)
+{
+	g_free (base);
+}
+
+static void *
+mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
+{
+#ifdef USE_WIN32_API
+	/* FileMapping implementation */
+
+	DWORD start, end;
+	int prot, access;
+	void *ptr;
+	HANDLE file, mapping;
+
+	if (alignment == 0)
+		get_alignment ();
+	start = ROUND_DOWN (base, alignment);
+	end = base + size;
+	
+	if (is_writable) {
+		prot = PAGE_WRITECOPY;
+		access = FILE_MAP_COPY;
+	}
+	else {
+		prot = PAGE_READONLY;
+		access = FILE_MAP_READ;
+	}
+
+	file = (HANDLE) get_osfhandle (fd);
+	mapping = CreateFileMapping (file, NULL, prot, 0, 0, NULL);
+	if (mapping == NULL)
+		return 0;
+
+	ptr = MapViewOfFile (mapping, access, 0, start, end - start);
+	if (ptr == NULL) {
+		CloseHandle (mapping);
+		return 0;
+	}
+
+	if (mmap_map == NULL)
+		mmap_map = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (mapping));
+	
+	return ((char *)ptr) + (base - start);
+
+#else
+	/* mmap implementation */
+
+
 	size_t start, end;
 	int prot = PROT_READ;
 	int flags = 0;
-	void *ptr, *mmap_ptr;
-	
+	void *ptr;
+
+	if (alignment == 0)
+		get_alignment ();
+	start = ROUND_DOWN (base, alignment);
+	end = ROUND_UP (base + size, alignment);
+
 	if (is_writable){
 		prot |= PROT_WRITE;
 	}
 	flags = MAP_PRIVATE;
 
-	start = base & ~(PAGESIZE - 1);
-	end = (base + size + PAGESIZE - 1) & ~(PAGESIZE - 1);
+	ptr = mmap (0, end - start, prot, flags, fd, start);
 
-	/*
-	 * Apparently on cygwin the mmap succedes, but not all the
-	 * area is mapped in and we get segfaults later.
-	 */
-#ifdef __CYGWIN__
-	mmap_ptr = (void *) -1;
-#else
-	mmap_ptr = mmap (0, end - start, prot, flags, fd, start);
+	if (ptr == (void *) -1)
+		return 0;
+	
+	if (mmap_map == NULL)
+		mmap_map = g_hash_table_new (g_direct_hash, g_direct_equal);
+	
+	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (size));
+
+	return ((char *)ptr) + (base - start);
 #endif
-	if (mmap_ptr == (void *) -1){
-		ptr = g_malloc (size);
-		if (ptr == NULL)
-			return NULL;
-		if (lseek (fd, base, 0) == (off_t) -1)
-			return NULL;
-		read (fd, ptr, size);
-		return ptr;
-	}
-	if (malloc_map == NULL)
-		malloc_map = g_hash_table_new (g_direct_hash, g_direct_equal);
+}
 
-	g_hash_table_insert (malloc_map, mmap_ptr, GINT_TO_POINTER (size));
+static void
+mono_raw_buffer_free_mmap (void *base)
+{
+	int value;
 
-	return ((char *)mmap_ptr) + (base - start);
+	value = GPOINTER_TO_INT (g_hash_table_lookup (mmap_map, base));
+
+#ifdef USE_WIN32_API
+	UnmapViewOfFile (base);
+	CloseHandle ((HANDLE) value);
+#else
+	munmap (base, value);
+#endif
+}
+
+void *
+mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
+{
+	void *ptr;
+
+	ptr = mono_raw_buffer_load_mmap (fd, is_writable, base, size);
+	if (ptr == 0)
+		ptr = mono_raw_buffer_load_malloc (fd, is_writable, base, size);
+	
+	return ptr;
 }
 
 void
 mono_raw_buffer_free (void *buffer)
 {
-	int size, diff;
-	char *base;
-	
-	if (!malloc_map){
-		g_free (buffer);
-		return;
-	}
+	char *mmap_base;
 
-	diff = ((unsigned int) buffer) & (PAGESIZE - 1);
-	base = ((char *)buffer) - diff;
+	mmap_base = GINT_TO_POINTER (ROUND_DOWN (GPOINTER_TO_INT (buffer), alignment));
 	
-	size = GPOINTER_TO_INT (g_hash_table_lookup (malloc_map, base));
-	munmap (base, size);
+	if (mmap_map && g_hash_table_lookup (mmap_map, mmap_base))
+		mono_raw_buffer_free_mmap (mmap_base);
+	else
+		mono_raw_buffer_free_malloc (buffer);
 }
+
