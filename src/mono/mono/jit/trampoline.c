@@ -67,7 +67,7 @@ arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
 
 	msg = mono_method_call_message_new (method, &first_arg);
 
-	res = mono_remoting_invoke (this->rp, msg, &exc, &out_args);
+	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
 
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);

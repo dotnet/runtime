@@ -343,6 +343,61 @@ map_stind_type (MonoType *type)
 	return -1;
 }
 
+/**
+ * map_remote_stind_type:
+ * @type: the type to map
+ *
+ * Translates the MonoType @type into the corresponding remote store opcode 
+ * for the code generator.
+ */
+static int
+map_remote_stind_type (MonoType *type)
+{
+	if (type->byref) {
+		return MB_TERM_REMOTE_STIND_REF;
+	}
+
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return MB_TERM_REMOTE_STIND_I1;	
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return MB_TERM_REMOTE_STIND_I2;	
+	case MONO_TYPE_I:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return MB_TERM_REMOTE_STIND_I4;	
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return MB_TERM_REMOTE_STIND_REF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return MB_TERM_REMOTE_STIND_I8;
+	case MONO_TYPE_R4:
+		return MB_TERM_REMOTE_STIND_R4;
+	case MONO_TYPE_R8:
+		return MB_TERM_REMOTE_STIND_R8;
+	case MONO_TYPE_VALUETYPE: 
+		if (type->data.klass->enumtype)
+			return map_remote_stind_type (type->data.klass->enum_basetype);
+		else
+			return MB_TERM_REMOTE_STIND_OBJ;
+	default:
+		g_warning ("unknown type %02x", type->type);
+		g_assert_not_reached ();
+	}
+
+	g_assert_not_reached ();
+	return -1;
+}
+
 static int
 map_starg_type (MonoType *type)
 {
@@ -1718,10 +1773,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			g_assert (field);
 			
 			if (klass->marshalbyref) {
-				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-				t1->data.klass = klass;
-				t1 = mono_ctree_new (mp, MB_TERM_REMOTE_FIELD, sp [0], t1);
-				t1->data.field = field;
+				t1 = mono_ctree_new (mp, MB_TERM_REMOTE_LDFLDA, sp [0], NULL);
+				t1->data.fi.klass = klass;
+				t1->data.fi.field = field;
 			} else {
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 
@@ -1801,16 +1855,17 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 			g_assert (field);
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			if (klass->valuetype)
-				t1->data.i = field->offset - sizeof (MonoObject);
-			else 
-				t1->data.i = field->offset;
+			if (klass->marshalbyref) {
+				t1 = mono_ctree_new (mp, map_remote_stind_type (field->type), sp [0], sp [1]);
+				t1->data.fi.klass = klass;
+				t1->data.fi.field = field;
+			} else {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.i = klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset;
+				t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
+				t1 = ctree_create_store (cfg, field->type, t1, sp [1], FALSE);
+			}
 
-			//printf ("VALUETYPE %d %d %d\n", klass->valuetype, field->offset, t1->data.i);
-
-			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
-			t1 = ctree_create_store (cfg, field->type, t1, sp [1], FALSE);
 
 			ADD_TREE (t1, cli_addr);
 			break;
@@ -1930,7 +1985,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 		case CEE_NEWOBJ: {
 			MonoMethodSignature *csig;
-			MethodCallInfo *ci;
 			MonoMethod *cm;
 			MBTree *this = NULL;
 			guint32 token;
@@ -1945,9 +1999,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			g_assert (cm);
 			g_assert (!strcmp (cm->name, ".ctor"));
 			
-			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
-			ci->m = cm;
-
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			g_assert (csig->hasthis);
@@ -1989,7 +2040,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				args_size += size;
 			}
 
-			ci->args_size = args_size;
 
 			if (newarr) {
 
@@ -1997,7 +2047,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = mono_array_new_va;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.p = ci;
+				t1->data.ci.m = cm;
+				t1->data.ci.args_size = args_size;
+				t1->data.ci.vtype_num = 0;
+				
 				t1->svt = VAL_POINTER;
 
 				t1 = mono_store_tree (cfg, -1, t1, &t2);
@@ -2011,7 +2064,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = arch_create_jit_trampoline (cm);
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
-				t1->data.p = ci;
+				t1->data.ci.m = cm;
+				t1->data.ci.args_size = args_size;
+				t1->data.ci.vtype_num = 0;
 				t1->svt = svt;
 
 				ADD_TREE (t1, cli_addr); 
@@ -2029,7 +2084,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_CALL: 
 		case CEE_CALLVIRT: {
 			MonoMethodSignature *csig;
-			MethodCallInfo *ci;
 			MonoMethod *cm;
 			MBTree *this = NULL;
 			guint32 token;
@@ -2037,7 +2091,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean array_set = FALSE;
 			gboolean array_get = FALSE;
-
+			/* fixme: compute this value */
+			gboolean shared_to_unshared_call = FALSE;
 			int nargs, vtype_num = 0;
 
 			++ip;
@@ -2047,28 +2102,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			cm = mono_get_method (image, token, NULL);
 			g_assert (cm);
 
-			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
-			ci->m = cm;
-
 			
-#ifndef EXT_VTABLE_HACK
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
-#else
-			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
-			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-				/* fixme: compute this value */
-				gboolean shared_to_unshared_call = FALSE;
-				/* we call all marshalbyref methods and Object.GetType 
-				   through the vtable */
-				if (!(shared_to_unshared_call ||
-				      cm->klass->marshalbyref ||
-				      ((cm->klass == mono_defaults.object_class) && 
-				       !strcmp (cm->name, "GetType"))))
-					virtual = 0;
-			}
-#endif;
 
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
@@ -2111,9 +2148,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
 			}
 
-			ci->args_size = args_size;
-			ci->vtype_num = vtype_num;
-
 			if (array_get) {
 				int vnum;
 				
@@ -2121,7 +2155,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = ves_array_element_address;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.p = ci;
+				t1->data.ci.m = cm;
+				t1->data.ci.args_size = args_size;
+				t1->data.ci.vtype_num = vtype_num;
  
 				t1 = mono_ctree_new (mp, map_ldind_type (csig->ret, &svt), t1, NULL);
 				t1->svt = svt;		
@@ -2144,14 +2180,18 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = ves_array_element_address;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.p = ci;
+				t1->data.ci.m = cm;
+				t1->data.ci.args_size = args_size;
+				t1->data.ci.vtype_num = vtype_num;
 
 				t1 = ctree_create_store (cfg, csig->params [nargs], t1, arg_sp [nargs], FALSE);
 				ADD_TREE (t1, cli_addr);
 			
 			} else {
 
-				if (virtual) {
+				if (virtual || (csig->hasthis && (cm->klass->marshalbyref || 
+								  shared_to_unshared_call ||
+								  cm->klass == mono_defaults.object_class))) {
 					mono_class_init (cm->klass);
 					
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
@@ -2167,7 +2207,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
-				t1->data.p = ci;
+				t1->data.ci.m = cm;
+				t1->data.ci.args_size = args_size;
+				t1->data.ci.vtype_num = vtype_num;
 				t1->svt = svt;
 
 				if (csig->ret->type != MONO_TYPE_VOID) {

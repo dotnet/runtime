@@ -605,11 +605,11 @@ mono_class_init (MonoClass *class)
 		cm = class->methods [i];
 
 		
-#ifndef EXT_VTABLE_HACK
+#if 0
 		if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 		    (cm->slot >= 0))
 			continue;
-#else
+#else  /* EXT_VTABLE_HACK */
 		if (cm->slot >= 0)
 			continue;
 #endif

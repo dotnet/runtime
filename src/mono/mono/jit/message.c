@@ -165,11 +165,8 @@ mono_method_call_message_new (MonoMethod *method, gpointer stack)
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = method->signature;
 	MonoMethodMessage *msg;
-	MonoString *name;
 	int i, type, size, align;
 	char *cpos = stack;
-	char **names;
-	guint8 arg_type;
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
 	
@@ -211,7 +208,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer stack)
 }
 
 gpointer
-mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field)
+mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res)
 {
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
@@ -219,7 +216,6 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
-	MonoObject *res;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
 
@@ -246,14 +242,57 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
 
-	printf ("TEST %p %p %p %p \n", ((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
-	mono_remoting_invoke (((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
 
-	res = mono_array_get (out_args, MonoObject *, 0);
+	*res = mono_array_get (out_args, MonoObject *, 0);
 
 	if (field_class->valuetype) {
-		printf ("XTEST %d\n", *((int *)(((char *)res) + sizeof (MonoObject))));
-		return ((char *)res) + sizeof (MonoObject);
+		return ((char *)*res) + sizeof (MonoObject);
 	} else
-		return &res;
+		return res;
+}
+
+void
+mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val)
+{
+	static MonoMethod *setter = NULL;
+	MonoDomain *domain = mono_domain_get ();
+	MonoClass *field_class;
+	MonoMethodMessage *msg;
+	MonoArray *out_args;
+	MonoObject *exc;
+	MonoObject *arg;
+
+	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	if (!setter) {
+		int i;
+
+		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
+			MonoMethod *cm = mono_defaults.object_class->methods [i];
+	       
+			if (!strcmp (cm->name, "FieldSetter")) {
+				setter = cm;
+				break;
+			}
+		}
+		g_assert (setter);
+	}
+
+	field_class = mono_class_from_mono_type (field->type);
+
+	if (field_class->valuetype)
+		arg = mono_value_box (domain, field_class, val);
+	else 
+		arg = *((MonoObject **)val);
+		
+
+	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
+	mono_message_init (domain, msg, mono_method_get_object (domain, setter), NULL);
+
+	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
+	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
+	mono_array_set (msg->args, gpointer, 2, arg);
+
+	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
 }

@@ -170,10 +170,15 @@ handle_enum:
 			}
 			break;
 		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:  
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
 			frame [sp++] = params [i];
 			break;
 		default:
-			g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+			g_error ("type 0x%x not handled in arch_runtime_invoke", sig->params [i]->type);
 		}
 	}
 
@@ -231,7 +236,7 @@ handle_enum_2:
 		}
 		break;
 	default:
-		g_error ("type 0x%x not handled in invoke", type);
+		g_error ("return type 0x%x not handled in arch_runtime_invoke", type);
 	}
 
 	return retval;

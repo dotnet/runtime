@@ -116,9 +116,14 @@ typedef struct {
 
 typedef struct {
 	MonoMethod *m;
-	int args_size;
-	int vtype_num;
-} MethodCallInfo;
+	gint16 args_size;
+	gint16 vtype_num;
+} MonoJitCallInfo;
+
+typedef struct {
+	MonoClass *klass;
+	MonoClassField *field;
+} MonoJitFieldInfo;
 
 typedef struct {
 	gulong methods_compiled;
@@ -220,7 +225,10 @@ gpointer
 arch_get_delegate_invoke   (MonoMethod *method, int *size);
 
 gpointer
-mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *field);
+mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res);
+
+void
+mono_store_remote_field    (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
 
 MonoObject *
 mono_remoting_invoke       (MonoObject *real_proxy, MonoMethodMessage *msg, 

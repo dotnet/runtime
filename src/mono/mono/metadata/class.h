@@ -7,8 +7,6 @@
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
-#define EXT_VTABLE_HACK
-
 extern gboolean mono_print_vtable;
 
 typedef struct {
