@@ -1,5 +1,5 @@
 /*
- *
+ * testjit.c: Test 
  */
 #include <config.h>
 #include <glib.h>
@@ -11,6 +11,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/endian.h>
 
+#include "jit.h"
 #include "testjit.h"
 
 /*
@@ -103,20 +104,47 @@ print_tree (MBTree *tree)
 }
 
 static void
-print_forest (GList *f)
+print_forest (GPtrArray *forest)
 {
-	GList *l;
+	const int top = forest->len;
 	int i;
 
-	for (l = f, i = 0; l; l = l->next) {
-		printf ("%03d:", i++);
-		print_tree ((MBTree *)l->data);
+	for (i = 0; i < top; i++){
+		printf ("%03d:", i);
+		print_tree ((MBTree *) g_ptr_array_index (forest, i));
 		printf ("\n");
 	}
 
 }
 
-#define ADD_TREE(t)     forest = g_list_append (forest, t)
+static void
+label_forest (GPtrArray *forest)
+{
+	const int top = forest->len;
+	int i;
+	
+	for (i = 0; i < top; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+		MBState *s;
+
+		//printf ("%03d:", i++);print_tree ((MBTree *)l->data);printf ("\n");
+
+		s =  mono_burg_label (t1);
+		g_assert (s);
+		cregnum = 0;
+		reduce (t1, MB_NTERM_stmt);
+	}
+}
+
+static void
+emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
+{
+	arch_emit_prologue (method, locals_size);
+	label_forest (forest);
+	arch_emit_epilogue (method);
+}
+
+#define ADD_TREE(t)     g_ptr_array_add (forest, (t))
 
 #define LOCAL_POS(n)    (locals_offsets [(n)])
 #define LOCAL_TYPE(n)   ((header)->locals [(n)])
@@ -134,10 +162,9 @@ mono_compile_method (MonoMethod *method)
 	register const unsigned char *ip, *end;
 	guint *locals_offsets;
 	guint *args_offsets;
-	GList *l, *forest = NULL;
-	MBState *s;
-	int i;
-
+	GPtrArray *forest;
+	int locals_size = 0;
+	
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
@@ -160,6 +187,8 @@ mono_compile_method (MonoMethod *method)
 			offset += offset % align;
 			offset += size;
 		}
+		printf ("LOCALS ARE: %d\n", locals_size);
+		locals_size = offset;
 	}
 	
 	if (signature->params_size) {
@@ -179,6 +208,8 @@ mono_compile_method (MonoMethod *method)
 		}
 	}
 
+	forest = g_ptr_array_new ();
+
 	while (ip < end) {
 
 		switch (*ip) {
@@ -187,7 +218,8 @@ mono_compile_method (MonoMethod *method)
 			MonoMethodSignature *csig;
 			MonoMethod *cm;
 			guint32 token, nargs;
-
+			int i;
+			
 			++ip;
 			token = read32 (ip);
 			ip += 4;
@@ -383,6 +415,7 @@ mono_compile_method (MonoMethod *method)
 			++sp;
 			break;
 		}
+
 		case 0xFE:
 			++ip;			
 			switch (*ip) {
@@ -411,16 +444,7 @@ mono_compile_method (MonoMethod *method)
 	}
 	
 	print_forest (forest);
-	
-	for (l = forest, i = 0; l; l = l->next) {
-		t1 = (MBTree *)l->data;
-		//printf ("%03d:", i++);print_tree ((MBTree *)l->data);printf ("\n");
-
-		s =  mono_burg_label (t1);
-		g_assert (s);
-		cregnum = 0;
-		reduce (t1, MB_NTERM_stmt);
-	}
+	emit_method (method, forest, locals_size);
 }
 
 static void

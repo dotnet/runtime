@@ -46,8 +46,8 @@ con: CONST
 reg: LDLOC {
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("mov R%d, dword ptr %d[EBP]\n", tree->reg, 
-			tree->data.i);
+		printf ("\tmov     dword ptr %d[%%ebp], R%d\n", 
+			tree->data.i, tree->reg);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -62,8 +62,8 @@ reg: LDARG {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		printf ("mov R%d, dword ptr %d[EBP]\n", tree->reg, 
-			-tree->data.i);
+		printf ("\tmov     dword ptr %d[%%ebp], R%d\n", 
+			-tree->data.i, tree->reg);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -72,48 +72,53 @@ reg: LDARG {
 }
 
 reg: MUL (reg, reg) {
-	printf ("mov R%d, R%d\nimul R%d, R%d\n", tree->reg, tree->left->reg,
-		tree->reg, tree->right->reg);
+	printf ("\tmov     R%d, R%d\n\timul     R%d, R%d\n", 
+		tree->left->reg, tree->reg,
+		tree->right->reg, tree->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: ADD (reg, con) {
-	printf ("mov R%d, R%d\nadd R%d, %d\n", tree->reg, tree->left->reg,
-		tree->reg, tree->right->data.i);
+	printf ("\tmov     R%d, R%d\n\t    add R%d, %d\n", 
+		tree->left->reg, tree->reg, 
+		tree->right->data.i, tree->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: ADD (reg, reg) {
-	printf ("mov R%d, R%d\nadd R%d, R%d\n", tree->reg, tree->left->reg,
-		tree->reg, tree->right->reg);
+	printf ("\tmov     R%d, R%d\n\tadd     R%d, R%d\n",
+		tree->left->reg,  tree->reg, 
+		tree->right->reg, tree->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: SUB (reg, con) {
-	printf ("mov R%d, R%d\nsub R%d, %d\n", tree->reg, tree->left->reg,
-		tree->reg, tree->right->data.i);
+	printf ("\tmov     R%d, R%d\n\tsub     R%d, %d\n", 
+		tree->left->reg, tree->reg, 
+		tree->right->data.i, tree->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: SUB (reg, reg) {
-	printf ("mov R%d, R%d\nsub R%d, R%d\n", tree->reg, tree->left->reg,
-		tree->reg, tree->right->reg);
+	printf ("\tmov     R%d, R%d\n\tsub     R%d, R%d\n", 
+		tree->left->reg,  tree->reg, 
+		tree->right->reg, tree->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 stmt: STLOC (con) {
-	printf ("mov dword ptr %d[EBP], %d\n", tree->data.i,
-		tree->left->data.i);
+	printf ("\tmov     %d, dword ptr %d[EBP]\n", 
+		tree->left->data.i, tree->data.i);
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4);
 	return 0;
@@ -122,8 +127,8 @@ stmt: STLOC (con) {
 stmt: STLOC (reg) {	
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("mov dword ptr %d[EBP], R%d\n", tree->data.i,
-			tree->left->reg);
+		printf ("\tmov     R%d, dword ptr %d[EBP]\n", 
+			tree->left->reg, tree->data.i);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -133,47 +138,52 @@ stmt: STLOC (reg) {
 
 stmt: BR {
 
-	printf ("jmp %d[EIP]\n", tree->data.i);
+	printf ("\tjmp     %d[EIP]\n", tree->data.i);
 }
 
 stmt: BLT (reg, con) {
 
-	printf ("blt R%d, %d\n", tree->left->reg, tree->right->data.i);
+	printf ("\tcmp     R%d, %d\n"
+		"\tjl      label_%d\n", 
+		tree->left->reg, tree->right->data.i, tree->data.i);
 }
 
 stmt: BEQ (reg, con) {
-
-	printf ("beq R%d, %d\n", tree->left->reg, tree->right->data.i);
+	printf ("\tcmp     R%d, %d\n"
+		"\tje      label_%d\n", 
+		tree->left->reg, tree->right->data.i, tree->data.i);
 }
 
 stmt: BGE (reg, con) {
 
-	printf ("bge R%d, %d\n", tree->left->reg, tree->right->data.i);
+	printf ("\tcmp     R%d, %d\n"
+		"\tjae     label_%d\n", 
+		tree->left->reg, tree->right->data.i, tree->data.i);
 }
 
 stmt: RETV (reg) {
-
-	printf ("ret R%d\n", tree->left->reg);
+	
+	printf ("\tjmp     epilog ; Return value on R%d\n", tree->left->reg);
 }
 
 stmt: RET {
 
-	printf ("ret\n");
+	printf ("\tret\n");
 }
 
 stmt: ARG (con) {
        
-      printf ("push %d\n", tree->left->data.i);
+      printf ("\tpush     %d\n", tree->left->data.i);
 }
 
 stmt: ARG (reg) {
-      printf ("push R%d\n", tree->left->reg);
+      printf ("\tpush    R%d\n", tree->left->reg);
 }
 
 reg: CALL {
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("R%d = call\n", tree->reg);
+		printf ("\tR%d = call\n", tree->reg);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -182,7 +192,7 @@ reg: CALL {
 }
 
 stmt: CALL {
-     printf ("call\n");
+     printf ("\tcall    $0x%x\n", tree->data.i);
 }
 
 %% 

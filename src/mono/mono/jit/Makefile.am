@@ -8,7 +8,9 @@ bin_PROGRAMS = testjit
 testjit_SOURCES =		\
 	codegen.h		\
 	codegen-x86.c		\
-	testjit.h		  	\
+	emit-x86.c		\
+	jit.h			\
+	testjit.h		\
 	testjit.c
 
 testjit_LDADD =				\
