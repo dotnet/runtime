@@ -1028,11 +1028,15 @@ dump_table_methodspec (MonoImage *m)
 	for (i = 1; i <= t->rows; i++) {
 		char *sig;
 		char *method;
-		
+                guint32 token;
+                
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODSPEC_SIZE);
 
-		method = get_method (m, method_dor_to_token (cols [MONO_METHODSPEC_METHOD]));
-		sig = get_methodref_signature (m, cols [MONO_METHODSPEC_SIGNATURE], NULL);
+                // build a methodspec token to get the method
+                token = MONO_TOKEN_METHOD_SPEC | i;
+                method = get_method (m, token);
+                
+                sig = get_method_type_param (m, cols [MONO_METHODSPEC_SIGNATURE]);
 		fprintf (output, "%d: %s, %s\n", i, method, sig);
 		g_free (sig);
 		g_free (method);
