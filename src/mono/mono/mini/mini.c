@@ -8156,7 +8156,7 @@ sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 	MonoException *exc;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	struct sigcontext *ctx = (struct sigcontext *)&(((ucontext_t*)context)->uc_mcontext);
-
+		
 	/* Can't allocate memory using Boehm GC on altstack */
 	if (jit_tls->stack_size && 
 		((guint8*)info->si_addr >= (guint8*)jit_tls->end_of_stack - jit_tls->stack_size) &&
@@ -8184,13 +8184,25 @@ static void
 SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
 	MonoThread *thread;
+	gboolean stopRequested = FALSE;
+
 	GET_CONTEXT
-	
+
 	thread = mono_thread_current ();
+
+	mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
+	stopRequested = (thread->state & ThreadState_StopRequested) != 0;
+	mono_monitor_exit ((MonoObject *)thread);
 
 	thread->abort_exc = mono_get_exception_thread_abort ();
 
-	mono_arch_handle_exception (ctx, thread->abort_exc, FALSE);
+	if (stopRequested) {
+		/* Don't throw the exception, just abort the thread */
+		mono_thread_abort (thread->abort_exc);
+	}
+	else {
+		mono_arch_handle_exception (ctx, thread->abort_exc, FALSE);
+	}
 }
 
 static void
