@@ -537,7 +537,7 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 
 static void
 emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, 
-		      int usize, int msize)
+		      int usize, int msize, MonoMarshalSpec *mspec)
 {
 	switch (conv) {
 	case MONO_MARSHAL_CONV_BOOL_I4:
@@ -558,23 +558,20 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		MonoClass *eclass;
 		int esize;
 
-		if (type->type == MONO_TYPE_ARRAY)
-			eclass = mono_class_from_mono_type (type->data.array->type);
-		else if (type->type == MONO_TYPE_SZARRAY) {
+		if (type->type == MONO_TYPE_SZARRAY) {
 			eclass = mono_class_from_mono_type (type->data.type);
 		} else {
 			g_assert_not_reached ();
 		}
 
-	     	if (eclass->valuetype)
+		if (eclass->valuetype)
 			esize = mono_class_instance_size (eclass) - sizeof (MonoObject);
 		else
 			esize = sizeof (gpointer);
 
 		/* create a new array */
-		/* fixme: this only works for SZARRAYS */
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
-		mono_mb_emit_icon (mb, msize / esize);
+		mono_mb_emit_icon (mb, mspec->num_elem);
 		mono_mb_emit_byte (mb, CEE_NEWARR);	
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
 		mono_mb_emit_byte (mb, CEE_STIND_I);
@@ -585,7 +582,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
-		mono_mb_emit_icon (mb, usize);
+		mono_mb_emit_icon (mb, mspec->num_elem * esize);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);			
 
@@ -667,7 +664,8 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 }
 
 static void
-emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, int usize, int msize)
+emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, int usize, int msize,
+		      MonoMarshalSpec *mspec)
 {
 	int pos;
 
@@ -727,6 +725,20 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_BYVALARRAY: {
+		MonoClass *eclass;
+		int esize;
+
+		if (type->type == MONO_TYPE_SZARRAY) {
+			eclass = mono_class_from_mono_type (type->data.type);
+		} else {
+			g_assert_not_reached ();
+		}
+
+               if (eclass->valuetype)
+                       esize = mono_class_native_size (eclass, NULL);
+               else
+                       esize = sizeof (gpointer);
+
 		if (!usize) 
 			break;
 
@@ -743,7 +755,7 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
 		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_icon (mb, usize);
+		mono_mb_emit_icon (mb, mspec->num_elem * esize);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);			
 		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
@@ -799,6 +811,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 {
 	MonoMarshalType *info;
 	int i;
+
+	if (klass->parent)
+		emit_struct_conv(mb, klass->parent, to_object);
 
 	info = mono_marshal_load_type_info (klass);
 
@@ -911,9 +926,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 		}
 		default:
 			if (to_object) 
-				emit_ptr_to_str_conv (mb, ftype, conv, usize, msize);
+				emit_ptr_to_str_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);
 			else
-				emit_str_to_ptr_conv (mb, ftype, conv, usize, msize);	
+				emit_str_to_ptr_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);	
 		}
 		
 		if (to_object) {
@@ -3531,8 +3546,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	MonoMarshalType *info;
 	MonoClass *klass;
 	char *fname;
-	int i;
-
+	int i, match_index = -1;
+	
 	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (type);
@@ -3541,18 +3556,36 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	fname = mono_string_to_utf8 (field_name);
 	klass = mono_class_from_mono_type (type->type);
 
-	info = mono_marshal_load_type_info (klass);	
-	
-	for (i = 0; i < klass->field.count; ++i) {
-		if (*fname == *klass->fields [i].name && 
-		    strcmp (fname, klass->fields [i].name) == 0)
-			break;
-	}
+	while(klass && match_index == -1) {
+		for (i = 0; i < klass->field.count; ++i) {
+			if (*fname == *klass->fields [i].name && strcmp (fname, klass->fields [i].name) == 0) {
+				match_index = i;
+				break;
+			}
+		}
+
+		if(match_index == -1)
+			klass = klass->parent;
+        }
+
 	g_free (fname);
 
-	mono_assert (i < klass->field.count);
+	if(match_index == -1) {
+               MonoException* exc;
+               gchar *tmp;
 
-	return info->fields [i].offset;
+               /* Get back original class instance */
+	       klass = mono_class_from_mono_type (type->type);
+
+               tmp = g_strdup_printf ("Field passed in is not a marshaled member of the type %s", klass->name);
+               exc = mono_get_exception_argument ("fieldName", tmp);
+               g_free (tmp);
+ 
+               mono_raise_exception ((MonoException*)exc);
+       }
+
+       info = mono_marshal_load_type_info (klass);     
+       return info->fields [match_index].offset;
 }
 
 gpointer

@@ -369,7 +369,7 @@ retarg:
 setret: dest:a src1:i len:2
 setlret: dest:l src1:i src2:i len:4
 checkthis: src1:b len:3
-voidcall: len:8 clob:c
+voidcall: len:11 clob:c
 voidcall_reg: src1:i len:5 clob:c
 voidcall_membase: src1:b len:10 clob:c
 fcall: dest:f len:8 clob:c

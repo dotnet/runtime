@@ -108,7 +108,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
-	int i, j, count = 0;
+	int i, j, count = 0, native_size = 0;
 	MonoMarshalType *info;
 	guint32 layout;
 
@@ -131,9 +131,17 @@ mono_marshal_load_type_info (MonoClass* klass)
 	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
 	info->num_fields = count;
 	
-	if (klass->parent)
-		info->native_size = mono_class_native_size (klass->parent, NULL);
+	/* Try to find a size for this type in metadata */
+	mono_metadata_packing_from_typedef (klass->image, klass->type_token, NULL, &native_size);
 
+	if (klass->parent) {
+		int parent_size = mono_class_native_size (klass->parent, NULL);
+
+		/* Add parent size to real size */
+		native_size += parent_size;
+		info->native_size = parent_size;
+	}
+ 
 	for (j = i = 0; i < klass->field.count; ++i) {
 		int size, align;
 		
@@ -166,6 +174,10 @@ mono_marshal_load_type_info (MonoClass* klass)
 		j++;
 	}
 
+	if(layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		info->native_size = MAX (native_size, info->native_size);
+	}
+
 	if (info->native_size & (klass->min_align - 1)) {
 		info->native_size += klass->min_align - 1;
 		info->native_size &= ~(klass->min_align - 1);
@@ -191,7 +203,7 @@ class_compute_field_layout (MonoClass *class)
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
-	int i, blittable = TRUE;
+	int i, blittable = TRUE, real_size = 0;
 	guint32 rva;
 	guint32 packing_size = 0;
 
@@ -203,14 +215,14 @@ class_compute_field_layout (MonoClass *class)
 			class_compute_field_layout (class->parent);
 		class->instance_size += class->parent->instance_size;
 		class->min_align = class->parent->min_align;
+		blittable = class->blittable;
 	} else {
 		class->instance_size = sizeof (MonoObject);
 		class->min_align = 1;
 	}
 
-	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size)) {
-		class->instance_size += sizeof (MonoObject);
-	}
+	/* Get the real size */
+	mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &real_size);
 
 	g_assert ((packing_size & 0xfffffff0) == 0);
 	class->packing_size = packing_size;
@@ -281,6 +293,13 @@ class_compute_field_layout (MonoClass *class)
 			G_BREAKPOINT ();
 	}
 	mono_class_layout_fields (class);
+
+	if(real_size) {
+		if(class->parent)
+			real_size += class->parent->instance_size;
+
+		class->instance_size = MAX(real_size, class->instance_size);
+	}
 }
 
 void
