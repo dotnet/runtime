@@ -440,12 +440,18 @@ static gboolean process_compare (gpointer handle, gpointer user_data)
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	pid_t pid;
+	guint32 segment, idx;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle, NULL);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up process handle %p", handle);
+		return(FALSE);
+	}
+
+	_wapi_handle_segment (handle, &segment, &idx);
+	if (_wapi_shared_data[segment]->handles[idx].signalled) {
 		return(FALSE);
 	}
 
@@ -1231,4 +1237,3 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 		g_main_context_iteration (g_main_context_default (), TRUE);
 	}
 }
-
