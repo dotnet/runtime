@@ -228,7 +228,8 @@ if test x$platform_win32 = xno; then
 			], [
 				AC_MSG_RESULT(no)
 				dnl Add other variants here
-				AC_MSG_ERROR([PTHREAD_MUTEX_RECURSIVE not found])
+				AC_MSG_WARN(Using mono_mutex_t for recursive mutexes)
+				AC_DEFINE(USE_MONO_MUTEX)
 			])
 		])
 		CPPFLAGS=$orig_CPPFLAGS

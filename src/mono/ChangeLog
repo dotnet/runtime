@@ -1,3 +1,10 @@
+2002-02-13  Jeffrey Stedfast  <fejj@ximian.com>
+
+	* acconfig.h: #undef USE_MONO_MUTEX
+
+	* configure.in: If the system pthread implementation is lacking,
+	default to using mono-mutex.
+
 2002-02-05  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/enum2.cs: new file with more enum tests.
