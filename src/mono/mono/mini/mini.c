@@ -117,10 +117,10 @@ mono_type_blittable (MonoType *type)
 	case MONO_TYPE_R8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-	case MONO_TYPE_OBJECT:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
 		return type->data.klass->blittable;
 		break;
 	default:
@@ -154,6 +154,9 @@ mono_method_blittable (MonoMethod *method)
 	for (i = 0; i < sig->param_count; i++)
 		if (!mono_type_blittable (sig->params [i]))
 			return FALSE;
+
+	if (mono_method_has_marshal_info (method))
+		return FALSE;
 
 	return TRUE;
 }
