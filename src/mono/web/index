@@ -1,3 +1,5 @@
+<link rel="alternate" type="application/rss+xml" title="RSS" href="index.rss"/>
+
 <table>
   <tr>
     <td>
@@ -77,6 +79,27 @@
     </td>
   </tr>
 </table>
+
+@item Jun 3rd, 2002
+
+	CodeDOM implementation from Daniel Stodden has got C# output support.
+
+@item May 31, 2002
+
+	Gonzalo got the Mono XSP page parser to run its first ASP.NET
+	.aspx file today.  It is currently on its infancy.  But very
+	good news, now we need to upgrade our System.Web runtime to run
+	natively on Linux.
+
+	Sergey's code for architecture and size-specific CPBLK has
+	been checked into CVS.
+
+	Paolo has checked the configuration code for Mono (to map
+	PInvoke dlls to other libraries).
+
+	<a href="ado-net.html">ADO support</a>: Daniel has checked in
+	a modified version of the MySQL data provider from Brad.  And Rodrigo
+	started the OleDB using LibGDA.
 
 @item May 27, 2002
 

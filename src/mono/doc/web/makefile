@@ -59,7 +59,7 @@ all: $(OBJECTS) index.rss
 	perl process.pl commands template.html.in deploy
 
 index.rss: mono-rss.exe ../index
-	mono-rss.exe ../index deploy/index.rss
+	./mono-rss.exe ../index deploy/index.rss
 
 mono-rss.exe: mono-rss.cs rss.cs 
 	$(CSC) mono-rss.cs rss.cs
