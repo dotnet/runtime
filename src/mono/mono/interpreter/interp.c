@@ -71,7 +71,7 @@ typedef struct {
 } MethodProfile;
 
 /* If true, then we output the opcodes as we interpret them */
-static int tracing = 0;
+static int global_tracing = 0;
 
 static int debug_indent_level = 0;
 
@@ -562,10 +562,11 @@ ves_runtime_method (MonoInvocation *frame)
 
 		code = (guchar*)delegate->delegate.method_ptr;
 		method = mono_method_pointer_get (code);
+#if 1
 		/* FIXME: check for NULL method */
 		INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
 		ves_exec_method (&call);
-#if 0
+#else
 		if (!method->addr)
 			method->addr = mono_create_trampoline (method, 1);
 		func = method->addr;
@@ -674,7 +675,7 @@ db_match_method (gpointer data, gpointer user_data)
 #define DEBUG_ENTER()	\
 	fcall_count++;	\
 	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method);	\
-	if (break_on_method) G_BREAKPOINT ();	\
+	if (break_on_method) tracing=2;	\
 	break_on_method = 0;	\
 	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
@@ -899,27 +900,38 @@ static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 {
 	MonoInvocation frame;
-	MonoObject *retval;
+	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = method->signature;
-	int i, type;
+	MonoClass *klass = mono_class_from_mono_type (sig->ret);
+	int i, type, isobject = 0;
 	void *ret;
+	stackval result;
 	stackval *args = alloca (sizeof (stackval) * sig->param_count);
 
 	/* FIXME: Set frame for execption handling.  */
 
-	/* allocate ret object. */
-	if (sig->ret->type == MONO_TYPE_VOID) {
-		retval = NULL;
-		ret = NULL;
-	} else {
-		MonoClass *klass = mono_class_from_mono_type (sig->ret);
-		if (klass->valuetype) {
-			retval = mono_object_new (mono_domain_get (), klass);
-			ret = ((char*)retval) + sizeof (MonoObject);
-		} else {
-			ret = &retval;
-		}
+	switch (sig->ret->type) {
+	case MONO_TYPE_VOID:
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+		isobject = 1;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		retval = mono_object_new (mono_domain_get (), klass);
+		ret = ((char*)retval) + sizeof (MonoObject);
+		if (!sig->ret->data.klass->enumtype)
+			result.data.vt.vt = ret;
+		break;
+	default:
+		retval = mono_object_new (mono_domain_get (), klass);
+		ret = ((char*)retval) + sizeof (MonoObject);
+		break;
 	}
+
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
 			args [i].type = VAL_POINTER;
@@ -981,8 +993,13 @@ handle_enum:
 		}
 	}
 
-	INIT_FRAME(&frame,NULL,obj,args,ret,method);
+	INIT_FRAME(&frame,NULL,obj,args,&result,method);
 	ves_exec_method (&frame);
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return NULL;
+	if (isobject)
+		return result.data.p;
+	stackval_to_data (sig->ret, &result, ret);
 	return retval;
 }
 
@@ -1011,6 +1028,7 @@ ves_exec_method (MonoInvocation *frame)
 	void **args_pointers;
 	guint32 *offsets;
 	gint il_ins_count = -1;
+	gint tracing = global_tracing;
 	unsigned char tail_recursion = 0;
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
@@ -1018,8 +1036,6 @@ ves_exec_method (MonoInvocation *frame)
 	MethodProfile *profile_info;
 	GOTO_LABEL_VARS;
 
-	if (frame < 0xbff00000)
-		G_BREAKPOINT ();
 	signature = frame->method->signature;
 	mono_class_init (frame->method->klass);
 
@@ -3854,12 +3870,25 @@ static void
 my_GC_free (void *p)
 {
 	/* do nothing */
+	GC_debug_free (p);
+}
+
+static void*
+my_GC_malloc (gsize n_block_bytes)
+{
+	return GC_debug_malloc (n_block_bytes, "malloc", 0);
+}
+
+static void*
+my_GC_realloc (void* ptr, gsize n_block_bytes)
+{
+	return GC_debug_realloc (ptr, n_block_bytes, "realloc", 0);
 }
 
 static void*
 my_GC_calloc (gsize n_blocks, gsize n_block_bytes)
 {
-	return GC_malloc (n_block_bytes * n_blocks);
+	return GC_debug_malloc (n_block_bytes * n_blocks, "calloc", 0);
 }
 #endif
 
@@ -3875,11 +3904,11 @@ main (int argc, char *argv [])
 	if (argc < 2)
 		usage ();
 
-#if HAVE_BOEHM_GC
+#if 0 && HAVE_BOEHM_GC
 	{
 		static GMemVTable boehm_table = {
-			GC_malloc,
-			GC_realloc,
+			my_GC_malloc,
+			my_GC_realloc,
 			my_GC_free,
 			my_GC_calloc,
 			GC_malloc, /* try variants */
@@ -3891,9 +3920,9 @@ main (int argc, char *argv [])
 
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
-			tracing = 1;
+			global_tracing = 1;
 		if (strcmp (argv [i], "--traceops") == 0)
-			tracing = 2;
+			global_tracing = 2;
 		if (strcmp (argv [i], "--dieonex") == 0)
 			die_on_exception = 1;
 		if (strcmp (argv [i], "--print-vtable") == 0)
