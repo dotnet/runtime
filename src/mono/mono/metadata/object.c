@@ -163,7 +163,6 @@ vtable_finalizer (void *obj, void *data) {
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
-	MonoClass *k;
 	MonoVTable *vt;
 	MonoClassField *field;
 	guint32 cindex;
