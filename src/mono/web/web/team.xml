@@ -100,5 +100,18 @@
       <task>Random fixes</task>
     </tasks>
   </contributor>
+  
+  <contributor>
+    <name>
+      <first-name>Marco</first-name>
+      <last-name>Ridoni</last-name>
+    </name>
+    <e-mail>marco.ridoni@virgilio.it</e-mail>
+    <location>Rome, Italy</location>
+    <tasks>
+      <task>MonoBasic</task>
+      <task>MonoBasic runtime</task>
+    </tasks>
+  </contributor>  
  
 </contributors>
