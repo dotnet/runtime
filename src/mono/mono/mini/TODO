@@ -11,3 +11,30 @@ Other Ideas:
   memory (for example allocation of strings - instead they allocate strings when
   the code is executed (like the --shared option)). But there are only a few
   functions using catch handlers, so I consider this a minor issue.
+
+* some performance critical functions should be inlined. These include:
+	- mono_mempool_alloc and mono_mempool_alloc0
+	- EnterCriticalSection and LeaveCriticalSection
+	- TlsSetValue
+	- mono_metadata_row_col
+	- mono_g_hash_table_lookup
+	- mono_domain_get
+* load_class_names can be speeded up by caching the per-namespace hash tables
+  in a new hash table indexed by the index of the namespace in the blob heap.
+* the managed/unmanaged boundary is quite slow:
+	- it calls mono_get_lmf_addr, which calls TlsGetValue, which calls
+      pthread_getspecific (). This means that 3 function calls are needed for
+      each native function call.
+* currently mono assumes that the CustomAttribute table is not sorted. So 
+  lookup in this table is slow. Furthermore, this is used by 
+  field_is_thread_static, which is called a lot of times.
+* mono_find_jit_opcode_emulation is called a lot of times during compilation,
+  and it involves a hash table lookup. 
+* mcs should create AssemblyBuilders with the Run flag instead of RunAndSave,
+  so the runtime could avoid fully constructing the types in the dynamic
+  assembly.
+* if a function which involves locking is called from another function which
+  acquires the same lock, it might be useful to create a separate _inner 
+  version of the function which does not re-acquire the lock. This is a perf
+  win only if the function is called a lot of times, like mono_get_method.
+
