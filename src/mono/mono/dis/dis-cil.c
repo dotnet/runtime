@@ -213,9 +213,9 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 		}
 
 		case MonoInlineVar: {
-			gint16 var_idx = read16 (ptr);
+			guint16 var_idx = read16 (ptr);
 
-			fprintf (output, "variable-%d\n", var_idx);
+			fprintf (output, "%d\n", var_idx);
 			ptr += 2;
 			break;
 		}
@@ -245,7 +245,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 		}
 
 		case MonoShortInlineVar: {
-			signed char x = *ptr;
+			unsigned char x = *ptr;
 
 			fprintf (output, "%d", (int) x);
 			ptr++;
