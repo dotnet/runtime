@@ -1534,6 +1534,9 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	if (!parent->inited)
 		mono_class_init (parent);
 
+	if (!eclass->inited)
+		mono_class_init (eclass);
+
 	image = eclass->image;
 
 	if ((list = g_hash_table_lookup (image->array_cache, element_type))) {
@@ -1565,6 +1568,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	class->vtable_size = parent->vtable_size;
 	class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 	mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
+	mono_class_setup_supertypes (class);
 
 	class->rank = rank;
 	
