@@ -4183,6 +4183,9 @@ array_constructed:
 				case MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY:
 					sp->data.p = mono_marshal_string_array (sp->data.p);
 					break;
+				case MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY:
+					sp->data.p = mono_marshal_string_array_to_unicode (sp->data.p);
+					break;
 				case MONO_MARSHAL_CONV_LPWSTR_STR:
 					sp->data.p = mono_string_from_utf16 (sp->data.p);
 					break;
