@@ -59,6 +59,31 @@ free_method_info (MonoDebugMethodInfo *minfo)
 	g_free (minfo);
 }
 
+static gchar *
+get_class_name (MonoClass *klass)
+{
+	if (klass->nested_in) {
+		gchar *parent_name = get_class_name (klass->nested_in);
+		gchar *name = g_strdup_printf ("%s.%s", parent_name, klass->name);
+		g_free (parent_name);
+		return name;
+	}
+
+	return g_strdup_printf ("%s%s%s", klass->name_space,
+				klass->name_space [0] ? "." : "", klass->name);
+}
+
+static gchar *
+get_method_name (MonoMethod *method)
+{
+	gchar *tmpsig = mono_signature_get_desc (method->signature, TRUE);
+	gchar *class_name = get_class_name (method->klass);
+	gchar *name = g_strdup_printf ("%s.%s(%s)", class_name, method->name, tmpsig);
+	g_free (class_name);
+	g_free (tmpsig);
+	return name;
+}
+
 static int
 load_symfile (MonoSymbolFile *symfile)
 {
@@ -137,9 +162,7 @@ load_symfile (MonoSymbolFile *symfile)
 		mep->index = i;
 
 		mep->method_name_offset = priv->string_table_size;
-		mep->name = g_strdup_printf ("%s%s%s.%s", method->klass->name_space,
-					     method->klass->name_space [0] ? "." : "",
-					     method->klass->name, method->name);
+		mep->name = get_method_name (method);
 		priv->string_table_size += strlen (mep->name) + 5;
 
 		g_hash_table_insert (priv->method_table, method, mep);

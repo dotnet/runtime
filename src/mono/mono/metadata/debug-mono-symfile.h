@@ -177,7 +177,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		27
+#define MONO_SYMBOL_FILE_VERSION		28
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 #define MONO_SYMBOL_FILE_DYNAMIC_VERSION	14
