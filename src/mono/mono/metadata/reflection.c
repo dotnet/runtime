@@ -4542,6 +4542,14 @@ fixup_resource_directory (char *res_section, char *p, guint32 rva)
 	}
 }
 
+static void
+checked_write_file (HANDLE f, gconstpointer buffer, guint32 numbytes)
+{
+	guint32 dummy;
+	if (!WriteFile (f, buffer, numbytes, &dummy, NULL))
+		g_error ("WriteFile returned %d\n", GetLastError ());
+}
+
 /*
  * mono_image_create_pefile:
  * @mb: a module builder object
@@ -4559,12 +4567,11 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	guint32 header_start, section_start, file_offset, virtual_offset;
 	MonoDynamicImage *assembly;
 	MonoReflectionAssemblyBuilder *assemblyb;
-	MonoDynamicStream *pefile;
+	MonoDynamicStream pefile_stream = {0};
+	MonoDynamicStream *pefile = &pefile_stream;
 	int i, nsections;
 	guint32 *rva, value;
-	guint16 *data16;
 	guchar *p;
-	guint32 dummy;
 	static const unsigned char msheader[] = {
 		0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,  0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
 		0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4585,10 +4592,6 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	assembly->machine = assemblyb->machine;
 	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->pe_kind = assemblyb->pe_kind;
 	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->machine = assemblyb->machine;
-
-	/* already created */
-	if (assembly->pefile.index)
-		return;
 	
 	mono_image_build_metadata (mb);
 
@@ -4610,9 +4613,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 		assembly_add_win32_resources (assembly, assemblyb);
 
 	nsections = calc_section_size (assembly);
-
-	pefile = &assembly->pefile;
-
+	
 	/* The DOS header and stub */
 	g_assert (sizeof (MonoMSDOSHeader) == sizeof (msheader));
 	mono_image_add_stream_data (pefile, msheader, sizeof (msheader));
@@ -4646,7 +4647,6 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 
 	file_offset += FILE_ALIGN - 1;
 	file_offset &= ~(FILE_ALIGN - 1);
-	mono_image_add_stream_zero (pefile, file_offset - pefile->index);
 
 	image_size += section_start + sizeof (MonoSectionTable) * nsections;
 
@@ -4821,6 +4821,20 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 		section->st_raw_data_size &= GUINT32_FROM_LE (~(FILE_ALIGN - 1));
 		section->st_raw_data_ptr = GUINT32_FROM_LE (assembly->sections [i].offset);
 		section->st_flags = GUINT32_FROM_LE (assembly->sections [i].attrs);
+		section ++;
+	}
+	
+	checked_write_file (file, pefile->data, pefile->index);
+	
+	mono_dynamic_stream_reset (pefile);
+	
+	for (i = 0; i < MONO_SECTION_MAX; ++i) {
+		if (!assembly->sections [i].size)
+			continue;
+		
+		if (SetFilePointer (file, assembly->sections [i].offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+			g_error ("SetFilePointer returned %d\n", GetLastError ());
+		
 		switch (i) {
 		case MONO_SECTION_TEXT:
 			/* patch entry point */
@@ -4830,56 +4844,59 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 			*p++ = (value >> 8) & 0xff;
 			*p++ = (value >> 16) & 0xff;
 			*p++ = (value >> 24) & 0xff;
-
-			text_offset = assembly->sections [i].offset;
-			memcpy (pefile->data + text_offset, assembly->code.data, assembly->code.index);
-			text_offset += assembly->code.index;
-			memcpy (pefile->data + text_offset, assembly->resources.data, assembly->resources.index);
-			text_offset += assembly->resources.index;
-			memcpy (pefile->data + text_offset, assembly->image.raw_metadata, assembly->meta_size);
-			text_offset += assembly->meta_size;
-			memcpy (pefile->data + text_offset, assembly->strong_name, assembly->strong_name_size);
+		
+			checked_write_file (file, assembly->code.data, assembly->code.index);
+			checked_write_file (file, assembly->resources.data, assembly->resources.index);
+			checked_write_file (file, assembly->image.raw_metadata, assembly->meta_size);
+			checked_write_file (file, assembly->strong_name, assembly->strong_name_size);
+				
 
 			g_free (assembly->image.raw_metadata);
 			break;
-		case MONO_SECTION_RELOC:
-			rva = (guint32*)(pefile->data + assembly->sections [i].offset);
-			*rva = GUINT32_FROM_LE (assembly->text_rva);
-			++rva;
-			*rva = GUINT32_FROM_LE (12);
-			++rva;
-			data16 = (guint16*)rva;
+		case MONO_SECTION_RELOC: {
+			struct {
+				guint32 page_rva;
+				guint32 block_size;
+				guint16 type_and_offset;
+				guint16 term;
+			} reloc;
+			
+			g_assert (sizeof (reloc) == 12);
+			
+			reloc.page_rva = GUINT32_FROM_LE (assembly->text_rva);
+			reloc.block_size = GUINT32_FROM_LE (12);
+			
 			/* 
 			 * the entrypoint is always at the start of the text section 
 			 * 3 is IMAGE_REL_BASED_HIGHLOW
 			 * 2 is patch_size_rva - text_rva
 			 */
-			*data16 = GUINT16_FROM_LE ((3 << 12) + (2));
-			data16++;
-			*data16 = 0; /* terminate */
+			reloc.type_and_offset = GUINT16_FROM_LE ((3 << 12) + (2));
+			reloc.term = 0;
+			
+			checked_write_file (file, &reloc, sizeof (reloc));
+			
 			break;
+		}
 		case MONO_SECTION_RSRC:
 			if (assembly->win32_res) {
-				text_offset = assembly->sections [i].offset;
 
 				/* Fixup the offsets in the IMAGE_RESOURCE_DATA_ENTRY structures */
 				fixup_resource_directory (assembly->win32_res, assembly->win32_res, assembly->sections [i].rva);
-
-				memcpy (pefile->data + text_offset, assembly->win32_res, assembly->win32_res_size);
+				checked_write_file (file, assembly->win32_res, assembly->win32_res_size);
 			}
 			break;
 		default:
 			g_assert_not_reached ();
 		}
-		section++;
 	}
 	
 	/* check that the file is properly padded */
+	if (SetFilePointer (file, file_offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+		g_error ("SetFilePointer returned %d\n", GetLastError ());
+	if (! SetEndOfFile (file))
+		g_error ("SetEndOfFile returned %d\n", GetLastError ());
 	
-	if (!WriteFile (file, pefile->data, pefile->index , &dummy, NULL))
-		g_error ("WriteFile returned %d\n", GetLastError ());
-	
-	mono_dynamic_stream_reset (pefile);
 	mono_dynamic_stream_reset (&assembly->code);
 	mono_dynamic_stream_reset (&assembly->us);
 	mono_dynamic_stream_reset (&assembly->blob);
