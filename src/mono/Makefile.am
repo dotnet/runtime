@@ -45,8 +45,10 @@ MCS_BASIC_FILES = \
 
 # Set of directories and files the 'mcs' compiler can use
 ## We build class/System twice to resolve the cyclic dependency of class/System.XML
-MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System $(MONO_CSHARP_DEBUGGER_DIR)
-MCS_FILES = $(MCS_BASIC_FILES) $(mcs_topdir)/class/lib/default/System.Xml.dll $(MONO_CSHARP_DEBUGGER_FILE)
+MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System class/Mono.CSharp.Debugger
+MCS_FILES = $(MCS_BASIC_FILES) \
+	$(mcs_topdir)/class/lib/default/System.Xml.dll \
+	$(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
 
 tmpinst = _tmpinst
 
@@ -55,12 +57,10 @@ if PLATFORM_WIN32
 populate_profiles = default:net_1_1
 
 # bootstraps using the .NET C# compiler
-bootstrap: faststrap
+bootstrap: tmpinst-dir mono-do-runtime-only
+	$(MAKE) fasterstrap
 
 else
-
-MONO_CSHARP_DEBUGGER_DIR = class/Mono.CSharp.Debugger
-MONO_CSHARP_DEBUGGER_FILE = $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
 
 populate_profiles = default:net_1_1 net_2_0:net_2_0
 
@@ -159,29 +159,21 @@ tmpinst-dir:
 	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono
 	$(MAKE) tmpinst-dir-contents
 
-if PLATFORM_WIN32
-
-tmpinst-dir-contents: $(tmpinst)/bin/mono.bat $(tmpinst)/etc/mono/machine.config
-
-else
-
 tmpinst-dir-contents: $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/machine.config
 
-endif
+if PLATFORM_WIN32
 
-$(tmpinst)/bin/mono.bat: $(srcdir)/Makefile.am
-	echo '@echo off' > $@
-	echo 'set builddir="'"`pwd`"'"' >> $@
-	echo 'set win_builddir="'"`cygpath -w -a .`"'"' >> $@
-	echo 'set tmpinst="%win_builddir%\$(tmpinst)"' >> $@
-	echo 'if %MONO_PATH% == "" goto when_empty' >> $@
-	echo 'set MONO_PATH="%MONO_PATH%;%tmpinst%\lib"' >> $@
-	echo 'goto endif_empty' >> $@
-	echo ':when_empty' >> $@
-	echo 'set MONO_PATH=%tmpinst%\lib' >> $@
-	echo ':endif_empty' >> $@
-	echo 'set MONO_CFG_DIR=%tmpinst%\etc' >> $@
-	echo "`cygpath -w /bin/sh`" '"%builddir%/libtool" --mode=execute "%builddir%/$(mono_runtime)" --config "%win_builddir%\data\config" %*' >> $@
+$(tmpinst)/bin/mono: $(srcdir)/Makefile.am
+	echo '#! /bin/sh' > $@
+	echo 'builddir="'`pwd`'"; win_builddir="'`cygpath -w -a .`'"' >> $@
+	echo 'tmpinst="$$win_builddir\\$(tmpinst)"' >> $@
+	echo 'if test -z "$$MONO_PATH" ; then MONO_PATH="$$tmpinst\\lib"; else MONO_PATH="$${MONO_PATH};$$tmpinst\\lib" ; fi' >> $@
+	echo 'MONO_CFG_DIR="$$tmpinst\\etc"' >> $@
+	echo 'export MONO_PATH MONO_CFG_DIR' >> $@
+	echo 'exec "$$builddir/libtool" --mode=execute "$$builddir/mono.exe" "$$@"' >> $@
+	chmod +x $@
+
+else
 
 $(tmpinst)/bin/mono: $(srcdir)/Makefile.am
 	echo '#! /bin/sh' > $@
@@ -191,6 +183,8 @@ $(tmpinst)/bin/mono: $(srcdir)/Makefile.am
 	echo 'export MONO_PATH MONO_CFG_DIR' >> $@
 	echo 'exec "$$builddir/libtool" --mode=execute "$$builddir/$(mono_runtime)" --config "$$builddir/data/config" "$$@"' >> $@
 	chmod +x $@
+
+endif
 
 $(tmpinst)/bin/mcs: $(srcdir)/Makefile.am
 	(t=`cd $(tmpinst) && pwd`; echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$t/lib/mcs.exe"'" "$$@"') > $@

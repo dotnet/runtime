@@ -1,7 +1,12 @@
 2004-06-24  Raja R Harinath  <rharinath@novell.com>
 
-	* runtime/net_2_0/Makefile.am (gac_assemblies_list): Don't mention nunit.*.
-	Fix for #60443.
+	* Makefile.am (MCS_DIRS, MCS_FILES): Add back Mono.CSharp.Debugger.
+	(tmpinst-dir-contents, $(tmpinst)/bin/mono.bat): Remove mono.bat
+	in W32.  Use 'mono' and 'mcs' in W32 too.
+	(bootstrap) [PLATFORM_WIN32]: Back to single stage bootstrap.
+	* runtime/net_2_0/Makefile.am (gac_assemblies_list): Don't mention
+	nunit.*, IBM.Data.DB2, ICSharpCode.SharpZipLib.
+	Fix for #60443, the GAC .DLL-Hell.
 
 2004-06-22  Raja R Harinath  <rharinath@novell.com>
 
