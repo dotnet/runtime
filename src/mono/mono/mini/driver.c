@@ -37,6 +37,7 @@
 #include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
+#include "jit.h"
 #include <string.h>
 #include <ctype.h>
 #include "inssel.h"
