@@ -2398,6 +2398,8 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 		if (!strcmp (m->name, "FieldGetter")) {
 			MonoClass *k = this->vtable->klass;
+			MonoString *name;
+			char *str;
 			
 			/* If this is a proxy, then it must be a CBO */
 			if (k == mono_defaults.transparent_proxy_class) {
@@ -2407,9 +2409,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 				k = this->vtable->klass;
 			}
 			
-			MonoString *name = mono_array_get (params, MonoString *, 1);
-			char *str;
-
+			name = mono_array_get (params, MonoString *, 1);
 			str = mono_string_to_utf8 (name);
 		
 			do {
