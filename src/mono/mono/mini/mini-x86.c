@@ -3962,7 +3962,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i1 = args [1];
 		}
 #endif
-	} else if (strcmp (cmethod->klass->name, "Interlocked") == 0) {
+	} /* else if (strcmp (cmethod->klass->name, "Interlocked") == 0) {
 		if (strcmp (cmethod->name, "Increment") == 0 && fsig->params [0]->type == MONO_TYPE_I4) {
 			MonoInst *ins_iconst;
 
@@ -3992,7 +3992,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
 		} 
-	}
+	} */
 	
 	return ins;
 }
