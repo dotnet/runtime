@@ -152,12 +152,12 @@ class_compute_field_layout (MonoClass *class)
 			int size, align;
 			
 			size = mono_type_size (class->fields [i].type, &align);
-			class->min_align = MAX (align, class->min_align);
 			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
 				class->class_size += (class->class_size % align);
 				class->class_size += size;
 			} else {
+				class->min_align = MAX (align, class->min_align);
 				class->fields [i].offset = class->instance_size;
 				class->instance_size += (class->instance_size % align);
 				class->instance_size += size;
@@ -1001,16 +1001,6 @@ MonoClassField *
 mono_class_get_field (MonoClass *class, guint32 field_token)
 {
 	int idx = mono_metadata_token_index (field_token);
-
-	if (mono_metadata_token_code (field_token) == MONO_TOKEN_MEMBER_REF) {
-		MonoClass *refclass;
-		MonoClassField *field;
-
-		field = mono_field_from_memberref (class->image, field_token, &refclass);
-		g_assert (field != NULL);
-
-		return field;
-	}
 
 	g_assert (mono_metadata_token_code (field_token) == MONO_TOKEN_FIELD_DEF);
 

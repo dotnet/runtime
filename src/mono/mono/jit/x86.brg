@@ -2312,6 +2312,24 @@ stmt: ARG_I8 (lreg) {
 	x86_push_reg (s->code, tree->left->reg1);
 }
 
+reg: CEQ (lreg, lreg) {
+	guint8 *start = s->code;
+	gint32 o1, o2, i;
+
+	tree->is_jump = TRUE;
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+		o1 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_NE, o2 - o1, FALSE);
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+		o2 = s->code - s->start;		
+		x86_set_reg (s->code, X86_CC_EQ, tree->reg1, FALSE);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+	}
+}
+
 stmt: BEQ (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, i;

@@ -1889,12 +1889,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			sp--;
 
 			/* need to handle fieldrefs */
-			klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 
-			        mono_metadata_typedef_from_field (image, token & 0xffffff));
-
-			mono_class_init (klass);
-
-			field = mono_class_get_field (klass, token);
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				field = mono_field_from_memberref (image, token, &klass);
+				mono_class_init (klass);
+			} else {
+				klass = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+				mono_class_init (klass);
+				field = mono_class_get_field (klass, token);
+			}
 			g_assert (field);
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -1955,12 +1958,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			sp -= 2;
 
 			/* need to handle fieldrefs */
-			klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 
-			        mono_metadata_typedef_from_field (image, token & 0xffffff));
-
-			mono_class_init (klass);
-
-			field = mono_class_get_field (klass, token);
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				field = mono_field_from_memberref (image, token, &klass);
+				mono_class_init (klass);
+			} else {
+				klass = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+				mono_class_init (klass);
+				field = mono_class_get_field (klass, token);
+			}
 			g_assert (field);
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -2909,6 +2915,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
+		case CEE_CONV_OVF_I_UN:
 		case CEE_CONV_OVF_I4_UN: {
 			++ip;
 			sp--;
@@ -2987,6 +2994,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
+		case CEE_CONV_OVF_U_UN:
 		case CEE_CONV_OVF_U4_UN: {
 			// fixme: raise exceptions ?
 			++ip;

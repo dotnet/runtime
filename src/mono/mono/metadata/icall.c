@@ -139,8 +139,9 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	guint32 size = mono_array_element_size (klass);
 	int i;
 
-	for (i = 0; i < klass->rank; ++i)
+	for (i = 0; i < klass->rank; ++i) 
 		size *= array->bounds [i].length;
+
 	memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
