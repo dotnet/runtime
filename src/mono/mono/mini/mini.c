@@ -3352,6 +3352,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			}
 
+			if (cmethod && cmethod->klass->generic_container)
+				goto unverified;
+
 			CHECK_STACK (n);
 
 			//g_assert (!virtual || fsig->hasthis);
