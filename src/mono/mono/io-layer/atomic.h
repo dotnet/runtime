@@ -349,12 +349,12 @@ static inline gint32 InterlockedIncrement(volatile gint32 *val)
 {
 	gint32 tmp;
 
-	__asm__ __volatile__ ("\nL_ii_loop:\n\t"
+	__asm__ __volatile__ ("\n1:\n\t"
 			      "lwarx  %0, 0, %2\n\t"
 			      "addi   %0, %0, 1\n\t"
                               "stwcx. %0, 0, %2\n\t"
-			      "bne-   L_ii_loop"
-			      : "=r" (tmp) : "0" (tmp), "r" (val));
+			      "bne-   1b"
+			      : "=b" (tmp) : "r" (tmp), "r" (val): "cc");
 	return(tmp);
 }
 
@@ -362,12 +362,12 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
 {
 	gint32 tmp;
 
-	__asm__ __volatile__ ("\nL_id_loop:\n\t"
+	__asm__ __volatile__ ("\n1:\n\t"
 			      "lwarx  %0, 0, %2\n\t"
 			      "addi   %0, %0, -1\n\t"
                               "stwcx. %0, 0, %2\n\t"
-			      "bne-   L_id_loop"
-			      : "=r" (tmp) : "0" (tmp), "r" (val));
+			      "bne-   1b"
+			      : "=b" (tmp) : "r" (tmp), "r" (val): "cc");
 	return(tmp);
 }
 
@@ -377,13 +377,13 @@ static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 						gint32 exch, gint32 comp) {
 	gint32 tmp = 0;
 
-	__asm__ __volatile__ ("\nL_ice_loop:\n\t"
+	__asm__ __volatile__ ("\n1:\n\t"
 			     "lwarx   %0, 0, %1\n\t"
 			     "cmpw    %2, %3\n\t" 
-			     "bne-    L_ice_diff\n\t"
+			     "bne-    2f\n\t"
 			     "stwcx.  %4, 0, %1\n\t"
-			     "bne-    L_ice_loop\n"
-			     "L_ice_diff:"
+			     "bne-    1b\n"
+			     "2:"
 			     : "=r" (tmp)
 			     : "r" (dest), "0" (tmp) ,"r" (comp), "r" (exch));
 	return(tmp);
@@ -393,10 +393,10 @@ static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 {
 	gint32 tmp;
 
-	__asm__ __volatile__ ("\nL_ie_loop:\n\t"
+	__asm__ __volatile__ ("\n1:\n\t"
 			      "lwarx  %0, 0, %1\n\t"
 			      "stwcx. %2, 0, %1\n\t"
-			      "bne    L_ie_loop"
+			      "bne    1b"
 			      : "=r" (tmp) : "r" (dest), "r" (exch));
 	return(tmp);
 }
@@ -406,11 +406,11 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
 	gint32 tmp;
 
-	__asm__ __volatile__ ("\nL_iea_loop:\n\t"
+	__asm__ __volatile__ ("\n1:\n\t"
 			      "lwarx  %0, 0, %2\n\t"
 			      "add    %1, %3, %4\n\t"
 			      "stwcx. %1, 0, %2\n\t"
-			      "bne    L_iea_loop"
+			      "bne    1b"
 			      : "=r" (tmp), "=r" (add)
 			      : "r" (dest), "0" (tmp), "1" (add));
 	return(tmp);
