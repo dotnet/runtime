@@ -17,7 +17,7 @@
 /*
  * Hack to apply SSAPRE only to a given method (invaluable in debugging)
  */
-#define MONO_APPLY_SSAPRE_TO_SINGLE_METHOD 1
+#define MONO_APPLY_SSAPRE_TO_SINGLE_METHOD 0
 
 /*
  * Hack to apply SSAPRE only to a given expression (invaluable in debugging)

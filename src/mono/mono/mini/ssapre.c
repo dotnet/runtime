@@ -81,53 +81,49 @@ print_expression_description (MonoSsapreExpressionDescription *expression_descri
 }
 
 #if (MONO_APPLY_SSAPRE_TO_SINGLE_EXPRESSION)
-static int
-snprint_argument (char *string, size_t max_length, MonoSsapreExpressionArgument *argument) {
-	int length;
+static void
+snprint_argument (GString *string, MonoSsapreExpressionArgument *argument) {
 	switch (argument->type) {
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_ANY:
-			length = snprintf (string, max_length, "ANY");
+			g_string_append_printf (string, "ANY");
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_NOT_PRESENT:
-			length = snprintf (string, max_length, "NONE");
+			g_string_append_printf (string, "NONE");
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_ORIGINAL_VARIABLE:
-			length = snprintf (string, max_length, "ORIGINAL_VARIABLE %d", argument->argument.original_variable);
+			g_string_append_printf (string, "ORIGINAL_VARIABLE %d", argument->argument.original_variable);
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_SSA_VARIABLE:
-			length = snprintf (string, max_length, "SSA_VARIABLE %d", argument->argument.ssa_variable);
+			g_string_append_printf (string, "SSA_VARIABLE %d", argument->argument.ssa_variable);
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_INTEGER_CONSTANT:
-			length = snprintf (string, max_length, "INTEGER_CONSTANT %d", argument->argument.integer_constant);
+			g_string_append_printf (string, "INTEGER_CONSTANT %d", argument->argument.integer_constant);
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_LONG_COSTANT:
-			length = snprintf (string, max_length, "LONG_COSTANT %lld", *(argument->argument.long_constant));
+			g_string_append_printf (string, "LONG_COSTANT %lld", *(argument->argument.long_constant));
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_FLOAT_COSTANT:
-			length = snprintf (string, max_length, "FLOAT_COSTANT %f", *(argument->argument.float_constant));
+			g_string_append_printf (string, "FLOAT_COSTANT %f", *(argument->argument.float_constant));
 			break;
 		case MONO_SSAPRE_EXPRESSION_ARGUMENT_DOUBLE_COSTANT:
-			length = snprintf (string, max_length, "DOUBLE_COSTANT %f", *(argument->argument.double_constant));
+			g_string_append_printf (string, "DOUBLE_COSTANT %f", *(argument->argument.double_constant));
 			break;
 		default:
-			length = snprintf (string, max_length, "UNKNOWN: %d", argument->type);
+			g_string_append_printf (string, "UNKNOWN: %d", argument->type);
 	}
-	return length;
 }
 
-static int
-snprint_expression_description (char *string, size_t max_length, MonoSsapreExpressionDescription *expression_description) {
-	int length = 0;
+static void
+snprint_expression_description (GString *string, MonoSsapreExpressionDescription *expression_description) {
 	if (expression_description->opcode != 0) {
-		length += snprintf (string + length, max_length - length, "%s ([", mono_inst_name (expression_description->opcode) );
-		length += snprint_argument (string + length, max_length - length, &(expression_description->left_argument));
-		length += snprintf (string + length, max_length - length, "],[");
-		length += snprint_argument (string + length, max_length - length, &(expression_description->right_argument));
-		length += snprintf (string + length, max_length - length, "])");
+		g_string_append_printf (string, "%s ([", mono_inst_name (expression_description->opcode) );
+		snprint_argument (string, &(expression_description->left_argument));
+		g_string_append_printf (string, "],[");
+		snprint_argument (string, &(expression_description->right_argument));
+		g_string_append_printf (string, "])");
 	} else {
-		length += snprintf (string + length, max_length - length, "ANY");
+		g_string_append_printf (string, "ANY");
 	}
-	return length;
 }
 #endif
 
@@ -653,13 +649,16 @@ check_ssapre_expression_name (MonoSsapreWorkArea *area, MonoSsapreExpressionDesc
 		mono_ssapre_expression_name = getenv ("MONO_SSAPRE_EXPRESSION_NAME");
 	}
 	if (mono_ssapre_expression_name != NULL) {
-		char expression_name[1024];
-		snprint_expression_description (expression_name, 1024, expression_description);
-		if (strstr (expression_name, mono_ssapre_expression_name) != NULL) {
-			return TRUE;
+		GString *expression_name = g_string_new_len ("", 256);
+		gboolean return_value;
+		snprint_expression_description (expression_name, expression_description);
+		if (strstr (expression_name->str, mono_ssapre_expression_name) != NULL) {
+			return_value = TRUE;
 		} else {
-			return FALSE;
+			return_value = FALSE;
 		}
+		g_string_free (expression_name, TRUE);
+		return return_value;
 	} else {
 		return TRUE;
 	}
