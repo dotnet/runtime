@@ -1,3 +1,8 @@
+
+Wed Jan 15 16:20:54 CET 2003 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: allow MacOSX (from various people).
+
 2003-01-14  Martin Baulig  <martin@ximian.com>
 
 	* configure.in (GTHREAD_LIBS, GTHREAD_CFLAGS): Added check for gthread.

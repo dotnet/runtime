@@ -43,6 +43,15 @@ case "$host" in
 		AC_DEFINE(NEED_LINK_UNLINK)
 		libmono_cflags="-D_REENTRANT"
 		;;
+	*-*-darwin*)
+		platform_win32=no
+		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE"
+		libmono_cflags="-D_THREAD_SAFE"
+		LDFLAGS="$LDFLAGS -pthread"
+		AC_DEFINE(NEED_LINK_UNLINK)
+		AC_DEFINE(PTHREAD_POINTER_ID)
+		libdl=
+		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
 		platform_win32=no
@@ -491,7 +500,7 @@ i*86-*-*) TARGET=X86; arch_target=x86;;
 sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
-macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | powerpc-*-sysv*) TARGET=POWERPC; arch_target=ppc;;
+macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | powerpc-*-sysv* | powerpc-*-darwin*) TARGET=POWERPC; arch_target=ppc;;
 arm-*-linux-* | armv4l-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
 s390-*-linux*) TARGET=S390; arch_target=s390; ACCESS_UNALIGNED="no";;
 esac
