@@ -320,8 +320,13 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
+#ifdef PLATFORM_WIN32
+	thread_handle = GC_CreateThread(NULL, default_stacksize, start_wrapper, start_info,
+				     CREATE_SUSPENDED, &tid);
+#else
 	thread_handle = CreateThread(NULL, default_stacksize, start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
+#endif
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
 		  tid, thread_handle);
