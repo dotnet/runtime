@@ -1819,7 +1819,7 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		int i;
-		char *p2 = mono_string_chars (str);
+		char *p2 = (char *)mono_string_chars (str);
 		for (i = 0; i < str->length; ++i) {
 			*p++ = p2 [1];
 			*p++ = p2 [0];
