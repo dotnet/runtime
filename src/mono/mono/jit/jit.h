@@ -223,10 +223,10 @@ void
 mono_delegate_ctor         (MonoDelegate *this, MonoObject *target, gpointer addr);
 
 gpointer 
-arch_begin_invoke          (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...);
+arch_begin_invoke          (MonoMethod *method, gpointer ret_ip, MonoObject *delegate);
 
 void
-arch_end_invoke            (MonoObject *this, gpointer handle, ...);
+arch_end_invoke            (MonoObject *this, ...);
 
 gpointer
 arch_get_delegate_invoke   (MonoMethod *method, int *size);
@@ -236,10 +236,6 @@ mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *
 
 void
 mono_store_remote_field    (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
-
-MonoObject *
-mono_remoting_invoke       (MonoObject *real_proxy, MonoMethodMessage *msg, 
-			    MonoObject **exc, MonoArray **out_args);
 
 MonoDomain * 
 mono_jit_init              (char *file);
@@ -252,7 +248,11 @@ void
 mono_jit_cleanup           (MonoDomain *domain);
 
 MonoMethodMessage *
-arch_method_call_message_new (MonoMethod *method, gpointer stack);
+arch_method_call_message_new (MonoMethod *method, gpointer stack, MonoMethod *invoke, 
+			      MonoDelegate **cb, MonoObject **state);
+
+void
+arch_return_value           (MonoType *return_type, MonoObject *result, gpointer stack);
 
 void
 arch_method_return_message_restore (MonoMethod *method, gpointer stack, 

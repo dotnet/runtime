@@ -2460,29 +2460,6 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	return &klass->byval_arg;
 }
 
-static MonoObject*
-dummy_runtime_invoke (MonoMethod *method, void *obj, void **params)
-{
-	g_error ("runtime invoke called on uninitialized runtime");
-	return NULL;
-}
-
-MonoInvokeFunc mono_default_runtime_invoke = dummy_runtime_invoke;
-
-void
-mono_install_runtime_invoke (MonoInvokeFunc func) {
-	if (func)
-		mono_default_runtime_invoke = func;
-	else
-		mono_default_runtime_invoke = dummy_runtime_invoke;
-}
-
-MonoObject*
-mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
-{
-	return mono_default_runtime_invoke (method, obj, params);;
-}
-
 /*
  * Optimization we could avoid mallocing() an little-endian archs that
  * don't crash with unaligned accesses.

@@ -25,8 +25,19 @@ default_runtime_object_init (MonoObject *o)
 	return;
 }
 
+static MonoInvokeFunc  default_mono_runtime_invoke = NULL;
+
+MonoObject*
+mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
+{
+	if (!default_mono_runtime_invoke) {
+		g_error ("runtime invoke called on uninitialized runtime");
+		return NULL;
+	}
+	default_mono_runtime_invoke (method, obj, params);
+}
+
 MonoRuntimeObjectInit mono_runtime_object_init = default_runtime_object_init;
-MonoRuntimeExecMain   mono_runtime_exec_main = NULL;
 
 void
 mono_install_runtime_object_init (MonoRuntimeObjectInit func)
@@ -34,10 +45,75 @@ mono_install_runtime_object_init (MonoRuntimeObjectInit func)
 	mono_runtime_object_init = func? func: default_runtime_object_init;
 }
 
-void
-mono_install_runtime_exec_main (MonoRuntimeExecMain func)
+int
+mono_runtime_exec_main (MonoMethod *method, MonoArray *args)
 {
-	mono_runtime_exec_main = func;
+	gpointer pa [1];
+
+	pa [0] = args;
+
+	if (method->signature->ret->type == MONO_TYPE_I4) {
+		MonoObject *res;
+		res = mono_runtime_invoke (method, NULL, pa);
+		return *(guint32 *)((char *)res + sizeof (MonoObject));
+	} else {
+		mono_runtime_invoke (method, NULL, pa);
+		return 0;
+	}
+}
+
+void
+mono_install_runtime_invoke (MonoInvokeFunc func)
+{
+	default_mono_runtime_invoke = func;
+}
+
+MonoObject*
+mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params)
+{
+	MonoMethodSignature *sig = method->signature;
+	gpointer *pa;
+	int i;
+
+	pa = alloca (sizeof (gpointer) * params->bounds->length);
+
+	for (i = 0; i < params->bounds->length; i++) {
+		if (sig->params [i]->byref) {
+			/* nothing to do */
+		}
+
+		switch (sig->params [i]->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
+			pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+			pa [i] = (char *)(((gpointer *)params->vector)[i]);
+			break;
+		default:
+			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
+		}
+	}
+
+	if (!strcmp (method->name, ".ctor")) {
+		obj = mono_object_new (mono_domain_get (), method->klass);
+		mono_runtime_invoke (method, obj, pa);
+		return obj;
+	} else
+		return mono_runtime_invoke (method, obj, pa);
 }
 
 /**
@@ -631,4 +707,139 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 
 	return res;
 }
+
+void
+mono_message_init (MonoDomain *domain,
+		   MonoMethodMessage *this, 
+		   MonoReflectionMethod *method,
+		   MonoArray *out_args)
+{
+	MonoMethodSignature *sig = method->method->signature;
+	MonoString *name;
+	int i, j;
+	char **names;
+	guint8 arg_type;
+
+	this->method = method;
+
+	this->args = mono_array_new (domain, mono_defaults.object_class, sig->param_count);
+	this->arg_types = mono_array_new (domain, mono_defaults.byte_class, sig->param_count);
+
+	names = g_new (char *, sig->param_count);
+	mono_method_get_param_names (method->method, (const char **) names);
+	this->names = mono_array_new (domain, mono_defaults.string_class, sig->param_count);
+	
+	for (i = 0; i < sig->param_count; i++) {
+		 name = mono_string_new (domain, names [i]);
+		 mono_array_set (this->names, gpointer, i, name);	
+	}
+
+	g_free (names);
+	
+	for (i = 0, j = 0; i < sig->param_count; i++) {
+
+		if (sig->params [i]->byref) {
+			if (out_args) {
+				gpointer arg = mono_array_get (out_args, gpointer, j);
+				mono_array_set (this->args, gpointer, i, arg);
+				j++;
+			}
+			arg_type = 2;
+			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_IN)
+				arg_type |= 1;
+		} else {
+			arg_type = 1;
+		}
+
+		mono_array_set (this->arg_types, guint8, i, arg_type);
+	}
+}
+
+/**
+ * mono_remoting_invoke:
+ * @real_proxy: pointer to a RealProxy object
+ * @msg: The MonoMethodMessage to execute
+ * @exc: used to store exceptions
+ * @out_args: used to store output arguments
+ *
+ * This is used to call RealProxy::Invoke(). RealProxy::Invoke() returns an
+ * IMessage interface and it is not trivial to extract results from there. So
+ * we call an helper method PrivateInvoke instead of calling
+ * RealProxy::Invoke() directly.
+ *
+ * Returns: the result object.
+ */
+MonoObject *
+mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
+		      MonoObject **exc, MonoArray **out_args)
+{
+	static MonoMethod *im = NULL;
+	gpointer pa [4];
+
+	//static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;
+
+	/* fixme: make this domain dependent */
+	if (!im) {
+		MonoClass *klass;
+		int i;
+
+		klass = mono_defaults.real_proxy_class; 
+		       
+		for (i = 0; i < klass->method.count; ++i) {
+			if (!strcmp ("PrivateInvoke", klass->methods [i]->name) &&
+			    klass->methods [i]->signature->param_count == 4) {
+				im = klass->methods [i];
+				break;
+			}
+		}
+	
+		g_assert (im);
+	}
+
+	pa [0] = real_proxy;
+	pa [1] = msg;
+	pa [2] = exc;
+	pa [3] = out_args;
+
+	return mono_runtime_invoke (im, NULL, pa);
+}
+
+MonoObject *
+mono_message_invoke (MonoObject *target, MonoMethodMessage *msg, 
+		     MonoObject **exc, MonoArray **out_args) 
+{
+	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
+
+		return mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)target)->rp, 
+					     msg, exc, out_args);
+
+	} else {
+		MonoDomain *domain = mono_domain_get (); 
+		MonoMethod *method = msg->method->method;
+		MonoMethodSignature *sig = method->signature;
+		MonoObject *res;
+		int i, j, outarg_count = 0;
+
+		for (i = 0; i < sig->param_count; i++) {
+			if (sig->params [i]->byref) 
+				outarg_count++;
+		}
+
+		*out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
+		*exc = NULL;
+
+		for (i = 0, j = 0; i < sig->param_count; i++) {
+			if (sig->params [i]->byref) {
+				gpointer arg;
+				arg = mono_array_get (msg->args, gpointer, i);
+				mono_array_set (*out_args, gpointer, j, arg);
+				j++;
+			}
+		}
+
+		return mono_runtime_invoke_array (method, target, msg->args);
+	}
+}
+
+
 

@@ -15,6 +15,76 @@
 
 #include "jit.h"
 
+void
+arch_return_value (MonoType *return_type, MonoObject *result, gpointer stack)
+{
+	gpointer resp, vt_resp;
+	int type;
+
+	resp = &result;
+	vt_resp = (char *)result + sizeof (MonoObject);
+
+	if (return_type->byref) {
+		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
+		return;
+	}
+
+	type = return_type->type;
+ handle_enum:
+	switch (type) {
+	case MONO_TYPE_VOID:
+		/* nothing to do */
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_CHAR:
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+		asm ("movl (%0),%%eax" : : "r" (vt_resp) : "eax");
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS: 
+		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
+		break;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		asm ("movl 0(%0),%%eax;"
+		     "movl 4(%0),%%edx" 
+		     : : "r"(vt_resp)
+		     : "eax", "edx");
+		break;
+	case MONO_TYPE_R4:
+		asm ("fld (%0)" : : "r" (vt_resp) : "st", "st(1)" );
+		break;
+	case MONO_TYPE_R8:
+		asm ("fldl (%0)" : : "r" (vt_resp) : "st", "st(1)" );
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (return_type->data.klass->enumtype) {
+			type = return_type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			memcpy (*((gpointer *)stack), vt_resp, 
+				  mono_class_value_size (return_type->data.klass, NULL));
+		}
+		break;
+	default:
+		g_error ("type 0x%x not handled in remoting invoke", return_type->type);
+		
+	}
+}
+
 /**
  * arch_method_return_message_restore:
  * @method: method info
@@ -31,7 +101,6 @@ arch_method_return_message_restore (MonoMethod *method, gpointer stack,
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *class;
 	int i, j, type, size, align;
-	gpointer resp, vt_resp;
 	char *cpos = stack;
 
 	if (ISSTRUCT (sig->ret))
@@ -84,70 +153,7 @@ arch_method_return_message_restore (MonoMethod *method, gpointer stack,
 		cpos += size;
 	}
 
-	/* restore return value */
-
-	resp = &result;
-	vt_resp = (char *)result + sizeof (MonoObject);
-
-	if (sig->ret->byref) {
-		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
-		return;
-	}
-
-	type = sig->ret->type;
- handle_enum:
-	switch (type) {
-	case MONO_TYPE_VOID:
-		/* nothing to do */
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_CHAR:
-#if SIZEOF_VOID_P == 4
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-#endif
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-		asm ("movl (%0),%%eax" : : "r" (vt_resp) : "eax");
-		break;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS: 
-		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
-		break;
-#if SIZEOF_VOID_P == 8
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-#endif
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-		asm ("movl 0(%0),%%eax;"
-		     "movl 4(%0),%%edx" 
-		     : : "r"(vt_resp)
-		     : "eax", "edx");
-		break;
-	case MONO_TYPE_R4:
-		asm ("fld (%0)" : : "r" (vt_resp) : "st", "st(1)" );
-		break;
-	case MONO_TYPE_R8:
-		asm ("fldl (%0)" : : "r" (vt_resp) : "st", "st(1)" );
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (sig->ret->data.klass->enumtype) {
-			type = sig->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		} else {
-			memcpy (*((gpointer *)stack), vt_resp, 
-				mono_class_value_size (sig->ret->data.klass, NULL));
-		}
-		break;
-	default:
-		g_error ("type 0x%x not handled in remoting invoke", sig->ret->type);
-
-	}
+	arch_return_value (sig->ret, result, stack);
 }
 
 /**
@@ -159,27 +165,34 @@ arch_method_return_message_restore (MonoMethod *method, gpointer stack,
  */
 
 MonoMethodMessage *
-arch_method_call_message_new (MonoMethod *method, gpointer stack)
+arch_method_call_message_new (MonoMethod *method, gpointer stack, MonoMethod *invoke, 
+			      MonoDelegate **cb, MonoObject **state)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = method->signature;
 	MonoMethodMessage *msg;
-	int i, type, size, align;
+	int i, count, type, size, align;
 	char *cpos = stack;
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
 	
-	mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
-
+	if (invoke) {
+		mono_message_init (domain, msg, mono_method_get_object (domain, invoke), NULL);
+		count =  sig->param_count - 2;
+	} else {
+		mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
+		count =  sig->param_count;
+	}
 	/* the first argument is an implizit reference for valuetype 
 	 * return values */
-	if (ISSTRUCT (sig->ret))
+	if (!invoke && ISSTRUCT (sig->ret))
 		cpos += 4;
 
 	if (sig->hasthis)
 		cpos += 4;
-	
-	for (i = 0; i < sig->param_count; i++) {
+
+
+	for (i = 0; i < count; i++) {
 		gpointer vpos;
 		MonoClass *class;
 		MonoObject *arg;
@@ -201,6 +214,12 @@ arch_method_call_message_new (MonoMethod *method, gpointer stack)
 		      
 		mono_array_set (msg->args, gpointer, i, arg);
 		cpos += size;
+	}
+
+	if (invoke) {
+		*cb = *((MonoObject **)cpos);
+		cpos += sizeof (MonoObject *);
+		*state = *((MonoObject **)cpos);
 	}
 	
 	return msg;
@@ -320,3 +339,4 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 
 	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
 }
+

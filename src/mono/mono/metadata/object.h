@@ -53,6 +53,8 @@
 
 typedef guchar MonoBoolean;
 
+typedef struct _MonoReflectionMethod MonoReflectionMethod;
+
 typedef struct {
 	MonoVTable *vtable;
 	MonoThreadsSync *synchronisation;
@@ -130,11 +132,21 @@ typedef struct {
 	MonoRealProxy *rp;	
 } MonoTransparentProxy;
 
-typedef void   (*MonoRuntimeObjectInit) (MonoObject *o);
-typedef gint32 (*MonoRuntimeExecMain)   (MonoMethod *method, MonoArray *args);
+typedef struct {
+	MonoObject obj;
+	MonoReflectionMethod *method;
+	MonoArray  *args;		
+	MonoArray  *names;		
+	MonoArray  *arg_types;	
+	MonoObject *ctx;
+	MonoObject *rval;
+	MonoObject *exc;
+} MonoMethodMessage;
+
+typedef void        (*MonoRuntimeObjectInit) (MonoObject *o);
+typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params);
 
 extern MonoRuntimeObjectInit mono_runtime_object_init;
-extern MonoRuntimeExecMain mono_runtime_exec_main;
 
 #define mono_array_length(array) ((array)->bounds->length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
@@ -217,8 +229,17 @@ mono_raise_exception        (MonoException *ex);
 void
 mono_install_runtime_object_init (MonoRuntimeObjectInit func);
 
-void
-mono_install_runtime_exec_main   (MonoRuntimeExecMain func);
+void        
+mono_install_runtime_invoke (MonoInvokeFunc func);
+
+MonoObject*
+mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
+
+MonoObject*
+mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params);
+
+int
+mono_runtime_exec_main      (MonoMethod *method, MonoArray *args);
 
 MonoAsyncResult *
 mono_async_result_new       (MonoDomain *domain, HANDLE handle, 
@@ -226,6 +247,18 @@ mono_async_result_new       (MonoDomain *domain, HANDLE handle,
 
 MonoWaitHandle *
 mono_wait_handle_new        (MonoDomain *domain, HANDLE handle);
+
+void
+mono_message_init           (MonoDomain *domain, MonoMethodMessage *this, 
+			     MonoReflectionMethod *method, MonoArray *out_args);
+
+MonoObject *
+mono_remoting_invoke        (MonoObject *real_proxy, MonoMethodMessage *msg, 
+			     MonoObject **exc, MonoArray **out_args);
+
+MonoObject *
+mono_message_invoke         (MonoObject *target, MonoMethodMessage *msg, 
+			     MonoObject **exc, MonoArray **out_args);
 
 #endif
 

@@ -3116,22 +3116,6 @@ ves_array_get (MonoArray *this, ...)
 	g_assert_not_reached ();
 }
 	
-static gint32
-jit_exec_main (MonoMethod *method, MonoArray *args)
-{
-	gint32 (*mfunc) (MonoArray*);
-	gint32 res;
-
-	mfunc = arch_compile_method (method);
-
-	res = mfunc (args);
-
-	if (method->signature->ret->type == MONO_TYPE_VOID)
-		res = 0;
-	
-	return res;
-}
-
 /**
  * mono_jit_exec:
  * @assembly: reference to an assembly
@@ -3283,7 +3267,6 @@ mono_jit_init (char *file) {
 	mono_install_remoting_trampoline (arch_create_remoting_trampoline);
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
-	mono_install_runtime_exec_main (jit_exec_main);
 	mono_install_handler (arch_get_throw_exception ());
 	mono_install_runtime_invoke (arch_runtime_invoke);
 

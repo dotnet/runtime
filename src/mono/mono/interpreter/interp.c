@@ -1011,12 +1011,16 @@ handle_enum:
 			}
 			break;
 		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
 			args [i].type = VAL_OBJ;
 			args [i].data.p = params [i];
 			args [i].data.vt.klass = NULL;
 			break;
 		default:
-			g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+			g_error ("type 0x%x not handled in  runtime invoke", sig->params [i]->type);
 		}
 	}
 
@@ -3753,28 +3757,6 @@ die_on_ex:
 	
 }
 
-static gint32
-runtime_exec_main (MonoMethod *method, MonoArray *args)
-{
-	stackval result;
-	stackval argv_array;
-	MonoInvocation call;
-
-	argv_array.type = VAL_OBJ;
-	argv_array.data.p = args;
-	argv_array.data.vt.klass = NULL;
-
-	if (args)
-		INIT_FRAME (&call, NULL, NULL, &argv_array, &result, method);
-	else 
-		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
-
-	ves_exec_method (&call);
-
-	return result.data.i;
-
-}
-
 static int 
 ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
@@ -3984,7 +3966,6 @@ main (int argc, char *argv [])
 
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
-	mono_install_runtime_exec_main (runtime_exec_main);
 	mono_install_runtime_invoke (interp_mono_runtime_invoke);
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 

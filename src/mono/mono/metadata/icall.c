@@ -842,48 +842,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
-	MonoMethodSignature *sig = method->method->signature;
-	gpointer *pa;
-	int i;
-
-	pa = alloca (sizeof (gpointer) * params->bounds->length);
-
-	for (i = 0; i < params->bounds->length; i++) {
-		if (sig->params [i]->byref) {
-			/* nothing to do */
-		}
-
-		switch (sig->params [i]->type) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_VALUETYPE:
-			pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_OBJECT:
-			pa [i] = (char *)(((gpointer *)params->vector)[i]);
-			break;
-		default:
-			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
-		}
-	}
-
-	if (!strcmp (method->method->name, ".ctor")) {
-		this = mono_object_new (mono_domain_get (), method->method->klass);
-		mono_runtime_invoke (method->method, this, pa);
-		return this;
-	} else
-		return mono_runtime_invoke (method->method, this, pa);
+	return mono_runtime_invoke_array (method->method, this, params);
 }
 
 static MonoObject *
@@ -978,7 +937,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 	if (!strcmp (method->method->name, ".ctor"))
 		g_assert_not_reached ();
 
-	result = ves_icall_InternalInvoke (method, this, params);
+	result = mono_runtime_invoke_array (method->method, this, params);
 
 	*outArgs = out_args;
 
@@ -1980,54 +1939,6 @@ static MonoString *
 ves_icall_System_Environment_GetCommandLine (void)
 {
 	return NULL;	/* FIXME */
-}
-
-
-void
-mono_message_init (MonoDomain *domain,
-		   MonoMethodMessage *this, 
-		   MonoReflectionMethod *method,
-		   MonoArray *out_args)
-{
-	MonoMethodSignature *sig = method->method->signature;
-	MonoString *name;
-	int i, j;
-	char **names;
-	guint8 arg_type;
-
-	this->method = method;
-
-	this->args = mono_array_new (domain, mono_defaults.object_class, sig->param_count);
-	this->arg_types = mono_array_new (domain, mono_defaults.byte_class, sig->param_count);
-
-	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (method->method, (const char **) names);
-	this->names = mono_array_new (domain, mono_defaults.string_class, sig->param_count);
-	
-	for (i = 0; i < sig->param_count; i++) {
-		 name = mono_string_new (domain, names [i]);
-		 mono_array_set (this->names, gpointer, i, name);	
-	}
-
-	g_free (names);
-	
-	for (i = 0, j = 0; i < sig->param_count; i++) {
-
-		if (sig->params [i]->byref) {
-			if (out_args) {
-				gpointer arg = mono_array_get (out_args, gpointer, j);
-				mono_array_set (this->args, gpointer, i, arg);
-				j++;
-			}
-			arg_type = 2;
-			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_IN)
-				arg_type |= 1;
-		} else {
-			arg_type = 1;
-		}
-
-		mono_array_set (this->arg_types, guint8, i, arg_type);
-	}
 }
 
 static void

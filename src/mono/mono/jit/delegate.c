@@ -26,20 +26,14 @@
  */
 
 typedef struct {
-	MonoMethod *begin_method;
-	MonoMethod *end_method;
-	int         frame_size;
-	gpointer    stack_frame;
-	HANDLE      wait_semaphore;
-	gpointer    code;
-	gpointer    cb_code;
-	gpointer    cb_target;
-	int         inside_cb;
-	MonoObject *state;
-	guint32     res_eax;
-	guint32     res_edx;
-	double      res_freg;
-	MonoObject *exc;
+	MonoMethodMessage *msg;
+	HANDLE            wait_semaphore;
+	MonoMethod        *cb_method;
+	MonoDelegate      *cb_target;
+	int                inside_cb;
+	MonoObject        *state;
+	MonoObject        *res;
+	MonoArray         *out_args;
 } ASyncCall;
 
 static guint32 async_invoke_thread (void);
@@ -86,118 +80,58 @@ mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
 	}
 }
 
-static gpointer
-arch_get_async_invoke (void)
+static void
+mono_async_invoke (MonoAsyncResult *ares, gboolean cb_only)
 {
-	static guint8 *start = NULL, *code;
-	guint8 *br, *pos;
+	ASyncCall *ac = (ASyncCall *)ares->data;
 
-	/* async_invoke (MonoAsyncResult *ar) */
+	if (!cb_only)
+		ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
+					       &ac->msg->exc, &ac->out_args);
 
-	if (start)
-		return start;
-
-	start = code = g_malloc (512);
-
-	/* save caller saved regs */
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
-
-	/* load MonoAsyncResult into ESI */
-	x86_mov_reg_membase (code, X86_ESI, X86_ESP, 16, 4);
-	/* load ASyncCall into EBX */
-	x86_mov_reg_membase (code, X86_EBX, X86_ESI, G_STRUCT_OFFSET (MonoAsyncResult, data), 4);
-	/* load frame_size into EDI */
-	x86_mov_reg_membase (code, X86_EDI, X86_EBX, G_STRUCT_OFFSET (ASyncCall, frame_size), 4);
-	/* allocate stack frame */
-	x86_alu_reg_reg (code, X86_SUB, X86_ESP, X86_EDI);
-
-	/* memcopy activation frame to the stack */
-	x86_push_reg (code, X86_EDI);
-	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, stack_frame));
-	x86_lea_membase (code, X86_ECX, X86_ESP, 8);
-	x86_push_reg (code, X86_ECX);
-	x86_call_code (code, memcpy);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
-
-	/* call delegate invoke */
-	x86_call_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, code));
-	x86_alu_reg_reg (code, X86_ADD, X86_ESP, X86_EDI);
-	
-	/* save results */
-	x86_mov_membase_reg (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_eax), X86_EAX, 4);
-	x86_mov_membase_reg (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_edx), X86_EDX, 4);
-	x86_fst_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_freg), TRUE, FALSE);
-
-	/* set inside_cb to 1 */
-	x86_mov_membase_imm (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, inside_cb), 1, 4);
-	/* set completed to 1 */
-	x86_mov_membase_imm (code, X86_ESI, G_STRUCT_OFFSET (MonoAsyncResult, completed), 
-			     1, sizeof (MonoBoolean));
-
+	ac->inside_cb = 1;
+	ares->completed = 1;
+		
 	/* notify listeners */
-	x86_push_imm (code, 0);
-	x86_push_imm (code, 1);
-	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, wait_semaphore));
-	x86_call_code (code, ReleaseSemaphore);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+	ReleaseSemaphore (ac->wait_semaphore, 1, NULL);
 
-	/* call async callback if cb_code != null*/
-	x86_alu_membase_imm (code, X86_CMP, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code), 0);
-	br = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-	pos = code;
-
-	/* push pointer to AsyncResult */
-	x86_push_reg (code, X86_ESI);
-	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_target));
-	x86_call_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code));
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-	
-	x86_branch8 (br, X86_CC_EQ, code - pos, FALSE);
-
-	/* restore caller saved regs */
-	x86_pop_reg (code, X86_ESI);
-	x86_pop_reg (code, X86_EDI);
-	x86_pop_reg (code, X86_EBX);
-
-	x86_ret (code);
-	
-	return start;
+	/* call async callback if cb_method != null*/
+	if (ac->cb_method) {
+		void *pa = &ares;
+		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa);
+	}
 }
 
 gpointer 
-arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...)
+arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoMethodSignature *csig = method->signature;
 	MonoAsyncResult *ares;
 	MonoDelegate *async_callback;
 	MonoClass *klass;
 	MonoMethod *im;
 	ASyncCall *ac;
-	int i, align, arg_size = 4;
-
-
-	if (ISSTRUCT (csig->ret)) {
-		g_assert (!csig->ret->byref);
-		arg_size += sizeof (gpointer);
-	}
-
-	if (csig->param_count) {
-		for (i = 0; i < csig->param_count; ++i)
-			arg_size += mono_type_stack_size (csig->params [i], &align);
-	}
-
-	ac = g_new0 (ASyncCall, 1);
-	ac->begin_method = method;
-	ac->stack_frame = g_memdup (&this, arg_size);
-	ac->frame_size = arg_size;
-	ac->state = *((MonoObject **)(((char *)&this) + arg_size - sizeof (gpointer)));
-	ac->wait_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-
-	async_callback = *((MonoDelegate **)(((char *)&this) + arg_size - sizeof (gpointer) * 2));
+	int i;
 	
+	ac = g_new0 (ASyncCall, 1);
+	ac->wait_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+	
+	klass = method->klass;
+	im = NULL;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'I' && 
+		    !strcmp ("Invoke", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == 
+		    (method->signature->param_count - 2)) {
+			im = klass->methods [i];
+		}
+	}
+
+	g_assert (im);
+
+	ac->msg = arch_method_call_message_new (method, &delegate, im, &async_callback, &ac->state);
+
 	if (async_callback) {
 		klass = ((MonoObject *)async_callback)->vtable->klass;
 		im = NULL;
@@ -210,32 +144,12 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...)
 			}
 		}
 		g_assert (im);
-		ac->cb_code = arch_compile_method (im);
+		ac->cb_method = im;
 		ac->cb_target = async_callback;
 	}
 
-	klass = this->vtable->klass;
-	im = NULL;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == 'I' && 
-		    !strcmp ("Invoke", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == (csig->param_count - 2)) {
-			im = klass->methods [i];
-		}
-		if (klass->methods [i]->name[0] == 'E' && 
-		    !strcmp ("EndInvoke", klass->methods [i]->name))
-			ac->end_method = klass->methods [i];
-	}
-
-	g_assert (ac->end_method);
-	g_assert (im);
-
-	ac->code = arch_compile_method (im);
-
 	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
-
-	ares->async_delegate = this;
+	ares->async_delegate = delegate;
 
 	EnterCriticalSection (&delegate_section);	
 	async_call_queue = g_list_append (async_call_queue, ares); 
@@ -247,18 +161,34 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...)
 }
 
 void
-arch_end_invoke (MonoObject *this, gpointer handle, ...)
+arch_end_invoke (MonoObject *this, ...)
 {
-	void (*async_invoke) (MonoAsyncResult *ar) = arch_get_async_invoke ();
-	MonoAsyncResult *ares = (MonoAsyncResult *)handle;
-	ASyncCall *ac = (ASyncCall *)ares->data;
-	MonoMethodSignature *sig;
+	MonoAsyncResult *ares;
+	MonoMethodMessage *msg;
+	ASyncCall *ac;
 	MonoDomain *domain = this->vtable->domain;
-	int type;
-	void *resp;
+	MonoMethod *method;
+	MonoClass *klass;
 	GList *l;
-	int res_eax, res_edx;
-	double res_freg;
+	int i;
+
+	klass = this->vtable->klass;
+	method = NULL;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'E' && 
+		    !strcmp ("EndInvoke", klass->methods [i]->name))
+			method = klass->methods [i];
+	}
+
+	g_assert (method);
+
+	msg = arch_method_call_message_new (method, &this, NULL, NULL, NULL);
+
+	ares = mono_array_get (msg->args, gpointer, method->signature->param_count - 1);
+	g_assert (ares);
+
+	ac = (ASyncCall *)ares->data;
 
 	/* check if we call EndInvoke twice */
 	if (!ares->data) {
@@ -271,96 +201,28 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 	ares->endinvoke_called = 1;
 
 	EnterCriticalSection (&delegate_section);	
-	if ((l = g_list_find (async_call_queue, handle))) {
+	if ((l = g_list_find (async_call_queue, ares))) {
 		async_call_queue = g_list_remove_link (async_call_queue, l);
-		printf("ENDINVOKE1\n");
-		async_invoke (ares);
+		mono_async_invoke (ares, FALSE);
 	}		
 	LeaveCriticalSection (&delegate_section);
 
-	if (ac->exc) {
-		char *strace = mono_string_to_utf8 (((MonoException*)ac->exc)->stack_trace);
+	
+	if (ac->msg->exc) {
+		char *strace = mono_string_to_utf8 (((MonoException*)ac->msg->exc)->stack_trace);
 		char  *tmp;
 		tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
 		g_free (strace);	
-		((MonoException*)ac->exc)->stack_trace = mono_string_new (domain, tmp);
+		((MonoException*)ac->msg->exc)->stack_trace = mono_string_new (domain, tmp);
 		g_free (tmp);
-		mono_raise_exception ((MonoException*)ac->exc);
+		mono_raise_exception ((MonoException*)ac->msg->exc);
 	}
 
-	sig = ac->end_method->signature;
-
-	/* save return value */
-	res_eax = ac->res_eax;
-	res_edx = ac->res_edx;
-	res_freg = ac->res_freg;
-
-	/* free resources */
-	/* fixme: this triggers a strange SEGV somethimes with tests/delegate1.cs */
-	//g_free (ac->stack_frame);
-	//g_free (ac);
-	ares->data = NULL;
+	/* fixme: we also need to restore out args */
 
 	/* restore return value */
 
-	if (sig->ret->byref) {
-		resp = &res_eax;
-		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
-		return;
-	}
-
-	type = sig->ret->type;
-handle_enum:
-	switch (type) {
-	case MONO_TYPE_VOID:
-		/* nothing to do */
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_CHAR:
-#if SIZEOF_VOID_P == 4
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-#endif
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS: 
-		resp = &res_eax;
-		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
-		break;
-#if SIZEOF_VOID_P == 8
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-#endif
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-		resp = &res_eax;
-		asm ("movl 0(%0),%%eax;"
-		     "movl 4(%0),%%edx" 
-		     : : "r"(resp)
-		     : "eax", "edx");
-		break;
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		resp = &res_freg;
-		asm ("fldl (%0)" : : "r" (resp) : "st", "st(1)" );
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (sig->ret->data.klass->enumtype) {
-			type = sig->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		} else {
-			/* do nothing */
-		}
-		break;
-	default:
-		g_error ("type 0x%x not handled in endinvoke", sig->ret->type);
-
-	}
+	arch_return_value (method->signature->ret, ac->res, NULL);
 }
 
 gpointer
@@ -486,15 +348,13 @@ async_invoke_abort (MonoObject *obj)
 
 	ares->completed = 1;
 
-	if (!ac->exc)
-		ac->exc = obj;
+	if (!ac->msg->exc)
+		ac->msg->exc = obj;
 
 	/* we need to call the callback if not already called */
 	if (!ac->inside_cb) {
-		void (*async_cb) (gpointer target, MonoAsyncResult *ar);
 		ac->inside_cb = 1;
-		async_cb = ac->cb_code; 
-		async_cb (ac->cb_target, ares);
+		mono_async_invoke (ares, TRUE);
 	}
 
 	/* signal that we finished processing */
@@ -510,10 +370,9 @@ static guint32
 async_invoke_thread ()
 {
 	MonoDomain *domain;
-	void (*async_invoke) (MonoAsyncResult *ar) = arch_get_async_invoke ();
 	static int workers = 1;
 	static HANDLE first_worker = NULL;
-
+      
 	if (!first_worker) {
 		first_worker = GetCurrentThread ();
 		g_assert (first_worker);
@@ -562,7 +421,7 @@ async_invoke_thread ()
 
 		TlsSetValue (async_result_id, ar);
 
-		async_invoke (ar);
+		mono_async_invoke (ar, FALSE);
 	}
 
 	return 0;

@@ -16,46 +16,6 @@
 
 #include "jit.h"
 #include "codegen.h"
-/**
- * mono_remoting_invoke:
- * @real_proxy: pointer to a RealProxy object
- * @msg: The MonoMethodMessage to execute
- * @exc: used to store exceptions
- * @out_args: used to store output arguments
- *
- * This is used to call RealProxy::Invoke(). RealProxy::Invoke() returns an
- * IMessage interface and it is not trivial to extract results from there. So
- * we call an helper method PrivateInvoke instead of calling
- * RealProxy::Invoke() directly.
- *
- * Returns: the result object.
- */
-MonoObject *
-mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
-		      MonoObject **exc, MonoArray **out_args)
-{
-	static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;
-
-	/* fixme: make this domain dependent */
-	if (!invoke) {
-		MonoClass *klass;
-		int i;
-
-		klass = mono_defaults.real_proxy_class; 
-		       
-		for (i = 0; i < klass->method.count; ++i) {
-			if (!strcmp ("PrivateInvoke", klass->methods [i]->name) &&
-			    klass->methods [i]->signature->param_count == 4) {
-				invoke = arch_compile_method (klass->methods [i]);
-				break;
-			}
-		}
-	
-		g_assert (invoke);
-	}
-
-	return invoke (real_proxy, msg, exc, out_args);
-}
 
 static void
 arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
@@ -77,7 +37,7 @@ arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
 
 	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
 
-	msg = arch_method_call_message_new (method, &first_arg);
+	msg = arch_method_call_message_new (method, &first_arg, NULL, NULL, NULL);
 
 	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
 

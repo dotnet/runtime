@@ -28,21 +28,10 @@ typedef struct {
  * The followinbg structure must match the C# implementation in our corlib.
  */
 
-typedef struct {
+struct _MonoReflectionMethod {
 	MonoObject object;
 	MonoMethod *method;
-} MonoReflectionMethod;
-
-typedef struct {
-	MonoObject obj;
-	MonoReflectionMethod *method;
-	MonoArray  *args;		
-	MonoArray  *names;		
-	MonoArray  *arg_types;	
-	MonoObject *ctx;
-	MonoObject *rval;
-	MonoObject *exc;
-} MonoMethodMessage;
+};
 
 typedef struct {
 	MonoObject object;
@@ -369,13 +358,6 @@ MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass 
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 
-
-typedef MonoObject* (*MonoInvokeFunc) (MonoMethod *method, void *obj, void **params);
-
-extern MonoInvokeFunc mono_default_runtime_invoke;
-
-void        mono_install_runtime_invoke (MonoInvokeFunc func);
-MonoObject* mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
@@ -384,12 +366,6 @@ void        mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig);
-
-void
-mono_message_init (MonoDomain *domain,
-		   MonoMethodMessage *this, 
-		   MonoReflectionMethod *method,
-		   MonoArray *out_args);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

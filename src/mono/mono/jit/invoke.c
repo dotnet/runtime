@@ -83,12 +83,14 @@ arch_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	static guint64 (*invoke_int64) (gpointer code, gpointer frame, int frame_size) = NULL;
 	static double (*invoke_double) (gpointer code, gpointer frame, int frame_size) = NULL;
 	MonoObject *retval;
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig; 
 	int i, tmp, type, sp = 0;
 	void *ret;
 	int frame_size = 0;
 	gpointer *frame;
 	gpointer code;
+	
+	sig = method->signature;
 
 	/* allocate ret object. */
 	if (sig->ret->type == MONO_TYPE_VOID) {
