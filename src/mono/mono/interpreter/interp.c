@@ -506,10 +506,15 @@ ves_runtime_method (MonoInvocation *frame)
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
 		MonoPIFunc func;
+		guchar *code;
+		MonoMethod *method;
 		
-		if (!frame->method->info)
-			frame->method->info = mono_create_trampoline (frame->method);
-		func = (MonoPIFunc)frame->method->info;
+		code = (guchar*)delegate->method_ptr;
+		g_assert (code [2] == 'M' && code [3] == 'o');
+		method = *(gpointer*)(code + sizeof (gpointer));
+		if (!method->addr)
+			method->addr = mono_create_trampoline (method);
+		func = (MonoPIFunc)mono_create_trampoline (method);
 		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
 		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
