@@ -9,6 +9,7 @@ SOURCES=	\
 	../gcc-frontend		\
 	../index		\
 	../ideas		\
+	../passport		\
 	../rationale		\
 	../resources		\
 	../roadmap		\

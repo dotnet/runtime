@@ -28,6 +28,12 @@
 	For example, an XML parsing Bonobo/CORBA component would be
 	inefficient compared to a C API.
 
+** Another explanation
+
+	I recently explained our motivations to Dave Winer, and he posted
+	it <a
+	href="http://scriptingnews.userland.com/stories/storyReader$1275">here</a>
+
 ** Microsoft's .NET
 
 	The Microsoft .NET initiative is confusing because it is a
