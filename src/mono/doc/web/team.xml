@@ -62,4 +62,17 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Juli</first-name>
+      <last-name>Mallett</first-name>
+    </name>
+    <e-mail>jmallett@FreeBSD.org</e-mail>
+    <location>Kansas City</location>
+    <tasks>
+      <task>(Runtime) Portability</task>
+      <task>FreeBSD packaging</task>
+    </tasks>
+  </contributor>
+
 </contributors>
