@@ -1,17 +1,13 @@
- The MonoNet runtime
+* The Mono runtime
 
-	The MonoNet runtime will implement the JIT engine (and a byte
+	The Mono runtime will implement the JIT engine (and a byte
 	code interpreter for quickly porting to new systems), the
 	class loader, the garbage collector, threading system and
 	metadata access libraries.
 
-	Currently the runtime contains the beginning of an image
-	loader and metadata access entry points.  Since Beta2 has been
-	now released, it is possible to resume work using the ECMA
-	specs and testing with Beta2-generated executables.
-
-	The runtime core will be implemented in C, in a library
-	"libMonoVES.so".  
+	Currently the runtime has an image loader and metadata access
+	entry points.  The runtime comes with a simple interpreter
+	that can execute very simple programs. 
 
 ** Executing MSIL/CIL images
 

@@ -10,35 +10,29 @@
 
 		* Metadata library: Can currently parse and load
 		information from .NET modules (executables and DLL
-		files).  It has a few bugs outstanding (table
-		dimension computation is incorrect).
+		files).  
 
 		Parsing of Exception tables is missing. 
-
-		It lacks Token to (Table, Index) mapping, but this
-		should be trivial to write. 
 
 		* Disassembler: Can disassemble .NET modules. Still
 		lacking exception handling as well as useful debugging
 		tools (hex dumping, token dumping).
 
-		* Class Libraries: Only a few classes have been
-		implemented. 
+		* Class Libraries: You can check the current status in the
+		  <a href="class-status.html">Class Status page</a>
 	</ul>
 
 	Tasks on the critical path:
 
 	<ul>
-		* Method and Field resolution.
+		* Bytecode interpreter: (Paolo is working on this).
 
-		* Bytecode interpreter: Not implemented yet.
+		* Simple JIT: Not implemented yet (Miguel is
+		  researching the code-generator generator)
 
-		* Simple JIT: Not implemented yet.
-
-		* Garbage collection engine.
+		* Garbage collection engine (Dick is working on this, his contact is <a
+		  href="mailto:dick@ximian.com">dick@ximian.com</a>
 	</ul>
 	
-
-
-
-	
+	If you want to work on any task here, please mail <a
+	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
