@@ -1,4 +1,3 @@
-
 Mon Sep 10 20:19:00 CEST 2001 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: check for sizeof(void*) and for the architecture.

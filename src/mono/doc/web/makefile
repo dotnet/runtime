@@ -4,6 +4,7 @@ SOURCES=	\
 	../class-status		\
 	../contact		\
 	../c-sharp		\
+	../ccvs			\
 	../documentation	\
 	../download		\
 	../faq			\
