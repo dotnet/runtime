@@ -102,6 +102,7 @@ typedef enum {
 #define ppc_mtspr(c,spr,S) ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((spr) << 11) | (467 << 1))
 #define  ppc_mtlr(c,S)     ppc_mtspr  (c, ppc_lr, S)
 
+#define  ppc_b(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2))
 #define  ppc_blrl(c)       ppc_emit32 (c, 0x4e800021)
 #define   ppc_blr(c)       ppc_emit32 (c, 0x4e800020)
 

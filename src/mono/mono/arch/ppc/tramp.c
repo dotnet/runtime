@@ -580,7 +580,7 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 }
 
 
-#define MINV_POS  (- sizeof (MonoInvocation))
+#define MINV_POS  8   /* MonoInvocation structure offset on stack */
 #define STACK_POS (MINV_POS - sizeof (stackval) * sig->param_count)
 #define OBJ_POS   8
 #define TYPE_OFFSET (G_STRUCT_OFFSET (stackval, type))
@@ -598,7 +598,120 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 void *
 mono_create_method_pointer (MonoMethod *method)
 {
-	return NULL;
+	MonoMethodSignature *sig;
+	guint8 *p, *code_buffer;
+	guint code_size, stack_size, stackval_arg_pos;
+
+	code_size = 512;
+	stack_size = 512;
+
+	sig = method->signature;
+
+	p = code_buffer = g_malloc (code_size);
+
+	printf ("\nDelegate [start emiting] %s\n", method->name);
+
+	/* jump after header which consist of "Mono" + method ptr */
+	ppc_b (p, 3);
+	*p = 'M'; p ++;
+	*p = 'o'; p ++;
+	*p = 'n'; p ++;
+	*p = 'o'; p ++;
+	*(void **) p = method; p += 4;
+
+	/* prolog */
+	ppc_stwu (p, ppc_r1, -stack_size, ppc_r1);     /* sp      <--- sp - stack_size, sp[0] <---- sp save sp, alloc stack */
+	ppc_mflr (p, ppc_r0);                          /* r0      <--- LR */
+	ppc_stw  (p, ppc_r31, stack_size - 4, ppc_r1); /* sp[+4]  <--- r31     save r31 */
+	ppc_stw  (p, ppc_r0, stack_size + 4, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
+	ppc_mr   (p, ppc_r31, ppc_r1);                 /* r31     <--- sp */
+
+	/* let's fill MonoInvocation */
+	/* first zero some fields */
+	ppc_li   (p, ppc_r0, 0);
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)), ppc_r31);
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), ppc_r31);
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)), ppc_r31);
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)), ppc_r31);
+
+	/* set method pointer */
+	ppc_lis  (p, ppc_r0,     (guint32) method >> 16);
+	ppc_ori  (p, ppc_r0, ppc_r0, (guint32) method & 0xffff);
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)), ppc_r31);
+
+	if (sig->hasthis) {
+		ppc_stw  (p, ppc_r3, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)), ppc_r31);
+	}
+
+	/* set MonoInvocation::stack_args */
+	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
+	ppc_addi (p, ppc_r0, ppc_r31, stackval_arg_pos);
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)), ppc_r31);
+
+	/* add stackval arguments */
+	/* for (i = 0; i < sig->param_count; ++i) {
+
+		
+
+		ppc_lis  (p, ppc_r0,     (guint32) stackval_from_data >> 16);
+		ppc_ori  (p, ppc_r0, ppc_r0, (guint32) stackval_from_data & 0xffff);
+		ppc_mtlr (p, ppc_r0);
+		ppc_blrl (p);
+		
+		x86_mov_reg_imm (p, X86_ECX, stackval_from_data);
+		x86_lea_membase (p, X86_EDX, X86_EBP, arg_pos);
+		x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
+		x86_push_reg (p, X86_EDX);
+		x86_push_reg (p, X86_EAX);
+		x86_push_imm (p, sig->params [i]);
+		x86_call_reg (p, X86_ECX);
+		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 12);
+		stackval_pos += sizeof (stackval);
+		arg_pos += 4;
+		if (!sig->params [i]->byref) {
+			switch (sig->params [i]->type) {
+			case MONO_TYPE_I8:
+			case MONO_TYPE_R8:
+				arg_pos += 4;
+				break;
+			case MONO_TYPE_VALUETYPE:
+				g_assert_not_reached (); Not implemented yet.
+			default:
+				break;
+			}
+		}
+	} */
+
+	/* return value storage */
+	if (sig->param_count) {
+		ppc_addi (p, ppc_r0, ppc_r31, stackval_arg_pos);
+	}
+	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)), ppc_r31);
+
+	/* call ves_exec_method */
+	ppc_lis  (p, ppc_r0,     (guint32) ves_exec_method >> 16);
+	ppc_addi (p, ppc_r3, ppc_r31, MINV_POS);
+	ppc_ori  (p, ppc_r0, ppc_r0, (guint32) ves_exec_method & 0xffff);
+	ppc_mtlr (p, ppc_r0);
+	ppc_blrl (p);
+
+	/* move retval from stackval to proper place (r3/r4/...) */
+	/* TODO */
+
+	/* epilog */
+	ppc_lwz  (p, ppc_r11, 0,  ppc_r1);        /* r11     <--- sp[0]   load backchain from caller's function */
+	ppc_lwz  (p, ppc_r0, 4, ppc_r11);         /* r0      <--- r11[4]  load return address */
+	ppc_mtlr (p, ppc_r0);                     /* LR      <--- r0      set return address */
+	ppc_lwz  (p, ppc_r31, -4, ppc_r11);       /* r31     <--- r11[-4] restore r31 */
+	ppc_mr   (p, ppc_r1, ppc_r11);            /* sp      <--- r11     restore stack */
+	ppc_blr  (p);                             /* return */
+
+	printf ("emited code size: %d\n", p - code_buffer);
+	flush_icache (code_buffer, p - code_buffer);
+
+	printf ("Delegate [end emiting]\n");
+
+	return (MonoPIFunc) code_buffer;
 }
 
 
@@ -610,6 +723,8 @@ mono_create_method_pointer (MonoMethod *method)
 MonoMethod*
 mono_method_pointer_get (void *code)
 {
-	return NULL;
+	unsigned char *c = code;
+	if (c [4] != 'M' || c [5] != 'o' || c [6] != 'n' || c [7] != 'o')
+		return NULL;
+	return *(MonoMethod**)(c + 8);
 }
-
