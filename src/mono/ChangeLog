@@ -1,3 +1,12 @@
+2002-05-05  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ado-net: updated to include installation of
+	PostgreSQL DBMS under cygwin.  It is a TODO for Linux though.
+	Also included notes on running the System.Data/Test/PostgresTest.cs
+	that should work on a lot of Mono installations that have
+	PostgreSQL installed.  If not please let me, rodrigo, or gonzalo
+	know.
+
 2002-05-01  Rodrigo Moya <rodrigo@ximian.com>
 
 	* doc/ado-net: updated a little bit.
