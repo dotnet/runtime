@@ -1633,9 +1633,9 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 		mono_metadata_encode_value (minfo->count, p, &p);
 		break;
 	case MONO_NATIVE_LPARRAY:
-		if (minfo->eltype || (minfo->count > 0) || (minfo->param_num > 0)) {
+		if (minfo->eltype || minfo->has_size) {
 			mono_metadata_encode_value (minfo->eltype, p, &p);
-			if ((minfo->count > 0) || (minfo->param_num > 0)) {
+			if (minfo->has_size) {
 				mono_metadata_encode_value (minfo->param_num, p, &p);
 				mono_metadata_encode_value (minfo->count, p, &p);
 			}

@@ -644,6 +644,7 @@ typedef struct {
 	MonoString *marshaltype;
 	MonoReflectionType *marshaltyperef;
 	gint32 param_num;
+	MonoBoolean has_size;
 } MonoReflectionMarshal;
 
 typedef struct {

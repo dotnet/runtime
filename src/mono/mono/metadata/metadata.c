@@ -3425,6 +3425,9 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 	res->native = *ptr++;
 
 	if (res->native == MONO_NATIVE_LPARRAY) {
+		res->data.array_data.param_num = -1;
+		res->data.array_data.num_elem = -1;
+
 		if (ptr - start <= len)
 			res->data.array_data.elem_type = *ptr++;
 		if (ptr - start <= len)

@@ -95,6 +95,7 @@ typedef enum {
 	MONO_MARSHAL_CONV_STR_BSTR,
 	MONO_MARSHAL_CONV_STR_LPSTR,
 	MONO_MARSHAL_CONV_LPSTR_STR,
+	MONO_MARSHAL_CONV_LPTSTR_STR,
 	MONO_MARSHAL_CONV_STR_LPWSTR,
 	MONO_MARSHAL_CONV_LPWSTR_STR,
 	MONO_MARSHAL_CONV_STR_LPTSTR,
@@ -125,8 +126,8 @@ typedef struct {
 	union {
 		struct {
 			MonoMarshalNative elem_type;
-			gint32 param_num;
-			gint32 num_elem;
+			gint32 param_num; /* -1 if not set */
+			gint32 num_elem; /* -1 if not set */
 		} array_data;
 		struct {
 			char *custom_name;
