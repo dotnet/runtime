@@ -41,6 +41,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
+#include <mono/metadata/opcodes.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
 /*#include <mono/cli/types.h>*/
@@ -75,15 +76,6 @@ enum {
 	LAST = 0xff
 };
 #undef OPDEF
-
-/*
- * Pull the opcode names
- */
-#define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
-static char *opcode_names[] = {
-#include "mono/cil/opcode.def"
-	NULL
-};
 
 #define GET_NATI(sp) ((sp).data.nati)
 #define CSIZE(x) (sizeof (x) / 4)
@@ -595,14 +587,18 @@ dump_frame (MonoInvocation *inv)
 	for (i = 0; inv; inv = inv->parent, ++i) {
 		MonoClass *k = inv->method->klass;
 		int codep;
+		const char * opname;
 		if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL ||
 				inv->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
 			codep = 0;
+			opname = "";
 		} else {
 			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
+			codep = *inv->ip == 0xfe? inv->ip [1] + 256: *inv->ip;
+			opname = mono_opcode_names [codep];
 			codep = inv->ip - hd->code;
 		}
-		g_print ("#%d: 0x%05x in %s.%s::%s (", i, codep, 
+		g_print ("#%d: 0x%05x %s in %s.%s::%s (", i, codep, opname,
 						k->name_space, k->name, inv->method->name);
 		dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
 		g_print (")\n");
@@ -939,7 +935,7 @@ ves_exec_method (MonoInvocation *frame)
 			g_print ("\n");
 			output_indent ();
 			g_print ("0x%04x: %s\n", ip-header->code,
-				 *ip == 0xfe ? opcode_names [256 + ip [1]] : opcode_names [*ip]);
+				 *ip == 0xfe ? mono_opcode_names [256 + ip [1]] : mono_opcode_names [*ip]);
 		}
 #endif
 		
