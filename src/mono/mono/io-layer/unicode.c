@@ -72,17 +72,26 @@ guchar *_wapi_unicode_to_utf8(const guchar *uni)
 	guint outbytes_remaining;
 	size_t err;
 	guint outbuf_size;
-	gint len;
+	gint i, len;
 	gboolean have_error = FALSE;
 	iconv_t converter;
   
 	converter=unicode_reset();
-	
+
 	g_return_val_if_fail(uni != NULL, NULL);
 	g_return_val_if_fail(converter != (iconv_t) -1, NULL);
      
 	len = unicode_len(uni);
+     
+
 	str = g_memdup(uni, (guint32)len+2); /* don't forget the double NULL */
+
+	/* fixme: ugly - iconv expects big endian encoding 
+	   UTF-16le does not work on older libc */
+	for (i = 0; i < len; i += 2) {
+		str [i] = uni [i + 1];
+		str [i + 1] = uni [i];
+	}
 
 	p = str;
 	inbytes_remaining = len;
@@ -97,6 +106,7 @@ again:
 	if(err == (size_t)-1) {
 		switch(errno) {
 		case EINVAL:
+			have_error = TRUE;
 			/* Incomplete text, do not report an error */
 			break;
 		case E2BIG: {

@@ -35,7 +35,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 
 	ebp += 8;
 
-	if (method->signature->ret->type == MONO_TYPE_VALUETYPE) {
+	if (ISSTRUCT (method->signature->ret)) {
 		int size, align;
 		
 		g_assert (!method->signature->ret->byref);
@@ -908,9 +908,12 @@ arch_compile_method (MonoMethod *method)
 
 		mono_compute_branches (cfg);
 		
-		if (mono_jit_dump_asm)
-			mono_disassemble_code (cfg->start, cfg->code - cfg->start);
-
+		if (mono_jit_dump_asm) {
+			char *id = g_strdup_printf ("%s_%s__%s", method->klass->name_space,
+						    method->klass->name, method->name);
+			mono_disassemble_code (cfg->start, cfg->code - cfg->start, id);
+			g_free (id);
+		}
 		if (mono_debug_handle)
 			mono_debug_add_method (mono_debug_handle, cfg);
 
@@ -1129,27 +1132,100 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		}
 
 		ctx->esp = ctx->ebp;
-
-		next_bp = *((int *)ctx->ebp);
-		next_ip = *((int *)ctx->ebp + 1);
+		ctx->eip = *((int *)ctx->ebp + 1);
+		ctx->ebp = *((int *)ctx->ebp);
 		
-		if (next_bp < (unsigned)mono_end_of_stack) {
-
-			ctx->eip = next_ip;
-			ctx->ebp = next_bp;
+		if (next_bp < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
-
-		} else {
+		else
 			mono_jit_abort (obj);
-		}
 
 	} else {
-		/* fixme: implement exceptions inside unmanaged code */
-		mono_jit_abort (obj);
+		gpointer *lmf_addr = TlsGetValue (lmf_thread_id);
+		MonoLMF *lmf;
+		MonoMethod *m;
+
+		g_assert (lmf_addr);
+		lmf = *((MonoLMF **)lmf_addr);
+
+		if (!lmf)
+			mono_jit_abort (obj);
+
+		m = lmf->method;
+
+		*lmf_addr = lmf->previous_lmf;
+
+		ctx->esi = lmf->esi;
+		ctx->edi = lmf->edi;
+		ctx->ebx = lmf->ebx;
+		ctx->ebp = lmf->ebp;
+		ctx->eip = lmf->eip;
+		ctx->esp = lmf;
+
+		/*
+		g_warning ("Exception inside unmanaged code. %s.%s::%s %p", m->klass->name_space,
+			   m->klass->name, m->name, lmf->previous_lmf);
+		*/
+
+		if (ctx->eip < (unsigned)mono_end_of_stack)
+			arch_handle_exception (ctx, obj);
+		else
+			mono_jit_abort (obj);
 	}
 
 	g_assert_not_reached ();
 }
+
+static void
+throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
+		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
+		 unsigned long eip,  unsigned long esp)
+{
+	struct sigcontext ctx;
+	
+	ctx.esp = esp;
+	ctx.eip = eip;
+	ctx.ebp = ebp;
+	ctx.edi = edi;
+	ctx.esi = esi;
+	ctx.ebx = ebx;
+	ctx.edx = edx;
+	ctx.ecx = ecx;
+	ctx.eax = eax;
+	
+	arch_handle_exception (&ctx, exc);
+
+	g_assert_not_reached ();
+}
+
+gpointer 
+arch_get_throw_exception (void)
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	code = start = g_malloc (1024);
+
+	x86_push_reg (code, X86_ESP);
+	x86_push_membase (code, X86_ESP, 4); /* IP */
+	x86_push_membase (code, X86_ESP, 12); /* exception */
+	x86_push_reg (code, X86_EBP);
+	x86_push_reg (code, X86_EDI);
+	x86_push_reg (code, X86_ESI);
+	x86_push_reg (code, X86_EBX);
+	x86_push_reg (code, X86_EDX);
+	x86_push_reg (code, X86_ECX);
+	x86_push_reg (code, X86_EAX);
+	x86_call_code (code, throw_exception);
+	/* we should never reach this breakpoint */
+	x86_breakpoint (code);
+
+	return start;
+}
+
 
 
 

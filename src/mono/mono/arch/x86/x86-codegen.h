@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.18 2001/12/13 11:03:21 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.19 2001/12/17 06:50:02 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -1087,6 +1087,12 @@ typedef union {
 	do {	\
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_membase_emit ((inst), 6, (basereg), (disp));	\
+	} while (0)
+
+#define x86_push_memindex(inst,basereg,disp,indexreg,shift)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xff;	\
+		x86_memindex_emit ((inst), 6, (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
 #define x86_push_imm(inst,imm)	\

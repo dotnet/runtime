@@ -185,7 +185,11 @@ gint32 ves_icall_System_PAL_OpSys_ReadFile(MonoObject *this, HANDLE handle, Mono
 	guint32 bytesread;
 	guchar *buf;
 	gint32 alen;
-	
+
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	alen=mono_array_length(buffer);
 	if(offset+count>alen) {
 		return(0);
@@ -205,6 +209,10 @@ gint32 ves_icall_System_PAL_OpSys_WriteFile(MonoObject *this, HANDLE handle,  Mo
 	guchar *buf;
 	gint32 alen;
 	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	alen=mono_array_length(buffer);
 	if(offset+count>alen) {
 		return(0);
@@ -227,6 +235,10 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 	gboolean ret;
 	gint32 lenlo, lenhi, retlo;
 	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	lenlo=length & 0xFFFFFFFF;
 	lenhi=length >> 32;
 
@@ -243,16 +255,25 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, gint32 mode, gint32 access, gint32 share)
 {
 	HANDLE handle;
-	
+
 	handle=CreateFile(mono_string_chars(path), convert_access(access),
 			  convert_share(share), NULL, convert_mode(mode),
 			  FILE_ATTRIBUTE_NORMAL, NULL);
 	
+	/* fixme: raise mor appropriate exceptions (errno) */
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	return(handle);
 }
 
 void ves_icall_System_PAL_OpSys_CloseFile(MonoObject *this, HANDLE handle)
 {
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	CloseHandle(handle);
 }
 
@@ -262,6 +283,10 @@ gint64 ves_icall_System_PAL_OpSys_SeekFile(MonoObject *this, HANDLE handle,
 	gint64 ret;
 	gint32 offsetlo, offsethi, retlo;
 	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	offsetlo=offset & 0xFFFFFFFF;
 	offsethi=offset >> 32;
 
@@ -288,6 +313,10 @@ gboolean ves_icall_System_PAL_OpSys_GetFileTime(HANDLE handle, gint64 *createtim
 	gboolean ret;
 	FILETIME cr, ac, wr;
 	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	ret=GetFileTime(handle, &cr, &ac, &wr);
 	if(ret==TRUE) {
 		/* The FILETIME struct holds two unsigned 32 bit
@@ -310,6 +339,10 @@ gboolean ves_icall_System_PAL_OpSys_SetFileTime(HANDLE handle, gint64 createtime
 	gboolean ret;
 	FILETIME cr, ac, wr;
 	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(get_io_exception("Invalid handle"));
+	}
+
 	cr.dwLowDateTime= createtime & 0xFFFFFFFF;
 	cr.dwHighDateTime= createtime >> 32;
 	

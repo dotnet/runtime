@@ -82,8 +82,7 @@ gint64  mono_llrem     (gint64 a, gint64 b);
 guint64 mono_lldiv_un  (guint64 a, guint64 b);
 guint64 mono_llrem_un  (guint64 a, guint64 b);
 
-gpointer 
-get_throw_exception    (void);
+gpointer arch_get_lmf_addr (void);
 
 gpointer
 get_mono_object_isinst (void);
@@ -145,8 +144,8 @@ x86_pop_reg (s->code, X86_EAX);
 #define EMIT_COND_EXCEPTION(cond, exc)                                       \
         do {                                                                 \
 	        x86_branch8 (s->code, cond, 12, TRUE);                       \
-	        x86_mov_reg_imm (s->code, X86_ECX, exc);                     \
-		x86_mov_reg_imm (s->code, X86_EAX, get_throw_exception ());  \
+	        x86_push_imm (s->code, exc);                                 \
+		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ());  \
 	        x86_call_reg (s->code, X86_EAX);                             \
 	} while (0); 
 
@@ -165,13 +164,13 @@ x86_pop_reg (s->code, X86_EAX);
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
 %term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
-%term CEQ CLT
+%term CEQ CLT CGT
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8
 %term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ NEWSTRUCT CPOBJ POP INITOBJ
 %term ISINST CASTCLASS UNBOX
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
-%term EXCEPTION THROW RETHROW HANDLER 
+%term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
 %term LDLEN
 
 #
@@ -286,10 +285,8 @@ reg: EXCEPTION {
 stmt: THROW (reg) {
 	tree->is_jump = TRUE;
 
-	if (tree->left->reg1 != X86_ECX)
-		x86_mov_reg_reg (s->code, X86_ECX, tree->left->reg1, 4);
-
-	x86_call_code (s->code, get_throw_exception ());
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_call_code (s->code, arch_get_throw_exception ());
 }
 
 stmt: RETHROW {
@@ -297,9 +294,8 @@ stmt: RETHROW {
 
 	tree->is_jump = TRUE;
 
-	x86_mov_reg_membase (s->code, X86_ECX, X86_EBP, offset, 4);
-
-	x86_call_code (s->code, get_throw_exception ());
+	x86_push_membase (s->code, X86_EBP, offset);
+	x86_call_code (s->code, arch_get_throw_exception ());
 }
 
 stmt: HANDLER {
@@ -310,6 +306,52 @@ stmt: HANDLER {
 
 stmt: ENDFINALLY {
 	x86_ret (s->code);
+}
+
+stmt: SAVE_LMF {
+	tree->is_jump = TRUE;
+
+
+	/* save all caller saved regs */
+	x86_push_reg (s->code, X86_EBX);
+	x86_push_reg (s->code, X86_EDI);
+	x86_push_reg (s->code, X86_ESI);
+	x86_push_reg (s->code, X86_EBP);
+
+	/* save the IP */
+	x86_push_imm (s->code, s->code);
+
+	/* save method info */
+	x86_push_imm (s->code, tree->data.m);
+	/* get the address of lmf for the current thread */
+	x86_call_code (s->code, arch_get_lmf_addr);
+	/* push lmf */
+	x86_push_reg (s->code, X86_EAX); 
+	/* push *lfm (previous_lmf) */
+	x86_push_membase (s->code, X86_EAX, 0);
+	/* *(lmf) = ESP */
+	x86_mov_membase_reg (s->code, X86_EAX, 0, X86_ESP, 4);
+}
+
+stmt: RESTORE_LMF {
+	/* ebx = previous_lmf */
+	x86_pop_reg (s->code, X86_EBX);
+	/* edi = lmf */
+	x86_pop_reg (s->code, X86_EDI);
+	/* *(lmf) = previous_lmf */
+	x86_mov_membase_reg (s->code, X86_EDI, 0, X86_EBX, 4);
+
+	/* discard method info */
+	x86_pop_reg (s->code, X86_ESI);
+
+	/* discard save IP */
+	x86_pop_reg (s->code, X86_ESI);
+
+	/* restore caller saved regs */
+	x86_pop_reg (s->code, X86_EBP);
+	x86_pop_reg (s->code, X86_ESI);
+	x86_pop_reg (s->code, X86_EDI);
+	x86_pop_reg (s->code, X86_EBX);
 }
 
 stmt: STIND_I4 (addr, reg) {
@@ -726,6 +768,12 @@ reg: SUB (reg, reg) {
 reg: CEQ (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	x86_set_reg (s->code, X86_CC_EQ, tree->reg1, TRUE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+}
+
+reg: CGT (reg, reg) {
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	x86_set_reg (s->code, X86_CC_GT, tree->reg1, TRUE);
 	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
@@ -1291,6 +1339,55 @@ stmt: RET_VOID {
 	} 
 }
 
+
+stmt: ARG_I4 (LDIND_I4 (addr)) {
+	MBTree *at = tree->left->left;
+
+	switch (at->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_push_mem (s->code, at->data.ainfo.offset);
+		break;
+
+	case AMBase:
+		x86_push_membase (s->code, at->data.ainfo.basereg, at->data.ainfo.offset);
+		break;		
+	case AMIndex:
+		x86_push_memindex (s->code, X86_NOBASEREG, at->data.ainfo.offset,
+				   at->data.ainfo.indexreg, at->data.ainfo.shift);
+		break;		
+	case AMBaseIndex:
+		x86_push_memindex (s->code, at->data.ainfo.basereg, 
+				   at->data.ainfo.offset, at->data.ainfo.indexreg, 
+				   at->data.ainfo.shift);
+		break;		
+	}
+}
+
+stmt: ARG_I4 (LDIND_U4 (addr)) {
+	MBTree *at = tree->left->left;
+
+	switch (at->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_push_mem (s->code, at->data.ainfo.offset);
+		break;
+
+	case AMBase:
+		x86_push_membase (s->code, at->data.ainfo.basereg, at->data.ainfo.offset);
+		break;		
+	case AMIndex:
+		x86_push_memindex (s->code, X86_NOBASEREG, at->data.ainfo.offset,
+				   at->data.ainfo.indexreg, at->data.ainfo.shift);
+		break;		
+	case AMBaseIndex:
+		x86_push_memindex (s->code, at->data.ainfo.basereg, 
+				   at->data.ainfo.offset, at->data.ainfo.indexreg, 
+				   at->data.ainfo.shift);
+		break;		
+	}
+}
+
 stmt: ARG_I4 (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
 	PRINT_REG ("ARG_I4",  tree->left->reg1);
@@ -1342,15 +1439,15 @@ reg: CALL_I4 (this, reg) {
 	if (lreg == treg || rreg == treg) 
 		g_assert_not_reached ();
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_call_reg (s->code, rreg);
@@ -1371,15 +1468,15 @@ reg: CALL_I4 (this, LDIND_I4 (ADDR_G)) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_call_mem (s->code, tree->right->left->data.p);
@@ -1400,15 +1497,15 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
@@ -1433,15 +1530,15 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
@@ -1499,7 +1596,6 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
-
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_mov_reg_membase (s->code, lreg, lreg, 
@@ -1576,8 +1672,8 @@ reg: CONV_OVF_I4 (lreg){
 	x86_branch8 (s->code, X86_CC_EQ, 17, TRUE);
 
 	/* throw exception */
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_mov_reg_imm (s->code, X86_EAX, get_throw_exception ()); 
+	x86_push_imm (s->code, get_exception_overflow ());
+	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ()); 
 	x86_call_reg (s->code, X86_EAX); 
 	
 	/* our top bit is set, check that top word is 0xfffffff */
@@ -1635,8 +1731,8 @@ lreg: CONV_U8 (CONST_I4) 1 {
 
 lreg: CONV_OVF_U8 (CONST_I4) {
 	if (tree->left->data.i < 0){
-		x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-		x86_mov_reg_imm (s->code, X86_EAX, get_throw_exception ()); 
+		x86_push_imm (s->code, get_exception_overflow ());
+		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ()); 
 	        x86_call_reg (s->code, X86_EAX);                            
 	} else {
 		x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
@@ -1882,21 +1978,54 @@ lreg: CALL_I8 (this, LDIND_I4 (ADDR_G)) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
 
+	x86_call_mem (s->code, tree->right->left->data.p);
+
+	if (ci->args_size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
+
+	g_assert (tree->reg1 == X86_EAX);
+	g_assert (tree->reg2 == X86_EDX);
+}
+
+lreg: CALL_I8 (this, VFUNC_ADDR) {
+	MethodCallInfo *ci = tree->data.ci;
+	int lreg = tree->left->reg1;
+	int treg = X86_EAX;
+
+	if (lreg == treg) 
+		treg = X86_EDX;
+
 	if (tree->left->op != MB_TERM_NOP) {
 		g_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
-	x86_call_mem (s->code, tree->right->left->data.p);
+	if (ci->vtype_num) {
+		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
+		x86_lea_membase (s->code, treg, X86_EBP, offset);
+		x86_push_reg (s->code, treg);
+	}
+
+	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
+	x86_call_virtual (s->code, lreg, 
+	        G_STRUCT_OFFSET (MonoClass, vtable) + (tree->right->data.m->slot << 2));
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
+
+	PRINT_REG ("CALL0_I8(VIRTUAL)", tree->reg1);
+	PRINT_REG ("CALL1_I8(VIRTUAL)", tree->reg2);
 
 	g_assert (tree->reg1 == X86_EAX);
 	g_assert (tree->reg2 == X86_EDX);
@@ -2352,15 +2481,15 @@ freg: CALL_R8 (this, LDIND_I4 (ADDR_G)) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_call_mem (s->code, tree->right->left->data.p);
@@ -2377,15 +2506,15 @@ freg: CALL_R8 (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
@@ -2406,15 +2535,15 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
@@ -2566,55 +2695,22 @@ mono_ctree_new_leaf (MonoMemPool *mp, int op)
 	return mono_ctree_new (mp, op, NULL, NULL);
 }
 
-static void
-throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
-		 unsigned long esi, unsigned long edi, unsigned long ebp, unsigned long eip,
-		 unsigned long esp)
-{
-	MonoObject *exc = (gpointer)ecx;
-	struct sigcontext ctx;
-	
-	ctx.esp = esp;
-	ctx.eip = eip;
-	ctx.ebp = ebp;
-	ctx.edi = edi;
-	ctx.esi = esi;
-	ctx.ebx = ebx;
-	ctx.edx = edx;
-	ctx.ecx = ecx;
-	ctx.eax = eax;
-	
-	arch_handle_exception (&ctx, exc);
-
-	g_assert_not_reached ();
-}
-
 gpointer 
-get_throw_exception (void)
+arch_get_lmf_addr (void)
 {
-	static guint8 *start = NULL;
-	guint8 *code;
+	gpointer *lmf;
 
-	if (start)
-		return start;
+	if ((lmf = TlsGetValue (lmf_thread_id)))
+		return lmf;
 
-	code = start = g_malloc (1024);
+	lmf = g_malloc (sizeof (gpointer));
+	*lmf = NULL;
 
-	x86_push_reg (code, X86_ESP);
-	x86_push_membase (code, X86_ESP, 4); /* IP */
-	x86_push_reg (code, X86_EBP);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDX);
-	x86_push_reg (code, X86_ECX);
-	x86_push_reg (code, X86_EAX);
-	x86_call_code (code, throw_exception);
-	/* we should never reach this breakpoint */
-	x86_breakpoint (code);
+	TlsSetValue (lmf_thread_id, lmf);
 
-	return start;
+	return lmf;
 }
+
 
 #ifdef DEBUG
 void *

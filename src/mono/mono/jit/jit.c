@@ -23,6 +23,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/arch/x86/x86-codegen.h>
+#include <mono/io-layer/io-layer.h>
 
 #include "jit.h"
 #include "regset.h"
@@ -171,6 +172,9 @@ GList *mono_debug_methods = NULL;
 gpointer mono_end_of_stack = NULL;
 
 MonoJitInfoTable *mono_jit_info_table = NULL;
+
+/* last managed frame (used by pinvoke) */ 
+guint32 lmf_thread_id = 0;
 
 /* 
  * We sometimes need static data, for example the forest generator need it to
@@ -685,13 +689,15 @@ mono_print_forest (GPtrArray *forest)
  * Disassemble to code to stdout.
  */
 void
-mono_disassemble_code (guint8 *code, int size)
+mono_disassemble_code (guint8 *code, int size, char *id)
 {
 	int i;
 	FILE *ofd;
 
 	if (!(ofd = fopen ("/tmp/test.s", "w")))
 		g_assert_not_reached ();
+
+	fprintf (ofd, "%s:\n", id);
 
 	for (i = 0; i < size; ++i) 
 		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
@@ -843,7 +849,7 @@ ctree_create_store (MonoFlowGraph *cfg, MonoType *type, MBTree *addr,
 
 	t = mono_ctree_new (mp, stind, addr, s);
 
-	if (!type->byref && type->type == MONO_TYPE_VALUETYPE)	
+	if (ISSTRUCT (type))
 		t->data.i = mono_class_value_size (type->data.klass, NULL);
 	
 	return t;
@@ -1352,6 +1358,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 				
 			case CEE_CEQ:
 			case CEE_CLT:
+			case CEE_CGT:
 				ip++;
 				break;
 			case CEE_LDARG:
@@ -1586,11 +1593,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 	}
 
-	if (signature->ret->type == MONO_TYPE_VALUETYPE) {
+	if (ISSTRUCT (signature->ret)) {
 		int size, align;
-
-		// fixme: maybe we must add this check to the above if statement
-		g_assert (!signature->ret->byref);
 
 		cfg->has_vtarg = 1;
 
@@ -2174,9 +2178,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
 			ci->m = cm;
 
-			if ((cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
-			    !(cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-				pinvoke = TRUE;
+			if (cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				if (!(cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+					pinvoke = TRUE;
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_SAVE_LMF);
+				t1->data.m = cm;
+				ADD_TREE (t1, cli_addr);
+			}
 
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
@@ -2186,7 +2195,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			g_assert (!virtual || csig->hasthis);
 
-			/* fixme: we need to unbox the this pointer for value types */
+			/* fixme: we need to unbox the this pointer for value types ?*/
 			g_assert (!virtual || !cm->klass->valuetype);
 
 			nargs = csig->param_count;
@@ -2219,7 +2228,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 
-			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
+			if (ISSTRUCT (csig->ret)) {
 				int size, align;
 				size = mono_type_size (csig->ret, &align);
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
@@ -2305,6 +2314,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				} else
 					ADD_TREE (t1, cli_addr);
    
+			}
+
+			if (cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_RESTORE_LMF);
+				ADD_TREE (t1, cli_addr);
 			}
 
 			break;
@@ -2681,7 +2695,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (ret->type != MONO_TYPE_VOID) {
 				--sp;
-				if (!ret->byref && ret->type == MONO_TYPE_VALUETYPE) {
+				if (ISSTRUCT (ret)) {
 					int align;
 					t1 = mono_ctree_new (mp, MB_TERM_RET_OBJ, *sp, NULL);
 					t1->data.i = mono_class_value_size (ret->data.klass, &align);
@@ -2928,6 +2942,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 			MAKE_CMP (CEQ)
 			MAKE_CMP (CLT)
+			MAKE_CMP (CGT)
 
 			case CEE_RETHROW: {
 				++ip;
@@ -3252,8 +3267,12 @@ main (int argc, char *argv [])
 
 	mono_jit_info_table = mono_jit_info_table_new ();
 
+	lmf_thread_id = TlsAlloc ();
+	TlsSetValue (lmf_thread_id, NULL);
+
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
+	mono_install_handler (arch_get_throw_exception ());
 	mono_init ();
 
 	/*

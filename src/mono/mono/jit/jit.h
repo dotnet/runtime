@@ -9,6 +9,8 @@
 #include "regset.h"
 #include "mempool.h"
 
+#define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
+
 typedef struct _MBTree MBTree;
 
 typedef enum {
@@ -24,6 +26,18 @@ typedef enum {
 	MONO_LOCALVAR,
 	MONO_TEMPVAR,
 } MonoValueKind;
+
+typedef struct {
+	gpointer    previous_lmf;
+	gpointer    lmf_addr;
+	MonoMethod *method;
+	guint32     eip;
+	guint32     ebp;
+	guint32     esi;
+	guint32     edi;
+	guint32     ebx;
+
+} MonoLMF;
 
 typedef struct {
 	MonoValueType type;
@@ -106,6 +120,8 @@ extern gboolean mono_jit_trace_calls;
 extern MonoJitInfoTable *mono_jit_info_table;
 extern gpointer mono_end_of_stack;
 
+extern guint32  lmf_thread_id;
+
 MonoJitInfoTable *
 mono_jit_info_table_new    (void);
 
@@ -120,6 +136,9 @@ mono_jit_info_table_find   (MonoJitInfoTable *table, gpointer addr);
 
 void
 arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
+
+gpointer 
+arch_get_throw_exception   (void);
 
 void
 mono_jit_abort             (MonoObject *obj);
@@ -143,7 +162,7 @@ void
 mono_analyze_stack         (MonoFlowGraph *cfg);
 
 void
-mono_disassemble_code      (guint8 *code, int size);
+mono_disassemble_code      (guint8 *code, int size, char *id);
 
 gpointer 
 arch_compile_method        (MonoMethod *method);

@@ -709,8 +709,8 @@ WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 
 		return(INVALID_HANDLE_VALUE);
 	}
-
 	filename=_wapi_unicode_to_utf8(name);
+
 #ifdef ACTUALLY_DO_UNICODE
 	if(filename==NULL) {
 #ifdef DEBUG
