@@ -142,6 +142,51 @@
   </tr>
 </table>
 
+@item Sep 16th, 2003: WineLib, Authenticode, Generics, Xslt updates, Wsdl compiler, WSE.
+
+	<b>WineLib:</b> Vladimir has added new libraries to the Wine
+	process, which we will soon bring into our packages: the
+	various Windows common dialogs can now be used (screenshots:
+	<a href="images/colordlg.png">here</a>, <a
+	href="images/fontdlg.png">here</a>, <a
+	href="images/filedlg.png">here</a> and <a
+	href="images/finddlg.png">here</a>.
+
+	<b>Security:</b> New authenticode support from Sebastien has
+	been checked into CVS.
+
+	<b>Xslt:</b> Plenty of conformance updates to the managed
+	implementation of Xslt, as well as breaking the libxslt speed
+	barrier.  Our managed implementation is now faster than the
+	C-based libxslt that we used before.
+
+	<b>Generics:</b> Work continues on generics support, feel free
+	to try it out.  The compiler is currently on a separate
+	directory until we stability it (gmcs) and you need to compile
+	the class libraries with the `generics' profile to try it
+	out.  Sample generic programs are included in the CVS module. 
+
+	<b>Wsdl:</b> We now have Wsdl support in Mono: a wsdl compiler
+	command line tool, and support on ASP.NET to generate the wsdl
+	file from an .asmx file.
+
+	<b>AOT:</b> Many robustness updates to the ahead-of-time
+	compiler and a new locking and threading system that avoids
+	having "big locks" around the mono kernel, and moves to a
+	fine-grained locking system.  The design includes a lattice to
+	avoid deadlocks.
+
+	<b>Dogfooding:</b> We are now running Mono's ASP.NET on
+	go-mono.com to find problems.  It is currently hosting our
+	Monodoc documentation.  The <a
+	href="http://www.go-mono.com/docs/index.html">Apache module
+	version</a> and the <a href="http://www.go-mono.com:8080/">XSP
+	version</a>.
+
+	<b>WSE:</b> The Web Services Enhancements season has begun.
+	The Microsoft.Web.Services namespace and classes are now
+	checked into CVS.  
+
 @item Sep 1st, 2003: Ice for Mono;  XmlSerializer generators; Monodoc progress.
 
 	<b>Ice:</b> Vladimir has checked into CVS (Module ginzu) an
