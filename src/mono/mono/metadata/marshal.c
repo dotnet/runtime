@@ -2384,6 +2384,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
 
+			if (t->attrs & PARAM_ATTRIBUTE_OUT)
+				break;
+
 			if (t->byref) 
 				mono_mb_emit_ldarg (mb, i);
 			else
@@ -2400,7 +2403,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
-			/* emit valuetype convnversion code code */
+			/* emit valuetype conversion code */
 			emit_struct_conv (mb, klass, TRUE);
 
 			if (t->byref)
@@ -2626,7 +2629,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		MonoType *t = sig->params [i];
 
 		if (!t->byref)
-			break;
+			continue;
 
 		switch (t->type) {
 		case MONO_TYPE_CLASS: {
@@ -2641,7 +2644,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 			mono_mb_emit_byte (mb, CEE_STIND_I);
 			pos2 = mono_mb_emit_branch (mb, CEE_BR);
-			
+
 			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));			
 			
 			/* Set src */
@@ -2661,6 +2664,34 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_ldarg (mb, i);
 			mono_mb_emit_byte (mb, CEE_LDLOC_1);
 			mono_mb_emit_byte (mb, CEE_STIND_I);
+
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, klass, FALSE);
+
+			mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
+			break;
+		}
+		case MONO_TYPE_VALUETYPE: {
+			int pos2;
+
+			klass = t->data.klass;
+
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype) {
+				break;
+			}
+
+			/* Check for null */
+			mono_mb_emit_ldarg (mb, i);
+			pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+			/* Set src */
+			mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+			/* Set dest */
+			mono_mb_emit_ldarg (mb, i);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
 			/* emit valuetype conversion code */
 			emit_struct_conv (mb, klass, FALSE);
