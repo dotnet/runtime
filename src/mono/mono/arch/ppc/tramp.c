@@ -745,6 +745,7 @@ mono_create_method_pointer (MonoMethod *method)
 
 	/* move retval from stackval to proper place (r3/r4/...) */
 	if (sig->ret->byref) {
+		DEBUG (printf ("ret by ref\n"));
 		ppc_lwz (p, ppc_r3, stackval_arg_pos, ppc_r31);
 	} else {
 		switch (sig->ret->type) {
@@ -753,8 +754,12 @@ mono_create_method_pointer (MonoMethod *method)
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+			ppc_lbz (p, ppc_r3, stackval_arg_pos, ppc_r31);
+			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
+			ppc_lhz (p, ppc_r3, stackval_arg_pos, ppc_r31);
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -766,7 +771,7 @@ mono_create_method_pointer (MonoMethod *method)
 			break;
 		case MONO_TYPE_I8:
 			ppc_lwz (p, ppc_r3, stackval_arg_pos, ppc_r31);
-			ppc_lwz (p, ppc_r4, stackval_arg_pos + 1, ppc_r31);
+			ppc_lwz (p, ppc_r4, stackval_arg_pos + 4, ppc_r31);
 			break;
 		case MONO_TYPE_R4:
 			ppc_lfs (p, ppc_f1, stackval_arg_pos, ppc_r31);
