@@ -5,9 +5,10 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
+#include <mono/utils/mono-hash.h>
 
 typedef struct {
-	char *name;
+	GHashTable *hash;
 	char *data;
 	guint32 alloc_size; /* malloced bytes */
 	guint32 index;
@@ -22,14 +23,6 @@ typedef struct {
 	guint32 *values; /* rows * columns */
 	guint32 next_idx;
 } MonoDynamicTable;
-
-typedef struct {
-	GHashTable *hash;
-	char *data;
-	guint32 index;
-	guint32 alloc_size;
-	guint32 offset; /* from start of metadata */
-} MonoStringHeap;
 
 /*
  * The followinbg structure must match the C# implementation in our corlib.
@@ -218,8 +211,8 @@ typedef struct {
 	guint32 text_rva;
 	guint32 metadata_rva;
 	GHashTable *typeref;
-	GHashTable *token_fixups;
-	MonoStringHeap sheap;
+	MonoGHashTable *token_fixups;
+	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
 	MonoDynamicStream us;
 	MonoDynamicStream blob;

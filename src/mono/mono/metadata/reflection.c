@@ -13,6 +13,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/appdomain.h"
+#include "mono/metadata/opcodes.h"
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
@@ -101,7 +102,7 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 }
 
 static guint32
-string_heap_insert (MonoStringHeap *sh, const char *str)
+string_heap_insert (MonoDynamicStream *sh, const char *str)
 {
 	guint32 idx;
 	guint32 len;
@@ -128,7 +129,7 @@ string_heap_insert (MonoStringHeap *sh, const char *str)
 }
 
 static void
-string_heap_init (MonoStringHeap *sh)
+string_heap_init (MonoDynamicStream *sh)
 {
 	sh->index = 0;
 	sh->alloc_size = 4096;
@@ -138,7 +139,7 @@ string_heap_init (MonoStringHeap *sh)
 }
 
 static void
-string_heap_free (MonoStringHeap *sh)
+string_heap_free (MonoDynamicStream *sh)
 {
 	g_free (sh->data);
 	g_hash_table_foreach (sh->hash, (GHFunc)g_free, NULL);
@@ -207,6 +208,7 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (type->type, p, &p);
 		break;
 	case MONO_TYPE_PTR:
+		g_print ("encode pointer\n");
 	case MONO_TYPE_SZARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, type->data.type, p, &p);
@@ -270,6 +272,7 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoMethodSignature *sig
 	for (i = 0; i < nparams; ++i)
 		encode_type (assembly, sig->params [i], p, &p);
 	/* store length */
+	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
@@ -307,6 +310,7 @@ method_builder_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethod
 		encode_reflection_type (assembly, pt, p, &p);
 	}
 	/* store length */
+	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
@@ -320,14 +324,15 @@ encode_locals (MonoDynamicAssembly *assembly, MonoReflectionILGen *ilgen)
 	MonoDynamicTable *table;
 	guint32 *values;
 	char *p;
-	guint32 idx, sig_idx;
+	guint32 idx, sig_idx, size;
 	guint nl = mono_array_length (ilgen->locals);
 	char *buf;
 	char blob_size [6];
 	char *b = blob_size;
 	int i;
 
-	p = buf = g_malloc (10 + nl * 10);
+	size = 10 + nl * 10;
+	p = buf = g_malloc (size);
 	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
 	idx = table->next_idx ++;
 	table->rows ++;
@@ -340,6 +345,7 @@ encode_locals (MonoDynamicAssembly *assembly, MonoReflectionILGen *ilgen)
 		MonoReflectionLocalBuilder *lb = mono_array_get (ilgen->locals, MonoReflectionLocalBuilder*, i);
 		encode_reflection_type (assembly, lb->type, p, &p);
 	}
+	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
 	sig_idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
@@ -410,7 +416,7 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 		idx = mono_image_add_stream_data (&assembly->code, &flags, 1);
 		/* add to the fixup todo list */
 		if (mb->ilgen && mb->ilgen->num_token_fixups)
-			g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 1));
+			mono_g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 1));
 		mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
 		return assembly->text_rva + idx + CLI_H_SIZE;
 	} 
@@ -435,7 +441,7 @@ fat_header:
 	idx = mono_image_add_stream_data (&assembly->code, fat_header, 12);
 	/* add to the fixup todo list */
 	if (mb->ilgen && mb->ilgen->num_token_fixups)
-		g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 12));
+		mono_g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 12));
 	
 	mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
 	if (num_exception) {
@@ -556,6 +562,10 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 index, guint32 typ
 	}
 }
 
+/*
+ * Fill in the MethodDef and ParamDef tables for a method.
+ * This is used for both normal methods and constructors.
+ */
 static void
 mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assembly)
 {
@@ -852,11 +862,12 @@ property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionProperty
 	char *b = blob_size;
 	guint32 nparams = 0;
 	MonoReflectionMethodBuilder *mb = fb->get_method;
-	guint32 idx, i;
+	guint32 idx, i, size;
 
 	if (mb && mb->parameters)
 		nparams = mono_array_length (mb->parameters);
-	buf = p = g_malloc (24 + nparams * 10);
+	size = 24 + nparams * 10;
+	buf = p = g_malloc (size);
 	*p = 0x08;
 	p++;
 	mono_metadata_encode_value (nparams, p, &p);
@@ -870,6 +881,7 @@ property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionProperty
 		*p++ = 1; /* void: a property should probably not be allowed without a getter */
 	}
 	/* store length */
+	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
@@ -1005,7 +1017,10 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	table->rows ++;
 	alloc_table (table, table->rows);
 	values = table->values + token * MONO_ASSEMBLYREF_SIZE;
-	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
+	if (strcmp ("corlib", image->assembly_name) == 0)
+		values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, "mscorlib");
+	else
+		values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
 	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = cols [MONO_ASSEMBLY_MAJOR_VERSION];
 	values [MONO_ASSEMBLYREF_MINOR_VERSION] = cols [MONO_ASSEMBLY_MINOR_VERSION];
 	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = cols [MONO_ASSEMBLY_BUILD_NUMBER];
@@ -1053,6 +1068,12 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	return token;
 }
 
+/*
+ * Insert a memberef row into the metadata: the token that point to the memberref
+ * is returned. Caching is done in the caller (mono_image_get_methodref_token() or
+ * mono_image_get_fieldref_token()).
+ * The sig param is an index to an already built signature.
+ */
 static guint32
 mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoClass *klass, const char *name, guint32 sig)
 {
@@ -1117,6 +1138,10 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 	return token;
 }
 
+/*
+ * Insert into the metadata tables all the info about the TypeBuilder tb.
+ * Data in the tables is inserted in a predefined order, since some tables need to be sorted.
+ */
 static void
 mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *assembly)
 {
@@ -1309,11 +1334,18 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 			(p) += 4 - (__diff & 3);\
 	} while (0)
 
+/*
+ * build_compressed_metadata() fills in the blob of data that represents the 
+ * raw metadata as it will be saved in the PE file. The five streams are output 
+ * and the metadata tables are comnpressed from the guint32 array representation, 
+ * to the compressed on-disk format.
+ */
 static void
 build_compressed_metadata (MonoDynamicAssembly *assembly)
 {
 	int i;
 	guint64 valid_mask = 0;
+	guint64 sorted_mask;
 	guint32 heapt_size = 0;
 	guint32 meta_size = 256; /* allow for header and other stuff */
 	guint32 table_offset;
@@ -1324,9 +1356,28 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	MonoImage *meta;
 	unsigned char *p;
 	char *version = "mono" VERSION;
+	struct StreamDesc {
+		const char *name;
+		MonoDynamicStream *stream;
+	} stream_desc [] = {
+		{"#~", &assembly->tstream},
+		{"#Strings", &assembly->sheap},
+		{"#US", &assembly->us},
+		{"#Blob", &assembly->blob},
+		{"#GUID", &assembly->guid},
+	};
+	
+	/* tables that are sorted */
+	sorted_mask = ((guint64)1 << MONO_TABLE_CONSTANT) | ((guint64)1 << MONO_TABLE_FIELDMARSHAL)
+		| ((guint64)1 << MONO_TABLE_METHODSEMANTICS) | ((guint64)1 << MONO_TABLE_CLASSLAYOUT)
+		| ((guint64)1 << MONO_TABLE_FIELDLAYOUT) | ((guint64)1 << MONO_TABLE_FIELDRVA)
+		| ((guint64)1 << MONO_TABLE_IMPLMAP) | ((guint64)1 << MONO_TABLE_NESTEDCLASS)
+		| ((guint64)1 << MONO_TABLE_METHODIMPL) | ((guint64)1 << MONO_TABLE_CUSTOMATTRIBUTE)
+		| ((guint64)1 << MONO_TABLE_DECLSECURITY);
 	
 	/* Compute table sizes */
-	meta = assembly->assembly.image = g_new0 (MonoImage, 1);
+	/* the MonoImage has already been created in mono_image_basic_init() */
+	meta = assembly->assembly.image;
 	
 	/* Setup the info used by compute_sizes () */
 	meta->idx_blob_wide = assembly->blob.index >= 65536 ? 1 : 0;
@@ -1379,57 +1430,19 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	 */
 	table_offset = (p - (unsigned char*)meta->raw_metadata) + 5 * 8 + 40; /* room needed for stream headers */
 	table_offset += 3; table_offset &= ~3;
-	
-	int32val = (guint32*)p;
-	*int32val++ = assembly->tstream.offset = table_offset;
-	*int32val = heapt_size;
-	table_offset += *int32val;
-	table_offset += 3; table_offset &= ~3;
-	p += 8;
-	strcpy (p, "#~");
-	p += 3;
-	align_pointer (meta->raw_metadata, p);
 
-	int32val = (guint32*)p;
-	*int32val++ = assembly->sheap.offset = table_offset;
-	*int32val = assembly->sheap.index;
-	table_offset += *int32val;
-	table_offset += 3; table_offset &= ~3;
-	p += 8;
-	strcpy (p, "#Strings");
-	p += 9;
-	align_pointer (meta->raw_metadata, p);
-
-	int32val = (guint32*)p;
-	*int32val++ = assembly->us.offset = table_offset;
-	*int32val = assembly->us.index;
-	table_offset += *int32val;
-	table_offset += 3; table_offset &= ~3;
-	p += 8;
-	strcpy (p, "#US");
-	p += 4;
-	align_pointer (meta->raw_metadata, p);
-
-	int32val = (guint32*)p;
-	*int32val++ = assembly->blob.offset = table_offset;
-	*int32val = assembly->blob.index;
-	table_offset += *int32val;
-	table_offset += 3; table_offset &= ~3;
-	p += 8;
-	strcpy (p, "#Blob");
-	p += 6;
-	align_pointer (meta->raw_metadata, p);
-
-	int32val = (guint32*)p;
-	*int32val++ = assembly->guid.offset = table_offset;
-	*int32val = assembly->guid.index;
-	table_offset += *int32val;
-	table_offset += 3; table_offset &= ~3;
-	p += 8;
-	strcpy (p, "#GUID");
-	p += 6;
-	align_pointer (meta->raw_metadata, p);
-
+	assembly->tstream.index = heapt_size;
+	for (i = 0; i < 5; ++i) {
+		int32val = (guint32*)p;
+		*int32val++ = stream_desc [i].stream->offset = table_offset;
+		*int32val = stream_desc [i].stream->index;
+		table_offset += *int32val;
+		table_offset += 3; table_offset &= ~3;
+		p += 8;
+		strcpy (p, stream_desc [i].name);
+		p += strlen (stream_desc [i].name) + 1;
+		align_pointer (meta->raw_metadata, p);
+	}
 	/* 
 	 * now copy the data, the table stream header and contents goes first.
 	 */
@@ -1450,7 +1463,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	*p++ = 0; /* reserved */
 	int64val = (guint64*)p;
 	*int64val++ = valid_mask;
-	*int64val++ = 0; /* bitvector of sorted tables, set to 0 for now  */
+	*int64val++ = valid_mask & sorted_mask; /* bitvector of sorted tables  */
 	p += 16;
 	int32val = (guint32*)p;
 	for (i = 0; i < 64; i++){
@@ -1503,6 +1516,15 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	assembly->meta_size = assembly->guid.offset + assembly->guid.index;
 }
 
+/*
+ * Some tables in metadata need to be sorted according to some criteria, but
+ * when methods and fields are first created with reflection, they may be assigned a token
+ * that doesn't correspond to the final token they will get assigned after the sorting.
+ * ILGenerator.cs keeps a fixup table that maps the position of tokens in the IL code stream
+ * with the reflection objects that represent them. Once all the tables are set up, the 
+ * reflection objects will contains the correct table index. fixup_method() will fixup the
+ * tokens for the method with ILGenerator @ilgen.
+ */
 static void
 fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *assembly) {
 	guint32 code_idx = GPOINTER_TO_UINT (value);
@@ -1543,6 +1565,14 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 	}
 }
 
+/*
+ * mono_image_build_metadata() will fill the info in all the needed metadata tables
+ * for the AssemblyBuilder @assemblyb: it iterates over the assembly modules
+ * and recursively outputs the info for a module. Each module will output all the info
+ * about it's types etc.
+ * At the end of the process, method and field tokens are fixed up and the on-disk
+ * compressed metadata representation is created.
+ */
 static void
 mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 {
@@ -1606,7 +1636,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_TYPEDEF_METHOD_LIST] = 1;
 
 	/* fixup tokens */
-	g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
+	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
 	
 	build_compressed_metadata (assembly);
 }
@@ -1643,9 +1673,13 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 guint32
 mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 {
-	MonoClass *klass = obj->vtable->klass;
+	MonoClass *klass;
 	guint32 token;
 
+	if (!obj)
+		g_error ("System.Array methods not yet supported");
+	
+	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
@@ -1688,6 +1722,10 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	return 0;
 }
 
+/*
+ * Create the MonoImage that represents the assembly builder and setup some
+ * of the helper hash table and the basic metadata streams.
+ */
 void
 mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
@@ -1698,9 +1736,13 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	if (assemblyb->dynamic_assembly)
 		return;
 
+#if HAVE_BOEHM_GC
+	assembly = assemblyb->dynamic_assembly = GC_malloc (sizeof (MonoDynamicAssembly));
+#else
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
+#endif
 
-	assembly->token_fixups = g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	string_heap_init (&assembly->sheap);
@@ -1727,6 +1769,12 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	
 }
 
+/*
+ * When we need to save an assembly, we first call this function that ensures the metadata 
+ * tables are built for all the modules in the assembly. This function creates the PE-COFF
+ * header, the image sections, the CLI header etc. The header is written in @buffer
+ * and the length of the data written is returned.
+ */
 int
 mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, int maxsize)
 {
@@ -1790,6 +1838,8 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	header->nt.pe_os_minor = 0;
 	header->nt.pe_subsys_major = 4;
 	/* need to set pe_image_size, pe_header_size */
+	header->nt.pe_header_size = 0x200;
+	header->nt.pe_image_size = 0x00008000;
 	header->nt.pe_subsys_required = 3; /* 3 -> cmdline app, 2 -> GUI app */
 	header->nt.pe_stack_reserve = 0x00100000;
 	header->nt.pe_stack_commit = 0x00001000;
@@ -1805,7 +1855,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	pe_reloc_table
 	pe_iat	
 #endif
-	header->datadir.pe_cli_header.size = CLI_H_SIZE;
+	header->datadir.pe_cli_header.size = 72;
 	header->datadir.pe_cli_header.rva = assembly->text_rva; /* we put it always at the beginning */
 
 	/* Write section tables */
@@ -1829,7 +1879,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	 * Write the MonoCLIHeader header 
 	 */
 	cli_header = (MonoCLIHeader*)(buffer + TEXT_OFFSET);
-	cli_header->ch_size = CLI_H_SIZE;
+	cli_header->ch_size = 72;
 	cli_header->ch_runtime_major = 2;
 	cli_header->ch_flags = CLI_FLAGS_ILONLY;
 	if (assemblyb->entry_point) 
@@ -1846,21 +1896,21 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
  * We need to return always the same object for MethodInfo, FieldInfo etc..
  * type uses a different hash, since it uses custom hash/equal functions.
  */
-static GHashTable *object_cache = NULL;
-static GHashTable *type_cache = NULL;
+static MonoGHashTable *object_cache = NULL;
+static MonoGHashTable *type_cache = NULL;
 
 #define CHECK_OBJECT(t,p)	\
 	do {	\
 		t _obj;	\
 		if (!object_cache)	\
-			object_cache = g_hash_table_new (g_direct_hash, g_direct_equal);	\
-		if ((_obj = g_hash_table_lookup (object_cache, (p))))	\
+			object_cache = mono_g_hash_table_new (g_direct_hash, g_direct_equal);	\
+		if ((_obj = mono_g_hash_table_lookup (object_cache, (p))))	\
 			return _obj;	\
 	} while (0)
 
 #define CACHE_OBJECT(p,o)	\
 	do {	\
-		g_hash_table_insert (object_cache, p,o);	\
+		mono_g_hash_table_insert (object_cache, p,o);	\
 	} while (0)
 	
 MonoReflectionAssembly*
@@ -1950,9 +2000,9 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	MonoClass *klass = mono_class_from_mono_type (type);
 
 	if (!type_cache)
-		type_cache = g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
+		type_cache = mono_g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
 				(GCompareFunc)mymono_metadata_type_equal);
-	if ((res = g_hash_table_lookup (type_cache, type)))
+	if ((res = mono_g_hash_table_lookup (type_cache, type)))
 		return res;
 	if (klass->reflection_info) {
 		/* should this be considered an error condition? */
@@ -1962,7 +2012,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	mono_class_init (klass);
 	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
 	res->type = type;
-	g_hash_table_insert (type_cache, type, res);
+	mono_g_hash_table_insert (type_cache, type, res);
 	return res;
 }
 
