@@ -254,10 +254,13 @@ MonoAppDomain *
 ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
 
 MonoObject *
-ves_icall_System_AppDomain_InternalInvokeInDomain (MonoAppDomain *ad, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args);
+ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad);
 
 MonoObject *
-ves_icall_System_AppDomain_InternalInvokeInDomainByID (gint32 domain_id, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args);
+ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id);
+
+MonoObject *
+ves_icall_System_AppDomain_InternalPopDomainRef (void);
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalGetContext      (void);

@@ -953,37 +953,30 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 }
 
 MonoObject *
-ves_icall_System_AppDomain_InternalInvokeInDomain (MonoAppDomain *ad, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args)
+ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad)
 {
-	MonoDomain *old_domain = mono_domain_get ();
-	MonoMethod *m = method->method;
-	MonoObject *res;
-
 	MONO_ARCH_SAVE_REGS;
 
-	if (!mono_domain_set (ad->data, FALSE))
-		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
-
 	mono_thread_push_appdomain_ref (ad->data);
-
-	res = mono_runtime_invoke_array (m, obj, args, NULL);
-
-	mono_thread_pop_appdomain_ref ();
-
-	mono_domain_set (old_domain, TRUE);
-
-	return res;
 }
 
 MonoObject *
-ves_icall_System_AppDomain_InternalInvokeInDomainByID (gint32 domain_id, MonoReflectionMethod *method, MonoObject *obj, MonoArray *args)
+ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 {
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
 
-	if (!domain)
-		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+	MONO_ARCH_SAVE_REGS;
 
-	return ves_icall_System_AppDomain_InternalInvokeInDomain (domain->domain, method, obj, args);
+	if (domain)
+		mono_thread_push_appdomain_ref (domain);
+}
+
+MonoObject *
+ves_icall_System_AppDomain_InternalPopDomainRef (void)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	mono_thread_pop_appdomain_ref ();
 }
 
 MonoAppContext * 
