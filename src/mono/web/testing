@@ -15,6 +15,8 @@
 		<li><a href="#compiler"><b>Compiler tests</b></a>: Both
 		tests that should pass and tests that should fail are included. 
 
+		<li><a href="#runtime"><b>Runtime tests</b></a>: Tests for 
+		the virtual machine.
 	</ul>
 
 <a name="unit"></a>
@@ -168,3 +170,13 @@
 	tests live in mcs/errors.
 
 	The VB.NET compilation tests live in mcs/btests. 
+
+<a name="runtime"></a>
+* Runtime Tests
+
+	These tests verify the virtual machine, to run these tests, do:
+
+<pre>
+	cd mono/mono/tests
+	make test
+</pre>
