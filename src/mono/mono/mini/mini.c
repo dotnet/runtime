@@ -8194,8 +8194,8 @@ mini_init (const char *filename)
 
 	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4, FALSE);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8, TRUE);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8, TRUE);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8, FALSE);
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
 	mono_register_opcode_emulation (OP_FCONV_TO_I8, "__emul_fconv_to_i8", helper_sig_long_double, mono_fconv_i8, FALSE);
