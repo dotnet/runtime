@@ -3193,6 +3193,11 @@ pad_heap (MonoDynamicStream *sh)
 	}
 }
 
+static struct StreamDesc {
+	const char *name;
+	MonoDynamicStream *stream;
+} stream_desc [5];
+
 /*
  * build_compressed_metadata() fills in the blob of data that represents the 
  * raw metadata as it will be saved in the PE file. The five streams are output 
@@ -3221,11 +3226,6 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 		GenericParamTableEntry *entry = g_ptr_array_index (assembly->gen_params, i);
 		write_generic_param_entry (assembly, entry);
 	}
-
-	struct StreamDesc {
-		const char *name;
-		MonoDynamicStream *stream;
-	} stream_desc [5];
 
 	stream_desc[0].name  = "#~"; stream_desc[0].stream = &assembly->tstream;
 	stream_desc[1].name  = "#Strings"; stream_desc[1].stream = &assembly->sheap;
