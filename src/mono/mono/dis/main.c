@@ -32,10 +32,10 @@ gboolean dump_header_data_p = FALSE;
 
 int dump_table = -1;
 
-gpointer arch_create_jit_trampoline (MonoMethod *method, gboolean virtual);
+gpointer arch_create_jit_trampoline (MonoMethod *method);
 
 gpointer 
-arch_create_jit_trampoline (MonoMethod *method, gboolean virtual)
+arch_create_jit_trampoline (MonoMethod *method)
 {
 	return method;
 }

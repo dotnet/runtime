@@ -86,10 +86,10 @@ void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
-gpointer arch_create_jit_trampoline (MonoMethod *method, gboolean virtual);
+gpointer arch_create_jit_trampoline (MonoMethod *method);
 
 gpointer 
-arch_create_jit_trampoline (MonoMethod *method, gboolean virtual)
+arch_create_jit_trampoline (MonoMethod *method)
 {
 	return method;
 }

@@ -61,13 +61,12 @@ struct _MBTree {
 	gint8     reg1;
 	gint8     reg2;
 	
-	gint32    size;
-
 	union {
 		gint32 i;
 		gint64 l;
 		gpointer p;
 		MonoBBlock *bb;
+		MonoMethod *m;
 		X86AddressInfo ainfo;
 	} data;
 };
@@ -498,7 +497,7 @@ reg: LDLEN (reg) {
 reg: LDELEMA (reg, reg) {
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1, 
 			     G_STRUCT_OFFSET (MonoArray, vector), 4);
-	x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->size);
+	x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->data.i);
 	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
 }
 
@@ -825,8 +824,8 @@ reg: CALL_I4 (ADDR_G) {
 	
 	x86_call_mem (s->code, tree->left->data.p);
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 
 	g_assert (tree->reg1 == X86_EAX);
 }
@@ -837,11 +836,11 @@ reg: CALL_I4 (INTF_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, 
 	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
-	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.i, 4);
-	x86_call_membase (s->code, reg1, tree->left->size);
+	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.m->klass->interface_id << 2, 4);
+	x86_call_membase (s->code, reg1, tree->left->data.m->slot << 2);
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 
 	g_assert (tree->reg1 == X86_EAX);
 }
@@ -851,10 +850,10 @@ reg: CALL_I4 (VFUNC_ADDR (reg)) {
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_call_membase (s->code, reg1, 
-	        G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
+	        G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 
 	g_assert (tree->reg1 == X86_EAX);
 }
@@ -862,8 +861,8 @@ reg: CALL_I4 (VFUNC_ADDR (reg)) {
 stmt: CALL_I4 (ADDR_G) {
 	x86_call_mem (s->code, tree->left->data.p);
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 stmt: CALL_I4 (INTF_ADDR (reg)) {
@@ -872,11 +871,11 @@ stmt: CALL_I4 (INTF_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, 
                 G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
-	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.i, 4);
-	x86_call_membase (s->code, reg1, tree->left->size);
+	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.m->klass->interface_id << 2, 4);
+	x86_call_membase (s->code, reg1, tree->left->data.m->slot << 2);
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 stmt: CALL_I4 (VFUNC_ADDR (reg)) {
@@ -884,17 +883,17 @@ stmt: CALL_I4 (VFUNC_ADDR (reg)) {
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_call_membase (s->code, reg1, 
-                G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
+                G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 stmt: CALL_I4 (ADDR_G) {
 	x86_call_mem (s->code, tree->left->data.p);
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 stmt: SWITCH (reg) {
@@ -1159,8 +1158,8 @@ lreg: CALL_I8 (addr) {
 		g_assert_not_reached ();
 	}
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 
 	g_assert (tree->reg1 == X86_EAX);
 	g_assert (tree->reg2 == X86_EDX);
@@ -1546,8 +1545,8 @@ freg: CALL_R8 (addr) {
 		g_assert_not_reached ();
 	}
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 freg: CALL_R8 (INTF_ADDR (reg)) {
@@ -1556,11 +1555,11 @@ freg: CALL_R8 (INTF_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, 
 	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
-	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.i, 4);
-	x86_call_membase (s->code, reg1, tree->left->size);
+	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.m->klass->interface_id << 2, 4);
+	x86_call_membase (s->code, reg1, tree->left->data.m->slot << 2);
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 freg: CALL_R8 (VFUNC_ADDR (reg)) {
@@ -1568,10 +1567,10 @@ freg: CALL_R8 (VFUNC_ADDR (reg)) {
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_call_membase (s->code, reg1, 
-	        G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
+	        G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
 
-	if (tree->size)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
 }
 
 stmt: RETV (freg) {

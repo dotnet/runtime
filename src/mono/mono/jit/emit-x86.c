@@ -141,15 +141,6 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 	x86_ret (cfg->code);
 }
 
-static void
-arch_vtable_trampoline ()
-{
-	//guint8 *code, *buf;
-
-	g_assert_not_reached ();
-}
-
-
 /**
  * arch_create_jit_trampoline:
  * @method: pointer to the method info
@@ -163,46 +154,21 @@ arch_vtable_trampoline ()
  * Returns: a pointer to the newly created code 
  */
 gpointer
-arch_create_jit_trampoline (MonoMethod *method, gboolean vtable)
+arch_create_jit_trampoline (MonoMethod *method)
 {
 	guint8 *code, *buf;
 
-/*
-	if (vtable)
-		return arch_vtable_trampoline; 
-*/
 	if (method->addr)
 		return method->addr;
 
-	code = buf = g_malloc (64);
-
-	x86_push_reg (buf, X86_EBP);
-	x86_mov_reg_reg (buf, X86_EBP, X86_ESP, 4);
-
+	/* we never free the allocated code buffer */
+	code = buf = g_malloc (16);
 	x86_push_imm (buf, method);
 	x86_call_code (buf, arch_compile_method);
-
-	/* free the allocated code buffer */
-	/* unfortunately this does not work, because we store the
-	 * trampoline in various places (for example the vtable of classes, 
-	 * and vtables are copied to inherited classes, there may be also 
-	 * several references in compiled code) - so we dont 
-	 * know how many references to the trampoline exists :-(
-	 */
-	/*
-	x86_push_reg (buf, X86_EAX);
-	x86_push_imm (buf, code);
-	x86_call_code (buf, g_free);
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
-	x86_pop_reg (buf, X86_EAX);
-	*/
-
-	x86_leave (buf);
-
 	/* jump to the compiled method */
 	x86_jump_reg (buf, X86_EAX);
-
-	g_assert ((buf - code) < 64);
+	g_assert ((buf - code) < 16);
 
 	return code;
 }

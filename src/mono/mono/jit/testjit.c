@@ -91,7 +91,7 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
-	t1->size = s;                                                         \
+	t1->data.i = s;                                                       \
 	t1 = mono_ctree_new (mp, op, t1, NULL);                               \
 	PUSH_TREE (t1, svt);                                                  \
 	break;                                                                \
@@ -111,7 +111,7 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 3;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
-	t1->size = s;                                                         \
+	t1->data.i = s;                                                       \
 	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
 	ADD_TREE (t1);                                                        \
 	break;                                                                \
@@ -1563,20 +1563,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				if (!cm->klass->metadata_inited)
 					mono_class_metadata_init (cm->klass);
 
-				if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+				if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 					t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t2, NULL);
-					t2->data.i = cm->klass->interface_id << 2;
-					printf ("SLOT %s.%s::%s %d %d\n", cm->klass->name_space, 
-						cm->klass->name, cm->name, cm->klass->metadata_inited, 
-						cm->slot);
-					t2->size = cm->slot << 2;
-				} else {
+				else 
 					t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t2, NULL);
-					t2->data.i = cm->slot << 2;
-				}
+	 
+				t2->data.m = cm;
 			} else {
 				if (!cm->addr)
-					cm->addr = arch_create_jit_trampoline (cm, FALSE);
+					cm->addr = arch_create_jit_trampoline (cm);
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
@@ -1604,7 +1599,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
-			t1->size = args_size;
+			t1->data.i = args_size;
 			t1->svt = svt;
 
 			if (csig->ret->type != MONO_TYPE_VOID) {

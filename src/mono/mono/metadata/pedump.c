@@ -19,10 +19,10 @@
 gboolean dump_data = TRUE;
 gboolean dump_tables = FALSE;
 
-gpointer arch_create_jit_trampoline (MonoMethod *method, gboolean virtual);
+gpointer arch_create_jit_trampoline (MonoMethod *method);
 
 gpointer 
-arch_create_jit_trampoline (MonoMethod *method, gboolean virtual)
+arch_create_jit_trampoline (MonoMethod *method)
 {
 	return method;
 }
