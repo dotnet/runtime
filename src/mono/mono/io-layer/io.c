@@ -345,7 +345,7 @@ typedef struct {
 } notifier_data_t;
 
 static void
-async_notifier (sigval_t sig)
+async_notifier (union sigval sig)
 {
 	notifier_data_t *ndata = sig.sival_ptr;
 	guint32 error;
