@@ -8,7 +8,7 @@
 	by Borland under the Interbase Public License</li>
 	
 	<li>Both the Firebird Relational Database and the Firebird .NET Data Provider can be
-	downloaded from <a href="http://sourceforge.net/projects/firebird/firebird">here</a></li>
+	downloaded from <a href="http://sourceforge.net/projects/firebird/">here</a></li>
 	
 	<li>The Firebird .NET Data provider has been made
  available by Carlos Guzmán Álvarez (aka "Carlos G.A."), who has also made a
@@ -16,7 +16,7 @@
 	
 </ul>
 
-* Current Status
+** Current Status
 
 <ul>
 	<li>Currently, it is able to connect to Firebird and Interbase databases 
@@ -56,7 +56,7 @@
  
 </ul>   
    
-* Action Plan
+** Action Plan
 
 <ul>
 	<li>Bug fixing</li>
@@ -98,3 +98,78 @@
 	</li>
 
 </ul>	
+
+** Testing
+
+<ul>
+	<li>Need a working mono and mcs</li>
+	<li>Need access to a Firebird Relational Database or you can download
+	it from <a href="http://firebird.sourceforge.net">here</a></li>
+	<li>Get the Firebird .NET data provider from here as 
+	<a href="http://lists.sourceforge.net/lists/listinfo/firebird-net-provider">firebird-net-provider</a>.  Make
+	sure the Firebird .NET data provider binary assembly FirebirdSql.Data.Firebird.dll is
+	installed in the same place as the mono class libraries.</li>
+		<li>C# Example for Mono's System.Data.OleDb:
+<pre>
+ using System;
+ using System.Data;
+ using FirebirdSql.Data.Firebird;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+        string connectionString = 
+	       "Database=C:\\PROGRAM FILES\\FIREBIRD\\EXAMPLES\\EMPLOYEE.GDB;" +
+	       "User=SYSDBA;" +
+	       "Password=masterkey;" +
+	       "Dialect=3;" +
+	       "Server=localhost";
+       IDbConnection dbcon = new FbConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       string sql = "SELECT * FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            object dataValue = myReader.GetValue(0);
+            string sValue = dataValue.ToString();
+            Console.WriteLine("Value: " + sValue);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r FirebirdSql.Data.Firebird.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll -r FirebirdSql.Data.Firebird.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+</li>
+
+</ul>
+

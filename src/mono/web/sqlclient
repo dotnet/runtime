@@ -1,58 +1,147 @@
 * Microsoft SQL Server Provider
 
 <ul>
-	<li>ADO.NET Provider for Microsoft SQL Server 7/2000 databases
+	<li>ADO.NET Provider for Microsoft SQL Server 7/2000 databases</li>
 
-	<li>Exists in namespace System.Data.SqlClient and assembly System.Data
+	<li>Exists in namespace System.Data.SqlClient and assembly System.Data</li>
 	
-	<li>Created by Tim Coleman
+	<li>Created by Tim Coleman</li>
 	
 	<li>Used the <a href="http://www.freetds.org/">FreeTDS</a> and 
-	<a href="http://jtds.sourceforge.net/">jTDS</a> projects as resources.
+	<a href="http://jtds.sourceforge.net/">jTDS</a> projects as resources.</li>
 	
-	<li>Implemented in 100% C#
+	<li>Implemented in 100% C#</li>
 	
-	<li>Is similar to the Mono.Data.TdsClient and Mono.Data.SybaseClient providers.
+	<li>Is similar to the Mono.Data.TdsClient and Mono.Data.SybaseClient providers.</li>
+	
+	<li>Requires the assembly Mono.Data.Tds.dll which implements the TDS protocol in 100% C#.</li>
+	
+	<li>Uses TDS Protocol Version 7.0</li>
+	
+	<li>Does not support trusted connections</li>
 </ul>
 
-* Current Status
-	
+
+** Current Status
+
+
 <ul>
-	<li>Able to connect to Microsoft SQL Server 7/2000 databases
+	<li>Able to connect to Microsoft SQL Server 7/2000 databases</li>
 	
-	<li>Connection pooling works.
+	<li>Connection pooling works.</li>
 	
-	<li>Stored Procedures work
+	<li>Stored Procedures work</li>
 	
-	<li>Parameters work.  
+	<li>Parameters work.</li>
 	
-	<li>Prepare works.
+	<li>Prepare works.</li>
 	
 	<li>SQL commands can be executed
-	via ExecuteNonQuery() of a SqlCommand.
+	via ExecuteNonQuery() of a SqlCommand.</li>
 	
 	<li>SQL aggregates can be executed and a single row and single column
-	result can be retrieved via ExecuteScalar() of a SqlCommand
+	result can be retrieved via ExecuteScalar() of a SqlCommand</li>
 	
 	<li>SQL queries can be executed via ExecuteReader() and results 
-	can be retrieved via SqlDataReader.
+	can be retrieved via SqlDataReader.</li>
 	
 	<li>a DataTable with schema info about a result can be gotten via GetSchemaTable()
-	in a SqlDataReader
+	in a SqlDataReader</li>
 	
-	<li>XML can be read via ExecuteXmlReader in a SqlCommand.
+	<li>XML can be read via ExecuteXmlReader in a SqlCommand.</li>
 	
-	<li>Data can be filled in a DataTable in a DataSet via a SqlDataAdapter
+	<li>Data can be filled in a DataTable in a DataSet via a SqlDataAdapter</li>
 	
-	<li>Uses TDS Protocol Version 7.0
+	<li>Uses TDS Protocol Version 7.0</li>
 	
-	<li><a href="http://www.go-mono.com/tds-providers.html">Design of the Microsoft SQL Server, Sybase, and TDS Providers in Mono</a>
+	<li><a href="http://www.go-mono.com/tds-providers.html">Design of the Microsoft SQL Server, Sybase, and TDS Providers in Mono</a></li>
 </ul>
 
-* Action plan
+** Action plan
 
 <ul>
 	<li>Connection timeouts is being developed now.
 
-	<li>TODO
+	<li>Needs more testing...
+
 </ul>
+
+** Testing
+
+<ul>
+	<li>Have a working mono and mcs installed</li>
+	
+	<li>Have access to a Microsoft SQL Server database 
+	or either download it:
+		<ul>
+			<li><a href="http://www.microsoft.com/sql/default.asp">Microsoft SQL Server</a></li>
+		</ul>
+	</li>
+	
+	<li>Located at mcs/class/System.Data/Test is a test for System.Data.SqlClient
+	named SqlTest.cs and you could use this as a basis for your test.</li>
+	
+	<li>C# Example:
+<pre>
+ using System;
+ using System.Data;
+ using System.Data.SqlClient;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Server=localhost;" +
+          "Database=pubs;" +
+          "User ID=sa;" +
+          "Password=;";
+       IDbConnection dbcon;
+       dbcon = new SqlConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       string sql = 
+           "SELECT fname, lname " +
+           "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader["fname"];
+            string LastName = reader["lname"];
+            Console.WriteLine("Name: " + 
+                 FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs -r System.Data.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+	</li>
+
+</ul>
+

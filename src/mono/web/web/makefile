@@ -6,6 +6,7 @@ CORCOMPARE=../../../mcs/tools/corcompare
 OBJECTS=									\
 	deploy/ado-net.html							\
 	deploy/firebird.html							\
+	deploy/ibmdb2.html							\
 	deploy/mysql.html							\
 	deploy/odbc.html							\
 	deploy/oledb.html							\

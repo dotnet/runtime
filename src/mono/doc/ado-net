@@ -1,39 +1,51 @@
 * ADO.NET
 
-	The coordinator for the ADO.NET implementation is 
-	<a href="mailto:rodrigo@ximian.com">Rodrigo Moya</a>, 
-	with the collaboration of: 
-	<a href="mailto:danmorg@sc.rr.com">Daniel Morgan</a>, 
-	<a href="mailto:tim@timcoleman.com">Tim Coleman</a>,
-	<a href="mailto:brianlritchie@hotmail.com">Brian Ritchie</a>, and
-	<a href="mailto:vladimir@pobox.com">Vladimir Vukicevic</a>.
+	<p>Mono's ADO.NET Developers:
+	<ul>
+	<li>rodrigo -AT- ximian.comNOSPAM - <b>Rodrigo Moya</b> - coordinator 
+	for the ADO.NET implementation and works on the OLE DB provider</li>
+	<li>danmorg -AT- sc.rr.comNOSPAM - <b>Daniel Morgan</b> - works on
+	the MySQL, PostgreSQL, and Oracle providers</li>
+	<li>tim -AT- timcoleman.comNOSPAM - <b>Tim Coleman</b> - works on
+	the Microsoft SQL Server, Sybase, and TDS providers</li>
+	<li>brianlritchie -AT- hotmail.comNOSPAM - <b>Brian Ritchie</b> - works on
+	the ODBC provider and the ProviderFactory</li>
+	<li>vladimir -AT- pobox.comNOSPAM - <b>Vladimir Vukicevic</b> - works on
+	the SQL Lite provider</li>
+	<li>cleared -AT- rogers.comNOSPAM - <b>Christopher Bockner</b> - works on
+	the IBM DB2 provider</li>
+	<li>vi64pa -AT- koti.soon.fiNOSPAM - <b>Ville Palo</b> - works on XML stuff in System.Data
+	including DataSet, XmlDataDocument, and has done lots of testing</li>
+	</ul>
 	
-
 * Action plan
 
 	<p>The current plan to implement ADO.NET is as follows:
 
 	<ul>
 		<li>Either create ADO.NET providers or modify pre-exiting ADO.NET providers to
-		work with Mono
+		work with Mono</li>
 		
 		<ul>
 			<li>Create ADO.NET Providers
 			
 			<ul>
-					<li><a href="http://www.go-mono.com/mysql.html">MySQL</a>
-					<li><a href="http://www.go-mono.com/odbc.html">ODBC</a>
-					<li><a href="http://www.go-mono.com/oracle.html">Oracle</a>
-					<li><a href="http://www.go-mono.com/oledb.html">OLE DB</a>
-					<li><a href="http://www.go-mono.com/postgresql.html">PostgreSQL</a>
-					<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a>
-					<li><a href="http://www.go-mono.com/sqlite.html">SQL Lite</a>
-					<li><a href="http://www.go-mono.com/sybase.html">Sybase</a>
-					<li><a href="http://www.go-mono.com/tdsclient.html">TDS Generic</a>
+					<li><a href="http://www.go-mono.com/ibmdb2.html">IBM DB2 Universal Database</a></li>
+					<li><a href="http://www.go-mono.com/mysql.html">MySQL</a></li>
+					<li><a href="http://www.go-mono.com/odbc.html">ODBC</a></li>
+					<li><a href="http://www.go-mono.com/oracle.html">Oracle</a></li>
+					<li><a href="http://www.go-mono.com/oledb.html">OLE DB</a></li>
+					<li><a href="http://www.go-mono.com/postgresql.html">PostgreSQL</a></li>
+					<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a></li>
+					<li><a href="http://www.go-mono.com/sqlite.html">SQL Lite</a></li>
+					<li><a href="http://www.go-mono.com/sybase.html">Sybase</a></li>
+					<li><a href="http://www.go-mono.com/tdsclient.html">TDS Generic</a></li>
 					<li>Providers which we do not have, but we would like to have.  Currently,
-					some of these databases are supported via the ODBC or OLEDB providers.
+					some of these databases are supported via the ODBC or OLEDB providers.</li>
 					<ul>
-						<li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a>
+						<li><a href="http://msdn.microsoft.com/library/en-us/dnsql2k/html/sqlxml_intromanagedclasses.asp?frame=true">Managed Classes for SqlXml</a> which is
+						a .NET data provider for retrieving XML data from a Microsoft SQL Server 2000 database.  The System.Data.SqlClient provider
+						in Mono can be used as a starting point at mcs/class/System.Data/System.Data.SqlClient.</li>
 						<li><a href="http://www.hughes.com.au/">miniSQL</a></li>
 						<li><a href="http://www.sleepycat.com/">BerkeleyDB (Sleepycat)</a></li>
 						<li><a href="http://www.sapdb.org/">SapDB</a></li>
@@ -41,18 +53,18 @@
 						<li>dbase or xbase type database files</li>
 						<li>Others are welcome</li>
 					</ul>
-				</ul>
+				</ul></li>
 				<br>
 			<li>Modify Pre-existing ADO.NET Providers to work with Mono.  This may
 			require fixing or implementing areas of Mono too.
 				<ul>
 					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a></li>
-					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> is a PostgreSQL Managed data provider written 
-					in 100% C# and does not require a client library </li>
-					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a MySQL Manager data provider written in 100% C# and does not
-					require a client library</li>
-					<li><a href="http://sourceforge.net/projects/mysqldrivercs/">MySQLDriverCS</a> is a MySQL data provider written in C#</li>
-					
+					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> is a 
+					   PostgreSQL Managed data provider written 
+					   in 100% C#, does not require a client library, and works on Mono</li>
+					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a 
+					   MySQL Manager data provider written in 100% C#, does not
+					   require a client library, and works on Mono</li>
 				</ul>
 			</li>
 		</ul>
@@ -64,13 +76,16 @@
 		  test connection strings, and connect to various ADO.NET
 		  providers in Mono.  The SQL# CLI can be found in
 		  mcs/tools/SqlSharp/SqlSharpCli.cs</li>
+		  
 		<li><p><b>SQL# GUI - a GUI tool</b> written in C# to 
 		  execute SQL commands. 
 		  Currently, there is SQL# For GTK# which
 		  can be found at 
 		  mcs/tools/SqlSharp/gui/gtk-sharp  
 		  It has a SQL editor with 
-		  syntax hi lighting of SQL keywords</li>
+		  syntax hi lighting of SQL keywords.  This will be
+		  moving to its own cvs modeul sqlsharpgtk.</li>
+		  
 		<li><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
 		  These tools have not been started.  The tools would be written in
 		  C# and run on Mono. The
@@ -93,6 +108,10 @@
 	<p>Variouls ADO.NET Providers have been created: PostgreSQL, MySQL, Sybase, SQL Lite,
 	Microsoft SQL Server, OLE DB, ODBC, and TDS Generic.  See their respective web page for
 	more information.
+	
+	<p>Constraints need lots of work
+	
+	<p>TypeDataSetGenerator needs to be stubbed and implemented.
 		
 	<p><b>DataSet, DataAdaptor, DataTable, DataRelation, DataRow, DataColumn,
 	DataColumnCollection, DataRowCollection, and others</b> need more work.  There are
@@ -102,19 +121,56 @@
 	the classes: DataSet, XmlDataDocument, and the method ExecuteXmlReader() that
 	exists in a provider's class that implements IDbCommand, and others.
 	Stuart Caborn has started the XML support in a DataSet.  Tim Coleman started
-	XML support in the ExecuteXmlReader() in a SqlCommand.
+	XML support in the ExecuteXmlReader() in a SqlCommand.  Ville Palo has been
+	heavily modifying DataSet, XmlDataDocument, and other classes for reading
+	and writing XML.
 	
 	<p><b>ADO.NET Provider Factory</b> has been started by Brian Ritchie.  The 
-	Provider Factory is used to dynamically create
-	connections, commands, parameters, and data adapters based on configuration information.  This
-	provider factory can also provide utility functions needed by a lot of 
-	providers but are not exposed via the provider.
+	Provider Factory is way to dynamically create
+	connections, commands, parameters, and data adapters based on configuration information.  The
+	provider factory also provides utility functions needed by a lot of 
+	providers but are not exposed via the provider.  The ProviderFactory
+	is found at mcs/class/Mono.Data and includes a test named test.cs for it in
+	mcs/class/Mono.Data/Test.  Also, take a look at the sample .config file for the
+	test.exe application named test.exe.config.  The .config file is automatically
+	read when you use the Mono.Data.ProviderFactory or Mono.Data.DataTools.
 		
 	<p><b>Integration with ASP.NET</b> has not been started, such as, data binding
 	to a System.Web.UI.WebControls.DataGrid.  This may involve implementing many classes
-	in System.Web and System.Data.  Gonzalo, Gaurav, Leen, Patrik, Duncan, and others are 
-	working very hard on the ASP.NET support. If you want to help, 
-	contact <a href="mailto:gonzalo@ximian.com">Gonzalo Paniagua Javier</a>
+	in System.Web and System.Data. If you want to help, 
+	contact Gonzalo Paniagua Javier. Here is information about using ADO.NET in ASP.NET:
+	<ul>
+		<li>Take a look at xsp in cvs and look at the examples in test: dbpage1.aspx
+		and dbpage2.aspx:
+			<ul>
+				<li>Notice that the namespace System.Data is imported via <b>import</b></li>
+				<li>A NameValueCollection is gotten using ConfigurationSettings.AppSetings. These
+				settings are gotten from the file server.exe.config which is a XML file.   The XML
+				file has a section appSettings.  In the appSettings section, you have keys 
+				for DBProviderAssembly, DBConnectionType, and DBConnectionString.
+				<ul>
+					<li><b>DBProviderAssembly</b> is the assembly of the ADO.NET provider.  
+					      For example: 
+					      "Mono.Data.PostgreSqlClient"</li>
+					<li><b>DBConnectionType</b> is the System.Type of the class that 
+					      implements System.Data.IDbConnection that is found
+				          in the DBProviderAssembly.  
+				          For example: 
+				          "Mono.Data.PostgreSqlClient.PgConnection"</li> 
+				    <li><b>DBConnectionString</b> is the ConnectionString to set to the
+				          IDbConnection object to use in opening a connection to a data source.
+				          For Example: 
+				          "hostaddr=127.0.0.1;user=monotest;password=monotest;dbname=monotest"</li>
+				</ul>
+				<li>The function GetConnectionData() gets the database provider assembly, connection type,
+				and connection string parameters if they exist; otherwise, it uses default values.  This is
+				done during the loading of the web page.</li>
+				<li>With the connection parameters, the assembly is loaded, the connection type is verified that
+				it implements IDbConnection and an instance of the class can be created, creates a instance
+				of the class, sets the connection string, and opens the connection.</li>
+			</ul>
+		</li>
+	</ul>
 	
 	<p><b>Integration with Windows.Forms</b> has not been started, such as, data binding 
 	to a System.Windows.Forms.DataGrid.  This may involve implementing many classes
@@ -129,27 +185,6 @@
 	<p><b>Integration with QT#</b> has not been started.  Any information on 
 	how this can be done is appreciated.  Adam Treat would be the best 
 	person to ask about QT#.
-	
-	<p><b>Integration with GDA#</b> has not been started.  It is 
-	included in the GTK# project, GDA# 
-	does not require GTK+ nor GNOME.  GDA# is C# bindings 
-	to <a href="http://www.gnome-db.org/">GDA</a> which
-	is an ADO/OLE-DB like layer for Linux provided as a C library.  Classes
-	that would bind data between the ADO.NET data model and the GDA data model will
-	need to be created.  Rodrigo Moya is the best person to contact about this.
-	
-	<p><b>Integration with GnomeDb#</b> has not been started.  It is
-	included in the GTK# project and uses GDA# for its data access model.
-	Creating classes to bind data between the data model in ADO.NET 
-	and the data model that	exists in GDA# and GnomeDb# will
-	need to be started.  GnomeDb# is C# bindings to
-	<a href="http://www.gnome-db.org/">GnomeDb</a> which uses 
-	<a href="http://www.gnome-db.org/">GDA</a> as its data access layer.  GnomeDb
-	is a C API in a library that contains
-	gtk+ widgets (GUI controls) for data access.  There are some nifty widgets
-	(GUI controls) that can be used, such as, GnomeDbGrid, GnomeDbBrowswer, 
-	GnomeDbSqlEditor, GnomeDbList, GnomeDbLogin, GnomeDbReportEditor, GnomeDbTableEditor, 
-	GnomeDbCombo, and GnomeDbForm.  Rodrigo Moya is the best person to contact.	
 	
 	<p><b>Building System.Data</b>
 	
@@ -194,3 +229,12 @@
 </pre>
 	</ul>
 
+* Testing
+
+<ul>
+	<li>Testing connection-oriented classes are done via the provider specific tests
+
+	<li><a href="http://www.go-mono.com/testing.html">Testing non-connection classes</a> are 
+	done via mono's modified version of NUnit.</li>
+
+</ul>	

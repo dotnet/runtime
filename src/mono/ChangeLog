@@ -1,3 +1,31 @@
+2003-01-19  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ibmdb2: added file which is new web page
+	about IBM DB2 data provider at Mono.Data.DB2Client
+	
+	* makefile
+	* commands: added ibmdb2 web page to go-mono web site
+	
+	* doc/ado-net: added a couple more developers email, plus made the
+	email spam resistant, added Mono's DB2 data provider to list,
+	added more info about the ProviderFactory and retrieving data using
+	ADO.NET from ASP.NET, add notes about testing, misc cleanup
+	
+	* doc/mysql
+	* doc/postgresql
+	* doc/sqlclient
+	* doc/oracle
+	* doc/tdsclient
+	* doc/firebird
+	* doc/oledb
+	* doc/odbc
+	* doc/sybase
+	* doc/sqlite: added testing notes and C# examples
+	
+	* doc/gtk-sharp: added links for GTK# for Windows
+	
+	* man/sqlsharp.1: added providers Npgsql and MySQLNet
+
 2003-01-17  Duncan Mak  <duncan@ximian.com>
 
 	* runtime/Makefile.am: Add the new Mono.Data.DB2Client.dll.

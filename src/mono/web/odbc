@@ -2,51 +2,174 @@
 <ul>
 	<li>Exists in namespace System.Data.Odbc and assembly System.Data
 	
-	<li>Works on Windows and Linux
+	<li>Works on Windows and Linux. Should have no problems working on UNIX too.
 	
 	<li>Works on Windows via the native Windows odbc32.dll
 	
-	<li>Works on Linux via <a href="http://www.unixodbc.org/">unixODBC</a>
+	<li>Works on Linux via:
 	
-	<li>List of unixODBC <a href="http://www.unixodbc.org/drivers.html">drivers</a> and
-	an alternative list
+	<ul>
+		<li><a href="http://www.unixodbc.org/">unixODBC</a> which has 
+			commercial support 
+			from <a href="http://www.easysoft.com/">Easysoft</a></li>
+			
+		<li><a href="http://www.iodbc.org/">iODBC</a> which has 
+		    a commercial support 
+		    from <a href="http://oplweb.openlinksw.com:8080/download/">OpenLink Software</a></li>
+	</ul>
 	
-	<li>An alternative to unixODBC, but not tested with this 
-	provider is <a href="http://www.iodbc.org">iODBC</a>
-
-	<li>Another alternative to unixODBC, but not tested this provider is 
-	<a href="http://oplweb.openlinksw.com:8080/download/">OpenLink's</a>.
+	<li>List of unixODBC <a href="http://www.unixodbc.org/drivers.html">drivers</a>
 	
 	<li>List of <a href="http://ourworld.compuserve.com/homepages/Ken_North/odbcvend.htm">ODBC Vendors</a>
+	
+	<li>ODBC can connect to various databases which has an ODBC driver installed:
+	<ul> 
+		  <li><a href="http://www.mysql.com/">MySQL</a> 
+		  <li><a href="http://www.postgresql.org/">PostgreSQL</a>
+		  <li><a href="http://www.oracle.com/">Oracle</a>
+		  <li><a href="http://www.borland.com/products/downloads/download_interbase.html">Interbase</a>
+		  <li><a href="http://www.sybase.com/downloads">Sybase</a> and
+		  <li><a href="http://www.microsoft.com/sql/default.asp">Microsoft SQL Server</a> (
+		  via <a href="http://www.freetds.org/">FreeTDS</a> on UNIX)
+		  <li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a>
+		  <li><a href="http://www.microsoft.com/office/access/default.asp">MS Access</a> 
+		  (via <a href="http://mdbtools.sourceforge.net/">MDB Tools</a> on UNIX)
+	</ul>
 		
-	<li>ODBC Provider created by Brian Ritchie.
+	<li>ODBC Provider created by Brian Ritchie.</li>
+	
+	<li>Does not support trusted connections</li>
 </ul>
 	
-* Current Status
+** Current Status
 
 <ul>
-	<li>Connect on Windows via native Windows odbc32.dll
-	
-	<li>Connect on Linux via unixODBC's libodbc.so
+	<li>Can Connect on:
+	<ul>
+		<li>Windows via native Windows odbc32.dll</a></li>
+		<li>Linux via:
+		<ul>
+			<li>unixODBC's libodbc.so</li>
+			<li>iODBC's libiodbc.so</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
 	
 	<li>Various databases have been tested using their
-	   ODBC drivers: MySQL, Oracle, IBM DB2, and Microsoft SQL Server
+	   ODBC drivers: MySQL, PostgreSQL, Oracle, IBM DB2, and Microsoft SQL Server</li>
 	   
-	<li>Can execute non-query commands via ExecuteNonQuery of a OdbcCommand
+	<li>Can execute non-query commands via ExecuteNonQuery of a OdbcCommand</li>
 	
 	<li>Can execute aggreates and retrieve a single row single column result via
-	ExecuteScalar of a OdbcCommand
+	ExecuteScalar of a OdbcCommand</li>
 	
 	<li>Can execute queries via ExecuteReader of a OdbcCommand and 
-	retrieve results using an OdbcDataReader.
+	retrieve results using an OdbcDataReader</li>
 	
-	<li>Can get a DataTable containing schema info via GetSchemaTable() in a OdbcDataReader
+	<li>Can get a DataTable containing schema info via GetSchemaTable() in a OdbcDataReader</li>
+	
+	<li>Can Fill a DataTable in a DataSet via an OdbcDataAdapter</li>
 </ul>
 	
-* Action Plan
+** Action Plan
 
 <ul>
-	<li>Create a Data Adapter to Fill data into a DataTable in a DataSet
 	
-	<li>TODO
+	<li>Fixing bugs
+	
+	<li>Testing with other setups
+</ul>
+
+** Testing ODBC provider
+
+<p>Test Mono's ODBC provider System.Data.Odbc with the MySQL ODBC driver MyODBC
+
+<p><ul>
+	<li>Take a look at OdbcTest.cs in mcs/class/System.Data/Test</li>
+
+	<li>Here is a ConnectionString format if you have a DSN setup: 
+<pre>
+"DSN=dataSetName;UID=username;PWD=password"
+</pre>
+	</li>
+	<li>Here is a ConnectionString format if you do not have DSN (have not
+	gotten this to work):
+<pre>
+"DRIVER={SQL Server};SERVER=(local);UID=sa;PWD=;DATABASE=pubs"
+</pre>
+	</li>
+	<li>C# Example:
+<pre>
+ using System;
+ using System.Data;
+ using System.Data.Odbc;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+		// have an ODBC DSN setup named MYSQLDSN
+		// that accesses a MySQL database via
+		// MyODBC driver for ODBC with a
+		// hostname of localhost and database test
+       string connectionString = 
+          "DSN=MYSQLDSN;" +
+          "UID=mysql;" +
+          "PWD=;";
+       IDbConnection dbcon;
+       dbcon = new OdbcConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+           "SELECT firstname, lastname " +
+           "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader["firstname"];
+            string LastName = reader["lastname"];
+            Console.WriteLine("Name: " + 
+                FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+	</li>
+	
 </ul>

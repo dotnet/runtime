@@ -1,16 +1,27 @@
 * PostgreSQL Data Provider
 
 <ul>
-	<li>Exists in namespace Mono.Data.PostgreSql and assembly Mono.Data.PostgreSql
+	<li>Exists in namespace Mono.Data.PostgreSql and assembly Mono.Data.PostgreSql</li>
 	
 	<li>Is a Mono Data Provider for the <a href="http://www.postgresql.org/">PostgreSQL</a>
-	client/server database management system.
+	client/server database management system.</li>
 	
 	<li>Written in C# and has C# bindings to the PostgreSQL C Client library pq.dll on Windows
-	and libpq.so on Linux.
+	and libpq.so on Linux.</li>
+	
+	<li>Alternative to the PostgreSQL provider in Mono:
+		<ul>
+			<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
+			is a Managed PostgreSQL provider written in 100% C#, does not require a client library,
+			and works on Microsoft .NET and Mono.
+			</li>
+		</ul>
+	</li>
+	
+	<li>See Testing for both Mono's Mono.Data.PostgreSqlClient and Npgsql.</li>
 </ul>
 
-* Current Status
+** Current Status
 
 <ul>
 	<li>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
@@ -70,12 +81,23 @@
 	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.
 </ul>
 
-* Testing the PostgreSQL Provider
+** Action Plan
+
+	<p>More testing and fixing bugs...
+
+	<p>Eventually replace the PostgreSQL data provider in Mono
+	with <a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>.
+	Npgsql is a .Net Data Provider for PostgreSQL which implements 
+	the <a href="http://developer.postgresql.org/docs/postgres/protocol.html">PostgreSQL Frontend/Backend Protocol</a>.
+	Npgsql is implemented in 100% C#.  This provider was created by Francisco Figueiredo jr.
+	and has many programmers developing the provider.
+
+** Testing Mono's Mono.Data.PostgreSqlClient
 
 	<ul>
 		* <p>In order to test Mono.Data.PostgreSqlClient, you will need to have
 	access to a remote PostgreSQL DBMS, or you will have to install 
-	one locally.  PostgreSQL was first ADO.NET provider created in Mono.
+	one locally.  PostgreSQL was the first ADO.NET provider created in Mono.
 		
 	<p>Why use PostgreSQL?  Because it is free software, has a client 
 	library that is easy to use, PostgreSQL is easy to install on
@@ -94,7 +116,9 @@
 	user "postgres".
 
 <pre>
-"host=localhost;dbname=test;user=postgres"
+"Server=localhost;Database=test;User ID=postgres;Password=fun2db"
+      (or)
+"host=localhost;dbname=test;user=postgres;password=fun2db"
 </pre>
 </ul>
 		
@@ -179,9 +203,15 @@ create user postgres with password 'fun2db';
 		* <p>Important notes from this file are:
 		  
 		  <ul>
-				<p><b>2.</b> - Install the latest <a href="http://www.neuro.gatech.edu/users/cwilson/cygutils/OBSOLETE/V1.1/cygipc/index.html">CygIPC</a> package.
+				<p><b>2.</b> - Install the latest <a href="http://www.neuro.gatech.edu/users/cwilson/cygutils/cygipc/index.html">CygIPC</a> package.
+				Cygwin includes a utility bunzip2 which can be used to unzip it.  Now, change to 
+				the root directory by 
+				typing "cd /" then 
+				you can use "tar xvf cygipc.xxx.tar" to untar it 
+				in the root directory in cygwin.
 			  			  
-				<p>The cygipc package contains the ipc-daemon you will need 
+				<p>The cygipc package contains the support to run ipc-daemon 
+				that you will need 
 				to run before you can
 				run the PostgreSQL DBMS Server daemon (postmaster) or run
 				initdb which initializes the PostgreSQL database.
@@ -267,34 +297,9 @@ create user postgres with password 'fun2db';
 	</ul>
 	
 	<p>In the path mcs/class/System.Data/Test
-	there is a PostgreSQL test program named
+	there is a test for Mono.Data.PostgreSqlClient named
 	PostgreTest.cs.  Thanks goes to Gonzalo for creating the original
 	PostgreSQL test.
-	
-	<p>To use it to test System.Data, you
-	modify the file to your PostgreSQL database
-	connection requirements:
-
-	<p>
-	<ul>
-		<li><b>dbname</b> database, ie., test</li>
-		<li><b>host</b> hostname of the PostgreSQL DBMS Server, ie., localhost</li>
-		<li><b>user</b> username, ie., someuser</li>
-		<li><b>password</b> password, ie., mypass1234</li>
-	</ul>
-	
-	<p>The connection string is in OLE-DB connection string format.  Internally,
-	SqlConnection converts this to the PostgreSQL connection string format.
-	
-	<p>
-<pre>
-    OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
-PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
-</pre>
-
-	<p>
-	Note that OLE-DB includes the semicolons while PostgreSQL's connection
-	string does not.
 
 	<p>
     To compile the PostgresTest.cs program, do:
@@ -310,7 +315,7 @@ PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
 	to PgSqlConnection, then you need to run mcs like:
 
 <pre>
- mono f:/cygwin/home/DanielMorgan/mono/install/bin/mcs.exe \
+ mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
     PostgresTest.cs \
     -r System.Data.dll \
     -r Mono.Data.PostgreSqlClient.dll
@@ -328,185 +333,160 @@ mint PostgresTest.exe
     To run using mono, do:
 <pre>
 mono PostgresTest.exe
+</pre>  
+
+	<p>C# Example for Mono.Data.PostgreSqlClient:
+<pre>
+ using System;
+ using System.Data;
+ using Mono.Data.PostgreSqlClient;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Server=localhost;" +
+          "Database=test;" +
+          "User ID=postgres;" +
+          "Password=fun2db;";
+       IDbConnection dbcon;
+       dbcon = new PgConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+           "SELECT firstname, lastname" + 
+           "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader["firstname"];
+            string LastName = reader["lastname"];
+            Console.WriteLine("Name: " + 
+                FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
 </pre>
-    
-    <p>Below, I show how the output from PostgresTest.  I have omitted a lot
-    of the meta data for the columns except two columns.  The classes
-    used were from Mono.Data.PostgreSqlClient and were used to connect to a
-    PostgreSQL database and retrieve data.
-
-<p>
-<pre>   
-
- danmorg@DANPC ~/mono/mcs/class/System.Data/Test
- $ mcs PostgresTest.cs -r System.Data.dll
-
- danmorg@DANPC ~/mono/mcs/class/System.Data/Test
- $ mono PostgresTest.exe
-        Postgres provider specific tests...
-
-                Drop table:
- Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  
- table "mono_postgres_test" does not exist
- <Stack Trace>
-
-                Create table with all supported types:
- OK
-                Insert values for all known types:
- OK
-                Update values:
- OK
-                Insert values for all known types:
- OK
- Aggregate: count(*)
- Agg Result: 2
- Aggregate: min(text_value)
- Agg Result: This is a text
- Aggregate: max(int4_value)
- Agg Result: 1048000
- Aggregate: sum(int4_value)
- Agg Result: 1048003
-                Select values from the database:
- Result is from a SELECT SQL Query.  Records Affected: -1
- Result Set 1...
-   Total Columns: 28
- ColumnName = boolean_value
- ColumnOrdinal = 1
- ColumnSize = 1
- NumericPrecision = 0
- NumericScale = 0
- IsUnique = False
- IsKey =
- BaseCatalogName =
- BaseColumnName = boolean_value
- BaseSchemaName =
- BaseTableName =
- DataType = System.Boolean
- AllowDBNull = False
- ProviderType = 16
- IsAliased = False
- IsExpression = False
- IsIdentity = False
- IsAutoIncrement = False
- IsRowVersion = False
- IsHidden = False
- IsLong = False
- IsReadOnly = False
-
- ...
-
- ColumnName = null_timestamp_value
- ColumnOrdinal = 28
- ColumnSize = 8
- NumericPrecision = 0
- NumericScale = 0
- IsUnique = False
- IsKey =
- BaseCatalogName =
- BaseColumnName = null_timestamp_value
- BaseSchemaName =
- BaseTableName =
- DataType = System.DateTime
- AllowDBNull = False
- ProviderType = 1184
- IsAliased = False
- IsExpression = False
- IsIdentity = False
- IsAutoIncrement = False
- IsRowVersion = False
- IsHidden = False
- IsLong = False
- IsReadOnly = False
-
- Gonna do a Read() now...
-   Row 0:
-    Col 0: boolean_value: False
-    Col 1: int2_value: 5
-    Col 2: int4_value: 3
-    Col 3: bigint_value: 9
-    Col 4: float_value: 3.141590
-    Col 5: double_value: 3.14159
-    Col 6: numeric_value: 123456789012.345
-    Col 7: char_value: Mono.Data!
-    Col 8: varchar_value: It was not me!
-    Col 9: text_value: We got data!
-    Col 10: point_value: (1,0)
-    Col 11: time_value: 01/01/1 21:13:14
-    Col 12: date_value: 02/29/2000 00:00:00
-    Col 13: timestamp_value: 02/29/2004 14:00:11
-    Col 14: null_boolean_value is NULL
-    Col 15: null_int2_value is NULL
-    Col 16: null_int4_value is NULL
-    Col 17: null_bigint_value is NULL
-    Col 18: null_float_value is NULL
-    Col 19: null_double_value is NULL
-    Col 20: null_numeric_value is NULL
-    Col 21: null_char_value is NULL
-    Col 22: null_varchar_value is NULL
-    Col 23: null_text_value is NULL
-    Col 24: null_point_value is NULL
-    Col 25: null_time_value is NULL
-    Col 26: null_date_value is NULL
-    Col 27: null_timestamp_value is NULL
-   Row 1:
-    Col 0: boolean_value: True
-    Col 1: int2_value: -22
-    Col 2: int4_value: 1048000
-    Col 3: bigint_value: 123456789012345
-    Col 4: float_value: 3.141590
-    Col 5: double_value: 3.14159
-    Col 6: numeric_value: 123456789012.345
-    Col 7: char_value: This is a char
-    Col 8: varchar_value: This is a varchar
-    Col 9: text_value: This is a text
-    Col 10: point_value: (1,0)
-    Col 11: time_value: 01/01/1 21:13:14
-    Col 12: date_value: 02/29/2000 00:00:00
-    Col 13: timestamp_value: 02/29/2004 14:00:11
-    Col 14: null_boolean_value is NULL
-    Col 15: null_int2_value is NULL
-    Col 16: null_int4_value is NULL
-    Col 17: null_bigint_value is NULL
-    Col 18: null_float_value is NULL
-    Col 19: null_double_value is NULL
-    Col 20: null_numeric_value is NULL
-    Col 21: null_char_value is NULL
-    Col 22: null_varchar_value is NULL
-    Col 23: null_text_value is NULL
-    Col 24: null_point_value is NULL
-    Col 25: null_time_value is NULL
-    Col 26: null_date_value is NULL
-    Col 27: null_timestamp_value is NULL
-   Total Rows Retrieved: 2
- Total Result sets: 1
-                Call ExecuteReader with a SQL Command. 
-                (Not INSERT,UPDATE,DELETE
- ).
- Result is from a SQL Command not (INSERT,UPDATE,DELETE).  
-                        Records Affected: -1
- Total Result sets: 0
-                Call ExecuteReader with a SQL Command. 
-                        (Is INSERT,UPDATE,DELETE)
- .
- Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: 1
- Total Result sets: 0
-                Calling stored procedure version()
- Result: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.95.3-5
- Database Server Version: PostgreSQL 7.2.1 on i686-pc-cygwin, 
-              compiled by GCC 2.9
- 5.3-5
- Clean up...
-                Drop table...
- OK
- RESULT: 0
-
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r Mono.Data.PostgreSqlClient.dll
 </pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll -r Mono.Data.PostgreSqlClient.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+</li>
+</ul>
 
-* Action Plan
+** Testing Npgsql
 
-	<p>Eventually replace the PostgreSQL data provider in Mono
-	with <a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>.
-	Npgsql is a .Net Data Provider for PostgreSQL which implements 
-	the <a href="http://developer.postgresql.org/docs/postgres/protocol.html">PostgreSQL Frontend/Backend Protocol</a>.
-	Npgsql is implemented in 100% C#.  This provider was created by Francisco Figueiredo jr.
-	and has many programmers developing the provider.
+<ul>
+	<li>Have a working mono and mcs</li>
+		
+	<li>Get <a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
+	and make sure the binary assembly Npgsql.dll is installed in the same place that the
+	mono class libraries are located.
+	
+	<li>Read the Testing notes for Mono.Data.PostgreSqlClient too
+	
+	<li>C# Example for Npgsql:
+<pre>
+ using System;
+ using System.Data;
+ using Npgsql;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Server=localhost;" +
+          "Database=test;" +
+          "User ID=postgres;" +
+          "Password=fun2db;";
+       IDbConnection dbcon;
+       dbcon = new NpgsqlConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+           "SELECT firstname, lastname " +
+           "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader["firstname"];
+            string LastName = reader["lastname"];
+            Console.WriteLine("Name: " + 
+                 FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r Npgsql.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll -r Npgsql.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+</li>
+</ul>
+	

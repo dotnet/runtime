@@ -3,27 +3,32 @@
 <ul>
 	<li>MySQL Data Provider for 
 	<a href="http://www.mysql.com/">MySQL</a> databases.  It is written in C# and uses
-	the MySQL C Client Library
+	the MySQL C Client Library</li>
 
-	<li>Exists in namespace Mono.Data.MySql and assembly Mono.Data.MySql
+	<li>Exists in namespace Mono.Data.MySql and assembly Mono.Data.MySql</li>
 	
 	<li>Works on Windows and Linux via the MySQL client shared library
-	    (libmySQL.dll on Windows and libmysqlclient.so on Linux).
+	    (libmySQL.dll on Windows and libmysqlclient.so on Linux).</li>
 	    
-    <li>Started by Daniel Morgan using C# Bindings to MySQL from Brad Meril.  
+    <li>Started by Daniel Morgan using 
+    <a href="http://www.cybercom.net/~zbrad/DotNet/MySql/">C# Bindings to MySQL</a> from <a href="mailto:zbrad@cybercom.net">Brad Merill</a>
     
     <li><a href="http://www.mysql.com/articles/dotnet/">Exploring MySQL in the Microsoft .NET Environment</a> is an article
-    by Mr. Venu who is a MySQL AB developer.
+    by Mr. Venu who is a MySQL AB developer.</li>
     
-    <li>Other projects which have created a .NET Data provider for MySQL in C#
+    <li>There is a good alternative to the provider in Mono:
 		<ul>
-			<li><a href="http://sourceforge.net/projects/mysqldrivercs/">MySQLDriverCS</a> is a MySQL provider written in C#
-			<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a MySQL Manager provider written in C#
+			<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> from ByteFX 
+			is a MySQL Managed provider written in 100% C#,
+			does not require a client library, and works on Microsoft .NET and Mono.  You 
+			need at least Mono 0.18 and MySQLNet 0.65 for it to work on Mono.</li>
 
 		</ul>
+		</li>
+	<li>Testing for Mono's Mono.Data.MySql and ByteFX's ByteFX.Data.MySQLClient is below...</li>
 </ul>
     
-* Current Status
+** Current Status
 
 <ul>
 	<li>can connect
@@ -48,7 +53,7 @@
 	can be modified with a text editor.  
 </ul>
 
-* Action plan
+** Action plan
 
 The current plan to work on the MySQL data provider:
 	
@@ -64,3 +69,202 @@ The current plan to work on the MySQL data provider:
 		
 		<li>Get the provider to work like other data providers
 	</ul>
+
+** Testing for Mono's MySQL provider (Mono.Data.MySql)
+
+<ul>
+	<li>Have access to a MySQL database or download it from
+		<ul>
+			<li><a href="http://www.mysql.com/downloads/index.html">MySQL AB</a></li>
+		</ul>
+	</li>
+	
+	<li>Take a look at MySqlTest.cs in mcs/class/Mono.Data.MySql/Test</li>
+	
+	<li>Has a ConnectionString format: 
+<pre>
+ "Server=hostname;" +
+ "Database=database;" +
+ "User ID=username;" +
+ "Password=password"
+         (or)
+ "host=hostname;" +
+ "dbname=database;" +
+ "user=username;" +
+ "passwd=password"
+</pre>
+
+	<li>C# Example:
+<pre>
+ using System;
+ using System.Data;
+ using Mono.Data.MySql;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Server=localhost;" +
+          "Database=test;" +
+          "User ID=mysql;" +
+          "Password=;";
+       IDbConnection dbcon;
+       dbcon = new MySqlConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+            "SELECT firstname, lastname " + 
+            "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader["firstname"];
+            string LastName = reader["lastname"];
+            Console.WriteLine("Name: " + 
+                 FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs \
+	    -r System.Data.dll \
+	    -r Mono.Data.MySql.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll \
+	     -r Mono.Data.MySql.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+	</li>
+
+</ul>
+
+** Testing for MySQLNet provider (ByteFX.Data.MySQLClient)
+
+<ul>
+	<li>Have access to a MySQL database or download it from
+		<ul>
+			<li><a href="http://www.mysql.com/downloads/index.html">MySQL AB</a></li>
+		</ul>
+	</li>
+	
+	<li>MySQLNet can be gotten from <a href="http://sourceforge.net/projects/mysqlnet/">here</a> and the 
+	binary assembly ByteFX.Data.dll needs to be	installed 
+	in the same place as the mono class libraries.</li>
+	
+	<li>MySQLNet requires <a href="http://www.icsharpcode.net/OpenSource/SharpZipLib/default.asp">SharpZipLib</a> which is 
+	a Zip Library written in 100% C#.  This is used for compression/decompression of data
+	sent/received over the network.  The SharpZipLib binary assembly SharpZipLib.dll should 
+	be installed in the same place as the mono class libraries.</li>
+	
+	<li>Has a ConnectionString format: 
+<pre>
+"Server=hostname;" +
+"Database=database;" +
+"User ID=username;" +
+"Password=password"
+</pre>
+	</li>
+	<li>C# Example:
+<pre>
+ using System;
+ using System.Data;
+ using ByteFX.Data.MySQLClient;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Server=localhost;" +
+          "Database=test;" +
+          "User ID=mysql;" +
+          "Password=;";
+       IDbConnection dbcon;
+       dbcon = new MySQLConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+           "SELECT firstname, lastname " +
+           "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader["firstname"];
+            string LastName = reader["lastname"];
+            Console.WriteLine("Name: " + 
+                  FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r ByteFX.Data.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll -r ByteFX.Data.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+	</li>
+
+</ul>
+

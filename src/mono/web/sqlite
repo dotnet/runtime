@@ -1,28 +1,112 @@
 * SQL Lite Data Provider
 
 <ul>
-	<li>Exists in namespace and assembly Mono.Data.SqliteClient
+	<li>Exists in namespace and assembly Mono.Data.SqliteClient</li>
 	
-	<li>Created by Vladimir Vukicevic
+	<li>Created by Vladimir Vukicevic</li>
 	
 	<li><a href"http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a>
 	binaries exist for Linux and Windows.  sqlite.dll on Windows 
-	and sqlite.so on Linux.
+	and sqlite.so on Linux.</li>
 </ul>
 
-* Current Status
+** Current Status
 
 <ul>
-	<li>Able to connect, execute commands, and retrieve data...
+	<li>Able to connect, execute commands, and retrieve data...</li>
 	
-	<li>Works in mPhoto
+	<li>Works in mPhoto by providing access to a SQL Lite database to store images.</li>
 </ul>
 
-* Action Plan
+** Action Plan
 
 <ul>
 	<li>Create a DataAdapter for SQL Lite named SqliteDataAdapter that can be used to 
-	Fill a DataTable in a DataSet
+	Fill a DataTable in a DataSet</li>
 	
-	<li>TODO
+	<li>Get the method GetSchemaTable() in class SqliteDataReader to return a DataTable
+	that works</li>
 </ul>
+
+** Testing
+
+<ul>
+	<li>Have a working mcs and mono</li>
+	<li>Make sure Mono.Data.SqliteClient.dll was built and is installed
+	in the same place as the mono class libraries.</li>
+	<li>If you do not have <a href"http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a>,
+	download it.  There are binaries for Windows and Linux.</li>
+	<li>There is a test named SqliteTest.cs found at mcs/class/Mono.Data.SqliteTest/Test</li>
+	<li>Has a connection string format of "URI=file:some/path".  For example, 
+	the connection string "URI=file:SqliteTest.db" will use the database file 
+	named SqliteTest.db, if it does not exist, the file will be created.</li>
+	<li>C# Example:
+<pre>
+ using System;
+ using System.Data;
+ using Mono.Data.SqliteClient;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = "URI=file:SqliteTest.db";
+       IDbConnection dbcon;
+       dbcon = new MySQLConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+          "SELECT firstname, lastname " + 
+          "FROM employee";
+       dbcmd.ConnectionString = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = reader[0];
+            string LastName = reader[1];
+            Console.WriteLine("Name: " + 
+                FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r Mono.Data.SqliteClient.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll \
+	     -r Mono.Data.SqliteClient.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+	</li>
+
+</ul>
+

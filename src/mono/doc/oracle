@@ -1,4 +1,5 @@
 * Oracle Data Provider
+
 <ul>
 	<li>Exists in namespace System.Data.OracleClient and assembly System.Data.OracleClient</li>
 
@@ -7,10 +8,14 @@
 	<li>Works with Oracle 8i</li>
 	
 	<li>More information about Oracle can be found at <a href="http://www.oracle.com/"/>here</a></li>
+	
+	<li>Created by Daniel Morgan.</li>
+	
+	<li>Does not support trusted connections</li>
 
 </ul>
 	
-* Current Status
+** Current Status
 
 <ul>
 	<li>OracleConnection can connect to an Oracle 8i database on 
@@ -30,7 +35,7 @@
 	   
 </ul>
 	
-* Action Plan
+** Action Plan
 
 <ul>
 	<li>Get the makefile for the Borland C++ compiler to work 
@@ -50,3 +55,92 @@
 	Marshalling in C# to the oci shared library (oci.dll on Windows)</li>
 	
 </ul>
+
+** Testing Mono.Data.OracleClient
+
+<ul>
+	<li>Have a working mono and mcs</li>
+	
+	<li>Have access to an Oracle 8i database or download it from
+	<a href="http://www.oracle.com/">Oracle</a>.  Registration to the
+	Oracle Technology Network is free.  If installing on Linux, I suggest you
+	do a lot of searching to see how others installed Oracle on Linux.</li>
+	
+	<li>Make sure Mono.Data.OracleClient.dll assembly is built, if not, go
+	into Mono.Data.OracleClient and do a make -f makefile.gnu (on Linux) or
+	../../nant/NAnt.exe (on Cygwin).</li>
+	
+	<li>The OCI Glue Library Mono.Data.OracleClient.ociglue.dll will need to be
+	created as well.  Has only been tested with lc (Microsoft Visual C++ command-line compiler).
+	There is a make file for Microsoft C++ and Borland C++.  I'm sure it wouldn't be hard
+	to create a makefile for gcc if installing on Linux.</li>
+	
+	<li>Take a look at TestOracleClient.cs found at mcs/class/System.Data.OracleClient/Test</li>
+	
+	<li>Has a connection string format:
+<pre>
+"Data Source=tnsname;User ID=userid;Password=password"
+</pre>	
+	</li>
+	<li>C# Example:
+<pre>
+ using System;
+ using System.Data;
+ using System.Data.OracleClient;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Data Source=testdb;" +
+          "User ID=scott;" +
+          "Password=tiger;";
+       IDbConnection dbcon;
+       dbcon = new OracleConnection(connectionString);
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       string sql =
+              "insert into scott.emp " +
+              "(empno, ename, job, sal, deptno) " +
+              "values(123," +
+              "'Don Smith'," +
+              "'Cook'," +
+              "23021," +
+              "20)";
+       dbcmd.ConnectionString = sql;
+       dbcmd.ExecuteNonQuery();
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Build on Linux:
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r System.Data.OracleClient.dll
+</pre>
+		</li>
+		<li>Build on Windows via Cygwin:
+<pre>
+	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
+	     TestExample.cs \
+	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
+	     -r System.Data.dll -r System.Data.OracleClient.dll
+</pre>
+		</li>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+	</li>
+
+</ul>
+
