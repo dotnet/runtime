@@ -47,6 +47,9 @@ typedef struct {
 	MonoClass *enum_class;
 	MonoClass *array_class;
 	MonoClass *delegate_class;
+	MonoClass *typehandle_class;
+	MonoClass *fieldhandle_class;
+	MonoClass *methodhandle_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

@@ -97,9 +97,8 @@ ves_real_abort (int line, MonoMethod *mh,
 		 ip-mm->header->code, *ip);
 	if (sp > stack)
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
-	exit (1);
 }
-#define ves_abort() ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp)
+#define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (get_exception_execution_engine (), ip);} while (0);
 
 /*
  * init_class:
@@ -786,6 +785,11 @@ ves_exec_method (MonoInvocation *frame)
 	DEBUG_ENTER ();
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		if (!frame->method->addr) {
+			frame->ex = get_exception_missing_method ();
+			DEBUG_LEAVE ();
+			return;
+		}
 		if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 			ves_pinvoke_method (frame);
 		} else {
@@ -797,6 +801,11 @@ ves_exec_method (MonoInvocation *frame)
 	} 
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		if (!frame->method->addr) {
+			frame->ex = get_exception_missing_method ();
+			DEBUG_LEAVE ();
+			return;
+		}
 		ves_pinvoke_method (frame);
 		DEBUG_LEAVE ();
 		return;
@@ -1072,12 +1081,9 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED99) ves_abort (); BREAK;
 		CASE (CEE_DUP) 
 			if (sp [-1].type == VAL_VALUET) {
-				/* kludge alert! */
-				char *addr = sp [-1].data.vt.vt;
-				MonoType t = sp [-1].data.vt.klass->this_arg;
-				t.byref = 0;
-				vt_alloc (&t, sp);
-				stackval_from_data (&t, sp, addr);
+				MonoClass *c = sp [-1].data.vt.klass;
+				vt_alloc (&c->byval_arg, sp);
+				stackval_from_data (&c->byval_arg, sp, sp [-1].data.vt.vt);
 			} else {
 				*sp = sp [-1]; 
 			}
@@ -1940,7 +1946,6 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDOBJ) {
 			guint32 token;
 			MonoClass *c;
-			MonoType t;
 			char *addr;
 
 			++ip;
@@ -1948,11 +1953,8 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 4;
 			c = mono_class_get (image, token);
 			addr = sp [-1].data.vt.vt;
-			/* kludge alert! */
-			t = c->this_arg;
-			t.byref = 0;
-			vt_alloc (&t, &sp [-1]);
-			stackval_from_data (&t, &sp [-1], addr);
+			vt_alloc (&c->byval_arg, &sp [-1]);
+			stackval_from_data (&c->byval_arg, &sp [-1], addr);
 			BREAK;
 		}
 		CASE (CEE_LDSTR) {
@@ -2582,9 +2584,6 @@ ves_exec_method (MonoInvocation *frame)
 			
 				v = sp [2].data.p;
 
-				/*fixme: what about type conversions ? */
-				g_assert (v->klass == ac->element_class);
-
 				((gpointer *)o->vector)[aindex] = sp [2].data.p;
 				break;
 			default:
@@ -2651,8 +2650,39 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED65) 
 		CASE (CEE_UNUSED66) 
 		CASE (CEE_UNUSED67) ves_abort(); BREAK;
-		CASE (CEE_LDTOKEN)
-		CASE (CEE_CONV_OVF_I) ves_abort(); BREAK;
+		CASE (CEE_LDTOKEN) {
+			gpointer handle;
+			MonoClass *handle_class;
+			++ip;
+			handle = mono_ldtoken (image, read32 (ip), &handle_class);
+			ip += 4;
+			vt_alloc (&handle_class->byval_arg, sp);
+			stackval_from_data (&handle_class->byval_arg, sp, (char*)&handle);
+			++sp;
+			BREAK;
+		}
+		CASE (CEE_CONV_OVF_I)
+			++ip;
+			--sp;
+			/* FIXME: check overflow. */
+			switch (sp->type) {
+			case VAL_I32:
+				sp->data.p = (gpointer)(mono_i) sp->data.i;
+				break;
+			case VAL_I64:
+				sp->data.p = (gpointer)(mono_i) sp->data.l;
+				break;
+			case VAL_NATI:
+				break;
+			case VAL_DOUBLE:
+				sp->data.p = (gpointer)(mono_i) sp->data.f;
+				break;
+			default:
+				ves_abort ();
+			}
+			sp->type = VAL_NATI;
+			++sp;
+			BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF_UN) ves_abort(); BREAK;

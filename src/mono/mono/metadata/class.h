@@ -52,8 +52,9 @@ struct _MonoClass {
 
 	MonoMethod **methods;
 
-	/* used as the type of the this argument */
+	/* used as the type of the this argument and when passing the arg by value */
 	MonoType this_arg;
+	MonoType byval_arg;
 	
 	/* 
 	 * Static class data 
@@ -99,5 +100,8 @@ mono_class_data_size       (MonoClass *klass);
 
 MonoClass *
 mono_class_from_mono_type  (MonoType *type);
+
+gpointer
+mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
 
 #endif /* _MONO_CLI_CLASS_H_ */

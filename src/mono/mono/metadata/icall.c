@@ -183,9 +183,41 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 }
 
 static MonoObject *
-ves_icall_get_cur_domain ()
+ves_icall_app_get_cur_domain ()
 {
 	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+
+	return mono_new_object (klass);
+}
+
+static MonoObject *
+ves_icall_app_define_assembly (MonoObject *appdomain, MonoObject *assembly_name, int access)
+{
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "AssemblyBuilder");
+
+	return mono_new_object (klass);
+}
+
+static MonoObject *
+ves_icall_define_type (MonoObject *moduleb, MonoObject *name, int attrs)
+{
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "TypeBuilder");
+
+	return mono_new_object (klass);
+}
+
+static MonoObject *
+ves_icall_define_module (MonoObject *assb, MonoObject *name, MonoObject *fname)
+{
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "ModuleBuilder");
+
+	return mono_new_object (klass);
+}
+
+static MonoObject *
+ves_icall_define_method (MonoObject *typeb, MonoObject *name, int attrs, int callconv, MonoObject *rettype, MonoObject *paramtypes)
+{
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "MethodBuilder");
 
 	return mono_new_object (klass);
 }
@@ -217,8 +249,24 @@ static gpointer icall_map [] = {
 	/*
 	 * System.AppDomain
 	 */
-	"System.AppDomain::getCurDomain", ves_icall_get_cur_domain,
+	"System.AppDomain::getCurDomain", ves_icall_app_get_cur_domain,
+	"System.AppDomain::defineAssembly", ves_icall_app_define_assembly,
 
+	/*
+	 * ModuleBuilder
+	 */
+	"System.Reflection.Emit.ModuleBuilder::defineType", ves_icall_define_type,
+	
+	/*
+	 * AssemblyBuilder
+	 */
+	"System.Reflection.Emit.AssemblyBuilder::defineModule", ves_icall_define_module,
+	
+	/*
+	 * TypeBuilder
+	 */
+	"System.Reflection.Emit.TypeBuilder::defineMethod", ves_icall_define_method,
+	
 	/*
 	 * System.Threading
 	 */

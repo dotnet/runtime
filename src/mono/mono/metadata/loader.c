@@ -33,6 +33,9 @@ static gboolean dummy_icall = TRUE;
 
 MonoDefaults mono_defaults;
 
+#ifdef __CYGWIN__
+#define mono_map_dll(name) (name)
+#else
 static char *dll_map[] = {
 	"libc", "libc.so.6",
 	"libm", "libm.so.6",
@@ -53,6 +56,7 @@ mono_map_dll (const char *name)
 
 	return name;
 }
+#endif
 
 void
 mono_init (void)
@@ -149,6 +153,23 @@ mono_init (void)
 	mono_defaults.delegate_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Delegate");
 	g_assert (mono_defaults.delegate_class != 0);
+
+	mono_defaults.typehandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeTypeHandle");
+	g_assert (mono_defaults.typehandle_class != 0);
+
+	mono_defaults.methodhandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeMethodHandle");
+	g_assert (mono_defaults.methodhandle_class != 0);
+
+	mono_defaults.fieldhandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeFieldHandle");
+	g_assert (mono_defaults.fieldhandle_class != 0);
+
+	mono_defaults.typehandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeTypeHandle");
+	g_assert (mono_defaults.typehandle_class != 0);
+
 }
 
 static GHashTable *icall_hash = NULL;
@@ -385,9 +406,11 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 	mh->addr = NULL;
 	if (!gmodule) {
-		g_warning ("Failed to load library %s (%s)", full_name, scope);
-		g_free (full_name);
-		return;
+		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
+			g_warning ("Failed to load library %s (%s)", full_name, scope);
+			g_free (full_name);
+			return;
+		}
 	}
 	g_free (full_name);
 

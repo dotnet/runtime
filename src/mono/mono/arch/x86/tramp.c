@@ -94,6 +94,12 @@ mono_create_trampoline (MonoMethod *method)
 			stack_size += 4;
 			code_size += i < 10 ? 5 : 8;
 			break;
+		case MONO_TYPE_VALUETYPE:
+			if (!sig->params [i]->data.klass->enumtype)
+				g_error ("can only marshal enums, not generic structures");
+			stack_size += 4;
+			code_size += i < 10 ? 5 : 8;
+			break;
 		case MONO_TYPE_STRING:
 			stack_size += 4;
 			code_size += 20;
@@ -165,6 +171,7 @@ mono_create_trampoline (MonoMethod *method)
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_R4:
+		case MONO_TYPE_VALUETYPE: /* only enums supported right now, anyway */
 			x86_push_membase (p, X86_EDX, arg_pos);
 			break;
 		case MONO_TYPE_R8:

@@ -204,6 +204,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->this_arg.byref = 1;
 	class->this_arg.data.klass = class;
 	class->this_arg.type = MONO_TYPE_CLASS;
+	class->byval_arg.data.klass = class;
+	class->byval_arg.type = MONO_TYPE_CLASS;
 
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
 	class->name = name = mono_metadata_string_heap (image, cols[1]);
@@ -234,8 +236,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			class->enumtype = 1;
 		}
 	}
-	if (class->valuetype)
+	if (class->valuetype) {
 		class->this_arg.type = MONO_TYPE_VALUETYPE;
+		class->byval_arg.type = MONO_TYPE_VALUETYPE;
+	}
 	
 	/*
 	 * Compute the field and method lists
@@ -619,3 +623,22 @@ mono_array_element_size (MonoArrayClass *ac)
 	
 	return esize;
 }
+
+gpointer
+mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
+{
+	switch (token & 0xff000000) {
+	case MONO_TOKEN_TYPE_DEF:
+	case MONO_TOKEN_TYPE_REF:
+		if (handle_class)
+			*handle_class = mono_defaults.typehandle_class;
+		return mono_class_get (image, token);
+	case MONO_TOKEN_METHOD_DEF:
+	case MONO_TOKEN_FIELD_DEF:
+	case MONO_TOKEN_MEMBER_REF:
+	default:
+		break;
+	}
+	return NULL;
+}
+

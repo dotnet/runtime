@@ -1846,17 +1846,18 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_OBJECT:
-		break;
+		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
 		return t1->data.klass == t2->data.klass;
+	case MONO_TYPE_SZARRAY:
+		return mono_metadata_type_equal (t1->data.type, t2->data.type);
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
 	}
 
-	return TRUE;
+	return FALSE;
 }
 
 gboolean
