@@ -877,8 +877,8 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res)
 	}
 }
 
-static inline GPtrArray*
-collect_implemented_interfaces (MonoClass *klass)
+GPtrArray*
+mono_class_get_implemented_interfaces (MonoClass *klass)
 {
 	GPtrArray *res = NULL;
 
@@ -918,7 +918,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	for (i = 0; i <= max_iid; i++)
 		class->interface_offsets [i] = -1;
 
-	ifaces = collect_implemented_interfaces (class);
+	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
 			ic = g_ptr_array_index (ifaces, i);
@@ -929,7 +929,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 
 	for (k = class->parent; k ; k = k->parent) {
-		ifaces = collect_implemented_interfaces (k);
+		ifaces = mono_class_get_implemented_interfaces (k);
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				ic = g_ptr_array_index (ifaces, i);
@@ -967,7 +967,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		return;
 	}
 
-	ifaces = collect_implemented_interfaces (class);
+	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; i++) {
 			MonoClass *ic = g_ptr_array_index (ifaces, i);
@@ -1012,7 +1012,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 	for (k = class; k ; k = k->parent) {
 		int nifaces = 0;
-		ifaces = collect_implemented_interfaces (k);
+		ifaces = mono_class_get_implemented_interfaces (k);
 		if (ifaces)
 			nifaces = ifaces->len;
 		for (i = 0; i < nifaces; i++) {
@@ -3385,7 +3385,7 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
 }
 
 /**
- * mono_class_get_interfaaces
+ * mono_class_get_interfaces
  * @klass: the MonoClass to act on
  *
  * This routine is an iterator routine for retrieving the interfaces implemented by this class.
@@ -3424,7 +3424,7 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 }
 
 /**
- * mono_class_get_interfaaces
+ * mono_class_get_nested_types
  * @klass: the MonoClass to act on
  *
  * This routine is an iterator routine for retrieving the nested types of a class.

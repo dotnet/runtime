@@ -393,6 +393,9 @@ mono_class_setup_parent    (MonoClass *klass, MonoClass *parent);
 void
 mono_class_setup_supertypes (MonoClass *klass);
 
+GPtrArray*
+mono_class_get_implemented_interfaces (MonoClass *klass);
+
 gboolean
 mono_class_is_open_constructed_type (MonoType *t);
 
