@@ -4,7 +4,7 @@
 1,Runtime,runtime.html,runtime.src
 2,Embedding,embedded-api.html,embedded-api.src
 1,Classes,class-library.html,class-library.src
-1,Gtk#,http://gtk-sharp.sourceforge.net
+1,Gtk#,gtk-sharp.html,gtk-sharp.src
 1,ASP.NET,asp-net.html,asp-net.src
 1,ADO.NET,ado-net.html,ado-net.src
 1,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
