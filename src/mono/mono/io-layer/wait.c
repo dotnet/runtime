@@ -354,8 +354,9 @@ guint32 WaitForSingleObject(WapiHandle *handle, guint32 timeout)
 	if(wait==TRUE) {
 		/* Object signalled before timeout expired */
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Object %p signalled",
-			  handle);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": Object %p (type %d) signalled", handle,
+			  handle->type);
 #endif
 		return(WAIT_OBJECT_0);
 	} else {

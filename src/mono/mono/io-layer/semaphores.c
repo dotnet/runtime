@@ -69,11 +69,19 @@ static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 	int ret;
 	
 	mono_mutex_lock(&sem_mutex);
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Sem %p val %d ms %d", handle,
+		  sem_handle->val, ms);
+#endif
 	
 	/* Signal this handle after we have obtained the semaphore
 	 * global lock
 	 */
 	if(signal!=NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": signalling %p", signal);
+#endif
 		signal->ops->signal(signal);
 	}
 	
@@ -98,16 +106,63 @@ static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 	}
 	
 	if(ms==INFINITE) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": wait for %p INFINITE",
+			  sem_handle);
+#endif
+	try_again_infinite:
 		ret=mono_cond_wait(&sem_cond, &sem_mutex);
-		waited=TRUE;
+		if(ret==0) {
+			/* See if we were signalled (it might have been
+			 * another semaphore)
+			 */
+			if(sem_handle->val>0) {
+#ifdef DEBUG
+				g_message(G_GNUC_PRETTY_FUNCTION
+					  ": sem %p has been signalled",
+					  sem_handle);
+#endif
+			 	waited=TRUE;
+			} else {
+#ifdef DEBUG
+				g_message(G_GNUC_PRETTY_FUNCTION
+					  ": sem %p not signalled",
+					  sem_handle);
+#endif
+				goto try_again_infinite;
+			}
+		}
 	} else {
 		struct timespec timeout;
 
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": wait for %p for %d ms",
+			  sem_handle, ms);
+#endif
+
 		_wapi_calc_timeout(&timeout, ms);
 		
+	try_again_timed:
 		ret=mono_cond_timedwait(&sem_cond, &sem_mutex, &timeout);
 		if(ret==0) {
-			waited=TRUE;
+			/* See if we were signalled (it might have been
+			 * another semaphore)
+			 */
+			if(sem_handle->val>0) {
+#ifdef DEBUG
+				g_message(G_GNUC_PRETTY_FUNCTION
+					  ": sem %p has been signalled",
+					  sem_handle);
+#endif
+				waited=TRUE;
+			} else {
+#ifdef DEBUG
+				g_message(G_GNUC_PRETTY_FUNCTION
+					  ": sem %p not signalled",
+					  sem_handle);
+#endif
+				goto try_again_timed;
+			}
 		} else {
 			/* ret might be ETIMEDOUT for timeout, or
 			 * other for error */
@@ -118,7 +173,18 @@ static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 end:
 	if(waited==TRUE) {
 		sem_handle->val--;
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": Waited TRUE, sem %p val now %d", sem_handle,
+			  sem_handle->val);
+#endif
 	}
+#ifdef DEBUG
+	else {
+		g_message(G_GNUC_PRETTY_FUNCTION ": Waited FALSE, sem %p",
+			  sem_handle);
+	}
+#endif
 	
 	mono_mutex_unlock(&sem_mutex);
 	return(waited);
@@ -332,6 +398,11 @@ gboolean ReleaseSemaphore(WapiHandle *handle, gint32 count, gint32 *prevcount)
 	
 	
 	mono_mutex_lock(&sem_mutex);
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": sem %p val %d count %d",
+		  sem_handle, sem_handle->val, count);
+#endif
 	
 	/* Do this before checking for count overflow, because overflowing max
 	 * is a listed technique for finding the current value
@@ -353,6 +424,11 @@ gboolean ReleaseSemaphore(WapiHandle *handle, gint32 count, gint32 *prevcount)
 	sem_handle->val+=count;
 	pthread_cond_broadcast(&sem_cond);
 	ret=TRUE;
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": sem %p val now %d", sem_handle,
+		  sem_handle->val);
+#endif
 	
 end:
 	mono_mutex_unlock(&sem_mutex);
