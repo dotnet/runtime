@@ -4134,9 +4134,6 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	x86_patch (br [1], s->code);
-
-	/* please test this first */
-	g_assert_not_reached ();
 }
 
 stmt: ARG_OBJ (coni4) {
