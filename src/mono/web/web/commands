@@ -41,6 +41,7 @@
 2,MySQL,mysql.html,mysql.src
 2,ODBC,odbc.html,odbc.src
 2,OLE DB,oledb.html,oledb.src
+2,Oracle,oracle.html,oracle.src
 2,PostgreSQL,postgresql.html,postgresql.src
 2,SQL Lite,sqlite.html,sqlite.src
 2,Sybase,sybase.html,sybase.src

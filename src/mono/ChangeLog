@@ -1,5 +1,16 @@
 2002-12-10  Daniel Morgan <danmorg@sc.rr.com>
 
+	* doc/oracle: added file which is
+	a new web page oracle.html
+
+	* doc/ado-net: clean up and add link
+	to oracle.html
+	
+	* doc/web/commands
+	* doc/web/makefile: added oracle.html
+
+2002-12-10  Daniel Morgan <danmorg@sc.rr.com>
+
 	* man/Makefile.am: changed sqlsharpcli.1 to sqlsharp.1
 	
 	* man/sqlsharpcli.1: renamed to sqlsharp.1

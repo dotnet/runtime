@@ -9,6 +9,7 @@ OBJECTS=									\
 	deploy/mysql.html							\
 	deploy/odbc.html							\
 	deploy/oledb.html							\
+	deploy/oracle.html							\
 	deploy/postgresql.html							\
 	deploy/sqlclient.html							\
 	deploy/sqlite.html							\

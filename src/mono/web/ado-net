@@ -23,6 +23,7 @@
 			<ul>
 					<li><a href="http://www.go-mono.com/mysql.html">MySQL</a>
 					<li><a href="http://www.go-mono.com/odbc.html">ODBC</a>
+					<li><a href="http://www.go-mono.com/oracle.html">Oracle</a>
 					<li><a href="http://www.go-mono.com/oledb.html">OLE DB</a>
 					<li><a href="http://www.go-mono.com/postgresql.html">PostgreSQL</a>
 					<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a>
@@ -33,42 +34,43 @@
 					some of these databases are supported via the ODBC or OLEDB providers.
 					<ul>
 						<li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a>
-						<li>miniSQL
-						<li><a href="http://www.oracle.com/">Oracle</a> - could be done by creating C# bindings to OCI (Oracle C Call Level Interface)
-						<li>BerkeleyDB (Sleepycat)
-						<li><a href="http://www.sapdb.org/">SapDB</a>
-						<li>Microsoft Access - could be done by creating C# bindings to <a href="http://mdbtools.sourceforge.net">MDB Tools</a>
-						<li>dbase or xbase type database files
-						<li>Others, of course, are welcomed...
-		  
+						<li><a href="http://www.hughes.com.au/">miniSQL</a></li>
+						<li><a href="http://www.sleepycat.com/">BerkeleyDB (Sleepycat)</a></li>
+						<li><a href="http://www.sapdb.org/">SapDB</a></li>
+						<li>Microsoft Access - could be done by creating C# bindings to <a href="http://mdbtools.sourceforge.net">MDB Tools</a></li>
+						<li>dbase or xbase type database files</li>
+						<li>Others are welcome</li>
 					</ul>
 				</ul>
 				<br>
 			<li>Modify Pre-existing ADO.NET Providers to work with Mono.  This may
 			require fixing or implementing areas of Mono too.
 				<ul>
-					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a>
-					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> a PostgreSQL provider
-					written in 100% C#
-					<li><a href="http://sourceforge.net/projects/mysqldrivercs/">MySQLDriverCS</a> is a MySQL provider written in C#
-					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a MySQL Manager provider written in C#
+					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a></li>
+					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> is a PostgreSQL Managed data provider written 
+					in 100% C# and does not require a client library </li>
+					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a MySQL Manager data provider written in 100% C# and does not
+					require a client library</li>
+					<li><a href="http://sourceforge.net/projects/mysqldrivercs/">MySQLDriverCS</a> is a MySQL data provider written in C#</li>
+					
 				</ul>
+			</li>
 		</ul>
 	<br>
 	<li>Create Tools for Configuration, Testing, and Entering SQL Queries  
 	<ul>
-		<li><b>SQL# CLI - a command-line tool</b> to execute SQL commands,
+		<li><b>SQL# CLI - a command-line tool</b> written in C# to 
+		  execute SQL commands,
 		  test connection strings, and connect to various ADO.NET
 		  providers in Mono.  The SQL# CLI can be found in
-		  mcs/tools/SqlSharp/SqlSharpCli.cs
-		  It is written in C# and runs on Mono and .NET
-
-		<li><p><b>SQL# GUI - a GUI tool</b> to execute SQL commands. 
+		  mcs/tools/SqlSharp/SqlSharpCli.cs</li>
+		<li><p><b>SQL# GUI - a GUI tool</b> written in C# to 
+		  execute SQL commands. 
 		  Currently, there is SQL# For GTK# which
 		  can be found at 
-		  mcs/tools/SqlSharp/gui/gtk-sharp.  It has a SQL editor with 
-		  syntax hi lighting of SQL keywords
-          
+		  mcs/tools/SqlSharp/gui/gtk-sharp  
+		  It has a SQL editor with 
+		  syntax hi lighting of SQL keywords</li>
 		<li><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
 		  These tools have not been started.  The tools would be written in
 		  C# and run on Mono. The
@@ -76,13 +78,13 @@
 		  <ul> 
 			<li>setup DSNs for the ODBC and OLE-DB
 				providers and configurations for 
-				their underlying libraries (unixODBC and libgda)
+				their underlying libraries (unixODBC and libgda)</li>
 		    <li>setup configurations for the Mono.Data.ProviderFactory
-				that Brian Ritchie created
+				that Brian Ritchie created</li>
 		    <li>setup native database client library configurations too, such as,
-				freetds.conf for Microsoft SQL Server and Sybase
+				freetds.conf for Microsoft SQL Server and Sybase</li>
 		  </ul>
-		
+		</li>
 	</ul>
 </ul>
 	
@@ -95,6 +97,18 @@
 	<p><b>DataSet, DataAdaptor, DataTable, DataRelation, DataRow, DataColumn,
 	DataColumnCollection, DataRowCollection, and others</b> need more work.  There are
 	many classes that are just stubs and need to be implemented.  
+
+	<p><b>XML support in System.Data</b> needs work.  This involves working on
+	the classes: DataSet, XmlDataDocument, and the method ExecuteXmlReader() that
+	exists in a provider's class that implements IDbCommand, and others.
+	Stuart Caborn has started the XML support in a DataSet.  Tim Coleman started
+	XML support in the ExecuteXmlReader() in a SqlCommand.
+	
+	<p><b>ADO.NET Provider Factory</b> has been started by Brian Ritchie.  The 
+	Provider Factory is used to dynamically create
+	connections, commands, parameters, and data adapters based on configuration information.  This
+	provider factory can also provide utility functions needed by a lot of 
+	providers but are not exposed via the provider.
 		
 	<p><b>Integration with ASP.NET</b> has not been started, such as, data binding
 	to a System.Web.UI.WebControls.DataGrid.  This may involve implementing many classes
@@ -135,103 +149,7 @@
 	gtk+ widgets (GUI controls) for data access.  There are some nifty widgets
 	(GUI controls) that can be used, such as, GnomeDbGrid, GnomeDbBrowswer, 
 	GnomeDbSqlEditor, GnomeDbList, GnomeDbLogin, GnomeDbReportEditor, GnomeDbTableEditor, 
-	GnomeDbCombo, and GnomeDbForm.  Rodrigo Moya is the best person to contact.
-		
-	<p><b>XML support in System.Data</b> needs work.  This involves working on
-	the classes: DataSet, XmlDataDocument, and the method ExecuteXmlReader() that
-	exists in a provider's class that implements IDbCommand, and others.
-	Stuart Caborn has started the XML support in a DataSet.  Tim Coleman started
-	XML support in the ExecuteXmlReader() in a SqlCommand.
-	
-	<p><b>ADO.NET Provider Factory</b> has been started by Brian Ritchie.  The 
-	Provider Factory is used to dynamically create data provider
-	connections and data adapters based on configuration information.  This
-	provider factory can also provide utility functions needed by a lot of 
-	providers but are not exposed via the provider.
-	
-	<p><b>ADO.NET Multiplexor Provider</b> needs to be created.  It can use the
-	ADO.NET Provider Factory to create its connections and adapters, but the
-	Multiplexor Provider is a Generic Provider that internally uses an existing
-	provider based on configuration options.  This is not
-	part of Microsoft .NET, but it needs to be able to run on Microsoft .NET
-	and Mono.  This provider can be a generic provider, much like the ODBC.NET and
-	OLEDB.NET providers are, but be written in 100% C# and be configurable via
-	a configuration file.  This provider will multiplex to other providers
-	that exist.  If one does not exist for a given DBMS, 
-	default to the ODBC or OLEDB .NET provider.  
-	
-	<p>According to Gonzalo, this is how the configuration could be implemented for
-	the Provider Factory and Multiplexor Provider.
-
-	<p>After some work done in System.Configuration, you can now do something
-    like:   
-
-	<p>
- <pre>
- // Get an instance of the multiplexor from machine.config file
- // Can be overriden in the application config file	
- object o = ConnectionSettings.GetConfig 
-               ("mono.data/multiplexor");
- if (o == null)
-	--- error
-    
- Multiplexor mp = (Multiplexor) o;
-    
- // may be a string [] argument can help passing arguments
- IDbConnection cnc = mp.CreateConnection (providerName);
-</pre>    
-
- 	<p>and in the machine.config file:
-
-<pre>
-  &lt;configuration&gt;
-   &lt;configSections&gt;
-    &lt;section name="mono.data"
-      type="Mono.Data.MultiplexorSectionHandler,Mono.Data"/&gt;
-    ....
-   &lt;/configSections>
-   ...
-   &lt;sectionGroup name="mono.data"&gt;
-     &lt;multiplexor&gt;
-       &lt;add provider="PostgreSQL" 
-          type="Mono.Data.PostgreSQLClient,Mono.Data"
-          validate="false" 
-          parameters="USER=xxx;HOST=127.0.0.1;DBNAME=xxx"/&gt;
-     &lt;/multiplexor&gt;
-   &lt;/sectionGroup&gt;
-  &lt;/configuration&gt;
-</pre>
-
-	<p>validate="false" tells MultiplexorSectionHandler not to load the Type
-	until an instance is required. You can add more attributes or whatever
-	inside <multiplexor> as long as MultiplexorSectionHandler parses it.
-
-<pre>
-public class MultiplexorSectionHandler :
-IConfigurationSectionHandler
-{
-    public object Create (object parent, 
-      object configContext,
-      XmlNode section)
-    {
-       Multiplexor mp;
-       // Here you get the ChildNodes and 
-       // set up a Multiplexor
-       // instance that will hold the information 
-       // needed to create 
-       // instances of each provider. Only one 
-       // instance will be 
-       // created by the config system.
-            return mp;
-    }
- }
-</pre>
-	<p>This way, if our providers works with MS, the user can test them in both
-	MS and mono by just adding a few lines to machine.config (i still have
-	to upload a default machine.config file for mono). And this is the .NET
-	way of doing it (of course, if you prefer, you can use the other config
-	file. I just wanted to make people aware of this feature that now works
-	on mono).
+	GnomeDbCombo, and GnomeDbForm.  Rodrigo Moya is the best person to contact.	
 	
 	<p><b>Building System.Data</b>
 	

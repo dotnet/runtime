@@ -1,0 +1,52 @@
+* Oracle Data Provider
+<ul>
+	<li>Exists in namespace System.Data.OracleClient and assembly System.Data.OracleClient</li>
+
+	<li>Works on Windows</li>
+	
+	<li>Works with Oracle 8i</li>
+	
+	<li>More information about Oracle can be found at <a href="http://www.oracle.com/"/>here</a></li>
+
+</ul>
+	
+* Current Status
+
+<ul>
+	<li>OracleConnection can connect to an Oracle 8i database on 
+	Windows via oci.dll</li>
+	
+	<li>The native glue library only has makefiles for Borland C++ and
+	Microsoft Visual C++ command line compilers.  Only the makefile for
+	Microsoft Visual C++ command-line compiler has been tested.</li>
+	
+	<li>Can execute simple DML SQL statements, such as, 
+	INSERT a row into the EMP table via the OracleCommand's ExecuteNonQuery method</li>
+	
+	<li>The System.Data.OracleClient.dll assembly can be built with mcs/mono via
+	the makefile.gnu for System.Data.OracleClient or csc/.net via the
+	System.Data.OracleClient.build nant build file.   There is also a Visual Studio.NET 
+	solution it too.
+	   
+</ul>
+	
+* Action Plan
+
+<ul>
+	<li>Get the makefile for the Borland C++ compiler to work 
+	since the <a href="http://www.borland.com/">Borland</a> C++ compiler is
+	a free download</li>
+	<li>Get the native glue lib System.Data.OracleClient.ocigule.dll to be built
+	using gcc on Linux.  This would require that Oracle 8i client software be installed
+	on Linux with the oci headers and shared libraries</li>
+	<li>Be able to retrieve results via a data reader</li>
+	<li>Parameters support</li>
+	<li>Stored Procedures, Functions, and Packages support</li>
+	<li>Be able to fill a DataTable in a DataSet via a data adapter</li>
+	<li>Support for Oracle 9i</li>
+	<li>Figure out how to move the unmanaged OCI handling code in 
+	the oci glue C library to the managed C# assembly.  I have been unable 
+	to successfully connect to an Oracle 8i database by using Platform Invoke and
+	Marshalling in C# to the oci shared library (oci.dll on Windows)</li>
+	
+</ul>
