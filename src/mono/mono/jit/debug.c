@@ -926,7 +926,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 			} else
 				locals [i].offset = ptr [i].offset;
 
-			locals [i].offset = ptr [i].size;
+			locals [i].size = ptr [i].size;
 
 			begin_offset = il_offset_from_position (cfg, &ptr [i].range.first_use);
 			end_offset = il_offset_from_position (cfg, &ptr [i].range.last_use);
