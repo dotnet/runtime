@@ -18,6 +18,11 @@
 #include "mono/metadata/loader.h"
 #include "mono/metadata/class.h"
 
+#ifndef HAVE_ISINF
+#ifdef HAVE_IEEEFP_H
+extern int isinf (double);
+#endif
+#endif
 void
 dump_table_assembly (MonoImage *m)
 {

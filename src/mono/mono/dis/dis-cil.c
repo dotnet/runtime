@@ -21,6 +21,8 @@
 
 #ifndef HAVE_ISINF
 #ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+int isinf (double);
 int
 isinf (double num)
 {
