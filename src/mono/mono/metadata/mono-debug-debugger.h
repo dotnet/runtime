@@ -73,6 +73,7 @@ struct _MonoDebuggerSymbolTable {
 
 struct _MonoDebuggerSymbolFile {
 	MonoSymbolFile *symfile;
+	MonoImage *image;
 	const char *image_file;
 	/* Pointer to the malloced range table. */
 	guint32 locked;
