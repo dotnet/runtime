@@ -14,7 +14,7 @@ while (<>){
 	} elsif (/^\t\t\* (.*)$/) {
 		print "<li>$1\n";
 	} elsif (/^Q: (.*)$/){
-		print "<p><a name=\"q$q\"><b>Question $q:</b> $1\n";
+		print "<p><a name=\"q$q\"></a><b>Question $q:</b> $1\n";
 		$q++;
 	} elsif (/^A: (.*)$/){
 		print "$1\n";
