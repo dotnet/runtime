@@ -167,10 +167,10 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 	g_assert (dst != NULL);
 	g_assert (size > 0);
 
-	if (!src) {
-		memset (dst, 0, size);
+	memset (dst, 0, size);
+	
+	if (!src)
 		return;
-	}
 
 	s = mono_string_to_utf8 (src);
 	len = MIN (size, strlen (s));

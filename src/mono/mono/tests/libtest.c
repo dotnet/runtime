@@ -258,3 +258,34 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 	return 1;
 }
 #endif
+
+
+typedef struct {
+       char a[100];
+} ByValStrStruct;
+
+ByValStrStruct *
+mono_test_byvalstr_gen (void)
+{
+	ByValStrStruct *ret;
+	int i;
+       
+	ret = g_malloc(sizeof(ByValStrStruct));
+	memset(ret, 'a', sizeof(ByValStrStruct)-1);
+	ret->a[sizeof(ByValStrStruct)-1] = 0;
+
+	return ret;
+}
+
+int
+mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
+{
+	int ret;
+
+	ret = strcmp(data->a, correctString);
+	printf ("T1: %s\n", data->a);
+	printf ("T2: %s\n", correctString);
+
+	g_free(data);
+	return (ret != 0);
+}
