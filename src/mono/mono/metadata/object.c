@@ -211,6 +211,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 {
 	MonoClassField *field;
 	guint64 bitmap;
+	guint32 bm [2];
 	int i;
 	static gboolean gcj_inited = FALSE;
 
@@ -319,7 +320,10 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 //		printf("CLASS: %s.%s -> %d %llx.\n", class->name_space, class->name, class->instance_size / sizeof (gpointer), bitmap);
 		class->gc_bitmap = bitmap;
-		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, class->instance_size / sizeof (gpointer));
+		/* Convert to the format expected by GC_make_descriptor */
+		bm [0] = (guint32)bitmap;
+		bm [1] = (guint32)(bitmap >> 32);
+		class->gc_descr = (gpointer)GC_make_descriptor (&bm, class->instance_size / sizeof (gpointer));
 	}
 }
 #endif /* CREATION_SPEEDUP */
