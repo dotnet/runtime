@@ -333,8 +333,10 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		GC_init_gcj_malloc (5, NULL);
 
 #ifdef GC_REDIRECT_TO_LOCAL
+		mono_register_jit_icall (GC_local_gcj_malloc, "GC_local_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 		mono_register_jit_icall (GC_local_gcj_fast_malloc, "GC_local_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 #endif
+		mono_register_jit_icall (GC_gcj_malloc, "GC_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 		mono_register_jit_icall (GC_gcj_fast_malloc, "GC_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 	}
 
@@ -1753,6 +1755,12 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 	return o;
 }
 
+MonoObject*
+mono_object_new_fast (MonoVTable *vtable)
+{
+	return GC_GCJ_MALLOC (vtable->klass->instance_size, vtable);
+}
+
 /*
  * Return the allocation function appropriate for the given class.
  */
@@ -1767,12 +1775,21 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean *pass_size_in_words)
 
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+
+		return mono_object_new_fast;
+
+		/* 
+		 * FIXME: This is actually slower than mono_object_new_fast, because
+		 * of the overhead of parameter passing.
+		 */
+		/*
 		*pass_size_in_words = TRUE;
 #ifdef GC_REDIRECT_TO_LOCAL
 		return GC_local_gcj_fast_malloc;
 #else
 		return GC_gcj_fast_malloc;
 #endif
+		*/
 	}
 #endif
 
