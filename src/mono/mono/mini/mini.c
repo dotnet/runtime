@@ -6936,6 +6936,8 @@ mono_destroy_compile (MonoCompile *cfg)
 		mono_regstate_free (cfg->rs);
 	if (cfg->spvars)
 		g_hash_table_destroy (cfg->spvars);
+	if (cfg->exvars)
+		g_hash_table_destroy (cfg->exvars);
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
 
@@ -9418,6 +9420,10 @@ mini_cleanup (MonoDomain *domain)
 #endif
 
 	mono_domain_free (domain, TRUE);
+
+	mono_code_manager_destroy (global_codeman);
+
+	g_hash_table_destroy (class_init_hash_addr);
 
 	print_jit_stats ();
 }
