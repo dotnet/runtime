@@ -91,6 +91,15 @@
   </tr>
 </table>
 
+@item Jan 10th, 2003: Mono Weekly News.
+
+	A new issue of the <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-January/004903.html">Mono
+	Weekly News</a> has been published.
+
+	Check out the <a href="crypto.html">Crypto status</a> page
+	that Sebastien has put together.
+
 @item Jan 3rd, 2003: Glade#, Code Coverage, Apache, MBas, Debugger.
 
 	Rachel has made Glade# use attributes so binding C# widgets to
@@ -112,6 +121,22 @@
 
 	Zoltan has <a href="http://www.nexus.hu/vargaz2/">posted</a>
 	his Code Coverage analysis tool for Mono.
+
+@item Dec 17th, 2002: Mono: Commercial uses.
+
+	<a href="http://www.tipic.com">Tipic</a> today <a
+	href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=tipic_mono">announced</a>
+	their work on porting their Instant Messaging Server platform
+	to run on Mono.
+
+	<a href="http://www.winfessor.com">Winfessor</a> also <a
+	href="http://www.winfessor.com/press.asp">announced</a> the
+	availability of their Jabber SDK to run on Mono.
+
+	Also two weeks ago we mentioned <a
+	href="http://www.openlinksw.com">OpenLink Software's</a> <a
+	href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=openlink_mono">announcement</a>
+	of their product, also using Mono.
 
 @item Dec 10th, 2002: Gtk# 0.6 released;  Mono 0.17 packages for Windows and Debian.
 

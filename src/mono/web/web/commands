@@ -7,19 +7,6 @@
 1,Gtk#,gtk-sharp.html,gtk-sharp.src
 1,ASP.NET,asp-net.html,asp-net.src
 1,ADO.NET,ado-net.html,ado-net.src
-1,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
-2,corlib,class-status-corlib.html,class-status-corlib.src,cm/cormissing.css,cm/cormissing.js
-2,System,class-status-System.html,class-status-System.src,cm/cormissing.css,cm/cormissing.js
-2,Xml,class-status-System.Xml.html,class-status-System.Xml.src,cm/cormissing.css,cm/cormissing.js
-2,Data,class-status-System.Data.html,class-status-System.Data.src,cm/cormissing.css,cm/cormissing.js
-2,Drawing,class-status-System.Drawing.html,class-status-System.Drawing.src,cm/cormissing.css,cm/cormissing.js
-2,Web,class-status-System.Web.html,class-status-System.Web.src,cm/cormissing.css,cm/cormissing.js
-2,Web.Services,class-status-System.Web.Services.html,class-status-System.Web.Services.src,cm/cormissing.css,cm/cormissing.js
-2,Microsoft.VisualBasic,class-status-Microsoft.VisualBasic.html,class-status-Microsoft.VisualBasic.src,cm/cormissing.css,cm/cormissing.js
-2,Windows.Forms,class-status-System.Windows.Forms.html,class-status-System.Windows.Forms.src,cm/cormissing.css,cm/cormissing.js
-2,EnterpriseServices,class-status-System.EnterpriseServices.html,class-status-System.EnterpriseServices.src,cm/cormissing.css,cm/cormissing.js
-2,Formatters.Soap,class-status-System.Runtime.Serialization.Formatters.Soap.html,class-status-System.Runtime.Serialization.Formatters.Soap.src,cm/cormissing.css,cm/cormissing.js
-2,Cscompmgd,class-status-Cscompmgd.html,class-status-Cscompmgd.src,cm/cormissing.css,cm/cormissing.js
 1,C# Compiler,c-sharp.html,c-sharp.src
 1,VB Compiler,mbas.html,mbas.src
 0,Download,download.html,download.src
@@ -35,8 +22,18 @@
 1,Porting,porting.html,porting.src
 2,PowerPC,ppc.html,ppc.src
 1,HOWTO,mono-contribution-howto.html,mono-contribution-howto.src
+0,Resources,resources.html,resources.src
+1,Beginning,mono-beginning.html,mono-beginning.src
+1,Mailing Lists,mailing-lists.html,mailing-lists.src
+1,Ideas,ideas.html,ideas.src
+1,Passport,passport.html,passport.src
+1,Books,books.html,books.src
+1,Papers,papers.html,papers.src
+1,Languages,languages.html,languages.src
+1,Debugging,jit-debug.html,jit-debug.src
 0,Plans,plans.html,plans.src
 1,ADO.NET,ado-net.html,ado-net.src
+1,Crypto,crypto.html,crypto.src
 2,Firebird Interbase,firebird.html,firebird.src
 2,Microsft SQL Server,sqlclient.html,sqlclient.src
 2,MySQL,mysql.html,mysql.src
@@ -49,13 +46,17 @@
 2,TDS Generic,tdsclient.html,tdsclient.src
 1,Java,java.html,java.src
 1,Windows.Forms,winforms.html,winforms.src
-0,Resources,resources.html,resources.src
-1,Beginning,mono-beginning.html,mono-beginning.src
-1,Mailing Lists,mailing-lists.html,mailing-lists.src
-1,Ideas,ideas.html,ideas.src
-1,Passport,passport.html,passport.src
-1,Books,books.html,books.src
-1,Papers,papers.html,papers.src
-1,Languages,languages.html,languages.src
-1,Debugging,jit-debug.html,jit-debug.src
+0,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
+1,corlib,class-status-corlib.html,class-status-corlib.src,cm/cormissing.css,cm/cormissing.js
+1,System,class-status-System.html,class-status-System.src,cm/cormissing.css,cm/cormissing.js
+1,Xml,class-status-System.Xml.html,class-status-System.Xml.src,cm/cormissing.css,cm/cormissing.js
+1,Data,class-status-System.Data.html,class-status-System.Data.src,cm/cormissing.css,cm/cormissing.js
+1,Drawing,class-status-System.Drawing.html,class-status-System.Drawing.src,cm/cormissing.css,cm/cormissing.js
+1,Web,class-status-System.Web.html,class-status-System.Web.src,cm/cormissing.css,cm/cormissing.js
+1,Web.Services,class-status-System.Web.Services.html,class-status-System.Web.Services.src,cm/cormissing.css,cm/cormissing.js
+1,Microsoft.VisualBasic,class-status-Microsoft.VisualBasic.html,class-status-Microsoft.VisualBasic.src,cm/cormissing.css,cm/cormissing.js
+1,Windows.Forms,class-status-System.Windows.Forms.html,class-status-System.Windows.Forms.src,cm/cormissing.css,cm/cormissing.js
+1,EnterpriseServices,class-status-System.EnterpriseServices.html,class-status-System.EnterpriseServices.src,cm/cormissing.css,cm/cormissing.js
+1,Formatters.Soap,class-status-System.Runtime.Serialization.Formatters.Soap.html,class-status-System.Runtime.Serialization.Formatters.Soap.src,cm/cormissing.css,cm/cormissing.js
+1,Cscompmgd,class-status-Cscompmgd.html,class-status-Cscompmgd.src,cm/cormissing.css,cm/cormissing.js
 0,Contact,contact.html,contact.src

@@ -40,6 +40,7 @@ OBJECTS=									\
 	deploy/ccvs.html							\
 	deploy/documentation.html						\
 	deploy/download.html							\
+	deploy/crypto.html							\
 	deploy/embedded-api.html						\
 	deploy/faq.html								\
 	deploy/gcc-frontend.html						\
