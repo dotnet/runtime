@@ -249,6 +249,13 @@ AM_CONDITIONAL(HAVE_ZLIB, test x$have_zlib = xyes)
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
+# for support
+AC_CHECK_HEADERS(poll.h)
+AC_CHECK_HEADERS(sys/poll.h)
+AC_CHECK_HEADERS(sys/wait.h)
+AC_CHECK_HEADERS(grp.h)
+AC_CHECK_HEADERS(syslog.h)
+
 # for mono/dis
 AC_CHECK_HEADERS(wchar.h)
 AC_CHECK_HEADERS(ieeefp.h)
