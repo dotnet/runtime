@@ -921,7 +921,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	} 
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-		mono_ex = (MonoException*)mono_ex;
+		mono_ex = (MonoException*)obj;
 		mono_ex->stack_trace = NULL;
 	} else {
 		mono_ex = NULL;
