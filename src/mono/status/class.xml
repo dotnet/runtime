@@ -3559,6 +3559,36 @@
         </maintainers>
     </class>
 
+    <class name="System.Runtime.Serialization.IFormatterConverter">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Serialization.ISerializable">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
+    <class name="System.Runtime.Serialization.SerializationInfo">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.Web.UI.WebControls.AdCreatedEventArgs">
         <last-activity>Oct-27-2001</last-activity>
         <implementation>yes</implementation>
@@ -3898,5 +3928,98 @@
             <maintainer>gvaish@iitk.ac.in</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.ComponentModel.BrowsableAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
+    <class name="System.ComponentModel.CategoryAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
+    <class name="System.ComponentModel.DescriptionAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
+    <class name="System.ComponentModel.LocalizableAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
+    <class name="System.ComponentModel.DesignOnlyAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
+
+    <class name="System.ComponentModel.DesignerSerializationVisibilityAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ComponentModel.DesignerSerializationVisibility">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ComponentModel.MemberDescriptor">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>70</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ComponentModel.PropertyDescriptor">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>30</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
 </classes>
+
+
 
