@@ -3,6 +3,7 @@
 
 #include <mono/metadata/blob.h>
 #include <mono/metadata/metadata.h>
+#include <mono/arch/x86/x86-codegen.h>
 
 #define MBTREE_TYPE  MBTree
 
@@ -11,6 +12,12 @@ struct _MBTree {
 	guint16 op;
 	MBTree *left, *right;
 	gpointer state;
+	gpointer emit;
+
+	guint is_jump:1;
+
+	guint32 vaddr;
+	guint32 addr;
 
 	int reg;
 	MonoTypeEnum type;
@@ -45,9 +52,9 @@ con: CONST
 
 reg: LDLOC {
 	switch (tree->type) {
-	case MONO_TYPE_I4:
-		printf ("\tmov     dword ptr %d[%%ebp], R%d\n", 
-			-(tree->data.i + 4), tree->reg);
+	case MONO_TYPE_I4:  
+		x86_mov_reg_membase (*code, tree->reg, X86_EBP,
+				     - tree->data.i - 4, 4);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -62,8 +69,8 @@ reg: LDARG {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		printf ("\tmov     dword ptr %d[%%ebp], R%d\n", 
-			tree->data.i + 8, tree->reg);
+		x86_mov_reg_membase (*code, tree->reg, X86_EBP,
+				     tree->data.i + 8, 4);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -72,53 +79,48 @@ reg: LDARG {
 }
 
 reg: MUL (reg, reg) {
-	printf ("\tmov     R%d, R%d\n\timul    R%d, R%d\n", 
-		tree->left->reg, tree->reg,
-		tree->right->reg, tree->reg);
+	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_imul_reg_reg (*code, tree->reg, tree->right->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: ADD (reg, con) {
-	printf ("\tmov     R%d, R%d\n\tadd     R%d, %d\n", 
-		tree->left->reg, tree->reg, 
-		tree->right->data.i, tree->reg);
+	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_alu_reg_imm (*code, X86_ADD, tree->reg, tree->right->data.i);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: ADD (reg, reg) {
-	printf ("\tmov     R%d, R%d\n\tadd     R%d, R%d\n",
-		tree->left->reg,  tree->reg, 
-		tree->right->reg, tree->reg);
+	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_alu_reg_reg (*code, X86_ADD, tree->reg, tree->right->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: SUB (reg, con) {
-	printf ("\tmov     R%d, R%d\n\tsub     R%d, %d\n", 
-		tree->left->reg, tree->reg, 
-		tree->right->data.i, tree->reg);
+	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_alu_reg_imm (*code, X86_SUB, tree->reg, tree->right->data.i);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 reg: SUB (reg, reg) {
-	printf ("\tmov     R%d, R%d\n\tsub     R%d, R%d\n", 
-		tree->left->reg,  tree->reg, 
-		tree->right->reg, tree->reg);
+	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_alu_reg_reg (*code, X86_SUB, tree->reg, tree->right->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
 	return 0;
 }
 
 stmt: STLOC (con) {
-	printf ("\tmov     %d, dword ptr %d[%%ebp]\n", 
-		tree->left->data.i, tree->data.i);
+	x86_mov_membase_reg (*code, X86_EBP, - tree->data.i - 4,
+			     tree->left->data.i, 4);
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4);
 	return 0;
@@ -127,8 +129,8 @@ stmt: STLOC (con) {
 stmt: STLOC (reg) {	
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("\tmov     R%d, dword ptr %d[%%ebp]\n", 
-			tree->left->reg, tree->data.i);
+		x86_mov_membase_reg (*code, X86_EBP, - tree->data.i - 4,
+				     tree->left->reg, 4);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -137,53 +139,52 @@ stmt: STLOC (reg) {
 }
 
 stmt: BR {
-
-	printf ("\tjmp     label_%d\n", tree->data.i);
+	tree->is_jump = 1;
+	x86_jump32 (*code, tree->data.i); 
 }
 
 stmt: BLT (reg, con) {
-
-	printf ("\tcmp     R%d, %d\n"
-		"\tjl      label_%d\n", 
-		tree->left->reg, tree->right->data.i, tree->data.i);
+	tree->is_jump = 1;
+	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
+	x86_branch32 (*code, X86_CC_LT, tree->data.i - 6, TRUE); 
 }
 
 stmt: BEQ (reg, con) {
-	printf ("\tcmp     R%d, %d\n"
-		"\tje      label_%d\n", 
-		tree->left->reg, tree->right->data.i, tree->data.i);
+	tree->is_jump = 1;
+	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
+	x86_branch32 (*code, X86_CC_EQ, tree->data.i - 6 , TRUE);
 }
 
 stmt: BGE (reg, con) {
-
-	printf ("\tcmp     R%d, %d\n"
-		"\tjae     label_%d\n", 
-		tree->left->reg, tree->right->data.i, tree->data.i);
+	tree->is_jump = 1;
+	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
+	x86_branch32 (*code, X86_CC_GE, tree->data.i - 6, TRUE);
 }
 
 stmt: RETV (reg) {
-	
-	printf ("\tjmp     epilog ; Return value on R%d\n", tree->left->reg);
+	tree->is_jump = 1;
+	x86_jump32 (*code, tree->data.i - 5);      
+	g_assert (tree->left->reg == X86_EAX); // return must be in EAX
 }
 
 stmt: RET {
-
-	printf ("\tret\n");
+	tree->is_jump = 1;
+	x86_jump32 (*code, tree->data.i - 5); 
 }
 
 stmt: ARG (con) {
-       
-      printf ("\tpush    %d\n", tree->left->data.i);
+	x86_push_imm (*code, tree->left->data.i);
 }
 
 stmt: ARG (reg) {
-      printf ("\tpush    R%d\n", tree->left->reg);
+	x86_push_reg (*code, tree->left->reg);
 }
 
 reg: CALL {
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("\t(R%d=)call\n", tree->reg);
+		x86_call_imm (*code, 0); // FIXME:
+		g_assert (tree->reg == X86_EAX);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -192,7 +193,7 @@ reg: CALL {
 }
 
 stmt: CALL {
-     printf ("\tcall    $0x%x\n", tree->data.i);
+	x86_call_imm (*code, 0); // FIXME:
 }
 
 %% 

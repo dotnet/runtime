@@ -18,40 +18,40 @@
 #include "jit.h"
 
 void
-arch_emit_prologue (MonoMethod *method, int locals_size, MonoRegSet *rs)
+arch_emit_prologue (guint8 **buf, MonoMethod *method, int locals_size, MonoRegSet *rs)
 {
-	printf ("\tpush    %%ebp\n"
-		"\tmov     %%esp,%%ebp\n");
+	x86_push_reg (*buf, X86_EBP);
+	x86_mov_reg_reg (*buf, X86_EBP, X86_ESP, 4);
 	
 	if (locals_size)
-		printf ("\tsub     $0x%x,%%esp\n", locals_size);
+		x86_alu_reg_imm (*buf, X86_SUB, X86_ESP, locals_size);
 
-	if (mono_regset_reg_used (rs, X86_EBX))
-		printf ("\tpush    %%ebx\n");
+	if (mono_regset_reg_used (rs, X86_EBX)) 
+		x86_push_reg (*buf, X86_EBX);
 
-	if (mono_regset_reg_used (rs, X86_EDI))
-		printf ("\tpush    %%edi\n");
+	if (mono_regset_reg_used (rs, X86_EDI)) 
+		x86_push_reg (*buf, X86_EDI);
 
 	if (mono_regset_reg_used (rs, X86_ESI))
-		printf ("\tpush    %%esi\n");
+		x86_push_reg (*buf, X86_ESI);
 }
 
 void
-arch_emit_epilogue (MonoMethod *method, MonoRegSet *rs)
+arch_emit_epilogue (guint8 **buf, MonoMethod *method, MonoRegSet *rs)
 {
-	printf ("epilog:\n");
+	//printf ("epilog:\n");
 
 	if (mono_regset_reg_used (rs, X86_EDI))
-		printf ("\tpop    %%esi\n");
+		x86_pop_reg (*buf, X86_EDI);
 
 	if (mono_regset_reg_used (rs, X86_ESI))
-		printf ("\tpop    %%edi\n");
+		x86_pop_reg (*buf, X86_ESI);
 
 	if (mono_regset_reg_used (rs, X86_EBX))
-		printf ("\tpop    %%ebx\n");
+		x86_pop_reg (*buf, X86_EBX);
 
-	printf ("\tleave\n"
-		"\tret\n");
+	x86_leave (*buf);
+	x86_ret (*buf);
 }
 
 

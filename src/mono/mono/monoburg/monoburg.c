@@ -581,7 +581,7 @@ emit_emitter_func ()
 
 			emit_rule_string (rule, "");
 
-			output ("mono_burg_emit_%d (MBTREE_TYPE *tree)\n", i);
+			output ("mono_burg_emit_%d (MBTREE_TYPE *tree, guint8 **code)\n", i);
 			output ("{\n");
 			output ("%s\n", rule->code);
 			output ("}\n\n");
@@ -744,7 +744,7 @@ emit_vardefs ()
 static void
 emit_prototypes ()
 {
-	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree);\n\n");
+	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, guint8 **code);\n\n");
 
 	output ("extern char *mono_burg_term_string [];\n");
 	output ("extern char *mono_burg_rule_string [];\n");

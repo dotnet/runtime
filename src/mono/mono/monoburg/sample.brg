@@ -102,7 +102,7 @@ reduce (MBTree *tree, int goal)
 	if (n) { /* not a terminal */
 	  // printf ("XXTE %s %d\n", mono_burg_rule_string [ern], n);
 		if (mono_burg_func [ern])
-			mono_burg_func [ern] (tree);
+			mono_burg_func [ern] (tree, NULL);
 		else
 			g_warning ("no code for rule %s\n", 
 				   mono_burg_rule_string [ern]);

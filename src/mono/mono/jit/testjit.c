@@ -1,8 +1,11 @@
 /*
  * testjit.c: Test 
+ *
  */
+
 #include <config.h>
 #include <glib.h>
+#include <stdlib.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -60,37 +63,63 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		}
 	}
 
+	tree->emit = mono_burg_func [ern];
+
 	for (i = 0; nts [i]; i++) 
 		mono_regset_free_reg (rs, kids [i]->reg);
 }
 
 static void
-tree_emit (MBTree *tree, int goal) 
+tree_emit (guint8 *cstart, guint8 **buf, MBTree *tree) 
 {
-	MBTree *kids[10];
-	int ern = mono_burg_rule (tree->state, goal);
-	guint16 *nts = mono_burg_nts [ern];
-	int i, n;
-	
-	mono_burg_kids (tree, ern, kids);
+	if (tree->left)
+		tree_emit (cstart, buf, tree->left);
+	if (tree->right)
+		tree_emit (cstart, buf, tree->right);
 
-	// printf ("TEST %d %d %s %d\n", goal, ern, mono_burg_rule_string [ern], nts [0]);
-	
-	for (i = 0; nts [i]; i++) 
-		tree_emit (kids [i], nts [i]);
+	tree->addr = *buf - cstart;
 
-	n = (tree->left != NULL) + (tree->right != NULL);
+	if (tree->emit)
+		((MBEmitFunc)tree->emit) (tree, buf);
+}
 
-	if (n) { /* not a terminal */
-	  // printf ("XXTE %s %d\n", mono_burg_rule_string [ern], n);
-		if (mono_burg_func [ern])
-			mono_burg_func [ern] (tree);
-		else ;
-//			g_warning ("no code for rule %s\n", 
-//				   mono_burg_rule_string [ern]);
-	} else {
-		if (mono_burg_func [ern])
-			mono_burg_func [ern] (tree);
+static gint32
+get_address (GPtrArray *forest, guint32 vaddr)
+{
+	int i;
+
+	for (i = 0; i < forest->len; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+
+		if (t1->vaddr == vaddr)
+			return t1->addr;
+
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
+static void
+compute_branches (guint8 *cstart, GPtrArray *forest, guint32 epilog)
+{
+	gint32 addr;
+	int i;
+	guint8 *buf;
+
+	for (i = 0; i < forest->len; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+
+		if (t1->is_jump) {
+			if (t1->data.i >= 0)
+				addr = get_address (forest, t1->data.i);
+			else
+				addr = epilog;
+
+			t1->data.i = addr - t1->addr;
+			buf = cstart + t1->addr;
+			((MBEmitFunc)t1->emit) (t1, &buf);
+		}
 	}
 }
 
@@ -104,6 +133,7 @@ ctree_new (int op, MonoTypeEnum type, MBTree *left, MBTree *right)
 	t->right = right;
 	t->type = type;
 	t->reg = -1;
+	t->is_jump = 0;
 	return t;
 }
 
@@ -143,9 +173,10 @@ print_forest (GPtrArray *forest)
 	const int top = forest->len;
 	int i;
 
-	for (i = 0; i < top; i++){
-		printf ("%03d:", i);
-		print_tree ((MBTree *) g_ptr_array_index (forest, i));
+	for (i = 0; i < top; i++) {
+		MBTree *t = (MBTree *) g_ptr_array_index (forest, i);
+		printf ("IL%04x:", t->vaddr);
+		print_tree (t);
 		printf ("\n");
 	}
 
@@ -171,14 +202,15 @@ forest_label (GPtrArray *forest)
 }
 
 static void
-forest_emit (GPtrArray *forest)
+forest_emit (guint8 *cstart, guint8 **buf, GPtrArray *forest)
 {
 	const int top = forest->len;
 	int i;
 	
+	
 	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		tree_emit (t1, 1);
+		tree_emit (cstart, buf, t1);
 	}
 }
 
@@ -196,20 +228,47 @@ forest_allocate_regs (GPtrArray *forest, MonoRegSet *rs)
 }
 
 static void
+mono_disassemble_code (guint8 *code, int size)
+{
+	int i;
+	FILE *ofd;
+
+	if (!(ofd = fopen ("/tmp/test.s", "w")))
+		g_assert_not_reached ();
+
+	for (i = 0; i < size; ++i)
+		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
+
+	fclose (ofd);
+
+	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o");
+}
+
+static void
 emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
 {
 	MonoRegSet *rs = get_x86_regset ();
+	guint8 *buf, *start;
+	guint32 epilog;
+
+	start = buf = g_malloc (1024);
 
 	forest_label (forest);
 	forest_allocate_regs (forest, rs);
-	arch_emit_prologue (method, locals_size, rs);
-	forest_emit (forest);
-	arch_emit_epilogue (method, rs);
+	arch_emit_prologue (&buf, method, locals_size, rs);
+	forest_emit (start, &buf, forest);
+	
+	epilog = buf - start;
+	arch_emit_epilogue (&buf, method, rs);
+
+	compute_branches (start, forest, epilog);
 
 	mono_regset_free (rs);
+
+	mono_disassemble_code (start, buf - start);
 }
 
-#define ADD_TREE(t)     g_ptr_array_add (forest, (t))
+#define ADD_TREE(t)     do { t->vaddr = vaddr; g_ptr_array_add (forest, (t)); } while (0)
 
 #define LOCAL_POS(n)    (locals_offsets [(n)])
 #define LOCAL_TYPE(n)   ((header)->locals [(n)])
@@ -274,6 +333,7 @@ mono_compile_method (MonoMethod *method)
 	forest = g_ptr_array_new ();
 
 	while (ip < end) {
+		guint32 vaddr = ip - header->code;
 
 		switch (*ip) {
 
@@ -402,7 +462,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_BR_S: 
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_BR, 0);
-			t1->data.i = (signed char) *ip;
+			t1->data.i = vaddr + (signed char) *ip;
 			ADD_TREE (t1);
 			++ip;
 			break;
@@ -410,7 +470,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_BR:
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_BR, 0);
-			t1->data.i = (gint32) read32(ip);
+			t1->data.i = vaddr + (gint32) read32(ip);
 			ADD_TREE (t1);
 			ip += 4;
 			break;
@@ -422,9 +482,9 @@ mono_compile_method (MonoMethod *method)
 			sp -= 2;
 			t1 = ctree_new (MB_TERM_BLT, 0, sp [0], sp [1]);
 			if (near_jump)
-				t1->data.i = (signed char) *ip;
+				t1->data.i = vaddr + (signed char) *ip;
 			else 
-				t1->data.i = (gint32) read32 (ip);				
+				t1->data.i = vaddr + (gint32) read32 (ip);
 
 			ADD_TREE (t1);
 			ip += near_jump ? 1: 4;		
@@ -437,9 +497,9 @@ mono_compile_method (MonoMethod *method)
 			sp -= 2;
 			t1 = ctree_new (MB_TERM_BEQ, 0, sp [0], sp [1]);
 			if (near_jump)
-				t1->data.i = (signed char) *ip;
+				t1->data.i = vaddr + (signed char) *ip;
 			else 
-				t1->data.i = (gint32) read32 (ip);				
+				t1->data.i = vaddr + (gint32) read32 (ip);
 
 			ADD_TREE (t1);
 			ip += near_jump ? 1: 4;		
@@ -452,9 +512,9 @@ mono_compile_method (MonoMethod *method)
 			sp -= 2;
 			t1 = ctree_new (MB_TERM_BGE, 0, sp [0], sp [1]);
 			if (near_jump)
-				t1->data.i = (signed char) *ip;
+				t1->data.i = vaddr + (signed char) *ip;
 			else 
-				t1->data.i = (gint32) read32 (ip);				
+				t1->data.i = vaddr + (gint32) read32 (ip);
 
 			ADD_TREE (t1);
 			ip += near_jump ? 1: 4;		
@@ -467,6 +527,8 @@ mono_compile_method (MonoMethod *method)
 			} else
 				t1 = ctree_new (MB_TERM_RET, 0, NULL, NULL);
 				
+			t1->data.i = -1;
+
 			ADD_TREE (t1);
 
 			if (sp > stack)
@@ -601,6 +663,7 @@ main (int argc, char *argv [])
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
 	}
+
 
 	//retval = ves_exec (assembly, argc, argv);
 	jit_assembly (assembly);
