@@ -955,15 +955,18 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 		call->used_iregs |= 1 << reg;
 		break;
 	case ArgInFloatSSEReg:
-		/* FIXME: These are volatile as well */
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
 		arg->inst_left = tree;
+		arg->inst_right = (MonoInst*)call;
 		arg->unused = reg;
+		call->used_fregs |= 1 << reg;
 		break;
 	case ArgInDoubleSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
 		arg->inst_left = tree;
+		arg->inst_right = (MonoInst*)call;
 		arg->unused = reg;
+		call->used_fregs |= 1 << reg;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2086,7 +2089,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (spec [MONO_INST_DEST]) {
 			if (spec [MONO_INST_DEST] == 'f') {
 				reginfod = reginfof;
-				if (!use_sse2) {
+				if (!use_sse2 && (spec [MONO_INST_CLOB] != 'm')) {
 					if (fpcount >= FPSTACK_SIZE) {
 						reginfod [ins->dreg].flags |= MONO_X86_FP_NEEDS_SPILL;
 						fspill++;
@@ -2119,12 +2122,12 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (spec [MONO_INST_CLOB] == 'c') {
-			/* A call instruction implicitly uses all registers in call->out_reg_args */
+			/* A call instruction implicitly uses all registers in call->out_ireg_args */
 
 			MonoCallInst *call = (MonoCallInst*)ins;
 			GSList *list;
 
-			list = call->out_reg_args;
+			list = call->out_ireg_args;
 			if (list) {
 				while (list) {
 					guint64 regpair;
@@ -2136,6 +2139,23 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					reginfo [reg].prev_use = reginfo [reg].last_use;
 					reginfo [reg].last_use = i;
+
+					list = g_slist_next (list);
+				}
+			}
+
+			list = call->out_freg_args;
+			if (use_sse2 && list) {
+				while (list) {
+					guint64 regpair;
+					int reg, hreg;
+
+					regpair = (guint64) (list->data);
+					hreg = regpair >> 32;
+					reg = regpair & 0xffffffff;
+
+					reginfof [reg].prev_use = reginfof [reg].last_use;
+					reginfof [reg].last_use = i;
 
 					list = g_slist_next (list);
 				}
@@ -2345,17 +2365,18 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->dreg = val;
 				}
 			}
-			else
-			if (reginfof [ins->dreg].flags & MONO_X86_FP_NEEDS_SPILL) {
-				GList *spill_node;
-				MonoInst *store;
-				spill_node = g_list_first (fspill_list);
-				g_assert (spill_node);
+			else if (spec [MONO_INST_CLOB] != 'm') {
+				if (reginfof [ins->dreg].flags & MONO_X86_FP_NEEDS_SPILL) {
+					GList *spill_node;
+					MonoInst *store;
+					spill_node = g_list_first (fspill_list);
+					g_assert (spill_node);
 
-				store = create_spilled_store_float (cfg, GPOINTER_TO_INT (spill_node->data), ins->dreg, ins);
-				insert_before_ins (ins, tmp, store);
-				fspill_list = g_list_remove (fspill_list, spill_node->data);
-				fspill--;
+					store = create_spilled_store_float (cfg, GPOINTER_TO_INT (spill_node->data), ins->dreg, ins);
+					insert_before_ins (ins, tmp, store);
+					fspill_list = g_list_remove (fspill_list, spill_node->data);
+					fspill--;
+				}
 			}
 		} else if (spec [MONO_INST_DEST] == 'L') {
 			int hreg;
@@ -2767,7 +2788,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * argument registers.
 			 */
 
-			list = call->out_reg_args;
+			list = call->out_ireg_args;
 			if (list) {
 				while (list) {
 					guint64 regpair;
@@ -2783,8 +2804,28 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					list = g_slist_next (list);
 				}
-				g_slist_free (call->out_reg_args);
+				g_slist_free (call->out_ireg_args);
 			}
+
+			list = call->out_freg_args;
+			if (list && use_sse2) {
+				while (list) {
+					guint64 regpair;
+					int reg, hreg;
+
+					regpair = (guint64) (list->data);
+					hreg = regpair >> 32;
+					reg = regpair & 0xffffffff;
+
+					rs->fassign [reg] = hreg;
+					rs->fsymbolic [hreg] = reg;
+					rs->ffree_mask &= ~ (1 << hreg);
+
+					list = g_slist_next (list);
+				}
+			}
+			if (call->out_freg_args)
+				g_slist_free (call->out_freg_args);
 		}
 
 		/*if (reg_is_freeable (ins->sreg1) && prev_sreg1 >= 0 && reginfo [prev_sreg1].born_in >= i) {
@@ -3636,17 +3677,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
 			break;
 		case OP_AMD64_SET_XMMREG_R4: {
-			g_assert (!use_sse2);
-			amd64_fst_membase (code, AMD64_RSP, -8, FALSE, TRUE);
-			/* ins->dreg is set to -1 by the reg allocator */
-			amd64_movss_reg_membase (code, ins->unused, AMD64_RSP, -8);
+			if (use_sse2) {
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			}
+			else {
+				amd64_fst_membase (code, AMD64_RSP, -8, FALSE, TRUE);
+				/* ins->dreg is set to -1 by the reg allocator */
+				amd64_movss_reg_membase (code, ins->unused, AMD64_RSP, -8);
+			}
 			break;
 		}
 		case OP_AMD64_SET_XMMREG_R8: {
 			if (use_sse2) {
-				/* ins->dreg is set to -1 by the reg allocator */
-				if (ins->unused != ins->sreg1)
-					amd64_sse_movsd_reg_reg (code, ins->unused, ins->sreg1);
+				if (ins->dreg != ins->sreg1)
+					amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			}
 			else {
 				amd64_fst_membase (code, AMD64_RSP, -8, TRUE, TRUE);
@@ -4233,9 +4277,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_fsqrt (code);
 			break;		
 		case OP_X86_FPOP:
-			if (use_sse2)
-				g_assert_not_reached ();
-			amd64_fstp (code, 0);
+			if (!use_sse2)
+				amd64_fstp (code, 0);
 			break;		
 		case OP_FREM: {
 			guint8 *l1, *l2;
@@ -4529,14 +4572,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
 		case CEE_CKFINITE: {
-			if (use_sse2)
-				g_assert_not_reached ();
+			if (use_sse2) {
+				/* Transfer value to the fp stack */
+				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
+				amd64_movsd_membase_reg (code, AMD64_RSP, 0, ins->sreg1);
+				amd64_fld_membase (code, AMD64_RSP, 0, TRUE);
+			}
 			amd64_push_reg (code, AMD64_RAX);
 			amd64_fxam (code);
 			amd64_fnstsw (code);
 			amd64_alu_reg_imm (code, X86_AND, AMD64_RAX, 0x4100);
 			amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, X86_FP_C0);
 			amd64_pop_reg (code, AMD64_RAX);
+			if (use_sse2) {
+				amd64_fstp (code, 0);
+			}				
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
 			break;
 		}
@@ -5510,6 +5560,9 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 gint
 mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	if (use_sse2)
+		return -1;
+
 	if (cmethod->klass == mono_defaults.math_class) {
 		if (strcmp (cmethod->name, "Sin") == 0)
 			return OP_SIN;

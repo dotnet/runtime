@@ -37,6 +37,7 @@
 #   d  EAX and EDX are clobbered
 #	s  the src2 operand needs to be in ECX (shift opcodes)
 #	x  both the source operands are clobbered (xchg)
+#   m  sets an XMM reg
 #
 # flags:spec        describe if the instruction uses or sets the flags (unused)
 #
@@ -173,7 +174,7 @@ conv.ovf.u4: dest:i src1:i len:15
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
-ckfinite: dest:f src1:f len:32
+ckfinite: dest:f src1:f len:39
 mkrefany:
 ldtoken:
 conv.u2: dest:i src1:i len:4
@@ -288,7 +289,7 @@ storei2_membase_reg: dest:b src1:i len:8
 storei4_membase_imm: dest:b len:11
 storei4_membase_reg: dest:b src1:i len:8
 storei8_membase_imm: dest:b len:17
-storer4_membase_reg: dest:b src1:f len:11
+storer4_membase_reg: dest:b src1:f len:14
 storer8_membase_reg: dest:b src1:f len:8
 load_membase: dest:i src1:b len:14
 loadi1_membase: dest:i src1:b len:9
@@ -298,7 +299,7 @@ loadu2_membase: dest:i src1:b len:9
 loadi4_membase: dest:i src1:b len:9
 loadu4_membase: dest:i src1:b len:9
 loadi8_membase: dest:i src1:b len:17
-loadr4_membase: dest:f src1:b len:9
+loadr4_membase: dest:f src1:b len:12
 loadr8_membase: dest:f src1:b len:8
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
@@ -504,8 +505,8 @@ amd64_test_null: src1:i len:5
 amd64_icompare_membase_reg: src1:b src2:i len:7
 amd64_icompare_membase_imm: src1:b len:12
 amd64_icompare_reg_membase: src1:i src2:b len:7
-amd64_set_xmmreg_r4: src1:f len:14
-amd64_set_xmmreg_r8: src1:f len:14
+amd64_set_xmmreg_r4: dest:f src1:f len:14 clob:m
+amd64_set_xmmreg_r8: dest:f src1:f len:14 clob:m
 adc: dest:i src1:i src2:i len:3 clob:1
 addcc: dest:i src1:i src2:i len:3 clob:1
 subcc: dest:i src1:i src2:i len:3 clob:1

@@ -207,7 +207,7 @@ stmt: OP_OUTARG_REG (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 
 	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_reg_args = g_slist_append (call->out_reg_args, (gpointer)(regpair));
+	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
 }
 
 stmt: OP_OUTARG_REG (OP_ICONST) {	
@@ -220,7 +220,7 @@ stmt: OP_OUTARG_REG (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 
 	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_reg_args = g_slist_append (call->out_reg_args, (gpointer)(regpair));
+	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
 }
 
 stmt: OP_OUTARG_REG (CEE_LDIND_I (OP_REGVAR)),
@@ -237,7 +237,7 @@ stmt: OP_OUTARG_REG (CEE_LDIND_REF (OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 
 	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_reg_args = g_slist_append (call->out_reg_args, (gpointer)(regpair));
+	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
 }
 
 # we need to reduce this code duplication with some burg syntax extension
@@ -364,17 +364,29 @@ stmt: OP_OUTARG_R8 (freg) {
 }
 
 stmt: OP_AMD64_OUTARG_XMMREG_R4 (freg) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint64 regpair;
+
 	tree->opcode = OP_AMD64_SET_XMMREG_R4;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
+	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
+
+	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
+	call->out_freg_args = g_slist_append (call->out_freg_args, (gpointer)(regpair));
 }
 
 stmt: OP_AMD64_OUTARG_XMMREG_R8 (freg) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint64 regpair;
+
 	tree->opcode = OP_AMD64_SET_XMMREG_R8;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
+	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
+
+	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
+	call->out_freg_args = g_slist_append (call->out_freg_args, (gpointer)(regpair));
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
