@@ -1416,6 +1416,46 @@
             <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Security.Cryptography.CipherMode">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Cryptography.CryptoStreamMode">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+        </maintainers>
+    </class>
+    
+    <class name="System.Security.Cryptography.KeySizes">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Cryptography.PaddingMode">
+        <last-activity>Jul-20-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+        </maintainers>
+    </class>
     
     <class name="System.Security.Cryptography.MD5">
         <last-activity>Jul-20-2001</last-activity>
@@ -1534,6 +1574,46 @@
         <completion>?</completion>
         <maintainers>
             <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Cryptography.ToBase64Transform">
+        <last-activity>Aug-1-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Cryptography.FromBase64Transform">
+        <last-activity>Aug-1-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Cryptography.DES">
+        <last-activity>Aug-1-2001</last-activity>
+        <implementation>no/soft</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Cryptography.DESCrytpoServiceProvider">
+        <last-activity>Aug-1-2001</last-activity>
+        <implementation>no/soft</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
         </maintainers>
     </class>
 

@@ -109,7 +109,7 @@ tar xzvf glib-1.2.10.tar.gz
 		* Configure, compile and install glib, like this:
 
 <pre>
-./configure --prefix=/usr/bin
+./configure --prefix=/usr
 make
 make install
 </pre>
