@@ -6110,11 +6110,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-				/*
-				if (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)
-					g_assert_not_reached ();
-				*/
-
 				NEW_METHODCONST (cfg, argconst, cmethod);
 				if (method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
 					temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn, &argconst, ip);
