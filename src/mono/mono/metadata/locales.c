@@ -231,6 +231,7 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	this->datetime_index = ci->datetime_format_index;
 	this->number_index = ci->number_format_index;
 	this->calendar_data = ci->calendar_data;
+	this->text_info_data = &ci->text_info;
 	
 	return TRUE;
 }

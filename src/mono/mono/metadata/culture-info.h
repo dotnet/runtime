@@ -82,6 +82,14 @@ typedef struct {
 } NumberFormatEntry;
 
 typedef struct {
+	const gint ansi;
+	const gint ebcdic;
+	const gint mac;
+	const gint oem;
+	const char list_sep;
+} TextInfoEntry;
+
+typedef struct {
 	gint lcid;
 	gint parent_lcid;
 	gint specific_lcid;
@@ -98,6 +106,8 @@ typedef struct {
 
 	gint16 datetime_format_index;
 	gint16 number_format_index;
+	
+	TextInfoEntry text_info;
 } CultureInfoEntry;
 
 typedef struct {

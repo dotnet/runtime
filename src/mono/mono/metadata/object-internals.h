@@ -345,6 +345,7 @@ typedef struct {
 	MonoString *win3lang;
 	MonoCompareInfo *compareinfo;
 	const gint32 *calendar_data;
+	const void* text_info_data;
 } MonoCultureInfo;
 
 typedef struct {
