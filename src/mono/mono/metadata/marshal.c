@@ -3611,8 +3611,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		mono_mb_emit_native_call (mb, lasterr_sig, mono_marshal_set_last_error);
 	}		
 
-	emit_thread_interrupt_checkpoint (mb);
-
 	/* convert the result */
 	if (!sig->ret->byref) {
 		MonoMarshalSpec *spec = mspecs [0];
@@ -3807,6 +3805,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	} else {
 		mono_mb_emit_byte (mb, CEE_STLOC_3);
 	}
+
+	/* 
+	 * Need to call this after converting the result since MONO_VTADDR needs 
+	 * to be adjacent to the call instruction.
+	 */
+	emit_thread_interrupt_checkpoint (mb);
 
 	/* we need to convert byref arguments back and free string arrays */
 	for (i = 0; i < sig->param_count; i++) {
