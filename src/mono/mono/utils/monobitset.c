@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "monobitset.h"
+#include "config.h"
 
 #ifdef __GNUC__
 #define MONO_ZERO_LEN_ARRAY 0
@@ -298,6 +299,29 @@ my_g_bit_nth_lsf (guint32 mask, gint nth_bit)
 #define my_g_bit_nth_lsf_nomask(m) (my_g_bit_nth_lsf((m),-1))
 #endif
 
+#if SIZEOF_VOID_P == 8 && GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION < 4
+/*
+ * There was a 64 bit bug in glib-2.2: g_bit_nth_msf (0, -1) would return 32,
+ * causing infinite loops in dominator computation. So glib-2.4 is required.
+ */
+my_g_bit_nth_msf (gulong mask,
+	       gint   nth_bit)
+{
+  if (nth_bit < 0)
+    nth_bit = GLIB_SIZEOF_LONG * 8;
+  do
+    {
+      nth_bit--;
+      if (mask & (1UL << nth_bit))
+	return nth_bit;
+    }
+  while (nth_bit > 0);
+  return -1;
+}
+#else
+#define my_g_bit_nth_msf(mask,nth_bit) g_bit_nth_msf((mask),(nth_bit))
+#endif
+
 /*
  * mono_bitset_find_start:
  * @set: bitset ptr
@@ -373,13 +397,13 @@ mono_bitset_find_last (const MonoBitSet *set, gint pos) {
 	g_return_val_if_fail (pos < set->size, -1);
 
 	if (set->data [j]) {
-		result = g_bit_nth_msf (set->data [j], bit);
+		result = my_g_bit_nth_msf (set->data [j], bit);
 		if (result != -1)
 			return result + j * BITS_PER_CHUNK;
 	}
 	for (i = --j; i >= 0; --i) {
 		if (set->data [i])
-			return g_bit_nth_msf (set->data [i], -1) + i * BITS_PER_CHUNK;
+			return my_g_bit_nth_msf (set->data [i], -1) + i * BITS_PER_CHUNK;
 	}
 	return -1;
 }
