@@ -52,14 +52,8 @@ mono_LDADD = \
 	$(GMODULE_LIBS) -lm	\
 	$(ICU_LIBS)
 
-if X86
-static_flags = -static libmono.la
-else
-static_flags = 
-endif
-
 mono_LDFLAGS = \
-	$(static_flags) -export-dynamic
+	-export-dynamic
 
 genmdesc_SOURCES = \
 	mini.h		\
