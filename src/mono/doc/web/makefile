@@ -76,6 +76,7 @@ OBJECTS=									\
 	deploy/class-status-System.Data.html 					\
 	deploy/class-status-System.Security.html				\
 	deploy/class-status-System.Web.html 					\
+	deploy/class-status-System.Web.Services.html				\
 	deploy/class-status-System.Drawing.html					\
 	deploy/class-status-Microsoft.VisualBasic.html				\
 	deploy/class-status-System.Windows.Forms.html				\
@@ -133,6 +134,7 @@ push:
 	#echo scp -P 2200 -r deploy/* www@www.go-mono.com:/web/cvsmodules/mono
 	#(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . www@www.go-mono.com:/web/cvsmodules/mono )
 	(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . mono-web@www.go-mono.com:/web/cvsmodules/mono )
+
 
 push2: 
 	scp -r deploy/* primates:public_html/xxx
