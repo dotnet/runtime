@@ -74,7 +74,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	g_assert (klass->delegate);
 	
 	method = delegate->method_info->method;
-	wrapper = mono_marshal_get_managed_wrapper (method, (MonoObject *)delegate);
+	wrapper = mono_marshal_get_managed_wrapper (method, delegate->target);
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);
 
@@ -1862,6 +1862,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		/* do nothing */
+		break;
+	case MONO_TYPE_STRING:
+		g_assert_not_reached ();
 		break;
 	case MONO_TYPE_VALUETYPE: {
 		int tmp;

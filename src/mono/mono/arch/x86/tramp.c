@@ -3,7 +3,9 @@
  * 
  * Copyright (C) Ximian Inc.
  * 
- * Author: Paolo Molaro (lupus@ximian.com)
+ * Authors: 
+ *   Paolo Molaro (lupus@ximian.com)
+ *   Dietmar Maurer (dietmar@ximian.com)
  * 
  */
 
@@ -528,7 +530,6 @@ mono_create_method_pointer (MonoMethod *method)
 			x86_push_imm (p, sig->ret);
 			x86_mov_reg_imm (p, X86_ECX, stackval_to_data);
 			x86_call_reg (p, X86_ECX);
-			//x86_breakpoint (p);
 			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 16);
 			
 			break;
