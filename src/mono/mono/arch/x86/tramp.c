@@ -13,6 +13,7 @@
 #include "mono/metadata/class.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
+#include "mono/metadata/appdomain.h"
 
 /*
  * The resulting function takes the form:
@@ -25,6 +26,14 @@
 #define LOC_POS	-4
 
 #define ARG_SIZE	sizeof (stackval)
+
+MonoString*
+mono_string_new_wrapper (const char *text)
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	return mono_string_new (domain, text);
+}
 
 MonoPIFunc
 mono_create_trampoline (MonoMethod *method, int runtime)
@@ -268,7 +277,7 @@ enum_retvalue:
 			x86_alu_reg_reg (p, X86_OR, X86_EAX, X86_EAX);
 			x86_branch8 (p, X86_CC_EQ, 11, FALSE);
 			x86_push_reg (p, X86_EAX);
-			x86_mov_reg_imm (p, X86_EDX, mono_string_new);
+			x86_mov_reg_imm (p, X86_EDX, mono_string_new_wrapper);
 			x86_call_reg (p, X86_EDX);
 			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
 
