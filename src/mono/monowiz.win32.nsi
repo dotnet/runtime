@@ -11,6 +11,7 @@
 ; Authors: 
 ;       Johannes Roith <johannes@jroith.de>
 ;       Daniel Morgan <danielmorgan@verizon.net>
+;	Urs C Muff <umuff@quark.com>
 ;
 ; This .nsi includes code from the NSIS Archives:
 ; function StrReplace and VersionCheck 
@@ -26,12 +27,9 @@
 ; SET MILESTONE & SOURCE DIR
 ; =====================================================
 ; set by makefile!!
-; !define MILESTONE 0.29 
-; !define SOURCE_INSTALL_DIR E:\cygwin\home\danmorg\mono029\*.*
 
-!define MILESTONE 0.31
-!define SOURCE_INSTALL_DIR c:\b\install\*.* 
-;E:\cygwin\home\danmorg\mono029\*.*
+!define MILESTONE 0.31.99
+!define SOURCE_INSTALL_DIR ..\install\*.* 
 
 ; =====================================================
 ; SET LOGO
@@ -194,6 +192,8 @@ Section "Uninstall"
   Delete $WINDIR\monoresgen.bat
   Delete $WINDIR\monosn.bat
   Delete $WINDIR\cilc.bat
+  Delete $WINDIR\monop.bat
+  Delete $WINDIR\xsp.bat
 
   GoNext2:
   NoUnInstall:
@@ -242,106 +242,6 @@ SectionEnd
  ;resulting string which is like C:/mono-0.20/install
  Pop $6
 
-;========================
-; Write the wrapper files
-;========================
-
-; create bin/mono wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\mono.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe "$$@"'
-FileClose $0
-
-; create bin/mint wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\mint.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mint.exe "$$@"'
-FileClose $0
-
-; create bin/mcs wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\mcs.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/mcs.exe "$$@"'
-FileClose $0
-
-; create bin/mbas wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\mbas.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/mbas.exe "$$@"'
-FileClose $0
-
-; create bin/sqlsharp wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\sqlsharp.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/sqlsharp.exe "$$@"'
-FileClose $0
-
-; create bin/monodis wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\monodis.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/monodis.exe "$$@"'
-FileClose $0
-
-; create bin/monoresgen wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\monoresgen.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/monoresgen.exe "$$@"'
-FileClose $0
-
-; create bin/monoilasm wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\monoilasm.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/monoilasm.exe "$$@"'
-FileClose $0
-
-; create bin/monosn wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\monosn.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/monosn.exe "$$@"'
-FileClose $0
-
-; create bin/secutil wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\secutil.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/secutil.exe "$$@"'
-FileClose $0
-
-; create bin/cert2spc wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\cert2spc.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/cert2spc.exe "$$@"'
-FileClose $0
-
-; create bin/cilc wrapper to be used if the user has cygwin
-FileOpen $0 "$INSTDIR\bin\cilc.exe.sh" "w"
-FileWrite $0 "#!/bin/sh$\r$\n"
-FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-FileWrite $0 '$6/bin/mono.exe $6/bin/cilc.exe "$$@"'
-FileClose $0
-
 ;
 ; These wrappers are copied to the windows directory.
 ;
@@ -350,277 +250,53 @@ FileClose $0
 ; Write the path file
 ;========================
 
-FileOpen $0 "$WINDIR\monobasepath.bat" "w"
-FileWrite $0 'set MONO_BASEPATH="$INSTDIR"$\r$\n'
-FileWrite $0 'set MONO_PATH=$INSTDIR\lib$\r$\n'
-FileWrite $0 'set MONO_CFG_DIR=$INSTDIR\etc'
+FileOpen $0 "$WINDIR\MonoBasePath.bat" "w"
+FileWrite $0 'SET MONO_BASEPATH="$INSTDIR"$\r$\n'
+FileWrite $0 'SET MONO_PATH=$INSTDIR\lib$\r$\n'
+FileWrite $0 'SET MONO_CFG_DIR=$INSTDIR\etc'
 FileClose $0
 
+Push "mint"
+Call windowsBatCore
 
-;========================
-; Write the mcs file
-;========================
+Push "mono"
+Call windowsBatCore
 
-FileOpen $0 "$WINDIR\mcs.bat" "w"
+Push "mcs"
+Call windowsBat
 
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\mcs.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
+Push "mbas"
+Call windowsBat
 
-FileClose $0
+Push "monodis"
+Call windowsBat
 
-;========================
-; Write the mbas file
-;========================
+Push "monoilasm"
+Call windowsBat
 
-FileOpen $0 "$WINDIR\mbas.bat" "w"
+Push "sqlsharp"
+Call windowsBat
 
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\mbas.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
+Push "secutil"
+Call windowsBat
 
-FileClose $0
+Push "cert2spec"
+Call windowsBat
 
-;========================
-; Write the mint file
-;========================
+Push "monoresgen"
+Call windowsBat
 
-FileOpen $0 "$WINDIR\mint.bat" "w"
+Push "monosn"
+Call windowsBat
 
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mint.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
+Push "cilc"
+Call windowsBat
 
-FileClose $0
+Push "monop"
+Call windowsBat
 
-;========================
-; Write the mono file
-;========================
-
-FileOpen $0 "$WINDIR\mono.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-FileClose $0
-
-;========================
-; Write monodis
-;========================
-
-FileOpen $0 "$WINDIR\monodis.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\monodis.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-;========================
-; Write monoilasm
-;========================
-
-FileOpen $0 "$WINDIR\monoilasm.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\monoilasm.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-
-;========================
-; Write the sqlsharp file
-;========================
-
-FileOpen $0 "$WINDIR\sqlsharp.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\sqlsharp.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-;========================
-; Write the secutil file
-;========================
-
-FileOpen $0 "$WINDIR\secutil.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\secutil.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-;========================
-; Write the cert2spc file
-;========================
-
-FileOpen $0 "$WINDIR\cert2spc.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\cert2spec.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-
-;========================
-; Write the monoresgen file
-;========================
-
-FileOpen $0 "$WINDIR\monoresgen.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\monoresgen.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-;========================
-; Write the monosn file
-;========================
-
-FileOpen $0 "$WINDIR\monosn.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\monosn.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
-
-;========================
-; Write the cilc file
-;========================
-
-FileOpen $0 "$WINDIR\cilc.bat" "w"
-
-FileWrite $0 "@echo off$\r$\n"
-FileWrite $0 "call monobasepath.bat$\r$\n"
-FileWrite $0 "set MONOARGS=$\r$\n"
-FileWrite $0 ":loop$\r$\n"
-FileWrite $0 "if x%1 == x goto :done$\r$\n"
-FileWrite $0 "set MONOARGS=%MONOARGS% %1$\r$\n"
-FileWrite $0 "shift$\r$\n"
-FileWrite $0 "goto loop$\r$\n"
-FileWrite $0 ":done$\r$\n"
-FileWrite $0 "setlocal$\r$\n"
-FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%path%"$\r$\n'
-FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\cilc.exe" %MONOARGS%$\r$\n'
-FileWrite $0 "endlocal$\r$\n"
-
-FileClose $0
+Push "xsp"
+Call windowsBat
 
 ; ============= glib-2.0.pc ===============
 FileOpen $0 "$INSTDIR\lib\pkgconfig\glib-2.0.pc" "w"
@@ -703,6 +379,64 @@ FileClose $0
 
 NoInstall:
 SectionEnd
+
+Function windowsBatCore
+	Exch $1 ;core exe name
+
+	FileOpen $0 "$WINDIR\$1.bat" "w"
+	FileWrite $0 "@ECHO OFF$\r$\n"
+	FileWrite $0 "CALL MonoBasePath.bat$\r$\n"
+	FileWrite $0 "SET MONOARGS=$\r$\n"
+	FileWrite $0 ":loop$\r$\n"
+	FileWrite $0 "IF x%1 == x goto :done$\r$\n"
+	FileWrite $0 "SET MONOARGS=%MONOARGS% %1$\r$\n"
+	FileWrite $0 "SHIFT$\r$\n"
+	FileWrite $0 "GOTO loop$\r$\n"
+	FileWrite $0 ":done$\r$\n"
+	FileWrite $0 "SETLOCAL$\r$\n"
+	FileWrite $0 'SET PATH="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%PATH%"$\r$\n'
+	FileWrite $0 '"$INSTDIR\bin\$1.exe" %MONOARGS%$\r$\n'
+	FileWrite $0 "ENDLOCAL$\r$\n"
+	FileClose $0
+
+	FileOpen $0 "$INSTDIR\bin\$1" "w"
+	FileWrite $0 "#!/bin/sh$\r$\n"
+	FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
+	FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
+	FileWrite $0 '$6/bin/$1.exe "$$@"'
+	FileClose $0
+
+	Pop $1
+FunctionEnd
+
+Function windowsBat
+	Exch $1 ;tool name
+
+	FileOpen $0 "$WINDIR\$1.bat" "w"
+	FileWrite $0 "@ECHO OFF$\r$\n"
+	FileWrite $0 "CALL monobasepath.bat$\r$\n"
+	FileWrite $0 "SET MONOARGS=$\r$\n"
+	FileWrite $0 ":loop$\r$\n"
+	FileWrite $0 "IF x%1 == x GOTO :done$\r$\n"
+	FileWrite $0 "SET MONOARGS=%MONOARGS% %1$\r$\n"
+	FileWrite $0 "SHIFT$\r$\n"
+	FileWrite $0 "GOTO loop$\r$\n"
+	FileWrite $0 ":done$\r$\n"
+	FileWrite $0 "SETLOCAL$\r$\n"
+	FileWrite $0 'SET PATH="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%PATH%"$\r$\n'
+	FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\lib\$1.exe" %MONOARGS%$\r$\n'
+	FileWrite $0 "ENDLOCAL$\r$\n"
+	FileClose $0
+
+	FileOpen $0 "$INSTDIR\bin\$1" "w"
+	FileWrite $0 "#!/bin/sh$\r$\n"
+	FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
+	FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
+	FileWrite $0 '$6/bin/mono.exe $6/lib/$1.exe "$$@"'
+	FileClose $0
+
+	Pop $1
+FunctionEnd
 
 ; function StrReplace
 ; by Hendri Adriaens

@@ -1,3 +1,11 @@
+2004-04-22  Urs C Muff <umuff@quark.com>
+
+	move .net assemblies from $prefix/bin/*.exe to $prefix/lib/*.exe on windows/cygwin
+	refactor .nsi to simply maintenance on script/batch generation
+	* runtime/Makefile.am
+	* script/Makefile.am
+	* monowiz.win32.nsi
+
 2004-04-14  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am ($(assemblies_DATA)): Copy file into
