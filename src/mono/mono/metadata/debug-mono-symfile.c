@@ -28,6 +28,7 @@ struct MonoSymbolFilePriv
 	GHashTable *method_table;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
+	gpointer *type_table;
 };
 
 typedef struct
@@ -44,6 +45,7 @@ static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
 static MonoDebugRangeInfo *allocate_range_entry (MonoSymbolFile *symfile);
+static gpointer write_type (MonoSymbolFile *symfile, int index, MonoType *type);
 
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
@@ -134,6 +136,8 @@ load_symfile (MonoSymbolFile *symfile)
 		g_hash_table_insert (priv->method_table, method, mep);
 		g_hash_table_insert (priv->method_hash, method, minfo);
 	}
+
+	priv->type_table = g_new0 (gpointer, priv->offset_table->type_count);
 
 	if (!write_string_table (symfile))
 		return FALSE;
@@ -330,7 +334,8 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	MonoSymbolFileLineNumberEntry *lne;
 	MonoDebugRangeInfo *range;
 	guint32 size, line_size, line_offset, num_variables, variable_size, variable_offset;
-	guint32 *line_addresses;
+	guint32 type_size, type_offset, *line_addresses, *type_index_table;
+	gpointer *type_table;
 	guint8 *ptr;
 	int i;
 
@@ -363,6 +368,10 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	variable_offset = size;
 	size += variable_size;
 
+	type_size = num_variables * sizeof (gpointer);
+	type_offset = size;
+	size += type_size;
+
 	address = g_malloc0 (size);
 	ptr = (guint8 *) address;
 
@@ -371,6 +380,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	address->end_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start + mep->minfo->jit->code_size);
 	address->line_table_offset = line_offset;
 	address->variable_table_offset = variable_offset;
+	address->type_table_offset = type_offset;
 
 	range = allocate_range_entry (symfile);
 	range->file_offset = mep->minfo->file_offset;
@@ -380,14 +390,21 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	range->dynamic_size = size;
 
 	var_table = (MonoDebugVarInfo *) (ptr + variable_offset);
+	type_table = (gpointer *) (ptr + type_offset);
+
+	type_index_table = (guint32 *)
+		(symfile->raw_contents + mep->entry->type_index_table_offset);
 
 	if (mep->entry->this_type_index) {
 		if (!mep->minfo->jit->this_var) {
 			g_warning (G_STRLOC ": Method %s.%s doesn't have `this'.",
 				   mep->method->klass->name, mep->method->name);
 			var_table++;
-		} else
+		} else {
 			*var_table++ = *mep->minfo->jit->this_var;
+			*type_table++ = write_type (symfile, mep->entry->this_type_index,
+						    &method->klass->this_arg);
+		}
 	}
 
 	if (mep->minfo->jit->num_params != mep->entry->num_parameters) {
@@ -395,14 +412,20 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 			   mep->method->klass->name, mep->method->name, mep->minfo->jit->num_params,
 			   mep->entry->num_parameters);
 		var_table += mep->entry->num_parameters;
-	} else
-		for (i = 0; i < mep->minfo->jit->num_params; i++)
+	} else {
+		for (i = 0; i < mep->minfo->jit->num_params; i++) {
 			*var_table++ = mep->minfo->jit->params [i];
+			*type_table++ = write_type (symfile, type_index_table [i],
+						    method->signature->params [i]);
+		}
+	}
 
 	if (mep->minfo->jit->num_locals != mep->entry->num_locals) {
+#if 0
 		g_warning (G_STRLOC ": Method %s.%s has %d locals, but symbol file claims it has %d.",
 			   mep->method->klass->name, mep->method->name, mep->minfo->jit->num_locals,
 			   mep->entry->num_locals);
+#endif
 		var_table += mep->entry->num_locals;
 	} else
 		for (i = 0; i < mep->minfo->jit->num_locals; i++)
@@ -695,6 +718,8 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 	if (priv->error)
 		return FALSE;
 
+	priv->type_table = g_new0 (gpointer, priv->offset_table->type_count);
+
 	if (!write_string_table (symfile))
 		return FALSE;
 
@@ -822,5 +847,70 @@ allocate_range_entry (MonoSymbolFile *symfile)
 
 	retval = symfile->range_table + symfile->num_range_entries;
 	symfile->num_range_entries++;
+	return retval;
+}
+
+static gpointer
+write_type (MonoSymbolFile *symfile, int index, MonoType *type)
+{
+	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
+	guint32 size;
+
+	if (symfile->_priv->type_table [index])
+		return symfile->_priv->type_table [index];
+
+	if (!type->byref)
+		*((guint32 *) ptr)++ = 0;
+	else {
+		switch (type->type) {
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_CLASS: {
+			MonoClass *klass = type->data.klass;
+
+			mono_class_init (klass);
+			*((guint32 *) ptr)++ = type->data.klass->instance_size;
+			break;
+		}
+
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+			*((guint32 *) ptr)++ = 1;
+			break;
+
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+			*((guint32 *) ptr)++ = 2;
+			break;
+
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
+			*((guint32 *) ptr)++ = 4;
+			break;
+
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R8:
+			*((guint32 *) ptr)++ = 8;
+			break;
+
+		default:
+			g_message (G_STRLOC ": %d - %p - %x,%x,%x", index, type, type->attrs,
+				   type->type, type->byref);
+
+			*((guint32 *) ptr)++ = -1;
+			break;
+		}
+	}
+
+	size = ptr - buffer;
+
+	retval = g_malloc0 (size + 4);
+	memcpy (retval + 4, buffer, size);
+	*((guint32 *) retval) = size;
+
+	symfile->_priv->type_table [index] = retval;
 	return retval;
 }
