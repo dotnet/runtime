@@ -915,9 +915,9 @@ dis_generic_param_and_constraints (MonoImage *m, int table_type, guint32 typedef
                         continue;
 
                 if (found_count == 0)
-                        fprintf (output, "<%s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+                        fprintf (output, "<");
                 else
-                        fprintf (output, ", %s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+                        fprintf (output, ", ");
 
                 for (cnst_ind = cnst_start; cnst_ind < ct->rows; cnst_ind++) {
                         char *sig;
@@ -927,12 +927,13 @@ dis_generic_param_and_constraints (MonoImage *m, int table_type, guint32 typedef
                         if (cnst_block == NULL)
                                 cnst_block = g_string_new ("");
                         sig = get_typedef_or_ref (m, ccols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
-                        g_string_append_printf (cnst_block, "    .constraint !%d is %s\n",
-                                        cols [MONO_GENERICPARAM_NUMBER], sig);
+			fprintf (output, "(%s) ", sig);
                         g_free (sig);
                         cnst_start = cnst_ind;
                 }
-                
+
+		fprintf (output, "%s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+               
                 found_count++;
 	}
 

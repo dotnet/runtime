@@ -698,7 +698,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype" : "class" ;
-	char *assemblyref = NULL, *result, *esname;
+	char *assemblyref = NULL, *result, *esname, *generic = NULL;
 	if (m != c->image) {
 		if (c->image->assembly_name) {
 			/* we cheat */
@@ -723,8 +723,28 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 	esname = get_escaped_name (result);
 	g_free (result);
 
-	result = g_strdup_printf ("%s %s%s", otype, assemblyref?assemblyref:"", esname);
+	if (c->generic_inst) {
+		MonoGenericInst *ginst = c->generic_inst;
+		GString *str = g_string_new ("");
+		int i;
+
+		for (i = 0; i < ginst->type_argc; i++){
+			char *t = dis_stringify_type (m, ginst->type_argv [i]);
+
+			g_string_append (str, t);
+			if (i+1 != ginst->type_argc)
+				g_string_append (str, ", ");
+			g_free (t);
+		}
+		generic = g_strdup_printf ("<%s>", str->str);
+		g_string_free (str, TRUE);
+	}
+
+
+	result = g_strdup_printf ("%s %s%s%s", otype, assemblyref?assemblyref:"",
+				  esname, generic?generic:"");
 	
+	g_free (generic);
 	g_free (assemblyref);
 	g_free (esname);
 	
