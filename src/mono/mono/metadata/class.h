@@ -90,6 +90,8 @@ struct _MonoClass {
 	MonoType this_arg;
 	MonoType byval_arg;
 
+	void *reflection_info;
+
         MonoMethod *vtable [0];	
 };
 
@@ -113,6 +115,12 @@ mono_class_init            (MonoClass *klass);
 
 MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *class);
+
+void
+mono_class_setup_mono_type (MonoClass *class);
+
+void
+mono_class_setup_parent    (MonoClass *class, MonoClass *parent);
 
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);

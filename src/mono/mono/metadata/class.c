@@ -739,11 +739,17 @@ mono_compute_relative_numbering (MonoClass *class, int *c)
 	class->diffval = *c -  class->baseval;
 }
 
-static void
+void
 mono_class_setup_mono_type (MonoClass *class)
 {
 	const char *name = class->name;
 	const char *nspace = class->name_space;
+
+	class->this_arg.byref = 1;
+	class->this_arg.data.klass = class;
+	class->this_arg.type = MONO_TYPE_CLASS;
+	class->byval_arg.data.klass = class;
+	class->byval_arg.type = MONO_TYPE_CLASS;
 
 	if (!strcmp (nspace, "System")) {
 		if (!strcmp (name, "ValueType")) {
@@ -828,6 +834,30 @@ mono_class_setup_mono_type (MonoClass *class)
 	}
 }
 
+void
+mono_class_setup_parent (MonoClass *class, MonoClass *parent)
+{
+	/* if root of the hierarchy */
+	if (!strcmp (class->name_space, "System") && !strcmp (class->name, "Object")) {
+		class->parent = NULL;
+		class->instance_size = sizeof (MonoObject);
+	} else if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		int rnum = 0;
+		class->parent = parent;
+		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0)))
+			class->valuetype = 1;
+		if (((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
+			class->valuetype = class->enumtype = 1;
+		}
+		//class->enumtype = class->parent->enumtype;
+		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
+		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
+	} else {
+		class->parent = NULL;
+	}
+
+}
+
 /**
  * @image: context where the image is created
  * @type_token:  typedef token
@@ -881,44 +911,22 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	
 	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
-	class->parent = parent;
 	class->interfaces = interfaces;
 	class->interface_count = icount;
 	class->vtable_size = vtsize;
-
-	class->this_arg.byref = 1;
-	class->this_arg.data.klass = class;
-	class->this_arg.type = MONO_TYPE_CLASS;
-	class->byval_arg.data.klass = class;
-	class->byval_arg.type = MONO_TYPE_CLASS;
 
 	class->name = name;
 	class->name_space = nspace;
 
 	class->image = image;
 	class->type_token = type_token;
-	class->flags = cols [0];
+	class->flags = cols [MONO_TYPEDEF_FLAGS];
 
 	class->element_class = class;
 
 	/*g_print ("Init class %s\n", name);*/
 
-	/* if root of the hierarchy */
-	if (!strcmp (nspace, "System") && !strcmp (name, "Object")) {
-		class->parent = NULL;
-		class->instance_size = sizeof (MonoObject);
-	} else if (!(cols [0] & TYPE_ATTRIBUTE_INTERFACE)) {
-		int rnum = 0;
-		class->parent = mono_class_get (image,  mono_metadata_token_from_dor (cols [3]));
-		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0)))
-			class->valuetype = 1;
-		if (((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
-			class->valuetype = class->enumtype = 1;
-		}
-		//class->enumtype = class->parent->enumtype;
-		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
-		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
-	}
+	mono_class_setup_parent (class, parent);
 
 	mono_class_setup_mono_type (class);
 
