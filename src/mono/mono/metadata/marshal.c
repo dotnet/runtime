@@ -1485,7 +1485,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 			}
 		}
 
-		return mono_runtime_invoke (method, this->rp->unwrapped_server, mparams, NULL);
+		return mono_runtime_invoke (method, this, mparams, NULL);
 	}
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
