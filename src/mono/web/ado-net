@@ -20,9 +20,9 @@
 		  
 		* Once the <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a>
 		  code is functional and is usable by other people, we willl move it to
-		  Mono.Data.PostgreSQL, and will convert the existing
-		  System.Data.SqlClient to be just a wrapper around
 		  Mono.Data.PostgreSQL.  
+		  
+		* <a href="http://www.go-mono.com/postgresql.html">Current PostgreSQL ADO.NET Provider Status and Test Notes</a>
 
 	</ul>
 
@@ -41,20 +41,20 @@
 		  <p>There is work under way to get libgda working under 
 		  Windows using Cygwin by the GNOME-DB developers.
 		  
-		  <p>LibGDA has providers for MySQL, PostgreSQL, XML, ODBC,
-		  Oracle, Interbase, Sybase/SQL server (via FreeTDS), IBM DB2,
-		  SQLite and MDB Tools
-		  (MS Access support).
+		  <p>LibGDA has providers for MySQL, PostgreSQL, XML, ODBC (via unixODBC),
+		  Oracle, Interbase, Sybase and MS SQL Server (via FreeTDS), IBM DB2,
+		  SQLite and MS Access (via MDB Tools).
 
 		* On Windows systems: System.Data.OleDb will use libgda as well,
 		  if we can get it working, or OLE-DB as
 		  its engine.
+		  
 	</ul>
 
 	<b>Step 3:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a> Provider:
 
 	<ul>
-		* <p>System.Data.SqlClient will then become a managed
+		* <p>System.Data.SqlClient will then become a
 		  provider for Microsoft SQL Server, both on Windows and
 		  Linux, to be compatible with applications written
 		  for the Microsoft .NET Development Framework.
@@ -63,7 +63,9 @@
 		  provider support has been moved to its own place at 
 		  Mono.Data.PostgreSQL, we will use 
 		  <a href="http://www.freetds.org/">FreeTDS</a> as the basis
-		  for providing access to Microsoft SQL Server databases.
+		  for providing access to Microsoft SQL Server databases.  Or we will
+		  use FreeTDS and jTDS (a 100% Java JDBC Provider for TDS) as a basis for
+		  creating a pure managed SQL Server provider.
 		  
 		  <P>FreeTDS is a C API for Unix and Windows that implements 
 		  the TDS (Tabular Data Stream) protocol used in accessing 
@@ -74,18 +76,19 @@
 	<b>Step 4:</b> <a href="http://msdn.microsoft.com/downloads/sample.asp?url=/MSDN-FILES/027/001/668/msdncompositedoc.xml&frame=true">System.Data.Odbc</a> Provider:
 	
 	<ul>
-		* We will create a .NET Managaed Provider for ODBC
-		  in System.Data.Odbc for those using ODBC.
-		  On Unix and Windows, <a href="http://www.unixodbc.org/">unixODBC</a> mabye used.
-		  iODBC is an alternative to using unixODBC.
+		* An ADO.NET Provider for ODBC has been created in
+		  System.Data.Odbc for those using ODBC.
+		  On Unix, <a href="http://www.unixodbc.org/">unixODBC</a> mabye used.
+		  On Windows, we may just use the native ODBC libraries that comes with Windows since
+		  unixODBC is supposed to be compatible with that.
 		  
 		  <p>unixODBC works on Unix and Windows.  Well, I have not actually 
 		  used it on Cygwin, but it does build and install without problems.  
 		  
 		  <p>unixODBC has providers for:
-		  Oracle, Microsoft SQL Server and Sybase via FreeTDS, 
-		  MySQL, PostgreSQL, Informix, IBM DB2 (Universal Database), 
-		  Interbase, miniSQL (mSQL), AdabasD, Empress, YARD SQL, and others.
+		  Oracle, Microsoft SQL Server and Sybase (via FreeTDS), 
+		  MySQL, PostgreSQL, Informix, IBM DB2 Universal Database, 
+		  Interbase, miniSQL (mSQL), AdabasD, Empress, and others.
 		  
 	</ul>
 
@@ -107,13 +110,13 @@
 	
 * Current Status
 
-	<p>We are working on Steps 1, 2, and 5.  We have only just begun on
-	steps 2 and 5 though.  We still have tons and tons of stuff to do.
-	If you have any ideas, let us know.
+	<p>We are working on Steps 1, 2, 4, and 5. We still have tons and tons of 
+	stuff still to do.  If you have any ideas, let us know on the mono-list@ximian.com
 	
-	<p>For Step 1, the PostgreSQL is starting to come together - it 
-	still needs a lot of work.
-	
+	<p>For Step 1, the PostgreSQL provider can connect, execute commands, retrieve
+	data via a Data Reader, read data in a DataTable in a DataSet via a Data Adapter, 
+	and use input parameters in its SQL.
+		
 	<p>For Step 2, Rodrigo Moya has been working on System.Data.OleDb which uses libgda
 	which is an OLE-DB/ADO data access for Unix.  The C-Sharp bindings to libgda
 	currently work - meaning they can compile, run, and you can connect to a
@@ -122,227 +125,67 @@
 	now working. Current focus is on filling up the missing pieces (Data adapters
 	mainly).
 	
-	<p>For Step 3, we need someone to start the FreeTDS .NET Data Provider so
-	we can have data access to Microsoft SQL Server and Sybase databases, or either
-	add the support in libgda.
+	<p>For Step 3, we need someone to start on the Microsoft SQL Server and Sybase
+	support.  This can be done by creating a FreeTDS .NET Data Provider 
+	or C# bindings to FreeTDS native libraries.  A better solution, but a solution 
+	that would take longer, would be to create a pure
+	managed provider in C# that implements the TDS (Tabular DataStream) protocol.  TDS
+	is used to access Microsoft SQL Server and Sybase databases.  Another possibility
+	is to wrap System.Data.SqlClient around System.Data.OleDb since System.Data.OleDb on 
+	Mono uses <a href="http://www.gnome-db.org/">libgda</a> and libgda has 
+	a FreeTDS provider.  Yet another possibility, port 
+	the <a href="http://jtds.sourceforge.net/">jTDS</a> provider to a pure C# ADO.NET 
+	provider.  jTDS is a 100% pure Java (Type 4) open source JDBC 2.0 driver for 
+	the Microsoft SQL Server series (6.5, 7.x and 2000). 
 	
-	<p>For Step 4, we need someone to start the unixODBC .NET Data Provider, or add
-	the support in libgda.
+	<p>For Step 4, Brian Ritchie has contributed an initial implementation of
+	an ODBC ADO.NET Provider that uses unixODBC.  He has a basic implementations of 
+    OdbcConnection, OdbcCommand, OdbcDataReader, OdbcParameter, and 
+    OdbcParameterCollection.  It can execute queries and display result sets 
+    (and ExecuteNonQuery too).  I'm currently working on the Parameter & 
+    Transaction support.  He has been doing his development on Debian against a DB2 
+    7.2 UDB.
 	
 	<p>For Step 5, we have just begun creating a Mono.Data .NET Provider - a MySQL
 	.NET Provider that uses the MySQL C Client Library.  This provider is 
-	found in Mono.Data.MySql.  We can currently connect and do a SQL INSERT and insert
-	a row into a MySQL database.  However, it currently only works on Cygwin because
-	the MySQL client library libmySQL.dll is different 
-	from the library on Linux libmysqlclient.dll.  Another problem, mysql thread functions
-	do not load for some reason.  Also, the provider only runs if you use "mint" (the Mono
-	runtime interpreter).  It does not work on "mono" (the Mono Just-In-Time compiler).
+	found in Mono.Data.MySql.  We can currently connect, execute simple commands, and
+	retrieve results using a data reader.  The shared client libraries 
+	between windows version and linux are different: windows has libmySQL.dll 
+	while linux has libmysqlclient.so.  I have put this mapping in mono/config.in so it can
+	automatically be maped.  There is a problem with mysql thread functions because
+	they do not load for some reasons when running under Mono.  
 	The C# Bindings to MySQL are thanks to Brad Meril.
-		
-	<p>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
-	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
 	
-	<p>We can execute multiple queries and do a NextResult() in SqlDataReader()
-	to get the next result set.  
+	<p>DataSet, DataAdaptor, DataTable, DataRelation, etc. need to be implemented
+	more.
 	
-	<p>We are also able to do simple aggregate functions, 
-	ie, count(), sum(), min(), and max() 
-	in a simple SELECT SQL query using the ExecuteScalar() now.  
-	
-	<p>We are also able to retrieve data with a simple SELECT SQL query 
-	using ExecuteReader() which returns a SqlDataReader.  We are able to
-	use GetSchemaTable() to get the meta data about the table columns.  
-	We are able	to Read() to get each row from the result set.  
-	
-	<p>Here is a sample of code that is based on PostgresTest.cs and
-	TestSqlDataReader.cs tests:
-<pre>
- 
- static void SelectData (IDbConnection cnc) {
-	
-	IDbCommand selectCommand = cnc.CreateCommand();
-	IDataReader reader;
-
-	selectCommand.CommandType = CommandType.Text;
-	selectCommand.CommandText = 
-		"select * from pg_user;" + 
-		"select * from pg_tables;" + 
-		"select * from pg_database";
-
-	reader = selectCommand.ExecuteReader ();
-
-	do {
-		// get the DataTable that holds
-		// the schema
-		DataTable dt = rdr.GetSchemaTable();
-
-		if(rdr.RecordsAffected != -1) {
-			// Results for 
-			// SQL INSERT, UPDATE, DELETE Commands 
-			// have RecordsAffected >= 0
-			Console.WriteLine("Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: " + rdr.RecordsAffected);
-		}
-		else if (dt == null)
-				Console.WriteLine("Result is from a SQL Command not (INSERT,UPDATE,DELETE).   Records Affected: " + rdr.RecordsAffected);
-		else {
-			// Results for
-			// SQL not INSERT, UPDATE, nor DELETE
-			// have RecordsAffected = -1
-			Console.WriteLine("Result is from a SQL SELECT Query.  Records Affected: " + rdr.RecordsAffected);
-		
-			// Results for a SQL Command (CREATE TABLE, SET, etc)
-			// will have a null reference returned from GetSchemaTable()
-			// 
-			// Results for a SQL SELECT Query
-			// will have a DataTable returned from GetSchemaTable()
-
-			results++;
-			Console.WriteLine("Result Set " + results + "...");
-                        			
-			// number of columns in the table
-			Console.WriteLine("   Total Columns: " +
-				dt.Columns.Count);
-
-			// display the schema
-			foreach (DataRow schemaRow in dt.Rows) {
-				foreach (DataColumn schemaCol in dt.Columns)
-					Console.WriteLine(schemaCol.ColumnName + 
-						" = " + 
-						schemaRow[schemaCol]);
-				Console.WriteLine();
-			}
-
-			int nRows = 0;
-			string output, metadataValue, dataValue;
-			// Read and display the rows
-			Console.WriteLine("Gonna do a Read() now...");
-			while(rdr.Read()) {
-				Console.WriteLine("   Row " + nRows + ": ");
-					
-				for(c = 0; c < rdr.FieldCount; c++) {
-					// column meta data 
-					DataRow dr = dt.Rows[c];
-					metadataValue = 
-						"    Col " + 
-						c + ": " + 
-						dr["ColumnName"];
-						
-					// column data
-					if(rdr.IsDBNull(c) == true)
-						dataValue = " is NULL";
-					else
-						dataValue = 
-							": " + 
-							rdr.GetValue(c);
-				
-					// display column meta data and data
-					output = metadataValue + dataValue;					
-					Console.WriteLine(output);
-				}
-				nRows++;
-			}
-			Console.WriteLine("   Total Rows: " + 
-				nRows);
-		}	
-	} while(rdr.NextResult());
-	Console.WriteLine("Total Result sets: " + results);
-			
-	rdr.Close();
- }
-
-</pre>
-	
-	<p>We are able to get 
-	String data (char, character, text, varchar), Int16 (smallint),
-	Int32 (integer), Int64 (bigint), DateTime (time, date, timestamp),
-	Boolean (boolean), Single (float), and Double (double).
-	More data types will come later.  Note, the types that do work still 
-	need thorough testing.
-	
-	<p>Rows that are returned which contain columns that are NULL are handled now. 
-	The SqlDataReader method IsDBNull() needs to be called to determine 
-	if a field IS NULL before trying to read data from that field.
-	
-	<p>Calling PostgreSQL stored procedures works.  It does not work perfectly.  It may not
-	even work to specification - yet.  If you want to test it yourself, look at
-	TestSqlDataReader.cs or PostgresTest.cs in
-	mcs/class/System.Data/Test.  
-	
-	<p>Below, I have some sample code you can
-	use to call a PostgreSQL stored procedure named "version".  This stored
-	procedure returns a string containing the PostgreSQL server version.  Notice
-	the CommandType is StoredProcedure and the method ExecuteScalar() is called.
-	
-	<p>ExecuteScalar() is a lightweight method in class SqlCommand that only returns
-	one row and one column as one object - even if there is more than row or column.
-	
-<pre>
- static string GetDatabaseServerVersion (SqlConnection cnc) 
- {			 
-	SqlCommand cmd = cnc.CreateCommand ();
-	string data;
-
-	cmd.CommandType = CommandType.StoredProcedure;
-	cmd.CommandText = "version";
-							
-	data = (string) cmd.ExecuteScalar ();
-
-	return data;
- }
-</pre>
-			
-	<p>We have the beginnings of Parameters support PostgreSQL.  Only
-	Input Parameters are currently supported.  Output, Input/Output,
-	and Return parameters still need to be done.
-	
-	<p>A lot of functionality in System.Data is missing, but the 
-	infrastructure is starting to come together.
-	
-	<p>A lot of Exceptions need to be thrown for various exceptions.  However,
-	SqlException, SqlErrorCollection, and SqlError have been partially
-	implemented.
-	
-	<p>Tim Coleman and Rodrigo Moya got the beginnings of the
-	SqlDataAdapter/DataSet/DataTable/DataRow to work.  Currently, 
-	the SqlDataAdapter can Fill() relational data into a DataTable in a DataSet.
-	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.
-	Below, I show a snippets from the test:
-	
-<pre>
- string connectionString;
- string sqlQuery;
- SqlDataAdapter adapter;
- DataSet dataSet = null;
-
- connectionString =
-	"host=localhost;" +
-	"dbname=test;" +
-	"user=postgres";
-						
- sqlQuery = "select * from pg_tables";
-
- adapter = new SqlDataAdapter (sqlQuery, 
-			connectionString);
- 				
- dataSet = new DataSet ();
-
- adapter.Fill (dataSet);
-			
- if (dataSet != null) {
-	foreach (DataRow row in dataSet.Tables["Table"].Rows)
-		Console.WriteLine("tablename: " + row["tablename"]);
- }
-</pre>	
-	
-	<p>We do need help on the DataSet/DataAdaptor/DataTable/DataRelation/XML 
-	functionality so we	can integrate with 
-	the ASP.NET controls and Windows.Forms controls by allowing the controls to bind 
-	to a data source.  Gonzalo, Gaurav, Leen, Patrik, Duncan, and others are 
+	<p>Integration with ASP.NET needs to be started, such as, data binding
+	to a System.Web.UI.WebControls.DataGrid.  This may involve implementing many classes
+	in System.Web and System.Data.  Gonzalo, Gaurav, Leen, Patrik, Duncan, and others are 
 	working very hard on the ASP.NET support. If you want to help, 
 	contact <a href="mailto:gonzalo@ximian.com">Gonzalo Paniagua Javier</a>
 	
-	<P>Need to add XML support in System.Data.  This involves working on
-	the classes: DataSet and XmlDataDocument and the ExecuteXmlReader() in SqlCommand.
+	<p>Integration with Windows.Forms, such as, data binding 
+	to a System.Windows.Forms.DataGrid.  This may involve implementing many classes
+	in System.Windows.Forms and System.Data.
+	
+	<p>Integration with GTK#, such as, data binding
+	to a GtkTreeView.  This may involve creating new classes
+	to go between the glist data model and the ADO.NET data model.
+	
+	<p>Integration with QT#.  Any information on how this can be done is appreciated.
+	
+	<p>Integration with GDA# and Libgnomedb# which exists in GTK#.  Creating classes
+	to bind data between the data model in ADO.NET and the data model that
+	exists in <a href="http://www.gnome-db.org/">GDA</a> and 
+	<a href="http://www.gnome-db.org/">libgnomedb</a>.  There are some nifty widgets
+	(GUI controls) that can be used, such as, GnomeDbGrid, GnomeDbBrowswer, GnomeDbSqlEditor,
+	GnomeDbList, GnomeDbLogin, GnomeDbReportEditor, GnomeDbTableEditor, 
+	GnomeDbCombo, and GnomeDbForm.
+		
+	<P>XML support in System.Data needs to be started.  This involves working on
+	the classes: DataSet, XmlDataDocument, and the method ExecuteXmlReader() that
+	exists in a provider's class that implements IDbCommand.
 	
 	<p>The System.Data.dll gets built with the rest of the class library.
 	To compile the System.Data.dll assembly separately, you need:
@@ -383,419 +226,4 @@
  ../../nant/NAnt.exe clean
 </pre>
 	</ul>
-
-* Testing
-
-	<p>In order to test System.Data.SqlClient, you will need to have
-	access to a remote PostgreSQL DBMS, or you will have to install 
-	one locally.  PostgreSQL is the DBMS used for the initial 
-	implementation of System.Data.SqlClient.
-		
-	<p>Why?  Because it is free software, has a client 
-	library that is easy to use, PostgreSQL is easy to install on
-	Unix and Windows (using the Cygwin install program), not difficult to setup after
-	installation, and it runs under: Linux, 
-	Windows (via cygwin and ipc-daemon), Unix, and
-	others.  This allowed us to create the
-	System.Data functionality in Mono much quicker.
-		
-	<p>If you plan on using a remote PostgreSQL DBMS Server,
-	than you will need to have the PostgreSQL client software on your
-	local computer that includes libpq.so (pq.dll on Windows).
-	
-	<p>The System.Data tests use this connection string to connect
-	to the PostgreSQL database named "test" at host "localhost" as
-	user "postgres".
-
-<pre>
-"host=localhost;dbname=test;user=postgres"
-</pre>
-		
-	<p>Installation instructions for PostgreSQL DBMS:
-
-	<b>On Unix</b>
-
-	<ul>
-		* Read the PostgreSQL Installation Instructions 
-		at \usr\doc\postgresql-x.x.x\html\installation.html
-		
-		* Depending on your Unix system, 
-		PostgreSQL maybe already installed, a database user 'postgres' created, 
-		a linux user 'postgres' created and initdb ran.  Or maybe not.
-
-<pre>
- su
- adduser postgres
- mkdir /usr/local/pgsql/data
- chown postgres /usr/local/pgsql/data
- su - postgres
- initdb -D /usr/local/pgsql/data
- postmaster -i -D /usr/local/pgsql/data
- createdb test
- psql test
-</pre>
-	
-		* Make sure you have a database user named postgres.  It is best to install
-		the PostgreSQL DBMS under linux user postgres.  When you run the postmaster,
-		run it under the user postgres as well.  If this was not done, then you
-		will need to create a user named postgres for the System.Data tests.
-
-		* If you already installed PostgeSQL and you do not have a database
-		user named postgres, then you can create user postgres using psql:
-		
-<pre>		
-psql test
-create user postgres with password 'fun2db';
-</pre>
-				
-		* The postmaster must be run with -i option.
-		
-		* In the /usr/local/pgsql/data/pg_hba.conf file, you need
-		to have the AUTH_TYPE set to md5.  You can read more on this at
-		/usr/doc/postgresql-7.2.1/html/client-authentication.html 
-		or wherever your
-		PostgreSQL html docs are located.  See the 2nd line below,
-		host 127.0.0.1 has an AUTH_TYPE md5 in pg_hba.conf.
-		
-<pre>
- # TYPE     DATABASE    IP_ADDRESS    MASK               AUTH_TYPE
-
- local      all                                          trust
- host       all         127.0.0.1     255.255.255.255    md5
-</pre>
-
-	* If you can not find your PostgreSQL documentation locally or you 
-	did not install it, then you 
-	can get it <a href="http://www.postgresql.org/idocs/">here</a>.
-
-	</ul>
-
-	<b>On Windows</b>
-
-	<ul>
-		* Use the <a href="http://www.cygwin.com/">Cygwin</a> installer to 
-		  install the PostgreSQL DBMS.  It is
-		  found in the database category.
-		  
-		* <p>Read the file postgres-x.x.README at /usr/doc/Cygwin and read 
-		  the requirements to install PostgreSQL.  Those requirements
-		  are included with cygwin except cygipc.  A default installtion
-		  of cygwin does not install everything you will need, so on the 
-		  safe side, just include everything when installing cygwin.
-		
-		* <p>The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
-		
-		* <p>Once Cygwin has installed the PostgreSQL DBMS on your computer,
-		  read the file FAQ_MSWIN which is available 
-		  in /usr/doc/postgres-x.x 
-				  
-		* <p>Important notes from this file are:
-		  
-		  <ul>
-				<p><b>2.</b> - Install the latest <a href="http://www.neuro.gatech.edu/users/cwilson/cygutils/OBSOLETE/V1.1/cygipc/index.html">CygIPC</a> package.
-			  			  
-				<p>The cygipc package contains the ipc-daemon you will need 
-				to run before you can
-				run the PostgreSQL DBMS Server daemon (postmaster) or run
-				initdb which initializes the PostgreSQL database.
-			  
-				<p><b>3.</b>  The Cygwin bin directory has to be placed in 
-				the path before the Windows program directories, 
-				for example, C:\cygwin\bin 
-			  
-				<p><b>My own note.</b>  In the Windows control panel, I set
-				the environment variables PATH to my cygwin /usr/local/bin,
-				/usr/bin, and /bin.  I also set my LD_LIBRARY_PATH to 
-				/usr/local/lib and /usr/lib.  For example:
-			  
-				<p>
-<pre>
-PATH=c:\cygwin\usr\local\bin;c:\cygwin\usr\bin;c:\cygwin\bin;
-LD_LIBRARY_PATH=c:\cygwin\usr\local\lib;c:\cygwin\usr\lib;
-</pre>
-							  
-				<p><b>4.</b> Start the ipc-daemon that came with the cygipc 
-				package.  There
-				are two ways to do this: run it from the command line as:
-			  
-				<p>
-<pre>
-ipc-daemon &
-</pre> 			  
-				<p>or you can set it up as a Windows service.  See the 
-				file cygrunsrv.README at /usr/doc/Cygwin on how to do this
-				for ipc-daemon and postmaster.  Note the
-				troubleshooting section at the end of 
-				the cygrunsrv.README file.
-			  
-				<p>To install ipc-daemon as a service, 
-				you just have to run
-			  
-				<p>
-<pre>
-ipc-daemon --install-as-service' (--remove-as-service) 
-</pre>
-			  
-				<p>and then run
-			  
-<pre>
-net start ipc-daemon
-</pre>
-			</ul>
-			  
-			<p>Read the installation.html file 
-			at /usr/doc/postgresql-x.x/html/installation.html
-		
-			<p>You will see in this file that you will need to 
-			run the following commands:
-		  
-			<p>
-<pre>
-mkdir /usr/local/pgsql/data
-initdb -D /usr/local/pgsql/data
-postmaster -D /usr/local/pgsql/data
-createdb test
-psql test  		
-</pre>
-		  
-			<p>When you need to connect to the database, 
-			you will need ipc-daemon and postmaster running.  Start ipc-daemon
-			before any of the command above.  If you restart your computer, you
-			need to start ipc-daemon and postmaster either manually or as a 
-			service.
-		  
-			<p>psql is a command-line PostgreSQL client tool to 
-			enter and run SQL commands and queries.
-		  
-			<p>If there is no database user named postgres, create a user named
-			postgres with the following SQL command in the client tool psql:
-		  
-			<p>
-<pre>
-psql test
-create user postgres with password 'fun2db';
-</pre>
-			<p>The only reason I say this is so you can easily use the System.Data tests
-			without having to change the database, userid, etc.
-	</ul>
-	
-	<p>In the path mcs/class/System.Data/Test
-	there is a PostgreSQL test program named
-	PostgreTest.cs.  Thanks goes to Gonzalo for creating the original
-	PostgreSQL test.
-	
-	<p>To use it to test System.Data, you
-	modify the file to your PostgreSQL database
-	connection requirements:
-
-	<p>
-	<ul>
-		<li><b>dbname</b> database, ie., test</li>
-		<li><b>host</b> hostname of the PostgreSQL DBMS Server to connect to, ie., localhost</li>
-		<li><b>user</b> username, ie., someuser</li>
-		<li><b>password</b> password, ie., mypass1234</li>
-	</ul>
-	
-	<p>The connection string is in OLE-DB connection string format.  Internally,
-	SqlConnection converts this to the PostgreSQL connection string format.
-	
-	<p>
-<pre>
-    OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
-PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
-</pre>
-
-	<p>
-	Note that OLE-DB includes the semicolons while PostgreSQL's connection
-	string does not.
-
-	<p>
-    To compile the PostgresTest.cs program, do:
-    
-    <p>
-<pre>
-mcs PostgresTest.cs -r System.Data.dll
-</pre>
-    
-    <p>
-    To run using mint, do:
-    
-    <p>
-<pre>
-mint PostgresTest.exe
-</pre>
-    
-    <p>
-    To run using mono, do:
-<pre>
-mono PostgresTest.exe
-</pre>
-    
-    <p>Below, I show how the output from PostgresTest.  I have omitted a lot
-    of the meta data for the columns except two columns.  The classes
-    used were from System.Data.SqlClient and were used to connect to a
-    PostgreSQL database and retrieve data.
-
-<p>
-<pre>   
-
-danmorg@DANPC ~/mono/mcs/class/System.Data/Test
-$ mcs PostgresTest.cs -r System.Data.dll
-
-danmorg@DANPC ~/mono/mcs/class/System.Data/Test
-$ mono PostgresTest.exe
-        Postgres provider specific tests...
-
-                Drop table:
-Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  table "mono
-_postgres_test" does not exist
- <Stack Trace>
-
-                Create table with all supported types:
-OK
-                Insert values for all known types:
-OK
-                Update values:
-OK
-                Insert values for all known types:
-OK
-Aggregate: count(*)
-Agg Result: 2
-Aggregate: min(text_value)
-Agg Result: This is a text
-Aggregate: max(int4_value)
-Agg Result: 1048000
-Aggregate: sum(int4_value)
-Agg Result: 1048003
-                Select values from the database:
-Result is from a SELECT SQL Query.  Records Affected: -1
-Result Set 1...
-   Total Columns: 28
-ColumnName = boolean_value
-ColumnOrdinal = 1
-ColumnSize = 1
-NumericPrecision = 0
-NumericScale = 0
-IsUnique = False
-IsKey =
-BaseCatalogName =
-BaseColumnName = boolean_value
-BaseSchemaName =
-BaseTableName =
-DataType = System.Boolean
-AllowDBNull = False
-ProviderType = 16
-IsAliased = False
-IsExpression = False
-IsIdentity = False
-IsAutoIncrement = False
-IsRowVersion = False
-IsHidden = False
-IsLong = False
-IsReadOnly = False
-
- ...
-
- ColumnName = null_timestamp_value
- ColumnOrdinal = 28
- ColumnSize = 8
- NumericPrecision = 0
- NumericScale = 0
- IsUnique = False
- IsKey =
- BaseCatalogName =
- BaseColumnName = null_timestamp_value
- BaseSchemaName =
- BaseTableName =
- DataType = System.DateTime
- AllowDBNull = False
- ProviderType = 1184
- IsAliased = False
- IsExpression = False
- IsIdentity = False
- IsAutoIncrement = False
- IsRowVersion = False
- IsHidden = False
- IsLong = False
- IsReadOnly = False
-
- Gonna do a Read() now...
-   Row 0:
-    Col 0: boolean_value: False
-    Col 1: int2_value: 5
-    Col 2: int4_value: 3
-    Col 3: bigint_value: 9
-    Col 4: float_value: 3.141590
-    Col 5: double_value: 3.14159
-    Col 6: numeric_value: 123456789012.345
-    Col 7: char_value: Mono.Data!
-    Col 8: varchar_value: It was not me!
-    Col 9: text_value: We got data!
-    Col 10: point_value: (1,0)
-    Col 11: time_value: 01/01/1 21:13:14
-    Col 12: date_value: 02/29/2000 00:00:00
-    Col 13: timestamp_value: 02/29/2004 14:00:11
-    Col 14: null_boolean_value is NULL
-    Col 15: null_int2_value is NULL
-    Col 16: null_int4_value is NULL
-    Col 17: null_bigint_value is NULL
-    Col 18: null_float_value is NULL
-    Col 19: null_double_value is NULL
-    Col 20: null_numeric_value is NULL
-    Col 21: null_char_value is NULL
-    Col 22: null_varchar_value is NULL
-    Col 23: null_text_value is NULL
-    Col 24: null_point_value is NULL
-    Col 25: null_time_value is NULL
-    Col 26: null_date_value is NULL
-    Col 27: null_timestamp_value is NULL
-   Row 1:
-    Col 0: boolean_value: True
-    Col 1: int2_value: -22
-    Col 2: int4_value: 1048000
-    Col 3: bigint_value: 123456789012345
-    Col 4: float_value: 3.141590
-    Col 5: double_value: 3.14159
-    Col 6: numeric_value: 123456789012.345
-    Col 7: char_value: This is a char
-    Col 8: varchar_value: This is a varchar
-    Col 9: text_value: This is a text
-    Col 10: point_value: (1,0)
-    Col 11: time_value: 01/01/1 21:13:14
-    Col 12: date_value: 02/29/2000 00:00:00
-    Col 13: timestamp_value: 02/29/2004 14:00:11
-    Col 14: null_boolean_value is NULL
-    Col 15: null_int2_value is NULL
-    Col 16: null_int4_value is NULL
-    Col 17: null_bigint_value is NULL
-    Col 18: null_float_value is NULL
-    Col 19: null_double_value is NULL
-    Col 20: null_numeric_value is NULL
-    Col 21: null_char_value is NULL
-    Col 22: null_varchar_value is NULL
-    Col 23: null_text_value is NULL
-    Col 24: null_point_value is NULL
-    Col 25: null_time_value is NULL
-    Col 26: null_date_value is NULL
-    Col 27: null_timestamp_value is NULL
-   Total Rows Retrieved: 2
- Total Result sets: 1
-                Call ExecuteReader with a SQL Command. (Not INSERT,UPDATE,DELETE
- ).
- Result is from a SQL Command not (INSERT,UPDATE,DELETE).   Records Affected: -1
- Total Result sets: 0
-                Call ExecuteReader with a SQL Command. (Is INSERT,UPDATE,DELETE)
- .
- Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: 1
- Total Result sets: 0
-                Calling stored procedure version()
- Result: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.95.3-5
- Database Server Version: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.9
- 5.3-5
- Clean up...
-                Drop table...
- OK
- RESULT: 0
-
-</pre>
 

@@ -96,7 +96,7 @@
 
 @item Oct 9th, 2002: Various Mono oupdates.
 
-	Brian Ritchie, Dan Morgan, Rodrigo Moya and Ville Palo have
+	Brian Ritchie, Daniel Morgan, Rodrigo Moya and Ville Palo have
 	been working on various database providers.  The MySQL has
 	seen a lot of work, and a new ODBC provider is now on CVS and
 	more extensive regression tests have been checked in.
@@ -120,7 +120,7 @@
 	working on the UI elements to simplify their use (as seen on
 	the screenshot).  
 
-	<a href="http://gtksharp.sf.net">Gtk#</a> has seen a lot of
+	<a href="http://gtk-sharp.sf.net">Gtk#</a> has seen a lot of
 	activity specially as we start to build larger applications.
 	Vladimir Vukicevic, Kristian Rietveld, Rachel Hestilow, Mike
 	Kestner and Miguel de Icaza have been busy improving it.

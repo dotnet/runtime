@@ -1,3 +1,14 @@
+2002-10-10  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/index: corrected some mistypes
+	
+	* doc/adonet: updated the status and plans of all the ADO.NET providers
+	  and moved PostgreSQL specific stuff to doc/postgresql
+
+	* doc/postgresql: added new file to detail
+	  the status of the PostgreSQL ADO.NET provider
+	  and provide test notes for setting it up
+
 2002-10-09  Daniel Morgan <danmorg@sc.rr.com>
 
 	* data/config.in: add entry for MySQL native shared libraries
