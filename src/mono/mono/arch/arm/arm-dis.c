@@ -26,7 +26,7 @@ const static char* ops[] = {
 const static char* shift_types[] = {"lsl", "lsr", "asr", "ror"};
 
 const static char* mul_ops[] = {
-	"mul", "mla", "?", "?", "umul", "umlal", "smull", "smlal"
+	"mul", "mla", "?", "?", "umull", "umlal", "smull", "smlal"
 };
 
 const static char* reg_alias[] = {
@@ -58,6 +58,7 @@ void dump_mul(ARMDis* dis, ARMInstr i);
 void dump_swi(ARMDis* dis, ARMInstr i);
 void dump_swp(ARMDis* dis, ARMInstr i);
 void dump_wxfer(ARMDis* dis, ARMInstr i);
+void dump_clz(ARMDis* dis, ARMInstr i);
 
 
 /*
@@ -92,9 +93,9 @@ FILE* armdis_get_output(ARMDis* dis) {
 void dump_reg(ARMDis* dis, int reg) {
 	reg &= 0xF;
 	if (!use_reg_alias || (reg > 3 && reg < 11)) {
-			fprintf(dis->dis_out, "r%d", reg);
+		fprintf(dis->dis_out, "r%d", reg);
 	} else {
-			fprintf(dis->dis_out, reg_alias[reg]);
+		fprintf(dis->dis_out, reg_alias[reg]);
 	}
 }
 
@@ -136,28 +137,29 @@ void dump_reglist(ARMDis* dis, int reg_list) {
 
 
 void dump_br(ARMDis* dis, ARMInstr i) {
-	fprintf(dis->dis_out, "b%s%s\t%x",
+	fprintf(dis->dis_out, "b%s%s\t%x\t; %p -> %p",
 	    (i.br.link == 1) ? "l" : "",
-	    cond[i.br.cond], i.br.offset);
+	    cond[i.br.cond], i.br.offset, dis->pi, (int)dis->pi + 4*2 + ((int)(i.br.offset << 8) >> 6));
 }
 
 
 void dump_dpi(ARMDis* dis, ARMInstr i) {
 	fprintf(dis->dis_out, "%s%s", ops[i.dpi.all.opcode], cond[i.dpi.all.cond]);
 
-	if ((i.dpi.all.opcode >= ARMOP_TST) && (i.dpi.all.opcode <= ARMOP_CMN) && (i.dpi.all.s != 0)) {
+	if ((i.dpi.all.opcode < ARMOP_TST || i.dpi.all.opcode > ARMOP_CMN) && (i.dpi.all.s != 0)) {
 		fprintf(dis->dis_out, "s");
 	}
 
 	fprintf(dis->dis_out, "\t");
 
 	if ((i.dpi.all.opcode < ARMOP_TST) || (i.dpi.all.opcode > ARMOP_CMN)) {
-		/* comparison operation */
+		/* for comparison operations Rd is ignored */
 		dump_reg(dis, i.dpi.all.rd);
 		fprintf(dis->dis_out, ", ");
 	}
 
 	if ((i.dpi.all.opcode != ARMOP_MOV) && (i.dpi.all.opcode != ARMOP_MVN)) {
+		/* for MOV/MVN Rn is ignored */
 		dump_reg(dis, i.dpi.all.rn);
 		fprintf(dis->dis_out, ", ");
 	}
@@ -189,10 +191,11 @@ void dump_dpi(ARMDis* dis, ARMInstr i) {
 }
 
 void dump_wxfer(ARMDis* dis, ARMInstr i) {
-	fprintf(dis->dis_out, "%s%s%s\t",
+	fprintf(dis->dis_out, "%s%s%s%s\t",
 		(i.wxfer.all.ls == 0) ? "str" : "ldr",
 		cond[i.generic.cond],
-		(i.wxfer.all.b == 0) ? "" : "b");
+		(i.wxfer.all.b == 0) ? "" : "b",
+		(i.wxfer.all.ls != 0 && i.wxfer.all.wb != 0) ? "t" : "");
 	dump_reg(dis, i.wxfer.all.rd);
 	fprintf(dis->dis_out, ", [");
 	dump_reg(dis, i.wxfer.all.rn);
@@ -277,7 +280,7 @@ void dump_mul(ARMDis* dis, ARMInstr i) {
 		fprintf(dis->dis_out, ", ");
 		dump_reg(dis, i.mul.rn);
 		break;
-	case ARMOP_UMUL:
+	case ARMOP_UMULL:
 	case ARMOP_UMLAL:
 	case ARMOP_SMULL:
 	case ARMOP_SMLAL:
@@ -372,6 +375,15 @@ void dump_swi(ARMDis* dis, ARMInstr i) {
 }
 
 
+void dump_clz(ARMDis* dis, ARMInstr i) {
+	fprintf(dis->dis_out, "clz%s\t");
+	dump_reg(dis, i.clz.rd);
+	fprintf(dis->dis_out, ", ");
+	dump_reg(dis, i.clz.rm);
+	fprintf(dis->dis_out, "\n");
+}
+
+
 
 void armdis_decode(ARMDis* dis, void* p, int size) {
 	int i;
@@ -386,6 +398,7 @@ void armdis_decode(ARMDis* dis, void* p, int size) {
 
 	for (i=0; i<size; ++i) {
 		fprintf(dis->dis_out, "%p:\t%08x\t", pi, *pi);
+		dis->pi = pi;
 		instr.raw = *pi++;
 
 		if ((instr.raw & ARM_BR_MASK) == ARM_BR_TAG) {
@@ -394,6 +407,8 @@ void armdis_decode(ARMDis* dis, void* p, int size) {
 			dump_swp(dis, instr);
 		} else if ((instr.raw & ARM_MUL_MASK) == ARM_MUL_TAG) {
 			dump_mul(dis, instr);
+		} else if ((instr.raw & ARM_CLZ_MASK) == ARM_CLZ_TAG) {
+			dump_clz(dis, instr);
 		} else if ((instr.raw & ARM_WXFER_MASK) == ARM_WXFER_TAG) {
 			dump_wxfer(dis, instr);
 		} else if ((instr.raw & ARM_HXFER_MASK) == ARM_HXFER_TAG) {

@@ -156,9 +156,9 @@ arminstr_t* arm_mov_reg_imm32_cond(arminstr_t* p, int reg, armword_t imm32, int 
 
 	if ((shift & 0x80000001) != 1) {
 		if (shift >= 0) {
-			ARM_MOV_REG_IMM_COND(p, reg, imm32 >> ((32 - shift) & 31), shift >> 1, cond);
+			ARM_MOV_REG_IMM_COND(p, reg, imm32 >> ((32 - shift) & 31), shift, cond);
 		} else {
-			ARM_MVN_REG_IMM_COND(p, reg, (imm32 ^ (~0)) >> ((32 + 2 + shift) & 31), (-shift - 2) >> 1, cond);
+			ARM_MVN_REG_IMM_COND(p, reg, (imm32 ^ (~0)) >> ((32 + 2 + shift) & 31), (-shift - 2), cond);
 		}
 	} else {
 		mov_op = ARMOP_MOV;
@@ -172,12 +172,12 @@ arminstr_t* arm_mov_reg_imm32_cond(arminstr_t* p, int reg, armword_t imm32, int 
 
 		shift = (arm_bsf(imm32) - 1) & (~1);
 		snip = imm32 & (0xFF << shift);
-		ARM_EMIT(p, ARM_DEF_DPI_IMM_COND(snip >> shift, (32 - shift) >> 1, reg, 0, 0, mov_op, cond));
+		ARM_EMIT(p, ARM_DEF_DPI_IMM_COND((unsigned)snip >> shift, (32 - shift) >> 1, reg, 0, 0, mov_op, cond));
 
 		while ((imm32 ^= snip) != 0) {
 			shift = (arm_bsf(imm32) - 1) & (~1);
 			snip = imm32 & (0xFF << shift);
-			ARM_EMIT(p, ARM_DEF_DPI_IMM_COND(snip >> shift, (32 - shift) >> 1, reg, reg, 0, step_op, cond));
+			ARM_EMIT(p, ARM_DEF_DPI_IMM_COND((unsigned)snip >> shift, (32 - shift) >> 1, reg, reg, 0, step_op, cond));
 		}
 	}
 

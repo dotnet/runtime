@@ -28,5 +28,5 @@ echo -e "\n\n" >> $OUTFILE
 echo -e "\n/* DPIs, comparison */\n" >>  $OUTFILE
 gen "$CMP_OPCODES" cmp_macros
 
-echo -e "/* end generated */\n\n" >> $OUTFILE
+echo -e "\n/* end generated */\n" >> $OUTFILE
 

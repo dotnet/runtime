@@ -14,6 +14,7 @@ extern "C" {
 
 typedef struct _ARMDis {
 	FILE* dis_out;
+	void* pi;
 } ARMDis;
 
 
