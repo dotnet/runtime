@@ -2074,7 +2074,9 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
+			MonoClass *newobj_class;
 			MonoMethodSignature *csig;
+			stackval valuetype_this;
 			stackval *endsp = sp;
 			guint32 token;
 
@@ -2088,18 +2090,33 @@ ves_exec_method (MonoInvocation *frame)
 				THROW_EX (mono_get_exception_missing_method (), ip -5);
 
 			csig = child_frame.method->signature;
+			newobj_class = child_frame.method->klass;
 
-			if (child_frame.method->klass->parent == mono_defaults.array_class) {
+			if (newobj_class->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
-				o = ves_array_create (domain, child_frame.method->klass, csig, sp);
+				o = ves_array_create (domain, newobj_class, csig, sp);
 				goto array_constructed;
 			}
 
-			o = mono_object_new (domain, child_frame.method->klass);
 			/*
 			 * First arg is the object.
 			 */
-			child_frame.obj = o;
+			if (newobj_class->valuetype) {
+				void *zero;
+				vt_alloc (&newobj_class->byval_arg, &valuetype_this);
+				if (!newobj_class->enumtype && (newobj_class->byval_arg.type == MONO_TYPE_VALUETYPE)) {
+					zero = valuetype_this.data.vt.vt;
+					child_frame.obj = valuetype_this.data.vt.vt;
+				} else {
+					memset (&valuetype_this, 0, sizeof (stackval));
+					zero = &valuetype_this;
+					child_frame.obj = &valuetype_this;
+				}
+				stackval_from_data (&newobj_class->byval_arg, &valuetype_this, zero);
+			} else {
+				o = mono_object_new (domain, newobj_class);
+				child_frame.obj = o;
+			}
 
 			if (csig->param_count) {
 				sp -= csig->param_count;
@@ -2131,9 +2148,13 @@ ves_exec_method (MonoInvocation *frame)
 			 * a constructor returns void, but we need to return the object we created
 			 */
 array_constructed:
-			sp->type = VAL_OBJ;
-			sp->data.p = o;
-			sp->data.vt.klass = o->vtable->klass;
+			if (newobj_class->valuetype && !newobj_class->enumtype) {
+				*sp = valuetype_this;
+			} else {
+				sp->type = VAL_OBJ;
+				sp->data.p = o;
+				sp->data.vt.klass = newobj_class;
+			}
 			++sp;
 			BREAK;
 		}
@@ -2883,8 +2904,24 @@ array_constructed:
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f *= sp [0].data.f;
 			BREAK;
-		CASE (CEE_SUB_OVF) ves_abort(); BREAK;
-		CASE (CEE_SUB_OVF_UN) ves_abort(); BREAK;
+		CASE (CEE_SUB_OVF)
+		CASE (CEE_SUB_OVF_UN)
+			++ip;
+			--sp;
+			/* FIXME: handle undeflow/unsigned */
+			/* should probably consider the pointers as unsigned */
+			if (sp->type == VAL_I32)
+				sp [-1].data.i -= GET_NATI (sp [0]);
+			else if (sp->type == VAL_I64)
+				sp [-1].data.l -= sp [0].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				sp [-1].data.f -= sp [0].data.f;
+			else {
+				char *p = sp [-1].data.p;
+				p -= GET_NATI (sp [0]);
+				sp [-1].data.p = p;
+			}
+			BREAK;
 		CASE (CEE_ENDFINALLY)
 			if (frame->ex)
 				goto handle_fault;
