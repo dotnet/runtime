@@ -5,12 +5,12 @@
     <td>
 	<a href="http://www.ximian.com">Ximian</a> announced the
 	launch of the Mono project, an effort to create an open source
-	implementation of the .NET Development Framework. 
+	implementation of the .NET Development Framework.
 
 	Mono includes: <a href="c-sharp.html">a compiler</a> for the
 	C# language, a <a href="runtime.html">runtime</a> for the
-	Common Language Infrastructure (the CLR) and a set of <a
-	href="class-library.html">class libraries</a>.  
+	Common Language Infrastructure (also refered as the CLR) and a
+	set of <a href="class-library.html">class libraries</a>.  
 
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
@@ -34,6 +34,9 @@
 	<table border=1>
 	  <tr>
 	    <td>
+	      <b><center>Mono Status</center></b>
+	    </td>
+	    <td>
 	      <b><a href="c-sharp.html">C# Compiler</a></b>
 	    </td>
 	    <td>
@@ -56,7 +59,8 @@
 	    <td>
 	      Working:<br>
 	      Linux/x86, Linux/PPC<br>
-	      In progress: StrongARM, SPARC.
+	      In progress:<br>
+	      StrongARM, SPARC.
 	    </td>
 	  </tr>
 	  <tr>
@@ -80,16 +84,19 @@
   </tr>
 </table>
 
-	<b>Mono Talks:</b>
 
-	<b>Valencia</b>: August 8th.
+@item Aug 20th, 2002: Remoting work, Resources, SPARC checkins, ADO.NET
 
-	<b>Hong Kong:</b> August 10th.  If you live in Hong
-	Kong, come see Duncan Mak talk about the Mono project.
-	Details are <a
-	href="http://linux.org.hk/org/event/200208-talk/">here</a>
+	Mark Crichton has checked in his patches to get the SPARC port
+	on par with the PPC port.
 
-	<b>San Francisco</b>: August 14th.  Linux World Expo.
+	Dick has checked-in the resource reader and resource writers
+	to the class libraries, and Dietmar checked in the C# support
+	code for the remoting infrastructure.  
+
+	More work on System.Data: the LibGDA (our OleDB backend) based
+	providers are quickly maturing, and recently they executed
+	their first query.
 
 @item Aug 13th, 2002: MCS news, Gtk# progress, Windows.Forms, ADO.NET
 

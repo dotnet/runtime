@@ -2,17 +2,13 @@
 
 	MCS is currently able to compile itself and many more C#
 	programs (there is a test suite included that you can use).
+	It is routinely used to compile Mono, roughly half a million
+	lines of C# code.
 
 	We are in feature completion mode right now.  There are still
 	a couple of areas that are not covered by the Mono compiler, but
-	they are very very few at this point.
-
-	MCS was able to parse itself on April 2001, MCS compiled itself
-	for the first time on December 28 2001.  MCS became self hosting
-	on January 3rd, 2002. 
-
-	The Mono Runtime and the Mono execution engine were able to make
-	our compiler self hosting on March 12, 2002.
+	they are very very few at this point (security attributes),
+	you can also browse the MCS <a href="http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FMCS&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&newqueryname=&order=Reuse+same+sort+as+last+time&form_name=query">bugs</a> from Bugzilla.
 
 	A test suite is maintained to track the progress of
 	the compiler and various programs are routinely compiled and
@@ -27,8 +23,8 @@
 ** Running MCS
 
 	MCS is written in C# and uses heavily the .NET APIs.  MCS runs
-	on Linux (with the Mono runtime) and Windows (with the .NET
-	framework runtime)
+	on Linux with the Mono runtime and on Windows with both the
+	.NET runtime and the Mono runtime.
 
 ** Reporting Bugs in MCS
 
@@ -103,33 +99,14 @@
 	able to use this generic CIL optimizer in their projects
 	reducing their time to develop a production compiler. 
 
-<a name="tasks">
-** Current pending tasks
+** History
 
-	Simple tasks:
+	MCS was able to parse itself on April 2001, MCS compiled itself
+	for the first time on December 28 2001.  MCS became self hosting
+	on January 3rd, 2002. 
 
-	<ul>
-		* Redo the way we deal with built-in operators.
-	</ul>
-
-	Larger tasks:
-	<ul>
-
-		* Jay does not work correctly with `error'
-		  productions, making parser errors hard to point.  It
-		  would be best to port the Bison-To-Java compiler to
-		  become Bison-to-C# compiler. 
-		  
-		  Nick Drochak has started a project on SourceForge for this.
-		  You can find the project at: <a href="http://sourceforge.net/projects/jb2csharp/">
-		  http://sourceforge.net/projects/jb2csharp/</a>
-
-		* Semantic Analysis: Return path coverage and
-		  initialization before use coverage are two great
-		  features of C# that help reduce the number of bugs
-		  in applications.  It is one interesting hack.
-
-	</ul>
+	The Mono Runtime and the Mono execution engine were able to make
+	our compiler self hosting on March 12, 2002.
 
 ** Questions and Answers
 
