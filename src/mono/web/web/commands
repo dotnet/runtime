@@ -7,6 +7,7 @@
 1,C# Compiler,c-sharp.html,c-sharp.src
 1,Status,status.html,status.src
 0,Download,download.html,download.src
+1,CVS access,ccvs.html,ccvs.src
 0,Contributing,contributing.html,contributing.src
 1,Documentation,documentation.html,documentation.src
 1,Test Suite,testing.html,testing.src
