@@ -8938,3 +8938,165 @@ mono_declsec_flags_from_assembly (MonoAssembly *assembly)
 	idx |= MONO_HAS_DECL_SECURITY_ASSEMBLY;
 	return mono_declsec_get_flags (assembly->image, idx);
 }
+
+
+/*
+ * Fill actions for the specific index (which may either be an encoded class token or
+ * an encoded method token) from the metadata image.
+ * Returns TRUE if some actions requiring code generation are present, FALSE otherwise.
+ */
+static MonoBoolean
+fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityActions* actions)
+{
+	MonoBoolean result = FALSE;
+	MonoTableInfo *t;
+	guint32 cols [MONO_DECL_SECURITY_SIZE];
+	int index = mono_metadata_declsec_from_index (image, token);
+	int i;
+
+	t  = &image->tables [MONO_TABLE_DECLSECURITY];
+	for (i = index; i < t->rows; i++) {
+		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
+
+		if (cols [MONO_DECL_SECURITY_PARENT] != token)
+			return result;
+
+		/* if present only replace (class) permissions with method permissions */
+		/* if empty accept either class or method permissions */
+		switch (cols [MONO_DECL_SECURITY_ACTION]) {
+		case SECURITY_ACTION_DEMAND:
+			if (!actions->demand.blob) {
+				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
+				actions->demand.blob = (char*) (blob + 2);
+				actions->demand.size = mono_metadata_decode_blob_size (blob, &blob);
+				result = TRUE;
+			}
+			break;
+		case SECURITY_ACTION_NONCASDEMAND:
+			if (!actions->noncasdemand.blob) {
+				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
+				actions->noncasdemand.blob = (char*) (blob + 2);
+				actions->noncasdemand.size = mono_metadata_decode_blob_size (blob, &blob);
+				result = TRUE;
+			}
+			break;
+		case SECURITY_ACTION_DEMANDCHOICE:
+			if (!actions->demandchoice.blob) {
+				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
+				actions->demandchoice.blob = (char*) (blob + 2);
+				actions->demandchoice.size = mono_metadata_decode_blob_size (blob, &blob);
+				result = TRUE;
+			}
+			break;
+		}
+	}
+
+	return result;
+}
+
+/*
+ * Collect all actions (that requires to generate code in mini) assigned for
+ * the specified method.
+ * Note: Don't use the content of actions if the function return FALSE.
+ */
+MonoBoolean
+mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
+{
+	MonoImage *image = method->klass->image;
+	MonoBoolean result = FALSE;
+	guint32 flags;
+
+	/* quick exit if no declarative security is present in the metadata */
+	if (!image->tables [MONO_TABLE_DECLSECURITY].rows)
+		return FALSE;
+
+	memset (demands, 0, sizeof (MonoDeclSecurityActions));
+
+	/* First we look for method-level attributes */
+	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
+		guint32 idx = find_method_index (method);
+		idx <<= MONO_HAS_DECL_SECURITY_BITS;
+		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
+		result = fill_actions_from_index (image, idx, demands);
+	}
+
+	/* Next we fill holes with class-level attributes */
+	/* Here we use (or create) the class declarative cache to look for demands */
+	flags = mono_declsec_flags_from_class (method->klass);
+	if (flags & (MONO_DECLSEC_FLAG_DEMAND | MONO_DECLSEC_FLAG_NONCAS_DEMAND | MONO_DECLSEC_FLAG_DEMAND_CHOICE)) {
+		guint32 idx = mono_metadata_token_index (method->klass->type_token);
+		idx <<= MONO_HAS_DECL_SECURITY_BITS;
+		idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
+		result |= fill_actions_from_index (image, idx, demands);
+	}
+
+	/* The boolean return value is used as a shortcut in case nothing needs to
+	   be generated (e.g. LinkDemand[Choice] and InheritanceDemand[Choice]) */
+	return result;
+}
+
+static MonoBoolean
+get_declsec_action (MonoImage *image, guint32 token, guint32 action, MonoDeclSecurityEntry *entry)
+{
+	guint32 cols [MONO_DECL_SECURITY_SIZE];
+	MonoTableInfo *t;
+	int i;
+
+	int index = mono_metadata_declsec_from_index (image, token);
+	if (index == -1)
+		return FALSE;
+
+	t =  &image->tables [MONO_TABLE_DECLSECURITY];
+	for (i = index; i < t->rows; i++) {
+		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
+
+		/* shortcut - index are ordered */
+		if (token != cols [MONO_DECL_SECURITY_PARENT])
+			return FALSE;
+
+		if (cols [MONO_DECL_SECURITY_ACTION] == action) {
+			const char *metadata = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
+			entry->blob = (char*) (metadata + 2);
+			entry->size = mono_metadata_decode_blob_size (metadata, &metadata);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+MonoBoolean
+mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecurityEntry *entry)
+{
+	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
+		guint32 idx = find_method_index (method);
+		idx <<= MONO_HAS_DECL_SECURITY_BITS;
+		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
+		return get_declsec_action (method->klass->image, idx, action, entry);
+	}
+	return FALSE;
+}
+
+MonoBoolean
+mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurityEntry *entry)
+{
+	/* use cache */
+	guint32 flags = mono_declsec_flags_from_class (klass);
+	if (declsec_flags_map [action] & flags) {
+		guint32 idx = mono_metadata_token_index (klass->type_token);
+		idx <<= MONO_HAS_DECL_SECURITY_BITS;
+		idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
+		return get_declsec_action (klass->image, idx, action, entry);
+	}
+	return FALSE;
+}
+
+MonoBoolean
+mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry)
+{
+	guint32 idx = 1; /* there is only one assembly */
+	idx <<= MONO_HAS_DECL_SECURITY_BITS;
+	idx |= MONO_HAS_DECL_SECURITY_ASSEMBLY;
+
+	return get_declsec_action (assembly->image, idx, action, entry);
+}

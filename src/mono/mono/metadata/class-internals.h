@@ -497,6 +497,7 @@ typedef struct {
 	MonoClass *marshalbyrefobject_class;
 	MonoClass *monitor_class;
 	MonoClass *iremotingtypeinfo_class;
+	MonoClass *runtimesecurityframe_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

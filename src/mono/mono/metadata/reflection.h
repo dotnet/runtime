@@ -105,5 +105,20 @@ guint32 mono_declsec_flags_from_method (MonoMethod *method);
 guint32 mono_declsec_flags_from_class (MonoClass *klass);
 guint32 mono_declsec_flags_from_assembly (MonoAssembly *assembly);
 
-#endif /* __METADATA_REFLECTION_H__ */
+typedef struct {
+	char *blob;				/* pointer to metadata blob */
+	guint32 size;				/* size of the metadata blob */
+} MonoDeclSecurityEntry;
 
+typedef struct {
+	MonoDeclSecurityEntry demand;
+	MonoDeclSecurityEntry noncasdemand;
+	MonoDeclSecurityEntry demandchoice;
+} MonoDeclSecurityActions;
+
+MonoBoolean mono_declsec_get_demands (MonoMethod *callee, MonoDeclSecurityActions* demands);
+MonoBoolean mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecurityEntry *entry);
+MonoBoolean mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurityEntry *entry);
+MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry);
+
+#endif /* __METADATA_REFLECTION_H__ */
