@@ -608,3 +608,5 @@ sbb_imm: dest:i src1:i len:8
 br_reg: src1:i len:8
 ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4
+op_bigmul: len:2 dest:l src1:a src2:i
+op_bigmul_un: len:2 dest:l src1:a src2:i

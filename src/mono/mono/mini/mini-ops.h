@@ -281,6 +281,7 @@ MINI_OP(OP_ENDFILTER,  "op_endfilter")
 
 /* inline (long)int * (long)int */
 MINI_OP(OP_BIGMUL, "op_bigmul")
+MINI_OP(OP_BIGMUL_UN, "op_bigmul_un")
 
 /* opcodes most architecture have */
 MINI_OP(OP_ADC,     "adc")

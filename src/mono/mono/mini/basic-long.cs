@@ -69,6 +69,24 @@ class Tests {
 		return 0;
 	}
 	
+	static int test_1_bigmul5 () {
+                int a = System.Int32.MaxValue, b = System.Int32.MinValue;
+                long c;
+                c = (long) a * (long) b;
+		if (c == -4611686016279904256)
+			return 1;
+		return 0;
+	}
+	
+	static int test_1_bigmul6 () {
+                uint a = System.UInt32.MaxValue, b = System.UInt32.MaxValue/(uint)2;
+                ulong c;
+                c = (ulong) a * (ulong) b;
+		if (c == 9223372030412324865)
+			return 1;
+		return 0;
+	}
+	
 	static int test_0_beq () {
 		long a = 0xffffffffff;
 		if (a != 0xffffffffff)

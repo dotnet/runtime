@@ -1981,6 +1981,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		switch (ins->opcode) {
 		case OP_BIGMUL:
+			x86_mul_reg (code, ins->sreg2, TRUE);
+			break;
+		case OP_BIGMUL_UN:
 			x86_mul_reg (code, ins->sreg2, FALSE);
 			break;
 		case OP_X86_SETEQ_MEMBASE:

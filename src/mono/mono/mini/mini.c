@@ -5618,7 +5618,7 @@ dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 				&& (tree->inst_right->opcode == CEE_CONV_I8 
 					|| tree->inst_right->opcode == CEE_CONV_U8)
 				&& tree->inst_right->inst_left->type == STACK_I4) {
-			tree->opcode = OP_BIGMUL;
+			tree->opcode = (tree->inst_left->opcode == CEE_CONV_I8 ? OP_BIGMUL: OP_BIGMUL_UN);
 			tree->inst_left = tree->inst_left->inst_left;
 			tree->inst_right = tree->inst_right->inst_left;
 			dec_foreach (tree, cfg);

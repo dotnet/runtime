@@ -78,6 +78,10 @@ lreg: OP_BIGMUL (reg, reg) {
 	MONO_EMIT_NEW_BIALU (s, OP_BIGMUL, state->reg1, state->left->reg1, state->right->reg1); 
 }
 
+lreg: OP_BIGMUL_UN (reg, reg) {
+	MONO_EMIT_NEW_BIALU (s, OP_BIGMUL_UN, state->reg1, state->left->reg1, state->right->reg1); 
+}
+
 lreg: OP_LADD (lreg, lreg) {
 	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_BIALU (s, tree, OP_ADC, state->reg2, state->left->reg2, state->right->reg2);
