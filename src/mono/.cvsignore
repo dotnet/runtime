@@ -20,3 +20,4 @@ mono.spec
 autom4te.cache
 mint.pc
 stamp-h1
+config.h.in
