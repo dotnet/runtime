@@ -3237,9 +3237,11 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
 		params [n - 1].constraints = get_constraints (image, i + 1);
-		i++;
+		if (++i >= tdef->rows)
+			break;
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
-	} while (cols [MONO_GENERICPARAM_NUMBER] == last_num + 1);
+		n++;
+	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 	
 	if (num)
 		*num = n;

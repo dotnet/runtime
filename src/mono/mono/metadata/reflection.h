@@ -388,6 +388,7 @@ typedef struct {
 	MonoGenericParam *param;
 	MonoReflectionType *type;
 	MonoString *name;
+	guint32 flags;
 	MonoArray *constraints;
 } MonoReflectionGenericParam;
 

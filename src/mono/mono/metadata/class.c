@@ -1148,7 +1148,7 @@ mono_class_init (MonoClass *class)
 				class->methods [i]->klass = class;
 				/*g_print ("inflated method %s in %s\n", class->methods [i]->name, class->name);*/
 			}
-		} else {
+		} else if (!class->methods) {
 			class->methods = g_new (MonoMethod*, class->method.count);
 			for (i = 0; i < class->method.count; ++i) {
 				class->methods [i] = mono_get_method (class->image,
