@@ -265,7 +265,6 @@ void mono_monitor_exit (MonoObject *obj)
 		return;
 	}
 	if(mon->owner!=GetCurrentThreadId ()) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return;
 	}
 	
