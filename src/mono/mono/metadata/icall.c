@@ -1694,26 +1694,27 @@ ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 	return FALSE;
 }
 
-static MonoReflectionType*
-ves_icall_TypeBuilder_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam)
+static MonoReflectionGenericParam*
+ves_icall_TypeBuilder_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoString *name, int index)
 {
-	guint32 index;
-
 	MONO_ARCH_SAVE_REGS;
 
-	index = mono_array_length (tb->generic_params) - 1;
-	return mono_reflection_define_generic_parameter (tb, NULL, index, gparam);
+	return mono_reflection_define_generic_parameter (tb, NULL, name, index);
 }
 
-static MonoReflectionType*
-ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *mb, MonoReflectionGenericParam *gparam)
+static MonoReflectionGenericParam*
+ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *mb, MonoString *name, int index)
 {
-	guint32 index;
-
 	MONO_ARCH_SAVE_REGS;
 
-	index = mono_array_length (mb->generic_params) - 1;
-	return mono_reflection_define_generic_parameter (NULL, mb, index, gparam);
+	return mono_reflection_define_generic_parameter (NULL, mb, name, index);
+}
+
+static void
+ves_icall_MonoGenericParam_initialize (MonoReflectionGenericParam *gparam)
+{
+	MONO_ARCH_SAVE_REGS;
+	mono_reflection_initialize_generic_parameter (gparam);
 }
 
 static MonoReflectionMethod *
@@ -3362,6 +3363,18 @@ ves_icall_Type_make_array_type (MonoReflectionType *type, int rank)
 	return mono_type_get_object (mono_object_domain (type), &aklass->byval_arg);
 }
 
+static MonoReflectionType *
+ves_icall_Type_make_byref_type (MonoReflectionType *type)
+{
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type);
+
+	return mono_type_get_object (mono_object_domain (type), &klass->this_arg);
+}
+
 static MonoObject *
 ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
 						   MonoReflectionMethod *info)
@@ -4492,6 +4505,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.MonoGenericInst::inflate_method", mono_reflection_inflate_method_or_ctor,
 	"System.Reflection.MonoGenericInst::inflate_ctor", mono_reflection_inflate_method_or_ctor,
 	"System.Reflection.MonoGenericInst::inflate_field", mono_reflection_inflate_field,
+	"System.Reflection.MonoGenericParam::initialize", ves_icall_MonoGenericParam_initialize,
 	
 	/*
 	 * System.Type
@@ -4506,6 +4520,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,
 	"System.Type::IsArrayImpl", ves_icall_Type_IsArrayImpl,
 	"System.Type::make_array_type", ves_icall_Type_make_array_type,
+	"System.Type::make_byref_type", ves_icall_Type_make_byref_type,
 
 	/* Type generics icalls */
 	"System.Type::GetGenericArguments", ves_icall_Type_GetGenericArguments,

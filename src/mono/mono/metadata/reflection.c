@@ -1641,6 +1641,7 @@ static void
 mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
 {
 	MonoDynamicTable *table;
+	MonoGenericParam *param;
 	guint32 *values;
 	guint32 table_idx;
 
@@ -1648,10 +1649,12 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	table_idx = table->next_idx ++;
 	values = table->values + table_idx * MONO_GENERICPARAM_SIZE;
 
+	param = gparam->type.type->data.generic_param;
+
 	values [MONO_GENERICPARAM_OWNER] = owner;
-	values [MONO_GENERICPARAM_FLAGS] = gparam->param->flags;
-	values [MONO_GENERICPARAM_NUMBER] = gparam->param->num;
-	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, gparam->param->name);
+	values [MONO_GENERICPARAM_FLAGS] = param->flags;
+	values [MONO_GENERICPARAM_NUMBER] = param->num;
+	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 	values [MONO_GENERICPARAM_KIND] = 0;
 	values [MONO_GENERICPARAM_DEPRECATED_CONSTRAINT] = 0;
 
@@ -2139,14 +2142,10 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	mono_metadata_encode_value (count, p, &p);
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam;
-		MonoType t;
 
 		gparam = mono_array_get (tb->generic_params, MonoReflectionGenericParam *, i);
 
-		t.type = MONO_TYPE_VAR;
-		t.data.generic_param = gparam->param;
-
-		encode_type (assembly, &t, p, &p);
+		encode_type (assembly, gparam->type.type, p, &p);
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPESPEC];
@@ -3393,7 +3392,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
 	}
-	else if (strcmp (klass->name, "MonoType") == 0) {
+	else if (strcmp (klass->name, "MonoType") == 0 ||
+		 strcmp (klass->name, "MonoGenericParam") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType *)obj;
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref (assembly, tb->type));
@@ -5868,7 +5868,7 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
-		klass->gen_params [i] = *gparam->param;
+		klass->gen_params [i] = *gparam->type.type->data.generic_param;
 	}
 
 	ensure_runtime_vtable (klass);
@@ -6717,25 +6717,55 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	return res;
 }
 
-MonoReflectionType *
-mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, guint32 index, MonoReflectionGenericParam *gparam)
+MonoReflectionGenericParam *
+mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, MonoString *name, guint32 index)
 {
-	MonoClass *klass;
+	static MonoClass *System_Reflection_MonoGenericParam;
 	MonoImage *image;
 	MonoGenericParam *param;
-	int count, i;
+	MonoReflectionGenericParam *res;
+	MonoDomain *domain;
 
-	param = gparam->param = g_new0 (MonoGenericParam, 1);
+	if (!System_Reflection_MonoGenericParam) {
+		System_Reflection_MonoGenericParam = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoGenericParam");
+		g_assert (System_Reflection_MonoGenericParam);
+	}
+
+	param = g_new0 (MonoGenericParam, 1);
 
 	if (mb)
 		tb = (MonoReflectionTypeBuilder *) mb->type;
 
+	domain = mono_object_domain (tb);
 	image = (MonoImage*)tb->module->dynamic_image;
 
 	param->method = NULL;
-	param->name = mono_string_to_utf8 (gparam->name);
+	param->name = mono_string_to_utf8 (name);
 	param->num = index;
 
+	res = (MonoReflectionGenericParam *)mono_object_new (domain, System_Reflection_MonoGenericParam);
+	res->type.type = g_new0 (MonoType, 1);
+	res->type.type->type = mb ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+	res->type.type->data.generic_param = param;
+
+	res->refobj = mb ? (MonoObject *) mb : (MonoObject *) tb;
+	res->index = index;
+	res->name = name;
+
+	return res;
+}
+
+void
+mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam)
+{
+	MonoGenericParam *param;
+	MonoReflectionMethodBuilder *mb = NULL;
+	MonoReflectionTypeBuilder *tb;
+	MonoImage *image;
+	int count, i;
+
+	param = gparam->type.type->data.generic_param;
 	count = gparam->constraints ? mono_array_length (gparam->constraints) : 0;
 	param->constraints = g_new0 (MonoClass *, count + 1);
 	for (i = 0; i < count; i++) {
@@ -6744,11 +6774,17 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 		param->constraints [i] = mono_class_from_mono_type (constraint->type);
 	}
 
-	klass = mono_class_from_generic_parameter (param, image, mb != NULL);
+	if (!strcmp (gparam->refobj->vtable->klass->name, "MethodBuilder")) {
+		mb = (MonoReflectionMethodBuilder *) gparam->refobj;
+		tb = (MonoReflectionTypeBuilder *) mb->type;
+	} else
+		tb = (MonoReflectionTypeBuilder *) gparam->refobj;
 
-	gparam->type = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+	image = (MonoImage*)tb->module->dynamic_image;
 
-	return gparam->type;
+	param->pklass = mono_class_from_generic_parameter (param, image, mb != NULL);
+
+	gparam->initialized = TRUE;
 }
 
 MonoArray *

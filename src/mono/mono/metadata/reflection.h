@@ -416,12 +416,13 @@ typedef struct {
 } MonoReflectionTypeBuilder;
 
 typedef struct {
-	MonoObject obj;
-	MonoGenericParam *param;
-	MonoReflectionType *type;
+	MonoReflectionType type;
+	MonoObject *refobj;
+	guint32 index;
 	MonoString *name;
 	guint32 flags;
 	MonoArray *constraints;
+	guint32 initialized;
 } MonoReflectionGenericParam;
 
 typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;
@@ -597,7 +598,8 @@ MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBui
 
 void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);
 
-MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, guint32 index, MonoReflectionGenericParam *gparam);
+MonoReflectionGenericParam *mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, MonoString *name, guint32 index);
+void mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam);
 
 MonoReflectionGenericInst*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);
