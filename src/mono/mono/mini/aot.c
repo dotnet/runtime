@@ -387,6 +387,8 @@ mono_aot_init (void)
 
 	if (getenv ("MONO_LASTAOT"))
 		mono_last_aot_method = atoi (getenv ("MONO_LASTAOT"));
+	if (getenv ("MONO_AOT_CACHE"))
+		use_aot_cache = TRUE;
 }
  
 static MonoJitInfo *
