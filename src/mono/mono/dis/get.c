@@ -978,15 +978,21 @@ get_method (MonoMetadata *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
-	char *res, *class, *fancy_name, *sig;
+	char *sig;
 	const char *name;
+
+	MonoMethod *mh;
+
+	mh = mono_get_method (m, token, NULL);
+	g_assert (mh);
+
+	name = g_strdup_printf ("%s.%s::%s", mh->klass->name_space, 
+				mh->klass->name, mh->name); 
 
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF:
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
 					  idx - 1, method_cols, MONO_METHOD_SIZE);
-
-		name = mono_metadata_string_heap (m, method_cols [MONO_METHOD_NAME]);
 
 		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name);
 		return sig;
@@ -995,19 +1001,9 @@ get_method (MonoMetadata *m, guint32 token)
 		
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 					  idx - 1, member_cols, MONO_MEMBERREF_SIZE);
-		class = get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS]);
-		fancy_name = g_strconcat (
-			class, "::",
-			mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]),
-			NULL);
-		
 		sig = get_methodref_signature (
-			m, member_cols [MONO_MEMBERREF_SIGNATURE], fancy_name);
-		g_free (fancy_name);
-
-		res = g_strdup_printf ("%s", sig);
-		g_free (sig);
-		return res;
+			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
+		return sig;
 	}
 	       
 	default:
