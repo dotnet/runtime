@@ -1800,6 +1800,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		MonoType *t = sig->params [i];
 
 		switch (t->type) {
+		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I2:
