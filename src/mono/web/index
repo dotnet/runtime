@@ -142,6 +142,45 @@
   </tr>
 </table>
 
+@item Sep 1st, 2003: Ice for Mono;  XmlSerializer generators; Monodoc progress.
+
+	<b>Ice:</b> Vladimir has checked into CVS (Module ginzu) an
+	implementation of <a href="http://www.zeroc.com">ZeroC's</a>
+	<a href="http://www.zeroc.com/ice.html">ICE</a> protocol.  It
+	is implemented using Remoting.  If you were looking for an
+	efficient binary protocol to use with Remoting, this is it.
+
+	ICE is simpler to use than CORBA, and was created by people
+	who were deeply involved in CORBA and wanted to fix its
+	problems (you can see a <a
+	href="http://www.zeroc.com/iceVsCorba.html">list of
+	differences</a>).
+
+	<b>XmlSerializer</b>: Lluis has checked in a new technology
+	for use in our XmlSerializer: the XmlSerializer code
+	generator.  Currently our XmlSerializer generates a
+	description of instructions for serializing data, these
+	instructions are later interpreted while using it: Reflection
+	is used to pull all the data.  The code generator is the first
+	step into turning the Serializer from an intepreter into a
+	compiler and improving the performance of it.
+
+	Currently was used internally to implement the WSDL
+	serializer, in the future it will just be part of the standard
+	serialization process.
+
+	<b>MonoDoc:</b> New providers!  Thanks to <a
+	href="http://www.jaggersoft.com/">Jon Jagger</a> for providing
+	us with his master XML files for the C# specification we now
+	have integrated the C# spec into Monodoc.  Another provider is
+	the Error provider: now we include all the C# compiler errors
+	in the help system.
+
+	Alp has contributed various user interface improvement, and
+	updated our list widget for key navigation; Ben made the
+	matches window more useful and Joshua has helped us clean up
+	the ECMA provider even more.
+
 @item Aug 14th, 2003: Mono 0.26 has been released
 
 	A new version of Mono is available, the new features include:
