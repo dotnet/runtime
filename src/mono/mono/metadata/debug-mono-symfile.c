@@ -914,6 +914,7 @@ static gpointer
 write_type (MonoSymbolFile *symfile, MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
+	int num_fields = 0;
 	guint32 size;
 
 	if (!type_table)
@@ -939,6 +940,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		MonoClass *klass = type->data.klass;
+		int i;
 
 		mono_class_init (klass);
 		if (klass->enumtype) {
@@ -946,11 +948,20 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 			break;
 		}
 
-		size = 10 + sizeof (int) + klass->field.count * (4 + sizeof (gpointer));
+		for (i = 0; i < klass->field.count; i++)
+			if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+				++num_fields;
+
+		size = 10 + sizeof (int) + num_fields * (4 + sizeof (gpointer));
+
 		if (type->type == MONO_TYPE_CLASS)
 			size += sizeof (gpointer);
 		break;
 	}
+
+	case MONO_TYPE_OBJECT:
+		size = 5 + sizeof (int);
+		break;
 
 	default:
 		size = sizeof (int);
@@ -1015,12 +1026,15 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 			break;
 		}
 
-		*((int *) ptr)++ = -10 - klass->field.count * (4 + sizeof (gpointer));
+		*((int *) ptr)++ = -10 - num_fields * (4 + sizeof (gpointer));
 		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
 		*ptr++ = type->type == MONO_TYPE_CLASS ? 6 : 5;
 		*ptr++ = type->type == MONO_TYPE_CLASS;
-		*((guint32 *) ptr)++ = klass->field.count;
+		*((guint32 *) ptr)++ = num_fields;
 		for (i = 0; i < klass->field.count; i++) {
+			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+
 			*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
 			*((gpointer *) ptr)++ = write_type (symfile, klass->fields [i].type);
 		}
@@ -1034,6 +1048,12 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 
 		break;
 	}
+
+	case MONO_TYPE_OBJECT:
+		*((int *) ptr)++ = -5;
+		*((guint32 *) ptr)++ = sizeof (MonoObject);
+		*ptr++ = 7;
+		break;
 
 	default:
 		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, type->type, type->byref);
