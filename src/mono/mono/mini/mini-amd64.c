@@ -186,6 +186,71 @@ typedef enum ArgumentClass {
 	ARG_CLASS_SSE
 } ArgumentClass;
 
+static ArgumentClass
+merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
+{
+	ArgumentClass class2;
+
+	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		class2 = ARG_CLASS_INTEGER;
+		break;
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		class2 = ARG_CLASS_SSE;
+		break;
+
+	case MONO_TYPE_TYPEDBYREF:
+		g_assert_not_reached ();
+
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype)
+			class2 = ARG_CLASS_INTEGER;
+		else {
+			MonoMarshalType *info = mono_marshal_load_type_info (type->data.klass);
+			int i;
+
+			for (i = 0; i < info->num_fields; ++i) {
+				class2 = class1;
+				class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
+			}
+		}
+		break;
+	}
+
+	/* Merge */
+	if (class1 == class2)
+		;
+	else if (class1 == ARG_CLASS_NO_CLASS)
+		class1 = class2;
+	else if ((class1 == ARG_CLASS_MEMORY) || (class2 == ARG_CLASS_MEMORY))
+		class1 = ARG_CLASS_MEMORY;
+	else if ((class1 == ARG_CLASS_INTEGER) || (class2 == ARG_CLASS_INTEGER))
+		class1 = ARG_CLASS_INTEGER;
+	else
+		class1 = ARG_CLASS_SSE;
+
+	return class1;
+}
+
 static void
 add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			   gboolean is_return,
@@ -200,7 +265,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	else 
 		size = mono_type_stack_size (&type->data.klass->byval_arg, NULL);
 
-	if (!sig->pinvoke || (size > 16)) {
+	if (!sig->pinvoke || (size == 0) || (size > 16)) {
 		/* Allways pass in memory */
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
@@ -209,8 +274,9 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		return;
 	}
 
-	if ((size % 8) != 0)
-		NOT_IMPLEMENTED;
+	/* FIXME: Handle structs smaller than 8 bytes */
+	//if ((size % 8) != 0)
+	//	NOT_IMPLEMENTED;
 
 	if (size > 8)
 		nquads = 2;
@@ -234,7 +300,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	for (quad = 0; quad < nquads; ++quad) {
 		int size, align;
-		ArgumentClass class1, class2;
+		ArgumentClass class1;
 		
 		class1 = ARG_CLASS_NO_CLASS;
 		for (i = 0; i < info->num_fields; ++i) {
@@ -252,54 +318,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			if ((quad == 1) && (info->fields [i].offset < 8))
 				continue;
 
-			switch (info->fields [i].field->type->type) {
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_CHAR:
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_FNPTR:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-				class2 = ARG_CLASS_INTEGER;
-				break;
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-				class2 = ARG_CLASS_SSE;
-				break;
-
-			case MONO_TYPE_TYPEDBYREF:
-				g_assert_not_reached ();
-
-			case MONO_TYPE_VALUETYPE:
-				if (sig->params [i]->data.klass->enumtype)
-					class2 = ARG_CLASS_INTEGER;
-				else
-					NOT_IMPLEMENTED;
-			}
-
-			/* Merge */
-			if (class1 == class2)
-				;
-			else if (class1 == ARG_CLASS_NO_CLASS)
-				class1 = class2;
-			else if ((class1 == ARG_CLASS_MEMORY) || (class2 == ARG_CLASS_MEMORY))
-				class1 = ARG_CLASS_MEMORY;
-			else if ((class1 == ARG_CLASS_INTEGER) || (class2 == ARG_CLASS_INTEGER))
-				class1 = ARG_CLASS_INTEGER;
-			else
-				class1 = ARG_CLASS_SSE;
+			class1 = merge_argument_class_from_type (info->fields [i].field->type, class1);
 		}
 		g_assert (class1 != ARG_CLASS_NO_CLASS);
 		args [quad] = class1;
@@ -928,6 +947,23 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
  * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
  */
 
+static int
+arg_storage_to_ldind (ArgStorage storage)
+{
+	switch (storage) {
+	case ArgInIReg:
+		return CEE_LDIND_I;
+	case ArgInDoubleSSEReg:
+		return CEE_LDIND_R8;
+	case ArgInFloatSSEReg:
+		return CEE_LDIND_R4;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}
+
 /* 
  * take the arguments and generate the arch-specific
  * instructions to properly call the function in call.
@@ -1018,7 +1054,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 						/* Simpler case */
 
-						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						MONO_INST_NEW (cfg, load, arg_storage_to_ldind (ainfo->pair_storage [0]));
 						load->inst_left = in;
 
 						arg->inst_left = load;
@@ -1038,7 +1074,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						load2->inst_left = load;
 						load2->inst_right = offset_ins;
 
-						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						MONO_INST_NEW (cfg, load, arg_storage_to_ldind (ainfo->pair_storage [0]));
 						load->inst_left = load2;
 
 						arg->inst_left = load;
@@ -1053,7 +1089,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						load2->inst_left = load;
 						load2->inst_right = offset_ins;
 
-						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						MONO_INST_NEW (cfg, load, arg_storage_to_ldind (ainfo->pair_storage [1]));
 						load->inst_left = load2;
 
 						MONO_INST_NEW (cfg, arg, OP_OUTARG);
@@ -2631,6 +2667,12 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 				switch (cinfo->ret.pair_storage [quad]) {
 				case ArgInIReg:
 					amd64_mov_membase_reg (code, AMD64_RCX, (quad * 8), cinfo->ret.pair_regs [quad], 8);
+					break;
+				case ArgInFloatSSEReg:
+					amd64_movss_membase_reg (code, AMD64_RCX, (quad * 8), cinfo->ret.pair_regs [quad]);
+					break;
+				case ArgInDoubleSSEReg:
+					amd64_movsd_membase_reg (code, AMD64_RCX, (quad * 8), cinfo->ret.pair_regs [quad]);
 					break;
 				case ArgNone:
 					break;
