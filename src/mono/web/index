@@ -70,6 +70,26 @@
   </tr>
 </table>
 
+** May 20, 2002
+
+	XSP <a href="asp-net">our ASP.NET</a> .aspx page parser is now
+	available on the AnonCVS servers.  This is part of the ASP.NET
+	support in Mono.  Gonzalo is the developer on charge of it.
+
+	Many updates to the <a href="ado-net.html">ADO.NET
+	implementation</a> from Dan, Tim and Rodrigo.  
+
+	Radek got the Mono C# compiler running on Linux/PPC and
+	compiling most of our regression test suite.
+
+	Lawrence has been working really hard in fixing, improving and
+	polishing the underlying network infrastructure.
+
+	The Rafael and Chris have commited the beginning of the
+	VisualBasic.NET runtime support to CVS.
+
+	Jesus has contributed the beginning of the SoapFormatter
+
 ** May 9, 2002
 
 	Linear register allocator has been deployed in the Mono JIT
