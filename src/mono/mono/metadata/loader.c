@@ -525,8 +525,37 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		result->addr = mono_lookup_internal_call (result);
 		result->signature->pinvoke = 1;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
+		MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
+		MonoCallConvention conv;
+
 		result->signature->pinvoke = 1;
-		((MonoMethodPInvoke *)result)->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
+		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
+		piinfo->piflags = mono_metadata_decode_row_col (im, piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
+
+		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CALL_CONV_MASK) {
+		case PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI:
+			conv = MONO_CALL_DEFAULT;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_CDECL:
+			conv = MONO_CALL_C;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_STDCALL:
+			conv = MONO_CALL_STDCALL;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_THISCALL:
+			conv = MONO_CALL_THISCALL;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_FASTCALL:
+			conv = MONO_CALL_FASTCALL;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
+		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
+		default:
+			g_warning ("unsupported calling convention");
+			g_assert_not_reached ();
+		}	
+		result->signature->call_convention = conv;
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);

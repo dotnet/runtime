@@ -2240,7 +2240,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			}
 			x86_call_code (code, 0);
-			if (call->stack_usage)
+			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
 		case OP_FCALL_REG:
@@ -2250,7 +2250,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
 			x86_call_reg (code, ins->sreg1);
-			if (call->stack_usage)
+			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
 		case OP_FCALL_MEMBASE:
@@ -2260,7 +2260,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
-			if (call->stack_usage)
+			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
 		case OP_OUTARG:
