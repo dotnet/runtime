@@ -37,6 +37,23 @@ debug_arg_warning (const char *message)
 	g_warning ("Error while processing --debug-args arguments: %s", message);
 }
 
+static gchar *
+replace_suffix (const char *filename, const char *new_suffix)
+{
+	const char *pos = strrchr (filename, '.');
+
+	if (!pos)
+		return g_strdup_printf ("%s.%s", filename, new_suffix);
+	else {
+		int len = pos - filename;
+		gchar *retval = g_malloc0 (len + strlen (new_suffix) + 2);
+		memcpy (retval, filename, len);
+		retval [len] = '.';
+		memcpy (retval + len + 1, new_suffix, strlen (new_suffix) + 1);
+		return retval;
+	}
+}
+
 MonoDebugHandle*
 mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args)
 {
@@ -140,8 +157,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			mono_debug_open (assembly, MONO_DEBUG_FORMAT_DWARF2, NULL);
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
-		if (!debug->filename)
-			debug->filename = g_strdup_printf ("%s.dbg", g_basename (debug->name));
 		break;
 	default:
 		g_assert_not_reached ();
@@ -419,7 +434,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	}
 
 	case MONO_DEBUG_FORMAT_MONO:
-		info->filename = g_strdup_printf ("%s.dbg", info->name);
+		info->filename = replace_suffix (image->name, "dbg");
 		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
 			info->mono_symfile = mono_debug_open_mono_symbol_file
 				(info->image, info->filename, TRUE);
@@ -427,13 +442,10 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 			g_message (G_STRLOC ": Creating symbol file: %s - %s", info->name,
 				   info->image->name);
 			info->always_create_il = TRUE;
-			if (debug->flags & MONO_DEBUG_FLAGS_INSTALL_IL_FILES) {
-				gchar *dirname = g_path_get_dirname (image->name);
-				info->ilfile = g_strdup_printf ("%s/%s.il", dirname, info->name);
-				g_free (dirname);
-			} else {
+			if (debug->flags & MONO_DEBUG_FLAGS_INSTALL_IL_FILES)
+				info->ilfile = replace_suffix (image->name, "il");
+			else
 				info->ilfile = g_strdup_printf ("%s.il", info->name);
-			}
 			debug_load_method_lines (info);
 			info->mono_symfile = mono_debug_create_mono_symbol_file (info->image, info->ilfile);
 		}
