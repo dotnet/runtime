@@ -14,6 +14,7 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -5864,8 +5865,10 @@ setup_stack (MonoJitTlsData *tls)
 	tls->stack_size = stsize + getpagesize ();
 
 	/* Setup an alternate signal stack */
-	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE);
+	tls->signal_stack = mmap (0, SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	tls->signal_stack_size = SIGNAL_STACK_SIZE;
+
+	g_assert (tls->signal_stack);
 
 	sa.ss_sp = tls->signal_stack;
 	sa.ss_size = SIGNAL_STACK_SIZE;
@@ -5903,7 +5906,7 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 	sigaltstack  (&sa, NULL);
 
 	if (tls->signal_stack)
-		g_free (tls->signal_stack);
+		munmap (tls->signal_stack, SIGNAL_STACK_SIZE);
 #endif
 }
 
