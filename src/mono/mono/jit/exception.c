@@ -93,7 +93,7 @@ arch_get_restore_context (void)
 static gpointer
 arch_get_call_finally (void)
 {
-	static guint8 start [28];
+	static guint8 start [64];
 	static int inited = 0;
 	guint8 *code;
 
@@ -118,6 +118,9 @@ arch_get_call_finally (void)
 	x86_push_reg (code, X86_EBP);
 	/* set new EBP */
 	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
+	/* restore registers used by global register allocation (EBX & ESI) */
+	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
+	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
 	/* save the ESP - this is used by endfinally */
 	x86_mov_membase_reg (code, X86_EBP, -16, X86_ESP, 4);
 	/* call the handler */
@@ -131,7 +134,7 @@ arch_get_call_finally (void)
 	x86_leave (code);
 	x86_ret (code);
 
-	g_assert ((code - start) < 28);
+	g_assert ((code - start) < 64);
 	return start;
 }
 

@@ -386,7 +386,7 @@ stmt: HANDLER {
 }
 
 stmt: ENDFINALLY {
-	/* restore ESP - which an be modified when we allocate value types
+	/* restore ESP - which can be modified when we allocate value types
 	 * in the finally handler */
 	x86_mov_reg_membase (s->code, X86_ESP, X86_EBP, -16, 4);
 	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
