@@ -577,7 +577,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_sthu(c,S,A,D) ppc_emit32(c, (45 << 26) | (S << 21) | (A << 16) | D)
 #define ppc_sthux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (439 << 1) | 0)
 #define ppc_sthx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (407 << 1) | 0)
-#define ppc_stmw(c,S,A,D) ppc_emit32(c, (47 << 26) | (S << 21) | (A << 16) | D)
+#define ppc_stmw(c,S,A,D) ppc_emit32(c, (47 << 26) | (S << 21) | (A << 16) | (guint16)D)
 #define ppc_stswi(c,S,A,NB) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (NB << 11) | (725 << 1) | 0)
 #define ppc_stswx(c,S,A,NB) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (NB << 11) | (661 << 1) | 0)
 #define ppc_stwbrx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (662 << 1) | 0)
@@ -631,8 +631,8 @@ my and Ximian's copyright to this code. ;)
 #define ppc_xor(c,A,S,B) ppc_xorx(c,A,S,B,0)
 #define ppc_xord(c,A,S,B) ppc_xorx(c,A,S,B,1)
 
-#define ppc_xori(c,S,A,SIMM) ppc_emit32(c, (26 << 26) | (S << 21) | (A << 16) | (guint16)(SIMM))
-#define ppc_xoris(c,S,A,SIMM) ppc_emit32(c, (27 << 26) | (S << 21) | (A << 16) | (guint16)(SIMM))
+#define ppc_xori(c,S,A,UIMM) ppc_emit32(c, (26 << 26) | (S << 21) | (A << 16) | (guint16)(UIMM))
+#define ppc_xoris(c,S,A,UIMM) ppc_emit32(c, (27 << 26) | (S << 21) | (A << 16) | (guint16)(UIMM))
 
 /* this marks the end of my work, ct */
 
