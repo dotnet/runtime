@@ -141,8 +141,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	guint32 opts = 0;
 
 	/* no ppc-specific optimizations yet */
-	//*exclude_mask = 0;
-	*exclude_mask = MONO_OPT_INLINE|MONO_OPT_LINEARS;
+	*exclude_mask = MONO_OPT_INLINE;
 	return opts;
 }
 
@@ -155,6 +154,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
@@ -228,7 +228,7 @@ guint32
 mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
 	/* FIXME: */
-	return 3;
+	return 2;
 }
 
 // code from ppc/tramp.c, try to keep in sync
@@ -1046,6 +1046,12 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins = ins->next;				
 					continue;
 				}
+			} else {
+				int power2 = mono_is_power_of_two (ins->inst_imm);
+				if (power2 > 0) {
+					ins->opcode = OP_SHL_IMM;
+					ins->inst_imm = power2;
+				}
 			}
 			break;
 		case OP_LOAD_MEMBASE:
@@ -1147,6 +1153,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
+		case OP_SETREG:
 			ins->opcode = OP_MOVE;
 			/* 
 			 * OP_MOVE reg, reg 
@@ -2778,13 +2785,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOCALLOC: {
 			/* keep alignment */
-			int alloca_waste = PPC_STACK_PARAM_OFFSET + cfg->param_area + 15;
+			int alloca_waste = PPC_STACK_PARAM_OFFSET + cfg->param_area + 31;
+			int area_offset = alloca_waste;
+			area_offset &= ~31;
 			ppc_addi (code, ppc_r11, ins->sreg1, alloca_waste);
 			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 0, 27);
 			ppc_lwz (code, ppc_r0, 0, ppc_sp);
 			ppc_neg (code, ppc_r11, ppc_r11);
 			ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
-			ppc_addi (code, ins->dreg, ppc_sp, PPC_STACK_PARAM_OFFSET + cfg->param_area);
+			ppc_addi (code, ins->dreg, ppc_sp, area_offset);
 			break;
 		}
 		case CEE_RET:

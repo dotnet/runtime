@@ -9,8 +9,8 @@
  */
 #include "mini.h"
 
-static int
-is_power_of_two (guint32 val)
+int
+mono_is_power_of_two (guint32 val)
 {
 	int i, j, k;
 
@@ -60,7 +60,7 @@ is_power_of_two (guint32 val)
 				inst->opcode = CEE_NEG;	\
 				return;	\
 			}	\
- 		        power2 = is_power_of_two (inst->inst_i1->inst_c0);	\
+ 		        power2 = mono_is_power_of_two (inst->inst_i1->inst_c0);	\
 		     	if (power2 < 0) return;	\
 			inst->opcode = CEE_SHL;	\
 			inst->inst_i1->inst_c0 = power2;	\
@@ -81,7 +81,7 @@ is_power_of_two (guint32 val)
 				inst->inst_c0 = (cast)inst->inst_i0->inst_c0 op (cast)inst->inst_i1->inst_c0;	\
 				inst->opcode = OP_ICONST;	\
 			} else {	\
-				int power2 = is_power_of_two (inst->inst_i1->inst_c0);	\
+				int power2 = mono_is_power_of_two (inst->inst_i1->inst_c0);	\
 				if (power2 < 0) return;	\
 				if (inst->opcode == CEE_REM_UN) {	\
 					inst->opcode = CEE_AND;	\

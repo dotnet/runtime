@@ -666,6 +666,7 @@ int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);
 void      mono_constant_fold                (MonoCompile *cfg);
 void      mono_constant_fold_inst           (MonoInst *inst, gpointer data);
+int       mono_is_power_of_two              (guint32 val);
 void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **acp, int acp_size);
 MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode);
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
