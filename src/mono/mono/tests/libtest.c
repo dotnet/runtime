@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
+#include <errno.h>
 
 unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
@@ -211,7 +212,7 @@ typedef struct {
 } simplestruct;
 
 simplestruct
-mono_test_return_vtype (void)
+mono_test_return_vtype (int i)
 {
 	simplestruct res;
 
@@ -219,7 +220,7 @@ mono_test_return_vtype (void)
 	res.b = 1;
 	res.c = 0;
 	res.d = "TEST";
-	printf ("mono_test_return_vtype\n");
+
 	return res;
 }
 
@@ -227,30 +228,6 @@ void
 mono_test_delegate_struct (void)
 {
 	printf ("TEST\n");
-}
-
-typedef simplestruct (*ReturnVTypeDelegate) (simplestruct ss);
-
-simplestruct
-mono_test_return_vtype2 (ReturnVTypeDelegate func)
-{
-	simplestruct res;
-	simplestruct res1;
-
-	res.a = 1;
-	res.b = 0;
-	res.c = 1;
-	res.d = "TEST";
-	printf ("mono_test_return_vtype2\n");
-
-	res1 = func (res);
-
-	printf ("UA: %d\n", res1.a);
-	printf ("UB: %d\n", res1.b);
-	printf ("UC: %d\n", res1.c);
-	printf ("UD: %s\n", res1.d);
-
-	return res1;
 }
 
 typedef char* (*ReturnStringDelegate) (const char *s);
@@ -335,9 +312,9 @@ mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 {
 	if (i != 10 || j != 11 || k != 12)
 		return 1;
-	if (ss.a == 0 && ss.b == 0 && ss.c == 0 &&
-	    !strcmp (ss.d, "TEST2") && 
-	    ss.e == 100 && ss.f == 2.5 && ss.g == 43 && ss.h == (guint64)124)
+	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST") && 
+	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
 		return 0;
 
 	return 1;
@@ -356,6 +333,42 @@ mono_test_marshal_struct_array (simplestruct2 *ss)
 		   ss[1].e == 100 && ss[1].f == 2.5 && ss[1].g == 43 && ss[1].h == (guint64)124))
 		return 1;
 
+	return 0;
+}
+
+simplestruct2 *
+mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
+{
+	if (!ss)
+		return NULL;
+
+	if (i != 10 || j != 11 || k != 12 || l != 14)
+		return NULL;
+	if (! (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
+		   !strcmp (ss->d, "TEST") && 
+		   ss->e == 99 && ss->f == 1.5 && ss->g == 42 && ss->h == (guint64)123))
+		return NULL;
+
+	simplestruct2 *res = g_new0 (simplestruct2, 1);
+	memcpy (res, ss, sizeof (simplestruct2));
+	return res;
+}
+
+int
+mono_test_marshal_byref_class (simplestruct2 **ssp)
+{
+	simplestruct2 *ss = *ssp;
+	
+	if (! (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
+		   !strcmp (ss->d, "TEST") && 
+		   ss->e == 99 && ss->f == 1.5 && ss->g == 42 && ss->h == (guint64)123))
+		return 1;
+
+	simplestruct2 *res = g_new0 (simplestruct2, 1);
+	memcpy (res, ss, sizeof (simplestruct2));
+	res->d = (char*)"TEST-RES";
+
+	*ssp = res;
 	return 0;
 }
 
@@ -390,24 +403,110 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	return delegate (2);
 }
 
-typedef int (*SimpleDelegate2) (simplestruct ss);
+typedef simplestruct (*SimpleDelegate2) (simplestruct ss);
 
 int
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 {
-	simplestruct ss;
-	int res;
+	simplestruct ss, res;
 
 	ss.a = 0;
 	ss.b = 1;
 	ss.c = 0;
 	ss.d = "TEST";
 
-	printf ("Calling delegate from unmanaged code\n");
 	res = delegate (ss);
-	printf ("GOT %d\n", res);
+	if (! (res.a && !res.b && res.c && !strcmp (res.d, "TEST-RES")))
+		return 1;
 
-	return res;
+	return 0;
+}
+
+typedef simplestruct* (*SimpleDelegate4) (simplestruct *ss);
+
+int
+mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
+{
+	simplestruct ss;
+	simplestruct *res;
+
+	ss.a = 0;
+	ss.b = 1;
+	ss.c = 0;
+	ss.d = "TEST";
+
+	/* Check argument */
+	res = delegate (&ss);
+	if (!res)
+		return 1;
+
+	/* Check return value */
+	if (! (!res->a && res->b && !res->c && !strcmp (res->d, "TEST")))
+		return 2;
+
+	/* Check NULL argument and NULL result */
+	res = delegate (NULL);
+	if (res)
+		return 3;
+
+	return 0;
+}
+
+typedef int (*SimpleDelegate5) (simplestruct **ss);
+
+int
+mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
+{
+	simplestruct ss;
+	int res;
+	simplestruct *ptr;
+
+	ss.a = 0;
+	ss.b = 1;
+	ss.c = 0;
+	ss.d = "TEST";
+
+	ptr = &ss;
+
+	res = delegate (&ptr);
+	if (res != 0)
+		return 1;
+
+	if (!(ptr->a && !ptr->b && ptr->c && !strcmp (ptr->d, "RES")))
+		return 2;
+
+	return 0;
+}
+
+int
+mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
+{
+	int res;
+
+	res = delegate (NULL);
+
+	return 0;
+}
+
+typedef int (*SimpleDelegate7) (simplestruct **ss);
+
+int
+mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
+{
+	int res;
+	simplestruct *ptr;
+
+	/* Check that the input pointer is ignored */
+	ptr = (gpointer)0x12345678;
+
+	res = delegate (&ptr);
+	if (res != 0)
+		return 1;
+
+	if (!(ptr->a && !ptr->b && ptr->c && !strcmp (ptr->d, "RES")))
+		return 2;
+
+	return 0;
 }
 
 int 
@@ -745,5 +844,16 @@ marshal_test_bool_struct(struct BoolStruct *s)
     s->b3 = !s->b3;
     return res;
 }
+
+void
+mono_test_last_error (int err)
+{
+#ifdef WIN32
+	SetLastError (err);
+#else
+	errno = err;
+#endif
+}
+
 
 

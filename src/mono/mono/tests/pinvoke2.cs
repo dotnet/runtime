@@ -111,6 +111,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder")]
 	public static extern void mono_test_marshal_stringbuilder (StringBuilder sb, int len);
 
+	[DllImport ("libtest", EntryPoint="mono_test_last_error", SetLastError=true)]
+	public static extern void mono_test_last_error (int err);
+
 	public delegate int SimpleDelegate (int a);
 
 	public static int Main () {
@@ -290,5 +293,13 @@ public class Tests {
 			return 1;  
 		
 		return 0;
+	}
+
+	static int test_0_last_error () {
+		mono_test_last_error (5);
+		if (Marshal.GetLastWin32Error () == 5)
+			return 0;
+		else
+			return 1;
 	}
 }
