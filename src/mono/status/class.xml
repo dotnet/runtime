@@ -1875,21 +1875,59 @@
         </maintainers>
     </class>
     <class name="System.Globalization.Calendar">
-        <last-activity>Jul-24-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
+            <maintainer>wictor@iBizkit.se</maintainer>
             <maintainer>marcel@narings.nl</maintainer>
         </maintainers>
     </class>
-    <class name="System.Globalization.GregorianCalendar">
-        <last-activity>Jul-24-2001</last-activity>
-        <implementation>no</implementation>
+    <class name="System.Globalization.Calendar.WeekRule">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
+            <maintainer>wictor@iBizkit.se</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.Calendar.WeekRule">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>wictor@iBizkit.se</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.GregorianCalendar">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>wictor@iBizkit.se</maintainer>
             <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.JulianCalendar">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>wictor@iBizkit.se</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.GregorianCalendarTypes">
+        <last-activity>Sep-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>wictor@iBizkit.se</maintainer>
         </maintainers>
     </class>
     <class name="System.Globalization.HebrewCalendar">
