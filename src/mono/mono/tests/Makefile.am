@@ -203,6 +203,11 @@ if X86
 PLATFORM_DISABLED_TESTS=
 endif
 
+if AMD64
+# bug #71273
+PLATFORM_DISABLED_TESTS=appdomain-unload.exe
+endif
+
 DISABLED_TESTS=			\
 	delegate-async-exception.cs	\
 	delegate-delegate-exception.cs	\
