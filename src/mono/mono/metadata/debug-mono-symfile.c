@@ -846,7 +846,7 @@ allocate_range_entry (MonoSymbolFile *symfile)
 }
 
 static gpointer
-write_type (MonoSymbolFile *symfile, MonoType *type)
+write_simple_type (MonoSymbolFile *symfile, MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
 	guint32 size;
@@ -895,6 +895,77 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		break;
 	}
 
+	default:
+		return NULL;
+	}
+
+	size = ptr - buffer;
+
+	retval = g_malloc0 (size + 4);
+	memcpy (retval + 4, buffer, size);
+	*((int *) retval) = size;
+
+	g_hash_table_insert (type_table, type, retval);
+
+	return retval;
+}
+
+static gpointer
+write_type (MonoSymbolFile *symfile, MonoType *type)
+{
+	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
+	guint32 size;
+
+	if (!type_table)
+		type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	retval = g_hash_table_lookup (type_table, type);
+	if (retval)
+		return retval;
+
+	retval = write_simple_type (symfile, type);
+	if (retval)
+		return retval;
+
+	switch (type->type) {
+	case MONO_TYPE_SZARRAY:
+		size = 8 + sizeof (int) + sizeof (gpointer);
+		break;
+
+	case MONO_TYPE_ARRAY:
+		size = 15 + sizeof (int) + sizeof (gpointer);
+		break;
+
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS: {
+		MonoClass *klass = type->data.klass;
+
+		mono_class_init (klass);
+		if (klass->enumtype) {
+			size = 5 + sizeof (int) + sizeof (gpointer);
+			break;
+		}
+
+		size = 10 + sizeof (int) + klass->field.count * (4 + sizeof (gpointer));
+		if (type->type == MONO_TYPE_CLASS)
+			size += sizeof (gpointer);
+		break;
+	}
+
+	default:
+		size = sizeof (int);
+		break;
+	}
+
+	retval = g_malloc0 (size + 4);
+	memcpy (retval + 4, buffer, size);
+	*((int *) retval) = size;
+
+	g_hash_table_insert (type_table, type, retval);
+
+	ptr = retval + 4;
+
+	switch (type->type) {
 	case MONO_TYPE_SZARRAY: {
 		MonoArray array;
 
@@ -932,6 +1003,8 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		MonoClass *klass = type->data.klass;
+		int base_offset = type->type == MONO_TYPE_CLASS ? 0 : - sizeof (MonoObject);
+		int i;
 
 		mono_class_init (klass);
 		if (klass->enumtype) {
@@ -942,9 +1015,23 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 			break;
 		}
 
-		*((int *) ptr)++ = -4;
-		*((guint32 *) ptr)++ = klass->instance_size;
-		*ptr++ = 5;
+		*((int *) ptr)++ = -10 - klass->field.count * (4 + sizeof (gpointer));
+		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
+		*ptr++ = type->type == MONO_TYPE_CLASS ? 6 : 5;
+		*ptr++ = type->type == MONO_TYPE_CLASS;
+		*((guint32 *) ptr)++ = klass->field.count;
+		for (i = 0; i < klass->field.count; i++) {
+			*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
+			*((gpointer *) ptr)++ = write_type (symfile, klass->fields [i].type);
+		}
+
+		if (type->type == MONO_TYPE_CLASS) {
+			if (klass->parent)
+				*((gpointer *) ptr)++ = write_type (symfile, &klass->parent->this_arg);
+			else
+				*((gpointer *) ptr)++ = NULL;
+		}
+
 		break;
 	}
 
@@ -954,14 +1041,6 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		*((int *) ptr)++ = -1;
 		break;
 	}
-
-	size = ptr - buffer;
-
-	retval = g_malloc0 (size + 4);
-	memcpy (retval + 4, buffer, size);
-	*((int *) retval) = size;
-
-	g_hash_table_insert (type_table, type, retval);
 
 	return retval;
 }
