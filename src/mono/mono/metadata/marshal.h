@@ -324,5 +324,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);
 
+MonoDelegate*
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (MonoReflectionType *type, void *ftn);
+
 #endif /* __MONO_MARSHAL_H__ */
 

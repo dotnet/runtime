@@ -191,11 +191,11 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 static GHashTable *delegate_hash_table;
 
 static GHashTable *
-delegate_hash_table_new () {
+delegate_hash_table_new (void) {
 	return g_hash_table_new (NULL, NULL);
 }
 
-void 
+static void 
 delegate_hash_table_remove (MonoDelegate *d)
 {
 	EnterCriticalSection (&marshal_mutex);
@@ -6145,6 +6145,12 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index)
 {
 	return mono_array_addr_with_size (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
+}
+
+MonoDelegate*
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (MonoReflectionType *type, void *ftn)
+{
+	return mono_ftnptr_to_delegate (mono_type_get_class (type->type), ftn);
 }
 
 MonoMarshalType *
