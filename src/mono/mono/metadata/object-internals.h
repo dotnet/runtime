@@ -859,6 +859,20 @@ typedef struct {
 	guint32 location;
 } MonoManifestResourceInfo;
 
+/* Keep in sync with System.GenericParameterAttributes */
+typedef enum {
+	GENERIC_PARAMETER_ATTRIBUTE_NON_VARIANT		= 0,
+	GENERIC_PARAMETER_ATTRIBUTE_COVARIANT		= 1,
+	GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT	= 2,
+	GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK	= 3,
+
+	GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT	= 0,
+	GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT	= 4,
+	GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT	= 8,
+	GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT	= 16,
+	GENREIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK	= 28
+} GenericParameterAttributes;
+
 void          mono_image_create_pefile (MonoReflectionModuleBuilder *module);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name);
