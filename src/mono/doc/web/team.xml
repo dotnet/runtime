@@ -159,5 +159,20 @@
 	  <task>corcompare / class-status</task>
     </tasks>
   </contributor>
- 
+
+   <contributor>
+    <name>
+      <first-name>Johannes</first-name>
+      <last-name>Roith</last-name>
+    </name>
+    <e-mail>johannes@jroith.de</e-mail>
+    <image>johannes.png</image>
+    <location>Germany</location>
+    <organization>None</organization>
+    <description>External Contributor</description>
+    <tasks>
+      <task>Mono Handbook</task>
+      <task>Windows packaging</task>
+    </tasks>
+  </contributor>
 </contributors>
