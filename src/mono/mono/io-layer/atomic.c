@@ -91,8 +91,8 @@ gint32 InterlockedIncrement(volatile gint32 *dest)
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
-	
-	*dest++;
+
+	(*dest)++;
 	ret= *dest;
 	
 	thr_ret = pthread_mutex_unlock(&spin);
@@ -115,7 +115,7 @@ gint32 InterlockedDecrement(volatile gint32 *dest)
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 	
-	*dest--;
+	(*dest)--;
 	ret= *dest;
 	
 	thr_ret = pthread_mutex_unlock(&spin);
