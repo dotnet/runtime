@@ -1339,7 +1339,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	MonoClass *class;
 	MonoClass *parent = NULL;
 	GSList *list;
-	int rnum = 0;
+	int rnum = 0, nsize;
 
 	eclass = mono_class_from_mono_type (element_type);
 	g_assert (rank <= 255);
@@ -1362,8 +1362,15 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	class = g_malloc0 (sizeof (MonoClass) + parent->vtable_size * sizeof (gpointer));
 
 	class->image = image;
-	class->name_space = "System";
-	class->name = "Array";
+	class->name_space = eclass->name_space;
+	nsize = strlen (eclass->name);
+	class->name = g_malloc (nsize + 2 + rank);
+	memcpy (class->name, eclass->name, nsize);
+	class->name [nsize] = '[';
+	if (rank > 1)
+		memset (class->name + nsize + 1, ',', rank - 1);
+	class->name [nsize + rank] = ']';
+	class->name [nsize + rank + 1] = 0;
 	class->type_token = 0;
 	class->flags = TYPE_ATTRIBUTE_CLASS;
 	class->parent = parent;
