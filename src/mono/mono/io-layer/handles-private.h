@@ -109,7 +109,7 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 		/* Tell everyone blocking on multiple handles that something
 		 * was signalled
 		 */
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 		mono_mutex_lock (&_wapi_shared_data->signal_mutex);
 		pthread_cond_broadcast (&_wapi_shared_data->signal_cond);
 		mono_mutex_unlock (&_wapi_shared_data->signal_mutex);
@@ -144,7 +144,7 @@ static inline int _wapi_handle_lock_signal_mutex (void)
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": lock global signal mutex");
 #endif
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	return(mono_mutex_lock (&_wapi_shared_data->signal_mutex));
 #else
 	return(mono_mutex_lock (&_wapi_private_data->signal_mutex));
@@ -156,7 +156,7 @@ static inline int _wapi_handle_unlock_signal_mutex (void)
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unlock global signal mutex");
 #endif
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	return(mono_mutex_unlock (&_wapi_shared_data->signal_mutex));
 #else
 	return(mono_mutex_unlock (&_wapi_private_data->signal_mutex));

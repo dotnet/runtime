@@ -106,7 +106,7 @@ struct _WapiHandleShared_list
 	guchar daemon[MONO_SIZEOF_SUNPATH];
 	_wapi_daemon_status daemon_running;
 	
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	mono_mutex_t signal_mutex;
 	pthread_cond_t signal_cond;
 #endif
@@ -134,7 +134,7 @@ struct _WapiHandlePrivate
  */
 struct _WapiHandlePrivate_list
 {
-#ifndef _POSIX_THREAD_PROCESS_SHARED
+#if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
 	mono_mutex_t signal_mutex;
 	pthread_cond_t signal_cond;
 #endif

@@ -250,7 +250,7 @@ static gboolean unref_handle (guint32 *open_handles, guint32 handle,
 		
 		_wapi_handle_ops_close_shared (GUINT_TO_POINTER (handle));
 		
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 		mono_mutex_destroy (&_wapi_shared_data->handles[handle].signal_mutex);
 		pthread_cond_destroy (&_wapi_shared_data->handles[handle].signal_cond);
 #endif
@@ -400,7 +400,7 @@ static gboolean process_thread_compare (gpointer handle, gpointer user_data)
 
 		thread_handle->exitstatus=0;
 
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 		_wapi_handle_lock_handle (handle);
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 		_wapi_handle_unlock_handle (handle);
@@ -463,7 +463,7 @@ static void process_post_mortem (pid_t pid, int status)
 		_wapi_timeval_to_filetime (&tv,
 					   &process_handle_data->exit_time);
 
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 		_wapi_handle_lock_handle (process_handle);
 		_wapi_handle_set_signal_state (process_handle, TRUE, TRUE);
 		_wapi_handle_unlock_handle (process_handle);

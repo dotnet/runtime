@@ -147,7 +147,7 @@ attach_again:
 	pthread_mutexattr_init (&mutex_shared_attr);
 	pthread_condattr_init (&cond_shared_attr);
 
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	pthread_mutexattr_setpshared (&mutex_shared_attr,
 				      PTHREAD_PROCESS_SHARED);
 	pthread_condattr_setpshared (&cond_shared_attr,
@@ -179,7 +179,7 @@ again:
 			last=i+1;
 			shared->type=type;
 			shared->signalled=FALSE;
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 			mono_mutex_init (&_wapi_shared_data->handles[i].signal_mutex, &mutex_shared_attr);
 			pthread_cond_init (&_wapi_shared_data->handles[i].signal_cond, &cond_shared_attr);
 #endif
@@ -255,7 +255,7 @@ again:
 		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
 	}
 
-#ifndef _POSIX_THREAD_PROCESS_SHARED
+#if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
 	mono_mutex_init (&_wapi_shared_data->handles[idx].signal_mutex, &mutex_shared_attr);
 	pthread_cond_init (&_wapi_shared_data->handles[idx].signal_cond, &cond_shared_attr);
 #endif
@@ -412,7 +412,7 @@ void _wapi_handle_unref (gpointer handle)
 			memset (&_wapi_shared_data->handles[idx].u, '\0', sizeof(_wapi_shared_data->handles[idx].u));
 		
 		}
-#ifndef _POSIX_THREAD_PROCESS_SHARED
+#if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
 		else {
 			mono_mutex_destroy (&_wapi_shared_data->handles[idx].signal_mutex);
 			pthread_cond_destroy (&_wapi_shared_data->handles[idx].signal_cond);
@@ -1013,7 +1013,7 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
  */
 int _wapi_handle_wait_signal (void)
 {
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	return(mono_cond_wait (&_wapi_shared_data->signal_cond,
 			       &_wapi_shared_data->signal_mutex));
 #else
@@ -1035,7 +1035,7 @@ int _wapi_handle_wait_signal (void)
 
 int _wapi_handle_timedwait_signal (struct timespec *timeout)
 {
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	return(mono_cond_timedwait (&_wapi_shared_data->signal_cond,
 				    &_wapi_shared_data->signal_mutex,
 				    timeout));
@@ -1067,7 +1067,7 @@ int _wapi_handle_timedwait_signal (struct timespec *timeout)
 
 int _wapi_handle_wait_signal_handle (gpointer handle)
 {
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	guint32 idx=GPOINTER_TO_UINT (handle);
 	
 	return(mono_cond_wait (&_wapi_shared_data->handles[idx].signal_cond,
@@ -1093,7 +1093,7 @@ int _wapi_handle_wait_signal_handle (gpointer handle)
 int _wapi_handle_timedwait_signal_handle (gpointer handle,
 					  struct timespec *timeout)
 {
-#ifdef _POSIX_THREAD_PROCESS_SHARED
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	guint32 idx=GPOINTER_TO_UINT (handle);
 	
 	return(mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
