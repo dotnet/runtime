@@ -16,6 +16,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
+#include <mono/utils/mono-hash.h>
 
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
@@ -61,8 +62,8 @@ struct _MonoDomain {
 	GHashTable         *assemblies;
 	MonoAppDomainSetup *setup;
 	MonoString         *friendly_name;
-	GHashTable         *ldstr_table;
-	GHashTable         *class_vtable_hash;
+	MonoGHashTable     *ldstr_table;
+	MonoGHashTable         *class_vtable_hash;
 	GHashTable         *jit_code_hash;
 	MonoJitInfoTable   *jit_info_table;
 };

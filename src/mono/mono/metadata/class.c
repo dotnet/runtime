@@ -705,6 +705,13 @@ mono_class_init (MonoClass *class)
 	}
 }
 
+#if HAVE_BOEHM_GC
+static void
+vtable_finalizer (void *obj, void *data) {
+	g_print ("%s finalized\n", (char*)data);
+}
+#endif
+
 /**
  * mono_class_vtable:
  * @domain: the application domain
@@ -731,18 +738,28 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
 		g_assert_not_reached ();
 
-	if ((vt = g_hash_table_lookup (domain->class_vtable_hash, class)))
+	if ((vt = mono_g_hash_table_lookup (domain->class_vtable_hash, class)))
 		return vt;
 	
 	if (!class->inited)
 		mono_class_init (class);
 		
+#if HAVE_BOEHM_GC
+	vt = GC_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+	GC_register_finalizer (vt, vtable_finalizer, "vtable", NULL, NULL);
+#else
 	vt = g_malloc0 (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+#endif
 	vt->klass = class;
 	vt->domain = domain;
 
 	if (class->class_size) {
+#if HAVE_BOEHM_GC
+		vt->data = GC_malloc (class->class_size + 8);
+		GC_register_finalizer (vt->data, vtable_finalizer, "vtabledata", NULL, NULL);
+#else
 		vt->data = g_malloc0 (class->class_size + 8);
+#endif
 		/* align: fixme not 64 bit clean */
 		if (((guint32)vt->data) & 0x7)
 			vt->data += 8 - (((guint32)vt->data) & 0x7);
@@ -831,7 +848,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			vt->vtable [i] = arch_create_jit_trampoline (cm);
 	}
 
-	g_hash_table_insert (domain->class_vtable_hash, class, vt);
+	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
 
 	mono_runtime_class_init (class);
 

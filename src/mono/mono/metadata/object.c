@@ -53,7 +53,7 @@ void *
 mono_object_allocate (size_t size)
 {
 #if HAVE_BOEHM_GC
-	void *o = GC_malloc (size);
+	void *o = GC_debug_malloc (size, "object", 1);
 #else
 	void *o = calloc (1, size);
 #endif
@@ -390,7 +390,7 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 static MonoString*
 mono_string_is_interned_lookup (MonoString *str, int insert)
 {
-	GHashTable *ldstr_table;
+	MonoGHashTable *ldstr_table;
 	MonoString *res;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
@@ -422,12 +422,12 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	memcpy (p, str->c_str->vector, str->length * 2);
 #endif
 	ldstr_table = ((MonoObject *)str)->vtable->domain->ldstr_table;
-	if ((res = g_hash_table_lookup (ldstr_table, ins))) {
+	if ((res = mono_g_hash_table_lookup (ldstr_table, ins))) {
 		g_free (ins);
 		return res;
 	}
 	if (insert) {
-		g_hash_table_insert (ldstr_table, ins, str);
+		mono_g_hash_table_insert (ldstr_table, ins, str);
 		return str;
 	}
 	g_free (ins);
@@ -454,11 +454,11 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
 	size_t len2;
 		
 	sig = str = mono_metadata_user_string (image, index);
-	len2 = mono_metadata_decode_blob_size (str, &str);
 	
-	if ((o = g_hash_table_lookup (domain->ldstr_table, sig)))
+	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig)))
 		return o;
 	
+	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 
 	o = mono_string_new_utf16 (domain, (guint16*)str, len2);
@@ -472,7 +472,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
 		}
 	}
 #endif
-	g_hash_table_insert (domain->ldstr_table, (gpointer)sig, o);
+	mono_g_hash_table_insert (domain->ldstr_table, (gpointer)sig, o);
 
 	return o;
 }

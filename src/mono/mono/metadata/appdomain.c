@@ -121,6 +121,13 @@ ldstr_equal (const char *str1, const char *str2) {
 	return memcmp (str1, str2, len) == 0;
 }
 
+#if HAVE_BOEHM_GC
+static void
+domain_finalizer (void *obj, void *data) {
+	g_print ("domain finalized\n");
+}
+#endif
+
 static MonoDomain *
 mono_create_domain ()
 {
@@ -128,6 +135,7 @@ mono_create_domain ()
 
 #if HAVE_BOEHM_GC
 	domain = GC_malloc (sizeof (MonoDomain));
+	GC_register_finalizer (domain, domain_finalizer, NULL, NULL, NULL);
 #else
 	domain = g_new0 (MonoDomain, 1);
 #endif
@@ -138,9 +146,9 @@ mono_create_domain ()
 	domain->mp = mono_mempool_new ();
 	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
-	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
+	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
-	domain->ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
+	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
 	return domain;
 }
@@ -647,9 +655,9 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 
 	g_hash_table_destroy (domain->env);
 	g_hash_table_destroy (domain->assemblies);
-	g_hash_table_destroy (domain->class_vtable_hash);
+	mono_g_hash_table_destroy (domain->class_vtable_hash);
 	g_hash_table_destroy (domain->jit_code_hash);
-	g_hash_table_destroy (domain->ldstr_table);
+	mono_g_hash_table_destroy (domain->ldstr_table);
 	mono_jit_info_table_free (domain->jit_info_table);
 	mono_mempool_destroy (domain->mp);
 	
