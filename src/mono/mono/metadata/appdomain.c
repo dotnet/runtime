@@ -26,7 +26,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 6
+#define MONO_CORLIB_VERSION 7
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -624,7 +624,7 @@ set_domain_search_path (MonoDomain *domain)
 }
 
 static MonoAssembly *
-real_load (gchar **search_path, gchar *filename)
+real_load (gchar **search_path, const gchar *culture, gchar *filename)
 {
 	MonoAssembly *result;
 	gchar **path;
@@ -633,7 +633,10 @@ real_load (gchar **search_path, gchar *filename)
 	for (path = search_path; *path; path++) {
 		if (**path == '\0')
 			continue; /* Ignore empty ApplicationBase */
-		fullpath = g_build_filename (*path, filename, NULL);
+		if (culture && (strlen (culture) > 0))
+			fullpath = g_build_filename (*path, culture, filename, NULL);
+		else
+			fullpath = g_build_filename (*path, filename, NULL);
 		result = mono_assembly_open (fullpath, NULL);
 		g_free (fullpath);
 		if (result)
@@ -664,14 +667,14 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 
 	if (domain->search_path && domain->search_path [0] != NULL) {
 		/* TODO: should also search in name/name.dll and name/name.exe from appbase */
-		result = real_load (domain->search_path, dll);
+		result = real_load (domain->search_path, aname->culture, dll);
 		if (result) {
 			g_free (dll);
 			g_free (exe);
 			return result;
 		}
 
-		result = real_load (domain->search_path, exe);
+		result = real_load (domain->search_path, aname->culture, exe);
 		if (result) {
 			g_free (dll);
 			g_free (exe);
@@ -680,14 +683,14 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 	}
 
 	if (assemblies_path && assemblies_path [0] != NULL) {
-		result = real_load (assemblies_path, dll);
+		result = real_load (assemblies_path, aname->culture, dll);
 		if (result) {
 			g_free (dll);
 			g_free (exe);
 			return result;
 		}
 
-		result = real_load (assemblies_path, exe);
+		result = real_load (assemblies_path, aname->culture, exe);
 		if (result) {
 			g_free (dll);
 			g_free (exe);
@@ -741,7 +744,7 @@ free_assembly_name (MonoAssemblyName *aname)
 }
 
 static gboolean
-get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyName *aname)
+get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 {
 	gchar *name;
 	gchar *value;
@@ -751,7 +754,7 @@ get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyNam
 
 	memset (aname, 0, sizeof (MonoAssemblyName));
 
-	name = mono_string_to_utf8 (assRef->name);
+	name = mono_string_to_utf8 (assRef);
 	parts = tmp = g_strsplit (name, ",", 4);
 	g_free (name);
 	if (!tmp || !*tmp) {
@@ -878,7 +881,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 }
 
 MonoReflectionAssembly *
-ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssemblyName *assRef, MonoObject *evidence)
+ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef, MonoObject *evidence)
 {
 	MonoDomain *domain = ad->data; 
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
@@ -893,23 +896,22 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 	/* FIXME : examine evidence? */
 
 	g_assert (assRef != NULL);
-	g_assert (assRef->name != NULL);
 
 	if (!get_info_from_assembly_name (assRef, &aname)) {
 		MonoException *exc;
 
 		free_assembly_name (&aname);
 		/* This is a parse error... */
-		exc = mono_get_exception_file_not_found (assRef->name);
+		exc = mono_get_exception_file_not_found (assRef);
 		mono_raise_exception (exc);
 	}
 
 	ass = mono_assembly_load (&aname, NULL, &status);
 	free_assembly_name (&aname);
 
-	if (!ass && (refass = try_assembly_resolve (domain, assRef->name)) == NULL){
+	if (!ass && (refass = try_assembly_resolve (domain, assRef)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
-		MonoException *exc = mono_get_exception_file_not_found (assRef->name);
+		MonoException *exc = mono_get_exception_file_not_found (assRef);
 		mono_raise_exception (exc);
 	}
 
