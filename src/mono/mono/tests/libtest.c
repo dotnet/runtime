@@ -353,4 +353,17 @@ HexDump1W(char *data)
 	return res + 1000000;
 }
 
+typedef int (*intcharFunc)(char*);
 
+void 
+callFunction (intcharFunc f)
+{
+	f ("ABC");
+}
+
+int
+printInt (int* number)
+{
+	printf( "<%d>\n", *number );
+	return *number + 1;
+}
