@@ -256,7 +256,7 @@ mono_class_layout_fields (MonoClass *class)
 	int i;
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
-	guint32 pass, passes;
+	guint32 pass, passes, real_size;
 
 	/*
 	 * Compute field layout and total size (not considering static fields)
@@ -275,6 +275,11 @@ mono_class_layout_fields (MonoClass *class)
 			passes = 1;
 
 		for (pass = 0; pass < passes; ++pass) {
+			if (class->parent)
+				real_size = class->parent->instance_size;
+			else
+				real_size = sizeof (MonoObject);
+
 			for (i = 0; i < top; i++){
 				int size, align;
 
@@ -306,11 +311,13 @@ mono_class_layout_fields (MonoClass *class)
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
 				align = class->packing_size ? MIN (class->packing_size, align): align;
 				class->min_align = MAX (align, class->min_align);
-				class->fields [i].offset = class->instance_size;
+				class->fields [i].offset = real_size;
 				class->fields [i].offset += align - 1;
 				class->fields [i].offset &= ~(align - 1);
-				class->instance_size = class->fields [i].offset + size;
+				real_size = class->fields [i].offset + size;
 			}
+
+			class->instance_size = MAX (real_size, class->instance_size);
        
 			if (class->instance_size & (class->min_align - 1)) {
 				class->instance_size += class->min_align - 1;
@@ -343,8 +350,9 @@ mono_class_layout_fields (MonoClass *class)
 			/*
 			 * Calc max size.
 			 */
-			class->instance_size = MAX (class->instance_size, size + class->fields [i].offset);
+			real_size = MAX (real_size, size + class->fields [i].offset);
 		}
+		class->instance_size = MAX (real_size, class->instance_size);
 		break;
 	}
 
