@@ -866,7 +866,11 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	MonoContext ctx, new_ctx;
 
+#ifdef __APPLE__
 	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
+#else
+	__asm__ volatile("lwz   %0,0(1)" : "=r" (sframe));
+#endif
 	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
 	MONO_CONTEXT_SET_BP (&ctx, sframe->sp);
 
