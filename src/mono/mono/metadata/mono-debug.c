@@ -67,7 +67,6 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debugger_start_class_init_func = mono_debug_start_add_type;
 	mono_debugger_class_init_func = mono_debug_add_type;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
-	mono_debugger_unlock ();
 }
 
 void
@@ -355,17 +354,17 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	MonoDebugMethodInfo *minfo;
 	MonoDebugDomainData *domain_data;
 
-	mono_debugger_lock ();
+	mono_loader_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->handle || !minfo->handle->symfile ||
 	    !minfo->handle->symfile->offset_table) {
-		mono_debugger_unlock ();
+		mono_loader_unlock ();
 		return NULL;
 	}
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);
 	if (!domain_data->jit [minfo->index]) {
-		mono_debugger_unlock ();
+		mono_loader_unlock ();
 		return NULL;
 	}
 
@@ -375,11 +374,11 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 		
 		if (offset >= 0)
 			res = mono_debug_find_source_location (minfo->handle->symfile, method, offset, line_number);
-		mono_debugger_unlock ();
+		mono_loader_unlock ();
 		return res;
 	}
 
-	mono_debugger_unlock ();
+	mono_loader_unlock ();
 	return NULL;
 }
 
@@ -399,15 +398,15 @@ mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset, g
 	char *res;
 	MonoDebugMethodInfo *minfo;
 
-	mono_debugger_lock ();
+	mono_loader_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->handle || !minfo->handle->symfile) {
-		mono_debugger_unlock ();
+		mono_loader_unlock ();
 		return NULL;
 	}
 
 	res = mono_debug_find_source_location (minfo->handle->symfile, method, offset, line_number);
-	mono_debugger_unlock ();
+	mono_loader_unlock ();
 	return res;
 }
 
@@ -425,18 +424,18 @@ mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomai
 	if (address < 0)
 		return -1;
 
-	mono_debugger_lock ();
+	mono_loader_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
 	    !minfo->handle->symfile->offset_table) {
-		mono_debugger_unlock ();
+		mono_loader_unlock ();
 		return -1;
 	}
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);
 
 	res = il_offset_from_address (domain_data->jit [minfo->index], address);
-	mono_debugger_unlock ();
+	mono_loader_unlock ();
 	return res;
 }
 
@@ -454,18 +453,18 @@ mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset, MonoDom
 	if (il_offset < 0)
 		return -1;
 
-	mono_debugger_lock ();
+	mono_loader_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
 	    !minfo->handle->symfile->offset_table) {
-		mono_debugger_unlock ();
+		mono_loader_unlock ();
 		return -1;
 	}
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);
 
 	res = _mono_debug_address_from_il_offset (domain_data->jit [minfo->index], il_offset);
-	mono_debugger_unlock ();
+	mono_loader_unlock ();
 	return res;
 }
 
