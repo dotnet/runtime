@@ -676,7 +676,7 @@ dump_stack (stackval *stack, stackval *sp)
 static unsigned long opcode_count = 0;
 static unsigned long fcall_count = 0;
 static int break_on_method = 0;
-GList *db_methods = NULL;
+static GList *db_methods = NULL;
 
 static void
 output_indent (void)
@@ -2762,6 +2762,7 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_LEAVE) /* Fall through */
 		CASE (CEE_LEAVE_S)
+			frame->ip = ip;
 			if (*ip == CEE_LEAVE_S) {
 				++ip;
 				ip += (signed char) *ip;
@@ -2779,12 +2780,12 @@ ves_exec_method (MonoInvocation *frame)
 			 * In the second case we need to clear the exception and
 			 * continue directly at the target ip.
 			 */
-			if (frame->ex) {
-				frame->ex = NULL;
-				frame->ex_handler = NULL;
-			} else {
+			if (!frame->ex) {
 				endfinally_ip = ip;
 				goto handle_finally;
+			} else {
+				frame->ex = NULL;
+				frame->ex_handler = NULL;
 			}
 			BREAK;
 		CASE (CEE_UNUSED26) 
