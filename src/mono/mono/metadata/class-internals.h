@@ -62,7 +62,7 @@ struct _MonoMethod {
 
 struct _MonoMethodNormal {
 	MonoMethod method;
-	MonoGenericParam *gen_params;
+	MonoGenericContainer *generic_container;
 	MonoMethodHeader *header;
 };
 
@@ -261,8 +261,7 @@ struct _MonoClass {
 	MonoType byval_arg;
 
 	MonoGenericInst *generic_inst;
-	MonoGenericParam *gen_params;
-	guint16 num_gen_params;
+	MonoGenericContainer *generic_container;
 
 	void *reflection_info;
 
@@ -336,6 +335,11 @@ struct _MonoGenericMethod {
 struct _MonoGenericContext {
 	MonoGenericInst *ginst;
 	MonoGenericMethod *gmethod;
+};
+
+struct _MonoGenericContainer {
+	int type_argc;
+	MonoGenericParam *type_params;
 };
 
 struct _MonoGenericParam {
@@ -490,7 +494,7 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 void
 mono_install_stack_walk (MonoStackWalkImpl func);
 
-MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num);
+MonoGenericContainer *mono_metadata_load_generic_params (MonoImage *image, guint32 token);
 
 MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr);

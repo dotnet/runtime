@@ -165,14 +165,14 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 					ginst->type_argv [i], str, FALSE, include_arity);
 			}
 			g_string_append_c (str, '>');
-		} else if (klass->gen_params) {
+		} else if (klass->generic_container) {
 			int i;
 
 			g_string_append_c (str, '<');
-			for (i = 0; i < klass->num_gen_params; i++) {
+			for (i = 0; i < klass->generic_container->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
-				g_string_append (str, klass->gen_params [i].name);
+				g_string_append (str, klass->generic_container->type_params [i].name);
 			}
 			g_string_append_c (str, '>');
 		}
@@ -576,7 +576,7 @@ class_compute_field_layout (MonoClass *class)
 		class->instance_size = MAX (real_size, class->instance_size);
 	}
 
-	if (class->gen_params ||
+	if (class->generic_container ||
 	    (class->generic_inst && class->generic_inst->is_open))
 		return;
 
@@ -1899,8 +1899,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
 
-	class->gen_params = mono_metadata_load_generic_params (image, class->type_token, &icount);
-	class->num_gen_params = icount;
+	class->generic_container = mono_metadata_load_generic_params (image, class->type_token);
 
 	mono_loader_unlock ();
 
@@ -2343,7 +2342,7 @@ mono_class_instance_size (MonoClass *klass)
 	if (!klass->size_inited)
 		mono_class_init (klass);
 
-	g_assert (!klass->gen_params &&
+	g_assert (!klass->generic_container &&
 		  (!klass->generic_inst || !klass->generic_inst->is_open));
 	return klass->instance_size;
 }

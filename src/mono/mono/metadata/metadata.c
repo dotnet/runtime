@@ -2369,7 +2369,7 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericInst *ginst = t->data.generic_inst;
 
-		g_assert (!ginst->is_open && !ginst->klass->gen_params);
+		g_assert (!ginst->is_open && !ginst->klass->generic_container);
 
 		if (MONO_TYPE_ISSTRUCT (ginst->generic_type)) {
 			MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
@@ -2468,7 +2468,7 @@ mono_type_stack_size (MonoType *t, gint *align)
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericInst *ginst = t->data.generic_inst;
 
-		g_assert (!ginst->is_open && !ginst->klass->gen_params);
+		g_assert (!ginst->is_open && !ginst->klass->generic_container);
 
 		if (MONO_TYPE_ISSTRUCT (ginst->generic_type)) {
 			MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
@@ -3404,12 +3404,13 @@ get_constraints (MonoImage *image, int owner)
 	return res;
 }
 
-MonoGenericParam *
-mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num)
+MonoGenericContainer *
+mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	guint32 i, owner, last_num, n;
+	MonoGenericContainer *container;
 	MonoGenericParam *params;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
@@ -3420,8 +3421,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 		g_error ("wrong token %x to load_generics_params", token);
 	}
 	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
-	if (num)
-		*num = 0;
 	if (!tdef->base)
 		return NULL;
 
@@ -3448,10 +3447,12 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 			break;
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
-	
-	if (num)
-		*num = n;
-	return params;
+
+	container = g_new0 (MonoGenericContainer, 1);
+	container->type_argc = n;
+	container->type_params = params;
+
+	return container;
 }
 
 gboolean

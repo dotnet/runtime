@@ -826,7 +826,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		result->signature->call_convention = conv;
 	} else {
 		MonoMethodNormal *mn = (MonoMethodNormal *) result;
-		MonoGenericParam *gen_params = NULL;
+		MonoGenericContainer *generic_container = NULL;
 
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_image_rva_map (image, cols [0]);
@@ -834,25 +834,25 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		if (result->signature->generic_param_count) {
 			MonoMethodSignature *sig = result->signature;
 
-			gen_params = mono_metadata_load_generic_params (image, token, NULL);
+			generic_container = mono_metadata_load_generic_params (image, token);
 
 			for (i = 0; i < sig->generic_param_count; i++) {
-				gen_params [i].method = result;
+				generic_container->type_params [i].method = result;
 
 				mono_class_from_generic_parameter (
-					&gen_params [i], image, TRUE);
+					&generic_container->type_params [i], image, TRUE);
 			}
 
 			if (sig->ret->type == MONO_TYPE_MVAR) {
 				int num = sig->ret->data.generic_param->num;
-				sig->ret->data.generic_param = &gen_params [num];
+				sig->ret->data.generic_param = &generic_container->type_params [num];
 			}
 
 			for (i = 0; i < sig->param_count; i++) {
 				MonoType *t = sig->params [i];
 				if (t->type == MONO_TYPE_MVAR) {
 					int num = t->data.generic_param->num;
-					sig->params [i]->data.generic_param = &gen_params [num];
+					sig->params [i]->data.generic_param = &generic_container->type_params [num];
 				}
 			}
 		}
@@ -863,7 +863,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			mn->header = mono_metadata_parse_mh (image, loc);
 		}
 
-		mn->gen_params = gen_params;
+		mn->generic_container = generic_container;
 	}
 
 	return result;

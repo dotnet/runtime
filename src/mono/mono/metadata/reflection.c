@@ -6623,8 +6623,8 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	method_index = find_method_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
 
-	if (method->klass->generic_inst || method->klass->gen_params ||
-			method->signature->generic_param_count) {
+	if (method->klass->generic_inst || method->klass->generic_container ||
+	    method->signature->generic_param_count) {
 		/* FIXME FIXME FIXME */
 		return NULL;
 	}
@@ -7250,6 +7250,7 @@ void
 mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoClass *klass;
+	MonoGenericContainer *container;
 	int count, i;
 
 	MONO_ARCH_SAVE_REGS;
@@ -7258,15 +7259,17 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 
 	count = tb->generic_params ? mono_array_length (tb->generic_params) : 0;
 
-	if (klass->gen_params || (count == 0))
+	if (klass->generic_container || (count == 0))
 		return;
 
-	klass->num_gen_params = count;
-	klass->gen_params = g_new0 (MonoGenericParam, count);
+	klass->generic_container = container = g_new0 (MonoGenericContainer, 1);
+
+	container->type_argc = count;
+	container->type_params = g_new0 (MonoGenericParam, count);
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
-		klass->gen_params [i] = *gparam->type.type->data.generic_param;
+		container->type_params [i] = *gparam->type.type->data.generic_param;
 	}
 }
 
@@ -7505,12 +7508,17 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	if (rmb->generic_params) {
 		int count = mono_array_length (rmb->generic_params);
-		pm->gen_params = g_new0 (MonoGenericParam, count);
+		MonoGenericContainer *container;
+
+		pm->generic_container = container = g_new0 (MonoGenericContainer, 1);
+		container->type_argc = count;
+		container->type_params = g_new0 (MonoGenericParam, count);
+
 		for (i = 0; i < count; i++) {
 			MonoReflectionGenericParam *gp =
 				mono_array_get (rmb->generic_params, MonoReflectionGenericParam*, i);
 
-			pm->gen_params [i] = *gp->type.type->data.generic_param;
+			container->type_params [i] = *gp->type.type->data.generic_param;
 		}
 	}
 
@@ -7666,8 +7674,8 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	int icount, i;
 
 	klass = mono_class_from_mono_type (type->type);
-	if (!klass->gen_params && !klass->generic_inst &&
-			!(klass->nested_in && klass->nested_in->gen_params))
+	if (!klass->generic_container && !klass->generic_inst &&
+	    !(klass->nested_in && klass->nested_in->generic_container))
 		return NULL;
 
 	mono_loader_lock ();
@@ -7868,7 +7876,7 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method, MonoOb
 
 	for (i = 0; i < gmethod->mtype_argc; i++) {
 		MonoMethodNormal *mn = (MonoMethodNormal *) method;
-		MonoGenericParam *gparam = &mn->gen_params [i];
+		MonoGenericParam *gparam = &mn->generic_container->type_params [i];
 
 		g_assert (gparam->pklass);
 		gmethod->mtype_argv [i] = &gparam->pklass->byval_arg;

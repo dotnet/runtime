@@ -1215,7 +1215,7 @@ ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal (MonoReflectionField *
 	MonoMarshalType *info;
 	int i;
 
-	if (klass->gen_params ||
+	if (klass->generic_container ||
 	    (klass->generic_inst && klass->generic_inst->is_open))
 		return NULL;
 
@@ -1736,10 +1736,11 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 
 	if (type->type->byref) {
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, 0);
-	} else if (klass->gen_params) {
-		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, klass->num_gen_params);
-		for (i = 0; i < klass->num_gen_params; ++i) {
-			pklass = mono_class_from_generic_parameter (&klass->gen_params [i], klass->image, FALSE);
+	} else if (klass->generic_container) {
+		MonoGenericContainer *container = klass->generic_container;
+		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, container->type_argc);
+		for (i = 0; i < container->type_argc; ++i) {
+			pklass = mono_class_from_generic_parameter (&container->type_params [i], klass->image, FALSE);
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
 		}
 	} else if (klass->generic_inst) {
@@ -1764,7 +1765,7 @@ ves_icall_Type_get_IsGenericTypeDefinition (MonoReflectionType *type)
 		return FALSE;
 	klass = mono_class_from_mono_type (type->type);
 
-	return klass->gen_params != NULL;
+	return klass->generic_container != NULL;
 }
 
 static MonoReflectionType*
@@ -1776,7 +1777,7 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 	if (type->type->byref)
 		return NULL;
 	klass = mono_class_from_mono_type (type->type);
-	if (klass->gen_params) {
+	if (klass->generic_container) {
 		return type; /* check this one */
 	}
 	if (klass->generic_inst) {
@@ -1880,7 +1881,7 @@ ves_icall_MonoType_get_HasGenericArguments (MonoReflectionType *type)
 	if (type->type->byref)
 		return FALSE;
 	klass = mono_class_from_mono_type (type->type);
-	if (klass->gen_params || klass->generic_inst)
+	if (klass->generic_container || klass->generic_inst)
 		return TRUE;
 	return FALSE;
 }
@@ -1929,7 +1930,7 @@ ves_icall_MonoGenericInst_GetParentType (MonoReflectionGenericInst *type)
 		return NULL;
 
 	klass = mono_class_from_mono_type (ginst->parent);
-	if (!klass->generic_inst && !klass->gen_params)
+	if (!klass->generic_inst && !klass->generic_container)
 		return NULL;
 
 	return mono_type_get_object (mono_object_domain (type), ginst->parent);
@@ -2307,7 +2308,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 	for (i = 0; i < count; i++) {
-		MonoGenericParam *param = &mn->gen_params [i];
+		MonoGenericParam *param = &mn->generic_container->type_params [i];
 		MonoClass *pklass = mono_class_from_generic_parameter (
 			param, method->method->klass->image, TRUE);
 		mono_array_set (res, gpointer, i,
