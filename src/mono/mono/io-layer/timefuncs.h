@@ -14,10 +14,18 @@
 
 #include "mono/io-layer/wapi.h"
 
+/* The typical idiom for this struct is to cast it to and from 64bit
+ * ints, hence the endian switch.
+ */
 typedef struct 
 {
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+	guint32 dwHighDateTime;
+	guint32 dwLowDateTime;
+#else
 	guint32 dwLowDateTime;
 	guint32 dwHighDateTime;
+#endif
 } WapiFileTime;
 
 extern gboolean QueryPerformanceCounter(WapiLargeInteger *count);
