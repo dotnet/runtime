@@ -3998,27 +3998,6 @@ handle_type:
 	return NULL;
 }
 
-/*
- * Optimization we could avoid mallocing() an little-endian archs that
- * don't crash with unaligned accesses.
- */
-static const char*
-fill_param_data (MonoImage *image, MonoMethodSignature *sig, guint32 blobidx, void **params) {
-	int len, i;
-	const char *p = mono_metadata_blob_heap (image, blobidx);
-
-	len = mono_metadata_decode_value (p, &p);
-	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
-		return NULL;
-
-	/* skip prolog */
-	p += 2;
-	for (i = 0; i < sig->param_count; ++i) {
-		params [i] = load_cattr_value (image, sig->params [i], p, &p);
-	}
-	return p;
-}
-
 static gboolean
 type_is_reference (MonoType *type)
 {
@@ -4111,6 +4090,70 @@ find_event_index (MonoClass *klass, MonoEvent *event) {
 	return 0;
 }
 
+static MonoObject*
+create_custom_attr (MonoImage *image, MonoMethod *method, 
+					const char *data, guint32 len)
+{
+	const char *p = data;
+	const char *named;
+	guint32 i, j, num_named;
+	MonoObject *attr;
+	void **params;
+
+	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
+		return NULL;
+
+	mono_class_init (method->klass);
+	/*g_print ("got attr %s\n", method->klass->name);*/
+	
+	params = g_new (void*, method->signature->param_count);
+
+	/* skip prolog */
+	p += 2;
+	for (i = 0; i < method->signature->param_count; ++i) {
+		params [i] = load_cattr_value (image, method->signature->params [i], p, &p);
+	}
+
+	named = p;
+	attr = mono_object_new (mono_domain_get (), method->klass);
+	mono_runtime_invoke (method, attr, params, NULL);
+	free_param_data (method->signature, params);
+	g_free (params);
+	num_named = read16 (named);
+	named += 2;
+	for (j = 0; j < num_named; j++) {
+		gint name_len;
+		char *name, named_type;
+		named_type = *named++;
+		named++; /* type of data */
+		name_len = mono_metadata_decode_blob_size (named, &named);
+		name = g_malloc (name_len + 1);
+		memcpy (name, named, name_len);
+		name [name_len] = 0;
+		named += name_len;
+		if (named_type == 0x53) {
+			MonoClassField *field = mono_class_get_field_from_name (mono_object_class (attr), name);
+			void *val = load_cattr_value (image, field->type, named, &named);
+				mono_field_set_value (attr, field, val);
+				if (!type_is_reference (field->type))
+					g_free (val);
+		} else if (named_type == 0x54) {
+			MonoProperty *prop = mono_class_get_property_from_name (mono_object_class (attr), name);
+			void *pparams [1];
+			MonoType *prop_type;
+			/* can we have more that 1 arg in a custom attr named property? */
+			prop_type = prop->get? prop->get->signature->ret: prop->set->signature->params [prop->set->signature->param_count - 1];
+			pparams [0] = load_cattr_value (image, prop_type, named, &named);
+			mono_property_set_value (prop, attr, pparams, NULL);
+			if (!type_is_reference (prop_type))
+				g_free (pparams [0]);
+		}
+		g_free (name);
+	}
+
+	return attr;
+}
+
 /*
  * mono_reflection_get_custom_attrs:
  * @obj: a reflection object handle
@@ -4130,7 +4173,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	MonoObject *attr;
 	MonoArray *result;
 	GList *list = NULL;
-	void **params;
+	MonoArray *dynamic_attrs = NULL;
 	
 	MONO_ARCH_SAVE_REGS;
 	
@@ -4203,74 +4246,56 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		idx = i;
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_PARAMDEF;
+	} else if (strcmp ("AssemblyBuilder", klass->name) == 0) {
+		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)obj;
+		dynamic_attrs = assemblyb->cattrs;
+		if (!dynamic_attrs)
+			return mono_array_new (mono_domain_get (), mono_defaults.object_class, 0);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
 
-	/* at this point image and index are set correctly for searching the custom attr */
-	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-	/* the table is not sorted */
-	for (i = 0; i < ca->rows; ++i) {
-		const char *named;
-		gint j, num_named;
-		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
-		if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
-			continue;
-		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
-		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
-		case CUSTOM_ATTR_TYPE_METHODDEF:
-			mtoken |= MONO_TOKEN_METHOD_DEF;
-			break;
-		case CUSTOM_ATTR_TYPE_MEMBERREF:
-			mtoken |= MONO_TOKEN_MEMBER_REF;
-			break;
-		default:
-			g_error ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
-			break;
-		}
-		method = mono_get_method (image, mtoken, NULL);
-		if (!method)
-			g_error ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
-		mono_class_init (method->klass);
-		/*g_print ("got attr %s\n", method->klass->name);*/
-		params = g_new (void*, method->signature->param_count);
-		named = fill_param_data (image, method->signature, cols [MONO_CUSTOM_ATTR_VALUE], params);
-		attr = mono_object_new (mono_domain_get (), method->klass);
-		mono_runtime_invoke (method, attr, params, NULL);
-		free_param_data (method->signature, params);
-		g_free (params);
-		num_named = read16 (named);
-		named += 2;
-		for (j = 0; j < num_named; j++) {
-			gint name_len;
-			char *name, named_type;
-			named_type = *named++;
-			named++; /* type of data */
-			name_len = mono_metadata_decode_blob_size (named, &named);
-			name = g_malloc (name_len + 1);
-			memcpy (name, named, name_len);
-			name [name_len] = 0;
-			named += name_len;
-			if (named_type == 0x53) {
-				MonoClassField *field = mono_class_get_field_from_name (mono_object_class (attr), name);
-				void *val = load_cattr_value (image, field->type, named, &named);
-				mono_field_set_value (attr, field, val);
-				if (!type_is_reference (field->type))
-					g_free (val);
-			} else if (named_type == 0x54) {
-				MonoProperty *prop = mono_class_get_property_from_name (mono_object_class (attr), name);
-				void *pparams [1];
-				MonoType *prop_type;
-				/* can we have more that 1 arg in a custom attr named property? */
-				prop_type = prop->get? prop->get->signature->ret: prop->set->signature->params [prop->set->signature->param_count - 1];
-				pparams [0] = load_cattr_value (image, prop_type, named, &named);
-				mono_property_set_value (prop, attr, pparams, NULL);
-				if (!type_is_reference (prop_type))
-					g_free (pparams [0]);
+	if (dynamic_attrs) {
+		len = mono_array_length (dynamic_attrs);
+		for (i = 0; i < len; ++i) {
+			MonoReflectionCustomAttr *cattr = (MonoReflectionCustomAttr*)mono_array_get (dynamic_attrs, gpointer, i);			
+			attr = create_custom_attr (image, cattr->ctor->method, mono_array_addr (cattr->data, int, 0), mono_array_length (cattr->data));
+			list = g_list_prepend (list, attr);
+		}		
+	}
+	else {
+		/* at this point image and index are set correctly for searching the custom attr */
+		ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+		/* the table is not sorted */
+		for (i = 0; i < ca->rows; ++i) {
+			mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
+			if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
+				continue;
+			mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
+			switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
+			case CUSTOM_ATTR_TYPE_METHODDEF:
+				mtoken |= MONO_TOKEN_METHOD_DEF;
+				break;
+			case CUSTOM_ATTR_TYPE_MEMBERREF:
+				mtoken |= MONO_TOKEN_MEMBER_REF;
+				break;
+			default:
+				g_error ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
+				break;
 			}
-			g_free (name);
+			method = mono_get_method (image, mtoken, NULL);
+			if (!method)
+				g_error ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
+
+			{
+				int data_len;
+				const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+				data_len = mono_metadata_decode_value (data, &data);
+
+				attr = create_custom_attr (image, method, data, data_len);
+			}
+			list = g_list_prepend (list, attr);
 		}
-		list = g_list_prepend (list, attr);
 	}
 
 	len = g_list_length (list);
