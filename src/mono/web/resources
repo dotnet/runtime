@@ -140,6 +140,10 @@
 		  href="http://xmarks.sourceforge.net/doc.html">XMarks DOC.NET:</a> For
 		  creating online documentation you can browse for your own classes. 
 
+		* <a
+		  href="http://www.cl.cam.ac.uk/~jds31/research/gccnet/">GCC .NET backend</a>.
+
+		  Jeremy Singer has developed a .NET backend for GCC.  This is research work.
 	</ul>
 
 	<li><b>Class Libraries</b></li>
