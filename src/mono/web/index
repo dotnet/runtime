@@ -85,6 +85,21 @@
 	and <a
 	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)</b>
 
+@item Jul 19th, 2002
+
+	Dick's code for file handle redirection is complete and has
+	now landed on the CVS repository.
+
+	The Mono runtime can now be embedded into your application
+	(also known as "CLR hosting").  See the sample in
+	mono/samples/embed.  This allows your application to link with
+	the Mono runtime, then your C code can call into the C#/CIL
+	universe and back.
+
+	Peter Williams and Martin contributed some Makefiles to
+	compile all of Mono on Linux.  Details are <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-July/000916.html">here</a>.
+
 @item Jul 17th, 2002
 
 	A Tutorial on getting Mono installed from sources is now <a
