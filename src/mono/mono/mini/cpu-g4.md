@@ -313,10 +313,10 @@ vcall_membase: src1:b len:12 clob:c
 call_reg: dest:a src1:i len:8 clob:c
 call_membase: dest:a src1:b len:12 clob:c
 trap:
-iconst: dest:i len:8
+iconst: dest:i len:12
 i8const:
-r4const: dest:f len:8
-r8const: dest:f len:8
+r4const: dest:f len:12
+r8const: dest:f len:12
 regvar:
 reg:
 regoffset:
@@ -345,6 +345,7 @@ loadr4_membase: dest:f src1:b len:8
 loadr8_membase: dest:f src1:b len:12
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
+fmove: dest:f src1:f len:4
 add_imm: dest:i src1:i len:12
 sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:12
@@ -505,11 +506,11 @@ float_conv_to_ovf_i4:
 float_conv_to_ovf_u4:
 float_conv_to_ovf_i8:
 float_conv_to_ovf_u8:
-float_ceq: dest:i src1:f src2:f len:12
-float_cgt: dest:i src1:f src2:f len:12
-float_cgt_un: dest:i src1:f src2:f len:12
-float_clt: dest:i src1:f src2:f len:12
-float_clt_un: dest:i src1:f src2:f len:12
+float_ceq: dest:i src1:f src2:f len:16
+float_cgt: dest:i src1:f src2:f len:16
+float_cgt_un: dest:i src1:f src2:f len:16
+float_clt: dest:i src1:f src2:f len:16
+float_clt_un: dest:i src1:f src2:f len:16
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
 op_endfilter: src1:i len:12

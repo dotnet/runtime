@@ -126,7 +126,7 @@ enter_method (MonoMethod *method, char *ebp)
 	g_free (fname);
 
 	if (!ebp) {
-		printf (")\n");
+		printf (") ip: %p\n", __builtin_return_address (1));
 		return;
 	}
 	if (((int)ebp & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
@@ -350,7 +350,7 @@ handle_enum:
 		printf ("(unknown return type %x)", method->signature->ret->type);
 	}
 
-	printf ("\n");
+	printf (" ip: %p\n", __builtin_return_address (1));
 }
 
 /*
@@ -1241,7 +1241,7 @@ branch_b1_table [] = {
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
 #define reg_is_freeable(r) ((r) >= 3 && (r) <= 10)
-#define freg_is_freeable(r) ((r) >= 3 && (r) <= 10)
+#define freg_is_freeable(r) ((r) >= 1 && (r) <= 14)
 
 typedef struct {
 	int born_in;
@@ -1732,7 +1732,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				prev_dreg = -1;
 			}
-			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && reginfo [prev_dreg].born_in >= i) {
+			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
 				DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 				mono_regstate_free_float (rs, ins->dreg);
 			}
@@ -1780,9 +1780,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else if (ins->dreg == ppc_r3) {
 					if (val == ppc_r4) {
 						/* swap */
-						create_copy_ins (cfg, ppc_r0, ppc_r3, ins);
-						create_copy_ins (cfg, ppc_r3, ppc_r4, ins);
 						create_copy_ins (cfg, ppc_r4, ppc_r0, ins);
+						create_copy_ins (cfg, ppc_r3, ppc_r4, ins);
+						create_copy_ins (cfg, ppc_r0, ppc_r3, ins);
 					} else {
 						/* two forced copies */
 						create_copy_ins (cfg, val, ppc_r3, ins);
@@ -1797,7 +1797,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						create_copy_ins (cfg, ins->dreg, ppc_r4, ins);
 					}
 				}
-				if (reg_is_freeable (val) && hreg >= 0 && reginfo [hreg].born_in >= i) {
+				if (reg_is_freeable (val) && hreg >= 0 && (reginfo [hreg].born_in >= i && !(cur_iregs & (1 << val)))) {
 					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
 					mono_regstate_free_int (rs, val);
 				}
@@ -1808,7 +1808,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else {
 			prev_dreg = -1;
 		}
-		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && reginfo [prev_dreg].born_in >= i) {
+		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
 			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 			mono_regstate_free_int (rs, ins->dreg);
 		}
@@ -2622,18 +2622,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_I8:
 		case OP_FCONV_TO_U8:
 			g_assert_not_reached ();
-			/*x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-			x86_fnstcw_membase(code, X86_ESP, 0);
-			x86_mov_reg_membase (code, ins->inst_dreg_low, X86_ESP, 0, 2);
-			x86_alu_reg_imm (code, X86_OR, ins->inst_dreg_low, 0xc00);
-			x86_mov_membase_reg (code, X86_ESP, 2, ins->inst_dreg_low, 2);
-			x86_fldcw_membase (code, X86_ESP, 2);
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-			x86_fist_pop_membase (code, X86_ESP, 0, TRUE);
-			x86_pop_reg (code, ins->inst_dreg_low);
-			x86_pop_reg (code, ins->inst_dreg_high);
-			x86_fldcw_membase (code, X86_ESP, 0);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);*/
+			/* Implemented as helper calls */
 			break;
 		case OP_LCONV_TO_R_UN: { 
 #if 0
@@ -2723,44 +2712,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCEQ:
-			g_assert_not_reached ();
-			/*if (ins->dreg != X86_EAX) 
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX) 
-				x86_pop_reg (code, X86_EAX);*/
+			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
+			ppc_li (code, ins->dreg, 0);
+			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 2);
+			ppc_li (code, ins->dreg, 1);
 			break;
 		case OP_FCLT:
+			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
+			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_li (code, ins->dreg, 0);
+			break;
 		case OP_FCLT_UN:
-			g_assert_not_reached ();
-			/*if (ins->dreg != X86_EAX) 
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX) 
-				x86_pop_reg (code, X86_EAX);*/
+			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
+			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCGT:
+			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
+			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_li (code, ins->dreg, 0);
+			break;
 		case OP_FCGT_UN:
-			g_assert_not_reached ();
-			/*if (ins->dreg != X86_EAX) 
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX) 
-				x86_pop_reg (code, X86_EAX);*/
+			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
+			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FBEQ:
 			EMIT_COND_BRANCH (ins, CEE_BEQ - CEE_BEQ);
@@ -3229,7 +3208,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		this->type = this_type;
 		this->sreg1 = this_reg;
 		this->dreg = this_dreg;
-		mono_bblock_add_inst (bb, this);
+		mono_bblock_add_inst (cfg->cbb, this);
 	}
 
 	if (vt_reg != -1) {
@@ -3237,8 +3216,8 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
 		vtarg->type = STACK_MP;
 		vtarg->sreg1 = vt_reg;
-		this->dreg = ppc_r3;
-		mono_bblock_add_inst (bb, vtarg);
+		vtarg->dreg = ppc_r3;
+		mono_bblock_add_inst (cfg->cbb, vtarg);
 	}
 }
 
