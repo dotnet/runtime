@@ -1739,6 +1739,9 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 #endif
 
 		_wapi_handle_unlock_handle (handle);
+	} else {
+		/* Add a reference to this reused handle */
+		_wapi_handle_ref (handle);
 	}
 	
 	return(handle);
