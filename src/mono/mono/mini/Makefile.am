@@ -22,7 +22,7 @@ INCLUDES = \
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
-regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe iltests.exe exceptions.exe bench.exe
+regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
 
 bin_PROGRAMS = mono genmdesc
 
