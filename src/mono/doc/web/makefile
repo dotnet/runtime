@@ -69,7 +69,18 @@ OBJECTS=									\
 	deploy/tools.html							\
 	deploy/winforms.html							\
 	deploy/class-library.html						\
-	deploy/classlib-doc.html
+	deploy/classlib-doc.html 						\
+	deploy/class-status-corlib.html 					\
+	deploy/class-status-System.html 					\
+	deploy/class-status-System.Xml.html 					\
+	deploy/class-status-System.Data.html 					\
+	deploy/class-status-System.Security.html				\
+	deploy/class-status-System.Web.html 					\
+	deploy/class-status-System.Drawing.html					\
+	deploy/class-status-Microsoft.VisualBasic.html				\
+	deploy/class-status-System.Windows.Forms.html				\
+	deploy/class-status-Cscompmgd.html					\
+	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html
 
 HTML_SOURCES = ../mono-roadmap.html
 
@@ -145,7 +156,8 @@ src/%.src: ../% commands template.html.in makefile
 
 .PRECIOUS: src/%.html.in
 src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/cormissing.xsl
-	$(RUN_MONO) ./transform.exe $< $(CORCOMPARE)/cormissing.xsl > $@
+	cscript $(CORCOMPARE)/transform.js $< $(CORCOMPARE)/cormissing.xsl > $@
+	#$(RUN_MONO) ./transform.exe 
 
 
 
