@@ -3675,6 +3675,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:			
 			if (t->data.klass == mono_defaults.stringbuilder_class) {
+				gboolean need_free = TRUE;
+
 				g_assert (!t->byref);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
@@ -3685,6 +3687,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 					switch (spec->native) {
 					case MONO_NATIVE_LPWSTR:
 						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_SB);
+						/* 
+						 * mono_string_builder_to_utf16 does not allocate a 
+						 * new buffer, so no need to free it.
+						 */
+						need_free = FALSE;
 						break;
 					case MONO_NATIVE_LPSTR:
 						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_SB);
@@ -3699,6 +3706,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_SB);
+						need_free = FALSE;
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
 						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPTSTR_SB);
@@ -3709,9 +3717,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 					}
 				}
 
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_FREE);
+				if (need_free) {
+					mono_mb_emit_ldloc (mb, tmp_locals [i]);
+					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+					mono_mb_emit_byte (mb, CEE_MONO_FREE);
+				}
 				break;
 			}
 			
