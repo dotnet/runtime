@@ -1551,6 +1551,11 @@ Q: Is it possible to use Visual C++ with Mono?.
 A: It's possible to run VC++ generated apps under Mono, but we do not
    provide a Manager C++ compiler ourselves.
 
+Q: Does Mono support generics?.
+
+A: Mono doesn't support generics currently but a lot of work is being 
+   done towards it.
+
 <a name="problems"></a>
 ** Mono Common Problems
 
