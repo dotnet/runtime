@@ -64,28 +64,28 @@ brtrue.s:
 br: len:6
 brfalse:
 brtrue:
-beq: len:7
-bge: len:7
-bgt: len:7
-ble: len:7
-blt: len:7
-bne.un: len:7
-bge.un: len:7
-bgt.un: len:7
-ble.un: len:7
-blt.un: len:7
+beq: len:8
+bge: len:8
+bgt: len:8
+ble: len:8
+blt: len:8
+bne.un: len:8
+bge.un: len:8
+bgt.un: len:8
+ble.un: len:8
+blt.un: len:8
 switch:
-ldind.i1: dest:i len:7
-ldind.u1: dest:i len:7
-ldind.i2: dest:i len:7
-ldind.u2: dest:i len:7
+ldind.i1: dest:i len:8
+ldind.u1: dest:i len:8
+ldind.i2: dest:i len:8
+ldind.u2: dest:i len:8
 ldind.i4: dest:i len:9
-ldind.u4: dest:i len:7
+ldind.u4: dest:i len:8
 ldind.i8:
-ldind.i: dest:i len:7
+ldind.i: dest:i len:8
 ldind.r4:
 ldind.r8:
-ldind.ref: dest:i len:7
+ldind.ref: dest:i len:8
 stind.ref: src1:b src2:i
 stind.i1: src1:b src2:i
 stind.i2: src1:b src2:i
@@ -124,7 +124,7 @@ castclass:
 isinst:
 conv.r.un: dest:f src1:i len:8
 unbox:
-throw: src1:i len:17
+throw: src1:i len:18
 ldfld:
 ldflda:
 stfld:
@@ -186,7 +186,7 @@ add.ovf:
 add.ovf.un:
 mul.ovf: dest:i src1:i src2:i clob:1 len:10
 # this opcode is handled specially in the code generator
-mul.ovf.un: dest:i src1:i src2:i len:17
+mul.ovf.un: dest:i src1:i src2:i len:18
 sub.ovf:
 sub.ovf.un:
 endfinally:
@@ -194,7 +194,7 @@ leave:
 leave.s:
 stind.i:
 conv.u: dest:i src1:i len:4
-prefix7:
+prefix8:
 prefix6:
 prefix5:
 prefix4:
@@ -216,7 +216,7 @@ starg:
 ldloc:
 ldloca:
 stloc:
-localloc: dest:i src1:i len:74
+localloc: dest:i src1:i len:84
 endfilter:
 unaligned.:
 volatile.:
@@ -243,8 +243,8 @@ compare: src1:i src2:i len:3
 lcompare: src1:i src2:i len:3
 icompare: src1:i src2:i len:3
 compare_imm: src1:i len:13
-icompare_imm: src1:i len:7
-fcompare: src1:f src2:f clob:a len:12
+icompare_imm: src1:i len:8
+fcompare: src1:f src2:f clob:a len:13
 local:
 arg:
 oparglist: src1:b len:11
@@ -272,8 +272,8 @@ call_reg: dest:a src1:i len:64 clob:c
 call_membase: dest:a src1:b len:64 clob:c
 trap:
 iconst: dest:i len:10
-i8const: dest:i len:17
-r4const: dest:f len:12
+i8const: dest:i len:18
+r4const: dest:f len:13
 r8const: dest:f len:9
 regvar:
 reg:
@@ -284,11 +284,11 @@ store_membase_reg: dest:b src1:i len:9
 storei8_membase_reg: dest:b src1:i len:9
 storei1_membase_imm: dest:b len:11
 storei1_membase_reg: dest:b src1:i len:9
-storei2_membase_imm: dest:b len:12
+storei2_membase_imm: dest:b len:13
 storei2_membase_reg: dest:b src1:i len:9
-storei4_membase_imm: dest:b len:12
+storei4_membase_imm: dest:b len:13
 storei4_membase_reg: dest:b src1:i len:9
-storei8_membase_imm: dest:b len:17
+storei8_membase_imm: dest:b len:18
 storer4_membase_reg: dest:b src1:f len:14
 storer8_membase_reg: dest:b src1:f len:9
 load_membase: dest:i src1:b len:14
@@ -298,16 +298,16 @@ loadi2_membase: dest:i src1:b len:9
 loadu2_membase: dest:i src1:b len:9
 loadi4_membase: dest:i src1:b len:9
 loadu4_membase: dest:i src1:b len:9
-loadi8_membase: dest:i src1:b len:17
-loadr4_membase: dest:f src1:b len:12
+loadi8_membase: dest:i src1:b len:18
+loadr4_membase: dest:f src1:b len:13
 loadr8_membase: dest:f src1:b len:9
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 move: dest:i src1:i len:4
 setreg: dest:i src1:i len:4
-add_imm: dest:i src1:i len:7 clob:1
-sub_imm: dest:i src1:i len:7 clob:1
-mul_imm: dest:i src1:i len:7
+add_imm: dest:i src1:i len:8 clob:1
+sub_imm: dest:i src1:i len:8 clob:1
+mul_imm: dest:i src1:i len:8
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 
 # to allocate a symbolic reg for src2)
@@ -321,22 +321,22 @@ xor_imm: dest:i src1:i len:8 clob:1
 shl_imm: dest:i src1:i len:8 clob:1
 shr_imm: dest:i src1:i len:8 clob:1
 shr_un_imm: dest:i src1:i len:8 clob:1
-cond_exc_eq: len:7
-cond_exc_ne_un: len:7
-cond_exc_lt: len:7
-cond_exc_lt_un: len:7
-cond_exc_gt: len:7
-cond_exc_gt_un: len:7
-cond_exc_ge: len:7
-cond_exc_ge_un: len:7
-cond_exc_le: len:7
-cond_exc_le_un: len:7
-cond_exc_ov: len:7
-cond_exc_no: len:7
-cond_exc_c: len:7
-cond_exc_nc: len:7
-cond_exc_iov: len:7
-cond_exc_ic: len:7
+cond_exc_eq: len:8
+cond_exc_ne_un: len:8
+cond_exc_lt: len:8
+cond_exc_lt_un: len:8
+cond_exc_gt: len:8
+cond_exc_gt_un: len:8
+cond_exc_ge: len:8
+cond_exc_ge_un: len:8
+cond_exc_le: len:8
+cond_exc_le_un: len:8
+cond_exc_ov: len:8
+cond_exc_no: len:8
+cond_exc_c: len:8
+cond_exc_nc: len:8
+cond_exc_iov: len:8
+cond_exc_ic: len:8
 long_add:
 long_sub:
 long_mul:
@@ -394,7 +394,7 @@ long_cgt:
 long_cgt_un:
 long_clt:
 long_clt_un:
-long_conv_to_r_un: dest:f src1:i src2:i len:47 
+long_conv_to_r_un: dest:f src1:i src2:i len:48 
 long_conv_to_u:
 long_shr_imm: dest:i src1:i len:11
 long_shr_un_imm: dest:i src1:i len:11
@@ -469,7 +469,7 @@ float_conv_to_ovf_i8:
 float_conv_to_ovf_u8:
 float_ceq: dest:i src1:f src2:f len:35
 float_cgt: dest:i src1:f src2:f len:35
-float_cgt_un: dest:i src1:f src2:f len:47
+float_cgt_un: dest:i src1:f src2:f len:48
 float_clt: dest:i src1:f src2:f len:35
 float_clt_un: dest:i src1:f src2:f len:42
 float_conv_to_u: dest:i src1:f len:46
@@ -478,14 +478,14 @@ call_handler: len:14
 aot_const: dest:i len:10
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:9
-x86_compare_membase_imm: src1:b len:12
-x86_compare_reg_membase: src1:i src2:b len:7
+x86_compare_membase_imm: src1:b len:13
+x86_compare_reg_membase: src1:i src2:b len:8
 x86_inc_reg: dest:i src1:i clob:1 len:3
-x86_inc_membase: src1:b len:7
+x86_inc_membase: src1:b len:8
 x86_dec_reg: dest:i src1:i clob:1 len:3
-x86_dec_membase: src1:b len:7
-x86_add_membase_imm: src1:b len:12
-x86_sub_membase_imm: src1:b len:12
+x86_dec_membase: src1:b len:8
+x86_add_membase_imm: src1:b len:13
+x86_sub_membase_imm: src1:b len:13
 x86_push: src1:i len:3
 x86_push_imm: len:6
 x86_push_membase: src1:b len:8
@@ -497,25 +497,25 @@ x86_fpop: src1:f len:3
 x86_fp_load_i8: dest:f src1:b len:8
 x86_fp_load_i4: dest:f src1:b len:8
 x86_seteq_membase: src1:b len:9
-x86_add_membase: dest:i src1:i src2:b clob:1 len:12
-x86_sub_membase: dest:i src1:i src2:b clob:1 len:12
+x86_add_membase: dest:i src1:i src2:b clob:1 len:13
+x86_sub_membase: dest:i src1:i src2:b clob:1 len:13
 x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
-x86_tls_get: dest:i len:12
+x86_tls_get: dest:i len:13
 amd64_test_null: src1:i len:5
-amd64_icompare_membase_reg: src1:b src2:i len:7
-amd64_icompare_membase_imm: src1:b len:12
-amd64_icompare_reg_membase: src1:i src2:b len:7
+amd64_icompare_membase_reg: src1:b src2:i len:8
+amd64_icompare_membase_imm: src1:b len:13
+amd64_icompare_reg_membase: src1:i src2:b len:8
 amd64_set_xmmreg_r4: dest:f src1:f len:14 clob:m
 amd64_set_xmmreg_r8: dest:f src1:f len:14 clob:m
 adc: dest:i src1:i src2:i len:3 clob:1
 addcc: dest:i src1:i src2:i len:3 clob:1
 subcc: dest:i src1:i src2:i len:3 clob:1
-adc_imm: dest:i src1:i len:7 clob:1
+adc_imm: dest:i src1:i len:8 clob:1
 sbb: dest:i src1:i src2:i len:3 clob:1
-sbb_imm: dest:i src1:i len:7 clob:1
+sbb_imm: dest:i src1:i len:8 clob:1
 br_reg: src1:i len:3
-sin: dest:f src1:f len:7
-cos: dest:f src1:f len:7
+sin: dest:f src1:f len:8
+cos: dest:f src1:f len:8
 abs: dest:f src1:f len:3
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
