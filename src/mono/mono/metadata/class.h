@@ -163,8 +163,9 @@ struct MonoVTable {
 	guint       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data; /* to store static class data */
-        gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 	guint remote          : 1; /* class is remotely activated */
+	/* do not add any fields after vtable, the structure is dynamically extended */
+        gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
 typedef struct {
