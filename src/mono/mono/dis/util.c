@@ -82,3 +82,41 @@ hex_dump (const char *buffer, int base, int count)
 	fflush (stdout);
 }
 
+char*
+data_dump (const char *data, int len, const char* prefix) {
+	int i, j;
+	GString *str;
+	if (!len)
+		return g_strdup (" ()\n");
+	str = g_string_new (" (");
+	for (i = 0; i + 15 < len; i += 16) {
+		if (i == 0)
+			g_string_sprintfa (str, "\n");
+		g_string_sprintfa (str, "%s", prefix);
+		for (j = 0; j < 16; ++j)
+			g_string_sprintfa (str, "%02X ", (unsigned char) (data [i + j]));
+		g_string_sprintfa (str, i == len - 16? ") // ": "  // ");
+		for (j = 0; j < 16; ++j)
+			g_string_sprintfa (str, "%c", data [i + j] >= 32 && data [i + j] <= 126? data [i + j]: '.');
+		g_string_sprintfa (str, "\n");
+	}
+	if (i == len)
+		return g_string_free (str, FALSE);
+	if (len > 16)
+		g_string_sprintfa (str, "%s", prefix);
+	j = i;
+	for (; i < len; ++i)
+		g_string_sprintfa (str, "%02X ", (unsigned char) (data [i]));
+	if (len > 16) {
+		/* align */
+		int count = 16 - (len % 16);
+		for (i = 0; i < count; ++i)
+			g_string_sprintfa (str, "   ");
+	}
+	g_string_sprintfa (str, ") // ");
+	for (i = j; i < len; ++i)
+		g_string_sprintfa (str, "%c", data [i] >= 32 && data [i] <= 126? data [i]: '.');
+	g_string_sprintfa (str, "\n");
+	return g_string_free (str, FALSE);
+}
+

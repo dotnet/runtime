@@ -76,18 +76,20 @@ dis_directive_assembly (MonoImage *m)
 	dump_cattrs (m, MONO_TOKEN_ASSEMBLY | 1, "  ");
 	fprintf (output,
 		 "  .hash algorithm 0x%08x\n"
-		 "  .ver  %d:%d:%d:%d"
-		 "%s %s"
-		 "%s"
-		 "\n"
-		 "}\n",
+		 "  .ver  %d:%d:%d:%d\n",
 		 cols [MONO_ASSEMBLY_HASH_ALG],
 		 cols [MONO_ASSEMBLY_MAJOR_VERSION], cols [MONO_ASSEMBLY_MINOR_VERSION], 
-		 cols [MONO_ASSEMBLY_BUILD_NUMBER], cols [MONO_ASSEMBLY_REV_NUMBER],
-		 cols [MONO_ASSEMBLY_CULTURE] ? "\n  .locale" : "",
-		 cols [MONO_ASSEMBLY_CULTURE] ? mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_CULTURE]) : "",
-		 cols [MONO_ASSEMBLY_PUBLIC_KEY] ? "\n  .publickey" : ""
-		);
+		 cols [MONO_ASSEMBLY_BUILD_NUMBER], cols [MONO_ASSEMBLY_REV_NUMBER]);
+	if (cols [MONO_ASSEMBLY_CULTURE])
+		fprintf (output, "  .locale %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_CULTURE]));
+	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
+		const char* b = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+		int len = mono_metadata_decode_blob_size (b, &b);
+		char *dump = data_dump (b, len, "\t\t");
+		fprintf (output, "  .publickey =%s", dump);
+		g_free (dump);
+	}
+	fprintf (output, "}\n");
 }
 
 static void

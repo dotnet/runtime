@@ -1235,7 +1235,7 @@ GList *
 dis_get_custom_attrs (MonoImage *m, guint32 token)
 {
 	GList *list = NULL;
-	guint32 idx, i, j, len, mtoken;
+	guint32 idx, i, len, mtoken;
 	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
 	MonoTableInfo *ca;
 	char *method;
@@ -1275,6 +1275,7 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 	ca = &m->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	/* the table is not sorted */
 	for (i = 0; i < ca->rows; ++i) {
+		char *dump;
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
 		if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
 			continue;
@@ -1294,13 +1295,9 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 		val = mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]);
 		len = mono_metadata_decode_value (val, &val);
 		attr = g_string_new (".custom ");
-		g_string_sprintfa (attr, "%s = (", method);
-		for (j = 0; j < len; ++j) {
-			if (len > 4 && !(j % 16))
-				g_string_append (attr, "\n\t\t");
-			g_string_sprintfa (attr, " %02X", (val [j] & 0xff));
-		}
-		g_string_append_c (attr, ')');
+		dump = data_dump (val, len, "\t\t");
+		g_string_sprintfa (attr, "%s = %s", method, dump);
+		g_free (dump);
 		list = g_list_append (list, attr->str);
 		g_string_free (attr, FALSE);
 		g_free (method);
