@@ -815,12 +815,23 @@ usage ()
 	exit (1);
 }
 
+static void
+warning_handler (const gchar *log_domain,
+		 GLogLevelFlags log_level,
+		 const gchar *message,
+		 gpointer user_data)
+{
+	(void) fprintf ((FILE *) user_data, "** WARNING **: %s\n", message);
+}
+
 int
 main (int argc, char *argv [])
 {
 	char *deffile = NULL;
 	char *infile = NULL;
 	int i;
+
+	g_log_set_handler (NULL, G_LOG_LEVEL_WARNING, warning_handler, stderr);
 
 	for (i = 1; i < argc; i++){
 		if (argv [i][0] == '-'){
