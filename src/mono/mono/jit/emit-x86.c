@@ -445,7 +445,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	case MB_NTERM_reg:
 		if ((tree->reg1 = 
 		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1) {
-			g_warning ("register allocation failed %d %p %p\n",  tree->reg1, rs->free_mask, tree->exclude_mask);
+			g_warning ("register allocation failed %d 0x%08x 0x%08x\n",  tree->reg1, rs->free_mask, tree->exclude_mask);
 			g_assert_not_reached ();
 		}
 

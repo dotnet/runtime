@@ -524,7 +524,7 @@ dis_property_methods (MonoMetadata *m, guint32 prop)
 	char *type[] = {NULL, ".set", ".get", NULL, ".other"};
 
 	if (!msemt->base)
-		return
+		return;
 
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;

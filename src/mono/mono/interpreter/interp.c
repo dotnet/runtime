@@ -14,6 +14,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <glib.h>
 
 #ifdef HAVE_ALLOCA_H
@@ -3423,7 +3424,7 @@ check_corlib (MonoImage *corlib)
 		for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
 			field = mono_class_get_field_from_name (klass, fdesc->name);
 			if (!field || (field->offset != fdesc->offset))
-				g_error ("filed %s mismatch in class %s (%d != %d)", fdesc->name, cdesc->name, fdesc->offset, field?field->offset:-1);
+				g_error ("filed %s mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
 		}
 	}
 }

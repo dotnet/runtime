@@ -8,6 +8,7 @@
  */
 
 #include "config.h"
+#include <stdlib.h>
 #include "x86-codegen.h"
 #include "mono/metadata/class.h"
 #include "mono/metadata/tabledefs.h"

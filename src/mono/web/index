@@ -23,6 +23,12 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Nov 8, 2001
+
+	Enumerations, array access and attributes for the C# compiler are into the CVS now.
+
+	Full array support is not complete, but moving along.
+
 ** Nov 5, 2001
 
 	Dietmar's new set of patches to the JIT have 20 out of 33

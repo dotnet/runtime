@@ -16,6 +16,8 @@
 #include <config.h>
 #include <glib.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/metadata.h>
@@ -129,7 +131,6 @@ class_compute_field_layout (MonoClass *class)
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 		for (i = 0; i < top; i++){
-			guint32 cols [2];
 			int size, align;
 			int idx = class->field.first + i;
 

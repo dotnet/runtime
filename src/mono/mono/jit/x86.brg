@@ -9,6 +9,7 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <mono/metadata/blob.h>
 #include <mono/metadata/metadata.h>

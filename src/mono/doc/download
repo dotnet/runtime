@@ -150,6 +150,8 @@ tar xzvf glib-1.2.10.tar.gz
 make
 make install
 </pre>
+ 	     * You also need a patch found <a 
+		href="http://www.cygwin.com/ml/cygwin/2001-04/msg01792.html">here</a>.
 
 		* Unpack the mono distribution:
 

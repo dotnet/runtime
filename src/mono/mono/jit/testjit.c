@@ -10,6 +10,7 @@
 #include <config.h>
 #include <glib.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -1281,7 +1282,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = mono_ldstr (image, index);
+			o = (MonoObject *) mono_ldstr (image, index);
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.p = o;
 

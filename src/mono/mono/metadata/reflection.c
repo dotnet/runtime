@@ -219,7 +219,7 @@ encode_locals (MonoDynamicAssembly *assembly, MonoReflectionILGen *ilgen)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name, *p;
+	char *p;
 	guint32 idx, sig_idx;
 	guint nl = mono_array_length (ilgen->locals);
 	char *buf;
@@ -562,6 +562,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
+	int idx;
 	char *version = "mono" VERSION;
 	
 	/* Compute table sizes */
@@ -595,71 +596,73 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	meta->raw_metadata = g_malloc0 (meta_size);
 	p = meta->raw_metadata;
 	/* the metadata signature */
-	*p++ = 'B'; *p++ = 'S'; *p++ = 'J'; *p++ = 'B';
+	idx = 0;
+	p [idx++] = 'B'; p [idx++] = 'S'; p [idx++] = 'J'; p [idx++] = 'B';
+
 	/* version numbers and 4 bytes reserved */
-	int16val = (guint16*)p;
+	int16val = (guint16*) (&p [idx]);
 	*int16val++ = 1;
 	*int16val = 1;
-	p += 8;
+	idx += 8;
 	/* version string */
-	int32val = (guint32*)p;
+	int32val = (guint32*)(&p [idx]);
 	*int32val = strlen (version);
-	p += 4;
-	memcpy (p, version, *int32val);
-	p += *int32val;
-	p += 3; p = (guint32)p & ~3; /* align */
-	int16val = (guint16*)p;
+	idx += 4;
+	memcpy (&p [i], version, *int32val);
+	idx += *int32val;
+	idx += 3; idx = idx & ~3; /* align */
+	int16val = (guint16*)(&p [idx]);
 	*int16val++ = 0; /* flags must be 0 */
 	*int16val = 5; /* number of streams */
-	p += 4;
+	idx += 4;
 
 	/*
 	 * write the stream info.
 	 */
 	table_offset = (p - (unsigned char*)meta->raw_metadata) + 5 * 8 + 40; /* room needed for stream headers */
 	
-	int32val = (guint32*)p;
+	int32val = (guint32*)(&p [idx]);
 	*int32val++ = assembly->tstream.offset = table_offset;
 	*int32val = heapt_size;
 	table_offset += *int32val;
-	p += 8;
-	strcpy (p, "#~");
+	idx += 8;
+	strcpy (&p [idx], "#~");
 	/* 
 	 * FIXME: alignment not 64 bit safe: same problem in metadata/image.c 
 	 */
-	p += 3 + 3; p = (guint32)p & ~3;
+	idx += 3 + 3; idx = idx & ~3;
 
-	int32val = (guint32*)p;
+	int32val = (guint32*)(&p [idx]);
 	*int32val++ = assembly->sheap.offset = table_offset;
 	*int32val = assembly->sheap.index;
 	table_offset += *int32val;
-	p += 8;
-	strcpy (p, "#Strings");
-	p += 9 + 3; p = (guint32)p & ~3;
+	idx += 8;
+	strcpy (&p [idx], "#Strings");
+	idx += 9 + 3; idx = idx & ~3;
 
-	int32val = (guint32*)p;
+	int32val = (guint32*)(&p [idx]);
 	*int32val++ = assembly->us.offset = table_offset;
 	*int32val = assembly->us.index;
 	table_offset += *int32val;
-	p += 8;
-	strcpy (p, "#US");
-	p += 4 + 3; p = (guint32)p & ~3;
+	idx += 8;
+	strcpy (&p [idx], "#US");
+	idx += 4 + 3; idx = idx & ~3;
 
-	int32val = (guint32*)p;
+	int32val = (guint32*)(&p [idx]);
 	*int32val++ = assembly->blob.offset = table_offset;
 	*int32val = assembly->blob.index;
 	table_offset += *int32val;
-	p += 8;
-	strcpy (p, "#Blob");
-	p += 6 + 3; p = (guint32)p & ~3;
+	idx += 8;
+	strcpy (&p [idx], "#Blob");
+	idx += 6 + 3; idx = idx & ~3;
 
-	int32val = (guint32*)p;
+	int32val = (guint32*)(&p [idx]);
 	*int32val++ = assembly->guid.offset = table_offset;
 	*int32val = assembly->guid.index;
 	table_offset += *int32val;
-	p += 8;
-	strcpy (p, "#GUID");
-	p += 6 + 3; p = (guint32)p & ~3;
+	idx += 8;
+	strcpy (&p [idx], "#GUID");
+	idx += 6 + 3; idx = idx & ~3;
 
 	/* 
 	 * now copy the data, the table stream header and contents goes first.
@@ -737,10 +740,8 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 static void
 mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 {
-	char *meta;
 	MonoDynamicTable *table;
 	MonoDynamicAssembly *assembly = assemblyb->dynamic_assembly;
-	GList *type;
 	guint32 len;
 	guint32 *values;
 	char *name;

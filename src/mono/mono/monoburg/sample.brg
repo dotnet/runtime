@@ -5,6 +5,7 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MBTREE_TYPE  MBTree
 

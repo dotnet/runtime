@@ -1021,15 +1021,19 @@ static GHashTable *type_cache = NULL;
 /*
  * MonoTypes with modifies are never cached, so we never check or use that field.
  */
-static int
-mono_type_hash (MonoType *type)
+static guint
+mono_type_hash (gconstpointer data)
 {
+	MonoType *type = (MonoType *) data;
 	return type->type | (type->byref << 8) | (type->attrs << 9);
 }
 
-static gboolean
-mono_type_equal (MonoType *a, MonoType *b)
+static gint
+mono_type_equal (gconstpointer ka, gconstpointer kb)
 {
+	MonoType *a = (MonoType *) ka;
+	MonoType *b = (MonoType *) kb;
+	
 	if (a->type != b->type || a->byref != b->byref || a->attrs != b->attrs || a->pinned != b->pinned)
 		return 0;
 	/* need other checks */
@@ -1044,7 +1048,8 @@ mono_metadata_parse_type (MonoMetadata *m, MonoParseTypeMode mode, short opt_att
 	if (!type_cache) {
 		int i;
 		type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
-		for (i=0; i < NBUILTIN_TYPES (); ++i)
+
+		for (i = 0; i < NBUILTIN_TYPES (); ++i)
 			g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
 	}
 
