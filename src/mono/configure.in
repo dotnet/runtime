@@ -1250,7 +1250,7 @@ fi
 #
 ICU_CFLAGS=""
 ICU_LIBS=""
-enable_icu="no;  default"
+enable_glob="normal;  default"
 
 probe_icu=false
 AC_ARG_WITH(icu, [  --with-icu=yes/no],
@@ -1266,10 +1266,9 @@ AC_ARG_WITH(icu, [  --with-icu=yes/no],
 if $probe_icu; then
 	AC_PATH_PROG(ICU_CONFIG, icu-config, no)
 	if test "x$ICU_CONFIG" = "xno" -o ! -x "$ICU_CONFIG"; then
-		AC_MSG_WARN([Only invariant locale available; install ICU for I18N support])
-		enable_icu="no, if you want full i18n support download it from: http://oss.software.ibm.com/icu/index.html"
+		enable_glob="ICU not found, using non-ICU globalization code."
 	else
-		enable_icu="yes. Version: `$ICU_CONFIG --version`"
+		enable_glob="ICU, unsupported. Version: `$ICU_CONFIG --version`"
 		AC_DEFINE(HAVE_ICU)
 		ICU_CFLAGS=`$ICU_CONFIG --cppflags`
 		ICU_LIBS=`$ICU_CONFIG --ldflags`
@@ -1662,7 +1661,7 @@ runtime/Makefile
 echo "
         mcs source:  $mcs_topdir
 	GC:	     $gc
-	ICU:	     $enable_icu
+	Globalization:     $enable_glob
 	TLS:         $with_tls
 	SIGALTSTACK: $with_sigaltstack
 	Engine:      $jit_status

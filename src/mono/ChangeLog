@@ -1,3 +1,9 @@
+
+Mon Feb 21 17:14:34 CET 2005 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: don't imply that enabling ICU support is a good
+	thing to do.
+
 2005-02-21  Michal Moskal  <malekith@pld-linux.org>
 	    Raja R Harinath  <rharinath@novell.com>
 
