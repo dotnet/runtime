@@ -1,19 +1,42 @@
 * System.Windows.Forms
 
-	<p>Currently Windows.Forms support is under development. Check Mono's <a 
+	<p>Currently Windows.Forms support is under heavy development. Check Mono's <a 
 	href = "http://www.go-mono.com/mono-roadmap.html">Roadmap</a> for more 
 	details on when it is going to be available.
 
-	<p>System.Windows.Forms in Mono is implemented using System.Drawing and 
-	Wine. This allows applications that use P/Invoke to call Win32 functions 
-	or rely on event delivery through the Wndproc method to work as 
-	expected. This is the path of best compatibility.
+	<p>System.Windows.Forms in Mono is implemented using System.Drawing. All controls
+	are natively drawn through System.Drawing. System.Windows.Forms implements it's own
+	driver interface to communicate with the host OS windowing system. Currently,
+	we have a driver for Win32 and a driver for X11. 
+	The drivers translate the native window messages into WndProc compatible messages,
+	to provide as much compatibility with native .Net as possible.
 	
-	<p>In terms of integrating visually with the desktop, we are hoping to 
-	contribute to the Wine project a mechanism to make it use the Gtk+ 
-	themes on X11 and Cocoa on MacOS to render the widgets, and get the 
-	native look and feel on each of these platforms. 
-	
+	<p>In terms of integrating visually with the desktop, we have a (still incomplete)
+	themeing interface, currently with a classic Win32 theme and a Gtk theme. 
+
+	<p>The current implementation is still very incomplete, with several large controls
+	(Edit, ListBox, ComboBox, Menus), etc, still being developed. It is too early to
+	file bugs if you cannot compile or run a certain application because of controls
+	missing.
+
+* Why not use Wine?
+
+	<ul>
+
+	<li>Debugging with Wine was extremely hard, and Wine was a moving target, 
+	some of the calls we relied on changed from release to release.
+	<li>Wine/GDI+ interactions were not efficient.
+	<li>Too many cooks contributed to the core, so it was hard to maintain.
+	<li>To many dependencies on install, many people where having problems getting 
+	the very strict winelib requirements right.
+
+	</ul>
+
+	The driver interface should allow us to also create a Wine based driver for 
+	System.Windows.Forms, to support applications performing Win32 P/Invokes, but
+	for now this is not a priority.
+
+
 * Installation
 
 	<p>To get the Windows.Forms support working, you need:
@@ -23,10 +46,16 @@
 	<li> The latest <a href = "http://www.go-mono.com/download.html">Mono</a> package.
 	<li> The latest <a href = "http://www.go-mono.com/download.html">libgdiplus</a> library.
 	<li> The latest <a href = "http://www.cairographics.org/download">Cairo</a> vector graphics library.
-	<li> A recent copy of <a href="http://www.winehq.com/">Wine</a>.
-	<li> A recent copy of WineLib (do a cvs co winelib from Mono's CVS).
 	
 	</ul>
+
+	The current source of System.Windows.Forms resides in mcs/class/Managed.Windows.Forms.
+	The previous version of System.Windows.Forms, based on Wine, still can be found in 
+	mcs/class/System.Windows.Forms, but it is no longer being worked on.
+
+	<p>To use the latest version, go into Managed.Windows.Forms and issue a 'make clean',
+	followed by a 'make install'. Afterwards, the new implementation should be available
+	in the GAC for your use.
 
 * Contributing
 
@@ -37,8 +66,8 @@
 	href="mailto:mono-winforms-list-request@ximian.com">mono-winforms-list-request@ximian.com</a>.
 		
 	<p>If you want to help, you can pick a control and start implementing it's 
-	methods. You can do this either on Windows or on Linux. Try using 
-	System.Drawing calls instead of P/Invoked Win32 calls. 
+	methods. You can do this either on Windows or on Linux. All controls must be drawn
+	using System.Drawing calls, tied into the themeing interface, and not stubbed.
 
 	<p>If you choose a particular control to work on, send a note to the 
 	winforms list to avoid duplication of effort. 
