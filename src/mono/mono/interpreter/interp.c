@@ -1617,12 +1617,12 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDIND_R4)
 			++ip;
 			sp[-1].type = VAL_DOUBLE;
-			sp[-1].data.i = *(gfloat*)sp[-1].data.p;
+			sp[-1].data.f = *(gfloat*)sp[-1].data.p;
 			BREAK;
 		CASE (CEE_LDIND_R8)
 			++ip;
 			sp[-1].type = VAL_DOUBLE;
-			sp[-1].data.i = *(gdouble*)sp[-1].data.p;
+			sp[-1].data.f = *(gdouble*)sp[-1].data.p;
 			BREAK;
 		CASE (CEE_LDIND_REF)
 			++ip;
