@@ -36,8 +36,8 @@
     </tr>
     <tr>
 	<td width="100"><img src="images/pixel.gif"></td>
-	<td valign="top" align="right">
-	    <table class="navi" cellpadding="3" valign="top">
+	<td valign="top">
+	    <table cellpadding="3" valign="top">
                 #MENU#
 	    </table>
 	</td>
