@@ -584,7 +584,11 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 
 	if (aot_module->code_offsets [mono_metadata_token_index (method->token) - 1] == 0xffffffff) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", mono_method_full_name (method, TRUE));
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
+			char *full_name = mono_method_full_name (method, TRUE);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", full_name);
+			g_free (full_name);
+		}
 		return NULL;
 	}
 
@@ -633,7 +637,11 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		code = code2;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);
+	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
+		char *full_name = mono_method_full_name (method, TRUE);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", full_name, code, code + code_len, info);
+		g_free (full_name);
+	}
 
 	/* Exception table */
 	has_clauses = decode_value (p, &p);
