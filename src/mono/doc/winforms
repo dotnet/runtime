@@ -90,79 +90,9 @@
 
 * System.Drawing
 
-	Using existing libraries to implement some of the
-	functionality required:
+	We currently have two code paths: the Wine-based
+	System.Drawing and the Cairo-based one.  We will eventually
+	unify everything to use Cairo, but currently the effort can
+	continue with the approach we have.
 
-	<ul>
-		* gdk-pixbuf is a generic image loader that loads an image
-		  and leaves it into an RGB buffer.  It hides all the details
-		  about what image file format is being loaded.
-
-		* Libart is a general framework for rendering RGB/RGBA
-		  buffers into RGB buffers and rendering postscript-like paths into
-		  RGB/RGBA buffers.
-	</ul>
-
-	We want to use gdk-pixbuf as the image loader for the image
-	classes, and then we need operations to render that into the
-	windowing system (Gtk+, MacOS, etc).  But notice how there is
-	very little dependnecies in Gdk-pixbuf on gtk, and libart has
-	none.
-
-	They are pretty independent from a windowing system
-	(gdk-pixbuf comes with some "helper" routines for rendering
-	data into a pixmap and to load pixmaps into RGB buffers).
-
-	A few things to keep in mind:
-	
-	<ul>
-	
-		* gdk-pixbuf can be used to load images for Gtk+,
-		  MacOS X and Windows, it should be pretty portable,
-		  although we might need in the future to back-port
-		  some new features from Gtk head. 
-
-		* Libart is probably only going to be used with X11,
-		  as the MacOS X provides the same features in Quartz,
-		  and Win32 *probably* has that in GDI+.  If not, we
-		  should use libart in Win32 as well (or for older
-		  Windows systems).
-	</ul>
-
-* Directory Layout
-
-<pre>
-        System.Drawing  (assembly directory)
-                System.Drawing.Blah
-                        Common code for "Blah"
-                        Stubs for "Blah" to ease ports.
-
-                Gtk
-                        System.Drawing.Blah.
-                                Gtk ports of "System.Drawing.Blah"
-                MacOS
-                        System.Drawing.Blah
-                                MacOS ports of "System.Drawing.Blah"
-                WineLIB
-                        System.Drawing.Blah
-                                Win32 ports of "System.Drawing.Blah"
-</pre>
-
-	Notice that there is a proof of concept Gtk-backend for
-	Windows.Forms, but nobody is working on it, and for the
-	reasons stated before it is not a long term strategy.
-
-* Open questions:
-
-	I believe that the graphics contexts that are used to render
-	can accept either libart-like rendering operations and
-	X11-like rendering operations.  This complicates matters, but
-	I am not sure.  Someone needs to investigate this.
-
-* Historical 
-	
-	Although the original plans were to use Gtk on X and Cocoa on
-	MacOS X, it would be very hard to emulate the event model in
-	which some Winforms applications depend, and it would be very
-	hard to implement the Wndproc method.  
 
