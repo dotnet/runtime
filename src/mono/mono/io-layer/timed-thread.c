@@ -57,6 +57,10 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 	}
 	
 	thread=(TimedThread *)specific;
+
+	if(thread->exit_routine!=NULL) {
+		thread->exit_routine(exitstatus, thread->exit_userdata);
+	}
 	
 	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
 			      (void *)&thread->join_mutex);
@@ -73,10 +77,6 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 
 	thread->exitstatus=exitstatus;
 	thread->exiting=TRUE;
-
-	if(thread->exit_routine!=NULL) {
-		thread->exit_routine(exitstatus, thread->exit_userdata);
-	}
 	
 	thr_ret = pthread_cond_signal(&thread->exit_cond);
 	g_assert (thr_ret == 0);
