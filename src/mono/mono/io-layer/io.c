@@ -1373,6 +1373,20 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 	
 	ret=open(filename, flags, perms);
+    
+	/* If we were trying to open a directory with write permissions
+	 * (e.g. O_WRONLY or O_RDWR), this call will fail with
+	 * EISDIR. However, this is a bit bogus because calls to
+	 * manipulate the directory (e.g. SetFileTime) will still work on
+	 * the directory because they use other API calls
+	 * (e.g. utime()). Hence, if we failed with the EISDIR error, try
+	 * to open the directory again without write permission.
+	 */
+	if (ret == -1 && errno == EISDIR)
+	{
+		/* Try again but don't try to make it writable */
+		ret=open(filename, flags  & ~(O_RDWR|O_WRONLY), perms);
+	}
 	
 	if(ret==-1) {
 #ifdef DEBUG
