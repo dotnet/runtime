@@ -1268,7 +1268,7 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		 unsigned long eip,  unsigned long esp)
 {
 	struct sigcontext ctx;
-	
+
 	ctx.esp = esp;
 	ctx.eip = eip;
 	ctx.ebp = ebp;
@@ -1284,6 +1284,18 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	g_assert_not_reached ();
 }
 
+/**
+ * arch_get_throw_exception:
+ *
+ * Returns a function pointer which can be used to raise 
+ * exceptions. The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ * For example to raise an arithmetic exception you can use:
+ *
+ * x86_push_imm (code, mono_get_exception_arithmetic ()); 
+ * x86_call_code (code, arch_get_throw_exception ()); 
+ *
+ */
 gpointer 
 arch_get_throw_exception (void)
 {
@@ -1314,6 +1326,47 @@ arch_get_throw_exception (void)
 	g_assert ((code - start) < 24);
 	return start;
 }
+
+/**
+ * arch_get_throw_exception_by_name:
+ *
+ * Returns a function pointer which can be used to raise 
+ * corlib exceptions. The returned function has the following 
+ * signature: void (*func) (char *exc_name); 
+ * For example to raise an arithmetic exception you can use:
+ *
+ * x86_push_imm (code, "ArithmeticException"); 
+ * x86_call_code (code, arch_get_throw_exception ()); 
+ *
+ */
+gpointer 
+arch_get_throw_exception_by_name ()
+{
+	static guint8 start [32];
+	static int inited = 0;
+	guint8 *code;
+
+	if (inited)
+		return start;
+
+	inited = 1;
+	code = start;
+
+	/* fixme: we do not save EAX, EDX, ECD - unsure if we need that */
+
+	x86_push_membase (code, X86_ESP, 4); /* exception name */
+	x86_push_imm (code, "System");
+	x86_push_imm (code, mono_defaults.exception_class->image);
+	x86_call_code (code, mono_exception_from_name);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+	/* save the newly create object (overwrite exception name)*/
+	x86_mov_membase_reg (code, X86_ESP, 4, X86_EAX, 4);
+	x86_jump_code (code, arch_get_throw_exception ());
+
+	g_assert ((code - start) < 32);
+
+	return start;
+}	
 
 
 

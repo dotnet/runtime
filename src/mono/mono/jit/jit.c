@@ -1676,9 +1676,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = (MonoObject *) mono_ldstr (cfg->domain, image, index);
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.p = o;
+			if (cfg->share_code) {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_LDSTR);
+				t1->data.i = index;
+			} else {
+				o = (MonoObject *) mono_ldstr (cfg->domain, image, index);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.p = o;
+			}
 
 			PUSH_TREE (t1, VAL_POINTER);
 			break;
@@ -3319,7 +3324,7 @@ main (int argc, char *argv [])
 	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);

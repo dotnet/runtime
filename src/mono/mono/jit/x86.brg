@@ -93,6 +93,8 @@ MonoObject *
 mono_object_new_wrapper (MonoClass *klass);
 MonoString*
 mono_string_new_wrapper (const char *text);
+MonoString*
+mono_ldstr_wrapper      (MonoImage *image, guint32 index);
 
 gpointer
 get_mono_object_isinst (void);
@@ -153,12 +155,13 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 	} while (0)
 
 /* emit an exception if condition is fail */
-#define EMIT_COND_EXCEPTION(cond,signed,exc)                                 \
-        do {                                                                 \
-	        x86_branch8 (s->code, cond, 12, signed);                     \
-	        x86_push_imm (s->code, exc);                                 \
-		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ());  \
-	        x86_call_reg (s->code, X86_EAX);                             \
+#define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)       \
+        do {                                                   \
+	        x86_branch8 (s->code, cond, 12, signed);       \
+	        x86_push_imm (s->code, exc_name);              \
+		x86_mov_reg_imm (s->code, X86_EAX,             \
+		        arch_get_throw_exception_by_name ());  \
+	        x86_call_reg (s->code, X86_EAX);               \
 	} while (0); 
 
 %%
@@ -185,7 +188,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
-%term LDLEN LDELEMA LDFTN TOSTRING  LDSFLDA
+%term LDLEN LDELEMA LDFTN TOSTRING LDSTR LDSFLDA
 
 #
 # we start at stmt
@@ -690,7 +693,7 @@ reg: CONV_I4 (reg) {
 reg: CONV_OVF_U4 (reg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -698,7 +701,7 @@ reg: CONV_OVF_U4 (reg) {
 reg: CONV_OVF_I4_UN (reg) {
 	/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -706,9 +709,9 @@ reg: CONV_OVF_I4_UN (reg) {
 reg: CONV_OVF_I1 (reg) {
 	/* probe value to be within -128 to 127 */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 127);
-	EMIT_COND_EXCEPTION (X86_CC_LE, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, TRUE, "OverflowException");	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -128);
-	EMIT_COND_EXCEPTION (X86_CC_GT, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GT, TRUE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -716,7 +719,7 @@ reg: CONV_OVF_I1 (reg) {
 reg: CONV_OVF_I1_UN (reg) {
 	/* probe values between 0 to 128 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff80);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -725,7 +728,7 @@ reg: CONV_OVF_U1 (reg) {
 	/* Keep in sync with CONV_OVF_U1_UN routine below, they are the same on 32-bit machines */
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -734,7 +737,7 @@ reg: CONV_OVF_U1_UN (reg) {
 	/* Keep in sync with CONV_OVF_U1 routine above, they are the same on 32-bit machines */
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -742,7 +745,7 @@ reg: CONV_OVF_U1_UN (reg) {
 reg: CONV_OVF_I2 (reg) {
 	/* Probe value to be within -32768 and 32767 */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 32767);
-	EMIT_COND_EXCEPTION (X86_CC_LE, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, TRUE, "OverflowException");	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -32768);
 	// fixme: check branch
 	g_assert_not_reached ();
@@ -755,7 +758,7 @@ reg: CONV_OVF_U2 (reg) {
 	/* Keep in sync with CONV_OVF_U2_UN below, they are the same on 32-bit machines */
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -764,7 +767,7 @@ reg: CONV_OVF_U2_UN (reg) {
 	/* Keep in sync with CONV_OVF_U2 above, they are the same on 32-bit machines */
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -772,7 +775,7 @@ reg: CONV_OVF_U2_UN (reg) {
 reg: CONV_OVF_I2_UN (reg) {
 	/* Convert uint value into short, value within 0 and 32767 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff8000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -786,7 +789,7 @@ reg: MUL (reg, reg) {
 
 reg: MUL_OVF (reg, reg) {
 	x86_imul_reg_reg (s->code, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NO, TRUE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -871,7 +874,7 @@ reg: ADD (reg, reg) {
 
 reg: ADD_OVF (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NO, TRUE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -879,7 +882,7 @@ reg: ADD_OVF (reg, reg) {
 
 reg: ADD_OVF_UN (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NC, FALSE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -904,7 +907,7 @@ reg: SUB (reg, reg) {
 
 reg: SUB_OVF (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NO, TRUE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -912,7 +915,7 @@ reg: SUB_OVF (reg, reg) {
 
 reg: SUB_OVF_UN (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NC, FALSE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -1063,7 +1066,7 @@ reg: LDSFLDA (CONST_I4) {
 # array support
 reg: LDLEN (reg) {	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
-	EMIT_COND_EXCEPTION (X86_CC_NE, TRUE, mono_get_exception_null_reference ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");
 
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
 			     G_STRUCT_OFFSET (MonoArray, bounds), 4);
@@ -1073,7 +1076,7 @@ reg: LDLEN (reg) {
 
 reg: LDELEMA (reg, reg) {
 	x86_alu_reg_membase (s->code, X86_CMP, tree->right->reg1, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
-	EMIT_COND_EXCEPTION (X86_CC_LT, FALSE, mono_get_exception_index_out_of_range ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LT, FALSE, "IndexOutOfRangeException");
 
 	if (tree->data.i == 1 || tree->data.i == 2 || 
 	    tree->data.i == 4 || tree->data.i == 8) {
@@ -1086,6 +1089,28 @@ reg: LDELEMA (reg, reg) {
 		x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
 		x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, G_STRUCT_OFFSET (MonoArray, vector));
 	}
+}
+
+reg: LDSTR {
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_imm (s->code, tree->data.p);
+	x86_push_imm (s->code, s->method->klass->image);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_ldstr_wrapper);
+	x86_call_reg (s->code, X86_EAX);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
+
+	PRINT_REG ("LDSTR", tree->reg1);	
 }
 
 reg: TOSTRING (reg) {
@@ -1183,14 +1208,14 @@ reg: UNBOX (reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
 	x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, 0);
-	EMIT_COND_EXCEPTION (X86_CC_NE, TRUE, mono_get_exception_null_reference ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");	
 
 	x86_push_reg (s->code, tree->reg1);
 	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, 0, 4); 
 	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, 0, 4); 
 	x86_alu_membase_imm (s->code, X86_CMP, tree->reg1, 
 			     G_STRUCT_OFFSET (MonoClass, element_class), ((int)(tree->data.klass->element_class)));
-	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, mono_get_exception_invalid_cast ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "InvalidCastException");
 	x86_pop_reg (s->code, tree->reg1);
 	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, sizeof (MonoObject));
 }
@@ -1224,7 +1249,7 @@ reg: CASTCLASS (reg) {
 		x86_pop_reg (s->code, X86_ECX);
 
 		x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0);
-		EMIT_COND_EXCEPTION (X86_CC_NE, TRUE, mono_get_exception_invalid_cast ());	
+		EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "InvalidCastException");	
 		if (tree->reg1 != X86_EAX) {
 			x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 			x86_pop_reg (s->code, X86_EAX);
@@ -1907,8 +1932,8 @@ reg: CONV_OVF_I4 (lreg){
 	x86_branch8 (s->code, X86_CC_EQ, 17, TRUE);
 
 	/* throw exception */
-	x86_push_imm (s->code, mono_get_exception_overflow ());
-	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ()); 
+	x86_push_imm (s->code, "OverflowException");
+	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception_by_name ()); 
 	x86_call_reg (s->code, X86_EAX); 
 	
 	/* our top bit is set, check that top word is 0xfffffff */
@@ -1925,7 +1950,7 @@ reg: CONV_OVF_U4 (lreg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
 	/* top word must be 0 */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, mono_get_exception_overflow ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "OverflowException");
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -1934,7 +1959,7 @@ reg: CONV_OVF_I4_UN (lreg) {
 	/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
 	/* top word must be 0 */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, mono_get_exception_overflow ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "OverflowException");
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -1983,8 +2008,8 @@ lreg: CONV_U8 (CONST_I4) 1 {
 
 lreg: CONV_OVF_U8 (CONST_I4) {
 	if (tree->left->data.i < 0){
-		x86_push_imm (s->code, mono_get_exception_overflow ());
-		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ()); 
+		x86_push_imm (s->code, "OverflowException");
+		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception_by_name ()); 
 	        x86_call_reg (s->code, X86_EAX);                            
 	} else {
 		x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
@@ -1999,7 +2024,7 @@ lreg: CONV_OVF_I8_UN (CONST_I4) {
 
 lreg: CONV_OVF_U8 (reg) {
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, mono_get_exception_overflow ());
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "OverflowException");
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2182,7 +2207,7 @@ lreg: ADD (lreg, lreg) {
 lreg: ADD_OVF (lreg, lreg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
 	x86_alu_reg_reg (s->code, X86_ADC, tree->left->reg2, tree->right->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NO, TRUE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2193,7 +2218,7 @@ lreg: ADD_OVF (lreg, lreg) {
 lreg: ADD_OVF_UN (lreg, lreg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
 	x86_alu_reg_reg (s->code, X86_ADC, tree->left->reg2, tree->right->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NC, FALSE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2214,7 +2239,7 @@ lreg: SUB (lreg, lreg) {
 lreg: SUB_OVF (lreg, lreg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
 	x86_alu_reg_reg (s->code, X86_SBB, tree->left->reg2, tree->right->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NO, TRUE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -2225,7 +2250,7 @@ lreg: SUB_OVF (lreg, lreg) {
 lreg: SUB_OVF_UN (lreg, lreg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
 	x86_alu_reg_reg (s->code, X86_SBB, tree->left->reg2, tree->right->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, mono_get_exception_overflow ());	
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NC, FALSE, "OverflowException");	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -3296,6 +3321,14 @@ mono_string_new_wrapper (const char *text)
 	return mono_string_new (domain, text);
 }
 
+MonoString*
+mono_ldstr_wrapper (MonoImage *image, guint32 index)
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	return mono_ldstr (domain, image, index);
+}
+
 gpointer 
 mono_ldsflda (MonoClass *klass, int offset)
 {
@@ -3324,3 +3357,4 @@ MEMCOPY (void *dest, const void *src, size_t n)
 	return memcpy (dest, src, n);
 }
 #endif
+

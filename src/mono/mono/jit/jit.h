@@ -144,6 +144,9 @@ arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
 gpointer 
 arch_get_throw_exception   (void);
 
+gpointer 
+arch_get_throw_exception_by_name (void);
+
 void
 mono_jit_abort             (MonoObject *obj);
 
