@@ -4839,3 +4839,62 @@ mono_arch_get_patch_offset (guint8 *code)
 		return -1;
 	}
 }
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
+{
+	guint8 reg = 0;
+	gint32 disp = 0;
+
+	/* go to the start of the call instruction
+	 *
+	 * address_byte = (m << 6) | (o << 3) | reg
+	 * call opcode: 0xff address_byte displacement
+	 * 0xff m=1,o=2 imm8
+	 * 0xff m=2,o=2 imm32
+	 */
+	code -= 6;
+	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
+		reg = code [4] & 0x07;
+		disp = (signed char)code [5];
+	} else {
+		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
+			reg = code [1] & 0x07;
+			disp = *((gint32*)(code + 2));
+		} else if ((code [1] == 0xe8)) {
+			return NULL;
+		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
+			/*
+			 * This is a interface call: should check the above code can't catch it earlier 
+			 * 8b 40 30   mov    0x30(%eax),%eax
+			 * ff 10      call   *(%eax)
+			 */
+			disp = 0;
+			reg = code [5] & 0x07;
+		}
+		else
+			return NULL;
+	}
+
+	return (gpointer*)(((gint32)(regs [reg])) + disp);
+}
+
+gpointer* 
+mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
+{
+	guint8 reg = 0;
+	gint32 disp = 0;
+
+	code -= 7;
+	if ((code [0] == 0x8b) && (x86_modrm_mod (code [1]) == 3) && (x86_modrm_reg (code [1]) == X86_EAX) && (code [2] == 0x8b) && (code [3] == 0x40) && (code [5] == 0xff) && (code [6] == 0xd0)) {
+		reg = x86_modrm_rm (code [1]);
+		disp = code [4];
+
+		if (reg == X86_EAX)
+			return NULL;
+		else
+			return (gpointer*)(((gint32)(regs [reg])) + disp);
+	}
+
+	return NULL;
+}

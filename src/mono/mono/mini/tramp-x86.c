@@ -70,74 +70,6 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
-static gpointer
-get_vtable_slot_addr (guint8 *code, int eax, int ecx, int edx, int esi, 
-					  int edi, int ebx)
-{
-	guint8 reg = 0;
-	gint32 disp = 0;
-	char *o = NULL;
-
-	/* go to the start of the call instruction
-	 *
-	 * address_byte = (m << 6) | (o << 3) | reg
-	 * call opcode: 0xff address_byte displacement
-	 * 0xff m=1,o=2 imm8
-	 * 0xff m=2,o=2 imm32
-	 */
-	code -= 6;
-	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
-		reg = code [4] & 0x07;
-		disp = (signed char)code [5];
-	} else {
-		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
-			reg = code [1] & 0x07;
-			disp = *((gint32*)(code + 2));
-		} else if ((code [1] == 0xe8)) {
-			return FALSE;
-		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
-			/*
-			 * This is a interface call: should check the above code can't catch it earlier 
-			 * 8b 40 30   mov    0x30(%eax),%eax
-			 * ff 10      call   *(%eax)
-			 */
-			disp = 0;
-			reg = code [5] & 0x07;
-		} else {
-			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
-			g_assert_not_reached ();
-		}
-	}
-
-	switch (reg) {
-	case X86_EAX:
-		o = (gpointer)eax;
-		break;
-	case X86_EDX:
-		o = (gpointer)edx;
-		break;
-	case X86_ECX:
-		o = (gpointer)ecx;
-		break;
-	case X86_ESI:
-		o = (gpointer)esi;
-		break;
-	case X86_EDI:
-		o = (gpointer)edi;
-		break;
-	case X86_EBX:
-		o = (gpointer)ebx;
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-	o += disp;
-
-	return o;
-}
-
 /**
  * x86_magic_trampoline:
  * @eax: saved x86 register 
@@ -162,8 +94,9 @@ static gpointer
 x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
 		      int ebx, guint8 *code, MonoMethod *m)
 {
-	char *o = NULL;
 	gpointer addr;
+	gpointer *vtable_slot;
+	int regs [X86_NREG];
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
@@ -172,8 +105,15 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	if (!code)
 		return addr;
 
-	o = get_vtable_slot_addr (code, eax, ecx, edx, esi, edi, ebx);
-	if (!o) {
+	regs [X86_EAX] = eax;
+	regs [X86_ECX] = ecx;
+	regs [X86_EDX] = edx;
+	regs [X86_ESI] = esi;
+	regs [X86_EDI] = edi;
+	regs [X86_EBX] = ebx;
+
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+	if (!vtable_slot) {
 		/* go to the start of the call instruction
 		 *
 		 * address_byte = (m << 6) | (o << 3) | reg
@@ -206,11 +146,11 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		}
 	}
 
-	if (m->klass->valuetype && !mono_aot_is_got_entry (code, o))
+	if (m->klass->valuetype && !mono_aot_is_got_entry (code, (guint8*)vtable_slot))
 		addr = get_unbox_trampoline (m, addr);
 
-	if (mono_aot_is_got_entry (code, o) || mono_domain_owns_vtable_slot (mono_domain_get (), o))
-		*((gpointer *)o) = addr;
+	if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+		*vtable_slot = addr;
 
 	return addr;
 }
@@ -230,6 +170,7 @@ x86_aot_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	MonoMethod *method;
 	gpointer addr;
 	gpointer *vtable_slot;
+	int regs [X86_NREG];
 
 	image = *(gpointer*)token_info;
 	token_info += sizeof (gpointer);
@@ -245,7 +186,14 @@ x86_aot_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	addr = mono_compile_method (method);
 	g_assert (addr);
 
-	vtable_slot = get_vtable_slot_addr (code, eax, ecx, edx, esi, edi, ebx);
+	regs [X86_EAX] = eax;
+	regs [X86_ECX] = ecx;
+	regs [X86_EDX] = edx;
+	regs [X86_ESI] = esi;
+	regs [X86_EDI] = edi;
+	regs [X86_EBX] = ebx;
+
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 	g_assert (vtable_slot);
 
 	if (method->klass->valuetype)
