@@ -4343,7 +4343,7 @@ freg: REM (freg, freg) {
 	/* this requires a loop, because fprem1 somtimes 
 	 * returns a partial remainder */
 	l1 = s->code;
-	x86_fprem1 (s->code);
+	x86_fprem (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x0400);
 	l2 = s->code + 2;
