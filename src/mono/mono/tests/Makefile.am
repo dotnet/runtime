@@ -228,6 +228,7 @@ TEST_IL_SRC=			\
 	qt-instance.il		\
 	vararg.il			\
 	bug-29859.il		\
+	static-fields-nonconst.il	\
 	even-odd.il
 
 
