@@ -1937,11 +1937,30 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
 
+static gboolean 
+needs_cctor_run (MonoClass *klass, MonoMethod *caller)
+{
+	int i;
+	MonoMethod *method;
+	
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+		    (strcmp (".cctor", method->name) == 0)) {
+			if (caller == method)
+				return FALSE;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 static gboolean
-mono_method_check_inlining (MonoMethod *method)
+mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
 	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
 	MonoMethodSignature *signature = method->signature;
+	MonoVTable *vtable;
 	int i;
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
@@ -1962,6 +1981,27 @@ mono_method_check_inlining (MonoMethod *method)
 		}
 	}
 
+	/* 
+	 * if we can initialize the class of the method right away, we do,
+	 * otherwise we don't allow inlining if the class needs initialization,
+	 * since it would mean inserting a call to mono_runtime_class_init()
+	 * inside the inlined code
+	 */
+	if (!(cfg->opt & MONO_OPT_SHARED)) {
+		vtable = mono_class_vtable (cfg->domain, method->klass);
+		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
+			mono_runtime_class_init (vtable);
+		else if (!vtable->initialized && needs_cctor_run (method->klass, NULL))
+			return FALSE;
+	} else {
+		/* 
+		 * If we're compiling for shared code
+		 * the cctor will need to be run at aot method load time, for example,
+		 * or at the end of the compilation of the inlining method.
+		 */
+		if (needs_cctor_run (method->klass, NULL) && !((method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+			return FALSE;
+	}
 	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
 
 	/* also consider num_locals? */
@@ -2818,7 +2858,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 			    (!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || (cmethod->flags & METHOD_ATTRIBUTE_FINAL)) && 
-			    mono_method_check_inlining (cmethod) &&
+			    mono_method_check_inlining (cfg, cmethod) &&
 			    !g_list_find (dont_inline, cmethod)) {
 				int costs;
 				MonoBasicBlock *ebblock;
@@ -3345,7 +3385,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
-				    mono_method_check_inlining (cmethod) &&
+				    mono_method_check_inlining (cfg, cmethod) &&
 				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
 				    !g_list_find (dont_inline, cmethod)) {
 					int costs;
@@ -3610,7 +3650,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDSFLDA:
 		case CEE_STSFLD: {
 			MonoClassField *field;
-			MonoVTable *vtable;
 
 			token = read32 (ip + 1);
 
@@ -3629,8 +3668,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_TEMPLOAD (cfg, ins, temp);
 			} else {
 				gpointer addr;
-				vtable = mono_class_vtable (cfg->domain, klass);
 				if (!cfg->domain->thread_static_fields || !(addr = g_hash_table_lookup (cfg->domain->thread_static_fields, field))) {
+					MonoVTable *vtable;
+					vtable = mono_class_vtable (cfg->domain, klass);
+					if (!vtable->initialized && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && needs_cctor_run (klass, method)) {
+						MonoInst *iargs [1];
+						NEW_PCONST (cfg, iargs [0], vtable);
+						mono_emit_jit_icall (cfg, bblock, mono_runtime_class_init, iargs, ip);
+						if (cfg->verbose_level > 2)
+							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
+					} else {
+						mono_runtime_class_init (vtable);
+					}
 					addr = (char*)vtable->data + field->offset;
 					NEW_PCONST (cfg, ins, addr);
 					ins->cil_code = ip;
@@ -4913,12 +4962,25 @@ mono_find_jit_icall_by_addr (gconstpointer addr)
 	return g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
 }
 
+gconstpointer
+mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
+{
+	char *name;
+	MonoMethod *wrapper;
+	
+	if (callinfo->wrapper)
+		return callinfo->wrapper;
+	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
+	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
+	callinfo->wrapper = mono_jit_compile_method (wrapper);
+	g_free (name);
+	return callinfo->wrapper;
+}
+
 MonoJitICallInfo *
 mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
 {
 	MonoJitICallInfo *info;
-	MonoMethod *wrapper;
-	char *n;
 	
 	g_assert (func);
 	g_assert (name);
@@ -4935,7 +4997,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 
 	info = g_new (MonoJitICallInfo, 1);
 	
-	info->name = g_strdup (name);
+	info->name = name;
 	info->func = func;
 	info->sig = sig;
 		
@@ -4946,14 +5008,11 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	    ) {
 		info->wrapper = func;
 	} else {
-		g_assert (sig);
-		n = g_strdup_printf ("__icall_wrapper_%s", name);	
-		wrapper = mono_marshal_get_icall_wrapper (sig, n, func);
-		info->wrapper = mono_jit_compile_method (wrapper);
-		g_free (n);
+		info->wrapper = NULL;
+		mono_icall_get_wrapper (info);
 	}
 
-	g_hash_table_insert (jit_icall_hash_name, info->name, info);
+	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
 	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
 	if (func != info->wrapper)
 		g_hash_table_insert (jit_icall_hash_addr, (gpointer)info->wrapper, info);
@@ -4973,10 +5032,9 @@ mono_find_jit_opcode_emulation (int opcode)
 }
 
 void
-mono_register_opcode_emulation (int opcode, MonoMethodSignature *sig, gpointer func)
+mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func)
 {
 	MonoJitICallInfo *info;
-	char *name;
 
 	if (!emul_opcode_hash)
 		emul_opcode_hash = g_hash_table_new (NULL, NULL);
@@ -4984,11 +5042,7 @@ mono_register_opcode_emulation (int opcode, MonoMethodSignature *sig, gpointer f
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	name = g_strdup_printf ("__emulate_%s",  mono_inst_name (opcode));
-
 	info = mono_register_jit_icall (func, name, sig, FALSE);
-
-	g_free (name);
 
 	g_hash_table_insert (emul_opcode_hash, (gpointer)opcode, info);
 }
@@ -6258,7 +6312,7 @@ mono_jit_compile_method (MonoMethod *method)
 		g_slist_free (list);
 	}
 	/* make sure runtime_init is called */
-	mono_class_vtable (target_domain, method->klass);
+	mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
 
 	return code;
 }
@@ -6467,25 +6521,25 @@ mini_init (const char *filename)
 	 * when adding emulation for some opcodes, remember to also add a dummy
 	 * rule to the burg files, because we need the arity information to be correct.
 	 */
-	mono_register_opcode_emulation (OP_LMUL, helper_sig_long_long_long, mono_llmult);
-	mono_register_opcode_emulation (OP_LMUL_OVF_UN, helper_sig_long_long_long, mono_llmult_ovf_un);
-	mono_register_opcode_emulation (OP_LMUL_OVF, helper_sig_long_long_long, mono_llmult_ovf);
-	mono_register_opcode_emulation (OP_LDIV, helper_sig_long_long_long, mono_lldiv);
-	mono_register_opcode_emulation (OP_LDIV_UN, helper_sig_long_long_long, mono_lldiv_un);
-	mono_register_opcode_emulation (OP_LREM, helper_sig_long_long_long, mono_llrem);
-	mono_register_opcode_emulation (OP_LREM_UN, helper_sig_long_long_long, mono_llrem_un);
+	mono_register_opcode_emulation (OP_LMUL, "__emul_lmul", helper_sig_long_long_long, mono_llmult);
+	mono_register_opcode_emulation (OP_LMUL_OVF_UN, "__emul_lmul_ovf_un", helper_sig_long_long_long, mono_llmult_ovf_un);
+	mono_register_opcode_emulation (OP_LMUL_OVF, "__emul_lmul_ovf", helper_sig_long_long_long, mono_llmult_ovf);
+	mono_register_opcode_emulation (OP_LDIV, "__emul_ldiv", helper_sig_long_long_long, mono_lldiv);
+	mono_register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", helper_sig_long_long_long, mono_lldiv_un);
+	mono_register_opcode_emulation (OP_LREM, "__emul_lrem", helper_sig_long_long_long, mono_llrem);
+	mono_register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", helper_sig_long_long_long, mono_llrem_un);
 
-	mono_register_opcode_emulation (OP_LSHL, helper_sig_long_long_int, mono_lshl);
-	mono_register_opcode_emulation (OP_LSHR, helper_sig_long_long_int, mono_lshr);
-	mono_register_opcode_emulation (OP_LSHR_UN, helper_sig_long_long_int, mono_lshr_un);
+	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", helper_sig_long_long_int, mono_lshl);
+	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", helper_sig_long_long_int, mono_lshr);
+	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un);
 
-	mono_register_opcode_emulation (OP_FCONV_TO_U8, helper_sig_ulong_double, mono_fconv_u8);
-	mono_register_opcode_emulation (OP_FCONV_TO_U4, helper_sig_uint_double, mono_fconv_u4);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, helper_sig_long_double, mono_fconv_ovf_i8);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, helper_sig_ulong_double, mono_fconv_ovf_u8);
+	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8);
+	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8);
 
 #if SIZEOF_VOID_P == 4
-	mono_register_opcode_emulation (OP_FCONV_TO_U, helper_sig_uint_double, mono_fconv_u4);
+	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4);
 #else
 #warning "fixme: add opcode emulation"
 #endif
@@ -6520,6 +6574,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", helper_sig_void_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", helper_sig_void_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (g_free, "g_free", helper_sig_void_ptr, FALSE);
+	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
 

@@ -564,7 +564,7 @@ typedef enum {
 } MonoGraphOptions;
 
 typedef struct {
-	char *name;
+	const char *name;
 	gconstpointer func;
 	gconstpointer wrapper;
 	MonoMethodSignature *sig;
@@ -609,7 +609,7 @@ MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, M
 void      mono_destroy_compile              (MonoCompile *cfg);
 gpointer  mono_aot_get_method               (MonoMethod *method);
 gboolean  mono_method_blittable             (MonoMethod *method);
-void      mono_register_opcode_emulation    (int opcode, MonoMethodSignature *sig, gpointer func);
+void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func);
 void      mono_arch_register_lowlevel_calls (void);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
 void      mono_add_varcopy_to_end           (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest);
@@ -618,6 +618,7 @@ int               mono_find_method_opcode      (MonoMethod *method);
 MonoJitICallInfo *mono_find_jit_icall_by_name  (const char *name);
 MonoJitICallInfo *mono_find_jit_icall_by_addr  (gconstpointer addr);
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
+gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
 
 MonoCoverageInfo *mono_allocate_coverage_info (MonoMethod *method, int size);
 MonoCoverageInfo *mono_get_coverage_info      (MonoMethod *method);
