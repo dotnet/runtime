@@ -2,6 +2,10 @@
 #include <glib.h>
 #include <pthread.h>
 #include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
@@ -13,32 +17,83 @@
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/misc-private.h>
+#include <mono/io-layer/daemon-messages.h>
 
 #undef DEBUG
 
 static pthread_once_t shared_data_once=PTHREAD_ONCE_INIT;
 static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT]={0};
-static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={NULL};
-static guint32 scratch_size=0;
+static gboolean shared=FALSE;
+static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
+	NULL,
+	&_wapi_file_ops,
+	&_wapi_console_ops,
+	&_wapi_thread_ops,
+	&_wapi_sem_ops,
+	&_wapi_mutex_ops,
+	&_wapi_event_ops,
+	&_wapi_socket_ops,
+	&_wapi_find_ops,
+	&_wapi_process_ops,
+};
+
+static int daemon_sock;
+
+static pthread_mutexattr_t mutex_shared_attr;
+static pthread_condattr_t cond_shared_attr;
 
 struct _WapiHandleShared_list *_wapi_shared_data=NULL;
 struct _WapiHandlePrivate_list *_wapi_private_data=NULL;
 
-/* All non-zero entries here need to be CloseHandle()d that many times
- * on process exit
- */
-guint32 _wapi_open_handles[_WAPI_MAX_HANDLES]={0};
-
 static void shared_init (void)
 {
-	_wapi_shared_data=_wapi_shm_attach (&scratch_size);
-	_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
+	struct sockaddr_un sun;
+	int ret;
+	
+#ifndef DISABLE_SHARED_HANDLES
+	if(getenv ("MONO_DISABLE_SHM"))
+#endif
+	{
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Using process-private handles");
+#endif
+		shared=FALSE;
 
-	/* This wont be called if the process exits due to a signal,
-	 * any suggestions welcome (I tried {on_,at,g_at}exit and gcc
-	 * destructor attributes.)
-	 */
-	atexit (_wapi_handle_cleanup);
+		_wapi_shared_data=
+			g_malloc0 (sizeof(struct _WapiHandleShared_list)+
+				   _WAPI_SHM_SCRATCH_SIZE);
+		_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
+#ifndef DISABLE_SHARED_HANDLES
+	} else {
+		shared=TRUE;
+		
+		_wapi_shared_data=_wapi_shm_attach (FALSE);
+		_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
+
+		daemon_sock=socket (PF_UNIX, SOCK_STREAM, 0);
+		sun.sun_family=AF_UNIX;
+		memcpy (sun.sun_path, _wapi_shared_data->daemon, 108);
+		ret=connect (daemon_sock, (struct sockaddr *)&sun,
+			     sizeof(struct sockaddr_un));
+		if(ret==-1) {
+			g_error (G_GNUC_PRETTY_FUNCTION
+				 "connect to daemon failed: %s",
+				 strerror (errno));
+			g_assert_not_reached ();
+		}
+#endif /* DISABLE_SHARED_HANDLES */
+	}
+
+	pthread_mutexattr_init (&mutex_shared_attr);
+	pthread_condattr_init (&cond_shared_attr);
+
+#ifdef _POSIX_THREAD_PROCESS_SHARED
+	pthread_mutexattr_setpshared (&mutex_shared_attr,
+				      PTHREAD_PROCESS_SHARED);
+	pthread_condattr_setpshared (&cond_shared_attr,
+				     PTHREAD_PROCESS_SHARED);
+#endif
 }
 
 void _wapi_handle_init (void)
@@ -53,34 +108,40 @@ void _wapi_handle_init (void)
 	gpointer thread_handle;
 
 	process_handle=_wapi_handle_new (WAPI_HANDLE_PROCESS);
-	_wapi_handle_lock_handle (process_handle);
-	_wapi_handle_unlock_handle (process_handle);
 	
 	thread_handle=_wapi_handle_new (WAPI_HANDLE_THREAD);
-	_wapi_handle_lock_handle (thread_handle);
-	_wapi_handle_unlock_handle (thread_handle);
 }
 
-void _wapi_handle_cleanup (void)
+guint32 _wapi_handle_new_internal (WapiHandleType type)
 {
-	guint32 i, j;
+	guint32 i;
 	
-	/* Close all the handles listed in _wapi_open_handles */
-	for(i=0; i<_WAPI_MAX_HANDLES; i++) {
-		for(j=0; j< _wapi_open_handles[i]; j++) {
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": Closing %d", i);
-#endif
+	/* A linear scan should be fast enough.  Start from 1, leaving
+	 * 0 (NULL) as a guard
+	 */
+	for(i=1; i<_WAPI_MAX_HANDLES; i++) {
+		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
+		
+		if(shared->type==WAPI_HANDLE_UNUSED) {
+			shared->type=type;
+			shared->signalled=FALSE;
+			mono_mutex_init (&_wapi_shared_data->handles[i].signal_mutex, &mutex_shared_attr);
+			pthread_cond_init (&_wapi_shared_data->handles[i].signal_cond, &cond_shared_attr);
 
-			CloseHandle ((gpointer)i);
+			return(i);
 		}
 	}
+
+	return(0);
 }
 
 gpointer _wapi_handle_new (WapiHandleType type)
 {
+	static pthread_mutex_t scan_mutex=PTHREAD_MUTEX_INITIALIZER;
 	guint32 idx;
 	gpointer handle;
+	WapiHandleRequest new;
+	WapiHandleResponse new_resp;
 #if HAVE_BOEHM_GC
 	gboolean tried_collect=FALSE;
 #endif
@@ -88,48 +149,55 @@ gpointer _wapi_handle_new (WapiHandleType type)
 	pthread_once (&shared_data_once, shared_init);
 	
 again:
-	_wapi_handle_shared_lock ();
+	if(shared==TRUE) {
+		new.type=WapiHandleRequestType_New;
+		new.u.new.type=type;
 	
-	/* A linear scan should be fast enough.  Start from 1, leaving
-	 * 0 (NULL) as a guard
-	 */
-	for(idx=1; idx<_WAPI_MAX_HANDLES; idx++) {
-		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[idx];
-		
-		if(shared->type==WAPI_HANDLE_UNUSED) {
-			shared->type=type;
-			shared->signalled=FALSE;
-			mono_mutex_init (&_wapi_shared_data->handles[idx].signal_mutex, NULL);
-			pthread_cond_init (&_wapi_shared_data->handles[idx].signal_cond, NULL);
-			
-			handle=GUINT_TO_POINTER (idx);
-			_wapi_handle_ref (handle);
-			
-			_wapi_handle_shared_unlock ();
-			
-			return(handle);
+		_wapi_daemon_request_response (daemon_sock, &new, &new_resp);
+	
+		if (new_resp.type==WapiHandleResponseType_New) {
+			idx=new_resp.u.new.handle;
+		} else {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": bogus daemon response, type %d",
+				   new_resp.type);
+			g_assert_not_reached ();
 		}
+	} else {
+		pthread_mutex_lock (&scan_mutex);
+		idx=_wapi_handle_new_internal (type);
+		pthread_mutex_unlock (&scan_mutex);
 	}
-	
-	_wapi_handle_shared_unlock ();
-	
-	g_warning (G_GNUC_PRETTY_FUNCTION ": Ran out of handles!");
+		
+	if(idx==0) {
+		g_warning (G_GNUC_PRETTY_FUNCTION ": Ran out of handles!");
 
 #if HAVE_BOEHM_GC
-	/* See if we can reclaim some handles by forcing a GC collection */
-	if(tried_collect==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": Seeing if GC collection helps...");
-		GC_gcollect ();
-		tried_collect=TRUE;
-		goto again;
-	} else {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": didn't help, returning error");
-	}
+		/* See if we can reclaim some handles by forcing a GC
+		 * collection
+		 */
+		if(tried_collect==FALSE) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": Seeing if GC collection helps...");
+			GC_gcollect ();
+			tried_collect=TRUE;
+			goto again;
+		} else {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": didn't help, returning error");
+		}
 #endif
 	
-	return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
+		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
+	}
+
+	handle=GUINT_TO_POINTER (idx);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Allocated new handle %p", handle);
+#endif
+
+	return(handle);
 }
 
 gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
@@ -141,7 +209,11 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 
 	if(shared!=NULL) {
 		shared_handle_data=&_wapi_shared_data->handles[idx];
-		if(shared_handle_data->type!=type) {
+		/* Allow WAPI_HANDLE_UNUSED to mean "dont care which
+		 * type"
+		 */
+		if(shared_handle_data->type!=type &&
+		   type != WAPI_HANDLE_UNUSED) {
 			return(FALSE);
 		}
 
@@ -157,25 +229,113 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 	return(TRUE);
 }
 
+void _wapi_handle_ref (gpointer handle)
+{
+	guint32 idx=GPOINTER_TO_UINT (handle);
+
+	if(shared==TRUE) {
+		WapiHandleRequest req;
+		WapiHandleResponse resp;
+	
+		req.type=WapiHandleRequestType_Open;
+		req.u.open.handle=idx;
+	
+		_wapi_daemon_request_response (daemon_sock, &req, &resp);
+		if(resp.type!=WapiHandleResponseType_Open) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": bogus daemon response, type %d",
+				   resp.type);
+			g_assert_not_reached ();
+		}
+	} else {
+		_wapi_shared_data->handles[idx].ref++;
+	
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p ref now %d",
+			   handle, _wapi_shared_data->handles[idx].ref);
+#endif
+	}
+}
+
+void _wapi_handle_unref (gpointer handle)
+{
+	guint32 idx=GPOINTER_TO_UINT (handle);
+	gboolean destroy;
+	
+	if(shared==TRUE) {
+		WapiHandleRequest req;
+		WapiHandleResponse resp;
+	
+		req.type=WapiHandleRequestType_Close;
+		req.u.close.handle=GPOINTER_TO_UINT (handle);
+	
+		_wapi_daemon_request_response (daemon_sock, &req, &resp);
+		if(resp.type!=WapiHandleResponseType_Close) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": bogus daemon response, type %d",
+				   resp.type);
+			g_assert_not_reached ();
+		} else {
+			destroy=resp.u.close.destroy;
+		}
+	} else {
+		_wapi_shared_data->handles[idx].ref--;
+	
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p ref now %d",
+			   handle, _wapi_shared_data->handles[idx].ref);
+#endif
+
+		/* Possible race condition here if another thread refs
+		 * the handle between here and setting the type to
+		 * UNUSED.  I could lock a mutex, but I'm not sure
+		 * that allowing a handle reference to reach 0 isn't
+		 * an application bug anyway.
+		 */
+		destroy=(_wapi_shared_data->handles[idx].ref==0);
+	}
+
+	if(destroy==TRUE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Destroying handle %p",
+			   handle);
+#endif
+		
+		if(shared==FALSE) {
+			_wapi_handle_ops_close_shared (handle);
+			_wapi_shared_data->handles[idx].type=WAPI_HANDLE_UNUSED;
+			mono_mutex_destroy (&_wapi_shared_data->handles[idx].signal_mutex);
+			pthread_cond_destroy (&_wapi_shared_data->handles[idx].signal_cond);
+			memset (&_wapi_shared_data->handles[idx].u, '\0', sizeof(_wapi_shared_data->handles[idx].u));
+		}
+		
+		_wapi_handle_ops_close_private (handle);
+	}
+}
+
 #define HDRSIZE sizeof(struct _WapiScratchHeader)
 
-guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
+guint32 _wapi_handle_scratch_store_internal (guint32 bytes)
 {
 	guint32 idx=0, last_idx=0;
 	struct _WapiScratchHeader *hdr, *last_hdr;
 	gboolean last_was_free=FALSE;
 	guchar *storage=&_wapi_shared_data->scratch_base[0];
 	
-	_wapi_handle_shared_lock ();
-	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": looking for %d bytes of scratch space (%d bytes total)",
+		   bytes, _WAPI_SHM_SCRATCH_SIZE);
+#endif
+
 	hdr=(struct _WapiScratchHeader *)&storage[0];
 	if(hdr->flags==0 && hdr->length==0) {
 		/* Need to initialise scratch data */
 		hdr->flags |= WAPI_SHM_SCRATCH_FREE;
-		hdr->length = scratch_size - HDRSIZE;
+		hdr->length = _WAPI_SHM_SCRATCH_SIZE - HDRSIZE;
 	}
 	
-	while(idx<scratch_size) {
+	while(idx< _WAPI_SHM_SCRATCH_SIZE) {
 		hdr=(struct _WapiScratchHeader *)&storage[idx];
 		
 		/* Do a simple first-fit allocation, coalescing
@@ -193,12 +353,6 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 			hdr->flags &= ~WAPI_SHM_SCRATCH_FREE;
 			hdr->length=bytes;
 			idx += HDRSIZE;
-			memcpy (&storage[idx], data, bytes);
-
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": copied %d bytes",
-				   bytes);
-#endif
 
 			/* Put a new header in at the end of the used
 			 * space
@@ -210,8 +364,6 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": new header at %d, length %d", idx+bytes, hdr->length);
 #endif
-			
-			_wapi_handle_shared_unlock ();
 			
 			return(idx);
 		} else if(hdr->flags & WAPI_SHM_SCRATCH_FREE &&
@@ -262,9 +414,46 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 		}
 	}
 	
-	_wapi_handle_shared_unlock ();
-	
 	return(0);
+}
+
+guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
+{
+	static pthread_mutex_t scratch_mutex=PTHREAD_MUTEX_INITIALIZER;
+	guint32 idx;
+	
+	if(shared==TRUE) {
+		WapiHandleRequest scratch;
+		WapiHandleResponse scratch_resp;
+	
+		scratch.type=WapiHandleRequestType_Scratch;
+		scratch.u.scratch.length=bytes;
+	
+		_wapi_daemon_request_response (daemon_sock, &scratch,
+					       &scratch_resp);
+	
+		if(scratch_resp.type==WapiHandleResponseType_Scratch) {
+			idx=scratch_resp.u.scratch.idx;
+		} else {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": bogus daemon response, type %d",
+				   scratch_resp.type);
+			g_assert_not_reached ();
+		}
+	} else {
+		pthread_mutex_lock (&scratch_mutex);
+		idx=_wapi_handle_scratch_store_internal (bytes);
+		pthread_mutex_unlock (&scratch_mutex);
+		
+		if(idx==0) {
+			/* Failed to allocate space */
+			return(0);
+		}
+	}
+
+	memcpy (&_wapi_shared_data->scratch_base[idx], data, bytes);
+	
+	return(idx);
 }
 
 guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx)
@@ -273,7 +462,7 @@ guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx)
 	guchar *str;
 	guchar *storage=&_wapi_shared_data->scratch_base[0];
 	
-	if(idx < HDRSIZE || idx > scratch_size) {
+	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
 		return(NULL);
 	}
 	
@@ -284,12 +473,12 @@ guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx)
 	return(str);
 }
 
-void _wapi_handle_scratch_delete (guint32 idx)
+void _wapi_handle_scratch_delete_internal (guint32 idx)
 {
 	struct _WapiScratchHeader *hdr;
 	guchar *storage=&_wapi_shared_data->scratch_base[0];
 	
-	if(idx < HDRSIZE || idx > scratch_size) {
+	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
 		return;
 	}
 	
@@ -302,10 +491,27 @@ void _wapi_handle_scratch_delete (guint32 idx)
 	 */
 }
 
-void _wapi_handle_register_ops (WapiHandleType type,
-				struct _WapiHandleOps *ops)
+void _wapi_handle_scratch_delete (guint32 idx)
 {
-	handle_ops[type]=ops;
+	if(shared==TRUE) {
+		WapiHandleRequest scratch_free;
+		WapiHandleResponse scratch_free_resp;
+	
+		scratch_free.type=WapiHandleRequestType_ScratchFree;
+		scratch_free.u.scratch_free.idx=idx;
+	
+		_wapi_daemon_request_response (daemon_sock, &scratch_free,
+					       &scratch_free_resp);
+	
+		if(scratch_free_resp.type!=WapiHandleResponseType_ScratchFree) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": bogus daemon response, type %d",
+				   scratch_free_resp.type);
+			g_assert_not_reached ();
+		}
+	} else {
+		_wapi_handle_scratch_delete_internal (idx);
+	}
 }
 
 void _wapi_handle_register_capabilities (WapiHandleType type,
@@ -330,141 +536,27 @@ gboolean _wapi_handle_test_capabilities (gpointer handle,
 	return((handle_caps[type] & caps)!=0);
 }
 
-void _wapi_handle_ops_close (gpointer handle)
+void _wapi_handle_ops_close_shared (gpointer handle)
 {
 	guint32 idx=GPOINTER_TO_UINT (handle);
 	WapiHandleType type;
 
 	type=_wapi_shared_data->handles[idx].type;
 
-	if(handle_ops[type]!=NULL && handle_ops[type]->close!=NULL) {
-		handle_ops[type]->close(handle);
+	if(handle_ops[type]!=NULL && handle_ops[type]->close_shared!=NULL) {
+		handle_ops[type]->close_shared (handle);
 	}
 }
 
-WapiFileType _wapi_handle_ops_getfiletype (gpointer handle)
+void _wapi_handle_ops_close_private (gpointer handle)
 {
 	guint32 idx=GPOINTER_TO_UINT (handle);
 	WapiHandleType type;
 
 	type=_wapi_shared_data->handles[idx].type;
 
-	if(handle_ops[type]!=NULL && handle_ops[type]->getfiletype!=NULL) {
-		return(handle_ops[type]->getfiletype());
-	} else {
-		return(FILE_TYPE_UNKNOWN);
-	}
-}
-
-gboolean _wapi_handle_ops_readfile (gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread, WapiOverlapped *overlapped)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->readfile!=NULL) {
-		return(handle_ops[type]->readfile(handle, buffer, numbytes, bytesread, overlapped));
-	} else {
-		return(FALSE);
-	}
-}
-
-gboolean _wapi_handle_ops_writefile (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, WapiOverlapped *overlapped)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->writefile!=NULL) {
-		return(handle_ops[type]->writefile(handle, buffer, numbytes, byteswritten, overlapped));
-	} else {
-		return(FALSE);
-	}
-}
-
-gboolean _wapi_handle_ops_flushfile (gpointer handle)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->flushfile!=NULL) {
-		return(handle_ops[type]->flushfile(handle));
-	} else {
-		return(FALSE);
-	}
-}
-
-guint32 _wapi_handle_ops_seek (gpointer handle, gint32 movedistance, gint32 *highmovedistance, WapiSeekMethod method)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->seek!=NULL) {
-		return(handle_ops[type]->seek(handle, movedistance, highmovedistance, method));
-	} else {
-		return(INVALID_SET_FILE_POINTER);
-	}
-}
-
-gboolean _wapi_handle_ops_setendoffile (gpointer handle)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->setendoffile!=NULL) {
-		return(handle_ops[type]->setendoffile(handle));
-	} else {
-		return(FALSE);
-	}
-}
-
-guint32 _wapi_handle_ops_getfilesize (gpointer handle, guint32 *highsize)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->getfilesize!=NULL) {
-		return(handle_ops[type]->getfilesize(handle, highsize));
-	} else {
-		return(INVALID_FILE_SIZE);
-	}
-}
-
-gboolean _wapi_handle_ops_getfiletime (gpointer handle, WapiFileTime *create_time, WapiFileTime *last_access, WapiFileTime *last_write)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->getfiletime!=NULL) {
-		return(handle_ops[type]->getfiletime(handle, create_time, last_access, last_write));
-	} else {
-		return(FALSE);
-	}
-}
-
-gboolean _wapi_handle_ops_setfiletime (gpointer handle, const WapiFileTime *create_time, const WapiFileTime *last_access, const WapiFileTime *last_write)
-{
-	guint32 idx=GPOINTER_TO_UINT (handle);
-	WapiHandleType type;
-
-	type=_wapi_shared_data->handles[idx].type;
-
-	if(handle_ops[type]!=NULL && handle_ops[type]->setfiletime!=NULL) {
-		return(handle_ops[type]->setfiletime(handle, create_time, last_access, last_write));
-	} else {
-		return(FALSE);
+	if(handle_ops[type]!=NULL && handle_ops[type]->close_private!=NULL) {
+		handle_ops[type]->close_private (handle);
 	}
 }
 

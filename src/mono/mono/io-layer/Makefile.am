@@ -1,9 +1,12 @@
 lib_LIBRARIES = libwapi.a
 
+bin_PROGRAMS = mono-handle-d
+
 INCLUDES = \
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
 	-D_WAPI_BUILDING=1	\
+	-DMONO_BINDIR=\""$(bindir)"\"	\
 	-I$(top_srcdir)	
 
 libwapiincludedir = $(includedir)/mono/io-layer
@@ -38,6 +41,8 @@ OTHER_SRC = \
 	context.h		\
 	critical-sections.c	\
 	critical-sections.h	\
+	daemon-messages.c	\
+	daemon-messages.h	\
 	error.c			\
 	error.h			\
 	events.c		\
@@ -103,6 +108,16 @@ else
 libwapi_a_SOURCES = $(OTHER_SRC)
 libwapiinclude_HEADERS = $(OTHER_H)
 endif
+
+mono_handle_d_SOURCES = \
+	daemon.c	\
+	daemon-messages.c	\
+	daemon-messages.h
+
+mono_handle_d_LDADD = \
+	$(GLIB_LIBS) \
+	$(top_builddir)/mono/io-layer/libwapi.a \
+	$(top_builddir)/mono/utils/libmonoutils.a
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\

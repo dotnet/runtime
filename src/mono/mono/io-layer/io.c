@@ -20,7 +20,8 @@
 #undef DEBUG
 #define ACTUALLY_DO_UNICODE
 
-static void file_close(gpointer handle);
+static void file_close_shared (gpointer handle);
+static void file_close_private (gpointer handle);
 static WapiFileType file_getfiletype(void);
 static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
@@ -42,23 +43,16 @@ static gboolean file_setfiletime(gpointer handle,
 				 const WapiFileTime *last_write);
 
 /* File handle is only signalled for overlapped IO */
-static struct _WapiHandleOps file_ops = {
-	file_close,		/* close */
-	file_getfiletype,	/* getfiletype */
-	file_read,		/* readfile */
-	file_write,		/* writefile */
-	file_flush,		/* flushfile */
-	file_seek,		/* seek */
-	file_setendoffile,	/* setendoffile */
-	file_getfilesize,	/* getfilesize */
-	file_getfiletime,	/* getfiletime */
-	file_setfiletime,	/* setfiletime */
+struct _WapiHandleOps _wapi_file_ops = {
+	file_close_shared,	/* close_shared */
+	file_close_private,	/* close_private */
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
 };
 
-static void console_close(gpointer handle);
+static void console_close_shared (gpointer handle);
+static void console_close_private (gpointer handle);
 static WapiFileType console_getfiletype(void);
 static gboolean console_read(gpointer handle, gpointer buffer,
 			     guint32 numbytes, guint32 *bytesread,
@@ -71,17 +65,9 @@ static gboolean console_flush(gpointer handle);
 /* Console is mostly the same as file, except it can block waiting for
  * input or output
  */
-static struct _WapiHandleOps console_ops = {
-	console_close,		/* close */
-	console_getfiletype,	/* getfiletype */
-	console_read,		/* readfile */
-	console_write,		/* writefile */
-	console_flush,		/* flushfile */
-	NULL,			/* seek */
-	NULL,			/* setendoffile */
-	NULL,			/* getfilesize */
-	NULL,			/* getfiletime */
-	NULL,			/* setfiletime */
+struct _WapiHandleOps _wapi_console_ops = {
+	console_close_shared,	/* close_shared */
+	console_close_private,	/* close_private */
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
@@ -89,33 +75,80 @@ static struct _WapiHandleOps console_ops = {
 
 /* Find handle has no ops.
  */
-static struct _WapiHandleOps find_ops = {
+struct _WapiHandleOps _wapi_find_ops = {
 	NULL,			/* close */
 	NULL,			/* getfiletype */
-	NULL,			/* readfile */
-	NULL,			/* writefile */
-	NULL,			/* flushfile */
-	NULL,			/* seek */
-	NULL,			/* setendoffile */
-	NULL,			/* getfilesize */
-	NULL,			/* getfiletime */
-	NULL,			/* setfiletime */
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
 };
 
+static struct {
+	/* File, console and pipe handles */
+	WapiFileType (*getfiletype)(void);
+	
+	/* File and console handles */
+	gboolean (*readfile)(gpointer handle, gpointer buffer,
+			     guint32 numbytes, guint32 *bytesread,
+			     WapiOverlapped *overlapped);
+	gboolean (*writefile)(gpointer handle, gconstpointer buffer,
+			      guint32 numbytes, guint32 *byteswritten,
+			      WapiOverlapped *overlapped);
+	gboolean (*flushfile)(gpointer handle);
+	
+	/* File handles */
+	guint32 (*seek)(gpointer handle, gint32 movedistance,
+			gint32 *highmovedistance, WapiSeekMethod method);
+	gboolean (*setendoffile)(gpointer handle);
+	guint32 (*getfilesize)(gpointer handle, guint32 *highsize);
+	gboolean (*getfiletime)(gpointer handle, WapiFileTime *create_time,
+				WapiFileTime *last_access,
+				WapiFileTime *last_write);
+	gboolean (*setfiletime)(gpointer handle,
+				const WapiFileTime *create_time,
+				const WapiFileTime *last_access,
+				const WapiFileTime *last_write);
+} io_ops[WAPI_HANDLE_COUNT]={
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* file */
+	{file_getfiletype,
+	 file_read, file_write,
+	 file_flush, file_seek,
+	 file_setendoffile,
+	 file_getfilesize,
+	 file_getfiletime,
+	 file_setfiletime},
+	/* console */
+	{console_getfiletype,
+	 console_read,
+	 console_write,
+	 console_flush,
+	 NULL, NULL, NULL, NULL, NULL},
+	/* thread */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* sem */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* mutex */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* event */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* socket (will need at least read and write) */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* find */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* process */
+	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+};
+
+
 static pthread_once_t io_ops_once=PTHREAD_ONCE_INIT;
 
 static void io_ops_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_FILE, &file_ops);
 /* 	_wapi_handle_register_capabilities (WAPI_HANDLE_FILE, */
 /* 					    WAPI_HANDLE_CAP_WAIT); */
-	_wapi_handle_register_ops (WAPI_HANDLE_CONSOLE, &console_ops);
 /* 	_wapi_handle_register_capabilities (WAPI_HANDLE_CONSOLE, */
 /* 					    WAPI_HANDLE_CAP_WAIT); */
-	_wapi_handle_register_ops (WAPI_HANDLE_FIND, &find_ops);
 }
 
 /* Some utility functions.
@@ -208,14 +241,39 @@ static void _wapi_set_last_error_from_errno (void)
 
 /* Handle ops.
  */
-static void file_close(gpointer handle)
+static void file_close_shared (gpointer handle)
 {
 	struct _WapiHandle_file *file_handle;
-	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
-				(gpointer *)&file_handle,
+				(gpointer *)&file_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return;
+	}
+	
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": closing file handle %p", handle);
+#endif
+	
+	if(file_handle->filename!=0) {
+		_wapi_handle_scratch_delete (file_handle->filename);
+		file_handle->filename=0;
+	}
+	if(file_handle->security_attributes!=0) {
+		_wapi_handle_scratch_delete (file_handle->security_attributes);
+		file_handle->security_attributes=0;
+	}
+}
+
+static void file_close_private (gpointer handle)
+{
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_UNUSED, NULL,
 				(gpointer *)&file_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
@@ -229,14 +287,6 @@ static void file_close(gpointer handle)
 #endif
 	
 	close(file_private_handle->fd);
-	if(file_handle->filename!=0) {
-		_wapi_handle_scratch_delete (file_handle->filename);
-		file_handle->filename=0;
-	}
-	if(file_handle->security_attributes!=0) {
-		_wapi_handle_scratch_delete (file_handle->security_attributes);
-		file_handle->security_attributes=0;
-	}
 }
 
 static WapiFileType file_getfiletype(void)
@@ -834,14 +884,39 @@ static gboolean file_setfiletime(gpointer handle,
 	return(TRUE);
 }
 
-static void console_close(gpointer handle)
+static void console_close_shared (gpointer handle)
 {
 	struct _WapiHandle_file *console_handle;
-	struct _WapiHandlePrivate_file *console_private_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
-				(gpointer *)&console_handle,
+				(gpointer *)&console_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		return;
+	}
+	
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": closing console handle %p", handle);
+#endif
+	
+	if(console_handle->filename!=0) {
+		_wapi_handle_scratch_delete (console_handle->filename);
+		console_handle->filename=0;
+	}
+	if(console_handle->security_attributes!=0) {
+		_wapi_handle_scratch_delete (console_handle->security_attributes);
+		console_handle->security_attributes=0;
+	}
+}
+
+static void console_close_private (gpointer handle)
+{
+	struct _WapiHandlePrivate_file *console_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_UNUSED, NULL,
 				(gpointer *)&console_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
@@ -856,14 +931,6 @@ static void console_close(gpointer handle)
 #endif
 	
 	close(console_private_handle->fd);
-	if(console_handle->filename!=0) {
-		_wapi_handle_scratch_delete (console_handle->filename);
-		console_handle->filename=0;
-	}
-	if(console_handle->security_attributes!=0) {
-		_wapi_handle_scratch_delete (console_handle->security_attributes);
-		console_handle->security_attributes=0;
-	}
 }
 
 static WapiFileType console_getfiletype(void)
@@ -1209,8 +1276,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": returning handle %p [%s] with fd %d",
-		  handle, file_handle->filename, file_private_handle->fd);
+		  ": returning handle %p with fd %d", handle,
+		  file_private_handle->fd);
 #endif
 
 	_wapi_handle_unlock_handle (handle);
@@ -1530,8 +1597,14 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
 		  guint32 *bytesread, WapiOverlapped *overlapped)
 {
-	return(_wapi_handle_ops_readfile(handle, buffer, numbytes, bytesread,
-				     overlapped));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].readfile==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].readfile (handle, buffer, numbytes, bytesread,
+				      overlapped));
 }
 
 /**
@@ -1562,8 +1635,14 @@ gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
 gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
 		   guint32 *byteswritten, WapiOverlapped *overlapped)
 {
-	return(_wapi_handle_ops_writefile(handle, buffer, numbytes,
-					  byteswritten, overlapped));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].writefile==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].writefile (handle, buffer, numbytes, byteswritten,
+				       overlapped));
 }
 
 /**
@@ -1578,7 +1657,13 @@ gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
  */
 gboolean FlushFileBuffers(gpointer handle)
 {
-	return(_wapi_handle_ops_flushfile(handle));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].flushfile==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].flushfile (handle));
 }
 
 /**
@@ -1593,7 +1678,13 @@ gboolean FlushFileBuffers(gpointer handle)
  */
 gboolean SetEndOfFile(gpointer handle)
 {
-	return(_wapi_handle_ops_setendoffile(handle));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].setendoffile==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].setendoffile (handle));
 }
 
 /**
@@ -1628,8 +1719,14 @@ gboolean SetEndOfFile(gpointer handle)
 guint32 SetFilePointer(gpointer handle, gint32 movedistance,
 		       gint32 *highmovedistance, WapiSeekMethod method)
 {
-	return(_wapi_handle_ops_seek(handle, movedistance, highmovedistance,
-				     method));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].seek==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].seek (handle, movedistance, highmovedistance,
+				  method));
 }
 
 /**
@@ -1645,7 +1742,13 @@ guint32 SetFilePointer(gpointer handle, gint32 movedistance,
  */
 WapiFileType GetFileType(gpointer handle)
 {
-	return(_wapi_handle_ops_getfiletype(handle));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].getfiletype==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].getfiletype ());
 }
 
 /**
@@ -1666,7 +1769,13 @@ WapiFileType GetFileType(gpointer handle)
  */
 guint32 GetFileSize(gpointer handle, guint32 *highsize)
 {
-	return(_wapi_handle_ops_getfilesize(handle, highsize));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].getfilesize==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].getfilesize (handle, highsize));
 }
 
 /**
@@ -1697,8 +1806,14 @@ guint32 GetFileSize(gpointer handle, guint32 *highsize)
 gboolean GetFileTime(gpointer handle, WapiFileTime *create_time,
 		     WapiFileTime *last_access, WapiFileTime *last_write)
 {
-	return(_wapi_handle_ops_getfiletime(handle, create_time, last_access,
-					    last_write));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].getfiletime==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].getfiletime (handle, create_time, last_access,
+					 last_write));
 }
 
 /**
@@ -1728,8 +1843,14 @@ gboolean SetFileTime(gpointer handle, const WapiFileTime *create_time,
 		     const WapiFileTime *last_access,
 		     const WapiFileTime *last_write)
 {
-	return(_wapi_handle_ops_setfiletime(handle, create_time, last_access,
-					    last_write));
+	WapiHandleType type=_wapi_handle_type (handle);
+	
+	if(io_ops[type].setfiletime==NULL) {
+		return(FALSE);
+	}
+	
+	return(io_ops[type].setfiletime (handle, create_time, last_access,
+					 last_write));
 }
 
 /* A tick is a 100-nanosecond interval.  File time epoch is Midnight,

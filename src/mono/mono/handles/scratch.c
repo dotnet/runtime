@@ -34,22 +34,17 @@ static guchar *printable (guchar *data, guint32 datalen)
 int main (int argc, char **argv)
 {
 	guint32 idx=0;
-	/* Fix if this changes in shared.c */
-	guint32 scratch_size=0;
 	struct _WapiScratchHeader *hdr;
 	
-	_wapi_shared_data=_wapi_shm_attach (&scratch_size);
-	
-	_wapi_handle_shared_lock ();
+	_wapi_shared_data=_wapi_shm_attach (FALSE);
 
 	hdr=(struct _WapiScratchHeader *)&_wapi_shared_data->scratch_base[0];
 	if(hdr->flags==0 && hdr->length==0) {
 		g_print ("Scratch space unused\n");
-		_wapi_handle_shared_unlock ();
 		exit (0);
 	}
 	
-	while(idx<scratch_size) {
+	while(idx < _WAPI_SHM_SCRATCH_SIZE) {
 		hdr=(struct _WapiScratchHeader *)&_wapi_shared_data->scratch_base[idx];
 		if(hdr->flags & WAPI_SHM_SCRATCH_FREE) {
 			g_print ("Free block at %6d (index %6d), length %6d\n",
@@ -64,8 +59,6 @@ int main (int argc, char **argv)
 
 		idx+=(hdr->length+HDRSIZE);
 	}
-	
-	_wapi_handle_shared_unlock ();
 	
 	exit (0);
 }

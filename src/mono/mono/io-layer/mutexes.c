@@ -14,22 +14,14 @@
 
 #undef DEBUG
 
-static void mutex_close(gpointer handle);
+static void mutex_close_shared (gpointer handle);
 static void mutex_signal(gpointer handle);
 static void mutex_own (gpointer handle);
 static gboolean mutex_is_owned (gpointer handle);
 
-static struct _WapiHandleOps mutex_ops = {
-	mutex_close,		/* close */
-	NULL,			/* getfiletype */
-	NULL,			/* readfile */
-	NULL,			/* writefile */
-	NULL,			/* flushfile */
-	NULL,			/* seek */
-	NULL,			/* setendoffile */
-	NULL,			/* getfilesize */
-	NULL,			/* getfiletime */
-	NULL,			/* setfiletime */
+struct _WapiHandleOps _wapi_mutex_ops = {
+	mutex_close_shared,	/* close_shared */
+	NULL,			/* close_private */
 	mutex_signal,		/* signal */
 	mutex_own,		/* own */
 	mutex_is_owned,		/* is_owned */
@@ -39,14 +31,13 @@ static pthread_once_t mutex_ops_once=PTHREAD_ONCE_INIT;
 
 static void mutex_ops_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_MUTEX, &mutex_ops);
 	_wapi_handle_register_capabilities (WAPI_HANDLE_MUTEX,
 					    WAPI_HANDLE_CAP_WAIT |
 					    WAPI_HANDLE_CAP_SIGNAL |
 					    WAPI_HANDLE_CAP_OWN);
 }
 
-static void mutex_close(gpointer handle)
+static void mutex_close_shared (gpointer handle)
 {
 	struct _WapiHandle_mutex *mutex_handle;
 	gboolean ok;

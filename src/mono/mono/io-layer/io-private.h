@@ -5,6 +5,10 @@
 #include <glib.h>
 #include <glob.h>
 
+extern struct _WapiHandleOps _wapi_file_ops;
+extern struct _WapiHandleOps _wapi_console_ops;
+extern struct _WapiHandleOps _wapi_find_ops;
+
 /* Currently used for both FILE and CONSOLE handle types.  This may
  * have to change in future.
  */

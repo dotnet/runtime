@@ -4,6 +4,8 @@
 #include <config.h>
 #include <glib.h>
 
+extern struct _WapiHandleOps _wapi_process_ops;
+
 struct _WapiHandle_process
 {
 	pid_t id;

@@ -33,20 +33,12 @@ static GHashTable *thread_hash=NULL;
 static MonoGHashTable *tls_gc_hash = NULL;
 #endif
 
-static void thread_close(gpointer handle);
+static void thread_close_private (gpointer handle);
 static void thread_own (gpointer handle);
 
-static struct _WapiHandleOps thread_ops = {
-	thread_close,			/* close */
-	NULL,				/* getfiletype */
-	NULL,				/* readfile */
-	NULL,				/* writefile */
-	NULL,				/* flushfile */
-	NULL,				/* seek */
-	NULL,				/* setendoffile */
-	NULL,				/* getfilesize */
-	NULL,				/* getfiletime */
-	NULL,				/* setfiletime */
+struct _WapiHandleOps _wapi_thread_ops = {
+	NULL,				/* close_shared */
+	thread_close_private,		/* close_private */
 	NULL,				/* signal */
 	thread_own,			/* own */
 	NULL,				/* is_owned */
@@ -56,18 +48,17 @@ static pthread_once_t thread_ops_once=PTHREAD_ONCE_INIT;
 
 static void thread_ops_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_THREAD, &thread_ops);
 	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD,
 					    WAPI_HANDLE_CAP_WAIT);
 }
 
-static void thread_close(gpointer handle)
+static void thread_close_private (gpointer handle)
 {
-	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_handle;
 	gboolean ok;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				(gpointer *)&thread_handle, NULL);
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_UNUSED, NULL,
+				(gpointer *)&thread_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
@@ -89,10 +80,12 @@ static void thread_close(gpointer handle)
 static void thread_own (gpointer handle)
 {
 	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				(gpointer *)&thread_handle, NULL);
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
@@ -100,7 +93,8 @@ static void thread_own (gpointer handle)
 	}
 
 	if(thread_handle->joined==FALSE) {
-		_wapi_timed_thread_join (thread_handle->thread, NULL, NULL);
+		_wapi_timed_thread_join (thread_private_handle->thread, NULL,
+					 NULL);
 		thread_handle->joined=TRUE;
 	}
 }
@@ -108,10 +102,12 @@ static void thread_own (gpointer handle)
 static void thread_exit(guint32 exitstatus, gpointer handle)
 {
 	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				(gpointer *)&thread_handle, NULL);
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
@@ -134,7 +130,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 
 	/* Remove this thread from the hash */
 	mono_mutex_lock(&thread_hash_mutex);
-	g_hash_table_remove(thread_hash, &thread_handle->thread->id);
+	g_hash_table_remove(thread_hash, &thread_private_handle->thread->id);
 	mono_mutex_unlock(&thread_hash_mutex);
 
 	/* The thread is no longer active, so unref it */
@@ -167,6 +163,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		      guint32 *tid) 
 {
 	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
 	gpointer handle;
 	gboolean ok;
 	int ret;
@@ -188,7 +185,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	_wapi_handle_lock_handle (handle);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				(gpointer *)&thread_handle, NULL);
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
@@ -206,8 +204,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	 */
 	mono_mutex_lock(&thread_hash_mutex);
 	
-	ret=_wapi_timed_thread_create(&thread_handle->thread, NULL, start,
-				      thread_exit, param, handle);
+	ret=_wapi_timed_thread_create(&thread_private_handle->thread, NULL,
+				      start, thread_exit, param, handle);
 	if(ret!=0) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Thread create error: %s",
@@ -222,18 +220,19 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		return(NULL);
 	}
 
-	g_hash_table_insert(thread_hash, &thread_handle->thread->id,
+	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
 			    handle);
 	mono_mutex_unlock(&thread_hash_mutex);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Started thread handle %p thread %p ID %ld", handle,
-		  thread_handle->thread, thread_handle->thread->id);
+		  thread_private_handle->thread,
+		  thread_private_handle->thread->id);
 #endif
 	
 	if(tid!=NULL) {
-		*tid=thread_handle->thread->id;
+		*tid=thread_private_handle->thread->id;
 	}
 
 	_wapi_handle_unlock_handle (handle);

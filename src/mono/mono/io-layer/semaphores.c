@@ -16,21 +16,13 @@
 
 #undef DEBUG
 
-static void sema_close(gpointer handle);
+static void sema_close_shared (gpointer handle);
 static void sema_signal(gpointer handle);
 static void sema_own (gpointer handle);
 
-static struct _WapiHandleOps sem_ops = {
-	sema_close,		/* close */
-	NULL,			/* getfiletype */
-	NULL,			/* readfile */
-	NULL,			/* writefile */
-	NULL,			/* flushfile */
-	NULL,			/* seek */
-	NULL,			/* setendoffile */
-	NULL,			/* getfilesize */
-	NULL,			/* getfiletime */
-	NULL,			/* setfiletime */
+struct _WapiHandleOps _wapi_sem_ops = {
+	sema_close_shared,	/* close_shared */
+	NULL,			/* close_private */
 	sema_signal,		/* signal */
 	sema_own,		/* own */
 	NULL,			/* is_owned */
@@ -40,13 +32,12 @@ static pthread_once_t sem_ops_once=PTHREAD_ONCE_INIT;
 
 static void sem_ops_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_SEM, &sem_ops);
 	_wapi_handle_register_capabilities (WAPI_HANDLE_SEM,
 					    WAPI_HANDLE_CAP_WAIT |
 					    WAPI_HANDLE_CAP_SIGNAL);
 }
 
-static void sema_close(gpointer handle G_GNUC_UNUSED)
+static void sema_close_shared (gpointer handle G_GNUC_UNUSED)
 {
 	/* Not really much to do here */
 #ifdef DEBUG

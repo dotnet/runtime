@@ -7,6 +7,8 @@
 
 #include <mono/io-layer/mono-mutex.h>
 
+extern struct _WapiHandleOps _wapi_event_ops;
+
 struct _WapiHandle_event
 {
 	gboolean manual;

@@ -6,6 +6,8 @@
 
 #include <mono/io-layer/timed-thread.h>
 
+extern struct _WapiHandleOps _wapi_thread_ops;
+
 typedef enum {
 	THREAD_STATE_START,
 	THREAD_STATE_EXITED,
@@ -14,7 +16,6 @@ typedef enum {
 struct _WapiHandle_thread
 {
 	WapiThreadState state;
-	TimedThread *thread;
 	guint32 exitstatus;
 	gboolean joined;
 	gpointer process_handle;
@@ -22,7 +23,7 @@ struct _WapiHandle_thread
 
 struct _WapiHandlePrivate_thread
 {
-	int dummy;
+	TimedThread *thread;
 };
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */

@@ -36,34 +36,9 @@ typedef enum {
 
 struct _WapiHandleOps 
 {
-	/* All handle types */
-	void (*close)(gpointer handle);
+	void (*close_shared)(gpointer handle);
+	void (*close_private)(gpointer handle);
 
-	/* File, console and pipe handles */
-	WapiFileType (*getfiletype)(void);
-	
-	/* File and console handles */
-	gboolean (*readfile)(gpointer handle, gpointer buffer,
-			     guint32 numbytes, guint32 *bytesread,
-			     WapiOverlapped *overlapped);
-	gboolean (*writefile)(gpointer handle, gconstpointer buffer,
-			      guint32 numbytes, guint32 *byteswritten,
-			      WapiOverlapped *overlapped);
-	gboolean (*flushfile)(gpointer handle);
-	
-	/* File handles */
-	guint32 (*seek)(gpointer handle, gint32 movedistance,
-			gint32 *highmovedistance, WapiSeekMethod method);
-	gboolean (*setendoffile)(gpointer handle);
-	guint32 (*getfilesize)(gpointer handle, guint32 *highsize);
-	gboolean (*getfiletime)(gpointer handle, WapiFileTime *create_time,
-				WapiFileTime *last_access,
-				WapiFileTime *last_write);
-	gboolean (*setfiletime)(gpointer handle,
-				const WapiFileTime *create_time,
-				const WapiFileTime *last_access,
-				const WapiFileTime *last_write);
-	
 	/* SignalObjectAndWait */
 	void (*signal)(gpointer signal);
 
@@ -116,11 +91,16 @@ struct _WapiHandleShared
  */
 struct _WapiHandleShared_list
 {
+	/* UNIX_PATH_MAX doesnt seem to be defined in any accessible
+	 * header file
+	 */
+	guchar daemon[108];
+	guint32 daemon_running;
+	
 #ifdef _POSIX_THREAD_PROCESS_SHARED
 	mono_mutex_t signal_mutex;
 	pthread_cond_t signal_cond;
 #endif
-	guint32 lock;
 	struct _WapiHandleShared handles[_WAPI_MAX_HANDLES];
 	guchar scratch_base[0];
 };

@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include <sys/types.h>
 
+extern struct _WapiHandleOps _wapi_mutex_ops;
+
 struct _WapiHandle_mutex
 {
 	guint32 name;

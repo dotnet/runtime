@@ -501,6 +501,9 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	return(GUINT_TO_POINTER (sock));
 }
 
+/* FIXME: the SOCKET parameter (here and in other functions in this
+ * file) is really an IntPtr which needs to be converted to a guint32.
+ */
 void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
 {
 	closesocket(sock);

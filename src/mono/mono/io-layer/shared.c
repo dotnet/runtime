@@ -39,6 +39,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <errno.h>
+#include <string.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -46,57 +47,122 @@
 
 #undef DEBUG
 
-static gboolean shared;
-
-gpointer _wapi_shm_attach (guint32 *scratch_size)
+gpointer _wapi_shm_attach (gboolean daemon)
 {
 	gpointer shm_seg;
+	int shm_id;
+	key_t key;
+	gboolean fork_daemon=FALSE;
+	struct _WapiHandleShared_list *data;
 
-	*scratch_size=getpagesize ()*100;
+	/*
+	 * This is an attempt to get a unique key id.  The first arg
+	 * to ftok is a path, so when the config file support is done
+	 * we should use that.
+	 */
+	key=ftok (g_get_home_dir (), _WAPI_HANDLE_VERSION);
 	
-#ifndef DISABLE_SHARED_HANDLES
-	if(getenv ("MONO_DISABLE_SHM"))
-#endif
-	{
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": Using process-private handles");
-#endif
-
-		shared=FALSE;
-		shm_seg=g_malloc0 (sizeof(struct _WapiHandleShared_list)+
-				   *scratch_size);
-#ifndef DISABLE_SHARED_HANDLES
-	} else {
-		int shm_id;
-		key_t key;
-	
-		shared=TRUE;
-		
-		/*
-		 * This is an attempt to get a unique key id.  The
-		 * first arg to ftok is a path, so when the config
-		 * file support is done we should use that.
+try_again:
+	shm_id=shmget (key, sizeof(struct _WapiHandleShared_list)+
+		       _WAPI_SHM_SCRATCH_SIZE, IPC_CREAT | IPC_EXCL | 0600);
+	if(shm_id==-1 && errno==EEXIST) {
+		/* Cool, we dont have to fork the handle daemon, but
+		 * we still need to try and get the shm_id.
 		 */
-		key=ftok (g_get_home_dir (), _WAPI_HANDLE_VERSION);
-	
+		shm_id=shmget (key, 0, 0600);
+			
+		/* it's possible that the shared memory segment was
+		 * deleted in between seeing if it exists, and
+		 * attaching it.  If we got an error here, just try
+		 * attaching it again.
+		 */
+		if(shm_id==-1) {
+			goto try_again;
+		}
+	} else if (shm_id!=-1) {
+		/* We created the shared memory segment, so we need to
+		 * fork the handle daemon too
+		 */
+		fork_daemon=TRUE;
+
 		/* sysv shared mem is set to all zero when allocated,
 		 * so we don't need to do any more initialisation here
 		 */
-		shm_id=shmget (key, sizeof(struct _WapiHandleShared_list)+
-			       *scratch_size, IPC_CREAT | 0600);
-		if(shm_id==-1) {
-			perror ("shmget");
-			exit (-1);
-		}
-	
-		shm_seg=shmat (shm_id, NULL, 0);
-		if(shm_seg==(gpointer)-1) {
-			perror ("shmat");
-			exit (-1);
-		}
-#endif /* DISABLE_SHARED_HANDLES */
+	} else {
+		/* Some error other than EEXIST */
+		g_message (G_GNUC_PRETTY_FUNCTION ": shmget error: %s",
+			   strerror (errno));
+		exit (-1);
 	}
+	
+	/* From now on, we need to delete the shm segment before
+	 * exiting on error if we created it (ie, if
+	 * fork_daemon==TRUE)
+	 */
+	shm_seg=shmat (shm_id, NULL, 0);
+	if(shm_seg==(gpointer)-1) {
+		g_message (G_GNUC_PRETTY_FUNCTION ": shmat error: %s",
+			   strerror (errno));
+		if(fork_daemon==TRUE) {
+			_wapi_shm_destroy ();
+		}
+		exit (-1);
+	}
+
+	if(daemon==TRUE) {
+		/* No more to do in the daemon */
+		return(shm_seg);
+	}
+		
+	data=shm_seg;
+
+	if(fork_daemon==TRUE) {
+		pid_t pid;
+			
+		pid=fork ();
+		if(pid==-1) {
+			g_message (G_GNUC_PRETTY_FUNCTION ": fork error: %s",
+				   strerror (errno));
+			_wapi_shm_destroy ();
+			exit (-1);
+		} else if (pid==0) {
+			/* child */
+			setsid ();
+			execl (MONO_BINDIR "/mono-handle-d", "mono-handle-d",
+			       NULL);
+			g_message (G_GNUC_PRETTY_FUNCTION ": exec error: %s",
+				   strerror (errno));
+			data->daemon_running=2;
+			exit (-1);
+		}
+		/* parent carries on */
+	}
+		
+	/* Set up the handle daemon connection */
+
+	while(data->daemon_running==0) {
+		/* wait for the daemon to sort itself out.  To be
+		 * completely safe, we should have a timeout before
+		 * giving up.
+		 */
+		struct timespec sleepytime;
+			
+		sleepytime.tv_sec=0;
+		sleepytime.tv_nsec=10000000;	/* 10ms */
+			
+		nanosleep (&sleepytime, NULL);
+	}
+	if(data->daemon_running==2) {
+		/* Oh dear, the daemon had an error starting up */
+		if(fork_daemon==TRUE) {
+			_wapi_shm_destroy ();
+		}
+		g_error ("Handle daemon failed to start");
+	}
+		
+	/* From now on, it's up to the daemon to delete the shared
+	 * memory segment
+	 */
 
 	return(shm_seg);
 }
@@ -114,18 +180,17 @@ void _wapi_shm_destroy (void)
 	 */
 	key=ftok (g_get_home_dir (), _WAPI_HANDLE_VERSION);
 	
-	/* sysv shared mem is set to all zero when allocated,
-	 * so we don't need to do any more initialisation here
-	 */
 	shm_id=shmget (key, 0, 0600);
 	if(shm_id==-1 && errno==ENOENT) {
 		return;
 	} else if (shm_id==-1) {
-		perror ("shmget");
+		g_message (G_GNUC_PRETTY_FUNCTION ": shmget error: %s",
+			   strerror (errno));
 		exit (-1);
 	}
 	if(shmctl (shm_id, IPC_RMID, NULL)==-1) {
-		perror ("shmctl");
+		g_message (G_GNUC_PRETTY_FUNCTION ": shmctl error: %s",
+			   strerror (errno));
 		exit (-1);
 	}
 #endif /* DISABLE_SHARED_HANDLES */

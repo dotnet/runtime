@@ -4,6 +4,8 @@
 #include <config.h>
 #include <glib.h>
 
+extern struct _WapiHandleOps _wapi_socket_ops;
+
 struct _WapiHandle_socket
 {
 	int dummy;

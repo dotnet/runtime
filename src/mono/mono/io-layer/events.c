@@ -15,21 +15,13 @@
 
 #undef DEBUG
 
-static void event_close(gpointer handle);
+static void event_close_shared (gpointer handle);
 static void event_signal(gpointer handle);
 static void event_own (gpointer handle);
 
-static struct _WapiHandleOps event_ops = {
-	event_close,		/* close */
-	NULL,			/* getfiletype */
-	NULL,			/* readfile */
-	NULL,			/* writefile */
-	NULL,			/* flushfile */
-	NULL,			/* seek */
-	NULL,			/* setendoffile */
-	NULL,			/* getfilesize */
-	NULL,			/* getfiletime */
-	NULL,			/* setfiletime */
+struct _WapiHandleOps _wapi_event_ops = {
+	event_close_shared,	/* close_shared */
+	NULL,			/* close_private */
 	event_signal,		/* signal */
 	event_own,		/* own */
 	NULL,			/* is_owned */
@@ -39,13 +31,12 @@ static pthread_once_t event_ops_once=PTHREAD_ONCE_INIT;
 
 static void event_ops_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_EVENT, &event_ops);
 	_wapi_handle_register_capabilities (WAPI_HANDLE_EVENT,
 					    WAPI_HANDLE_CAP_WAIT |
 					    WAPI_HANDLE_CAP_SIGNAL);
 }
 
-static void event_close(gpointer handle)
+static void event_close_shared(gpointer handle)
 {
 	struct _WapiHandle_event *event_handle;
 	gboolean ok;

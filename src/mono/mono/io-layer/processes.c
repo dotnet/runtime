@@ -20,19 +20,11 @@
 
 #undef DEBUG
 
-static void process_close (gpointer handle);
+static void process_close_shared (gpointer handle);
 
-static struct _WapiHandleOps process_ops = {
-	process_close,			/* close */
-	NULL,				/* getfiletype */
-	NULL,				/* readfile */
-	NULL,				/* writefile */
-	NULL,				/* flushfile */
-	NULL,				/* seek */
-	NULL,				/* setendoffile */
-	NULL,				/* getfilesize */
-	NULL,				/* getfiletime */
-	NULL,				/* setfiletime */
+struct _WapiHandleOps _wapi_process_ops = {
+	process_close_shared,		/* close_shared */
+	NULL,				/* close_private */
 	NULL,				/* signal */
 	NULL,				/* own */
 	NULL,				/* is_owned */
@@ -42,12 +34,11 @@ static pthread_once_t process_ops_once=PTHREAD_ONCE_INIT;
 
 static void process_ops_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_PROCESS, &process_ops);
 	_wapi_handle_register_capabilities (WAPI_HANDLE_PROCESS,
 					    WAPI_HANDLE_CAP_WAIT);
 }
 
-static void process_close (gpointer handle G_GNUC_UNUSED)
+static void process_close_shared (gpointer handle G_GNUC_UNUSED)
 {
 #ifdef DEBUG
 	struct _WapiHandle_process *process_handle;

@@ -54,11 +54,8 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 int main (int argc, char **argv)
 {
 	guint32 idx;
-	guint32 scratch_size;
 	
-	_wapi_shared_data=_wapi_shm_attach (&scratch_size);
-	
-	_wapi_handle_shared_lock ();
+	_wapi_shared_data=_wapi_shm_attach (FALSE);
 	
 	/* Make sure index 0 is actually unused */
 	for(idx=0; idx<_WAPI_MAX_HANDLES; idx++) {
@@ -71,8 +68,6 @@ int main (int argc, char **argv)
 				 details[shared->type](shared));
 		}
 	}
-
-	_wapi_handle_shared_unlock ();
 	
 	exit (0);
 }
