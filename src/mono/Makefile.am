@@ -79,7 +79,13 @@ fasterstrap: tmpinst-mcs-full-build
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
-bootstrap-check: check mcs-do-run-test-profiles
+
+bootstrap-check: check mcs-do-run-test-profiles #mono-do-testjit
+
+mono-do-testjit: $(tmpinst)/bin/ilasm
+	tmpinst=`cd $(tmpinst) && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+	cd mono/tests && $(MAKE) test
 
 # building with monolite
 
@@ -142,12 +148,14 @@ mcs-do-full-build:
 mcs-do-clean-profiles:
 	cd $(mcs_topdir) && $(MAKE) clean-profiles
 
-mcs-do-run-test-profiles: tmpinst-dir $(tmpinst)/bin/mbas
+mcs-do-run-test-profiles: tmpinst-dir $(tmpinst)/bin/mbas $(tmpinst)/bin/ilasm
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) run-test-profiles
 
 mcs-do-compiler-tests:
+	tmpinst=`cd $(tmpinst) && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) compiler-tests
 
 populate-runtime-subdir:
@@ -166,10 +174,10 @@ populate-runtime-subdir:
 	rm -rf $(tmpinst)/prefix
 
 tmpinst-dir: 
-	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono/1.0
+	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono/1.0 $(tmpinst)/etc/mono/2.0
 	$(MAKE) tmpinst-dir-contents
 
-tmpinst-dir-contents: $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/1.0/machine.config
+tmpinst-dir-contents: $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/1.0/machine.config $(tmpinst)/etc/mono/2.0/machine.config
 
 if PLATFORM_WIN32
 
@@ -200,15 +208,19 @@ $(tmpinst)/bin/mcs: $(srcdir)/Makefile.am
 	(t=`cd $(tmpinst) && pwd`; echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$t/lib/mcs.exe"'" "$$@"') > $@
 	chmod +x $@
 
-# Used only by 'bootstrap-check' -- so, can safely use runtime/mbas.exe.
-$(tmpinst)/bin/mbas: $(srcdir)/Makefile.am
+# Used only by 'bootstrap-check' -- so, can safely use runtime/.
+$(tmpinst)/bin/mbas $(tmpinst)/bin/ilasm: $(srcdir)/Makefile.am
 	t=`cd $(tmpinst) && pwd`; r=`cd $(srcdir)/runtime && pwd`; \
-	( echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$r/mbas.exe"'" "$$@"' ) > $@
+	( echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$r/$(@F).exe"'" "$$@"' ) > $@
 	chmod +x $@
 
 $(tmpinst)/etc/mono/1.0/machine.config: $(srcdir)/data/net_1_1/machine.config
 	rm -f $@
 	srcdir=`cd $(srcdir) && pwd`; cd $(tmpinst)/etc/mono/1.0 && $(LN_S) $$srcdir/data/net_1_1/machine.config machine.config
+
+$(tmpinst)/etc/mono/2.0/machine.config: $(srcdir)/data/net_2_0/machine.config
+	rm -f $@
+	srcdir=`cd $(srcdir) && pwd`; cd $(tmpinst)/etc/mono/2.0 && $(LN_S) $$srcdir/data/net_2_0/machine.config machine.config
 
 # Obsolete target -- don't use.
 .PHONY: fullbuild

@@ -1,3 +1,10 @@
+2004-09-27  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (mono-do-testjit): New target, unused for now.  Runs
+	the mono testsuite in tests/.
+	(tmpinst-dir): Create etc/mono/2.0.
+	($(tmpinst)/bin/ilasm, $(tmpinst)/etc/mono/2.0/machine.config): New.
+
 2004-09-21 Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
 
 	* configure.in: Cater for S/390 on Linux
