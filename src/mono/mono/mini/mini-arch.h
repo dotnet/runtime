@@ -1,7 +1,7 @@
 #ifndef __MONO_MINI_ARCH_H__
 #define __MONO_MINI_ARCH_H__
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__MINGW32__)
 #include "mini-x86.h"
 #elif defined(__ppc__) || defined(__powerpc__)
 #include "mini-ppc.h"
