@@ -1,5 +1,8 @@
 2004-03-22  Zoltan Varga  <vargaz@freemail.hu>
 
+	* configure.in: Disable -version-script if not using GNU ld. Fixes
+	#55910.
+	
 	* configure.in: Speedup successful sigaltstack test.
 
 2004-03-21  Gonzalo Paniagua Javier <gonzalo@ximian.com>
