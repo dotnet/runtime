@@ -29,8 +29,6 @@ GMODULE_LIBS=`glib-config --libs gmodule`
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-AC_CONFIG_SUBDIRS(libffi)
-
 CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
 AC_SUBST(CFLAGS)
 

@@ -22,6 +22,8 @@
 #include "dump.h"
 #include "get.h"
 #include "dis-cil.h"
+#include <mono/metadata/loader.h>
+#include <mono/metadata/assembly.h>
 
 FILE *output;
 

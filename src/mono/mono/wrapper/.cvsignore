@@ -6,3 +6,4 @@ wrapper.h
 *.lo
 *.la
 Wrapper.cs
+libmonowrapper.def

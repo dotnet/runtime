@@ -188,98 +188,6 @@ mono_lookup_internal_call (const char *name)
 	return res;
 }
 
-static ffi_type *
-ves_map_ffi_type (MonoType *type)
-{
-	ffi_type *rettype;
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-		rettype = &ffi_type_sint8;
-		break;
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U1:
-		rettype = &ffi_type_uint8;
-		break;
-	case MONO_TYPE_I2:
-		rettype = &ffi_type_sint16;
-		break;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		rettype = &ffi_type_uint16;
-		break;
-	case MONO_TYPE_I4:
-		rettype = &ffi_type_sint32;
-		break;
-	case MONO_TYPE_U4:
-		rettype = &ffi_type_sint32;
-		break;
-	case MONO_TYPE_I:
-		rettype = &ffi_type_sint;
-		break;
-	case MONO_TYPE_U:
-		rettype = &ffi_type_sint;
-		break;
-	case MONO_TYPE_I8:
-		rettype = &ffi_type_sint64;
-		break;
-	case MONO_TYPE_PTR:
-		rettype = &ffi_type_pointer;
-		break;
-	case MONO_TYPE_R4:
-		rettype = &ffi_type_float;
-		break;
-	case MONO_TYPE_R8:
-		rettype = &ffi_type_double;
-		break;
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_STRING:
-		rettype = &ffi_type_pointer;
-		break;
-	case MONO_TYPE_VOID:
-		rettype = &ffi_type_void;
-		break;
-	default:
-		g_warning ("not implemented 0x%02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	return rettype;
-}
-
-static void
-prepare_pinvoke_info (MonoMethodPInvoke *piinfo)
-{
-	MonoMethod *mh = &piinfo->method;
-	int hasthis = mh->signature->hasthis;
-	ffi_type **args, *rettype;
-	int i, acount;
-
-	mh->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
-
-	piinfo->cif = g_new (ffi_cif , 1);
-
-	acount = mh->signature->param_count;
-
-	args = g_new (ffi_type *, acount + hasthis);
-
-	if (hasthis)
-		args [0] = &ffi_type_pointer;
-
-	for (i = 0; i < acount; i++)
-		args[i + hasthis] = ves_map_ffi_type (mh->signature->params [i]);
-
-	rettype = ves_map_ffi_type (mh->signature->ret);
-	
-	if (!ffi_prep_cif (piinfo->cif, FFI_DEFAULT_ABI, acount + hasthis, rettype, 
-			   args) == FFI_OK) {
-		g_warning ("prepare pinvoke failed");
- 		g_assert_not_reached ();
-	}
-}
-
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 index)
 {
@@ -381,7 +289,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			} else 
 				g_assert_not_reached ();
 
-			prepare_pinvoke_info ((MonoMethodPInvoke *)result);
+			result->flags = METHOD_ATTRIBUTE_PINVOKE_IMPL;
 			return result;						
 		}
 
@@ -457,7 +365,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 	g_assert (mh->addr);
 
-	prepare_pinvoke_info (piinfo);
+	mh->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 }
 
 MonoMethod *
@@ -522,7 +430,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 
 		g_assert (result->addr != NULL);
 
-		prepare_pinvoke_info ((MonoMethodPInvoke *)result);
+		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index - 1);
@@ -547,8 +455,7 @@ mono_free_method  (MonoMethod *method)
 	mono_metadata_free_method_signature (method->signature);
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
-		g_free (piinfo->cif->arg_types);
-		g_free (piinfo->cif);
+		g_free (piinfo->code);
 	} else if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		mono_metadata_free_mh (((MonoMethodNormal *)method)->header);
 	}

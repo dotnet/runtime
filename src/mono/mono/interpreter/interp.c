@@ -15,8 +15,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
-#include <ffi.h>
-
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -35,6 +33,7 @@
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
+#include <mono/arch/x86/x86-codegen.h>
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
 #include "hacks.h"
@@ -584,26 +583,24 @@ ves_pinvoke_method (MonoInvocation *frame)
 {
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)frame->method;
 	MonoMethodSignature *sig = frame->method->signature;
-	int hasthis = sig->hasthis;
-	gpointer *values;
-	float *tmp_float;
-	char **tmp_string;
-	int i, acount, rsize, align;
 	stackval *sp = frame->stack_args;
-	gpointer res = NULL; 
+	int hasthis = sig->hasthis;
+	char *tmp_string;
+	int i, acount;
 	GSList *t, *l = NULL;
+	guint8 *p;
+ 
+	p = piinfo->code = alloca (128);
+
+	x86_enter (p, 16);
 
 	acount = sig->param_count;
 
-	values = alloca (sizeof (gpointer) * (acount + hasthis));
-
-	if (hasthis)
-		values[0] = &frame->obj;
+	printf ("PIENTER %d %p\n", hasthis, frame->obj);
 
 	/* fixme: only works on little endian machines */
 
-	for (i = 0; i < acount; i++) {
-		int ind = i + hasthis;
+	for (i = acount - 1; i >= 0; i--) {
 
 		switch (sig->params [i]->type) {
 
@@ -618,54 +615,102 @@ ves_pinvoke_method (MonoInvocation *frame)
 		case MONO_TYPE_I: /* FIXME: not 64 bit clean */
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-			values[ind] = &sp [i].data.i;
+			x86_push_imm (p, sp [i].data.i);
 			break;
 		case MONO_TYPE_R4:
-			tmp_float = alloca (sizeof (float));
-			*tmp_float = sp [i].data.f;
-			values[ind] = tmp_float;
+			x86_fld (p, &sp [i].data.f, FALSE);
+			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 4);
+			x86_fst_membase (p, X86_ESP, 0, FALSE, TRUE);
 			break;
 		case MONO_TYPE_R8:
-			values[ind] = &sp [i].data.f;
+			x86_fld (p, &sp [i].data.f, TRUE);
+			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 8);
+			x86_fst_membase (p, X86_ESP, 0, TRUE, TRUE);
 			break;
 		case MONO_TYPE_I8:
-			values[ind] = &sp [i].data.l;
+			x86_push_imm (p, sp [i].data.i);
+			x86_push_imm (p, *(&sp [i].data.i+1));
 			break;
 		case MONO_TYPE_STRING:
 			g_assert (sp [i].type == VAL_OBJ);
 
 			if (frame->method->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI && sp [i].data.p) {
-				tmp_string = alloca (sizeof (char *));
-				*tmp_string = mono_get_ansi_string (sp [i].data.p);
-				l = g_slist_prepend (l, *tmp_string);
-				values[ind] = tmp_string;				
+				tmp_string = mono_get_ansi_string (sp [i].data.p);
+				l = g_slist_prepend (l, tmp_string);
+				x86_push_imm (p, tmp_string);
 			} else {
-				/* 
-				 * fixme: may we pass the object - I assume 
-				 * that is wrong ?? 
-				 */
-				values[ind] = &sp [i].data.p;
+				x86_push_imm (p, sp [i].data.p);
 			}
 			
 			break;
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_SZARRAY:
-			values[ind] = &sp [i].data.p;		
+			x86_push_imm (p, sp [i].data.p);
 			break;
  		default:
-			g_warning ("not implemented %x", 
-				   sig->params [i]->type);
+			g_warning ("not implemented %02x", sig->params [i]->type);
 			g_assert_not_reached ();
 		}
 
 	}
 
-	if ((rsize = mono_type_size (sig->ret, &align)))
-		res = alloca (rsize);
+	if (hasthis) 
+		x86_push_imm (p, frame->obj);
 
-	ffi_call (piinfo->cif, frame->method->addr, res, values);
-		
+	x86_call_code (p, (unsigned char*)frame->method->addr);
+
+	switch (sig->ret->type) {
+
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
+	case MONO_TYPE_U:
+		frame->retval->type = VAL_I32;
+		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
+		x86_mov_regp_reg (p, X86_EDX, X86_EAX, 4);
+		break;
+	case MONO_TYPE_I8:
+		frame->retval->type = VAL_I64;
+		x86_mov_mem_reg (p, &frame->retval->data.i, X86_EAX, 4);
+		x86_mov_mem_reg (p, &frame->retval->data.i + 1, X86_EDX, 4);
+		break;
+	case MONO_TYPE_R4:
+		frame->retval->type = VAL_DOUBLE;
+		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
+		x86_fst_membase (p, X86_EDX, 0, FALSE, TRUE);
+		break;
+	case MONO_TYPE_R8:
+		frame->retval->type = VAL_DOUBLE;
+		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
+		x86_fst_membase (p, X86_EDX, 0, TRUE, TRUE);
+		break;
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+		frame->retval->type = VAL_OBJ;
+		x86_mov_reg_imm (p, X86_EDX, &frame->retval->data.p);
+		x86_mov_regp_reg (p, X86_EDX, X86_EAX, 4);
+		break;
+	case MONO_TYPE_VOID:
+		break;
+	default:
+		g_warning ("not implemented %02x", sig->ret->type);
+		g_assert_not_reached ();
+	}
+
+	x86_leave (p);
+	x86_ret (p);
+
+	piinfo->code ();
+
 	t = l;
 	while (t) {
 		g_free (t->data);
@@ -673,10 +718,6 @@ ves_pinvoke_method (MonoInvocation *frame)
 	}
 
 	g_slist_free (l);
-
-
-	if (sig->ret->type != MONO_TYPE_VOID)
-		stackval_from_data (sig->ret, frame->retval, res);
 }
 
 static void
@@ -819,7 +860,6 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-			printf ("TEST\n");
 			ves_pinvoke_method (frame);
 		} else {
 			ICallMethod icall = frame->method->addr;

@@ -1,1 +1,1 @@
-SUBDIRS = libffi mono doc runtime
+SUBDIRS = mono doc runtime

@@ -1,7 +1,6 @@
 #ifndef _MONO_METADATA_LOADER_H_
 #define _MONO_METADATA_LOADER_H_ 1
 
-#include <ffi.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 
@@ -23,7 +22,7 @@ typedef struct {
 typedef struct {
 	MonoMethod method;
 	guint16 piflags;  /* pinvoke flags */
-	ffi_cif *cif;
+	void  (*code) ();
 } MonoMethodPInvoke;
 
 typedef struct {

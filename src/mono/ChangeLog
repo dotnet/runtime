@@ -1,3 +1,9 @@
+2001-08-30  Dietmar Maurer  <dietmar@ximian.com>
+
+	* *: removed the libffi dependency, mono now compiles on cygwin 
+
+	* mono/wrapper/build-dll: new file.
+
 2001-08-28  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/console.cs: impl.

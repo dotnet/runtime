@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# Temporary hack until building dlls is easier with gcc -mno-cygwin
+# ("mingw32").
+
+# This is usable with cygwin 1.1.x and gcc-2.95.2 for mingw as
+# distributed by Mumit Khan. For other combinations, no idea.
+
+GCC="gcc"
+DLLTOOL="dlltool"
+AS=as
+
+library=$1; shift
+version=$1; shift;
+def=$1; shift
+ldargs="$*"
+
+defswitch=""
+[ -n "$def" -a "$def" != '-' ] && defswitch="--def $def"
+
+libname=$library
+[ $version != '-' ] && libname=$library-$version
+dllfile=$libname.dll
+
+for F in $ldargs; do
+    case $F in
+	*.[ao])	objs="$objs $F";;
+    esac
+done
+
+# Check if we have a resource file for this DLL.
+resfile=""
+if [ -f $library.rc ]; then
+    resfile=$library-win32res.o
+    objs="$objs $resfile"
+    ldargs="$ldargs $resfile"
+
+    # Check if we have a build number stamp file.
+    if [ -f $library-build.stamp ]; then
+	read number <$library-build.stamp
+	buildnumber=$[number+1]
+	echo Build number is $buildnumber
+	echo $buildnumber >$library-build.stamp
+    else
+	echo Using zero as build number
+        buildnumber=0
+    fi
+
+    m4 -DBUILDNUMBER=$buildnumber <$library.rc >$library-win32res.rc
+    windres $library-win32res.rc $library-win32res.o
+    rm $library-win32res.rc
+fi
+
+# Build the DLL.
+
+$GCC -mdll -mno-cygwin -Wl,--base-file,$library.base -o $dllfile $ldargs &&
+$DLLTOOL --as=$AS --dllname $dllfile $defswitch --base-file $library.base --output-exp $library.exp $objs &&
+$GCC -mdll -mno-cygwin -Wl,--base-file,$library.base,$library.exp -o $dllfile $ldargs &&
+$DLLTOOL --as=$AS --dllname $dllfile $defswitch --base-file $library.base --output-exp $library.exp $objs &&
+$GCC -mdll -mno-cygwin -Wl,$library.exp -o $dllfile $ldargs &&
+$DLLTOOL --as=$AS --dllname $dllfile $defswitch --output-lib lib$libname.a $objs
+
+# Finally, also build import libraries for the Microsoft linker. You
+# will either need to have some decent version of MSVC, or get lib.exe
+# (and link.exe) from the (freely downloadable) Microsoft Platform SDK.
+
+if type -p lib.exe && [ -n "$def" -a "$def" != '-' ]; then
+    lib -name:$libname.dll -def:$def -out:$libname.lib
+fi
+
+rm $library.base $library.exp 2>/dev/null

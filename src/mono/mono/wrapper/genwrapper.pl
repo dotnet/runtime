@@ -8,9 +8,15 @@
 use Getopt::Long;
 init();
 
+if ($ENV{"OSTYPE"} eq "cygwin") {
 @includes = ("sys/types.h", "sys/stat.h", "unistd.h", "fcntl.h", "glib.h",
 	     "errno.h");
-$cflags = `gnome-config --cflags glib`;
+} else {
+@includes = ("sys/types.h", "sys/stat.h", "unistd.h", "fcntl.h", "glib.h",
+	     "errno.h");
+}
+
+$cflags = `glib-config --cflags glib`;
 $cflags =~ s/\n//;
 
 $lib = "monowrapper";
@@ -173,7 +179,6 @@ map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "EMULTIHOP",
 	   "int", "%d", "EDOTDOT",
 	   "int", "%d", "EBADMSG",
-	   "int", "%d", "EOVERFLOW",
 	   "int", "%d", "ENOTUNIQ",
 	   "int", "%d", "EBADFD",
 	   "int", "%d", "EREMCHG",
@@ -182,9 +187,6 @@ map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "ELIBSCN",
 	   "int", "%d", "ELIBMAX",
 	   "int", "%d", "ELIBEXEC",
-	   "int", "%d", "EILSEQ",
-	   "int", "%d", "ERESTART",
-	   "int", "%d", "ESTRPIPE",
 	   "int", "%d", "EUSERS",
 	   "int", "%d", "ENOTSOCK",
 	   "int", "%d", "EDESTADDRREQ",
@@ -215,21 +217,17 @@ map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "EALREADY",
 	   "int", "%d", "EINPROGRESS",
 	   "int", "%d", "ESTALE",
-	   "int", "%d", "EUCLEAN",
-	   "int", "%d", "ENOTNAM",
-	   "int", "%d", "ENAVAIL",
-	   "int", "%d", "EISNAM",
-	   "int", "%d", "EREMOTEIO",
 	   "int", "%d", "EDQUOT",
 	   "int", "%d", "ENOMEDIUM",
-	   "int", "%d", "EMEDIUMTYPE",
 	   );
 
 sub init {
 
     $csmode = 0;
+    $defmode = 0;
 
-    GetOptions ("csharp" => \$csmode) or die "cant parse options";
+    GetOptions ("c|csharp" => \$csmode,
+		"d|defmode" => \$defmode) or die "cant parse options";
 
     $CC = $env{"CC"};
 
@@ -274,6 +272,10 @@ sub create_func {
 
     if ($func[1] eq "") {
 	$func[1] = "mono_wrapper_$func[2]";
+    }
+
+    if ($defmode) {
+	$dlldef .= "\t$func[1]\n";
     }
 
     if ($csmode) {
@@ -377,12 +379,12 @@ sub map_const {
 
     close (TFN);
 
-    system ("$CC $cflags $tfn") == 0
+    system ("$CC $cflags $tfn -o conftest.exe") == 0
 	or die "calling c compiler failed";
 
     system ("rm $tfn");
 
-    $res = `./a.out`;
+    $res = `./conftest.exe`;
 
     if (!$res) {
 	die "calling a.out failde";
@@ -390,7 +392,7 @@ sub map_const {
 
     $res_const = $res_const . $res;
 
-    system ("rm ./a.out");	
+    system ("rm ./conftest.exe");	
 }
 
 sub etypes_end {
@@ -423,7 +425,7 @@ if ($csmode) {
     print "using System;\n";
     print "using System.Runtime.InteropServices;\n\n";
 
-    print "namespace Unix {\n\n";
+    print "namespace System.Private {\n\n";
 
     print $res_struct;
 
@@ -439,6 +441,12 @@ if ($csmode) {
 
     print "}\n";
     
+} elsif ($defmode) {
+	
+    print "LIBRARY libmonowrapper\n";
+    print "EXPORTS\n";
+    print "\tDllMain\n";
+    print $dlldef;
 
 } else {
 
