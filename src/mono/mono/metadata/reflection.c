@@ -4334,7 +4334,7 @@ handle_type:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_STRING:
 				for (i = 0; i < alen; i++) {
-					MonoObject *item = load_cattr_value (image, t->data.type, p, &p);
+					MonoObject *item = load_cattr_value (image, &t->data.klass->byval_arg, p, &p);
 					mono_array_set (arr, gpointer, i, item);
 				}
 				break;
