@@ -2200,7 +2200,7 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!method->method->signature->is_inflated) {
+	if (!method->method->is_inflated) {
 		if (method->method->signature->generic_param_count)
 			return method;
 
@@ -2236,7 +2236,7 @@ ves_icall_MonoMethod_get_Mono_IsInflatedMethod (MonoReflectionMethod *method)
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return FALSE;
 
-	return method->method->signature->is_inflated;
+	return method->method->is_inflated;
 }
 
 static gboolean
@@ -2266,7 +2266,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 
-	if (method->method->signature->is_inflated) {
+	if (method->method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method->method;
 		MonoGenericMethod *gmethod = imethod->context->gmethod;
 

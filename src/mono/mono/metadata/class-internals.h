@@ -62,7 +62,8 @@ struct _MonoMethod {
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	unsigned int dynamic:1; /* created & destroyed during runtime */
-	gint slot : 22;
+	unsigned int is_inflated:1;
+	gint slot : 21;
 };
 
 struct _MonoMethodNormal {
@@ -80,6 +81,7 @@ struct _MonoMethodInflated {
 	MonoMethodNormal nmethod;
 	MonoGenericContext *context;
 	MonoMethod *declaring;
+	MonoMethodInflated *inflated;
 };
 
 struct _MonoMethodPInvoke {

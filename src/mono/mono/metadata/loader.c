@@ -260,7 +260,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
 			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 			  method->signature);
-		g_assert (method->signature->is_inflated);
+		g_assert (method->is_inflated);
 
 		return method->signature;
 	}
@@ -456,7 +456,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
 	g_assert (param_count);
-	if (method->signature->is_inflated)
+	if (method->is_inflated)
 		container = ((MonoMethodNormal *) ((MonoMethodInflated *) method)->declaring)->generic_container;
 	else
 		container = ((MonoMethodNormal *) method)->generic_container;
@@ -967,7 +967,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 
 	result = mono_get_method_from_token (image, token, klass, context);
 
-	if (!(result && result->signature->is_inflated))
+	if (!(result && result->is_inflated))
 		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
 
 	mono_loader_unlock ();

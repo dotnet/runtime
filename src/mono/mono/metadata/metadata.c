@@ -2836,7 +2836,7 @@ _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGeneri
 {
 	int i;
 
-	if (g1->inst->type_argc != g2->inst->type_argc)
+	if ((g1->inst->type_argc != g2->inst->type_argc) || (g1->is_dynamic != g2->is_dynamic))
 		return FALSE;
 	if (!mono_metadata_class_equal (g1->container_class, g2->container_class, signature_only))
 		return FALSE;

@@ -50,6 +50,9 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context);
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context, MonoClass *klass);
 
+MonoMethod *
+mono_get_inflated_method (MonoMethod *method);
+
 MonoClassField*
 mono_field_from_token      (MonoImage *image, guint32 token, MonoClass **retklass, MonoGenericContext *context);
 

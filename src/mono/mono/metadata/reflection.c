@@ -2462,7 +2462,8 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
-	g_assert (method->signature->is_inflated);
+	g_assert (method->is_inflated);
+	method = mono_get_inflated_method (method);
 	imethod = (MonoMethodInflated *) method;
 	declaring = imethod->declaring;
 
@@ -2508,7 +2509,8 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *m)
 	if (token)
 		return token;
 
-	g_assert (m->signature->is_inflated);
+	g_assert (m->is_inflated);
+	m = mono_get_inflated_method (m);
 	imethod = (MonoMethodInflated *) m;
 
 	if (imethod->declaring->signature->generic_param_count) {
@@ -3565,6 +3567,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") ||
 				   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
+				m = mono_get_inflated_method (m);
 				g_assert (m->klass->generic_class);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
@@ -4129,7 +4132,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		if (m->method->signature->is_inflated) {
+		if (m->method->is_inflated) {
 			if (create_methodspec)
 				token = mono_image_get_methodspec_token (assembly, m->method);
 			else
@@ -5345,7 +5348,11 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	 */
 	const char *cname;
 	MonoClass *klass;
+	MonoMethod *original = method;
 	MonoReflectionMethod *ret;
+
+	if (method->is_inflated)
+		method = mono_get_inflated_method (method);
 
 	if (!refclass)
 		refclass = method->klass;
@@ -6134,7 +6141,7 @@ mono_reflection_get_token (MonoObject *obj)
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		if (m->method->signature->is_inflated) {
+		if (m->method->is_inflated) {
 			g_assert_not_reached ();
 		} else if (m->method->signature->generic_param_count) {
 			g_assert_not_reached ();
@@ -7413,6 +7420,8 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 		klass->generic_container->type_params [i] = *gparam->type.type->data.generic_param;
 		g_assert (klass->generic_container->type_params [i].owner);
 	}
+
+	klass->generic_container->context.gclass = mono_get_shared_gclass (klass->generic_container, TRUE);
 }
 
 /*

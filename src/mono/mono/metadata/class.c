@@ -267,6 +267,7 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 	if (ogclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
 		ngclass = &dgclass->generic_class;
+		ngclass->is_dynamic = 1;
 	} else
 		ngclass = g_new0 (MonoGenericClass, 1);
 
@@ -441,7 +442,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return method;
 
-	if (method->signature->is_inflated) {
+	if (method->is_inflated || method->signature->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
 		context = inflate_generic_context (imethod->context, context);
@@ -454,25 +455,46 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 
 	result = g_new0 (MonoMethodInflated, 1);
 	result->nmethod = *(MonoMethodNormal*)method;
-
-	if (mono_method_get_header (method))
-		result->nmethod.header = inflate_generic_header (
-			mono_method_get_header (method), context);
-
-	if (klass)
-		rklass = result->nmethod.method.klass = klass;
-	else {
-		MonoType *declaring = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
-		rklass = result->nmethod.method.klass = mono_class_from_mono_type (declaring);
-	}
-
-	result->nmethod.method.signature = mono_class_inflate_generic_signature (
-		method->klass->image, method->signature, context);
-
+	result->nmethod.method.is_inflated = 1;
 	result->context = context;
 	result->declaring = method;
 
+	if (result->nmethod.method.klass->generic_class)
+		result->nmethod.method.klass = result->nmethod.method.klass->generic_class->container_class;
+
 	return (MonoMethod *) result;
+}
+
+MonoMethod *
+mono_get_inflated_method (MonoMethod *method)
+{
+	MonoMethodInflated *imethod, *res;
+	MonoMethodHeader *mh;
+	MonoType *dtype;
+	MonoClass *rklass;
+
+	if (!method->is_inflated)
+		return method;
+
+	imethod = (MonoMethodInflated *) method;
+	if (imethod->inflated)
+		return (MonoMethod *) imethod->inflated;
+
+	res = g_new0 (MonoMethodInflated, 1);
+	*res = *imethod;
+	res->inflated = res;
+
+	mh = mono_method_get_header (method);
+	if (mh)
+		res->nmethod.header = inflate_generic_header (mh, imethod->context);
+
+	dtype = mono_class_inflate_generic_type (&method->klass->byval_arg, imethod->context);
+	rklass = res->nmethod.method.klass = mono_class_from_mono_type (dtype);
+
+	res->nmethod.method.signature = mono_class_inflate_generic_signature (
+		method->klass->image, method->signature, imethod->context);
+
+	return (MonoMethod *) res;
 }
 
 /** 
@@ -1416,9 +1438,12 @@ mono_class_init (MonoClass *class)
 		g_assert (class->method.count == gklass->method.count);
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 
-		for (i = 0; i < class->method.count; i++)
-			class->methods [i] = mono_class_inflate_generic_method (
+		for (i = 0; i < class->method.count; i++) {
+			MonoMethod *inflated = mono_class_inflate_generic_method (
 				gklass->methods [i], gclass->context, gclass->klass);
+
+			class->methods [i] = mono_get_inflated_method (inflated);
+		}
 
 		g_assert (class->field.count == gklass->field.count);
 		class->fields = g_new0 (MonoClassField, class->field.count);
@@ -1862,21 +1887,30 @@ get_shared_inst (MonoGenericContainer *container)
 	return mono_metadata_lookup_generic_inst (nginst);
 }
 
-static MonoGenericClass *
-get_shared_gclass (MonoGenericContainer *container)
+MonoGenericClass *
+mono_get_shared_gclass (MonoGenericContainer *container, gboolean is_dynamic)
 {
-	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
+	MonoGenericClass *gclass;
 	MonoGenericClass *cached;
+
+	if (is_dynamic) {
+		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+		gclass = &dgclass->generic_class;
+		gclass->is_dynamic = 1;
+	} else
+		gclass = g_new0 (MonoGenericClass, 1);
 
 	gclass->context = &container->context;
 	gclass->container_class = container->klass;
 	gclass->inst = get_shared_inst (container);
 
+#if 0
 	cached = mono_metadata_lookup_generic_class (gclass);
 	if (cached) {
 		g_free (gclass);
 		return cached;
 	}
+#endif
 
 	gclass->klass = container->klass;
 
@@ -1930,7 +1964,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->generic_container->klass = class;
 		context = &class->generic_container->context;
 
-		context->gclass = get_shared_gclass (context->container);
+		context->gclass = mono_get_shared_gclass (context->container, FALSE);
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS])
