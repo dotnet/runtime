@@ -1732,9 +1732,15 @@ mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 	class->cast_class = class->element_class = class;
 
 	if (inflate_methods) {
+		MonoClass *pklass = NULL;
 		int i;
 
-		mono_class_setup_parent (class, gklass->parent);
+		if (ginst->parent)
+			pklass = mono_class_from_mono_type (ginst->parent);
+		else
+			pklass = gklass->parent;
+
+		mono_class_setup_parent (class, pklass);
 		mono_class_setup_mono_type (class);
 
 		class->field = gklass->field;

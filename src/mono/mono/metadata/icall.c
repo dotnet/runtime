@@ -1663,14 +1663,46 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 }
 
 static MonoReflectionGenericInst*
+mono_reflection_generic_inst_get_object (MonoDomain *domain, MonoType *geninst)
+{
+	static MonoClass *System_Reflection_MonoGenericInst;
+	MonoReflectionGenericInst *res;
+	MonoGenericInst *ginst;
+	MonoClass *gklass;
+
+	if (!System_Reflection_MonoGenericInst) {
+		System_Reflection_MonoGenericInst = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoGenericInst");
+		g_assert (System_Reflection_MonoGenericInst);
+	}
+
+	ginst = geninst->data.generic_inst;
+	gklass = mono_class_from_mono_type (ginst->generic_type);
+
+	res = (MonoReflectionGenericInst *) mono_object_new (domain, System_Reflection_MonoGenericInst);
+
+	res->type.type = geninst;
+	if (gklass->wastypebuilder && gklass->reflection_info)
+		res->generic_type = gklass->reflection_info;
+	else
+		res->generic_type = mono_type_get_object (domain, ginst->generic_type);
+
+	return res;
+}
+
+static MonoReflectionGenericInst*
 ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types)
 {
+	MonoType *geninst;
+
 	MONO_ARCH_SAVE_REGS;
 
 	if (type->type->byref)
 		return NULL;
 
-	return mono_reflection_bind_generic_parameters (type, types);
+	geninst = mono_reflection_bind_generic_parameters (type->type, types);
+
+	return mono_reflection_generic_inst_get_object (mono_object_domain (type), geninst);
 }
 
 static gboolean
@@ -1749,6 +1781,62 @@ ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *m
 	MONO_ARCH_SAVE_REGS;
 
 	return mono_reflection_define_generic_parameter (NULL, mb, name, index);
+}
+
+static MonoReflectionGenericInst*
+ves_icall_MonoGenericInst_GetParentType (MonoReflectionGenericInst *type)
+{
+	MonoGenericInst *ginst;
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ginst = type->type.type->data.generic_inst;
+	if (!ginst || !ginst->parent || (ginst->parent->type != MONO_TYPE_GENERICINST))
+		return NULL;
+
+	klass = mono_class_from_mono_type (ginst->parent);
+	if (!klass->generic_inst && !klass->gen_params)
+		return NULL;
+
+	return mono_reflection_generic_inst_get_object (mono_object_domain (type), ginst->parent);
+}
+
+static MonoArray*
+ves_icall_MonoGenericInst_GetInterfaces (MonoReflectionGenericInst *type)
+{
+	static MonoClass *System_Reflection_MonoGenericInst;
+	MonoGenericInst *ginst;
+	MonoDomain *domain;
+	MonoClass *klass;
+	MonoArray *res;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!System_Reflection_MonoGenericInst) {
+		System_Reflection_MonoGenericInst = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoGenericInst");
+		g_assert (System_Reflection_MonoGenericInst);
+	}
+
+	domain = mono_object_domain (type);
+
+	ginst = type->type.type->data.generic_inst;
+	if (!ginst || !ginst->ifaces)
+		return mono_array_new (domain, System_Reflection_MonoGenericInst, 0);
+
+	klass = mono_class_from_mono_type (ginst->generic_type);
+
+	res = mono_array_new (domain, System_Reflection_MonoGenericInst, klass->interface_count);
+
+	for (i = 0; i < klass->interface_count; i++) {
+		MonoReflectionGenericInst *iface = mono_reflection_generic_inst_get_object (domain, ginst->ifaces [i]);
+
+		mono_array_set (res, gpointer, i, iface);
+	}
+
+	return res;
 }
 
 static void
@@ -4640,6 +4728,8 @@ static gconstpointer icall_map [] = {
 	/*
 	 * MonoGenericInst generic icalls.
 	 */
+	"System.Reflection.MonoGenericInst::GetParentType", ves_icall_MonoGenericInst_GetParentType,
+	"System.Reflection.MonoGenericInst::GetInterfaces_internal", ves_icall_MonoGenericInst_GetInterfaces,
 	"System.Reflection.MonoGenericInst::inflate_method", mono_reflection_inflate_method_or_ctor,
 	"System.Reflection.MonoGenericInst::inflate_ctor", mono_reflection_inflate_method_or_ctor,
 	"System.Reflection.MonoGenericInst::inflate_field", mono_reflection_inflate_field,

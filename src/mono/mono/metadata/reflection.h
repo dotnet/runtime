@@ -448,10 +448,7 @@ typedef struct {
 typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;
 struct _MonoReflectionGenericInst {
 	MonoReflectionType type;
-	MonoClass *klass;
-	MonoReflectionGenericInst *parent;
 	MonoReflectionType *generic_type;
-	MonoArray *interfaces;
 	MonoArray *methods;
 	MonoArray *ctors;
 	MonoArray *fields;
@@ -622,8 +619,8 @@ void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);
 MonoReflectionGenericParam *mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, MonoString *name, guint32 index);
 void mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam);
 
-MonoReflectionGenericInst*
-mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);
+MonoType*
+mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types);
 MonoReflectionInflatedMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 MonoReflectionInflatedMethod*

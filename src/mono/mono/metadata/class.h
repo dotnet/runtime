@@ -218,6 +218,8 @@ struct MonoVTable {
  */
 struct _MonoGenericInst {
 	MonoClass *klass;
+	MonoType *parent;
+	MonoType **ifaces;
 	MonoType *generic_type;
 	MonoMethod *generic_method;
 	int type_argc;
