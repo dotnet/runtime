@@ -497,7 +497,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			guint32 cols [MONO_PARAM_SIZE];
 			guint param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 
-			if (idx < methodt->rows)
+			if (idx + 1 < methodt->rows)
 				lastp = mono_metadata_decode_row_col (methodt, idx + 1, MONO_METHOD_PARAMLIST);
 			else
 				lastp = paramt->rows;
