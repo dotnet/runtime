@@ -3160,7 +3160,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
-				if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
+				/* FIXME: currently disabled because of bug #42175 */
+				if (0 && (cfg->opt & MONO_OPT_INLINE) && cmethod &&
 				    mono_method_check_inlining (cmethod) &&
 				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
 				    !g_list_find (dont_inline, cmethod)) {
@@ -5743,7 +5744,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	
 	decompose_pass (cfg);
 
-	if (cfg->opt & MONO_OPT_LINEARS) {
+	/* FIXME: disabled with exception clauses: bug #42136 */
+	if ((!header->num_clauses) && (cfg->opt & MONO_OPT_LINEARS)) {
 		GList *vars, *regs;
 
 		/* fixme: maybe we can avoid to compute livenesss here if already computed ? */
