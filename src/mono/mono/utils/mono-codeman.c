@@ -167,7 +167,7 @@ new_codechunk (int size)
 		return NULL;
 	flags = CODE_FLAG_MALLOC;
 #else
-	ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+	ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	if (ptr == (void*)-1) {
 		int fd = open ("/dev/zero", O_RDONLY);
 		if (fd != -1) {
@@ -182,6 +182,9 @@ new_codechunk (int size)
 		}
 	}
 #endif
+	/* Make sure the thunks area is zeroed */
+	if (flags == CODE_FLAG_MALLOC)
+		memset (ptr, 0, bsize);
 
 	chunk = malloc (sizeof (CodeChunk));
 	if (!chunk) {
