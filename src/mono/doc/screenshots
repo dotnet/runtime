@@ -154,11 +154,19 @@
 	<table border=1>
 	  <tr>
 	    <td>
+	      <a href="http://go-mono.com/images/monomdi.jpg"><img src="http://go-mono.com/images/monomdi-thumb.jpg"></a>
+	    </td>
+	  </tr>
+	</table>
+
+	<table border=1>
+	  <tr>
+	    <td>
 	      <a href="http://go-mono.com/images/WINESWF.JPG"><img src="http://go-mono.com/images/WINESWF-thumb.JPG"></a>
 	    </td>
 	  </tr>
 	</table>
-	
+
 ** Mono running on the iPaq
 
 	<table border=1>

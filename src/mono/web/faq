@@ -130,6 +130,17 @@ A: Different parts of Mono will achieve usability at different stages,
    Other higher level class libraries (ASP.NET, ADO.NET, WinForms) will
    be released when they become stable. 
 
+Q: When will Mono 1.0 ship?
+
+A: We are planning on releasing Mono 1.0 (Mono Core) which will ship all the
+   components of Mono that are known to be stable in Q4 2003.
+
+   This release will lack System.Windows.Forms  and
+   Enterprise.Services, as they will not be production ready on this timeframe.
+
+   Mono 1.2 should come in Q2 2004 and include the missing components
+   libraries that will make Mono feature-compatible with .NET 1.0
+
 Q: What major components will you include in Mono?
 
 A: Hopefully everything that Microsoft ships on their Framework
@@ -715,6 +726,9 @@ A: With any luck, Free Software enthusiasts will contribute tools to
    initially using the Microsoft implementation of the CLI and then
    executed later with Mono.
 
+   We are recommending people to use and contribute to existing
+   projects like SharpDevelop, Anjuta and Eclipse.
+
 Q: What kind of rules make the Common Intermediate Language useful for
    JITers?
 
@@ -742,32 +756,14 @@ A: In Mono, xsp is just the name of the C# code generator for ASP.NET
    Pages" technology so as they are very different things, they don't 
    conflict.
 
-Q: What about using something like Jabber instead of the System.Messaging 
-   namespace?.
-
-A: In short, MSMQ is not something like Jabber, but asynchronous messaging 
-   through queues. Useful queues do more than serialize messages, they are 
-   also platform bridges.
-
-Q: Are you supporting XMLDocument and relatives?.
-
-A: Currently, we aren't implementing them yet. It would require updates to 
-   most of the XmlNode derivatives so it's not a trivial task. We are 
-   currently focusing on getting XPath support working. 
-
 Q: Is there any plan to develop an aspx server for Mono?.
 
-A: The web server turned out to be very simple compared to the rest of the 
-   work. Gonzalo has got the page generator mostly done (a module called 
-   xsp, who has nothing to do with the XSP term used in the Apache Project).
-   Patrik has done a lot of the work to get the ProcessRequest to work.
-   You can try to help in the final touches to the System.Web classes and
-   writing regression tests for the widgets we have.
+A: The XSP reference server is available and you can also use mod_mono
+   with Apache.
 
 Q: Is there any way I can develop the class libraries using Linux yet?
 
-A: Yes. Some class libraries can be developed on Linux. Search for
-   Paolo's post (he lists which classes can be compiled fine now).
+A: Yes.  Mono has been self hosting since May 2002.
 
 Q: Is there any way I can install a known working copy of mono in /usr, 
    and an experimental copy somewhere else, and have both copies use 
@@ -787,26 +783,15 @@ Q: Would it be too terrible to have another corlib signed as mscorlib?
 A: We rename corlib to mscorlib also when saving the PE files, in fact, 
    the runtime can execute program created by mono just fine.  
 
-Q: Is there a relatively straightforward way to repeat the steps taken 
-   by Paolo to get Mono completely self-hosted on Linux?
-
-A: To build the compiler and class libraries in Linux, run:
-   <ul><li>make -f makefile.gnu. To install them, run: </li>
-       <li>make -f makefile.gnu install prefix=/opt/mono</li>
-   </ul>
-
-   If you want to produce and distribute a monocharge tarball, run:
-   make -f makefile.gnu dist
-   Of course you have to run these in the top level mcs directory.
-
 Q: Is it possible to build a C# file to some sort of intermediate format which 
    can linked into a final module, like the traditional .c -> .o -> .so path? 
    
-A: You could do: mcs /target:module file1.cs, mcs /target:module file2.cs, 
-   mcs /target:exe file1.dll file2.dll /out:mybin.exe
+A: You can use: 
 
-Q: Is there any plans for implementing remoting in the near future?, When will 
-   work in System.Runtime.Remoting.dll start?
+	mcs /target:library file1.cs, mcs /target:library file2.cs, 
+	mcs /target:exe file1.dll file2.dll /out:mybin.exe
+
+Q: Is there any plans for implementing remoting in the near future?
 
 A: The remoting infrastructure is in place.  We have implementations
    of the TcpChannel, HttpChannel and the Soap and Binary Formatters.
@@ -848,6 +833,23 @@ A: From Carlos Perelló:
 
    This way you just execute: ./my-cool-mono-application.exe and it works
    without the need of any wrapper.</i>
+
+Q: I see funny characters when I run programs, what is the problem?
+
+A: (From Peter Williams and Gonzalo Paniagua):
+
+   This is Red Hat 9 (probably) using UTF8 on its console; the bytes are
+   the UTF8 endianness markers.   You can do:
+ 
+	 LC_ALL=C mono myexe.exe
+
+   And they wont show up.
+
+   Alternatively, you can do:
+
+        $ echo -e "\033%G"
+
+   to enable UTF-8 on the console.
 
 <a name="asp">
 ** Mono and ASP.NET
@@ -1417,3 +1419,6 @@ A: It's possible to run VC++ generated apps under Mono, but we do not
    or if you think that you found a bug, etc. Please visit the
    <a href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">Mono Common Problems</a> document and try there. 
 
+** Credits
+
+   The FAQ contains material contributed by Miguel de Icaza, Jaime Anguiano, Lluis Sánchez.

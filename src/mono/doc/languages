@@ -9,6 +9,7 @@
 		* <a href="#Oberon">Oberon</a>
 		* <a href="#Forth">Forth</a>
 		* <a href="#mbas">Mono Basic</a> (Mono's VB.NET compiler)
+		* <a href="#dotlist">dotLisp</a>
 	</ul>
 
 	Languages which are known to run, but we have not done a
@@ -114,6 +115,18 @@
 	An FAQ document is available <a
 	href="http://www.zope.org/Members/Brian/PythonNet/FAQ.html">here</a>.
 
+<a name="dotlisp">
+** dotLisp
+
+	DotLisp is available from: <a
+	href="http://sourceforge.net/projects/dotlisp/">http://sourceforge.net/projects/dotlisp/</a>
+
+<a name="JavaScript">
+* Java Script
+
+	Cesar is working on Mono's implementation of JScript, the code
+	is available on CVS on module `mcs'.
+
 * Missing languages
 
 	Here is a list of a few languages that we would like to see
@@ -121,19 +134,6 @@
 	technical information for those interested in porting,
 	implementing or adapting a compiler for any of these
 	languages:
-
-<a name="JavaScript">
-* Java Script
-
-	The Mozilla project has an implementation of JavaScript
-	written in Java called <a
-	href="http://www.mozilla.org/rhino/">Rhino</a>.
-
-	You could port this code from Java to C#.
-
-	Note that since JavaScript allows for evaluation at runtime,
-	the compiler has to be built as a class that can be invoked at
-	runtime.
 
 <a name="c">
 * C
@@ -151,6 +151,10 @@
 
 <a name="Java">
 * Java
+
+	Java bytecode can run directly on Mono using the <a
+	href="http://www.ikvm.net">IKVM</a> java virtual machine for
+	.NET.
 
 	We have a <a href="java.html">separate page</a> for Java.
 

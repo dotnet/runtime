@@ -151,6 +151,26 @@
   </tr>
 </table>
 
+@item JUl 14th, 2003: New build system;  IPV6 support.
+
+	Peter Williams has contributed a new build system that
+	addresses many of the annoyance we had with our previous build
+	system.  He has worked on this for a few weeks, and Gonzalo
+	helped test it and get it into CVS.  We no longer have the
+	historical dual build system: make for Unix and nant for
+	Windows.
+
+	This system also offers the opportunity to compile our class
+	libraries with different profiles (.NET 1.0, .NET 1.1 and the
+	various ECMA subsets).
+
+	Peter explains the new build system <a
+	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001506.html">here</a>
+
+	Jerome's IPV6 code has been checked into CVS; With Peter's new
+	build system, we will be able to expose it (as part of the
+	NET_1_1 build).
+
 @item Jul 9th, 2003: ASP.NET web services, coverage tools.
 
 	Web Services keep advancing: now we also support server-side
