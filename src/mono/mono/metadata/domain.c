@@ -457,16 +457,6 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	if (!(ass = mono_assembly_open (name, NULL)))
 		return NULL;
 
-	mono_domain_lock (domain);
-	g_hash_table_insert (domain->assemblies, ass->aname.name, ass);
-	mono_domain_unlock (domain);
-
-	/* FIXME: maybe this must be recursive ? */
-	for (i = 0; (tmp = ass->image->references [i]) != NULL; i++) {
-		if (!g_hash_table_lookup (domain->assemblies, tmp->aname.name))
-			g_hash_table_insert (domain->assemblies, tmp->aname.name, tmp);
-	}
-
 	return ass;
 }
 

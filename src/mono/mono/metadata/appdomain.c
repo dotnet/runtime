@@ -594,6 +594,22 @@ try_assembly_resolve (MonoDomain *domain, MonoString *fname)
 }
 
 static void
+add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
+{
+	gint i;
+
+	if (g_hash_table_lookup (domain->assemblies, ass->aname.name))
+		return; /* This is ok while no lazy loading of assemblies */
+
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain->assemblies, ass->aname.name, ass);
+	mono_domain_unlock (domain);
+
+	for (i = 0; ass->image->references [i] != NULL; i++)
+		add_assemblies_to_domain (domain, ass->image->references [i]);
+}
+
+static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 {
 	MonoDomain *domain = mono_domain_get ();
@@ -609,6 +625,8 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 		g_warning ("Method AppDomain.DoAssemblyLoad not found.\n");
 		return;
 	}
+
+	add_assemblies_to_domain (domain, assembly);
 
 	ref_assembly = mono_assembly_get_object (domain, assembly);
 	g_assert (ref_assembly);
