@@ -56,15 +56,15 @@
 	</ul>
 	
 * Current Status
-
-	We are able to do simple CREATE TABLE, DROP TABLE, INSERT, and
+	>
+	<p>We are able to do simple CREATE TABLE, DROP TABLE, INSERT, and
 	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
 	
-	We are also	able to do simple aggregate functions, 
+	<p>We are also	able to do simple aggregate functions, 
 	ie, count(), sum(), avg(), min(), and
 	max() in a simple SELECT SQL query using ExecuteSecalar() now.  
 	
-	We are also able to retrieve data with a simple SELECT SQL query 
+	<p>We are also able to retrieve data with a simple SELECT SQL query 
 	using ExecuteReader() which returns a SqlDataReader.  We are able to
 	GetSchemaTable() get the meta data about the table columns.  We are able
 	to Read() to get each row from the result set.  We are able to get 
@@ -72,12 +72,12 @@
 	and Int32 (int4 or integer), Int64 (int8 or bigint).  More data types will
 	follow later on.
 		
-	Parameters are not working nor has stored procedures been tested - but they will be.
+	<p>Parameters are not working nor has stored procedures been tested - but they will be.
 	
-	A lot of functionality in System.Data is missing, but the infrastructure is
+	<p>A lot of functionality in System.Data is missing, but the infrastructure is
 	starting to come together.
 	
-	To compile that test program, you need:
+	<p>To compile that test program, you need:
 
 	<b>On Linux</b>
 
@@ -93,24 +93,24 @@
 
 * Testing
 
-	In order to test System.Data.SqlClient, you will need to have
+	<p>In order to test System.Data.SqlClient, you will need to have
 	access to a remote PostgreSQL DBMS, or you will have to install 
 	one locally.  PostgreSQL is the DBMS used for the initial 
 	implementation of System.Data.SqlClient.
-	
-	Why?  Because it is open source, has a client 
+		
+	<p>Why?  Because it is open source, has a client 
 	library that is easy to use, PostgreSQL is easy to install 
 	using the Cygwin install program, not difficult to setup after
 	installation, and it runs under: Linux, 
 	Windows (via cygwin and ipc-daemon), Unix, and
 	others.  This allowed us to create the
 	System.Data functionality in Mono much quicker.
-	
-	If you plan on using a remote PostgreSQL DBMS Server,
+		
+	<p>If you plan on using a remote PostgreSQL DBMS Server,
 	than you will need to have the PostgreSQL client software on your
 	local computer that includes libpq.so (pq.dll on Windows).
-
-	Installation instructions for PostgreSQL DBMS:
+		
+	<p>Installation instructions for PostgreSQL DBMS:
 
 	<b>On Linux</b>
 
@@ -126,23 +126,24 @@
 		* Use the cygwin installer to install the PostgreSQL DBMS.  It is
 		  found in the database category.
 		  
-		* Read the file postgres-x.x.README at /usr/doc/Cygwin and read 
+		* <p>Read the file postgres-x.x.README at /usr/doc/Cygwin and read 
 		  the requirements to install PostgreSQL.  Those requirements
 		  are included with cygwin except cygipc.  A default installtion
 		  of cygwin does not install everything you will need, so on the 
 		  safe side, just include everything when installing cygwin.
 		
-		  The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
+		  <p>The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
 		
-		* Once cygwin has installed PostgreSQL on your computer,
+		* <p>Once cygwin has installed PostgreSQL on your computer,
 		  read the file FAQ_MSWIN which is available 
 		  in /usr/doc/postgres-x.x\FAQ_MSWIN
 		  
-		  The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
+		  <p>The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
 		  
-		  Important notes from this file are:
+		  <p>Important notes from this file are:
 		  
-			* Point 2. - Install the latest cygipc package, 
+		  <ul>
+			* <p>Point 2. - Install the latest cygipc package, 
 			  available at
 			  http://www.neuro.gatech.edu/users/cwilson/cygutils/V1.1/cygipc/
 			  
@@ -151,7 +152,7 @@
 			  run the PostgreSQL DBMS Server daemon (postmaster) or run
 			  initdb which initializes the PostgreSQL database.
 			  
-			* Point 3.  The Cygwin bin directory has to be placed in 
+			* <p>Point 3.  The Cygwin bin directory has to be placed in 
 			  the path before the Windows program directories, 
 			  for example, C:\cygwin\bin 
 			  
@@ -160,83 +161,131 @@
 			  /usr/bin, and /bin.  I also set my LD_LIBRARY_PATH to 
 			  /usr/local/lib and /usr/lib.  For example:
 			  
+			  <p><pre>
 			  PATH=c:\cygwin\usr\local\bin;c:\cygwin\usr\bin;c:\cygwin\bin;
 			  LD_LIBRARY_PATH=c:\cygwin\usr\local\lib;c:\cygwin\usr\lib;
+			  </pre>
 			  
-			* Point 4. Start the ipc-daemon that came with the cygipc package.  There
+			  </p>
+			* <p>Point 4. Start the ipc-daemon that came with the cygipc package.  There
 			  are two ways to do this: run it from the command line as:
+			  
+			  <p>
+			  <pre>
 				ipc-daemon &
-				
-			  or you can set it up as a Windows service.  See the 
+			  </pre>
+			  			  
+			  <p>or you can set it up as a Windows service.  See the 
 			  file cygrunsrv.README at /usr/doc/Cygwin on how to do this
 			  for ipc-daemon and postmaster.  Note the
 			  troubleshooting section at the end of 
 			  the cygrunsrv.README file.
 			  
-			  To install ipc-daemon as a service, 
-			  you just have to run 'ipc-daemon --install-as-service' (--remove-as-service) 
-			  and then run 'net start ipc-daemon'		  
+			  <p>To install ipc-daemon as a service, 
+			  you just have to run
 			  
-		* Read the installation.html file 
+			  <p>
+			  <pre>
+			  ipc-daemon --install-as-service' (--remove-as-service) 
+			  </pre>
+			  
+			  <p>
+			  and then run
+			  
+			  <pre>
+			  net start ipc-daemon
+			  </pre>
+			  </ul>
+			  
+		* <p>Read the installation.html file 
 		  at /usr/doc/postgresql-x.x/html/installation.html
 		
-		  In this file, you will run the following commands:
+		  <p>In this file, you will run the following commands:
 		  
-			* mkdir /usr/local/pgsql/data
-			* initdb -D /usr/local/pgsql/data
-			* postmaster -D /usr/local/pgsql/data >logfile 2>&1 &
-			* createdb test
-			* psql test  		
-			  
-		  When you need to connect to the database, 
+		  <pre>
+			mkdir /usr/local/pgsql/data
+			initdb -D /usr/local/pgsql/data
+			postmaster -D /usr/local/pgsql/data >logfile 2>&1 &
+			createdb test
+			psql test  		
+		  </pre>
+		  
+		  <p>When you need to connect to the database, 
 		  you will need ipc-daemon and postmaster running.  Start ipc-daemon
 		  before any of the command above.  
 		  
-		  psql is a command-line PostgreSQL client tool to 
+		  <p>psql is a command-line PostgreSQL client tool to 
 		  enter and run SQL commands and queries.
 		  
-		  If there is no database user named postgres, create a user named
+		  <p>If there is no database user named postgres, create a user named
 		  postgres with the following SQL command in the client tool psql:
+		  
+		  <p>
+		  <pre>
 			plsql test
 			create user postgres with password 'fun2db';
-		  The only reason I say this is so you can easily use the System.Data tests
-		  without having to change the database, userid, etc.
+		  </pre>
 		  
+		  <p>The only reason I say this is so you can easily use the System.Data tests
+		  without having to change the database, userid, etc.
 	</ul>
 	
-	In the path mcs/class/System.Data/Test
+	<p>In the path mcs/class/System.Data/Test
 	there is a PostgreSQL test program named
 	PostgreTest.cs.  Thanks goes to Gonzalo for creating the original
 	PostgreSQL test.
-	To use it to test System.Data, you
+	
+	<p>To use it to test System.Data, you
 	modify the file to your PostgreSQL database
 	connection requirements:
 	
+	<p>
+	<pre>	
 	dbname is the database, ie, test
 	host is the hostname of the PostgreSQL DBMS Server to connect to
 	user is the username, ie, someuser
 	password is the password, ie, mypass1234
+	</pre>
 	
-	The connection string is in OLE-DB connection string format.  Internally,
+	<p>The connection string is in OLE-DB connection string format.  Internally,
 	SqlConnection converts this to the PostgreSQL connection string format.
 	
+	<p>
+	<pre>
 	    OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
 	PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
+	</pre>
 
+	<p>
 	Note that OLE-DB includes the semicolons while PostgreSQL's connection
 	string does not.
 
+	<p>
     To compile the PostgresTest.cs program, do:
+    
+    <p>
+    <pre>
     mcs PostgresTest.cs -r System.Data
+    </pre>
     
+    <p>
     To run using mint, do:
+    
+    <p>
+    <pre>
     mint PostgresTest.exe
+    </pre>
     
+    <p>
     To run using mono, do:
+    <pre>
     mono PostgresTest.exe
+    </pre>
     
-    You should get something like:
-    
+    <p>You should get something like:
+
+<p>
+<pre>   
 Administrator@DANPC ~/mono/mcs/class/System.Data/Test
 $ mcs PostgresTest.cs -r System.Data
 
@@ -282,4 +331,4 @@ Rows: 1
 Clean up...
                 Drop table...
 OK
-
+</pre>
