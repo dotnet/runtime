@@ -860,10 +860,9 @@ ves_icall_get_attributes (MonoReflectionType *type)
 }
 
 static void
-ves_icall_get_method_info (MonoReflectionMethod *refl_method, MonoMethodInfo *info)
+ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoMethod *method = refl_method->method;
 
 	info->parent = mono_type_get_object (domain, &method->klass->byval_arg);
 	info->ret = mono_type_get_object (domain, method->signature->ret);
@@ -872,13 +871,12 @@ ves_icall_get_method_info (MonoReflectionMethod *refl_method, MonoMethodInfo *in
 }
 
 static MonoArray*
-ves_icall_get_parameter_info (MonoReflectionMethod *refl_method)
+ves_icall_get_parameter_info (MonoMethod *method)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoArray *res;
 	static MonoClass *System_Reflection_ParameterInfo;
 	MonoReflectionParameter** args;
-	MonoMethod *method = refl_method->method;
 	int i;
 
 	args = mono_param_get_objects (domain, method);
