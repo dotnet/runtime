@@ -1,3 +1,7 @@
+2005-01-05  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add check for <checklist.h>.
+
 2005-01-04  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add check for vsnprintf.

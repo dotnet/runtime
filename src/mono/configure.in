@@ -1029,6 +1029,7 @@ if test x$platform_win32 = xno; then
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
+	AC_CHECK_HEADERS(checklist.h)
 	AC_CHECK_HEADERS(fstab.h)
 	AC_CHECK_HEADERS(sys/sendfile.h)
 	AC_CHECK_HEADERS(sys/statvfs.h)
