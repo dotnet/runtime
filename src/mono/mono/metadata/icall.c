@@ -46,6 +46,8 @@
 #endif
 #include "decimal.h"
 
+static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
+
 static MonoString *
 mono_double_ToStringImpl (double value)
 {
@@ -753,38 +755,14 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 	return count;
 }
 
-typedef struct getTypeInfo GetTypeInfo;
-struct getTypeInfo {
-	MonoType *type;
-	MonoTypeNameParse *info;
-	MonoBoolean ignoreCase;
-};
-
-static void
-try_get_type (gpointer key, gpointer value, gpointer user_data)
-{
-	GetTypeInfo *gt_info = user_data;
-	MonoAssembly *assembly;
-
-	if (gt_info->type != NULL)
-		return;
-
-	assembly = value;
-	/* Weird, but the domain is locked and the assembly will not be freed */
-	memcpy (&gt_info->info->assembly, &assembly->aname, sizeof (MonoAssemblyName));
-	gt_info->type = mono_reflection_get_type (assembly->image,
-						  gt_info->info,
-						  gt_info->ignoreCase);
-}
-
 static MonoReflectionType*
 ves_icall_type_from_name (MonoString *name,
 			  MonoBoolean throwOnError,
 			  MonoBoolean ignoreCase)
 {
 	gchar *str;
-	MonoType *type;
-	MonoAssembly *assembly = NULL;
+	MonoType *type = NULL;
+	MonoAssembly *assembly;
 	MonoTypeNameParse info;
 
 	MONO_ARCH_SAVE_REGS;
@@ -802,33 +780,18 @@ ves_icall_type_from_name (MonoString *name,
 
 	if (info.assembly.name) {
 		assembly = mono_assembly_load (&info.assembly, NULL, NULL);
-
-		if (!assembly) {
-			g_free (str);
-			g_list_free (info.modifiers);
-			g_list_free (info.nested);
-			if (throwOnError)
-				mono_raise_exception (mono_get_exception_type_load ());
-
-			return NULL;
-		}
-	}
-	
-	if (assembly) {
-		type = mono_reflection_get_type (assembly->image, &info, ignoreCase);
 	} else {
-		MonoDomain *domain = mono_domain_get ();
-		GetTypeInfo gt_info;
-		
-		gt_info.type = NULL;
-		gt_info.info = &info;
-		gt_info.ignoreCase = ignoreCase;
+		MonoReflectionAssembly *refass;
 
-		mono_domain_lock (domain);
-		g_hash_table_foreach (domain->assemblies, try_get_type, &gt_info);
-		mono_domain_unlock (domain);
-		type = gt_info.type;
+		refass = ves_icall_System_Reflection_Assembly_GetCallingAssembly  ();
+		assembly = refass->assembly;
 	}
+
+	if (assembly)
+		type = mono_reflection_get_type (assembly->image, &info, ignoreCase);
+	
+	if (!info.assembly.name && !type) /* try mscorlib */
+		type = mono_reflection_get_type (NULL, &info, ignoreCase);
 
 	g_free (str);
 	g_list_free (info.modifiers);
