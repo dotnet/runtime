@@ -72,6 +72,7 @@ typedef struct {
 
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 0;
+static int global_class_init_tracing = 0;
 
 static int debug_indent_level = 0;
 
@@ -111,6 +112,93 @@ typedef void (*ICallMethod) (MonoInvocation *frame);
 
 static guint32 die_on_exception = 0;
 static guint32 frame_thread_id = 0;
+
+#define DEBUG_INTERP 1
+#if DEBUG_INTERP
+
+static unsigned long opcode_count = 0;
+static unsigned long fcall_count = 0;
+static int break_on_method = 0;
+static GList *db_methods = NULL;
+
+static void
+output_indent (void)
+{
+	int h;
+
+	for (h = 0; h < debug_indent_level; h++)
+		g_print ("  ");
+}
+
+static void
+db_match_method (gpointer data, gpointer user_data)
+{
+	MonoMethod *m = (MonoMethod*)user_data;
+	MonoMethodDesc *desc = data;
+
+	if (mono_method_desc_full_match (desc, m))
+		break_on_method = 1;
+}
+
+#define DEBUG_ENTER()	\
+	fcall_count++;	\
+	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method);	\
+	if (break_on_method) tracing=2;	\
+	break_on_method = 0;	\
+	if (tracing) {	\
+		MonoClass *klass = frame->method->klass;	\
+		char *args = dump_stack (frame->stack_args, frame->stack_args+signature->param_count);	\
+		debug_indent_level++;	\
+		output_indent ();	\
+		g_print ("(%d) Entering %s.%s::%s (", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
+		if (signature->hasthis) g_print ("%p ", frame->obj);	\
+		g_print ("%s)\n", args);	\
+		g_free (args);	\
+	}	\
+	if (profiling) {	\
+		if (!(profile_info = g_hash_table_lookup (profiling, frame->method))) {	\
+			profile_info = g_new0 (MethodProfile, 1);	\
+			profile_info->u.timer = g_timer_new ();	\
+			g_hash_table_insert (profiling, frame->method, profile_info);	\
+		}	\
+		profile_info->count++;	\
+		g_timer_start (profile_info->u.timer);	\
+	}
+
+#define DEBUG_LEAVE()	\
+	if (tracing) {	\
+		MonoClass *klass = frame->method->klass;	\
+		output_indent ();	\
+		g_print ("(%d) Leaving %s.%s::%s\n", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
+		debug_indent_level--;	\
+	}	\
+	if (profiling) {	\
+		g_timer_stop (profile_info->u.timer);	\
+		profile_info->total += g_timer_elapsed (profile_info->u.timer, NULL);	\
+	}
+
+#define DEBUG_CLASS_INIT(klass)	\
+	if (global_class_init_tracing) {	\
+		output_indent();	\
+		g_print("(%d) Init class %s\n", GetCurrentThreadId(),	\
+			klass->name);	\
+	}
+
+#define DEBUG_CLASS_INIT_END(klass)	\
+	if (global_class_init_tracing) {	\
+		output_indent();	\
+		g_print("(%d) End init class %s\n", GetCurrentThreadId(), \
+			klass->name);	\
+	}
+
+#else
+
+#define DEBUG_ENTER()
+#define DEBUG_LEAVE()
+#define DEBUG_CLASS_INIT(klass)
+#define DEBUG_CLASS_INIT_END(klass)
+
+#endif
 
 static void
 interp_ex_handler (MonoException *ex) {
@@ -172,15 +260,18 @@ runtime_class_init (MonoClass *klass)
 	MonoInvocation call;
 	int i;
 
+	DEBUG_CLASS_INIT(klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
 		    (strcmp (".cctor", method->name) == 0)) {
 			INIT_FRAME (&call, NULL, NULL, NULL, NULL, method);
 			ves_exec_method (&call);
+			DEBUG_CLASS_INIT_END(klass);
 			return;
 		}
 	}
+	DEBUG_CLASS_INIT_END(klass);
 	/* No class constructor found */
 }
 
@@ -645,77 +736,6 @@ dump_frame (MonoInvocation *inv)
 	return g_string_free (str, FALSE);
 }
 
-#define DEBUG_INTERP 1
-#if DEBUG_INTERP
-
-static unsigned long opcode_count = 0;
-static unsigned long fcall_count = 0;
-static int break_on_method = 0;
-static GList *db_methods = NULL;
-
-static void
-output_indent (void)
-{
-	int h;
-
-	for (h = 0; h < debug_indent_level; h++)
-		g_print ("  ");
-}
-
-static void
-db_match_method (gpointer data, gpointer user_data)
-{
-	MonoMethod *m = (MonoMethod*)user_data;
-	MonoMethodDesc *desc = data;
-
-	if (mono_method_desc_full_match (desc, m))
-		break_on_method = 1;
-}
-
-#define DEBUG_ENTER()	\
-	fcall_count++;	\
-	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method);	\
-	if (break_on_method) tracing=2;	\
-	break_on_method = 0;	\
-	if (tracing) {	\
-		MonoClass *klass = frame->method->klass;	\
-		char *args = dump_stack (frame->stack_args, frame->stack_args+signature->param_count);	\
-		debug_indent_level++;	\
-		output_indent ();	\
-		g_print ("Entering %s.%s::%s (", klass->name_space, klass->name, frame->method->name);	\
-		if (signature->hasthis) g_print ("%p ", frame->obj);	\
-		g_print ("%s)\n", args);	\
-		g_free (args);	\
-	}	\
-	if (profiling) {	\
-		if (!(profile_info = g_hash_table_lookup (profiling, frame->method))) {	\
-			profile_info = g_new0 (MethodProfile, 1);	\
-			profile_info->u.timer = g_timer_new ();	\
-			g_hash_table_insert (profiling, frame->method, profile_info);	\
-		}	\
-		profile_info->count++;	\
-		g_timer_start (profile_info->u.timer);	\
-	}
-
-#define DEBUG_LEAVE()	\
-	if (tracing) {	\
-		MonoClass *klass = frame->method->klass;	\
-		output_indent ();	\
-		g_print ("Leaving %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
-		debug_indent_level--;	\
-	}	\
-	if (profiling) {	\
-		g_timer_stop (profile_info->u.timer);	\
-		profile_info->total += g_timer_elapsed (profile_info->u.timer, NULL);	\
-	}
-
-#else
-
-#define DEBUG_ENTER()
-#define DEBUG_LEAVE()
-
-#endif
-
 static guint32*
 calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *signature)
 {
@@ -1148,12 +1168,12 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp > frame->stack) {
 				output_indent ();
 				ins = dump_stack (frame->stack, sp);
-				g_print ("stack: %s\n", ins);
+				g_print ("(%d) stack: %s\n", GetCurrentThreadId(), ins);
 				g_free (ins);
 			}
 			output_indent ();
 			ins = mono_disasm_code_one (NULL, frame->method, ip);
-			g_print ("%s", ins);
+			g_print ("(%d) %s", GetCurrentThreadId(), ins);
 			g_free (ins);
 		}
 		if (il_ins_count > 0)
@@ -3763,7 +3783,13 @@ usage (void)
 		 "Usage is: mint [options] executable args...\n", VERSION);
 	fprintf (stderr,
 		 "Valid Options are:\n"
+#ifdef DEBUG_INTERP
+		 "--debug\n"
+#endif
+		 "--help\n"
 		 "--trace\n"
+		 "--traceops\n"
+		 "--traceclassinit\n"
 		 "--dieonex\n"
 		 "--profile\n"
 		 "--debug method_name\n"
@@ -3935,6 +3961,8 @@ main (int argc, char *argv [])
 			global_tracing = 1;
 		if (strcmp (argv [i], "--traceops") == 0)
 			global_tracing = 2;
+		if (strcmp (argv [i], "--traceclassinit") == 0)
+			global_class_init_tracing = 1;
 		if (strcmp (argv [i], "--dieonex") == 0)
 			die_on_exception = 1;
 		if (strcmp (argv [i], "--print-vtable") == 0)
