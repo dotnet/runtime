@@ -1,11 +1,11 @@
 if PLATFORM_WIN32
 export HOST_CC
 assembliesdir = `echo $(libdir) | tr '/' '\\\\'`
-else
-assembliesdir = $(libdir)
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
+else
+assembliesdir = $(libdir)
 endif
 
 bin_PROGRAMS = monosn pedump
