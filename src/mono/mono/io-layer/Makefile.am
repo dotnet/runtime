@@ -23,6 +23,7 @@ OTHER_H = \
 	mono-mutex.h	\
 	mutexes.h	\
 	processes.h	\
+	security.h	\
 	semaphores.h	\
 	sockets.h	\
 	status.h	\
@@ -71,6 +72,8 @@ OTHER_SRC = \
 	processes.c		\
 	processes.h		\
 	process-private.h	\
+	security.c		\
+	security.h		\
 	semaphores.c		\
 	semaphores.h		\
 	semaphore-private.h	\
