@@ -1181,7 +1181,7 @@ arch_get_restore_context ()
 	/* restore_contect (struct sigcontext *ctx) */
 	/* we do not restore X86_EAX, X86_EDX */
 
-	start = code = malloc (1024);
+	start = code = g_malloc (1024);
 	
 	/* load ctx */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
@@ -1525,7 +1525,7 @@ get_invoke_method_with_frame ()
 	if (start)
 		return start;
 
-	start = code = malloc (64);
+	start = code = g_malloc (64);
 
 	/* Prolog */
 	x86_push_reg (code, X86_EBP);

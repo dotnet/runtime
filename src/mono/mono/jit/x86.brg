@@ -2594,6 +2594,32 @@ reg: CLT (lreg, lreg) {
 	}
 }
 
+reg: CGT_UN (lreg, lreg) {
+	guint8 *start = s->code;
+	gpointer o1, o2, o3, o4, o5;
+	int i;
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg2, tree->left->reg2);
+		x86_branch8 (s->code, X86_CC_GT, o4 - o1, FALSE);
+		o1 = s->code;
+		x86_branch8 (s->code, X86_CC_NE, o4 - o2, FALSE);
+		o2 = s->code;
+		x86_alu_reg_reg (s->code, X86_CMP, tree->right->reg1, tree->left->reg1);
+		x86_branch8 (s->code, X86_CC_GE, o4 - o3, FALSE);
+
+		/* set result to 1 */
+		o3 = s->code;
+		x86_mov_reg_imm (s->code, tree->reg1, 1);
+		x86_jump8 (s->code, (o4 - o3));
+		/* set result to 0 */
+		o4 = s->code;
+		x86_mov_reg_imm (s->code, tree->reg1, 0);	
+		o5 = s->code;
+	}
+}
+
 stmt: BEQ (lreg, lreg) {
 	guint8 *start = s->code;
 	int i;
@@ -2857,6 +2883,23 @@ reg: CEQ (freg, freg) {
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x4000);
+	x86_set_reg (s->code, X86_CC_EQ, tree->reg1, TRUE);
+	x86_widen_reg (s->code, treg, treg, FALSE, FALSE);
+
+	if (treg != X86_EAX)
+		x86_pop_reg (s->code, X86_EAX); // save EAX
+}
+
+reg: CGT_UN (freg, freg) {
+	int treg = tree->reg1;
+	
+	if (treg != X86_EAX)
+		x86_push_reg (s->code, X86_EAX); // save EAX
+		
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
 	x86_set_reg (s->code, X86_CC_EQ, tree->reg1, TRUE);
 	x86_widen_reg (s->code, treg, treg, FALSE, FALSE);
 
