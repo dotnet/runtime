@@ -485,7 +485,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	if (!container->method_hash)
 		container->method_hash = g_hash_table_new (
-			mono_metadata_generic_method_hash, mono_metadata_generic_method_equal);
+			(GHashFunc)mono_metadata_generic_method_hash, (GEqualFunc)mono_metadata_generic_method_equal);
 
 	inflated = g_hash_table_lookup (container->method_hash, gmethod);
 	if (inflated) {
@@ -745,7 +745,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 		if (exc_class) {
 			*exc_class = "DllNotFoundException";
-			*exc_arg = orig_scope;
+			*exc_arg = new_scope;
 		}
 		return NULL;
 	}
