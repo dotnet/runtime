@@ -160,7 +160,79 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for libsocket  ***
 	dnl *****************************
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
-	
+
+	dnl *****************************
+	dnl *** Checks for SOL_IP     ***
+	dnl *****************************
+	AC_MSG_CHECKING(for SOL_IP)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = SOL_IP;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SOL_IP)
+	], [
+		# We'll have to use getprotobyname
+		AC_MSG_RESULT(no)
+	])
+
+	dnl *****************************
+	dnl *** Checks for SOL_TCP    ***
+	dnl *****************************
+	AC_MSG_CHECKING(for SOL_TCP)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = SOL_TCP;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SOL_TCP)
+	], [
+		# We'll have to use getprotobyname
+		AC_MSG_RESULT(no)
+	])
+
+	dnl *****************************
+	dnl *** Checks for IP_PKTINFO ***
+	dnl *****************************
+	AC_MSG_CHECKING(for IP_PKTINFO)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = IP_PKTINFO;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_PKTINFO)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl ************************************
+	dnl *** Checks for IP_ADD_MEMBERSHIP ***
+	dnl ************************************
+	AC_MSG_CHECKING(for IP_ADD_MEMBERSHIP)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = IP_ADD_MEMBERSHIP;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_ADD_MEMBERSHIP)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl *************************************
+	dnl *** Checks for IP_DROP_MEMBERSHIP ***
+	dnl *************************************
+	AC_MSG_CHECKING(for IP_DROP_MEMBERSHIP)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = IP_DROP_MEMBERSHIP;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_DROP_MEMBERSHIP)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
 	dnl *****************************
 	dnl *** Checks for libnsl     ***
 	dnl *****************************
@@ -187,7 +259,7 @@ if test x$platform_win32 = xno; then
 			pthread_mutex_timedlock(&mut, NULL);
 		], [
 			# Works!
-			AC_MSG_RESULT(ok)
+			AC_MSG_RESULT(yes)
 			AC_DEFINE(HAVE_PTHREAD_MUTEX_TIMEDLOCK)
 		], [
 			AC_MSG_RESULT(no)
@@ -200,7 +272,7 @@ if test x$platform_win32 = xno; then
 				pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
 				pthread_mutex_timedlock(&mut, NULL);
 			], [
-				AC_MSG_RESULT(ok)
+				AC_MSG_RESULT(yes)
 				pthread_CFLAGS="-D_GNU_SOURCE"
 				AC_DEFINE(HAVE_PTHREAD_MUTEX_TIMEDLOCK)
 			], [
