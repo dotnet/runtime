@@ -3325,9 +3325,21 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		/* g_print ("failed find\n"); */
 		return NULL;
 	}
+
+	if (type->type == MONO_TYPE_CLASS) {
+		MonoClass *klass = mono_type_get_class (type);
+		/* need to report exceptions ? */
+		if (throwOnError && klass->exception_type) {
+			/* report SecurityException (or others) that occured when loading the assembly */
+			MonoException *exc = mono_class_get_exception_for_failure (klass);
+			mono_raise_exception (exc);
+		} else if (klass->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) {
+			return NULL;
+		}
+	}
+
 	/* g_print ("got it\n"); */
 	return mono_type_get_object (mono_object_domain (assembly), type);
-
 }
 
 static MonoString *
@@ -4179,7 +4191,46 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 				}
 			}
 		}
-	}		
+	}
+
+	if (mono_is_security_manager_active ()) {
+		/* the ReflectionTypeLoadException must have all the types (Types property), 
+		 * NULL replacing types which throws an exception. The LoaderException must
+		 * contains all exceptions for NULL items.
+		 */
+
+		guint32 len = mono_array_length (res);
+		GList *list = NULL;
+
+		for (i = 0; i < len; i++) {
+			MonoReflectionType *t = mono_array_get (res, gpointer, i);
+			MonoClass *klass = mono_type_get_class (t->type);
+			if ((klass != NULL) && klass->exception_type) {
+				/* keep the class in the list */
+				list = g_list_append (list, klass);
+				/* and replace Type with NULL */
+				mono_array_set (res, gpointer, i, NULL);
+			}
+		}
+
+		if (list) {
+			GList *tmp = NULL;
+			MonoException *exc = NULL;
+			int length = g_list_length (list);
+
+			MonoArray *exl = mono_array_new (domain, mono_defaults.exception_class, length);
+			for (i = 0, tmp = list; i < length; i++, tmp = tmp->next) {
+				MonoException *exc = mono_class_get_exception_for_failure (tmp->data);
+				mono_array_set (exl, gpointer, i, exc);
+			}
+			g_list_free (list);
+			list = NULL;
+
+			exc = mono_get_exception_reflection_type_load (res, exl);
+			mono_raise_exception (exc);
+		}
+	}
+		
 	return res;
 }
 
@@ -6620,6 +6671,7 @@ static const IcallEntry evidence_icalls [] = {
 };
 
 static const IcallEntry securitymanager_icalls [] = {
+	{"GetLinkDemandSecurity", ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity},
 	{"get_CheckExecutionRights", ves_icall_System_Security_SecurityManager_get_CheckExecutionRights},
 	{"get_SecurityEnabled", ves_icall_System_Security_SecurityManager_get_SecurityEnabled},
 	{"set_CheckExecutionRights", ves_icall_System_Security_SecurityManager_set_CheckExecutionRights},

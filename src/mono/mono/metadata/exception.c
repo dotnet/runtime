@@ -410,3 +410,27 @@ mono_get_exception_stack_overflow (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System", "StackOverflowException");	
 }
+
+MonoException *
+mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions)
+{
+	MonoClass *klass;
+	gpointer args [2];
+	MonoObject *exc;
+	MonoMethod *method;
+
+	klass = mono_class_from_name (mono_get_corlib (), "System.Reflection", "ReflectionTypeLoadException");
+	g_assert (klass);
+	mono_class_init (klass);
+
+	method = mono_class_get_method_from_name (klass, ".ctor", 2);
+	g_assert (method);
+
+	args [0] = types;
+	args [1] = exceptions;
+
+	exc = mono_object_new (mono_domain_get (), klass);
+	mono_runtime_invoke (method, exc, args, NULL);
+
+	return (MonoException *) exc;
+}

@@ -19,6 +19,7 @@
 #include "marshal.h"
 #include "image.h"
 #include "reflection.h"
+#include "tabledefs.h"
 
 
 /* Definitions */
@@ -38,9 +39,6 @@ typedef struct {
 	MonoClass *securitymanager;		/* System.Security.SecurityManager */
 	MonoMethod *demand;			/* SecurityManager.InternalDemand */
 	MonoMethod *demandchoice;		/* SecurityManager.InternalDemandChoice */
-	MonoMethod *assert;			/* SecurityManager.InternalAssert */
-	MonoMethod *deny;			/* SecurityManager.InternalDeny */
-	MonoMethod *permitonly;			/* SecurityManager.InternalPermitOnly */
 	MonoMethod *inheritancedemand;		/* SecurityManager.InheritanceDemand */
 	MonoMethod *inheritsecurityexception;	/* SecurityManager.InheritanceDemandSecurityException */
 	MonoMethod *linkdemand;			/* SecurityManager.LinkDemand */
@@ -66,6 +64,7 @@ MonoBoolean ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void)
 void ves_icall_System_Security_SecurityManager_set_SecurityEnabled (MonoBoolean value);
 MonoBoolean ves_icall_System_Security_SecurityManager_get_CheckExecutionRights (void);
 void ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean value);
+MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions);
 
 
 #endif /* _MONO_METADATA_SECURITY_MANAGER_H_ */

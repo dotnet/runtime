@@ -38,6 +38,10 @@ mono_security_manager_get_methods (void)
 		"InternalDemand", 2);	
 	g_assert (secman.demand);
 
+	secman.demandchoice = mono_class_get_method_from_name (secman.securitymanager,
+		"InternalDemandChoice", 2);	
+	g_assert (secman.demandchoice);
+
 	secman.inheritancedemand = mono_class_get_method_from_name (secman.securitymanager,
 		"InheritanceDemand", 2);	
 	g_assert (secman.inheritancedemand);
@@ -167,6 +171,8 @@ mono_is_ecma_key (const char *publickey, int size)
 	return TRUE;
 }
 
+/* System.Security icalls */
+
 MonoBoolean
 ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void)
 {
@@ -199,4 +205,26 @@ ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean 
 	if (mono_security_manager_activated) {
 		mono_security_manager_execution = value;
 	}
+}
+
+MonoBoolean
+ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions)
+{
+	MonoMethod *method = m->method;
+	/* we want the original as the wrapper is "free" of the security informations */
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		method = mono_marshal_method_from_wrapper (method);
+	}
+
+	mono_class_init (method->klass);
+
+	/* if either the method or it's class has security (any type) */
+	if ((method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) || (method->klass->flags & TYPE_ATTRIBUTE_HAS_SECURITY)) {
+		memset (kactions, 0, sizeof (MonoDeclSecurityActions));
+		memset (mactions, 0, sizeof (MonoDeclSecurityActions));
+
+		/* get any linkdemand (either on the method or it's class) */
+		return mono_declsec_get_linkdemands (method, kactions, mactions);
+	}
+	return FALSE;
 }
