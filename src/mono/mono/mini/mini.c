@@ -3446,7 +3446,53 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip++;
 			break;
 		case CEE_CPOBJ:
-			g_error ("opcode 0x%02x not handled", *ip);
+			CHECK_STACK (2);
+			token = read32 (ip + 1);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				klass = mono_method_get_wrapper_data (method, token);
+			else
+				klass = mono_class_get (image, token);
+
+			mono_class_init (klass);
+			if (klass->byval_arg.type == MONO_TYPE_VAR)
+				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.type_param);
+			sp -= 2;
+			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+				MonoInst *store, *load;
+				MONO_INST_NEW (cfg, load, CEE_LDIND_REF);
+				load->cil_code = ip;
+				load->inst_i0 = sp [1];
+				load->type = ldind_type [CEE_LDIND_REF];
+				load->flags |= ins_flag;
+				MONO_INST_NEW (cfg, store, CEE_STIND_REF);
+				store->cil_code = ip;
+				handle_loaded_temps (cfg, bblock, stack_start, sp);
+				MONO_ADD_INS (bblock, store);
+				store->inst_i0 = sp [0];
+				store->inst_i1 = load;
+				store->flags |= ins_flag;
+			} else {
+				n = mono_class_value_size (klass, NULL);
+				if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
+					MonoInst *copy;
+					MONO_INST_NEW (cfg, copy, OP_MEMCPY);
+					copy->inst_left = sp [0];
+					copy->inst_right = sp [1];
+					copy->cil_code = ip;
+					copy->unused = n;
+					MONO_ADD_INS (bblock, copy);
+				} else {
+					MonoInst *iargs [3];
+					iargs [0] = sp [0];
+					iargs [1] = sp [1];
+					NEW_ICONST (cfg, iargs [2], n);
+					iargs [2]->cil_code = ip;
+
+					mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+				}
+			}
+			ins_flag = 0;
+			ip += 5;
 			break;
 		case CEE_LDOBJ: {
 			MonoInst *iargs [3];
@@ -3461,6 +3507,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.type_param);
+			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
+				ins->cil_code = ip;
+				ins->inst_i0 = sp [0];
+				ins->type = ldind_type [CEE_LDIND_REF];
+				ins->flags |= ins_flag;
+				ins_flag = 0;
+				*sp++ = ins;
+				ip += 5;
+				break;
+			}
 			n = mono_class_value_size (klass, NULL);
 			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
@@ -3482,6 +3539,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
 			++sp;
 			ip += 5;
+			ins_flag = 0;
 			inline_costs += 1;
 			break;
 		}
@@ -3635,6 +3693,73 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 5;
 			*sp++ = ins;
 			break;
+		case CEE_UNBOX_ANY: {
+			MonoInst *add, *vtoffset;
+			MonoInst *iargs [3];
+
+			CHECK_STACK (1);
+			--sp;
+			token = read32 (ip + 1);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
+			else 
+				klass = mono_class_get (image, token);
+			mono_class_init (klass);
+
+			if (klass->byval_arg.type == MONO_TYPE_VAR)
+				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.type_param);
+
+			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+				/* CASTCLASS */
+				MONO_INST_NEW (cfg, ins, CEE_CASTCLASS);
+				ins->type = STACK_OBJ;
+				ins->inst_left = *sp;
+				ins->klass = klass;
+				ins->inst_newa_class = klass;
+				ins->cil_code = ip;
+				*sp++ = ins;
+				ip += 5;
+				break;
+			}
+
+			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
+			ins->type = STACK_OBJ;
+			ins->inst_left = *sp;
+			ins->klass = klass;
+			ins->inst_newa_class = klass;
+			ins->cil_code = ip;
+
+			MONO_INST_NEW (cfg, add, CEE_ADD);
+			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
+			add->inst_left = ins;
+			add->inst_right = vtoffset;
+			add->type = STACK_MP;
+			*sp = add;
+			ip += 5;
+			/* LDOBJ impl */
+			n = mono_class_value_size (klass, NULL);
+			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
+			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
+			if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
+				MonoInst *copy;
+				MONO_INST_NEW (cfg, copy, OP_MEMCPY);
+				copy->inst_left = iargs [0];
+				copy->inst_right = *sp;
+				copy->cil_code = ip;
+				copy->unused = n;
+				MONO_ADD_INS (bblock, copy);
+			} else {
+				iargs [1] = *sp;
+				NEW_ICONST (cfg, iargs [2], n);
+				iargs [2]->cil_code = ip;
+
+				mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+			}
+			NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
+			++sp;
+			inline_costs += 2;
+			break;
+		}
 		case CEE_UNBOX: {
 			MonoInst *add, *vtoffset;
 
@@ -4044,6 +4169,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.type_param);
 
+			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+				*sp = val;
+				ip += 5;
+				break;
+			}
 			/* much like NEWOBJ */
 			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
 				NEW_DOMAINCONST (cfg, iargs [0]);
@@ -4856,7 +4986,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					klass = mono_class_get (image, token);
 				if (klass->byval_arg.type == MONO_TYPE_VAR)
 					klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.type_param);
-				handle_initobj (cfg, bblock, *sp, NULL, klass, stack_start, sp);
+				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+					MonoInst *store, *load;
+					NEW_PCONST (cfg, load, NULL);
+					load->cil_code = ip;
+					load->type = STACK_OBJ;
+					MONO_INST_NEW (cfg, store, CEE_STIND_REF);
+					store->cil_code = ip;
+					handle_loaded_temps (cfg, bblock, stack_start, sp);
+					MONO_ADD_INS (bblock, store);
+					store->inst_i0 = sp [0];
+					store->inst_i1 = load;
+					break;
+				} else {
+					handle_initobj (cfg, bblock, *sp, NULL, klass, stack_start, sp);
+				}
 				ip += 6;
 				inline_costs += 1;
 				break;
@@ -4910,6 +5054,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_SIZEOF:
 				CHECK_STACK_OVF (1);
 				token = read32 (ip + 2);
+				/* FIXXME: handle generics. */
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					token = mono_type_size (type, &align);
