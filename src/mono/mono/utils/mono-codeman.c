@@ -130,7 +130,7 @@ query_pagesize (void)
  * we should reduce it and make MIN_PAGES bigger for such systems
  */
 #if defined(__ppc__) || defined(__powerpc__)
-#define BIND_ROOM 8
+#define BIND_ROOM 4
 #endif
 
 static CodeChunk*
