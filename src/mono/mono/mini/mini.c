@@ -3578,6 +3578,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CONV_R_UN:
 			CHECK_STACK (1);
 			ADD_UNOP (*ip);
+			if (mono_find_jit_opcode_emulation (ins->opcode)) {
+				MonoInst *store, *temp, *load;
+				--sp;
+				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+				store->cil_code = ins->cil_code;
+				MONO_ADD_INS (bblock, store);
+				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
+				load->cil_code = ins->cil_code;
+				*sp++ = load;
+				/*g_print ("found emulation for %d\n", ins->opcode);*/
+			}
 			ip++;			
 			break;
 		case CEE_CONV_OVF_I4:
@@ -4500,6 +4512,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->type = STACK_OBJ;
 			ip += 5;
 			*sp++ = ins;
+			/* 
+			 * we store the object so calls to create the array are not interleaved
+			 * with the arguments of other calls.
+			 */
+			if (1) {
+				MonoInst *store, *temp, *load;
+				--sp;
+				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+				store->cil_code = ins->cil_code;
+				MONO_ADD_INS (bblock, store);
+				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
+				load->cil_code = ins->cil_code;
+				*sp++ = load;
+			}
 			inline_costs += 1;
 			break;
 		case CEE_LDLEN:
