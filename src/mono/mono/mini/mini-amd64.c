@@ -4693,6 +4693,54 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
+		case OP_ATOMIC_EXCHANGE_I4:
+		case OP_ATOMIC_EXCHANGE_I8: {
+			guchar *br[2];
+			int sreg2 = ins->sreg2;
+			int breg = ins->inst_basereg;
+			guint32 size = (ins->opcode == OP_ATOMIC_EXCHANGE_I4) ? 4 : 8;
+
+			/* 
+			 * See http://msdn.microsoft.com/msdnmag/issues/0700/Win32/ for
+			 * an explanation of how this works.
+			 */
+
+			/* cmpxchg uses eax as comperand, need to make sure we can use it
+			 * hack to overcome limits in x86 reg allocator 
+			 * (req: dreg == eax and sreg2 != eax and breg != eax) 
+			 */
+			if (ins->dreg != AMD64_RAX)
+				amd64_push_reg (code, AMD64_RAX);
+			
+			/* We need the EAX reg for the cmpxchg */
+			if (ins->sreg2 == AMD64_RAX) {
+				amd64_push_reg (code, AMD64_RDX);
+				amd64_mov_reg_reg (code, AMD64_RDX, AMD64_RAX, size);
+				sreg2 = AMD64_RDX;
+			}
+
+			if (breg == AMD64_RAX) {
+				amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, size);
+				breg = AMD64_R11;
+			}
+
+			amd64_mov_reg_membase (code, AMD64_RAX, breg, ins->inst_offset, size);
+
+			br [0] = code; amd64_prefix (code, X86_LOCK_PREFIX);
+			amd64_cmpxchg_membase_reg_size (code, breg, ins->inst_offset, sreg2, size);
+			br [1] = code; amd64_branch8 (code, X86_CC_NE, -1, FALSE);
+			amd64_patch (br [1], br [0]);
+
+			if (ins->dreg != AMD64_RAX) {
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, size);
+				amd64_pop_reg (code, AMD64_RAX);
+			}
+
+			if (ins->sreg2 != sreg2)
+				amd64_pop_reg (code, AMD64_RDX);
+
+			break;
+		}
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
@@ -5834,11 +5882,32 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
+		} else if (strcmp (cmethod->name, "Exchange") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_EXCHANGE_I4;
+			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
+					 (fsig->params [0]->type == MONO_TYPE_I) ||
+					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
+				opcode = OP_ATOMIC_EXCHANGE_I8;
+			else
+				return NULL;
+
+			MONO_INST_NEW (cfg, ins, opcode);
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
 		} else if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
 			/* 64 bit reads are already atomic */
 			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
 			ins->inst_i0 = args [0];
 		}
+
+		/* 
+		 * Can't implement CompareExchange methods this way since they have
+		 * three arguments.
+		 */
 	}
 
 	return ins;
