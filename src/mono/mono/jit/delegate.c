@@ -436,4 +436,7 @@ void
 mono_delegate_cleanup ()
 {
 	stop_worker = 1;
+
+	/* stop all workers (max. 0xffff) */
+	ReleaseSemaphore (delegate_semaphore, 0xffff, NULL);
 }
