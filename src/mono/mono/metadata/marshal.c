@@ -505,7 +505,7 @@ mono_mb_emit_exception (MonoMethodBuilder *mb)
 }
 
 void
-mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint8 local, gint8 incr)
+mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 {
 	mono_mb_emit_ldloc (mb, local); 
 	mono_mb_emit_icon (mb, incr);

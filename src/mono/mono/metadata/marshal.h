@@ -102,7 +102,7 @@ void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value);
 
 void
-mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint8 local, gint8 incr);
+mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr);
 
 void
 mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset);
