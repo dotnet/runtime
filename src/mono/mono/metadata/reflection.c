@@ -1512,7 +1512,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 		{"#Strings", &assembly->sheap},
 		{"#US", &assembly->us},
 		{"#Blob", &assembly->blob},
-		{"#GUID", &assembly->guid},
+		{"#GUID", &assembly->guid}
 	};
 	
 	/* tables that are sorted */

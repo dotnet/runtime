@@ -210,6 +210,7 @@ static gint32 convert_proto(MonoProtocolType mono_proto)
 		break;
 		
 	default:
+		break;
 	}
 
 	return(proto);
