@@ -73,7 +73,7 @@ ctree_new (int op, MonoTypeEnum type, MBTree *left, MBTree *right)
 }
 
 static MBTree *
-ctree_new_leave (int op, MonoTypeEnum type)
+ctree_new_leaf (int op, MonoTypeEnum type)
 {
 	return ctree_new (op, type, NULL, NULL);
 }
@@ -130,7 +130,7 @@ mono_compile_method (MonoMethod *method)
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
 	MonoImage *image;
-	MBTree **sp, **stack, *t1, *t2;
+	MBTree **sp, **stack, *t1;
 	register const unsigned char *ip, *end;
 	guint *locals_offsets;
 	guint *args_offsets;
@@ -205,18 +205,18 @@ mono_compile_method (MonoMethod *method)
 			}
 			
 			if (csig->ret->type != MONO_TYPE_VOID) {
-				t1 = ctree_new_leave (MB_TERM_CALL, csig->ret->type);
+				t1 = ctree_new_leaf (MB_TERM_CALL, csig->ret->type);
 				*sp = t1;
 				sp++;
 			} else {
-				t1 = ctree_new_leave (MB_TERM_CALL, MONO_TYPE_VOID);
+				t1 = ctree_new_leaf (MB_TERM_CALL, MONO_TYPE_VOID);
 				ADD_TREE (t1);
 			}
 			break;
 		}
 		case CEE_LDC_I4_S: 
 			++ip;
-			t1 = ctree_new_leave (MB_TERM_CONST, MONO_TYPE_I4);
+			t1 = ctree_new_leaf (MB_TERM_CONST, MONO_TYPE_I4);
 			t1->data.i = *ip;
 			*sp = t1;
 			++ip;
@@ -225,7 +225,7 @@ mono_compile_method (MonoMethod *method)
 
 		case CEE_LDC_I4: 
 			++ip;
-			t1 = ctree_new_leave (MB_TERM_CONST, MONO_TYPE_I4);
+			t1 = ctree_new_leaf (MB_TERM_CONST, MONO_TYPE_I4);
 			t1->data.i = read32 (ip);
 			*sp = t1;
 			ip += 4;
@@ -242,7 +242,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDC_I4_6:
 		case CEE_LDC_I4_7:
 		case CEE_LDC_I4_8:
-			t1 = ctree_new_leave (MB_TERM_CONST, MONO_TYPE_I4);
+			t1 = ctree_new_leaf (MB_TERM_CONST, MONO_TYPE_I4);
 			t1->data.i = (*ip) - CEE_LDC_I4_0;
 			*sp = t1;
 			++sp;
@@ -256,7 +256,7 @@ mono_compile_method (MonoMethod *method)
 			int n = (*ip) - CEE_LDLOC_0;
 			++ip;
 
-			t1 = ctree_new_leave (MB_TERM_LDLOC, LOCAL_TYPE (n)->type);
+			t1 = ctree_new_leaf (MB_TERM_LDLOC, LOCAL_TYPE (n)->type);
 			t1->data.i = LOCAL_POS (n);
 			*sp = t1;
 			++sp;
@@ -297,7 +297,7 @@ mono_compile_method (MonoMethod *method)
 
 		case CEE_BR_S: 
 			++ip;
-			t1 = ctree_new_leave (MB_TERM_BR, 0);
+			t1 = ctree_new_leaf (MB_TERM_BR, 0);
 			t1->data.i = (signed char) *ip;
 			ADD_TREE (t1);
 			++ip;
@@ -305,7 +305,7 @@ mono_compile_method (MonoMethod *method)
 
 		case CEE_BR:
 			++ip;
-			t1 = ctree_new_leave (MB_TERM_BR, 0);
+			t1 = ctree_new_leaf (MB_TERM_BR, 0);
 			t1->data.i = (gint32) read32(ip);
 			ADD_TREE (t1);
 			ip += 4;
@@ -377,7 +377,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDARG_3: {
 			int n = (*ip) - CEE_LDARG_0;
 			++ip;
-			t1 = ctree_new_leave (MB_TERM_LDARG, ARG_TYPE (n)->type);
+			t1 = ctree_new_leaf (MB_TERM_LDARG, ARG_TYPE (n)->type);
 			t1->data.i = ARG_POS (n);
 			*sp = t1;
 			++sp;
@@ -391,7 +391,7 @@ mono_compile_method (MonoMethod *method)
 				++ip;
 				n = read32 (ip);
 				ip += 4;
-				t1 = ctree_new_leave (MB_TERM_LDARG, ARG_TYPE (n)->type);
+				t1 = ctree_new_leaf (MB_TERM_LDARG, ARG_TYPE (n)->type);
 				t1->data.i = ARG_POS (n);
 				*sp = t1;
 				++sp;
