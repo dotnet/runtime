@@ -3165,6 +3165,41 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 	}
 }
 
+/*
+ * fixup_cattrs:
+ *
+ *   The CUSTOM_ATTRIBUTE table might contain METHODDEF tokens whose final
+ * value is not known when the table is emitted.
+ */
+static void
+fixup_cattrs (MonoDynamicImage *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 type, i, idx, token;
+	MonoObject *ctor;
+
+	table = &assembly->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+
+	for (i = 0; i < table->rows; ++i) {
+		values = table->values + ((i + 1) * MONO_CUSTOM_ATTR_SIZE);
+
+		type = values [MONO_CUSTOM_ATTR_TYPE];
+		if ((type & CUSTOM_ATTR_TYPE_MASK) == CUSTOM_ATTR_TYPE_METHODDEF) {
+			idx = type >> CUSTOM_ATTR_TYPE_BITS;
+			token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
+			ctor = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+			g_assert (ctor);
+
+			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
+				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
+				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, m));
+				values [MONO_CUSTOM_ATTR_TYPE] = (idx << CUSTOM_ATTR_TYPE_BITS) | CUSTOM_ATTR_TYPE_METHODDEF;
+			}
+		}
+	}
+}
+
 static void
 assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly, MonoReflectionResource *rsrc, guint32 implementation)
 {
@@ -3474,6 +3509,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 
 	/* fixup tokens */
 	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
+	fixup_cattrs (assembly);
 }
 
 /*
@@ -5681,7 +5717,7 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 	return mono_custom_attrs_from_index (assembly->image, idx);
 }
 
-MonoCustomAttrInfo*
+static MonoCustomAttrInfo*
 mono_custom_attrs_from_module (MonoImage *image)
 {
 	MonoCustomAttrInfo *cinfo;
