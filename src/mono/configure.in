@@ -322,6 +322,7 @@ dnl End of libgc checks
 dnl
 
 if test x$platform_win32 = xno; then
+	AC_CHECK_FUNCS(getpwuid_r)
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
 	dnl *** (If we were using autoconf 2.50 we'd use AC_SYS_LARGEFILE) ***

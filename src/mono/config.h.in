@@ -56,6 +56,9 @@
 /* Define to 1 if you have the <gc.h> header file. */
 #undef HAVE_GC_H
 
+/* Define to 1 if you have the `getpwuid_r' function. */
+#undef HAVE_GETPWUID_R
+
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
 
