@@ -162,7 +162,7 @@ ldstr:
 newobj:
 castclass:
 isinst:
-conv.r.un:
+conv.r.un: dest:f src1:i len:28
 unbox:
 throw: src1:i len:8
 ldfld:
@@ -538,9 +538,9 @@ x86_fp_load_i4: dest:f src1:b len:7
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
-adc_imm: dest:i src1:i len:8
+adc_imm: dest:i src1:i len:12
 sbb: dest:i src1:i src2:i len:4
-sbb_imm: dest:i src1:i len:8
+sbb_imm: dest:i src1:i len:12
 br_reg: src1:i len:8
 ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4

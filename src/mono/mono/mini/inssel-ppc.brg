@@ -94,6 +94,10 @@ stmt: OP_SETRET (OP_ICONST) {
 }
 
 stmt: OP_OUTARG (reg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
 	tree->opcode = OP_SETREG;
 	tree->dreg = tree->unused;
 	tree->sreg1 = state->left->reg1;
@@ -101,6 +105,10 @@ stmt: OP_OUTARG (reg) {
 }
 
 stmt: OP_OUTARG (OP_REGVAR) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->tree->dreg);
+		return;
+	}
 	tree->opcode = OP_SETREG;
 	tree->dreg = tree->unused;
 	tree->sreg1 = state->left->tree->dreg;
@@ -108,6 +116,11 @@ stmt: OP_OUTARG (OP_REGVAR) {
 }
 
 stmt: OP_OUTARG (lreg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg2);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm + 4, state->left->reg1);
+		return;
+	}
 	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
 	tree->opcode = OP_SETREG;
 	tree->dreg = tree->unused + 1;
@@ -116,6 +129,10 @@ stmt: OP_OUTARG (lreg) {
 }
 
 stmt: OP_OUTARG (OP_ICONST) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, s->frame_reg, tree->inst_imm, state->left->tree->inst_c0);
+		return;
+	}
 	tree->opcode = OP_SETREGIMM;
 	tree->dreg = tree->unused;
 	tree->inst_c0 = state->left->tree->inst_c0;
@@ -151,6 +168,10 @@ stmt: OP_OUTARG (OP_ICONST) {
 #}
 
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->left->tree->dreg);
+		return;
+	}
 	tree->opcode = OP_SETREG;
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->dreg = tree->unused;
@@ -164,6 +185,10 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 #}
 
 stmt: OP_OUTARG (freg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
 	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = tree->unused;
@@ -171,6 +196,10 @@ stmt: OP_OUTARG (freg) {
 }
 
 stmt: OP_OUTARG_R4 (freg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
 	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = tree->unused;
@@ -178,6 +207,10 @@ stmt: OP_OUTARG_R4 (freg) {
 }
 
 stmt: OP_OUTARG_R8 (freg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
 	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = tree->unused;
@@ -198,7 +231,9 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 		soffset += sizeof (gpointer);
 	}
 	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
-	g_assert (ovf_size == 0); /* not yet supported */
+	if (ovf_size != 0) {
+		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm + (soffset - vt->inst_offset), vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
+	}
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
@@ -209,6 +244,20 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 		tree->opcode = OP_SETREGIMM;
 		tree->dreg = start_reg;
 		tree->inst_c0 = state->left->tree->inst_c0;
+		mono_bblock_add_inst (s->cbb, tree);
+	} else {
+		g_assert_not_reached ();
+	}
+}
+
+stmt: OP_OUTARG_VT (reg) {
+	int start_reg = tree->unused & 0xff;
+	int nregs = (tree->unused >> 8) & 0xff;
+	int ovf_size = (tree->unused >> 16) & 0xffff;
+	if (nregs) {
+		tree->opcode = OP_SETREG;
+		tree->dreg = start_reg;
+		tree->sreg1 = state->left->tree->dreg;
 		mono_bblock_add_inst (s->cbb, tree);
 	} else {
 		g_assert_not_reached ();

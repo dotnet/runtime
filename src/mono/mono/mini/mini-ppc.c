@@ -399,7 +399,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	guint32 opts = 0;
 
 	/* no ppc-specific optimizations yet */
-	*exclude_mask = 0;
+	*exclude_mask = MONO_OPT_INLINE|MONO_OPT_LINEARS;
 	return opts;
 }
 
@@ -455,6 +455,9 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 	return vars;
 }
 
+#define USE_EXTRA_TEMPS ((1<<30) | (1<<29))
+//#define USE_EXTRA_TEMPS 0
+
 GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
@@ -462,6 +465,9 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	int i, top = 32;
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
 		top = 31;
+#if USE_EXTRA_TEMPS
+	top -= 2;
+#endif
 	for (i = 13; i < top; ++i)
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 
@@ -632,6 +638,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
@@ -650,6 +657,35 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			size = mono_class_value_size (sig->params [i]->data.klass, NULL);
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_value_size (sig->params [i]->data.klass, NULL)));
+#if PPC_PASS_STRUCTS_BY_VALUE
+			{
+				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+				cinfo->args [n].regtype = RegTypeStructByVal;
+				if (gr <= PPC_LAST_ARG_REG) {
+					int rest = PPC_LAST_ARG_REG - gr + 1;
+					int n_in_regs = rest >= nwords? nwords: rest;
+					cinfo->args [n].size = n_in_regs;
+					cinfo->args [n].vtsize = nwords - n_in_regs;
+					cinfo->args [n].reg = gr;
+					gr += n_in_regs;
+				} else {
+					cinfo->args [n].size = 0;
+					cinfo->args [n].vtsize = nwords;
+				}
+				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
+				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
+				stack_size += nwords * sizeof (gpointer);
+			}
+#else
+			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			cinfo->args [n].regtype = RegTypeStructByAddr;
+#endif
+			n++;
+			break;
+		}
+		case MONO_TYPE_TYPEDBYREF: {
+			int size = sizeof (MonoTypedRef);
+			/* keep in sync or merge with the valuetype case */
 #if PPC_PASS_STRUCTS_BY_VALUE
 			{
 				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
@@ -751,6 +787,7 @@ enum_retvalue:
 				goto enum_retvalue;
 			}
 			break;
+		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -964,8 +1001,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg->unused = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
 				arg->inst_imm = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeBase) {
-				arg->opcode = OP_OUTARG_VT;
-				arg->unused = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
+				arg->opcode = OP_OUTARG;
+				arg->unused = ainfo->reg | (ainfo->size << 8);
 				arg->inst_imm = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeFP) {
 				arg->opcode = OP_OUTARG_R8;
@@ -1759,7 +1796,7 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 }
 
 /* use ppc_r3-ppc_10 as temp registers */
-#define PPC_CALLER_REGS (0xff<<3)
+#define PPC_CALLER_REGS ((0xff<<3) | USE_EXTRA_TEMPS)
 #define PPC_CALLER_FREGS (0xff<<2)
 
 /*
@@ -2554,14 +2591,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SETREGIMM:
 			ppc_load (code, ins->dreg, ins->inst_c0);
 			break;
-		/*case OP_CLASS:
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_CLASS, (gpointer)ins->inst_c0);
-			ppc_load (code, ins->dreg, 0xff00ff00);
+		case OP_AOTCONST:
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			ppc_lis (code, ins->dreg, 0);
+			ppc_ori (code, ins->dreg, ins->dreg, 0);
 			break;
-		case OP_IMAGE:
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_IMAGE, (gpointer)ins->inst_c0);
-			ppc_load (code, ins->dreg, 0xff00ff00);
-			break;*/
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
@@ -2762,16 +2796,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADR4_MEMBASE:
 			ppc_lfs (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			break;
+		case CEE_CONV_R_UN: {
+			static const guint64 adjust_val = 0x4330000000000000UL;
+			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
+			ppc_stw (code, ppc_r0, -8, ppc_sp);
+			ppc_stw (code, ins->sreg1, -4, ppc_sp);
+			ppc_load (code, ppc_r11, &adjust_val);
+			ppc_lfd (code, ppc_f0, 0, ppc_r11);
+			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
+			break;
+		}
 		case CEE_CONV_R4: /* FIXME: change precision */
 		case CEE_CONV_R8: {
-			static const guint64 adjust_val = 0x4330000000000000UL;
-			ppc_li (code, ppc_r0, 0);
+			static const guint64 adjust_val = 0x4330000080000000UL;
+			// addis is special for ppc_r0
 			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
-			ppc_stw (code, ins->sreg1, -8, ppc_sp);
-			ppc_xoris (code, ppc_r11, ins->sreg1, 0x8000);
+			ppc_stw (code, ppc_r0, -8, ppc_sp);
+			ppc_xoris (code, ins->sreg1, ppc_r11, 0x8000);
 			ppc_stw (code, ppc_r11, -4, ppc_sp);
 			ppc_lfd (code, ins->dreg, -8, ppc_sp);
-			ppc_li (code, ppc_r11, &adjust_val);
+			ppc_load (code, ppc_r11, &adjust_val);
 			ppc_lfd (code, ppc_f0, 0, ppc_r11);
 			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
 			break;
@@ -2946,6 +2990,12 @@ mono_arch_register_lowlevel_calls (void)
 	mono_register_jit_icall (leave_method, "mono_leave_method", NULL, TRUE);
 }
 
+#define patch_lis_ori(ip,val) do {\
+		guint16 *__lis_ori = (guint16*)(ip);	\
+		__lis_ori [1] = (((guint32)(val)) >> 16) & 0xffff;	\
+		__lis_ori [3] = ((guint32)(val)) & 0xffff;	\
+	} while (0)
+
 void
 mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
@@ -3009,8 +3059,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IMAGE:
 		case MONO_PATCH_INFO_FIELD:
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
+			/* from OP_AOTCONST : lis + ori */
+			patch_lis_ori (ip, patch_info->data.target);
 			continue;
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
@@ -3018,13 +3068,12 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
 			continue;
 		case MONO_PATCH_INFO_IID:
-			g_assert_not_reached ();
 			mono_class_init (patch_info->data.klass);
-			*((guint32 *)(ip + 1)) = patch_info->data.klass->interface_id;
+			patch_lis_ori (ip, patch_info->data.klass->interface_id);
 			continue;			
 		case MONO_PATCH_INFO_VTABLE:
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = mono_class_vtable (domain, patch_info->data.klass);
+			target = mono_class_vtable (domain, patch_info->data.klass);
+			patch_lis_ori (ip, target);
 			continue;
 		case MONO_PATCH_INFO_CLASS_INIT:
 			target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
@@ -3038,9 +3087,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				if (run_cctors)
 					mono_runtime_class_init (vtable);
 			}
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = 
-				(char*)vtable->data + patch_info->data.field->offset;
+			target = (char*)vtable->data + patch_info->data.field->offset;
+			patch_lis_ori (ip, target);
 			continue;
 		}
 		case MONO_PATCH_INFO_EXC_NAME:
@@ -3048,10 +3096,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
 			continue;
 		case MONO_PATCH_INFO_LDSTR:
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = 
-				mono_ldstr (domain, patch_info->data.token->image, 
+			target = mono_ldstr (domain, patch_info->data.token->image, 
 							mono_metadata_token_index (patch_info->data.token->token));
+			patch_lis_ori (ip, target);
 			continue;
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
 			gpointer handle;
@@ -3062,9 +3109,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			mono_class_init (handle_class);
 			mono_class_init (mono_class_from_mono_type (handle));
 
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = 
-				mono_type_get_object (domain, handle);
+			patch_lis_ori (ip, handle);
 			continue;
 		}
 		case MONO_PATCH_INFO_LDTOKEN: {
@@ -3075,8 +3120,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 								   patch_info->data.token->token, &handle_class);
 			mono_class_init (handle_class);
 
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = handle;
+			patch_lis_ori (ip, handle);
 			continue;
 		}
 		default:
@@ -3142,6 +3186,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
 		cfg->used_int_regs |= 1 << 31;
 	}
+	cfg->used_int_regs |= USE_EXTRA_TEMPS;
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
@@ -3237,8 +3282,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				ppc_mr (code, inst->dreg, ainfo->reg);
 			else if (ainfo->regtype == RegTypeFP)
 				ppc_fmr (code, inst->dreg, ainfo->reg);
-			else
+			else if (ainfo->regtype == RegTypeBase) {
+				ppc_lwz (code, ppc_r11, 0, ppc_sp);
+				ppc_lwz (code, inst->dreg, ainfo->offset, ppc_r11);
+			} else
 				g_assert_not_reached ();
+
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
@@ -3257,6 +3306,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				default:
 					ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+				}
+			} else if (ainfo->regtype == RegTypeBase) {
+				/* load the previous stack pointer in r11 */
+				ppc_lwz (code, ppc_r11, 0, ppc_sp);
+				ppc_lwz (code, ppc_r0, ainfo->offset, ppc_r11);
+				switch (ainfo->size) {
+				case 1:
+					ppc_stb (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
+					break;
+				case 2:
+					ppc_sth (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
+					break;
+				case 8:
+					ppc_stw (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
+					ppc_lwz (code, ppc_r0, ainfo->offset + 4, ppc_r11);
+					ppc_stw (code, ppc_r0, inst->inst_offset + 4, inst->inst_basereg);
+					break;
+				default:
+					ppc_stw (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 				}
 			} else if (ainfo->regtype == RegTypeFP) {
 				if (ainfo->size == 8)
