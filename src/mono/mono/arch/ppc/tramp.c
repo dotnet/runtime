@@ -22,7 +22,7 @@
 #endif
 #endif
 
-#define DEBUG(x) x
+#define DEBUG(x)
 
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
@@ -64,9 +64,22 @@ flush_icache (guint8 *code, guint size)
 #define PROLOG_INS 8
 #define CALL_INS   2
 #define EPILOG_INS 6
-#define MINIMAL_STACK_SIZE 5
 #define FLOAT_REGS 8
 #define GENERAL_REGS 8
+#ifdef __APPLE__
+#define MINIMAL_STACK_SIZE 10
+#define ALWAYS_ON_STACK(s) s
+#define FP_ALSO_IN_REG(s) s
+#define RET_ADDR_OFFSET 8
+#define STACK_PARAM_OFFSET 24
+#else
+#define MINIMAL_STACK_SIZE 5
+#define ALWAYS_ON_STACK(s)
+#define FP_ALSO_IN_REG(s) s
+#define ALIGN_DOUBLES
+#define RET_ADDR_OFFSET 4
+#define STACK_PARAM_OFFSET 8
+#endif
 
 static void inline
 add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
@@ -76,17 +89,24 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 			*stack_size += 4;
 			*code_size += 8;    /* load from stack, save on stack */
 		} else {
+			ALWAYS_ON_STACK (*stack_size += 4);
 			*code_size += 4;    /* load from stack */
 		}
 	} else {
 		if (*gr >= GENERAL_REGS - 1) {
-			*stack_size += 8 + (*stack_size % 8);
+			*stack_size += 8;
+#ifdef ALIGN_DOUBLES
+			*stack_size += (*stack_size % 8);
+#endif
 			*code_size += 16;   /* 2x load from stack, 2x save to stack */
 		} else {
-			*code_size += 16;   /* 2x load from stack */
+			ALWAYS_ON_STACK (*stack_size += 8);
+			*code_size += 8;   /* 2x load from stack */
 		}
-		if ((*gr) && 1)
+#ifdef ALIGN_DOUBLES
+		if ((*gr) & 1)
 			(*gr) ++;
+#endif
 		(*gr) ++;
 	}
 	(*gr) ++;
@@ -105,9 +125,11 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size, 
 	if (sig->hasthis) {
 		add_general (&gr, stack_size, code_size, TRUE);
 	}
-
+        DEBUG(printf("params: %d\n", sig->param_count));
 	for (i = 0; i < sig->param_count; ++i) {
+                DEBUG(printf("param %d: ", i));
 		if (sig->params [i]->byref) {
+                        DEBUG(printf("byref\n"));
 			add_general (&gr, stack_size, code_size, TRUE);
 			continue;
 		}
@@ -163,10 +185,21 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size, 
 			add_general (&gr, stack_size, code_size, FALSE);
 			break;
 		case MONO_TYPE_R4:
+			if (fr < 7) {
+				*code_size += 4;
+				fr ++;
+				FP_ALSO_IN_REG (gr ++);
+				ALWAYS_ON_STACK (*stack_size += 4);
+			} else {
+				NOT_IMPLEMENTED ("R4 arg");
+			}
+			break;
 		case MONO_TYPE_R8:
 			if (fr < 7) {
 				*code_size += 4;
 				fr ++;
+				FP_ALSO_IN_REG (gr += 2);
+				ALWAYS_ON_STACK (*stack_size += 8);
 			} else {
 				NOT_IMPLEMENTED ("R8 arg");
 			}
@@ -239,7 +272,7 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 	ppc_stwu (p, ppc_r1, -stack_size, ppc_r1);     /* sp      <--- sp - stack_size, sp[0] <---- sp save sp, alloc stack */
 	ppc_mflr (p, ppc_r0);                          /* r0      <--- LR */
 	ppc_stw  (p, ppc_r31, stack_size - 4, ppc_r1); /* sp[+4]  <--- r31     save r31 */
-	ppc_stw  (p, ppc_r0, stack_size + 4, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
+	ppc_stw  (p, ppc_r0, stack_size + RET_ADDR_OFFSET, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
 	ppc_mr   (p, ppc_r31, ppc_r1);                 /* r31     <--- sp */
 
 	return p;
@@ -260,6 +293,7 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
 				ppc_lwz  (p, ppc_r3 + gr, 0, ppc_r3 + gr); \
 				gr ++; \
+                                ALWAYS_ON_STACK (stack_par_pos += 4); \
 			} else { \
 				ppc_lwz  (p, ppc_r11, i*16, ARG_BASE); \
 				ppc_lwz  (p, ppc_r11, 0, ppc_r11); \
@@ -274,7 +308,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gbo
 	guint32 simpletype;
 
 	fr = gr = 0;
-	stack_par_pos = 8;
+	stack_par_pos = STACK_PARAM_OFFSET;
 
 	ppc_stw  (p, ppc_r4, stack_size - 12, ppc_r31);               /* preserve "retval", sp[+8] */
 
@@ -295,6 +329,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gbo
 		} else
 			ppc_mr (p, ppc_r3, ppc_r5);
 		gr ++;
+                ALWAYS_ON_STACK (stack_par_pos += 4);
 	}
 
 	if (use_memcpy) {
@@ -341,6 +376,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gbo
 				ppc_lwz (p, ppc_r3, stack_size - 12, ppc_r31);
 				ppc_lwz (p, ppc_r3, 0, ppc_r3);
 				gr ++;
+                                ALWAYS_ON_STACK (stack_par_pos += 4);
 			} else {
 				NOT_IMPLEMENTED ("retval valuetype <= 8 bytes");
 			}
@@ -395,21 +431,35 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gbo
 			break;
 		}
 		case MONO_TYPE_I8:
+DEBUG(printf("Mono_Type_i8. gr = %d, arg_base = %d\n", gr, ARG_BASE));                
+#ifdef ALIGN_DOUBLES
+			if (gr & 1)
+				gr++;
+#endif
 			if (gr < 7) {
-				if (gr & 1)
-					gr ++;
 				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
-				gr ++;
-				ppc_lwz  (p, ppc_r3 + gr, i*16 + 4, ARG_BASE);
-				gr ++;
-			} else {
-				NOT_IMPLEMENTED ("i8 on stack");
+				ppc_lwz  (p, ppc_r3 + gr + 1, i*16 + 4, ARG_BASE);
+                        	ALWAYS_ON_STACK (stack_par_pos += 8);
+			} else if (gr == 7) {
+                                ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
+				ppc_lwz  (p, ppc_r11, i*16 + 4,  ARG_BASE);
+                                ppc_stw  (p, ppc_r11, stack_par_pos + 4, ppc_r1);
+                        	stack_par_pos += 8;
+                        } else {
+                                ppc_lwz  (p, ppc_r11, i*16, ARG_BASE);
+                                ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1);
+				ppc_lwz  (p, ppc_r11, i*16 + 4,  ARG_BASE);
+                                ppc_stw  (p, ppc_r11, stack_par_pos + 4, ppc_r1);
+                        	stack_par_pos += 8;
 			}
+			gr += 2;
 			break;
 		case MONO_TYPE_R4:
 			if (fr < 7) {
 				ppc_lfs  (p, ppc_f1 + fr, i*16, ARG_BASE);
 				fr ++;
+                                FP_ALSO_IN_REG (gr ++);
+                                ALWAYS_ON_STACK (stack_par_pos += 4);
 			} else {
 				NOT_IMPLEMENTED ("r4 on stack");
 			}
@@ -418,6 +468,8 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gbo
 			if (fr < 7) {
 				ppc_lfd  (p, ppc_f1 + fr, i*16, ARG_BASE);
 				fr ++;
+                                FP_ALSO_IN_REG (gr += 2);
+                                ALWAYS_ON_STACK (stack_par_pos += 8);
 			} else {
 				NOT_IMPLEMENTED ("r8 on stack");
 			}
@@ -529,7 +581,7 @@ emit_epilog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 {
 	/* function epilog */
 	ppc_lwz  (p, ppc_r11, 0,  ppc_r1);        /* r11     <--- sp[0]   load backchain from caller's function */
-	ppc_lwz  (p, ppc_r0, 4, ppc_r11);         /* r0      <--- r11[4]  load return address */
+	ppc_lwz  (p, ppc_r0, RET_ADDR_OFFSET, ppc_r11);         /* r0      <--- r11[4]  load return address */
 	ppc_mtlr (p, ppc_r0);                     /* LR      <--- r0      set return address */
 	ppc_lwz  (p, ppc_r31, -4, ppc_r11);       /* r31     <--- r11[-4] restore r31 */
 	ppc_mr   (p, ppc_r1, ppc_r11);            /* sp      <--- r11     restore stack */
@@ -578,7 +630,11 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 }
 
 
+#ifdef __APPLE__
+#define MINV_POS  24   /* MonoInvocation structure offset on stack */
+#else
 #define MINV_POS  8   /* MonoInvocation structure offset on stack */
+#endif
 #define STACK_POS (MINV_POS - sizeof (stackval) * sig->param_count)
 #define OBJ_POS   8
 #define TYPE_OFFSET (G_STRUCT_OFFSET (stackval, type))
@@ -632,7 +688,7 @@ mono_create_method_pointer (MonoMethod *method)
 	ppc_stwu (p, ppc_r1, -stack_size, ppc_r1);     /* sp      <--- sp - stack_size, sp[0] <---- sp save sp, alloc stack */
 	ppc_mflr (p, ppc_r0);                          /* r0      <--- LR */
 	ppc_stw  (p, ppc_r31, stack_size - 4, ppc_r1); /* sp[+4]  <--- r31     save r31 */
-	ppc_stw  (p, ppc_r0, stack_size + 4, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
+	ppc_stw  (p, ppc_r0, stack_size + RET_ADDR_OFFSET, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
 	ppc_mr   (p, ppc_r31, ppc_r1);                 /* r31     <--- sp */
 
 	/* let's fill MonoInvocation */
@@ -801,7 +857,7 @@ mono_create_method_pointer (MonoMethod *method)
 
 	/* epilog */
 	ppc_lwz  (p, ppc_r11, 0,  ppc_r1);        /* r11     <--- sp[0]   load backchain from caller's function */
-	ppc_lwz  (p, ppc_r0, 4, ppc_r11);         /* r0      <--- r11[4]  load return address */
+	ppc_lwz  (p, ppc_r0, RET_ADDR_OFFSET, ppc_r11);         /* r0      <--- r11[4]  load return address */
 	ppc_mtlr (p, ppc_r0);                     /* LR      <--- r0      set return address */
 	ppc_lwz  (p, ppc_r31, -4, ppc_r11);       /* r31     <--- r11[-4] restore r31 */
 	ppc_mr   (p, ppc_r1, ppc_r11);            /* sp      <--- r11     restore stack */
