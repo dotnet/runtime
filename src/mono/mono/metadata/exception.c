@@ -58,7 +58,7 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
  */
 static MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
-				      const char *name, MonoString *a1, MonoString *a2)
+									  const char *name, MonoString *a1, MonoString *a2)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoClass *klass;
@@ -89,6 +89,34 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 	args [1] = a2;
 	mono_runtime_invoke (method, o, args, NULL);
 	return (MonoException *) o;
+}
+
+/**
+ * mono_exception_from_name_msg:
+ * @image: the Mono image where to look for the class
+ * @name_space: the namespace for the class
+ * @name: class name
+ * @msg: the message to embed inside the exception
+ *
+ * Creates an exception and initializes its message field.
+ *
+ * Returns: the initialized exception instance.
+ */
+static MonoException *
+mono_exception_from_name_msg (MonoImage *image, const char *name_space,
+							  const char *name, const guchar *msg)
+{
+	MonoException *ex;
+	MonoDomain *domain;
+
+    ex = mono_exception_from_name (image, name_space, name);
+
+	domain = ((MonoObject *)ex)->vtable->domain;
+
+	if (msg)
+		ex->message = mono_string_new (domain, msg);
+
+	return ex;
 }
 
 MonoException *
@@ -136,18 +164,8 @@ mono_get_exception_null_reference ()
 MonoException *
 mono_get_exception_execution_engine (const guchar *msg)
 {
-	MonoException *ex;
-	MonoDomain *domain;
-
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-					 "ExecutionEngineException");
-
-	domain = ((MonoObject *)ex)->vtable->domain;
-
-	if (msg)
-		ex->message = mono_string_new (domain, msg);
-
-	return ex;
+	return mono_exception_from_name_msg (mono_defaults.corlib, "System",
+										 "ExecutionEngineException", msg);
 }
 
 MonoException *
@@ -156,15 +174,8 @@ mono_get_exception_serialization (const guchar *msg)
 	MonoException *ex;
 	MonoDomain *domain;
 
-	ex = mono_exception_from_name (mono_defaults.corlib, "System.Runtime.Serialization",
-				       "SerializationException");
-
-	domain = ((MonoObject *)ex)->vtable->domain;
-
-	if (msg)
-		ex->message = mono_string_new (domain, msg);
-
-	return ex;
+	return mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Serialization",
+										 "SerializationException", msg);
 }
 
 MonoException *
@@ -221,8 +232,8 @@ mono_get_exception_argument_null (const guchar *arg)
 	MonoException *ex;
 	MonoDomain *domain;
 
-	ex = (MonoException *)mono_exception_from_name ( 
-	        mono_defaults.corlib, "System", "ArgumentNullException");
+	ex = mono_exception_from_name ( 
+		mono_defaults.corlib, "System", "ArgumentNullException");
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -239,14 +250,11 @@ mono_get_exception_argument (const guchar *arg, const guchar *msg)
 	MonoException *ex;
 	MonoDomain *domain;
 
-	ex = (MonoException *)mono_exception_from_name (
-	        mono_defaults.corlib, "System", "ArgumentException");
+	ex = mono_exception_from_name_msg (
+		mono_defaults.corlib, "System", "ArgumentException", msg);
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
-	if (msg)
-		ex->message = mono_string_new (domain, msg);
-	
 	if (arg)
 		((MonoArgumentException *)ex)->param_name =
 			mono_string_new (domain, arg);
@@ -260,8 +268,8 @@ mono_get_exception_argument_out_of_range (const guchar *arg)
 	MonoException *ex;
 	MonoDomain *domain;
 
-	ex = (MonoException *)mono_exception_from_name (
-	        mono_defaults.corlib, "System", "ArgumentOutOfRangeException");
+	ex = mono_exception_from_name (
+		mono_defaults.corlib, "System", "ArgumentOutOfRangeException");
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -275,34 +283,16 @@ mono_get_exception_argument_out_of_range (const guchar *arg)
 MonoException *
 mono_get_exception_thread_state (const guchar *msg)
 {
-	MonoException *ex;
-	MonoDomain *domain;
-
-	ex = (MonoException *)mono_exception_from_name (
-	        mono_defaults.corlib, "System.Threading", "ThreadStateException");
-
-	domain = ((MonoObject *)ex)->vtable->domain;
-
-	if (msg)
-		ex->message = mono_string_new (domain, msg);
-		
-	return ex;
+	return mono_exception_from_name_msg (mono_defaults.corlib, 
+										 "System.Threading", "ThreadStateException",
+										 msg);
 }
 
 MonoException *
 mono_get_exception_io (const guchar *msg)
 {
-	MonoException *ex;
-	MonoDomain *domain;
-
-	ex=(MonoException *)mono_exception_from_name ( 
-	        mono_defaults.corlib, "System.IO", "IOException");
-
-	domain = ((MonoObject *)ex)->vtable->domain;
-
-	ex->message=mono_string_new (domain, msg);
-	
-	return(ex);
+	return mono_exception_from_name_msg ( 
+		mono_defaults.corlib, "System.IO", "IOException", msg);
 }
 
 MonoException *
@@ -348,15 +338,11 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 MonoException *
 mono_get_exception_synchronization_lock (const guchar *msg)
 {
-	MonoException *ex;
-	MonoDomain *domain;
-	
-	ex=(MonoException *)mono_exception_from_name (mono_defaults.corlib, "System.Threading", "SynchronizationLockException");
-	domain=((MonoObject *)ex)->vtable->domain;
-	
-	if(msg) {
-		ex->message=mono_string_new (domain, msg);
-	}
-	
-	return(ex);
+	return mono_exception_from_name_msg (mono_defaults.corlib, "System.Threading", "SynchronizationLockException", msg);
+}
+
+MonoException *
+mono_get_exception_cannot_unload_appdomain (const guchar *msg)
+{
+	return mono_exception_from_name_msg (mono_defaults.corlib, "System", "CannotUnloadAppDomainException", msg);
 }
