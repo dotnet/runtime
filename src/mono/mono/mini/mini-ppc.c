@@ -37,8 +37,8 @@ mono_arch_regname (int reg) {
 }
 
 /* this function overwrites r0 */
-static guint32*
-emit_memcpy (guint32 *code, int size, int dreg, int doffset, int sreg, int soffset)
+static guint8*
+emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
 	/* unrolled, use the counter in big */
 	while (size >= 4) {
@@ -729,8 +729,7 @@ MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
-	int i, n, type;
-	MonoType *ptype;
+	int i, n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 
@@ -1668,10 +1667,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		spec = ins_spec [ins->opcode];
 		DEBUG (print_ins (i, ins));
-		if (spec [MONO_INST_CLOB] == 'c') {
+		/*if (spec [MONO_INST_CLOB] == 'c') {
 			MonoCallInst * call = (MonoCallInst*)ins;
 			int j;
-		}
+		}*/
 		if (spec [MONO_INST_SRC1]) {
 			if (spec [MONO_INST_SRC1] == 'f')
 				reginfo1 = reginfof;
@@ -2165,14 +2164,14 @@ ppc_patch (guchar *code, guchar *target)
 
 	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 18) {
-		if (target >= 0){
-			if (target < 33554431){
+		if ((glong)target >= 0){
+			if ((glong)target < 33554431){
 				ins = (18 << 26) | ((guint32) target) | (ins & 1) | 2;
 				*(guint32*)code = ins;
 				return;
 			} 
 		} else {
-			if (target > -33554432){
+			if ((glong)target > -33554432){
 				ins = (18 << 26) | (((guint32)target) & 0xfc000000) | (ins & 1) | 2;
 				*(guint32*)code = ins;
 				return;
@@ -2966,7 +2965,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case CEE_CONV_R_UN: {
-			static const guint64 adjust_val = 0x4330000000000000UL;
+			static const guint64 adjust_val = 0x4330000000000000ULL;
 			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
 			ppc_stw (code, ppc_r0, -8, ppc_sp);
 			ppc_stw (code, ins->sreg1, -4, ppc_sp);
@@ -2978,7 +2977,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case CEE_CONV_R4: /* FIXME: change precision */
 		case CEE_CONV_R8: {
-			static const guint64 adjust_val = 0x4330000080000000UL;
+			static const guint64 adjust_val = 0x4330000080000000ULL;
 			// addis is special for ppc_r0
 			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
 			ppc_stw (code, ppc_r0, -8, ppc_sp);
@@ -3232,7 +3231,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 int
 mono_arch_max_epilog_size (MonoCompile *cfg)
 {
-	int exc_count = 0, max_epilog_size = 16 + 20*4;
+	int max_epilog_size = 16 + 20*4;
 	MonoJumpInfo *patch_info;
 	
 	if (cfg->method->save_lmf)
@@ -3267,6 +3266,8 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
  * 
  *   ------------------- sp
  *   	MonoLMF structure or saved registers
+ *   -------------------
+ *   	spilled regs
  *   -------------------
  *   	locals
  *   -------------------

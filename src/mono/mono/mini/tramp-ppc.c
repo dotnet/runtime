@@ -471,14 +471,10 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	return code;
 }
 
-MonoJitInfo*
-mono_arch_create_jump_trampoline (MonoMethod *method)
-{
-	guint8 *code, *buf, *tramp = NULL;
+static MonoJitInfo*
+create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
+	guint8 *code, *buf;
 	MonoJitInfo *ji;
-	MonoDomain* domain = mono_domain_get ();
-	
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
@@ -517,6 +513,16 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	return ji;
 }
 
+MonoJitInfo*
+mono_arch_create_jump_trampoline (MonoMethod *method)
+{
+	guint8 *tramp;
+	MonoDomain* domain = mono_domain_get ();
+	
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	return create_specific_tramp (method, tramp, domain);
+}
+
 /**
  * arch_create_jit_trampoline:
  * @method: pointer to the method info
@@ -539,8 +545,8 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
-	guint8 *code, *buf;
-	static guint8 *vc = NULL;
+	guint8 *tramp;
+	MonoJitInfo *ji;
 	MonoDomain* domain = mono_domain_get ();
 
 	/* previously created trampoline code */
@@ -550,51 +556,13 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
-	vc = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-
-	/* This is the method-specific part of the trampoline. Its purpose is
-	to provide the generic part with the MonoMethod *method pointer. We'll
-	use r11 to keep that value, for instance. However, the generic part of
-	the trampoline relies on r11 having the same value it had before coming
-	here, so we must save it before. */
-	//code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
-	// FIXME: should pass the domain down tot his function
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
-	mono_domain_unlock (domain);
-
-	/* Save r11. There's nothing magic in the '44', its just an arbitrary
-	position - see above */
-	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);
-	
-	/* Now save LR - we'll overwrite it now */
-	ppc_mflr (buf, ppc_r11);
-	ppc_stw  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
-	
-	/* Prepare the jump to the generic trampoline code.*/
-	ppc_lis  (buf, ppc_r11, (guint32) vc >> 16);
-	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) vc & 0xffff);
-	ppc_mtlr (buf, ppc_r11);
-	
-	/* And finally put 'method' in r11 and fly! */
-	ppc_lis  (buf, ppc_r11, (guint32) method >> 16);
-	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) method & 0xffff);
-	ppc_blr  (buf);
-	
-	/* Flush instruction cache, since we've generated code */
-	mono_arch_flush_icache (code, buf - code);
-		
-	/* Sanity check */
-	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
-	
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	/* FIXME: should pass the domain down tot his function */
+	ji = create_specific_tramp (method, tramp, domain);
 	/* Store trampoline address */
-	method->info = code;
-
-	mono_jit_stats.method_trampolines++;
-
-	return code;
+	method->info = ji->code_start;
+	return ji->code_start;
 }
-
 
 /**
  * mono_arch_create_class_init_trampoline:
