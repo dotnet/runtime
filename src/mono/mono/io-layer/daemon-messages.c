@@ -16,6 +16,7 @@
 #include <sys/socket.h>
 /* Freebsd needs this included explicitly, but it doesn't hurt on Linux */
 #include <sys/uio.h>
+#include <semaphore.h>
 
 #ifndef HAVE_MSG_NOSIGNAL
 #include <signal.h>
