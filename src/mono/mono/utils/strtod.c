@@ -1190,7 +1190,7 @@ ratio
 	return da / db;
 }
 
- static double
+ static const double
 tens[] = {
 		1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
 		1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
@@ -1200,19 +1200,19 @@ tens[] = {
 #endif
 		};
 
- static double
+ static const double
 #ifdef IEEE_Arith
 bigtens[] = { 1e16, 1e32, 1e64, 1e128, 1e256 };
-static double tinytens[] = { 1e-16, 1e-32, 1e-64, 1e-128, 1e-256 };
+static const double tinytens[] = { 1e-16, 1e-32, 1e-64, 1e-128, 1e-256 };
 #define n_bigtens 5
 #else
 #ifdef IBM
 bigtens[] = { 1e16, 1e32, 1e64 };
-static double tinytens[] = { 1e-16, 1e-32, 1e-64 };
+static const double tinytens[] = { 1e-16, 1e-32, 1e-64 };
 #define n_bigtens 3
 #else
 bigtens[] = { 1e16, 1e32 };
-static double tinytens[] = { 1e-16, 1e-32 };
+static const double tinytens[] = { 1e-16, 1e-32 };
 #define n_bigtens 2
 #endif
 #endif
