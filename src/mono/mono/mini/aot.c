@@ -392,7 +392,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 #endif
 	info->aot_name = aot_name;
 	info->methods = mono_g_hash_table_new (NULL, NULL);
+#ifdef MONO_ARCH_HAVE_PIC_AOT
 	info->got = got;
+#endif
 	sscanf (opt_flags, "%d", &info->opts);
 
 	/* Read image table */
