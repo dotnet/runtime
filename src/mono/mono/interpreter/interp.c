@@ -96,6 +96,7 @@ void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
+static guint32 die_on_exception = 0;
 static guint32 frame_thread_id = 0;
 
 static void
@@ -598,7 +599,7 @@ dump_frame (MonoInvocation *inv)
 			opname = mono_opcode_names [codep];
 			codep = inv->ip - hd->code;
 		}
-		g_print ("#%d: 0x%05x %s in %s.%s::%s (", i, codep, opname,
+		g_print ("#%d: 0x%05x %-10s in %s.%s::%s (", i, codep, opname,
 						k->name_space, k->name, inv->method->name);
 		dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
 		g_print (")\n");
@@ -3266,6 +3267,9 @@ array_constructed:
 		MonoExceptionClause *clause;
 		char *message;
 		MonoObject *ex_obj;
+
+		if (die_on_exception)
+			goto die_on_ex;
 		
 		for (inv = frame; inv; inv = inv->parent) {
 			if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
@@ -3301,6 +3305,7 @@ array_constructed:
 		/*
 		 * If we get here, no handler was found: print a stack trace.
 		 */
+die_on_ex:
 		ex_obj = (MonoObject*)frame->ex;
 		message = frame->ex->message? mono_string_to_utf8 (frame->ex->message): NULL;
 		g_print ("Unhandled exception %s.%s %s.\n", ex_obj->klass->name_space, ex_obj->klass->name,
@@ -3431,6 +3436,7 @@ usage (void)
 	fprintf (stderr,
 		 "Valid Options are:\n"
 		 "--trace\n"
+		 "--dieonex\n"
 		 "--profile\n"
 		 "--debug method_name\n"
 		 "--opcode-count\n");
@@ -3658,11 +3664,13 @@ output_profile (GList *funcs)
 	}
 }
 
+static MonoException * segv_exception = NULL;
+
 static void
 segv_handler (int signum)
 {
 	signal (signum, segv_handler);
-	mono_raise_exception (mono_get_exception_null_reference ());
+	mono_raise_exception (segv_exception);
 }
 
 int 
@@ -3681,6 +3689,8 @@ main (int argc, char *argv [])
 			tracing = 1;
 		if (strcmp (argv [i], "--traceops") == 0)
 			tracing = 2;
+		if (strcmp (argv [i], "--dieonex") == 0)
+			die_on_exception = 1;
 		if (strcmp (argv [i], "--profile") == 0)
 			profiling = g_hash_table_new (g_direct_hash, g_direct_equal);
 		if (strcmp (argv [i], "--opcode-count") == 0)
@@ -3728,6 +3738,8 @@ main (int argc, char *argv [])
 	test_load_class (assembly->image);
 #else
 	check_corlib (mono_defaults.corlib);
+	segv_exception = mono_get_exception_null_reference ();
+	segv_exception->message = mono_string_new ("Segmentation fault");
 	signal (SIGSEGV, segv_handler);
 	/*
 	 * skip the program name from the args.
