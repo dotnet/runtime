@@ -2038,7 +2038,7 @@ assembly_add_resource (MonoDynamicAssembly *assembly, MonoReflectionResource *rs
 	table->rows++;
 	alloc_table (table, table->rows);
 	values = table->values + table->next_idx * MONO_FILE_SIZE;
-	values [MONO_FILE_FLAGS] = 1; /* nometadata */
+	values [MONO_FILE_FLAGS] = FILE_CONTAINS_NO_METADATA;
 	values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, sname);
 	g_free (sname);
 
@@ -2085,7 +2085,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	table = &assembly->tables [MONO_TABLE_ASSEMBLY];
 	alloc_table (table, 1);
 	values = table->values + MONO_ASSEMBLY_SIZE;
-	values [MONO_ASSEMBLY_HASH_ALG] = 0x8004;
+	values [MONO_ASSEMBLY_HASH_ALG] = ASSEMBLY_HASH_SHA1;
 	name = mono_string_to_utf8 (assemblyb->name);
 	values [MONO_ASSEMBLY_NAME] = string_heap_insert (&assembly->sheap, name);
 	g_free (name);

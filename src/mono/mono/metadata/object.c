@@ -20,6 +20,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/threadpool.h>
+#include <mono/metadata/marshal.h>
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/marshal.h"
 #if HAVE_BOEHM_GC
