@@ -17,39 +17,42 @@
  * that I may as well take advantage of sysV shared memory too.
  * Actually, semaphores seem to be buggy, or I was using them
  * incorrectly :-).  I've replaced the sysV semaphore with a shared
- * integer controlled with Interlocked functions.
-
+ * integer controlled with Interlocked functions.  And I've since
+ * replaced that with a separate process to serialise access to the
+ * shared memory, to avoid the possibility of DOS by leaving the
+ * shared memory locked, and also to allow the shared memory to be
+ * cleaned up.
+ *
  * mmap() files have the advantage of avoiding namespace collisions,
  * but have the disadvantage of needing cleaning up, and also msync().
  * sysV shared memory has a really stupid way of getting random key
  * IDs, which can lead to collisions.
  *
- * I deliberately don't ever delete the shared memory: I'd like to
- * have been able to set the shared memory segment to destroy itself
- * on last close, but it doesn't support that. (Setting IPC_RMID on a
- * segment causes subsequent shmat() with the same key to get a new
- * segment :-( ).  The function to delete the shared memory segment is
- * only called from a debugging tool (mono/handles/shmdel).
+ * Having tried sysv shm, I tested mmap() and found that MAP_SHARED
+ * makes msync() irrelevent, and both types need cleaning up.  Seeing
+ * as mmap() doesn't suffer from the bonkers method of allocating
+ * segments, it seems to be the best method.
  *
- * w32 processes do not have the POSIX parent-child relationship, so a
- * process handle is available to any other process to find out exit
- * status.  Handles are destroyed when the last reference to them is
- * closed.  New handles can be created for long lasting items such as
- * processes or threads, and also for named synchronisation objects so
- * long as these haven't been deleted by having the last referencing
- * handle closed.
+ * This shared memory is needed because w32 processes do not have the
+ * POSIX parent-child relationship, so a process handle is available
+ * to any other process to find out exit status.  Handles are
+ * destroyed when the last reference to them is closed.  New handles
+ * can be created for long lasting items such as processes or threads,
+ * and also for named synchronisation objects so long as these haven't
+ * been deleted by having the last referencing handle closed.
  */
+
 
 #include <config.h>
 #include <glib.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
-#include <fcntl.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -58,84 +61,155 @@
 
 #undef DEBUG
 
-/*
- * _wapi_shm_attach:
- * @daemon: Is it the daemon trying to attach to the segment
- * @success: Was it a success
- * @shm_id: The ID of the segment created/attached to
- *
- * Attach to the shared memory segment or create it if it did not
- * exist. If it was created and daemon was FALSE a new daemon is
- * forked into existence. Returns the memory area the segment was
- * attached to.
- */
-gpointer _wapi_shm_attach (gboolean daemon, gboolean *success, int *shm_id)
+static guchar *shared_file (void)
 {
-	gpointer shm_seg;
-	key_t key;
-	gboolean fork_daemon=FALSE;
-	struct _WapiHandleShared_list *data;
-	int tries;
+	static guchar *file=NULL;
+	guchar *name, *dir;
 	
-	/*
-	 * This is an attempt to get a unique key id.  The first arg
-	 * to ftok is a path, so when the config file support is done
-	 * we should use that.
-	 */
-	key=ftok (g_get_home_dir (), _WAPI_HANDLE_VERSION);
-	
-try_again:
-	*shm_id=shmget (key, sizeof(struct _WapiHandleShared_list)+
-			_WAPI_SHM_SCRATCH_SIZE, IPC_CREAT | IPC_EXCL | 0600);
-	if(*shm_id==-1 && errno==EEXIST) {
-		/* Cool, we dont have to fork the handle daemon, but
-		 * we still need to try and get the shm_id.
-		 */
-		*shm_id=shmget (key, 0, 0600);
-			
-		/* it's possible that the shared memory segment was
-		 * deleted in between seeing if it exists, and
-		 * attaching it.  If we got an error here, just try
-		 * attaching it again.
-		 */
-		if(*shm_id==-1) {
-			goto try_again;
-		}
-	} else if (*shm_id!=-1) {
-		/* We created the shared memory segment, so we need to
-		 * fork the handle daemon too
-		 */
-		fork_daemon=TRUE;
-
-		/* sysv shared mem is set to all zero when allocated,
-		 * so we don't need to do any more initialisation here
-		 */
-	} else {
-		/* Some error other than EEXIST */
-		g_critical (G_GNUC_PRETTY_FUNCTION ": shmget error: %s",
-			    strerror (errno));
-		exit (-1);
+	if(file!=NULL) {
+		return(file);
 	}
 	
-	/* From now on, we need to delete the shm segment before
-	 * exiting on error if we created it (ie, if
-	 * fork_daemon==TRUE)
+	/* Change the filename whenever the format of the contents
+	 * changes
 	 */
-	shm_seg=shmat (*shm_id, NULL, 0);
-	if(shm_seg==(gpointer)-1) {
-		g_critical (G_GNUC_PRETTY_FUNCTION ": shmat error: %s",
-			    strerror (errno));
+	name=g_strdup_printf ("shared_data-%d", _WAPI_HANDLE_VERSION);
+
+	/* I don't know how nfs affects mmap.  If mmap() of files on
+	 * nfs mounts breaks, then there should be an option to set
+	 * the directory.
+	 */
+	file=g_build_filename (g_get_home_dir (), ".wapi", name, NULL);
+	g_free (name);
+
+	/* No need to check if the dir already exists or check
+	 * mkdir() errors, because on any error the open() call will
+	 * report the problem.
+	 */
+	dir=g_path_get_dirname (file);
+	mkdir (dir, 0755);
+	g_free (dir);
+		
+	return(file);
+}
+
+/*
+ * _wapi_shm_attach:
+ * @success: Was it a success
+ *
+ * Attach to the shared memory file or create it if it did not
+ * exist. If it was created and daemon was FALSE a new daemon is
+ * forked into existence. Returns the memory area the file was mmapped
+ * to.
+ */
+gpointer _wapi_shm_attach (gboolean *success)
+{
+	gpointer shm_seg;
+	int fd;
+	gboolean fork_daemon=FALSE;
+	struct stat statbuf;
+	struct _WapiHandleShared_list *data;
+	int tries;
+	int wanted_size=sizeof(struct _WapiHandleShared_list) +
+		_WAPI_SHM_SCRATCH_SIZE;
+	
+try_again:
+	/* No O_CREAT yet, because we need to initialise the file if
+	 * we have to create it.
+	 */
+	fd=open (shared_file (), O_RDWR, 0600);
+	if(fd==-1 && errno==ENOENT) {
+		/* OK, its up to us to create it.  O_EXCL to avoid a
+		 * race condition where two processes can
+		 * simultaneously try and create the file
+		 */
+		fd=open (shared_file (), O_CREAT|O_EXCL|O_RDWR, 0600);
+		if(fd==-1 && errno==EEXIST) {
+			/* It's possible that the file was created in
+			 * between finding it didn't exist, and trying
+			 * to create it.  Just try opening it again
+			 */
+			goto try_again;
+		} else if (fd==-1) {
+			g_critical (G_GNUC_PRETTY_FUNCTION
+				    ": shared file [%s] open error: %s",
+				    shared_file (), g_strerror (errno));
+			exit (-1);
+		} else {
+			/* We created the file, so we need to expand
+			 * the file and fork the handle daemon too
+			 */
+			if(lseek (fd, wanted_size, SEEK_SET)==-1) {
+				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] lseek error: %s", shared_file (), g_strerror (errno));
+				_wapi_shm_destroy ();
+				exit (-1);
+			}
+			
+			if(write (fd, "", 1)==-1) {
+				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] write error: %s", shared_file (), g_strerror (errno));
+				_wapi_shm_destroy ();
+				exit (-1);
+			}
+			
+			fork_daemon=TRUE;
+
+			/* The contents of the file is set to all
+			 * zero, because it is opened up with lseek,
+			 * so we don't need to do any more
+			 * initialisation here
+			 */
+		}
+	} else if(fd==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+			    ": shared file [%s] open error: %s",
+			    shared_file (), g_strerror (errno));
+		exit (-1);
+	} else {
+		/* We dont need to fork the handle daemon */
+	}
+	
+	/* From now on, we need to delete the file before exiting on
+	 * error if we created it (ie, if fork_daemon==TRUE)
+	 */
+
+	/* Use stat to find the file size (instead of hard coding it)
+	 * so that we can expand the file later if needed (for more
+	 * handles or scratch space, though that will require a tweak
+	 * to the file format to store the count).
+	 */
+	if(fstat (fd, &statbuf)==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION ": fstat error: %s",
+			    g_strerror (errno));
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
 		}
 		exit (-1);
 	}
 
-	if(daemon==TRUE) {
-		/* No more to do in the daemon */
-		*success=TRUE;
-		return(shm_seg);
+	if(statbuf.st_size < wanted_size) {
+#ifdef HAVE_LARGE_FILE_SUPPORT
+		/* Keep gcc quiet... */
+		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %lld, need %d bytes)", shared_file (), statbuf.st_size, wanted_size);
+#else
+		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %ld, need %d bytes)", shared_file (), statbuf.st_size, wanted_size);
+#endif
+		if(fork_daemon==TRUE) {
+			_wapi_shm_destroy ();
+		}
+		exit (-1);
 	}
+	
+	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
+		      fd, 0);
+	if(shm_seg==MAP_FAILED) {
+		g_critical (G_GNUC_PRETTY_FUNCTION ": mmap error: %s",
+			    g_strerror (errno));
+		if(fork_daemon==TRUE) {
+			_wapi_shm_destroy ();
+		}
+		exit (-1);
+	}
+	close (fd);
 		
 	data=shm_seg;
 
@@ -169,7 +243,7 @@ try_again:
 			}
 			
 			/* _wapi_daemon_main() does not return */
-			_wapi_daemon_main ();
+			_wapi_daemon_main (data);
 			
 			/* But just in case... */
 			data->daemon_running=DAEMON_DIED_AT_STARTUP;
@@ -242,28 +316,10 @@ try_again:
 void _wapi_shm_destroy (void)
 {
 #ifndef DISABLE_SHARED_HANDLES
-	int shm_id;
-	key_t key;
-		
-	/*
-	 * This is an attempt to get a unique key id.  The
-	 * first arg to ftok is a path, so when the config
-	 * file support is done we should use that.
-	 */
-	key=ftok (g_get_home_dir (), _WAPI_HANDLE_VERSION);
-	
-	shm_id=shmget (key, 0, 0600);
-	if(shm_id==-1 && errno==ENOENT) {
-		return;
-	} else if (shm_id==-1) {
-		g_message (G_GNUC_PRETTY_FUNCTION ": shmget error: %s",
-			   strerror (errno));
-		exit (-1);
-	}
-	if(shmctl (shm_id, IPC_RMID, NULL)==-1) {
-		g_message (G_GNUC_PRETTY_FUNCTION ": shmctl error: %s",
-			   strerror (errno));
-		exit (-1);
-	}
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlinking %s", shared_file ());
+#endif
+	unlink (shared_file ());
 #endif /* DISABLE_SHARED_HANDLES */
 }
+

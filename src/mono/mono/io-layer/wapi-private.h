@@ -22,10 +22,8 @@
 
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
- *
- * If this ever reaches 255, we have problems :-(
  */
-#define _WAPI_HANDLE_VERSION 7
+#define _WAPI_HANDLE_VERSION 0
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,

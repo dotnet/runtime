@@ -58,11 +58,10 @@ int main (int argc, char **argv)
 {
 	guint32 idx;
 	gboolean success;
-	int shm_id;
 	
-	_wapi_shared_data=_wapi_shm_attach (FALSE, &success, &shm_id);
+	_wapi_shared_data=_wapi_shm_attach (&success);
 	if(success==FALSE) {
-		g_error ("Failed to attach shared memory! (tried shared memory ID 0x%x)", shm_id);
+		g_error ("Failed to attach shared memory!");
 		exit (-1);
 	}
 	

@@ -81,7 +81,6 @@ attach_again:
 		shared=FALSE;
 #ifndef DISABLE_SHARED_HANDLES
 	} else {
-		int shm_id;
 		gboolean success;
 		
 		/* Ensure that shared==FALSE while _wapi_shm_attach()
@@ -89,13 +88,11 @@ attach_again:
 		 */
 		shared=FALSE;
 		
-		_wapi_shared_data=_wapi_shm_attach (FALSE, &success, &shm_id);
+		_wapi_shared_data=_wapi_shm_attach (&success);
 		shared=success;
 		if(shared==FALSE) {
 			g_warning ("Failed to attach shared memory! "
-				   "(tried shared memory ID 0x%x). "
-				   "Falling back to non-shared handles",
-				   shm_id);
+				   "Falling back to non-shared handles");
 		}
 #endif /* DISABLE_SHARED_HANDLES */
 	}

@@ -130,8 +130,6 @@ static void sigchld_handler (int unused)
 static void startup (void)
 {
 	struct sigaction sa;
-	gboolean success;
-	int shm_id;
 	
 	sa.sa_handler=signal_handler;
 	sigemptyset (&sa.sa_mask);
@@ -148,12 +146,6 @@ static void startup (void)
 	sa.sa_flags=SA_NOCLDSTOP;
 	sigaction (SIGCHLD, &sa, NULL);
 	
-	_wapi_shared_data=_wapi_shm_attach (TRUE, &success, &shm_id);
-	if(success==FALSE) {
-		g_error ("Failed to attach shared memory! (tried shared memory ID 0x%x)", shm_id);
-		exit (-1);
-	}
-
 #ifdef NEED_LINK_UNLINK
 	/* Here's a more portable method... */
 	snprintf (_wapi_shared_data->daemon, MONO_SIZEOF_SUNPATH-1,
@@ -1002,7 +994,7 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
  * Open socket, create shared mem segment and begin listening for
  * clients.
  */
-void _wapi_daemon_main(void)
+void _wapi_daemon_main(gpointer shm)
 {
 	struct sockaddr_un main_socket_address;
 	int ret;
@@ -1011,6 +1003,7 @@ void _wapi_daemon_main(void)
 	g_message ("Starting up...");
 #endif
 
+	_wapi_shared_data=shm;
 	startup ();
 	
 	main_sock=socket(PF_UNIX, SOCK_STREAM, 0);

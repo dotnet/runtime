@@ -16,6 +16,6 @@ typedef enum {
 	DAEMON_DIED_AT_STARTUP = 2,
 } _wapi_daemon_status;
 
-extern void _wapi_daemon_main (void);
+extern void _wapi_daemon_main (gpointer shm);
 
 #endif /* _WAPI_DAEMON_PRIVATE_H_ */
