@@ -447,6 +447,7 @@ timeval_elapsed (MonoGLibTimer *t)
 #endif
 
 typedef struct _AllocInfo AllocInfo;
+typedef struct _CallerInfo CallerInfo;
 
 struct _MonoProfiler {
 	GHashTable *methods;
@@ -466,6 +467,7 @@ typedef struct {
 	guint64 count;
 	double total;
 	AllocInfo *alloc_info;
+	CallerInfo *caller_info;
 } MethodProfile;
 
 typedef struct _MethodCallProfile MethodCallProfile;
@@ -483,6 +485,12 @@ struct _AllocInfo {
 	guint mem;
 };
 
+struct _CallerInfo {
+	CallerInfo *next;
+	MonoMethod *caller;
+	guint count;
+};
+
 static gint
 compare_profile (MethodProfile *profa, MethodProfile *profb)
 {
@@ -497,29 +505,37 @@ build_profile (MonoMethod *m, MethodProfile *prof, GList **funcs)
 	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_profile);
 }
 
+static char*
+method_get_name (MonoMethod* method)
+{
+	char *sig, *res;
+	
+	sig = mono_signature_get_desc (method->signature, FALSE);
+	res = g_strdup_printf ("%s.%s::%s(%s)", method->klass->name_space, method->klass->name,
+		method->name, sig);
+	g_free (sig);
+	return res;
+}
+
 static void
 output_profile (GList *funcs)
 {
 	GList *tmp;
 	MethodProfile *p;
-	char buf [256];
-	char *sig;
+	char *m;
 	guint64 total_calls = 0;
 
 	if (funcs)
-		g_print ("Method name\t\t\t\t\tTotal (ms) Calls Per call (ms)\n");
+		g_print ("Time(ms) Count   P/call(ms) Method name\n");
 	for (tmp = funcs; tmp; tmp = tmp->next) {
 		p = tmp->data;
 		total_calls += p->count;
 		if (!(gint)(p->total*1000))
 			continue;
-		sig = mono_signature_get_desc (p->u.method->signature, FALSE);
-		g_snprintf (buf, sizeof (buf), "%s.%s::%s(%s)",
-			p->u.method->klass->name_space, p->u.method->klass->name,
-			p->u.method->name, sig);
-		g_free (sig);
-		printf ("%-82s\t%8.3f\t%7llu\t%8.3f\n", buf,
-			(double)(p->total*1000), p->count, (double)(p->total*1000)/(double)p->count);
+		m = method_get_name (p->u.method);
+		printf ("% 8.3f %7llu % 8.3f  %s\n",
+			(double)(p->total*1000), p->count, (double)(p->total*1000)/(double)p->count, m);
+		g_free (m);
 	}
 	printf ("Total number of calls: %lld\n", total_calls);
 }
@@ -550,6 +566,40 @@ build_newobj_profile (MonoClass *class, MethodProfile *mprof, GList **funcs)
 	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_newobj_profile);
 }
 
+static int
+compare_caller (CallerInfo *a, CallerInfo *b)
+{
+	return b->count - a->count;
+}
+
+static int
+compare_alloc (AllocInfo *a, AllocInfo *b)
+{
+	return b->mem - a->mem;
+}
+
+static GSList*
+sort_alloc_list (AllocInfo *ai)
+{
+	GSList *l = NULL;
+	AllocInfo *tmp;
+	for (tmp = ai; tmp; tmp = tmp->next) {
+		l = g_slist_insert_sorted (l, tmp, (GCompareFunc)compare_alloc);
+	}
+	return l;
+}
+
+static GSList*
+sort_caller_list (CallerInfo *ai)
+{
+	GSList *l = NULL;
+	CallerInfo *tmp;
+	for (tmp = ai; tmp; tmp = tmp->next) {
+		l = g_slist_insert_sorted (l, tmp, (GCompareFunc)compare_caller);
+	}
+	return l;
+}
+
 static void
 output_newobj_profile (GList *proflist)
 {
@@ -557,28 +607,31 @@ output_newobj_profile (GList *proflist)
 	NewobjProfile *p;
 	MethodProfile *mp;
 	AllocInfo *ainfo;
+	CallerInfo *cinfo;
 	MonoClass *klass;
 	const char* isarray;
 	char buf [256];
 	char *m;
 	guint total = 0;
+	guint total_callers;
+	GSList *sorted, *tmps;
 
 	g_print ("\nAllocation profiler\n");
 
 	if (proflist)
-		g_print ("%-52s %9s\n", "Method:", "Total memory");
+		g_print ("%-9s %s\n", "Total mem", "Method");
 	for (tmp = proflist; tmp; tmp = tmp->next) {
 		p = tmp->data;
 		total += p->count;
 		if (p->count < 50000)
 			continue;
 		mp = p->mp;
-		m = mono_method_full_name (mp->u.method, TRUE);
-		/* + 3 because of the ugly leading "00 " */
-		g_print ("%-52s %9d KB\n", m + 3, p->count / 1024);
+		m = method_get_name (mp->u.method);
+		g_print ("########################\n%8d KB %s\n", p->count / 1024, m);
 		g_free (m);
-		/* sort them? */
-		for (ainfo = mp->alloc_info; ainfo; ainfo = ainfo->next) {
+		sorted = sort_alloc_list (mp->alloc_info);
+		for (tmps = sorted; tmps; tmps = tmps->next) {
+			ainfo = tmps->data;
 			if (ainfo->mem < 50000)
 				continue;
 			klass = ainfo->klass;
@@ -590,7 +643,22 @@ output_newobj_profile (GList *proflist)
 			}
 			g_snprintf (buf, sizeof (buf), "%s.%s%s",
 				klass->name_space, klass->name, isarray);
-			g_print ("  %-50s %9d %8d KB\n", buf, ainfo->count, ainfo->mem / 1024);
+			g_print ("    %8d KB %8d %-48s\n", ainfo->mem / 1024, ainfo->count, buf);
+		}
+		/* callers */
+		g_print ("  Callers (with count) that contribute at least for 3%%:\n");
+		total_callers = 0;
+		for (cinfo = mp->caller_info; cinfo; cinfo = cinfo->next) {
+			total_callers += cinfo->count;
+		}
+		sorted = sort_caller_list (mp->caller_info);
+		for (tmps = sorted; tmps; tmps = tmps->next) {
+			cinfo = tmps->data;
+			if ((cinfo->count * 100)/total_callers < 3)
+				continue;
+			m = method_get_name (cinfo->caller);
+			g_print ("    %8d %s\n", cinfo->count, m);
+			g_free (m);
 		}
 	}
 	g_print ("Total memory allocated: %d KB\n", total / 1024);
@@ -607,6 +675,21 @@ simple_method_enter (MonoProfiler *prof, MonoMethod *method)
 	}
 	profile_info->count++;
 	MONO_TIMER_START (profile_info->u.timer);
+	if (prof->callers) {
+		CallerInfo *cinfo;
+		MonoMethod *caller = prof->callers->data;
+		for (cinfo = profile_info->caller_info; cinfo; cinfo = cinfo->next) {
+			if (cinfo->caller == caller)
+				break;
+		}
+		if (!cinfo) {
+			cinfo = g_new0 (CallerInfo, 1);
+			cinfo->caller = caller;
+			cinfo->next = profile_info->caller_info;
+			profile_info->caller_info = cinfo;
+		}
+		cinfo->count++;
+	}
 	prof->callers = g_slist_prepend (prof->callers, method);
 }
 
