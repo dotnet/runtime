@@ -5265,6 +5265,8 @@ typebuilder_setup_fields (MonoClass *klass)
 	int i;
 
 	klass->field.count = tb->fields? mono_array_length (tb->fields): 0;
+	klass->field.first = 0;
+	klass->field.last = klass->field.count;
 
 	if (!klass->field.count)
 		return;
