@@ -13,6 +13,8 @@ MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname,
 				     	MonoImageOpenStatus *status);
 MonoAssembly* mono_assembly_load_from  (MonoImage *image, const char *fname,
 										MonoImageOpenStatus *status);
+MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status);
+
 MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
 void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status);
 MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, guint32 idx);

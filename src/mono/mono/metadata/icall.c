@@ -3040,6 +3040,25 @@ ves_icall_System_Reflection_Assembly_get_global_assembly_cache (MonoReflectionAs
 	return mass->in_gac;
 }
 
+static MonoReflectionAssembly*
+ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoString *mname, MonoObject *evidence)
+{
+	gchar *name;
+	MonoReflectionAssembly *res;
+	MonoImageOpenStatus status;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	name = mono_string_to_utf8 (mname);
+	res = mono_assembly_load_with_partial_name (name, &status);
+
+	g_free (name);
+
+	if (res == NULL)
+		return NULL;
+	return mono_assembly_get_object (mono_domain_get (), res);
+}
+
 static MonoString *
 ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assembly)
 {
@@ -5206,7 +5225,8 @@ static const IcallEntry assembly_icalls [] = {
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
 	{"get_code_base", ves_icall_System_Reflection_Assembly_get_code_base},
 	{"get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache},
-	{"get_location", ves_icall_System_Reflection_Assembly_get_location}
+	{"get_location", ves_icall_System_Reflection_Assembly_get_location},
+	{"load_with_partial_name", ves_icall_System_Reflection_Assembly_load_with_partial_name}
 };
 
 static const IcallEntry methodbase_icalls [] = {

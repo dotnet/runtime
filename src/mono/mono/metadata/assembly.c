@@ -736,6 +736,44 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	return ass;
 }
 
+MonoAssembly*
+mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
+{
+	MonoAssembly *res;
+	MonoAssemblyName aname;
+	gchar *libpath, *fullpath, *fullname;
+	const char* direntry;
+	GDir *dirhandle;
+
+	memset (&aname, 0, sizeof (MonoAssemblyName));
+	aname.name = name;
+
+	res = mono_assembly_loaded (&aname);
+
+	if (res)
+		return res;
+
+	libpath = g_build_path (G_DIR_SEPARATOR_S, MONO_ASSEMBLIES, "mono", "gac", name, NULL);
+
+	dirhandle = g_dir_open (libpath, 0, NULL);
+	if (!dirhandle)
+		return NULL;
+
+	fullname = g_strdup_printf ("%s.dll", name);
+	while ((direntry = g_dir_read_name (dirhandle))) {
+		fullpath = g_build_path (G_DIR_SEPARATOR_S, libpath, direntry, fullname, NULL);
+		res = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+		if (res)
+			break;
+	}
+	g_dir_close (dirhandle);
+
+	g_free (fullname);
+
+	return res;
+}
+
 /**
  * mono_assembly_load_from_gac
  *
@@ -792,7 +830,7 @@ MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
 	MonoAssembly *result;
-	char *fullpath, *filename;
+	char *fullpath, *filename, *currentpath;
 
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
 	if (result)
