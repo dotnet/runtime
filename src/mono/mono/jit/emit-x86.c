@@ -291,22 +291,30 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
-	int i, j, k;
+	int i, j, k, alloc_size;
 
 	x86_push_reg (cfg->code, X86_EBP);
 	x86_mov_reg_reg (cfg->code, X86_EBP, X86_ESP, 4);
 
-	if (cfg->locals_size)
-		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, cfg->locals_size);
+	alloc_size = cfg->locals_size;
 
-	if (mono_regset_reg_used (cfg->rs, X86_EBX)) 
+	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
 		x86_push_reg (cfg->code, X86_EBX);
+		alloc_size -= 4;
+	}
 
-	if (mono_regset_reg_used (cfg->rs, X86_EDI)) 
+	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
 		x86_push_reg (cfg->code, X86_EDI);
+		alloc_size -= 4;
+	}
 
-	if (mono_regset_reg_used (cfg->rs, X86_ESI))
+	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
 		x86_push_reg (cfg->code, X86_ESI);
+		alloc_size -= 4;
+	}
+
+	if (alloc_size)
+		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, alloc_size);
 
 	if (mono_jit_trace_calls) {
 		x86_push_reg (cfg->code, X86_EBP);
@@ -339,6 +347,9 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 			int size = - offset;
 			int inited = 0;
 			
+			/* do not clear caller saved registers */
+			size -= 12;
+
 			for (i = 0; i < header->num_locals; ++i) {
 				MonoVarInfo *rv = &VARINFO (cfg, cfg->locals_start_index + i);
 
@@ -430,7 +441,7 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 static void
 arch_emit_epilogue (MonoFlowGraph *cfg)
 {
-	int pos = 4;
+	int pos;
 	/*
 	 * note: with trace and profiling the value on the FP stack may get clobbered.
 	 */
@@ -459,17 +470,18 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_pop_reg (cfg->code, X86_EAX);
 	}
 
+	pos = -4;
 	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
-		x86_mov_reg_membase (cfg->code, X86_EBX, X86_EBP, - (cfg->locals_size + pos), 4);
-		pos += 4;
+		x86_mov_reg_membase (cfg->code, X86_EBX, X86_EBP, pos, 4);
+		pos -= 4;
 	}
 	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
-		x86_mov_reg_membase (cfg->code, X86_EDI, X86_EBP, - (cfg->locals_size + pos), 4);
-		pos += 4;
+		x86_mov_reg_membase (cfg->code, X86_EDI, X86_EBP, pos, 4);
+		pos -= 4;
 	}
 	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
-		x86_mov_reg_membase (cfg->code, X86_ESI, X86_EBP, - (cfg->locals_size + pos), 4);
-		pos += 4;
+		x86_mov_reg_membase (cfg->code, X86_ESI, X86_EBP, pos, 4);
+		pos -= 4;
 	}
 
 	x86_leave (cfg->code);

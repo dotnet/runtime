@@ -168,7 +168,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 	if (ji) { /* we are inside managed code */
 		MonoMethod *m = ji->method;
-		int offset = 2;
+		int offset;
 
 		if (ji->num_clauses) {
 			int i;
@@ -224,17 +224,18 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 		/* continue unwinding */
 
+		offset = -1;
 		/* restore caller saved registers */
 		if (ji->used_regs & X86_ESI_MASK) {
-			ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
-			offset++;
+			ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
+			offset--;
 		}
 		if (ji->used_regs & X86_EDI_MASK) {
 			ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
-			offset++;
+			offset--;
 		}
 		if (ji->used_regs & X86_EBX_MASK) {
-			ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
+			ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
 		}
 
 		ctx->SC_ESP = ctx->SC_EBP;

@@ -1056,6 +1056,10 @@ mono_cfg_new (MonoMethod *method, MonoMemPool *mp)
 	cfg->method = method;
 	cfg->mp = mp;
 
+	/* reserve space for caller saved registers */
+	/* fixme: this is arch dependent */
+	cfg->locals_size = 12;
+
 	/* fixme: we should also consider loader optimisation attributes */
 	cfg->share_code = mono_jit_share_code;
 
@@ -1295,6 +1299,15 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	cfg->bblocks = bblocks;
 	cfg->block_count = block_count;
        
+	for (i = 0; i < header->num_clauses; ++i) {
+		MonoBBlock *sbb, *tbb;
+		clause = &header->clauses [i];
+		sbb = &cfg->bblocks [bcinfo [clause->try_offset].block_id];
+		tbb = &cfg->bblocks [bcinfo [clause->handler_offset].block_id];
+		g_assert (sbb && tbb);
+		sbb->succ = g_list_prepend (sbb->succ, tbb);
+	}
+
 	ip = header->code;
 	end = ip + header->code_size;
 	bb = NULL;
