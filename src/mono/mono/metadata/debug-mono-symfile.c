@@ -117,7 +117,7 @@ mono_debug_open_mono_symbol_file (MonoImage *image, const char *filename, gboole
 		return NULL;
 	}
 
-	ptr = mono_raw_buffer_load (fd, FALSE, FALSE, 0, file_size);
+	ptr = mono_raw_buffer_load (fd, FALSE, 0, file_size);
 	if (!ptr) {
 		if (emit_warnings)
 			g_warning ("Can't read symbol file: %s", filename);
@@ -567,7 +567,7 @@ create_symfile (MonoSymbolFile *symfile, GHashTable *method_hash, gboolean emit_
 
 	lseek (priv->fd, symfile->raw_contents_size, SEEK_SET);
 
-	ptr = mono_raw_buffer_load (priv->fd, TRUE, FALSE, 0, symfile->raw_contents_size);
+	ptr = mono_raw_buffer_load (priv->fd, TRUE, 0, symfile->raw_contents_size);
 	if (!ptr)
 		return FALSE;
 

@@ -66,7 +66,7 @@ mono_raw_buffer_free_malloc (void *base)
 }
 
 static void *
-mono_raw_buffer_load_mmap (int fd, int is_writable, int is_shared, guint32 base, size_t size)
+mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 {
 #ifdef USE_WIN32_API
 	/* FileMapping implementation */
@@ -124,10 +124,7 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, int is_shared, guint32 base,
 
 	if (is_writable){
 		prot |= PROT_WRITE;
-		if (is_shared)
-			flags = MAP_SHARED;
-		else
-			flags = MAP_PRIVATE;
+		flags = MAP_SHARED;
 	} else {
 		flags = MAP_PRIVATE;
 	}
@@ -172,11 +169,11 @@ mono_raw_buffer_update_mmap (void *base, size_t size)
 }
 
 void *
-mono_raw_buffer_load (int fd, int is_writable, int is_shared, guint32 base, size_t size)
+mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 {
 	void *ptr;
 
-	ptr = mono_raw_buffer_load_mmap (fd, is_writable, is_shared, base, size);
+	ptr = mono_raw_buffer_load_mmap (fd, is_writable, base, size);
 	if (ptr == 0)
 		ptr = mono_raw_buffer_load_malloc (fd, is_writable, base, size);
 	
