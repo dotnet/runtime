@@ -360,7 +360,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 }
 
 static void
-set_value (MonoType *type, void *dest, void *value) {
+set_value (MonoType *type, void *dest, void *value, int deref_pointer) {
 	int t;
 	if (type->byref) {
 		gpointer *p = (gpointer*)dest;
@@ -421,7 +421,7 @@ handle_enum:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR: {
 		gpointer *p = (gpointer*)dest;
-		*p = value;
+		*p = deref_pointer? *(gpointer*)value: value;
 		return;
 	}
 	case MONO_TYPE_VALUETYPE:
@@ -448,7 +448,7 @@ mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
 	dest = (char*)obj + field->offset;
-	set_value (field->type, dest, value);
+	set_value (field->type, dest, value, FALSE);
 }
 
 void
@@ -459,7 +459,7 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 
 	dest = (char*)vt->data + field->offset;
-	set_value (field->type, dest, value);
+	set_value (field->type, dest, value, FALSE);
 }
 
 void
@@ -470,7 +470,7 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
 	src = (char*)obj + field->offset;
-	set_value (field->type, value, src);
+	set_value (field->type, value, src, TRUE);
 }
 
 void
@@ -481,7 +481,7 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 
 	src = (char*)vt->data + field->offset;
-	set_value (field->type, value, src);
+	set_value (field->type, value, src, TRUE);
 }
 
 void
