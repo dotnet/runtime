@@ -983,10 +983,10 @@
     </class>
 
     <class name="System.Diagnostics.ConditionalAttribute">
-        <last-activity>Aug-16-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion99</completion>
         <maintainers>
             <maintainer>ndrochak@gol.com</maintainer>
         </maintainers>
@@ -999,6 +999,16 @@
         <completion>?</completion>
         <maintainers>
             <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.DebuggableAttribute">
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>99</completion>
+        <maintainers>
+            <maintainer>ndrochak@gol.com</maintainer>
         </maintainers>
     </class>
 
