@@ -1,1 +1,1 @@
-void dissasemble_cil (metadata_t *m, MonoMetaMethodHeader *mh);
+void dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh);

@@ -87,7 +87,7 @@ get_encoded_user_string (const char *ptr)
 	indent[indent_level*2] = 0;
 
 void
-dissasemble_cil (metadata_t *m, MonoMetaMethodHeader *mh) 
+dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh) 
 {
 	const unsigned char *start = mh->code;
 	int size = mh->code_size;

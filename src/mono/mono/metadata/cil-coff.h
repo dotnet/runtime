@@ -27,12 +27,9 @@
 #define METHOD_HEADER_SECTION_FAT_FORMAT  0x40
 #define METHOD_HEADER_SECTION_MORE_SECTS  0x80
 
-/* A metadata token */
-typedef guint32 mtoken_t;
-
 typedef struct {
 	char msdos_header [128];
-} msdos_header_t;
+} MonoMSDOSHeader;
 
 typedef struct {
 	guint16  coff_machine;
@@ -42,7 +39,7 @@ typedef struct {
 	guint32  coff_symcount;
 	guint16  coff_opt_header_size;
 	guint16  coff_attributes;
-} coff_header_t;
+} MonoCOFFHeader;
 
 #define COFF_ATTRIBUTE_EXECUTABLE_IMAGE 0x0002
 #define COFF_ATTRIBUTE_LIBRARY_IMAGE    0x2000
@@ -57,7 +54,7 @@ typedef struct {
 	guint32 pe_rva_entry_point;
 	guint32 pe_rva_code_base;
 	guint32 pe_rva_data_base;
-} pe_header_t;
+} MonoPEHeader;
 
 typedef struct {
 	guint32 pe_image_base;		/* must be 0x400000 */
@@ -81,39 +78,39 @@ typedef struct {
 	guint32 pe_heap_commit;
 	guint32 pe_loader_flags;
 	guint32 pe_data_dir_count;
-} pe_header_nt_t;
+} MonoPEHeaderNT;
 
 typedef struct {
 	guint32 rva;
 	guint32 size;
-} pe_dir_entry_t;
+} MonoPEDirEntry;
 
 typedef struct {
-	pe_dir_entry_t pe_export_table;
-	pe_dir_entry_t pe_import_table;
-	pe_dir_entry_t pe_resource_table;
-	pe_dir_entry_t pe_exception_table;
-	pe_dir_entry_t pe_certificate_table;
-	pe_dir_entry_t pe_reloc_table;
-	pe_dir_entry_t pe_debug;
-	pe_dir_entry_t pe_copyright;
-	pe_dir_entry_t pe_global_ptr;
-	pe_dir_entry_t pe_tls_table;
-	pe_dir_entry_t pe_load_config_table;
-	pe_dir_entry_t pe_bound_import;
-	pe_dir_entry_t pe_iat;
-	pe_dir_entry_t pe_delay_import_desc;
-	pe_dir_entry_t pe_cli_header;
-	pe_dir_entry_t pe_reserved;
-} pe_datadir_t;
+	MonoPEDirEntry pe_export_table;
+	MonoPEDirEntry pe_import_table;
+	MonoPEDirEntry pe_resource_table;
+	MonoPEDirEntry pe_exception_table;
+	MonoPEDirEntry pe_certificate_table;
+	MonoPEDirEntry pe_reloc_table;
+	MonoPEDirEntry pe_debug;
+	MonoPEDirEntry pe_copyright;
+	MonoPEDirEntry pe_global_ptr;
+	MonoPEDirEntry pe_tls_table;
+	MonoPEDirEntry pe_load_config_table;
+	MonoPEDirEntry pe_bound_import;
+	MonoPEDirEntry pe_iat;
+	MonoPEDirEntry pe_delay_import_desc;
+	MonoPEDirEntry pe_cli_header;
+	MonoPEDirEntry pe_reserved;
+} MonoPEDatadir;
 
 typedef struct {
 	char            pesig [4];
-	coff_header_t   coff;
-	pe_header_t     pe;
-	pe_header_nt_t  nt;
-	pe_datadir_t    datadir;
-} dotnet_header_t;
+	MonoCOFFHeader  coff;
+	MonoPEHeader    pe;
+	MonoPEHeaderNT  nt;
+	MonoPEDatadir   datadir;
+} MonoDotNetHeader;
 
 typedef struct {
 	char    st_name [8];
@@ -138,48 +135,48 @@ typedef struct {
 #define SECT_FLAGS_MEM_WRITE              0x80000000
 	guint32 st_flags;
 
-} section_table_t;
+} MonoSectionTable;
 
 typedef struct {
 	guint32        ch_size;
 	guint16        ch_runtime_major;
 	guint16        ch_runtime_minor;
-	pe_dir_entry_t ch_metadata;
+	MonoPEDirEntry ch_metadata;
 
 #define CLI_FLAGS_ILONLY         0x01
 #define CLI_FLAGS_32BITREQUIRED  0x02
 #define CLI_FLAGS_TRACKDEBUGDATA 0x00010000
 	guint32        ch_flags;
 
-	mtoken_t       ch_entry_point;
-	pe_dir_entry_t ch_resources;
-	pe_dir_entry_t ch_strong_name;
-	pe_dir_entry_t ch_code_manager_table;
-	pe_dir_entry_t ch_vtable_fixups;
-	pe_dir_entry_t ch_export_address_table_jumps;
+	guint32        ch_entry_point;
+	MonoPEDirEntry ch_resources;
+	MonoPEDirEntry ch_strong_name;
+	MonoPEDirEntry ch_code_manager_table;
+	MonoPEDirEntry ch_vtable_fixups;
+	MonoPEDirEntry ch_export_address_table_jumps;
 
 	/* The following are zero in the current docs */
-	pe_dir_entry_t ch_eeinfo_table;
-	pe_dir_entry_t ch_helper_table;
-	pe_dir_entry_t ch_dynamic_info;
-	pe_dir_entry_t ch_delay_load_info;
-	pe_dir_entry_t ch_module_image;
-	pe_dir_entry_t ch_external_fixups;
-	pe_dir_entry_t ch_ridmap;
-	pe_dir_entry_t ch_debug_map;
-	pe_dir_entry_t ch_ip_map;
-} cli_header_t;
+	MonoPEDirEntry ch_eeinfo_table;
+	MonoPEDirEntry ch_helper_table;
+	MonoPEDirEntry ch_dynamic_info;
+	MonoPEDirEntry ch_delay_load_info;
+	MonoPEDirEntry ch_module_image;
+	MonoPEDirEntry ch_external_fixups;
+	MonoPEDirEntry ch_ridmap;
+	MonoPEDirEntry ch_debug_map;
+	MonoPEDirEntry ch_ip_map;
+} MonoCLIHeader;
 
 /* This is not an on-disk structure */
 typedef struct {
-	dotnet_header_t   cli_header;
+	MonoDotNetHeader  cli_header;
 	int               cli_section_count;
-	section_table_t  *cli_section_tables;
+	MonoSectionTable  *cli_section_tables;
 	void            **cli_sections;
-	cli_header_t      cli_cli_header;
-} cli_image_info_t;
+	MonoCLIHeader     cli_cli_header;
+} MonoCLIImageInfo;
 
-guint32       cli_rva_image_map (cli_image_info_t *iinfo, guint32 rva);
-char         *cli_rva_map       (cli_image_info_t *iinfo, guint32 rva);
+guint32       mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 rva);
+char         *mono_cli_rva_map       (MonoCLIImageInfo *iinfo, guint32 rva);
 
 #endif /* __MONO_CIL_COFF_H__ */

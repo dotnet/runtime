@@ -16,7 +16,7 @@ struct _MonoImage {
 	char *name;
 	void *image_info;
 
-	metadata_t metadata;
+	MonoMetadata metadata;
 
 	/*
 	 * references is initialized only by using the mono_assembly_open

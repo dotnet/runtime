@@ -16,7 +16,7 @@ typedef struct {
 
 typedef struct {
 	MonoMethod method;
-	MonoMetaMethodHeader *header;
+	MonoMethodHeader *header;
 } MonoMethodManaged;
 
 typedef struct {

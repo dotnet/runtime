@@ -19,6 +19,7 @@
 #include "cil-coff.h"
 #include "rawbuffer.h"
 #include "endian.h"
+#include "private.h"
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -28,10 +29,10 @@
 static GHashTable *loaded_images_hash;
 
 guint32
-cli_rva_image_map (cli_image_info_t *iinfo, guint32 addr)
+mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
 {
 	const int top = iinfo->cli_section_count;
-	section_table_t *tables = iinfo->cli_section_tables;
+	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
 	
 	for (i = 0; i < top; i++){
@@ -45,10 +46,10 @@ cli_rva_image_map (cli_image_info_t *iinfo, guint32 addr)
 }
 
 char *
-cli_rva_map (cli_image_info_t *iinfo, guint32 addr)
+mono_cli_rva_map (MonoCLIImageInfo *iinfo, guint32 addr)
 {
 	const int top = iinfo->cli_section_count;
-	section_table_t *tables = iinfo->cli_section_tables;
+	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
 	
 	for (i = 0; i < top; i++){
@@ -75,8 +76,8 @@ cli_rva_map (cli_image_info_t *iinfo, guint32 addr)
 int
 mono_image_ensure_section_idx (MonoImage *image, int section)
 {
-	cli_image_info_t *iinfo = image->image_info;
-	section_table_t *sect;
+	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoSectionTable *sect;
 	gboolean writable;
 	
 	g_return_val_if_fail (section < iinfo->cli_section_count, FALSE);
@@ -88,7 +89,7 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 	
 	writable = sect->st_flags & SECT_FLAGS_MEM_WRITE;
 
-	iinfo->cli_sections [section] = raw_buffer_load (
+	iinfo->cli_sections [section] = mono_raw_buffer_load (
 		fileno (image->f), writable,
 		sect->st_raw_data_ptr, sect->st_raw_data_size);
 
@@ -111,7 +112,7 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 int
 mono_image_ensure_section (MonoImage *image, const char *section)
 {
-	cli_image_info_t *ii = image->image_info;
+	MonoCLIImageInfo *ii = image->image_info;
 	int i;
 	
 	for (i = 0; i < ii->cli_section_count; i++){
@@ -124,19 +125,19 @@ mono_image_ensure_section (MonoImage *image, const char *section)
 }
 
 static int
-load_section_tables (MonoImage *image, cli_image_info_t *iinfo)
+load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	const int top = iinfo->cli_header.coff.coff_sections;
 	int i;
 
 	iinfo->cli_section_count = top;
-	iinfo->cli_section_tables = g_new0 (section_table_t, top);
+	iinfo->cli_section_tables = g_new0 (MonoSectionTable, top);
 	iinfo->cli_sections = g_new0 (void *, top);
 	
 	for (i = 0; i < top; i++){
-		section_table_t *t = &iinfo->cli_section_tables [i];
+		MonoSectionTable *t = &iinfo->cli_section_tables [i];
 		
-		if (fread (t, sizeof (section_table_t), 1, image->f) != 1)
+		if (fread (t, sizeof (MonoSectionTable), 1, image->f) != 1)
 			return FALSE;
 
 		t->st_virtual_size = le32_to_cpu (t->st_virtual_size);
@@ -157,19 +158,19 @@ load_section_tables (MonoImage *image, cli_image_info_t *iinfo)
 }
 
 static gboolean
-load_cli_header (MonoImage *image, cli_image_info_t *iinfo)
+load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	guint32 offset;
 	int n;
 	
-	offset = cli_rva_image_map (iinfo, iinfo->cli_header.datadir.pe_cli_header.rva);
+	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_header.datadir.pe_cli_header.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
 
 	if (fseek (image->f, offset, 0) != 0)
 		return FALSE;
 	
-	if ((n = fread (&iinfo->cli_cli_header, sizeof (cli_header_t), 1, image->f)) != 1)
+	if ((n = fread (&iinfo->cli_cli_header, sizeof (MonoCLIHeader), 1, image->f)) != 1)
 		return FALSE;
 
 	/* Catch new uses of the fields that are supposed to be zero */
@@ -190,18 +191,18 @@ load_cli_header (MonoImage *image, cli_image_info_t *iinfo)
 }
 
 static gboolean
-load_metadata_ptrs (MonoImage *image, cli_image_info_t *iinfo)
+load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
-	metadata_t *metadata = &image->metadata;
+	MonoMetadata *metadata = &image->metadata;
 	guint32 offset, size;
 	guint16 streams;
 	int i;
 	char *ptr;
 	
-	offset = cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
+	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
 	size = iinfo->cli_cli_header.ch_metadata.size;
 	
-	metadata->raw_metadata = raw_buffer_load (fileno (image->f), FALSE, offset, size);
+	metadata->raw_metadata = mono_raw_buffer_load (fileno (image->f), FALSE, offset, size);
 	if (metadata->raw_metadata == NULL)
 		return FALSE;
 
@@ -227,24 +228,24 @@ load_metadata_ptrs (MonoImage *image, cli_image_info_t *iinfo)
 
 	for (i = 0; i < streams; i++){
 		if (strncmp (ptr + 8, "#~", 3) == 0){
-			metadata->heap_tables.sh_offset = read32 (ptr);
-			metadata->heap_tables.sh_size = read32 (ptr + 4);
+			metadata->heap_tables.offset = read32 (ptr);
+			metadata->heap_tables.size = read32 (ptr + 4);
 			ptr += 8 + 3;
 		} else if (strncmp (ptr + 8, "#Strings", 9) == 0){
-			metadata->heap_strings.sh_offset = read32 (ptr);
-			metadata->heap_strings.sh_size = read32 (ptr + 4);
+			metadata->heap_strings.offset = read32 (ptr);
+			metadata->heap_strings.size = read32 (ptr + 4);
 			ptr += 8 + 9;
 		} else if (strncmp (ptr + 8, "#US", 4) == 0){
-			metadata->heap_us.sh_offset = read32 (ptr);
-			metadata->heap_us.sh_size = read32 (ptr + 4);
+			metadata->heap_us.offset = read32 (ptr);
+			metadata->heap_us.size = read32 (ptr + 4);
 			ptr += 8 + 4;
 		} else if (strncmp (ptr + 8, "#Blob", 6) == 0){
-			metadata->heap_blob.sh_offset = read32 (ptr);
-			metadata->heap_blob.sh_size = read32 (ptr + 4);
+			metadata->heap_blob.offset = read32 (ptr);
+			metadata->heap_blob.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else if (strncmp (ptr + 8, "#GUID", 6) == 0){
-			metadata->heap_guid.sh_offset = read32 (ptr);
-			metadata->heap_guid.sh_size = read32 (ptr + 4);
+			metadata->heap_guid.offset = read32 (ptr);
+			metadata->heap_guid.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else
 			g_message ("Unknown heap type: %s\n", ptr + 8);
@@ -259,9 +260,9 @@ load_metadata_ptrs (MonoImage *image, cli_image_info_t *iinfo)
  * Load representation of logical metadata tables, from the "#~" stream
  */
 static gboolean
-load_tables (MonoImage *image, metadata_t *meta)
+load_tables (MonoImage *image, MonoMetadata *meta)
 {
-	char *heap_tables = meta->raw_metadata + meta->heap_tables.sh_offset;
+	char *heap_tables = meta->raw_metadata + meta->heap_tables.offset;
 	guint32 *rows;
 	guint64 valid_mask;
 	int valid = 0, table;
@@ -298,7 +299,7 @@ load_tables (MonoImage *image, metadata_t *meta)
 }
 
 static gboolean
-load_metadata (MonoImage *image, cli_image_info_t *iinfo)
+load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	if (!load_metadata_ptrs (image, iinfo))
 		return FALSE;
@@ -309,16 +310,16 @@ load_metadata (MonoImage *image, cli_image_info_t *iinfo)
 static MonoImage *
 do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 {
-	cli_image_info_t *iinfo;
-	dotnet_header_t *header;
-	msdos_header_t msdos;
+	MonoCLIImageInfo *iinfo;
+	MonoDotNetHeader *header;
+	MonoMSDOSHeader msdos;
 	MonoImage *image;
 	int n;
 
 	image = g_new0 (MonoImage, 1);
 	image->f = fopen (fname, "r");
 	image->name = g_strdup (fname);
-	iinfo = g_new0 (cli_image_info_t, 1);
+	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -342,7 +343,7 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	if (!(msdos.msdos_header [0] == 0x4d && msdos.msdos_header [1] == 0x5a))
 		goto invalid_image;
 	
-	if ((n = fread (header, sizeof (dotnet_header_t), 1, image->f)) != 1)
+	if ((n = fread (header, sizeof (MonoDotNetHeader), 1, image->f)) != 1)
 		goto invalid_image;
 
 	/*
@@ -426,16 +427,16 @@ mono_image_close (MonoImage *image)
 	g_free (image->name);
 	
 	if (image->metadata.raw_metadata != NULL)
-		raw_buffer_free (image->metadata.raw_metadata);
+		mono_raw_buffer_free (image->metadata.raw_metadata);
 	
 	if (image->image_info){
-		cli_image_info_t *ii = image->image_info;
+		MonoCLIImageInfo *ii = image->image_info;
 		int i;
 
 		for (i = 0; i < ii->cli_section_count; i++){
 			if (!ii->cli_sections [i])
 				continue;
-			raw_buffer_free (ii->cli_sections [i]);
+			mono_raw_buffer_free (ii->cli_sections [i]);
 		}
 		if (ii->cli_section_tables)
 			g_free (ii->cli_section_tables);

@@ -17,11 +17,11 @@
 #include "get.h"
 
 char *
-get_typedef (metadata_t *m, int idx)
+get_typedef (MonoMetadata *m, int idx)
 {
 	guint32 cols [6];
 
-	mono_metadata_decode_row (&m->tables [META_TABLE_TYPEDEF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup_printf (
 		"%s.%s",
@@ -30,7 +30,7 @@ get_typedef (metadata_t *m, int idx)
 }
 
 char *
-get_module (metadata_t *m, int idx)
+get_module (MonoMetadata *m, int idx)
 {
 	guint32 cols [5];
 	
@@ -39,17 +39,17 @@ get_module (metadata_t *m, int idx)
 	 */
 	g_assert (idx == 1);
 	    
-	mono_metadata_decode_row (&m->tables [META_TABLE_MODULEREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULEREF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup (mono_metadata_string_heap (m, cols [6]));
 }
 
 char *
-get_assemblyref (metadata_t *m, int idx)
+get_assemblyref (MonoMetadata *m, int idx)
 {
 	guint32 cols [9];
 	
-	mono_metadata_decode_row (&m->tables [META_TABLE_ASSEMBLYREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_ASSEMBLYREF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup (mono_metadata_string_heap (m, cols [6]));
 }
@@ -59,7 +59,7 @@ get_assemblyref (metadata_t *m, int idx)
  * Returns a string representing the ArrayShape (22.2.16).
  */
 static const char *
-get_array_shape (metadata_t *m, const char *ptr, char **result)
+get_array_shape (MonoMetadata *m, const char *ptr, char **result)
 {
 	GString *res = g_string_new ("[");
 	guint32 rank, num_sizes, num_lo_bounds;
@@ -119,7 +119,7 @@ get_array_shape (metadata_t *m, const char *ptr, char **result)
  * Returns the stringified representation of a TypeSpec signature (22.2.17)
  */
 char *
-get_typespec (metadata_t *m, guint32 idx)
+get_typespec (MonoMetadata *m, guint32 idx)
 {
 	guint32 cols [1];
 	const char *ptr;
@@ -127,12 +127,12 @@ get_typespec (metadata_t *m, guint32 idx)
 	GString *res = g_string_new ("");
 	int len;
 
-	mono_metadata_decode_row (&m->tables [META_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
 	ptr = mono_metadata_blob_heap (m, cols [0]);
 	len = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (*ptr++){
-	case ELEMENT_TYPE_PTR:
+	case MONO_TYPE_PTR:
 		ptr = get_custom_mod (m, ptr, &s);
 		if (s){
 			g_string_append (res, s);
@@ -140,7 +140,7 @@ get_typespec (metadata_t *m, guint32 idx)
 			g_free (s);
 		}
 		
-		if (*ptr == ELEMENT_TYPE_VOID)
+		if (*ptr == MONO_TYPE_VOID)
 			g_string_append (res, "void");
 		else {
 			ptr = get_type (m, ptr, &s);
@@ -149,7 +149,7 @@ get_typespec (metadata_t *m, guint32 idx)
 		}
 		break;
 		
-	case ELEMENT_TYPE_FNPTR:
+	case MONO_TYPE_FNPTR:
 		g_string_append (res, "FNPTR ");
 		/*
 		 * we assume MethodRefSig, as we do not know
@@ -160,7 +160,7 @@ get_typespec (metadata_t *m, guint32 idx)
 		hex_dump (ptr, 0, 40);
 		break;
 			
-	case ELEMENT_TYPE_ARRAY:
+	case MONO_TYPE_ARRAY:
 		ptr = get_type (m, ptr, &s);
 		g_string_append (res, s);
 		g_free (s);
@@ -170,7 +170,7 @@ get_typespec (metadata_t *m, guint32 idx)
 		g_free (s);
 		break;
 		
-	case ELEMENT_TYPE_SZARRAY:
+	case MONO_TYPE_SZARRAY:
 		ptr = get_custom_mod (m, ptr, &s);
 		if (s){
 			g_string_append (res, s);
@@ -190,14 +190,14 @@ get_typespec (metadata_t *m, guint32 idx)
 }
 
 char *
-get_typeref (metadata_t *m, int idx)
+get_typeref (MonoMetadata *m, int idx)
 {
 	guint32 cols [3];
 	const char *s, *t;
 	char *x, *ret;
 	guint32 rs_idx, table;
 	
-	mono_metadata_decode_row (&m->tables [META_TABLE_TYPEREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEREF], idx - 1, cols, CSIZE (cols));
 
 	t = mono_metadata_string_heap (m, cols [1]);
 	s = mono_metadata_string_heap (m, cols [2]);
@@ -252,7 +252,7 @@ get_typeref (metadata_t *m, int idx)
  * at (dor_token >> 2) 
  */
 char *
-get_typedef_or_ref (metadata_t *m, guint32 dor_token)
+get_typedef_or_ref (MonoMetadata *m, guint32 dor_token)
 {
 	char *temp = NULL, *s;
 	int table, idx;
@@ -300,7 +300,7 @@ get_typedef_or_ref (metadata_t *m, guint32 dor_token)
  * Returns: the new ptr to continue decoding
  */
 const char *
-get_encoded_typedef_or_ref (metadata_t *m, const char *ptr, char **result)
+get_encoded_typedef_or_ref (MonoMetadata *m, const char *ptr, char **result)
 {
 	guint32 token;
 	
@@ -319,12 +319,12 @@ get_encoded_typedef_or_ref (metadata_t *m, const char *ptr, char **result)
  * Returns: updated pointer location
  */
 const char *
-get_custom_mod (metadata_t *m, const char *ptr, char **return_value)
+get_custom_mod (MonoMetadata *m, const char *ptr, char **return_value)
 {
 	char *s;
 	
-	if ((*ptr == ELEMENT_TYPE_CMOD_OPT) ||
-	    (*ptr == ELEMENT_TYPE_CMOD_REQD)){
+	if ((*ptr == MONO_TYPE_CMOD_OPT) ||
+	    (*ptr == MONO_TYPE_CMOD_REQD)){
 		ptr++;
 		ptr = get_encoded_typedef_or_ref (m, ptr, &s);
 
@@ -337,25 +337,25 @@ get_custom_mod (metadata_t *m, const char *ptr, char **return_value)
 
 
 static map_t element_type_map [] = {
-	{ ELEMENT_TYPE_END        , "end" },
-	{ ELEMENT_TYPE_VOID       , "void" },
-	{ ELEMENT_TYPE_BOOLEAN    , "bool" },
-	{ ELEMENT_TYPE_CHAR       , "char" }, 
-	{ ELEMENT_TYPE_I1         , "sbyte" },
-	{ ELEMENT_TYPE_U1         , "byte" }, 
-	{ ELEMENT_TYPE_I2         , "int16" },
-	{ ELEMENT_TYPE_U2         , "uint16" },
-	{ ELEMENT_TYPE_I4         , "int32" },
-	{ ELEMENT_TYPE_U4         , "uint32" },
-	{ ELEMENT_TYPE_I8         , "int64" },
-	{ ELEMENT_TYPE_U8         , "uint64" },
-	{ ELEMENT_TYPE_R4         , "float32" },
-	{ ELEMENT_TYPE_R8         , "float64" },
-	{ ELEMENT_TYPE_STRING     , "string" },
-	{ ELEMENT_TYPE_TYPEDBYREF , "TypedByRef" },
-	{ ELEMENT_TYPE_I          , "native int" },
-	{ ELEMENT_TYPE_U          , "native unsigned int" },
-	{ ELEMENT_TYPE_OBJECT     , "object" },
+	{ MONO_TYPE_END        , "end" },
+	{ MONO_TYPE_VOID       , "void" },
+	{ MONO_TYPE_BOOLEAN    , "bool" },
+	{ MONO_TYPE_CHAR       , "char" }, 
+	{ MONO_TYPE_I1         , "sbyte" },
+	{ MONO_TYPE_U1         , "byte" }, 
+	{ MONO_TYPE_I2         , "int16" },
+	{ MONO_TYPE_U2         , "uint16" },
+	{ MONO_TYPE_I4         , "int32" },
+	{ MONO_TYPE_U4         , "uint32" },
+	{ MONO_TYPE_I8         , "int64" },
+	{ MONO_TYPE_U8         , "uint64" },
+	{ MONO_TYPE_R4         , "float32" },
+	{ MONO_TYPE_R8         , "float64" },
+	{ MONO_TYPE_STRING     , "string" },
+	{ MONO_TYPE_TYPEDBYREF , "TypedByRef" },
+	{ MONO_TYPE_I          , "native int" },
+	{ MONO_TYPE_U          , "native unsigned int" },
+	{ MONO_TYPE_OBJECT     , "object" },
 	{ 0, NULL }
 };
 
@@ -370,13 +370,13 @@ static map_t call_conv_type_map [] = {
 };
 
 char*
-dis_stringify_token (metadata_t *m, guint32 token)
+dis_stringify_token (MonoMetadata *m, guint32 token)
 {
 	guint idx = token & 0xffffff;
 	switch (token >> 24) {
-	case META_TABLE_TYPEDEF: return get_typedef (m, idx);
-	case META_TABLE_TYPEREF: return get_typeref (m, idx);
-	case META_TABLE_TYPESPEC: return get_typespec (m, idx);
+	case MONO_TABLE_TYPEDEF: return get_typedef (m, idx);
+	case MONO_TABLE_TYPEREF: return get_typeref (m, idx);
+	case MONO_TABLE_TYPESPEC: return get_typespec (m, idx);
 	default:
 		 break;
 	}
@@ -384,7 +384,7 @@ dis_stringify_token (metadata_t *m, guint32 token)
 }
 
 char*
-dis_stringify_array (metadata_t *m, MonoArray *array) 
+dis_stringify_array (MonoMetadata *m, MonoArray *array) 
 {
 	char *type;
 	GString *s = g_string_new("");
@@ -411,14 +411,14 @@ dis_stringify_array (metadata_t *m, MonoArray *array)
 }
 
 char*
-dis_stringify_modifiers (metadata_t *m, int n, MonoCustomMod *mod)
+dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod)
 {
 	GString *s = g_string_new("");
 	char *result;
 	int i;
 	for (i = 0; i < n; ++i) {
 		char *tok = dis_stringify_token (m, mod[i].token);
-		g_string_sprintfa (s, "%s %s", mod[i].mod == ELEMENT_TYPE_CMOD_OPT ? "opt": "reqd", tok);
+		g_string_sprintfa (s, "%s %s", mod[i].mod == MONO_TYPE_CMOD_OPT ? "opt": "reqd", tok);
 		g_free (tok);
 	}
 	g_string_append_c (s, ' ');
@@ -428,7 +428,7 @@ dis_stringify_modifiers (metadata_t *m, int n, MonoCustomMod *mod)
 }
 
 char*
-dis_stringify_param (metadata_t *m, MonoParam *param) 
+dis_stringify_param (MonoMetadata *m, MonoParam *param) 
 {
 	char *mods = NULL;
 	char *t;
@@ -448,13 +448,13 @@ dis_stringify_param (metadata_t *m, MonoParam *param)
 }
 
 char*
-dis_stringify_method_signature (metadata_t *m, MonoMethodSignature *method)
+dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method)
 {
 	return g_strdup ("method-signature");
 }
 
 char*
-dis_stringify_type (metadata_t *m, MonoType *type)
+dis_stringify_type (MonoMetadata *m, MonoType *type)
 {
 	char *bare = NULL;
 	char *byref;
@@ -466,36 +466,36 @@ dis_stringify_type (metadata_t *m, MonoType *type)
 	byref = type->byref ? "ref " : "";
 
 	switch (type->type){
-	case ELEMENT_TYPE_BOOLEAN:
-	case ELEMENT_TYPE_CHAR:
-	case ELEMENT_TYPE_I1:
-	case ELEMENT_TYPE_U1:
-	case ELEMENT_TYPE_I2:
-	case ELEMENT_TYPE_U2:
-	case ELEMENT_TYPE_I4:
-	case ELEMENT_TYPE_U4:
-	case ELEMENT_TYPE_I8:
-	case ELEMENT_TYPE_U8:
-	case ELEMENT_TYPE_R4:
-	case ELEMENT_TYPE_R8:
-	case ELEMENT_TYPE_I:
-	case ELEMENT_TYPE_U:
-	case ELEMENT_TYPE_STRING:
-	case ELEMENT_TYPE_OBJECT:
-	case ELEMENT_TYPE_TYPEDBYREF:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_TYPEDBYREF:
 		bare = g_strdup (map (type->type, element_type_map));
 		break;
 		
-	case ELEMENT_TYPE_VALUETYPE:
-	case ELEMENT_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
 		bare = dis_stringify_token (m, type->data.token);
 		break;
 		
-	case ELEMENT_TYPE_FNPTR:
+	case MONO_TYPE_FNPTR:
 		bare = dis_stringify_method_signature (m, type->data.method);
 		break;
-	case ELEMENT_TYPE_PTR:
-	case ELEMENT_TYPE_SZARRAY: {
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY: {
 		char *child_type;
 		char *mods;
 		if (type->custom_mod) {
@@ -506,12 +506,12 @@ dis_stringify_type (metadata_t *m, MonoType *type)
 			child_type = dis_stringify_type (m, type->data.type);
 		}
 		
-		bare = g_strdup_printf (type->type == ELEMENT_TYPE_PTR ? "%s%s*" : "%s%s[]", mods, child_type);
+		bare = g_strdup_printf (type->type == MONO_TYPE_PTR ? "%s%s*" : "%s%s[]", mods, child_type);
 		g_free (child_type);
 		g_free (mods);
 		break;
 	}
-	case ELEMENT_TYPE_ARRAY:
+	case MONO_TYPE_ARRAY:
 		bare = dis_stringify_array (m, type->data.array);
 		break;
 	default:
@@ -535,7 +535,7 @@ dis_stringify_type (metadata_t *m, MonoType *type)
  * Returns: the new ptr to continue decoding
  */
 const char *
-get_type (metadata_t *m, const char *ptr, char **result)
+get_type (MonoMetadata *m, const char *ptr, char **result)
 {
 	MonoType *type = mono_metadata_parse_type (m, ptr, &ptr);
 	*result = dis_stringify_type (m, type);
@@ -548,7 +548,7 @@ get_type (metadata_t *m, const char *ptr, char **result)
  * Returns a stringified representation of a FieldSig (22.2.4)
  */
 char *
-get_field_signature (metadata_t *m, guint32 blob_signature)
+get_field_signature (MonoMetadata *m, guint32 blob_signature)
 {
 	char *allocated_modifier_string, *allocated_type_string;
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -579,8 +579,8 @@ get_field_signature (metadata_t *m, guint32 blob_signature)
 	return res;
 }
 
-ElementTypeEnum
-get_field_literal_type (metadata_t *m, guint32 blob_signature)
+MonoTypeEnum
+get_field_literal_type (MonoMetadata *m, guint32 blob_signature)
 {
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	int len;
@@ -596,7 +596,7 @@ get_field_literal_type (metadata_t *m, guint32 blob_signature)
 	if (allocated_modifier_string)
 		g_free (allocated_modifier_string);
 
-	return (ElementTypeEnum) *ptr;
+	return (MonoTypeEnum) *ptr;
 	
 }
 
@@ -608,7 +608,7 @@ get_field_literal_type (metadata_t *m, guint32 blob_signature)
  * decodes the literal indexed by @token.
  */
 char *
-decode_literal (metadata_t *m, guint32 token)
+decode_literal (MonoMetadata *m, guint32 token)
 {
 	return g_strdup ("LITERAL_VALUE");
 }
@@ -624,7 +624,7 @@ decode_literal (metadata_t *m, guint32 token)
  * Returns: the new ptr to continue decoding.
  */
 const char *
-get_ret_type (metadata_t *m, const char *ptr, char **ret_type)
+get_ret_type (MonoMetadata *m, const char *ptr, char **ret_type)
 {
 	GString *str = g_string_new ("");
 	char *mod = NULL;
@@ -637,15 +637,15 @@ get_ret_type (metadata_t *m, const char *ptr, char **ret_type)
 		g_free (mod);
 	}
 
-	if (*ptr == ELEMENT_TYPE_TYPEDBYREF){
+	if (*ptr == MONO_TYPE_TYPEDBYREF){
 		/* TODO: what does `typedbyref' mean? */
 		g_string_append (str, "/* FIXME: What does this mean? */ typedbyref ");
 		ptr++;
-	} else if (*ptr == ELEMENT_TYPE_VOID){
+	} else if (*ptr == MONO_TYPE_VOID){
 		 g_string_append (str, "void");
 		 ptr++;
 	} else {
-		if (*ptr == ELEMENT_TYPE_BYREF){
+		if (*ptr == MONO_TYPE_BYREF){
 			g_string_append (str, "[out] ");
 			ptr++;
 		}
@@ -672,7 +672,7 @@ get_ret_type (metadata_t *m, const char *ptr, char **ret_type)
  * Returns: the new ptr to continue decoding.
  */
 const char *
-get_param (metadata_t *m, const char *ptr, char **retval)
+get_param (MonoMetadata *m, const char *ptr, char **retval)
 {
 	GString *str = g_string_new ("");
 	char *allocated_mod_string, *allocated_type_string;
@@ -684,11 +684,11 @@ get_param (metadata_t *m, const char *ptr, char **retval)
 		g_free (allocated_mod_string);
 	}
 	
-	if (*ptr == ELEMENT_TYPE_TYPEDBYREF){
+	if (*ptr == MONO_TYPE_TYPEDBYREF){
 		g_string_append (str, "/*FIXME: what does typedbyref mean? */ typedbyref ");
 		ptr++;
 	} else {
-		if (*ptr == ELEMENT_TYPE_BYREF){
+		if (*ptr == MONO_TYPE_BYREF){
 			g_string_append (str, "[out] ");
 			ptr++;
 		}
@@ -760,7 +760,7 @@ field_flags (guint32 f)
  * Returns a stringifed representation of a MethodRefSig (22.2.2)
  */
 char *
-get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fancy_name)
+get_methodref_signature (MonoMetadata *m, guint32 blob_signature, const char *fancy_name)
 {
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -836,10 +836,10 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fanc
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_field (metadata_t *m, guint32 token)
+get_field (MonoMetadata *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
-	metadata_tableinfo_t *tdef = &m->tables [META_TABLE_TYPEDEF];
+	MonoTableInfo *tdef = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [3];
 	char *sig, *res, *type;
 	guint32 type_idx;
@@ -848,12 +848,12 @@ get_field (metadata_t *m, guint32 token)
 	 * We can get here also with a MenberRef token (for a field
 	 * defined in another module/assembly, just like in get_method ()
 	 */
-	if (mono_metadata_token_code (token) == TOKEN_TYPE_MEMBER_REF) {
+	if (mono_metadata_token_code (token) == MONO_TOKEN_MEMBER_REF) {
 		return g_strdup_printf ("fieldref-0x%08x", token);
 	}
-	g_assert (mono_metadata_token_code (token) == TOKEN_TYPE_FIELD_DEF);
+	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
 
-	mono_metadata_decode_row (&m->tables [META_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
 	sig = get_field_signature (m, cols [2]);
 
 	/*
@@ -873,7 +873,7 @@ get_field (metadata_t *m, guint32 token)
 }
 
 static char *
-get_memberref_parent (metadata_t *m, guint32 mrp_token)
+get_memberref_parent (MonoMetadata *m, guint32 mrp_token)
 {
 	/*
 	 * mrp_index is a MemberRefParent coded index
@@ -911,16 +911,16 @@ get_memberref_parent (metadata_t *m, guint32 mrp_token)
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_method (metadata_t *m, guint32 token)
+get_method (MonoMetadata *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [3], method_cols [6];
 	char *res, *class, *fancy_name, *sig;
 	
 	switch (mono_metadata_token_code (token)){
-	case TOKEN_TYPE_METHOD_DEF:
+	case MONO_TOKEN_METHOD_DEF:
 
-		mono_metadata_decode_row (&m->tables [META_TABLE_METHOD], 
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
 					  idx - 1, method_cols, 6);
 
 		fancy_name = mono_metadata_string_heap (m, method_cols [3]);
@@ -929,9 +929,9 @@ get_method (metadata_t *m, guint32 token)
 
 		return sig;
 		
-	case TOKEN_TYPE_MEMBER_REF: {
+	case MONO_TOKEN_MEMBER_REF: {
 		
-		mono_metadata_decode_row (&m->tables [META_TABLE_MEMBERREF],
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 					  idx - 1, member_cols,
 					  CSIZE (member_cols));
 		class = get_memberref_parent (m, member_cols [0]);
@@ -965,7 +965,7 @@ get_method (metadata_t *m, guint32 token)
  * constant.
  */
 char *
-get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
+get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
 {
 	const char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
@@ -973,38 +973,38 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 	len = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (t){
-	case ELEMENT_TYPE_BOOLEAN:
+	case MONO_TYPE_BOOLEAN:
 		return g_strdup_printf ("%s", *ptr ? "true" : "false");
 		
-	case ELEMENT_TYPE_CHAR:
+	case MONO_TYPE_CHAR:
 		return g_strdup_printf ("%c", *ptr);
 		
-	case ELEMENT_TYPE_U1:
+	case MONO_TYPE_U1:
 		return g_strdup_printf ("0x%02x", (int) (*ptr));
 		break;
 		
-	case ELEMENT_TYPE_I2:
+	case MONO_TYPE_I2:
 		return g_strdup_printf ("%d", (int) (*(gint16 *) ptr));
 		
-	case ELEMENT_TYPE_I4:
+	case MONO_TYPE_I4:
 		return g_strdup_printf ("%d", *(gint32 *) ptr);
 		
-	case ELEMENT_TYPE_I8:
+	case MONO_TYPE_I8:
 		/*
 		 * FIXME: This is not endian portable, does only 
 		 * matter for debugging, but still.
 		 */
 		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));
 		
-	case ELEMENT_TYPE_U8:
+	case MONO_TYPE_U8:
 		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));		
-	case ELEMENT_TYPE_R4:
+	case MONO_TYPE_R4:
 		return g_strdup_printf ("%g", (double) (* (float *) ptr));
 		
-	case ELEMENT_TYPE_R8:
+	case MONO_TYPE_R8:
 		return g_strdup_printf ("%g", * (double *) ptr);
 		
-	case ELEMENT_TYPE_STRING: {
+	case MONO_TYPE_STRING: {
 		int len, i, j, e;
 		char *res;
 		e = len = 0;
@@ -1043,23 +1043,23 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 		return res;
 	}
 		
-	case ELEMENT_TYPE_CLASS:
+	case MONO_TYPE_CLASS:
 		return g_strdup ("CLASS CONSTANT.  MUST BE ZERO");
 		
 		/*
 		 * These are non CLS compliant:
 		 */
-	case ELEMENT_TYPE_I1:
+	case MONO_TYPE_I1:
 		return g_strdup_printf ("%d", (int) *ptr);
 
-	case ELEMENT_TYPE_U2:
+	case MONO_TYPE_U2:
 		return g_strdup_printf ("0x%04x", (unsigned int) (*(guint16 *) ptr));
 		
-	case ELEMENT_TYPE_U4:
+	case MONO_TYPE_U4:
 		return g_strdup_printf ("0x%04x", (unsigned int) (*(guint32 *) ptr));
 		
 	default:
-		g_error ("Unknown ELEMENT_TYPE (%d) on constant at Blob index (0x%08x)\n",
+		g_error ("Unknown MONO_TYPE (%d) on constant at Blob index (0x%08x)\n",
 			 (int) *ptr, blob_index);
 		return g_strdup_printf ("Unknown");
 	}
@@ -1075,10 +1075,10 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
  * constant.
  */
 char *
-get_token (metadata_t *m, guint32 token)
+get_token (MonoMetadata *m, guint32 token)
 {
 	switch (mono_metadata_token_code (token)){
-	case TOKEN_TYPE_FIELD_DEF:
+	case MONO_TOKEN_FIELD_DEF:
 		return (get_field (m, token));
 		
 	default:
@@ -1093,13 +1093,13 @@ get_token (metadata_t *m, guint32 token)
  * get_token_type:
  * @m: metadata context
  * @token: the token can belong to any of the following tables:
- * TOKEN_TYPE_TYPE_REF, TOKEN_TYPE_TYPE_DEF, TOKEN_TYPE_TYPE_SPEC
+ * MONO_TOKEN_TYPE_REF, MONO_TOKEN_TYPE_DEF, MONO_TOKEN_TYPE_SPEC
  *
  * Returns: a stringified version of the MethodDef or MethodRef or TypeSpecn
  * at (token & 0xffffff) 
  */
 char *
-get_token_type (metadata_t *m, guint32 token)
+get_token_type (MonoMetadata *m, guint32 token)
 {
 	char *temp = NULL, *s;
 	int idx;
@@ -1107,17 +1107,17 @@ get_token_type (metadata_t *m, guint32 token)
 	idx = mono_metadata_token_index (token);
 	
 	switch (mono_metadata_token_code (token)){
-	case TOKEN_TYPE_TYPE_DEF:
+	case MONO_TOKEN_TYPE_DEF:
 		temp = get_typedef (m, idx);
 		s = g_strdup_printf ("%s", temp);
 		break;
 		
-	case TOKEN_TYPE_TYPE_REF: 
+	case MONO_TOKEN_TYPE_REF: 
 		temp = get_typeref (m, idx);
 		s = g_strdup_printf ("%s", temp);
 		break;
 		
-	case TOKEN_TYPE_TYPE_SPEC:
+	case MONO_TOKEN_TYPE_SPEC:
 		s = get_typespec (m, idx);
 		break;
 

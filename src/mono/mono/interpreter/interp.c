@@ -78,9 +78,9 @@ ves_real_abort (int line, MonoMethod *mh,
 static void
 init_class (MonoClass *klass)
 {
-	guint32 cols [META_METHOD_SIZE];
-	metadata_t *m;
-	metadata_tableinfo_t *t;
+	guint32 cols [MONO_METHOD_SIZE];
+	MonoMetadata *m;
+	MonoTableInfo *t;
 	int i;
 	
 	if (klass->inited)
@@ -89,13 +89,13 @@ init_class (MonoClass *klass)
 		init_class (klass->parent);
 	
 	m = &klass->image->metadata;
-	t = &m->tables [META_TABLE_METHOD];
+	t = &m->tables [MONO_TABLE_METHOD];
 
 	for (i = klass->method.first; i < klass->method.last; ++i) {
-		mono_metadata_decode_row (t, i, cols, META_METHOD_SIZE);
+		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 		
-		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [META_METHOD_NAME])) == 0) {
-			MonoMethod *cctor = mono_get_method (klass->image, TOKEN_TYPE_METHOD_DEF | (i + 1));
+		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0) {
+			MonoMethod *cctor = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1));
 			ves_exec_method (cctor, NULL);
 			mono_free_method (cctor);
 			klass->inited = 1;
@@ -117,33 +117,33 @@ init_class (MonoClass *klass)
 static MonoObject *
 newobj (MonoImage *image, guint32 token)
 {
-	metadata_t *m = &image->metadata;
+	MonoMetadata *m = &image->metadata;
 	MonoObject *result = NULL;
 	
 	switch (mono_metadata_token_code (token)){
-	case TOKEN_TYPE_METHOD_DEF: {
+	case MONO_TOKEN_METHOD_DEF: {
 		guint32 idx = mono_metadata_typedef_from_method (m, token);
-		result = mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+		result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
 		break;
 	}
-	case TOKEN_TYPE_MEMBER_REF: {
-		guint32 member_cols [3];
+	case MONO_TOKEN_MEMBER_REF: {
+		guint32 member_cols [MONO_MEMBERREF_SIZE];
 		guint32 mpr_token, table, idx;
 		
 		mono_metadata_decode_row (
-			&m->tables [META_TABLE_MEMBERREF],
+			&m->tables [MONO_TABLE_MEMBERREF],
 			mono_metadata_token_index (token) - 1,
 			member_cols, CSIZE (member_cols));
-		mpr_token = member_cols [0];
+		mpr_token = member_cols [MONO_MEMBERREF_CLASS];
 		table = mpr_token & 7;
 		idx = mpr_token >> 3;
 		
 		switch (table){
 		case 0: /* TypeDef */
-			result = mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+			result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
 			break;
 		case 1: /* TypeRef */
-			result = mono_object_new (image, TOKEN_TYPE_TYPE_REF | idx);
+			result = mono_object_new (image, MONO_TOKEN_TYPE_REF | idx);
 			break;
 		case 2: /* ModuleRef */
 			g_error ("Unhandled: ModuleRef");
@@ -167,7 +167,7 @@ static MonoMethod*
 get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 {
 	switch (mono_metadata_token_table (token)) {
-	case META_TABLE_METHOD:
+	case MONO_TABLE_METHOD:
 		return mono_get_method (image, token);
 	}
 	g_error ("got virtual method: 0x%x\n", token);
@@ -179,37 +179,37 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 {
 	stackval result;
 	switch (type->type) {
-	case ELEMENT_TYPE_I1:
+	case MONO_TYPE_I1:
 		result.type = VAL_I32;
 		result.data.i = *(gint8*)(data + offset);
 		break;
-	case ELEMENT_TYPE_U1:
-	case ELEMENT_TYPE_BOOLEAN:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
 		result.type = VAL_I32;
 		result.data.i = *(guint8*)(data + offset);
 		break;
-	case ELEMENT_TYPE_I2:
+	case MONO_TYPE_I2:
 		result.type = VAL_I32;
 		result.data.i = *(gint16*)(data + offset);
 		break;
-	case ELEMENT_TYPE_U2:
-	case ELEMENT_TYPE_CHAR:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
 		result.type = VAL_I32;
 		result.data.i = *(guint16*)(data + offset);
 		break;
-	case ELEMENT_TYPE_I4:
+	case MONO_TYPE_I4:
 		result.type = VAL_I32;
 		result.data.i = *(gint32*)(data + offset);
 		break;
-	case ELEMENT_TYPE_U4:
+	case MONO_TYPE_U4:
 		result.type = VAL_I32;
 		result.data.i = *(guint32*)(data + offset);
 		break;
-	case ELEMENT_TYPE_R4:
+	case MONO_TYPE_R4:
 		result.type = VAL_DOUBLE;
 		result.data.f = *(float*)(data + offset);
 		break;
-	case ELEMENT_TYPE_R8:
+	case MONO_TYPE_R8:
 		result.type = VAL_DOUBLE;
 		result.data.f = *(double*)(data + offset);
 		break;
@@ -225,25 +225,25 @@ static void
 stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 {
 	switch (type->type) {
-	case ELEMENT_TYPE_I1:
-	case ELEMENT_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
 		*(guint8*)(data + offset) = val->data.i;
 		break;
-	case ELEMENT_TYPE_BOOLEAN:
+	case MONO_TYPE_BOOLEAN:
 		*(guint8*)(data + offset) = (val->data.i != 0);
 		break;
-	case ELEMENT_TYPE_I2:
-	case ELEMENT_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
 		*(guint16*)(data + offset) = val->data.i;
 		break;
-	case ELEMENT_TYPE_I4:
-	case ELEMENT_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
 		*(gint32*)(data + offset) = val->data.i;
 		break;
-	case ELEMENT_TYPE_R4:
+	case MONO_TYPE_R4:
 		*(float*)(data + offset) = val->data.f;
 		break;
-	case ELEMENT_TYPE_R8:
+	case MONO_TYPE_R8:
 		*(double*)(data + offset) = val->data.f;
 		break;
 	default:
@@ -274,24 +274,24 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 
 		switch (mh->signature->params [i]->type->type) {
 
-		case ELEMENT_TYPE_I1:
-		case ELEMENT_TYPE_U1:
-		case ELEMENT_TYPE_BOOLEAN:
-		case ELEMENT_TYPE_I2:
-		case ELEMENT_TYPE_U2:
-		case ELEMENT_TYPE_CHAR:
-		case ELEMENT_TYPE_I4:
-		case ELEMENT_TYPE_U4:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
 			values[i] = &sp [i].data.i;
 			break;
-		case ELEMENT_TYPE_R4:
+		case MONO_TYPE_R4:
 			tmp_float [i] = sp [i].data.f;
 			values[i] = &tmp_float [i];
 			break;
-		case ELEMENT_TYPE_R8:
+		case MONO_TYPE_R8:
 			values[i] = &sp [i].data.f;
 			break;
-		case ELEMENT_TYPE_STRING: /* fixme: this is wrong ? */
+		case MONO_TYPE_STRING: /* fixme: this is wrong ? */
 			values[i] = &sp [i].data.p;
 			break;
  		default:
@@ -925,7 +925,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) {
-			metadata_t *m = &mh->image->metadata;
+			MonoMetadata *m = &mh->image->metadata;
 		        const char *name;
 			guint32 index;
 			
@@ -1029,7 +1029,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			
 			/* need to handle fieldrefs */
 			klass = mono_class_get (mh->image, 
-				TOKEN_TYPE_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
+				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			*sp = stackval_from_data (field->type->type, (char*)klass, field->offset);
@@ -1049,7 +1049,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			/* need to handle fieldrefs */
 			klass = mono_class_get (mh->image, 
-				TOKEN_TYPE_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
+				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			stackval_to_data (field->type->type, sp, (char*)klass, field->offset);
@@ -1234,7 +1234,7 @@ static int
 ves_exec (MonoAssembly *assembly)
 {
 	MonoImage *image = assembly->image;
-	cli_image_info_t *iinfo;
+	MonoCLIImageInfo *iinfo;
 	stackval result;
 	MonoMethod *mh;
 

@@ -16,6 +16,7 @@
 #include "endian.h"
 #include "cil-coff.h"
 #include "tokentype.h"
+#include "private.h"
 
 /*
  * Encoding of the "description" argument:
@@ -363,7 +364,7 @@ inverse of this mapping.
 
 /* Reference: Partition II - 23.2.6 */
 static int
-compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *result_bitfield)
+compute_size (MonoMetadata *meta, MonoMetaTable *table, int tableindex, guint32 *result_bitfield)
 {
 	guint32 bitfield = 0;
 	int size = 0, field_size;
@@ -396,61 +397,61 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * get the size for this column - lupus 
 			 */
 			switch (tableindex) {
-			case META_TABLE_ASSEMBLYREFOS:
+			case MONO_TABLE_ASSEMBLYREFOS:
 				g_assert (i == 3);
-				field_size = idx_size (META_TABLE_ASSEMBLYREF); break;
-			case META_TABLE_ASSEMBLYPROCESSOR:
+				field_size = idx_size (MONO_TABLE_ASSEMBLYREF); break;
+			case MONO_TABLE_ASSEMBLYPROCESSOR:
 				g_assert (i == 1);
-				field_size = idx_size (META_TABLE_ASSEMBLYREF); break;
-			case META_TABLE_CLASSLAYOUT:
+				field_size = idx_size (MONO_TABLE_ASSEMBLYREF); break;
+			case MONO_TABLE_CLASSLAYOUT:
 				g_assert (i == 2);
-				field_size = idx_size (META_TABLE_TYPEDEF); break;
-			case META_TABLE_EVENTMAP:
+				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+			case MONO_TABLE_EVENTMAP:
 				g_assert (i == 0 || i == 1);
-				field_size = i ? idx_size (META_TABLE_EVENT):
-					idx_size(META_TABLE_TYPEDEF); 
+				field_size = i ? idx_size (MONO_TABLE_EVENT):
+					idx_size(MONO_TABLE_TYPEDEF); 
 				break;
-			case META_TABLE_EVENT:
+			case MONO_TABLE_EVENT:
 				g_assert (i == 2);
-				field_size = MAX (idx_size (META_TABLE_TYPEDEF), idx_size(META_TABLE_TYPEREF));
-				field_size = MAX (field_size, idx_size(META_TABLE_TYPESPEC));
+				field_size = MAX (idx_size (MONO_TABLE_TYPEDEF), idx_size(MONO_TABLE_TYPEREF));
+				field_size = MAX (field_size, idx_size(MONO_TABLE_TYPESPEC));
 				break;
-			case META_TABLE_EXPORTEDTYPE:
+			case MONO_TABLE_EXPORTEDTYPE:
 				g_assert (i == 1);
-				field_size = idx_size (META_TABLE_TYPEDEF); break;
-			case META_TABLE_FIELDLAYOUT:
+				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+			case MONO_TABLE_FIELDLAYOUT:
 				g_assert (i == 1);
-				field_size = idx_size (META_TABLE_FIELD); break;
-			case META_TABLE_FIELDRVA:
+				field_size = idx_size (MONO_TABLE_FIELD); break;
+			case MONO_TABLE_FIELDRVA:
 				g_assert (i == 1);
-				field_size = idx_size (META_TABLE_FIELD); break;
-			case META_TABLE_IMPLMAP:
+				field_size = idx_size (MONO_TABLE_FIELD); break;
+			case MONO_TABLE_IMPLMAP:
 				g_assert (i == 3);
-				field_size = idx_size (META_TABLE_MODULEREF); break;
-			case META_TABLE_INTERFACEIMPL:
+				field_size = idx_size (MONO_TABLE_MODULEREF); break;
+			case MONO_TABLE_INTERFACEIMPL:
 				g_assert (i == 0);
-				field_size = idx_size (META_TABLE_TYPEDEF); break;
-			case META_TABLE_METHOD:
+				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+			case MONO_TABLE_METHOD:
 				g_assert (i == 5);
-				field_size = idx_size (META_TABLE_PARAM); break;
-			case META_TABLE_METHODIMPL:
+				field_size = idx_size (MONO_TABLE_PARAM); break;
+			case MONO_TABLE_METHODIMPL:
 				g_assert (i == 0);
-				field_size = idx_size (META_TABLE_TYPEDEF); break;
-			case META_TABLE_METHODSEMANTICS:
+				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+			case MONO_TABLE_METHODSEMANTICS:
 				g_assert (i == 1);
-				field_size = idx_size (META_TABLE_METHOD); break;
-			case META_TABLE_NESTEDCLASS:
+				field_size = idx_size (MONO_TABLE_METHOD); break;
+			case MONO_TABLE_NESTEDCLASS:
 				g_assert (i == 0 || i == 1);
-				field_size = idx_size (META_TABLE_TYPEDEF); break;
-			case META_TABLE_PROPERTYMAP:
+				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+			case MONO_TABLE_PROPERTYMAP:
 				g_assert (i == 0 || i == 1);
-				field_size = i ? idx_size (META_TABLE_PROPERTY):
-					idx_size(META_TABLE_TYPEDEF); 
+				field_size = i ? idx_size (MONO_TABLE_PROPERTY):
+					idx_size(MONO_TABLE_TYPEDEF); 
 				break;
-			case META_TABLE_TYPEDEF:
+			case MONO_TABLE_TYPEDEF:
 				g_assert (i == 4 || i == 5);
-				field_size = i == 4 ? idx_size (META_TABLE_FIELD):
-					idx_size(META_TABLE_METHOD); 
+				field_size = i == 4 ? idx_size (MONO_TABLE_FIELD):
+					idx_size(MONO_TABLE_METHOD); 
 				break;
 			default:
 				g_assert_not_reached ();
@@ -464,9 +465,9 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * HasConstant: ParamDef, FieldDef, Property
 			 */
 		case MONO_MT_CONST_IDX:
-			n = MAX (meta->tables [META_TABLE_PARAM].rows,
-				 meta->tables [META_TABLE_FIELD].rows);
-			n = MAX (n, meta->tables [META_TABLE_PROPERTY].rows);
+			n = MAX (meta->tables [MONO_TABLE_PARAM].rows,
+				 meta->tables [MONO_TABLE_FIELD].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_PROPERTY].rows);
 
 			/* 2 bits to encode tag */
 			field_size = rtsize (n, 16-2);
@@ -488,25 +489,25 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 				break;
 			}*/
 			
-			n = MAX (meta->tables [META_TABLE_METHOD].rows,
-				 meta->tables [META_TABLE_FIELD].rows);
-			n = MAX (n, meta->tables [META_TABLE_TYPEREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_TYPEDEF].rows);
-			n = MAX (n, meta->tables [META_TABLE_PARAM].rows);
-			n = MAX (n, meta->tables [META_TABLE_INTERFACEIMPL].rows);
-			n = MAX (n, meta->tables [META_TABLE_MEMBERREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_MODULE].rows);
+			n = MAX (meta->tables [MONO_TABLE_METHOD].rows,
+				 meta->tables [MONO_TABLE_FIELD].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_TYPEREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_TYPEDEF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_PARAM].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_INTERFACEIMPL].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MEMBERREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MODULE].rows);
 			/* Permission seems to be a blob heap pointer */
-			n = MAX (n, meta->tables [META_TABLE_PROPERTY].rows);
-			n = MAX (n, meta->tables [META_TABLE_EVENT].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_PROPERTY].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_EVENT].rows);
 			/* Signature seems to be a blob heap pointer */
-			n = MAX (n, meta->tables [META_TABLE_MODULEREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_TYPESPEC].rows);
-			n = MAX (n, meta->tables [META_TABLE_ASSEMBLY].rows);
-			n = MAX (n, meta->tables [META_TABLE_ASSEMBLYREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_FILE].rows);
-			n = MAX (n, meta->tables [META_TABLE_EXPORTEDTYPE].rows);
-			n = MAX (n, meta->tables [META_TABLE_MANIFESTRESOURCE].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MODULEREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_ASSEMBLY].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_ASSEMBLYREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_FILE].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_EXPORTEDTYPE].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MANIFESTRESOURCE].rows);
 
 			/* 5 bits to encode */
 			field_size = rtsize (n, 16-5);
@@ -524,10 +525,10 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 				break;
 			}*/
 			
-			n = MAX (meta->tables [META_TABLE_TYPEREF].rows,
-				 meta->tables [META_TABLE_TYPEDEF].rows);
-			n = MAX (n, meta->tables [META_TABLE_METHOD].rows);
-			n = MAX (n, meta->tables [META_TABLE_MEMBERREF].rows);
+			n = MAX (meta->tables [MONO_TABLE_TYPEREF].rows,
+				 meta->tables [MONO_TABLE_TYPEDEF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_METHOD].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MEMBERREF].rows);
 
 			/* 3 bits to encode */
 			field_size = rtsize (n, 16-3);
@@ -537,9 +538,9 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * HasDeclSecurity: Typedef, MethodDef, Assembly
 			 */
 		case MONO_MT_HASDEC_IDX:
-			n = MAX (meta->tables [META_TABLE_TYPEDEF].rows,
-				 meta->tables [META_TABLE_METHOD].rows);
-			n = MAX (n, meta->tables [META_TABLE_ASSEMBLY].rows);
+			n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows,
+				 meta->tables [MONO_TABLE_METHOD].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_ASSEMBLY].rows);
 
 			/* 2 bits to encode */
 			field_size = rtsize (n, 16-2);
@@ -549,9 +550,9 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * Implementation: File, AssemblyRef, ExportedType
 			 */
 		case MONO_MT_IMPL_IDX:
-			n = MAX (meta->tables [META_TABLE_FILE].rows,
-				 meta->tables [META_TABLE_ASSEMBLYREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_EXPORTEDTYPE].rows);
+			n = MAX (meta->tables [MONO_TABLE_FILE].rows,
+				 meta->tables [MONO_TABLE_ASSEMBLYREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_EXPORTEDTYPE].rows);
 
 			/* 2 bits to encode tag */
 			field_size = rtsize (n, 16-2);
@@ -561,8 +562,8 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * HasFieldMarshall: FieldDef, ParamDef
 			 */
 		case MONO_MT_HFM_IDX:
-			n = MAX (meta->tables [META_TABLE_FIELD].rows,
-				 meta->tables [META_TABLE_PARAM].rows);
+			n = MAX (meta->tables [MONO_TABLE_FIELD].rows,
+				 meta->tables [MONO_TABLE_PARAM].rows);
 
 			/* 1 bit used to encode tag */
 			field_size = rtsize (n, 16-1);
@@ -572,8 +573,8 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * MemberForwarded: FieldDef, MethodDef
 			 */
 		case MONO_MT_MF_IDX:
-			n = MAX (meta->tables [META_TABLE_FIELD].rows,
-				 meta->tables [META_TABLE_METHOD].rows);
+			n = MAX (meta->tables [MONO_TABLE_FIELD].rows,
+				 meta->tables [MONO_TABLE_METHOD].rows);
 
 			/* 1 bit used to encode tag */
 			field_size = rtsize (n, 16-1);
@@ -583,9 +584,9 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * TypeDefOrRef: TypeDef, ParamDef, TypeSpec
 			 */
 		case MONO_MT_TDOR_IDX:
-			n = MAX (meta->tables [META_TABLE_TYPEDEF].rows,
-				 meta->tables [META_TABLE_PARAM].rows);
-			n = MAX (n, meta->tables [META_TABLE_TYPESPEC].rows);
+			n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows,
+				 meta->tables [MONO_TABLE_PARAM].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
 
 			/* 2 bits to encode */
 			field_size = rtsize (n, 16-2);
@@ -595,11 +596,11 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * MemberRefParent: TypeDef, TypeRef, ModuleDef, ModuleRef, TypeSpec
 			 */
 		case MONO_MT_MRP_IDX:
-			n = MAX (meta->tables [META_TABLE_TYPEDEF].rows,
-				 meta->tables [META_TABLE_TYPEREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_MODULE].rows);
-			n = MAX (n, meta->tables [META_TABLE_MODULEREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_TYPESPEC].rows);
+			n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows,
+				 meta->tables [MONO_TABLE_TYPEREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MODULE].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MODULEREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
 
 			/* 3 bits to encode */
 			field_size = rtsize (n, 16 - 3);
@@ -611,8 +612,8 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * MethodDefOrRef: MethodDef, MemberRef
 			 */
 		case MONO_MT_HS_IDX:
-			n = MAX (meta->tables [META_TABLE_METHOD].rows,
-				 meta->tables [META_TABLE_MEMBERREF].rows);
+			n = MAX (meta->tables [MONO_TABLE_METHOD].rows,
+				 meta->tables [MONO_TABLE_MEMBERREF].rows);
 
 			/* 1 bit used to encode tag */
 			field_size = rtsize (n, 16-1);
@@ -622,10 +623,10 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * ResolutionScope: Module, ModuleRef, AssemblyRef, TypeRef
 			 */
 		case MONO_MT_RS_IDX:
-			n = MAX (meta->tables [META_TABLE_MODULE].rows,
-				 meta->tables [META_TABLE_MODULEREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_ASSEMBLYREF].rows);
-			n = MAX (n, meta->tables [META_TABLE_TYPEREF].rows);
+			n = MAX (meta->tables [MONO_TABLE_MODULE].rows,
+				 meta->tables [MONO_TABLE_MODULEREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_ASSEMBLYREF].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_TYPEREF].rows);
 
 			/* 2 bits used to encode tag (ECMA spec claims 3) */
 			field_size = rtsize (n, 16 - 2);
@@ -658,7 +659,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
  * This is an internal function used by the image loader code.
  */
 void
-mono_metadata_compute_table_bases (metadata_t *meta)
+mono_metadata_compute_table_bases (MonoMetadata *meta)
 {
 	int i;
 	char *base = meta->tables_base;
@@ -685,7 +686,7 @@ mono_metadata_compute_table_bases (metadata_t *meta)
  * whose code is @table.
  */
 char *
-mono_metadata_locate (metadata_t *meta, int table, int idx)
+mono_metadata_locate (MonoMetadata *meta, int table, int idx)
 {
 	/* idx == 0 refers always to NULL */
 	g_return_val_if_fail (idx > 0 && idx <= meta->tables [table].rows, "");
@@ -694,7 +695,7 @@ mono_metadata_locate (metadata_t *meta, int table, int idx)
 }
 
 char *
-mono_metadata_locate_token (metadata_t *meta, guint32 token)
+mono_metadata_locate_token (MonoMetadata *meta, guint32 token)
 {
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
 }
@@ -706,11 +707,11 @@ mono_metadata_locate_token (metadata_t *meta, guint32 token)
  * Returns the MonoMetaTable structure for table @table
  */
 MonoMetaTable *
-mono_metadata_get_table (MetaTableEnum table)
+mono_metadata_get_table (MonoMetaTableEnum table)
 {
 	int x = (int) table;
 
-	g_return_val_if_fail ((x > 0) && (x <= META_TABLE_LAST), NULL);
+	g_return_val_if_fail ((x > 0) && (x <= MONO_TABLE_LAST), NULL);
 
 	return tables [table].table;
 }
@@ -723,17 +724,17 @@ mono_metadata_get_table (MetaTableEnum table)
  * Returns: an in-memory pointer to the @index in the string heap.
  */
 const char *
-mono_metadata_string_heap (metadata_t *meta, guint32 index)
+mono_metadata_string_heap (MonoMetadata *meta, guint32 index)
 {
-	g_return_val_if_fail (index < meta->heap_strings.sh_size, "");
-	return meta->raw_metadata + meta->heap_strings.sh_offset + index;
+	g_return_val_if_fail (index < meta->heap_strings.size, "");
+	return meta->raw_metadata + meta->heap_strings.offset + index;
 }
 
 const char *
-mono_metadata_user_string (metadata_t *meta, guint32 index)
+mono_metadata_user_string (MonoMetadata *meta, guint32 index)
 {
-	g_return_val_if_fail (index < meta->heap_us.sh_size, "");
-	return meta->raw_metadata + meta->heap_us.sh_offset + index;
+	g_return_val_if_fail (index < meta->heap_us.size, "");
+	return meta->raw_metadata + meta->heap_us.offset + index;
 }
 
 /**
@@ -744,10 +745,10 @@ mono_metadata_user_string (metadata_t *meta, guint32 index)
  * Returns: an in-memory pointer to the @index in the Blob heap.
  */
 const char *
-mono_metadata_blob_heap (metadata_t *meta, guint32 index)
+mono_metadata_blob_heap (MonoMetadata *meta, guint32 index)
 {
-	g_return_val_if_fail (index < meta->heap_blob.sh_size, "");
-	return meta->raw_metadata + meta->heap_blob.sh_offset + index;
+	g_return_val_if_fail (index < meta->heap_blob.size, "");
+	return meta->raw_metadata + meta->heap_blob.offset + index;
 }
 
 static const char *
@@ -766,16 +767,16 @@ dword_align (const char *ptr)
  * into the guint32 @res array that has res_size elements
  */
 void
-mono_metadata_decode_row (metadata_tableinfo_t *t, int idx, guint32 *res, int res_size)
+mono_metadata_decode_row (MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
 	guint32 bitfield = t->size_bitfield;
-	int i, count = meta_table_count (bitfield);
+	int i, count = mono_metadata_table_count (bitfield);
 	char *data = t->base + idx * t->row_size;
 	
 	g_assert (res_size == count);
 	
 	for (i = 0; i < count; i++){
-		int n = meta_table_size (bitfield, i);
+		int n = mono_metadata_table_size (bitfield, i);
 
 		switch (n){
 		case 1:
@@ -864,16 +865,16 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
 }
 
 guint32
-mono_metadata_parse_typedef_or_ref (metadata_t *m, const char *ptr, const char **rptr)
+mono_metadata_parse_typedef_or_ref (MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	guint32 token;
 	guint table;
 	token = mono_metadata_decode_value (ptr, &ptr);
 
 	switch (table & 0x03) {
-	case 0: table = META_TABLE_TYPEDEF; break;
-	case 1: table = META_TABLE_TYPEREF; break;
-	case 2: table = META_TABLE_TYPESPEC; break;
+	case 0: table = MONO_TABLE_TYPEDEF; break;
+	case 1: table = MONO_TABLE_TYPEREF; break;
+	case 2: table = MONO_TABLE_TYPESPEC; break;
 	default: g_error ("Unhandled encoding for typedef-or-ref coded index");
 	}
 	if (rptr)
@@ -882,11 +883,11 @@ mono_metadata_parse_typedef_or_ref (metadata_t *m, const char *ptr, const char *
 }
 
 int
-mono_metadata_parse_custom_mod (metadata_t *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
+mono_metadata_parse_custom_mod (MonoMetadata *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
 {
 	MonoCustomMod local;
-	if ((*ptr == ELEMENT_TYPE_CMOD_OPT) ||
-	    (*ptr == ELEMENT_TYPE_CMOD_REQD)) {
+	if ((*ptr == MONO_TYPE_CMOD_OPT) ||
+	    (*ptr == MONO_TYPE_CMOD_REQD)) {
 		if (!dest)
 			dest = &local;
 		dest->mod = *ptr++;
@@ -897,7 +898,7 @@ mono_metadata_parse_custom_mod (metadata_t *m, MonoCustomMod *dest, const char *
 }
 
 MonoArray *
-mono_metadata_parse_array (metadata_t *m, const char *ptr, const char **rptr)
+mono_metadata_parse_array (MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	int i;
 	MonoArray *array = g_new0 (MonoArray, 1);
@@ -932,7 +933,7 @@ mono_metadata_free_array (MonoArray *array)
 }
 
 MonoParam *
-mono_metadata_parse_param (metadata_t *m, int rettype, const char *ptr, const char **rptr)
+mono_metadata_parse_param (MonoMetadata *m, int rettype, const char *ptr, const char **rptr)
 {
 	const char *tmp_ptr = ptr;
 	MonoParam *param;
@@ -949,16 +950,16 @@ mono_metadata_parse_param (metadata_t *m, int rettype, const char *ptr, const ch
 	while (mono_metadata_parse_custom_mod (m, &(param->modifiers[count]), ptr, &ptr))
 		count++;
 	switch (*ptr) {
-	case ELEMENT_TYPE_TYPEDBYREF: 
+	case MONO_TYPE_TYPEDBYREF: 
 		param->typedbyref = 1; 
 		ptr++; 
 		break;
-	case ELEMENT_TYPE_VOID: 
+	case MONO_TYPE_VOID: 
 		if (!rettype)
 			g_error ("void not allowed in param");
 		ptr++;
 		break;
-	case ELEMENT_TYPE_BYREF: 
+	case MONO_TYPE_BYREF: 
 		byref = 1; 
 		ptr++;
 		/* follow through */
@@ -981,7 +982,7 @@ mono_metadata_free_param (MonoParam *param)
 }
 
 MonoMethodSignature *
-mono_metadata_parse_method_signature (metadata_t *m, int def, const char *ptr, const char **rptr)
+mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method = g_new0(MonoMethodSignature, 1);
 	int i;
@@ -998,7 +999,7 @@ mono_metadata_parse_method_signature (metadata_t *m, int def, const char *ptr, c
 	method->params = g_new0(MonoParam*, method->param_count);
 	method->sentinelpos = -1;
 	for (i = 0; i < method->param_count; ++i) {
-		if (*ptr == ELEMENT_TYPE_SENTINEL) {
+		if (*ptr == MONO_TYPE_SENTINEL) {
 			if (method->call_convention != MONO_CALL_VARARG || def)
 					g_error ("found sentinel for methoddef or no vararg method");
 			method->sentinelpos = i;
@@ -1039,34 +1040,34 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
  * This extracts a Type as specified in Partition II (22.2.12) 
  */
 static void
-do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, const char **rptr)
+do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
-	case ELEMENT_TYPE_BOOLEAN:
-	case ELEMENT_TYPE_CHAR:
-	case ELEMENT_TYPE_I1:
-	case ELEMENT_TYPE_U1:
-	case ELEMENT_TYPE_I2:
-	case ELEMENT_TYPE_U2:
-	case ELEMENT_TYPE_I4:
-	case ELEMENT_TYPE_U4:
-	case ELEMENT_TYPE_I8:
-	case ELEMENT_TYPE_U8:
-	case ELEMENT_TYPE_R4:
-	case ELEMENT_TYPE_R8:
-	case ELEMENT_TYPE_I:
-	case ELEMENT_TYPE_U:
-	case ELEMENT_TYPE_STRING:
-	case ELEMENT_TYPE_OBJECT:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
 		break;
-	case ELEMENT_TYPE_VALUETYPE:
-	case ELEMENT_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
 		type->data.token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		break;
-	case ELEMENT_TYPE_SZARRAY:
-	case ELEMENT_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
 		if (mono_metadata_parse_custom_mod (m, NULL, ptr, NULL)) {
 			const char *tmp_ptr = ptr;
 			MonoModifiedType *mtype;
@@ -1084,7 +1085,7 @@ do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, con
 			while (mono_metadata_parse_custom_mod (m, &(mtype->modifiers[count]), ptr, &ptr))
 				count++;
 			/* FIXME: mono_metadata_decode_value ... */
-			if (*ptr == ELEMENT_TYPE_VOID) {
+			if (*ptr == MONO_TYPE_VOID) {
 				mtype->type = NULL;
 				ptr++;
 			} else {
@@ -1092,7 +1093,7 @@ do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, con
 			}
 		} else {
 			/* FIXME: mono_metadata_decode_value ... */
-			if (*ptr == ELEMENT_TYPE_VOID) {
+			if (*ptr == MONO_TYPE_VOID) {
 				type->data.type = NULL;
 				ptr++;
 			} else {
@@ -1100,10 +1101,10 @@ do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, con
 			}
 		}
 		break;
-	case ELEMENT_TYPE_FNPTR:
+	case MONO_TYPE_FNPTR:
 		type->data.method = mono_metadata_parse_method_signature (m, 0, ptr, &ptr);
 		break;
-	case ELEMENT_TYPE_ARRAY:
+	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array (m, ptr, &ptr);
 		break;
 	default:
@@ -1124,7 +1125,7 @@ do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, con
  * from the type stored at @ptr in the metadata table @m.
  */
 MonoType *
-mono_metadata_parse_type (metadata_t *m, const char *ptr, const char **rptr)
+mono_metadata_parse_type (MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	/* should probably be allocated in a memchunk */
 	MonoType *type = g_new0(MonoType, 1);
@@ -1138,8 +1139,8 @@ void
 mono_metadata_free_type (MonoType *type)
 {
 	switch (type->type){
-	case ELEMENT_TYPE_SZARRAY:
-	case ELEMENT_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
 		if (!type->custom_mod) {
 			if (type->data.type)
 				mono_metadata_free_type (type->data.type);
@@ -1148,10 +1149,10 @@ mono_metadata_free_type (MonoType *type)
 			g_free (type->data.mtype);
 		}
 		break;
-	case ELEMENT_TYPE_FNPTR:
+	case MONO_TYPE_FNPTR:
 		mono_metadata_free_method_signature (type->data.method);
 		break;
-	case ELEMENT_TYPE_ARRAY:
+	case MONO_TYPE_ARRAY:
 		mono_metadata_free_array (type->data.array);
 		break;
 	}
@@ -1184,7 +1185,7 @@ hex_dump (const char *buffer, int base, int count)
  * @ptr: Points to the beginning of the Section Data (25.3)
  */
 static void
-parse_section_data (MonoMetaMethodHeader *mh, const unsigned char *ptr)
+parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 {
 	unsigned char sect_data_flags;
 	const unsigned char *sptr;
@@ -1200,7 +1201,7 @@ parse_section_data (MonoMetaMethodHeader *mh, const unsigned char *ptr)
 		
 		is_fat = sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT;
 		if (is_fat) {
-			sect_data_len = (ptr [0] << 16) | (ptr [1] << 8) | ptr [0];
+			sect_data_len = (ptr [0] << 16) | (ptr [1] << 8) | ptr [2];
 			ptr += 3;
 		} else {
 			sect_data_len = ptr [0];
@@ -1260,23 +1261,24 @@ parse_section_data (MonoMetaMethodHeader *mh, const unsigned char *ptr)
 	}
 }
 
-MonoMetaMethodHeader *
-mono_metadata_parse_mh (metadata_t *m, const char *ptr)
+MonoMethodHeader *
+mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 {
-	MonoMetaMethodHeader *mh;
+	MonoMethodHeader *mh;
 	unsigned char flags = *(unsigned char *) ptr;
 	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 	guint16 fat_flags;
+	guint32 local_var_sig_tok;
 	int hsize;
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
 
-	mh = g_new0 (MonoMetaMethodHeader, 1);
+	mh = g_new0 (MonoMethodHeader, 1);
 	switch (format){
 	case METHOD_HEADER_TINY_FORMAT:
 		ptr++;
 		mh->max_stack = 8;
-		mh->local_var_sig_tok = 0;
+		local_var_sig_tok = 0;
 		mh->code_size = flags >> 2;
 		mh->code = ptr;
 		break;
@@ -1284,7 +1286,7 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 	case METHOD_HEADER_TINY_FORMAT1:
 		ptr++;
 		mh->max_stack = 8;
-		mh->local_var_sig_tok = 0;
+		local_var_sig_tok = 0;
 
 		//
 		// The spec claims 3 bits, but the Beta2 is
@@ -1302,7 +1304,7 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 		ptr += 2;
 		mh->code_size = *(guint32 *) ptr;
 		ptr += 4;
-		mh->local_var_sig_tok = *(guint32 *) ptr;
+		local_var_sig_tok = *(guint32 *) ptr;
 		ptr += 4;
 
 		if (fat_flags & METHOD_HEADER_INIT_LOCALS)
@@ -1328,14 +1330,14 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 		return NULL;
 	}
 		       
-	if (mh->local_var_sig_tok) {
-		metadata_tableinfo_t *t = &m->tables [META_TABLE_STANDALONESIG];
+	if (local_var_sig_tok) {
+		MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
 		const char *ptr;
-		guint32 cols[1];
+		guint32 cols [MONO_STAND_ALONG_SIGNATURE_SIZE];
 		int len=0, i, bsize;
 
-		mono_metadata_decode_row (t, (mh->local_var_sig_tok & 0xffffff)-1, cols, 1);
-		ptr = mono_metadata_blob_heap (m, cols [0]);
+		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
+		ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONG_SIGNATURE]);
 		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 		if (*ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
@@ -1348,11 +1350,11 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 			const char *p = ptr;
 			val = mono_metadata_decode_blob_size (ptr, &ptr);
 			/* FIXME: store pinned/byref values */
-			if (val == ELEMENT_TYPE_PINNED) {
+			if (val == MONO_TYPE_PINNED) {
 				p = ptr;
 				val = mono_metadata_decode_blob_size (ptr, &ptr);
 			}
-			if (val == ELEMENT_TYPE_BYREF) {
+			if (val == MONO_TYPE_BYREF) {
 				p = ptr;
 			}
 			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
@@ -1362,7 +1364,7 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 }
 
 void
-mono_metadata_free_mh (MonoMetaMethodHeader *mh)
+mono_metadata_free_mh (MonoMethodHeader *mh)
 {
 	int i;
 	for (i = 0; i < mh->num_locals; ++i)
@@ -1382,7 +1384,7 @@ mono_metadata_free_mh (MonoMetaMethodHeader *mh)
  * Returns: The MonoFieldType that was extracted from @ptr.
  */
 MonoFieldType *
-mono_metadata_parse_field_type (metadata_t *m, const char *ptr, const char **rptr)
+mono_metadata_parse_field_type (MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	return mono_metadata_parse_param (m, 0, ptr, rptr);
 }
@@ -1407,13 +1409,13 @@ mono_metadata_token_from_dor (guint32 dor_index)
 
 	switch (table){
 	case 0: /* TypeDef */
-		return TOKEN_TYPE_TYPE_DEF | idx;
+		return MONO_TOKEN_TYPE_DEF | idx;
 
 	case 1: /* TypeRef */
-		return TOKEN_TYPE_TYPE_REF | idx;
+		return MONO_TOKEN_TYPE_REF | idx;
 
 	case 2: /* TypeSpec */
-		return TOKEN_TYPE_TYPE_SPEC | idx;
+		return MONO_TOKEN_TYPE_SPEC | idx;
 
 	default:
 		g_assert_not_reached ();
@@ -1428,8 +1430,8 @@ mono_metadata_token_from_dor (guint32 dor_index)
 typedef struct {
 	int idx;		 /* The index that we are trying to locate */
 	int col_idx;		 /* The index in the row where idx is stored */
-	metadata_t *m;		 /* the metadata context */
-	metadata_tableinfo_t *t; /* pointer to the typedef table */
+	MonoMetadata *m;		 /* the metadata context */
+	MonoTableInfo *t; /* pointer to the typedef table */
 	guint32 result;
 } locator_t;
 
@@ -1465,17 +1467,14 @@ typedef_locator (const void *a, const void *b)
 	return 0;
 }
 
-#define FIELD_INDEX 4
-#define METHOD_INDEX 5
-
 guint32
-mono_metadata_typedef_from_field (metadata_t *meta, guint32 index)
+mono_metadata_typedef_from_field (MonoMetadata *meta, guint32 index)
 {
-	metadata_tableinfo_t *tdef = &meta->tables [META_TABLE_TYPEDEF];
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
 	locator_t loc;
 	
 	loc.idx = mono_metadata_token_index (index);
-	loc.col_idx = FIELD_INDEX;
+	loc.col_idx = MONO_TYPEDEF_FIELD_LIST;
 	loc.t = tdef;
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
@@ -1486,13 +1485,13 @@ mono_metadata_typedef_from_field (metadata_t *meta, guint32 index)
 }
 
 guint32
-mono_metadata_typedef_from_method (metadata_t *meta, guint32 index)
+mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 {
-	metadata_tableinfo_t *tdef = &meta->tables [META_TABLE_TYPEDEF];
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
 	locator_t loc;
 	
 	loc.idx = mono_metadata_token_index (index);
-	loc.col_idx = METHOD_INDEX;
+	loc.col_idx = MONO_TYPEDEF_METHOD_LIST;
 	loc.t = tdef;
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))

@@ -19,10 +19,10 @@
 void
 mono_typedef_decode (MonoImage *image, guint32 tidx, MonoTypedef *ret)
 {
-	metadata_t *m = &image->metadata;
-	metadata_tableinfo_t *tt = m->tables [META_TABLE_TYPEDEF];
+	MonoMetadata *m = &image->metadata;
+	MonoTableInfo *tt = m->tables [MONO_TABLE_TYPEDEF];
 	int next_is_valid;
-	guint32 cols_next [6];
+	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	guint last;
 	
 	g_assert (typedef_token < tt->rows);
@@ -32,16 +32,16 @@ mono_typedef_decode (MonoImage *image, guint32 tidx, MonoTypedef *ret)
 	/*
 	 * Get the field and method range
 	 */
-	ret->field.first = ret->cols [4] - 1;
-	ret->method.first = ret->cols [5] - 1;
+	ret->field.first = ret->cols [MONO_TYPEREF_FIELD_LIST] - 1;
+	ret->method.first = ret->cols [MONO_TYPEDEF_METHOD_LIST] - 1;
 	
 	if (tt->rows > typedef_idx + 1){
 		mono_metadata_decode_row (tt, typedef_idx + 1, cols_next, CSIZE (cols_next));
-		ret->field.last = cols_next [4] - 1;
-		ret->method.last = cols_next [5] - 1;
+		ret->field.last = cols_next [MONO_TYPEREF_FIELD_LIST] - 1;
+		ret->method.last = cols_next [MONO_TYPEREF_FIELD_LIST] - 1;
 	} else {
-		ret->field.last = m->tables [META_TABLE_FIELD].rows;
-		ret->field.method = m->tables [META_TABLE_METHOD].rows;
+		ret->field.last = m->tables [MONO_TABLE_FIELD].rows;
+		ret->field.method = m->tables [MONO_TABLE_METHOD].rows;
 	}
 
 	/*

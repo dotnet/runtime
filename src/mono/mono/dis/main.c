@@ -41,9 +41,9 @@ dump_header_data (MonoImage *img)
 }
 
 static void
-dis_directive_assembly (metadata_t *m)
+dis_directive_assembly (MonoMetadata *m)
 {
-	metadata_tableinfo_t *t  = &m->tables [META_TABLE_ASSEMBLY];
+	MonoTableInfo *t  = &m->tables [MONO_TABLE_ASSEMBLY];
 	guint32 cols [9];
 	
 	if (t->base == NULL)
@@ -70,9 +70,9 @@ dis_directive_assembly (metadata_t *m)
 }
 
 static void
-dis_directive_assemblyref (metadata_t *m)
+dis_directive_assemblyref (MonoMetadata *m)
 {
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_ASSEMBLYREF];
+	MonoTableInfo *t = &m->tables [MONO_TABLE_ASSEMBLYREF];
 	guint32 cols [9];
 	int i;
 	
@@ -158,9 +158,9 @@ typedef_flags (guint32 flags)
  * This routine displays all the decoded fields from @start to @end
  */
 static void
-dis_field_list (metadata_t *m, guint32 start, guint32 end)
+dis_field_list (MonoMetadata *m, guint32 start, guint32 end)
 {
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_FIELD];
+	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	guint32 cols [3];
 	int i;
 
@@ -177,7 +177,7 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 		flags = field_flags (cols [0]);
 		
 		if (cols [0] & FIELD_ATTRIBUTE_LITERAL){
-			ElementTypeEnum type;
+			MonoTypeEnum type;
 			char *lit;
 			
 			type = get_field_literal_type (m, cols [2]);
@@ -333,39 +333,15 @@ method_impl_flags (guint32 f)
 }
 
 static void
-dis_locals (metadata_t *m, guint32 token) 
+dis_locals (MonoMetadata *m, MonoMethodHeader *mh) 
 {
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_STANDALONESIG];
-	const char *ptr;
-	guint32 cols[1];
-	int len=0, i, bsize;
+	int i;
 
-	mono_metadata_decode_row (t, (token&0xffffff)-1, cols, CSIZE(cols));
-	ptr = mono_metadata_blob_heap (m, cols[0]);
-	bsize = mono_metadata_decode_blob_size (ptr, &ptr);
-	if (*ptr != 0x07)
-			g_warning("wrong signature for locals blob");
-	ptr++;
-	len = mono_metadata_decode_value (ptr, &ptr);
-	fprintf(output, "\t.locals ( // %d\n", len);
-	for (i=0; i < len; ++i) {
-		int val;
-		char * desc = NULL;
-		const char *p = ptr;
-		MonoType *type;
-		val = mono_metadata_decode_value (ptr, &ptr);
-		if (val == ELEMENT_TYPE_PINNED) {
-			fprintf(output, "//pinned\n");
-			p = ptr;
-			val = mono_metadata_decode_value (ptr, &ptr);
-		}
-		if (val == ELEMENT_TYPE_BYREF) {
-			fprintf(output, "// byref\n");
-			p = ptr;
-		}
-		type = mono_metadata_parse_type (m, p, &ptr);
-		desc = dis_stringify_type (m, type);
-		mono_metadata_free_type (type);
+	fprintf(output, "\t.locals %s(\n", mh->init_locals ? "init " : "");
+	for (i=0; i < mh->num_locals; ++i) {
+		char * desc;
+		/* print also byref and pinned attributes */
+		desc = dis_stringify_type (m, mh->locals[i]);
 		fprintf(output, "\t\t%s\tV_%d\n", desc, i);
 		g_free(desc);
 	}
@@ -373,10 +349,10 @@ dis_locals (metadata_t *m, guint32 token)
 }
 
 static void
-dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
+dis_code (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 rva)
 {
-	MonoMetaMethodHeader *mh;
-	const char *ptr = cli_rva_map (ii, rva);
+	MonoMethodHeader *mh;
+	const char *ptr = mono_cli_rva_map (ii, rva);
 	char *loc;
 
 	if (rva == 0)
@@ -391,10 +367,10 @@ dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 	
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	fprintf (output, "\t// Code size=%d (0x%x)\n", mh->code_size, mh->code_size);
-	printf ("\t// Values Code Size=%d/0x%x\n\t// LocalTok=%x\n\n",
-		mh->code_size, mh->code_size, mh->local_var_sig_tok);
-	if (mh->local_var_sig_tok)
-		dis_locals (m, mh->local_var_sig_tok);
+	printf ("\t// Values Code Size=%d/0x%x\n\n",
+		mh->code_size, mh->code_size);
+	if (mh->num_locals)
+		dis_locals (m, mh);
 	dissasemble_cil (m, mh);
 	
 /*
@@ -423,7 +399,7 @@ typedef struct {
  * needs to be deallocated with free_method_signature().
  */
 static MethodSignature *
-parse_method_signature (metadata_t *m, guint32 blob_signature)
+parse_method_signature (MonoMetadata *m, guint32 blob_signature)
 {
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	MethodSignature *ms = g_new0 (MethodSignature, 1);
@@ -460,10 +436,10 @@ free_method_signature (MethodSignature *ms)
 
 
 static char *
-pinvoke_info (metadata_t *m, guint32 mindex)
+pinvoke_info (MonoMetadata *m, guint32 mindex)
 {
-	metadata_tableinfo_t *im = &m->tables [META_TABLE_IMPLMAP];
-	metadata_tableinfo_t *mr = &m->tables [META_TABLE_MODULEREF];
+	MonoTableInfo *im = &m->tables [MONO_TABLE_IMPLMAP];
+	MonoTableInfo *mr = &m->tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [4];
 	guint32 mr_cols [1];
 	const char *import, *scope, *flags;
@@ -503,10 +479,10 @@ pinvoke_info (metadata_t *m, guint32 mindex)
  * This routine displays the methods in the Method Table from @start to @end
  */
 static void
-dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end)
+dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 end)
 {
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_METHOD];
-	metadata_tableinfo_t *p = &m->tables [META_TABLE_PARAM];
+	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
+	MonoTableInfo *p = &m->tables [MONO_TABLE_PARAM];
 	guint32 cols [6];
 	guint32 cols_next [6];
 	guint32 param_cols [3];
@@ -577,9 +553,9 @@ dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end
  * Disassembles the type whose index in the TypeDef table is @n.
  */
 static void
-dis_type (metadata_t *m, cli_image_info_t *ii, int n)
+dis_type (MonoMetadata *m, MonoCLIImageInfo *ii, int n)
 {
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_TYPEDEF];
+	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [6];
 	guint32 cols_next [6];
 	const char *name;
@@ -614,18 +590,18 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	if (next_is_valid)
 		last = cols_next [4] - 1;
 	else
-		last = m->tables [META_TABLE_FIELD].rows;
+		last = m->tables [MONO_TABLE_FIELD].rows;
 			
-	if (cols[4] && cols[4] <= m->tables [META_TABLE_FIELD].rows)
+	if (cols[4] && cols[4] <= m->tables [MONO_TABLE_FIELD].rows)
 		dis_field_list (m, cols [4] - 1, last);
 	fprintf (output, "\n");
 
 	if (next_is_valid)
 		last = cols_next [5] - 1;
 	else
-		last = m->tables [META_TABLE_METHOD].rows;
+		last = m->tables [MONO_TABLE_METHOD].rows;
 	
-	if (cols [5] < m->tables [META_TABLE_METHOD].rows)
+	if (cols [5] < m->tables [MONO_TABLE_METHOD].rows)
 		dis_method_list (m, ii, cols [5]-1, last);
 
 	fprintf (output, "  }\n}\n\n");
@@ -638,9 +614,9 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
  * disassembles all types in the @m context
  */
 static void
-dis_types (metadata_t *m, cli_image_info_t *ii)
+dis_types (MonoMetadata *m, MonoCLIImageInfo *ii)
 {
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_TYPEDEF];
+	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	int i;
 
 	for (i = 1; i < t->rows; i++)
@@ -650,22 +626,22 @@ dis_types (metadata_t *m, cli_image_info_t *ii)
 struct {
 	char *name;
 	int table;
-	void (*dumper) (metadata_t *m);
+	void (*dumper) (MonoMetadata *m);
 } table_list [] = {
-	{ "--assembly",    META_TABLE_ASSEMBLY,    dump_table_assembly },
-	{ "--assemblyref", META_TABLE_ASSEMBLYREF, dump_table_assemblyref },
-	{ "--fields",      META_TABLE_FIELD,       dump_table_field },
-	{ "--memberref",   META_TABLE_MEMBERREF,   dump_table_memberref },
-	{ "--param",       META_TABLE_PARAM,       dump_table_param },
-	{ "--typedef",     META_TABLE_TYPEDEF,     dump_table_typedef },
-	{ "--typeref",     META_TABLE_TYPEREF,     dump_table_typeref },
-	{ "--classlayout", META_TABLE_CLASSLAYOUT, dump_table_class_layout },
-	{ "--constant",    META_TABLE_CONSTANT,    dump_table_constant },
-	{ "--property",    META_TABLE_PROPERTY,    dump_table_property },
-	{ "--event",       META_TABLE_EVENT,       dump_table_event },
-	{ "--file",        META_TABLE_FILE,        dump_table_file },
-	{ "--moduleref",   META_TABLE_MODULEREF,   dump_table_moduleref },
-	{ "--method",      META_TABLE_METHOD,      dump_table_method },
+	{ "--assembly",    MONO_TABLE_ASSEMBLY,    dump_table_assembly },
+	{ "--assemblyref", MONO_TABLE_ASSEMBLYREF, dump_table_assemblyref },
+	{ "--fields",      MONO_TABLE_FIELD,       dump_table_field },
+	{ "--memberref",   MONO_TABLE_MEMBERREF,   dump_table_memberref },
+	{ "--param",       MONO_TABLE_PARAM,       dump_table_param },
+	{ "--typedef",     MONO_TABLE_TYPEDEF,     dump_table_typedef },
+	{ "--typeref",     MONO_TABLE_TYPEREF,     dump_table_typeref },
+	{ "--classlayout", MONO_TABLE_CLASSLAYOUT, dump_table_class_layout },
+	{ "--constant",    MONO_TABLE_CONSTANT,    dump_table_constant },
+	{ "--property",    MONO_TABLE_PROPERTY,    dump_table_property },
+	{ "--event",       MONO_TABLE_EVENT,       dump_table_event },
+	{ "--file",        MONO_TABLE_FILE,        dump_table_file },
+	{ "--moduleref",   MONO_TABLE_MODULEREF,   dump_table_moduleref },
+	{ "--method",      MONO_TABLE_METHOD,      dump_table_method },
 	{ NULL, -1 }
 };
 
@@ -680,8 +656,8 @@ disassemble_file (const char *file)
 {
 	enum MonoImageOpenStatus status;
 	MonoImage *img;
-	cli_image_info_t *ii;
-	metadata_t *m;
+	MonoCLIImageInfo *ii;
+	MonoMetadata *m;
 
 	fprintf (output, "// Disassembling %s\n", file);
 

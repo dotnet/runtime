@@ -12,6 +12,7 @@ libmetadata_a_SOURCES = \
 	assembly.c	\
 	image.c		\
 	metadata.c	\
+	private.h	\
 	rawbuffer.c
 
 libmetadataincludedir = $(includedir)/mono/metadata

@@ -40,63 +40,63 @@ mono_field_type_size (MonoFieldType *ft)
 	MonoType *t = ft->type;
 
 	switch (t->type){
-	case ELEMENT_TYPE_BOOLEAN:
+	case MONO_TYPE_BOOLEAN:
 		return sizeof (m_boolean);
 		
-	case ELEMENT_TYPE_CHAR:
+	case MONO_TYPE_CHAR:
 		return sizeof (m_char);
 		
-	case ELEMENT_TYPE_I1:
-	case ELEMENT_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
 		return 1;
 		
-	case ELEMENT_TYPE_I2:
-	case ELEMENT_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
 		return 2;
 		
-	case ELEMENT_TYPE_I4:
-	case ELEMENT_TYPE_U4:
-	case ELEMENT_TYPE_R4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
 		return 4;
 		
-	case ELEMENT_TYPE_I8:
-	case ELEMENT_TYPE_U8:
-	case ELEMENT_TYPE_R8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
 		return 8;
 		
-	case ELEMENT_TYPE_I:
+	case MONO_TYPE_I:
 		return sizeof (m_i);
 		
-	case ELEMENT_TYPE_U:
+	case MONO_TYPE_U:
 		return sizeof (m_u);
 		
-	case ELEMENT_TYPE_STRING:
+	case MONO_TYPE_STRING:
 		return sizeof (m_string);
 		
-	case ELEMENT_TYPE_OBJECT:
+	case MONO_TYPE_OBJECT:
 		return sizeof (m_object);
 		
-	case ELEMENT_TYPE_VALUETYPE:
-		g_error ("FIXME: Add computation of size for ELEMENT_TYPE_VALUETYPE");
+	case MONO_TYPE_VALUETYPE:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_VALUETYPE");
 		
-	case ELEMENT_TYPE_CLASS:
-		g_error ("FIXME: Add computation of size for ELEMENT_TYPE_CLASS");
+	case MONO_TYPE_CLASS:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_CLASS");
 		break;
 		
-	case ELEMENT_TYPE_SZARRAY:
-		g_error ("FIXME: Add computation of size for ELEMENT_TYPE_SZARRAY");
+	case MONO_TYPE_SZARRAY:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_SZARRAY");
 		break;
 		
-	case ELEMENT_TYPE_PTR:
-		g_error ("FIXME: Add computation of size for ELEMENT_TYPE_PTR");
+	case MONO_TYPE_PTR:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_PTR");
 		break;
 		
-	case ELEMENT_TYPE_FNPTR:
-		g_error ("FIXME: Add computation of size for ELEMENT_TYPE_FNPTR");
+	case MONO_TYPE_FNPTR:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_FNPTR");
 		break;
 		
-	case ELEMENT_TYPE_ARRAY:
-		g_error ("FIXME: Add computation of size for ELEMENT_TYPE_ARRAY");
+	case MONO_TYPE_ARRAY:
+		g_error ("FIXME: Add computation of size for MONO_TYPE_ARRAY");
 		break;
 	default:
 		g_error ("type 0x%02x unknown", t->type);
@@ -115,11 +115,11 @@ mono_field_type_size (MonoFieldType *ft)
  * a good job at it.  This is temporary to get the code for Paolo.
  */
 static void
-class_compute_field_layout (metadata_t *m, MonoClass *class)
+class_compute_field_layout (MonoMetadata *m, MonoClass *class)
 {
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_FIELD];
+	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	int i;
 	
 	/*
@@ -174,8 +174,8 @@ class_compute_field_layout (metadata_t *m, MonoClass *class)
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 {
-	metadata_t *m = &image->metadata;
-	metadata_tableinfo_t *tt = &m->tables [META_TABLE_TYPEDEF];
+	MonoMetadata *m = &image->metadata;
+	MonoTableInfo *tt = &m->tables [MONO_TABLE_TYPEDEF];
 	MonoClass stack_class;
 	MonoClass *class = &stack_class;
 	guint32 cols [6], parent_token;
@@ -218,16 +218,16 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->field.last  = cols_next [4] - 1;
 		class->method.last = cols_next [5] - 1;
 	} else {
-		class->field.last  = m->tables [META_TABLE_FIELD].rows;
-		class->method.last = m->tables [META_TABLE_METHOD].rows;
+		class->field.last  = m->tables [MONO_TABLE_FIELD].rows;
+		class->method.last = m->tables [MONO_TABLE_METHOD].rows;
 	}
 
-	if (cols [4] && cols [4] <= m->tables [META_TABLE_FIELD].rows)
+	if (cols [4] && cols [4] <= m->tables [MONO_TABLE_FIELD].rows)
 		class->field.count = class->field.last - class->field.first;
 	else
 		class->field.count = 0;
 
-	if (cols [5] <= m->tables [META_TABLE_METHOD].rows)
+	if (cols [5] <= m->tables [MONO_TABLE_METHOD].rows)
 		class->method.count = class->method.last - class->method.first;
 	else
 		class->method.count = 0;
@@ -279,10 +279,10 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 {
 	int idx = mono_metadata_token_index (field_token);
 
-	if (mono_metadata_token_code (field_token) == TOKEN_TYPE_MEMBER_REF)
+	if (mono_metadata_token_code (field_token) == MONO_TOKEN_MEMBER_REF)
 		g_error ("Unsupported Field Token is a MemberRef, implement me");
 
-	g_assert (mono_metadata_token_code (field_token) == TOKEN_TYPE_FIELD_DEF);
+	g_assert (mono_metadata_token_code (field_token) == MONO_TOKEN_FIELD_DEF);
 
 	return mono_class_get_field_idx (class, idx - 1);
 }
@@ -291,8 +291,8 @@ static void
 typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, guint32 *index)
 {
 	guint32 cols[6];
-	metadata_t *m = &image->metadata;
-	metadata_tableinfo_t  *t = &m->tables[META_TABLE_TYPEREF];
+	MonoMetadata *m = &image->metadata;
+	MonoTableInfo  *t = &m->tables[MONO_TABLE_TYPEREF];
 	guint32 idx, i;
 	const char *name, *nspace;
 	
@@ -304,7 +304,7 @@ typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, 
 	/* load referenced assembly */
 	image = image->references [idx-1]->image;
 	m = &image->metadata;
-	t = &m->tables [META_TABLE_TYPEDEF];
+	t = &m->tables [MONO_TABLE_TYPEDEF];
 	/* dumb search for now */
 	for (i=0; i < t->rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, 6);
@@ -331,21 +331,21 @@ mono_class_get (MonoImage *image, guint32 type_token)
 {
 	MonoClass *class;
 
-	if ((type_token & 0xff000000) == TOKEN_TYPE_TYPE_DEF 
+	if ((type_token & 0xff000000) == MONO_TOKEN_TYPE_DEF 
 					&& (class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
 			return class;
 
 	switch (type_token & 0xff000000){
-	case TOKEN_TYPE_TYPE_DEF:
+	case MONO_TOKEN_TYPE_DEF:
 		class = mono_class_create_from_typedef (image, type_token);
 		break;
 		
-	case TOKEN_TYPE_TYPE_REF: {
+	case MONO_TOKEN_TYPE_REF: {
 		typedef_from_typeref (image, type_token, &image, &type_token);
 		class = mono_class_create_from_typedef (image, type_token);
 		break;
 	}
-	case TOKEN_TYPE_TYPE_SPEC:
+	case MONO_TOKEN_TYPE_SPEC:
 		g_error ("Can not handle class creation of TypeSpecs yet");
 		
 	default:

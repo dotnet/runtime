@@ -12,6 +12,7 @@
 #include "image.h"
 #include <glib.h>
 #include "cil-coff.h"
+#include "private.h"
 
 gboolean dump_data = TRUE;
 gboolean dump_tables = FALSE;
@@ -48,7 +49,7 @@ hex32 (char *label, guint32 x)
 }
 
 static void
-dump_coff_header (coff_header_t *coff)
+dump_coff_header (MonoCOFFHeader *coff)
 {
 	printf ("\nCOFF Header:\n");
 	hex16 ("                Machine", coff->coff_machine);
@@ -62,7 +63,7 @@ dump_coff_header (coff_header_t *coff)
 }
 
 static void
-dump_pe_header (pe_header_t *pe)
+dump_pe_header (MonoPEHeader *pe)
 {
 	printf ("\nPE Header:\n");
 	hex16 ("         Magic (0x010b)", pe->pe_magic);
@@ -78,7 +79,7 @@ dump_pe_header (pe_header_t *pe)
 }
 
 static void
-dump_nt_header (pe_header_nt_t *nt)
+dump_nt_header (MonoPEHeaderNT *nt)
 {
 	printf ("\nNT Header:\n");
 
@@ -106,13 +107,13 @@ dump_nt_header (pe_header_nt_t *nt)
 }
 
 static void
-dent (const char *label, pe_dir_entry_t de)
+dent (const char *label, MonoPEDirEntry de)
 {
 	printf ("\t%s: 0x%08x [0x%08x]\n", label, de.rva, de.size);
 }
 
 static void
-dump_datadir (pe_datadir_t *dd)
+dump_datadir (MonoPEDatadir *dd)
 {
 	printf ("\nData directories:\n");
 	dent ("     Export Table", dd->pe_export_table);
@@ -133,7 +134,7 @@ dump_datadir (pe_datadir_t *dd)
 }
 
 static void
-dump_dotnet_header (dotnet_header_t *header)
+dump_dotnet_header (MonoDotNetHeader *header)
 {
 	dump_coff_header (&header->coff);
 	dump_pe_header (&header->pe);
@@ -142,7 +143,7 @@ dump_dotnet_header (dotnet_header_t *header)
 }
 
 static void
-dump_section_table (section_table_t *st)
+dump_section_table (MonoSectionTable *st)
 {
 	guint32 flags = st->st_flags;
 		
@@ -170,7 +171,7 @@ dump_section_table (section_table_t *st)
 }
 
 static void
-dump_sections (cli_image_info_t *iinfo)
+dump_sections (MonoCLIImageInfo *iinfo)
 {
 	const int top = iinfo->cli_header.coff.coff_sections;
 	int i;
@@ -180,7 +181,7 @@ dump_sections (cli_image_info_t *iinfo)
 }
 
 static void
-dump_cli_header (cli_header_t *ch)
+dump_cli_header (MonoCLIHeader *ch)
 {
 	printf ("\n");
 	printf ("          CLI header size: %d\n", ch->ch_size);
@@ -199,16 +200,16 @@ dump_cli_header (cli_header_t *ch)
 }	
 
 static void
-dsh (char *label, stream_header_t *sh)
+dsh (char *label, MonoStreamHeader *sh)
 {
 	printf ("%s: 0x%08x - 0x%08x [%d == 0x%08x]\n",
 		label,
-		sh->sh_offset, sh->sh_offset + sh->sh_size,
-		sh->sh_size, sh->sh_size);
+		sh->offset, sh->offset + sh->size,
+		sh->size, sh->size);
 }
 
 static void
-dump_metadata_ptrs (metadata_t *meta)
+dump_metadata_ptrs (MonoMetadata *meta)
 {
 	printf ("\nMetadata pointers:\n");
 	dsh ("\tTables (#~)", &meta->heap_tables);
@@ -219,13 +220,13 @@ dump_metadata_ptrs (metadata_t *meta)
 }
 
 static void
-dump_table (metadata_t *meta, int table)
+dump_table (MonoMetadata *meta, int table)
 {
 	
 }
 
 static void
-dump_metadata (metadata_t *meta)
+dump_metadata (MonoMetadata *meta)
 {
 	int table;
 	
@@ -247,7 +248,7 @@ dump_metadata (metadata_t *meta)
 }
 
 static void
-dump_methoddef (metadata_t *metadata, guint32 token)
+dump_methoddef (MonoMetadata *metadata, guint32 token)
 {
 	char *loc;
 
@@ -259,7 +260,7 @@ dump_methoddef (metadata_t *metadata, guint32 token)
 static void
 dump_dotnet_iinfo (MonoImage *image)
 {
-	cli_image_info_t *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 
 	dump_dotnet_header (&iinfo->cli_header);
 	dump_sections (iinfo);

@@ -18,7 +18,7 @@
 GHashTable *malloc_map;
 
 void *
-raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
+mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 {
 	size_t start, end;
 	int prot = PROT_READ;
@@ -52,7 +52,7 @@ raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 }
 
 void
-raw_buffer_free (void *buffer)
+mono_raw_buffer_free (void *buffer)
 {
 	int size, diff;
 	char *base;

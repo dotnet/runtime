@@ -109,7 +109,7 @@ static opcode_t opcodes [300] = {
 };
 
 void
-dissasemble_cil (metadata_t *m, const unsigned char *start, int size) 
+dissasemble_cil (MonoMetadata *m, const unsigned char *start, int size) 
 {
 	const unsigned char *end = start + size;
 	const unsigned char *ptr = start;

@@ -30,16 +30,16 @@
 static guint32
 typedef_from_name (MonoImage *image, const char *name, const char *nspace, guint32 *mlist)
 {
-	metadata_t *m = &image->metadata;
-	metadata_tableinfo_t *t = &m->tables [META_TABLE_TYPEDEF];
+	MonoMetadata *m = &image->metadata;
+	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 i;
-	guint32 cols [META_TYPEDEF_SIZE];
+	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	for (i=0; i < t->rows; ++i) {
-		mono_metadata_decode_row (t, i, cols, META_TYPEDEF_SIZE);
-		if (strcmp (name, mono_metadata_string_heap (m, cols [META_TYPEDEF_NAME])) == 0 
-				&& strcmp (nspace, mono_metadata_string_heap (m, cols [META_TYPEDEF_NAMESPACE])) == 0) {
-			*mlist = cols [META_TYPEDEF_METHOD_LIST];
+		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
+		if (strcmp (name, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME])) == 0 
+				&& strcmp (nspace, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
+			*mlist = cols [MONO_TYPEDEF_METHOD_LIST];
 			return i + 1;
 		}
 	}
@@ -50,31 +50,31 @@ typedef_from_name (MonoImage *image, const char *name, const char *nspace, guint
 static void
 methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, guint32 *rindex)
 {
-	metadata_t *m = &image->metadata;
-	metadata_tableinfo_t *tables = m->tables;
+	MonoMetadata *m = &image->metadata;
+	MonoTableInfo *tables = m->tables;
 	guint32 cols[6];
 	guint32 nindex, sig_len, msig_len, class, i;
 	const char *sig, *msig, *mname, *name, *nspace;
 	
-	mono_metadata_decode_row (&tables [META_TABLE_MEMBERREF], index-1, cols, 3);
-	nindex = cols [META_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
-	class = cols [META_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, 3);
+	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
+	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
-		mono_metadata_string_heap (m, cols [META_MEMBERREF_NAME]));*/
-	sig = mono_metadata_blob_heap (m, cols [META_MEMBERREF_SIGNATURE]);
+		mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));*/
+	sig = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
 	sig_len = mono_metadata_decode_blob_size (sig, &sig);
-	mname = mono_metadata_string_heap (m, cols [META_MEMBERREF_NAME]);
+	mname = mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]);
 
 	switch (class) {
 	case MEMBERREF_PARENT_TYPEREF: {
 		guint32 scopeindex, scopetable;
 
-		mono_metadata_decode_row (&tables [META_TABLE_TYPEREF], nindex-1, cols, META_TYPEREF_SIZE);
-		scopeindex = cols [META_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
-		scopetable = cols [META_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
+		mono_metadata_decode_row (&tables [MONO_TABLE_TYPEREF], nindex-1, cols, MONO_TYPEREF_SIZE);
+		scopeindex = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
+		scopetable = cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
 		/*g_print ("typeref: 0x%x 0x%x %s.%s\n", scopetable, scopeindex,
-			mono_metadata_string_heap (m, cols [META_TYPEREF_NAMESPACE]),
-			mono_metadata_string_heap (m, cols [META_TYPEREF_NAME]));*/
+			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]),
+			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]));*/
 		switch (scopetable) {
 		case RESOLTION_SCOPE_ASSEMBLYREF:
 			/*
@@ -82,20 +82,20 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 			 * *) name and namespace of the class from the TYPEREF table
 			 * *) name and signature of the method from the MEMBERREF table
 			 */
-			nspace = mono_metadata_string_heap (m, cols [META_TYPEREF_NAMESPACE]);
-			name = mono_metadata_string_heap (m, cols [META_TYPEREF_NAME]);
+			nspace = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
+			name = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
 			
 			image = image->references [scopeindex-1]->image;
 			m = &image->metadata;
-			tables = &m->tables [META_TABLE_METHOD];
+			tables = &m->tables [MONO_TABLE_METHOD];
 			typedef_from_name (image, name, nspace, &i);
 			/* mostly dumb search for now */
 			for (;i < tables->rows; ++i) {
-				mono_metadata_decode_row (tables, i, cols, META_METHOD_SIZE);
-				msig = mono_metadata_blob_heap (m, cols [META_METHOD_SIGNATURE]);
+				mono_metadata_decode_row (tables, i, cols, MONO_METHOD_SIZE);
+				msig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 				msig_len = mono_metadata_decode_blob_size (msig, &msig);
 				
-				if (strcmp (mname, mono_metadata_string_heap (m, cols [META_METHOD_NAME])) == 0 
+				if (strcmp (mname, mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0 
 						&& sig_len == msig_len
 						&& strncmp (sig, msig, sig_len) == 0) {
 					*rimage = image;
@@ -124,33 +124,33 @@ ves_map_ffi_type (MonoType *type)
 		return &ffi_type_void;
 
 	switch (type->type) {
-	case ELEMENT_TYPE_I1:
+	case MONO_TYPE_I1:
 		rettype = &ffi_type_sint8;
 		break;
-	case ELEMENT_TYPE_BOOLEAN:
-	case ELEMENT_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U1:
 		rettype = &ffi_type_uint8;
 		break;
-	case ELEMENT_TYPE_I2:
+	case MONO_TYPE_I2:
 		rettype = &ffi_type_sint16;
 		break;
-	case ELEMENT_TYPE_U2:
-	case ELEMENT_TYPE_CHAR:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
 		rettype = &ffi_type_uint16;
 		break;
-	case ELEMENT_TYPE_I4:
+	case MONO_TYPE_I4:
 		rettype = &ffi_type_sint32;
 		break;
-	case ELEMENT_TYPE_U4:
+	case MONO_TYPE_U4:
 		rettype = &ffi_type_sint32;
 		break;
-	case ELEMENT_TYPE_R4:
+	case MONO_TYPE_R4:
 		rettype = &ffi_type_float;
 		break;
-	case ELEMENT_TYPE_R8:
+	case MONO_TYPE_R8:
 		rettype = &ffi_type_double;
 		break;
-	case ELEMENT_TYPE_STRING:
+	case MONO_TYPE_STRING:
 		rettype = &ffi_type_pointer;
 		break;
 	default:
@@ -165,9 +165,9 @@ static void
 fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 {
 	MonoMethod *mh = &piinfo->method;
-	metadata_tableinfo_t *tables = image->metadata.tables;
-	metadata_tableinfo_t *im = &tables [META_TABLE_IMPLMAP];
-	metadata_tableinfo_t *mr = &tables [META_TABLE_MODULEREF];
+	MonoTableInfo *tables = image->metadata.tables;
+	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
+	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [4];
 	guint32 mr_cols [1];
 	const char *import = NULL;
@@ -231,19 +231,19 @@ mono_get_method (MonoImage *image, guint32 token)
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
-	metadata_tableinfo_t *tables = image->metadata.tables;
+	MonoTableInfo *tables = image->metadata.tables;
 	const char *loc;
 	const char *sig = NULL;
 	int size;
 	guint32 cols[6];
 
-	if (table == META_TABLE_METHOD && (result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
+	if (table == MONO_TABLE_METHOD && (result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
 			return result;
 	
-	if (table != META_TABLE_METHOD) {
-		g_assert (table == META_TABLE_MEMBERREF);
+	if (table != MONO_TABLE_METHOD) {
+		g_assert (table == MONO_TABLE_MEMBERREF);
 		methoddef_from_memberref (image, index, &image, &token);
-		return mono_get_method (image, TOKEN_TYPE_METHOD_DEF | token);
+		return mono_get_method (image, MONO_TOKEN_METHOD_DEF | token);
 	}
 
 	
@@ -269,7 +269,7 @@ mono_get_method (MonoImage *image, guint32 token)
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
-		loc = cli_rva_map ((cli_image_info_t *)image->image_info, cols [0]);
+		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
 		g_assert (loc);
 		((MonoMethodManaged *)result)->header = 
 			mono_metadata_parse_mh (&image->metadata, loc);
