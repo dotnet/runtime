@@ -2101,5 +2101,14 @@
             <maintainer>mkestner@speakeasy.net</maintainer>
         </maintainers>
     </class>
+    <class name="System.Web.UI.Control">
+        <last-activity>Aug-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
