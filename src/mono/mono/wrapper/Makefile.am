@@ -5,7 +5,7 @@ INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 libmonowrapper_la_SOURCES = 		\
 	wrapper.c	
 
-libmonowrapperincludedir = $(includir)/mono/wrapper
+libmonowrapperincludedir = $(includedir)/mono/wrapper
 
 libmonowrapperinclude_HEADERS = 
 	wrapper.h	
@@ -20,3 +20,4 @@ BUILT_SOURCES = wrapper.h
 CLEANFILES += $(BUILT_SOURCES)
 
 EXTRA_DIST = genwrapper.pl
+

@@ -1,3 +1,8 @@
+2001-08-22  Rodrigo Moya <rodrigo@ximian.com>
+
+	* mono/cil/Makefile.am:
+	* mono/wrapper/Makefile.am: use correct variables for installation
+	directories
 
 Tue Aug 21 18:54:06 CEST 2001 Paolo Molaro <lupus@ximian.com>
 
