@@ -34,8 +34,12 @@
 
 #include <mono/os/gc_wrapper.h>
 
-#undef THREAD_DEBUG
-#undef THREAD_WAIT_DEBUG
+/*#define THREAD_DEBUG(a) do { a; } while (0)*/
+#define THREAD_DEBUG(a)
+/*#define THREAD_WAIT_DEBUG(a) do { a; } while (0)*/
+#define THREAD_WAIT_DEBUG(a)
+/*#define LIBGC_DEBUG(a) do { a; } while (0)*/
+#define LIBGC_DEBUG(a)
 
 struct StartInfo 
 {
@@ -142,10 +146,7 @@ static void handle_store(MonoThread *thread)
 {
 	EnterCriticalSection(&threads_mutex);
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": thread %p ID %d", thread,
-		  thread->tid);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": thread %p ID %d", thread, thread->tid));
 
 	if(threads==NULL) {
 		MONO_GC_REGISTER_ROOT (threads);
@@ -161,9 +162,7 @@ static void handle_store(MonoThread *thread)
 
 static void handle_remove(guint32 tid)
 {
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": thread ID %d", tid);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": thread ID %d", tid));
 
 	EnterCriticalSection(&threads_mutex);
 
@@ -221,10 +220,7 @@ static guint32 start_wrapper(void *data)
 	MonoThread *thread=start_info->obj;
 	MonoObject *start_delegate = start_info->delegate;
 	
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper",
-		  GetCurrentThreadId ());
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper", GetCurrentThreadId ()));
 	
 	/* We can be sure start_info->obj->tid and
 	 * start_info->obj->handle have been set, because the thread
@@ -252,17 +248,13 @@ static guint32 start_wrapper(void *data)
 	mono_thread_new_init (tid, &tid, start_func);
 	thread->stack_ptr = &tid;
 
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 		   ": (%d,%d) Setting thread stack to %p",
-		   GetCurrentThreadId (), getpid (), thread->stack_ptr);
-#endif
+		   GetCurrentThreadId (), getpid (), thread->stack_ptr));
 
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 		   ": (%d) Setting current_object_key to %p",
-		   GetCurrentThreadId (), thread);
-#endif
+		   GetCurrentThreadId (), thread));
 
 	mono_profiler_thread_start (tid);
 
@@ -299,10 +291,8 @@ static guint32 start_wrapper(void *data)
 	 * call thread_cleanup() on this thread's behalf.
 	 */
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper terminating",
-		  GetCurrentThreadId ());
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper terminating",
+		  GetCurrentThreadId ()));
 
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
@@ -360,10 +350,8 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	 */
 	thread_handle = CreateThread(NULL, default_stacksize_for_thread (thread), start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
-		  tid, thread_handle);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
+		  tid, thread_handle));
 	g_assert (thread_handle);
 
 	thread->handle=thread_handle;
@@ -409,18 +397,13 @@ mono_thread_attach (MonoDomain *domain)
 	thread->tid=tid;
 	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Attached thread ID %d (handle %p)",
-		  tid, thread_handle);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Attached thread ID %d (handle %p)",
+		  tid, thread_handle));
 
 	handle_store(thread);
 
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
-		   ": (%d) Setting current_object_key to %p",
-		   GetCurrentThreadId (), thread);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Setting current_object_key to %p",
+		   GetCurrentThreadId (), thread));
 
 	SET_CURRENT_OBJECT (thread);
 	mono_domain_set (domain, TRUE);
@@ -439,9 +422,7 @@ mono_thread_detach (MonoThread *thread)
 {
 	g_return_if_fail (thread != NULL);
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION "mono_thread_detach for %d\n", thread->tid);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION "mono_thread_detach for %d\n", thread->tid));
 	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
@@ -472,11 +453,8 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 	
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Trying to start a new thread: this (%p) start (%p)",
-		  this, start);
-#endif
+	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
+		  ": Trying to start a new thread: this (%p) start (%p)", this, start));
 
 /* FIXME: remove the code inside BROKEN_THREAD_START once martin gets rid of the
  * thread_start_compile_func stuff.
@@ -534,10 +512,8 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		 * store the handle till then.
 		 */
 
-#ifdef THREAD_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Started thread ID %d (handle %p)", tid, thread);
-#endif
+		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+			  ": Started thread ID %d (handle %p)", tid, thread));
 
 		return(thread);
 	}
@@ -548,10 +524,8 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Closing thread %p, handle %p",
-		   this, thread);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Closing thread %p, handle %p",
+		   this, thread));
 
 	CloseHandle (thread);
 }
@@ -561,10 +535,8 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Launching thread %p (%d)",
-		  GetCurrentThreadId (), this, this->tid);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Launching thread %p (%d)",
+		  GetCurrentThreadId (), this, this->tid));
 
 	/* Only store the handle when the thread is about to be
 	 * launched, to avoid the main thread deadlocking while trying
@@ -587,22 +559,18 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 		 * started
 		 */
 
-#ifdef THREAD_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
+		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 			  ": (%d) waiting for thread %p (%d) to start",
-			  GetCurrentThreadId (), this, this->tid);
-#endif
+			  GetCurrentThreadId (), this, this->tid));
 
 		WaitForSingleObjectEx (this->start_notify, INFINITE, FALSE);
 		CloseHandle (this->start_notify);
 		this->start_notify=NULL;
 	}
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Done launching thread %p (%d)",
-		  GetCurrentThreadId (), this, this->tid);
-#endif
+		  GetCurrentThreadId (), this, this->tid));
 }
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
@@ -611,9 +579,7 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms));
 
 	mono_monitor_enter (thread->synch_lock);
 	thread->state |= ThreadState_WaitSleepJoin;
@@ -812,16 +778,8 @@ ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *thi
 MonoThread *
 mono_thread_current (void)
 {
-#ifdef THREAD_DEBUG
-	MonoThread *thread;
-	MONO_ARCH_SAVE_REGS;
-	thread = GET_CURRENT_OBJECT ();
-	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", thread);
-	return thread;
-#else
-	MONO_ARCH_SAVE_REGS;
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", GET_CURRENT_OBJECT ()));
 	return GET_CURRENT_OBJECT ();
-#endif
 }
 
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
@@ -838,10 +796,8 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	if(ms== -1) {
 		ms=INFINITE;
 	}
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": joining thread handle %p, %d ms",
-		   thread, ms);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": joining thread handle %p, %d ms",
+		   thread, ms));
 	
 	ret=WaitForSingleObjectEx (thread, ms, TRUE);
 
@@ -850,16 +806,12 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	mono_monitor_exit (this->synch_lock);
 	
 	if(ret==WAIT_OBJECT_0) {
-#ifdef THREAD_DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": join successful");
-#endif
+		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": join successful"));
 
 		return(TRUE);
 	}
 	
-#ifdef THREAD_DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": join failed");
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": join failed"));
 
 	return(FALSE);
 }
@@ -868,9 +820,7 @@ void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Storing key %p", data);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Storing key %p", data));
 
 	/* Object location stored here */
 	TlsSetValue(slothash_key, data);
@@ -884,9 +834,7 @@ MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void)
 
 	data=TlsGetValue(slothash_key);
 	
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Retrieved key %p", data);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Retrieved key %p", data));
 	
 	return(data);
 }
@@ -935,10 +883,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	g_free(handles);
 
 	if(ret==WAIT_FAILED) {
-#ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
-			  GetCurrentThreadId ());
-#endif
+		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
+			  GetCurrentThreadId ()));
 		return(FALSE);
 	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
 		/* Do we want to try again if we get
@@ -946,10 +892,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 		 * WaitHandle doesn't give any clues.  (We'd have to
 		 * fiddle with the timeout if we retry.)
 		 */
-#ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
-			  GetCurrentThreadId ());
-#endif
+		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
+			  GetCurrentThreadId ()));
 		return(FALSE);
 	}
 	
@@ -999,10 +943,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	g_free(handles);
 
-#ifdef THREAD_WAIT_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) returning %d",
-		  GetCurrentThreadId (), ret);
-#endif
+	THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) returning %d",
+		  GetCurrentThreadId (), ret));
 
 	/*
 	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
@@ -1026,10 +968,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef THREAD_WAIT_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) waiting for %p, %d ms",
-		  GetCurrentThreadId (), handle, ms);
-#endif
+	THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) waiting for %p, %d ms",
+		  GetCurrentThreadId (), handle, ms));
 	
 	if(ms== -1) {
 		ms=INFINITE;
@@ -1046,10 +986,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	mono_monitor_exit (thread->synch_lock);
 
 	if(ret==WAIT_FAILED) {
-#ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
-			  GetCurrentThreadId ());
-#endif
+		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
+			  GetCurrentThreadId ()));
 		return(FALSE);
 	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
 		/* Do we want to try again if we get
@@ -1057,10 +995,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 		 * WaitHandle doesn't give any clues.  (We'd have to
 		 * fiddle with the timeout if we retry.)
 		 */
-#ifdef THREAD_WAIT_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
-			  GetCurrentThreadId ());
-#endif
+		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
+			  GetCurrentThreadId ()));
 		return(FALSE);
 	}
 	
@@ -1288,11 +1224,9 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 
 	mono_monitor_exit (thread->synch_lock);
 
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 		   ": (%d) Abort requested for %p (%d)", GetCurrentThreadId (),
-		   thread, thread->tid);
-#endif
+		   thread, thread->tid));
 	
 	/* Make sure the thread is awake */
 	ves_icall_System_Threading_Thread_Resume (thread);
@@ -1494,10 +1428,8 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_init_static_data_info (&context_static_info);
 
 	current_object_key=TlsAlloc();
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Allocated current_object_key %d",
-		   current_object_key);
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Allocated current_object_key %d",
+		   current_object_key));
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
@@ -1541,18 +1473,14 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 {
 	guint32 i, ret;
 	
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": %d threads to wait for in this batch", wait->num);
-#endif
+	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
+		  ": %d threads to wait for in this batch", wait->num));
 
 	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, FALSE);
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
-#ifdef THREAD_DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": Wait failed");
-#endif
+		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Wait failed"));
 		return;
 	}
 	
@@ -1577,10 +1505,8 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 			 * same thread.)
 			 */
 	
-#ifdef THREAD_DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": cleaning up after thread %d", tid);
-#endif
+			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+				   ": cleaning up after thread %d", tid));
 			thread_cleanup (wait->threads[i]);
 		}
 	}
@@ -1642,15 +1568,11 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	
 		if(thread->state & ThreadState_AbortRequested ||
 		   thread->state & ThreadState_Aborted) {
-#ifdef THREAD_DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": Thread id %d already aborting", thread->tid);
-#endif
+			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Thread id %d already aborting", thread->tid));
 			return(TRUE);
 		}
 		
-#ifdef THREAD_DEBUG
-		g_print (G_GNUC_PRETTY_FUNCTION ": Aborting id: %d\n", thread->tid);
-#endif
+		THREAD_DEBUG (g_print (G_GNUC_PRETTY_FUNCTION ": Aborting id: %d\n", thread->tid));
 		mono_thread_stop (thread);
 		return TRUE;
 	}
@@ -1663,15 +1585,11 @@ void mono_thread_manage (void)
 	struct wait_data *wait=g_new0 (struct wait_data, 1);
 	
 	/* join each thread that's still running */
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Joining each running thread...");
-#endif
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Joining each running thread..."));
 	
 	EnterCriticalSection (&threads_mutex);
 	if(threads==NULL) {
-#ifdef THREAD_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": No threads");
-#endif
+		THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION ": No threads"));
 		LeaveCriticalSection (&threads_mutex);
 		return;
 	}
@@ -1679,12 +1597,9 @@ void mono_thread_manage (void)
 	
 	do {
 		EnterCriticalSection (&threads_mutex);
-#ifdef THREAD_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ":There are %d threads to join",
-			  mono_g_hash_table_size (threads));
-		mono_g_hash_table_foreach (threads, print_tids, NULL);
-#endif
+		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+			  ":There are %d threads to join", mono_g_hash_table_size (threads));
+			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
 		wait->num=0;
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
@@ -1739,11 +1654,9 @@ void mono_thread_abort_all_other_threads (void)
 	guint32 self=GetCurrentThreadId ();
 
 	EnterCriticalSection (&threads_mutex);
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ":There are %d threads to abort",
+	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ":There are %d threads to abort",
 		  mono_g_hash_table_size (threads));
-	mono_g_hash_table_foreach (threads, print_tids, NULL);
-#endif
+		mono_g_hash_table_foreach (threads, print_tids, NULL));
 
 	mono_g_hash_table_foreach (threads, terminate_thread,
 				   GUINT_TO_POINTER (self));
@@ -2131,10 +2044,8 @@ static void gc_stop_world (gpointer key, gpointer value, gpointer user)
 	MonoThread *thread=(MonoThread *)value;
 	guint32 self=GPOINTER_TO_UINT (user);
 
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid);
-#endif
-	
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid));
+
 	if(thread->tid==self)
 		return;
 
@@ -2145,9 +2056,7 @@ void mono_gc_stop_world (void)
 {
 	guint32 self=GetCurrentThreadId ();
 
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads);
-#endif
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads));
 
 	EnterCriticalSection (&threads_mutex);
 
@@ -2162,10 +2071,8 @@ static void gc_start_world (gpointer key, gpointer value, gpointer user)
 	MonoThread *thread=(MonoThread *)value;
 	guint32 self=GPOINTER_TO_UINT (user);
 	
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid);
-#endif
-	
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid));
+
 	if(thread->tid==self)
 		return;
 
@@ -2176,9 +2083,7 @@ void mono_gc_start_world (void)
 {
 	guint32 self=GetCurrentThreadId ();
 
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads);
-#endif
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads));
 
 	EnterCriticalSection (&threads_mutex);
 
@@ -2365,14 +2270,10 @@ static void gc_push_all_stacks (gpointer key, gpointer value, gpointer user)
 	MonoThread *thread=(MonoThread *)value;
 	guint32 *selfp=(guint32 *)user, self = *selfp;
 
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d - %p", self, thread->tid, thread->stack_ptr);
-#endif
-	
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d - %p", self, thread->tid, thread->stack_ptr));
+
 	if(thread->tid==self) {
-#ifdef LIBGC_DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": %p - %p", selfp, thread->stack_ptr);
-#endif
+		LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %p - %p", selfp, thread->stack_ptr));
 		GC_push_all_stack (selfp, thread->stack_ptr);
 		return;
 	}
@@ -2388,9 +2289,7 @@ void mono_gc_push_all_stacks (void)
 {
 	guint32 self=GetCurrentThreadId ();
 
-#ifdef LIBGC_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads);
-#endif
+	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads));
 
 	EnterCriticalSection (&threads_mutex);
 
