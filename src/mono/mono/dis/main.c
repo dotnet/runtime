@@ -56,7 +56,7 @@ dis_directive_assembly (MonoMetadata *m)
 		 ".assembly %s\n"
 		 "{\n"
 		 "  .hash algorithm 0x%08x\n"
-		 "  .ver  %d.%d.%d.%d"
+		 "  .ver  %d:%d:%d:%d"
 		 "%s %s"
 		 "%s"
 		 "\n"
@@ -87,7 +87,7 @@ dis_directive_assemblyref (MonoMetadata *m)
 		fprintf (output,
 			 ".assembly extern %s\n"
 			 "{\n"
-			 "  .ver %d.%d.%d.%d\n"
+			 "  .ver %d:%d:%d:%d\n"
 			 "}\n",
 			 mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]),
 			 cols [MONO_ASSEMBLYREF_MAJOR_VERSION], cols [MONO_ASSEMBLYREF_MINOR_VERSION], 
@@ -635,7 +635,7 @@ dis_type (MonoMetadata *m, int n)
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
-	const char *name;
+	const char *name, *nspace;
 	gboolean next_is_valid, last;
 	
 	mono_metadata_decode_row (t, n, cols, MONO_TYPEDEF_SIZE);
@@ -648,14 +648,15 @@ dis_type (MonoMetadata *m, int n)
 
 	fprintf (output, ".namespace %s\n{\n", mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]));
 	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
+	nspace = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
 		char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
-		fprintf (output, "  .class %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
+		fprintf (output, "  .class %s%s.%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), nspace, name);
 		fprintf (output, "  \textends %s\n", base);
 		g_free (base);
 	} else
-		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
+		fprintf (output, "  .class interface %s%s.%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), nspace, name);
 	
 	fprintf (output, "  {\n");
 

@@ -124,14 +124,14 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		ptr++;
 		switch (entry->argument){
 		case InlineBrTarget: {
-			gint target = *(gint32 *) ptr;
+			gint target = read32 (ptr);
 			fprintf (output, "IL_%04x\n", ((int) (ptr - start)) + 4 + target);
 			ptr += 4;
 			break;
 		}
 			
 		case InlineField: {
-			guint32 token = *(guint32 *) ptr;
+			guint32 token = read32 (ptr);
 			char *s;
 			
 			s = get_field (m, token);
@@ -142,7 +142,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 		
 		case InlineI: {
-			int value = *(int *) ptr;
+			int value = read32 (ptr);
 
 			fprintf (output, "%d", value);
 			ptr += 4;
@@ -150,7 +150,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 		
 		case InlineI8: {
-			gint64 top = *(guint64 *) ptr;
+			gint64 top = read64 (ptr);
 
 			fprintf (output, "%lld", (long long) top);
 			ptr += 8;
@@ -158,7 +158,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 		
 		case InlineMethod: {
-			guint32 token = *(guint32 *) ptr;
+			guint32 token = read32 (ptr);
 			char *s;
 
 			s = get_method (m, token);
@@ -179,14 +179,14 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 		
 		case InlineSig: {
-			guint32 token = *(guint32 *) ptr;
+			guint32 token = read32 (ptr);
 			fprintf (output, "signature-0x%08x", token);
 			ptr += 4;
 			break;
 		}
 		
 		case InlineString: {
-			guint32 token = *(guint32 *) ptr;
+			guint32 token = read32 (ptr);
 			
 			char *s = get_encoded_user_string (
 				mono_metadata_user_string (m, token & 0xffffff));
@@ -220,7 +220,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 
 		case InlineTok: {
-			guint32 token = *(guint32 *) ptr;
+			guint32 token = read32 (ptr);
 			char *s;
 			
 			s = get_token (m, token);
@@ -232,7 +232,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 		
 		case InlineType: {
-			guint32 token = *(guint32 *) ptr;
+			guint32 token = read32 (ptr);
 			char *s = get_token_type (m, token);
 			fprintf (output, "%s", s);
 			g_free (s);
@@ -241,7 +241,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 
 		case InlineVar: {
-			gint16 var_idx = *(gint16 *) ptr;
+			gint16 var_idx = read16 (ptr);
 
 			fprintf (output, "variable-%d\n", var_idx);
 			ptr += 2;

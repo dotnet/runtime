@@ -1026,10 +1026,10 @@ get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
 		break;
 		
 	case MONO_TYPE_I2:
-		return g_strdup_printf ("%d", (int) (*(gint16 *) ptr));
+		return g_strdup_printf ("%d", (int) read16 (ptr));
 		
 	case MONO_TYPE_I4:
-		return g_strdup_printf ("%d", *(gint32 *) ptr);
+		return g_strdup_printf ("%d", read32 (ptr));
 		
 	case MONO_TYPE_I8:
 		/*
@@ -1095,10 +1095,10 @@ get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("%d", (int) *ptr);
 
 	case MONO_TYPE_U2:
-		return g_strdup_printf ("0x%04x", (unsigned int) (*(guint16 *) ptr));
+		return g_strdup_printf ("0x%04x", (unsigned int) read16 (ptr));
 		
 	case MONO_TYPE_U4:
-		return g_strdup_printf ("0x%04x", (unsigned int) (*(guint32 *) ptr));
+		return g_strdup_printf ("0x%04x", (unsigned int) read32 (ptr));
 		
 	default:
 		g_error ("Unknown MONO_TYPE (%d) on constant at Blob index (0x%08x)\n",
