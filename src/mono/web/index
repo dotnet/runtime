@@ -36,6 +36,8 @@
 	    <td colspan="3">
 	      <b><center>Mono Status</center></b>
 	    </td>
+	  </tr>
+	  <tr>
 	    <td>
 	      <b><a href="c-sharp.html">C# Compiler</a></b>
 	    </td>
@@ -90,7 +92,6 @@
 	released a fresh version of <a
 	href="http://gtk-sharp.sf.net">Gtk#</a> was <a
 	href="http://lists.ximian.com/archives/public/mono-list/2002-August/001702.html">announced</a>.
-
 
 @item Aug 23rd, 2002: Mono 0.15 released
 
