@@ -6661,7 +6661,6 @@ mono_create_icall_signature (const char *sigstr)
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
 	res->pinvoke = 1;
-	res->shared = 1;
 
 #ifdef PLATFORM_WIN32
 	/* 
