@@ -347,7 +347,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
-	sig = mono_metadata_parse_method_signature_full (image, container, 0, ptr, NULL);
+	sig = mono_metadata_parse_method_signature_full (image, (MonoGenericContext *) container, 0, ptr, NULL);
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
@@ -466,7 +466,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->container = container;
 
-	gmethod->inst = mono_metadata_parse_generic_inst (image, container, param_count, ptr, &ptr);
+	gmethod->inst = mono_metadata_parse_generic_inst (
+		image, (MonoGenericContext *) container, param_count, ptr, &ptr);
+
 	if (context)
 		gmethod->inst = mono_metadata_inflate_generic_inst (gmethod->inst, context);
 
@@ -854,7 +856,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	result->signature = mono_metadata_parse_method_signature_full (image, container, idx, sig, NULL);
+	result->signature = mono_metadata_parse_method_signature_full (
+		image, (MonoGenericContext *) container, idx, sig, NULL);
 
 	if (!result->klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
@@ -928,7 +931,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
 			gpointer loc = mono_image_rva_map (image, cols [0]);
 			g_assert (loc);
-			((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (image, container, loc);
+			((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (
+				image, (MonoGenericContext *) container, loc);
 		}
 		
 		((MonoMethodNormal *) result)->generic_container = generic_container;
@@ -1322,7 +1326,7 @@ mono_method_get_header (MonoMethod *method)
 	
 	g_assert (loc);
 	
-	mn->header = mono_metadata_parse_mh_full (img, mn->generic_container, loc);
+	mn->header = mono_metadata_parse_mh_full (img, (MonoGenericContext *) mn->generic_container, loc);
 	
 	mono_loader_unlock ();
 	return mn->header;

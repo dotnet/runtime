@@ -525,7 +525,8 @@ class_compute_field_layout (MonoClass *class)
 			container = class->generic_class->container;
 		}
 		field->type = mono_metadata_parse_type_full (
-			m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+			m, (MonoGenericContext *) container, MONO_PARSE_FIELD,
+			cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (mono_field_is_deleted (field))
 			continue;
 		if (class->generic_class) {
@@ -2236,15 +2237,9 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
 				 MonoGenericContext *context)
 {
 	MonoType *type, *inflated;
-	MonoGenericContainer *container = NULL;
 	MonoClass *class;
 
-	if (context) {
-		g_assert (context->container);
-		container = context->container;
-	}
-
-	type = mono_type_create_from_typespec_full (image, container, type_spec);
+	type = mono_type_create_from_typespec_full (image, context, type_spec);
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:

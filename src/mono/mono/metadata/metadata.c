@@ -23,7 +23,7 @@
 #include "private.h"
 #include "class.h"
 
-static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *generic_container,
+static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *generic_context,
 					 const char *ptr, const char **rptr);
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
@@ -1059,14 +1059,14 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
  * and dimensions.
  */
 MonoArrayType *
-mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *generic_container,
+mono_metadata_parse_array_full (MonoImage *m, MonoGenericContext *generic_context,
 				const char *ptr, const char **rptr)
 {
 	int i;
 	MonoArrayType *array = g_new0 (MonoArrayType, 1);
 	MonoType *etype;
 	
-	etype = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	etype = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	array->eklass = mono_class_from_mono_type (etype);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
@@ -1264,7 +1264,7 @@ mono_metadata_init (void)
  * Returns: a #MonoType structure representing the decoded type.
  */
 MonoType*
-mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *generic_container, MonoParseTypeMode mode,
+mono_metadata_parse_type_full (MonoImage *m, MonoGenericContext *generic_context, MonoParseTypeMode mode,
 			       short opt_attrs, const char *ptr, const char **rptr)
 {
 	MonoType *type, *cached;
@@ -1344,7 +1344,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *generic_conta
 	type->byref = byref;
 	type->pinned = pinned ? 1 : 0;
 
-	do_mono_metadata_parse_type (type, m, generic_container, ptr, &ptr);
+	do_mono_metadata_parse_type (type, m, generic_context, ptr, &ptr);
 
 	if (rptr)
 		*rptr = ptr;
@@ -1390,7 +1390,7 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature *
-mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *generic_container, guint32 token)
+mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContext *generic_context, guint32 token)
 {
 	MonoTableInfo *tables = image->tables;
 	guint32 idx = mono_metadata_token_index (token);
@@ -1407,7 +1407,7 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *gene
 	ptr = mono_metadata_blob_heap (image, sig);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	return mono_metadata_parse_method_signature_full (image, generic_container, FALSE, ptr, NULL); 
+	return mono_metadata_parse_method_signature_full (image, generic_context, FALSE, ptr, NULL); 
 }
 
 MonoMethodSignature *
@@ -1450,7 +1450,7 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature *
-mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *generic_container,
+mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *generic_context,
 					   int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
@@ -1458,7 +1458,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
-	MonoGenericContainer *container = NULL;
+	MonoGenericContext *context = NULL;
 
 	if (*ptr & 0x10)
 		gen_param_count = 1;
@@ -1500,11 +1500,14 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	if (gen_param_count)
 		method->has_type_parameters = 1;
 
-	if (gen_param_count && (!generic_container || !generic_container->is_method)) {
-		container = g_new0 (MonoGenericContainer, 1);
-		container->parent = generic_container;
+	if (gen_param_count && (!generic_context || !generic_context->container->is_method)) {
+		MonoGenericContainer *container = g_new0 (MonoGenericContainer, 1);
+
+		if (generic_context)
+			container->parent = generic_context->container;
 		container->is_signature = 1;
 
+		context = &container->context;
 		container->context.container = container;
 
 		container->type_argc = gen_param_count;
@@ -1515,10 +1518,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 			container->type_params [i].num = i;
 		}
 	} else
-		container = generic_container;
+		context = generic_context;
 
 	if (call_convention != 0xa) {
-		method->ret = mono_metadata_parse_type_full (m, container, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
+		method->ret = mono_metadata_parse_type_full (m, context, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
 		is_open = mono_class_is_open_constructed_type (method->ret);
 	}
 
@@ -1533,7 +1536,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 				ptr++;
 			}
 			method->params [i] = mono_metadata_parse_type_full (
-				m, container, MONO_PARSE_PARAM, pattrs [i], ptr, &ptr);
+				m, context, MONO_PARSE_PARAM, pattrs [i], ptr, &ptr);
 			if (!is_open)
 				is_open = mono_class_is_open_constructed_type (method->params [i]);
 		}
@@ -1635,7 +1638,7 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 }
 
 MonoGenericInst *
-mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *generic_container,
+mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContext *generic_context,
 				  int count, const char *ptr, const char **rptr)
 {
 	MonoGenericInst *ginst;
@@ -1646,7 +1649,7 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *generic_co
 	ginst->type_argv = g_new0 (MonoType*, count);
 
 	for (i = 0; i < ginst->type_argc; i++) {
-		MonoType *t = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		MonoType *t = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 		ginst->type_argv [i] = t;
 		if (!ginst->is_open)
@@ -1660,7 +1663,7 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *generic_co
 }
 
 static void
-do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *generic_container,
+do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContext *generic_context,
 				      const char *ptr, const char **rptr)
 {
 	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
@@ -1676,7 +1679,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	gclass->klass = g_new0 (MonoClass, 1);
 
-	gclass->generic_type = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	gclass->generic_type = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 	gklass = mono_class_from_mono_type (gclass->generic_type);
 	g_assert ((gclass->context->container = gclass->container = gklass->generic_container) != NULL);
@@ -1693,7 +1696,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	mono_class_create_generic (gclass);
 
-	gclass->inst = mono_metadata_parse_generic_inst (m, generic_container, count, ptr, &ptr);
+	gclass->inst = mono_metadata_parse_generic_inst (m, generic_context, count, ptr, &ptr);
 
 	mono_class_create_generic_2 (gclass);
 
@@ -1740,14 +1743,18 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
  * Internal routine to parse a generic type parameter.
  */
 static MonoGenericParam *
-mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_container,
+mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_context,
 				   gboolean is_mvar, const char *ptr, const char **rptr)
 {
+	MonoGenericContainer *generic_container;
 	int index;
 
 	index = mono_metadata_decode_value (ptr, &ptr);
 	if (rptr)
 		*rptr = ptr;
+
+	g_assert (generic_context);
+	generic_container = generic_context->container;
 
 	if (!is_mvar) {
 		g_assert (generic_container);
@@ -1785,7 +1792,7 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
  * This extracts a Type as specified in Partition II (22.2.12) 
  */
 static void
-do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *generic_container,
+do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *generic_context,
 			     const char *ptr, const char **rptr)
 {
 	type->type = mono_metadata_decode_value (ptr, &ptr);
@@ -1818,31 +1825,31 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoType *etype = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
+		MonoType *etype = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		type->data.klass = mono_class_from_mono_type (etype);
 		mono_metadata_free_type (etype);
 		break;
 	}
 	case MONO_TYPE_PTR:
-		type->data.type = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
+		type->data.type = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		break;
 	case MONO_TYPE_FNPTR:
-		type->data.method = mono_metadata_parse_method_signature_full (m, generic_container, 0, ptr, &ptr);
+		type->data.method = mono_metadata_parse_method_signature_full (m, generic_context, 0, ptr, &ptr);
 		break;
 	case MONO_TYPE_ARRAY:
-		type->data.array = mono_metadata_parse_array_full (m, generic_container, ptr, &ptr);
+		type->data.array = mono_metadata_parse_array_full (m, generic_context, ptr, &ptr);
 		break;
 
 	case MONO_TYPE_MVAR:
-		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_container, TRUE, ptr, &ptr);
+		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_context, TRUE, ptr, &ptr);
 		break;
 
 	case MONO_TYPE_VAR:
-		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_container, FALSE, ptr, &ptr);
+		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_context, FALSE, ptr, &ptr);
 		break;
 
 	case MONO_TYPE_GENERICINST:
-		do_mono_metadata_parse_generic_class (type, m, generic_container, ptr, &ptr);
+		do_mono_metadata_parse_generic_class (type, m, generic_context, ptr, &ptr);
 		break;
 		
 	default:
@@ -2012,7 +2019,7 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
  * Returns: a MonoMethodHeader.
  */
 MonoMethodHeader *
-mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *generic_container, const char *ptr)
+mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContext *generic_context, const char *ptr)
 {
 	MonoMethodHeader *mh;
 	unsigned char flags = *(const unsigned char *) ptr;
@@ -2095,7 +2102,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *generic_contain
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i)
 			mh->locals [i] = mono_metadata_parse_type_full (
-				m, generic_container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
+				m, generic_context, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
 	} else {
 		mh = g_new0 (MonoMethodHeader, 1);
 	}
@@ -3378,7 +3385,7 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
  * token.
  */
 MonoType *
-mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContainer *generic_container, guint32 type_spec)
+mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *generic_context, guint32 type_spec)
 {
 	guint32 idx = mono_metadata_token_index (type_spec);
 	MonoTableInfo *t;
@@ -3409,7 +3416,7 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContainer *gen
 		ptr++;
 	}
 
-	do_mono_metadata_parse_type (type, image, generic_container, ptr, &ptr);
+	do_mono_metadata_parse_type (type, image, generic_context, ptr, &ptr);
 
 	mono_loader_unlock ();
 
