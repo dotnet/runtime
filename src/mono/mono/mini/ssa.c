@@ -126,6 +126,62 @@ replace_usage (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **
 	}
 }
 
+static int
+extends_live (MonoInst *inst)
+{
+	int arity;
+
+	if (!inst)
+		return 0;
+
+	arity = mono_burg_arity [inst->opcode];
+
+	if (inst->ssa_op == MONO_SSA_LOAD && 
+	    (inst->inst_i0->opcode == OP_LOCAL /*|| inst->inst_i0->opcode == OP_ARG*/)) {
+		return 1;
+	} else {
+		if (arity) {
+			if (inst->ssa_op != MONO_SSA_STORE)
+				if (extends_live (inst->inst_left))
+					return 1;
+			if (arity > 1)
+				if (extends_live (inst->inst_right))
+					return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int
+replace_usage_new (MonoCompile *cfg, MonoInst *inst, int varnum, MonoInst *rep)
+{
+	int arity;
+
+	if (!inst)
+		return 0;
+
+	arity = mono_burg_arity [inst->opcode];
+
+	if ((inst->ssa_op == MONO_SSA_LOAD) && 
+	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG) &&
+	    inst->inst_i0->inst_c0 == varnum && rep->type == inst->type) {
+		*inst = *rep;
+		return 1;
+	} else {
+		if (arity) {
+			if (inst->ssa_op != MONO_SSA_STORE)
+				if (replace_usage_new (cfg, inst->inst_left, varnum, rep))
+					return 1;
+			if (arity > 1)
+				if (replace_usage_new (cfg, inst->inst_right, varnum, rep))
+					return 1;
+		}
+	}
+
+	return 0;
+}
+
 static void
 mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoInst **stack) 
 {
@@ -437,7 +493,7 @@ mono_ssa_remove (MonoCompile *cfg)
 	varlist_array = mono_ssa_get_allocatable_vars (cfg);
 
 	for (i = 0; i < varlist_array->len; i++) {
-		GList *l, *t, *regs, *vars = g_ptr_array_index (varlist_array, i);
+		GList *l, *regs, *vars = g_ptr_array_index (varlist_array, i);
 		MonoMethodVar *vmv, *amv;
 		
 		if (g_list_length (vars) <= 1) {
@@ -462,7 +518,7 @@ mono_ssa_remove (MonoCompile *cfg)
 			}
 
 			if (!regs)
-				regs = g_list_prepend (regs, vmv->idx);
+				regs = g_list_prepend (regs, (gpointer)vmv->idx);
 
 			vmv->reg = (int)regs->data;
 			regs = g_list_remove_link (regs, regs);
@@ -568,13 +624,14 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 	}
 }
 
+
 /* avoid unnecessary copies of variables:
  * Y <= X; Z = Y; is translated to Z = X;
  */
 static void
 mono_ssa_avoid_copies (MonoCompile *cfg)
 {
-	MonoInst *inst, *next;
+	MonoInst *inst, *next, *u;
 	MonoBasicBlock *bb;
 	MonoMethodVar *i1, *i2;
 
@@ -583,9 +640,28 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		for (inst = bb->code; inst; inst = inst->next) {
 			if (inst->ssa_op == MONO_SSA_STORE && inst->inst_i0->opcode == OP_LOCAL &&
-			    !IS_CALL (inst->inst_i1->opcode)) {
+			    !IS_CALL (inst->inst_i1->opcode) && inst->inst_i1->opcode != OP_PHI && !inst->flags) {
 				i1 = cfg->vars [inst->inst_i0->inst_c0];
 
+/* fixme: compiling mcs does not work when I enable this */
+#if 0
+				if (g_list_length (i1->uses) == 1 && !extends_live (inst->inst_i1)) {
+					MonoVarUsageInfo *vi = (MonoVarUsageInfo *)i1->uses->data;
+					u = vi->inst;
+
+					//printf ("VAR %d %s\n", i1->idx, mono_method_full_name (cfg->method, TRUE));
+					//mono_print_tree (inst); printf ("\n");
+					//mono_print_tree (u); printf ("\n");
+
+					if (replace_usage_new (cfg, u, inst->inst_i0->inst_c0,  inst->inst_i1)) {
+														
+						//mono_print_tree (u); printf ("\n");
+							
+						inst->opcode = CEE_NOP;
+						inst->ssa_op = MONO_SSA_NOP;
+					}
+				}
+#endif			
 				if ((next = inst->next) && next->ssa_op == MONO_SSA_STORE && next->inst_i0->opcode == OP_LOCAL &&
 				    next->inst_i1->ssa_op == MONO_SSA_LOAD &&  next->inst_i1->inst_i0->opcode == OP_LOCAL &&
 				    next->inst_i1->inst_i0->inst_c0 == inst->inst_i0->inst_c0 && g_list_length (i1->uses) == 1 &&

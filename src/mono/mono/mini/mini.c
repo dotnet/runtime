@@ -1919,7 +1919,7 @@ mono_method_check_inlining (MonoMethod *method)
 		}
 	}
 	
-	//if (!MONO_TYPWE_IS_VOID (signature->ret)) return FALSE;
+	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
 
 	/* also consider num_locals? */
 	if (header->code_size < 20)
@@ -2569,8 +2569,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->verbose_level > 2)
 					g_print ("INLINE START %p %s\n", cmethod,  mono_method_full_name (cmethod, TRUE));
 
-				mono_jit_stats.inlineable_methods++;
-
+				if (!cmethod->inline_info) {
+					mono_jit_stats.inlineable_methods++;
+					cmethod->inline_info = 1;
+				}
 				/* allocate space to store the return value */
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) 
 					rvar =  mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
