@@ -6627,6 +6627,137 @@ mono_remove_patch_info (MonoCompile *cfg, int ip)
 	}
 }
 
+gpointer
+mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors)
+{
+	unsigned char *ip = patch_info->ip.i + code;
+	gpointer target = NULL;
+
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_BB:
+		target = patch_info->data.bb->native_offset + code;
+		break;
+	case MONO_PATCH_INFO_ABS:
+		target = patch_info->data.target;
+		break;
+	case MONO_PATCH_INFO_LABEL:
+		target = patch_info->data.inst->inst_c0 + code;
+		break;
+	case MONO_PATCH_INFO_IP:
+		target = ip;
+		break;
+	case MONO_PATCH_INFO_METHOD_REL:
+		target = code + patch_info->data.offset;
+		break;
+	case MONO_PATCH_INFO_INTERNAL_METHOD: {
+		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+		if (!mi) {
+			g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
+			g_assert_not_reached ();
+		}
+		target = mono_icall_get_wrapper (mi);
+		break;
+	}
+	case MONO_PATCH_INFO_METHOD_JUMP: {
+		GSList *list;
+
+		/* get the trampoline to the method from the domain */
+		target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
+		if (!domain->jump_target_hash)
+			domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+		list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
+		list = g_slist_prepend (list, ip);
+		g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
+		break;
+	}
+	case MONO_PATCH_INFO_METHOD:
+		if (patch_info->data.method == method) {
+			target = code;
+		} else
+			/* get the trampoline to the method from the domain */
+			target = mono_arch_create_jit_trampoline (patch_info->data.method);
+		break;
+	case MONO_PATCH_INFO_SWITCH: {
+		gpointer *jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+		int i;
+
+		for (i = 0; i < patch_info->table_size; i++) {
+			jump_table [i] = code + (int)patch_info->data.table [i];
+		}
+		target = jump_table;
+		break;
+	}
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IMAGE:
+	case MONO_PATCH_INFO_FIELD:
+		target = patch_info->data.target;
+		break;
+	case MONO_PATCH_INFO_IID:
+		mono_class_init (patch_info->data.klass);
+		target = patch_info->data.klass->interface_id;
+		break;
+	case MONO_PATCH_INFO_VTABLE:
+		target = mono_class_vtable (domain, patch_info->data.klass);
+		break;
+	case MONO_PATCH_INFO_CLASS_INIT:
+		target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
+		break;
+	case MONO_PATCH_INFO_SFLDA: {
+		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
+		if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))
+			/* Done by the generated code */
+			;
+		else {
+			if (run_cctors)
+				mono_runtime_class_init (vtable);
+		}
+		target = (char*)vtable->data + patch_info->data.field->offset;
+		break;
+	}
+	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R8:
+		target = patch_info->data.target;
+		break;
+	case MONO_PATCH_INFO_EXC_NAME:
+		target = patch_info->data.name;
+		break;
+	case MONO_PATCH_INFO_LDSTR:
+		target =
+			mono_ldstr (domain, patch_info->data.token->image, 
+						mono_metadata_token_index (patch_info->data.token->token));
+		break;
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
+		gpointer handle;
+		MonoClass *handle_class;
+
+		handle = mono_ldtoken (patch_info->data.token->image, 
+							   patch_info->data.token->token, &handle_class);
+		mono_class_init (handle_class);
+		mono_class_init (mono_class_from_mono_type (handle));
+
+		target =
+			mono_type_get_object (domain, handle);
+		break;
+	}
+	case MONO_PATCH_INFO_LDTOKEN: {
+		gpointer handle;
+		MonoClass *handle_class;
+		
+		handle = mono_ldtoken (patch_info->data.token->image,
+							   patch_info->data.token->token, &handle_class);
+		mono_class_init (handle_class);
+		
+		target = handle;
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	return target;
+}
+
 static void
 dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 	MonoJitICallInfo *info;
