@@ -861,7 +861,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			msize = klass->instance_size - info->fields [i].field->offset;
 			usize = info->native_size - info->fields [i].offset;
 		} else {
-			msize = klass->fields [i + 1].offset - info->fields [i].field->offset;
+			msize = info->fields [i + 1].field->offset - info->fields [i].field->offset;
 			usize = info->fields [i + 1].offset - info->fields [i].offset;
 		}
 		g_assert ((msize >= 0) && (usize >= 0));
