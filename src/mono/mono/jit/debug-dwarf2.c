@@ -412,7 +412,10 @@ dwarf2_write_class_field (AssemblyDebugInfo *info, MonoClass *klass, int index,
     // DW_TAG_member
     dwarf2_write_byte (info->f, ABBREV_STRUCT_MEMBER);
     dwarf2_write_string (info->f, klass->fields [index].name);
-    dwarf2_write_type_ref (info->f, type_index);
+    if (!subclass->valuetype)
+	dwarf2_write_type_ptr_ref (info->f, type_index);
+    else
+	dwarf2_write_type_ref (info->f, type_index);
 
     if (klass->fields [index].type->attrs & FIELD_ATTRIBUTE_PRIVATE)
 	dwarf2_write_byte (info->f, DW_ACCESS_private);
@@ -458,6 +461,8 @@ dwarf2_write_class_method (AssemblyDebugInfo *info, MonoClass *klass, MonoMethod
 		dwarf2_write_byte (info->f, DW_VIRTUALITY_pure_virtual);
 	else
 		dwarf2_write_byte (info->f, DW_VIRTUALITY_none);
+
+	dwarf2_write_byte (info->f, DW_CC_nocall);
 
 	if (ret_type) {
 		MonoClass *klass = mono_class_from_mono_type (ret_type);
@@ -664,9 +669,6 @@ dwarf2_write_array_type (AssemblyDebugInfo *info, MonoClass *klass, int index)
 	char buffer [BUFSIZ], *name;
 	int i;
 
-	g_message (G_STRLOC ": %s.%s - %d - %s", klass->name_space, klass->name,
-		   klass->rank, klass->element_class->name);
-
 	buffer[0] = '\0';
 	for (i = 0; i < klass->rank; i++)
 		strcat (buffer, "[]");
@@ -684,8 +686,6 @@ dwarf2_write_string_type (AssemblyDebugInfo *info, MonoClass *klass, int index)
 	unsigned long uint32_index = mono_debug_get_type (info, mono_defaults.uint32_class);
 	char buffer [BUFSIZ];
 	MonoString string;
-
-	g_message (G_STRLOC ": %s.%s", klass->name_space, klass->name);
 
 	// DW_TAG_structure_type
 	dwarf2_write_byte (info->f, ABBREV_STRUCT_TYPE);
@@ -732,7 +732,7 @@ dwarf2_write_class (AssemblyDebugInfo *info, MonoClass *klass, int index)
 	char buffer [BUFSIZ];
 	int print = 0;
 
-	if (!strncmp (klass->name, "My", 2) || !strcmp (klass->name, "Object")) {
+	if (!strncmp (klass->name, "My", 2)) {
 		g_message (G_STRLOC ": %s - %s - %x", klass->name_space, klass->name, klass->flags);
 		print = 1;
 		// G_BREAKPOINT ();
@@ -777,7 +777,7 @@ dwarf2_write_class (AssemblyDebugInfo *info, MonoClass *klass, int index)
 		dwarf2_write_byte (info->f, ABBREV_BASE_TYPE);
 		dwarf2_write_string (info->f, klass->name);
 		dwarf2_write_byte (info->f, DW_ATE_address);
-		dwarf2_write_byte (info->f, sizeof (gpointer));
+		dwarf2_write_byte (info->f, 0);
 		break;
 	}
 }
@@ -954,6 +954,9 @@ static void
 write_class_dwarf2 (AssemblyDebugInfo *info, MonoClass *klass, guint index)
 {
 	switch (klass->byval_arg.type) {
+	case MONO_TYPE_VOID:
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 0, "Void");
+		break;
 	case MONO_TYPE_BOOLEAN:
 		dwarf2_write_base_type (info, index, DW_ATE_boolean, 1, "Boolean");
 		break;
@@ -1221,6 +1224,7 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_pair (info->f, DW_AT_name, DW_FORM_string);
 	dwarf2_write_pair (info->f, DW_AT_accessibility, DW_FORM_data1);
 	dwarf2_write_pair (info->f, DW_AT_virtuality, DW_FORM_data1);
+	dwarf2_write_pair (info->f, DW_AT_calling_convention, DW_FORM_data1);
 	dwarf2_write_pair (info->f, 0, 0);
 
 	dwarf2_write_byte (info->f, ABBREV_CLASS_METHOD_RETVAL);
@@ -1229,6 +1233,7 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_pair (info->f, DW_AT_name, DW_FORM_string);
 	dwarf2_write_pair (info->f, DW_AT_accessibility, DW_FORM_data1);
 	dwarf2_write_pair (info->f, DW_AT_virtuality, DW_FORM_data1);
+	dwarf2_write_pair (info->f, DW_AT_calling_convention, DW_FORM_data1);
 	dwarf2_write_pair (info->f, DW_AT_type, DW_FORM_ref4);
 	dwarf2_write_pair (info->f, 0, 0);
 
