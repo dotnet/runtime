@@ -88,6 +88,7 @@ static void *timed_thread_start_routine(gpointer args)
 	pthread_detach(thread->id);
 
 	if(thread->create_flags & CREATE_SUSPENDED) {
+		thread->suspend_count = 1;
 		_wapi_timed_thread_suspend (thread);
 	}
 	
@@ -112,6 +113,7 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 	pthread_cond_init(&thread->exit_cond, NULL);
 	thread->create_flags = create_flags;
 	sem_init (&thread->suspend_sem, 0, 0);
+	sem_init (&thread->suspended_sem, 0, 0);
 	thread->start_routine = start_routine;
 	thread->exit_routine = exit_routine;
 	thread->arg = arg;
@@ -142,6 +144,7 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
 	sem_init (&thread->suspend_sem, 0, 0);
+	sem_init (&thread->suspended_sem, 0, 0);
 	thread->exit_routine = exit_routine;
 	thread->exit_userdata = exit_userdata;
 	thread->exitstatus = 0;
@@ -196,6 +199,7 @@ void _wapi_timed_thread_destroy (TimedThread *thread)
 	mono_mutex_destroy (&thread->join_mutex);
 	pthread_cond_destroy (&thread->exit_cond);
 	sem_destroy (&thread->suspend_sem);
+	sem_destroy (&thread->suspended_sem);
 	
 	g_free(thread);
 }
@@ -227,7 +231,7 @@ void _wapi_timed_thread_suspend (TimedThread *thread)
 			 ": attempt to suspend a different thread!");
 		exit (-1);
 	}
-	
+
 	sem_wait (&thread->suspend_sem);
 }
 

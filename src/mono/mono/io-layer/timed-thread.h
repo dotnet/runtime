@@ -25,13 +25,15 @@ typedef struct
 	mono_mutex_t join_mutex;
 	pthread_cond_t exit_cond;
 	guint32 create_flags;
-	sem_t suspend_sem;
+	int suspend_count;
+	sem_t suspend_sem, suspended_sem;
 	guint32 (*start_routine)(gpointer arg);
 	void (*exit_routine)(guint32 exitstatus, gpointer userdata);
 	gpointer arg;
 	gpointer exit_userdata;
 	guint32 exitstatus;
 	gboolean exiting;
+	gpointer stack_ptr;
 } TimedThread;
 
 extern void _wapi_timed_thread_exit(guint32 exitstatus) G_GNUC_NORETURN;
