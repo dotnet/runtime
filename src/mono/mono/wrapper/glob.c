@@ -36,7 +36,7 @@ mono_glob_compile (const char *glob)
 			g_string_append_c (str, *p);
 		}
 	}
-	g_string_append_c (str, "$");
+	g_string_append_c (str, '$');
 	regcomp (compiled, str->str, 0);
 
 	return compiled;
