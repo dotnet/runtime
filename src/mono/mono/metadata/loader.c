@@ -33,6 +33,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
+#include <mono/utils/mono-logger.h>
 
 static void mono_loader_wine_init   (void);
 
@@ -598,6 +599,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
 
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+			"DllImport attempting to load: '%s'.", new_scope);
+
 #ifndef PLATFORM_WIN32
 	/*
 	 * If we are P/Invoking a library from System.Windows.Forms, load Wine
@@ -627,18 +631,39 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 		if (!gmodule) {
 			full_name = g_module_build_path (NULL, file_name);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					"DllImport loading location: '%s'.", full_name);
 			gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+			if (!gmodule) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+						"DllImport error loading library: '%s'.",
+						g_module_error ());
+			}
 			g_free (full_name);
 		}
 
 		if (!gmodule) {
 			full_name = g_module_build_path (".", file_name);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					"DllImport loading library: '%s'.", full_name);
 			gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+			if (!gmodule) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+						"DllImport error loading library '%s'.",
+						g_module_error ());
+			}
 			g_free (full_name);
 		}
 
 		if (!gmodule) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					"DllImport loading: '%s'.", file_name);
 			gmodule=g_module_open (file_name, G_MODULE_BIND_LAZY);
+			if (!gmodule) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+						"DllImport error loading library '%s'.",
+						g_module_error ());
+			}
 		}
 
 		g_free (file_name);
@@ -648,11 +673,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	}
 
 	if (!gmodule) {
-		if (g_getenv ("MONO_DEBUG")) {
-			gchar *error = g_strdup (g_module_error ());
-			g_message ("Error loading '%s': %s\n", orig_scope, error);
-			g_free (error);
-		}
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
+				"DllImport unable to load library '%s'.",
+				g_module_error ());
 
 		if (exc_class) {
 			*exc_class = "DllNotFoundException";

@@ -12,6 +12,7 @@
 #include <string.h>
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
+#include "mono/utils/mono-logger.h"
 
 static void start_element (GMarkupParseContext *context, 
                            const gchar         *element_name,
@@ -222,6 +223,9 @@ mono_config_parse_file_with_context (ParseState *state, const char *filename)
 	GMarkupParseContext *context;
 	char *text;
 	gsize len;
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_CONFIG,
+			"Config attempting to parse: '%s'.", filename);
 
 	if (!inited)
 		mono_config_init ();

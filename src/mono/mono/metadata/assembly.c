@@ -27,6 +27,7 @@
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
+#include <mono/utils/mono-logger.h>
 #ifdef PLATFORM_WIN32
 #include <mono/os/util.h>
 #endif
@@ -586,7 +587,7 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	EnterCriticalSection (&assemblies_mutex);
 	image = mono_image_open (filename, status);
 	LeaveCriticalSection (&assemblies_mutex);
-	
+
 	return image;
 }
 
@@ -644,7 +645,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		fname = g_strdup (filename);
 	}
 
-	/* g_print ("file loading %s\n", fname); */
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+			"Assembly Loader probing location: '%s'.", filename);
 	image = do_mono_assembly_open (fname, status);
 
 	if (!image){
@@ -655,8 +657,11 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	ass = mono_assembly_load_from (image, fname, status);
 
-	if (ass)
+	if (ass) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+				"Assembly Loader loaded assembly from location: '%s'.", filename);
 		mono_config_for_assembly (ass->image);
+	}
 
 	g_free (fname);
 
