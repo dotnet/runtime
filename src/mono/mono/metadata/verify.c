@@ -1845,9 +1845,11 @@ static FieldDesc
 async_result_fields[] = {
 	{"async_state", G_STRUCT_OFFSET (MonoAsyncResult, async_state)},
 	{"handle", G_STRUCT_OFFSET (MonoAsyncResult, handle)},
+	{"async_delegate", G_STRUCT_OFFSET (MonoAsyncResult, async_delegate)},
 	{"data", G_STRUCT_OFFSET (MonoAsyncResult, data)},
 	{"sync_completed", G_STRUCT_OFFSET (MonoAsyncResult, sync_completed)},
 	{"completed", G_STRUCT_OFFSET (MonoAsyncResult, completed)},
+	{"endinvoke_called", G_STRUCT_OFFSET (MonoAsyncResult, endinvoke_called)},
 	{NULL, 0}
 };
 
@@ -1855,7 +1857,12 @@ static const ClassDesc
 system_classes_to_check [] = {
 	{"Delegate", delegate_fields},
 	{"MulticastDelegate", multicast_delegate_fields},
-	{"MonoAsyncResult", async_result_fields},
+	{NULL, NULL}
+};
+
+static const ClassDesc
+messaging_classes_to_check [] = {
+	{"AsyncResult", async_result_fields},
 	{NULL, NULL}
 };
 
@@ -1879,6 +1886,7 @@ typedef struct {
 
 static const NameSpaceDesc
 namespaces_to_check[] = {
+	{"System.Runtime.Remoting.Messaging", messaging_classes_to_check},
 	{"System.Reflection.Emit", emit_classes_to_check},
 	{"System.Threading", threading_classes_to_check},
 	{"System", system_classes_to_check},

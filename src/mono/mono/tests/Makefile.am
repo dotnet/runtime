@@ -85,7 +85,8 @@ TESTSRC=			\
 	rounding.cs		\
 	hashcode.cs		\
 	delegate1.cs		\
-	delegate2.cs
+	delegate2.cs		\
+	delegate3.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)

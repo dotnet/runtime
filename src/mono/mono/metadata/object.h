@@ -102,9 +102,11 @@ typedef struct {
 	MonoObject   object;
 	MonoObject  *async_state;
 	MonoObject  *handle;
+	MonoObject  *async_delegate;
 	gpointer     data;
 	MonoBoolean  sync_completed;
 	MonoBoolean  completed;
+	MonoBoolean  endinvoke_called;
 } MonoAsyncResult;
 
 typedef struct {

@@ -2902,8 +2902,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				cm = mono_get_method (image, token, NULL);
 				g_assert (cm);
 				
-				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t1->data.p = arch_compile_method (cm);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_LDFTN);
+				t1->data.m = cm;
 				PUSH_TREE (t1, VAL_POINTER);
 				break;
 			}
@@ -2925,7 +2925,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t2->data.m = cm;
 
-				t1 = mono_ctree_new (mp, MB_TERM_LDFTN, *sp, t2);
+				t1 = mono_ctree_new (mp, MB_TERM_LDVIRTFTN, *sp, t2);
 
 				PUSH_TREE (t1, VAL_POINTER);
 

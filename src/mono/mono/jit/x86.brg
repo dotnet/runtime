@@ -190,7 +190,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER
-%term LDLEN LDELEMA LDFTN LDSTR LDSFLDA
+%term LDLEN LDELEMA LDFTN LDVIRTFTN LDSTR LDSFLDA
 
 #
 # we start at stmt
@@ -1572,7 +1572,7 @@ reg: CALL_I4 (this, ADDR_G) {
 	mono_assert (tree->reg1 == X86_EAX);
 }
 
-reg: LDFTN (reg, INTF_ADDR) {
+reg: LDVIRTFTN (reg, INTF_ADDR) {
 	int lreg = tree->left->reg1;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
@@ -1615,13 +1615,34 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	mono_assert (tree->reg1 == X86_EAX);
 }
 
-reg: LDFTN (reg, VFUNC_ADDR) {
+reg: LDVIRTFTN (reg, VFUNC_ADDR) {
 	int lreg = tree->left->reg1;
 	
 	x86_mov_reg_membase (s->code, tree->reg1, lreg, 0, 4);
 	
 	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, G_STRUCT_OFFSET (MonoVTable, vtable) + (tree->right->data.m->slot << 2), 4);
 }
+
+reg: LDFTN {
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_imm (s->code, tree->data.m);
+	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, arch_compile_method);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
+	PRINT_REG ("LDFTN", tree->reg1);
+}
+
 
 reg: CALL_I4 (this, VFUNC_ADDR) {
 	MethodCallInfo *ci = tree->data.ci;

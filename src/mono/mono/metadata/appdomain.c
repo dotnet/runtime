@@ -279,7 +279,8 @@ mono_init (const char *filename)
 	g_assert (mono_defaults.multicastdelegate_class != 0 );
 
 	mono_defaults.asyncresult_class = mono_class_from_name (
-		mono_defaults.corlib, "System", "MonoAsyncResult");
+		mono_defaults.corlib, "System.Runtime.Remoting.Messaging", 
+		"AsyncResult");
 	g_assert (mono_defaults.asyncresult_class != 0 );
 
 	mono_defaults.waithandle_class = mono_class_from_name (

@@ -211,6 +211,8 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...)
 
 	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
 
+	ares->async_delegate = this;
+
 	EnterCriticalSection (&delegate_section);	
 	async_call_queue = g_list_append (async_call_queue, ares); 
 	LeaveCriticalSection (&delegate_section);
@@ -241,6 +243,8 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 					      "InvalidOperationException");
 		mono_raise_exception (e);
 	}
+
+	ares->endinvoke_called = 1;
 
 	EnterCriticalSection (&delegate_section);	
 	if ((l = g_list_find (async_call_queue, handle))) {
