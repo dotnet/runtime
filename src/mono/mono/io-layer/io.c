@@ -7,6 +7,7 @@
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <glob.h>
 #include <utime.h>
 
 #include "mono/io-layer/wapi.h"
@@ -30,6 +31,13 @@ struct _WapiHandle_file
 	guint32 attrs;
 };
 
+struct _WapiHandle_find
+{
+	WapiHandle handle;
+	glob_t glob;
+	size_t count;
+};
+
 static void file_close(WapiHandle *handle);
 static WapiFileType file_getfiletype(void);
 static gboolean file_read(WapiHandle *handle, gpointer buffer,
@@ -38,6 +46,7 @@ static gboolean file_read(WapiHandle *handle, gpointer buffer,
 static gboolean file_write(WapiHandle *handle, gconstpointer buffer,
 			   guint32 numbytes, guint32 *byteswritten,
 			   WapiOverlapped *overlapped);
+static gboolean file_flush(WapiHandle *handle);
 static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
 			 gint32 *highmovedistance, WapiSeekMethod method);
 static gboolean file_setendoffile(WapiHandle *handle);
@@ -56,6 +65,7 @@ static struct _WapiHandleOps file_ops = {
 	file_getfiletype,	/* getfiletype */
 	file_read,		/* readfile */
 	file_write,		/* writefile */
+	file_flush,		/* flushfile */
 	file_seek,		/* seek */
 	file_setendoffile,	/* setendoffile */
 	file_getfilesize,	/* getfilesize */
@@ -76,6 +86,7 @@ static struct _WapiHandleOps console_ops = {
 	console_getfiletype,	/* getfiletype */
 	file_read,		/* readfile */
 	file_write,		/* writefile */
+	file_flush,		/* flushfile */
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
@@ -86,6 +97,54 @@ static struct _WapiHandleOps console_ops = {
 	NULL,			/* signal */
 };
 
+/* Find handle has no ops.
+ */
+static struct _WapiHandleOps find_ops = {
+	NULL,			/* close */
+	NULL,			/* getfiletype */
+	NULL,			/* readfile */
+	NULL,			/* writefile */
+	NULL,			/* flushfile */
+	NULL,			/* seek */
+	NULL,			/* setendoffile */
+	NULL,			/* getfilesize */
+	NULL,			/* getfiletime */
+	NULL,			/* setfiletime */
+	NULL,			/* FIXME: wait */
+	NULL,			/* FIXME: wait_multiple */
+	NULL,			/* signal */
+};
+
+/* Some utility functions.
+ */
+static void _wapi_time_t_to_filetime (time_t time, WapiFileTime *filetime)
+{
+	guint64 ticks;
+	
+	ticks = ((guint64)time * 10000000) + 116444736000000000UL;
+	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
+	filetime->dwHighDateTime = ticks >> 32;
+}
+
+static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
+{
+	guint32 attrs = 0;
+
+	/* FIXME: this could definitely be better */
+
+	if (S_ISDIR (buf->st_mode))
+		attrs |= FILE_ATTRIBUTE_DIRECTORY;
+	else
+		attrs |= FILE_ATTRIBUTE_ARCHIVE;
+	
+	if (!(buf->st_mode & S_IWUSR))
+		attrs |= FILE_ATTRIBUTE_READONLY;
+	
+	return attrs;
+}
+
+/* Handle ops.
+ */
 static void file_close(WapiHandle *handle)
 {
 	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
@@ -177,6 +236,34 @@ static gboolean file_write(WapiHandle *handle, gconstpointer buffer,
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
+	}
+	
+	return(TRUE);
+}
+
+static gboolean file_flush(WapiHandle *handle)
+{
+	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	int ret;
+
+	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
+	   !(file_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+
+	ret=fsync(file_handle->fd);
+	if (ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": write of handle %p fd %d error: %s", handle,
+			  file_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
 	}
 	
 	return(TRUE);
@@ -964,6 +1051,25 @@ gboolean WriteFile(WapiHandle *handle, gconstpointer buffer, guint32 numbytes,
 }
 
 /**
+ * FlushFileBuffers:
+ * @handle: Handle to open file.  The handle must have
+ * %GENERIC_WRITE access.
+ *
+ * Flushes buffers of the file and causes all unwritten data to
+ * be written.
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean FlushFileBuffers(WapiHandle *handle)
+{
+	if(handle->ops->flushfile==NULL) {
+		return(FALSE);
+	}
+	
+	return(handle->ops->flushfile(handle));
+}
+
+/**
  * SetEndOfFile:
  * @handle: The file handle to set.  The handle must have
  * %GENERIC_WRITE access.
@@ -1297,3 +1403,140 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	
 	return(TRUE);
 }
+
+WapiHandle *FindFirstFile (const guchar *pattern, WapiFindData *find_data)
+{
+	struct _WapiHandle_find *handle;
+	guchar *utf8_pattern = NULL;
+	int result;
+	
+	if (pattern == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": pattern is NULL");
+#endif
+
+		return INVALID_HANDLE_VALUE;
+	}
+
+	utf8_pattern = _wapi_unicode_to_utf8 (pattern);
+	if (utf8_pattern == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+		
+		return INVALID_HANDLE_VALUE;
+	}
+	
+	handle = g_new0 (struct _WapiHandle_find, 1);
+	_WAPI_HANDLE_INIT ((&handle->handle), WAPI_HANDLE_FIND, find_ops);
+
+	result = glob (utf8_pattern, 0, NULL, &handle->glob);
+	g_free (utf8_pattern);
+
+	if (result != 0) {
+		globfree (&handle->glob);
+		g_free (handle);
+
+		switch (result) {
+		case GLOB_NOMATCH:
+			SetLastError (ERROR_NO_MORE_FILES);
+			break;
+
+		default:
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": glob failed with code %d.", result);
+#endif
+
+			break;
+		}
+
+		return INVALID_HANDLE_VALUE;
+	}
+
+	handle->count = 0;
+	if (!FindNextFile ((WapiHandle *)handle, find_data)) {
+		FindClose ((WapiHandle *)handle);
+		SetLastError (ERROR_NO_MORE_FILES);
+		return INVALID_HANDLE_VALUE;
+	}
+
+	return (WapiHandle *)handle;
+}
+
+gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
+{
+	struct _WapiHandle_find *handle;
+	struct stat buf;
+	const char *filename;
+	time_t ctime;
+
+	if (wapi_handle->type != WAPI_HANDLE_FIND) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return FALSE;
+	}
+
+	handle = (struct _WapiHandle_find *)wapi_handle;
+	if (handle->count >= handle->glob.gl_pathc) {
+		SetLastError (ERROR_NO_MORE_FILES);
+		return FALSE;
+	}
+
+	/* stat next glob match */
+
+	filename = handle->glob.gl_pathv [handle->count ++];
+	if (stat (filename, &buf) != 0) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": stat failed: %s", filename);
+#endif
+
+		SetLastError (ERROR_NO_MORE_FILES);
+		return FALSE;
+	}
+
+	/* fill data block */
+
+	if (buf.st_mtime < buf.st_ctime)
+		ctime = buf.st_mtime;
+	else
+		ctime = buf.st_ctime;
+	
+	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (&buf);
+
+	_wapi_time_t_to_filetime (ctime, &find_data->ftCreationTime);
+	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
+	_wapi_time_t_to_filetime (buf.st_mtime, &find_data->ftLastWriteTime);
+
+	if (find_data->dwFileAttributes && FILE_ATTRIBUTE_DIRECTORY) {
+		find_data->nFileSizeHigh = 0;
+		find_data->nFileSizeLow = 0;
+	}
+	else {
+		find_data->nFileSizeHigh = buf.st_size >> 32;
+		find_data->nFileSizeLow = buf.st_size & 0xFFFFFFFF;
+	}
+
+	find_data->dwReserved0 = 0;
+	find_data->dwReserved1 = 0;
+
+	g_strlcpy (find_data->cFileName, filename, MAX_PATH);
+	g_strlcpy (find_data->cAlternateFileName, filename, 14);
+
+	return TRUE;
+}
+
+gboolean FindClose (WapiHandle *wapi_handle)
+{
+	struct _WapiHandle_find *handle;
+
+	if (wapi_handle->type != WAPI_HANDLE_FIND) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return FALSE;
+	}
+	
+	handle = (struct _WapiHandle_find *)wapi_handle;
+	globfree (&handle->glob);
+	g_free (handle);
+
+	return TRUE;
+}
+

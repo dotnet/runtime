@@ -15,6 +15,7 @@ typedef gboolean BOOL;
 typedef guint32 *LPDWORD;
 typedef gint32 LONG;
 typedef gint32 *PLONG;
+typedef gunichar2 TCHAR;
 
 typedef WapiHandle *HANDLE;
 typedef WapiHandle **LPHANDLE;
@@ -30,6 +31,7 @@ typedef WapiSystemTime SYSTEMTIME;
 typedef WapiSystemTime *LPSYSTEMTIME;
 typedef WapiWSAData WSADATA;
 typedef WapiWSAData *LDWSADATA;
+typedef WapiFindData WIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
 #define CONST const
 #define VOID void

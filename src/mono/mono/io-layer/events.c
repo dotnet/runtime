@@ -45,6 +45,7 @@ static struct _WapiHandleOps event_ops = {
 	NULL,			/* getfiletype */
 	NULL,			/* readfile */
 	NULL,			/* writefile */
+	NULL,			/* flushfile */
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */

@@ -15,6 +15,7 @@ typedef enum {
 	WAPI_HANDLE_EVENT,
 	WAPI_HANDLE_SOCKET,
 	WAPI_HANDLE_COUNT,
+	WAPI_HANDLE_FIND
 } WapiHandleType;
 
 struct _WapiHandleOps 
@@ -32,6 +33,7 @@ struct _WapiHandleOps
 	gboolean (*writefile)(WapiHandle *handle, gconstpointer buffer,
 			      guint32 numbytes, guint32 *byteswritten,
 			      WapiOverlapped *overlapped);
+	gboolean (*flushfile)(WapiHandle *handle);
 	
 	/* File handles */
 	guint32 (*seek)(WapiHandle *handle, gint32 movedistance,

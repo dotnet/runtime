@@ -65,6 +65,8 @@ struct _WapiOverlapped
 #define FILE_FLAG_OVERLAPPED			0x40000000
 #define FILE_FLAG_WRITE_THROUGH			0x80000000
 
+#define MAX_PATH	260
+
 typedef enum {
 	STD_INPUT_HANDLE=-10,
 	STD_OUTPUT_HANDLE=-11,
@@ -103,6 +105,20 @@ typedef struct
 	guint16 wMilliseconds;
 } WapiSystemTime;
 
+typedef struct
+{
+	guint32 dwFileAttributes;
+	WapiFileTime ftCreationTime;
+	WapiFileTime ftLastAccessTime;
+	WapiFileTime ftLastWriteTime;
+	guint32 nFileSizeHigh;
+	guint32 nFileSizeLow;
+	guint32 dwReserved0;
+	guint32 dwReserved1;
+	guchar cFileName [MAX_PATH];
+	guchar cAlternateFileName [14];
+} WapiFindData;
+
 #define INVALID_SET_FILE_POINTER ((guint32)-1)
 #define INVALID_FILE_SIZE ((guint32)0xFFFFFFFF)
 
@@ -118,6 +134,7 @@ extern gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,
 extern gboolean WriteFile(WapiHandle *handle, gconstpointer buffer,
 			  guint32 numbytes, guint32 *byteswritten,
 			  WapiOverlapped *overlapped);
+extern gboolean FlushFileBuffers(WapiHandle *handle);
 extern gboolean SetEndOfFile(WapiHandle *handle);
 extern guint32 SetFilePointer(WapiHandle *handle, gint32 movedistance,
 			      gint32 *highmovedistance, WapiSeekMethod method);
@@ -126,5 +143,8 @@ extern guint32 GetFileSize(WapiHandle *handle, guint32 *highsize);
 extern gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time, WapiFileTime *last_access, WapiFileTime *last_write);
 extern gboolean SetFileTime(WapiHandle *handle, const WapiFileTime *create_time, const WapiFileTime *last_access, const WapiFileTime *last_write);
 extern gboolean FileTimeToSystemTime(const WapiFileTime *file_time, WapiSystemTime *system_time);
+extern WapiHandle *FindFirstFile (const guchar *pattern, WapiFindData *find_data);
+extern gboolean FindNextFile (WapiHandle *handle, WapiFindData *find_data);
+extern gboolean FindClose (WapiHandle *handle);
 
 #endif /* _WAPI_IO_H_ */

@@ -43,6 +43,7 @@ static struct _WapiHandleOps sem_ops = {
 	NULL,			/* getfiletype */
 	NULL,			/* readfile */
 	NULL,			/* writefile */
+	NULL,			/* flushfile */
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
