@@ -7425,6 +7425,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	MONO_ARCH_SAVE_REGS;
 
+	mono_loader_lock ();
+
 	if (tb->parent) {
 		/* check so we can compile corlib correctly */
 		if (strcmp (mono_object_class (tb->parent)->name, "TypeBuilder") == 0) {
@@ -7446,6 +7448,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		klass->supertypes = NULL;
 		mono_class_setup_parent (klass, parent);
 		mono_class_setup_mono_type (klass);
+		mono_loader_unlock ();
 		return;
 	}
 	
@@ -7502,6 +7505,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	}
 
 	/*g_print ("setup %s as %s (%p)\n", klass->name, ((MonoObject*)tb)->vtable->klass->name, tb);*/
+
+	mono_loader_unlock ();
 }
 
 /*
@@ -7579,6 +7584,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 
 	klass = my_mono_class_from_mono_type (tb->type.type);
 
+	mono_loader_lock ();
 	if (klass->enumtype && klass->enum_basetype == NULL) {
 		MonoReflectionFieldBuilder *fb;
 		MonoClass *ec;
@@ -7606,6 +7612,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 		/* FIXME: Does this mean enums can't have method overrides ? */
 		mono_class_setup_vtable_general (klass, NULL, 0);
 	}
+	mono_loader_unlock ();
 }
 
 static MonoMarshalSpec*
@@ -8679,6 +8686,11 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 
 	mono_save_custom_attrs (klass->image, klass, tb->cattrs);
 
+	mono_loader_lock ();
+	if (klass->wastypebuilder) {
+		mono_loader_unlock ();
+		return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+	}
 	/*
 	 * Fields to set in klass:
 	 * the various flags: delegate/unicode/contextbound etc.
@@ -8691,6 +8703,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		if (klass->generic_container) {
 			/* FIXME: The code below can't handle generic classes */
 			klass->wastypebuilder = TRUE;
+			mono_loader_unlock ();
 			return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 		}
 	}
@@ -8730,6 +8743,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	typebuilder_setup_events (klass);
 
 	klass->wastypebuilder = TRUE;
+	mono_loader_unlock ();
 
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	g_assert (res != (MonoReflectionType*)tb);
