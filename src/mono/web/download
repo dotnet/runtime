@@ -17,6 +17,134 @@
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
 	    <td>
+	      <b>Release 0.25</b><br>
+	      <a href="archive/mono-0.25.html">Release notes</a><br>
+	       Jun 26, 2003
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	 	      <li><a href="archive/mcs-0.25.tar.gz">Mono Class Libraries and C# Compiler.</a>
+	              <li><a href="archive/mono-0.25.tar.gz">Mono Runtime</a>
+ 		      <li><a href="archive/xsp-0.4.tar.gz">XSP web server (0.4)</a>
+		      <li><a href="archive/monodoc-0.4.tar.gz">MonoDoc 0.5</a>
+		      <li><a href="archive/gtk-sharp-0.10.tar.gz">Gtk# 0.10</a>
+	            </ul>
+		  </td>
+	        </tr>
+	        <tr bgcolor="#BBBBBB">
+		  <td>
+		     <b>Source RPMs</b><br>
+		     (No RPMS for XSP).
+	          </td>
+		  <td>
+		    <ul>
+			<li><a href="archive/mono-0.25-1.src.rpm">mono-0.25-1.src.rpm</a>
+		    </ul>
+		  </td>
+	        </tr>
+		<tr>
+		 <td></td>
+	 	</tr>
+
+		<tr>
+                  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b>
+                    <ul>
+                        <li><a href="archive/redhat-90-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a>
+                        <li><a href="archive/redhat-90-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a>
+                        <li><a href="archive/redhat-90-i386/mono-debuginfo-0.25-1.i386.rpm">mono-debuginfo-0.25-1.i386.rpm</a>
+		 	<br>
+			<li><a href="archive/redhat-90-i386/gtk-sharp-0.9-1.i386.rpm">gtk-sharp-0.9-1.i386.rpm</a>
+			<li><a href="archive/redhat-90-i386/gtk-sharp-debuginfo-0.9-1.i386.rpm">gtk-sharp-debuginfo-0.9-1.i386.rpm</a>
+			<li><a href="archive/redhat-90-i386/monodoc-0.4-1.i386.rpm">monodoc-0.4-1.i386.rpm</a>
+                    </ul>
+                  </td>
+                  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 8.0/x86</b>
+                    <ul>
+                        <li><a href="archive/redhat-80-i386/mono-0.25-2.i386.rpm">mono-0.25-2.i386.rpm</a>
+                        <li><a href="archive/redhat-80-i386/mono-devel-0.25-2.i386.rpm">mono-devel-0.25-2.i386.rpm</a>
+		 	<br>
+			<li><a href="archive/redhat-80-i386/gtk-sharp-0.9-1.i386.rpm">gtk-sharp-0.9-1.i386.rpm</a>
+			<li><a href="archive/redhat-80-i386/monodoc-0.4-1.i386.rpm">monodoc-0.4-1.i386.rpm</a>
+                    </ul>
+                  </td>
+		</tr>
+
+  		<tr> 
+                  <td bgcolor="#999999">
+                    <img src="images/debian-36.gif"><b>Debian</b>
+                    <ul>
+                        <li><a href="http://www.debianplanet.com/mono/">Debian Packages here.</a>
+                    </ul>
+                  </td>
+  		  <td bgcolor="#999999">
+ 		    <img src="images/windows-36.gif"><b>Windows Setup Wizard (XP, 2000, NT)</b> 
+ 		    <ul>
+ 	              <li><a href="archive/mono-0.25-win32-1.exe">Setup program.</a>
+ 	            </ul>
+  	          </td>
+  		</tr>
+
+		<tr>
+		  <td bgcolor="#999999">
+		    <img src="images/redhat-36.gif"><b>Red Hat 7.3/x86</b>
+                    <ul>
+			<li><a href="archive/redhat-73-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a>
+			<li><a href="archive/redhat-73-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a>
+		    </ul>
+		  </td>
+		  <td bgcolor="#999999">
+		    <img src="images/mandrake-36.gif"><b>Mandrake 8.2/x86</b>
+                    <ul>
+			<li><a href="archive/mandrake-82-i386/mono-0.25-1.i586.rpm">mono-0.25-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-devel-0.25-1.i586.rpm">mono-devel-0.25-1.i586.rpm</a>
+		    </ul>
+		  </td>
+		</tr>
+
+		<tr>
+ 		  <td bgcolor="#999999"> 
+		     <img src="images/suse-36.gif"><b>SuSE 8.2/x86</b> 
+                     <ul> 
+ 			<li><a href="archive/suse-80-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a> 
+ 			<li><a href="archive/suse-80-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a> 
+ 		    </ul>
+ 	          </td>
+	        </tr>
+	      </table>
+	    </td>
+	  </tr>
+	  <tr>
+	    <tr bgcolor="#CCCCC">
+	    <td>
+	      <b>Regression Tests</b><br>
+	    </td>
+	    <td>
+		You can get binaries for the Mono Regression Test
+		Suite <a href="archive/mono-tests.tar.gz">here</a>
+	    </td>
+	  </tr>
+	  </tr>
+	  </tbody>
+	</table>
+
+
+* Older Releases:
+
+	We provide binaries for older releases until we have packages for the new release.
+
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
 	      <b>Release 0.24</b><br>
 	      <a href="archive/mono-0.24.html">Release notes</a><br>
 	       May 6, 2003
@@ -156,11 +284,6 @@
 	  </tr>
 	  </tbody>
 	</table>
-
-* Older Releases:
-
-	We provide binaries for older releases until we have packages for the new release.
-
 
 	<table>
 	  <tbody>
