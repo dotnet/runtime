@@ -132,25 +132,17 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	if (l->culture && r->culture && strcmp (l->culture, r->culture))
 		return FALSE;
 
-        /*
-         * simply compare names until some other issues are resolved
-         * (version info not getting set correctly for custom
-         * attributes).
-         */
-        /*
 	if (l->major != r->major || l->minor != r->minor ||
 			l->build != r->build || l->revision != r->revision)
-		return FALSE;
+		if (! ((l->major == 0 && l->minor == 0 && l->build == 0 && l->revision == 0) || (r->major == 0 && r->minor == 0 && r->build == 0 && r->revision == 0)))
+			return FALSE;
 
-	if (!l->public_tok_value && !r->public_tok_value)
+	if (!l->public_key_token [0] || !r->public_key_token [0])
 		return TRUE;
 
-	if ((l->public_tok_value && !r->public_tok_value) || (!l->public_tok_value && r->public_tok_value))
+	if (strcmp (l->public_key_token, r->public_key_token))
 		return FALSE;
 
-	if (strcmp (l->public_tok_value, r->public_tok_value))
-		return FALSE;
-        */
 	return TRUE;
 }
 
