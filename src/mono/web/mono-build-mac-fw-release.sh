@@ -3,6 +3,8 @@
 # this horrid little script updates a mono revision
 # Author: Andy Satori <dru@satori-assoc.com>
 # Modifications: kangaroo
+# Changes June 10/2004
+#  - Updated for beta3 0.96
 # Changes June 2/2004
 #  - Updated for beta2 0.95
 #  - Updated to boehm.gc.a6
@@ -10,21 +12,8 @@
 
 set -e 
 
-# clear some references to /sw
-ACLOCAL_FLAGS=
-CPPFLAGS=
-DYLD_LIBRARY_PATH=
-INFOPATH=
-LD_LIBRARY_PATH=
-MANPATH=
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
-PERL5LIB=
-PKG_CONFIG_PATH=
-SGML_CATALOG_FILES=
-XML_CATALOG_FILES=
-
 INITIALDIR=$PWD
-VERSION=0.95
+VERSION=0.96
 PREFIX=/Library/Frameworks/Mono.framework/Versions/$VERSION
 
 export C_INCLUDE_PATH=$C_INCLUDE_PATH:$PREFIX/include
@@ -192,7 +181,7 @@ if test ! -f "$PREFIX/bin/mono"; then
 	cd $INITIALDIR/Bootstrap
 	
 	if test ! -d "mono-$VERSION"; then
-		curl http://www.go-mono.com/archive/beta2/mono-$VERSION.tar.gz -O
+		curl http://www.go-mono.com/archive/beta3/mono-$VERSION.tar.gz -O
 		tar xzf mono-$VERSION.tar.gz
 		rm mono-$VERSION.tar.gz
 	fi
@@ -215,5 +204,14 @@ if test -e "/Library/Frameworks/Mono.framework/Versions/Current"; then
 	rm Current
 fi
 ln -s $VERSION Current
+echo +++ Setup the rest of the framework
+cd /Library/Frameworks/Mono.framework
+ln -s Versions/Current/lib Libraries
+ln -s Versions/Current/include Headers
+ln -s Versions/Current/bin Commands
+for binfile in Commands/*; do
+	sudo rm -f /usr/bin/`echo $binfile | perl -pe 's/\.exe//' | perl -pe 's/Commands\///'`
+	sudo ln -s /Library/Frameworks/Mono.framework/`echo $binfile | perl -pe 's/\.exe//'` /usr/bin/`echo $binfile | perl -pe 's/\.exe//' | perl -pe 's/Commands\///'`
+done
 
-# update the installer source files
+# update the installer source file
