@@ -7538,7 +7538,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 				method->addr = mono_lookup_internal_call (method);
 			else
 				if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-					mono_lookup_pinvoke_call (method);
+					mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
 #ifdef MONO_USE_EXC_TABLES
 		if (mono_method_blittable (method)) {

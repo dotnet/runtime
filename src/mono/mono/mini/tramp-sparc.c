@@ -251,7 +251,7 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 				method->addr = mono_lookup_internal_call (method);
 			if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-				mono_lookup_pinvoke_call (method);
+				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}		
 #ifdef MONO_USE_EXC_TABLES
 		if (mono_method_blittable (method)) {
