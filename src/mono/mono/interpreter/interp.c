@@ -195,6 +195,8 @@ get_virtual_method (MonoMethod *m, stackval *objs)
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 		return *(MonoMethod**)(klass->interface_offsets [m->klass->interface_id] + (m->slot<<2));
 
+	g_assert (vtable [m->slot]);
+
 	return vtable [m->slot];
 }
 
@@ -466,7 +468,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 	if (setjmp(env))
 		return;
 	if (!frame->method->info)
-		frame->method->info = mono_create_trampoline (frame->method);
+		frame->method->info = mono_create_trampoline (frame->method, 0);
 	func = (MonoPIFunc)frame->method->info;
 
 	/* 
@@ -513,8 +515,8 @@ ves_runtime_method (MonoInvocation *frame)
 		g_assert (code [2] == 'M' && code [3] == 'o');
 		method = *(gpointer*)(code + sizeof (gpointer));
 		if (!method->addr)
-			method->addr = mono_create_trampoline (method);
-		func = (MonoPIFunc)mono_create_trampoline (method);
+			method->addr = mono_create_trampoline (method, 1);
+		func = method->addr;
 		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
 		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
@@ -1138,6 +1140,8 @@ ves_exec_method (MonoInvocation *frame)
 					if (!this_arg->data.p)
 						THROW_EX (get_exception_null_reference(), ip - 5);
 					child_frame.method = get_virtual_method (child_frame.method, this_arg);
+					if (!child_frame.method)
+						THROW_EX (get_exception_missing_method (), ip -5);
 				}
 			}
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);

@@ -27,7 +27,7 @@
 #define ARG_SIZE	sizeof (stackval)
 
 MonoPIFunc
-mono_create_trampoline (MonoMethod *method)
+mono_create_trampoline (MonoMethod *method, int runtime)
 {
 	MonoMethodSignature *sig;
 	unsigned char *p, *code_buffer;
@@ -176,7 +176,7 @@ enum_marshal:
 			 * If it is an internalcall we assume it's the object we want.
 			 * Yet another reason why MONO_TYPE_STRING should not be used to indicate char*.
 			 */
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
 				x86_push_membase (p, X86_EDX, arg_pos);
 				break;
 			}
@@ -258,7 +258,7 @@ enum_retvalue:
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 			break;
 		case MONO_TYPE_STRING: 
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
 				x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 				x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 				break;

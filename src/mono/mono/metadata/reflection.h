@@ -104,6 +104,7 @@ typedef struct {
 	MonoArray *interfaces;
 	MonoAssembly *assembly;
 	guint32 attrs;
+	guint32 rank;
 } MonoTypeInfo;
 
 typedef struct {

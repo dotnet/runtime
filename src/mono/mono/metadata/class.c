@@ -757,10 +757,11 @@ mono_class_from_mono_type (MonoType *type)
 		return mono_defaults.string_class;
 	case MONO_TYPE_ARRAY:
 		return mono_defaults.array_class;
-	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
-		/* Not really sure about these. */
+		/* FIXME: this is wrong. Need to handle PTR types */
 		return mono_class_from_mono_type (type->data.type);
+	case MONO_TYPE_SZARRAY:
+		return mono_array_class_get (mono_class_from_mono_type (type->data.type), 1);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
@@ -787,9 +788,6 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 	guint32 len;
 	MonoType *type;
 	MonoClass *class, *eclass;
-
-	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_spec))))
-		return class;
 
 	t = &image->tables [MONO_TABLE_TYPESPEC];
 	

@@ -191,9 +191,28 @@ ves_icall_type_from_name (MonoString *name)
 {
 	MonoClass *klass;
 	gchar *n, *namespace, *str;
+	char* byref, *isarray;
+	guint rank;
+	
 	str = namespace = mono_string_to_utf8 (name);
+	/*g_print ("requested type %s\n", str);*/
 
 	n = strrchr (str, '.');
+	byref = strrchr (str, '&');
+	if (byref)
+		*byref = 0;
+	isarray = strrchr (str, '[');
+	if (isarray) {
+		rank = 1;
+		*isarray = 0;
+		while (*isarray) {
+			if (*isarray == ',')
+				rank++;
+			if (*isarray == ']')
+				break;
+			++isarray;
+		}
+	}
 	if (n) {
 		*n = 0;
 		++n;
@@ -206,7 +225,13 @@ ves_icall_type_from_name (MonoString *name)
 	if (!klass)
 		return NULL;
 	mono_class_init (klass);
-	return mono_type_get_object (&klass->byval_arg);
+	if (isarray)
+		klass = mono_array_class_get (klass, rank);
+	
+	if (byref)
+		return mono_type_get_object (&klass->this_arg);
+	else
+		return mono_type_get_object (&klass->byval_arg);
 }
 
 static MonoReflectionType*
@@ -316,6 +341,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	info->name = mono_string_new (class->name);
 	info->name_space = mono_string_new (class->name_space);
 	info->attrs = class->flags;
+	info->rank = class->rank;
 	info->assembly = NULL; /* FIXME */
 	if (class->enumtype)
 		info->etype = mono_type_get_object (class->enum_basetype);
@@ -620,11 +646,30 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 {
 	/* FIXME : use throwOnError and ignoreCase */
 	gchar *name, *namespace, *str;
+	char *byref, *isarray;
+	guint rank;
 	MonoClass *klass;
 
 	str = namespace = mono_string_to_utf8 (type);
+	/*g_print ("requested type %s\n", str);*/
 
 	name = strrchr (str, '.');
+	byref = strrchr (str, '&');
+	if (byref)
+		*byref = 0;
+	isarray = strrchr (str, '[');
+	if (isarray) {
+		rank = 1;
+		*isarray = 0;
+		while (*isarray) {
+			if (*isarray == ',')
+				rank++;
+			if (*isarray == ']')
+				break;
+			++isarray;
+		}
+	}
+
 	if (name) {
 		*name = 0;
 		++name;
@@ -640,7 +685,16 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	return mono_type_get_object (&klass->byval_arg);
+	if (isarray) {
+		klass = mono_array_class_get (klass, rank);
+		mono_class_init (klass);
+		/*g_print ("got array class %s [%d] (0x%x)\n", klass->element_class->name, klass->rank, klass->this_arg.type);*/
+	}
+
+	if (byref)
+		return mono_type_get_object (&klass->this_arg);
+	else
+		return mono_type_get_object (&klass->byval_arg);
 }
 
 static MonoString *
