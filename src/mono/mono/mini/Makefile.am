@@ -43,16 +43,20 @@ genmdesc_LDADD = \
 
 arch_sources = \
 	mini-x86.c		\
+	mini-x86.h		\
 	exceptions-x86.c	\
 	tramp-x86.c
 
 libmono_la_SOURCES = \
 	mini.c		\
+	mini.h		\
+	mini-ops.h	\
+	mini-arch.h	\
 	dominators.c	\
 	cfold.c		\
 	regalloc.c	\
+	regalloc.h	\
 	inssel.c	\
-	regset.c	\
 	helpers.c	\
 	liveness.c	\
 	ssa.c		\
@@ -77,9 +81,9 @@ TestDriver.dll: TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library TestDriver.cs
 
 cpu-pentium.h: cpu-pentium.md genmdesc
-	./genmdesc cpu-pentium.md cpu-pentium.h pentium
+	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium
 
-BURGSRC= inssel.brg inssel-x86.brg inssel-long32.brg inssel-float.brg
+BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-x86.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
@@ -91,7 +95,7 @@ testi: mono test.exe
 checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
-check: mono $(regtests)
+rcheck: mono $(regtests)
 	./mono --verbose --regression $(regtests)
 
 aotcheck: mono $(regtests)
@@ -129,5 +133,8 @@ DISTCLEANFILES= mini.pc
 
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h
 CLEANFILES= $(BUILT_SOURCES)
-EXTRA_DIST = mini.pc.in
+EXTRA_DIST = mini.pc.in emullong.brg inssel-float.brg inssel-long.brg  \
+	inssel-long32.brg inssel-x86.brg inssel.brg jit-icalls.c cprop.c \
+	cpu-pentium.md cpu-g4.md
+
 
