@@ -55,7 +55,7 @@
 	repository (on gtk-sharp/doc) and we need volunteers to help
 	populate the documentation for it.  Since Gtk# is a wrapper
 	for Gtk, plenty of documentation exists in the <a
-	href="http://developer.gnome.org/doc/API/2.0/">Gnome developer
+	href="http://developer.gnome.org/doc/API">Gnome developer
 	site</a>.
 
 	To get started:
