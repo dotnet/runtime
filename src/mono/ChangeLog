@@ -1,3 +1,10 @@
+2002-11-30  Daniel Morgan <danmorg@sc.rr.com>
+
+	* man/sqlsharpcli.1: added file - a man page 
+	for SQL# CLI
+	
+	* man/Makefile.am: added sqlsharpcli.1 to man_MANS
+	
 2002-11-20  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/firebird: updated web page
