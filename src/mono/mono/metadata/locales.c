@@ -465,16 +465,19 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 			"System.Globalization", "CultureInfo");
 	ret = mono_array_new (domain, class, len);
 
+	if (len == 0)
+		return ret;
+
 	len = 0;
 	for (i = 0; i < NUM_CULTURE_ENTRIES; i++) {
 		ci = &culture_entries [i];
 		is_neutral = ((ci->lcid & 0xff00) == 0 || ci->specific_lcid == 0);
-		if ((neutral && !is_neutral) && (specific && is_neutral))
-			continue;
-		culture = (MonoCultureInfo *) mono_object_new (domain, class);
-		mono_runtime_object_init ((MonoObject *) culture);
-		construct_culture (culture, ci);
-		mono_array_set (ret, MonoCultureInfo *, len++, culture);
+		if ((neutral && is_neutral) || (specific && !is_neutral)) {
+			culture = (MonoCultureInfo *) mono_object_new (domain, class);
+			mono_runtime_object_init ((MonoObject *) culture);
+			construct_culture (culture, ci);
+			mono_array_set (ret, MonoCultureInfo *, len++, culture);
+		}
 	}
 
 	return ret;
