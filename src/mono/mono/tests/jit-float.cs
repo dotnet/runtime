@@ -19,9 +19,9 @@ public class TestJit {
 		
 		if ((a / 4) != 2.25)
 			return 1;
-		
-		//if ((a % 4) != 1)
-		//	return 1;
+
+		if ((a % 4) != 1)
+			return 1;
 
 		if (-a != -9)
 			return 1;
