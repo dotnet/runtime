@@ -1059,7 +1059,12 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 	p = buf = g_malloc (256);
 
 	switch (minfo->type) {
-	/* FIXME: handle ARRAY and other unmanaged types that need extra info */
+	case MONO_NATIVE_BYVALTSTR:
+	case MONO_NATIVE_BYVALARRAY:
+		mono_metadata_encode_value (minfo->type, p, &p);
+		mono_metadata_encode_value (minfo->count, p, &p);
+		break;
+		/* FIXME: handle ARRAY and other unmanaged types that need extra info */
 	default:
 		mono_metadata_encode_value (minfo->type, p, &p);
 		break;
@@ -5052,3 +5057,4 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	}
 	return result;
 }
+
