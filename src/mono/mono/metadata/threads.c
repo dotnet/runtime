@@ -166,7 +166,6 @@ static guint32 start_wrapper(void *data)
 
 	if (mono_thread_start_cb)
 		mono_thread_start_cb (&tid);
-
 	start_func (this);
 
 	/* If the thread calls ExitThread at all, this remaining code
@@ -223,6 +222,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)start;
 	guint32 (*start_func)(void *);
 	struct StartInfo *start_info;
+	MonoMethod *im;
 	HANDLE thread;
 	guint32 tid;
 	
@@ -232,8 +232,9 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		  this, start);
 #endif
 	
-	start_func = delegate->delegate.method_ptr;
-	
+	im = mono_get_delegate_invoke (start->vtable->klass);
+	start_func = mono_compile_method (im);
+
 	if(start_func==NULL) {
 		g_warning(G_GNUC_PRETTY_FUNCTION
 			  ": Can't locate start method!");
@@ -242,10 +243,9 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		/* This is freed in start_wrapper */
 		start_info = g_new0 (struct StartInfo, 1);
 		start_info->func = start_func;
-		start_info->this = delegate->delegate.target;
+		start_info->this = delegate;
 		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
-		
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {

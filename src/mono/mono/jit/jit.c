@@ -2404,7 +2404,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1->data.i = LOCAL_POS (n);
 			if (!MONO_TYPE_ISSTRUCT (LOCAL_TYPE (n))) 
 				t1 = ctree_create_load (cfg, LOCAL_TYPE (n), t1, &svt, FALSE);
-
 			PUSH_TREE (t1, svt);
 			break;
 		}
