@@ -321,7 +321,7 @@ ves_icall_System_IO_FileStream_FileSeek (HANDLE handle, gint64 offset, gint32 or
 	retlo=SetFilePointer(handle, offset, &offsethi,
 			     convert_seekorigin(origin));
 	
-	ret=((gint64)offsethi << 32) + offsetlo;
+	ret=((gint64)offsethi << 32) + retlo;
 
 	return(ret);
 }
@@ -339,32 +339,45 @@ ves_icall_System_IO_FileStream_FileGetLength (HANDLE handle) {
 }
 
 void 
-ves_icall_System_IO_FileStream_FileSetLength (HANDLE handle, gint64 length) {
-	/* FIXME: Should this put the file pointer back to where it
-	 * was before we started setting the length? The spec doesnt
-	 * say, as usual
-	 */
+ves_icall_System_IO_FileStream_FileSetLength (HANDLE handle, gint64 length)
+{
+	gboolean result;
+	gint32 position_lo, position_hi;
+	gint32 length_lo, length_hi;
 
-	gboolean ret;
-	gint32 lenlo, lenhi, retlo;
+	if (handle == INVALID_HANDLE_VALUE)
+		mono_raise_exception (mono_get_exception_io ("Invalid handle"));
+
+	/* save file pointer */
+
+	position_hi = 0;
+	position_lo = SetFilePointer (handle, 0, &position_hi, FILE_CURRENT);
+
+	/* extend or truncate */
+
+	length_hi = length >> 32;
+	length_lo = length & 0xFFFFFFFF;
+
+	SetFilePointer (handle, length_lo, &length_hi, FILE_BEGIN);
+	result = SetEndOfFile (handle);
+
+	/* restore */
+
+	SetFilePointer (handle, position_lo, &position_hi, FILE_BEGIN);
 	
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	lenlo=length & 0xFFFFFFFF;
-	lenhi=length >> 32;
-
-	retlo=SetFilePointer(handle, lenlo, &lenhi, FILE_BEGIN);
-	ret=SetEndOfFile(handle);
-	
-	if(ret==FALSE) {
-		mono_raise_exception(mono_get_exception_io("IO Exception"));
-	}
+	if (result == FALSE)
+		mono_raise_exception (mono_get_exception_io ("IO Exception"));
 }
 
 void 
-ves_icall_System_IO_FileStream_FileFlush (HANDLE handle) {
-	/* FIXME: implement FlushFileBuffers */
-}
+ves_icall_System_IO_FileStream_FileFlush (HANDLE handle)
+{
+	gboolean result;
 
+	if (handle == INVALID_HANDLE_VALUE)
+		mono_raise_exception (mono_get_exception_io ("Invalid handle"));
+
+	result = FlushFileBuffers (handle);
+	if (result == FALSE)
+		mono_raise_exception (mono_get_exception_io ("IO Exception"));
+}
