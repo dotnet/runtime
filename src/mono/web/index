@@ -94,6 +94,43 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Sep 16th, 2002: Documentation Tools, ILASM, Debugger, Mono LDAP, Winforms
+
+	Adam Treat has started moving the documentation universe again.  We
+	have a new strategy to document our APIs (given that we have
+	chosen <a href="classlib-doc.html">not to document the code
+	inline</a>).  This includes the use of a master reference file
+	that will hold the entry points to document.  All master files
+	for our assemblies have been checked into CVS now.
+
+	Sergey Panov's Mono.PEToolkit and ILASM tools have been
+	checked into CVS.  Although ILASM is old and will soon be
+	updated, we wanted to get the build issues sorted out.
+
+	Martin Baulig's Mono Debugger is still on its early stages,
+	but you can run and run step by step your C# code and C code
+	(including the Mono runtime).  Dwarf-2 is required to compile
+	your code.  The regular step, step-into, and assembly-level
+	step and step-into are supported.  And comes with a Gtk#
+	UI. The debugger is written mostly in C# with some C glue
+	code.  Most of the work is on the engine, we will be working
+	on making a good UI in the future.
+
+	Chris Toshok of the Hungry Programmer's fame has checked in
+	Mono.Directory.LDAP, a C# wrapper for the LDAP libraries.
+	This is the substrate for implementing the
+	System.DirectoryServices assembly.
+
+	Andrew has also continued with some of the cryptographic
+	classes implemetation.
+
+	After much public debate, we have chosen a new <a
+	href="winforms.html">strategy to implement winforms</a>.
+	Implementing a Gtk, Qt or Aqua based version of Winforms was
+	going to be almost as complex as implementing Wine itself.  So
+	the new strategy is to only roll out a WineLib-based
+	implementation. 
+
 @item Sep 4th, 2002: .NET One 2002 Program available
 
 	The <a
