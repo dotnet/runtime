@@ -1,3 +1,7 @@
+2002-05-19  Martin Baulig  <martin@gnome.org>
+
+	* mono/Makefile.am (SUBDIRS): Added `os', it's referenced by
+	interpreter/Makefile.am.
 
 Wed May 15 12:22:09 CEST 2002 Paolo Molaro <lupus@ximian.com>
 
