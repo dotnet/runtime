@@ -3,6 +3,10 @@
 	* configure.in: Check for `struct dirent' members which don't exist across
 	  all Unix platforms.
 	* support/dirent.c: Only access members which exist on the target platform.
+	* support/errno.c: Only export strerror_r if it's available.
+	* support/mph.h: Remove MPH_ON_BSD; use the configure checks instead.
+	* support/sys-mman.c: Only export posix_madvise if it's available.
+	* support/unistd.c: Only export sethostid if it's available.
 
 2004-11-08  Jonathan Pryor <jonpryor@vt.edu>
 
@@ -18,7 +22,7 @@
 	  getgrgid_r.
 	* support/pwd.c: Add checks for non-portable functions getpwnam_r,
 	  getpwuid_r.
-	* support/map.c: Remove <poll.h> include.  Building on Tigar (Mac OS X 10.4
+	* support/map.c: Remove <poll.h> include.  Building on Tiger (Mac OS X 10.4
 	  beta) breaks when both <poll.h> and <sys/poll.h> are included, so only use
 	  <sys/poll.h>.
 	* support/mph.h: Clean up macro handling for type overflow checking.
