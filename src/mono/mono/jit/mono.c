@@ -145,6 +145,8 @@ main (int argc, char *argv [])
 			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_DWARF2_PLUS);
 		} else if (strcmp (argv [i], "--verbose") == 0) {
 			verbose = TRUE;;
+		} else if (strcmp (argv [i], "--fast-iconv") == 0) {
+			mono_use_fast_iconv = TRUE;
 		} else
 			usage (argv [0]);
 	}

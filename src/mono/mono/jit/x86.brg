@@ -107,6 +107,9 @@ gpointer mono_ldsflda       (MonoClass *klass, int offset);
 
 gpointer arch_get_lmf_addr (void);
 
+void mono_emit_fast_iconv(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
+void mono_emit_fast_iconv_i8(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
+
 MonoArray*
 mono_array_new_wrapper  (MonoClass *eclass, guint32 n);
 MonoObject *
@@ -3371,121 +3374,157 @@ stmt: CBRANCH (COMPARE (lreg, lreg)) {
 #} 
 
 reg: CONV_I1 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
-	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, FALSE);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv(s, tree);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, FALSE);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+		x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, FALSE);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 reg: CONV_U1 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
-	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv(s, tree);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+		x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 reg: CONV_I2 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
-	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, TRUE);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv(s, tree);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, TRUE);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+		x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, TRUE);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 reg: CONV_U2 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
-	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, TRUE);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv(s, tree);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, TRUE);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+		x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, TRUE);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 reg: CONV_I4 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
-	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv(s, tree);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+		x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 reg: CONV_U4 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
-	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv(s, tree);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+		x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 lreg: CONV_I8 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
-	x86_fist_pop_membase (s->code, X86_ESP, 0, TRUE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_pop_reg (s->code, tree->reg2);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv_i8(s, tree);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
+		x86_fist_pop_membase (s->code, X86_ESP, 0, TRUE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_pop_reg (s->code, tree->reg2);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 lreg: CONV_U8 (freg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(s->code, X86_ESP, 0);
-	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
-	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
-	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
-	x86_fldcw_membase (s->code, X86_ESP, 2);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
-	x86_fist_pop_membase (s->code, X86_ESP, 0, TRUE);
-	x86_pop_reg (s->code, tree->reg1);
-	x86_pop_reg (s->code, tree->reg2);
-	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	if (mono_use_fast_iconv) {
+		mono_emit_fast_iconv_i8(s, tree);
+	} else {
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+		x86_fnstcw_membase(s->code, X86_ESP, 0);
+		x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+		x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+		x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+		x86_fldcw_membase (s->code, X86_ESP, 2);
+		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
+		x86_fist_pop_membase (s->code, X86_ESP, 0, TRUE);
+		x86_pop_reg (s->code, tree->reg1);
+		x86_pop_reg (s->code, tree->reg2);
+		x86_fldcw_membase (s->code, X86_ESP, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 reg: CSET (COMPARE (freg, freg)) {
@@ -4296,3 +4335,70 @@ MEMCOPY (void *dest, const void *src, size_t n)
 }
 #endif
 
+void mono_emit_fast_iconv (MBCGEN_TYPE* s, MBTREE_TYPE* tree)
+{
+	guint8* br [3];
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 12);
+	x86_fist_membase (s->code, X86_ESP, 8, TRUE); // rounded value
+	x86_fst_membase (s->code, X86_ESP, 0, FALSE, FALSE); // float value
+	x86_fp_int_op_membase (s->code, X86_FSUB, X86_ESP, 8, TRUE);
+	x86_fst_membase (s->code, X86_ESP, 4, FALSE, TRUE); // diff
+
+	x86_pop_reg (s->code, tree->reg1); // float value
+	x86_test_reg_reg (s->code, tree->reg1, tree->reg1);
+	br[0] = s->code; x86_branch8 (s->code, X86_CC_S, 0, TRUE);
+
+	x86_pop_reg (s->code, tree->reg1); // diff
+	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->reg1);
+	x86_pop_reg (s->code, tree->reg1); // rounded value
+	x86_alu_reg_imm (s->code, X86_SBB, tree->reg1, 0);
+	br[1] = s->code; x86_jump8 (s->code, 0);
+
+	// freg is negative
+	x86_patch (br[0], s->code);
+
+	x86_pop_reg (s->code, tree->reg1); // diff
+	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->reg1);
+	x86_pop_reg (s->code, tree->reg1); // rounded value
+	br[2] = s->code; x86_branch8 (s->code, X86_CC_Z, 0, FALSE);
+	x86_alu_reg_imm (s->code, X86_SBB, tree->reg1, -1);
+	x86_patch (br[1], s->code);
+	x86_patch (br[2], s->code);
+}
+
+void mono_emit_fast_iconv_i8 (MBCGEN_TYPE* s, MBTREE_TYPE* tree)
+{
+	guint8* br [3];
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 16);
+	x86_fld_reg (s->code, 0);
+	x86_fist_pop_membase (s->code, X86_ESP, 8, TRUE); // rounded value (qword)
+	x86_fst_membase (s->code, X86_ESP, 0, FALSE, FALSE); // float value
+	x86_fild_membase (s->code, X86_ESP, 8, TRUE);
+	x86_fp_op_reg (s->code, X86_FSUB, 1, TRUE); // diff
+	x86_fst_membase (s->code, X86_ESP, 4, FALSE, TRUE); // diff
+
+	x86_pop_reg (s->code, tree->reg1); // float value
+	x86_test_reg_reg (s->code, tree->reg1, tree->reg1);
+	br[0] = s->code; x86_branch8 (s->code, X86_CC_S, 0, TRUE);
+
+	x86_pop_reg (s->code, tree->reg1); // diff
+	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->reg1);
+	x86_pop_reg (s->code, tree->reg1); // rounded value
+	x86_pop_reg (s->code, tree->reg2);
+	x86_alu_reg_imm (s->code, X86_SBB, tree->reg1, 0);
+	x86_alu_reg_imm (s->code, X86_SBB, tree->reg2, 0);
+	br[1] = s->code; x86_jump8 (s->code, 0);
+
+	// freg is negative
+	x86_patch (br[0], s->code);
+
+	x86_pop_reg (s->code, tree->reg1); // diff
+	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->reg1);
+	x86_pop_reg (s->code, tree->reg1); // rounded value
+	x86_pop_reg (s->code, tree->reg2);
+	br[2] = s->code; x86_branch8 (s->code, X86_CC_Z, 0, FALSE);
+	x86_alu_reg_imm (s->code, X86_SBB, tree->reg1, -1);
+	x86_alu_reg_imm (s->code, X86_SBB, tree->reg2, -1);
+	x86_patch (br[1], s->code);
+	x86_patch (br[2], s->code);
+}

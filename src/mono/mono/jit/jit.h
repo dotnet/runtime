@@ -203,6 +203,7 @@ extern gboolean mono_jit_profile;
 extern gboolean mono_jit_share_code;
 extern gboolean mono_jit_inline_code;
 extern gboolean mono_use_linear_scan;
+extern gboolean mono_use_fast_iconv;
 
 extern gpointer mono_end_of_stack;
 extern int      mono_worker_threads;
