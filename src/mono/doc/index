@@ -158,7 +158,7 @@
 	href="download.html">download</a> page).  You can track the
 	progress on our <a
 	href="http://www.nullenvoid.com/mono/wiki/index.php/WineSamples">Wiki
-	page.
+	page.</a>
 
 	We're now building daily snapshots of Mono.  They come in
 	three distinct flavors:
@@ -173,7 +173,8 @@
 		  the assemblies built on that day.
 
 		* monolite tarballs - These tarballs contain a copy of
-		  'corlib.dll', 'mcs.exe' and 'System.dll'. They can be used to
+		  'corlib.dll', 'mcs.exe', 'System.dll', 'System.Xml.dll' and
+		  'Mono.CSharp.Debugger.dll'. They can be used to
 		  re-bootstrap an out-of-sync installation.
 	</ul>
 
