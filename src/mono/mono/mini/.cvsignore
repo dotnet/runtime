@@ -4,14 +4,17 @@ Makefile.in
 *.exe
 *.dll
 *.lo
+*.loT
 *.la
 .libs
 .deps
 mini
 genmdesc
-inssel.c inssel.h
+inssel.c
+inssel.h
 mini.pc
 cpu-pentium.h
 cpu-g4.h
 mono
 cpu-sparc.h
+cpu-s390.h
