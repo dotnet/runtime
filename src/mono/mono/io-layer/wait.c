@@ -263,7 +263,7 @@ static gboolean wait_for_item(WaitQueueItem *item)
 	if(item->waitall==TRUE) {
 		ret=TRUE;
 		for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-			if(_wapi_handle_count_signalled(item->handles[i])!=item->handles[i]->len) {
+			if(item->waitcount[i]!=item->handles[i]->len) {
 				ret=FALSE;
 				break;
 			}
@@ -271,7 +271,7 @@ static gboolean wait_for_item(WaitQueueItem *item)
 	} else {
 		ret=FALSE;
 		for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-			if(_wapi_handle_count_signalled(item->handles[i])>0) {
+			if(item->waitcount[i]>0) {
 				ret=TRUE;
 				break;
 			}

@@ -13,6 +13,7 @@ OTHER_H = \
 	handles.h	\
 	io.h		\
 	io-layer.h	\
+	semaphores.h	\
 	status.h	\
 	threads.h	\
 	uglify.h	\
@@ -20,7 +21,7 @@ OTHER_H = \
 	wapi.h		\
 	#
 
-OTHER_SOURCES = \
+OTHER_SRC = \
 	error.c			\
 	error.h			\
 	handles.c		\
@@ -31,6 +32,8 @@ OTHER_SOURCES = \
 	io-layer.h		\
 	pthread-compat.c	\
 	pthread-compat.h	\
+	semaphores.c		\
+	semaphores.h		\
 	status.h		\
 	threads.c		\
 	threads.h		\
@@ -50,22 +53,22 @@ WINDOWS_H = \
 	io-layer.h		\
 	#
 
-WINDOWS_SOURCES = \
+WINDOWS_SRC = \
 	io-layer.h		\
 	io-layer-dummy.c	\
 	#
 
 if PLATFORM_WIN32
-libwapi_a_SOURCES = $(WINDOWS_SOURCES)
+libwapi_a_SOURCES = $(WINDOWS_SRC)
 libwapiinclude_HEADERS = $(WINDOWS_H)
 else
-libwapi_a_SOURCES = $(OTHER_SOURCES)
+libwapi_a_SOURCES = $(OTHER_SRC)
 libwapiinclude_HEADERS = $(OTHER_H)
 endif
 
 EXTRA_DIST =	\
-	$(WINDOWS_SOURCES)	\
-	$(OTHER_SOURCES)	\
+	$(WINDOWS_SRC)	\
+	$(OTHER_SRC)	\
 	#
 
 

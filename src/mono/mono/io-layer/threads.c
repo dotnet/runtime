@@ -117,8 +117,6 @@ static guint32 thread_wait_multiple(gpointer data)
 	struct timeval now;
 	div_t divvy;
 	
-	pthread_mutex_lock(&item->mutex);
-	
 	numhandles=item->handles[WAPI_HANDLE_THREAD]->len;
 	
 #ifdef DEBUG
@@ -213,7 +211,8 @@ again:
 
 success:
 	item->waited[WAPI_HANDLE_THREAD]=TRUE;
-	pthread_mutex_unlock(&item->mutex);
+	item->waitcount[WAPI_HANDLE_THREAD]=count;
+	
 	return(count);
 }
 

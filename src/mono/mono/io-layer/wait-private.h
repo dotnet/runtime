@@ -27,6 +27,7 @@ typedef struct _WaitQueueItem
 	GPtrArray *handles[WAPI_HANDLE_COUNT];
 	TimedThread *thread[WAPI_HANDLE_COUNT];
 	gboolean waited[WAPI_HANDLE_COUNT];
+	guint32 waitcount[WAPI_HANDLE_COUNT];
 } WaitQueueItem;
 
 #endif /* _WAPI_WAIT_PRIVATE_H_ */

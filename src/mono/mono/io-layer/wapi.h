@@ -4,8 +4,9 @@
 #include <mono/io-layer/error.h>
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
-#include <mono/io-layer/threads.h>
+#include <mono/io-layer/semaphores.h>
 #include <mono/io-layer/status.h>
+#include <mono/io-layer/threads.h>
 #include <mono/io-layer/wait.h>
 
 #endif /* _WAPI_WAPI_H_ */
