@@ -18,7 +18,7 @@ This is Mono.
 	If you obtained this as a snapshot, you will need an existing
 	Mono installation.  To upgrade your installation do:
 
-		./autogen --prefix=/usr/local
+		./autogen.sh --prefix=/usr/local
 		make fullbuild
 
 2. Using Mono
