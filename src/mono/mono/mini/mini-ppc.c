@@ -1961,7 +1961,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_lwz (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				ppc_load (code, ppc_r11, ins->inst_offset);
-				ppc_lwz (code, ins->dreg, 0, ppc_r11);
+				ppc_lwzx (code, ins->dreg, ppc_r11, ins->inst_basereg);
 			}
 			break;
 		case OP_LOADU1_MEMBASE:
@@ -1994,14 +1994,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_rlwinm (code, ins->dreg, ins->sreg1, 0, 16, 31);
 			break;
 		case OP_COMPARE:
-			ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
+			if (ins->next && ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN)
+				ppc_cmpl (code, 0, 0, ins->sreg1, ins->sreg2);
+			else
+				ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COMPARE_IMM:
 			if (ppc_is_imm16 (ins->inst_imm)) {
-				ppc_cmpi (code, 0, 0, ins->sreg1, (ins->inst_imm & 0xffff));
+				if (ins->next && ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN)
+					ppc_cmpli (code, 0, 0, ins->sreg1, (ins->inst_imm & 0xffff));
+				else
+					ppc_cmpi (code, 0, 0, ins->sreg1, (ins->inst_imm & 0xffff));
 			} else {
 				ppc_load (code, ppc_r11, ins->inst_imm);
-				ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
+				if (ins->next && ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN)
+					ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
+				else
+					ppc_cmpl (code, 0, 0, ins->sreg1, ppc_r11);
 			}
 			break;
 		case OP_X86_TEST_NULL:
