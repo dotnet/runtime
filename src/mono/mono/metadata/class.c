@@ -2323,6 +2323,8 @@ mono_class_instance_size (MonoClass *klass)
 	if (!klass->size_inited)
 		mono_class_init (klass);
 
+	g_assert (!klass->gen_params &&
+		  (!klass->generic_inst || !klass->generic_inst->is_open));
 	return klass->instance_size;
 }
 
@@ -2821,9 +2823,10 @@ handle_enum:
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
 			type = type->data.klass->enum_basetype;
+			klass = klass->element_class;
 			goto handle_enum;
 		}
-		return mono_class_instance_size (type->data.klass) - sizeof (MonoObject);
+		return mono_class_instance_size (klass) - sizeof (MonoObject);
 	case MONO_TYPE_GENERICINST:
 		type = type->data.generic_inst->generic_type;
 		goto handle_enum;

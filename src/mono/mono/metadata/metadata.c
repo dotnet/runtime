@@ -2366,9 +2366,16 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericInst *ginst = t->data.generic_inst;
 
-		if (MONO_TYPE_ISSTRUCT (ginst->generic_type))
-			return mono_class_value_size (ginst->klass, align);
-		else {
+		g_assert (!ginst->is_open && !ginst->klass->gen_params);
+
+		if (MONO_TYPE_ISSTRUCT (ginst->generic_type)) {
+			MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
+
+			if (gklass->enumtype)
+				return mono_type_size (gklass->enum_basetype, align);
+			else
+				return mono_class_value_size (ginst->klass, align);
+		} else {
 			*align = __alignof__(gpointer);
 			return sizeof (gpointer);
 		}
@@ -2457,8 +2464,29 @@ mono_type_stack_size (MonoType *t, gint *align)
 	}
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericInst *ginst = t->data.generic_inst;
-		MonoClass *iclass = mono_class_from_mono_type (ginst->generic_type);
-		return mono_type_stack_size (&iclass->byval_arg, align);
+
+		g_assert (!ginst->is_open && !ginst->klass->gen_params);
+
+		if (MONO_TYPE_ISSTRUCT (ginst->generic_type)) {
+			MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
+
+			if (gklass->enumtype)
+				return mono_type_stack_size (gklass->enum_basetype, align);
+			else {
+				guint32 size = mono_class_value_size (ginst->klass, align);
+
+				*align = *align + __alignof__(gpointer) - 1;
+				*align &= ~(__alignof__(gpointer) - 1);
+
+				size += sizeof (gpointer) - 1;
+				size &= ~(sizeof (gpointer) - 1);
+
+				return size;
+			}
+		} else {
+			*align = __alignof__(gpointer);
+			return sizeof (gpointer);
+		}
 	}
 	default:
 		g_error ("type 0x%02x unknown", t->type);

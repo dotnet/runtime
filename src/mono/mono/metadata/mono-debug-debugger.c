@@ -1149,6 +1149,7 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_GENERICINST:
 	case MONO_TYPE_OBJECT:
 		return write_class (table, klass);
 
