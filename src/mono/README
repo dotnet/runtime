@@ -8,6 +8,36 @@ This is Mono.
 1. Compilation and Installation
 ===============================
 
+   a. Build Requirements
+   ---------------------
+
+	To build Mono, you will need the following components:
+
+		* pkg-config
+
+		  Available from: http://www.freedesktop.org/Software/pkgconfig
+
+		* glib 2.0
+
+		  Available from: http://www.gtk.org/
+
+	Optional dependencies:
+
+	 	* ICU library
+
+		  http://oss.software.ibm.com/icu/index.html
+
+		  You will need this one to get complete support for the international
+		  features of the .NET Framework.
+
+		* Cairo
+
+		  If you want to get support for System.Drawing, you will need to get
+		  this package. 
+
+    b. Building the Software
+    ------------------------
+  	
 	If you obtained this package as an officially released tarball,
 	this is very simple, use configure and make:
 
@@ -16,10 +46,50 @@ This is Mono.
 		make install
 
 	If you obtained this as a snapshot, you will need an existing
-	Mono installation.  To upgrade your installation do:
+	Mono installation.  To upgrade your installation, unpack both
+	mono and mcs:
 
+		tar xzf mcs-XXXX.tar.gz
+		tar xzf mono-XXXX.tar.gz
+		cd mono-XXXX
 		./autogen.sh --prefix=/usr/local
 		make fullbuild
+
+    c. Upgrade from CVS
+    -------------------
+
+	If you are upgrading from CVS you will need an existing Mono installation.
+	First verify that you have a working installation:
+
+		echo 'class X { static void Main () { System.Console.Write("OK");}'}' > x.cs
+
+	Compile:
+
+		mcs x.cs
+
+	And run:
+
+		mono x.exe
+
+	If you get the output `OK' and no errors, you are ready to start your CVS upgrade.
+
+	First, make sure that you have up-to-date mcs and mono sources:
+
+		cvs co mono mcs
+
+	Then, go into the mono directory, and configure:
+
+		cd mono
+		./autogen --prefix=/usr/local
+
+	Then compile using the special target `fullbuild':
+
+		make fullbuild
+
+	This step will compile and install at the same time.
+
+	Failure to follow these steps will result in a broken installation. 
+
 
 2. Using Mono
 =============
@@ -47,7 +117,13 @@ This is Mono.
 ====================
 
 	doc/
-		Contains documentation and the web site contents.
+		Contains the web site contents.
+
+	docs/
+		Technical documents about the Mono runtime.
+
+	data/
+		Configuration files installed as part of the Mono runtime.
 
 	mono/
 		The core of the Mono Runtime.
@@ -77,5 +153,18 @@ This is Mono.
 
 		arch/
 			Architecture specific portions.
+
+	man/
+
+		Manual pages for the various Mono commands and programs.
+
+	scripts/
+
+		Scripts used to invoke Mono and the corresponding program.
+
+	runtime/
+
+		A directory holding a pre-compiled version of the Mono
+		runtime.
 
 
