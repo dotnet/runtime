@@ -3654,6 +3654,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
 				} else if (constrained_call) {
 					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context);
+					cmethod = mono_get_inflated_method (cmethod);
 				} else {
 					cmethod = mini_get_method (image, token, NULL, generic_context);
 				}
