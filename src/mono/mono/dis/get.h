@@ -37,6 +37,7 @@ char *dis_stringify_array     (MonoImage *m, MonoArrayType *array);
 char *dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod);
 char *dis_stringify_param     (MonoImage *m, MonoType *param);
 char *dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row, gboolean fully_qualified);
+char *dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method);
 
 /*
  * These functions are used during the decoding of streams in the
