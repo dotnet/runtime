@@ -6379,7 +6379,7 @@ handle_enum:
 				(strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit")))
 			g_error ("only types allowed, not %s.%s", k->name_space, k->name);
 handle_type:
-		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, assembly);
+		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
