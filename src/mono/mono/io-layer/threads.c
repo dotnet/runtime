@@ -30,7 +30,7 @@
 
 #undef DEBUG
 #undef TLS_DEBUG
-#define TLS_PTHREAD_MUTEX
+#undef TLS_PTHREAD_MUTEX
 
 
 /* Hash threads with tids. I thought of using TLS for this, but that
