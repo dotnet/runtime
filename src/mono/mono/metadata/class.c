@@ -421,6 +421,21 @@ mono_class_init (MonoClass *class)
 		class->methods [i] = mono_get_method (class->image,
 		        MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
 
+	init_properties (class);
+	init_events (class);
+
+	i = mono_metadata_nesting_typedef (class->image, class->type_token);
+	while (i) {
+		MonoClass* nclass;
+		guint32 cols [MONO_NESTED_CLASS_SIZE];
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		if (cols [MONO_NESTED_CLASS_ENCLOSING] != mono_metadata_token_index (class->type_token))
+			break;
+		nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+		class->nested_classes = g_list_prepend (class->nested_classes, nclass);
+		++i;
+	}
+
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		for (i = 0; i < class->method.count; ++i)
 			class->methods [i]->slot = i;
@@ -638,21 +653,6 @@ mono_class_init (MonoClass *class)
 
 		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT))
 			vtable [cm->slot] = cm;
-	}
-
-	init_properties (class);
-	init_events (class);
-
-	i = mono_metadata_nesting_typedef (class->image, class->type_token);
-	while (i) {
-		MonoClass* nclass;
-		guint32 cols [MONO_NESTED_CLASS_SIZE];
-		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-		if (cols [MONO_NESTED_CLASS_ENCLOSING] != mono_metadata_token_index (class->type_token))
-			break;
-		nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-		class->nested_classes = g_list_prepend (class->nested_classes, nclass);
-		++i;
 	}
 
 	if (mono_print_vtable) {
