@@ -21,6 +21,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include <mono/io-layer/io-layer.h>
 #include <mono/io-layer/handles-private.h>
@@ -443,6 +444,8 @@ static void process_post_mortem (pid_t pid, int status)
 		 * _wapi_handle_set_signal_state() unless we have
 		 * process-shared pthread support.
 		 */
+		struct timeval tv;
+		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Set process %d exitstatus to %d", pid,
@@ -454,8 +457,11 @@ static void process_post_mortem (pid_t pid, int status)
 		 * process caught a signal or not.
 		 */
 		process_handle_data->exitstatus=WEXITSTATUS (status);
-		_wapi_time_t_to_filetime (time (NULL),
-					  &process_handle_data->exit_time);
+
+		/* Ignore errors */
+		gettimeofday (&tv, NULL);
+		_wapi_timeval_to_filetime (&tv,
+					   &process_handle_data->exit_time);
 
 #ifdef _POSIX_THREAD_PROCESS_SHARED
 		_wapi_handle_lock_handle (process_handle);
@@ -716,7 +722,8 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 		char *cmd=NULL, *dir=NULL, **argv, **env;
 		GError *gerr=NULL;
 		gboolean ret;
-			
+		struct timeval tv;
+		
 		/* Get usable copies of the cmd, dir and env now
 		 * rather than in the child process.  This is to
 		 * prevent the race condition where the parent can
@@ -844,8 +851,10 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 		/* store pid */
 		process_handle_data->id=pid;
 		process_handle_data->main_thread=GUINT_TO_POINTER (thread_handle);
-		_wapi_time_t_to_filetime (time (NULL),
-					  &process_handle_data->create_time);
+		/* Ignore errors */
+		gettimeofday (&tv, NULL);
+		_wapi_timeval_to_filetime (&tv,
+					   &process_handle_data->create_time);
 		
 		/* FIXME: if env==0, inherit the env from the current
 		 * process

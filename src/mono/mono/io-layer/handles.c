@@ -108,7 +108,7 @@ attach_again:
 		if(ret==-1) {
 			if(tried_once==TRUE) {
 				g_warning (G_GNUC_PRETTY_FUNCTION
-					   "connect to daemon failed: %s",
+					   ": connect to daemon failed: %s",
 					   g_strerror (errno));
 				/* Fall back to private handles */
 				shared=FALSE;

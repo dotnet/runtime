@@ -23,5 +23,5 @@ void _wapi_calc_timeout(struct timespec *timeout, guint32 ms)
 	gettimeofday(&now, NULL);
 		
 	timeout->tv_sec=now.tv_sec+divvy.quot;
-	timeout->tv_nsec=(now.tv_usec+divvy.rem)*1000;
+	timeout->tv_nsec=(now.tv_usec+(divvy.rem*1000))*1000;
 }
