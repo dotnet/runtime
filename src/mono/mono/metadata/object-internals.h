@@ -430,6 +430,11 @@ struct _MonoReflectionMethod {
 	MonoReflectionType *reftype;
 };
 
+typedef struct _MonoReflectionGenericMethod MonoReflectionGenericMethod;
+struct _MonoReflectionGenericMethod {
+	MonoReflectionMethod method;
+};
+
 struct _MonoDelegate {
 	MonoObject object;
 	MonoObject *target_type;

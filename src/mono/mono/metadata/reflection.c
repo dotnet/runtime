@@ -3565,10 +3565,11 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				am = (MonoReflectionArrayMethod*)iltoken->member;
 				idx = am->table_idx;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") ||
-				   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod") ||
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoGenericMethod") ||
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoGenericCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
-				m = mono_get_inflated_method (m);
-				g_assert (m->klass->generic_class);
+				g_assert (m->klass->generic_class || m->klass->generic_container);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
 				continue;
@@ -3583,7 +3584,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_METHODSPEC:
-			if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod")) {
+			if (!strcmp (iltoken->member->vtable->klass->name, "MonoGenericMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (m->signature->generic_param_count);
 				continue;
@@ -4130,7 +4131,9 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref (assembly, tb->type));
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
-			strcmp (klass->name, "MonoMethod") == 0) {
+		   strcmp (klass->name, "MonoMethod") == 0 ||
+		   strcmp (klass->name, "MonoGenericMethod") == 0 ||
+		   strcmp (klass->name, "MonoGenericCMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
 		if (m->method->is_inflated) {
 			if (create_methodspec)
@@ -5351,8 +5354,24 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	MonoMethod *original = method;
 	MonoReflectionMethod *ret;
 
-	if (method->is_inflated)
-		method = mono_get_inflated_method (method);
+	if (method->is_inflated) {
+		MonoReflectionGenericMethod *gret;
+
+		refclass = method->klass;
+		CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
+		if ((*method->name == '.') && (!strcmp (method->name, ".ctor") || !strcmp (method->name, ".cctor")))
+			cname = "MonoGenericCMethod";
+		else
+			cname = "MonoGenericMethod";
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", cname);
+
+		gret = (MonoReflectionGenericMethod*)mono_object_new (domain, klass);
+		gret->method.method = method;
+		gret->method.name = mono_string_new (domain, method->name);
+		gret->method.reftype = mono_type_get_object (domain, &refclass->byval_arg);
+		CACHE_OBJECT (method, gret, refclass);
+		return (MonoReflectionMethod *) gret;
+	}
 
 	if (!refclass)
 		refclass = method->klass;
@@ -6805,6 +6824,9 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	} else if ((strcmp ("MonoMethod", klass->name) == 0) || (strcmp ("MonoCMethod", klass->name) == 0)) {
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
 		cinfo = mono_custom_attrs_from_method (rmethod->method);
+	} else if ((strcmp ("MonoGenericMethod", klass->name) == 0) || (strcmp ("MonoGenericCMethod", klass->name) == 0)) {
+		MonoMethod *method = mono_get_inflated_method (((MonoReflectionMethod*)obj)->method);
+		cinfo = mono_custom_attrs_from_method (method);
 	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;
@@ -7421,7 +7443,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 		g_assert (klass->generic_container->type_params [i].owner);
 	}
 
-	klass->generic_container->context.gclass = mono_get_shared_gclass (klass->generic_container, TRUE);
+	klass->generic_container->context.gclass = mono_get_shared_generic_class (klass->generic_container, TRUE);
 }
 
 /*

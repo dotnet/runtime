@@ -1240,6 +1240,9 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (method->is_inflated)
+		method = mono_get_inflated_method (method);
+
 	info->parent = mono_type_get_object (domain, &method->klass->byval_arg);
 	info->ret = mono_type_get_object (domain, method->signature->ret);
 	info->attrs = method->flags;
@@ -1261,6 +1264,9 @@ ves_icall_get_parameter_info (MonoMethod *method)
 	MonoDomain *domain = mono_domain_get (); 
 
 	MONO_ARCH_SAVE_REGS;
+
+	if (method->is_inflated)
+		method = mono_get_inflated_method (method);
 
 	return mono_param_get_objects (domain, method);
 }
@@ -1420,6 +1426,14 @@ ves_icall_MonoField_Mono_GetGenericFieldDefinition (MonoReflectionField *field)
 		return field->field->generic_info->reflection_info;
 
 	return field;
+}
+
+static MonoReflectionType*
+ves_icall_MonoGenericMethod_get_reflected_type (MonoReflectionGenericMethod *rmethod)
+{
+	MonoMethod *method = mono_get_inflated_method (rmethod->method.method);
+
+	return mono_type_get_object (mono_object_domain (rmethod), &method->klass->byval_arg);
 }
 
 /* From MonoProperty.cs */
@@ -6043,6 +6057,10 @@ static const IcallEntry monogenericclass_icalls [] = {
 	{"initialize", mono_reflection_generic_class_initialize}
 };
 
+static const IcallEntry monogenericmethod_icalls [] = {
+	{"get_reflected_type", ves_icall_MonoGenericMethod_get_reflected_type}
+};
+
 static const IcallEntry generictypeparambuilder_icalls [] = {
 	{"initialize", mono_reflection_initialize_generic_parameter}
 };
@@ -6519,6 +6537,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.MonoEventInfo", monoeventinfo_icalls, G_N_ELEMENTS (monoeventinfo_icalls)},
 	{"System.Reflection.MonoField", monofield_icalls, G_N_ELEMENTS (monofield_icalls)},
 	{"System.Reflection.MonoGenericClass", monogenericclass_icalls, G_N_ELEMENTS (monogenericclass_icalls)},
+	{"System.Reflection.MonoGenericMethod", monogenericmethod_icalls, G_N_ELEMENTS (monogenericmethod_icalls)},
 	{"System.Reflection.MonoMethod", monomethod_icalls, G_N_ELEMENTS (monomethod_icalls)},
 	{"System.Reflection.MonoMethodInfo", monomethodinfo_icalls, G_N_ELEMENTS (monomethodinfo_icalls)},
 	{"System.Reflection.MonoPropertyInfo", monopropertyinfo_icalls, G_N_ELEMENTS (monopropertyinfo_icalls)},

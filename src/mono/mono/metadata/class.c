@@ -450,8 +450,6 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	}
 
 	mono_stats.inflated_method_count++;
-	mono_stats.generics_metadata_size +=
-		sizeof (MonoMethodInflated) - sizeof (MonoMethodNormal);
 
 	result = g_new0 (MonoMethodInflated, 1);
 	result->nmethod = *(MonoMethodNormal*)method;
@@ -480,9 +478,13 @@ mono_get_inflated_method (MonoMethod *method)
 	if (imethod->inflated)
 		return (MonoMethod *) imethod->inflated;
 
+	mono_stats.inflated_method_count_2++;
+	mono_stats.generics_metadata_size +=
+		sizeof (MonoMethodInflated) - sizeof (MonoMethodNormal);
+
 	res = g_new0 (MonoMethodInflated, 1);
 	*res = *imethod;
-	res->inflated = res;
+	res->inflated = imethod->inflated = res;
 
 	mh = mono_method_get_header (method);
 	if (mh)
@@ -1888,7 +1890,7 @@ get_shared_inst (MonoGenericContainer *container)
 }
 
 MonoGenericClass *
-mono_get_shared_gclass (MonoGenericContainer *container, gboolean is_dynamic)
+mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
 	MonoGenericClass *gclass;
 	MonoGenericClass *cached;
@@ -1964,7 +1966,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->generic_container->klass = class;
 		context = &class->generic_container->context;
 
-		context->gclass = mono_get_shared_gclass (context->container, FALSE);
+		context->gclass = mono_get_shared_generic_class (context->container, FALSE);
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS])
