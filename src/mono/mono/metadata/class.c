@@ -158,13 +158,15 @@ class_compute_field_layout (MonoClass *class)
 			size = mono_type_size (class->fields [i].type, &align);
 			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
-				class->class_size += (class->class_size % align);
-				class->class_size += size;
+				class->fields [i].offset += align - 1;
+				class->fields [i].offset &= ~(align - 1);
+				class->class_size = class->fields [i].offset + size;
 			} else {
 				class->min_align = MAX (align, class->min_align);
 				class->fields [i].offset = class->instance_size;
-				class->instance_size += (class->instance_size % align);
-				class->instance_size += size;
+				class->fields [i].offset += align - 1;
+				class->fields [i].offset &= ~(align - 1);
+				class->instance_size = class->fields [i].offset + size;
 			}
 		}
 		if (class->instance_size & (class->min_align - 1)) {
@@ -185,8 +187,9 @@ class_compute_field_layout (MonoClass *class)
 			size = mono_type_size (class->fields [i].type, &align);
 			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
-				class->class_size += (class->class_size % align);
-				class->class_size += size;
+				class->fields [i].offset += align - 1;
+				class->fields [i].offset &= ~(align - 1);
+				class->class_size = class->fields [i].offset + size;
 			} else {
 				mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
 				if (class->fields [i].offset == (guint32)-1)
@@ -585,8 +588,12 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	vt->klass = class;
 	vt->domain = domain;
 
-	if (class->class_size)
-		vt->data = g_malloc0 (class->class_size);
+	if (class->class_size) {
+		vt->data = g_malloc0 (class->class_size + 8);
+		/* align: fixme not 64 bit clean */
+		if (((guint32)vt->data) & 0x7)
+			vt->data += 8 - (((guint32)vt->data) & 0x7);
+	}
 
 	vt->interface_offsets = g_malloc0 (sizeof (gpointer) * (class->max_interface_id + 1));
 
@@ -1192,6 +1199,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		class = mono_class_get (image, token);
+		mono_class_init (class);
 		/* We return a MonoType* as handle */
 		return &class->byval_arg;
 	}
@@ -1200,6 +1208,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		class = mono_class_create_from_typespec (image, token);
+		mono_class_init (class);
 		return &class->byval_arg;
 	}
 	case MONO_TOKEN_FIELD_DEF: {

@@ -375,13 +375,18 @@ mono_string_intern (MonoString *str)
 	MonoString *res;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
+	int bloblen;
 	
 	/* Encode the length */
 	p = ins;
-	mono_metadata_encode_value (str->length, p, &p);
+	mono_metadata_encode_value (2 * str->length, p, &p);
+	bloblen = p - ins;
+	p = ins;
+	mono_metadata_encode_value (bloblen + 2 * str->length, p, &p);
+	bloblen = (p - ins) + 2 * str->length;
 	memcpy (p, str->c_str->vector, str->length * 2);
 	ldstr_table = ((MonoObject *)str)->vtable->domain->ldstr_table;
-	if ((res = g_hash_table_lookup (ldstr_table, str))) {
+	if ((res = g_hash_table_lookup (ldstr_table, ins))) {
 		g_free (ins);
 		return res;
 	}
@@ -397,11 +402,11 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
 	size_t len2;
 		
 	sig = str = mono_metadata_user_string (image, index);
+	len2 = mono_metadata_decode_blob_size (str, &str);
 	
-	if ((o = g_hash_table_lookup (domain->ldstr_table, str)))
+	if ((o = g_hash_table_lookup (domain->ldstr_table, sig)))
 		return o;
 	
-	len2 = mono_metadata_decode_blob_size (str, &str);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
 	{

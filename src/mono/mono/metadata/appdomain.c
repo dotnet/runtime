@@ -38,9 +38,10 @@ ldstr_hash (const char* str)
 
 static gboolean
 ldstr_equal (const char *str1, const char *str2) {
-	int len;
-	if ((len=mono_metadata_decode_blob_size (str1, &str1)) !=
-				mono_metadata_decode_blob_size (str2, &str2))
+	int len, len2;
+	len = mono_metadata_decode_blob_size (str1, NULL);
+	len2 = mono_metadata_decode_blob_size (str2, NULL);
+	if (len != len2)
 		return 0;
 	return memcmp (str1, str2, len) == 0;
 }
