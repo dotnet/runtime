@@ -651,7 +651,7 @@ get_field_signature (MonoImage *m, guint32 blob_signature)
 	if (allocated_modifier_string)
 		g_free (allocated_modifier_string);
 	if (allocated_type_string)
-		g_free (allocated_modifier_string);
+		g_free (allocated_type_string);
 	
 	return res;
 }
