@@ -402,11 +402,7 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 	if (default_mono_free_method != NULL)
 		default_mono_free_method (domain, method);
 
-	/* 
-	 * FIXME: This causes crashes because the types inside signatures and
-	 * locals are shared.
-	 */
-	/* mono_free_method (method); */
+	mono_free_method (method);
 }
 
 static MonoInitVTableFunc init_vtable_func = NULL;

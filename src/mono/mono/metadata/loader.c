@@ -755,7 +755,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		int mangle_charset;
 		int mangle_stdcall;
 		int mangle_param_count;
+#ifdef PLATFORM_WIN32
 		int param_count;
+#endif
 
 		/*
 		 * Search using a variety of mangled names
@@ -1035,10 +1037,28 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 void
 mono_free_method  (MonoMethod *method)
 {
-	if (method->signature)
-		mono_metadata_free_method_signature (method->signature);
+	if (method->signature) {
+		/* 
+		 * FIXME: This causes crashes because the types inside signatures and
+		 * locals are shared.
+		 */
+		/* mono_metadata_free_method_signature (method->signature); */
+		g_free (method->signature);
+	}
+
+	if (method->dynamic) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
+
+		g_free ((char*)method->name);
+		if (mw->method.header)
+			g_free ((char*)mw->method.header->code);
+		g_free (mw->method_data);
+	}
+
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
-		mono_metadata_free_mh (((MonoMethodNormal *)method)->header);
+		/* FIXME: Ditto */
+		/* mono_metadata_free_mh (((MonoMethodNormal *)method)->header); */
+		g_free (((MonoMethodNormal*)method)->header);
 	}
 
 	g_free (method);
