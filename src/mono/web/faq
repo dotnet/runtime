@@ -723,7 +723,7 @@ A: Most of Mono is being written using C#, with only
 
      <li> A multi-platform runtime engine: both a JIT engine and an
           interpreter exist.  The JIT engine runs currently on x86,
-          PowerPC and Sparc systems, while the interpreter works on
+          PowerPC Sparc and S390 systems, while the interpreter works on
           x86, SPARC, StrongARM, s390 and PowerPC systems.  
 
 	  The JIT engine is being ported to PowerPC, s390, SPARC and
