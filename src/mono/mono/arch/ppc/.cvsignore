@@ -4,3 +4,4 @@ Makefile.in
 .deps
 *.la
 *.lo
+test
