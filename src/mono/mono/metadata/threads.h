@@ -63,7 +63,7 @@ extern void mono_thread_new_init (guint32 tid, gpointer stack_start,
 				  gpointer func);
 extern void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
-extern void mono_thread_dettach (MonoThread *thread);
+extern void mono_thread_detach (MonoThread *thread);
 
 void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
 
