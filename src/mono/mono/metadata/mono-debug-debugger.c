@@ -1,10 +1,12 @@
 #include <config.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
@@ -1153,6 +1155,7 @@ mono_debugger_unhandled_exception (gpointer addr, MonoObject *exc)
 	if (!mono_debugger_initialized)
 		return FALSE;
 
+	ves_icall_System_GC_SuppressFinalize (exc);
 	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION, exc, addr);
 	return TRUE;
 }
