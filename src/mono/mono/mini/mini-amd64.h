@@ -143,7 +143,7 @@ typedef struct {
 # define SC_ESP sc_esp
 # define SC_EDI sc_edi
 # define SC_ESI sc_esi
-#elif defined(__x86_64__)
+#else
 # define SC_EAX rax
 # define SC_EBX rbx
 # define SC_ECX rcx
@@ -162,16 +162,7 @@ typedef struct {
 # define SC_R13 r13
 # define SC_R14 r14
 # define SC_R15 r15
-#else
-# define SC_EAX eax
-# define SC_EBX ebx
-# define SC_ECX ecx
-# define SC_EDX edx
-# define SC_EBP ebp
-# define SC_EIP eip
-# define SC_ESP esp
-# define SC_EDI edi
-# define SC_ESI esi
+
 #endif
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->rip = (long)(ip); } while (0); 
@@ -191,8 +182,16 @@ typedef struct {
 #define MONO_ARCH_VARARG_ICALLS 1
 
 #ifndef PLATFORM_WIN32
+
 #ifdef HAVE_WORKING_SIGALTSTACK
-#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+/*
+ * FIXME: For some reason, when sigaltstack is enabled, the uc_mcontext member
+ * in ucontext_t is not at the offset indicated by the definition of ucontext_t.
+ */
+
+//#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
 /* NetBSD doesn't define SA_STACK */
 #ifndef SA_STACK
 #define SA_STACK SA_ONSTACK

@@ -2295,7 +2295,7 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 	}
 	NEW_TEMPLOAD (cfg, dest, temp);
 	NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
-	MONO_INST_NEW (cfg, add, CEE_ADD);
+	MONO_INST_NEW (cfg, add, OP_PADD);
 	add->inst_left = dest;
 	add->inst_right = vtoffset;
 	add->cil_code = ip;
@@ -4235,7 +4235,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->inst_newa_class = klass;
 			ins->cil_code = ip;
 
-			MONO_INST_NEW (cfg, add, CEE_ADD);
+			MONO_INST_NEW (cfg, add, OP_PADD);
 			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
 			add->inst_left = ins;
 			add->inst_right = vtoffset;
@@ -4286,7 +4286,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->inst_newa_class = klass;
 			ins->cil_code = ip;
 
-			MONO_INST_NEW (cfg, add, CEE_ADD);
+			MONO_INST_NEW (cfg, add, OP_PADD);
 			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
 			add->inst_left = ins;
 			add->inst_right = vtoffset;
@@ -4416,7 +4416,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					MonoInst *store;
 					NEW_ICONST (cfg, offset_ins, foffset);
-					MONO_INST_NEW (cfg, ins, CEE_ADD);
+					MONO_INST_NEW (cfg, ins, OP_PADD);
 					ins->cil_code = ip;
 					ins->inst_left = *sp;
 					ins->inst_right = offset_ins;
@@ -4486,7 +4486,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				} else {
 					NEW_ICONST (cfg, offset_ins, foffset);
-					MONO_INST_NEW (cfg, ins, CEE_ADD);
+					MONO_INST_NEW (cfg, ins, OP_PADD);
 					ins->cil_code = ip;
 					ins->inst_left = *sp;
 					ins->inst_right = offset_ins;
