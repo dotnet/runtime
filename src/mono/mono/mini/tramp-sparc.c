@@ -338,7 +338,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	MonoJitInfo *ji;
 	gpointer code_start;
 
-	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain);
+	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
 	code_start = ji->code_start;
 	g_free (ji);
 
