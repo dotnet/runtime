@@ -10,6 +10,10 @@
  */
 
 #include <config.h>
+#ifdef PLATFORM_WIN32
+#define _WIN32_WINNT 0x0500
+#endif
+
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
