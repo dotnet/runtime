@@ -60,7 +60,7 @@ void
 mono_method_get_param_names (MonoMethod *method, const char **names);
 
 guint32
-mono_method_get_param_token (MonoMethod *method, int index);
+mono_method_get_param_token (MonoMethod *method, int idx);
 
 void
 mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs);

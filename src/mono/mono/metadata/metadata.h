@@ -481,6 +481,6 @@ guint32 mono_metadata_token_from_dor (guint32 dor_index);
 
 char *mono_guid_to_string (const guint8 *guid);
 
-guint32 mono_metadata_declsec_from_index (MonoImage *meta, guint32 index);
+guint32 mono_metadata_declsec_from_index (MonoImage *meta, guint32 idx);
 
 #endif /* __MONO_METADATA_H__ */
