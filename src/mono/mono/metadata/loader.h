@@ -146,6 +146,9 @@ mono_get_method            (MonoImage *image, guint32 token, MonoClass *klass);
 MonoMethod *
 mono_get_method_full       (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context);
 
+MonoMethod *
+mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context);
+
 void               
 mono_free_method           (MonoMethod *method);
 
