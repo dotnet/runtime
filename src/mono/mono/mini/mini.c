@@ -7998,7 +7998,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
-			mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
+			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
 			return info->code_start;
 		}
 	}
