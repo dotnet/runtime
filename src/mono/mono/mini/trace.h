@@ -23,4 +23,10 @@ struct MonoTraceSpec {
 	MonoAssembly *assembly;
 };
 
+void
+mono_trace_enter_method (MonoMethod *method, char *ebp);
+
+void 
+mono_trace_leave_method (MonoMethod *method, ...);
+
 #endif /* __MONO_TRACE_H__ */

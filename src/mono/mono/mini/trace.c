@@ -247,3 +247,279 @@ mono_trace_parse_options (MonoAssembly *assembly, char *options)
 	cleanup ();
 	return &trace_spec;
 }
+
+static int indent_level = 0;
+
+static void indent (int diff) {
+	int v;
+	if (diff < 0)
+		indent_level += diff;
+	v = indent_level;
+	while (v-- > 0) {
+		printf (". ");
+	}
+	if (diff > 0)
+		indent_level += diff;
+}
+
+static gboolean enable_trace = TRUE;
+
+void
+mono_trace_enter_method (MonoMethod *method, char *ebp)
+{
+	int i, j;
+	MonoClass *class;
+	MonoObject *o;
+	MonoJitArgumentInfo *arg_info;
+	MonoMethodSignature *sig;
+	char *fname;
+
+	if (!enable_trace)
+		return;
+
+	fname = mono_method_full_name (method, TRUE);
+	indent (1);
+	printf ("ENTER: %s(", fname);
+	g_free (fname);
+
+	if (!ebp) {
+		printf (") ip: %p\n", __builtin_return_address (1));
+		return;
+	}	
+	if (((int)ebp & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
+		g_error ("unaligned stack detected (%p)", ebp);
+	}
+
+	sig = method->signature;
+
+	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+
+	mono_arch_get_argument_info (sig, sig->param_count, arg_info);
+
+	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
+		g_assert (!method->signature->ret->byref);
+
+		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
+	}
+
+	if (method->signature->hasthis) {
+		gpointer *this = (gpointer *)(ebp + arg_info [0].offset);
+		if (method->klass->valuetype) {
+			printf ("value:%p, ", *this);
+		} else {
+			o = *((MonoObject **)this);
+
+			if (o) {
+				class = o->vtable->klass;
+
+				if (class == mono_defaults.string_class) {
+					printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+				} else {
+					printf ("this:%p[%s.%s %s], ", o, class->name_space, class->name, o->vtable->domain->friendly_name);
+				}
+			} else 
+				printf ("this:NULL, ");
+		}
+	}
+
+	for (i = 0; i < method->signature->param_count; ++i) {
+		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
+		int size = arg_info [i + 1].size;
+
+		MonoType *type = method->signature->params [i];
+		
+		if (type->byref) {
+			printf ("[BYREF:%p], ", *cpos); 
+		} else switch (type->type) {
+			
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+			printf ("%p, ", (gpointer)*((int *)(cpos)));
+			break;
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+			printf ("%d, ", *((gint8 *)(cpos)));
+			break;
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+			printf ("%d, ", *((gint16 *)(cpos)));
+			break;
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+			printf ("%d, ", *((int *)(cpos)));
+			break;
+		case MONO_TYPE_STRING: {
+			MonoString *s = *((MonoString **)cpos);
+			if (s) {
+				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
+				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
+			} else 
+				printf ("[STRING:null], ");
+			break;
+		}
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT: {
+			o = *((MonoObject **)cpos);
+			if (o) {
+				class = o->vtable->klass;
+		    
+				if (class == mono_defaults.string_class) {
+					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+				} else if (class == mono_defaults.int32_class) {
+					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
+				} else
+					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
+			} else {
+				printf ("%p, ", *((gpointer *)(cpos)));				
+			}
+			break;
+		}
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			printf ("%p, ", *((gpointer *)(cpos)));
+			break;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			printf ("0x%016llx, ", *((gint64 *)(cpos)));
+			break;
+		case MONO_TYPE_R4:
+			printf ("%f, ", *((float *)(cpos)));
+			break;
+		case MONO_TYPE_R8:
+			printf ("%f, ", *((double *)(cpos)));
+			break;
+		case MONO_TYPE_VALUETYPE: 
+			printf ("[");
+			for (j = 0; j < size; j++)
+				printf ("%02x,", *((guint8*)cpos +j));
+			printf ("], ");
+			break;
+		default:
+			printf ("XX, ");
+		}
+	}
+
+	printf (")\n");
+}
+
+void
+mono_trace_leave_method (MonoMethod *method, ...)
+{
+	MonoType *type;
+	char *fname;
+	va_list ap;
+
+	if (!enable_trace)
+		return;
+
+	va_start(ap, method);
+
+	fname = mono_method_full_name (method, TRUE);
+	indent (-1);
+	printf ("LEAVE: %s", fname);
+	g_free (fname);
+
+	type = method->signature->ret;
+
+handle_enum:
+	switch (type->type) {
+	case MONO_TYPE_VOID:
+		break;
+	case MONO_TYPE_BOOLEAN: {
+		int eax = va_arg (ap, int);
+		if (eax)
+			printf ("TRUE:%d", eax);
+		else 
+			printf ("FALSE");
+			
+		break;
+	}
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U: {
+		int eax = va_arg (ap, int);
+		printf ("result=%d", eax);
+		break;
+	}
+	case MONO_TYPE_STRING: {
+		MonoString *s = va_arg (ap, MonoString *);
+;
+		if (s) {
+			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
+			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
+		} else 
+			printf ("[STRING:null], ");
+		break;
+	}
+	case MONO_TYPE_CLASS: 
+	case MONO_TYPE_OBJECT: {
+		MonoObject *o = va_arg (ap, MonoObject *);
+
+		if (o) {
+			if (o->vtable->klass == mono_defaults.boolean_class) {
+				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
+			} else if  (o->vtable->klass == mono_defaults.int32_class) {
+				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
+			} else if  (o->vtable->klass == mono_defaults.int64_class) {
+				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
+			} else
+				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
+		} else
+			printf ("[OBJECT:%p]", o);
+	       
+		break;
+	}
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY: {
+		gpointer p = va_arg (ap, gpointer);
+		printf ("result=%p", p);
+		break;
+	}
+	case MONO_TYPE_I8: {
+		gint64 l =  va_arg (ap, gint64);
+		printf ("lresult=0x%16llx", l);
+		break;
+	}
+	case MONO_TYPE_U8: {
+		gint64 l =  va_arg (ap, gint64);
+		printf ("lresult=0x%16llx", l);
+		break;
+	}
+	case MONO_TYPE_R8: {
+		double f = va_arg (ap, double);
+		printf ("FP=%f\n", f);
+		break;
+	}
+	case MONO_TYPE_VALUETYPE: 
+		if (type->data.klass->enumtype) {
+			type = type->data.klass->enum_basetype;
+			goto handle_enum;
+		} else {
+			guint8 *p = va_arg (ap, gpointer);
+			int j, size, align;
+			size = mono_type_size (type, &align);
+			printf ("[");
+			for (j = 0; p && j < size; j++)
+				printf ("%02x,", p [j]);
+			printf ("]");
+		}
+		break;
+	default:
+		printf ("(unknown return type %x)", method->signature->ret->type);
+	}
+
+	//printf (" ip: %p\n", __builtin_return_address (1));
+	printf ("\n");
+}
