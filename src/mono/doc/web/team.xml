@@ -1492,11 +1492,15 @@
 
     <organization></organization>
 
-    <description></description>
+    <description>hacker</description>
 
     <tasks>
 
       <task>WSE2</task>
+
+      <task>gacutil</task>
+
+      <task>MonoDevelop</task>
 
     </tasks>
 
