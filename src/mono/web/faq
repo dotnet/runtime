@@ -636,9 +636,7 @@ Q: Is there a relatively straightforward way to repeat the steps taken
 
 A: To build the compiler and class libraries in Linux, run:
    <ul><li>make -f makefile.gnu. To install them, run: </li>
-       <li>make -f makefile.gnu install</li>
-       <li>You can also specify a prefix:</li>
-       <li>make -f makefile.gnu install prefix=/opt</li>
+       <li>make -f makefile.gnu install prefix=/opt/mono</li>
    </ul>
 
    If you want to produce and distribute a monocharge tarball, run:

@@ -86,6 +86,15 @@
   </tr>
 </table>
 
+@item Sep 3rd, 2002: Apache integration
+
+	<a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-September/001862.html">Sterling</a>
+	announced an Apache module that hosts
+	Mono, and allows CIL code to run from within Apache, giving the
+	module access to the Apache runtime.  This uses the Mono embedding
+	API.
+
 @item Aug 24th, 2002: Gtk# 0.4 released
 
 	Shortly after <a href="download.html">Mono 0.15</a> was
