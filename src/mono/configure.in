@@ -1497,8 +1497,6 @@ mono/mini/Makefile
 mono/profiler/Makefile
 ikvm-jni/Makefile
 runtime/Makefile
-runtime/net_1_1/Makefile
-runtime/net_2_0/Makefile
 scripts/Makefile
 man/Makefile
 web/Makefile
