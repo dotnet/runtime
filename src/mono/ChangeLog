@@ -1,3 +1,9 @@
+
+Tue Aug 21 18:54:06 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* mono/tests/exceptions*: enhanced and added more tests for
+	exceptions.
+
 2001-08-20  Miguel de Icaza  <miguel@ximian.com>
 
 	* mono/Makefile.am (SUBDIRS): Remove `test' from here to allow us

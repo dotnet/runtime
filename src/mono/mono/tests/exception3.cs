@@ -1,5 +1,9 @@
 using System;
 
+public class MyEx : Exception {
+	public MyEx () {}
+}
+
 public class Ex {
 
 	public static int test (int a) {
@@ -7,26 +11,28 @@ public class Ex {
 		int fin = 0;
 		try {
 			res = 10/a;
+			throw new MyEx ();
 		} catch (DivideByZeroException ex) {
 			if (fin != 1)
 				res = 34;
 			else
 				res = 33;
-		} catch {
-			if (fin != 1)
-				res = 24;
-			else
-				res = 22;
 		} finally {
 			fin = 1;
 		}
 		return res;
 	}
 	public static int Main () {
-		if (test(1) != 10)
-			return 1;
-		if (test(0) != 33)
+		int catched = 0;
+		try {
+			test (1);
+		} catch (MyEx ex) {
+			catched = 1;
+		}
+		if (catched != 1)
 			return 2;
+		if (test(0) != 33)
+			return 3;
 		return 0;
 	}
 }

@@ -993,16 +993,13 @@ mono_metadata_parse_param (MonoMetadata *m, int rettype, const char *ptr, const 
 		param->typedbyref = 1; 
 		ptr++; 
 		break;
-	case MONO_TYPE_VOID: 
-		if (!rettype)
-			g_error ("void not allowed in param");
-		param->type = mono_metadata_parse_type (m, ptr, &ptr);
-		break;
 	case MONO_TYPE_BYREF: 
 		byref = 1; 
 		ptr++;
 		/* follow through */
 	default:
+		if (*ptr == MONO_TYPE_VOID && !rettype)
+			g_error ("void not allowed in param");
 		param->type = mono_metadata_parse_type (m, ptr, &ptr);
 		param->type->byref = byref;
 		break;
@@ -1611,7 +1608,7 @@ mono_type_size (MonoType *t, gint *align)
 
 	switch (t->type){
 	case MONO_TYPE_VOID:
-		*align = 0;
+		*align = 1;
 		return 0;
 	case MONO_TYPE_BOOLEAN:
 		*align = __alignof__(char);

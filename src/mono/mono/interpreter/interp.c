@@ -53,6 +53,17 @@ enum {
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
 
+#define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,mono_method)	\
+	do {	\
+		(frame)->parent = (parent_frame);	\
+		(frame)->obj = (obj_this);	\
+		(frame)->stack_args = (method_args);	\
+		(frame)->retval = (method_retval);	\
+		(frame)->method = (mono_method);	\
+		(frame)->ex_handler = NULL;	\
+		(frame)->ex = NULL;	\
+	} while (0)
+
 static void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
@@ -88,11 +99,6 @@ init_class (MonoClass *klass)
 	int i;
 	MonoInvocation call;
 
-	call.parent = NULL;
-	call.retval = NULL;
-	call.obj = NULL;
-	call.stack_args = NULL;
-	
 	if (klass->inited)
 		return;
 	if (klass->parent)
@@ -105,7 +111,9 @@ init_class (MonoClass *klass)
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 		
 		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0) {
-			call.method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1));
+			INIT_FRAME (&call, NULL, NULL, NULL, NULL,
+					mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1)));
+	
 			ves_exec_method (&call);
 			mono_free_method (call.method);
 			klass->inited = 1;
@@ -228,10 +236,10 @@ get_named_exception (const char *name)
 {
 	MonoClass *klass;
 	MonoInvocation call;
+	MonoMethod *method = NULL;
 	MonoObject *o;
 	int i;
 	guint32 tdef;
-	stackval sv;
 
 	tdef = mono_typedef_from_name (mono_defaults.corlib, name, "System", NULL);
 
@@ -239,23 +247,19 @@ get_named_exception (const char *name)
 	g_assert (o != NULL);
 
 	klass = mono_class_get (mono_defaults.corlib, tdef);
-	call.method = NULL;
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
 		    klass->methods [i]->signature->param_count == 0) {
-			call.method = klass->methods [i];
+			method = klass->methods [i];
 			break;
 		}
 	}
 
-	sv.data.p = o;
-	sv.type = VAL_OBJ;
-
-	call.stack_args = &sv;
 	call.obj = o;
 
-	g_assert (call.method);
+	g_assert (method);
+	INIT_FRAME (&call, NULL, o, NULL, NULL, method);
 
 	ves_exec_method (&call);
 	return o;
@@ -271,64 +275,112 @@ get_exception_divide_by_zero ()
 	return ex;
 }
 
-static stackval
-stackval_from_data (MonoType *type, const char *data)
+static MonoObject*
+get_exception_security ()
 {
-	stackval result;
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("SecurityException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_arithmetic ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("ArithmeticException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_overflow ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("OverflowException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_null_reference ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("NullReferenceException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_execution_engine ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("ExecutionEngineException");
+	return ex;
+}
+
+static void
+stackval_from_data (MonoType *type, stackval *result, const char *data)
+{
 	if (type->byref) {
-		result.type = VAL_OBJ;
-		result.data.p = *(gpointer*)data;
-		return result;
+		result->type = VAL_OBJ;
+		result->data.p = *(gpointer*)data;
+		return;
 	}
 	switch (type->type) {
 	case MONO_TYPE_I1:
-		result.type = VAL_I32;
-		result.data.i = *(gint8*)data;
-		break;
+		result->type = VAL_I32;
+		result->data.i = *(gint8*)data;
+		return;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		result.type = VAL_I32;
-		result.data.i = *(guint8*)data;
-		break;
+		result->type = VAL_I32;
+		result->data.i = *(guint8*)data;
+		return;
 	case MONO_TYPE_I2:
-		result.type = VAL_I32;
-		result.data.i = *(gint16*)data;
-		break;
+		result->type = VAL_I32;
+		result->data.i = *(gint16*)data;
+		return;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
-		result.type = VAL_I32;
-		result.data.i = *(guint16*)data;
-		break;
+		result->type = VAL_I32;
+		result->data.i = *(guint16*)data;
+		return;
 	case MONO_TYPE_I4:
-		result.type = VAL_I32;
-		result.data.i = *(gint32*)data;
-		break;
+		result->type = VAL_I32;
+		result->data.i = *(gint32*)data;
+		return;
 	case MONO_TYPE_U4:
-		result.type = VAL_I32;
-		result.data.i = *(guint32*)data;
-		break;
+		result->type = VAL_I32;
+		result->data.i = *(guint32*)data;
+		return;
 	case MONO_TYPE_R4:
-		result.type = VAL_DOUBLE;
-		result.data.f = *(float*)data;
-		break;
+		result->type = VAL_DOUBLE;
+		result->data.f = *(float*)data;
+		return;
 	case MONO_TYPE_R8:
-		result.type = VAL_DOUBLE;
-		result.data.f = *(double*)data;
-		break;
+		result->type = VAL_DOUBLE;
+		result->data.f = *(double*)data;
+		return;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
-		result.type = VAL_OBJ;
-		result.data.p = *(gpointer*)data;
-		break;
+		result->type = VAL_OBJ;
+		result->data.p = *(gpointer*)data;
+		return;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
 	}
-	return result;
 }
 
 static void
@@ -482,10 +534,10 @@ ves_pinvoke_method (MonoInvocation *frame)
 	g_slist_free (l);
 
 	if (sig->ret->type->type != MONO_TYPE_VOID)
-		*frame->retval = stackval_from_data (sig->ret->type, res);
+		stackval_from_data (sig->ret->type, frame->retval, res);
 }
 
-#define DEBUG_INTERP 0
+#define DEBUG_INTERP 1
 #if DEBUG_INTERP
 #define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
 static char *opcode_names[] = {
@@ -524,6 +576,24 @@ dump_stack (stackval *stack, stackval *sp)
 		++s;
 	}
 }
+
+#define DEBUG_ENTER()	\
+	do {	\
+		debug_indent_level++;	\
+		output_indent ();	\
+		g_print ("Entering %s\n", frame->method->name);	\
+	} while (0)
+#define DEBUG_LEAVE()	\
+	do {	\
+		output_indent ();	\
+		g_print ("Leaving %s\n", frame->method->name);	\
+		debug_indent_level--;	\
+	} while (0)
+
+#else
+
+#define DEBUG_ENTER()
+#define DEBUG_LEAVE()
 
 #endif
 
@@ -573,6 +643,9 @@ ves_exec_method (MonoInvocation *frame)
 	register stackval *sp;
 	void **locals_pointers;
 	void **args_pointers;
+	unsigned char tail_recursion = 0;
+	unsigned char unaligned_address = 0;
+	unsigned char volatile_address = 0;
 	GOTO_LABEL_VARS;
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
@@ -590,11 +663,7 @@ ves_exec_method (MonoInvocation *frame)
 	signature = frame->method->signature;
 	image = frame->method->image;
 
-#if DEBUG_INTERP
-	debug_indent_level++;
-	output_indent ();
-	g_print ("Entering %s\n", frame->method->name);
-#endif
+	DEBUG_ENTER ();
 
 	/*
 	 * with alloca we get the expected huge performance gain
@@ -679,7 +748,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDARG_3) {
 			int n = (*ip)-CEE_LDARG_0;
 			++ip;
-			*sp = stackval_from_data (ARG_TYPE (signature, n), ARG_POS (n));
+			stackval_from_data (ARG_TYPE (signature, n), sp, ARG_POS (n));
 			++sp;
 			BREAK;
 		}
@@ -689,7 +758,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDLOC_3) {
 			int n = (*ip)-CEE_LDLOC_0;
 			++ip;
-			*sp = stackval_from_data (LOCAL_TYPE (header, n), LOCAL_POS (n));
+			stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
 			++sp;
 			BREAK;
 		}
@@ -705,7 +774,7 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		CASE (CEE_LDARG_S)
 			++ip;
-			*sp = stackval_from_data (ARG_TYPE (signature, *ip), ARG_POS (*ip));
+			stackval_from_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip));
 			++sp;
 			++ip;
 			BREAK;
@@ -719,7 +788,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_STARG_S) ves_abort(); BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
-			*sp = stackval_from_data (LOCAL_TYPE (header, *ip), LOCAL_POS (*ip));
+			stackval_from_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip));
 			++ip;
 			++sp;
 			BREAK;
@@ -817,6 +886,11 @@ ves_exec_method (MonoInvocation *frame)
 			guint32 token;
 			int virtual = *ip == CEE_CALLVIRT;
 
+			/*
+			 * We ignore tail recursion for now.
+			 */
+			tail_recursion = 0;
+
 			frame->ip = ip;
 			
 			++ip;
@@ -852,6 +926,7 @@ ves_exec_method (MonoInvocation *frame)
 			}
 
 			child_frame.ex = NULL;
+			child_frame.ex_handler = NULL;
 
 			ves_exec_method (&child_frame);
 
@@ -879,9 +954,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp > frame->stack)
 				g_warning ("more values on stack: %d", sp-frame->stack);
 
-#if DEBUG_INTERP
-			debug_indent_level--;
-#endif
+			DEBUG_LEAVE ();
 			return;
 		CASE (CEE_BR_S)
 			++ip;
@@ -1254,39 +1327,54 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32) {
-				/* 
-				 * FIXME: move to handle also the other types
-				 */
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.i /= GET_NATI (sp [0]);
-			} else if (sp->type == VAL_I64)
+			} else if (sp->type == VAL_I64) {
+				if (sp [0].data.l == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.l /= sp [0].data.l;
-			else if (sp->type == VAL_DOUBLE)
+			} else if (sp->type == VAL_DOUBLE) {
+				/* set NaN is divisor is 0.0 */
 				sp [-1].data.f /= sp [0].data.f;
+			}
 			BREAK;
 		CASE (CEE_DIV_UN)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
+			if (sp->type == VAL_I32) {
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				(guint32)sp [-1].data.i /= (guint32)GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			} else if (sp->type == VAL_I64) {
+				if (sp [0].data.l == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				(guint64)sp [-1].data.l /= (guint64)sp [0].data.l;
-			else if (sp->type == VAL_NATI)
+			} else if (sp->type == VAL_NATI) {
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				(gulong)sp [-1].data.p /= (gulong)sp [0].data.p;
+			}
 			BREAK;
 		CASE (CEE_REM)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
+			if (sp->type == VAL_I32) {
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.i %= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			} else if (sp->type == VAL_I64) {
+				if (sp [0].data.l == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.l %= sp [0].data.l;
-			else if (sp->type == VAL_DOUBLE)
-				/* FIXME: what do we actually fo here? */
+			} else if (sp->type == VAL_DOUBLE) {
+				/* FIXME: what do we actually do here? */
 				sp [-1].data.f = 0;
-			else
+			} else {
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				GET_NATI (sp [-1]) %= GET_NATI (sp [0]);
+			}
 			BREAK;
 		CASE (CEE_REM_UN) ves_abort(); BREAK;
 		CASE (CEE_AND)
@@ -1438,6 +1526,8 @@ ves_exec_method (MonoInvocation *frame)
 			MonoMethodSignature *csig;
 			guint32 token;
 
+			frame->ip = ip;
+
 			ip++;
 			token = read32 (ip);
 			o = newobj (image, token);
@@ -1461,10 +1551,18 @@ ves_exec_method (MonoInvocation *frame)
 
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 
+			child_frame.ex = NULL;
+			child_frame.ex_handler = NULL;
+
 			ves_exec_method (&child_frame);
-			/*
-			 * FIXME: check for exceptions
-			 */
+
+			if (child_frame.ex) {
+				/*
+				 * An exception occurred, need to run finally, fault and catch handlers..
+				 */
+				frame->ex = child_frame.ex;
+				goto handle_finally;
+			}
 			/*
 			 * a constructor returns void, but we need to return the object we created
 			 */
@@ -1547,7 +1645,7 @@ ves_exec_method (MonoInvocation *frame)
 			obj = sp [-1].data.p;
 			field = mono_class_get_field (obj->klass, token);
 			g_assert (field);
-			sp [-1] = stackval_from_data (field->type->type, (char*)obj + field->offset);
+			stackval_from_data (field->type->type, &sp [-1], (char*)obj + field->offset);
 			BREAK;
 		}
 		CASE (CEE_LDFLDA) ves_abort(); BREAK;
@@ -1583,7 +1681,7 @@ ves_exec_method (MonoInvocation *frame)
 				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			*sp = stackval_from_data (field->type->type, (char*)klass + field->offset);
+			stackval_from_data (field->type->type, sp, (char*)klass + field->offset);
 			++sp;
 			BREAK;
 		}
@@ -1949,18 +2047,49 @@ ves_exec_method (MonoInvocation *frame)
 			case CEE_LDLOC: ves_abort(); break;
 			case CEE_LDLOCA: ves_abort(); break;
 			case CEE_STLOC: ves_abort(); break;
-			case CEE_LOCALLOC: ves_abort(); break;
+			case CEE_LOCALLOC:
+				if (sp != frame->stack)
+					THROW_EX (get_exception_execution_engine (), ip);
+				++ip;
+				sp->data.p = alloca (sp->data.i);
+				sp->type = VAL_TP;
+				break;
 			case CEE_UNUSED57: ves_abort(); break;
 			case CEE_ENDFILTER: ves_abort(); break;
-			case CEE_UNALIGNED_: ves_abort(); break;
-			case CEE_VOLATILE_: ves_abort(); break;
-			case CEE_TAIL_: ves_abort(); break;
+			case CEE_UNALIGNED_:
+				++ip;
+				unaligned_address = 1;
+				break;
+			case CEE_VOLATILE_:
+				++ip;
+				volatile_address = 1;
+				break;
+			case CEE_TAIL_:
+				++ip;
+				tail_recursion = 1;
+				break;
 			case CEE_INITOBJ: ves_abort(); break;
 			case CEE_UNUSED68: ves_abort(); break;
 			case CEE_CPBLK: ves_abort(); break;
-			case CEE_INITBLK: ves_abort(); break;
+			case CEE_INITBLK:
+				sp -= 3;
+				if (!sp [0].data.p)
+					THROW_EX (get_exception_null_reference(), ip);
+				++ip;
+				/* FIXME: value and size may be int64... */
+				memset (sp [0].data.p, sp [1].data.i, sp [2].data.i);
+				break;
 			case CEE_UNUSED69: ves_abort(); break;
-			case CEE_RETHROW: ves_abort(); break;
+			case CEE_RETHROW:
+				/* 
+				 * need to clarify what this should actually do:
+				 * start the search from the last found handler in
+				 * this method or continue in the caller or what.
+				 * Also, do we need to run finally/fault handlers after a retrow?
+				 */
+				ves_abort ();
+				THROW_EX (frame->ex, ip);
+				break;
 			case CEE_UNUSED: ves_abort(); break;
 			case CEE_SIZEOF: ves_abort(); break;
 			case CEE_REFANYTYPE: ves_abort(); break;
@@ -1999,13 +2128,15 @@ ves_exec_method (MonoInvocation *frame)
 			for (i = 0; i < hd->num_clauses; ++i) {
 				clause = &hd->clauses [i];
 				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
-					if (!clause->flags && mono_object_isinst (frame->ex, mono_class_get (inv->method->image, clause->token_or_filter))) {
-							/* 
-							 * OK, we found an handler, now we need to execute the finally
-							 * and fault blocks before branching to the handler code.
-							 */
-							inv->ex_handler = clause;
-							goto handle_finally;
+					if (!clause->flags) {
+							if (mono_object_isinst (frame->ex, mono_class_get (inv->method->image, clause->token_or_filter))) {
+								/* 
+								 * OK, we found an handler, now we need to execute the finally
+								 * and fault blocks before branching to the handler code.
+								 */
+								inv->ex_handler = clause;
+								goto handle_finally;
+							}
 					} else {
 						/* FIXME: handle filter clauses */
 						g_assert (0);
@@ -2016,11 +2147,11 @@ ves_exec_method (MonoInvocation *frame)
 		/*
 		 * If we get here, no handler was found: print a stack trace.
 		 */
+		g_print ("Unhandled exception.\n");
 		for (inv = frame, i = 0; inv; inv = inv->parent, ++i) {
 			/*
 			 * FIXME: print out also the arguments passed to the func.
 			 */
-			g_print ("Unhandled exception.\n");
 			g_print ("$%d: %s ()\n", i, inv->method->name);
 		}
 		exit (1);
@@ -2074,11 +2205,10 @@ ves_exec_method (MonoInvocation *frame)
 			sp = frame->stack;
 			sp->type = VAL_OBJ;
 			sp->data.p = frame->ex;
+			++sp;
 			goto main_loop;
 		}
-#if DEBUG_INTERP
-		debug_indent_level--;
-#endif
+		DEBUG_LEAVE ();
 		return;
 	}
 	
@@ -2091,14 +2221,13 @@ ves_exec (MonoAssembly *assembly)
 	MonoCLIImageInfo *iinfo;
 	stackval result;
 	MonoInvocation call;
+	MonoMethod *method;
 
 	iinfo = image->image_info;
+	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
+
+	INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
 	
-	call.parent = NULL;
-	call.obj = NULL;
-	call.stack_args = NULL;
-	call.method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
-	call.retval = &result;
 	ves_exec_method (&call);
 	mono_free_method (call.method);
 

@@ -27,9 +27,12 @@ typedef struct {
 		double f;
 		/* native size integer and pointer types */
 		gpointer p;
+		struct {
+			gpointer vt;
+			MonoClass *klass;
+		} vt;
 	} data;
-	unsigned int type : 8;
-	unsigned int size : 24; /* used for value types */
+	unsigned int type;
 } stackval;
 
 typedef struct _MonoInvocation MonoInvocation;

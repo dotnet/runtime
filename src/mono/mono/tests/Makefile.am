@@ -11,6 +11,8 @@ TESTSRC=			\
 	outparm.cs		\
 	nested-loops.cs		\
 	exception.cs		\
+	exception2.cs		\
+	exception3.cs		\
 	struct.cs		\
 	pinvoke.cs		\
 	array.cs		\
@@ -25,6 +27,8 @@ TESTS=				\
 	outparm.exe		\
 	nested-loops.exe	\
 	exception.exe		\
+	exception2.exe		\
+	exception3.exe		\
 	struct.exe		\
 	pinvoke.exe		\
 	array.exe		\
