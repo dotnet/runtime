@@ -389,6 +389,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	int n;
 
 	image = g_new0 (MonoImage, 1);
+	image->ref_count = 1;
 	image->f = fopen (fname, "rb");
 	image->name = g_strdup (fname);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
