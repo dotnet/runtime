@@ -14,6 +14,21 @@ test_lpwstr_marshal (unsigned short* chars, long length)
 	return chars;
 }
 
+typedef struct {
+	int b;
+	int a;
+	int c;
+} union_test_1_type;
+
+int mono_union_test_1 (union_test_1_type u1) {
+	printf ("Got values %d %d %d\n", u1.b, u1.a, u1.c);
+	return u1.a + u1.b + u1.c;
+}
+
+int mono_return_int (int a) {
+	printf ("Got value %d\n", a);
+	return a;
+}
 int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 				  int f, int g, int h, int i, int j);
 short mono_test_many_short_arguments (short a, short b, short c, short d, short e,
