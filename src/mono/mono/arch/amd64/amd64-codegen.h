@@ -91,6 +91,8 @@ typedef union {
 
 #include "../x86/x86-codegen.h"
 
+#undef X86_IS_BYTE_REG
+#define X86_IS_BYTE_REG(reg) 1
 
 /* Need to fill this info in for amd64. */
 
