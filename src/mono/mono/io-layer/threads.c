@@ -41,7 +41,8 @@ static pthread_mutex_t thread_hash_mutex = PTHREAD_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
 
 static void thread_close(WapiHandle *handle);
-static gboolean thread_wait(WapiHandle *handle, guint32 ms);
+static gboolean thread_wait(WapiHandle *handle, WapiHandle *signal,
+			    guint32 ms);
 static guint32 thread_wait_multiple(gpointer data);
 
 static struct _WapiHandleOps thread_ops = {
@@ -54,6 +55,7 @@ static struct _WapiHandleOps thread_ops = {
 	NULL,				/* getfilesize */
 	thread_wait,			/* wait */
 	thread_wait_multiple,		/* wait_multiple */
+	NULL,				/* signal */
 };
 
 static void thread_close(WapiHandle *handle)
@@ -70,12 +72,20 @@ static void thread_close(WapiHandle *handle)
 	g_free(thread_handle->thread);
 }
 
-static gboolean thread_wait(WapiHandle *handle, guint32 ms)
+static gboolean thread_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 {
 	struct _WapiHandle_thread *thread_handle=(struct _WapiHandle_thread *)handle;
 	int ret;
 	
-	if(handle->signalled) {
+	/* A thread can never become unsignalled after it was
+	 * signalled, so we can signal this handle now without
+	 * worrying about lost wakeups
+	 */
+	if(signal!=NULL) {
+		signal->ops->signal(signal);
+	}
+	
+	if(handle->signalled==TRUE) {
 		/* Already signalled, so return straight away */
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": thread handle %p already signalled, returning now", handle);

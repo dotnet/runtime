@@ -20,8 +20,9 @@ struct _WapiHandle_mutex
 };
 
 static void mutex_close(WapiHandle *handle);
-static gboolean mutex_wait(WapiHandle *handle, guint32 ms);
+static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms);
 static guint32 mutex_wait_multiple(gpointer data);
+static void mutex_signal(WapiHandle *handle);
 
 static struct _WapiHandleOps mutex_ops = {
 	mutex_close,		/* close */
@@ -33,6 +34,7 @@ static struct _WapiHandleOps mutex_ops = {
 	NULL,			/* getfilesize */
 	mutex_wait,		/* wait */
 	mutex_wait_multiple,	/* wait_multiple */
+	mutex_signal,		/* signal */
 };
 
 static void mutex_close(WapiHandle *handle)
@@ -45,7 +47,7 @@ static void mutex_close(WapiHandle *handle)
 #endif
 }
 
-static gboolean mutex_wait(WapiHandle *handle, guint32 ms)
+static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 {
 	struct _WapiHandle_mutex *mutex_handle=(struct _WapiHandle_mutex *)handle;
 	pthread_t tid=pthread_self();
@@ -55,6 +57,13 @@ static gboolean mutex_wait(WapiHandle *handle, guint32 ms)
 	g_message(G_GNUC_PRETTY_FUNCTION ": waiting for mutex handle %p",
 		  mutex_handle);
 #endif
+
+	/* Signal this handle now.  It really doesn't matter if some
+	 * other thread grabs the mutex before we can
+	 */
+	if(signal!=NULL) {
+		signal->ops->signal(signal);
+	}
 
 	if(mutex_handle->tid==tid) {
 		/* We already own this mutex, so just increase the count and
@@ -264,6 +273,11 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 	item->waitcount[WAPI_HANDLE_MUTEX]=0;
 	
 	return(0);
+}
+
+static void mutex_signal(WapiHandle *handle)
+{
+	ReleaseMutex(handle);
 }
 
 /**

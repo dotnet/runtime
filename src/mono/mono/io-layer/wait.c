@@ -344,20 +344,7 @@ guint32 WaitForSingleObject(WapiHandle *handle, guint32 timeout)
 		return(WAIT_FAILED);
 	}
 
-	if(timeout==0) {
-		/* Just poll the object */
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Polling");
-#endif
-
-		if(handle->signalled==TRUE) {
-			return(WAIT_OBJECT_0);
-		} else {
-			return(WAIT_TIMEOUT);
-		}
-	}
-	
-	wait=handle->ops->wait(handle, timeout);
+	wait=handle->ops->wait(handle, NULL, timeout);
 	if(wait==TRUE) {
 		/* Object signalled before timeout expired */
 #ifdef DEBUG

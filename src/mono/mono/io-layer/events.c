@@ -34,8 +34,9 @@ static pthread_mutex_t event_signal_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t event_signal_cond = PTHREAD_COND_INITIALIZER;
 
 static void event_close(WapiHandle *handle);
-static gboolean event_wait(WapiHandle *handle, guint32 ms);
+static gboolean event_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms);
 static guint32 event_wait_multiple(gpointer data);
+static void event_signal(WapiHandle *handle);
 
 static struct _WapiHandleOps event_ops = {
 	event_close,		/* close */
@@ -47,6 +48,7 @@ static struct _WapiHandleOps event_ops = {
 	NULL,			/* getfilesize */
 	event_wait,		/* wait */
 	event_wait_multiple,	/* wait_multiple */
+	event_signal,		/* signal */
 };
 
 static void event_close(WapiHandle *handle)
@@ -59,7 +61,7 @@ static void event_close(WapiHandle *handle)
 #endif
 }
 
-static gboolean event_wait(WapiHandle *handle, guint32 ms)
+static gboolean event_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 {
 	struct _WapiHandle_event *event_handle=(struct _WapiHandle_event *)handle;
 	struct timespec timeout;
@@ -71,6 +73,11 @@ static gboolean event_wait(WapiHandle *handle, guint32 ms)
 #endif
 
 	pthread_mutex_lock(&event_handle->mutex);
+
+	/* Signal this handle after we have obtained the event lock */
+	if(signal!=NULL) {
+		signal->ops->signal(signal);
+	}
 	
 	/* First check if the handle is already signalled */
 	if(handle->signalled==TRUE) {
@@ -425,6 +432,11 @@ static guint32 event_wait_multiple(gpointer data)
 	item->waitcount[WAPI_HANDLE_MUTEX]=0;
 	
 	return(0);
+}
+
+static void event_signal(WapiHandle *handle)
+{
+	ResetEvent(handle);
 }
 
 /**

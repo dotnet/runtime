@@ -50,6 +50,7 @@ static struct _WapiHandleOps file_ops = {
 	file_getfilesize,	/* getfilesize */
 	NULL,			/* wait */
 	NULL,			/* wait_multiple */
+	NULL,			/* signal */
 };
 
 static WapiFileType console_getfiletype(void);
@@ -67,6 +68,7 @@ static struct _WapiHandleOps console_ops = {
 	NULL,			/* getfilesize */
 	NULL,			/* FIXME: wait */
 	NULL,			/* FIXME: wait_multiple */
+	NULL,			/* signal */
 };
 
 static void file_close(WapiHandle *handle)

@@ -32,8 +32,9 @@ static pthread_mutex_t sem_mutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t sem_cond=PTHREAD_COND_INITIALIZER;
 
 static void sema_close(WapiHandle *handle);
-static gboolean sema_wait(WapiHandle *handle, guint32 ms);
+static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms);
 static guint32 sema_wait_multiple(gpointer data);
+static void sema_signal(WapiHandle *handle);
 
 static struct _WapiHandleOps sem_ops = {
 	sema_close,		/* close */
@@ -45,6 +46,7 @@ static struct _WapiHandleOps sem_ops = {
 	NULL,			/* getfilesize */
 	sema_wait,		/* wait */
 	sema_wait_multiple,	/* wait_multiple */
+	sema_signal,		/* signal */
 };
 
 static void sema_close(WapiHandle *handle)
@@ -55,13 +57,34 @@ static void sema_close(WapiHandle *handle)
 #endif
 }
 
-static gboolean sema_wait(WapiHandle *handle G_GNUC_UNUSED, guint32 ms G_GNUC_UNUSED)
+static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 {
 	struct _WapiHandle_sem *sem_handle=(struct _WapiHandle_sem *)handle;
 	gboolean waited;
 	int ret;
 	
 	pthread_mutex_lock(&sem_mutex);
+	
+	/* Signal this handle after we have obtained the semaphore
+	 * global lock
+	 */
+	if(signal!=NULL) {
+		signal->ops->signal(signal);
+	}
+	
+	/* Shortcut when ms==0 */
+	if(ms==0) {
+		/* Just poll */
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Polling");
+#endif
+		if(sem_handle->val>0) {
+			waited=TRUE;
+		} else {
+			waited=FALSE;
+		}
+		goto end;
+	}
 	
 	/* Check state first */
 	if(sem_handle->val>0) {
@@ -224,6 +247,11 @@ success:
 	pthread_mutex_unlock(&sem_mutex);
 
 	return(count);
+}
+
+static void sema_signal(WapiHandle *handle)
+{
+	ReleaseSemaphore(handle, 1, NULL);
 }
 
 /**

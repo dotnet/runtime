@@ -39,10 +39,13 @@ struct _WapiHandleOps
 	guint32 (*getfilesize)(WapiHandle *handle, guint32 *highsize);
 
 	/* WaitForSingleObject */
-	gboolean (*wait)(WapiHandle *handle, guint32 ms);
+	gboolean (*wait)(WapiHandle *handle, WapiHandle *signal, guint32 ms);
 
 	/* WaitForMultipleObjects */
 	guint32 (*wait_multiple)(gpointer data);
+
+	/* SignalObjectAndWait */
+	void (*signal)(WapiHandle *signal);
 };
 
 struct _WapiHandle
