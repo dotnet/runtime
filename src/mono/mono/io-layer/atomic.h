@@ -11,6 +11,10 @@
 /*
  * NB: The *Pointer() functions here assume that
  * sizeof(pointer)==sizeof(gint32)
+ *
+ * NB2: These asm functions assume 486+ (some of the opcodes dont
+ * exist on 386).  If this becomes an issue, we can get configure to
+ * fall back to the non-atomic C versions of these calls.
  */
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
