@@ -6114,13 +6114,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
-
 		if (this) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, this));
-
-
 		} else {
 			/* fixme: */
 			g_assert_not_reached ();
@@ -6144,7 +6141,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_STRING:
-			tmp_locals [i] = emit_marshal (&m, i + sig->hasthis, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			tmp_locals [i] = emit_marshal (&m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 
 			break;
 		default:
