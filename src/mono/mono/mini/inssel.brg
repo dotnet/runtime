@@ -401,7 +401,8 @@ stmt: CEE_STIND_I (base, CEE_LDIND_I (OP_REGVAR)) {
 stmt: CEE_STIND_REF (OP_REGVAR, CEE_LDIND_REF (OP_REGVAR)),
 stmt: CEE_STIND_REF (OP_REGVAR, CEE_LDIND_I (OP_REGVAR)),
 stmt: CEE_STIND_I (OP_REGVAR, CEE_LDIND_REF (OP_REGVAR)),
-stmt: CEE_STIND_I (OP_REGVAR, CEE_LDIND_I (OP_REGVAR)) {
+stmt: CEE_STIND_I (OP_REGVAR, CEE_LDIND_I (OP_REGVAR)),
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (OP_REGVAR)) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->left->tree->dreg);
 }
 
@@ -438,14 +439,6 @@ stmt: CEE_STIND_I4 (base, CEE_LDIND_I4 (OP_REGVAR)) {
 stmt: CEE_STIND_I4 (base, OP_ICONST) {
 	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STOREI4_MEMBASE_IMM, state->left->tree->inst_basereg,
 				     state->left->tree->inst_offset, state->right->tree->inst_c0);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, reg) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->reg1);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (OP_REGVAR)) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->left->tree->dreg);
 }
 
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4 (base)) {
@@ -508,21 +501,10 @@ stmt: CEE_STIND_I (OP_REGVAR, OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_STIND_REF (OP_REGVAR, reg) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->reg1);
-}
-
+stmt: CEE_STIND_I4 (OP_REGVAR, reg),
+stmt: CEE_STIND_REF (OP_REGVAR, reg),
 stmt: CEE_STIND_I (OP_REGVAR, reg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->reg1);
-}
-
-stmt: CEE_STELEM_REF (OP_GROUP (reg, reg), reg) {
-
-	g_assert_not_reached ();
-}
-
-reg: OP_GROUP (reg, reg) {
-	g_assert_not_reached ();
 }
 
 stmt: OP_MEMCPY (base, base) {
@@ -637,16 +619,10 @@ reg: CEE_CONV_OVF_I1_UN (reg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
 }
 
-reg: CEE_CONV_OVF_U1 (reg) {
-	/* probe value to be within 0 to 255 */
-	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 255);
-	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xff);
-}
-
+reg: CEE_CONV_OVF_U1 (reg),
 reg: CEE_CONV_OVF_U1_UN (reg) {
 	/* probe value to be within 0 to 255 */
-	MONO_EMIT_NEW_ICOMPARE_IMM (s, state->left->reg1, 255);
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 255);
 	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xff);
 }
@@ -667,13 +643,7 @@ reg: CEE_CONV_OVF_I2_UN (reg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->reg1);
 }
 
-reg: CEE_CONV_OVF_U2 (reg) {
-	/* Probe value to be within 0 and 65535 */
-	MONO_EMIT_NEW_ICOMPARE_IMM (s, state->left->reg1, 0xffff);
-	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xffff);
-}
-
+reg: CEE_CONV_OVF_U2 (reg),
 reg: CEE_CONV_OVF_U2_UN (reg) {
 	/* Probe value to be within 0 and 65535 */
 	MONO_EMIT_NEW_ICOMPARE_IMM (s, state->left->reg1, 0xffff);
@@ -813,27 +783,7 @@ stmt: OP_RESTORE_LMF {
 # Optimized call instructions
 #
 
-reg: OP_CALL_REG (OP_ICONST) {
-	tree->opcode = CEE_CALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_VOIDCALL_REG (OP_ICONST) {
-	tree->opcode = OP_VOIDCALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-freg: OP_FCALL_REG (OP_ICONST) {
-	tree->opcode = OP_FCALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-# 64 bit versions
+reg: OP_CALL_REG (OP_ICONST),
 reg: OP_CALL_REG (OP_I8CONST) {
 	tree->opcode = CEE_CALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
@@ -841,12 +791,14 @@ reg: OP_CALL_REG (OP_I8CONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_VOIDCALL_REG (OP_ICONST),
 stmt: OP_VOIDCALL_REG (OP_I8CONST) {
 	tree->opcode = OP_VOIDCALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+freg: OP_FCALL_REG (OP_ICONST),
 freg: OP_FCALL_REG (OP_I8CONST) {
 	tree->opcode = OP_FCALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
@@ -1330,8 +1282,9 @@ reg: OP_CCASTCLASS (reg) {
 	mono_bblock_add_inst (s->cbb, end_label);
 }
 
+stmt: CEE_STELEM_REF (OP_GROUP (reg, reg), reg),
+reg: OP_GROUP (reg, reg),
 reg: CEE_NEWARR (reg),
-
 lreg: OP_LMUL (lreg, lreg),
 lreg: OP_LMUL_OVF (lreg, lreg),
 lreg: OP_LMUL_OVF_UN (lreg, lreg),
