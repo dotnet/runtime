@@ -3746,6 +3746,8 @@ mono_jit_init (char *file) {
 	mono_add_internal_call ("System.Array::Set", ves_array_set);
 	mono_add_internal_call ("System.Array::Get", ves_array_get);
 	mono_add_internal_call ("System.Array::Address", ves_array_element_address);
+	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
+				ves_icall_get_frame_info);
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);

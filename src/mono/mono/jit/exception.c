@@ -263,6 +263,63 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 	return FALSE;
 }
 
+
+MonoBoolean
+ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
+			  MonoReflectionMethod **method, 
+			  gint32 *iloffset, gint32 *native_offset,
+			  MonoString **file, gint32 *line, gint32 *column)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF *lmf = jit_tls->lmf;
+	gpointer *sf = (gpointer *)&skip;
+	gpointer ip = sf [-1];
+	int addr;
+	gpointer *bp = sf [-2];
+	MonoMethod *m = NULL;
+
+	do {
+		MonoJitInfo *ji;
+		addr = 0;
+
+		if ((ji = mono_jit_info_table_find (domain, ip))) {
+			m = ji->method;
+			addr = (char *)ip - (char *)ji->code_start;
+			ip = (gpointer)((char *)bp [1] - 5);
+			bp = bp [0];
+		} else {
+			if (!lmf)
+				g_assert_not_reached ();
+			
+			m = lmf->method;
+
+			bp = (gpointer)lmf->ebp;
+			ip = (gpointer)lmf->eip;
+
+			lmf = lmf->previous_lmf;
+		}
+
+		if ((unsigned)bp >= (unsigned)jit_tls->end_of_stack)
+			return FALSE;
+
+	} while (skip-- > 0);
+
+	g_assert (m);
+
+	*method = mono_method_get_object (domain, m);
+	*iloffset = mono_debug_il_offset_from_address (m, addr);
+	*native_offset = addr;
+
+	if (need_file_info) {
+		*file = mono_string_new (domain, m->klass->image->name);
+		*column = 0; // fixme
+		*line = 0; // fixme
+	}
+
+	return TRUE;
+}
+
 /**
  * arch_handle_exception:
  * @ctx: saved processor state

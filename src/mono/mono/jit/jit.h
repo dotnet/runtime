@@ -262,6 +262,12 @@ mono_cpu_detect            (void);
 
 /* architecture dependent functions */
 
+MonoBoolean
+ves_icall_get_frame_info   (gint32 skip, MonoBoolean need_file_info,
+			    MonoReflectionMethod **method, 
+			    gint32 *iloffset, gint32 *native_offset,
+			    MonoString **file, gint32 *line, gint32 *column);
+
 void
 arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
 
