@@ -120,7 +120,7 @@ struct _MonoClass {
 
 	void *reflection_info;
 
-        MonoMethod *vtable [0];	
+        MonoMethod **vtable;	
 };
 
 typedef struct {

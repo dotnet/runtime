@@ -647,7 +647,6 @@ arch_compile_method (MonoMethod *method)
 {
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *ji;
-	MonoMemPool *mp;
 	guint8 *addr;
 	GHashTable *jit_code_hash;
 
@@ -672,8 +671,6 @@ arch_compile_method (MonoMethod *method)
 
 	mono_jit_stats.methods_compiled++;
 	
-	mp = mono_mempool_new ();
-
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
 		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
 			method->klass->name, method->name);
@@ -722,11 +719,13 @@ arch_compile_method (MonoMethod *method)
 	} else {
 		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
 		MonoFlowGraph *cfg;
-
+		MonoMemPool *mp;
 		gulong code_size_ratio;
-
+	
 		ji = mono_mempool_alloc0 (target_domain->mp, sizeof (MonoJitInfo));
 		
+		mp = mono_mempool_new ();
+
 		cfg = mono_cfg_new (method, mp);
 
 		mono_analyze_flow (cfg);

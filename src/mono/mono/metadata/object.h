@@ -143,6 +143,14 @@ typedef struct {
 	MonoObject *exc;
 } MonoMethodMessage;
 
+typedef struct {
+	gulong new_object_count;
+	gulong initialized_class_count;
+	gulong used_class_count;
+	gulong class_vtable_size;
+	gulong class_static_data_size;
+} MonoStats;
+
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params);
 
 #define mono_array_length(array) ((array)->bounds->length)
@@ -156,6 +164,8 @@ typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, voi
 	} while (0)
 
 #define mono_string_chars(s) ((gushort*)(s)->c_str->vector)
+
+extern MonoStats mono_stats;
 
 void *
 mono_object_allocate        (size_t size);

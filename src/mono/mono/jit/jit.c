@@ -3248,6 +3248,12 @@ mono_jit_cleanup (MonoDomain *domain)
 				mono_jit_stats.biggest_method->klass->name, mono_jit_stats.biggest_method->name);
 		g_print ("Code reallocs:          %ld\n", mono_jit_stats.code_reallocs);
 		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
+
+		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);
+		g_print ("Initialized classes:    %ld\n", mono_stats.initialized_class_count);
+		g_print ("Used classes:           %ld\n", mono_stats.used_class_count);
+		g_print ("Static data size:       %ld\n", mono_stats.class_static_data_size);
+		g_print ("VTable data size:       %ld\n", mono_stats.class_vtable_size);
 	}
 
 	DeleteCriticalSection (metadata_section);

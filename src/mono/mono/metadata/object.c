@@ -19,6 +19,8 @@
 #include <gc/gc.h>
 #endif
 
+MonoStats mono_stats;
+
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -196,6 +198,8 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
 	static guint32 uoid = 0;
 	MonoObject *o;
+
+	mono_stats.new_object_count++;
 
 	if (!klass->inited)
 		mono_class_init (klass);
