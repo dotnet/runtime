@@ -157,7 +157,6 @@ function clickHandler (evt)
 		{
 			strField = 'ctor';
 			elt = getParentDiv (elt);
-//			elt = getParentDiv (elt);
 		}
 		else
 		if (elt.className == 'm' ||	// method
@@ -170,20 +169,20 @@ function clickHandler (evt)
 			if (match)
 				strField = match [0];
 			elt = getParentDiv (elt);
-//			elt = getParentDiv (elt);
+
 		}
+
 		if (elt.className == 'c' ||	// class
 			elt.className == 's' ||	// struct
+			elt.className == 'd' ||	// delegate
 			elt.className == 'en')	// enum
 		{
 			strClass = getName (elt).toLowerCase () + 'class';
+			if (elt.className == 'en')
+				strField = null;
 			elt = getParentDiv (elt);
 		}
-		else if (elt.className == 'd')	// delegate
-		{
-			strClass = getName (elt).toLowerCase () + 'eventhandler';
-			elt = getParentDiv (elt);
-		}
+
 		if (elt.className == 'n')	// namespace
 		{
 			var re = /\./g ;

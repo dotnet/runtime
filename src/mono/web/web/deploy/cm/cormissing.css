@@ -12,6 +12,7 @@
 .c, .c_,
 .s, .s_,
 .d, .d_,
+.i, .i_,
 .en, .en_,
 .m, .p, .e, .c, .f, .x
 {
@@ -29,12 +30,38 @@
 .n_ .d_,
 .n_ .en,
 .n_ .en_,
+.n_ .i,
+.n_ .i_,
 .c_ .m,
 .c_ .p,
 .c_ .e,
 .c_ .c,
 .c_ .f,
-.c_ .x
+.c_ .x,
+.s_ .m,
+.s_ .p,
+.s_ .e,
+.s_ .c,
+.s_ .f,
+.s_ .x,
+.d_ .m,
+.d_ .p,
+.d_ .e,
+.d_ .c,
+.d_ .f,
+.d_ .x,
+.en_ .m,
+.en_ .p,
+.en_ .e,
+.en_ .c,
+.en_ .f,
+.en_ .x,
+.i_ .m,
+.i_ .p,
+.i_ .e,
+.i_ .c,
+.i_ .f,
+.i_ .x
 {
 	display: none;
 }
