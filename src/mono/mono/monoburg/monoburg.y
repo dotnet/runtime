@@ -52,7 +52,7 @@ decls   : /* empty */
 	| IDENT ':' tree optcost optcode optcfunc { create_rule ($1, $3, $5, $4, $6); } decls 
 	;
 
-optcode : /* empty */ { $$ = NULL }
+optcode : /* empty */ { $$ = NULL; }
 	| CODE 
 	;
 
