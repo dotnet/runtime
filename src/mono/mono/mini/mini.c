@@ -4875,7 +4875,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_CLASSCONST (cfg, iargs [1], klass);
 					NEW_FIELDCONST (cfg, iargs [2], field);
 					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
-					if (cfg->opt & MONO_OPT_INLINE) {
+					if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (ldfld_wrapper->signature->ret)) {
 						costs = inline_method (cfg, ldfld_wrapper, ldfld_wrapper->signature, bblock, 
 								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
