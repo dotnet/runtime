@@ -300,6 +300,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		ngclass->klass = NULL;
 
 		ngclass->context = g_new0 (MonoGenericContext, 1);
+		ngclass->context->container = ngclass->container;
 		ngclass->context->gclass = ngclass;
 
 		ngclass->dynamic_info = NULL;
@@ -424,6 +425,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 
 	if (context->gmethod) {
 		result->context = g_new0 (MonoGenericContext, 1);
+		result->context->container = context->gmethod->container;
 		result->context->gmethod = context->gmethod;
 		result->context->gclass = rklass->generic_class;
 
@@ -2238,14 +2240,8 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
 	MonoClass *class;
 
 	if (context) {
-		if (context->gmethod && context->gmethod->container) {
-			g_assert (context->gmethod->container);
-			container = context->gmethod->container;
-		} else if (context->gclass) {
-			g_assert (context->gclass->container);
-			container = context->gclass->container;
-		} else if (context->container)
-			container = context->container;
+		g_assert (context->container);
+		container = context->container;
 	}
 
 	type = mono_type_create_from_typespec_full (image, container, type_spec);

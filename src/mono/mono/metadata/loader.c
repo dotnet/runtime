@@ -457,11 +457,10 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	g_assert (container && container->is_method);
 
 	if (context) {
-		if (context->gclass) {
-			g_assert (context->gclass->container);
-			container->parent = context->gclass->container;
-		} else
-			container->parent = context->container;
+		g_assert (context->container);
+		container->parent = context->container;
+		if (container->parent->is_method)
+			container->parent = container->parent->parent;
 	}
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
@@ -483,11 +482,13 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	if (!context) {
 		new_context = g_new0 (MonoGenericContext, 1);
+		new_context->container = container;
 		new_context->gmethod = gmethod;
 
 		context = new_context;
 	} else {
 		new_context = g_new0 (MonoGenericContext, 1);
+		new_context->container = container;
 		new_context->gmethod = gmethod;
 		new_context->gclass = context->gclass;
 
@@ -809,11 +810,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (table != MONO_TABLE_METHOD) {
 		MonoGenericContainer *generic_container = NULL;
 		if (context) {
-			if (context->gclass) {
-				g_assert (context->gclass->container);
-				generic_container = context->gclass->container;
-			} else
-				generic_container = context->container;
+			g_assert (context->container);
+			generic_container = context->container;
 		}
 		if (table == MONO_TABLE_METHODSPEC)
 			return method_from_methodspec (image, context, idx);

@@ -7843,6 +7843,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		MonoGenericClass *ogclass = gclass;
 
 		ogclass->context = g_new0 (MonoGenericContext, 1);
+		ogclass->context->container = ogclass->container;
 		ogclass->context->gclass = ogclass;
 
 		gclass = g_new0 (MonoGenericClass, 1);
@@ -7884,6 +7885,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	gclass->parent = parent;
 
 	gclass->context = g_new0 (MonoGenericContext, 1);
+	gclass->context->container = gclass->container;
 	gclass->context->gclass = gclass;
 
 	if (!strcmp (((MonoObject *) type)->vtable->klass->name, "TypeBuilder")) {
@@ -8030,6 +8032,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	ginst = mono_metadata_lookup_generic_inst (ginst);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->container = container;
 	gmethod->inst = ginst;
 
 	inflated = g_hash_table_lookup (container->method_hash, gmethod);
@@ -8042,6 +8045,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	gmethod->reflection_info = rmethod;
 
 	context = g_new0 (MonoGenericContext, 1);
+	context->container = container;
 	context->gclass = method->klass->generic_class;
 	context->gmethod = gmethod;
 
@@ -8077,6 +8081,7 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	}
 
 	context = g_new0 (MonoGenericContext, 1);
+	context->container = gclass->container;
 	context->gclass = gclass;
 	context->gmethod = gmethod;
 
