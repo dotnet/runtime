@@ -638,24 +638,30 @@ mono_class_setup_vtable (MonoClass *class)
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = ic->methods [l];						
 				char *qname, *fqname;
+				MonoClass *k1;
 				
+				if (vtable [io + l])
+					continue;
+					
 				qname = g_strconcat (ic->name, ".", im->name, NULL); 
 				if (ic->name_space && ic->name_space [0])
 					fqname = g_strconcat (ic->name_space, ".", ic->name, ".", im->name, NULL);
 				else
 					fqname = NULL;
 
-				for (j = 0; j < class->method.count; ++j) {
-					MonoMethod *cm = class->methods [j];
+				for (k1 = class; k1; k1 = k1->parent) {
+					for (j = 0; j < k1->method.count; ++j) {
+						MonoMethod *cm = k1->methods [j];
 
-					if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
-						continue;
+						if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
+							continue;
 					
-					if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
-					    mono_metadata_signature_equal (cm->signature, im->signature)) {
-						g_assert (io + l <= max_vtsize);
-						vtable [io + l] = cm;
-						break;
+						if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
+						    mono_metadata_signature_equal (cm->signature, im->signature)) {
+							g_assert (io + l <= max_vtsize);
+							vtable [io + l] = cm;
+							break;
+						}
 					}
 				}
 				g_free (qname);
