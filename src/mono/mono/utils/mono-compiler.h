@@ -31,5 +31,25 @@
 
 #endif
 
+/* Deal with Microsoft C compiler differences */
+#ifdef _MSC_VER
+
+#include <float.h>
+#define isnan(x)	_isnan(x)
+#define trunc(x)	((int)(x))
+#define isinf(x)	(_isnan(x) ? 0 : (_fpclass(x) == _FPCLASS_NINF) ? -1 : (_fpclass(x) == _FPCLASS_PINF) ? 1 : 0)
+
+#define popen		_popen
+#define pclose		_pclose
+
+#include <direct.h>
+#define mkdir(x)	_mkdir(x)
+
+/* GCC specific functions aren't available */
+#define __builtin_return_address(x)	NULL
+
+#endif /* _MSC_VER */
+
+
 #endif /* __UTILS_MONO_COMPILER_H__*/
 
