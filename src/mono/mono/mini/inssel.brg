@@ -591,16 +591,17 @@ reg: OP_GROUP (reg, reg) {
 	g_assert_not_reached ();
 }
 
-stmt: OP_MEMCPY (reg, reg) {
+stmt: OP_MEMCPY (base, base) {
 	int size = tree->unused;
 	if (size > 0)
-		mini_emit_memcpy (s, state->left->reg1, 0, state->right->reg1, 0, size, 0);
+		mini_emit_memcpy (s, state->left->tree->inst_basereg, state->left->tree->inst_offset,
+				  state->right->tree->inst_basereg, state->right->tree->inst_offset, size, 0);
 }
 
-stmt: OP_MEMSET (reg) {
+stmt: OP_MEMSET (base) {
 	int size = tree->unused;
 	if (size > 0)
-		mini_emit_memset (s, state->left->reg1, 0, size, tree->inst_imm, 0);
+		mini_emit_memset (s, state->left->tree->inst_basereg, state->left->tree->inst_offset, size, tree->inst_imm, 0);
 }
 
 reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
