@@ -100,9 +100,13 @@
 ** Recommendations
 
 	Please do not commit code that would break the compile to the
-	CVS, because that normally wastes everybody's time.  
+	CVS, because that normally wastes everybody's time.  Two things 
+	are important in this step: trying to build your sources and making 
+	sure that you add all the new files before you do a commit.
 
-	Make sure that you add all the files before you do a commit.
+	To build the sources, most of the type trying the `make' command
+	is enough.  In some cases (the class libraries) we use nant, so
+	you need to run nant manually.
 
 	Use ChangeLog entries so we can keep textual descriptions of
 	your work, and use the contents of your ChangeLog file as the

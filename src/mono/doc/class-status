@@ -21,13 +21,11 @@
 
 	Please bear with us in the meantime.
 This is a list of pending classes, and links to their documentation on MSDN.Microsoft.com<p><p>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystem_AppDomainClassTopic.asp">System._AppDomain</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemActivatorClassTopic.asp">System.Activator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAppDomainSetupClassTopic.asp">System.AppDomainSetup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAppDomainUnloadedExceptionClassTopic.asp">System.AppDomainUnloadedException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemArgIteratorClassTopic.asp">System.ArgIterator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAssemblyLoadEventHandlerClassTopic.asp">System.AssemblyLoadEventHandler</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemBitConverterClassTopic.asp">System.BitConverter</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemCannotUnloadAppDomainExceptionClassTopic.asp">System.CannotUnloadAppDomainException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemCharEnumeratorClassTopic.asp">System.CharEnumerator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemContextMarshalExceptionClassTopic.asp">System.ContextMarshalException</a><br>
@@ -36,14 +34,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsDebuggerClassTopic.asp">System.Diagnostics.Debugger</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsDebuggerHiddenAttributeClassTopic.asp">System.Diagnostics.DebuggerHiddenAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsDebuggerStepThroughAttributeClassTopic.asp">System.Diagnostics.DebuggerStepThroughAttribute</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolBinderClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolBinder</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolDocumentClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolDocument</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolMethodClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolMethod</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolNamespaceClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolNamespace</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolReaderClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolReader</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolScopeClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolScope</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolVariableClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolVariable</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreISymbolWriterClassTopic.asp">System.Diagnostics.SymbolStore.ISymbolWriter</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymAddressKindClassTopic.asp">System.Diagnostics.SymbolStore.SymAddressKind</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymbolTokenClassTopic.asp">System.Diagnostics.SymbolStore.SymbolToken</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymDocumentTypeClassTopic.asp">System.Diagnostics.SymbolStore.SymDocumentType</a><br>
@@ -64,13 +54,8 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationTextElementEnumeratorClassTopic.asp">System.Globalization.TextElementEnumerator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationTextInfoClassTopic.asp">System.Globalization.TextInfo</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationThaiBuddhistCalendarClassTopic.asp">System.Globalization.ThaiBuddhistCalendar</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGuidClassTopic.asp">System.Guid</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIAppDomainSetupClassTopic.asp">System.IAppDomainSetup</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOBinaryReaderClassTopic.asp">System.IO.BinaryReader</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOBinaryWriterClassTopic.asp">System.IO.BinaryWriter</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOBufferedStreamClassTopic.asp">System.IO.BufferedStream</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOEndOfStreamExceptionClassTopic.asp">System.IO.EndOfStreamException</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageINormalizeForIsolatedStorageClassTopic.asp">System.IO.IsolatedStorage.INormalizeForIsolatedStorage</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageIsolatedStorageClassTopic.asp">System.IO.IsolatedStorage.IsolatedStorage</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageIsolatedStorageExceptionClassTopic.asp">System.IO.IsolatedStorage.IsolatedStorageException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageIsolatedStorageFileClassTopic.asp">System.IO.IsolatedStorage.IsolatedStorageFile</a><br>
@@ -113,8 +98,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionTargetParameterCountExceptionClassTopic.asp">System.Reflection.TargetParameterCountException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionTypeDelegatorClassTopic.asp">System.Reflection.TypeDelegator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResolveEventArgsClassTopic.asp">System.ResolveEventArgs</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesIResourceReaderClassTopic.asp">System.Resources.IResourceReader</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesIResourceWriterClassTopic.asp">System.Resources.IResourceWriter</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesMissingManifestResourceExceptionClassTopic.asp">System.Resources.MissingManifestResourceException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesNeutralResourcesLanguageAttributeClassTopic.asp">System.Resources.NeutralResourcesLanguageAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesResourceManagerClassTopic.asp">System.Resources.ResourceManager</a><br>
