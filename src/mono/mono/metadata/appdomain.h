@@ -185,7 +185,7 @@ ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad,
 						    MonoObject    *evidence);
 
 void
-ves_icall_System_AppDomain_Unload                  (MonoAppDomain *ad);
+ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id);
 
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
