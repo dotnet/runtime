@@ -23,6 +23,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
@@ -273,7 +274,7 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 		int len;
 
 		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
-		len = mono_metadata_decode_blob_size (aname->public_key, &aname->public_key);
+		len = mono_metadata_decode_blob_size (aname->public_key, (const char**)&aname->public_key);
 
 		mono_digest_get_public_token (token, aname->public_key, len);
 		encoded = encode_public_tok (token, 8);
@@ -880,7 +881,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	gint32 len;
 	gchar **paths;
 
-	if (aname->public_key_token [0] == NULL) {
+	if (aname->public_key_token [0] == 0) {
 		return NULL;
 	}
 
