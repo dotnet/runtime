@@ -259,6 +259,10 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 {
 	gpointer ret=NULL;
 	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": looking up thread %d", tid);
+#endif
+
 	mono_mutex_lock(&thread_hash_mutex);
 
 	ret=g_hash_table_lookup(thread_hash, &tid);
@@ -267,6 +271,10 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	if(ret!=NULL) {
 		_wapi_handle_ref (ret);
 	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": returning thread handle %p", ret);
+#endif
 	
 	return(ret);
 }

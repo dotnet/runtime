@@ -130,6 +130,12 @@ static void handle_remove(guint32 tid)
 	 */
 }
 
+static void thread_cleanup (guint32 tid)
+{
+	mono_profiler_thread_end (tid);
+	handle_remove (tid);
+}
+
 static guint32 start_wrapper(void *data)
 {
 	struct StartInfo *start_info=(struct StartInfo *)data;
@@ -163,13 +169,17 @@ static guint32 start_wrapper(void *data)
 
 	start_func (this);
 
+	/* If the thread calls ExitThread at all, this remaining code
+	 * will not be executed, but the main thread will eventually
+	 * call thread_cleanup() on this thread's behalf.
+	 */
+
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper terminating");
 #endif
 	
-	mono_profiler_thread_end (tid);
-	handle_remove (tid);
-
+	thread_cleanup (tid);
+	
 	return(0);
 }
 
@@ -994,6 +1004,7 @@ void mono_thread_cleanup(void)
 	}
 	
 	do{
+	rescan:
 		EnterCriticalSection (&threads_mutex);
 #ifdef THREAD_DEBUG
 		g_message("There are %d threads to join", threads->len);
@@ -1006,6 +1017,26 @@ void mono_thread_cleanup(void)
 		for(i=0; i<MAXIMUM_WAIT_OBJECTS && i<threads->len; i++) {
 			wait[i]=OpenThread (THREAD_ALL_ACCESS, FALSE,
 					    g_array_index(threads, guint32, i));
+			if(wait[i]==NULL) {
+				/* The thread must have been killed */
+#ifdef THREAD_DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": Thread %d already dead",
+					   g_array_index (threads, guint32,
+							  i));
+#endif
+
+				LeaveCriticalSection (&threads_mutex);
+
+				for(j=0; j<i; j++) {
+					CloseHandle (wait[j]);
+				}
+
+				thread_cleanup (g_array_index (threads,
+							       guint32, i));
+				/* Start over */
+				goto rescan;
+			}
 		}
 		
 #ifdef THREAD_DEBUG
