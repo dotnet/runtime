@@ -1467,23 +1467,13 @@ get_exception_message (MonoObject *exc)
 	MonoString *str; 
 	MonoMethod *method;
 	MonoClass *klass;
-	gint i;
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		klass = exc->vtable->klass;
 		method = NULL;
 		while (klass && method == NULL) {
-			for (i = 0; i < klass->method.count; ++i) {
-				method = klass->methods [i];
-				if (!strcmp ("ToString", method->name) &&
-				    mono_method_signature (method)->param_count == 0 &&
-				    method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
-				    method->flags & METHOD_ATTRIBUTE_PUBLIC) {
-					break;
-				}
-				method = NULL;
-			}
-			
+			method = mono_class_get_method_from_name_flags (klass, "ToString", 0, METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_VIRTUAL);
+
 			if (method == NULL)
 				klass = klass->parent;
 		}
