@@ -3224,6 +3224,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	if (tb->parent)
 		parent = mono_class_from_mono_type (tb->parent->type);
+	else
+		parent = NULL;
 	
 	klass->inited = 1; /* we lie to the runtime */
 	klass->name = mono_string_to_utf8 (tb->name);
@@ -3234,7 +3236,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	klass->element_class = klass;
 	klass->reflection_info = tb; /* need to pin. */
 
-	mono_class_setup_parent (klass, parent);
+	if (parent != NULL)
+		mono_class_setup_parent (klass, parent);
 	mono_class_setup_mono_type (klass);
 
 	/*
@@ -3244,6 +3247,32 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	tb->type.type = &klass->byval_arg;
 
 	/*g_print ("setup %s as %s (%p)\n", klass->name, ((MonoObject*)tb)->vtable->klass->name, tb);*/
+}
+
+/*
+ * mono_reflection_create_internal_class:
+ * @tb: a TypeBuilder object
+ *
+ * Actually create the MonoClass that is associated with the TypeBuilder.
+ */
+void
+mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoClass *klass;
+
+	klass = mono_class_from_mono_type (tb->type.type);
+
+	if (klass->enumtype && klass->enum_basetype == NULL) {
+		MonoReflectionFieldBuilder *fb;
+
+		g_assert (tb->fields != NULL);
+		g_assert (mono_array_length (tb->fields) >= 1);
+
+		fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, 0);
+
+		klass->enum_basetype = fb->type->type;
+		klass->element_class = mono_class_from_mono_type (klass->enum_basetype);
+	}
 }
 
 MonoArray *

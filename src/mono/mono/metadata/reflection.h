@@ -366,7 +366,9 @@ MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMetho
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
-void        mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb);
+void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
+
+void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

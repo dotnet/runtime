@@ -2336,6 +2336,7 @@ static gconstpointer icall_map [] = {
 	 * TypeBuilder
 	 */
 	"System.Reflection.Emit.TypeBuilder::setup_internal_class", mono_reflection_setup_internal_class,
+	"System.Reflection.Emit.TypeBuilder::create_internal_class", mono_reflection_create_internal_class,
 
 	
 	/*
