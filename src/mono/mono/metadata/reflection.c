@@ -658,7 +658,6 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info);
 				}
 				table->next_idx++;
-				mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PARAMDEF, pb->cattrs);
 			}
 		}
 	}
@@ -731,7 +730,6 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 		}
 		values [MONO_METHODIMPL_DECLARATION] = tok;
 	}
-	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);
 }
 
 static void
@@ -753,7 +751,6 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	rmb.init_locals = mb->init_locals;
 
 	mono_image_basic_method (&rmb, assembly);
-	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);
 
 }
 
@@ -1008,7 +1005,6 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_FIELDSREF;
 		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info);
 	}
-	mono_image_add_cattrs (assembly, fb->table_idx, CUSTOM_ATTR_FIELDDEF, fb->cattrs);
 }
 
 static guint32
@@ -1093,7 +1089,6 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 		values [MONO_METHOD_SEMA_METHOD] = pb->set_method->table_idx;
 		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY;
 	}
-	mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PROPERTY, pb->cattrs);
 }
 
 static void
@@ -1153,7 +1148,6 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicAssembly *
 		values [MONO_METHOD_SEMA_METHOD] = eb->raise_method->table_idx;
 		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
 	}
-	mono_image_add_cattrs (assembly, eb->table_idx, CUSTOM_ATTR_EVENT, eb->cattrs);
 }
 
 static guint32
@@ -1554,7 +1548,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 			mono_image_get_type_info (domain, subtype, assembly);
 		}
 	}
-	mono_image_add_cattrs (assembly, tb->table_idx, CUSTOM_ATTR_TYPEDEF, tb->cattrs);
 }
 
 static void
@@ -1569,6 +1562,81 @@ assign_type_idx (MonoReflectionTypeBuilder *type, MonoDynamicTable *table)
 		MonoReflectionTypeBuilder *subtype = mono_array_get (type->subtypes, MonoReflectionTypeBuilder*, j);
 		assign_type_idx (subtype, table);
 	}
+}
+
+static void
+params_add_cattrs (MonoDynamicAssembly *assembly, MonoArray *pinfo) {
+	int i;
+
+	if (!pinfo)
+		return;
+	for (i = 0; i < mono_array_length (pinfo); ++i) {
+		MonoReflectionParamBuilder *pb;
+		pb = mono_array_get (pinfo, MonoReflectionParamBuilder *, i);
+		if (!pb)
+			continue;
+		mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PARAMDEF, pb->cattrs);
+	}
+}
+
+static void
+type_add_cattrs (MonoDynamicAssembly *assembly, MonoReflectionTypeBuilder *tb) {
+	int i;
+	
+	mono_image_add_cattrs (assembly, tb->table_idx, CUSTOM_ATTR_TYPEDEF, tb->cattrs);
+	if (tb->fields) {
+		for (i = 0; i < mono_array_length (tb->fields); ++i) {
+			MonoReflectionFieldBuilder* fb;
+			fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i);
+			mono_image_add_cattrs (assembly, fb->table_idx, CUSTOM_ATTR_FIELDDEF, fb->cattrs);
+		}
+	}
+	if (tb->events) {
+		for (i = 0; i < mono_array_length (tb->events); ++i) {
+			MonoReflectionEventBuilder* eb;
+			eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
+			mono_image_add_cattrs (assembly, eb->table_idx, CUSTOM_ATTR_EVENT, eb->cattrs);
+		}
+	}
+	if (tb->properties) {
+		for (i = 0; i < mono_array_length (tb->properties); ++i) {
+			MonoReflectionPropertyBuilder* pb;
+			pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
+			mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PROPERTY, pb->cattrs);
+		}
+	}
+	if (tb->ctors) {
+		for (i = 0; i < mono_array_length (tb->ctors); ++i) {
+			MonoReflectionCtorBuilder* cb;
+			cb = mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i);
+			mono_image_add_cattrs (assembly, cb->table_idx, CUSTOM_ATTR_METHODDEF, cb->cattrs);
+			params_add_cattrs (assembly, cb->pinfo);
+		}
+	}
+
+	if (tb->methods) {
+		for (i = 0; i < mono_array_length (tb->methods); ++i) {
+			MonoReflectionMethodBuilder* mb;
+			mb = mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
+			mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);
+			params_add_cattrs (assembly, mb->pinfo);
+		}
+	}
+
+	if (tb->subtypes) {
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i)
+			type_add_cattrs (assembly, mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i));
+	}
+}
+
+static void
+module_add_cattrs (MonoDynamicAssembly *assembly, MonoReflectionModuleBuilder *mb) {
+	int i;
+	
+	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_MODULE, mb->cattrs);
+	
+	for (i = 0; i < mono_array_length (mb->types); ++i)
+		type_add_cattrs (assembly, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i));
 }
 
 static void
@@ -1590,7 +1658,6 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENC] = 0;
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENCBASE] = 0;
 
-	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_MODULE, mb->cattrs);
 	/*
 	 * fill-in info in other tables as well.
 	 */
@@ -1943,8 +2010,6 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_ASSEMBLY_BUILD_NUMBER] = 0;
 	values [MONO_ASSEMBLY_FLAGS] = 0;
 
-	mono_image_add_cattrs (assembly, 1, CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
-
 	assembly->tables [MONO_TABLE_TYPEDEF].rows = 1; /* .<Module> */
 	assembly->tables [MONO_TABLE_TYPEDEF].next_idx++;
 
@@ -1978,6 +2043,15 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_TYPEDEF_FIELD_LIST] = 1;
 	values [MONO_TYPEDEF_METHOD_LIST] = 1;
 
+	/* add all the custom attributes at the end, once all the indexes are stable */
+	mono_image_add_cattrs (assembly, 1, CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
+
+	if (assemblyb->modules) {
+		len = mono_array_length (assemblyb->modules);
+		for (i = 0; i < len; ++i)
+			module_add_cattrs (assembly, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i));
+	}
+	
 	/* fixup tokens */
 	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
 	
