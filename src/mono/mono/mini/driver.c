@@ -204,7 +204,7 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_CFOLD,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE,
-       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE
 };
 
 typedef int (*TestMethod) (void);
@@ -496,6 +496,7 @@ mini_usage (void)
 		"    --config FILE          Loads FILE as the Mono config\n"
 		"    --verbose, -v          Increases the verbosity level\n"
 		"    --help, -h             Show usage information\n"
+		"    --version, -V          Show version information\n"
 		"    --optimize=OPT         Turns on a specific optimization:\n");
 
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
@@ -527,6 +528,9 @@ mini_main (int argc, char* argv[]) {
 			action = DO_REGRESSION;
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
+		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
+			g_print ("Mono JIT compiler version %s, (C) 2002, 2003 Ximian, Inc.\n", VERSION);
+			return 0;
 		} else if (strcmp (argv [i], "--help") == 0 || strcmp (argv [i], "-h") == 0) {
 			mini_usage ();
 			return 0;
@@ -602,7 +606,7 @@ mini_main (int argc, char* argv[]) {
 		break;
 	case DO_COMPILE:
 		if (argc - i != 1) {
-			fprintf (stderr, "Missing assembly name in --compile-all");
+			mini_usage ();
 			mini_cleanup (domain);
 			return 1;
 		}
@@ -610,7 +614,7 @@ mini_main (int argc, char* argv[]) {
 		break;
 	case DO_DRAW:
 		if (argc - i != 1 || mname == NULL) {
-			fprintf (stderr, "Usage: mini --graph[=TYPE] method assembly\n");
+			mini_usage ();
 			mini_cleanup (domain);
 			return 1;
 		}
