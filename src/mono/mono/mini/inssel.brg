@@ -390,6 +390,9 @@ stmt: OP_DUMMY_USE (CEE_LDIND_I (OP_REGVAR)) {
 stmt: OP_DUMMY_USE (CEE_LDIND_I (OP_REGOFFSET)) {
 }
 
+stmt: OP_DUMMY_STORE {
+}
+
 #
 # load/store operations
 #
