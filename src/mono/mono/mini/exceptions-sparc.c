@@ -26,9 +26,9 @@
 
 #warning NotReady
 
-gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
-
 typedef struct sigcontext MonoContext;
+
+gboolean  mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->SC_EIP = (long)ip; } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->SC_EBP = (long)bp; } while (0); 

@@ -1,6 +1,6 @@
 # sparc32 cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
-# about the cpu instructions that may be used by the regsiter allocator, the scheduler
+# about the cpu instructions that may be used by the register allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
 #
 # An opcode name is followed by a colon and optional specifiers.
@@ -15,6 +15,7 @@
 #	i  integer register
 #	b  base register (used in address references)
 #	f  floating point register
+#   l  register pair
 #
 # len:number         describe the maximun length in bytes of the instruction
 # number is a positive integer
@@ -83,7 +84,7 @@ ldc.r8:
 dup:
 pop:
 jmp:
-call: dest:i clob:c len:4
+call: dest:i clob:c len:12
 calli:
 ret:
 br.s:
@@ -99,19 +100,19 @@ bge.un.s:
 bgt.un.s:
 ble.un.s:
 blt.un.s:
-br: len:4
+br: len:8
 brfalse:
 brtrue:
-beq: len:4
-bge: len:4
-bgt: len:4
-ble: len:4
-blt: len:4
-bne.un: len:4
-bge.un: len:4
-bgt.un: len:4
-ble.un: len:4
-blt.un: len:4
+beq: len:8
+bge: len:8
+bgt: len:8
+ble: len:8
+blt: len:8
+bne.un: len:16
+bge.un: len:16
+bgt.un: len:16
+ble.un: len:16
+blt.un: len:16
 switch:
 ldind.i1: dest:i len:4
 ldind.u1: dest:i len:4
@@ -134,10 +135,10 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
-div: dest:i src1:i src2:i len:4
-div.un: dest:i src1:i src2:i len:4
-rem: dest:d src1:i src2:i len:12
-rem.un: dest:d src1:i src2:i len:12
+div: dest:i src1:i src2:i len:12
+div.un: dest:i src1:i src2:i len:8
+rem: dest:d src1:i src2:i len:20
+rem.un: dest:d src1:i src2:i len:16
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
@@ -146,11 +147,11 @@ shr: dest:i src1:i src2:i len:4
 shr.un: dest:i src1:i src2:i len:4
 neg: dest:i src1:i len:4
 not: dest:i src1:i len:4
-conv.i1: dest:i src1:i len:4
-conv.i2: dest:i src1:i len:4
+conv.i1: dest:i src1:i len:8
+conv.i2: dest:i src1:i len:8
 conv.i4: dest:i src1:i len:4
 conv.i8:
-conv.r4: dest:f src1:i len:4
+conv.r4: dest:f src1:i len:16
 conv.r8: dest:f src1:i len:4
 conv.u4: dest:i src1:i len:
 conv.u8:
@@ -216,15 +217,15 @@ refanyval:
 ckfinite: dest:f src1:f len:28
 mkrefany:
 ldtoken:
-conv.u2: dest:i src1:i len:4
+conv.u2: dest:i src1:i len:8
 conv.u1: dest:i src1:i len:4
 conv.i: dest:i src1:i len:4
 conv.ovf.i:
 conv.ovf.u:
 add.ovf:
 add.ovf.un:
-mul.ovf: dest:i src1:i src2:i len:4
-mul.ovf.un: dest:i src1:i src2:i len:4
+mul.ovf: dest:i src1:i src2:i len:12
+mul.ovf.un: dest:i src1:i src2:i len:12
 sub.ovf:
 sub.ovf.un:
 # FIXME: May need some work
@@ -301,23 +302,23 @@ setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
 voidcall: len:8 clob:c
 voidcall_reg: src1:i len:8 clob:c
-voidcall_membase: src1:b len:8 clob:c
-fcall: dest:f len:8 clob:c
-fcall_reg: dest:f src1:i len:8 clob:c
-fcall_membase: dest:f src1:b len:8 clob:c
-lcall: dest:l len:8 clob:c
-lcall_reg: dest:l src1:i len:8 clob:c
-lcall_membase: dest:l src1:b len:8 clob:c
+voidcall_membase: src1:b len:12 clob:c
+fcall: dest:f len:16 clob:c
+fcall_reg: dest:f src1:i len:16 clob:c
+fcall_membase: dest:f src1:b len:20 clob:c
+lcall: dest:l len:16 clob:c
+lcall_reg: dest:l src1:i len:16 clob:c
+lcall_membase: dest:l src1:b len:20 clob:c
 vcall: len:8 clob:c
 vcall_reg: src1:i len:8 clob:c
-vcall_membase: src1:b len:8 clob:c
-call_reg: dest:i src1:i len:8 clob:c
-call_membase: dest:i src1:b len:8 clob:c
+vcall_membase: src1:b len:16 clob:c
+call_reg: dest:i src1:i len:12 clob:c
+call_membase: dest:i src1:b len:16 clob:c
 trap:
 iconst: dest:i len:8
 i8const:
-r4const: dest:f len:8
-r8const: dest:f len:8
+r4const: dest:f len:16
+r8const: dest:f len:12
 regvar:
 reg:
 regoffset:
@@ -331,9 +332,9 @@ storei2_membase_reg: dest:b src1:i len:8
 storei4_membase_imm: dest:b len:12
 storei4_membase_reg: dest:b src1:i len:8
 storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i 
+storei8_membase_reg: dest:b src1:i len:4
 storer4_membase_reg: dest:b src1:f len:8
-storer8_membase_reg: dest:b src1:f len:8
+storer8_membase_reg: dest:b src1:f len:12
 load_membase: dest:i src1:b len:12
 loadi1_membase: dest:i src1:b len:12
 loadu1_membase: dest:i src1:b len:12
@@ -342,26 +343,23 @@ loadu2_membase: dest:i src1:b len:12
 loadi4_membase: dest:i src1:b len:12
 loadu4_membase: dest:i src1:b len:12
 loadi8_membase: dest:i src1:b
-loadr4_membase: dest:f src1:b len:8
-loadr8_membase: dest:f src1:b len:12
+loadr4_membase: dest:f src1:b len:16
+loadr8_membase: dest:f src1:b len:20
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 add_imm: dest:i src1:i len:12
 sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:12
-# there is no actual support for division or reminder by immediate
-# we simulate them, though (but we need to change the burg rules 
-# to allocate a symbolic reg for src2)
-div_imm: dest:a src1:i src2:i len:12
+div_imm: dest:a src1:i src2:i len:20
 div_un_imm: dest:a src1:i src2:i len:12
-rem_imm: dest:d src1:i src2:i len:16
+rem_imm: dest:d src1:i src2:i len:20
 rem_un_imm: dest:d src1:i src2:i len:16
-and_imm: dest:i src1:i len:8
-or_imm: dest:i src1:i len:8
-xor_imm: dest:i src1:i len:8
-shl_imm: dest:i src1:i len:8
-shr_imm: dest:i src1:i len:8
-shr_un_imm: dest:i src1:i len:8
+and_imm: dest:i src1:i len:12
+or_imm: dest:i src1:i len:12
+xor_imm: dest:i src1:i len:12
+shl_imm: dest:i src1:i len:12
+shr_imm: dest:i src1:i len:12
+shr_un_imm: dest:i src1:i len:12
 cond_exc_eq: len:8
 cond_exc_ne_un: len:8
 cond_exc_lt: len:8
@@ -402,7 +400,7 @@ long_conv_to_u8:
 long_conv_to_u2:
 long_conv_to_u1:
 long_conv_to_i:
-long_conv_to_ovf_i: dest:i src1:i src2:i len:30
+long_conv_to_ovf_i: dest:i src1:i src2:i len:36
 long_conv_to_ovf_u:
 long_add_ovf:
 long_add_ovf_un:
@@ -451,22 +449,22 @@ long_bge_un:
 long_ble:
 long_ble_un:
 float_beq: len:8
-float_bne_un: len:8
+float_bne_un: len:16
 float_blt: len:8
-float_blt_un: len:8
+float_blt_un: len:16
 float_bgt: len:8
-float_btg_un: len:8
-float_bge: len:8
-float_bge_un: len:8
-float_ble: len:8
-float_ble_un: len:8
-float_add: len:4
-float_sub: len:4
-float_mul: len:4
-float_div: len:4
-float_div_un: len:4
-float_rem: len:16
-float_rem_un: len:16
+float_btg_un: len:16
+float_bge: len:16
+float_bge_un: len:16
+float_ble: len:16
+float_ble_un: len:16
+float_add: dest:f src1:f src2:f len:4
+float_sub: dest:f src1:f src2:f len:4
+float_mul: dest:f src1:f src2:f len:4
+float_div: dest:f src1:f src2:f len:4
+float_div_un: dest:f src1:f src2:f len:4
+float_rem: dest:f src1:f src2:f len:16
+float_rem_un: dest:f src1:f src2:f len:16
 float_neg: dest:f src1:f len:4
 float_not: dest:f src1:f len:4
 float_conv_to_i1: dest:i src1:f len:40
@@ -506,11 +504,11 @@ float_conv_to_ovf_i4:
 float_conv_to_ovf_u4:
 float_conv_to_ovf_i8:
 float_conv_to_ovf_u8:
-float_ceq: dest:i src1:f src2:f len:12
-float_cgt: dest:i src1:f src2:f len:12
-float_cgt_un: dest:i src1:f src2:f len:12
-float_clt: dest:i src1:f src2:f len:12
-float_clt_un: dest:i src1:f src2:f len:12
+float_ceq: dest:i src1:f src2:f len:16
+float_cgt: dest:i src1:f src2:f len:16
+float_cgt_un: dest:i src1:f src2:f len:24
+float_clt: dest:i src1:f src2:f len:16
+float_clt_un: dest:i src1:f src2:f len:24
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
 op_endfilter: src1:i len:12
@@ -545,3 +543,5 @@ ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
+fmove: dest:f src1:f len:8
+

@@ -8,6 +8,7 @@
  * Modified for SPARC:
  *   Christopher Taylor (ct@gentoo.org)
  *   Mark Crichton (crichton@gimp.org)
+ *   Zoltan Varga (vargaz@freemail.hu)
  *
  * (C) 2003 Ximian, Inc.
  */
@@ -16,12 +17,43 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/mono-math.h>
 
 #include "mini-sparc.h"
 #include "inssel.h"
 #include "cpu-sparc.h"
 
+/*
+ * Sparc V9 means two things:
+ * - the instruction set
+ * - the ABI
+ *
+ * V9 instructions are only usable if the underlying processor is 64 bit. Most Sparc 
+ * processors in use are 64 bit processors. The V9 ABI is only usable if the 
+ * mono executable is a 64 bit executable. So it would make sense to use the 64 bit
+ * instructions without using the 64 bit ABI.
+ */
+
+/*
+ * Register usage:
+ * - %i0..%i7 hold the incoming arguments, these are never written by JITted code
+ * - %l0..%l7 is used for local register allocation
+ * - %o0..%o6 is used for outgoing arguments
+ * - %o7 and %g1 is used as scratch registers in opcodes
+ * - all floating point registers are used for local register allocation except %f0. 
+ *   Only double precision registers are used.
+ */
+
+#if SPARCV9
+#error "Sparc V9 support not yet implemented."
+#endif
+
 int mono_exc_esp_offset = 0;
+
+#define NOT_IMPLEMENTED g_assert_not_reached ();
+
+static void enter_method (MonoMethod *method, char *ebp);
+static void leave_method (MonoMethod *method, ...);
 
 const char*
 mono_arch_regname (int reg) {
@@ -37,320 +69,6 @@ mono_arch_regname (int reg) {
 	if (reg >= 0 && reg < 32)
 		return rnames [reg];
 	return "unknown";
-}
-
-typedef struct {
-	guint16 size;
-	guint16 offset;
-	guint8  pad;
-} MonoJitArgumentInfo;
-
-/*
- * arch_get_argument_info:
- * @csig:  a method signature
- * @param_count: the number of parameters to consider
- * @arg_info: an array to store the result infos
- *
- * Gathers information on parameters such as size, alignment and
- * padding. arg_info should be large enought to hold param_count + 1 entries. 
- *
- * Returns the size of the activation frame.
- */
-static int
-arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
-{
-	int k, frame_size = 0;
-	int size, align, pad;
-	int offset = 8;
-
-	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
-		frame_size += sizeof (gpointer);
-		offset += 4;
-	}
-
-	arg_info [0].offset = offset;
-
-	if (csig->hasthis) {
-		frame_size += sizeof (gpointer);
-		offset += 4;
-	}
-
-	arg_info [0].size = frame_size;
-
-	for (k = 0; k < param_count; k++) {
-		
-		if (csig->pinvoke)
-			size = mono_type_native_stack_size (csig->params [k], &align);
-		else
-			size = mono_type_stack_size (csig->params [k], &align);
-
-		/* ignore alignment for now */
-		align = 1;
-
-		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
-		arg_info [k].pad = pad;
-		frame_size += size;
-		arg_info [k + 1].pad = 0;
-		arg_info [k + 1].size = size;
-		offset += pad;
-		arg_info [k + 1].offset = offset;
-		offset += size;
-	}
-
-	align = MONO_ARCH_FRAME_ALIGNMENT;
-	frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
-	arg_info [k].pad = pad;
-
-	return frame_size;
-}
-
-static int indent_level = 0;
-
-static void indent (int diff) {
-	int v = indent_level;
-	while (v-- > 0) {
-		printf (". ");
-	}
-	indent_level += diff;
-}
-
-static void
-enter_method (MonoMethod *method, char *ebp)
-{
-	int i, j;
-	MonoClass *class;
-	MonoObject *o;
-	MonoJitArgumentInfo *arg_info;
-	MonoMethodSignature *sig;
-	char *fname;
-
-	fname = mono_method_full_name (method, TRUE);
-	indent (1);
-	printf ("ENTER: %s(", fname);
-	g_free (fname);
-	
-	if (((int)ebp & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
-		g_error ("unaligned stack detected (%p)", ebp);
-	}
-
-	sig = method->signature;
-
-	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
-
-	arch_get_argument_info (sig, sig->param_count, arg_info);
-
-	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
-		g_assert (!method->signature->ret->byref);
-
-		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
-	}
-
-	if (method->signature->hasthis) {
-		gpointer *this = (gpointer *)(ebp + arg_info [0].offset);
-		if (method->klass->valuetype) {
-			printf ("value:%p, ", *this);
-		} else {
-			o = *((MonoObject **)this);
-
-			if (o) {
-				class = o->vtable->klass;
-
-				if (class == mono_defaults.string_class) {
-					printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
-				} else {
-					printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
-				}
-			} else 
-				printf ("this:NULL, ");
-		}
-	}
-
-	for (i = 0; i < method->signature->param_count; ++i) {
-		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
-		int size = arg_info [i + 1].size;
-
-		MonoType *type = method->signature->params [i];
-		
-		if (type->byref) {
-			printf ("[BYREF:%p], ", *cpos); 
-		} else switch (type->type) {
-			
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-			printf ("%p, ", (gpointer)*((int *)(cpos)));
-			break;
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-			printf ("%d, ", *((int *)(cpos)));
-			break;
-		case MONO_TYPE_STRING: {
-			MonoString *s = *((MonoString **)cpos);
-			if (s) {
-				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
-			} else 
-				printf ("[STRING:null], ");
-			break;
-		}
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT: {
-			o = *((MonoObject **)cpos);
-			if (o) {
-				class = o->vtable->klass;
-		    
-				if (class == mono_defaults.string_class) {
-					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
-				} else if (class == mono_defaults.int32_class) {
-					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
-				} else
-					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
-			} else {
-				printf ("%p, ", *((gpointer *)(cpos)));				
-			}
-			break;
-		}
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_FNPTR:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-			printf ("%p, ", *((gpointer *)(cpos)));
-			break;
-		case MONO_TYPE_I8:
-			printf ("%lld, ", *((gint64 *)(cpos)));
-			break;
-		case MONO_TYPE_R4:
-			printf ("%f, ", *((float *)(cpos)));
-			break;
-		case MONO_TYPE_R8:
-			printf ("%f, ", *((double *)(cpos)));
-			break;
-		case MONO_TYPE_VALUETYPE: 
-			printf ("[");
-			for (j = 0; j < size; j++)
-				printf ("%02x,", *((guint8*)cpos +j));
-			printf ("], ");
-			break;
-		default:
-			printf ("XX, ");
-		}
-	}
-
-	printf (")\n");
-}
-
-static void
-leave_method (MonoMethod *method, ...)
-{
-	MonoType *type;
-	char *fname;
-	va_list ap;
-
-	va_start(ap, method);
-
-	fname = mono_method_full_name (method, TRUE);
-	indent (-1);
-	printf ("LEAVE: %s", fname);
-	g_free (fname);
-
-	type = method->signature->ret;
-
-handle_enum:
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		break;
-	case MONO_TYPE_BOOLEAN: {
-		int eax = va_arg (ap, int);
-		if (eax)
-			printf ("TRUE:%d", eax);
-		else 
-			printf ("FALSE");
-			
-		break;
-	}
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U: {
-		int eax = va_arg (ap, int);
-		printf ("EAX=%d", eax);
-		break;
-	}
-	case MONO_TYPE_STRING: {
-		MonoString *s = va_arg (ap, MonoString *);
-;
-		if (s) {
-			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
-		} else 
-			printf ("[STRING:null], ");
-		break;
-	}
-	case MONO_TYPE_CLASS: 
-	case MONO_TYPE_OBJECT: {
-		MonoObject *o = va_arg (ap, MonoObject *);
-
-		if (o) {
-			if (o->vtable->klass == mono_defaults.boolean_class) {
-				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
-			} else if  (o->vtable->klass == mono_defaults.int32_class) {
-				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
-			} else if  (o->vtable->klass == mono_defaults.int64_class) {
-				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
-			} else
-				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
-		} else
-			printf ("[OBJECT:%p]", o);
-	       
-		break;
-	}
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY: {
-		gpointer p = va_arg (ap, gpointer);
-		printf ("result=%p", p);
-		break;
-	}
-	case MONO_TYPE_I8: {
-		gint64 l =  va_arg (ap, gint64);
-		printf ("lresult=%lld", l);
-		break;
-	}
-	case MONO_TYPE_R8: {
-		double f = va_arg (ap, double);
-		printf ("FP=%f\n", f);
-		break;
-	}
-	case MONO_TYPE_VALUETYPE: 
-		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
-			goto handle_enum;
-		} else {
-			guint8 *p = va_arg (ap, gpointer);
-			int j, size, align;
-			size = mono_type_size (type, &align);
-			printf ("[");
-			for (j = 0; p && j < size; j++)
-				printf ("%02x,", p [j]);
-			printf ("]");
-		}
-		break;
-	default:
-		printf ("(unknown return type %x)", method->signature->ret->type);
-	}
-
-	printf ("\n");
 }
 
 /*
@@ -402,6 +120,9 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 	GList *vars = NULL;
 	int i;
 
+	/* FIXME: */
+	return NULL;
+
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
@@ -413,6 +134,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
+		/* FIXME: */
 		/* we can only allocate 32 bit values */
 		if (is_regsize_var (ins->inst_vtype)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
@@ -428,10 +150,11 @@ GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
-	int i, top = 32;
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
-		top = 31;
-	for (i = 13; i < top; ++i)
+	int i;
+
+	/* Use %l0..%l3 as global registers */
+
+	for (i = 16; i < 20; ++i)
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 
 	return regs;
@@ -444,38 +167,28 @@ mono_arch_flush_icache (guint8 *code, gint size)
 {
 	guint i;
 
-	for (i = 0; i < (size/2); i++)
+	/* FIXME: Make this more efficient */
+	for (i = 0; i < (size/8); i++)
 		flushi(code + (i*8));
 
 }
 
-#define NOT_IMPLEMENTED(x) \
-                g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
-
-#define PROLOG_INS 8
-#define CALL_INS   2
-#define EPILOG_INS 6
-#define FLOAT_REGS 8
-#define GENERAL_REGS 8
-#ifdef __APPLE__
-#define MINIMAL_STACK_SIZE 10
-#define ALWAYS_ON_STACK(s) s
-#define FP_ALSO_IN_REG(s) s
-#define RET_ADDR_OFFSET 8
-#define STACK_PARAM_OFFSET 24
-#else
-#define MINIMAL_STACK_SIZE 5
-#define ALWAYS_ON_STACK(s)
-#define FP_ALSO_IN_REG(s) s
-#define ALIGN_DOUBLES
-#define RET_ADDR_OFFSET 4
-#define STACK_PARAM_OFFSET 8
-#endif
+typedef enum {
+	ArgInIReg,
+	ArgInIRegPair,
+	ArgInSplitRegStack,
+	ArgInFReg,
+	ArgInFRegPair,
+	ArgOnStack,
+	ArgOnStackPair
+} ArgStorage;
 
 typedef struct {
 	gint16 offset;
+	/* This needs to be offset by %i0 or %o0 depending on caller/callee */
 	gint8  reg;
-	gint8  regtype; /* 0 general, 1 basereg, 2 floating point register */
+	ArgStorage storage;
+	guint32 vt_offset; /* for valuetypes */
 } ArgInfo;
 
 typedef struct {
@@ -487,67 +200,81 @@ typedef struct {
 
 #define DEBUG(a)
 
+/* %o0..%o5 */
+#define PARAM_REGS 6
+
 static void inline
-add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
+add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean pair)
 {
-	if (simple) {
-		if (*gr >= 3 + GENERAL_REGS) {
-			ainfo->offset = *stack_size;
-			ainfo->reg = sparc_sp; /* in the caller */
-			ainfo->regtype = 1;
-			*stack_size += 4;
-		} else {
-			ALWAYS_ON_STACK (*stack_size += 4);
-			ainfo->reg = *gr;
+	ainfo->offset = *stack_size;
+
+	if (!pair) {
+		if (*gr >= PARAM_REGS) {
+			ainfo->storage = ArgOnStack;
 		}
-	} else {
-		if (*gr >= 3 + GENERAL_REGS - 1) {
-			ainfo->offset = *stack_size;
-			ainfo->reg = sparc_sp; /* in the caller */
-			ainfo->regtype = 1;
-			*stack_size += 8;
-#ifdef ALIGN_DOUBLES
-			*stack_size += (*stack_size % 8);
-#endif
-		} else {
-			ALWAYS_ON_STACK (*stack_size += 8);
+		else {
+			ainfo->storage = ArgInIReg;
 			ainfo->reg = *gr;
-		}
-#ifdef ALIGN_DOUBLES
-		if ((*gr) & 1)
 			(*gr) ++;
-#endif
-		(*gr) ++;
+		}
+
+		/* Allways reserve stack space for parameters passed in registers */
+		(*stack_size) += 4;
 	}
-	(*gr) ++;
+	else {
+		if (*gr < PARAM_REGS - 1) {
+			/* A pair of registers */
+			ainfo->storage = ArgInIRegPair;
+			ainfo->reg = *gr;
+			(*gr) += 2;
+		}
+		else if (*gr >= PARAM_REGS) {
+			/* A pair of stack locations */
+			ainfo->storage = ArgOnStackPair;
+			ainfo->offset = *stack_size;
+		}
+		else {
+			ainfo->storage = ArgInSplitRegStack;
+			ainfo->reg = *gr;
+			ainfo->offset = *stack_size;
+			(*gr) ++;
+		}
+
+		(*stack_size) += 8;
+	}
 }
 
+/*
+ * get_call_info:
+ *
+ *  Obtain information about a call according to the calling convention.
+ * See the "System V ABI, Sparc Processor Supplement" Sparc V8 version document for
+ * more information.
+ */
 static CallInfo*
-calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint i, fr, gr;
+	guint32 i, gr, simpletype;
 	int n = sig->hasthis + sig->param_count;
-	guint32 simpletype;
 	guint32 stack_size = 0;
-	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
+	CallInfo *cinfo;
 
-	fr = 1;
-	gr = 3;
+	cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
-	/* FIXME: handle returning a struct */
+	gr = 0;
 
-	n = 0;
-	if (sig->hasthis) {
-		add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-		n++;
-	}
-        DEBUG(printf("params: %d\n", sig->param_count));
+	/* this */
+	if (sig->hasthis)
+		add_general (&gr, &stack_size, cinfo->args + 0, FALSE);
+
 	for (i = 0; i < sig->param_count; ++i) {
-                DEBUG(printf("param %d: ", i));
+		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
+
+		DEBUG(printf("param %d: ", i));
 		if (sig->params [i]->byref) {
-                        DEBUG(printf("byref\n"));
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-			n++;
+			DEBUG(printf("byref\n"));
+			
+			add_general (&gr, &stack_size, ainfo, FALSE);
 			continue;
 		}
 		simpletype = sig->params [i]->type;
@@ -557,8 +284,16 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+			add_general (&gr, &stack_size, ainfo, FALSE);
+			/* the value is in the ls byte */
+			ainfo->offset += 3;
+			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
+			add_general (&gr, &stack_size, ainfo, FALSE);
+			/* the value is in the ls word */
+			ainfo->offset += 2;
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -569,63 +304,35 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-			n++;
+			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
 		case MONO_TYPE_VALUETYPE: {
-			gint size;
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-#if 0
-			size = mono_class_value_size (sig->params [i]->data.klass, NULL);
-			if (size != 4) {
-				DEBUG(printf ("copy %d bytes struct on stack\n",
-					      mono_class_value_size (sig->params [i]->data.klass, NULL)));
-				*stack_size += (size + 3) & (~3);
-				if (gr > 3 + GENERAL_REGS) {
-					*stack_size += 4;
-				}
-			} else {
-				DEBUG(printf ("load %d bytes struct\n",
-					      mono_class_value_size (sig->params [i]->data.klass, NULL)));
-				add_general (&gr, stack_size, code_size, TRUE);
-			}
-#endif
-			g_assert_not_reached ();
+
+			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
 		}
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			add_general (&gr, &stack_size, cinfo->args + n, FALSE);
-			n++;
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			break;
 		case MONO_TYPE_R4:
-			if (fr < 7) {
-				fr ++;
-				FP_ALSO_IN_REG (gr ++);
-				ALWAYS_ON_STACK (stack_size += 4);
-			} else {
-				NOT_IMPLEMENTED ("R4 arg");
-			}
-			n++;
+			/* single precision values are passed in integer registers */
+			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
 		case MONO_TYPE_R8:
-			if (fr < 7) {
-				fr ++;
-				FP_ALSO_IN_REG (gr += 2);
-				ALWAYS_ON_STACK (stack_size += 8);
-			} else {
-				NOT_IMPLEMENTED ("R8 arg");
-			}
-			n++;
+			/* double precision values are passed in a pair of registers */
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			break;
 		default:
-			g_error ("Can't trampoline 0x%x", sig->params [i]->type);
+			g_assert_not_reached ();
 		}
 	}
 
+	/* return value */
 	{
 		simpletype = sig->ret->type;
 enum_retvalue:
@@ -645,22 +352,25 @@ enum_retvalue:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_STRING:
+			cinfo->ret.storage = ArgInIReg;
 			cinfo->ret.reg = sparc_i0;
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
+			cinfo->ret.storage = ArgInIRegPair;
 			cinfo->ret.reg = sparc_i0;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
+			cinfo->ret.storage = ArgInFReg;
 			cinfo->ret.reg = sparc_f0;
-			cinfo->ret.regtype = 2;
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->ret->data.klass->enumtype) {
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
+			cinfo->ret.storage = ArgOnStack;
 			break;
 		case MONO_TYPE_VOID:
 			break;
@@ -669,14 +379,9 @@ enum_retvalue:
 		}
 	}
 
-	/* align stack size to 16 */
-	DEBUG (printf ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
-	stack_size = (stack_size + 15) & ~15;
-
 	cinfo->stack_usage = stack_size;
 	return cinfo;
 }
-
 
 /*
  * Set var information according to the calling convention. sparc version.
@@ -690,65 +395,54 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
 	int frame_reg = sparc_sp;
+	CallInfo *cinfo;
  
-	if (m->flags & MONO_CFG_HAS_ALLOCA)
-		frame_reg = sparc_l7;
 	m->frame_reg = frame_reg;
 
 	header = ((MonoMethodNormal *)m->method)->header;
 
 	sig = m->method->signature;
-	
-	offset = 0;
-	curinst = 0;
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		m->ret->opcode = OP_REGVAR;
-		m->ret->inst_c0 = sparc_i0;
-	} else {
-		/* FIXME: handle long and FP values */
-		switch (sig->ret->type) {
-		case MONO_TYPE_VOID:
+
+	cinfo = get_call_info (sig, FALSE);
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		switch (cinfo->ret.storage) {
+		case ArgInIReg:
+		case ArgInFReg:
+		case ArgInIRegPair:
+			m->ret->opcode = OP_REGVAR;
+			m->ret->inst_c0 = cinfo->ret.reg;
+			break;
+		case ArgOnStack:
+			/* valuetypes */
+			m->ret->opcode = OP_REGOFFSET;
+			m->ret->inst_basereg = sparc_fp;
+			m->ret->inst_offset = 64;
 			break;
 		default:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = sparc_i0;
-			break;
+			NOT_IMPLEMENTED;
 		}
 	}
-	/* local vars are at a positive offset from the stack pointer */
-	/* 
-	 * also note that if the function uses alloca, we use sparc_l7 
-	 * to point at the local variables.
+
+	/*
+	 * We use the Sparc V8 calling conventions for managed code as well.
+	 * FIXME: Use something more optimized.
 	 */
-	offset = 24; /* linkage area */
-	/* align the offset to 16 bytes: not sure this is needed here  */
-	//offset += 16 - 1;
-	//offset &= ~(16 - 1);
+
+	offset = 64; /* register save area */
+	offset += 4; /* struct/union return pointer */
 
 	/* add parameter area size for called functions */
-	offset += m->param_area;
-	offset += 16 - 1;
-	offset &= ~(16 - 1);
-
-	/* FIXME: check how to handle this stuff... reserve space to save LMF and caller saved registers */
-	offset += sizeof (MonoLMF);
-
-#if 0
-	/* this stuff should not be needed on ppc and the new jit,
-	 * because a call on ppc to the handlers doesn't change the 
-	 * stack pointer and the jist doesn't manipulate the stack pointer
-	 * for operations involving valuetypes.
-	 */
-	/* reserve space to store the esp */
-	offset += sizeof (gpointer);
-
-	/* this is a global constant */
-	mono_exc_esp_offset = offset;
-#endif
-
+	if (m->param_area < 24)
+		/* Reserve space for the first 6 arguments even if it is unused */
+		offset += 24;
+	else
+		offset += m->param_area;
+	
 	curinst = m->locals_start;
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
+
 		if (inst->opcode == OP_REGVAR)
 			continue;
 
@@ -772,12 +466,12 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (sig->hasthis) {
 		inst = m->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = frame_reg;
-			offset += sizeof (gpointer) - 1;
-			offset &= ~(sizeof (gpointer) - 1);
-			inst->inst_offset = offset;
-			offset += sizeof (gpointer);
+			ArgInfo *ainfo = &cinfo->args [0];
+
+			g_assert (ainfo->storage == ArgInIReg);
+
+			inst->opcode = OP_REGVAR;
+			inst->dreg = sparc_i0 + ainfo->reg;
 		}
 		curinst++;
 	}
@@ -785,55 +479,118 @@ mono_arch_allocate_vars (MonoCompile *m)
 	for (i = 0; i < sig->param_count; ++i) {
 		inst = m->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = frame_reg;
-			size = mono_type_size (sig->params [i], &align);
-			offset += align - 1;
-			offset &= ~(align - 1);
-			inst->inst_offset = offset;
-			offset += size;
+			ArgInfo *ainfo = &cinfo->args [curinst];
+			gboolean inreg = TRUE;
+
+			if ((sig->params [i]->type == MONO_TYPE_R4) 
+				|| (sig->params [i]->type == MONO_TYPE_R8))
+				/*
+				 * Since float arguments are passed in integer registers, we need to
+				 * save them to the stack in the prolog.
+				 */
+				inreg = FALSE;
+
+			if (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))
+				inreg = FALSE;
+
+			if (MONO_TYPE_ISSTRUCT (sig->params [i]))
+				/* FIXME: this isn't needed */
+				inreg = FALSE;
+
+			switch (ainfo->storage) {
+			case ArgInIReg:
+			case ArgInIRegPair:
+				if (inreg) {
+					inst->opcode = OP_REGVAR;
+					inst->dreg = sparc_i0 + ainfo->reg;
+					break;
+				}
+				else {
+					/* Fall through */
+				}
+			case ArgOnStack:
+			case ArgOnStackPair:
+			case ArgInSplitRegStack:
+				/* Split arguments are saved to the stack in the prolog */
+				inst->opcode = OP_REGOFFSET;
+				/* in parent frame */
+				inst->inst_basereg = sparc_fp;
+				inst->inst_offset = ainfo->offset + 68;
+
+				if (sig->params [i]->type == MONO_TYPE_R8) {
+					/* 
+					 * It is very hard to load doubles from non-doubleword aligned
+					 * memory locations. So if the offset is misaligned, we copy the
+					 * argument to a stack location in the prolog.
+					 */
+					if (inst->inst_offset % 8) {
+						inst->inst_basereg = sparc_sp;
+						align = 8;
+						offset += align - 1;
+						offset &= ~(align - 1);
+						inst->inst_offset = offset;
+						offset += 8;
+					}
+				}
+				break;
+			default:
+				NOT_IMPLEMENTED;
+			}
+
+			if (MONO_TYPE_ISSTRUCT (sig->params [i])) {
+				/* Add a level of indirection */
+				/*
+				 * It would be easier to add OP_LDIND_I here, but ldind_i instructions
+				 * are destructively modified in a lot of places in inssel.brg.
+				 */
+				MonoInst *indir;
+				MONO_INST_NEW (m, indir, 0);
+				*indir = *inst;
+				inst->opcode = OP_SPARC_INARG_VT;
+				inst->inst_left = indir;
+			}
 		}
+		else
+			g_assert_not_reached ();
 		curinst++;
 	}
 
-	/* align the offset to 16 bytes */
-	offset += 16 - 1;
-	offset &= ~(16 - 1);
+	/* align the stack size to 8 bytes */
+	offset += 8 - 1;
+	offset &= ~(8 - 1);
 
-	/* change sign? */
+	/* Add a properly aligned dword for use by int<->float conversion opcodes */
+	offset += 8;
+
 	m->stack_offset = offset;
 
+	g_free (cinfo);
 }
-
-/* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
- * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
- */
 
 /* 
  * take the arguments and generate the arch-specific
  * instructions to properly call the function in call.
  * This includes pushing, moving arguments to the right register
  * etc.
- * Issue: who does the spilling if needed, and when?
  */
 MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
-	int i, n, type;
-	MonoType *ptype;
+	int i, n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
+	guint32 extra_space = 0;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = get_call_info (sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 		if (is_virtual && i == 0) {
-			/* the argument will be attached to the call instrucion */
+			/* the argument will be attached to the call instruction */
 			in = call->args [i];
 		} else {
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
@@ -844,20 +601,73 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			/* prepend, we'll need to reverse them later */
 			arg->next = call->out_args;
 			call->out_args = arg;
-			if (ainfo->regtype == 0) {
-				arg->unused = ainfo->reg;
+
+			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+				MonoInst *inst;
+				guint32 size = mono_type_stack_size (&in->klass->byval_arg, NULL);
+
+				/* 
+				 * We use OP_OUTARG_VT to copy the valuetype to a stack location, then
+				 * use the normal OUTARG opcodes to pass the address of the location to
+				 * the callee.
+				 */
+				MONO_INST_NEW (cfg, inst, OP_OUTARG_VT);
+				inst->inst_left = in;
+
+				/* The first 6 argument locations are reserved */
+				if (cinfo->stack_usage < 24)
+					cinfo->stack_usage = 24;
+
+				inst->inst_c1 = 68 + cinfo->stack_usage;
+				inst->unused = size;
+				arg->inst_left = inst;
+
+				cinfo->stack_usage += size;
+			}
+
+			switch (ainfo->storage) {
+			case ArgInIReg:
+			case ArgInFReg:
+			case ArgInIRegPair:
+				if (ainfo->storage == ArgInIRegPair)
+					arg->opcode = OP_SPARC_OUTARG_REGPAIR;
+				arg->unused = sparc_o0 + ainfo->reg;
+				/* outgoing arguments begin at sp+68 */
+				arg->inst_basereg = sparc_sp;
+				arg->inst_imm = 68 + ainfo->offset;
 				call->used_iregs |= 1 << ainfo->reg;
-			} else if (ainfo->regtype == 1) {
-				g_assert_not_reached ();
-			} else if (ainfo->regtype == 2) {
-				arg->opcode = OP_OUTARG_R8;
-				arg->unused = ainfo->reg;
-				call->used_fregs |= 1 << ainfo->reg;
-			} else {
-				g_assert_not_reached ();
+
+				if ((i >= sig->hasthis) && (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8)) {
+					/*
+					 * The OUTARG (freg) implementation needs an extra dword to store
+					 * the temporary value.
+					 */
+					extra_space += 8;
+				}
+				break;
+			case ArgOnStack:
+				arg->opcode = OP_SPARC_OUTARG_MEM;
+				arg->inst_basereg = sparc_sp;
+				arg->inst_imm = 68 + ainfo->offset;
+				break;
+			case ArgOnStackPair:
+				arg->opcode = OP_SPARC_OUTARG_MEMPAIR;
+				arg->inst_basereg = sparc_sp;
+				arg->inst_imm = 68 + ainfo->offset;
+				break;
+			case ArgInSplitRegStack:
+				arg->opcode = OP_SPARC_OUTARG_SPLIT_REG_STACK;
+				arg->unused = sparc_o0 + ainfo->reg;
+				arg->inst_basereg = sparc_sp;
+				arg->inst_imm = 68 + ainfo->offset;
+				call->used_iregs |= 1 << ainfo->reg;
+				break;
+			default:
+				NOT_IMPLEMENTED;
 			}
 		}
 	}
+
 	/*
 	 * Reverse the call->out_args list.
 	 */
@@ -869,170 +679,112 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			prev = list;
 			list = next;
 		}
+		call->out_args = prev;
 	}
-	call->stack_usage = cinfo->stack_usage;
-	cfg->param_area = MAX (cfg->param_area, cinfo->stack_usage);
+	call->stack_usage = cinfo->stack_usage + extra_space;
+	cfg->param_area = MAX (cfg->param_area, call->stack_usage);
 	cfg->flags |= MONO_CFG_HAS_CALLS;
-	/* 
-	 * should set more info in call, such as the stack space
-	 * used by the args that needs to be added back to esp
-	 */
 
 	g_free (cinfo);
 	return call;
 }
 
-/*
- * Allow tracing to work with this interface (with an optional argument)
- */
-
-/*
- * This may be needed on some archs or for debugging support.
- */
-void
-mono_arch_instrument_mem_needs (MonoMethod *method, int *stack, int *code)
+/* Map opcode to the sparc condition codes */
+static inline SparcCond
+opcode_to_sparc_cond (int opcode)
 {
-	/* no stack room needed now (may be needed for FASTCALL-trace support) */
-	*stack = 0;
-	/* split prolog-epilog requirements? */
-	*code = 50; /* max bytes needed: check this number */
+	switch (opcode) {
+
+	case OP_FBGE:
+		return sparc_fbge;
+	case OP_FBLE:
+		return sparc_fble;
+	case OP_FBEQ:
+	case OP_FCEQ:
+		return sparc_fbe;
+	case OP_FBLT:
+	case OP_FCLT:
+	case OP_FCLT_UN:
+		return sparc_fbl;
+	case OP_FBGT:
+	case OP_FCGT:
+	case OP_FCGT_UN:
+		return sparc_fbg;
+	case CEE_BEQ:
+	case OP_CEQ:
+		return sparc_be;
+	case CEE_BNE_UN:
+		return sparc_bne;
+	case CEE_BLT:
+	case OP_CLT:
+		return sparc_bl;
+	case CEE_BLT_UN:
+	case OP_CLT_UN:
+		return sparc_blu;
+	case CEE_BGT:
+	case OP_CGT:
+		return sparc_bg;
+	case CEE_BGT_UN:
+	case OP_CGT_UN:
+		return sparc_bgu;
+	case CEE_BGE:
+		return sparc_bge;
+	case CEE_BGE_UN:
+		return sparc_beu;
+	case CEE_BLE:
+		return sparc_ble;
+	case CEE_BLE_UN:
+		return sparc_bleu;
+	default:
+		g_assert_not_reached ();
+		return sparc_be;
+	}
 }
 
-void*
-mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = p;
-#if 0
-	/* if some args are passed in registers, we need to save them here */
-	x86_push_reg (code, X86_EBP);
-	x86_push_imm (code, cfg->method);
-	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
-	x86_call_code (code, 0);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-#endif
-	return code;
-}
-
-enum {
-	SAVE_NONE,
-	SAVE_STRUCT,
-	SAVE_ONE,
-	SAVE_TWO,
-	SAVE_FP
-};
-
-void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = p;
-	int arg_size = 0, save_mode = SAVE_NONE;
-	MonoMethod *method = cfg->method;
-	int rtype = method->signature->ret->type;
-	
-handle_enum:
-	switch (rtype) {
-	case MONO_TYPE_VOID:
-		/* special case string .ctor icall */
-		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
-			save_mode = SAVE_ONE;
-		else
-			save_mode = SAVE_NONE;
-		break;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		save_mode = SAVE_TWO;
-		break;
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		save_mode = SAVE_FP;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (method->signature->ret->data.klass->enumtype) {
-			rtype = method->signature->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		}
-		save_mode = SAVE_STRUCT;
-		break;
-	default:
-		save_mode = SAVE_ONE;
-		break;
-	}
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		//x86_push_reg (code, X86_EDX);
-		//x86_push_reg (code, X86_EAX);
-		if (enable_arguments) {
-			//x86_push_reg (code, X86_EDX);
-			//x86_push_reg (code, X86_EAX);
-			arg_size = 8;
-		}
-		break;
-	case SAVE_ONE:
-		//x86_push_reg (code, X86_EAX);
-		if (enable_arguments) {
-			//x86_push_reg (code, X86_EAX);
-			arg_size = 4;
-		}
-		break;
-	case SAVE_FP:
-		//x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-		///x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
-		if (enable_arguments) {
-			//x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-			//x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
-			arg_size = 8;
-		}
-		break;
-	case SAVE_STRUCT:
-		if (enable_arguments) {
-			//x86_push_membase (code, X86_EBP, 8);
-			arg_size = 4;
-		}
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	/*x86_push_imm (code, method);
-	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
-	x86_call_code (code, 0);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
-	*/
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		//x86_pop_reg (code, X86_EAX);
-		//x86_pop_reg (code, X86_EDX);
-		break;
-	case SAVE_ONE:
-		//x86_pop_reg (code, X86_EAX);
-		break;
-	case SAVE_FP:
-		//x86_fld_membase (code, X86_ESP, 0, TRUE);
-		//x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	return code;
-}
-
-#define EMIT_COND_BRANCH(ins,cond) \
+#define EMIT_COND_BRANCH_GENERAL(ins,bop,cond) \
 if (ins->flags & MONO_INST_BRLABEL) { \
         if (ins->inst_i0->inst_c0) { \
+           gint32 disp = (ins->inst_i0->inst_c0 - ((guint8*)code - cfg->native_code)) >> 2; \
+           g_assert (sparc_is_imm22 (disp)); \
+           sparc_ ## bop (code, 1, cond, disp); \
         } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
+	        mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
+            sparc_ ## bop (code, 1, cond, 0); \
         } \
+		sparc_nop (code); \
 } else { \
-        if (0 && ins->inst_true_bb->native_offset) { \
+        if (ins->inst_true_bb->native_offset) { \
+           gint32 disp = (ins->inst_true_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2; \
+           g_assert (sparc_is_imm22 (disp)); \
+           sparc_ ## bop (code, 1, cond, disp); \
         } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+	        mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+            sparc_ ## bop (code, 1, cond, 0); \
         } \
+		sparc_nop (code); \
 }
+
+#define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),branch,(cond))
+
+#define EMIT_FLOAT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),fbranch,(cond))
+
+#define EMIT_ALU_IMM(ins,op,setcc) do { \
+			if (sparc_is_imm13 ((ins)->inst_imm)) \
+				sparc_ ## op ## _imm (code, (setcc), (ins)->sreg1, ins->inst_imm, (ins)->dreg); \
+			else { \
+				sparc_set (code, ins->inst_imm, sparc_o7); \
+				sparc_ ## op (code, (setcc), (ins)->sreg1, sparc_o7, (ins)->dreg); \
+			} \
+} while (0);
+
+#define EMIT_LOAD_MEMBASE(ins,op) do { \
+			if (sparc_is_imm13 (ins->inst_offset)) \
+				sparc_ ## op ## _imm (code, ins->inst_basereg, ins->inst_offset, ins->dreg); \
+			else { \
+				sparc_set (code, ins->inst_offset, sparc_o7); \
+				sparc_ ## op (code, ins->inst_basereg, sparc_o7, ins->dreg); \
+			} \
+} while (0);
 
 /* emit an exception if condition is fail */
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)            \
@@ -1199,42 +951,11 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->last_ins = last_ins;
 }
 
-/*
- * returns the offset used by spillvar. It allocates a new
- * spill variable if necessary. Likely incorrect for sparc.
- */
-static int
-mono_spillvar_offset (MonoCompile *cfg, int spillvar)
-{
-	MonoSpillInfo **si, *info;
-	int i = 0;
-
-	si = &cfg->spill_info; 
-	
-	while (i <= spillvar) {
-
-		if (!*si) {
-			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
-			info->next = NULL;
-			cfg->stack_offset -= sizeof (gpointer);
-			info->offset = cfg->stack_offset;
-		}
-
-		if (i == spillvar)
-			return (*si)->offset;
-
-		i++;
-		si = &(*si)->next;
-	}
-
-	g_assert_not_reached ();
-	return 0;
-}
-
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
-#define reg_is_freeable(r) ((r) >= 3 && (r) <= 10)
+#define reg_is_freeable(r) (TRUE)
+#define freg_is_freeable(r) (TRUE)
 
 typedef struct {
 	int born_in;
@@ -1310,6 +1031,74 @@ inst_list_prepend (MonoMemPool *pool, InstList *list, MonoInst *data)
 	if (list)
 		list->prev = item;
 	return item;
+}
+
+#define STACK_OFFSETS_POSITIVE
+
+/*
+ * returns the offset used by spillvar. It allocates a new
+ * spill variable if necessary. Likely incorrect for sparc.
+ */
+static int
+mono_spillvar_offset (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+#ifdef STACK_OFFSETS_POSITIVE
+			cfg->stack_offset += sizeof (gpointer);
+#else
+			cfg->stack_offset -= sizeof (gpointer);
+#endif
+			info->offset = cfg->stack_offset;
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
+static int
+mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info_float; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+			cfg->stack_offset += 7;
+			cfg->stack_offset &= ~7;
+			info->offset = cfg->stack_offset;
+			cfg->stack_offset += sizeof (double);
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
 }
 
 /*
@@ -1406,6 +1195,66 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 
 	return sel;
 }
 
+static int
+get_float_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 regmask, int reg)
+{
+	MonoInst *load;
+	int i, sel, spill;
+
+	DEBUG (g_print ("start regmask to assign R%d: 0x%08x (R%d <- R%d R%d)\n", reg, regmask, ins->dreg, ins->sreg1, ins->sreg2));
+	/* exclude the registers in the current instruction */
+	if (reg != ins->sreg1 && (freg_is_freeable (ins->sreg1) || (ins->sreg1 >= MONO_MAX_FREGS && cfg->rs->fassign [ins->sreg1] >= 0))) {
+		if (ins->sreg1 >= MONO_MAX_FREGS)
+			regmask &= ~ (1 << cfg->rs->fassign [ins->sreg1]);
+		else
+			regmask &= ~ (1 << ins->sreg1);
+		DEBUG (g_print ("excluding sreg1 %s\n", mono_arch_regname (ins->sreg1)));
+	}
+	if (reg != ins->sreg2 && (freg_is_freeable (ins->sreg2) || (ins->sreg2 >= MONO_MAX_FREGS && cfg->rs->fassign [ins->sreg2] >= 0))) {
+		if (ins->sreg2 >= MONO_MAX_FREGS)
+			regmask &= ~ (1 << cfg->rs->fassign [ins->sreg2]);
+		else
+			regmask &= ~ (1 << ins->sreg2);
+		DEBUG (g_print ("excluding sreg2 %s %d\n", mono_arch_regname (ins->sreg2), ins->sreg2));
+	}
+	if (reg != ins->dreg && freg_is_freeable (ins->dreg)) {
+		regmask &= ~ (1 << ins->dreg);
+		DEBUG (g_print ("excluding dreg %s\n", mono_arch_regname (ins->dreg)));
+	}
+
+	DEBUG (g_print ("available regmask: 0x%08x\n", regmask));
+	g_assert (regmask); /* need at least a register we can free */
+	sel = -1;
+	/* we should track prev_use and spill the register that's farther */
+	for (i = 0; i < MONO_MAX_FREGS; ++i) {
+		if (regmask & (1 << i)) {
+			sel = i;
+			DEBUG (g_print ("selected register %s has assignment %d\n", mono_arch_regname (sel), cfg->rs->fassign [sel]));
+			break;
+		}
+	}
+	i = cfg->rs->fsymbolic [sel];
+	spill = ++cfg->spill_count;
+	cfg->rs->fassign [i] = -spill - 1;
+	mono_regstate_free_float(cfg->rs, sel);
+	/* we need to create a spill var and insert a load to sel after the current instruction */
+	MONO_INST_NEW (cfg, load, OP_LOADR8_MEMBASE);
+	load->dreg = sel;
+	load->inst_basereg = cfg->frame_reg;
+	load->inst_offset = mono_spillvar_offset_float (cfg, spill);
+	if (item->prev) {
+		while (ins->next != item->prev->data)
+			ins = ins->next;
+	}
+	load->next = ins->next;
+	ins->next = load;
+	DEBUG (g_print ("SPILLED LOAD (%d at 0x%08x(%%sp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
+	i = mono_regstate_alloc_float (cfg->rs, 1 << sel);
+	g_assert (i == sel);
+	
+	return sel;
+}
+
 static MonoInst*
 create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins)
 {
@@ -1422,13 +1271,44 @@ create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins)
 }
 
 static MonoInst*
+create_copy_ins_float (MonoCompile *cfg, int dest, int src, MonoInst *ins)
+{
+	MonoInst *copy;
+	MONO_INST_NEW (cfg, copy, OP_FMOVE);
+	copy->dreg = dest;
+	copy->sreg1 = src;
+	if (ins) {
+		copy->next = ins->next;
+		ins->next = copy;
+	}
+	DEBUG (g_print ("\tforced copy from %s to %s\n", mono_arch_regname (src), mono_arch_regname (dest)));
+	return copy;
+}
+
+static MonoInst*
 create_spilled_store (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoInst *ins)
 {
 	MonoInst *store;
 	MONO_INST_NEW (cfg, store, OP_STORE_MEMBASE_REG);
 	store->sreg1 = reg;
-	store->inst_destbasereg = sparc_sp;
+	store->inst_destbasereg = cfg->frame_reg;
 	store->inst_offset = mono_spillvar_offset (cfg, spill);
+	if (ins) {
+		store->next = ins->next;
+		ins->next = store;
+	}
+	DEBUG (g_print ("SPILLED STORE (%d at 0x%08x(%%sp)) R%d (from %s)\n", spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
+	return store;
+}
+
+static MonoInst*
+create_spilled_store_float (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoInst *ins)
+{
+	MonoInst *store;
+	MONO_INST_NEW (cfg, store, OP_STORER8_MEMBASE_REG);
+	store->sreg1 = reg;
+	store->inst_destbasereg = cfg->frame_reg;
+	store->inst_offset = mono_spillvar_offset_float (cfg, spill);
 	if (ins) {
 		store->next = ins->next;
 		ins->next = store;
@@ -1477,6 +1357,15 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 	return val;
 }
 
+/* Parameters used by the register allocator */
+
+/* Use %l4..%l7 as local registers */
+#define ARCH_CALLER_REGS (0xf0<<16)
+/* Use %f2..%f30 as the double precision floating point local registers */
+#define ARCH_CALLER_FREGS (0x55555554)
+
+/* FIXME: Strange loads from the stack in basic-float.cs:test_2_rem */
+
 /*
  * Local register allocation.
  * We first scan the list of instructions and we save the liveness info of
@@ -1489,12 +1378,15 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins;
 	MonoRegState *rs = cfg->rs;
-	int i, val, fpcount;
+	int i, val;
 	RegTrack *reginfo, *reginfof;
 	RegTrack *reginfo1, *reginfo2, *reginfod;
 	InstList *tmp, *reversed = NULL;
 	const char *spec;
 	guint32 src1_mask, src2_mask, dest_mask;
+	guint32 cur_iregs, cur_fregs;
+
+	/* FIXME: clobbering */
 
 	if (!bb->code)
 		return;
@@ -1503,16 +1395,18 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	mono_regstate_assign (rs);
 	reginfo = mono_mempool_alloc0 (cfg->mempool, sizeof (RegTrack) * rs->next_vireg);
 	reginfof = mono_mempool_alloc0 (cfg->mempool, sizeof (RegTrack) * rs->next_vfreg);
-	rs->ifree_mask = 0xdeadbeef; /* FIXME */
+	rs->ifree_mask = ARCH_CALLER_REGS;
+	rs->ffree_mask = ARCH_CALLER_FREGS;
 
 	ins = bb->code;
 	i = 1;
-	fpcount = 0; /* FIXME: track fp stack utilization */
 	DEBUG (g_print ("LOCAL regalloc: basic block: %d\n", bb->block_num));
 	/* forward pass on the instructions to collect register liveness info */
 	while (ins) {
 		spec = ins_spec [ins->opcode];
+		g_assert (spec);
 		DEBUG (print_ins (i, ins));
+
 		if (spec [MONO_INST_SRC1]) {
 			if (spec [MONO_INST_SRC1] == 'f')
 				reginfo1 = reginfof;
@@ -1559,19 +1453,73 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		ins = ins->next;
 	}
 
+	cur_iregs = ARCH_CALLER_REGS;
+	cur_fregs = ARCH_CALLER_FREGS;
+
 	DEBUG (print_regtrack (reginfo, rs->next_vireg));
 	DEBUG (print_regtrack (reginfof, rs->next_vfreg));
 	tmp = reversed;
 	while (tmp) {
 		int prev_dreg, prev_sreg1, prev_sreg2;
-		dest_mask = src1_mask = src2_mask = 0xdeadbeef; /* FIXME */
 		--i;
 		ins = tmp->data;
 		spec = ins_spec [ins->opcode];
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
+
+		/* make the register available for allocation: FIXME add fp reg */
+		if (ins->opcode == OP_SETREG || ins->opcode == OP_SETREGIMM) {
+			cur_iregs |= 1 << ins->dreg;
+			DEBUG (g_print ("adding %d to cur_iregs\n", ins->dreg));
+		} else if (ins->opcode == OP_SETFREG) {
+			cur_fregs |= 1 << ins->dreg;
+			DEBUG (g_print ("adding %d to cur_fregs\n", ins->dreg));
+		} else if (spec [MONO_INST_CLOB] == 'c') {
+			MonoCallInst *cinst = (MonoCallInst*)ins;
+			DEBUG (g_print ("excluding regs 0x%x from cur_iregs (0x%x)\n", cinst->used_iregs, cur_iregs));
+			cur_iregs &= ~cinst->used_iregs;
+			cur_fregs &= ~cinst->used_fregs;
+			DEBUG (g_print ("available cur_iregs: 0x%x\n", cur_iregs));
+			/* registers used by the calling convention are excluded from 
+			 * allocation: they will be selectively enabled when they are 
+			 * assigned by the special SETREG opcodes.
+			 */
+		}
+		dest_mask = src1_mask = src2_mask = cur_iregs;
+
+		/*
+		 * DEST
+		 */
 		/* update for use with FP regs... */
-		if (spec [MONO_INST_DEST] != 'f' && ins->dreg >= MONO_MAX_IREGS) {
+		if (spec [MONO_INST_DEST] == 'f') {
+			if (ins->dreg >= MONO_MAX_FREGS) {
+				val = rs->fassign [ins->dreg];
+				prev_dreg = ins->dreg;
+				if (val < 0) {
+					int spill = 0;
+					if (val < -1) {
+						/* the register gets spilled after this inst */
+						spill = -val -1;
+					}
+					dest_mask = cur_fregs;
+					val = mono_regstate_alloc_float (rs, dest_mask);
+					if (val < 0)
+						val = get_float_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
+					rs->fassign [ins->dreg] = val;
+					if (spill)
+						create_spilled_store_float (cfg, spill, val, prev_dreg, ins);
+				}
+				DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", mono_arch_regname (val), ins->dreg));
+				rs->fsymbolic [val] = prev_dreg;
+				ins->dreg = val;
+			} else {
+				prev_dreg = -1;
+			}
+			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
+				DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
+				mono_regstate_free_float (rs, ins->dreg);
+			}
+		} else if (ins->dreg >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->dreg];
 			prev_dreg = ins->dreg;
 			if (val < 0) {
@@ -1599,6 +1547,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						/* the register gets spilled after this inst */
 						spill = -val -1;
 					}
+					/* The second register must be a pair of the first */
+					dest_mask = 1 << (rs->iassign [prev_dreg] + 1);
 					val = mono_regstate_alloc_int (rs, dest_mask);
 					if (val < 0)
 						val = get_register_spilling (cfg, tmp, ins, dest_mask, hreg);
@@ -1606,33 +1556,25 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					if (spill)
 						create_spilled_store (cfg, spill, val, hreg, ins);
 				}
+				else {
+					/* The second register must be a pair of the first */
+					if (val != rs->iassign [prev_dreg] + 1) {
+						dest_mask = 1 << (rs->iassign [prev_dreg] + 1);
+
+						val = mono_regstate_alloc_int (rs, dest_mask);
+						if (val < 0)
+							val = get_register_spilling (cfg, tmp, ins, dest_mask, hreg);
+
+						create_copy_ins (cfg, rs->iassign [hreg], val, ins);
+
+						rs->iassign [hreg] = val;
+					}
+				}					
+
 				DEBUG (g_print ("\tassigned hreg %s to dest R%d\n", mono_arch_regname (val), hreg));
 				rs->isymbolic [val] = hreg;
-				/* FIXME:? ins->dreg = val; */
-				if (ins->dreg == sparc_l1) {
-					if (val != sparc_l0)
-						create_copy_ins (cfg, val, sparc_l0, ins);
-				} else if (ins->dreg == sparc_l0) {
-					if (val == sparc_l1) {
-						/* swap */
-						create_copy_ins (cfg, sparc_l2, sparc_l0, ins);
-						create_copy_ins (cfg, sparc_l0, sparc_l1, ins);
-						create_copy_ins (cfg, sparc_l1, sparc_l2, ins);
-					} else {
-						/* two forced copies */
-						create_copy_ins (cfg, val, sparc_l0, ins);
-						create_copy_ins (cfg, ins->dreg, sparc_l1, ins);
-					}
-				} else {
-					if (val == sparc_l0) {
-						create_copy_ins (cfg, ins->dreg, sparc_l1, ins);
-					} else {
-						/* two forced copies */
-						create_copy_ins (cfg, val, sparc_l0, ins);
-						create_copy_ins (cfg, ins->dreg, sparc_l1, ins);
-					}
-				}
-				if (reg_is_freeable (val) && hreg >= 0 && reginfo [hreg].born_in >= i) {
+
+				if (reg_is_freeable (val) && hreg >= 0 && (reginfo [hreg].born_in >= i && !(cur_iregs & (1 << val)))) {
 					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
 					mono_regstate_free_int (rs, val);
 				}
@@ -1640,11 +1582,42 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else {
 			prev_dreg = -1;
 		}
-		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && reginfo [prev_dreg].born_in >= i) {
+		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
 			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 			mono_regstate_free_int (rs, ins->dreg);
 		}
-		if (spec [MONO_INST_SRC1] != 'f' && ins->sreg1 >= MONO_MAX_IREGS) {
+
+		/**
+		 * SRC1
+		 */
+		if (spec [MONO_INST_SRC1] == 'f') {
+			if (ins->sreg1 >= MONO_MAX_FREGS) {
+				val = rs->fassign [ins->sreg1];
+				prev_sreg1 = ins->sreg1;
+				if (val < 0) {
+					int spill = 0;
+					if (val < -1) {
+						/* the register gets spilled after this inst */
+						spill = -val -1;
+					}
+					//g_assert (val == -1); /* source cannot be spilled */
+					src1_mask = cur_fregs;
+					val = mono_regstate_alloc_float (rs, src1_mask);
+					if (val < 0)
+						val = get_float_register_spilling (cfg, tmp, ins, src1_mask, ins->sreg1);
+					rs->fassign [ins->sreg1] = val;
+					DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", mono_arch_regname (val), ins->sreg1));
+					if (spill) {
+						MonoInst *store = create_spilled_store_float (cfg, spill, val, prev_sreg1, NULL);
+						insert_before_ins (ins, tmp, store);
+					}
+				}
+				rs->fsymbolic [val] = prev_sreg1;
+				ins->sreg1 = val;
+			} else {
+				prev_sreg1 = -1;
+			}
+		} else if (ins->sreg1 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg1];
 			prev_sreg1 = ins->sreg1;
 			if (val < 0) {
@@ -1684,7 +1657,35 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else {
 			prev_sreg1 = -1;
 		}
-		if (spec [MONO_INST_SRC2] != 'f' && ins->sreg2 >= MONO_MAX_IREGS) {
+
+		/*
+		 * SRC2
+		 */
+		if (spec [MONO_INST_SRC2] == 'f') {
+			if (ins->sreg2 >= MONO_MAX_FREGS) {
+				val = rs->fassign [ins->sreg2];
+				prev_sreg2 = ins->sreg2;
+				if (val < 0) {
+					int spill = 0;
+					if (val < -1) {
+						/* the register gets spilled after this inst */
+						spill = -val -1;
+					}
+					src2_mask = cur_fregs;
+					val = mono_regstate_alloc_float (rs, src2_mask);
+					if (val < 0)
+						val = get_float_register_spilling (cfg, tmp, ins, src2_mask, ins->sreg2);
+					rs->fassign [ins->sreg2] = val;
+					DEBUG (g_print ("\tassigned sreg2 %s to R%d\n", mono_arch_regname (val), ins->sreg2));
+					if (spill)
+						create_spilled_store_float (cfg, spill, val, prev_sreg2, ins);
+				}
+				rs->fsymbolic [val] = prev_sreg2;
+				ins->sreg2 = val;
+			} else {
+				prev_sreg2 = -1;
+			}
+		} else if (ins->sreg2 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg2];
 			prev_sreg2 = ins->sreg2;
 			if (val < 0) {
@@ -1709,7 +1710,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if (spec [MONO_INST_CLOB] == 'c') {
 			int j, s;
-			guint32 clob_mask = 0xdeadbeef; /* FIXME */
+			guint32 clob_mask = ARCH_CALLER_REGS;
 			for (j = 0; j < MONO_MAX_IREGS; ++j) {
 				s = 1 << j;
 				if ((clob_mask & s) && !(rs->ifree_mask & s) && j != ins->sreg1) {
@@ -1727,6 +1728,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}*/
 		
 		//DEBUG (print_ins (i, ins));
+
 		tmp = tmp->next;
 	}
 }
@@ -1740,56 +1742,112 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean 
 static unsigned char*
 mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 {
+	NOT_IMPLEMENTED;
 	return code;
 }
 
-void
-sparc_patch (guchar *code, guchar *target)
+static void
+sparc_patch (guint8 *code, guint8 *target)
 {
 	guint32 ins = *(guint32*)code;
-	guint32 prim = ins >> 26;
+	guint32 op = ins >> 30;
+	guint32 op2 = (ins >> 22) & 0x7;
+	guint32 rd = (ins >> 25) & 0x1f;
+	gint32 disp = (target - code) >> 2;
 
 //	g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
-	if (prim == 18) {
-		// absolute address
-		if (ins & 2) {
-			guint32 li = (guint32)target;
-			ins = prim << 26 | (ins & 3);
-			ins |= li;
-			// FIXME: assert the top bits of li are 0
-		} else {
-			gint diff = target - code;
-			ins = prim << 26 | (ins & 3);
-			diff &= ~3;
-			diff &= ~(63 << 26);
-			ins |= diff;
-		}
-		*(guint32*)code = ins;
-	} else if (prim == 16) {
-		// absolute address
-		if (ins & 2) {
-			guint32 li = (guint32)target;
-			ins = (ins & 0xffff0000) | (ins & 3);
-			li &= 0xffff;
-			ins |= li;
-			// FIXME: assert the top bits of li are 0
-		} else {
-			gint diff = target - code;
-			ins = (ins & 0xffff0000) | (ins & 3);
-			diff &= 0xffff;
-			ins |= diff;
-		}
-		*(guint32*)code = ins;
-	} else {
-		g_assert_not_reached ();
+
+	if ((op == 0) && (op2 == 2)) {
+		if (!sparc_is_imm22 (disp))
+			NOT_IMPLEMENTED;
+		/* Bicc */
+		*(guint32*)code = ((ins >> 22) << 22) | disp;
 	}
+	else if ((op == 0) && (op2 == 6)) {
+		if (!sparc_is_imm22 (disp))
+			NOT_IMPLEMENTED;
+		/* FBicc */
+		*(guint32*)code = ((ins >> 22) << 22) | disp;
+	}
+	else if ((op == 0) && (op2 == 4)) {
+		guint32 ins2 = *(guint32*)(code + 4);
+
+		if (((ins2 >> 30) == 2) && (((ins2 >> 19) & 0x3f) == 2)) {
+			/* sethi followed by or */
+			guint32 *p = (guint32*)code;
+			sparc_set (p, target, rd);
+			while (p < (code + 4))
+				sparc_nop (p);
+		}
+		else if ((sparc_inst_op (ins2) == 3) && (sparc_inst_imm (ins2))) {
+			/* sethi followed by load/store */
+			guint32 t = (guint32)target;
+			*(guint32*)code = ins | (t >> 10);
+			*(guint32*)(code + 4) = ins2 | (t & 0x3ff);
+		}
+		else if ((sparc_inst_op (ins2) == 2) && (sparc_inst_op3 (ins2) == 0x38) && 
+				 (sparc_inst_imm (ins2))) {
+			/* sethi followed by jmpl */
+			guint32 t = (guint32)target;
+			*(guint32*)code = ins | (t >> 10);
+			*(guint32*)(code + 4) = ins2 | (t & 0x3ff);
+		}
+		else
+			NOT_IMPLEMENTED;
+	}
+	else if (op == 01) {
+		sparc_call_simple (code, target - code);
+	}
+	else
+		NOT_IMPLEMENTED;
+
 //	g_print ("patched with 0x%08x\n", ins);
+}
+
+static guint32*
+emit_move_return_value (MonoInst *ins, guint32 *code)
+{
+	/* Move return value to the target register */
+	/* FIXME: do this in the local reg allocator */
+	switch (ins->opcode) {
+	case OP_VOIDCALL:
+	case OP_VOIDCALL_REG:
+	case OP_VOIDCALL_MEMBASE:
+		break;
+	case CEE_CALL:
+	case OP_CALL_REG:
+	case OP_CALL_MEMBASE:
+		sparc_mov_reg_reg (code, sparc_o0, ins->dreg);
+		break;
+	case OP_LCALL:
+	case OP_LCALL_REG:
+	case OP_LCALL_MEMBASE:
+		/* 
+		 * ins->dreg is the least significant reg due to the lreg: LCALL rule
+		 * in inssel.brg.
+		 */
+		sparc_mov_reg_reg (code, sparc_o0, ins->dreg + 1);
+		sparc_mov_reg_reg (code, sparc_o1, ins->dreg);
+		break;
+	case OP_FCALL:
+	case OP_FCALL_REG:
+	case OP_FCALL_MEMBASE:
+		sparc_fmovs (code, sparc_f0, ins->dreg);
+		sparc_fmovs (code, sparc_f1, ins->dreg + 1);
+		break;
+	case OP_VCALL:
+	case OP_VCALL_REG:
+	case OP_VCALL_MEMBASE:
+		break;
+	default:
+		NOT_IMPLEMENTED;
+	}
+
+	return code;
 }
 
 /*
  * Some conventions used in the following code.
- * 1) We're assuming a V9 CPU.  We will check for that later.
- * In reality, we're mostly sticking with V8 instructions...
  * 2) The only scratch registers we have are o7 and g1.  We try to
  * stick to o7 when we can, and use g1 when necessary.
  */
@@ -1800,36 +1858,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins;
 	MonoCallInst *call;
 	guint offset;
-	guint8 *code = cfg->native_code + cfg->code_len;
+	guint32 *code = (guint32*)(cfg->native_code + cfg->code_len);
 	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
 	int max_len, cpos;
 
+	GC_malloc (240);
+
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass (cfg, bb);
-
-#if 0
-	/* 
-	 * various stratgies to align BBs. Using real loop detection or simply
-	 * aligning every block leads to more consistent benchmark results,
-	 * but usually slows down the code
-	 * we should do the alignment outside this function or we should adjust
-	 * bb->native offset as well or the code is effectively slowed down!
-	 */
-	/* align all blocks */
-//	if ((pad = (cfg->code_len & (align - 1)))) {
-	/* poor man loop start detection */
-//	if (bb->code && bb->in_count && bb->in_bb [0]->cil_code > bb->cil_code && (pad = (cfg->code_len & (align - 1)))) {
-	/* consider real loop detection and nesting level */
-//	if (bb->loop_blocks && bb->nesting < 3 && (pad = (cfg->code_len & (align - 1)))) {
-	/* consider real loop detection */
-	if (/*bb->loop_blocks &&*/ (pad = (cfg->code_len & (align - 1)))) {
-		pad = align - pad;
-		x86_padding (code, pad);
-		cfg->code_len += pad;
-		bb->native_offset = cfg->code_len;
-	}
-#endif
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
@@ -1837,59 +1874,76 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	cpos = bb->max_offset;
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
-		//MonoCoverageInfo *cov = mono_get_coverage_info (cfg->method);
-		//g_assert (!mono_compile_aot);
-		//cpos += 6;
-		//if (bb->cil_code)
-		//	cov->data [bb->dfn].iloffset = bb->cil_code - cfg->cil_code;
-		/* this is not thread save, but good enough */
-		/* fixme: howto handle overflows? */
-		//x86_inc_mem (code, &cov->data [bb->dfn].count); 
+		NOT_IMPLEMENTED;
 	}
 
 	ins = bb->code;
 	while (ins) {
-		offset = code - cfg->native_code;
+		offset = (guint8*)code - cfg->native_code;
 
 		max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
 
 		if (offset > (cfg->code_size - max_len - 16)) {
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-			code = cfg->native_code + offset;
+			code = (guint32*)(cfg->native_code + offset);
 		}
-	//	if (ins->cil_code)
-	//		g_print ("cil code\n");
+		//	if (ins->cil_code)
+		//		g_print ("cil code\n");
 
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM:
-			sparc_set (code, ins->inst_imm, sparc_o7);
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_stb_imm (code, sparc_o7, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			if (ins->inst_imm == 0)
+				sparc_stb_imm (code, sparc_g0, ins->inst_destbasereg, ins->inst_offset);
+			else {
+				sparc_set (code, ins->inst_imm, sparc_o7);
+				sparc_stb_imm (code, sparc_o7, ins->inst_destbasereg, ins->inst_offset);
+			}
 			break;
 		case OP_STOREI2_MEMBASE_IMM:
-			sparc_set (code, ins->inst_imm, sparc_o7);
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_sth_imm (code, sparc_o7, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			if (ins->inst_imm == 0)
+				sparc_sth_imm (code, sparc_g0, ins->inst_destbasereg, ins->inst_offset);
+			else {
+				sparc_set (code, ins->inst_imm, sparc_o7);
+				sparc_sth_imm (code, sparc_o7, ins->inst_destbasereg, ins->inst_offset);
+			}
 			break;
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM:
-			sparc_set (code, ins->inst_imm, sparc_o7);
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_st_imm (code, sparc_o7, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			if (ins->inst_imm == 0)
+				sparc_st_imm (code, sparc_g0, ins->inst_destbasereg, ins->inst_offset);
+			else {
+				sparc_set (code, ins->inst_imm, sparc_o7);
+				sparc_st_imm (code, sparc_o7, ins->inst_destbasereg, ins->inst_offset);
+			}
 			break;
 		case OP_STOREI1_MEMBASE_REG:
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_stb_imm (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			sparc_stb_imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_STOREI2_MEMBASE_REG:
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_sth (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			sparc_sth_imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_STORE_MEMBASE_REG:
 		case OP_STOREI4_MEMBASE_REG:
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_st (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			sparc_st_imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+			break;
+		case OP_STOREI8_MEMBASE_REG:
+			/* Only used by OP_MEMSET */
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			sparc_std_imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case CEE_LDIND_I:
 		case CEE_LDIND_I4:
@@ -1904,27 +1958,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE:
-			if (TRUE) { /* FIXME */
-				sparc_ld_imm (code, ins->inst_basereg, ins->inst_offset, ins->dreg);
-			} else {
-				sparc_ld (code, sparc_l0, 0, ins->inst_offset);
-				sparc_ld (code, ins->dreg, 0, sparc_l0);
-			}
+			EMIT_LOAD_MEMBASE (ins, ld);
 			break;
 		case OP_LOADU1_MEMBASE:
-//			g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_ldub_imm (code, ins->inst_basereg, ins->inst_offset, ins->dreg);
+			EMIT_LOAD_MEMBASE (ins, ldub);
 			break;
 		case OP_LOADI1_MEMBASE:
-		  //	g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_ldsb_imm (code, ins->inst_basereg, ins->inst_offset, ins->dreg);
+			EMIT_LOAD_MEMBASE (ins, ldsb);
 			break;
 		case OP_LOADU2_MEMBASE:
-		  //	g_assert (ppc_is_imm16 (ins->inst_offset));
-			sparc_lduh_imm (code, ins->inst_basereg, ins->inst_offset, ins->dreg);
+			EMIT_LOAD_MEMBASE (ins, lduh);
 			break;
 		case OP_LOADI2_MEMBASE:
-			sparc_ldsh_imm (code, ins->inst_basereg, ins->inst_offset, ins->dreg);
+			EMIT_LOAD_MEMBASE (ins, ldsh);
 			break;
 		case CEE_CONV_I1:
 			sparc_sll_imm (code, ins->sreg1, 24, sparc_o7);
@@ -1946,9 +1992,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_cmp (code, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COMPARE_IMM:
-			if (TRUE) { /* FIXME */
-				sparc_cmp_imm (code, ins->sreg1, (ins->inst_imm & 0x1fff));
-			} else {
+			if (sparc_is_imm13 (ins->inst_imm))
+				sparc_cmp_imm (code, ins->sreg1, ins->inst_imm);
+			else {
 				sparc_set (code, ins->inst_imm, sparc_o7);
 				sparc_cmp (code, ins->sreg1, sparc_o7);
 			}
@@ -1957,7 +2003,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_cmp_imm (code, ins->sreg1, 0);
 			break;
 		case CEE_BREAK:
-			g_assert_not_reached();
+			sparc_ta (code, 1);
 			break;
 		case OP_ADDCC:
 			sparc_add (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
@@ -1969,15 +2015,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_addx (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_ADD_IMM:
-			if (TRUE) { /* FIXME */
-				sparc_add_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
-			} else {
-				sparc_ld (code, sparc_l0, 0, ins->inst_imm);
-				sparc_add (code, 0, ins->dreg, ins->sreg1, sparc_l0);
-			}
+			EMIT_ALU_IMM (ins, add, FALSE);
 			break;
 		case OP_ADC_IMM:
-			sparc_addx (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
+			EMIT_ALU_IMM (ins, addx, FALSE);
 			break;
 		case OP_SUBCC:
 			sparc_sub (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
@@ -1990,70 +2031,103 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUB_IMM:
 			// we add the negated value
-		  //	g_assert (ppc_is_imm16 (-ins->inst_imm));
-			sparc_add_imm (code, FALSE, ins->sreg1, -ins->inst_imm, ins->dreg);
+			if (sparc_is_imm13 (- ins->inst_imm))
+				sparc_add_imm (code, FALSE, ins->sreg1, -ins->inst_imm, ins->dreg);
+			else {
+				sparc_set (code, - ins->inst_imm, sparc_o7);
+				sparc_add (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
+			}
 			break;
 		case OP_SBB_IMM:
-			sparc_subx_imm (code, FALSE, ins->sreg2, ins->inst_imm, ins->dreg);
+			EMIT_ALU_IMM (ins, subx, FALSE);
 			break;
 		case CEE_AND:
 			sparc_and (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_AND_IMM:
-			sparc_and_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
+			EMIT_ALU_IMM (ins, and, FALSE);
 			break;
 		case CEE_DIV:
+			/* Sign extend sreg1 into %y */
+			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
+			sparc_wry (code, sparc_o7, sparc_g0);
 			sparc_sdiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case CEE_DIV_UN:
+			sparc_wry (code, sparc_g0, sparc_g0);
 			sparc_udiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_DIV_IMM:
-			sparc_sdiv_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
+			/* Sign extend sreg1 into %y */
+			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
+			sparc_wry (code, sparc_o7, sparc_g0);
+			EMIT_ALU_IMM (ins, sdiv, FALSE);
 			break;
 		case CEE_REM:
+			/* Sign extend sreg1 into %y */
+			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
+			sparc_wry (code, sparc_o7, sparc_g0);
 			sparc_sdiv (code, FALSE, ins->sreg1, ins->sreg2, sparc_o7);
 			sparc_smul (code, FALSE, ins->sreg2, sparc_o7, sparc_o7);
-			sparc_sub (code, FALSE, sparc_o7, ins->sreg1, ins->dreg);
+			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			break;
 		case CEE_REM_UN:
+			sparc_wry (code, sparc_g0, sparc_g0);
 			sparc_udiv (code, FALSE, ins->sreg1, ins->sreg2, sparc_o7);
 			sparc_umul (code, FALSE, ins->sreg2, sparc_o7, sparc_o7);
-			sparc_sub (code, FALSE, sparc_o7, ins->sreg1, ins->dreg);
+			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			break;
 		case OP_REM_IMM:
+			/* Sign extend sreg1 into %y */
+			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
+			sparc_wry (code, sparc_o7, sparc_g0);
+			if (!sparc_is_imm13 (ins->inst_imm))
+				NOT_IMPLEMENTED;
 			sparc_sdiv_imm (code, FALSE, ins->sreg1, ins->inst_imm, sparc_o7);
 			sparc_smul_imm (code, FALSE, sparc_o7, ins->inst_imm, sparc_o7);
-			sparc_sub (code, FALSE, sparc_o7, ins->sreg1, ins->dreg);
+			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			break;
 		case CEE_OR:
 			sparc_or (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_OR_IMM:
-			sparc_set (code, ins->inst_imm, sparc_o7);
-			sparc_or (code, FALSE, ins->sreg2, sparc_o7, ins->dreg);
+			EMIT_ALU_IMM (ins, or, FALSE);
 			break;
 		case CEE_XOR:
 			sparc_xor (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_XOR_IMM:
-			sparc_set (code, ins->inst_imm, sparc_o7);
-			sparc_xor (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
+			EMIT_ALU_IMM (ins, xor, FALSE);
 			break;
 		case CEE_SHL:
 			sparc_sll (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_SHL_IMM:
-			sparc_sll_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
+			if (sparc_is_imm13 (ins->inst_imm))
+				sparc_sll_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
+			else {
+				sparc_set (code, ins->inst_imm, sparc_o7);
+				sparc_sll (code, ins->sreg1, sparc_o7, ins->dreg);
+			}
 			break;
 		case CEE_SHR:
 			sparc_sra (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_SHR_IMM:
-			sparc_sra_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
+			if (sparc_is_imm13 (ins->inst_imm))
+				sparc_sra_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
+			else {
+				sparc_set (code, ins->inst_imm, sparc_o7);
+				sparc_sra (code, ins->sreg1, sparc_o7, ins->dreg);
+			}
 			break;
 		case OP_SHR_UN_IMM:
-			sparc_srl_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
+			if (sparc_is_imm13 (ins->inst_imm))
+				sparc_srl_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
+			else {
+				sparc_set (code, ins->inst_imm, sparc_o7);
+				sparc_srl (code, ins->sreg1, sparc_o7, ins->dreg);
+			}
 			break;
 		case CEE_SHR_UN:
 			sparc_srl (code, ins->sreg1, ins->sreg2, ins->dreg);
@@ -2070,49 +2144,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_smul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_MUL_IMM:
-			sparc_smul_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
+			EMIT_ALU_IMM (ins, smul, FALSE);
 			break;
 		case CEE_MUL_OVF:
-			/* FIXME: this isn't right, I don't think */
+			/* FIXME: */
 			sparc_smul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case CEE_MUL_OVF_UN:
-			/* FIXME: This isn't right either */
+			/* FIXME: */
 			sparc_umul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_ICONST:
 		case OP_SETREGIMM:
 			sparc_set (code, ins->inst_c0, ins->dreg);
 			break;
-		/*case OP_CLASS:
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_CLASS, (gpointer)ins->inst_c0);
-			break;
-		case OP_IMAGE:
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_IMAGE, (gpointer)ins->inst_c0);
-			break;*/
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
 		case OP_SETREG:
-			sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
+			if (ins->sreg1 != ins->dreg)
+				sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
 			break;
 		case CEE_JMP:
 			g_assert_not_reached ();
-			/*
-			 * Copied roughly from x86.  Probably doesn't work
-			 */
-
-			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
-			/* reset offset to make max_len work */
-			offset = code - cfg->native_code;
-
-			g_assert (!cfg->method->save_lmf);
-
-			offset = code - cfg->native_code;
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			sparc_jmp_imm (code, sparc_g0, 0);
-
 			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
@@ -2129,6 +2183,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			sparc_call_simple (code, 0);
+			sparc_nop (code);
+
+			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2136,10 +2193,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
-			sparc_call (code, ins->sreg1, sparc_g0);
-			/* FIXME: yea, a store in g0 is a GOOD IDEA */
-			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
-				sparc_add_imm (code, FALSE, sparc_sp, call->stack_usage, sparc_g0);
+			sparc_jmpl (code, ins->sreg1, sparc_g0, sparc_callsite);
+			sparc_nop (code);
+
+			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
@@ -2147,94 +2204,79 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
-			sparc_call_imm (code, ins->sreg1, ins->inst_offset);
-			/* FIXME: yea, a store in g0 is a GOOD IDEA */
-			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
-				sparc_add_imm (code, FALSE, sparc_sp, call->stack_usage, sparc_g0);
-                        break;
+			g_assert (sparc_is_imm13 (ins->inst_offset));
 
+			sparc_ld_imm (code, ins->inst_basereg, ins->inst_offset, sparc_o7);
+			sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
+			sparc_nop (code);
+
+			code = emit_move_return_value (ins, code);
 			break;
 		case OP_OUTARG:
-			/* FIXME: This can be SO far wrong! */
-			sparc_st (code, ins->sreg1, sparc_g0, sparc_sp);
-			sparc_sub_imm (code, FALSE, sparc_sp, 4, sparc_sp);
-			break;
-		case OP_LOCALLOC:
-			/* keep alignment */
-#define MONO_FRAME_ALIGNMENT 32
-			sparc_add_imm (code, 0, ins->sreg1, MONO_FRAME_ALIGNMENT-1, sparc_o7);
-			//ppc_rlwinm (code, sparc_l0, sparc_l0, 0, 0, 27);
-			//ppc_lwz (code, sparc_l0, 0, ppc_sp);
-			// Fix semantics to negate to another reg? FIXME
-			//sparc_neg (code, sparc_l0, sparc_l0);
-			//ppc_stwux (code, ppc_sp, sparc_l0, ppc_sp);
-			//ppc_mr (code, ins->dreg, ppc_sp);
 			g_assert_not_reached ();
 			break;
+		case OP_LOCALLOC:
+			NOT_IMPLEMENTED;
+			break;
 		case CEE_RET:
-			sparc_ret (code);
+			/* The return is done in the epilog */
+			g_assert_not_reached ();
 			break;
 		case CEE_THROW: {
-			sparc_mov_reg_reg (code, ins->sreg1, sparc_sp);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-					     (gpointer)"throw_exception");
-			sparc_call_simple (code, 0);
+			sparc_unimp (code, 0);
+			/* FIXME: */
 			break;
 		}
 		case OP_ENDFILTER:
-			if (ins->sreg1 != sparc_sp)
-				sparc_mov_reg_reg (code, ins->sreg1, sparc_sp);
-			sparc_ret (code);
+			/* FIXME: */
 			break;
 		case CEE_ENDFINALLY:
-			sparc_ret (code);
+			/* FIXME: */
 			break;
 		case OP_CALL_HANDLER: 
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-			sparc_call_simple (code, 0);
+			/* FIXME: */
 			break;
 		case OP_LABEL:
-			ins->inst_c0 = code - cfg->native_code;
+			ins->inst_c0 = (guint8*)code - cfg->native_code;
 			break;
 		case CEE_BR:
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
-			//if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
-			//break;
+			if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
+				break;
 			if (ins->flags & MONO_INST_BRLABEL) {
 				if (ins->inst_i0->inst_c0) {
-					sparc_call_simple (code, 0);
+					gint32 disp = (ins->inst_i0->inst_c0 - ((guint8*)code - cfg->native_code)) >> 2;
+					g_assert (sparc_is_imm22 (disp));
+					sparc_branch (code, 1, sparc_ba, disp);
 				} else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					sparc_call_simple (code, 0);
+					sparc_branch (code, 1, sparc_ba, 0);
 				}
 			} else {
 				if (ins->inst_target_bb->native_offset) {
-					sparc_call_simple (code, 0);
+					gint32 disp = (ins->inst_target_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2;
+					g_assert (sparc_is_imm22 (disp));
+					sparc_branch (code, 1, sparc_ba, disp);
 				} else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					sparc_call_simple (code, 0);
+					sparc_branch (code, 1, sparc_ba, 0);
 				} 
 			}
+			sparc_nop (code);
 			break;
 		case OP_BR_REG:
 			sparc_jmp (code, ins->sreg1, sparc_g0);
+			sparc_nop (code);
 			break;
 		case OP_CEQ:
-			//ppc_li (code, ins->dreg, 0);
-			//ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 2);
-			//ppc_li (code, ins->dreg, 1);
-			break;
 		case OP_CLT:
 		case OP_CLT_UN:
-			//ppc_li (code, ins->dreg, 1);
-			//ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
-			//ppc_li (code, ins->dreg, 0);
-			break;
 		case OP_CGT:
 		case OP_CGT_UN:
-			//ppc_li (code, ins->dreg, 1);
-			//ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
-			//ppc_li (code, ins->dreg, 0);
+			sparc_clr_reg (code, ins->dreg);
+			sparc_branch (code, 1, opcode_to_sparc_cond (ins->opcode), 2);
+			/* delay slot */
+			sparc_set (code, 1, ins->dreg);
 			break;
 		case OP_COND_EXC_EQ:
 		case OP_COND_EXC_NE_UN:
@@ -2250,6 +2292,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_NO:
 		case OP_COND_EXC_C:
 		case OP_COND_EXC_NC:
+			/* FIXME: */
 			//EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], 
 			//			    (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
 			break;
@@ -2263,248 +2306,225 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BGE_UN:
 		case CEE_BLE:
 		case CEE_BLE_UN:
-			EMIT_COND_BRANCH (ins, ins->opcode - CEE_BEQ);
+			EMIT_COND_BRANCH (ins, opcode_to_sparc_cond (ins->opcode));
 			break;
 
 		/* floating point opcodes */
-		case OP_R8CONST:
-			//ppc_load (code, sparc_l0, ins->inst_p0);
-			//ppc_lfd (code, ins->dreg, 0, sparc_l0);
+		case OP_R8CONST: {
+			double d = *(double*)ins->inst_p0;
+
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, ins->inst_p0);
+			sparc_sethi (code, 0, sparc_o7);
+			sparc_lddf_imm (code, sparc_o7, 0, ins->dreg);
 			break;
-		case OP_R4CONST:
-			//ppc_load (code, sparc_l0, ins->inst_p0);
-			//ppc_lfs (code, ins->dreg, 0, sparc_l0);
+		}
+		case OP_R4CONST: {
+			float f = *(float*)ins->inst_p0;
+
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, ins->inst_p0);
+			sparc_sethi (code, 0, sparc_o7);
+			sparc_ldf_imm (code, sparc_o7, 0, ins->dreg);
+
+			/* Extend to double */
+			sparc_fstod (code, ins->dreg, ins->dreg);
 			break;
+		}
 		case OP_STORER8_MEMBASE_REG:
-			//ppc_stfd (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+			if (!sparc_is_imm13 (ins->inst_offset + 4))
+				NOT_IMPLEMENTED;
+			if (ins->inst_offset % 8) {
+				/* Misaligned */
+				sparc_stf_imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+				sparc_stf_imm (code, ins->sreg1 + 1, ins->inst_destbasereg, ins->inst_offset + 4);
+			} else
+				sparc_stdf_imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_LOADR8_MEMBASE:
-			//ppc_lfd (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+			g_assert ((ins->inst_offset % 8) == 0);
+			EMIT_LOAD_MEMBASE (ins, lddf);
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			//ppc_stfs (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+			/* This requires a double->single conversion */
+			sparc_fdtos (code, ins->sreg1, sparc_f0);
+			if (!sparc_is_imm13 (ins->inst_offset))
+				NOT_IMPLEMENTED;
+			sparc_stf_imm (code, sparc_f0, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_LOADR4_MEMBASE:
-			//ppc_lfs (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+			EMIT_LOAD_MEMBASE (ins, ldf);
+			/* Extend to double */
+			sparc_fstod (code, ins->dreg, ins->dreg);
 			break;
-		case CEE_CONV_R4: /* FIXME: change precision */
+		case OP_FMOVE:
+			sparc_fmovs (code, ins->sreg1, ins->dreg);
+			sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
+			break;
+		case CEE_CONV_R4:
+			sparc_st_imm (code, ins->sreg1, sparc_sp, cfg->stack_offset - 8);
+			sparc_ldf_imm (code, sparc_sp, cfg->stack_offset - 8, sparc_f0);
+			sparc_fitos (code, sparc_f0, sparc_f0);
+			sparc_fstod (code, sparc_f0, ins->dreg);
+			break;
 		case CEE_CONV_R8:
-			g_assert_not_reached ();
-			//x86_push_reg (code, ins->sreg1);
-			//x86_fild_membase (code, X86_ESP, 0, FALSE);
-			//x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-			break;
-		case OP_X86_FP_LOAD_I8:
-			g_assert_not_reached ();
-			//x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
-			break;
-		case OP_X86_FP_LOAD_I4:
-			g_assert_not_reached ();
-			//x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
+			NOT_IMPLEMENTED;
 			break;
 		case OP_FCONV_TO_I1:
-			g_assert_not_reached ();
-			code = emit_float_to_int (cfg, code, ins->dreg, 1, TRUE);
+			NOT_IMPLEMENTED;
 			break;
 		case OP_FCONV_TO_U1:
-			g_assert_not_reached ();
-			code = emit_float_to_int (cfg, code, ins->dreg, 1, FALSE);
+			NOT_IMPLEMENTED;
 			break;
 		case OP_FCONV_TO_I2:
-			g_assert_not_reached ();
-			code = emit_float_to_int (cfg, code, ins->dreg, 2, TRUE);
+			NOT_IMPLEMENTED;
 			break;
 		case OP_FCONV_TO_U2:
-			g_assert_not_reached ();
-			code = emit_float_to_int (cfg, code, ins->dreg, 2, FALSE);
+			NOT_IMPLEMENTED;
 			break;
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_I:
-			g_assert_not_reached ();
-			code = emit_float_to_int (cfg, code, ins->dreg, 4, TRUE);
+			sparc_fdtoi (code, ins->sreg1, sparc_f0);
+			sparc_stdf_imm (code, sparc_f0, sparc_sp, cfg->stack_offset - 8);
+			sparc_ld_imm (code, sparc_sp, cfg->stack_offset - 8, ins->dreg);
 			break;
 		case OP_FCONV_TO_U4:
 		case OP_FCONV_TO_U:
-			g_assert_not_reached ();
-			code = emit_float_to_int (cfg, code, ins->dreg, 4, FALSE);
+			NOT_IMPLEMENTED;
 			break;
 		case OP_FCONV_TO_I8:
 		case OP_FCONV_TO_U8:
-			g_assert_not_reached ();
-			/*x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-			x86_fnstcw_membase(code, X86_ESP, 0);
-			x86_mov_reg_membase (code, ins->inst_dreg_low, X86_ESP, 0, 2);
-			x86_alu_reg_imm (code, X86_OR, ins->inst_dreg_low, 0xc00);
-			x86_mov_membase_reg (code, X86_ESP, 2, ins->inst_dreg_low, 2);
-			x86_fldcw_membase (code, X86_ESP, 2);
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-			x86_fist_pop_membase (code, X86_ESP, 0, TRUE);
-			x86_pop_reg (code, ins->inst_dreg_low);
-			x86_pop_reg (code, ins->inst_dreg_high);
-			x86_fldcw_membase (code, X86_ESP, 0);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);*/
+			NOT_IMPLEMENTED;
 			break;
 		case OP_LCONV_TO_R_UN: { 
-#if 0
-			static guint8 mn[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f, 0x40 };
-			guint8 *br;
-
-			/* load 64bit integer to FP stack */
-			x86_push_imm (code, 0);
-			x86_push_reg (code, ins->sreg2);
-			x86_push_reg (code, ins->sreg1);
-			x86_fild_membase (code, X86_ESP, 0, TRUE);
-			/* store as 80bit FP value */
-			x86_fst80_membase (code, X86_ESP, 0);
-			
-			/* test if lreg is negative */
-			x86_test_reg_reg (code, ins->sreg2, ins->sreg2);
-			br = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
-	
-			/* add correction constant mn */
-			x86_fld80_mem (code, mn);
-			x86_fld80_membase (code, X86_ESP, 0);
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
-			x86_fst80_membase (code, X86_ESP, 0);
-
-			x86_patch (br, code);
-
-			x86_fld80_membase (code, X86_ESP, 0);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
-#endif
-			g_assert_not_reached ();
+			NOT_IMPLEMENTED;
 			break;
 		}
 		case OP_LCONV_TO_OVF_I: {
-#if 0
-			guint8 *br [3], *label [1];
+			guint32 *br [3], *label [1];
 
 			/* 
 			 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
 			 */
-			x86_test_reg_reg (code, ins->sreg1, ins->sreg1);
+			sparc_cmp_imm (code, ins->sreg1, 0);
+			br [0] = code; 
+			sparc_branch (code, 1, sparc_bneg, 0);
+			sparc_nop (code);
 
-			/* If the low word top bit is set, see if we are negative */
-			br [0] = code; x86_branch8 (code, X86_CC_LT, 0, TRUE);
-			/* We are not negative (no top bit set, check for our top word to be zero */
-			x86_test_reg_reg (code, ins->sreg2, ins->sreg2);
-			br [1] = code; x86_branch8 (code, X86_CC_EQ, 0, TRUE);
+			/* positive */
+			/* ms word must be 0 */
+			sparc_cmp_imm (code, ins->sreg2, 0);
+			br [1] = code;
+			sparc_branch (code, 1, sparc_be, 0);
+			sparc_nop (code);
+
 			label [0] = code;
+			/* FIXME: throw exception */
 
-			/* throw exception */
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, "OverflowException");
-		        x86_jump32 (code, 0);
-	
-			x86_patch (br [0], code);
-			/* our top bit is set, check that top word is 0xfffffff */
-			x86_alu_reg_imm (code, X86_CMP, ins->sreg2, 0xffffffff);
-		
-			x86_patch (br [1], code);
-			/* nope, emit exception */
-			br [2] = code; x86_branch8 (code, X86_CC_NE, 0, TRUE);
-			x86_patch (br [2], label [0]);
+			/* negative */
+			sparc_patch (br [0], code);
 
-			if (ins->dreg != ins->sreg1)
-				x86_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
-#endif
-			g_assert_not_reached ();
+			/* ms word must 0xfffffff */
+			sparc_cmp_imm (code, ins->sreg2, -1);
+			sparc_branch (code, 1, sparc_bne, label [0]);
+
+			/* Ok */
+			sparc_patch (br [1], code);
+			if (ins->sreg1 != ins->dreg)
+				sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
 			break;
 		}
 		case OP_FADD:
-		  sparc_fadds( code, ins->sreg1, ins->sreg2, ins->dreg); 
+			sparc_faddd (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_FSUB:
-		  sparc_fsubs( code, ins->sreg1, ins->sreg2, ins->dreg );
+			sparc_fsubd (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;		
 		case OP_FMUL:
-		  sparc_fmuls( code, ins->sreg1, ins->sreg2, ins->dreg );
+			sparc_fmuld (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;		
 		case OP_FDIV:
-		  sparc_fdivs( code, ins->sreg1, ins->sreg2, ins->dreg );
+			sparc_fdivd (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;		
 		case OP_FNEG:
-		  sparc_fnegs( code, ins->sreg1, ins->sreg2, ins->dreg );
+			sparc_fnegs (code, ins->sreg1, ins->dreg);
 			break;		
 		case OP_FREM:
-			g_assert_not_reached ();
+			sparc_fdivd (code, ins->sreg1, ins->sreg2, sparc_f0);
+			sparc_fmuld (code, ins->sreg2, sparc_f0, sparc_f0);
+			sparc_fsubd (code, ins->sreg1, sparc_f0, ins->dreg);
 			break;
 		case OP_FCOMPARE:
-			sparc_fcmps( code, ins->sreg1, ins->sreg2 );
-			/* this overwrites EAX */
-			//EMIT_FPCOMPARE(code);
+			sparc_fcmpd (code, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCEQ:
-			g_assert_not_reached();
-			/*if (ins->dreg != X86_EAX) 
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX) 
-				x86_pop_reg (code, X86_EAX);*/
-			break;
 		case OP_FCLT:
 		case OP_FCLT_UN:
-			g_assert_not_reached ();
-			/*if (ins->dreg != X86_EAX) 
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX) 
-				x86_pop_reg (code, X86_EAX);*/
-			break;
 		case OP_FCGT:
 		case OP_FCGT_UN:
-			g_assert_not_reached ();
-			/*if (ins->dreg != X86_EAX) 
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX) 
-				x86_pop_reg (code, X86_EAX);*/
+			sparc_fcmpd (code, ins->sreg1, ins->sreg2);
+			sparc_clr_reg (code, ins->dreg);
+			switch (ins->opcode) {
+			case OP_FCLT_UN:
+			case OP_FCGT_UN:
+				sparc_fbranch (code, 1, opcode_to_sparc_cond (ins->opcode), 4);
+				/* delay slot */
+				sparc_set (code, 1, ins->dreg);
+				sparc_fbranch (code, 1, sparc_fbu, 2);
+				/* delay slot */
+				sparc_set (code, 1, ins->dreg);
+				break;
+			default:
+				sparc_fbranch (code, 1, opcode_to_sparc_cond (ins->opcode), 2);
+				/* delay slot */
+				sparc_set (code, 1, ins->dreg);				
+			}
 			break;
 		case OP_FBEQ:
-			g_assert_not_reached ();
-			break;
-		case OP_FBNE_UN:
-			g_assert_not_reached ();
-			break;
 		case OP_FBLT:
-		case OP_FBLT_UN:
-			g_assert_not_reached ();
-			break;
 		case OP_FBGT:
+			EMIT_FLOAT_COND_BRANCH (ins, opcode_to_sparc_cond (ins->opcode));
+			break;
+		case OP_FBGE: {
+			/* clt.un + brfalse */
+			guint32 *p = code;
+			sparc_fbranch (code, 1, sparc_fbul, 0);
+			/* delay slot */
+			sparc_nop (code);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fba);
+			sparc_patch ((guint8*)p, (guint8*)code);
+			break;
+		}
+		case OP_FBLE: {
+			/* cgt.un + brfalse */
+			guint32 *p = code;
+			sparc_fbranch (code, 1, sparc_fbug, 0);
+			/* delay slot */
+			sparc_nop (code);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fba);
+			sparc_patch ((guint8*)p, (guint8*)code);
+			break;
+		}
+		case OP_FBNE_UN:
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbne);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu);
+			break;
+		case OP_FBLT_UN:
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbl);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu);
+			break;
 		case OP_FBGT_UN:
-			g_assert_not_reached ();
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbg);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu);
 			break;
-		case OP_FBGE:
 		case OP_FBGE_UN:
-			g_assert_not_reached ();
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbge);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu);
 			break;
-		case OP_FBLE:
 		case OP_FBLE_UN:
-			g_assert_not_reached ();
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fble);
+			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu);
 			break;
 		case CEE_CKFINITE: {
-			/* SO FIXME */
-			g_assert_not_reached ();
-			//x86_push_reg (code, X86_EAX);
-			//x86_fxam (code);
-			//x86_fnstsw (code);
-			//x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4100);
-			//x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
-			//x86_pop_reg (code, X86_EAX);
-			//EMIT_COND_SYSTEM_EXCEPTION (FALSE, FALSE, "ArithmeticException");
+			NOT_IMPLEMENTED;
 			break;
 		}
 		default:
@@ -2512,9 +2532,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 		}
 
-		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
+		if ((cfg->opt & MONO_OPT_BRANCH) && (((guint8*)code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
-				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
+				   mono_inst_name (ins->opcode), max_len, (guint8*)code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}
 	       
@@ -2526,7 +2546,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		ins = ins->next;
 	}
 
-	cfg->code_len = code - cfg->native_code;
+	cfg->code_len = (guint8*)code - cfg->native_code;
 }
 
 void
@@ -2537,10 +2557,11 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji)
+mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
 
+	/* FIXME: Move part of this to arch independent code */
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
 		const unsigned char *target = NULL;
@@ -2558,54 +2579,281 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_IP:
 			*((gpointer *)(ip)) = ip;
 			continue;
+		case MONO_PATCH_INFO_METHOD_REL:
+			NOT_IMPLEMENTED;
+			*((gpointer *)(ip)) = code + patch_info->data.offset;
+			continue;
 		case MONO_PATCH_INFO_INTERNAL_METHOD: {
 			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
 			if (!mi) {
 				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
 				g_assert_not_reached ();
 			}
-i			target = mono_icall_get_wrapper (mi);
+			target = mono_icall_get_wrapper (mi);
+			break;
+		}
+		case MONO_PATCH_INFO_METHOD_JUMP: {
+			GSList *list;
+
+			/* get the trampoline to the method from the domain */
+			target = mono_arch_create_jump_trampoline (patch_info->data.method);
+			if (!domain->jump_target_hash)
+				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
+			list = g_slist_prepend (list, ip);
+			g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				target = code;
-			} else {
+			} else
 				/* get the trampoline to the method from the domain */
 				target = mono_arch_create_jit_trampoline (patch_info->data.method);
-			}
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = (gpointer *)patch_info->data.target;
+			guint32 *p = (guint32*)ip;
+			gpointer *jump_table = mono_mempool_alloc (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			int i;
 
-			// FIXME: inspect code to get the register
-			//ppc_load (ip, sparc_l0, patch_info->data.target);
-			//*((gconstpointer *)(ip + 2)) = patch_info->data.target;
+			target = jump_table;
 
 			for (i = 0; i < patch_info->table_size; i++) {
-				table [i] = (int)patch_info->data.table [i] + code;
+				jump_table [i] = code + (int)patch_info->data.table [i];
 			}
-			/* we put into the table the absolute address, no need for sparc_patch in this case */
-			continue;
+			break;
 		}
 		case MONO_PATCH_INFO_METHODCONST:
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IMAGE:
 		case MONO_PATCH_INFO_FIELD:
-			g_assert_not_reached ();
+			NOT_IMPLEMENTED;
 			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
 			continue;
-		case MONO_PATCH_INFO_R4:
-		case MONO_PATCH_INFO_R8:
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
+		case MONO_PATCH_INFO_IID:
+			NOT_IMPLEMENTED;
+			mono_class_init (patch_info->data.klass);
+			*((guint32 *)(ip + 1)) = patch_info->data.klass->interface_id;
+			continue;			
+		case MONO_PATCH_INFO_VTABLE:
+			NOT_IMPLEMENTED;
+			*((gconstpointer *)(ip + 1)) = mono_class_vtable (domain, patch_info->data.klass);
 			continue;
+		case MONO_PATCH_INFO_CLASS_INIT: {
+			/* Might already been changed to a nop */
+			target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
+			break;
+		}
+		case MONO_PATCH_INFO_SFLDA: {
+			MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
+			if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))
+				/* Done by the generated code */
+				;
+			else {
+				if (run_cctors)
+					mono_runtime_class_init (vtable);
+			}
+			NOT_IMPLEMENTED;
+			*((gconstpointer *)(ip + 1)) = 
+				(char*)vtable->data + patch_info->data.field->offset;
+			continue;
+		}
+		case MONO_PATCH_INFO_R4: {
+			float *f = g_new0 (float, 1);
+			*f = *(float*)patch_info->data.target;
+			target = f;
+			break;
+		}
+		case MONO_PATCH_INFO_R8: {
+			double *d = g_new0 (double, 1);
+			*d = *(double*)patch_info->data.target;
+			target = d;			
+			break;
+		}
+		case MONO_PATCH_INFO_EXC_NAME:
+			NOT_IMPLEMENTED;
+			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
+			continue;
+		case MONO_PATCH_INFO_LDSTR:
+			NOT_IMPLEMENTED;
+			*((gconstpointer *)(ip + 1)) = 
+				mono_ldstr (domain, patch_info->data.token->image, 
+							mono_metadata_token_index (patch_info->data.token->token));
+			continue;
+		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
+			gpointer handle;
+			MonoClass *handle_class;
+
+			handle = mono_ldtoken (patch_info->data.token->image, 
+								   patch_info->data.token->token, &handle_class);
+			mono_class_init (handle_class);
+			mono_class_init (mono_class_from_mono_type (handle));
+
+			NOT_IMPLEMENTED;
+			*((gconstpointer *)(ip + 1)) = 
+				mono_type_get_object (domain, handle);
+			continue;
+		}
+		case MONO_PATCH_INFO_LDTOKEN: {
+			gpointer handle;
+			MonoClass *handle_class;
+
+			handle = mono_ldtoken (patch_info->data.token->image,
+								   patch_info->data.token->token, &handle_class);
+			mono_class_init (handle_class);
+
+			NOT_IMPLEMENTED;
+			*((gconstpointer *)(ip + 1)) = handle;
+			continue;
+		}
 		default:
 			g_assert_not_reached ();
 		}
 		sparc_patch (ip, target);
 	}
+}
+
+/*
+ * Allow tracing to work with this interface (with an optional argument)
+ */
+
+/*
+ * This may be needed on some archs or for debugging support.
+ */
+void
+mono_arch_instrument_mem_needs (MonoMethod *method, int *stack, int *code)
+{
+	/* no stack room needed now (may be needed for FASTCALL-trace support) */
+	*stack = 0;
+	/* split prolog-epilog requirements? */
+	*code = 256; /* max bytes needed: check this number */
+}
+
+void*
+mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
+{
+	int stack, code_size;
+	guint32 *code = (guint32*)p;
+
+	/* Save registers to stack */
+	sparc_st_imm (code, sparc_i0, sparc_fp, 68);
+	sparc_st_imm (code, sparc_i1, sparc_fp, 72);
+	sparc_st_imm (code, sparc_i2, sparc_fp, 76);
+	sparc_st_imm (code, sparc_i3, sparc_fp, 80);
+	sparc_st_imm (code, sparc_i4, sparc_fp, 84);
+
+	sparc_set (code, cfg->method, sparc_o0);
+	sparc_mov_reg_reg (code, sparc_fp, sparc_o1);
+
+	mono_add_patch_info (cfg, (guint8*)code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
+	sparc_sethi (code, 0, sparc_o7);
+	sparc_jmpl_imm (code, sparc_o7, 0, sparc_callsite);
+	sparc_nop (code);
+
+	mono_arch_instrument_mem_needs (cfg->method, &stack, &code_size);
+
+	g_assert ((code - (guint32*)p) <= (code_size * 4));
+
+	return code;
+}
+
+enum {
+	SAVE_NONE,
+	SAVE_STRUCT,
+	SAVE_ONE,
+	SAVE_TWO,
+	SAVE_FP
+};
+
+void*
+mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
+{
+	guchar *code = p;
+	int arg_size = 0, save_mode = SAVE_NONE;
+	MonoMethod *method = cfg->method;
+	int rtype = method->signature->ret->type;
+	
+handle_enum:
+	switch (rtype) {
+	case MONO_TYPE_VOID:
+		/* special case string .ctor icall */
+		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
+			save_mode = SAVE_ONE;
+		else
+			save_mode = SAVE_NONE;
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		save_mode = SAVE_TWO;
+		break;
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		save_mode = SAVE_FP;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (method->signature->ret->data.klass->enumtype) {
+			rtype = method->signature->ret->data.klass->enum_basetype->type;
+			goto handle_enum;
+		}
+		save_mode = SAVE_STRUCT;
+		break;
+	default:
+		save_mode = SAVE_ONE;
+		break;
+	}
+
+	/* Save the result to the stack and also put it into the output registers */
+
+	switch (save_mode) {
+	case SAVE_TWO:
+		sparc_st_imm (code, sparc_i0, sparc_fp, 68);
+		sparc_st_imm (code, sparc_i0, sparc_fp, 72);
+		sparc_mov_reg_reg (code, sparc_i0, sparc_o1);
+		sparc_mov_reg_reg (code, sparc_i1, sparc_o2);
+		break;
+	case SAVE_ONE:
+		sparc_st_imm (code, sparc_i0, sparc_fp, 68);
+		sparc_mov_reg_reg (code, sparc_i0, sparc_o1);
+		break;
+	case SAVE_FP:
+		sparc_stdf (code, sparc_f0, sparc_fp, 72);
+		sparc_ld_imm (code, sparc_fp, 72, sparc_o1);
+		sparc_ld_imm (code, sparc_fp, 72, sparc_o2);
+		break;
+	case SAVE_STRUCT:
+		sparc_ld_imm (code, sparc_fp, 64, sparc_o1);
+		break;
+	case SAVE_NONE:
+	default:
+		break;
+	}
+
+	sparc_set (code, cfg->method, sparc_o0);
+
+	mono_add_patch_info (cfg, (guint8*)code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
+	sparc_sethi (code, 0, sparc_o7);
+	sparc_jmpl_imm (code, sparc_o7, 0, sparc_callsite);
+	sparc_nop (code);
+
+	/* Restore result */
+
+	switch (save_mode) {
+	case SAVE_TWO:
+		sparc_ld_imm (code, sparc_fp, 68, sparc_i0);
+		sparc_ld_imm (code, sparc_fp, 72, sparc_i0);
+		break;
+	case SAVE_ONE:
+		sparc_ld_imm (code, sparc_fp, 68, sparc_i0);
+		break;
+	case SAVE_FP:
+		sparc_lddf_imm (code, sparc_fp, 72, sparc_f0);
+		break;
+	case SAVE_NONE:
+	default:
+		break;
+	}
+
+	return code;
 }
 
 int
@@ -2653,110 +2901,88 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->code_size = 256;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-		//ppc_mflr (code, sparc_l0);
-		//ppc_stw (code, sparc_l0, 8, ppc_sp);
-	}
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
-		cfg->used_int_regs |= 1 << 31;
-	}
+	sparc_save_imm (code, sparc_sp, - cfg->stack_offset, sparc_sp);
 
-	alloc_size = cfg->stack_offset;
+	sig = method->signature;
 	pos = 0;
+	if (sig->hasthis)
+		pos ++;
 
-	if (method->save_lmf) {
-#if 0
-		pos += sizeof (MonoLMF);
-		
-		/* save the current IP */
-		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
-		x86_push_imm (code, 0);
+	cinfo = get_call_info (sig, FALSE);
 
-		/* save all caller saved regs */
-		x86_push_reg (code, X86_EBX);
-		x86_push_reg (code, X86_EDI);
-		x86_push_reg (code, X86_ESI);
-		x86_push_reg (code, X86_EBP);
+	for (i = 0; i < sig->param_count; ++i) {
+		ArgInfo *ainfo = cinfo->args + pos;
+		guint32 stack_offset;
+		inst = cfg->varinfo [pos];
 
-		/* save method info */
-		x86_push_imm (code, method);
-	
-		/* get the address of lmf for the current thread */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-				     (gpointer)"get_lmf_addr");
-		x86_call_code (code, 0);
+		stack_offset = ainfo->offset + 68;
 
-		/* push lmf */
-		x86_push_reg (code, X86_EAX); 
-		/* push *lfm (previous_lmf) */
-		x86_push_membase (code, X86_EAX, 0);
-		/* *(lmf) = ESP */
-		x86_mov_membase_reg (code, X86_EAX, 0, X86_ESP, 4);
-#endif
-	} else {
-
-		for (i = 13; i < 32; ++i) {
-			if (cfg->used_int_regs & (1 << i)) {
-				pos += 4;
-				//ppc_stw (code, i, -pos, ppc_sp);
-			}
+		/* Save the split arguments so they will reside entirely on the stack */
+		if (ainfo->storage == ArgInSplitRegStack) {
+			/* Save the register to the stack */
+			g_assert (inst->opcode == OP_REGOFFSET);
+			if (!sparc_is_imm13 (stack_offset))
+				NOT_IMPLEMENTED;
+			sparc_st_imm (code, sparc_i5, inst->inst_basereg, stack_offset);
 		}
+
+		if (sig->params [i]->type == MONO_TYPE_R8) {
+			/* Save the argument to a dword aligned stack location */
+			/*
+			 * stack_offset contains the offset of the argument on the stack.
+			 * inst->inst_offset contains the dword aligned offset where the value 
+			 * should be stored.
+			 */
+			if (ainfo->storage == ArgInIRegPair) {
+				if (!sparc_is_imm13 (inst->inst_offset + 4))
+					NOT_IMPLEMENTED;
+				sparc_st_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, inst->inst_offset);
+				sparc_st_imm (code, sparc_i0 + ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
+			}
+			else
+				if (ainfo->storage == ArgInSplitRegStack) {
+					if (stack_offset != inst->inst_offset) {
+						/* stack_offset is not dword aligned, so we need to make a copy */
+						sparc_st_imm (code, sparc_i5, inst->inst_basereg, inst->inst_offset);
+						sparc_ld_imm (code, sparc_fp, stack_offset + 4, sparc_o7);
+						sparc_st_imm (code, sparc_o7, inst->inst_basereg, inst->inst_offset + 4);
+					}
+				}
+			else
+				if (ainfo->storage == ArgOnStackPair) {
+					if (stack_offset != inst->inst_offset) {
+						/* stack_offset is not dword aligned, so we need to make a copy */
+						sparc_ld_imm (code, sparc_fp, stack_offset, sparc_o7);
+						sparc_st_imm (code, sparc_o7, inst->inst_basereg, inst->inst_offset);
+						sparc_ld_imm (code, sparc_fp, stack_offset + 4, sparc_o7);
+						sparc_st_imm (code, sparc_o7, inst->inst_basereg, inst->inst_offset + 4);
+					}
+				}
+			else
+				g_assert_not_reached ();
+		}
+		else
+			if ((ainfo->storage == ArgInIReg) && (inst->opcode != OP_REGVAR)) {
+				/* Argument in register, but need to be saved to stack */
+				if (!sparc_is_imm13 (stack_offset))
+					NOT_IMPLEMENTED;
+				sparc_st_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, stack_offset);
+			}
+		else
+			if ((ainfo->storage == ArgInIRegPair) && (inst->opcode != OP_REGVAR))
+				NOT_IMPLEMENTED;
+
+		pos++;
 	}
 
-	alloc_size += pos;
-	// align to 16 bytes
-	if (alloc_size & (16 - 1))
-		alloc_size += 16 - (alloc_size & (16 - 1));
-
-	cfg->stack_usage = alloc_size;
-	if (alloc_size)
-		//ppc_stwu (code, sparc_sp, -alloc_size, sparc_sp);
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
-		//ppc_mr (code, sparc_l7, sparc_sp);
-
-        /* compute max_offset in order to use short forward jumps */
-	max_offset = 0;
-	if (cfg->opt & MONO_OPT_BRANCH) {
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *ins = bb->code;
-			bb->max_offset = max_offset;
-
-			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-				max_offset += 6; 
-
-			while (ins) {
-				max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
-				ins = ins->next;
-			}
-		}
-	}
+	g_free (cinfo);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 
-	/* load arguments allocated to register from the stack */
-	sig = method->signature;
-	pos = 0;
-
-	cinfo = calculate_sizes (sig, sig->pinvoke);
-
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->varinfo [pos];
-		
-		if (inst->opcode == OP_REGVAR) {
-			g_assert (!ainfo->regtype); // fine for now
-			//ppc_mr (code, inst->dreg, ainfo->reg);
-			if (cfg->verbose_level > 2)
-				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
-		} else {
-			/* the argument should be put on the stack: FIXME handle size != word  */
-			//ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-		}
-		pos++;
-	}
-
 	cfg->code_len = code - cfg->native_code;
+
+	g_assert (cfg->code_len <= cfg->code_size);
 
 	return code;
 }
@@ -2773,6 +2999,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
+
+	sparc_ret (code);
+	sparc_restore_imm (code, sparc_g0, 0, sparc_g0);
+
+#if 0
 
 	
 	pos = 0;
@@ -2831,6 +3062,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			break;
 		}
 	}
+#endif
 
 	cfg->code_len = code - cfg->native_code;
 
@@ -2846,28 +3078,19 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
-	int this_dreg = sparc_o0;
-	
-	if (vt_reg != -1)
-		this_dreg = sparc_o1;
-
 	/* add the this argument */
 	if (this_reg != -1) {
 		MonoInst *this;
 		MONO_INST_NEW (cfg, this, OP_SETREG);
 		this->type = this_type;
 		this->sreg1 = this_reg;
-		this->dreg = this_dreg;
+		this->dreg = sparc_o0;
 		mono_bblock_add_inst (cfg->cbb, this);
 	}
 
 	if (vt_reg != -1) {
-		MonoInst *vtarg;
-		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
-		vtarg->type = STACK_MP;
-		vtarg->sreg1 = vt_reg;
-		vtarg->dreg = sparc_o0;
-		mono_bblock_add_inst (cfg->cbb, vtarg);
+		/* Set the 'struct/union return pointer' location on the stack */
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, 64, vt_reg);
 	}
 }
 
@@ -2878,4 +3101,318 @@ mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	return -1;
 }
 
+typedef struct {
+	guint16 size;
+	guint16 offset;
+	guint8  pad;
+} MonoJitArgumentInfo;
+
+/*
+ * arch_get_argument_info:
+ * @csig:  a method signature
+ * @param_count: the number of parameters to consider
+ * @arg_info: an array to store the result infos
+ *
+ * Gathers information on parameters such as size, alignment and
+ * padding. arg_info should be large enought to hold param_count + 1 entries. 
+ *
+ * Returns the size of the activation frame.
+ */
+static int
+arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+{
+	int k, frame_size = 0;
+	int size, align, pad;
+	int offset = 8;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+
+	cinfo = get_call_info (csig, FALSE);
+
+	if (csig->hasthis) {
+		ainfo = &cinfo->args [0];
+		arg_info [0].offset = 68 + ainfo->offset;
+	}
+
+	for (k = 0; k < param_count; k++) {
+		ainfo = &cinfo->args [k + csig->hasthis];
+
+		arg_info [k + 1].offset = 68 + ainfo->offset;
+		arg_info [k + 1].size = mono_type_size (csig->params [k], &align);
+	}
+
+	g_free (cinfo);
+
+	/* FIXME: */
+	return 0;
+}
+
+static int indent_level = 0;
+
+static void indent (int diff) {
+	int v;
+	if (diff < 0)
+		indent_level += diff;
+	v = indent_level;
+	while (v-- > 0) {
+		printf (". ");
+	}
+	if (diff > 0)
+		indent_level += diff;
+}
+
+static gboolean enable_trace = TRUE;
+
+static void
+enter_method (MonoMethod *method, char *ebp)
+{
+	int i, j;
+	MonoClass *class;
+	MonoObject *o;
+	MonoJitArgumentInfo *arg_info;
+	MonoMethodSignature *sig;
+	char *fname;
+
+	/* FIXME: move to arch independent code */
+
+	if (!enable_trace)
+		return;
+
+	fname = mono_method_full_name (method, TRUE);
+	indent (1);
+	printf ("ENTER: %s(", fname);
+	g_free (fname);
+	
+	if (((int)ebp & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
+		g_error ("unaligned stack detected (%p)", ebp);
+	}
+
+	sig = method->signature;
+
+	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+
+	arch_get_argument_info (sig, sig->param_count, arg_info);
+
+	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
+		g_assert (!method->signature->ret->byref);
+
+		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
+	}
+
+	if (method->signature->hasthis) {
+		gpointer *this = (gpointer *)(ebp + arg_info [0].offset);
+		if (method->klass->valuetype) {
+			printf ("value:%p, ", *this);
+		} else {
+			o = *((MonoObject **)this);
+
+			if (o) {
+				class = o->vtable->klass;
+
+				if (class == mono_defaults.string_class) {
+					printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+				} else {
+					printf ("this:%p[%s.%s %s], ", o, class->name_space, class->name, o->vtable->domain->friendly_name);
+				}
+			} else 
+				printf ("this:NULL, ");
+		}
+	}
+
+	for (i = 0; i < method->signature->param_count; ++i) {
+		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
+		int size = arg_info [i + 1].size;
+
+		MonoType *type = method->signature->params [i];
+		
+		if (type->byref) {
+			printf ("[BYREF:%p], ", *cpos); 
+		} else switch (type->type) {
+			
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+			printf ("%p, ", (gpointer)*((int *)(cpos)));
+			break;
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+			printf ("%d, ", *((int *)(cpos)));
+			break;
+		case MONO_TYPE_STRING: {
+			MonoString *s = *((MonoString **)cpos);
+			if (s) {
+				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
+				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
+			} else 
+				printf ("[STRING:null], ");
+			break;
+		}
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT: {
+			o = *((MonoObject **)cpos);
+			if (o) {
+				class = o->vtable->klass;
+		    
+				if (class == mono_defaults.string_class) {
+					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+				} else if (class == mono_defaults.int32_class) {
+					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
+				} else
+					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
+			} else {
+				printf ("%p, ", *((gpointer *)(cpos)));				
+			}
+			break;
+		}
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			printf ("%p, ", *((gpointer *)(cpos)));
+			break;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			printf ("0x%016llx, ", *((gint64 *)(cpos)));
+			break;
+		case MONO_TYPE_R4:
+			printf ("%f, ", *((float *)(cpos)));
+			break;
+		case MONO_TYPE_R8:
+			printf ("%f, ", *((double *)(cpos)));
+			break;
+		case MONO_TYPE_VALUETYPE: 
+			printf ("[");
+			for (j = 0; j < size; j++)
+				printf ("%02x,", *((guint8*)cpos +j));
+			printf ("], ");
+			break;
+		default:
+			printf ("XX, ");
+		}
+	}
+
+	printf (")\n");
+}
+
+static void
+leave_method (MonoMethod *method, ...)
+{
+	MonoType *type;
+	char *fname;
+	va_list ap;
+
+	if (!enable_trace)
+		return;
+
+	va_start(ap, method);
+
+	fname = mono_method_full_name (method, TRUE);
+	indent (-1);
+	printf ("LEAVE: %s", fname);
+	g_free (fname);
+
+	type = method->signature->ret;
+
+handle_enum:
+	switch (type->type) {
+	case MONO_TYPE_VOID:
+		break;
+	case MONO_TYPE_BOOLEAN: {
+		int eax = va_arg (ap, int);
+		if (eax)
+			printf ("TRUE:%d", eax);
+		else 
+			printf ("FALSE");
+			
+		break;
+	}
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U: {
+		int eax = va_arg (ap, int);
+		printf ("RES=%d (0x%x)", eax, eax);
+		break;
+	}
+	case MONO_TYPE_STRING: {
+		MonoString *s = va_arg (ap, MonoString *);
+;
+		if (s) {
+			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
+			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
+		} else 
+			printf ("[STRING:null], ");
+		break;
+	}
+	case MONO_TYPE_CLASS: 
+	case MONO_TYPE_OBJECT: {
+		MonoObject *o = va_arg (ap, MonoObject *);
+
+		if (o) {
+			if (o->vtable->klass == mono_defaults.boolean_class) {
+				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
+			} else if  (o->vtable->klass == mono_defaults.int32_class) {
+				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
+			} else if  (o->vtable->klass == mono_defaults.int64_class) {
+				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
+			} else
+				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
+		} else
+			printf ("[OBJECT:%p]", o);
+	       
+		break;
+	}
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY: {
+		gpointer p = va_arg (ap, gpointer);
+		printf ("EAX=%p", p);
+		break;
+	}
+	case MONO_TYPE_I8: {
+		gint64 l =  va_arg (ap, gint64);
+		printf ("EAX/EDX=0x%16llx", l);
+		break;
+	}
+	case MONO_TYPE_U8: {
+		gint64 l =  va_arg (ap, gint64);
+		printf ("EAX/EDX=0x%16llx", l);
+		break;
+	}
+	case MONO_TYPE_R8: {
+		double f = va_arg (ap, double);
+		printf ("FP=%f\n", f);
+		break;
+	}
+	case MONO_TYPE_VALUETYPE: 
+		if (type->data.klass->enumtype) {
+			type = type->data.klass->enum_basetype;
+			goto handle_enum;
+		} else {
+			guint8 *p = va_arg (ap, gpointer);
+			int j, size, align;
+			size = mono_type_size (type, &align);
+			printf ("[");
+			for (j = 0; p && j < size; j++)
+				printf ("%02x,", p [j]);
+			printf ("]");
+		}
+		break;
+	default:
+		printf ("(unknown return type %x)", method->signature->ret->type);
+	}
+
+	printf ("\n");
+}
 

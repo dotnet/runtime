@@ -6,8 +6,7 @@
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
-/* Check this for Sparc.  I think it is right. */
-#define MONO_ARCH_FRAME_ALIGNMENT 4
+#define MONO_ARCH_FRAME_ALIGNMENT 8
 
 /* Also check this. */
 #define MONO_ARCH_CODE_ALIGNMENT 32
@@ -25,5 +24,11 @@ struct MonoLMF {
 	guint32     ebp;
 	guint32     eip;
 };
+
+#define MONO_ARCH_EMULATE_FCONV_TO_I8 1
+#define MONO_ARCH_EMULATE_LCONV_TO_R8 1
+#define MONO_ARCH_EMULATE_LCONV_TO_R4 1
+#define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
+#define MONO_ARCH_EMULATE_FREM 1
 
 #endif /* __MONO_MINI_SPARC_H__ */  

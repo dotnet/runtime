@@ -343,4 +343,9 @@ MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase")
 MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic")
 MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze")
 
+MINI_OP(OP_SPARC_OUTARG_REGPAIR,   "sparc_outarg_regpair")
+MINI_OP(OP_SPARC_OUTARG_MEM,       "sparc_outarg_mem")
+MINI_OP(OP_SPARC_OUTARG_MEMPAIR,   "sparc_outarg_mempair")
+MINI_OP(OP_SPARC_OUTARG_SPLIT_REG_STACK, "sparc_outarg_split_reg_stack")
+MINI_OP(OP_SPARC_INARG_VT,         "sparc_inarg_vt")
 
