@@ -24,36 +24,43 @@
 
 #if defined (NAME_DEV_RANDOM) && defined (HAVE_CRYPT_RNG)
 
+#ifndef NAME_DEV_URANDOM
+#define NAME_DEV_URANDOM "/dev/urandom"
+#endif
+
 void 
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes (MonoObject *self, MonoArray *arry)
 {
     guint32 len;
     gint file;
     gint err;
+    gint count;
     guchar *buf;
 
     len = mono_array_length(arry);
     buf = mono_array_addr(arry, guchar, 0);
 
-    file = open(NAME_DEV_RANDOM, O_RDONLY);
+    file = open (NAME_DEV_URANDOM, O_RDONLY);
+
+    if (file < 0)
+	    file = open (NAME_DEV_RANDOM, O_RDONLY);
 
     if (file < 0) {
-    	g_warning("Entropy problem! Can't open %s", NAME_DEV_RANDOM);
+    	g_warning ("Entropy problem! Can't open %s or %s", NAME_DEV_URANDOM, NAME_DEV_RANDOM);
 
     	/* This needs to be a crypto exception */
     	mono_raise_exception(mono_get_exception_not_implemented());
     }
 
-    /* A little optimization.... */
-    err = read(file, buf, len);
+    /* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
+    count = 0;
+    do {
+	    err = read(file, buf + count, len - count);
+	    count += err;
+    } while (err >= 0 && count < len);
 
     if (err < 0) {
         g_warning("Entropy error! Error in read.");
-        mono_raise_exception(mono_get_exception_not_implemented());
-    }
-
-    if (err != len) {
-        g_warning("Entropy error! Length != bytes read");
         mono_raise_exception(mono_get_exception_not_implemented());
     }
 
