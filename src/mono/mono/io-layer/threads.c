@@ -44,6 +44,8 @@ static GHashTable *thread_hash=NULL;
 static MonoGHashTable *tls_gc_hash = NULL;
 #endif
 
+static void update_debugger_thread_info (void);
+
 static void thread_close_private (gpointer handle);
 static void thread_own (gpointer handle);
 
@@ -147,6 +149,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	/* Remove this thread from the hash */
 	mono_mutex_lock(&thread_hash_mutex);
 	g_hash_table_remove(thread_hash, &thread_private_handle->thread->id);
+	update_debugger_thread_info ();
 	mono_mutex_unlock(&thread_hash_mutex);
 
 	/* The thread is no longer active, so unref it */
@@ -241,6 +244,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 
 	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
 			    handle);
+	update_debugger_thread_info ();
 	mono_mutex_unlock(&thread_hash_mutex);
 	
 #ifdef DEBUG
@@ -437,6 +441,7 @@ static gpointer thread_attach(guint32 *tid)
 
 	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
 			    handle);
+	update_debugger_thread_info ();
 	mono_mutex_unlock(&thread_hash_mutex);
 
 #ifdef DEBUG
@@ -806,3 +811,95 @@ void SleepEx(guint32 ms, gboolean alertable)
 	
 	Sleep(ms);
 }
+
+/*
+ * Support for the Mono Debugger.
+ *
+ * The debugger sets `mono_debugger_threads_debug' to a signal number which
+ * will be raised each time a thread has been created or exited.
+ * `mono_debugger_thread_info' may only be accessed by the debugger while the
+ * target is stopped due to that signal.
+ */
+int mono_debugger_threads_debug = 0;
+guint32 *mono_debugger_thread_info = NULL;
+/* This is called by initialize_debugger_support() in debug.c to tell us the
+ * pid of the background thread. */
+void mono_debugger_init_thread_debug (pid_t background_pid);
+
+static pid_t mono_debugger_background_thread = 0;
+
+static void
+update_debugger_thread_info_func (gpointer key, gpointer value, gpointer user_data)
+{
+	struct _WapiHandlePrivate_thread *thread_handle;
+	int **output = (int **) user_data;
+	gboolean ok;
+
+	ok=_wapi_lookup_handle (value, WAPI_HANDLE_THREAD, NULL,
+				(gpointer *)&thread_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", value);
+		return;
+	}
+
+	*(*output)++ = thread_handle->thread->pid;
+}
+
+/*
+ * This function is called (while owning the `thread_hash_mutex') each time the
+ * `thread_hash' is modified.  It copies the pids of all the threads into a flat
+ * array which is read by the debugger and then raises a special signal to notify
+ * the debugger to reload it.
+ *
+ * Note:
+ *   The LinuxThreads library which is now part of glibc has a similar notification
+ *   mechanism - but for obvious reasons it only works on platforms which are actually
+ *   using LinuxThreads such as Linux and FreeBSD.
+ *
+ * When debugging managed applications, the Mono Debugger only uses this notification
+ * mechanism here because it works on all operating systems, including windows.
+ *
+ * Note that you must create all threads - no matter whether you want to debug them or
+ * not - with CreateThread() instead of using pthread_create() directly.  The debugger
+ * must attach to all threads to do proper breakpoint handling.
+ */
+static void
+update_debugger_thread_info (void)
+{
+	guint32 count, *ptr;
+
+	/* Do nothing unless we're running in the debugger. */
+	if (!mono_debugger_threads_debug || !mono_debugger_background_thread)
+		return;
+
+	if (mono_debugger_thread_info) {
+		g_free (mono_debugger_thread_info);
+		mono_debugger_thread_info = NULL;
+	}
+
+	count = g_hash_table_size (thread_hash);
+	mono_debugger_thread_info = ptr = g_new0 (guint32, count + 2);
+
+	*ptr++ = count;
+	*ptr++ = mono_debugger_background_thread;
+	g_hash_table_foreach (thread_hash, update_debugger_thread_info_func, &ptr);
+
+	raise (mono_debugger_threads_debug);
+}
+
+void
+mono_debugger_init_thread_debug (pid_t background_pid)
+{
+	mono_once (&thread_hash_once, thread_hash_init);
+	mono_once (&thread_ops_once, thread_ops_init);
+
+	mono_mutex_lock (&thread_hash_mutex);
+	mono_debugger_background_thread = background_pid;
+	update_debugger_thread_info ();
+	mono_mutex_unlock (&thread_hash_mutex);
+}
+
+/*
+ * End Mono Debugger Support.
+ */
