@@ -7,6 +7,8 @@
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
+#define MONO_DEFAULT_SUPERTABLE_SIZE 6
+
 extern gboolean mono_print_vtable;
 typedef struct MonoVTable MonoVTable;
 
@@ -107,6 +109,10 @@ struct _MonoClass {
 	guint       max_interface_id;
         gint       *interface_offsets;   
 	MonoClass **interfaces;
+
+	/* for fast subtype checks */
+	guint       idepth;
+	MonoClass **supertypes;
 
 	/*
 	 * Computed object instance size, total.

@@ -336,6 +336,7 @@ mono_class_layout_fields (MonoClass *class)
 			 * classes and valuetypes.
 			 */
 			class->fields [i].offset += sizeof (MonoObject);
+
 			/*
 			 * Calc max size.
 			 */
@@ -363,6 +364,7 @@ mono_class_layout_fields (MonoClass *class)
 			class->fields [i].offset += align - 1;
 			class->fields [i].offset &= ~(align - 1);
 			class->class_size = class->fields [i].offset + size;
+
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
@@ -543,7 +545,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 {
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
-	int i, max_vtsize = 0, max_iid, cur_slot = 0;
+	int i, ms, max_vtsize = 0, max_iid, cur_slot = 0;
 
 	/* setup_vtable() must be called only once on the type */
 	if (class->interface_offsets) {
@@ -584,6 +586,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 
 	for (k = class; k ; k = k->parent) {
+		class->idepth++;
 		for (i = 0; i < k->interface_count; i++) {
 			int j, l, io;
 
@@ -771,6 +774,16 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
 	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
 
+	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
+	class->supertypes = g_new0 (MonoClass *, ms);
+
+	if (class->parent) {
+		for (i = class->idepth, k = class; k ; k = k->parent)
+			class->supertypes [--i] = k;
+	} else {
+		class->supertypes [0] = class;
+	}
+	
 	if (mono_print_vtable) {
 		int icount = 0;
 
