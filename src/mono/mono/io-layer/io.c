@@ -2355,72 +2355,54 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	return(TRUE);
 }
 
-/* This is here because I can't pass user data to the select function
- * in scandir :(
- */
-static mono_once_t file_key_once=MONO_ONCE_INIT;
-static pthread_key_t file_key;
-
-static void file_once_init (void)
+static gint
+file_compare (gconstpointer a, gconstpointer b)
 {
-	int ret;
+	gchar *astr = *(gchar **) a;
+	gchar *bstr = *(gchar **) b;
+
+	return strcmp (astr, bstr);
+}
+
+/* scandir using glib */
+static gint
+mono_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
+{
+	GError *error = NULL;
+	GDir *dir;
+	GPtrArray *names;
+	const gchar *name;
+	gint result;
+	GPatternSpec *patspec;
+
+	dir = g_dir_open (dirname, 0, &error);
+	if (dir == NULL) {
+		errno = error->code;
+		g_error_free (error);
+		return -1;
+	}
+
+	patspec = g_pattern_spec_new (pattern);
+	names = g_ptr_array_new ();
+	while ((name = g_dir_read_name (dir)) != NULL) {
+		if (g_pattern_match_string (patspec, name))
+			g_ptr_array_add (names, g_strdup (name));
+	}
 	
-	ret = pthread_key_create (&file_key, NULL);
-	g_assert (ret == 0);
+	g_pattern_spec_free (patspec);
+	g_dir_close (dir);
+	result = names->len;
+	if (result > 0) {
+		g_ptr_array_sort (names, file_compare);
+		g_ptr_array_set_size (names, result + 1);
+
+		*namelist = (gchar **) g_ptr_array_free (names, FALSE);
+	} else {
+		g_ptr_array_free (names, TRUE);
+	}
+
+	return result;
 }
-
-static int file_select (const struct dirent *dir)
-{
-	char *fullname=pthread_getspecific (file_key);
-	
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Checking [%s] against [%s]",
-		   dir->d_name, fullname);
-#endif
-
-	return(!fnmatch (fullname, dir->d_name, FNM_PATHNAME));
-}
-
-#ifndef HAVE_SCANDIR
-
-typedef int (*qsort_compar_fct)(const void *, const void *);
-
-static int scandir(const char *dir, struct dirent ***namelist,
-				   int (*select)(const struct dirent *),
-				   int (*compar)(const struct dirent **, const struct dirent **))
-{
-  DIR *d;
-  struct dirent *entry;
-  register int i=0;
-  size_t entrysize;
-
-  if ((d=opendir(dir)) == NULL)
-     return(-1);
-
-  *namelist=NULL;
-  while ((entry=readdir(d)) != NULL)
-  {
-    if (select == NULL || (select != NULL && (*select)(entry)))
-    {
-      *namelist=(struct dirent **)realloc((void *)(*namelist),
-                 (size_t)((i+1)*sizeof(struct dirent *)));
-        if (*namelist == NULL) return(-1);
-        entrysize=sizeof(struct 
-dirent)-sizeof(entry->d_name)+strlen(entry->d_name)+1;
-        (*namelist)[i]=(struct dirent *)malloc(entrysize);
-        if ((*namelist)[i] == NULL) return(-1);
-        memcpy((*namelist)[i], entry, entrysize);
-        i++;
-    }
-  }
-  if (closedir(d)) return(-1);
-  if (i == 0) return(-1);
-  if (compar != NULL)
-    qsort((void *)(*namelist), (size_t)i, sizeof(struct dirent *), (qsort_compar_fct)compar);
-
-  return(i);
-}
-#endif
 
 gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
@@ -2431,8 +2413,6 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	int result;
 	int thr_ret;
 	gboolean unref = FALSE;
-	
-	mono_once (&file_key_once, file_once_init);
 	
 	if (pattern == NULL) {
 #ifdef DEBUG
@@ -2464,13 +2444,17 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 
 	if (strchr (dir_part, '*') || strchr (dir_part, '?')) {
 		SetLastError (ERROR_INVALID_NAME);
+		g_free (dir_part);
+		g_free (entry_part);
+		g_free (utf8_pattern);
 		return(INVALID_HANDLE_VALUE);
 	}
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_FIND);
 	if(handle==_WAPI_HANDLE_INVALID) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error creating find handle");
+		g_warning (G_GNUC_PRETTY_FUNCTION ": error creating find handle");
+		g_free (dir_part);
+		g_free (entry_part);
 		g_free (utf8_pattern);
 		
 		return(INVALID_HANDLE_VALUE);
@@ -2486,7 +2470,12 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up find handle %p", handle);
+		g_free (dir_part);
+		dir_part = NULL;
+		g_free (entry_part);
+		entry_part = NULL;
 		g_free (utf8_pattern);
+		utf8_pattern = NULL;
 		goto cleanup;
 	}
 
@@ -2510,14 +2499,12 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	 * than mess around with regexes.
 	 */
 
-	pthread_setspecific (file_key, entry_part);
-	
 	/* glibc allows the two last parameters to be NULL here: check
 	 * that other systems do too.  (If some break, just make the
 	 * last parameter "alphasort" - I don't care about the order
 	 * so it's NULL for now to avoid the call to qsort(3).)
 	 */
-	result = scandir (dir_part, &find_handle->namelist, file_select, NULL);
+	result = mono_io_scandir (dir_part, entry_part, &find_handle->namelist);
 	g_free (utf8_pattern);
 	g_free (entry_part);
 	
@@ -2608,7 +2595,7 @@ retry:
 
 	/* stat next match */
 
-	filename = g_build_filename (find_handle->dir_part, find_handle->namelist[find_handle->count ++]->d_name, NULL);
+	filename = g_build_filename (find_handle->dir_part, find_handle->namelist[find_handle->count ++], NULL);
 	if (lstat (filename, &buf) != 0) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": stat failed: %s", filename);
@@ -2717,7 +2704,6 @@ gboolean FindClose (gpointer handle)
 {
 	struct _WapiHandlePrivate_find *find_handle;
 	gboolean ok;
-	int i;
 	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
@@ -2734,10 +2720,7 @@ gboolean FindClose (gpointer handle)
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	for(i = 0; i < find_handle->num; i++) {
-		free (find_handle->namelist[i]);
-	}
-	free (find_handle->namelist);
+	g_strfreev (find_handle->namelist);
 	g_free (find_handle->dir_part);
 
 	thr_ret = _wapi_handle_unlock_handle (handle);

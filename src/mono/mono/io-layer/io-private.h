@@ -50,7 +50,7 @@ struct _WapiHandle_find
 
 struct _WapiHandlePrivate_find
 {
-	struct dirent **namelist;
+	gchar **namelist;
 	gchar *dir_part;
 	int num;
 	size_t count;
