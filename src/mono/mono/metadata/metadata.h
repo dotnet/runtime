@@ -159,7 +159,9 @@ typedef enum {
 	MONO_MARSHAL_CONV_DEL_FTN,
 	MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY,
 	MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY,
-	MONO_MARSHAL_FREE_ARRAY
+	MONO_MARSHAL_CONV_ASANY,
+	MONO_MARSHAL_FREE_ARRAY,
+	MONO_MARSHAL_FREE_ASANY
 } MonoMarshalConv;
 
 typedef struct {
@@ -379,6 +381,8 @@ guint          mono_metadata_type_hash         (MonoType *t1);
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
 
 MonoMethodSignature  *mono_metadata_signature_alloc (MonoImage *image, guint32 nparams);
+
+MonoMethodSignature  *mono_metadata_signature_dup (MonoMethodSignature *sig);
 
 MonoMethodSignature  *mono_metadata_parse_signature (MonoImage *image, 
 						     guint32    token);

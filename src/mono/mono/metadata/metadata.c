@@ -1328,6 +1328,15 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	return sig;
 }
 
+MonoMethodSignature*
+mono_metadata_signature_dup (MonoMethodSignature *sig)
+{
+	int sigsize;
+
+	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
+	return g_memdup (sig, sigsize);
+}
+
 /*
  * mono_metadata_parse_method_signature:
  * @m: metadata context

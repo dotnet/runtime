@@ -79,6 +79,12 @@ mono_marshal_string_array_to_unicode (MonoArray *array);
 void
 mono_marshal_set_last_error (void);
 
+gpointer
+mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding);
+
+void
+mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding);
+
 /* method builder functions */
 
 void
