@@ -288,4 +288,20 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Alan, Siu Lung</first-name>
+      <last-name>Tam</last-name>
+    </name>
+    <e-mail>Tam@SiuLung.com</e-mail>
+    <image>none.png</image>
+    <location>Hong Kong SAR, People's Republic of China</location>
+    <description>Programmer-type dude</description>
+    <tasks>
+      <task>ADO.NET</task>
+      <task>Chinese encodings</task>
+      <task>Misc bug fixes</task>
+    </tasks>
+  </contributor>
+
 </contributors>
