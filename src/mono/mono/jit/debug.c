@@ -39,7 +39,7 @@ static pthread_cond_t debugger_thread_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_thread_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t debugger_start_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_start_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+static gboolean debugger_signalled = FALSE;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -60,6 +60,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_generic_trampoline_code,
 	&mono_breakpoint_trampoline_code,
 	&debugger_symbol_file_table_generation,
+	&debugger_symbol_file_table_modified,
 	&debugger_notification_address,
 	&debugger_symbol_file_table,
 	&debugger_compile_method,
@@ -84,7 +85,19 @@ static void
 mono_debugger_signal (void)
 {
 	mono_debugger_lock ();
-	if (!debugger_symbol_file_table_modified) {
+	if (!debugger_signalled) {
+		debugger_signalled = TRUE;
+		pthread_cond_signal (&debugger_thread_cond);
+	}
+	mono_debugger_unlock ();
+}
+
+static void
+mono_debugger_signal_modified (void)
+{
+	mono_debugger_lock ();
+	if (!debugger_signalled) {
+		debugger_signalled = TRUE;
 		debugger_symbol_file_table_modified = TRUE;
 		pthread_cond_signal (&debugger_thread_cond);
 	}
@@ -965,7 +978,7 @@ mono_debug_add_type (MonoClass *klass)
 	if (info->symfile) {
 		mono_debugger_lock ();
 		mono_debug_symfile_add_type (info->symfile, klass);
-		mono_debugger_signal ();
+		mono_debugger_signal_modified ();
 		mono_debugger_unlock ();
 	}
 }
@@ -1135,7 +1148,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 	if (info->symfile) {
 		mono_debug_symfile_add_method (info->symfile, method);
-		mono_debugger_signal ();
+		mono_debugger_signal_modified ();
 	}
 
 	mono_debugger_unlock ();
@@ -1309,9 +1322,6 @@ debugger_thread_func (gpointer ptr)
 		/* Wait for an event. */
 		pthread_cond_wait (&debugger_thread_cond, &debugger_thread_mutex);
 
-		if (!debugger_symbol_file_table_modified)
-			continue;
-
 		/* Reload the symbol file table if necessary. */
 		if (debugger_symbol_file_table_generation > last_generation) {
 			debugger_update_symbol_file_table ();
@@ -1326,8 +1336,9 @@ debugger_thread_func (gpointer ptr)
 		 */
 		notification_code ();
 
-		/* Clear modified flag. */
+		/* Clear modified and signalled flag. */
 		debugger_symbol_file_table_modified = FALSE;
+		debugger_signalled = FALSE;
 	}
 
 	return NULL;

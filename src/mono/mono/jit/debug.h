@@ -109,6 +109,7 @@ struct _MonoDebuggerInfo {
 	guint8 **generic_trampoline_code;
 	guint8 **breakpoint_trampoline_code;
 	guint32 *symbol_file_generation;
+	guint32 *symbol_file_modified;
 	gconstpointer *notification_address;
 	MonoDebuggerSymbolFileTable **symbol_file_table;
 	gpointer (*compile_method) (MonoMethod *method);
