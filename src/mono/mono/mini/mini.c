@@ -5431,7 +5431,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_ADD_INS (bblock, store);
 					store->inst_i0 = sp [0];
 					store->inst_i1 = load;
-					break;
 				} else {
 					handle_initobj (cfg, bblock, *sp, NULL, klass, stack_start, sp);
 				}
