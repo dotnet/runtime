@@ -4682,7 +4682,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType 
 }
 
 static void
-ves_icall_System_Char_GetDataTablePointers (guint8 **category_data, guint16 **numeric_data,
+ves_icall_System_Char_GetDataTablePointers (guint8 **category_data, guint8 **numeric_data,
 		gdouble **numeric_data_values, guint16 **to_lower_data_low,
 		guint16 **to_lower_data_high, guint16 **to_upper_data_low,
 		guint16 **to_upper_data_high)
