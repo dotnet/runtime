@@ -68,8 +68,10 @@ type_graph (MonoImage *image, char* cname) {
 		name_space = "";
 	}
 	class = mono_class_from_name (image, name_space, cname);
-	if (!class)
-		g_error ("class %s.%s not found", name_space, cname);
+	if (!class) {
+		g_print ("class %s.%s not found\n", name_space, cname);
+		exit (1);
+	}
 	fprintf (output, "digraph blah {\n");
 	fprintf (output, "%s", graph_properties);
 	child = class;
@@ -102,8 +104,10 @@ interface_graph (MonoImage *image, char* cname) {
 		name_space = "";
 	}
 	class = mono_class_from_name (image, name_space, cname);
-	if (!class)
-		g_error ("interface %s.%s not found", name_space, cname);
+	if (!class) {
+		g_print ("interface %s.%s not found\n", name_space, cname);
+		exit (1);
+	}
 	/* chek if it's really an interface... */
 	fprintf (output, "digraph interface {\n");
 	fprintf (output, "%s", graph_properties);
@@ -265,19 +269,25 @@ method_graph (MonoImage *image, char *name) {
 	MonoMethod *method = NULL;
 	
 	if (!name) {
-		method = mono_get_method (image, ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point, NULL);
-		if (!method)
-			g_error ("Cannot find entry point");
+		guint32 token = ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
+		if (!token || !(method = mono_get_method (image, token, NULL))) {
+			g_print ("Cannot find entry point in %s: specify an explict method name.\n", image->name);
+			exit (1);
+		}
 	} else {
 		/* search the method */
 		MonoMethodDesc *desc;
 
 		desc = mono_method_desc_new (name, include_namespace);
-		if (!desc)
-			g_error ("Invalid method name %s", name);
+		if (!desc) {
+			g_print ("Invalid method name %s\n", name);
+			exit (1);
+		}
 		method = mono_method_desc_search_in_image (desc, image);
-		if (!method)
-			g_error ("Cannot find method %s", name);
+		if (!method) {
+			g_print ("Cannot find method %s\n", name);
+			exit (1);
+		}
 	}
 	fprintf (output, "digraph blah {\n");
 	fprintf (output, "%s", graph_properties);
@@ -569,19 +579,25 @@ method_cfg (MonoImage *image, char *name) {
 	static char *cfg_graph_properties = "\tnode [fontsize=8.0]\n\tedge [len=1.5,color=red]\n";
 	
 	if (!name) {
-		method = mono_get_method (image, ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point, NULL);
-		if (!method)
-			g_error ("Cannot find entry point");
+		guint32 token = ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
+		if (!token || !(method = mono_get_method (image, token, NULL))) {
+			g_print ("Cannot find entry point in %s: specify an explict method name.\n", image->name);
+			exit (1);
+		}
 	} else {
 		/* search the method */
 		MonoMethodDesc *desc;
 
 		desc = mono_method_desc_new (name, include_namespace);
-		if (!desc)
-			g_error ("Invalid method name %s", name);
+		if (!desc) {
+			g_print ("Invalid method name %s\n", name);
+			exit (1);
+		}
 		method = mono_method_desc_search_in_image (desc, image);
-		if (!method)
-			g_error ("Cannot find method %s", name);
+		if (!method) {
+			g_print ("Cannot find method %s\n", name);
+			exit (1);
+		}
 	}
 	fprintf (output, "digraph blah {\n");
 	fprintf (output, "%s", cfg_graph_properties);
@@ -593,7 +609,7 @@ method_cfg (MonoImage *image, char *name) {
 
 static void
 usage () {
-	printf ("monograph 0.1 Copyright (c) 2002 Ximian, Inc\n");
+	printf ("monograph 0.2 Copyright (c) 2002 Ximian, Inc\n");
 	printf ("Create call graph or type hierarchy information from CIL assemblies.\n");
 	printf ("Usage: monograph [options] [assembly [typename|methodname]]\n");
 	printf ("Valid options are:\n");
@@ -605,12 +621,14 @@ usage () {
 	printf ("\t-n|--neato            invoke neato directly\n");
 	printf ("\t-v|--verbose          verbose operation\n");
 	printf ("The default assembly is corlib.dll. The default method for\n");
-	printf ("the --call option is the entrypoint.\n");
+	printf ("the --call and --control-flow options is the entrypoint.\n");
 	printf ("When the --neato option is used the output type info is taken\n");
-	printf ("from the output filename extension.\n");
+	printf ("from the output filename extension. You need the graphviz package installed\n");
+	printf ("to be able to use this option.\n");
 	printf ("Sample runs:\n");
 	printf ("\tmonograph -n -o vt.png corlib.dll System.ValueType\n");
 	printf ("\tmonograph -n -o expr.png mcs.exe Mono.CSharp.Expression\n");
+	printf ("\tmonograph -n -o cfg.png -C mcs.exe Driver:Main\n");
 	printf ("\tmonograph -d 3 -n -o callgraph.png -c mis.exe\n");
 	exit (1);
 }
@@ -687,8 +705,10 @@ main (int argc, char *argv[]) {
 		cname = "System.Object";
 
 	assembly = mono_assembly_open (aname, NULL, NULL);
-	if (!assembly)
-		g_error ("cannot open assembly %s", aname);
+	if (!assembly) {
+		g_print ("cannot open assembly %s\n", aname);
+		exit (1);
+	}
 
 	if (callneato) {
 		GString *command = g_string_new ("neato");
@@ -701,12 +721,16 @@ main (int argc, char *argv[]) {
 		if (type)
 			g_string_sprintfa (command, " -T%s", type + 1);
 		output = popen (command->str, "w");
-		if (!output)
-			g_error ("Cannot run neato");
+		if (!output) {
+			g_print ("Cannot run neato: you may need to install the graphviz package.\n");
+			exit (1);
+		}
 	} else if (outputfile) {
 		output = fopen (outputfile, "w");
-		if (!output)
-			g_error ("Cannot open file: %s", outputfile);
+		if (!output) {
+			g_print ("Cannot open file: %s\n", outputfile);
+			exit (1);
+		}
 	}
 	/* if it looks like a method name, we want a callgraph. */
 	if (cname && strchr (cname, ':') && graphtype == GRAPH_TYPES)
