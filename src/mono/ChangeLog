@@ -1,3 +1,10 @@
+2004-07-30  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (monoone_DATA): Add mcs.exe.config.
+	(gmcs_exe): Add gmcs.exe.config.
+	($(monoone_DATA) $(monotwo_DATA) ...): Add location of the .config
+	files too.
+
 2004-07-29  Lluis Sanchez Gual  <lluis@novell.com>
 
 	* Makefile.am: Copy machine.config in the correct _tmpinst subdirectory.
