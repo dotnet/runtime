@@ -393,8 +393,9 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	last = G_N_ELEMENTS (framework_assemblies) - 1;
 	
 	while (first <= last) {
+		int res;
 		pos = first + (last - first) / 2;
-		int res = strcmp (aname->name, framework_assemblies[pos]);
+		res = strcmp (aname->name, framework_assemblies[pos]);
 		if (res == 0) {
 			if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
 				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
