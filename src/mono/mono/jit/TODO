@@ -26,3 +26,11 @@
 
 * use short jump opcodes where possible (for backward jumps), will give better
   performance. 
+
+* Memory allocation of dynamic code.
+
+	The current interface to generate code and allocate the memory
+	for it is not very nice.
+
+	Use large buffers to allocate temporary code, rather than allocating
+	256 bytes every time, and hoping that it will be enough.  
