@@ -2471,8 +2471,9 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicStream *pefile;
 	int i, nsections;
-	guint32 *rva;
+	guint32 *rva, value;
 	guint16 *data16;
+	guchar *p;
 	static const unsigned char msheader[] = {
 		0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,  0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
 		0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -2623,8 +2624,12 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, import_lookup_table));
 	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->ilt_offset);
 
-	rva = (guint32*)(assembly->code.data + assembly->ilt_offset);
-	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset - 2);
+	p = (assembly->code.data + assembly->ilt_offset);
+	value = (assembly->text_rva + assembly->imp_names_offset - 2);
+	*p++ = (value) & 0xff;
+	*p++ = (value >> 8) & (0xff);
+	*p++ = (value >> 16) & (0xff);
+	*p++ = (value >> 24) & (0xff);
 
 	/* the CLI header info */
 	cli_header = (MonoCLIHeader*)(assembly->code.data + assembly->cli_header_offset);
@@ -2668,8 +2673,13 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 		switch (i) {
 		case MONO_SECTION_TEXT:
 			/* patch entry point */
-			rva = (guint32*)(assembly->code.data + 2);
-			*rva = GUINT32_FROM_LE (virtual_base + assembly->text_rva + assembly->iat_offset);
+			p = (assembly->code.data + 2);
+			value = (virtual_base + assembly->text_rva + assembly->iat_offset);
+			*p++ = (value) & 0xff;
+			*p++ = (value >> 8) & 0xff;
+			*p++ = (value >> 16) & 0xff;
+			*p++ = (value >> 24) & 0xff;
+
 			text_offset = assembly->sections [i].offset;
 			memcpy (pefile->data + text_offset, assembly->code.data, assembly->code.index);
 			text_offset += assembly->code.index;
