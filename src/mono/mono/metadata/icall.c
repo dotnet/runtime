@@ -1679,9 +1679,10 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	int i, count;
 	guint32 attrs, visibility;
 
+	/* we start the count from 1 because we skip the special type <Module> */
 	if (exportedOnly) {
 		count = 0;
-		for (i = 0; i < tdef->rows; ++i) {
+		for (i = 1; i < tdef->rows; ++i) {
 			attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
 			visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 			if (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)
@@ -1692,7 +1693,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	}
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 	count = 0;
-	for (i = 0; i < tdef->rows; ++i) {
+	for (i = 1; i < tdef->rows; ++i) {
 		attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
 		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
