@@ -6911,7 +6911,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType
 				MonoType **ntypes = g_new0 (MonoType *, ntype_argc);
 
 				for (j = 0; j < type_argc; j++)
-					ntypes [i] = types [i];
+					ntypes [j] = types [j];
 
 				for (j = type_argc; j < ntype_argc; j++) {
 					MonoType *pt = g_new0 (MonoType, 1);

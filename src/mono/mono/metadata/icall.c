@@ -1846,7 +1846,7 @@ ves_icall_MonoGenericInst_GetNestedTypes (MonoReflectionGenericInst *type)
 		count++;
 
 	res = mono_array_new (domain, System_Reflection_MonoGenericInst, count);
-	for (i = 0, tmpn = ginst->nested; tmpn; tmpn = tmpn->next) {
+	for (i = 0, tmpn = ginst->nested; tmpn; tmpn = tmpn->next, i++) {
 		MonoClass *nc = mono_class_from_mono_type (tmpn->data);
 		MonoReflectionType *type;
 
