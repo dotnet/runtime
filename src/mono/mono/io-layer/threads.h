@@ -53,7 +53,7 @@ extern gboolean TlsFree(guint32 idx);
 extern gpointer TlsGetValue(guint32 idx);
 extern gboolean TlsSetValue(guint32 idx, gpointer value);
 extern void Sleep(guint32 ms);
-extern void SleepEx(guint32 ms, gboolean);
+extern guint32 SleepEx(guint32 ms, gboolean alertable);
 extern gboolean BindIoCompletionCallback (gpointer handle,
 					  WapiOverlappedCB callback,
 					  guint64 flags);

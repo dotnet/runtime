@@ -858,26 +858,36 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 }
 
 /**
- * Sleep:
+ * SleepEx:
  * @ms: The time in milliseconds to suspend for
+ * @alertable: if TRUE, the wait can be interrupted by an APC call
  *
  * Suspends execution of the current thread for @ms milliseconds.  A
  * value of zero causes the thread to relinquish its time slice.  A
  * value of %INFINITE causes an infinite delay.
  */
-void Sleep(guint32 ms)
+guint32 SleepEx(guint32 ms, gboolean alertable)
 {
 	struct timespec req, rem;
 	int ms_quot, ms_rem;
 	int ret;
+	gpointer current_thread = NULL;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms);
 #endif
 
+	if (alertable) {
+		current_thread = GetCurrentThread ();
+		if (_wapi_thread_apc_pending (current_thread)) {
+			_wapi_thread_dispatch_apc_queue (current_thread);
+			return WAIT_IO_COMPLETION;
+		}
+	}
+	
 	if(ms==0) {
 		sched_yield();
-		return;
+		return 0;
 	}
 	
 	/* FIXME: check for INFINITE and sleep forever */
@@ -889,6 +899,12 @@ void Sleep(guint32 ms)
 	
 again:
 	ret=nanosleep(&req, &rem);
+
+	if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		_wapi_thread_dispatch_apc_queue (current_thread);
+		return WAIT_IO_COMPLETION;
+	}
+	
 	if(ret==-1) {
 		/* Sleep interrupted with rem time remaining */
 #ifdef DEBUG
@@ -900,16 +916,13 @@ again:
 		req=rem;
 		goto again;
 	}
+
+	return 0;
 }
 
-/* FIXME: implement alertable */
-void SleepEx(guint32 ms, gboolean alertable)
+void Sleep(guint32 ms)
 {
-	if(alertable==TRUE) {
-		g_warning(G_GNUC_PRETTY_FUNCTION ": alertable not implemented");
-	}
-	
-	Sleep(ms);
+	SleepEx(ms, FALSE);
 }
 
 gboolean
