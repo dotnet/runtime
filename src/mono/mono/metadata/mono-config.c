@@ -335,7 +335,7 @@ static void
 mono_install_get_config_dir (void)
 {
 #ifdef PLATFORM_WIN32
-  int i;
+  gchar *prefix;
 #endif
 
   mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
@@ -344,11 +344,9 @@ mono_install_get_config_dir (void)
 #ifndef PLATFORM_WIN32
     mono_cfg_dir = MONO_CFG_DIR;
 #else
-    mono_cfg_dir = g_build_path (mono_assembly_getrootdir (), "etc", NULL);
-    for (i = strlen (mono_cfg_dir) - 1; i >= 0; i--) {
-        if (mono_cfg_dir [i] == '/')
-            ((char*) mono_cfg_dir) [i] = '\\';
-    }
+    prefix = g_path_get_dirname (mono_assembly_getrootdir ());
+    mono_cfg_dir = g_build_filename (prefix, "etc", NULL);
+    g_free (prefix);
 #endif
   }
 }
