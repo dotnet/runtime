@@ -493,7 +493,14 @@ mono_create_method_pointer (MonoMethod *method)
 		case MONO_TYPE_VOID:
 			break;
 		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
 			x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 1);
+			break;
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+			x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 2);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
