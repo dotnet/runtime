@@ -134,7 +134,7 @@ gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 	mono_once(&spin_once, spin_init);
 	
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
-			      (void *)&req_mutex);
+			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
