@@ -1395,8 +1395,6 @@ if (ins->flags & MONO_INST_BRLABEL) { \
     sparc_nop (code); \
 } while (0);
 
-extern gboolean mono_compile_aot;
-
 /*
  * A call template is 7 instructions long, so we want to avoid it if possible.
  */
@@ -1406,7 +1404,7 @@ emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer da
 	gpointer target;
 
 	/* FIXME: This only works if the target method is already compiled */
-	if (0 && v64 && !mono_compile_aot) {
+	if (0 && v64 && !cfg->compile_aot) {
 		MonoJumpInfo patch_info;
 
 		patch_info.type = patch_type;
