@@ -4151,6 +4151,9 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
+#ifndef	SIGRTMIN
+#define	SIGRTMIN	SIGUSR1
+#endif
 	g_assert (sigaction (SIGRTMIN, &sa, NULL) != -1);
 
 #if 1
