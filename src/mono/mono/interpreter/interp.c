@@ -1283,14 +1283,6 @@ ves_exec_method (MonoInvocation *frame)
 
 	DEBUG_ENTER ();
 
-	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		ves_runtime_method (frame);
-		if (frame->ex)
-			goto handle_exception;
-		DEBUG_LEAVE ();
-		return;
-	} 
-
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (!frame->method->addr) {
 			if (!mono_lookup_pinvoke_call (frame->method)) {
@@ -1306,6 +1298,13 @@ ves_exec_method (MonoInvocation *frame)
 		return;
 	} 
 
+	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+		ves_runtime_method (frame);
+		if (frame->ex)
+			goto handle_exception;
+		DEBUG_LEAVE ();
+		return;
+	} 
 
 	/*verify_method (frame->method);*/
 
