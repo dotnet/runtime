@@ -88,7 +88,6 @@ OTHER_SRC = \
 	unicode.h		\
 	wait.c			\
 	wait.h			\
-	wait-private.h		\
 	wapi.h			\
 	wapi-private.h
 

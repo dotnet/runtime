@@ -14,7 +14,6 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/wait-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/misc-private.h>
 

@@ -138,7 +138,7 @@ if test x$platform_win32 = xno; then
 	
 	# Check that off_t can represent 2**63 - 1 correctly, working around
 	# potential compiler bugs.  Defines LARGE_FILE_SUPPORT, adds $1 to
-	# CFLAGS and sets $large_offt to yes if the test succeeds
+	# CPPFLAGS and sets $large_offt to yes if the test succeeds
 	large_offt=no
 	AC_DEFUN(LARGE_FILES, [
 		large_CPPFLAGS=$CPPFLAGS
@@ -160,7 +160,7 @@ if test x$platform_win32 = xno; then
 		], [
 			AC_MSG_RESULT(ok)
 			AC_DEFINE(HAVE_LARGE_FILE_SUPPORT)
-			CFLAGS="$CFLAGS $1"
+			large_CPPFLAGS="$large_CPPFLAGS $1"
 			large_offt=yes
 		], [
 			AC_MSG_RESULT(no)
@@ -292,7 +292,7 @@ if test x$platform_win32 = xno; then
 			])
 		])
 		CPPFLAGS=$orig_CPPFLAGS
-		CFLAGS="$CFLAGS $pthread_CFLAGS"
+		CPPFLAGS="$CPPFLAGS $pthread_CFLAGS"
 
 		# Need PTHREAD_MUTEX_RECURSIVE
 		pthread_CFLAGS=""
@@ -328,7 +328,7 @@ if test x$platform_win32 = xno; then
 			])
 		])
 		CPPFLAGS=$orig_CPPFLAGS
-		CFLAGS="$CFLAGS $pthread_CFLAGS"
+		CPPFLAGS="$CPPFLAGS $pthread_CFLAGS"
 	], [
 		AC_MSG_ERROR([libpthread is required on non-win32 hosts])
 	])

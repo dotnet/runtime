@@ -1,3 +1,7 @@
+2002-05-09  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Set CPPFLAGS not CFLAGS (bug 23767)
+
 2002-05-05  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/ado-net: correct formatting

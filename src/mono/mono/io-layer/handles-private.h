@@ -13,7 +13,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include <mono/io-layer/wait-private.h>
+#include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/shared.h>
 
 #undef DEBUG
