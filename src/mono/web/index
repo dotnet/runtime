@@ -81,6 +81,10 @@
 	href="http://mono.baselabs.org/index.php/software/">Linux</a> (thanks
 	to BaseLabs).
 
+	We have started a little document that aims to be a complete 
+	introduction to how to contribute to Mono without having to search
+	a lot through Google, mailing lists or the CVS. It is <a href="mono-contribution-howto">here</a>
+
 ** Apr 24, 2002
 
 	<b>Mono 0.11 is out!</b> Mostly performance improvements, bug
