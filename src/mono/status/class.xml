@@ -1462,12 +1462,30 @@
 		</maintainers>
 	</class>
 	<class name="System.IO.FileStream">
-		<last-activity>Jul-15-2001</last-activity>
-		<implementation>no</implementation>
+		<last-activity>Dec-11-2001</last-activity>
+		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>50</completion>
 		<maintainers>
-			<maintainer>czw@home.se</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.IO.StreamReader">
+		<last-activity>Dec-11-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>20</completion>
+		<maintainers>
+			<maintainer>dietmar@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.IO.StreamWriter">
+		<last-activity>Dec-11-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>20</completion>
+		<maintainers>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.IO.FileSystemInfo">
@@ -1507,12 +1525,12 @@
 		</maintainers>
 	</class>
 	<class name="System.IO.Stream">
-		<last-activity>Jul-15-2001</last-activity>
-		<implementation>no</implementation>
+		<last-activity>Dec-11-2001</last-activity>
+		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>50</completion>
 		<maintainers>
-			<maintainer>czw@home.se</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.IO.StringReader">
