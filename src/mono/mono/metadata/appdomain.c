@@ -95,6 +95,12 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
 	domain->out_of_memory_ex = mono_exception_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
+	/* 
+	 * These two are needed because the signal handlers might be executing on
+	 * an alternate stack, and Boehm GC can't handle that.
+	 */
+	domain->null_reference_ex = mono_exception_from_name (mono_defaults.corlib, "System", "NullReferenceException");
+	domain->stack_overflow_ex = mono_exception_from_name (mono_defaults.corlib, "System", "StackOverflowException");
 	
 	/* GC init has to happen after thread init */
 	mono_gc_init ();

@@ -112,6 +112,8 @@ struct _MonoDomain {
 	MonoMethod         *private_invoke_method;
 	MonoAppContext     *default_context;
 	MonoException      *out_of_memory_ex;
+	MonoException      *null_reference_ex;
+	MonoException      *stack_overflow_ex;
 	/* Used to store offsets of thread and context static fields */
 	GHashTable         *special_static_fields;
 	GHashTable         *jump_target_hash;
