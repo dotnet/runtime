@@ -401,13 +401,6 @@ A: No. MS Passport is unrelated to running .NET compatible applications
    produced with the Mono tools.  The only thing you will need is a
    just-in-time compiler (JIT).
 
-Q: What is a 100% .NET application?
-
-A: A `100% .NET application' is one that only uses the APIs defined
-   under the System namespace and does not use PInvoke.  These
-   applications would in theory run unmodified on Windows, Linux,
-   HP-UX, Solaris, MacOS X and others. 
-
 Q: If Microsoft will release a port of their .NET platform under the
    `Shared Source' license, why should I bother with anything else?
 
@@ -444,12 +437,6 @@ Q: Will Mono allow me to run Microsoft Office on Linux?
 A: No, it will not.  Microsoft Office is a Windows application.  To
    learn more about running Windows applications on Intel Unix systems
    refer to <a href="http://www.winehq.com">the Wine Project</a>.
-
-Q: Will I be able to compile a Microsoft VB.NET application and execute 
-   the resultant MSIL file under MONO on Linux without converting to C# 
-   and recompiling?
-
-A: Once we have a complete VisualBasic runtime, yes.
 
 Q: Can mono run the WebMatrix?
 
@@ -504,9 +491,9 @@ A: Mono requires Unicode versions of Win32 APIs to run,
 <a name="compatibility"></a>
 ** Compatibility
 
-Q: Can Mono run applications developed with the Microsoft.NET fraemwork?
+Q: Can Mono run applications developed with the Microsoft.NET framework?
 
-A: Yes, Mono can run applications developed with the Microsft .NET Framework
+A: Yes, Mono can run applications developed with the Microsoft .NET Framework
    on Unix.  There are a few caveats to keep in mind: Mono has not
    been completed yet, so a few API calls might be missing; And in
    some cases the Mono behavior *might* be incorrect.
@@ -539,6 +526,74 @@ Q: Will applications run out the box with Mono?
 A: Sometimes they will.  But sometimes a .NET application might invoke
    Win32 API calls, or assume certain patterns that are not correct
    for cross-platform applications.
+
+Q: What is a 100% .NET application?
+
+A: A `100% .NET application' is one that only uses the APIs defined
+   under the System namespace and does not use P/Invoke.  These
+   applications would in theory run unmodified on Windows, Linux,
+   HP-UX, Solaris, MacOS X and others. 
+
+   Note that this requirement also holds for all assemblies used by the
+   application.  If one of them is Windows-specific, then the entire program
+   is not a 100% .NET application.
+
+   Furthermore, a 100% .NET application must not contain non-standard data
+   streams in the assembly.  For example, Visual Studio .NET will insert a 
+   <tt>#-</tt> stream into assemblies built under the "Debug" target.  
+   This stream contains debugging information for use by Visual Studio .NET; 
+   however, this stream can not be interpreted by Mono (unless you're willing 
+   to donate support).
+
+   Thus, it is recommended that all Visual Studio .NET-compiled code be
+   compiled under the Release target before it is executed under Mono.
+
+Q: Can I execute my Visual Studio .NET program (Visual Basic .NET, Visual C#,
+   Managed Extensions for C++, etc.) under Mono?
+
+A: Yes, with some reservations.
+
+   The .NET program must either be a 100% .NET application, or (somehow) have
+   all dependent assemblies available on all desired platforms.  (How to do so
+   is outside the bounds of this FAQ.)
+
+   For example, since Mono's System.Windows.Forms implementation will use
+   Wine, System.Windows.Forms is only as portable as Wine is.  It's possible
+   that Mono may run on a platform, but Wine will not, in which case a
+   System.Windows.Forms app will not run on that platform.  This is similarly
+   true for all assemblies that are not 100% managed code.
+
+   Mono must also have an implementation for the .NET assemblies used.  For
+   example the System.EnterpriseServices namespace is part of .NET, but it
+   has not been implemented in Mono.  Thus, any applications using this
+   namespace will not run under Mono.
+
+   With regards to languages, C# applications tend to be most portable.
+
+   Visual Basic .NET applications are portable, but Mono's 
+   Microsoft.VisualBasic.dll implementation is incomplete.  It is recommended 
+   to either avoid using this assembly in your own code, only use the 
+   portions that Mono has implemented, or to help implement the missing
+   features.
+
+   Managed Extensions for C++ is least likely to operate under Mono.  Mono
+   does not support mixed mode assemblies (that is, assemblies containing both
+   managed and unmanaged code, which Managed C++ can produce).  You need a
+   fully-managed assembly to run under Mono, and getting the Visual C++ .NET
+   compiler to generate such an executable can be difficult.  You need to use
+   only the .NET-framework assemblies, not the C libraries (you can't use
+   <b>printf</b>(3) for example.), and you need to use
+   the linker options <tt>/nodefaultlib /entry:main mscoree.lib</tt> in
+   addition to the <tt>/clr</tt> compiler flag.  You can still use certain
+   compiler intrinsic functions (such as <b>memcpy</b>(3)) and the STL.
+   You should also see <a 
+   href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/vcmex/html/vcgrfconvertingmanagedextensionsforcprojectsfrommixed-modetopureil.asp"
+   >Converting Managed Extensions for C++ Projects from Mixed Mode to Pure
+   Intermediate Language</a> at MSDN.
+   Finally, you can use PEVERIFY.EXE from the .NET SDK to determine if the 
+   assembly is fully managed.
+
+   Thanks to Serge Chaban for the linker flags to use.
 
 <a name="pnpproject"></a>
 ** Mono and Portable.NET
@@ -818,7 +873,7 @@ A: Replace the __stdcall attribute with the STDCALL macro, and include this
 Q: I want to be able to execute Mono binaries, without having to use the "mono"
    command.  How can I do this?
 
-A: From Carlos Perelló:
+A: From Carlos PerellÃ³:
 
    <i>I think that the best solution is the binfmt feature with the
    wrapper that exists with Debian packages at:
@@ -887,7 +942,7 @@ A: Modules developed for Apache 2 are not compatible with Apache 1.3
 
 Q: Can I run Apache 1 and Apache 2 on the same machine?
 
-   You can always keep a copy of Apache 2 running in paralell with your Apache
+   You can always keep a copy of Apache 2 running in parallel with your Apache
    1.3 (either different port or using a reverse proxy).
 
    You can also bind the two servers to different IP addresses on the
@@ -1149,7 +1204,7 @@ A: There should not be any need to recode.
 Q: What do I need to watch out for when programming in VB.NET so that I'm
    sure to be able to run those apps on Linux?
 
-A: Not making any PInvoke or DLL calls should and not using anything in
+A: Not making any P/Invoke or DLL calls should and not using anything in
    the Microsoft.* namespaces should suffice. Also do not use any 
    Methods/Classes marked as "This type/method supports the .NET Framework 
    infrastructure and is not intended to be used directly from your code." 
@@ -1306,7 +1361,7 @@ A: First some background information.
 
    The Mono strategy for dealing with these technologies is as
    follows: (1) work around the patent by using a different
-   implementation techinque that retains the API, but changes the
+   implementation technique that retains the API, but changes the
    mechanism; if that is not possible, we would (2) remove the pieces
    of code that were covered by those patents, and also (3) find prior
    art that would render the patent useless.
@@ -1421,4 +1476,4 @@ A: It's possible to run VC++ generated apps under Mono, but we do not
 
 ** Credits
 
-   The FAQ contains material contributed by Miguel de Icaza, Jaime Anguiano, Lluis Sánchez.
+   The FAQ contains material contributed by Miguel de Icaza, Jaime Anguiano, Lluis SÃ¡nchez.
