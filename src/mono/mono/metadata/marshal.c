@@ -5821,7 +5821,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr)
 	MONO_ARCH_SAVE_REGS;
 
 	if (ptr == NULL)
-		return mono_string_new (mono_domain_get (), "");
+		return NULL;
 	else
 		return mono_string_new (mono_domain_get (), ptr);
 }
@@ -5832,7 +5832,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr,
 	MONO_ARCH_SAVE_REGS;
 
 	if (ptr == NULL)
-		return mono_string_new (mono_domain_get (), "");
+		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
 	else
 		return mono_string_new_len (mono_domain_get (), ptr, len);
 }
@@ -5847,7 +5847,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 	MONO_ARCH_SAVE_REGS;
 
 	if (ptr == NULL)
-		return mono_string_new (mono_domain_get (), "");
+		return NULL;
 
 	while (*t++)
 		len++;
@@ -5863,7 +5863,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *pt
 	MONO_ARCH_SAVE_REGS;
 
 	if (ptr == NULL)
-		return mono_string_new (mono_domain_get (), "");
+		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
 	else
 		return mono_string_new_utf16 (domain, ptr, len);
 }
