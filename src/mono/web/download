@@ -94,7 +94,7 @@
 		  <td>
 		    <ul>
 			<li><a href="archive/redhat-90-i386/mono-0.28-1.ximian.6.1.src.rpm">mono-0.28-1.src.rpm (RH9)</a>
-			<li><a href="archive/redhat-90-i386/mono-0.28-1.ximian.5.1.src.rpm">mono-0.28-1.src.rpm (RH8)</a>
+			<li><a href="archive/redhat-90-i386/mono-0.28-1.ximian.6.1.src.rpm">mono-0.28-1.src.rpm (RH8)</a>
 		    </ul>
 		  </td>
 	        </tr>
@@ -193,7 +193,7 @@
 		  <td>
 		    <ul>
 			<li><a href="archive/redhat-90-i386/mono-0.26-1.ximian.6.1.src.rpm">mono-0.26-1.src.rpm (RH9)</a>
-			<li><a href="archive/redhat-90-i386/mono-0.26-1.ximian.5.1.src.rpm">mono-0.26-1.src.rpm (RH8)</a>
+			<li><a href="archive/redhat-90-i386/mono-0.26-1.ximian.6.1.src.rpm">mono-0.26-1.src.rpm (RH8)</a>
 		    </ul>
 		  </td>
 	        </tr>
@@ -220,7 +220,7 @@
 		      <li><a href="archive/redhat-90-i386/monodoc-0.6-1.ximian.6.1.i386.rpm">monodoc-0.6-1.ximian.6.1.i386.rpm</a> (To be used only with CVS gtk-sharp)                        
                       <li><a href="archive/redhat-90-i386/monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm">monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm</a>
                       <li><a href="archive/redhat-90-i386/mono-wine-20030318-1.ximian.6.3.i386.rpm">mono-wine-20030318-1.ximian.6.3.i386.rpm</a>
-                      <li><a href="archive/redhat-90-i386/mono-wine-debuginfo-20030318-1.ximian.6.2.i386.rpm">mono-wine-debuginfo-20030318-1.ximian.6.3.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-wine-debuginfo-20030318-1.ximian.6.3.i386.rpm">mono-wine-debuginfo-20030318-1.ximian.6.3.i386.rpm</a>
                     </ul>
                   </td>
                   <td bgcolor="#999999">
@@ -300,7 +300,7 @@
 	          </td>
 		  <td>
 		    <ul>
-			<li><a href="archive/mono-0.25-1.ximian.5.src.rpm">mono-0.25-1.src.rpm</a>
+			<li><a href="archive/redhat-80-i386/mono-0.25-1.ximian.5.src.rpm">mono-0.25-1.src.rpm</a>
 		    </ul>
 		  </td>
 	        </tr>
@@ -855,7 +855,7 @@
 		  <td>
 		    <ul>
 			<li><a href="archive/libgc-6.1-1.src.rpm">libgc-6.1-1.src.rpm</a>
-			<li><a href="archive/mono-0.20-1.src.rpm">mono-0.20-1.src.rpm</a>
+			<li><a href="archive/redhat-73-i386/mono-0.20-1.src.rpm">mono-0.20-1.src.rpm</a>
 		    </ul>
 		  </td>
 	        </tr>
@@ -1169,7 +1169,6 @@
 
 	<ul>
 		* <a href="http://www.debianplanet.org/mono/">DebianPlanet</a>
-		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> (works without cygwin!)
 	</ul>
 
 * Snapshots
