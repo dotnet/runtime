@@ -15,7 +15,7 @@
 #	i  integer register
 #	b  base register (used in address references)
 #	f  floating point register
-#   l  register pair
+#   l  register pair (same as 'i' on v9)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # number is a positive integer
@@ -46,7 +46,7 @@
 # See the code in mini-sparc32.c for more details on how the specifiers are used.
 #
 nop: len:4
-break: len:8
+break: len:64
 ldarg.0:
 ldarg.1:
 ldarg.2:
@@ -83,8 +83,8 @@ ldc.r4:
 ldc.r8:
 dup:
 pop:
-jmp: len:32
-call: dest:i clob:c len:16
+jmp: len:64
+call: dest:i clob:c len:40
 calli:
 ret:
 br.s:
@@ -108,17 +108,23 @@ bge: len:8
 bgt: len:8
 ble: len:8
 blt: len:8
-bne.un: len:16
-bge.un: len:16
-bgt.un: len:16
-ble.un: len:16
-blt.un: len:16
-sparc_brz: len: 8
-sparc_brlez: len: 8
-sparc_brlz: len: 8
-sparc_brnz: len: 8
-sparc_brgz: len: 8
-sparc_brgez: len: 8
+bne.un: len:64
+bge.un: len:64
+bgt.un: len:64
+ble.un: len:64
+blt.un: len:64
+sparc_brz: src1:i len: 8
+sparc_brlez: src1:i len: 8
+sparc_brlz: src1:i len: 8
+sparc_brnz: src1:i len: 8
+sparc_brgz: src1:i len: 8
+sparc_brgez: src1:i len: 8
+sparc_cond_exc_eqz: src1:i len:64
+sparc_cond_exc_nez: src1:i len:64
+sparc_cond_exc_ltz: src1:i len:64
+sparc_cond_exc_gtz: src1:i len:64
+sparc_cond_exc_gez: src1:i len:64
+sparc_cond_exc_lez: src1:i len:64
 switch:
 ldind.i1: dest:i len:4
 ldind.u1: dest:i len:4
@@ -138,13 +144,13 @@ stind.i4: src1:b src2:i
 stind.i8:
 stind.r4: src1:b src2:f
 stind.r8: src1:b src2:f
-add: dest:i src1:i src2:i len:4
+add: dest:i src1:i src2:i len:64
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
-div: dest:i src1:i src2:i len:20
+div: dest:i src1:i src2:i len:64
 div.un: dest:i src1:i src2:i len:8
-rem: dest:d src1:i src2:i len:28
-rem.un: dest:d src1:i src2:i len:16
+rem: dest:d src1:i src2:i len:64
+rem.un: dest:d src1:i src2:i len:64
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
@@ -157,8 +163,8 @@ conv.i1: dest:i src1:i len:8
 conv.i2: dest:i src1:i len:8
 conv.i4: dest:i src1:i len:4
 conv.i8:
-conv.r4: dest:f src1:i len:16
-conv.r8: dest:f src1:i len:12
+conv.r4: dest:f src1:i len:64
+conv.r8: dest:f src1:i len:64
 conv.u4: dest:i src1:i len:
 conv.u8:
 callvirt:
@@ -170,7 +176,7 @@ castclass:
 isinst:
 conv.r.un:
 unbox:
-throw: src1:i len:8
+throw: src1:i len:64
 ldfld:
 ldflda:
 stfld:
@@ -216,7 +222,7 @@ conv.ovf.u1:
 conv.ovf.i2:
 conv.ovf.u2:
 conv.ovf.i4:
-conv.ovf.u4:
+conv.ovf.u4: dest:i src1:i len:64
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
@@ -230,13 +236,13 @@ conv.ovf.i:
 conv.ovf.u:
 add.ovf:
 add.ovf.un:
-mul.ovf: dest:i src1:i src2:i len:24
-mul.ovf.un: dest:i src1:i src2:i len:20
+mul.ovf: dest:i src1:i src2:i len:64
+mul.ovf.un: dest:i src1:i src2:i len:64
 sub.ovf:
 sub.ovf.un:
-start_handler: len:20
-endfinally: len:20
-endfilter: len:16
+start_handler: len:64
+endfinally: len:64
+endfilter: len:64
 leave:
 leave.s:
 stind.i:
@@ -250,11 +256,11 @@ prefix2:
 prefix1:
 prefixref:
 arglist: src1:i
-ceq: dest:i len:12
-cgt: dest:i len:12
-cgt.un: dest:i len:12
-clt: dest:i len:12
-clt.un: dest:i len:12
+ceq: dest:i len:64
+cgt: dest:i len:64
+cgt.un: dest:i len:64
+clt: dest:i len:64
+clt.un: dest:i len:64
 ldftn:
 ldvirtftn:
 ldarg:
@@ -263,8 +269,8 @@ starg:
 ldloc:
 ldloca:
 stloc:
-localloc: dest:i src1:i len:24
-sparc_localloc_imm: dest:i len:16
+localloc: dest:i src1:i len:64
+sparc_localloc_imm: dest:i len:64
 unaligned.:
 volatile.:
 tail.:
@@ -291,97 +297,99 @@ store:
 phi:
 rename:
 compare: src1:i src2:i len:4
-compare_imm: src1:i len:12
-fcompare: src1:f src2:f len:12
-lcompare:
+icompare: src1:i src2:i len:4
+compare_imm: src1:i len:64
+icompare_imm: src1:i len:64
+fcompare: src1:f src2:f len:64
+lcompare: src1:i src2:i len:4
 local:
 arg:
 setfret: dest:f src1:f len:8
-# FIXME: Mono-specifc opcodes (OP_)  Need to clean these up
 outarg: src1:i len:1
 outarg_imm: len:5
 retarg:
 setret: dest:a src1:i len:4
 setlret: dest:l src1:i src2:i len:8
 setreg: dest:i src1:i len:4 clob:r
-setregimm: dest:i len:8 clob:r
+setregimm: dest:i len:64 clob:r
 setfreg: dest:f src1:f len:4 clob:r
+sparc_setfreg_float: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
-oparglist: src1:i len:12
-voidcall: len:12 clob:c
-voidcall_reg: src1:i len:12 clob:c
-voidcall_membase: src1:b len:16 clob:c
-fcall: dest:f len:20 clob:c
-fcall_reg: dest:f src1:i len:20 clob:c
-fcall_membase: dest:f src1:b len:24 clob:c
-lcall: dest:l len:20 clob:c
-lcall_reg: dest:l src1:i len:20 clob:c
-lcall_membase: dest:l src1:b len:24 clob:c
-vcall: len:16 clob:c
-vcall_reg: src1:i len:16 clob:c
-vcall_membase: src1:b len:24 clob:c
-call_reg: dest:i src1:i len:16 clob:c
-call_membase: dest:i src1:b len:20 clob:c
+oparglist: src1:i len:64
+voidcall: len:64 clob:c
+voidcall_reg: src1:i len:64 clob:c
+voidcall_membase: src1:b len:64 clob:c
+fcall: dest:f len:42 clob:c
+fcall_reg: dest:f src1:i len:64 clob:c
+fcall_membase: dest:f src1:b len:64 clob:c
+lcall: dest:l len:42 clob:c
+lcall_reg: dest:l src1:i len:64 clob:c
+lcall_membase: dest:l src1:b len:64 clob:c
+vcall: len:40 clob:c
+vcall_reg: src1:i len:64 clob:c
+vcall_membase: src1:b len:64 clob:c
+call_reg: dest:i src1:i len:64 clob:c
+call_membase: dest:i src1:b len:64 clob:c
 trap:
-iconst: dest:i len:8
-i8const:
-r4const: dest:f len:16
-r8const: dest:f len:12
+iconst: dest:i len:64
+i8const: dest:i len:64
+r4const: dest:f len:64
+r8const: dest:f len:64
 regvar:
 reg:
 regoffset:
 label:
-store_membase_imm: dest:b len:20
-store_membase_reg: dest:b src1:i len:12
-storei1_membase_imm: dest:b len:20
-storei1_membase_reg: dest:b src1:i len:12
-storei2_membase_imm: dest:b len:20
-storei2_membase_reg: dest:b src1:i len:12
-storei4_membase_imm: dest:b len:20
-storei4_membase_reg: dest:b src1:i len:12
-storei8_membase_imm: dest:b len:20
-storei8_membase_reg: dest:b src1:i len:12
-storer4_membase_reg: dest:b src1:f len:20
-storer8_membase_reg: dest:b src1:f len:20
-load_membase: dest:i src1:b len:12
-loadi1_membase: dest:i src1:b len:12
-loadu1_membase: dest:i src1:b len:12
-loadi2_membase: dest:i src1:b len:12
-loadu2_membase: dest:i src1:b len:12
-loadi4_membase: dest:i src1:b len:12
-loadu4_membase: dest:i src1:b len:12
-loadi8_membase: dest:i src1:b
-loadr4_membase: dest:f src1:b len:16
-loadr8_membase: dest:f src1:b len:20
+store_membase_imm: dest:b len:64
+store_membase_reg: dest:b src1:i len:64
+storei1_membase_imm: dest:b len:64
+storei1_membase_reg: dest:b src1:i len:64
+storei2_membase_imm: dest:b len:64
+storei2_membase_reg: dest:b src1:i len:64
+storei4_membase_imm: dest:b len:64
+storei4_membase_reg: dest:b src1:i len:64
+storei8_membase_imm: dest:b len:64 len:64
+storei8_membase_reg: dest:b src1:i len:64
+storer4_membase_reg: dest:b src1:f len:64
+storer8_membase_reg: dest:b src1:f len:64
+load_membase: dest:i src1:b len:64
+loadi1_membase: dest:i src1:b len:64
+loadu1_membase: dest:i src1:b len:64
+loadi2_membase: dest:i src1:b len:64
+loadu2_membase: dest:i src1:b len:64
+loadi4_membase: dest:i src1:b len:64
+loadu4_membase: dest:i src1:b len:64
+loadi8_membase: dest:i src1:b len:64
+loadr4_membase: dest:f src1:b len:64
+loadr8_membase: dest:f src1:b len:64
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
-add_imm: dest:i src1:i len:12
-sub_imm: dest:i src1:i len:12
-mul_imm: dest:i src1:i len:12
-div_imm: dest:a src1:i src2:i len:28
-div_un_imm: dest:a src1:i src2:i len:12
-rem_imm: dest:d src1:i src2:i len:36
-rem_un_imm: dest:d src1:i src2:i len:16
-and_imm: dest:i src1:i len:12
-or_imm: dest:i src1:i len:12
-xor_imm: dest:i src1:i len:12
-shl_imm: dest:i src1:i len:12
-shr_imm: dest:i src1:i len:12
-shr_un_imm: dest:i src1:i len:12
-cond_exc_eq: len:12
-cond_exc_ne_un: len:12
-cond_exc_lt: len:12
-cond_exc_lt_un: len:12
-cond_exc_gt: len:12
-cond_exc_gt_un: len:12
-cond_exc_ge: len:12
-cond_exc_ge_un: len:12
-cond_exc_le: len:12
-cond_exc_le_un: len:12
-cond_exc_ov: len:12
-cond_exc_no: len:12
-cond_exc_c: len:12
-cond_exc_nc: len:12
+add_imm: dest:i src1:i len:64
+sub_imm: dest:i src1:i len:64
+mul_imm: dest:i src1:i len:64
+div_imm: dest:a src1:i src2:i len:64
+div_un_imm: dest:a src1:i src2:i len:64
+rem_imm: dest:d src1:i src2:i len:64
+rem_un_imm: dest:d src1:i src2:i len:64
+and_imm: dest:i src1:i len:64
+or_imm: dest:i src1:i len:64
+xor_imm: dest:i src1:i len:64
+shl_imm: dest:i src1:i len:64
+shr_imm: dest:i src1:i len:64
+shr_un_imm: dest:i src1:i len:64
+cond_exc_eq: len:64
+cond_exc_ne_un: len:64
+cond_exc_lt: len:64
+cond_exc_lt_un: len:64
+cond_exc_gt: len:64
+cond_exc_gt_un: len:64
+cond_exc_ge: len:64
+cond_exc_ge_un: len:64
+cond_exc_le: len:64
+cond_exc_le_un: len:64
+cond_exc_ov: len:64
+cond_exc_no: len:64
+cond_exc_c: len:64
+cond_exc_nc: len:64
 long_add:
 long_sub:
 long_mul:
@@ -392,9 +400,9 @@ long_rem_un:
 long_and:
 long_or:
 long_xor:
-long_shl:
-long_shr:
-long_shr_un:
+long_shl: dest:i src1:i src2:i len:64
+long_shr: dest:i src1:i src2:i len:64
+long_shr_un: dest:i src1:i src2:i len:64
 long_neg:
 long_not:
 long_conv_to_i1:
@@ -439,11 +447,11 @@ long_cgt:
 long_cgt_un:
 long_clt:
 long_clt_un:
-long_conv_to_r_un: dest:f src1:i src2:i len:37 
+long_conv_to_r_un: dest:f src1:i src2:i len:64 
 long_conv_to_u:
-long_shr_imm:
-long_shr_un_imm:
-long_shl_imm:
+long_shr_imm: dest:i src1:i len:64
+long_shr_un_imm: dest:i src1:i len:64
+long_shl_imm: dest:i src1:i len:64
 long_add_imm:
 long_sub_imm:
 long_beq:
@@ -457,22 +465,22 @@ long_bge_un:
 long_ble:
 long_ble_un:
 float_beq: len:8
-float_bne_un: len:16
+float_bne_un: len:64
 float_blt: len:8
-float_blt_un: len:16
+float_blt_un: len:64
 float_bgt: len:8
-float_btg_un: len:16
-float_bge: len:16
-float_bge_un: len:16
-float_ble: len:16
-float_ble_un: len:16
+float_btg_un: len:64
+float_bge: len:64
+float_bge_un: len:64
+float_ble: len:64
+float_ble_un: len:64
 float_add: dest:f src1:f src2:f len:4
 float_sub: dest:f src1:f src2:f len:4
 float_mul: dest:f src1:f src2:f len:4
 float_div: dest:f src1:f src2:f len:4
 float_div_un: dest:f src1:f src2:f len:4
-float_rem: dest:f src1:f src2:f len:16
-float_rem_un: dest:f src1:f src2:f len:16
+float_rem: dest:f src1:f src2:f len:64
+float_rem_un: dest:f src1:f src2:f len:64
 float_neg: dest:f src1:f len:4
 float_not: dest:f src1:f len:4
 float_conv_to_i1: dest:i src1:f len:40
@@ -512,23 +520,74 @@ float_conv_to_ovf_i4:
 float_conv_to_ovf_u4:
 float_conv_to_ovf_i8:
 float_conv_to_ovf_u8:
-float_ceq: dest:i src1:f src2:f len:16
-float_cgt: dest:i src1:f src2:f len:16
-float_cgt_un: dest:i src1:f src2:f len:24
-float_clt: dest:i src1:f src2:f len:16
-float_clt_un: dest:i src1:f src2:f len:24
-float_conv_to_u: dest:i src1:f len:36
-call_handler: len:12
-op_endfilter: src1:i len:12
-aot_const: dest:i len:8
+float_ceq: dest:i src1:f src2:f len:64
+float_cgt: dest:i src1:f src2:f len:64
+float_cgt_un: dest:i src1:f src2:f len:64
+float_clt: dest:i src1:f src2:f len:64
+float_clt_un: dest:i src1:f src2:f len:64
+float_conv_to_u: dest:i src1:f len:64
+call_handler: len:64
+op_endfilter: src1:i len:64
+aot_const: dest:i len:64
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
-adc_imm: dest:i src1:i len:12
+adc_imm: dest:i src1:i len:64
 sbb: dest:i src1:i src2:i len:4
-sbb_imm: dest:i src1:i len:12
+sbb_imm: dest:i src1:i len:64
 br_reg: src1:i len:8
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 fmove: dest:f src1:f len:8
+
+# 32 bit opcodes
+int_add: dest:i src1:i src2:i len:64
+int_sub: dest:i src1:i src2:i len:64
+int_mul: dest:i src1:i src2:i len:64
+int_div: dest:i src1:i src2:i len:64
+int_div_un: dest:i src1:i src2:i len:64
+int_rem: dest:i src1:i src2:i len:64
+int_rem_un: dest:i src1:i src2:i len:64
+int_and: dest:i src1:i src2:i len:64
+int_or: dest:i src1:i src2:i len:64
+int_xor: dest:i src1:i src2:i len:64
+int_shl: dest:i src1:i src2:i len:64
+int_shr: dest:i src1:i src2:i len:64
+int_shr_un: dest:i src1:i src2:i len:64
+int_adc: dest:i src1:i src2:i len:64
+int_adc_imm: dest:i src1:i len:64
+int_sbb: dest:i src1:i src2:i len:64
+int_sbb_imm: dest:i src1:i len:64
+int_addcc: dest:i src1:i src2:i len:64
+int_subcc: dest:i src1:i src2:i len:64
+int_add_imm: dest:i src1:i len:64
+int_sub_imm: dest:i src1:i len:64
+int_mul_imm: dest:i src1:i len:64
+int_div_imm: dest:i src1:i len:64
+int_div_un_imm: dest:i src1:i len:64
+int_rem_imm: dest:i src1:i len:64
+int_rem_un_imm: dest:i src1:i len:64
+int_and_imm: dest:i src1:i len:64
+int_or_imm: dest:i src1:i len:64
+int_xor_imm: dest:i src1:i len:64
+int_shl_imm: dest:i src1:i len:64
+int_shr_imm: dest:i src1:i len:64
+int_shr_un_imm: dest:i src1:i len:64
+int_neg: dest:i src1:i len:64
+int_not: dest:i src1:i len:64
+int_ceq: dest:i len:64
+int_cgt: dest:i len:64
+int_cgt_un: dest:i len:64
+int_clt: dest:i len:64
+int_clt_un: dest:i len:64
+int_beq: len:64
+int_bne_un: len:64
+int_blt: len:64
+int_blt_un: len:64
+int_bgt: len:64
+int_bgt_un: len:64
+int_bge: len:64
+int_bge_un: len:64
+int_ble: len:64
+int_ble_un: len:64
 

@@ -30,6 +30,8 @@
 #define REG_SP REG_O6
 #endif
 
+#define MONO_SPARC_WINDOW_ADDR(sp) ((gpointer*)(((guint8*)(sp)) + MONO_SPARC_STACK_BIAS))
+
 /*
  * mono_arch_get_restore_context:
  *
@@ -47,8 +49,8 @@ mono_arch_get_restore_context (void)
 
 	code = start;
 
-	sparc_ld_imm (code, sparc_o0, G_STRUCT_OFFSET (MonoContext, ip), sparc_i7);
-	sparc_ld_imm (code, sparc_o0, G_STRUCT_OFFSET (MonoContext, sp), sparc_i6);
+	sparc_ldi_imm (code, sparc_o0, G_STRUCT_OFFSET (MonoContext, ip), sparc_i7);
+	sparc_ldi_imm (code, sparc_o0, G_STRUCT_OFFSET (MonoContext, sp), sparc_i6);
 
 	sparc_jmpl_imm (code, sparc_i7, 0, sparc_g0);
 	/* FIXME: This does not return to the correct window */
@@ -90,13 +92,13 @@ mono_arch_get_call_filter (void)
 	 */
 
 	/* Create first frame */
-	sparc_save_imm (code, sparc_sp, -160, sparc_sp);
+	sparc_save_imm (code, sparc_sp, -256, sparc_sp);
 
 	sparc_mov_reg_reg (code, sparc_i1, sparc_o0);
-	sparc_ld_imm (code, sparc_i0, G_STRUCT_OFFSET (MonoContext, sp), sparc_o1);
+	sparc_ldi_imm (code, sparc_i0, G_STRUCT_OFFSET (MonoContext, sp), sparc_o1);
 
 	/* Create second frame */
-	sparc_save_imm (code, sparc_sp, -160, sparc_sp);
+	sparc_save_imm (code, sparc_sp, -256, sparc_sp);
 
 	sparc_mov_reg_reg (code, sparc_i0, sparc_o0);
 	sparc_mov_reg_reg (code, sparc_i1, sparc_o1);
@@ -117,17 +119,17 @@ mono_arch_get_call_filter (void)
 	 * method containing the filter.
 	 */
 	for (i = 0; i < 16; ++i)
-		sparc_ld_imm (code, sparc_o1, i * 4, sparc_l0 + i);
+		sparc_ldi_imm (code, sparc_o1, MONO_SPARC_STACK_BIAS + i * sizeof (gpointer), sparc_l0 + i);
 
 	/* Save %fp to a location reserved in mono_arch_allocate_vars */
-	sparc_st_imm (code, sparc_o7, sparc_fp, -4);
+	sparc_sti_imm (code, sparc_o7, sparc_fp, MONO_SPARC_STACK_BIAS - sizeof (gpointer));
 
 	/* Call the filter code, after this returns, %o0 will hold the result */
 	sparc_call_imm (code, sparc_o0, 0);
 	sparc_nop (code);
 
 	/* Restore original %fp */
-	sparc_ld_imm (code, sparc_fp, -4, sparc_fp);
+	sparc_ldi_imm (code, sparc_fp, MONO_SPARC_STACK_BIAS - sizeof (gpointer), sparc_fp);
 
 	sparc_mov_reg_reg (code, sparc_o0, sparc_i0);
 
@@ -149,17 +151,19 @@ mono_arch_get_call_filter (void)
 }
 
 static void
-throw_exception (MonoObject *ex, guint32 sp, guint32 ip)
+throw_exception (MonoObject *ex, gpointer sp, gpointer ip)
 {
 	MonoContext ctx;
 	static void (*restore_context) (MonoContext *);
-
+	gpointer *window;
+	
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
 
-	ctx.sp = (guint32*)sp;
+	window = MONO_SPARC_WINDOW_ADDR (sp);
+	ctx.sp = (gpointer*)sp;
 	ctx.ip = ip;
-	ctx.fp = (guint32*)ctx.sp [sparc_i6 - 16];
+	ctx.fp = (gpointer*)(MONO_SPARC_WINDOW_ADDR (sp) [sparc_i6 - 16]);
 
 	mono_handle_exception (&ctx, ex, ip, FALSE);
 	restore_context (&ctx);
@@ -187,7 +191,7 @@ mono_arch_get_throw_exception (void)
 	inited = 1;
 	code = start;
 
-	sparc_save_imm (code, sparc_sp, -160, sparc_sp);
+	sparc_save_imm (code, sparc_sp, -512, sparc_sp);
 
 	sparc_flushw (code);
 	sparc_mov_reg_reg (code, sparc_i0, sparc_o0);
@@ -212,15 +216,22 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint32 start [32];
+	static guint32 start [64];
 	static int inited = 0;
 	guint32 *code;
+	int reg;
 
 	if (inited)
 		return start;
 
 	inited = 1;
 	code = start;
+
+#ifdef SPARCV9
+	reg = sparc_g4;
+#else
+	reg = sparc_g1;
+#endif
 
 	sparc_save_imm (code, sparc_sp, -160, sparc_sp);
 
@@ -236,9 +247,9 @@ mono_arch_get_throw_exception_by_name (void)
 
 	/* Put original return address into %o7 */
 	sparc_mov_reg_reg (code, sparc_o1, sparc_o7);
-	sparc_set (code, mono_arch_get_throw_exception (), sparc_g1);
+	sparc_set (code, mono_arch_get_throw_exception (), reg);
 	/* Use a jmp instead of a call so o7 is preserved */
-	sparc_jmpl_imm (code, sparc_g1, 0, sparc_g0);
+	sparc_jmpl_imm (code, reg, 0, sparc_g0);
 	sparc_nop (code);
 
 	g_assert ((code - start) < 32);
@@ -262,7 +273,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-	guint32 *window;
+	gpointer *window;
 
 	/* Avoid costly table lookup during stack overflow */
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
@@ -321,10 +332,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 
 		/* Restore ip and sp from the saved register window */
-		window = (guint32*)ctx->sp;
+		window = MONO_SPARC_WINDOW_ADDR (ctx->sp);
 		new_ctx->ip = window [sparc_i7 - 16];
-		new_ctx->sp = (guint32*)(window [sparc_i6 - 16]);
-		new_ctx->fp = (guint32*)(new_ctx->sp [sparc_i6 - 16]);
+		new_ctx->sp = (gpointer*)(window [sparc_i6 - 16]);
+		new_ctx->fp = (gpointer*)(MONO_SPARC_WINDOW_ADDR (new_ctx->sp) [sparc_i6 - 16]);
 
 		*res = *ji;
 		return res;
@@ -369,6 +380,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
 	MonoContext mctx;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
+	gpointer *window;
 
 	/*
 	 * Access to the machine state using the ucontext_t parameter is somewhat
@@ -384,7 +396,8 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 
 	mctx.ip = ctx->uc_mcontext.gregs [REG_PC];
 	mctx.sp = ctx->uc_mcontext.gregs [REG_SP];
-	mctx.fp = mctx.sp [sparc_fp - 16];
+	window = (gpointer*)(((guint8*)mctx.sp) + MONO_SPARC_STACK_BIAS);
+	mctx.fp = window [sparc_fp - 16];
 
 	mono_handle_exception (&mctx, obj, mctx.ip, test_only);
 	
@@ -392,7 +405,8 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	ctx->uc_mcontext.gregs [REG_PC] = mctx.ip;
 	ctx->uc_mcontext.gregs [REG_nPC] = mctx.ip + 4;
 	ctx->uc_mcontext.gregs [REG_SP] = mctx.sp;
-	mctx.sp [sparc_fp - 16] = mctx.fp;
+	window = (gpointer*)(((guint8*)mctx.sp) + MONO_SPARC_STACK_BIAS);
+	window [sparc_fp - 16] = mctx.fp;
 
 	return TRUE;
 }

@@ -8,36 +8,42 @@
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
-#define MONO_ARCH_FRAME_ALIGNMENT 8
+#define MONO_ARCH_FRAME_ALIGNMENT (sizeof (gpointer) * 2)
 
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 #define MONO_ARCH_BASEREG sparc_fp
 #define MONO_ARCH_RETREG1 sparc_i0
 
+#ifdef SPARCV9
+#define MONO_SPARC_STACK_BIAS 2047
+#else
+#define MONO_SPARC_STACK_BIAS 0
+#endif
+
 struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
-	guint32     ip;
-	guint32     sp;
-	guint32     ebp;
+	gpointer    ip;
+	gpointer    sp;
+	gpointer    ebp;
 };
 
 typedef struct MonoContext {
-	guint32 ip;
-	guint32 *sp;
-	guint32 *fp;
+	guint8 *ip;
+	gpointer *sp;
+	gpointer *fp;
 } MonoContext;
 
 typedef struct MonoCompileArch {
-	guint32 lmf_offset;
-	guint32 localloc_offset;
+	gint32 lmf_offset;
+	gint32 localloc_offset;
 } MonoCompileArch;
 
-#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (guint32)(eip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (guint32*)(ebp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (guint32*)(esp); } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (gpointer*)(ebp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (gpointer*)(esp); } while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
@@ -54,6 +60,10 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
+
+#ifdef SPARCV9
+#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+#endif
 
 #ifndef __GNUC__
 /* assume Sun compiler if not GCC */
@@ -90,11 +100,13 @@ static void * __builtin_frame_address(int depth)
 
 gboolean mono_sparc_is_virtual_call (guint32 *code);
 
-gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, guint32 *fp);
+gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, gpointer *fp);
 
 void mono_sparc_flushw (void);
 
 gboolean mono_sparc_is_v9 (void);
+
+gboolean mono_sparc_is_sparc64 (void);
 
 struct MonoCompile;
 
