@@ -2395,7 +2395,7 @@ static gconstpointer icall_map [] = {
 	 */
 
 	 "System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes,
-	 "System.Security.Cryptography.RNG_CryptoServiceProvider::GetNonZeroBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes,
+	 "System.Security.Cryptography.RNGCryptoServiceProvider::GetNonZeroBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes,
 	
 	/*
 	 * System.Buffer
