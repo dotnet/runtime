@@ -1432,8 +1432,10 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			 * we've checked all these args for the
 			 * main_args array.
 			 */
-			MonoString *arg = mono_string_new (domain, mono_utf8_from_external (argv [i]));
+			gchar *str = mono_utf8_from_external (argv [i]);
+			MonoString *arg = mono_string_new (domain, str);
 			mono_array_set (args, gpointer, i, arg);
+			g_free (str);
 		}
 	} else {
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 0);
