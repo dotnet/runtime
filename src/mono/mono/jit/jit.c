@@ -1762,10 +1762,10 @@ check_inlining (MonoMethod *method)
 			++ip;			
 			switch (*ip) {
 			case CEE_LDARG: {
-				int an;
+				guint16 an;
 				ip++;
-				an = read32 (ip);
-				ip += 4;
+				an = read16 (ip);
+				ip += 2;
 				if (an > 255 || arg_used [an])
 					goto fail;
 				arg_used [an] = TRUE;
@@ -3550,10 +3550,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				break;
 			}
 			case CEE_LDARG: {
-				guint32 n;
+				guint16 n;
 				++ip;
-				n = read32 (ip);
-				ip += 4;
+				n = read16 (ip);
+				ip += 2;
 
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = ARG_POS (n);
