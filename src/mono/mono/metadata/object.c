@@ -114,7 +114,8 @@ mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
 	ao->bounds [0].length = n;
 	ao->bounds [0].lower_bound = 0;
 
-	ao->vector = g_malloc0 (n * ac->esize);
+	
+	ao->vector = g_malloc0 (n * mono_array_element_size (ac));
 
 	return o;
 }
@@ -162,14 +163,15 @@ mono_new_string (const char *text)
 }
 
 MonoObject *
-mono_value_box (MonoImage *image, guint32 etype, gpointer val)
+mono_value_box (MonoClass *class, gpointer val)
 {
 	MonoObject *res;
 	int size;
 
-	res = mono_object_new (image, etype);
+	g_assert (class->valuetype);
 
-	g_assert (res->klass->valuetype);
+	res = mono_object_allocate (class->instance_size);
+	res->klass = class;
 
 	size = res->klass->instance_size - sizeof (MonoObject);
 

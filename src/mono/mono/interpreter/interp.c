@@ -48,7 +48,7 @@ enum {
 };
 #undef OPDEF
 
-static int debug_indent_level = 0;
+ static int debug_indent_level = 0;
 
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
@@ -231,8 +231,10 @@ get_named_exception (const char *name)
 	MonoInvocation call;
 	MonoObject *o;
 	int i;
-	guint32 tdef = mono_typedef_from_name (mono_defaults.corlib, name, "System", NULL);
-	stackval sv[2];
+	guint32 tdef;
+	stackval sv;
+
+	tdef = mono_typedef_from_name (mono_defaults.corlib, name, "System", NULL);
 
 	o = mono_object_new (mono_defaults.corlib, tdef);
 	g_assert (o != NULL);
@@ -242,20 +244,16 @@ get_named_exception (const char *name)
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 1 &&
-		    klass->methods [i]->signature->params [0]->type->type == MONO_TYPE_STRING) {
+		    klass->methods [i]->signature->param_count == 0) {
 			call.method = klass->methods [i];
 			break;
 		}
 	}
 
-	sv [0].data.p = o;
-	sv [0].type = VAL_OBJ;
+	sv.data.p = o;
+	sv.type = VAL_OBJ;
 
-	sv [1].data.p = mono_new_string (name);
-	sv [1].type = VAL_OBJ;
-
-	call.stack_args = sv;
+	call.stack_args = &sv;
 	call.obj = o;
 
 	g_assert (call.method);
@@ -1635,13 +1633,16 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_CONV_OVF_U_UN) ves_abort(); BREAK;
 		CASE (CEE_BOX) {
 			guint32 token;
+			MonoClass *class;
 
 			ip++;
 			token = read32 (ip);
 
+			class = mono_class_get (image, token);
+			g_assert (class != NULL);
+
 			sp [-1].type = VAL_OBJ;
-			sp [-1].data.p = mono_value_box (image, token, 
-							 &sp [-1]);
+			sp [-1].data.p = mono_value_box (class, &sp [-1]);
 
 			ip += 4;
 
@@ -1805,7 +1806,7 @@ ves_exec_method (MonoInvocation *frame)
 				v = sp [2].data.p;
 
 				//fixme: what about type conversions ?
-				g_assert (v->klass->type_token == ac->etype_token);
+				g_assert (v->klass == ac->element_class);
 
 				((gpointer *)o->vector)[sp [1].data.i] = 
 					sp [2].data.p;

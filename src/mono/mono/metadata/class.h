@@ -21,7 +21,6 @@ struct _MonoClass {
 
 	guint inited : 1;
 	guint valuetype : 1; /* derives from System.ValueType */
-	guint evaltype : 1; /* element type derives from System.ValueType */
 
 	MonoClass *parent;
 	
@@ -53,19 +52,21 @@ struct _MonoClass {
 };
 
 typedef struct {
-	MonoClass class;
-	guint32 rank;        /* array dimension */
-	guint32 etype_token; /* element type token */
-	guint32 esize;       /* element size */	
+	MonoClass  class;
+	MonoClass *element_class; /* element class */
+	guint32    rank;          /* array dimension */
 } MonoArrayClass;
 
 MonoClass *
-mono_class_get       (MonoImage *image, guint32 type_token);
+mono_class_get          (MonoImage *image, guint32 type_token);
 
 MonoClass *
-mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank);
+mono_array_class_get    (MonoImage *image, guint32 etype, guint32 rank);
 
 MonoClassField *
-mono_class_get_field (MonoClass *class, guint32 field_token);
+mono_class_get_field    (MonoClass *class, guint32 field_token);
+
+gint32
+mono_array_element_size (MonoArrayClass *ac);
 
 #endif /* _MONO_CLI_CLASS_H_ */

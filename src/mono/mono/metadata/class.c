@@ -374,9 +374,6 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	if ((class = g_hash_table_lookup (image->array_cache, GUINT_TO_POINTER (key))))
 		return class;
 	
-	if (eclass->valuetype)
-		esize -= sizeof (MonoObject);
-
 	aclass = g_new0 (MonoArrayClass, 1);
 	class = (MonoClass *)aclass;
        
@@ -386,11 +383,9 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	class->parent = parent;
 	class->instance_size = class->parent->instance_size;
 	class->class_size = sizeof (MonoArrayClass);
-	class->evaltype = eclass->valuetype;
 
 	aclass->rank = rank;
-	aclass->etype_token = eclass->type_token;
-	aclass->esize = esize;
+	aclass->element_class = eclass;
 	
 	g_hash_table_insert (image->array_cache, GUINT_TO_POINTER (key), class);
 	return class;
@@ -480,3 +475,15 @@ mono_class_get (MonoImage *image, guint32 type_token)
 	return class;
 }
 
+gint32
+mono_array_element_size (MonoArrayClass *ac)
+{
+	gint32 esize;
+
+	esize = ac->element_class->instance_size;
+	
+	if (ac->element_class->valuetype)
+		esize -= sizeof (MonoObject);
+	
+	return esize;
+}

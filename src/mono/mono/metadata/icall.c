@@ -21,7 +21,7 @@ ves_icall_array_Set (MonoInvocation *frame)
 	MonoObject *o;
 	MonoArrayObject *ao;
 	MonoArrayClass *ac;
-	gint32 i, t, pos;
+	gint32 i, t, pos, esize;
 	gpointer ea;
 
 	o = frame->obj;
@@ -41,8 +41,9 @@ ves_icall_array_Set (MonoInvocation *frame)
 			ao->bounds [i].lower_bound;
 	}
 
-	ea = ao->vector + (pos * ac->esize);
-	memcpy (ea, &sp [ac->rank].data.p, ac->esize);
+	esize = mono_array_element_size (ac);
+	ea = ao->vector + (pos * esize);
+	memcpy (ea, &sp [ac->rank].data.p, esize);
 }
 
 static void 
@@ -52,7 +53,7 @@ ves_icall_array_Get (MonoInvocation *frame)
 	MonoObject *o;
 	MonoArrayObject *ao;
 	MonoArrayClass *ac;
-	gint32 i, pos;
+	gint32 i, pos, esize;
 	gpointer ea;
 
 	o = frame->obj;
@@ -66,10 +67,11 @@ ves_icall_array_Get (MonoInvocation *frame)
 		pos = pos*ao->bounds [i].length + sp [i].data.i - 
 			ao->bounds [i].lower_bound;
 
-	ea = ao->vector + (pos * ac->esize);
+	esize = mono_array_element_size (ac);
+	ea = ao->vector + (pos * esize);
 
 	frame->retval->type = VAL_I32; /* fixme: not really true */
-	memcpy (&frame->retval->data.p, ea, ac->esize);
+	memcpy (&frame->retval->data.p, ea, esize);
 }
 
 static void 
@@ -78,7 +80,7 @@ ves_icall_System_Array_GetValue (MonoInvocation *frame)
 	stackval *sp = frame->stack_args;
 	MonoArrayObject *ao, *io;
 	MonoArrayClass *ac, *ic;
-	gint32 i, pos, *ind;
+	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
 	g_assert (sp [0].type == VAL_OBJ); /* expect an array of integers */
@@ -99,13 +101,13 @@ ves_icall_System_Array_GetValue (MonoInvocation *frame)
 		pos = pos*ao->bounds [i].length + ind [i] - 
 			ao->bounds [i].lower_bound;
 
-	ea = ao->vector + (pos * ac->esize);
+	esize = mono_array_element_size (ac);
+	ea = ao->vector + (pos * esize);
 
 	frame->retval->type = VAL_OBJ; 
 
-	if (ac->class.evaltype)
-		frame->retval->data.p = mono_value_box (ac->class.image, 
-							ac->etype_token, ea);
+	if (ac->element_class->valuetype)
+		frame->retval->data.p = mono_value_box (ac->element_class, ea);
 	else
 		frame->retval->data.p = ea;
 }
@@ -116,7 +118,7 @@ ves_icall_System_Array_SetValue (MonoInvocation *frame)
 	stackval *sp = frame->stack_args;
 	MonoArrayObject *ao, *io, *vo;
 	MonoArrayClass *ac, *ic, *vc;
-	gint32 i, pos, *ind;
+	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
 	g_assert (sp [0].type == VAL_OBJ); /* the value object */
@@ -134,7 +136,7 @@ ves_icall_System_Array_SetValue (MonoInvocation *frame)
 	g_assert (ic->rank == 1);
 	g_assert (io->bounds [0].length == ac->rank);
 
-	g_assert (ac->etype_token == vc->class.type_token);
+	g_assert (ac->element_class == vo->obj.klass);
 
 	ind = (guint32 *)io->vector;
 
@@ -143,12 +145,13 @@ ves_icall_System_Array_SetValue (MonoInvocation *frame)
 		pos = pos*ao->bounds [i].length + ind [i] - 
 			ao->bounds [i].lower_bound;
 
-	ea = ao->vector + (pos * ac->esize);
+	esize = mono_array_element_size (ac);
+	ea = ao->vector + (pos * esize);
 
-	if (ac->class.evaltype) {
+	if (ac->element_class->valuetype) {
 		g_assert (vc->class.valuetype);
 
-		memcpy (ea, (char *)vo + sizeof (MonoObject), ac->esize);
+		memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
 	} else
 		ea = (gpointer)vo;
 }
@@ -160,7 +163,7 @@ ves_icall_array_ctor (MonoInvocation *frame)
 	MonoObject *o;
 	MonoArrayObject *ao;
 	MonoArrayClass *ac;
-	gint32 i, len;
+	gint32 i, len, esize;
 
 	o = frame->obj;
 	ao = (MonoArrayObject *)o;
@@ -172,7 +175,8 @@ ves_icall_array_ctor (MonoInvocation *frame)
 	for (i = 1; i < ac->rank; i++)
 		len *= sp [i].data.i;
 
-	ao->vector = g_malloc0 (len * ac->esize);
+	esize = mono_array_element_size (ac);
+	ao->vector = g_malloc0 (len * esize);
 	ao->bounds = g_malloc0 (ac->rank * sizeof (MonoArrayBounds));
 	
 	for (i = 0; i < ac->rank; i++)
