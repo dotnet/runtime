@@ -1,6 +1,5 @@
-#ifdef NO_PORT
 #include "mono/interpreter/interp.h"
-
+#ifdef NO_PORT
 MonoPIFunc
 mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
