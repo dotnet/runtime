@@ -1,11 +1,12 @@
 /*
  * appdomain.c: AppDomain functions
  *
- * Author:
+ * Authors:
  *	Dietmar Maurer (dietmar@ximian.com)
  *	Patrik Torstensson
+ *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (c) 2001-2003 Ximian, Inc. (http://www.ximian.com)
  */
 
 #include <config.h>
@@ -682,6 +683,7 @@ get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyNam
 		value = g_strstrip (g_strdup (value));
 		len = strlen (value);
 		if (len % 2) {
+			g_free (value);
 			g_strfreev (parts);
 			return FALSE;
 		}
@@ -694,6 +696,7 @@ get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyNam
 			if (i % 2) {
 				l = g_ascii_xdigit_value (value [i]);
 				if (l == -1) {
+					g_free (value);
 					g_strfreev (parts);
 					return FALSE;
 				}
@@ -701,11 +704,13 @@ get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyNam
 			} else {
 				h = g_ascii_xdigit_value (value [i]);
 				if (h == -1) {
+					g_free (value);
 					g_strfreev (parts);
 					return FALSE;
 				}
 			}
 		}
+		g_free (value);
 
 		/*
 		g_print ("PublicKeyToken: ");

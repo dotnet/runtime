@@ -2257,7 +2257,7 @@ static MonoObject*
 ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *assembly, MonoString *name) 
 {
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
-	MonoArray *result;
+	MonoArray *result = NULL;
 	int i;
 	const char *val;
 	char *n;
