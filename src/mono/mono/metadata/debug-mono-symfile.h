@@ -11,6 +11,7 @@ typedef struct MonoSymbolFileOffsetTable	MonoSymbolFileOffsetTable;
 typedef struct MonoSymbolFileLineNumberEntry	MonoSymbolFileLineNumberEntry;
 typedef struct MonoSymbolFileMethodEntry	MonoSymbolFileMethodEntry;
 typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
+typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
@@ -32,7 +33,6 @@ struct MonoSymbolFileOffsetTable {
 	guint32 type_count;
 	guint32 type_index_table_offset;
 	guint32 type_index_table_size;
-	guint32 address_table_size;
 };
 
 struct MonoSymbolFileMethodEntry {
@@ -47,16 +47,15 @@ struct MonoSymbolFileMethodEntry {
 	guint32 local_variable_table_offset;
 	guint32 source_file_offset;
 	guint32 line_number_table_offset;
-	guint32 address_table_offset;
-	guint32 variable_table_offset;
-	guint32 address_table_size;
 };
 
 struct MonoSymbolFileMethodAddress {
-	guint32 is_valid;
+	guint32 size;
 	guint64 start_address;
 	guint64 end_address;
-	guint32 line_addresses [MONO_ZERO_LEN_ARRAY];
+	guint32 line_table_offset;
+	guint32 variable_table_offset;
+	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
 struct MonoSymbolFileLineNumberEntry {
@@ -120,34 +119,39 @@ struct MonoDebugRangeInfo {
 	guint64 start_address;
 	guint64 end_address;
 	guint32 file_offset;
+	gpointer dynamic_data;
+	guint32 dynamic_size;
 };
 
 struct MonoSymbolFile {
 	guint64 magic;
 	guint32 version;
+	guint64 dynamic_magic;
+	guint32 dynamic_version;
 	guint32 is_dynamic;
 	char *image_file;
+	char *symbol_file;
 	/* Pointer to the mmap()ed contents of the file. */
 	guint8 *raw_contents;
 	guint32 raw_contents_size;
-	/* Pointer to the malloced address table. */
-	char *address_table;
-	guint32 address_table_size;
-	/* Pointer to the malloced range table. */
-	MonoDebugRangeInfo *range_table;
-	guint32 range_table_size;
 	/* Pointer to the malloced string table. */
 	guint8 *string_table;
 	guint32 string_table_size;
-	/* Pointer to the malloced type table. */
-	guint8 **type_table;
-	guint32 type_table_size;
+	/* Pointer to the malloced range table. */
+	guint32 locked;
+	guint32 generation;
+	MonoDebugRangeInfo *range_table;
+	guint32 range_entry_size;
+	guint32 num_range_entries;
 	/* Private. */
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		25
+#define MONO_SYMBOL_FILE_VERSION		26
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
+
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	1
+#define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file   (MonoImage                 *image,
@@ -155,7 +159,8 @@ mono_debug_open_mono_symbol_file   (MonoImage                 *image,
 				    gboolean                   emit_warnings);
 
 void
-mono_debug_update_mono_symbol_file (MonoSymbolFile           *symbol_file);
+mono_debug_symfile_add_method      (MonoSymbolFile           *symfile,
+				    MonoMethod               *method);
 
 void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);

@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define RANGE_TABLE_CHUNK_SIZE	256
+
 struct MonoSymbolFilePriv
 {
 	int fd;
@@ -26,7 +28,6 @@ struct MonoSymbolFilePriv
 	GHashTable *method_table;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
-	GPtrArray *range_table;
 };
 
 typedef struct
@@ -42,6 +43,7 @@ typedef struct
 static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
+static MonoDebugRangeInfo *allocate_range_entry (MonoSymbolFile *symfile);
 
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
@@ -77,10 +79,6 @@ load_symfile (MonoSymbolFile *symfile)
 	}
 
 	priv->offset_table = (MonoSymbolFileOffsetTable *) ptr;
-	symfile->address_table_size = priv->offset_table->address_table_size;
-
-	symfile->type_table_size = symfile->_priv->offset_table->type_count * sizeof (guint8 *);
-	symfile->type_table = g_malloc0 (symfile->type_table_size);
 
 	/*
 	 * Read method table.
@@ -178,7 +176,10 @@ mono_debug_open_mono_symbol_file (MonoImage *image, const char *filename, gboole
 	symfile = g_new0 (MonoSymbolFile, 1);
 	symfile->magic = MONO_SYMBOL_FILE_MAGIC;
 	symfile->version = MONO_SYMBOL_FILE_VERSION;
+	symfile->dynamic_magic = MONO_SYMBOL_FILE_DYNAMIC_MAGIC;
+	symfile->dynamic_version = MONO_SYMBOL_FILE_DYNAMIC_VERSION;
 	symfile->image_file = g_strdup (image->name);
+	symfile->symbol_file = g_strdup (filename);
 	symfile->raw_contents = ptr;
 	symfile->raw_contents_size = file_size;
 
@@ -247,6 +248,8 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 
 	g_free (symfile->_priv->source_file);
 	g_free (symfile->_priv);
+	g_free (symfile->image_file);
+	g_free (symfile->symbol_file);
 	g_free (symfile);
 }
 
@@ -318,16 +321,22 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	return NULL;
 }
 
-static void
-update_method_func (gpointer key, gpointer value, gpointer user_data)
+void
+mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 {
-	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
-	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
+	MonoSymbolFileMethodEntryPriv *mep;
 	MonoSymbolFileMethodAddress *address;
 	MonoDebugVarInfo *var_table;
 	MonoSymbolFileLineNumberEntry *lne;
 	MonoDebugRangeInfo *range;
+	guint32 size, line_size, line_offset, num_variables, variable_size, variable_offset;
+	guint32 *line_addresses;
+	guint8 *ptr;
 	int i;
+
+	mep = g_hash_table_lookup (symfile->_priv->method_table, method);
+	if (!mep)
+		return;
 
 	if (!mep->minfo) {
 		mep->minfo = g_hash_table_lookup (symfile->_priv->method_hash, mep->method);
@@ -338,20 +347,39 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	if (!mep->minfo->jit)
 		return;
 
-	address = (MonoSymbolFileMethodAddress *)
-		(symfile->address_table + mep->entry->address_table_offset);
+	symfile->generation++;
 
-	address->is_valid = TRUE;
+	size = sizeof (MonoSymbolFileMethodAddress);
+
+	line_size = mep->entry->num_line_numbers * sizeof (MonoSymbolFileLineNumberEntry);
+	line_offset = size;
+	size += line_size;
+
+	num_variables = mep->entry->num_parameters + mep->entry->num_locals;
+	if (mep->entry->this_type_index)
+		num_variables++;
+
+	variable_size = num_variables * sizeof (MonoDebugVarInfo);
+	variable_offset = size;
+	size += variable_size;
+
+	address = g_malloc0 (size);
+	ptr = (guint8 *) address;
+
+	address->size = size;
 	address->start_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start);
 	address->end_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start + mep->minfo->jit->code_size);
+	address->line_table_offset = line_offset;
+	address->variable_table_offset = variable_offset;
 
-	range = g_new0 (MonoDebugRangeInfo, 1);
+	range = allocate_range_entry (symfile);
+	range->file_offset = mep->minfo->file_offset;
 	range->start_address = address->start_address;
 	range->end_address = address->end_address;
-	range->file_offset = mep->minfo->file_offset;
+	range->dynamic_data = address;
+	range->dynamic_size = size;
 
-	var_table = (MonoDebugVarInfo *)
-		(symfile->address_table + mep->entry->variable_table_offset);
+	var_table = (MonoDebugVarInfo *) (ptr + variable_offset);
 
 	if (mep->entry->this_type_index) {
 		if (!mep->minfo->jit->this_var) {
@@ -380,77 +408,33 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 		for (i = 0; i < mep->minfo->jit->num_locals; i++)
 			*var_table++ = mep->minfo->jit->locals [i];
 
-	g_ptr_array_add (symfile->_priv->range_table, range);
-
 	lne = (MonoSymbolFileLineNumberEntry *)
 		(symfile->raw_contents + mep->entry->line_number_table_offset);
+
+	line_addresses = (guint32 *) (ptr + line_offset);
 
 	for (i = 0; i < mep->entry->num_line_numbers; i++, lne++) {
 		int j;
 
 		if (i == 0) {
-			address->line_addresses [i] = 0;
+			line_addresses [i] = 0;
 			continue;
 		} else if (lne->offset == 0) {
-			address->line_addresses [i] = mep->minfo->jit->prologue_end;
+			line_addresses [i] = mep->minfo->jit->prologue_end;
 			continue;
 		}
 
-		address->line_addresses [i] = mep->minfo->jit->code_size;
+		line_addresses [i] = mep->minfo->jit->code_size;
 
 		for (j = 0; j < mep->minfo->num_il_offsets; j++) {
 			MonoSymbolFileLineNumberEntry *il = &mep->minfo->il_offsets [j];
 
 			if (il->offset >= lne->offset) {
-				address->line_addresses [i] = mep->minfo->jit->il_addresses [j];
+				line_addresses [i] = mep->minfo->jit->il_addresses [j];
 				break;
 			}
 		}
 	}
-}
-
-static gint
-range_table_compare_func (gconstpointer a, gconstpointer b)
-{
-	const MonoDebugRangeInfo *r1 = (const MonoDebugRangeInfo *) a;
-	const MonoDebugRangeInfo *r2 = (const MonoDebugRangeInfo *) b;
-
-	if (r1->start_address < r2->start_address)
-		return -1;
-	else if (r1->start_address > r2->start_address)
-		return 1;
-	else
-		return 0;
-}	
-
-void
-mono_debug_update_mono_symbol_file (MonoSymbolFile *symfile)
-{
-	int i;
-
-	if (!symfile->_priv->method_table)
-		return;
-
-	symfile->_priv->range_table = g_ptr_array_new ();
-
-	if (!symfile->address_table)
-		symfile->address_table = g_malloc0 (symfile->address_table_size);
-
-	g_hash_table_foreach (symfile->_priv->method_table, update_method_func, symfile);
-
-	symfile->range_table_size = symfile->_priv->range_table->len * sizeof (MonoDebugRangeInfo);
-	symfile->range_table = g_malloc0 (symfile->range_table_size);
-
-	g_ptr_array_sort (symfile->_priv->range_table, range_table_compare_func);
-
-	for (i = 0; i < symfile->_priv->range_table->len; i++) {
-		MonoDebugRangeInfo *range = g_ptr_array_index (symfile->_priv->range_table, i);
-
-		symfile->range_table [i] = *range;
-	}
-
-	g_ptr_array_free (symfile->_priv->range_table, TRUE);
-	symfile->_priv->range_table = NULL;
 }
 
 static void
@@ -559,12 +543,6 @@ write_line_numbers (gpointer key, gpointer value, gpointer user_data)
 		line = mono_disasm_code_one (NULL, mep->method, ip, &ip);
 		g_free (line);
 	}
-
-	mep->entry->address_table_offset = symfile->address_table_size;
-	mep->entry->address_table_size = sizeof (MonoSymbolFileMethodAddress) +
-		mep->entry->num_line_numbers * sizeof (guint32);
-
-	symfile->address_table_size += mep->entry->address_table_size;
 }
 
 static void
@@ -627,6 +605,8 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 			g_warning ("Can't create symbol file");
 		return FALSE;
 	}
+
+	symfile->symbol_file = g_strdup (priv->file_name);
 
 	magic = MONO_SYMBOL_FILE_MAGIC;
 	if (write (priv->fd, &magic, sizeof (magic)) < 0)
@@ -695,7 +675,6 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 	//
 
 	symfile->raw_contents_size = lseek (priv->fd, 0, SEEK_CUR);
-	priv->offset_table->address_table_size = symfile->address_table_size;
 
 	lseek (priv->fd, offset, SEEK_SET);
 	if (write (priv->fd, priv->offset_table, sizeof (MonoSymbolFileOffsetTable)) < 0)
@@ -708,9 +687,6 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 		return FALSE;
 
 	symfile->raw_contents = ptr;
-
-	symfile->type_table_size = symfile->_priv->offset_table->type_count * sizeof (guint8 *);
-	symfile->type_table = g_malloc0 (symfile->type_table_size);
 
 	//
 	// Load line number table.
@@ -733,6 +709,8 @@ mono_debug_create_mono_symbol_file (MonoImage *image)
 	symfile = g_new0 (MonoSymbolFile, 1);
 	symfile->magic = MONO_SYMBOL_FILE_MAGIC;
 	symfile->version = MONO_SYMBOL_FILE_VERSION;
+	symfile->dynamic_magic = MONO_SYMBOL_FILE_DYNAMIC_MAGIC;
+	symfile->dynamic_version = MONO_SYMBOL_FILE_DYNAMIC_VERSION;
 	symfile->is_dynamic = TRUE;
 	symfile->image_file = g_strdup (image->name);
 
@@ -818,4 +796,31 @@ ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assemb
 	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
 
 	return mono_type_get_object (domain, type);
+}
+
+static MonoDebugRangeInfo *
+allocate_range_entry (MonoSymbolFile *symfile)
+{
+	MonoDebugRangeInfo *retval;
+	guint32 size, chunks;
+
+	symfile->range_entry_size = sizeof (MonoDebugRangeInfo);
+
+	if (!symfile->range_table) {
+		size = sizeof (MonoDebugRangeInfo) * RANGE_TABLE_CHUNK_SIZE;
+		symfile->range_table = g_malloc0 (size);
+		symfile->num_range_entries = 1;
+		return symfile->range_table;
+	}
+
+	if (!((symfile->num_range_entries + 1) % RANGE_TABLE_CHUNK_SIZE)) {
+		chunks = (symfile->num_range_entries + 1) / RANGE_TABLE_CHUNK_SIZE;
+		size = sizeof (MonoDebugRangeInfo) * RANGE_TABLE_CHUNK_SIZE * (chunks + 1);
+
+		symfile->range_table = g_realloc (symfile->range_table, size);
+	}
+
+	retval = symfile->range_table + symfile->num_range_entries;
+	symfile->num_range_entries++;
+	return retval;
 }
