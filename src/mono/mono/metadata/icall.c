@@ -2587,6 +2587,13 @@ ves_icall_System_Environment_Exit (int result)
 	exit (result);
 }
 
+static MonoString*
+ves_icall_System_Text_Encoding_InternalCodePage (void) {
+	const char *cset;
+	g_get_charset (&cset);
+	return mono_string_new (mono_domain_get (), cset);
+}
+
 static void
 ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
 					 MonoReflectionMethod *method,
@@ -2970,6 +2977,11 @@ static gconstpointer icall_map [] = {
 	"System.Char::IsWhiteSpace", ves_icall_System_Char_IsWhiteSpace,
 	"System.Char::ToLower", ves_icall_System_Char_ToLower,
 	"System.Char::ToUpper", ves_icall_System_Char_ToUpper,
+
+	/*
+	 * System.Text.Encoding
+	 */
+	"System.Text.Encoding::InternalCodePage", ves_icall_System_Text_Encoding_InternalCodePage,
 
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	"System.CurrentTimeZone::GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData,
