@@ -68,6 +68,13 @@ show_token (const char *file, int is_assembly, int show_pubkey) {
 		MonoImage *image;
 		const char *pubkey;
 		guint32 len;
+
+		mono_metadata_init ();
+        mono_raw_buffer_init ();
+        mono_images_init ();
+        mono_assemblies_init ();
+        mono_loader_init ();
+
 		image = mono_image_open (file, NULL);
 		if (!image) {
 			printf ("Cannot open image file: %s\n", file);
