@@ -396,6 +396,9 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 			memcpy (result->data.vt, data, size);
 		}
 		return;
+	case MONO_TYPE_GENERICINST:
+		stackval_from_data (type->data.generic_inst->generic_type, result, data, pinvoke);
+		return;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();
@@ -491,6 +494,9 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 
 			memcpy (data, val->data.vt, size);
 		}
+		return;
+	case MONO_TYPE_GENERICINST:
+		stackval_to_data (type->data.generic_inst->generic_type, val, data, pinvoke);
 		return;
 	default:
 		g_warning ("got type %x", type->type);
@@ -990,6 +996,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	int i, align, size, offset = 0;
 	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
 	MonoMethodSignature *signature = method->signature;
+	MonoGenericContext *generic_context = NULL;
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	guint32 token;
@@ -998,6 +1005,9 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	MonoDomain *domain = mono_domain_get ();
 	MethodRuntimeData *rtd;
 	int n_fields = 0;
+
+	if (method->signature->is_inflated)
+		generic_context = ((MonoMethodInflated *) method)->context;
 
 	mono_profiler_method_jit (method); /* sort of... */
 	/* intern the strings in the method. */
@@ -1020,7 +1030,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			break;
 		case MonoInlineType:
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				class = mono_class_get (image, read32 (ip + 1));
+				class = mono_class_get_full (image, read32 (ip + 1), generic_context);
 				mono_class_init (class);
 				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE))
 					mono_class_vtable (domain, class);
@@ -1033,7 +1043,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			break;
 		case MonoInlineMethod:
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				m = mono_get_method (image, read32 (ip + 1), NULL);
+				m = mono_get_method_full (image, read32 (ip + 1), NULL, generic_context);
 				mono_class_init (m->klass);
 				if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
 					mono_class_vtable (domain, m->klass);
@@ -1134,7 +1144,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			break;
 		case MonoInlineField:
 			token = read32 (ip + 1);
-			rtd->field_info[n_fields].field = mono_field_from_token (image, token, &class);
+			rtd->field_info[n_fields].field = mono_field_from_token (image, token, &class, generic_context);
 			mono_class_vtable (domain, class);
 			g_assert(rtd->field_info[n_fields].field->parent == class);
 			write32 ((unsigned char *)ip + 1, n_fields);
@@ -1589,6 +1599,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	MonoInvocation child_frame;
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
+	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	GSList *finally_ips = NULL;
 	const unsigned char *endfinally_ip = NULL;
@@ -1618,6 +1629,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	if (!method_class_vt->initialized)
 		mono_runtime_class_init (method_class_vt);
 	signature = frame->method->signature;
+
+	if (frame->method->signature->is_inflated)
+		generic_context = ((MonoMethodInflated *) frame->method)->context;
 
 	DEBUG_ENTER ();
 
@@ -1941,7 +1955,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				if (frame->method->wrapper_type != MONO_WRAPPER_NONE) 
 					child_frame.method = (MonoMethod *)mono_method_get_wrapper_data (frame->method, token);
 				else
-					child_frame.method = mono_get_method (image, token, NULL);
+					child_frame.method = mono_get_method_full (image, token, NULL, generic_context);
 				if (!child_frame.method)
 					THROW_EX (mono_get_exception_missing_method (), ip -5);
 				csignature = child_frame.method->signature;
@@ -3010,7 +3024,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		CASE (CEE_CPOBJ) {
 			MonoClass *vtklass;
 			++ip;
-			vtklass = mono_class_get (image, read32 (ip));
+			vtklass = mono_class_get_full (image, read32 (ip), generic_context);
 			ip += 4;
 			sp -= 2;
 			memcpy (sp [0].data.p, sp [1].data.p, mono_class_value_size (vtklass, NULL));
@@ -3028,7 +3042,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
 				c = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
 			else
-				c = mono_class_get (image, token);
+				c = mono_class_get_full (image, token, generic_context);
 
 			addr = sp [-1].data.vt;
 			vt_alloc (&c->byval_arg, &sp [-1], FALSE);
@@ -3073,7 +3087,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
 				child_frame.method = (MonoMethod *)mono_method_get_wrapper_data (frame->method, token);
 			else 
-				child_frame.method = mono_get_method (image, token, NULL);
+				child_frame.method = mono_get_method_full (image, token, NULL, generic_context);
 			if (!child_frame.method)
 				THROW_EX (mono_get_exception_missing_method (), ip -5);
 
@@ -3169,7 +3183,7 @@ array_constructed:
 
 			++ip;
 			token = read32 (ip);
-			c = mono_class_get (image, token);
+			c = mono_class_get_full (image, token, generic_context);
 
 			g_assert (sp [-1].type == VAL_OBJ);
 
@@ -3216,7 +3230,7 @@ array_constructed:
 			if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
 				c = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
 			else 
-				c = mono_class_get (image, token);
+				c = mono_class_get_full (image, token, generic_context);
 			
 			o = sp [-1].data.p;
 			if (!o)
@@ -3373,7 +3387,7 @@ array_constructed:
 		CASE (CEE_STOBJ) {
 			MonoClass *vtklass;
 			++ip;
-			vtklass = mono_class_get (image, read32 (ip));
+			vtklass = mono_class_get_full (image, read32 (ip), generic_context);
 			ip += 4;
 			sp -= 2;
 
@@ -3529,7 +3543,7 @@ array_constructed:
 			if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
 				class = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
 			else
-				class = mono_class_get (image, token);
+				class = mono_class_get_full (image, token, generic_context);
 			g_assert (class != NULL);
 
 			sp [-1].type = VAL_OBJ;
@@ -3556,7 +3570,7 @@ array_constructed:
 			if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
 				class = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
 			else
-				class = mono_class_get (image, token);
+				class = mono_class_get_full (image, token, generic_context);
 
 			o = (MonoObject*) mono_array_new (domain, class, sp [-1].data.i);
 			ip += 4;
@@ -4464,7 +4478,7 @@ array_constructed:
 				if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
 					m = (MonoMethod *)mono_method_get_wrapper_data (frame->method, token);
 				else 
-					m = mono_get_method (image, token, NULL);
+					m = mono_get_method_full (image, token, NULL, generic_context);
 
 				if (!m)
 					THROW_EX (mono_get_exception_missing_method (), ip - 5);
@@ -4586,7 +4600,7 @@ array_constructed:
 				token = read32 (ip);
 				ip += 4;
 
-				class = mono_class_get (image, token);
+				class = mono_class_get_full (image, token, generic_context);
 
 				--sp;
 				g_assert (sp->type == VAL_TP || sp->type == VAL_MP);
@@ -4646,7 +4660,7 @@ array_constructed:
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					sp->data.i = mono_type_size (type, &align);
 				} else {
-					MonoClass *szclass = mono_class_get (image, token);
+					MonoClass *szclass = mono_class_get_full (image, token, generic_context);
 					mono_class_init (szclass);
 					if (!szclass->valuetype)
 						THROW_EX (mono_exception_from_name (mono_defaults.corlib, "System", "InvalidProgramException"), ip - 5);
