@@ -1,4 +1,8 @@
 
+2002-08-24  Juli Mallett  <jmallett@FreeBSD.org>
+
+	* configure.in: Recognise OpenBSD/macppc as PowerPC.
+
 Tue Aug 20 15:15:52 CEST 2002 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: patch by noa@metamatrix.se (Daniel Resare)
