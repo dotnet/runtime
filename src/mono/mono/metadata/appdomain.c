@@ -1356,11 +1356,7 @@ mono_domain_unload (MonoDomain *domain)
 #if 0
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
-#if defined(PLATFORM_WIN32) && defined (HAVE_BOEHM_GC)
-	thread_handle = GC_CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
-#else
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
-#endif
 	ResumeThread (thread_handle);
 #endif
 
