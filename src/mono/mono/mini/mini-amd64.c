@@ -2050,6 +2050,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (spec [MONO_INST_CLOB] == 's') {
 			if (rs->ifree_mask & (1 << AMD64_RCX)) {
 				DEBUG (g_print ("\tshortcut assignment of R%d to ECX\n", ins->sreg2));
+				if (ins->sreg2 < MONO_MAX_IREGS) {
+					/* Argument already in hard reg, need to copy */
+					MonoInst *copy = create_copy_ins (cfg, AMD64_RCX, ins->sreg2, NULL);
+					insert_before_ins (ins, tmp, copy);
+				}
 				rs->iassign [ins->sreg2] = AMD64_RCX;
 				rs->isymbolic [AMD64_RCX] = ins->sreg2;
 				ins->sreg2 = AMD64_RCX;
@@ -2087,19 +2092,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					rs->isymbolic [val] = prev_dreg;
 					ins->dreg = val;*/
 				}
-				val = rs->iassign [ins->sreg1];
-				if (val == AMD64_RCX) {
-					g_assert_not_reached ();
-				} else if (val >= 0) {
-					/* 
-					 * the first src reg was already assigned to a register,
-					 * we need to copy it to the dest register because the 
-					 * shift instruction clobbers the first operand.
-					 */
-					MonoInst *copy = create_copy_ins (cfg, ins->dreg, val, NULL);
-					DEBUG (g_print ("\tclob:s moved sreg1 from R%d to R%d\n", val, ins->dreg));
-					insert_before_ins (ins, tmp, copy);
-				}
 				val = rs->iassign [ins->sreg2];
 				if (val >= 0 && val != AMD64_RCX) {
 					MonoInst *move = create_copy_ins (cfg, AMD64_RCX, val, NULL);
@@ -2109,6 +2101,15 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					/* FIXME: where is move connected to the instruction list? */
 					//tmp->prev->data->next = move;
 				}
+				else 
+					if (val == AMD64_RCX) {
+						if (ins->sreg2 < MONO_MAX_IREGS) {
+							/* sreg2 is already assigned to a hard reg, need to copy */
+							MonoInst *copy = create_copy_ins (cfg, AMD64_RCX, ins->sreg2, NULL);
+							insert_before_ins (ins, tmp, copy);
+						}
+						need_ecx_spill = FALSE;
+					}
 				if (need_ecx_spill && !(rs->ifree_mask & (1 << AMD64_RCX))) {
 					DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [AMD64_RCX]));
 					get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [AMD64_RCX]);
@@ -2358,6 +2359,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [AMD64_RAX]);
 				mono_regstate_free_int (rs, AMD64_RAX);
 			}
+			if (ins->sreg1 < MONO_MAX_IREGS) {
+				/* The argument is already in a hard reg, need to copy */
+				MonoInst *copy = create_copy_ins (cfg, AMD64_RAX, ins->sreg1, NULL);
+				insert_before_ins (ins, tmp, copy);
+			}
 			/* force-set sreg1 */
 			rs->iassign [ins->sreg1] = AMD64_RAX;
 			rs->isymbolic [AMD64_RAX] = ins->sreg1;
@@ -2414,7 +2420,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					/* the register gets spilled after this inst */
 					spill = -val -1;
 				}
-				if (0 && ins->opcode == OP_MOVE) {
+				if (0 && (ins->opcode == OP_MOVE)) {
 					/* 
 					 * small optimization: the dest register is already allocated
 					 * but the src one is not: we can simply assign the same register
@@ -2447,16 +2453,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if ((spec [MONO_INST_CLOB] == '1' || spec [MONO_INST_CLOB] == 's') && ins->dreg != ins->sreg1) {
 			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_arch_regname (ins->sreg1), mono_arch_regname (ins->dreg)));
-			if (ins->sreg2 == -1 || spec [MONO_INST_CLOB] == 's') {
-				/* note: the copy is inserted before the current instruction! */
-				insert_before_ins (ins, tmp, copy);
-				/* we set sreg1 to dest as well */
-				prev_sreg1 = ins->sreg1 = ins->dreg;
-			} else {
-				/* inserted after the operation */
-				copy->next = ins->next;
-				ins->next = copy;
-			}
+			insert_before_ins (ins, tmp, copy);
+			/* we set sreg1 to dest as well */
+			prev_sreg1 = ins->sreg1 = ins->dreg;
+			src2_mask &= ~ (1 << ins->dreg);
 		}
 		/* track sreg2 */
 		if (spec [MONO_INST_SRC2] == 'f') {
@@ -2557,7 +2557,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_regstate_free_int (rs, ins->sreg2);
 		}*/
 	
-		//DEBUG (print_ins (i, ins));
+		DEBUG (print_ins (i, ins));
 		/* this may result from a insert_before call */
 		if (!tmp->next)
 			bb->code = tmp->data;

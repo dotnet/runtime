@@ -148,6 +148,15 @@ stmt: OP_SETRET (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: CEE_LDIND_REF (OP_REGVAR),
+reg: CEE_LDIND_I (OP_REGVAR),
+reg: CEE_LDIND_I4 (OP_REGVAR),
+reg: CEE_LDIND_U4 (OP_REGVAR) "0" {
+	/* This rule might not work on all archs */
+	state->reg1 = state->left->tree->dreg;
+	tree->dreg = state->reg1;
+}
+
 stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)),
 stmt: OP_SETRET (CEE_LDIND_I4 (OP_REGVAR)),
 stmt: OP_SETRET (CEE_LDIND_U4 (OP_REGVAR)),
@@ -520,20 +529,6 @@ stmt: CEE_STIND_I4 (base, CEE_SUB (CEE_LDIND_I4 (base), OP_ICONST)) {
 		t1->inst_offset == t2->inst_offset);
 	return 2;
 }
-
-#
-# this rules is incorrect, it needs to do an indirect inc (inc_membase)
-#stmt: CEE_STIND_I4 (reg, CEE_ADD (reg, OP_ICONST)) {
-#	tree->opcode = OP_X86_INC_REG;
-#	tree->dreg = state->left->reg1;
-#	mono_bblock_add_inst (s->cbb, tree);
-#} cost {
-#	MBState *s1 = state->left;
-#	MBState *s2 = state->right->left;
-#	int con = state->right->right->tree->inst_c0;	
-#	MBCOND (con == 1 && s1->reg1 == s2->reg1);
-#	return 1;
-#}
 
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_SUB (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
 	int con = state->right->right->tree->inst_c0;	
