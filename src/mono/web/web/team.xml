@@ -1543,7 +1543,7 @@
 
     </name>
 
-    <e-mail>jmas@softcatala.org</e-mail>
+    <e-mail>jordi [at] ximian.com</e-mail>
 
     <image>jordi.png</image>
 
@@ -1555,6 +1555,7 @@
 
     <tasks>
 
+      <task>System.Drawing implementation</task>
       <task>Windows.Forms implementation</task>
 
     </tasks>
