@@ -210,6 +210,7 @@ ppc_class_init_trampoline (void *vtable, guint32 *code, char *sp)
 {
 	mono_runtime_class_init (vtable);
 
+#if 0
 	/* This is the 'bl' instruction */
 	--code;
 	
@@ -220,6 +221,7 @@ ppc_class_init_trampoline (void *vtable, guint32 *code, char *sp)
 	} else {
 		g_assert_not_reached ();
 	}
+#endif
 }
 
 static guchar*
@@ -496,6 +498,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	/* Now save LR - we'll overwrite it now */
 	ppc_mflr (buf, ppc_r11);
 	ppc_stw  (buf, ppc_r11, 4, ppc_r1);
+	ppc_stw  (buf, ppc_r11, 8, ppc_r1);
 	
 	/* Prepare the jump to the generic trampoline code.*/
 	ppc_lis  (buf, ppc_r11, (guint32) vc >> 16);
@@ -750,7 +753,23 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
 	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
-	
+
+#if 1
+	ppc_mflr (buf, ppc_r4);
+	ppc_stw  (buf, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_stwu (buf, ppc_sp, -32, ppc_sp);
+	ppc_load (buf, ppc_r3, vtable);
+	ppc_load (buf, ppc_r5, 0);
+
+	ppc_load (buf, ppc_r0, ppc_class_init_trampoline);
+	ppc_mtlr (buf, ppc_r0);
+	ppc_blrl (buf);
+
+	ppc_lwz (buf, ppc_r0, 32 + PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_mtlr (buf, ppc_r0);
+	ppc_addic (buf, ppc_sp, ppc_sp, 32);
+	ppc_blr (buf);
+#else
 	/* Save r11. There's nothing magic in the '44', its just an arbitrary
 	position - see above */
 	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);
@@ -758,6 +777,7 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	/* Now save LR - we'll overwrite it now */
 	ppc_mflr (buf, ppc_r11);
 	ppc_stw  (buf, ppc_r11, 4, ppc_r1);
+	ppc_stw  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 	
 	/* Prepare the jump to the generic trampoline code.*/
 	ppc_lis  (buf, ppc_r11, (guint32) tramp >> 16);
@@ -767,8 +787,13 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	/* And finally put 'vtable' in r11 and fly! */
 	ppc_lis  (buf, ppc_r11, (guint32) vtable >> 16);
 	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) vtable & 0xffff);
-	ppc_blr  (buf);
-	
+	ppc_blrl  (buf);
+	ppc_lwz (buf, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_r1);
+	ppc_mtlr (buf, ppc_r0);
+	ppc_blr (buf);
+
+#endif
+
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 		

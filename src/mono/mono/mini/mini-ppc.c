@@ -892,6 +892,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			if (ainfo->regtype == RegTypeGeneral) {
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
+				if (arg->type == STACK_I8)
+					call->used_iregs |= 1 << (ainfo->reg + 1);
 			} else if (ainfo->regtype == RegTypeBase) {
 				g_assert_not_reached ();
 			} else if (ainfo->regtype == RegTypeFP) {
@@ -2509,6 +2511,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SETREG:
 			ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_SETLRET: {
+			int saved = ins->sreg1;
+			if (ins->sreg1 == ppc_r3) {
+				ppc_mr (code, ppc_r0, ins->sreg1);
+				saved = ppc_r0;
+			}
+			if (ins->sreg2 != ppc_r3)
+				ppc_mr (code, ppc_r3, ins->sreg2);
+			if (saved != ppc_r4)
+				ppc_mr (code, ppc_r4, saved);
+			break;
+		}
 		case OP_SETFREG:
 		case OP_FMOVE:
 			ppc_fmr (code, ins->dreg, ins->sreg1);
@@ -2556,6 +2570,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC:
+			g_assert_not_reached ();
 			/* keep alignment */
 #define MONO_FRAME_ALIGNMENT 32
 			ppc_addi (code, ppc_r0, ins->sreg1, MONO_FRAME_ALIGNMENT-1);
@@ -2564,7 +2579,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_neg (code, ppc_r0, ppc_r0);
 			ppc_stwux (code, ppc_sp, ppc_r0, ppc_sp);
 			ppc_mr (code, ins->dreg, ppc_sp);
-			//g_assert_not_reached ();
 			break;
 		case CEE_RET:
 			ppc_blr (code);

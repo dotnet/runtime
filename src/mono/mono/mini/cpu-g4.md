@@ -293,7 +293,7 @@ outarg: src1:i len:1
 outarg_imm: len:5
 retarg:
 setret: dest:a src1:i len:4
-setlret: dest:l src1:i src2:i len:8
+setlret: src1:i src2:i len:12
 setreg: dest:i src1:i len:4 clob:r
 setregimm: dest:i len:8 clob:r
 setfreg: dest:f src1:f len:4 clob:r

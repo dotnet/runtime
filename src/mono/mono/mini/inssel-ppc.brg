@@ -57,10 +57,9 @@ stmt: OP_SETRET (reg) {
 }
 
 stmt: OP_SETRET (lreg) {
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, ppc_r3, state->left->reg2);
-	tree->opcode = OP_MOVE;
+	tree->opcode = OP_SETLRET;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = ppc_r4;
+	tree->sreg2 = state->left->reg2;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -251,6 +250,10 @@ stmt: CEE_POP (freg) "0" {
 }     
 
 freg: OP_LCONV_TO_R8 (lreg) {
+	/* nothing to do - emulated */
+}
+
+freg: OP_LCONV_TO_R4 (lreg) {
 	/* nothing to do - emulated */
 }
 
