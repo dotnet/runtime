@@ -269,22 +269,23 @@ main (int argc, char *argv [])
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			memset (&mono_jit_stats, 0, sizeof (MonoJitStats));
 			mono_jit_stats.enabled = TRUE;
-		} else if (strncmp (argv [i], "--debug", 7) == 0) {
-			if (argv [i][7] == '='){
-				const char *format = &argv [i][8];
+		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
+			const char *format = &argv [i][8];
 				
-				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-					g_error ("You can only use one debugging format.");
-				if (strcmp (format, "stabs") == 0)
-					mono_debug_format = MONO_DEBUG_FORMAT_STABS;
-				else if (strcmp (format, "dwarf") == 0)
-					mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
-				else if (strcmp (format, "dwarf-plus") == 0)
-					mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
-				else
-					g_error ("Unknown debugging format: %s", argv [i]);
-			} else
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				g_error ("You can only use one debugging format.");
+			if (strcmp (format, "stabs") == 0)
+				mono_debug_format = MONO_DEBUG_FORMAT_STABS;
+			else if (strcmp (format, "dwarf") == 0)
+				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
+			else if (strcmp (format, "dwarf-plus") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
+			else
+				g_error ("Unknown debugging format: %s", argv [i] + 8);
+		} else if (strcmp (argv [i], "--debug") == 0) {
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				g_error ("You can only use one debugging format.");
+			mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
 		} else if (strcmp (argv [i], "--debug-args") == 0) {
 			if (debug_args)
 				g_error ("You can use --debug-args only once.");

@@ -158,7 +158,7 @@ dwarf2_write_byte (FILE *f, int byte)
 static void
 dwarf2_write_2byte (FILE *f, int word)
 {
-	fprintf (f, "\t.2byte\t\t%d\n", word);
+	fprintf (f, "\t.word\t\t%d\n", word);
 }
 
 static void
@@ -201,12 +201,6 @@ static void
 dwarf2_write_section_start (FILE *f, const char *section)
 {
 	fprintf (f, "\t.section\t.%s\n", section);
-}
-
-static void
-dwarf2_write_section_end (FILE *f)
-{
-	fprintf (f, "\t.previous\n\n");
 }
 
 static void
@@ -1010,7 +1004,6 @@ write_line_numbers (MonoDebugHandle *debug)
 	g_hash_table_foreach (debug->methods, write_method_lines_func, debug);
 
 	dwarf2_write_label (debug->f, "debug_line_e");
-	dwarf2_write_section_end (debug->f);
 }
 
 static void
@@ -1329,7 +1322,6 @@ mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 	dwarf2_write_pair (debug->f, 0, 0);
 
 	dwarf2_write_label (debug->f, "debug_abbrev_e");
-	dwarf2_write_section_end (debug->f);
 
 	// Line numbers
 	write_line_numbers (debug);
@@ -1360,8 +1352,6 @@ mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 	// DW_TAG_compile_unit ends here
 
 	dwarf2_write_label (debug->f, "debug_info_e");
-
-	dwarf2_write_section_end (debug->f);
 
 	fclose (debug->f);
 	debug->f = NULL;
