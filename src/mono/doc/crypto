@@ -20,6 +20,11 @@
 
 **** TODO
 	<ul>
+		* The current implementation of <code>CryptoStream</code> is
+		  very limited and contain known bugs (<a 
+		  href="http://bugzilla.ximian.com/show_bug.cgi?id=40689">
+		  40689</a>). The class need to be re-designed.
+
 		* Support for adding/modifying OID using the 
 		  <code>machine.config</code> configuration file (algorithms 
 		  are done).
@@ -54,9 +59,10 @@
 		  classes named <code>*CryptoServiceProvider</code>, with the 
 		  exception of <code>RNGCryptoServiceProvider</code> (which 
 		  resides in the runtime).
+
 		* Look at assembly Mono.Security.Win32 if you require more
 		  compatiblity with the Microsoft implementation (like accessing
-		  a particuliar keypair container in a CSP).
+		  a particuliar keypair container inside a specific CSP).
 	</ul>
 
 
@@ -69,13 +75,13 @@
 
 		* Software Publisher Certificates (SPC) used by Authenticode
 		  (tm) to sign assemblies are supported (extraction from PE 
-		  files) but <b>not</b> validated.
+		  files) but <b>not yet</b> validated.
 
 		* Unit tests are generated from a set of existing certificates
 		  (about a dozen) each having different properties. Another
 		  set of certificates (more than 300) are used for a more 
 		  complete test (but isn't part of the standard test suite for 
-		  size and time consideration).
+		  size and time consideration, i.e. a 3.5Mb C# source file).
 	</ul>
 
 **** TODO
@@ -103,6 +109,10 @@
 		  Service Enhancement (WSE) is a little better (as it includes 
 		  CryptoAPI's validation) when <code>IsCurrent</code> is called.
 		  See assembly <b>Microsoft.Web.Services</b> for more details.
+
+		* The class Mono.Security.X509.X509Certificate (in Mono.Security 
+		  assembly) is becoming a much better alternative - and will 
+		  continue to evolve to support the security tools.
 
 		* Microsoft implementation of <code>X509Certificate</code> is 
 		  done by using CryptoAPI (unmanaged code). From the exceptions 
@@ -139,30 +149,51 @@
 <hr>
 ** Assembly: Mono.Security
 
+	<b>Rational</b>
 	This assembly provides the missing pieces to .NET security. On Windows
 	CryptoAPI is often used to provide much needed functionalities (like
 	some cryptographic algorithms, code signing, X.509 certificates).
 
 *** Namespace: Mono.Security
+	<ul>
+		* Structures (ASN1, PKCS7) and primitives (PKCS1).
+	</ul>
 *** Namespace: Mono.Security.Authenticode
+	<ul>
+		* Code signing and verification.
+		* Support for SPC files and PVK files.
+	</ul>
 *** Namespace: Mono.Security.Cryptography
+	<ul>
+		* Additional algorithms: MD2, ARCFOUR (required for SSL)
+		* Convertion helpers
+	</ul>
 *** Namespace: Mono.Security.X509
+	<ul>
+		* X.509 certificate building and decoding.
+	</ul>
 *** Namespace: Mono.Security.X509.Extensions
+	<ul>
+		* X.509 extensions (from X.509, PKIX, Netsapce, Microsoft,
+		  Entrust...).
+	</ul>
 
 **** Status
 	<ul>
-		* Work has been under way for quite some time - and should 
-		  start hitting CVS soon.
+		* Some part of the work has not yet been commited (cleaning up).
 
 		* A big part of this assembly is also included inside Mono's
 		  corlib. The class are duplicated in this assembly so the 
-		  functionalities can be used with a dependency on Mono's 
+		  functionalities can be used without a dependency on Mono's 
 		  corlib (which depends on Mono's runtime).
+
+		* Unit test coverage isn't (yet) complete.
 	</ul>
 
 <hr>
 ** Assembly: Mono.Security.Win32
 
+	<b>Rational</b>
 	This assembly goal is to provide maximum compatibility with CryptoAPI
 	to application running with Mono's runtime on the Windows operating 
 	system.
@@ -171,6 +202,9 @@
 	The classes should only be used by modifying the <code>machine.config
 	</code> configuration file (and then only if this increased 
 	compatibility is required by an application).
+
+	See the file <code>/mcs/class/Mono.Security.Win32/README</code> for 
+	complete instructions.
 
 *** Namespace: Mono.Security.Cryptography
 
@@ -193,11 +227,18 @@
 		* Wrapper classes for unmanaged versions of symmetric 
 		  encryption algorithms (like DES, TripleDES, RC2 and others 
 		  present in default CSP).
+
 		* Wrapper classes for unmanaged versions of asymmetric 
 		  algorithms (like DSA and RSA) which persist their keypair 
 		  into the specified CSP.
 	</ul>
 
+**** Ideas
+	<ul>
+		* Similar assembly could be created for <a href="http://www.openssl.org">
+		  OpenSSL</a>, NSS, crypto++, cryptlib ... for improved 
+		  performance and/or HSM support under Linux.
+	</ul>
 <hr>
 ** Assembly: Microsoft.Web.Services
 
@@ -218,8 +259,8 @@
 	Microsoft before commiting anything related to WS-Security into CVS.
 	</b>
 
-*** Namespace: Microsoft.Web.Services.Security
-*** Namespace: Microsoft.Web.Services.Timestamp
+*** Namespace: Microsoft.Web.Services.Security [*]
+*** Namespace: Microsoft.Web.Services.Timestamp [*]
 
 **** Status
 	<ul>
@@ -231,8 +272,8 @@
 **** Status
 	<ul>
 		* Nothing (yet) commited in CVS. However the classes in this 
-		  namespace are outside WS-Security scope. So development 
-		  could be done without signing any agreements.
+		  namespace are outside WS-Security scope. So development, for 
+		  those, could be done without signing any agreements.
 	</ul>
 
 **** TODO
@@ -261,6 +302,9 @@
 		* <code>cert2spc</code> is a tool to transform multiple X.509 
 		   certificates and CRLs into a Software Publisher Certificate
 		  (SPC) file - which is a long name for a simple PKCS#7 file.
+
+		* <code>makecert</code> to create X.509 test certificates that 
+		  can be used (once transformed in SPC) to sign assemblies.
 	</ul>
 
 **** TODO
@@ -274,20 +318,20 @@
 		  for signing and validating Authenticode(tm) signatures on 
 		  assemblies (or any PE file).
 
-		* <code>makecert</code> to create X.509 test certificates that 
-		  can be used (once transformed in SPC) to sign assemblies.
-
 		* Other tools like a, GUI-based, certificate manager...
 	</ul>
 
 	Note that many of the tools requires the class library and/or the
-	runtime to be ready for them.
+	runtime to be ready for them. E.g. StrongName and Authenticode signatures
+	tools are of limited use until supported by the runtime.
 
 <hr>
 ** Other stuff
 
 	<ul>
 		* SSL/TLS for secure communication (a prototype is under way).
+		  Some work is already visible in Mono.Security assembly (e.g. 
+		  RC4).
 	</ul>
 
 
@@ -300,7 +344,7 @@
 
 	Write some documentation on the cryptographic classes for the 
 	<a href="http://go-mono.com/tutorial/html/en/index.html">Mono 
-	Handbook</a> as I'm not a good writer (at least in English).
+	Handbook</a> as I'm not a very good writer (at least in English).
 
 	Optimization can also be done on algorithms as crypto is never fast 
 	enough. Just be sure to test every optimization (using the unit test)
@@ -311,4 +355,4 @@
 	informations about the status of the cryptographic classes.
 
 <hr>
-Last reviewed: March 4, 2003 (post mono 0.21)
+Last reviewed: April 7, 2003 (post mono 0.23)
