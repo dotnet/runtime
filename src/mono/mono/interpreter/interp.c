@@ -55,6 +55,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/os/util.h>
 
 /*#include <mono/cli/types.h>*/
@@ -802,23 +803,32 @@ dump_frame (MonoInvocation *inv)
 		MonoClass *k = inv->method->klass;
 		int codep;
 		const char * opname;
+		gchar *source = NULL;
 		if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL ||
 				inv->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
 			codep = 0;
 			opname = "";
 		} else {
 			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
+
 			if (inv->ip)
 				codep = *(inv->ip) == 0xfe? inv->ip [1] + 256: *(inv->ip);
 			else
 				codep = 0;
 			opname = mono_opcode_names [codep];
 			codep = inv->ip - hd->code;
+
+			source = mono_debug_source_location_from_il_offset (inv->method, codep, NULL);
 		}
 		args = dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
-		g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s)\n", i, codep, opname,
-						k->name_space, k->name, inv->method->name, args);
+		if (source)
+			g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s) at %s\n", i, codep, opname,
+					   k->name_space, k->name, inv->method->name, args, source);
+		else
+			g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s)\n", i, codep, opname,
+					   k->name_space, k->name, inv->method->name, args);
 		g_free (args);
+		g_free (source);
 	}
 	return g_string_free (str, FALSE);
 }
@@ -4418,6 +4428,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 typedef struct
 {
 	MonoDomain *domain;
+	int enable_debugging;
 	char *file;
 	int argc;
 	char **argv;
@@ -4429,6 +4440,9 @@ static void main_thread_handler (gpointer user_data)
 	MonoAssembly *assembly;
 	char *error;
 
+	if (main_args->enable_debugging)
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+
 	assembly = mono_domain_assembly_open (main_args->domain,
 					      main_args->file);
 
@@ -4437,6 +4451,8 @@ static void main_thread_handler (gpointer user_data)
 		exit (1);
 	}
 
+	if (main_args->enable_debugging)
+		mono_debug_init_2 (assembly);
 
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
@@ -4466,6 +4482,7 @@ main (int argc, char *argv [])
 	MonoDomain *domain;
 	int retval = 0, i, ocount = 0;
 	char *file, *config_file = NULL;
+	int enable_debugging = FALSE;
 	MainThreadArgs main_args;
 	
 	if (argc < 2)
@@ -4478,8 +4495,10 @@ main (int argc, char *argv [])
 			global_no_pointers = 1;
 		if (strcmp (argv [i], "--traceops") == 0)
 			global_tracing = 2;
-		if (strcmp (argv [i], "--dieonex") == 0)
+		if (strcmp (argv [i], "--dieonex") == 0) {
 			die_on_exception = 1;
+			enable_debugging = 1;
+		}
 		if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
 		if (strcmp (argv [i], "--profile") == 0)
@@ -4540,6 +4559,7 @@ main (int argc, char *argv [])
 	main_args.file=file;
 	main_args.argc=argc-i;
 	main_args.argv=argv+i;
+	main_args.enable_debugging=enable_debugging;
 	
 	mono_runtime_exec_managed_code (domain, main_thread_handler,
 					&main_args);
