@@ -39,7 +39,18 @@ struct _MonoClass {
 
 	guint dummy           : 1; /* temorary hack */
 	guint inited          : 1;
+
+	/* We use init_pending to detect cyclic calls to mono_class_init */
 	guint init_pending    : 1;
+
+	/* A class contains static and non static data. Static data can be
+	 * of the same type as the class itselfs, but it does not influence
+	 * the instance size of the class. To avoid cyclic calls to 
+	 * mono_class_init (from mono_class_instance_size ()) we first 
+	 * initialise all non static fields. After that we set size_inited 
+	 * to 1, because we know the instance size now. After that we 
+	 * initialise all static fields.
+	 */
 	guint size_inited     : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
