@@ -14,6 +14,7 @@ typedef struct MonoSymbolFileMethodEntry	MonoSymbolFileMethodEntry;
 typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
 typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
+typedef struct MonoSymbolFileMethodIndexEntry	MonoSymbolFileMethodIndexEntry;
 
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
@@ -60,6 +61,12 @@ struct MonoSymbolFileSourceEntry {
 	guint32 name_offset;
 	guint32 method_offset;
 	guint32 nstable_offset;
+};
+
+struct MonoSymbolFileMethodIndexEntry {
+	guint32 file_offset;
+	guint32 full_name_offset;
+	guint32 token;
 };
 
 struct MonoSymbolFileMethodAddress {
@@ -217,10 +224,10 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		31
+#define MONO_SYMBOL_FILE_VERSION		32
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	24
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	25
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 extern MonoGlobalSymbolFile *mono_debugger_global_symbol_file;

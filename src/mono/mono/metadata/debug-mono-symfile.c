@@ -75,6 +75,7 @@ load_symfile (MonoSymbolFile *symfile)
 {
 	MonoSymbolFilePriv *priv = symfile->_priv;
 	MonoSymbolFileMethodEntry *me;
+	MonoSymbolFileMethodIndexEntry *ie;
 	const char *ptr, *start;
 	guint64 magic;
 	long version;
@@ -116,18 +117,15 @@ load_symfile (MonoSymbolFile *symfile)
 	priv->method_hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
 						   (GDestroyNotify) free_method_info);
 
-	ptr = priv->raw_contents + priv->offset_table->method_table_offset;
+	ie = (MonoSymbolFileMethodIndexEntry *)
+		(priv->raw_contents + priv->offset_table->method_table_offset);
 
-	for (i = 0; i < priv->offset_table->method_count; i++, me++) {
+	for (i = 0; i < priv->offset_table->method_count; i++, me++, ie++) {
 		MonoMethod *method;
 		MonoSymbolFileMethodEntryPriv *mep;
 		MonoDebugMethodInfo *minfo;
-		int offset, name_offset;
 
-		offset = *((guint32 *) ptr)++;
-		name_offset = *((guint32 *) ptr)++;
-
-		me = (MonoSymbolFileMethodEntry *) (priv->raw_contents + offset);
+		me = (MonoSymbolFileMethodEntry *) (priv->raw_contents + ie->file_offset);
 
 		method = mono_get_method (priv->image, me->token, NULL);
 
