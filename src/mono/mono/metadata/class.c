@@ -1623,9 +1623,9 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	name [nsize + rank + 1] = 0;
 	class->name = name;
 	class->type_token = 0;
+	/* all arrays are marked serializable and sealed, bug #42779 */
 	class->flags = TYPE_ATTRIBUTE_CLASS | TYPE_ATTRIBUTE_SERIALIZABLE | TYPE_ATTRIBUTE_SEALED |
-		(eclass->flags & (TYPE_ATTRIBUTE_VISIBILITY_MASK | TYPE_ATTRIBUTE_LAYOUT_MASK | 
-				  TYPE_ATTRIBUTE_STRING_FORMAT_MASK));
+		(eclass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
