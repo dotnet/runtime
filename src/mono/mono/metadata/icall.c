@@ -935,6 +935,52 @@ ves_icall_MonoField_GetValue (MonoReflectionField *field, MonoObject *obj) {
 }
 
 static void
+ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *obj, MonoObject *value)
+{
+	MonoClassField *cf = field->field;
+	gchar *v;
+
+	v = (gchar *) value;
+	if (!cf->type->byref) {
+		switch (cf->type->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
+			v += sizeof (MonoObject);
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			/* Do nothing */
+			break;
+		default:
+			g_error ("type 0x%x not handled in "
+				 "ves_icall_FieldInfo_SetValueInternal", cf->type->type);
+			return;
+		}
+	}
+
+	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), field->klass);
+		mono_field_static_set_value (vtable, cf, v);
+	} else {
+		mono_field_set_value (obj, cf, v);
+	}
+}
+
+static void
 ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo *info)
 {
 	MonoDomain *domain = mono_domain_get (); 
@@ -2485,7 +2531,7 @@ ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_
 
 	if (klass->rank >= 1) {
 		g_assert (klass->rank == 1);
-		obj = mono_array_new (domain, klass->element_class, 0);
+		obj = (MonoObject *) mono_array_new (domain, klass->element_class, 0);
 	} else {
 		obj = mono_object_new (domain, klass);
 	}
@@ -2638,6 +2684,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
 	"System.Reflection.MonoField::GetValue", ves_icall_MonoField_GetValue,
+	"System.Reflection.FieldInfo::SetValueInternal", ves_icall_FieldInfo_SetValueInternal,
 	"System.Reflection.Emit.SignatureHelper::get_signature_local", mono_reflection_sighelper_get_signature_local,
 	"System.Reflection.Emit.SignatureHelper::get_signature_field", mono_reflection_sighelper_get_signature_field,
 
