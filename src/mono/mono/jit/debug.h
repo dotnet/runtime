@@ -25,6 +25,13 @@ void           mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg
 
 void           mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass);
 
+/* DEBUGGER PUBLIC FUNCTION:
+ *
+ * This is a public function which is supposed to be called from within a debugger
+ * each time the program stops. It's used to recreate the symbol file to tell the
+ * debugger about method addresses and such things. After calling this function,
+ * you must tell your debugger to reload its symbol file.
+ */
 void           mono_debug_make_symbols (void);
 
 #endif /* __MONO_JIT_DEBUG_H__ */
