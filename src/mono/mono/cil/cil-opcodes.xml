@@ -306,5 +306,7 @@
 <opcode name="mono_ldnativeobj" input="PopI" output="Push1" args="InlineType" o1="0xF0" o2="0x09" flow="return"/>
 <opcode name="mono_cisinst" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x0A" flow="next"/>
 <opcode name="mono_ccastclass" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x0B" flow="next"/>
+<opcode name="mono_save_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0C" flow="next" />
+<opcode name="mono_restore_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0D" flow="next" />
 
 </opdesc>
