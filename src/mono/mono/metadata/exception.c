@@ -129,6 +129,17 @@ mono_get_exception_array_type_mismatch ()
 }
 
 MonoException *
+mono_get_exception_type_load ()
+{
+	static MonoException *ex = NULL;
+	if (ex)
+		return ex;
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "TypeLoadException");
+	return ex;
+}
+
+MonoException *
 mono_get_exception_missing_method ()
 {
 	static MonoException *ex = NULL;

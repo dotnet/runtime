@@ -126,12 +126,38 @@ mono_object_clone (MonoObject *obj)
 {
 	MonoObject *o;
 	int size;
-	
+
 	size = obj->klass->instance_size;
 	o = mono_object_allocate (size);
-	/* FIXME: handle arrays... */
-	
+
 	memcpy (o, obj, size);
+
+	return o;
+}
+
+/**
+ * mono_array_clone:
+ * @array: the array to clone
+ *
+ * Returns: A newly created array who is a shallow copy of @array
+ */
+MonoArray*
+mono_array_clone (MonoArray *array)
+{
+	MonoArray *o;
+	int size, i;
+	guint32 *sizes;
+	MonoClass *klass = array->obj.klass;
+	
+	sizes = g_malloc (klass->rank * sizeof(guint32) * 2);
+	size = mono_array_element_size (klass);
+	for (i = 0; i < klass->rank; ++i) {
+		sizes [i] = array->bounds [i].length;
+		size *= array->bounds [i].length;
+		sizes [i + klass->rank] = array->bounds [i].lower_bound;
+	}
+	o = mono_array_new_full (klass, sizes, sizes + klass->rank);
+	memcpy (o, array, sizeof(MonoArray) + size);
 
 	return o;
 }

@@ -107,6 +107,9 @@ MonoObject *
 mono_object_new_from_token  (MonoImage *image, guint32 token);
 
 MonoArray*
+mono_array_clone            (MonoArray *array);
+
+MonoArray*
 mono_array_new              (MonoClass *eclass, guint32 n);
 
 MonoArray*

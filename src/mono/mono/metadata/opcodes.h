@@ -43,7 +43,7 @@ enum {
 typedef struct {
 	unsigned char argument;
 	unsigned char flow_type;
-	unsigned char byte0, byte1;
+	unsigned short opval;
 } MonoOpcode;
 
 #define MONO_N_OPCODES 300

@@ -121,15 +121,25 @@ ves_icall_System_Array_GetRank (MonoObject *this)
 }
 
 static gint32
-ves_icall_System_Array_GetLength (MonoObject *this, gint32 dimension)
+ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 {
-	return ((MonoArray *)this)->bounds [dimension].length;
+	return this->bounds [dimension].length;
 }
 
 static gint32
-ves_icall_System_Array_GetLowerBound (MonoObject *this, gint32 dimension)
+ves_icall_System_Array_GetLowerBound (MonoArray *this, gint32 dimension)
 {
-	return ((MonoArray *)this)->bounds [dimension].lower_bound;
+	return this->bounds [dimension].lower_bound;
+}
+
+static void
+ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* dest, int dest_idx, int length)
+{
+	int element_size = mono_array_element_size (source->obj.klass);
+	void * dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
+	void * source_addr = mono_array_addr_with_size (source, element_size, dest_idx);
+
+	memcpy (dest_addr, source_addr, element_size * length);
 }
 
 static void
@@ -405,6 +415,17 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 		}
 	}
 	info->interfaces = intf;
+}
+
+static MonoObject*
+ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) {
+	MonoMethodSignature *sig = method->method->signature;
+
+	/*
+	 * Do we need to copy the values so that the called method can't change them?
+	 */
+
+	return NULL;
 }
 
 static MonoObject *
@@ -729,16 +750,16 @@ static guint32 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Erro
 }
 
 static MonoReflectionType*
-ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type) /* , char throwOnError, char ignoreCase) */
+ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
-	/* FIXME : use throwOnError and ignoreCase */
+	/* FIXME : use ignoreCase */
 	gchar *name, *namespace, *str;
 	char *byref, *isarray, *ispointer;
 	guint rank;
 	MonoClass *klass;
 
 	str = namespace = mono_string_to_utf8 (type);
-	/*g_print ("requested type %s\n", str);*/
+	/*g_print ("requested type %s in %s\n", str, assembly->assembly->name);*/
 
 	name = strrchr (str, '.');
 	byref = strrchr (str, '&');
@@ -770,8 +791,11 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 
 	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
 	g_free (str);
-	if (!klass)
+	if (!klass) {
+		if (throwOnError)
+			mono_raise_exception (mono_get_exception_type_load ());
 		return NULL;
+	}
 	if (!klass->inited)
 		mono_class_init (klass);
 
@@ -869,6 +893,8 @@ static gpointer icall_map [] = {
 	"System.Array::GetLength",        ves_icall_System_Array_GetLength,
 	"System.Array::GetLowerBound",    ves_icall_System_Array_GetLowerBound,
 	"System.Array::CreateInstance",   ves_icall_System_Array_CreateInstance,
+	"System.Array::FastCopy",         ves_icall_System_Array_FastCopy,
+	"System.Array::Clone",            mono_array_clone,
 
 	/*
 	 * System.Object
@@ -936,6 +962,7 @@ static gpointer icall_map [] = {
 	"System.Reflection.MonoMethodInfo::get_parameter_info", ves_icall_get_parameter_info,
 	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
+	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
 	
 	/* System.Enum */
 
