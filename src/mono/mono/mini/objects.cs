@@ -37,6 +37,12 @@ class Sample {
 	}
 }
 
+enum SampleEnum {
+	A,
+	B,
+	C
+}
+
 class Tests {
 
 	static int Main () {
@@ -83,6 +89,17 @@ class Tests {
 		return (int)obj;
 	}
 
+	static int test_0_enum_unbox () {
+		SampleEnum x = SampleEnum.A;
+		object o = x;
+		
+		int res = 1;
+
+		res = (int)o;
+		
+		return res;
+	}
+	
 	static Simple get_simple (int v) {
 		Simple r = new Simple ();
 		r.a = v;

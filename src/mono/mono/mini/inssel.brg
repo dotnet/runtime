@@ -1189,6 +1189,22 @@ reg: CEE_ISINST (reg) {
 	mono_bblock_add_inst (s->cbb, end_label);
 }
 
+reg: OP_UNBOXCAST (reg) {
+     	MonoClass *klass = tree->inst_newa_class;
+	int obj_reg = state->left->reg1;
+	int vtable_reg = mono_regstate_next_int (s->rs);
+	int klass_reg = mono_regstate_next_int (s->rs);
+	int eclass_reg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, klass->element_class);
+	
+	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
+}
+
 reg: CEE_CASTCLASS (reg) {
      	MonoClass *klass = tree->inst_newa_class;
 	MonoInst *object_is_null;

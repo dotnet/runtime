@@ -3208,7 +3208,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_UNBOX: {
 			MonoInst *add, *vtoffset;
-			/* FIXME: need to check class: move to inssel.brg? */
+
 			CHECK_STACK (1);
 			--sp;
 			token = read32 (ip + 1);
@@ -3217,14 +3217,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else 
 				klass = mono_class_get (image, token);
 			mono_class_init (klass);
+
+
+			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
+			ins->type = STACK_OBJ;
+			ins->inst_left = *sp;
+			ins->klass = klass;
+			ins->inst_newa_class = klass;
+			ins->cil_code = ip;
+
 			MONO_INST_NEW (cfg, add, CEE_ADD);
 			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
-			add->inst_left = *sp;
+			add->inst_left = ins;
 			add->inst_right = vtoffset;
 			add->type = STACK_MP;
 			*sp++ = add;
 			ip += 5;
-			inline_costs += 1;
+			inline_costs += 2;
 			break;
 		}
 		case CEE_CASTCLASS:

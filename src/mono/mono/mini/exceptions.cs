@@ -1337,4 +1337,20 @@ class Tests {
 		return 0;
 	}
 
+	static int test_0_invalid_unbox () {
+
+		int i = 123;
+		object o = "Some string";
+		int res = 1;
+		
+		try {
+			// Illegal conversion; o contains a string not an int
+			i = (int) o;   
+		} catch (Exception e) {
+			if (i ==123)
+				res = 0;
+		}
+
+		return res;
+	}
 }

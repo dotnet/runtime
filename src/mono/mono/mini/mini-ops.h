@@ -269,6 +269,9 @@ MINI_OP(OP_GROUP, "group")
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aot_const")
 
+/* used to impl unbox */
+MINI_OP(OP_UNBOXCAST  , "unboxcast")
+
 /* exception related opcodes */
 MINI_OP(OP_HANDLER  , "handler")
 MINI_OP(OP_ENDFILTER,  "op_endfilter")
