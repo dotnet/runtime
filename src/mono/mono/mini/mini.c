@@ -7654,6 +7654,13 @@ optimize_branches (MonoCompile *cfg)
 
 				/* conditional branches where true and false targets are the same can be also replaced with CEE_BR */
 				if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
+					MonoInst *pop;
+					MONO_INST_NEW (cfg, pop, CEE_POP);
+					pop->inst_left = bb->last_ins->inst_left->inst_left;
+					mono_add_ins_to_end (bb, pop);
+					MONO_INST_NEW (cfg, pop, CEE_POP);
+					pop->inst_left = bb->last_ins->inst_left->inst_right;
+					mono_add_ins_to_end (bb, pop);
 					bb->last_ins->opcode = CEE_BR;
 					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
 					changed = TRUE;
@@ -7747,6 +7754,9 @@ optimize_branches (MonoCompile *cfg)
 						untaken_branch_target = bb->last_ins->inst_true_bb;
 					}
 					if (taken_branch_target) {
+						/* if mono_eval_cond_branch () is ever taken to handle 
+						 * non-constant values to compare, issue a pop here.
+						 */
 						bb->last_ins->opcode = CEE_BR;
 						bb->last_ins->inst_target_bb = taken_branch_target;
 						replace_out_block (bb, untaken_branch_target, NULL);

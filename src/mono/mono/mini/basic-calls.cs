@@ -286,5 +286,19 @@ class Tests {
 	{
 		return dum_de_dum;
 	}
+
+	/* from bug# 71515 */
+	static int counter = 0;
+	static bool WriteStuff () {
+		counter = 10;
+		return true;
+	}
+	static int test_0_cond_branch_side_effects () {
+		counter = 5;
+		if (WriteStuff());
+		if (counter == 10)
+			return 0;
+		return 1;
+	}
 }
 

@@ -258,6 +258,9 @@ mono_constant_fold (MonoCompile *cfg)
  * If the arguments to the cond branch are constants, eval and
  * return BRANCH_NOT_TAKEN for not taken, BRANCH_TAKEN for taken,
  * BRANCH_UNDEF otherwise.
+ * If this code is changed to handle also non-const values, make sure
+ * side effects are handled in optimize_branches() in mini.c, by
+ * inserting pop instructions.
  */
 int
 mono_eval_cond_branch (MonoInst *ins)
