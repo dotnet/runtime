@@ -57,7 +57,7 @@ struct _WapiHandlePrivate_list *_wapi_private_data=NULL;
 int disable_shm = 0;
 static void shared_init (void)
 {
-	struct sockaddr_un sun;
+	struct sockaddr_un shared_socket_address;
 	int ret;
 
 	if (getenv ("MONO_ENABLE_SHM"))
@@ -85,9 +85,9 @@ static void shared_init (void)
 
 	if(shared==TRUE) {
 		daemon_sock=socket (PF_UNIX, SOCK_STREAM, 0);
-		sun.sun_family=AF_UNIX;
-		memcpy (sun.sun_path, _wapi_shared_data->daemon, 108);
-		ret=connect (daemon_sock, (struct sockaddr *)&sun,
+		shared_socket_address.sun_family=AF_UNIX;
+		memcpy (shared_socket_address.sun_path, _wapi_shared_data->daemon, 108);
+		ret=connect (daemon_sock, (struct sockaddr *)&shared_socket_address,
 			     sizeof(struct sockaddr_un));
 		if(ret==-1) {
 			g_warning (G_GNUC_PRETTY_FUNCTION

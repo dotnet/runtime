@@ -330,7 +330,7 @@ static void read_message (guint32 idx)
 
 int main(int argc, char **argv)
 {
-	struct sockaddr_un sun;
+	struct sockaddr_un main_socket_address;
 	int ret;
 
 #ifdef DEBUG
@@ -341,10 +341,10 @@ int main(int argc, char **argv)
 	
 	main_sock=socket(PF_UNIX, SOCK_STREAM, 0);
 
-	sun.sun_family=AF_UNIX;
-	memcpy(sun.sun_path, _wapi_shared_data->daemon, 108);
+	main_socket_address.sun_family=AF_UNIX;
+	memcpy(main_socket_address.sun_path, _wapi_shared_data->daemon, 108);
 
-	ret=bind(main_sock, (struct sockaddr *)&sun,
+	ret=bind(main_sock, (struct sockaddr *)&main_socket_address,
 		 sizeof(struct sockaddr_un));
 	if(ret==-1) {
 		g_warning ("bind failed: %s", strerror (errno));
