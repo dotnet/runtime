@@ -6888,7 +6888,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 		ginst->generic_type = kginst->generic_type;
 	}
 
-	mono_class_from_generic (ginst);
+	mono_class_create_generic (ginst);
 
 	return geninst;
 }

@@ -1430,17 +1430,16 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 static void
 do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *ptr, const char **rptr)
 {
-	MonoGenericInst *generic_inst = g_new0 (MonoGenericInst, 1);
-	MonoClass *klass, *gklass;
+	MonoGenericInst *ginst = g_new0 (MonoGenericInst, 1);
 	int i, count;
 
-	type->data.generic_inst = generic_inst;
+	type->data.generic_inst = ginst;
 
-	generic_inst->klass = klass = g_new0 (MonoClass, 1);
+	ginst->klass = g_new0 (MonoClass, 1);
 
-	generic_inst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
-	generic_inst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
-	generic_inst->type_argv = g_new0 (MonoType*, count);
+	ginst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	ginst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
+	ginst->type_argv = g_new0 (MonoType*, count);
 
 	/*
 	 * Create the klass before parsing the type arguments.
@@ -1448,22 +1447,16 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 	 * See mcs/tests/gen-23.cs for an example.
 	 */
 
-	generic_inst->init_pending = TRUE;
+	ginst->init_pending = TRUE;
 
-	gklass = mono_class_from_mono_type (generic_inst->generic_type);
+	mono_class_create_generic (ginst);
 
-	klass->name_space = gklass->name_space;
-	klass->image = m;
-	klass->flags = gklass->flags;
+	for (i = 0; i < ginst->type_argc; i++)
+		ginst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-	klass->generic_inst = generic_inst;
+	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst);
 
-	klass->cast_class = klass->element_class = klass;
-
-	for (i = 0; i < generic_inst->type_argc; i++)
-		generic_inst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
-
-	generic_inst->init_pending = FALSE;
+	ginst->init_pending = FALSE;
 
 	if (rptr)
 		*rptr = ptr;

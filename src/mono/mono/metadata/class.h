@@ -327,8 +327,11 @@ mono_class_is_open_constructed_type (MonoType *t);
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);
 
+char*
+_mono_class_get_instantiation_name (const char *name, MonoGenericInst *ginst);
+
 MonoClass*
-mono_class_from_generic    (MonoGenericInst *ginst);
+mono_class_create_generic  (MonoGenericInst *ginst);
 
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst, MonoGenericMethod *gmethod);
