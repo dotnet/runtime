@@ -216,6 +216,8 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	   in a 64 bit result */
 	if (ah && bh)
 		goto raise_exception;
+	if ((gint64)((gint64)ah * (gint64)bl) > (gint64)0x80000000 || (gint64)((gint64)al * (gint64)bh) > (gint64)0x80000000)
+		goto raise_exception;
 
 	/* do the AlBl term first */
 	t1 = (gint64)al * (gint64)bl;
@@ -224,8 +226,8 @@ mono_llmult_ovf (gint64 a, gint64 b)
 
 	/* now do the [(Ah-Al)(Bl-Bh)+AlBl]R term */
 	t1 += (gint64)(ah - al) * (gint64)(bl - bh);
-	t1 <<= 32;
 	/* check for overflow */
+	t1 <<= 32;
 	if (t1 > (0x7FFFFFFFFFFFFFFFLL - res))
 		goto raise_exception;
 
