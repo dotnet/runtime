@@ -159,8 +159,8 @@ mono_class_metadata_init (MonoClass *class)
 	if (class->parent) {
 		if (!class->parent->metadata_inited)
 			mono_class_metadata_init (class->parent);
-		class->instance_size = class->parent->instance_size;
-		class->class_size = class->parent->class_size;
+		class->instance_size += class->parent->instance_size;
+		class->class_size += class->parent->class_size;
 	}
 
 	class->metadata_inited = 1;
