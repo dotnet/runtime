@@ -61,4 +61,30 @@ extern gboolean ves_icall_System_PAL_OpSys_ExistsFile(MonoObject *this, MonoStri
 extern gboolean ves_icall_System_PAL_OpSys_GetFileTime(HANDLE handle, gint64 *createtime, gint64 *lastaccess, gint64 *lastwrite);
 extern gboolean ves_icall_System_PAL_OpSys_SetFileTime(HANDLE handle, gint64 createtime, gint64 lastaccess, gint64 lastwrite);
 
+/* System.IO.FileStream */
+
+extern HANDLE
+ves_icall_System_IO_FileStream_FileOpen (MonoString *filename, gint32 mode, gint32 access, gint32 share);
+
+extern void 
+ves_icall_System_IO_FileStream_FileClose (gpointer handle);
+
+extern gint32 
+ves_icall_System_IO_FileStream_FileRead (gpointer handle, MonoArray *dest, gint32 dest_offset, gint32 count);
+
+extern gint32 
+ves_icall_System_IO_FileStream_FileWrite (gpointer handle, MonoArray *src, gint32 src_offset, gint32 count);
+
+extern gint64 
+ves_icall_System_IO_FileStream_FileSeek (gpointer handle, gint64 offset, gint32 origin);
+
+extern gint64 
+ves_icall_System_IO_FileStream_FileGetLength (gpointer handle);
+
+extern void 
+ves_icall_System_IO_FileStream_FileSetLength (gpointer handle, gint64 length);
+
+extern void 
+ves_icall_System_IO_FileStream_FileFlush (gpointer handle);
+
 #endif /* _MONO_METADATA_FILEIO_H_ */

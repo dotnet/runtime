@@ -1669,15 +1669,58 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 		gmtoff = tt.tm_gmtoff;
 	}
-
-	return 0;
 #endif
+	return 0;
 }
 
 static gpointer
 ves_icall_System_Object_obj_address (MonoObject *this) {
 	return this;
 }
+
+/* System.Buffer */
+
+static gint32 
+ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) {
+	MonoClass *klass;
+	MonoType etype;
+	int length, esize;
+	int i;
+
+	klass = array->obj.vtable->klass;
+	etype = klass->element_class->byval_arg;
+	if (etype.type < MONO_TYPE_BOOLEAN || etype.type > MONO_TYPE_R8)
+		return -1;
+
+	length = 0;
+	for (i = 0; i < klass->rank; ++ i)
+		length += array->bounds [i].length;
+
+	esize = mono_array_element_size (klass);
+	return length * esize;
+}
+
+static gint8 
+ves_icall_System_Buffer_GetByteInternal (MonoArray *array, gint32 index) {
+	return ((gint8 *)array->vector) [index];
+}
+
+static void 
+ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 index, gint8 value) {
+	((gint8 *)array->vector) [index] = value;
+}
+
+static void 
+ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, MonoArray *dest, gint32 dest_offset, gint32 count) {
+	char *src_buf, *dest_buf;
+
+	src_buf = (gint8 *)src->vector + src_offset;
+	dest_buf = (gint8 *)dest->vector + dest_offset;
+
+	memcpy (dest_buf, src_buf, count);
+}
+
+/* icall map */
 
 static gpointer icall_map [] = {
 	/*
@@ -1863,12 +1906,6 @@ static gpointer icall_map [] = {
 	 * System.PAL.OpSys I/O Services
 	 */
 	"System.PAL.OpSys::GetStdHandle", ves_icall_System_PAL_OpSys_GetStdHandle,
-	"System.PAL.OpSys::ReadFile", ves_icall_System_PAL_OpSys_ReadFile,
-	"System.PAL.OpSys::WriteFile", ves_icall_System_PAL_OpSys_WriteFile,
-	"System.PAL.OpSys::SetLengthFile", ves_icall_System_PAL_OpSys_SetLengthFile,
-	"System.PAL.OpSys::OpenFile", ves_icall_System_PAL_OpSys_OpenFile,
-	"System.PAL.OpSys::CloseFile", ves_icall_System_PAL_OpSys_CloseFile,
-	"System.PAL.OpSys::SeekFile", ves_icall_System_PAL_OpSys_SeekFile,
 	"System.PAL.OpSys::DeleteFile", ves_icall_System_PAL_OpSys_DeleteFile,
 	"System.PAL.OpSys::ExistsFile", ves_icall_System_PAL_OpSys_ExistsFile,
 	"System.PAL.OpSys::GetFileTime", ves_icall_System_PAL_OpSys_GetFileTime,
@@ -1936,6 +1973,26 @@ static gpointer icall_map [] = {
 
 	 "System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes,
 	 "System.Security.Cryptography.RNG_CryptoServiceProvider::GetNonZeroBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes,
+	
+	/*
+	 * System.Buffer
+	 */
+	"System.Buffer::ByteLengthInternal", ves_icall_System_Buffer_ByteLengthInternal,
+	"System.Buffer::GetByteInternal", ves_icall_System_Buffer_GetByteInternal,
+	"System.Buffer::SetByteInternal", ves_icall_System_Buffer_SetByteInternal,
+	"System.Buffer::BlockCopyInternal", ves_icall_System_Buffer_BlockCopyInternal,
+
+	/*
+	 * System.IO.FileStream
+	 */
+	"System.IO.FileStream::FileOpen", ves_icall_System_IO_FileStream_FileOpen,
+	"System.IO.FileStream::FileClose", ves_icall_System_IO_FileStream_FileClose,
+	"System.IO.FileStream::FileRead", ves_icall_System_IO_FileStream_FileRead,
+	"System.IO.FileStream::FileWrite", ves_icall_System_IO_FileStream_FileWrite,
+	"System.IO.FileStream::FileSeek", ves_icall_System_IO_FileStream_FileSeek,
+	"System.IO.FileStream::FileGetLength", ves_icall_System_IO_FileStream_FileGetLength,
+	"System.IO.FileStream::FileSetLength", ves_icall_System_IO_FileStream_FileSetLength,
+	"System.IO.FileStream::FileFlush", ves_icall_System_IO_FileStream_FileFlush,
 
 	/*
 	 * add other internal calls here

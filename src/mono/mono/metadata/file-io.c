@@ -165,130 +165,6 @@ HANDLE ves_icall_System_PAL_OpSys_GetStdHandle(MonoObject *this,
 	return(handle);
 }
 
-gint32 ves_icall_System_PAL_OpSys_ReadFile(MonoObject *this, HANDLE handle, MonoArray *buffer, gint32 offset, gint32 count)
-{
-	gboolean ret;
-	guint32 bytesread;
-	guchar *buf;
-	gint32 alen;
-
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	alen=mono_array_length(buffer);
-	if(offset+count>alen) {
-		return(0);
-	}
-	
-	buf=mono_array_addr(buffer, guchar, offset);
-	
-	ret=ReadFile(handle, buf, count, &bytesread, NULL);
-	
-	return(bytesread);
-}
-
-gint32 ves_icall_System_PAL_OpSys_WriteFile(MonoObject *this, HANDLE handle,  MonoArray *buffer, gint32 offset, gint32 count)
-{
-	gboolean ret;
-	guint32 byteswritten;
-	guchar *buf;
-	gint32 alen;
-	
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	alen=mono_array_length(buffer);
-	if(offset+count>alen) {
-		return(0);
-	}
-	
-	buf=mono_array_addr(buffer, guchar, offset);
-	
-	ret=WriteFile(handle, buf, count, &byteswritten, NULL);
-	
-	return(byteswritten);
-}
-
-gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle, gint64 length)
-{
-	/* FIXME: Should this put the file pointer back to where it
-	 * was before we started setting the length? The spec doesnt
-	 * say, as usual
-	 */
-
-	gboolean ret;
-	gint32 lenlo, lenhi, retlo;
-	
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	lenlo=length & 0xFFFFFFFF;
-	lenhi=length >> 32;
-
-	retlo=SetFilePointer(handle, lenlo, &lenhi, FILE_BEGIN);
-	ret=SetEndOfFile(handle);
-	
-	if(ret==FALSE) {
-		mono_raise_exception(mono_get_exception_io("IO Exception"));
-	}
-	
-	return(0);
-}
-
-HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, gint32 mode, gint32 access, gint32 share)
-{
-	HANDLE handle;
-	char *filename;
-	
-	filename=mono_string_to_utf16(path);
-	
-	handle=CreateFile(filename, convert_access(access),
-			  convert_share(share), NULL, convert_mode(mode),
-			  FILE_ATTRIBUTE_NORMAL, NULL);
-
-	g_free(filename);
-	
-	/* fixme: raise mor appropriate exceptions (errno) */
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	return(handle);
-}
-
-void ves_icall_System_PAL_OpSys_CloseFile(MonoObject *this, HANDLE handle)
-{
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	CloseHandle(handle);
-}
-
-gint64 ves_icall_System_PAL_OpSys_SeekFile(MonoObject *this, HANDLE handle,
-					   gint64 offset, gint32 origin)
-{
-	gint64 ret;
-	gint32 offsetlo, offsethi, retlo;
-	
-	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
-	}
-
-	offsetlo=offset & 0xFFFFFFFF;
-	offsethi=offset >> 32;
-
-	retlo=SetFilePointer(handle, offset, &offsethi,
-			     convert_seekorigin(origin));
-	
-	ret=((gint64)offsethi << 32) + offsetlo;
-
-	return(ret);
-}
-
 void ves_icall_System_PAL_OpSys_DeleteFile(MonoObject *this, MonoString *path)
 {
 	char *filename;
@@ -350,5 +226,145 @@ gboolean ves_icall_System_PAL_OpSys_SetFileTime(HANDLE handle, gint64 createtime
 	ret=SetFileTime(handle, &cr, &ac, &wr);
 	
 	return(ret);
+}
+
+/* System.IO.FileStream */
+
+HANDLE
+ves_icall_System_IO_FileStream_FileOpen (MonoString *path, gint32 mode, gint32 access, gint32 share) {
+	HANDLE handle;
+	char *filename;
+	
+	filename=mono_string_to_utf16(path);
+	
+	handle=CreateFile(filename, convert_access(access),
+			  convert_share(share), NULL, convert_mode(mode),
+			  FILE_ATTRIBUTE_NORMAL, NULL);
+
+	g_free(filename);
+	
+	/* fixme: raise mor appropriate exceptions (errno) */
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+	}
+
+	return(handle);
+}
+
+void 
+ves_icall_System_IO_FileStream_FileClose (gpointer handle) {
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+	}
+
+	CloseHandle(handle);
+}
+
+gint32 
+ves_icall_System_IO_FileStream_FileRead (gpointer handle, MonoArray *dest, gint32 dest_offset, gint32 count) {
+	gboolean ret;
+	guint32 bytesread;
+	guchar *buf;
+	gint32 alen;
+
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+	}
+
+	alen=mono_array_length(dest);
+	if(dest_offset+count>alen) {
+		return(0);
+	}
+	
+	buf=mono_array_addr(dest, guchar, dest_offset);
+	
+	ret=ReadFile(handle, buf, count, &bytesread, NULL);
+	
+	return(bytesread);
+}
+
+gint32 
+ves_icall_System_IO_FileStream_FileWrite (gpointer handle, MonoArray *src, gint32 src_offset, gint32 count) {
+	gboolean ret;
+	guint32 byteswritten;
+	guchar *buf;
+	gint32 alen;
+	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+	}
+
+	alen=mono_array_length(src);
+	if(src_offset+count>alen) {
+		return(0);
+	}
+	
+	buf=mono_array_addr(src, guchar, src_offset);
+	
+	ret=WriteFile(handle, buf, count, &byteswritten, NULL);
+	
+	return(byteswritten);
+}
+
+gint64 
+ves_icall_System_IO_FileStream_FileSeek (gpointer handle, gint64 offset, gint32 origin) {
+	gint64 ret;
+	gint32 offsetlo, offsethi, retlo;
+	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+	}
+
+	offsetlo=offset & 0xFFFFFFFF;
+	offsethi=offset >> 32;
+
+	retlo=SetFilePointer(handle, offset, &offsethi,
+			     convert_seekorigin(origin));
+	
+	ret=((gint64)offsethi << 32) + offsetlo;
+
+	return(ret);
+}
+
+gint64 
+ves_icall_System_IO_FileStream_FileGetLength (gpointer handle) {
+	gint32 length_lo, length_hi;
+
+	if (handle == INVALID_HANDLE_VALUE)
+		mono_raise_exception (mono_get_exception_io ("Invalid handle"));
+	
+	length_lo = GetFileSize (handle, &length_hi);
+	
+	return ((gint64)length_hi << 32) | length_lo;
+}
+
+void 
+ves_icall_System_IO_FileStream_FileSetLength (gpointer handle, gint64 length) {
+	/* FIXME: Should this put the file pointer back to where it
+	 * was before we started setting the length? The spec doesnt
+	 * say, as usual
+	 */
+
+	gboolean ret;
+	gint32 lenlo, lenhi, retlo;
+	
+	if(handle == INVALID_HANDLE_VALUE) {
+		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+	}
+
+	lenlo=length & 0xFFFFFFFF;
+	lenhi=length >> 32;
+
+	retlo=SetFilePointer(handle, lenlo, &lenhi, FILE_BEGIN);
+	ret=SetEndOfFile(handle);
+	
+	if(ret==FALSE) {
+		mono_raise_exception(mono_get_exception_io("IO Exception"));
+	}
+}
+
+void 
+ves_icall_System_IO_FileStream_FileFlush (gpointer handle) {
+	/* FIXME: implement FlushFileBuffers */
 }
 
