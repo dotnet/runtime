@@ -769,6 +769,16 @@
         </maintainers>
     </class>
 
+    <class name="System.EventArgs">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.IO.MemoryStream">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>no</implementation>
