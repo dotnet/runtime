@@ -63,20 +63,23 @@
 	have a sort of unofficial ownership. If you are not the owner of a 
 	piece of code and you want to make changes/fixes to it, there are two 
 	cases.
-	1) The change is a typo fix or a one-liner build or trivial fix. In 
+
+	<ul>
+	<li> The change is a typo fix or a one-liner build or trivial fix. In 
 	this case almost anyone can commit (always remembering to add the 
 	proper changelog entry to explain the change). We say "almost anyone",
 	because changes to certain directories almost always should be reviewed
 	first. Such as changes to core stuff: corlib/System, System.Collections,
 	mini/, metadata/, System.IO.
 
-	2) The change is larger. In this case the patch *must* be sent to
+	<li> The change is larger. In this case the patch *must* be sent to
 	mono-devel-list for review by the owner of the code and by the other
 	hackers. Always submit such patches to the list or bugzilla, although
 	you may put the owner of the code in the CC header. Hackers come and go.
 	Mailing a patch to only a personal address is a good way to get the
 	patch forgotten and missed. Plus, getting the patches reviewed as well
 	as reviewing them, is a good thing, so try to get used to it.
+	</ul>
 
 	Note: If the patch is an addition of code and doesn't change any of the
 	existing code, the rules are slightly relaxed: there is more freedom
@@ -123,34 +126,58 @@
 
 	Once you know you can commit a patch (because of the rules above) there
 	are a few other small rules to follow:
+
 	<ul>
-	<li>Always add a changelog entry with a meaningful explanation
+	<li>Always add a ChangeLog entry with a meaningful
+	explanation, this file should be located in the same directory
+	as the change you make.
+
+	<li>The ChangeLog entry <b>must</b> be pasted on the CVS
+	commit log, so the CVS commit log can be used to map to the
+	changes as well.
+
+	<li>The ChangeLog and the files that comprise related changes
+	should be committed together, not one by one, otherwise the
+	history is pretty much useless if related changes are
+	separated during the commit.
+
 	<li>If you fix a bug, add a regression test for it in the regression
-	suite
+	suite.
+
 	<li>Don't commit unrelated changes together with a fix: do fine-grained
-	commits
+	commits.
+
 	<li>Always check what you're committing: make sure you're only committing
 	what you need and make sure you don't change line endings and 
-	whitespace. Do a 'cvs diff -u' of the files you're going to commit and 
+	whitespace.  Do a 'cvs diff -u' of the files you're going to commit and 
 	check the changes.
+
 	<li>Don't do reformatting commits, unless you're the original author of
-	the code
+	the code.
+
 	<li>When fixing bugs, don't follow the documentation blindly, it may 
 	well be wrong. Test the behavior on the MS runtime or ask on the list 
 	for discussion if unsure. Don't be afraid of having your changes
 	reviewed.
-	<li>Never remove copyright notices from the code
-	<li>Never remove licensing info from code
+
+	<li>Never remove copyright notices from the code.
+
+	<li>Never remove licensing info from code.
+
 	<li>Never commit code you didn't write yourself or code that doesn't
-	have a suitable license
-	<li>Follow the style conventions
+	have a suitable license.
+
+	<li>Follow the style conventions.
+
 	<li>Keep an eye on performance considerations, especially for code in
-	core classes, ask on the list for guidance
+	core classes, ask on the list for guidance.
+
 	<li>Do a regression test run and a bootstrapping build if making changes
 	to core functionality before committing. Do not commit code that would 
 	break the compile, because that wastes everybody's time.  Two things 
 	are important in this step: trying to build your sources and making 
 	sure that you add all the new files before you do a commit.
+
 	</ul>
 
 	Also, remember to pat yourself on the back after the commit, smile and
