@@ -68,6 +68,8 @@ typedef struct {
 	gint32 context_id;
 } MonoAppContext;
 
+extern CRITICAL_SECTION *metadata_section;
+
 typedef struct _MonoAppDomain MonoAppDomain;
 
 struct _MonoDomain {

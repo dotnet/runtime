@@ -231,8 +231,6 @@ gboolean mono_break_on_exc = FALSE;
 
 MonoJitStats mono_jit_stats;
 
-CRITICAL_SECTION *metadata_section = NULL;
-
 /* 
  * We sometimes need static data, for example the forest generator need it to
  * store constants or class data.

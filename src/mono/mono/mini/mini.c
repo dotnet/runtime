@@ -94,8 +94,6 @@ gboolean mono_jit_trace_calls = FALSE;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
 
-CRITICAL_SECTION *metadata_section = NULL;
-
 static int mini_verbose = 0;
 
 #ifdef MONO_USE_EXC_TABLES
@@ -6837,6 +6835,18 @@ sigusr1_signal_handler (int _dummy)
 }
 
 static void
+sigquit_signal_handler (int _dummy)
+{
+       MonoException *exc;
+       GET_CONTEXT
+
+       exc = mono_get_exception_execution_engine ("Interrupted (SIGQUIT).");
+       
+       mono_arch_handle_exception (ctx, exc, FALSE);
+}
+
+
+static void
 mono_runtime_install_handlers (void)
 {
 #ifndef PLATFORM_WIN32
@@ -6862,6 +6872,12 @@ mono_runtime_install_handlers (void)
 	//g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
 	g_assert (sigaction (SIGFPE, &sa, NULL) != -1);
 
+	/* catch SIGQUIT */
+	sa.sa_handler = sigquit_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
+
 	/* catch SIGILL */
 	sa.sa_handler = sigill_signal_handler;
 	sigemptyset (&sa.sa_mask);
@@ -6874,7 +6890,7 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
+	//g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
 
 #if 1
 	/* catch SIGSEGV */

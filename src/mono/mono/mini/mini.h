@@ -86,8 +86,6 @@ extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
 
-extern CRITICAL_SECTION *metadata_section;
-
 struct MonoEdge {
 	MonoEdge *next;
 	MonoBasicBlock *bb;
