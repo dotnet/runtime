@@ -1,7 +1,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.19.1)
+AM_INIT_AUTOMAKE(mono, 0.20)
 AM_MAINTAINER_MODE
 
 #
@@ -550,6 +550,7 @@ mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
 mono/arch/s390/Makefile
 mono/arch/arm/Makefile
+mono/arch/alpha/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/benchmark/Makefile
