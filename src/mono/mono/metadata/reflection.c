@@ -122,21 +122,6 @@ const unsigned char table_sizes [64] = {
 	0	/* 0x2D */
 };
 
-/**
- * These macros can be used to allocate long living atomic data so it won't be
- * tracked by the garbage collector. We use libgc because it's apparently faster
- * than g_malloc.
- */
-#ifdef HAVE_BOEHM_GC
-#define ALLOC_ATOMIC(size) GC_MALLOC_ATOMIC (size)
-#define FREE_ATOMIC(ptr)
-#define REALLOC_ATOMIC(ptr, size) GC_REALLOC ((ptr), (size))
-#else
-#define ALLOC_ATOMIC(size) g_malloc (size)
-#define FREE_ATOMIC(ptr) g_free (ptr)
-#define REALLOC_ATOMIC(ptr, size) g_realloc ((ptr), (size))
-#endif
-
 static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
 static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
@@ -169,26 +154,24 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 				table->alloc_rows *= 2;
 		}
 
-		if (table->values)
-			table->values = REALLOC_ATOMIC (table->values, (table->alloc_rows) * table->columns * sizeof (guint32));
-		else
-			table->values = ALLOC_ATOMIC ((table->alloc_rows) * table->columns * sizeof (guint32));
+		table->values = g_renew (guint32, table->values, (table->alloc_rows) * table->columns);
 	}
 }
 
 static void
 make_room_in_stream (MonoDynamicStream *stream, int size)
 {
+	if (size <= stream->alloc_size)
+		return;
+	
 	while (stream->alloc_size <= size) {
 		if (stream->alloc_size < 4096)
 			stream->alloc_size = 4096;
 		else
 			stream->alloc_size *= 2;
 	}
-	if (stream->data)
-		stream->data = REALLOC_ATOMIC (stream->data, stream->alloc_size);
-	else
-		stream->data = ALLOC_ATOMIC (stream->alloc_size);
+	
+	stream->data = g_realloc (stream->data, stream->alloc_size);
 }	
 
 static guint32
@@ -203,8 +186,8 @@ string_heap_insert (MonoDynamicStream *sh, const char *str)
 
 	len = strlen (str) + 1;
 	idx = sh->index;
-	if (idx + len > sh->alloc_size)
-		make_room_in_stream (sh, idx + len);
+	
+	make_room_in_stream (sh, idx + len);
 
 	/*
 	 * We strdup the string even if we already copy them in sh->data
@@ -222,7 +205,7 @@ string_heap_init (MonoDynamicStream *sh)
 {
 	sh->index = 0;
 	sh->alloc_size = 4096;
-	sh->data = ALLOC_ATOMIC (4096);
+	sh->data = g_malloc (4096);
 	sh->hash = g_hash_table_new (g_str_hash, g_str_equal);
 	string_heap_insert (sh, "");
 }
@@ -231,7 +214,7 @@ string_heap_init (MonoDynamicStream *sh)
 static void
 string_heap_free (MonoDynamicStream *sh)
 {
-	FREE_ATOMIC (sh->data);
+	g_free (sh->data);
 	g_hash_table_foreach (sh->hash, (GHFunc)g_free, NULL);
 	g_hash_table_destroy (sh->hash);
 }
@@ -241,8 +224,8 @@ static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 {
 	guint32 idx;
-	if (stream->alloc_size < stream->index + len)
-		make_room_in_stream (stream, stream->index + len);
+	
+	make_room_in_stream (stream, stream->index + len);
 	memcpy (stream->data + stream->index, data, len);
 	idx = stream->index;
 	stream->index += len;
@@ -257,8 +240,8 @@ static guint32
 mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
 {
 	guint32 idx;
-	if (stream->alloc_size < stream->index + len)
-		make_room_in_stream (stream, stream->index + len);
+	
+	make_room_in_stream (stream, stream->index + len);
 	memset (stream->data + stream->index, 0, len);
 	idx = stream->index;
 	stream->index += len;
@@ -312,11 +295,11 @@ add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int 
 	char *copy;
 	gpointer oldkey, oldval;
 	
-	copy = ALLOC_ATOMIC (s1+s2);
+	copy = g_malloc (s1+s2);
 	memcpy (copy, b1, s1);
 	memcpy (copy + s1, b2, s2);
 	if (mono_g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
-		FREE_ATOMIC (copy);
+		g_free (copy);
 		idx = GPOINTER_TO_UINT (oldval);
 	} else {
 		idx = mono_image_add_stream_data (&assembly->blob, b1, s1);
