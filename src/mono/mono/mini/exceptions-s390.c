@@ -60,6 +60,7 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+#include <ucontext.h>
 
 #include <mono/arch/s390/s390-codegen.h>
 #include <mono/metadata/appdomain.h>

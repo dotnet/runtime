@@ -447,10 +447,10 @@ backUpStackPtr(MonoCompile *cfg, guint8 *code)
 		s390_ahi  (code, STK_BASE, cfg->stack_usage);
 	} else { 
 		while (stackSize > 32767) {
-			s390_ahi  (code, STK_BASE, -32767);
+			s390_ahi  (code, STK_BASE, 32767);
 			stackSize -= 32767;
 		}
-		s390_ahi  (code, STK_BASE, -stackSize);
+		s390_ahi  (code, STK_BASE, stackSize);
 	}
 	return (code);
 }
@@ -1116,13 +1116,13 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 
 	fr                = 0;
 	gr                = s390_r2;
+	nParm 		  = 0;
 	cinfo->struct_ret = 0;
 	sz->retStruct     = 0;
 	sz->stack_size    = S390_MINIMAL_STACK_SIZE;
 	sz->code_size     = 0;
 	sz->local_size    = 0;
 
-	nParm = 0;
 	/*----------------------------------------------------------*/
 	/* We determine the size of the return code/stack in case we*/
 	/* need to reserve a register to be used to address a stack */
@@ -1274,7 +1274,6 @@ enum_retvalue:
 				case 2:
 				case 4:
 					add_general(&gr, sz, cinfo->args+nParm, TRUE);
-//					cinfo->args[nParm].size    = sizeof(int);
 					cinfo->args[nParm].size    = size;
 					cinfo->args[nParm].regtype = RegTypeStructByVal; 
 					nParm++;
@@ -1330,8 +1329,6 @@ enum_retvalue:
 				sz->code_size += 4;
 				fr += 2;
 			} else {
-//				sz->stack_size  = S390_ALIGN(sz->stack_size, 
-//							     S390_STACK_ALIGNMENT);
 				cinfo->args[nParm].offset  = sz->stack_size;
 				cinfo->args[nParm].reg	   = STK_BASE;
 				cinfo->args[nParm].regtype = RegTypeBase;
@@ -1345,8 +1342,6 @@ enum_retvalue:
 		}
 	}
 
-
-	/* align stack size */
 	cinfo->stack_usage = S390_ALIGN(sz->stack_size+sz->local_size, 
 					S390_STACK_ALIGNMENT);
 	return (cinfo);
@@ -1380,17 +1375,17 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	header  = ((MonoMethodNormal *)m->method)->header;
 
-	/* 
-	 * We use the frame register also for any method that has
-	 * filter clauses. This way, when the handlers are called,
-	 * the code will reference local variables using the frame reg instead of
-	 * the stack pointer: if we had to restore the stack pointer, we'd
-	 * corrupt the method frames that are already on the stack (since
-	 * filters get called before stack unwinding happens) when the filter
-	 * code would call any method.
-	 */ 
+	/*---------------------------------------------------------*/	 
+	/* We use the frame register also for any method that has  */ 
+	/* filter clauses. This way, when the handlers are called, */
+	/* the code will reference local variables using the frame */
+	/* reg instead of the stack pointer: if we had to restore  */
+	/* the stack pointer, we'd corrupt the method frames that  */
+	/* are already on the stack (since filters get called      */
+	/* before stack unwinding happens) when the filter code    */
+	/* would call any method.				   */
+	/*---------------------------------------------------------*/	 
 	if ((m->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
-//	if (m->flags & MONO_CFG_HAS_ALLOCA) 
 		frame_reg = s390_r11;
 
 	m->frame_reg = frame_reg;
@@ -1458,7 +1453,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 				case RegTypeStructByAddr :
 					inst->opcode       = OP_S390_LOADARG;
 					inst->inst_basereg = frame_reg;
-//					size		   = sizeof(long);
 					size		   = abs(cinfo->args[iParm].vtsize);
 					offset 		   = S390_ALIGN(offset, size);
 					inst->inst_offset  = offset; 
@@ -1487,7 +1481,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 							      : 0);
 					inst->inst_offset  = cinfo->args[iParm].offset + 
 							     size;
-//					inst->unused       = stackOffset;
 					inst->unused       = 0;
 					size		   = sizeof(long);
 				} 
@@ -1503,8 +1496,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (inst->opcode == OP_REGVAR)
 			continue;
 
-		/* inst->unused indicates native sized value types, this is used by the
-		* pinvoke wrappers when they call functions returning structure */
+		/*--------------------------------------------------*/
+		/* inst->unused indicates native sized value types, */
+		/* this is used by the pinvoke wrappers when they   */
+		/* call functions returning structure 		    */
+		/*--------------------------------------------------*/
 		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else
@@ -1517,12 +1513,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 		offset 		  += size;
 		//DEBUG (g_print("allocating local %d to %d\n", iVar, inst->inst_offset));
 	}
-
-//	if (sig->hasthis) 
-//		curinst = sArg = 1;
-//	else 
-//		curinst = sArg = 0;
-//
 
 	/*------------------------------------------------------*/
 	/* Allow space for the trace method stack area if needed*/
@@ -1562,7 +1552,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 /*------------------------------------------------------------------*/
 
 MonoCallInst*
-mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
+mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, 
+		       MonoCallInst *call, int is_virtual) {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
 	int i, n, lParamArea;
@@ -1580,10 +1571,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	lParamArea        = cinfo->stack_usage - S390_MINIMAL_STACK_SIZE;
 	cfg->param_area   = MAX (cfg->param_area, lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
-	/*----------------------------------------------------------*/ 
-	/* should set more info in call, such as the stack space    */
-	/* used by the args that needs to be added back to esp      */
-	/*----------------------------------------------------------*/ 
 
 	if (cinfo->struct_ret)
 		call->used_iregs |= 1 << cinfo->struct_ret;
@@ -1645,16 +1632,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg->inst_imm = ainfo->offset;
 				call->used_fregs |= 1 << ainfo->reg;
 			} else if (ainfo->regtype == RegTypeFP) {
-//				arg->opcode = OP_OUTARG_R8;
-//				arg->unused = ainfo->reg;
-//				call->used_fregs |= 1 << ainfo->reg;
-//				if (ainfo->size == 4) {
-//					/* we reduce the precision */
-//					MonoInst *conv;
-//					MONO_INST_NEW (cfg, conv, OP_FCONV_TO_R4);
-//					conv->inst_left = arg->inst_left;
-//					arg->inst_left = conv;
-//				}
 				arg->unused = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
 				if (ainfo->size == 4) {
@@ -3110,7 +3087,7 @@ guint8 cond;
 			if (s390_is_uimm12(ins->inst_offset)) {
 				s390_sth (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
-				s390_basr (code, s390_r14, 0);
+				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_offset);
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
@@ -4026,8 +4003,6 @@ guint8 cond;
 				s390_l    (code, s390_r14, s390_r13, 
 					   ins->inst_left->inst_basereg, 0);
 			}
-//			s390_l   (code, STK_BASE, 0, STK_BASE, 0);
-//			s390_lm  (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 			s390_br  (code, s390_r14);
 		}
 			break;
@@ -4043,7 +4018,6 @@ guint8 cond;
 				s390_l    (code, s390_r14, s390_r13, 
 					   ins->inst_left->inst_basereg, 0);
 			}
-//			s390_l   (code, s390_r14, 0, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 			s390_br  (code, s390_r14);
 		}
 			break;
@@ -4173,7 +4147,6 @@ guint8 cond;
 				s390_word (code, ins->inst_p0);
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
 				s390_ldeb (code, ins->dreg, 0, s390_r13, 0);
-//				s390_ldebr(code, ins->dreg, ins->dreg);
 			}
 		}
 			break;
@@ -4225,7 +4198,6 @@ guint8 cond;
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
 				s390_ldeb (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
-//			s390_ldebr (code, ins->dreg, ins->dreg);
 		}
 			break;
 		case CEE_CONV_R_UN: {
@@ -4757,19 +4729,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	alloc_size = cfg->stack_offset;
-//	if (tracing)
-//		alloc_size += S390_TRACE_STACK_SIZE;
-//	pos = 0;
-	/* reserve room to save return value */
-//	if (tracing)
-//		pos += 8;
-
-//	alloc_size += pos;
-
-//	if (method->save_lmf) 
-//		alloc_size += sizeof(MonoLMF);
-
-//	alloc_size = S390_ALIGN(alloc_size, S390_STACK_ALIGNMENT);
 
 	cfg->stack_usage = alloc_size;
 	s390_lr   (code, s390_r11, STK_BASE);
@@ -4785,7 +4744,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	s390_st   (code, s390_r11, 0, STK_BASE, 0);
 
-//	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
 	if (cfg->frame_reg != STK_BASE)
 		s390_lr (code, s390_r11, STK_BASE);
 
@@ -4831,7 +4789,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (inst->dreg != ainfo->reg) {
 					if (ainfo->size == 4) {
 						s390_ledbr (code, inst->dreg, ainfo->reg);
-//						s390_ler   (code, inst->dreg, ainfo->reg);
 					} else {
 						s390_ldr   (code, inst->dreg, ainfo->reg);
 					}
@@ -4984,7 +4941,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* save the current IP						 */
 		/*---------------------------------------------------------------*/
 		s390_lr    (code, s390_r1, cfg->frame_reg);
-//		s390_ahi   (code, s390_r1, alloc_size);
 		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
 		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
 		s390_la    (code, s390_r1, 0, s390_r1, 0);

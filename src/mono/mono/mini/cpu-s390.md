@@ -312,7 +312,7 @@ leave:
 load:
 load_membase: dest:i src1:b len:18
 loadi1_membase: dest:i src1:b len:40
-loadi2_membase: dest:i src1:b len:22
+loadi2_membase: dest:i src1:b len:24
 loadi4_membase: dest:i src1:b len:18
 loadi8_membase: dest:i src1:b
 loadr4_membase: dest:f src1:b len:20
