@@ -352,6 +352,9 @@ typedef struct {
 	gint32 lcid;
 } MonoSortKey;
 
+/* used to free a dynamic method */
+typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
+
 /* remoting and async support */
 
 MonoAsyncResult *
@@ -382,6 +385,9 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 
 void
 mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
+
+void
+mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
 
 /* runtime initialization functions */
 typedef void (*MonoExceptionFunc) (MonoException *ex);

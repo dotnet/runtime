@@ -744,6 +744,14 @@ remove_assembly (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
+dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoJitDynamicMethodInfo *di = value;
+	mono_code_manager_destroy (di->code_mp);
+	g_free (di);
+}
+
+static void
 delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 {
 	g_slist_free (value);
@@ -771,6 +779,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->proxy_vtable_hash);
 	mono_g_hash_table_destroy (domain->static_data_hash);
 	g_hash_table_destroy (domain->jit_code_hash);
+	if (domain->dynamic_code_hash) {
+		g_hash_table_foreach (domain->dynamic_code_hash, dynamic_method_info_free, NULL);
+		g_hash_table_destroy (domain->dynamic_code_hash);
+	}
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	mono_jit_info_table_free (domain->jit_info_table);
 #ifdef DEBUG_DOMAIN_UNLOAD

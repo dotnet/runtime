@@ -299,7 +299,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		return;
 	}
 
-	mono_runtime_free_method (ji->method);
+	mono_runtime_free_method (mono_object_domain (delegate), ji->method);
 }
 
 gpointer

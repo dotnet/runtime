@@ -56,6 +56,11 @@ struct _MonoJitInfo {
 	MonoJitExceptionInfo *clauses;
 };
 
+typedef struct {
+	MonoJitInfo *ji;
+	MonoCodeManager *code_mp;
+} MonoJitDynamicMethodInfo;
+
 struct _MonoAppContext {
 	MonoObject obj;
 	gint32 domain_id;
@@ -86,6 +91,10 @@ struct _MonoDomain {
 	MonoGHashTable     *proxy_vtable_hash;
 	MonoGHashTable     *static_data_hash;
 	GHashTable         *jit_code_hash;
+	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
+	GHashTable         *dynamic_code_hash;
+	/* maps delegate trampoline addr -> delegate object */
+	MonoGHashTable     *delegate_hash_table;
 	MonoJitInfoTable   *jit_info_table;
 	/* hashtables for Reflection handles */
 	MonoGHashTable     *type_hash;
