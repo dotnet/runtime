@@ -19,6 +19,7 @@ char *get_token_type          (MonoImage *m, guint32 token);
 char *get_typespec            (MonoImage *m, guint32 blob_idx);
 char *get_method              (MonoImage *m, guint32 token);
 char *get_guid                (MonoImage *m, guint32 guid_index);
+char *get_marshal_info        (MonoImage *m, const char *blob);
 
 GList *dis_get_custom_attrs   (MonoImage *m, guint32 token);
 

@@ -872,6 +872,7 @@ struct {
 	{ "--assembly",    MONO_TABLE_ASSEMBLY,    dump_table_assembly },
 	{ "--assemblyref", MONO_TABLE_ASSEMBLYREF, dump_table_assemblyref },
 	{ "--fields",      MONO_TABLE_FIELD,       dump_table_field },
+	{ "--marshal",     MONO_TABLE_FIELDMARSHAL,	dump_table_field_marshal },
 	{ "--memberref",   MONO_TABLE_MEMBERREF,   dump_table_memberref },
 	{ "--param",       MONO_TABLE_PARAM,       dump_table_param },
 	{ "--typedef",     MONO_TABLE_TYPEDEF,     dump_table_typedef },

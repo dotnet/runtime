@@ -22,3 +22,4 @@ void dump_table_typeref      (MonoImage *m);
 void dump_table_exported     (MonoImage *m);
 void dump_table_nestedclass  (MonoImage *m);
 void dump_table_interfaceimpl (MonoImage *m);
+void dump_table_field_marshal (MonoImage *m);

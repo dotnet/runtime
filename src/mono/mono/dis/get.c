@@ -16,6 +16,7 @@
 #include "util.h"
 #include "get.h"
 #include <mono/metadata/class.h>
+#include <mono/metadata/marshal.h>
 
 extern gboolean substitute_with_mscorlib_p;
 
@@ -504,7 +505,7 @@ dis_stringify_object (MonoImage *m, MonoType *type)
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
 	char *assemblyref = NULL, *result;
-	MonoClass *c = type->data.klass;
+	MonoClass *c = mono_class_from_mono_type (type);
 	if (!c)
 		return g_strdup ("Unknown");
 	if (m != c->image) {
@@ -1301,5 +1302,87 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 		g_free (method);
 	}
 	return list;
+}
+
+char*
+get_marshal_info (MonoImage *m, const char *blob) {
+	int len, size = 0;
+
+	len = mono_metadata_decode_blob_size (blob, &blob);
+
+	switch (*blob) {
+	case MONO_NATIVE_BOOLEAN:
+		return g_strdup ("bool");
+	case MONO_NATIVE_I1:
+		return g_strdup ("int8");
+	case MONO_NATIVE_U1:
+		return g_strdup ("unsigned int8");
+	case MONO_NATIVE_I2:
+		return g_strdup ("int16");
+	case MONO_NATIVE_U2:
+		return g_strdup ("unsigned int16");
+	case MONO_NATIVE_I4:
+		return g_strdup ("int32");
+	case MONO_NATIVE_U4:
+		return g_strdup ("unsigned int32");
+	case MONO_NATIVE_I8:
+		return g_strdup ("int64");
+	case MONO_NATIVE_U8:
+		return g_strdup ("unsigned int64");
+	case MONO_NATIVE_R4:
+		return g_strdup ("float32");
+	case MONO_NATIVE_R8:
+		return g_strdup ("float64");
+	case MONO_NATIVE_CURRENCY:
+		return g_strdup ("currency");
+	case MONO_NATIVE_BSTR:
+		return g_strdup ("bstr");
+	case MONO_NATIVE_LPSTR:
+		return g_strdup ("lpstr");
+	case MONO_NATIVE_LPWSTR:
+		return g_strdup ("lpwstr");
+	case MONO_NATIVE_LPTSTR:
+		return g_strdup ("lptstr");
+	case MONO_NATIVE_BYVALTSTR:
+		return g_strdup_printf ("fixed sysstring [%d]", size);
+	case MONO_NATIVE_IUNKNOWN:
+		return g_strdup ("iunknown");
+	case MONO_NATIVE_IDISPATCH:
+		return g_strdup ("idispatch");
+	case MONO_NATIVE_STRUCT:
+		return g_strdup ("struct");
+	case MONO_NATIVE_INTERFACE:
+		return g_strdup ("interface");
+	case MONO_NATIVE_SAFEARRAY:
+		return g_strdup ("safearray");
+	case MONO_NATIVE_BYVALARRAY:
+		return g_strdup_printf ("fixed array [%d]", size);
+	case MONO_NATIVE_INT:
+		return g_strdup ("int");
+	case MONO_NATIVE_UINT:
+		return g_strdup ("unsigned int");
+	case MONO_NATIVE_VBBYREFSTR:
+		return g_strdup ("vbbyrefstr");
+	case MONO_NATIVE_ANSIBSTR:
+		return g_strdup ("ansi bstr");
+	case MONO_NATIVE_TBSTR:
+		return g_strdup ("tbstr");
+	case MONO_NATIVE_VARIANTBOOL:
+		return g_strdup ("variant bool");
+	case MONO_NATIVE_FUNC:
+		return g_strdup ("method");
+	case MONO_NATIVE_ASANY:
+		return g_strdup ("as any");
+	case MONO_NATIVE_ARRAY:
+		return g_strdup ("[]");
+	case MONO_NATIVE_LPSTRUCT:
+		return g_strdup ("lpstruct");
+	case MONO_NATIVE_CUSTOM:
+		return g_strdup ("custom");
+	case MONO_NATIVE_ERROR:
+		return g_strdup ("error");
+	default:
+		return g_strdup ("unknown");
+	}
 }
 
