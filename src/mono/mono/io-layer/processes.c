@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -947,9 +948,7 @@ TerminateProcess (gpointer process, gint32 exitCode)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
-	pid_t pid;
 	gint signo;
-	gboolean ret;
 	gint err;
 
 	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
