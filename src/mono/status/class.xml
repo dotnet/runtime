@@ -1905,16 +1905,6 @@
         </maintainers>
     </class>
 
-    <class name="System.Security.Cryptography.DeriveBytes">
-        <last-activity>Aug-1-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
-        <maintainers>
-            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
-        </maintainers>
-    </class>
-
     <class name="System.Security.Cryptography.PasswordDeriveBytes">
         <last-activity>Aug-1-2001</last-activity>
         <implementation>no</implementation>
@@ -1936,16 +1926,6 @@
     </class>
 
     <class name="System.Security.Cryptography.RijndaelManaged">
-        <last-activity>Aug-1-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
-        <maintainers>
-            <maintainer>Matthew.S.Ford@rose-hulman.edu</maintainer>
-        </maintainers>
-    </class>
-
-    <class name="System.Security.Cryptography.SymmetricalAlgoritm">
         <last-activity>Aug-1-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
@@ -3224,19 +3204,10 @@
         </maintainers>
     </class>
 
-    <class name="System.Security.Cryptography.SymmetricAlgorithm">
-        <last-activity>Oct-5-2001</last-activity>
-        <implementation>yes</implementation>
-        <test-suite>no</test-suite>
-        <completion>95</completion>
-        <maintainers>
-            <maintainer>tome@sbox.tugraz.at</maintainer>
-        </maintainers>
-    </class>
     <class name="System.Security.Cryptography.AsymmetricAlgorithm">
-        <last-activity>Oct-6-2001</last-activity>
+        <last-activity>Oct-11-2001</last-activity>
         <implementation>yes</implementation>
-        <test-suite>no</test-suite>
+        <test-suite>yes</test-suite>
         <completion>95</completion>
         <maintainers>
             <maintainer>tome@sbox.tugraz.at</maintainer>
@@ -3278,11 +3249,11 @@
             <maintainer>tome@sbox.tugraz.at</maintainer>
         </maintainers>
     </class>
-    <class name="System.Security.Cryptography.SignatureDescription">
-        <last-activity>Oct-6-2001</last-activity>
+    <class name="System.Security.Cryptography.CryptoAPITransform">
+        <last-activity>Oct-11-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>80</completion>
+        <completion>20</completion>
         <maintainers>
             <maintainer>tome@sbox.tugraz.at</maintainer>
         </maintainers>
@@ -3306,7 +3277,96 @@
             <maintainer>tome@sbox.tugraz.at</maintainer>
         </maintainers>
     </class>
-
+    <class name="System.Security.Cryptography.CryptoStream">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.CspParameters">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.CspProviderFlags">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.DeriveBytes">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.DSA">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.DSAParameters">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.DSASignatureDeformatter">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>30</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.DSASignatureFormatter">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>30</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.SignatureDescription">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.SymmetricAlgorithm">
+        <last-activity>Oct-11-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
 	
     
 </classes>
