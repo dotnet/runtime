@@ -102,6 +102,17 @@
   </tr>
 </table>
 
+@item Apr 11th, 2003: First Mono Book is out;  Team pages.
+
+	The first book to cover Mono is out.  This book is currently
+	only avaiable in German, you can find it <a
+	href="http://www.amazon.de/exec/obidos/ASIN/3827264928/qid=1050051051/sr=2-1/ref=sr_2_3_1/028-2755135-1623712">here</a>
+
+	We now have a page for the <a href="team.html">Mono Team</a>
+	where we include a list of some of the people who have made
+	Mono possible.  If you have CVS access, please update the page
+	to include your information.
+
 @item Apr 5th, 2003: New compilation engine.
 
 	The new Mono compilation engine has been placed on CVS, the
