@@ -4053,7 +4053,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i1 = args [1];
 		}
 #endif
-	} else if(cmethod->klass->image == mono_defaults.corlib &&
+	}/* else if(cmethod->klass->image == mono_defaults.corlib &&
 			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
 			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
 
@@ -4086,7 +4086,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
 		}
-	}
+	}*/
 
 	return ins;
 }
