@@ -7829,6 +7829,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoClass *klass;
 	MonoReflectionType* res;
+	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -7839,7 +7840,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	/*
 	 * Fields to set in klass:
 	 * the various flags: delegate/unicode/contextbound etc.
-	 * nested_classes
 	 */
 	klass->flags = tb->attrs;
 
@@ -7850,6 +7850,13 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	/* enums are done right away */
 	if (!klass->enumtype)
 		ensure_runtime_vtable (klass);
+
+	if (tb->subtypes) {
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
+			MonoReflectionTypeBuilder *subtb = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
+			klass->nested_classes = g_list_prepend (klass->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
+		}
+	}
 
 	/* fields and object layout */
 	if (klass->parent) {
