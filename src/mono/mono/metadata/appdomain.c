@@ -1284,7 +1284,7 @@ mono_domain_unload (MonoDomain *domain)
 #if 0
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
-#ifdef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) && defined (HAVE_GC_BOEHM)
 	thread_handle = GC_CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
 #else
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);

@@ -335,7 +335,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
-#ifdef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) && defined(HAVE_GC_BOEHM)
 	thread_handle = GC_CreateThread(NULL, default_stacksize, start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 #else
