@@ -8480,6 +8480,10 @@ ensure_runtime_vtable (MonoClass *klass)
 		for (i = 0; i < klass->method.count; ++i)
 			klass->methods [i]->slot = i;
 
+	if (!((MonoDynamicImage*)klass->image)->run)
+		/* No need to create a generic vtable */
+		return;
+
 	/* Overrides */
 	onum = 0;
 	if (tb->methods) {
@@ -8681,10 +8685,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	klass->flags = tb->attrs;
 	klass->has_cctor = 1;
 	klass->has_finalize = 1;
-
-	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->run)
-		/* No need to fully construct the type */
-		return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 
 	/* enums are done right away */
 	if (!klass->enumtype)
