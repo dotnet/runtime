@@ -747,6 +747,9 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	for (ptr = image->references; ptr && *ptr; ptr++)
 		mono_debug_add_assembly (*ptr, NULL);
 
+	if (image->assembly->dynamic)
+		return info;
+
 	switch (info->format) {
 	case MONO_DEBUG_FORMAT_STABS:
 	case MONO_DEBUG_FORMAT_DWARF2:
