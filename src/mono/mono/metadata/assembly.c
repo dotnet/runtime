@@ -570,8 +570,6 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	MonoAssembly *result;
 	char *fullpath, *filename;
 
-	check_env ();
-
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
 	if (result)
 		return result;
