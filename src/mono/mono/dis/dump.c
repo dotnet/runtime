@@ -102,7 +102,7 @@ dump_table_typespec (MonoImage *m)
 	fprintf (output, "Typespec Table\n");
 	
 	for (i = 1; i <= t->rows; i++){		
-		char *typespec = get_typespec (m, i, NULL);
+		char *typespec = get_typespec (m, i, TRUE, NULL);
 
 		fprintf (output, "%d: %s\n", i, typespec);
 		g_free (typespec);
@@ -257,7 +257,7 @@ dump_table_memberref (MonoImage *m)
 			break;
 		case 4:
 			ks = "TypeSpec";
-			xx = get_typespec (m, idx, NULL);
+			xx = get_typespec (m, idx, FALSE, NULL);
 			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
 			g_free (xx);
 			break;
@@ -1063,7 +1063,8 @@ dump_table_genericpar (MonoImage *m)
                 char *sig;
 		mono_metadata_decode_row (t, i - 1, cols, MONO_GENERICPARAM_SIZE);
 
-                sig = get_type_or_methdef (m, cols [MONO_GENERICPARAM_OWNER]);
+                // sig = get_type_or_methdef (m, cols [MONO_GENERICPARAM_OWNER]);
+		sig = g_strdup_printf ("%x", cols [MONO_GENERICPARAM_OWNER]);
 		fprintf (output, "%d: %d, flags=%d, owner=%s %s\n", i,
 			 cols [MONO_GENERICPARAM_NUMBER],
 			 cols [MONO_GENERICPARAM_FLAGS], sig,
@@ -1112,7 +1113,8 @@ dump_table_parconstraint (MonoImage *m)
                 char *sig;
 		mono_metadata_decode_row (t, i - 1, cols, MONO_GENPARCONSTRAINT_SIZE);
 
-                sig = get_typedef_or_ref (m, cols [MONO_GENPARCONSTRAINT_CONSTRAINT], NULL);
+                // sig = get_typedef_or_ref (m, cols [MONO_GENPARCONSTRAINT_CONSTRAINT], NULL);
+		sig = g_strdup_printf ("%x", cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
 		fprintf (output, "%d: gen-par=%d, Constraint=%s\n", i,
 			 cols [MONO_GENPARCONSTRAINT_GENERICPAR], sig);
                 g_free (sig);

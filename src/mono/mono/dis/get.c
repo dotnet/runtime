@@ -169,7 +169,7 @@ get_array_shape (MonoImage *m, const char *ptr, char **result)
  * Returns the stringified representation of a TypeSpec signature (22.2.17)
  */
 char *
-get_typespec (MonoImage *m, guint32 idx, MonoGenericContext *context)
+get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContext *context)
 {
 	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
@@ -234,15 +234,8 @@ get_typespec (MonoImage *m, guint32 idx, MonoGenericContext *context)
 		g_free (s);
 		break;
 
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		ptr = get_type (m, ptr-1, &s, context);
-		g_string_append (res, s);
-		g_free (s);
-		break;
-		
 	default:
-		s = dis_stringify_type (m, type, FALSE);
+		s = dis_stringify_type (m, type, is_def);
 		g_string_append (res, s);
 		g_free (s);
 		break;
@@ -351,7 +344,7 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token, MonoGenericContext *context
 		break;
 		
 	case 2: /* TypeSpec */
-		s = get_typespec (m, idx, context);
+		s = get_typespec (m, idx, FALSE, context);
 		break;
 
 	default:
@@ -476,7 +469,7 @@ dis_stringify_token (MonoImage *m, guint32 token)
 	switch (token >> 24) {
 	case MONO_TABLE_TYPEDEF: return get_typedef (m, idx);
 	case MONO_TABLE_TYPEREF: return get_typeref (m, idx);
-	case MONO_TABLE_TYPESPEC: return get_typespec (m, idx, NULL);
+	case MONO_TABLE_TYPESPEC: return get_typespec (m, idx, FALSE, NULL);
 	default:
 		 break;
 	}
@@ -1194,7 +1187,8 @@ get_escaped_name (const char *name)
 	}
 
 	for (s = name; *s; s++) {
-		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' || *s == '?' || *s == '.' || *s == 0)
+		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' ||
+		    *s == '?' || *s == '.' || *s == 0 || *s == '!')
 			continue;
 
 		return g_strdup_printf ("'%s'", name);
@@ -1477,7 +1471,7 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContext *conte
 		return g_strdup ("TODO:MethodDef");
 		
 	case 4: /* TypeSpec */
-		return get_typespec (m, idx, context);
+		return get_typespec (m, idx, FALSE, context);
 	}
 	g_assert_not_reached ();
 	return NULL;
@@ -1859,7 +1853,7 @@ get_token (MonoImage *m, guint32 token, MonoGenericContext *context)
 		g_free (temp);
 		return result;
 	case MONO_TOKEN_TYPE_SPEC:
-		temp = get_typespec (m, idx, context);
+		temp = get_typespec (m, idx, TRUE, context);
 		result = get_escaped_name (temp);
 		g_free (temp);
 		return result;
@@ -1917,7 +1911,7 @@ get_token_type (MonoImage *m, guint32 token, MonoGenericContext *context)
 		break;
 		
 	case MONO_TOKEN_TYPE_SPEC:
-		s = get_typespec (m, idx, context);
+		s = get_typespec (m, idx, FALSE, context);
 		break;
 
 	default:

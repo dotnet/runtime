@@ -23,7 +23,7 @@ char *get_methodspec          (MonoImage *m, int idx, guint32 token, const char 
 char *get_constant            (MonoImage *m, MonoTypeEnum t, guint32 blob_index);
 char *get_token               (MonoImage *m, guint32 token, MonoGenericContext *context);
 char *get_token_type          (MonoImage *m, guint32 token, MonoGenericContext *context);
-char *get_typespec            (MonoImage *m, guint32 blob_idx, MonoGenericContext *context);
+char *get_typespec            (MonoImage *m, guint32 blob_idx, gboolean is_def, MonoGenericContext *context);
 char *get_methoddef           (MonoImage *m, guint32 idx);
 char *get_method              (MonoImage *m, guint32 token, MonoGenericContext *context);
 char *get_method_type_param   (MonoImage *m, guint32 blob_signature, MonoGenericContext *context);
