@@ -2,6 +2,8 @@
 
 	* configure.in: missed in my last change
 
+	* samples/embed/testi.c: interpreter embedding example
+
 Mon Dec 22 18:27:14 CET 2003 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in, acconfig.h: use mach semaphores on darwin.
