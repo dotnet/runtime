@@ -13,6 +13,7 @@
 #
 # register may have the following values:
 #	i  integer register
+#	a  r3 register (output from calls)
 #	b  base register (used in address references)
 #	f  floating point register
 #
@@ -309,8 +310,8 @@ lcall_membase: dest:l src1:b len:12 clob:c
 vcall: len:8 clob:c
 vcall_reg: src1:i len:8 clob:c
 vcall_membase: src1:b len:12 clob:c
-call_reg: dest:i src1:i len:8 clob:c
-call_membase: dest:i src1:b len:12 clob:c
+call_reg: dest:a src1:i len:8 clob:c
+call_membase: dest:a src1:b len:12 clob:c
 trap:
 iconst: dest:i len:8
 i8const:

@@ -5159,6 +5159,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->cil_code = ip;
 
+				cfg->flags |= MONO_CFG_HAS_ALLOCA;
 				if (header->init_locals)
 					ins->flags |= MONO_INST_INIT;
 
@@ -6844,6 +6845,8 @@ mono_codegen (MonoCompile *cfg)
 
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info);
 
+	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
+
 	mono_debug_close_method (cfg);
 }
 
@@ -7648,11 +7651,17 @@ mini_init (const char *filename)
 	mono_runtime_install_handlers ();
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
+#define JIT_TRAMPOLINES_WORK
+#ifdef JIT_TRAMPOLINES_WORK
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (mono_arch_create_jit_trampoline);
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
+#endif
+#define JIT_INVOKE_WORKS
+#ifdef JIT_INVOKE_WORKS
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 	mono_install_handler (mono_arch_get_throw_exception ());
+#endif
 	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_get_config_dir ();
 
@@ -7669,6 +7678,8 @@ mini_init (const char *filename)
 
 	create_helper_signature ();
 
+#define JIT_CALLS_WORK
+#ifdef JIT_CALLS_WORK
 	/* Needs to be called here since register_jit_icall depends on it */
 	mono_marshal_init ();
 
@@ -7750,9 +7761,13 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
+#endif
 
+#define JIT_RUNTIME_WORKS
+#ifdef JIT_RUNTIME_WORKS
 	mono_runtime_install_cleanup ((MonoDomainFunc)mini_cleanup);
 	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
+#endif
 
 	//mono_thread_attach (domain);
 	return domain;

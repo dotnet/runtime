@@ -1750,6 +1750,12 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	this->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (cfg->cbb, this);
 
+	/* arch-specific: setup a mono_arch_call for it */
+#if defined(__ppc__) || defined(__powerpc__)
+	this->opcode = OP_SETREG;
+	this->dreg = ppc_r3;
+#endif
+
 	if (novirtop == OP_VCALL) {
 		/* FIXME: this is actually arch-specific... */
 		MONO_INST_NEW (cfg, vtarg, OP_OUTARG);
