@@ -242,7 +242,7 @@ get_typespec (MonoImage *m, guint32 idx, MonoGenericContext *context)
 		break;
 		
 	default:
-		s = dis_stringify_type (m, type);
+		s = dis_stringify_type (m, type, FALSE);
 		g_string_append (res, s);
 		g_free (s);
 		break;
@@ -484,13 +484,13 @@ dis_stringify_token (MonoImage *m, guint32 token)
 }
 
 char*
-dis_stringify_array (MonoImage *m, MonoArrayType *array) 
+dis_stringify_array (MonoImage *m, MonoArrayType *array, gboolean is_def)
 {
 	char *type;
 	GString *s = g_string_new("");
 	int i;
 	
-	type = dis_stringify_type (m, &array->eklass->byval_arg);
+	type = dis_stringify_type (m, &array->eklass->byval_arg, is_def);
 	g_string_append (s, type);
 	g_free (type);
 	g_string_append_c (s, '[');
@@ -538,7 +538,7 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 	const char *out = param->attrs & PARAM_ATTRIBUTE_OUT ? "[out]": "";
 	const char *opt = param->attrs & PARAM_ATTRIBUTE_OPTIONAL ? "[opt]": "";
 	attribs = g_strconcat(out, opt, NULL);
-	t = dis_stringify_type (m, param);
+	t = dis_stringify_type (m, param, TRUE);
 	result = g_strjoin(attribs[0] ? " ":"", attribs, t, NULL);
 	g_free (t);
 	g_free (attribs);
@@ -592,7 +592,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 				first = 0;
 			} else
 				g_string_append (result, ", ");
-			sig = dis_stringify_object_with_class (m, *constr, FALSE);
+			sig = dis_stringify_object_with_class (m, *constr, TRUE, TRUE);
 			g_string_append (result, sig);
 			g_free (sig);
                 }
@@ -639,13 +639,10 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		if (!method) {
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 
-			container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row);
-			if (container) {
-				container->parent = context ? context->container : NULL;
-				container->is_method = 1;
-
+			container = mono_metadata_load_generic_params (
+				m, MONO_TOKEN_METHOD_DEF | methoddef_row, context ? context->container : NULL);
+			if (container)
 				context = (MonoGenericContext *) container;
-			}
 
 			mono_metadata_decode_blob_size (sig, &sig);
 			method = mono_metadata_parse_method_signature_full (m, context, methoddef_row, sig, &sig);
@@ -754,7 +751,7 @@ get_class_name (MonoClass *c)
 }
 
 char *
-dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
+dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix, gboolean is_def)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype " : "class " ;
@@ -787,7 +784,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 		int i;
 
 		for (i = 0; i < gclass->inst->type_argc; i++){
-			char *t = dis_stringify_type (m, gclass->inst->type_argv [i]);
+			char *t = dis_stringify_type (m, gclass->inst->type_argv [i], is_def);
 
 			g_string_append (str, t);
 			if (i+1 != gclass->inst->type_argc)
@@ -810,14 +807,14 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 }
 
 static char *
-dis_stringify_object (MonoImage *m, MonoType *type)
+dis_stringify_object (MonoImage *m, MonoType *type, gboolean is_def)
 {
 	MonoClass *c = mono_class_from_mono_type (type);
-	return dis_stringify_object_with_class (m, c, TRUE);
+	return dis_stringify_object_with_class (m, c, TRUE, is_def);
 }
 
 char*
-dis_stringify_type (MonoImage *m, MonoType *type)
+dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 {
 	const char *pinned = "", *byref = "";
 	char *bare = NULL, *mods = NULL;
@@ -849,7 +846,7 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 		
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		bare = dis_stringify_object (m, type);
+		bare = dis_stringify_object (m, type, is_def);
 		break;
 	case MONO_TYPE_FNPTR: {
 		char *child_type;
@@ -860,7 +857,7 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 	}
 	case MONO_TYPE_PTR: {
 		char *child_type;
-		child_type = dis_stringify_type (m, type->data.type);
+		child_type = dis_stringify_type (m, type->data.type, is_def);
 		
 		bare = g_strdup_printf ("%s*", child_type);
 		g_free (child_type);
@@ -868,33 +865,39 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 	}
 	case MONO_TYPE_SZARRAY: {
 		char *child_type;
-		child_type = dis_stringify_type (m, &type->data.klass->byval_arg);
+		child_type = dis_stringify_type (m, &type->data.klass->byval_arg, is_def);
 		
 		bare = g_strdup_printf ("%s[]", child_type);
 		g_free (child_type);
 		break;
 	}
 	case MONO_TYPE_ARRAY:
-		bare = dis_stringify_array (m, type->data.array);
+		bare = dis_stringify_array (m, type->data.array, is_def);
 		break;
 	case MONO_TYPE_VOID:
 		bare = g_strdup ("void");
 		break;
 	case MONO_TYPE_MVAR:
-		g_assert (type->data.generic_param->name);
-		bare = g_strdup_printf ("!!%s", type->data.generic_param->name);
+		if (is_def) {
+			g_assert (type->data.generic_param->name);
+			bare = g_strdup_printf ("!!%s", type->data.generic_param->name);
+		} else
+			bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_VAR:
-		g_assert (type->data.generic_param->name);
-		bare = g_strdup_printf ("!%s", type->data.generic_param->name);
+		if (is_def) {
+			g_assert (type->data.generic_param->name);
+			bare = g_strdup_printf ("!%s", type->data.generic_param->name);
+		} else
+			bare = g_strdup_printf ("!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_GENERICINST: {
 		GString *str = g_string_new ("");
 		int i;
-		char *generic_type = dis_stringify_type (m, type->data.generic_class->generic_type);
+		char *generic_type = dis_stringify_type (m, type->data.generic_class->generic_type, is_def);
 
 		for (i = 0; i < type->data.generic_class->inst->type_argc; i++){
-			char *t = dis_stringify_type (m, type->data.generic_class->inst->type_argv [i]);
+			char *t = dis_stringify_type (m, type->data.generic_class->inst->type_argv [i], is_def);
 
 			g_string_append (str, t);
 			if (i+1 != type->data.generic_class->inst->type_argc)
@@ -951,7 +954,7 @@ get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *cont
 	case MONO_TYPE_CLASS: {
 		guint32 token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		MonoClass *klass = mono_class_get (m, token);
-		char *temp = dis_stringify_object_with_class (m, klass, TRUE);
+		char *temp = dis_stringify_object_with_class (m, klass, TRUE, FALSE);
 
 		if (show_tokens) {
 			*result = g_strdup_printf ("%s/*%08x*/", temp, token);
@@ -988,7 +991,7 @@ get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *cont
 
 	default:
 		t = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, start, &ptr);
-		*result = dis_stringify_type (m, t);
+		*result = dis_stringify_type (m, t, FALSE);
 		mono_metadata_free_type (t);
 		break;
 	}
@@ -1421,7 +1424,7 @@ get_memberref_context (MonoImage *m, guint32 mrp_token, MonoGenericContext *cont
 	switch (table){
 	case 0: /* TypeDef */
 		return (MonoGenericContext *) mono_metadata_load_generic_params (
-			m, MONO_TOKEN_TYPE_DEF | idx);
+			m, MONO_TOKEN_TYPE_DEF | idx, NULL);
 		
 	case 1: /* TypeRef */
 		return NULL;
@@ -1488,7 +1491,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 		if (mh->signature->is_inflated)
 			context = ((MonoMethodInflated *) mh)->context;
 		esname = get_escaped_name (mh->name);
-		sig = dis_stringify_object_with_class (m, mh->klass, TRUE);
+		sig = dis_stringify_object_with_class (m, mh->klass, TRUE, TRUE);
 		if (show_tokens)
 			name = g_strdup_printf ("%s/*%08x*/::%s", sig, token, esname);
 		else
@@ -1568,7 +1571,7 @@ get_methoddef (MonoImage *m, guint32 idx)
 
 	mh = mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
 	if (mh) {
-		sig = dis_stringify_object_with_class (m, mh->klass, TRUE);
+		sig = dis_stringify_object_with_class (m, mh->klass, TRUE, FALSE);
 		name = g_strdup_printf ("%s::%s", sig, mh->name);
 		g_free (sig);
 	} else

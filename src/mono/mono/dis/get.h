@@ -8,7 +8,7 @@ char *get_moduleref           (MonoImage *m, int idx);
 char *get_assemblyref         (MonoImage *m, int idx);
 char *get_typeref             (MonoImage *m, int idx);
 char *get_typedef_or_ref      (MonoImage *m, guint32 dor_token, MonoGenericContext *context);
-char *dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean p);
+char *dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean p, gboolean d);
 char *get_type_or_methdef     (MonoImage *m, guint32 dor_token);
 char *get_field_signature     (MonoImage *m, guint32 blob_signature, MonoGenericContext *context);
 char *get_fieldref_signature  (MonoImage *m, int idx, MonoGenericContext *contxt);
@@ -35,9 +35,9 @@ char *get_method_override     (MonoImage *m, guint32 token, MonoGenericContext *
 
 GList *dis_get_custom_attrs   (MonoImage *m, guint32 token);
 
-char *dis_stringify_type      (MonoImage *m, MonoType *type);
+char *dis_stringify_type      (MonoImage *m, MonoType *type, gboolean is_def);
 char *dis_stringify_token     (MonoImage *m, guint32 token);
-char *dis_stringify_array     (MonoImage *m, MonoArrayType *array);
+char *dis_stringify_array     (MonoImage *m, MonoArrayType *array, gboolean is_def);
 char *dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod);
 char *dis_stringify_param     (MonoImage *m, MonoType *param);
 char *dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,

@@ -104,7 +104,8 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
                                         fprintf (output, "\t%s} { // %d\n", indent, i);
                                 } else {
                                         char * klass = mh->clauses[i].flags ? g_strdup ("") :
-                                        dis_stringify_object_with_class (m, mh->clauses[i].data.catch_class, FALSE);
+						dis_stringify_object_with_class (m, mh->clauses[i].data.catch_class,
+										 FALSE, FALSE);
                                         fprintf (output, "\t%s%s %s { // %d\n", indent,
                                                         clause_names [mh->clauses[i].flags], klass, i);
                                         g_free (klass);

@@ -598,7 +598,7 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 		if (i)
 			fprintf(output, ",\n");
 		/* print also byref and pinned attributes */
-		desc = dis_stringify_type (m, mh->locals[i]);
+		desc = dis_stringify_type (m, mh->locals[i], TRUE);
 		fprintf(output, "\t\t%s\tV_%d", desc, i);
 		g_free(desc);
 	}
@@ -762,13 +762,10 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
 
-		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | (i + 1));
-		if (container) {
-			container->parent = context ? context->container : NULL;
-			container->is_method = 1;
-
+		container = mono_metadata_load_generic_params (
+			m, MONO_TOKEN_METHOD_DEF | (i + 1), context ? context->container : NULL);
+		if (container)
 			method_context = (MonoGenericContext *) container;
-		}
 
 		ms = mono_metadata_parse_method_signature_full (m, method_context, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context, FALSE);
@@ -878,7 +875,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContext *cont
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
 	type = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, ptr, &ptr);
-	blurb = dis_stringify_type (m, type);
+	blurb = dis_stringify_type (m, type, TRUE);
 	if (prop_flags & 0x0200)
 		g_string_append (res, "specialname ");
 	if (prop_flags & 0x0400)
@@ -1076,7 +1073,7 @@ dis_type (MonoImage *m, int n)
 	if (*nspace)
 		fprintf (output, ".namespace %s\n{\n", nspace);
 
-	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1));
+	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
 
 	esname = get_escaped_name (name);
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
