@@ -2060,15 +2060,12 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	MonoDomain *domain;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
-	int bloblen;
 	
 	/* Encode the length */
+	/* Same code as in mono_image_insert_string () */
 	p = ins;
-	mono_metadata_encode_value (2 * str->length, p, &p);
-	bloblen = p - ins;
-	p = ins;
-	mono_metadata_encode_value (bloblen + 2 * str->length, p, &p);
-	bloblen = (p - ins) + 2 * str->length;
+	mono_metadata_encode_value (1 | (2 * str->length), p, &p);
+
 	/*
 	 * ins is stored in the hash table as a key and needs to have the same
 	 * representation as in the metadata: we swap the character bytes on big
