@@ -100,15 +100,17 @@ if X86
 libmono_la_SOURCES = \
 	$(common_sources) $(x86_sources)
 
-BURGSRC= $(common_BURGSRC) $(srcdir)/inssel-x86.brg
+arch_BURGSRC= $(srcdir)/inssel-x86.brg
 endif
 
 if POWERPC
 libmono_la_SOURCES = \
 	$(common_sources) $(ppc_sources)
 
-BURGSRC= $(common_BURGSRC) $(srcdir)/inssel-ppc.brg
+arch_BURGSRC= $(srcdir)/inssel-ppc.brg
 endif
+
+BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
 libmonoincludedir = $(includedir)/mono/jit
 
