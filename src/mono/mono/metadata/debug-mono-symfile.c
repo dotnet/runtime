@@ -862,33 +862,33 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		*((guint32 *) ptr)++ = 1;
+		*((int *) ptr)++ = 1;
 		break;
 
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		*((guint32 *) ptr)++ = 2;
+		*((int *) ptr)++ = 2;
 		break;
 
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_R4:
-		*((guint32 *) ptr)++ = 4;
+		*((int *) ptr)++ = 4;
 		break;
 
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R8:
-		*((guint32 *) ptr)++ = 8;
+		*((int *) ptr)++ = 8;
 		break;
 
 	case MONO_TYPE_STRING: {
 		MonoString string;
 
-		*((guint32 *) ptr)++ = -5;
+		*((int *) ptr)++ = -8;
+		*((guint32 *) ptr)++ = sizeof (MonoString);
 		*ptr++ = 1;
-		*ptr++ = sizeof (MonoString);
 		*ptr++ = (guint8*)&string.length - (guint8*)&string;
 		*ptr++ = sizeof (string.length);
 		*ptr++ = (guint8*)&string.chars - (guint8*)&string;
@@ -898,9 +898,9 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 	case MONO_TYPE_SZARRAY: {
 		MonoArray array;
 
-		*((guint32 *) ptr)++ = -5 - sizeof (gpointer);
+		*((int *) ptr)++ = -8 - sizeof (gpointer);
+		*((guint32 *) ptr)++ = sizeof (MonoArray);
 		*ptr++ = 2;
-		*ptr++ = sizeof (MonoArray);
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
@@ -912,9 +912,9 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		MonoArray array;
 		MonoArrayBounds bounds;
 
-		*((guint32 *) ptr)++ = -12 - sizeof (gpointer);
+		*((int *) ptr)++ = -15 - sizeof (gpointer);
+		*((guint32 *) ptr)++ = sizeof (MonoArray);
 		*ptr++ = 3;
-		*ptr++ = sizeof (MonoArray);
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
@@ -935,13 +935,15 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 
 		mono_class_init (klass);
 		if (klass->enumtype) {
-			*((guint32 *) ptr)++ = -1 - sizeof (gpointer);
+			*((int *) ptr)++ = -5 - sizeof (gpointer);
+			*((guint32 *) ptr)++ = sizeof (MonoObject);
 			*ptr++ = 4;
 			*((gpointer *) ptr)++ = write_type (symfile, klass->enum_basetype);
 			break;
 		}
 
-		*((guint32 *) ptr)++ = -1;
+		*((int *) ptr)++ = -4;
+		*((guint32 *) ptr)++ = klass->instance_size;
 		*ptr++ = 5;
 		break;
 	}
@@ -949,7 +951,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 	default:
 		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, type->type, type->byref);
 
-		*((guint32 *) ptr)++ = -1;
+		*((int *) ptr)++ = -1;
 		break;
 	}
 
@@ -957,7 +959,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 
 	retval = g_malloc0 (size + 4);
 	memcpy (retval + 4, buffer, size);
-	*((guint32 *) retval) = size;
+	*((int *) retval) = size;
 
 	g_hash_table_insert (type_table, type, retval);
 
