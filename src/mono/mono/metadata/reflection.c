@@ -5257,11 +5257,20 @@ MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_ParameterInfo;
+	static MonoClassField *dbnull_value_field;
+	MonoClass *klass;
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
 	char **names;
 	int i;
+
+	if (!dbnull_value_field) {
+		klass = mono_class_from_name (mono_defaults.corlib, "System", "DBNull");
+		mono_class_init (klass);
+		dbnull_value_field = mono_class_get_field_from_name (klass, "Value");
+		g_assert (dbnull_value_field);
+	}
 
 	if (!System_Reflection_ParameterInfo)
 		System_Reflection_ParameterInfo = mono_class_from_name (
@@ -5284,7 +5293,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 		param = (MonoReflectionParameter *)mono_object_new (domain, 
 															System_Reflection_ParameterInfo);
 		param->ClassImpl = mono_type_get_object (domain, method->signature->params [i]);
-		param->DefaultValueImpl = NULL; /* FIXME */
+		param->DefaultValueImpl = mono_field_get_value_object (domain, dbnull_value_field, NULL); /* FIXME */
 		param->MemberImpl = (MonoObject*)member;
 		param->NameImpl = mono_string_new (domain, names [i]);
 		param->PositionImpl = i;
