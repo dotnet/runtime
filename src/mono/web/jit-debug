@@ -13,6 +13,34 @@
 	Notice that the program will need to be compiled with the -g
 	flag and that running with --debug will slow down the execution.
 
+* Debugging with GDB
+
+	If you use GDB to debug your mono process, you can use the function
+	print_method_from_ip(void *address) to obtain the name of a method
+	given an address.
+
+	For example:
+
+	<pre>
+(gdb) where
+#0  ves_icall_System_String_GetHashCode (me=0x80795d0) at string-icalls.c:861
+#1  0x0817f490 in ?? ()
+#2  0x0817f42a in ?? ()
+#3  0x0817f266 in ?? ()
+#4  0x0817f1a5 in ?? ()
+</pre>
+
+	You can now use:
+
+<pre>
+(gdb) p print_method_from_ip (0x0817f490)
+IP 0x817f490 at offset 0x28 of method (wrapper managed-to-native) System.String:GetHashCode () (0x817f468 0x817f4a4)
+$1 = void
+(gdb) p print_method_from_ip (0x0817f42a)
+IP 0x817f42a at offset 0x52 of method System.Collections.Hashtable:GetHash (object) (0x817f3d8 0x817f43b)
+$2 = void
+</pre>
+
 * Mono Debugger 
 
 	The Mono debugger is written in C# and can debug both managed
