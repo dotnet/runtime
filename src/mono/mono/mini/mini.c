@@ -92,11 +92,14 @@ static MonoMethodSignature *helper_sig_compile = NULL;
 static MonoMethodSignature *helper_sig_compile_virt = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr_ptr = NULL;
+static MonoMethodSignature *helper_sig_obj_obj_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_void = NULL;
 static MonoMethodSignature *helper_sig_ptr_void = NULL;
+static MonoMethodSignature *helper_sig_void_void = NULL;
 static MonoMethodSignature *helper_sig_void_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_obj = NULL;
 static MonoMethodSignature *helper_sig_void_obj_ptr_int = NULL;
+static MonoMethodSignature *helper_sig_void_obj_ptr_ptr_obj = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_ptr_ptr = NULL;
@@ -2245,7 +2248,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	int i;
 
 #ifdef MONO_ARCH_HAVE_LMF_OPS
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+	if (((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		 (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) &&
 	    !MONO_TYPE_ISSTRUCT (signature->ret) && (method->klass->parent != mono_defaults.array_class))
 		return TRUE;
 #endif
@@ -2461,6 +2465,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	MonoMethodHeader *cheader;
 	MonoBasicBlock *ebblock, *sbblock;
 	int i, costs, new_locals_offset;
+	MonoMethod *prev_inlined_method;
 
 	if (cfg->verbose_level > 2)
 		g_print ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
@@ -2489,7 +2494,12 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	ebblock->block_num = cfg->num_bblocks++;
 	ebblock->real_offset = real_offset;
 
+	prev_inlined_method = cfg->inlined_method;
+	cfg->inlined_method = cmethod;
+
 	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
+
+	cfg->inlined_method = prev_inlined_method;
 
 	if ((costs >= 0 && costs < 60) || inline_allways) {
 		if (cfg->verbose_level > 2)
@@ -3314,11 +3324,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 !g_list_find (dont_inline, cmethod)) {
 				int costs;
 				MonoBasicBlock *ebblock;
+				gboolean allways = FALSE;
 
-				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 					cmethod = mono_marshal_get_native_wrapper (cmethod);
+					allways = TRUE;
+				}
 
- 				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock, FALSE))) {
+ 				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock, allways))) {
 					ip += 5;
 					real_offset += 5;
 
@@ -5089,158 +5103,30 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (2);
 			switch (ip [1]) {
 
-			case CEE_MONO_FUNC1: {
+			case CEE_MONO_ICALL: {
 				int temp;
-				gpointer func = NULL;
-				CHECK_STACK (1);
-				sp--;
+				gpointer func;
+				MonoJitICallInfo *info;
 
-				CHECK_OPSIZE (3);
-				switch (ip [2]) {
-				case MONO_MARSHAL_CONV_STR_LPWSTR:
-					func = mono_string_to_utf16;
-					break;
-				case MONO_MARSHAL_CONV_LPWSTR_STR:
-					func = mono_string_from_utf16;
-					break;
-				case MONO_MARSHAL_CONV_LPSTR_STR:
-					func = mono_string_new_wrapper;
-					break;
-				case MONO_MARSHAL_CONV_STR_LPTSTR:
-				case MONO_MARSHAL_CONV_STR_LPSTR:
-					func = mono_string_to_utf8;
-					break;
-				case MONO_MARSHAL_CONV_STR_BSTR:
-					func = mono_string_to_bstr;
-					break;
-				case MONO_MARSHAL_CONV_STR_TBSTR:
-				case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-					func = mono_string_to_ansibstr;
-					break;
-				case MONO_MARSHAL_CONV_SB_LPSTR:
-				case MONO_MARSHAL_CONV_SB_LPTSTR:
-					func = mono_string_builder_to_utf8;
-					break;
-				case MONO_MARSHAL_CONV_SB_LPWSTR:
-					func = mono_string_builder_to_utf16;
-					break;
-				case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-					func = mono_array_to_savearray;
-					break;
-				case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
-					func = mono_array_to_lparray;
-					break;
-				case MONO_MARSHAL_CONV_DEL_FTN:
-					func = mono_delegate_to_ftnptr;
-					break;
-				case MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY:
-					func = mono_marshal_string_array;
-					break;
-				case MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY:
-					func = mono_marshal_string_array_to_unicode;
-					break;
-				default:
-					g_warning ("unknown conversion %d\n", ip [2]);
-					g_assert_not_reached ();
+				token = read32 (ip + 2);
+				func = mono_method_get_wrapper_data (method, token);
+				info = mono_find_jit_icall_by_addr (func);
+				g_assert (info);
+
+				CHECK_STACK (info->sig->param_count);
+				sp -= info->sig->param_count;
+
+				temp = mono_emit_jit_icall (cfg, bblock, info->func, sp, ip);
+				if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
+					NEW_TEMPLOAD (cfg, *sp, temp);
+					sp++;
 				}
 
-				temp = mono_emit_jit_icall (cfg, bblock, func, sp, ip);
-				NEW_TEMPLOAD (cfg, *sp, temp);
-				sp++;
-
-				ip += 3;
+				ip += 6;
 				inline_costs += 10 * num_calls++;
+
 				break;
 			}
-
-			case CEE_MONO_FUNC2: {
-				int temp;
-				gpointer func = NULL;
-				CHECK_STACK (2);
-				sp -= 2;
-
-				CHECK_OPSIZE (3);
-				switch (ip [2]) {
-				case MONO_MARSHAL_CONV_ASANY:
-					func = mono_marshal_asany;
-					break;
-				case MONO_MARSHAL_CONV_FTN_DEL:
-					func = mono_ftnptr_to_delegate;
-					break;
-				default:
-					g_warning ("unknown conversion %d\n", ip [2]);
-					g_assert_not_reached ();
-				}
-				temp = mono_emit_jit_icall (cfg, bblock, func, sp, ip);
-				NEW_TEMPLOAD (cfg, *sp, temp);
-				sp++;
-
-				ip += 3;
-				inline_costs += 10 * num_calls++;
-				break;
-			}
-
-			case CEE_MONO_PROC2: {
-				gpointer func = NULL;
-				CHECK_STACK (2);
-				sp -= 2;
-
-				CHECK_OPSIZE (3);
-				switch (ip [2]) {
-				case MONO_MARSHAL_CONV_LPSTR_SB:
-				case MONO_MARSHAL_CONV_LPTSTR_SB:
-					func = mono_string_utf8_to_builder;
-					break;
-				case MONO_MARSHAL_CONV_LPWSTR_SB:
-					func = mono_string_utf16_to_builder;
-					break;
-				case MONO_MARSHAL_FREE_ARRAY:
-					func = mono_marshal_free_array;
-					break;
-				case MONO_MARSHAL_CONV_ASANY:
-					func = mono_marshal_asany;
-					break;
-				default:
-					g_assert_not_reached ();
-				}
-
-				mono_emit_jit_icall (cfg, bblock, func, sp, ip);
-				ip += 3;
-				inline_costs += 10 * num_calls++;
-				break;
-			}
-			case CEE_MONO_PROC3: {
-				gpointer func = NULL;
-				CHECK_STACK (3);
-				sp -= 3;
-
-				CHECK_OPSIZE (3);
-				switch (ip [2]) {
-				case MONO_MARSHAL_CONV_STR_BYVALSTR:
-					func = mono_string_to_byvalstr;
-					break;
-				case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-					func = mono_string_to_byvalwstr;
-					break;
-				case MONO_MARSHAL_FREE_ASANY:
-					func = mono_marshal_free_asany;
-					break;
-				default:
-					g_assert_not_reached ();
-				}
-
-				mono_emit_jit_icall (cfg, bblock, func, sp, ip);
-				ip += 3;
-				inline_costs += 10 * num_calls++;
-				break;
-			}
-			case CEE_MONO_FREE:
-				CHECK_STACK (1);
-				sp -= 1;
-				mono_emit_jit_icall (cfg, bblock, g_free, sp, ip);
-				ip += 2;
-				inline_costs += 10 * num_calls++;
-				break;
 			case CEE_MONO_LDPTR:
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
@@ -5975,81 +5861,11 @@ mono_print_tree_nl (MonoInst *tree)
 	printf ("\n");
 }
 
-static MonoType*
-type_from_typename (char *typename)
-{
-	MonoClass *klass;
-
-	if (!strcmp (typename, "int"))
-		klass = mono_defaults.int_class;
-	else if (!strcmp (typename, "ptr"))
-		klass = mono_defaults.int_class;
-	else if (!strcmp (typename, "void"))
-		klass = mono_defaults.void_class;
-	else if (!strcmp (typename, "int32"))
-		klass = mono_defaults.int32_class;
-	else if (!strcmp (typename, "uint32"))
-		klass = mono_defaults.uint32_class;
-	else if (!strcmp (typename, "long"))
-		klass = mono_defaults.int64_class;
-	else if (!strcmp (typename, "ulong"))
-		klass = mono_defaults.uint64_class;
-	else if (!strcmp (typename, "float"))
-		klass = mono_defaults.single_class;
-	else if (!strcmp (typename, "double"))
-		klass = mono_defaults.double_class;
-	else if (!strcmp (typename, "object"))
-		klass = mono_defaults.object_class;
-	else {
-		g_error (typename);
-		g_assert_not_reached ();
-	}
-	return &klass->byval_arg;
-}
-
-static MonoMethodSignature*
-make_icall_sig (const char *sigstr)
-{
-	gchar **parts;
-	int i, len;
-	gchar **tmp;
-	MonoMethodSignature *res;
-
-	parts = g_strsplit (sigstr, " ", 256);
-
-	tmp = parts;
-	len = 0;
-	while (*tmp) {
-		len ++;
-		tmp ++;
-	}
-
-	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
-	res->pinvoke = 1;
-
-#ifdef PLATFORM_WIN32
-	/* 
-	 * Under windows, the default pinvoke calling convention is STDCALL but
-	 * we need CDECL.
-	 */
-	res->call_convention = MONO_CALL_C;
-#endif
-
-	res->ret = type_from_typename (parts [0]);
-	for (i = 1; i < len; ++i) {
-		res->params [i - 1] = type_from_typename (parts [i]);
-	}
-
-	g_strfreev (parts);
-
-	return res;
-}
+#define make_icall_sig mono_create_icall_signature
 
 static void
 create_helper_signature (void)
 {
-
-	/* FIXME: set call conv */
 	/* MonoArray * mono_array_new (MonoDomain *domain, MonoClass *klass, gint32 len) */
 	helper_sig_newarr = make_icall_sig ("object ptr ptr int32");
 
@@ -6088,6 +5904,10 @@ create_helper_signature (void)
 
 	helper_sig_obj_ptr_ptr = make_icall_sig ("object ptr ptr");
 
+	helper_sig_obj_obj_ptr_ptr = make_icall_sig ("object object ptr ptr");
+
+	helper_sig_void_void = make_icall_sig ("void");
+
 	/* void amethod (intptr) */
 	helper_sig_void_ptr = make_icall_sig ("void ptr");
 
@@ -6096,6 +5916,8 @@ create_helper_signature (void)
 
 	/* void amethod (MonoObject *obj, void *ptr, int i) */
 	helper_sig_void_obj_ptr_int = make_icall_sig ("void object ptr int");
+
+	helper_sig_void_obj_ptr_ptr_obj = make_icall_sig ("void object ptr ptr object");
 
 	/* intptr amethod (void) */
 	helper_sig_ptr_void = make_icall_sig ("ptr");
@@ -6160,35 +5982,6 @@ create_helper_signature (void)
 	helper_sig_class_init_trampoline = make_icall_sig ("void");
 }
 
-static GHashTable *jit_icall_hash_name = NULL;
-static GHashTable *jit_icall_hash_addr = NULL;
-
-MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name)
-{
-	MonoJitICallInfo *info;
-	g_assert (jit_icall_hash_name);
-
-	//printf ("lookup addr %s %p\n", name, g_hash_table_lookup (jit_icall_hash_name, name));
-	EnterCriticalSection (&trampoline_hash_mutex);
-	info = g_hash_table_lookup (jit_icall_hash_name, name);
-	LeaveCriticalSection (&trampoline_hash_mutex);
-	return info;
-}
-
-MonoJitICallInfo *
-mono_find_jit_icall_by_addr (gconstpointer addr)
-{
-	MonoJitICallInfo *info;
-	g_assert (jit_icall_hash_addr);
-
-	EnterCriticalSection (&trampoline_hash_mutex);
-	info = g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
-	LeaveCriticalSection (&trampoline_hash_mutex);
-
-	return info;
-}
-
 gconstpointer
 mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 {
@@ -6204,55 +5997,14 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	/* Must be domain neutral since there is only one copy */
 	code = mono_jit_compile_method_with_opt (wrapper, default_opt | MONO_OPT_SHARED);
 
-	EnterCriticalSection (&trampoline_hash_mutex);
 	if (!callinfo->wrapper) {
 		callinfo->wrapper = code;
-		g_hash_table_insert (jit_icall_hash_addr, (gpointer)callinfo->wrapper, callinfo);
+		mono_register_jit_icall_wrapper (callinfo, code);
 		mono_debug_add_icall_wrapper (wrapper, callinfo);
 	}
-	LeaveCriticalSection (&trampoline_hash_mutex);
 
 	g_free (name);
 	return callinfo->wrapper;
-}
-
-MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
-{
-	MonoJitICallInfo *info;
-	
-	g_assert (func);
-	g_assert (name);
-
-	EnterCriticalSection (&trampoline_hash_mutex);
-
-	if (!jit_icall_hash_name) {
-		jit_icall_hash_name = g_hash_table_new (g_str_hash, g_str_equal);
-		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
-	}
-
-	if (g_hash_table_lookup (jit_icall_hash_name, name)) {
-		g_warning ("jit icall already defined \"%s\"\n", name);
-		g_assert_not_reached ();
-	}
-
-	info = g_new (MonoJitICallInfo, 1);
-	
-	info->name = name;
-	info->func = func;
-	info->sig = sig;
-
-	if (is_save) {
-		info->wrapper = func;
-	} else {
-		info->wrapper = NULL;
-	}
-
-	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
-	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
-
-	LeaveCriticalSection (&trampoline_hash_mutex);
-	return info;
 }
 
 gpointer
@@ -8412,6 +8164,9 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
 				 helper_sig_void_ptr, TRUE);
 	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);
+	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", helper_sig_void_void, FALSE);
+	mono_register_jit_icall (mono_load_remote_field_new, "mono_load_remote_field_new", helper_sig_obj_obj_ptr_ptr, FALSE);
+	mono_register_jit_icall (mono_store_remote_field_new, "mono_store_remote_field_new", helper_sig_void_obj_ptr_ptr_obj, FALSE);
 
 	/* 
 	 * NOTE, NOTE, NOTE, NOTE:
@@ -8480,28 +8235,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", helper_sig_object_new_specific, FALSE);
 	mono_register_jit_icall (mono_array_new, "mono_array_new", helper_sig_newarr, FALSE);
 	mono_register_jit_icall (mono_array_new_specific, "mono_array_new_specific", helper_sig_newarr_specific, FALSE);
-	mono_register_jit_icall (mono_string_to_utf16, "mono_string_to_utf16", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_string_from_utf16, "mono_string_from_utf16", helper_sig_obj_ptr, FALSE);
-	mono_register_jit_icall (mono_string_new_wrapper, "mono_string_new_wrapper", helper_sig_obj_ptr, FALSE);
-	mono_register_jit_icall (mono_string_to_utf8, "mono_string_to_utf8", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_string_to_bstr, "mono_string_to_bstr", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_string_builder_to_utf8, "mono_string_builder_to_utf8", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_string_builder_to_utf16, "mono_string_builder_to_utf16", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_array_to_savearray, "mono_array_to_savearray", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_array_to_lparray, "mono_array_to_lparray", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", helper_sig_obj_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_marshal_string_array, "mono_marshal_string_array", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_marshal_string_array_to_unicode, "mono_marshal_string_array_to_unicode", helper_sig_ptr_obj, FALSE);
-	mono_register_jit_icall (mono_marshal_asany, "mono_marshal_asany", helper_sig_ptr_obj_int, FALSE);
-	mono_register_jit_icall (mono_marshal_free_asany, "mono_marshal_free_asany", helper_sig_void_obj_ptr_int, FALSE);
-	mono_register_jit_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", helper_sig_void_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", helper_sig_void_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_marshal_free_array, "mono_marshal_free_array", helper_sig_void_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", helper_sig_void_ptr_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", helper_sig_void_ptr_ptr_ptr, FALSE);
-	mono_register_jit_icall (g_free, "g_free", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldftn_nosync, "mono_ldftn_nosync", helper_sig_compile, FALSE);

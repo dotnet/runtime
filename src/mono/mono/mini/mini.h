@@ -496,6 +496,7 @@ typedef struct {
 	MonoSpillInfo   *spill_info_float; /* fp register spills */
 	gint             spill_count;
 	/* unsigned char   *cil_code; */
+	MonoMethod      *inlined_method; /* the method which is currently inlined */
 
 	/* the exception object passed to catch/filter blocks */
 	MonoInst        *exvar;
@@ -656,13 +657,6 @@ typedef enum {
 	MONO_GRAPH_CFG_SSA = 8,
 	MONO_GRAPH_CFG_OPTCODE = 16
 } MonoGraphOptions;
-
-typedef struct {
-	const char *name;
-	gconstpointer func;
-	gconstpointer wrapper;
-	MonoMethodSignature *sig;
-} MonoJitICallInfo;
 
 typedef struct {
 	guint16 size;
