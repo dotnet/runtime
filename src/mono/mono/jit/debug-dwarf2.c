@@ -152,55 +152,55 @@ static const int standard_opcode_sizes [10] = {
 static void
 dwarf2_write_byte (FILE *f, int byte)
 {
-	fprintf (f, "\t.byte\t\t%d\n", byte);
+	fprintf (f, "\t.byte %d\n", byte);
 }
 
 static void
 dwarf2_write_2byte (FILE *f, int word)
 {
-	fprintf (f, "\t.word\t\t%d\n", word);
+	fprintf (f, "\t.word %d\n", word);
 }
 
 static void
 dwarf2_write_pair (FILE *f, int a, int b)
 {
-	fprintf (f, "\t.uleb128\t\t%d, %d\n", a, b);
+	fprintf (f, "\t.uleb128 %d, %d\n", a, b);
 }
 
 static void
 dwarf2_write_long (FILE *f, unsigned long value)
 {
-	fprintf (f, "\t.long\t\t%lu\n", value);
+	fprintf (f, "\t.long %lu\n", value);
 }
 
 static void
 dwarf2_write_address (FILE *f, void *address)
 {
-	fprintf (f, "\t.long\t\t%p\n", address);
+	fprintf (f, "\t.long %p\n", address);
 }
 
 static void
 dwarf2_write_string (FILE *f, const char *string)
 {
-	fprintf (f, "\t.string\t\t\"%s\"\n", string);
+	fprintf (f, "\t.string \"%s\"\n", string);
 }
 
 static void
 dwarf2_write_sleb128 (FILE *f, long value)
 {
-	fprintf (f, "\t.sleb128\t%ld\n", value);
+	fprintf (f, "\t.sleb128 %ld\n", value);
 }
 
 static void
 dwarf2_write_uleb128 (FILE *f, unsigned long value)
 {
-	fprintf (f, "\t.uleb128\t%lu\n", value);
+	fprintf (f, "\t.uleb128 %lu\n", value);
 }
 
 static void
 dwarf2_write_section_start (FILE *f, const char *section)
 {
-	fprintf (f, "\t.section\t.%s\n", section);
+	fprintf (f, "\t.section .%s\n", section);
 }
 
 static void
@@ -212,31 +212,31 @@ dwarf2_write_label (FILE *f, const char *label)
 static void
 dwarf2_write_section_size (FILE *f, const char *start_label, const char *end_label)
 {
-	fprintf (f, "\t.long\t\t.L_%s - .L_%s\n", end_label, start_label);
+	fprintf (f, "\t.long .L_%s - .L_%s\n", end_label, start_label);
 }
 
 static void
 dwarf2_write_ref4 (FILE *f, const char *target_label)
 {
-	fprintf (f, "\t.long\t\t.L_%s\n", target_label);
+	fprintf (f, "\t.long .L_%s\n", target_label);
 }
 
 static void
 dwarf2_write_type_ref (FILE *f, unsigned long type_index)
 {
-	fprintf (f, "\t.long\t\t.L_TYPE_%lu - .L_debug_info_b\n", type_index);
+	fprintf (f, "\t.long .L_TYPE_%lu - .L_debug_info_b\n", type_index);
 }
 
 static void
 dwarf2_write_type_ptr_ref (FILE *f, unsigned long idx)
 {
-	fprintf (f, "\t.long\t\t.L_TYPE_PTR_%lu - .L_debug_info_b\n", idx);
+	fprintf (f, "\t.long .L_TYPE_PTR_%lu - .L_debug_info_b\n", idx);
 }
 
 static void
 dwarf2_write_relative_ref (FILE *f, const gchar *name, unsigned long idx)
 {
-	fprintf (f, "\t.long\t\t.L_%s_%lu - .L_debug_info_b\n", name, idx);
+	fprintf (f, "\t.long .L_%s_%lu - .L_debug_info_b\n", name, idx);
 }
 
 static void
@@ -1129,6 +1129,9 @@ mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 		g_warning ("Can't create dwarf file `%s': %s", debug->filename, g_strerror (errno)); 
 		return;
 	}
+
+	// Produce assembler code which is free of comments and extra whitespaces.
+	fprintf (debug->f, "#NOAPP\n");
 
 	// DWARF 2 Abbreviation table.
 	dwarf2_write_section_start (debug->f, "debug_abbrev");
