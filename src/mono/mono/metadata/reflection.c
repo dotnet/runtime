@@ -97,6 +97,7 @@ const unsigned char table_sizes [64] = {
 
 static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type);
 static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method);
+static guint32 encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo);
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
@@ -1531,7 +1532,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
 			MonoReflectionTypeBuilder *subtype = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
 
-			mono_image_get_type_info (domain, subtype, assembly);
 			values [MONO_NESTED_CLASS_NESTED] = subtype->table_idx;
 			values [MONO_NESTED_CLASS_ENCLOSING] = tb->table_idx;
 			/*g_print ("nesting %s (%d) in %s (%d) (rows %d/%d)\n",
@@ -1540,6 +1540,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 				ntable->next_idx, ntable->rows);*/
 			values += MONO_NESTED_CLASS_SIZE;
 			ntable->next_idx++;
+		}
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
+			MonoReflectionTypeBuilder *subtype = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
+
+			mono_image_get_type_info (domain, subtype, assembly);
 		}
 	}
 	mono_image_add_cattrs (assembly, tb->table_idx, CUSTOM_ATTR_TYPEDEF, tb->cattrs);
@@ -1624,6 +1629,15 @@ compare_field_marshal (const void *a, const void *b)
 	const guint32 *b_values = b;
 
 	return a_values [MONO_FIELD_MARSHAL_PARENT] - b_values [MONO_FIELD_MARSHAL_PARENT];
+}
+
+static int
+compare_nested (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
+
+	return a_values [MONO_NESTED_CLASS_NESTED] - b_values [MONO_NESTED_CLASS_NESTED];
 }
 
 /*
@@ -1782,6 +1796,9 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	table = &assembly->tables [MONO_TABLE_FIELDMARSHAL];
 	if (table->rows)
 		qsort (table->values + MONO_FIELD_MARSHAL_SIZE, table->rows, sizeof (guint32) * MONO_FIELD_MARSHAL_SIZE, compare_field_marshal);
+	table = &assembly->tables [MONO_TABLE_NESTEDCLASS];
+	if (table->rows)
+		qsort (table->values + MONO_NESTED_CLASS_SIZE, table->rows, sizeof (guint32) * MONO_NESTED_CLASS_SIZE, compare_nested);
 
 	/* compress the tables */
 	for (i = 0; i < 64; i++){

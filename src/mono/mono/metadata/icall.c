@@ -1430,7 +1430,7 @@ handle_parent:
 			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
 	res = mono_array_new (domain, System_Reflection_ConstructorInfo, len);
 	i = 0;
-	tmp = l;
+	tmp = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);

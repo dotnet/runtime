@@ -334,6 +334,7 @@ typedef struct {
 	MonoString *name;
 	MonoString *nspace;
 	MonoReflectionType *parent;
+	MonoReflectionType *nesting_type;
 	MonoArray *interfaces;
 	MonoArray *methods;
 	MonoArray *ctors;
