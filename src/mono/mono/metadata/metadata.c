@@ -1144,6 +1144,8 @@ builtin_types[] = {
 	{{NULL}, 0,     MONO_TYPE_R8,      0,     1,     0},
 	{{NULL}, 0,     MONO_TYPE_STRING,  0,     0,     0},
 	{{NULL}, 0,     MONO_TYPE_STRING,  0,     1,     0},
+	{{NULL}, 0,     MONO_TYPE_OBJECT,  0,     0,     0},
+	{{NULL}, 0,     MONO_TYPE_OBJECT,  0,     1,     0},
 	{{NULL}, 0,     MONO_TYPE_TYPEDBYREF,  0,     0,     0},
 	{{NULL}, 0,     MONO_TYPE_I,       0,     0,     0},
 	{{NULL}, 0,     MONO_TYPE_I,       0,     1,     0},
@@ -1301,15 +1303,28 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *generic_conta
 	if (rptr)
 		*rptr = ptr;
 
-	/* No need to use locking since nobody is modifying the hash table */
-	if (mode != MONO_PARSE_PARAM && !type->num_mods && (cached = g_hash_table_lookup (type_cache, type))) {
-		/* No need to free the contents of stype */
-		return cached;
-	} else {
-		if (type == &stype)
-			type = g_memdup (&stype, sizeof (MonoType));
-		return type;
+	
+	/* FIXME: remove the != MONO_PARSE_PARAM condition, this accounts for
+	 * almost 10k (about 2/3rds) of all MonoType's we create.
+	 */
+	if (mode != MONO_PARSE_PARAM && !type->num_mods) {
+		/* no need to free type here, because it is on the stack */
+		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
+			if (type->byref)
+				return &type->data.klass->this_arg;
+			else
+				return &type->data.klass->byval_arg;
+		}
+		/* No need to use locking since nobody is modifying the hash table */
+		if (cached = g_hash_table_lookup (type_cache, type))
+			return cached;
 	}
+	
+	/*printf ("%x%c %s\n", type->attrs, type->pinned ? 'p' : ' ', mono_type_full_name (type));*/
+	
+	if (type == &stype)
+		type = g_memdup (&stype, sizeof (MonoType));
+	return type;
 }
 
 MonoType*
@@ -1714,7 +1729,13 @@ mono_metadata_free_type (MonoType *type)
 {
 	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
 		return;
+	
 	switch (type->type){
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+		if (type == &type->data.klass->byval_arg || type == &type->data.klass->this_arg)
+			return;
+		break;
 	case MONO_TYPE_PTR:
 		mono_metadata_free_type (type->data.type);
 		break;
