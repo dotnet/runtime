@@ -1105,19 +1105,34 @@ verify_method (MonoMethod *m)
 /* Resolves to TRUE if the operands would overflow */
 #define CHECK_MUL_OVERFLOW(a,b) \
 	((gint32)(a) == 0) || ((gint32)(b) == 0) ? 0 : \
-	(((gint32)(a) > 0) && ((gint32)(b) > 0)) || (((gint32)(a) < 0) && ((gint32)(b) < 0)) ? \
-		(gint32)(b) > ((MYGINT32_MAX) / (gint32)(a)) : \
-		(gint32)(b) < ((MYGINT32_MIN) / (gint32)(a))
+	(((gint32)(a) > 0) && ((gint32)(b) == -1)) ? FALSE : \
+	(((gint32)(a) < 0) && ((gint32)(b) == -1)) ? (a == - MYGINT32_MAX) : \
+	(((gint32)(a) > 0) && ((gint32)(b) > 0)) ? (gint32)(a) > ((MYGINT32_MAX) / (gint32)(b)) : \
+	(((gint32)(a) > 0) && ((gint32)(b) < 0)) ? (gint32)(a) > ((MYGINT32_MIN) / (gint32)(b)) : \
+	(((gint32)(a) < 0) && ((gint32)(b) > 0)) ? (gint32)(a) < ((MYGINT32_MIN) / (gint32)(b)) : \
+	(gint32)(a) < ((MYGINT32_MAX) / (gint32)(b))
 
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
 	((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
 	(guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
- 
+
+#define CHECK_MUL_OVERFLOW(a,b) \
+	((gint32)(a) == 0) || ((gint32)(b) == 0) ? 0 : \
+	(((gint32)(a) > 0) && ((gint32)(b) == -1)) ? FALSE : \
+	(((gint32)(a) < 0) && ((gint32)(b) == -1)) ? (a == - MYGINT32_MAX) : \
+	(((gint32)(a) > 0) && ((gint32)(b) > 0)) ? (gint32)(a) > ((MYGINT32_MAX) / (gint32)(b)) : \
+	(((gint32)(a) > 0) && ((gint32)(b) < 0)) ? (gint32)(a) > ((MYGINT32_MIN) / (gint32)(b)) : \
+	(((gint32)(a) < 0) && ((gint32)(b) > 0)) ? (gint32)(a) < ((MYGINT32_MIN) / (gint32)(b)) : \
+	(gint32)(a) < ((MYGINT32_MAX) / (gint32)(b))
+
 #define CHECK_MUL_OVERFLOW64(a,b) \
 	((gint64)(a) == 0) || ((gint64)(b) == 0) ? 0 : \
-	(((gint64)(a) > 0) && ((gint64)(b) > 0)) || (((gint64)(a) < 0) && ((gint64)(b) < 0)) ? \
-		(gint64)(b) > ((MYGINT64_MAX) / (gint64)(a)) : \
-		(gint64)(b) < ((MYGINT64_MIN) / (gint64)(a))
+	(((gint64)(a) > 0) && ((gint64)(b) == -1)) ? FALSE : \
+	(((gint64)(a) < 0) && ((gint64)(b) == -1)) ? (a == - MYGINT64_MAX) : \
+	(((gint64)(a) > 0) && ((gint64)(b) > 0)) ? (gint64)(a) > ((MYGINT64_MAX) / (gint64)(b)) : \
+	(((gint64)(a) > 0) && ((gint64)(b) < 0)) ? (gint64)(a) > ((MYGINT64_MIN) / (gint64)(b)) : \
+	(((gint64)(a) < 0) && ((gint64)(b) > 0)) ? (gint64)(a) < ((MYGINT64_MIN) / (gint64)(b)) : \
+	(gint64)(a) < ((MYGINT64_MAX) / (gint64)(b))
 
 #define CHECK_MUL_OVERFLOW64_UN(a,b) \
 	((guint64)(a) == 0) || ((guint64)(b) == 0) ? 0 : \
@@ -1607,7 +1622,23 @@ ves_exec_method (MonoInvocation *frame)
 			--sp;
 			vt_free (sp);
 			BREAK;
-		CASE (CEE_JMP) ves_abort(); BREAK;
+		CASE (CEE_JMP) {
+			guint32 token;
+
+			frame->ip = ip;
+			
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+
+			child_frame.method = mono_get_method (image, token, NULL);
+			if (!child_frame.method)
+				THROW_EX (mono_get_exception_missing_method (), ip -5);
+
+			ves_abort ();
+
+			BREAK;
+		}
 		CASE (CEE_CALLVIRT) /* Fall through */
 		CASE (CEE_CALLI)    /* Fall through */
 		CASE (CEE_CALL) {
@@ -1636,10 +1667,13 @@ ves_exec_method (MonoInvocation *frame)
 				if (frame->method->wrapper_type != MONO_WRAPPER_NONE) {
 					csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (frame->method, token);
 					child_frame.method = NULL;
-				} else if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
-					child_frame.method = ji->method;
 				} else {
-					g_assert_not_reached ();
+					csignature = mono_metadata_parse_signature (image, token);
+					if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
+						child_frame.method = ji->method;
+					} else {
+						g_assert_not_reached ();
+					}
 				}
 				g_assert (code);
 			} else {
@@ -1656,6 +1690,10 @@ ves_exec_method (MonoInvocation *frame)
 						THROW_EX (mono_get_exception_missing_method (), ip -5);
 				}
 			}
+
+			if (frame->method->wrapper_type == MONO_WRAPPER_NONE)
+				if (child_frame.method && child_frame.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+					child_frame.method = mono_marshal_get_synchronized_wrapper (child_frame.method);
 
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
 			/* decrement by the actual number of args */
@@ -1693,6 +1731,10 @@ ves_exec_method (MonoInvocation *frame)
 			if (!child_frame.method) {
 				g_assert (code);
 				ves_pinvoke_method (&child_frame, csignature, (MonoFunc) code, FALSE);
+				if (child_frame.ex) {
+					frame->ex = child_frame.ex;
+					goto handle_exception;
+				}
 			} else if (csignature->hasthis && sp->type == VAL_OBJ &&
 					((MonoObject *)sp->data.p)->vtable->klass == mono_defaults.transparent_proxy_class) {
 				g_assert (child_frame.method);
@@ -3077,7 +3119,7 @@ array_constructed:
 			case CEE_CONV_OVF_I_UN: /* Fall through */
 #endif
 			case CEE_CONV_OVF_I4_UN:
-				if (value > 2147483647)
+				if (value > MYGUINT32_MAX)
 					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i = value;
 				sp [-1].type = VAL_I32;
@@ -3372,68 +3414,87 @@ array_constructed:
 		CASE (CEE_UNUSED15) 
 		CASE (CEE_UNUSED16) 
 		CASE (CEE_UNUSED17) ves_abort(); BREAK;
+
+#if SIZEOF_VOID_P == 4
+		CASE (CEE_CONV_OVF_I)
+		CASE (CEE_CONV_OVF_U) 
+#endif
 		CASE (CEE_CONV_OVF_I1)
-			if (sp [-1].type == VAL_I32) {
-				if (sp [-1].data.i < 128 || sp [-1].data.i > 127)
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (gint8)sp [-1].data.i;
-			} else if (sp [-1].type == VAL_I64) {
-				if (sp [-1].data.l < 128 || sp [-1].data.l > 127)
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (gint8)sp [-1].data.l;
-			} else {
-				ves_abort();
-			}
-			++ip;
-			BREAK;
-		CASE (CEE_CONV_OVF_U1)
-			if (sp [-1].type == VAL_I32) {
-				if (sp [-1].data.i < 0 || sp [-1].data.i > 255)
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (gint8)sp [-1].data.i;
-			} else if (sp [-1].type == VAL_I64) {
-				if (sp [-1].data.l < 0 || sp [-1].data.l > 255)
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (gint8)sp [-1].data.l;
-			} else {
-				ves_abort();
-			}
-			++ip;
-			BREAK;
 		CASE (CEE_CONV_OVF_I2)
-		CASE (CEE_CONV_OVF_U2)
-			++ip;
-			/* FIXME: handle other cases */
-			if (sp [-1].type == VAL_I32) {
-				/* defined as NOP */
-			} else {
-				ves_abort();
-			}
-			BREAK;
 		CASE (CEE_CONV_OVF_I4)
-			/* FIXME: handle other cases */
-			if (sp [-1].type == VAL_I32) {
-				/* defined as NOP */
-			} else if(sp [-1].type == VAL_I64) {
-				sp [-1].data.i = (gint32)sp [-1].data.l;
-				sp [-1].type = VAL_I32;
-			} else {
+		CASE (CEE_CONV_OVF_U1)
+		CASE (CEE_CONV_OVF_U2)
+		CASE (CEE_CONV_OVF_U4) {
+			gint64 value;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				value = (gint64)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				value = (gint64)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
 				ves_abort();
+			case VAL_I32:
+				value = (gint64)sp [-1].data.i;
+				break;
+			default:
+				value = (gint64)sp [-1].data.nati;
+				break;
+			}
+			switch (*ip) {
+			case CEE_CONV_OVF_I1:
+				if (value < -128 || value > 127)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			case CEE_CONV_OVF_I2:
+				if (value < -32768 || value > 32767)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+#if SIZEOF_VOID_P == 4
+			case CEE_CONV_OVF_I: /* Fall through */
+#endif
+			case CEE_CONV_OVF_I4:
+				if (value < MYGINT32_MIN || value > MYGINT32_MAX)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			case CEE_CONV_OVF_U1:
+				if (value < 0 || value > 255)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			case CEE_CONV_OVF_U2:
+				if (value < 0 || value > 65535)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+#if SIZEOF_VOID_P == 4
+			case CEE_CONV_OVF_U: /* Fall through */
+#endif
+			case CEE_CONV_OVF_U4:
+				if (value < 0 || value > MYGUINT32_MAX)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 			++ip;
 			BREAK;
-		CASE (CEE_CONV_OVF_U4)
-			/* FIXME: handle other cases */
-			if (sp [-1].type == VAL_I32) {
-				/* defined as NOP */
-			} else if(sp [-1].type == VAL_I64) {
-				sp [-1].data.i = (guint32)sp [-1].data.l;
-				sp [-1].type = VAL_I32;
-			} else {
-				ves_abort();
-			}
-			++ip;
-			BREAK;
+		}
+
+#if SIZEOF_VOID_P == 8
+		CASE (CEE_CONV_OVF_I)
+#endif
 		CASE (CEE_CONV_OVF_I8)
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
@@ -3446,6 +3507,10 @@ array_constructed:
 			}
 			++ip;
 			BREAK;
+
+#if SIZEOF_VOID_P == 8
+		CASE (CEE_CONV_OVF_U)
+#endif
 		CASE (CEE_CONV_OVF_U8)
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
@@ -3494,29 +3559,6 @@ array_constructed:
 			++sp;
 			BREAK;
 		}
-		CASE (CEE_CONV_OVF_I)
-			++ip;
-			--sp;
-			/* FIXME: check overflow. */
-			switch (sp->type) {
-			case VAL_I32:
-				sp->data.p = (gpointer)(mono_i) sp->data.i;
-				break;
-			case VAL_I64:
-				sp->data.p = (gpointer)(mono_i) sp->data.l;
-				break;
-			case VAL_NATI:
-				break;
-			case VAL_DOUBLE:
-				sp->data.p = (gpointer)(mono_i) sp->data.f;
-				break;
-			default:
-				ves_abort ();
-			}
-			sp->type = VAL_NATI;
-			++sp;
-			BREAK;
-		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF)
 			--sp;
 			/* FIXME: check overflow */
@@ -3560,7 +3602,6 @@ array_constructed:
 		CASE (CEE_MUL_OVF)
 			++ip;
 			--sp;
-			/* FIXME: check overflow */
 			if (sp->type == VAL_I32) {
 				if (CHECK_MUL_OVERFLOW (sp [-1].data.i, GET_NATI (sp [0])))
 					THROW_EX (mono_get_exception_overflow (), ip);
@@ -3988,6 +4029,15 @@ array_constructed:
 					
 					m = get_virtual_method (domain, m, sp);
 				}
+
+				/* 
+				 * This prevents infinite cycles since the wrapper contains
+				 * an ldftn too.
+				 */
+				if (frame->method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
+					if (m && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+						m = mono_marshal_get_synchronized_wrapper (m);
+
 				sp->type = VAL_NATI;
 				sp->data.p = mono_create_method_pointer (m);
 				sp->data.vt.klass = NULL;
@@ -4348,8 +4398,15 @@ die_on_ex:
 			++sp;
 			goto main_loop;
 		}
-		if (!frame->parent)
+		if (!frame->parent) {
+			/* Pass the exception though the managed barrier if possible */
+			MonoInvocation *parent = TlsGetValue (frame_thread_id);
+			if (parent) {
+				parent->ex = frame->ex;
+				longjmp (*(jmp_buf*)parent->locals, 1);
+			}
 			goto die_on_ex;
+		}
 		DEBUG_LEAVE ();
 		return;
 	}
