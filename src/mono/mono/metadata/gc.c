@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
@@ -254,13 +255,9 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#if HAVE_BOEHM_GC
 	if (forceCollection)
-		GC_gcollect ();
-	return GC_get_heap_size () - GC_get_free_bytes ();
-#else
-	return 0;
-#endif
+		mono_gc_collect (mono_gc_max_generation ());
+	return mono_gc_get_used_size ();
 }
 
 void
@@ -777,26 +774,6 @@ void mono_gc_cleanup (void)
 #endif
 }
 
-void
-mono_gc_disable (void)
-{
-#ifdef HAVE_GC_ENABLE
-	GC_disable ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-void
-mono_gc_enable (void)
-{
-#ifdef HAVE_GC_ENABLE
-	GC_enable ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
 #else
 
 /* no Boehm GC support. */
@@ -806,16 +783,6 @@ void mono_gc_init (void)
 }
 
 void mono_gc_cleanup (void)
-{
-}
-
-void
-mono_gc_disable (void)
-{
-}
-
-void
-mono_gc_enable (void)
 {
 }
 

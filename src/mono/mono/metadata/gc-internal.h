@@ -29,6 +29,10 @@ extern void mono_gc_init (void);
 extern void mono_gc_cleanup (void);
 extern void mono_gc_enable (void);
 extern void mono_gc_disable (void);
+/* only valid after the RECLAIM_START GC event and before RECLAIM_END
+ * Not exported in public headers, but can be linked to (unsupported).
+ */
+extern gboolean mono_object_is_alive (MonoObject* obj);
 extern gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 extern gpointer mono_gc_out_of_memory (size_t size);
 

@@ -42,6 +42,8 @@ libmonoruntime_la_SOURCES = \
 	char-conversions.h \
 	decimal.c	\
 	decimal.h	\
+	boehm-gc.c	\
+	null-gc.c	\
 	gc.c		\
 	gc-internal.h	\
 	marshal.c	\
@@ -126,6 +128,7 @@ libmonoruntimeincludedir = $(includedir)/mono/metadata
 libmonoruntimeinclude_HEADERS = \
 	appdomain.h	\
 	mono-debug.h	\
+	mono-gc.h	\
 	mono-debug-debugger.h	\
 	debug-mono-symfile.h	\
 	threads.h	\

@@ -50,6 +50,9 @@ static MonoProfileCoverageFilterFunc coverage_filter_cb;
 
 static MonoProfileFunc shutdown_callback;
 
+static MonoProfileGCFunc        gc_event;
+static MonoProfileGCResizeFunc  gc_heap_resize;
+
 static CRITICAL_SECTION profiler_coverage_mutex;
 
 /* this is directly accessible to other mono libs. */
@@ -355,6 +358,27 @@ mono_profiler_shutdown (void)
 {
 	if (current_profiler && shutdown_callback)
 		shutdown_callback (current_profiler);
+}
+
+void
+mono_profiler_gc_heap_resize (gint64 new_size)
+{
+	if ((mono_profiler_events & MONO_PROFILE_GC) && gc_heap_resize)
+		gc_heap_resize (current_profiler, new_size);
+}
+
+void
+mono_profiler_gc_event (MonoGCEvent event, int generation)
+{
+	if ((mono_profiler_events & MONO_PROFILE_GC) && gc_event)
+		gc_event (current_profiler, event, generation);
+}
+
+void
+mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
+{
+	gc_event = callback;
+	gc_heap_resize = heap_resize_callback;
 }
 
 static GHashTable *coverage_hash = NULL;

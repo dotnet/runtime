@@ -49,5 +49,8 @@ void mono_profiler_appdomain_loaded (MonoDomain *domain, int result);
 MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries);
 void                     mono_profiler_coverage_free  (MonoMethod *method);
 
+void mono_profiler_gc_event       (MonoGCEvent e, int generation);
+void mono_profiler_gc_heap_resize (gint64 new_size);
+
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
 

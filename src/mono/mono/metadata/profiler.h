@@ -29,6 +29,15 @@ typedef enum {
 	MONO_PROFILE_FAILED
 } MonoProfileResult;
 
+typedef enum {
+	MONO_GC_EVENT_START,
+	MONO_GC_EVENT_MARK_START,
+	MONO_GC_EVENT_MARK_END,
+	MONO_GC_EVENT_RECLAIM_START,
+	MONO_GC_EVENT_RECLAIM_END,
+	MONO_GC_EVENT_END
+} MonoGCEvent;
+
 /* coverage info */
 typedef struct {
 	MonoMethod *method;
@@ -64,6 +73,8 @@ typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *par
 typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, guint32 tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
 typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, guchar *ip, void *context);
+typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event, int generation);
+typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, gint64 new_size);
 
 typedef gboolean (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMethod *method);
 
@@ -94,6 +105,7 @@ void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
 void mono_profiler_install_statistical (MonoProfileStatFunc callback);
 void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
+void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
 
 void mono_profiler_load             (const char *desc);
 
