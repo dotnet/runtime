@@ -249,9 +249,9 @@ ves_real_abort (int line, MonoMethod *mh,
 	} while (0);
 
 static gpointer
-interp_create_remoting_trampoline (MonoMethod *method)
+interp_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
 {
-	return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke (method));
+	return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
 }
 
 static CRITICAL_SECTION runtime_method_lookup_section;
