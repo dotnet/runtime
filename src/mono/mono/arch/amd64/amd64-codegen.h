@@ -546,9 +546,13 @@ typedef union {
 
 #define amd64_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 8)
 
-#define amd64_sse_cvttsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2c, 8)
+#define amd64_sse_cvttsd2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2c, (size))
 
-#define amd64_sse_cvtsi2sd_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, 8)
+#define amd64_sse_cvttsd2si_reg_reg(inst,dreg,reg) amd64_sse_cvttsd2si_reg_reg_size ((inst), (dreg), (reg), 8)
+
+#define amd64_sse_cvtsi2sd_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, (size))
+
+#define amd64_sse_cvtsi2sd_reg_reg(inst,dreg,reg) amd64_sse_cvtsi2sd_reg_reg_size ((inst), (dreg), (reg), 8)
 
 #define amd64_sse_cvtsd2ss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5a)
 
