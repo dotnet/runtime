@@ -2583,15 +2583,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_and (code, ins->sreg1, ins->dreg, ppc_r11);
 			}
 			break;
-		case CEE_DIV:
+		case CEE_DIV: {
+			guint32 *divisor_is_m1;
+                         /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
+                         */
+			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
+			divisor_is_m1 = code;
+			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
+			ppc_lis (code, ppc_r11, 0x8000);
+			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
+			ppc_patch (divisor_is_m1, code);
 			 /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
 			 */
 			ppc_divwod (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			/* FIXME: use OverflowException for 0x80000000/-1 */
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
+		}
 		case CEE_DIV_UN:
 			ppc_divwuod (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
@@ -2609,7 +2619,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
 #endif
-		case CEE_REM:
+		case CEE_REM: {
+			guint32 *divisor_is_m1;
+			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
+			divisor_is_m1 = code;
+			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
+			ppc_lis (code, ppc_r11, 0x8000);
+			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
+			ppc_patch (divisor_is_m1, code);
 			ppc_divwod (code, ppc_r11, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
@@ -2618,6 +2636,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
 			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
 			break;
+		}
 		case CEE_REM_UN:
 			ppc_divwuod (code, ppc_r11, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
@@ -2831,15 +2850,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC: {
+			guint32 * zero_loop_jump, zero_loop_start;
 			/* keep alignment */
 			int alloca_waste = PPC_STACK_PARAM_OFFSET + cfg->param_area + 31;
 			int area_offset = alloca_waste;
 			area_offset &= ~31;
 			ppc_addi (code, ppc_r11, ins->sreg1, alloca_waste + 31);
 			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 0, 27);
+			/* use ctr to store the number of words to 0 if needed */
+			if (ins->flags & MONO_INST_INIT) {
+				/* we zero 4 bytes at a time */
+				ppc_addi (code, ppc_r0, ins->sreg1, 3);
+				ppc_srawi (code, ppc_r0, ppc_r0, 2);
+				ppc_mtctr (code, ppc_r0);
+			}
 			ppc_lwz (code, ppc_r0, 0, ppc_sp);
 			ppc_neg (code, ppc_r11, ppc_r11);
 			ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
+			
+			if (ins->flags & MONO_INST_INIT) {
+				/* adjust the dest reg by -4 so we can use stwu */
+				ppc_addi (code, ins->dreg, ppc_sp, (area_offset - 4));
+				ppc_li (code, ppc_r11, 0);
+				zero_loop_start = code;
+				ppc_stwu (code, ppc_r11, 4, ins->dreg);
+				zero_loop_jump = code;
+				ppc_bc (code, PPC_BR_DEC_CTR_NONZERO, 0, 0);
+				ppc_patch (zero_loop_jump, zero_loop_start);
+			}
 			ppc_addi (code, ins->dreg, ppc_sp, area_offset);
 			break;
 		}
@@ -3082,8 +3120,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Implemented as helper calls */
 			break;
 		case OP_LCONV_TO_OVF_I: {
-			ppc_mr (code, ins->dreg, ins->sreg1);
-			/* FIXME: emit exception if needed */
+			guint32 *negative_branch, *msword_positive_branch, *msword_negative_branch, *ovf_ex_target;
+			// Check if its negative
+			ppc_cmpi (code, 0, 0, ins->sreg1, 0);
+			negative_branch = code;
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 0);
+			// Its positive msword == 0
+			ppc_cmpi (code, 0, 0, ins->sreg2, 0);
+			msword_positive_branch = code;
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+
+			ovf_ex_target = code;
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_ALWAYS, 0, "OverflowException");
+			// Negative
+			ppc_patch (negative_branch, code);
+			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
+			msword_negative_branch = code;
+			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+			ppc_patch (msword_negative_branch, ovf_ex_target);
+			
+			ppc_patch (msword_positive_branch, code);
+			if (ins->dreg != ins->sreg1)
+				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_SQRT:

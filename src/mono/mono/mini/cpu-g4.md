@@ -135,9 +135,9 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
-div: dest:i src1:i src2:i len:16
+div: dest:i src1:i src2:i len:40
 div.un: dest:i src1:i src2:i len:16
-rem: dest:i src1:i src2:i len:24
+rem: dest:i src1:i src2:i len:48
 rem.un: dest:i src1:i src2:i len:24
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
@@ -262,7 +262,7 @@ starg:
 ldloc:
 ldloca:
 stloc:
-localloc: dest:i src1:i len:30
+localloc: dest:i src1:i len:60
 endfilter: len:12
 unaligned.:
 volatile.:
