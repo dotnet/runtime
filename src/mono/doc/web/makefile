@@ -5,8 +5,6 @@ CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=									\
 	deploy/ado-net.html							\
-	deploy/firebird.html							\
-	deploy/ibmdb2.html							\
 	deploy/mysql.html							\
 	deploy/odbc.html							\
 	deploy/oledb.html							\
@@ -37,24 +35,26 @@ OBJECTS=									\
 	deploy/classlib-doc.html						\
 	deploy/contact.html							\
 	deploy/c-sharp.html							\
-	deploy/mbas.html							\
 	deploy/ccvs.html							\
 	deploy/documentation.html						\
 	deploy/download.html							\
 	deploy/crypto.html							\
 	deploy/embedded-api.html						\
 	deploy/faq.html								\
+	deploy/firebird.html							\
 	deploy/gcc-frontend.html						\
 	deploy/gtk-sharp.html							\
 	deploy/hackers.html							\
-	deploy/index.html							\
 	deploy/ideas.html							\
+	deploy/ibmdb2.html							\
+	deploy/index.html							\
 	deploy/java.html							\
 	deploy/jit-debug.html							\
 	deploy/jit-debug-sample.html						\
 	deploy/jit-debug-sample2.html						\
 	deploy/languages.html							\
 	deploy/mailing-lists.html						\
+	deploy/mbas.html							\
 	deploy/mono-beginning.html						\
 	deploy/mono-contribution-howto.html					\
 	deploy/monodoc-xml.html							\
@@ -67,6 +67,7 @@ OBJECTS=									\
 	deploy/resources.html							\
 	deploy/roadmap.html							\
 	deploy/runtime.html							\
+	deploy/screenshots.html							\
 	deploy/status.html							\
 	deploy/testing.html							\
 	deploy/tools.html							\

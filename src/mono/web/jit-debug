@@ -15,9 +15,27 @@
 
 * Mono Debugger 
 
-	A new debugger has been created in C# and using Gtk# for its
-	user interface, this will simplify the debugging of CLI applications.
+	The Mono debugger is written in C# and can debug both managed
+	and unmanaged applications, support for multiple-threaded
+	applications and should be relatively easy to port to new
+	platforms.
 
-	Stay turned for its first public release.
+	Details of the release are available in <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-January/005192.html">post</a>. 
+
+	The debugger contains both Gtk# and command line interfaces.
+	The debugging file format used in Dwarf (its already supported
+	by our class libraries and the Mono C# compiler; To debug C
+	applications, you need a recent GCC, or to pass the -gdwarf-2
+	flag to gcc).
+
+	The debugger is available now, you can get it from <a
+	href="http://primates.ximian.com/~martin/debugger/debugger-0.2.0.tar.gz">here</a>
+
+
+
+
+	
+	
 
 	
