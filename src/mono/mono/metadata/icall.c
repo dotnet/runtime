@@ -3533,13 +3533,10 @@ mono_install_get_config_dir (void)
 static MonoString *
 ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 {
-	static MonoString *mcpath;
+	MonoString *mcpath;
 	gchar *path;
 
 	MONO_ARCH_SAVE_REGS;
-
-	if (mcpath != NULL)
-		return mcpath;
 
 	path = g_build_path (G_DIR_SEPARATOR_S, mono_cfg_dir, "mono", "machine.config", NULL);
 
@@ -3561,13 +3558,10 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 static MonoString *
 ves_icall_System_Web_Util_ICalls_get_machine_install_dir (void)
 {
-	static MonoString *ipath;
+	MonoString *ipath;
 	gchar *path;
 
 	MONO_ARCH_SAVE_REGS;
-
-	if (ipath != NULL)
-		return ipath;
 
 	path = g_path_get_dirname (mono_cfg_dir);
 
