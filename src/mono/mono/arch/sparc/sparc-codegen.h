@@ -391,8 +391,8 @@ typedef struct {
 #define sparc_faddq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 67, r2, dest )
 
 #define sparc_fsubs(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
-#define sparc_fsubd(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
-#define sparc_fsubq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
+#define sparc_fsubd(ins, r1, op, r2, dest) sparc_fop( ins, r1, 70, r2, dest ) 
+#define sparc_fsubq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 71, r2, dest ) 
 
 /* logical */
 #define sparc_and(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|1,(dest))
