@@ -184,6 +184,21 @@ mono_test_marshal_char (short a1)
 	return 1;
 }
 
+void
+mono_test_marshal_char_array (gunichar2 *s)
+{
+	const char m[] = "abcdef";
+	gunichar2* s2;
+	glong len;
+
+	s2 = g_utf8_to_utf16 (m, -1, NULL, &len, NULL);
+	
+	len = (len * 2) + 2;
+	memcpy (s, s2, len);
+
+	g_free (s2);
+}
+
 int
 mono_test_empty_pinvoke (int i)
 {

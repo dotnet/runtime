@@ -78,6 +78,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_char_array")]
+	public static extern int mono_test_marshal_char_array (char[] a1);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_byref")]
 	public static extern int mono_test_marshal_bool_byref (int a, ref bool b, int c);
 
@@ -143,6 +146,17 @@ public class Tests {
 
 	static int test_0_marshal_char () {
 		return mono_test_marshal_char ('a');
+	}
+
+	static int test_0_marshal_char_array () {
+		// char[] is implicitly marshalled as [Out]
+		char[] buf = new char [32];
+		mono_test_marshal_char_array (buf);
+		string s = new string (buf);
+		if (s.StartsWith ("abcdef"))
+			return 0;
+		else
+			return 1;
 	}
 
 	static int test_1225_marshal_array () {
