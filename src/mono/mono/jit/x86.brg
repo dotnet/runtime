@@ -1771,6 +1771,7 @@ reg: CALL_I4 (this, ADDR_G) {
 	if (tree->left->op != MB_TERM_NOP) {
 		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
 	}
 
 	if (tree->data.ci.vtype_num) {
@@ -1901,6 +1902,7 @@ stmt: CALL_VOID (this, ADDR_G) {
 	if (tree->left->op != MB_TERM_NOP) {
 		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
 	}
 
 	if (tree->data.ci.vtype_num) {
@@ -2641,6 +2643,7 @@ lreg: CALL_I8 (this, ADDR_G) {
 	if (tree->left->op != MB_TERM_NOP) {
 		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
 	}
 
 	if (tree->data.ci.vtype_num) {
@@ -3563,6 +3566,7 @@ freg: CALL_R8 (this, ADDR_G) {
 	if (tree->left->op != MB_TERM_NOP) {
 		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
 	}
 
 	if (tree->data.ci.vtype_num) {
