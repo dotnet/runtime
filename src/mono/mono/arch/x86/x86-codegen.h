@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.11 2001/09/26 10:33:18 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.12 2001/09/27 09:38:19 lupus Exp $
 */
 
 #ifndef X86_H
@@ -127,6 +127,8 @@ typedef union {
 	unsigned char b [4];
 } x86_imm_buf;
 
+#define X86_NOBASEREG (-1)
+
 /*
 // bitvector mask for callee-saved registers
 */
@@ -234,7 +236,11 @@ typedef union {
 
 #define x86_memindex_emit(inst,r,basereg,disp,indexreg,shift)	\
 	do {	\
-		if ((disp) == 0 && (basereg) != X86_EBP) {	\
+		if ((basereg) == X86_NOBASEREG) {	\
+			x86_address_byte ((inst), 0, (r), 4);	\
+			x86_address_byte ((inst), (shift), (indexreg), 5);	\
+			x86_imm_emit32 ((inst), (disp));	\
+		} else if ((disp) == 0 && (basereg) != X86_EBP) {	\
 			x86_address_byte ((inst), 0, (r), 4);	\
 			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
 		} else if (x86_is_imm8((disp))) {	\
@@ -242,8 +248,8 @@ typedef union {
 			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
 			x86_imm_emit8 ((inst), (disp));	\
 		} else {	\
-			x86_address_byte ((inst), 2, (r), 4);	\
-			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
+			x86_address_byte ((inst), 0, (r), 4);	\
+			x86_address_byte ((inst), (shift), (indexreg), 5);	\
 			x86_imm_emit32 ((inst), (disp));	\
 		}	\
 	} while (0)
