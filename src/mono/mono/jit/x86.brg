@@ -614,6 +614,8 @@ reg: NEWOBJ {
 stmt: INITOBJ (reg) {
 	int i, j;
 
+	i = tree->data.i;
+
 	if (i == 1 || i == 2 || i == 4) {
 		int t = X86_ECX;
 
@@ -660,13 +662,8 @@ stmt: INITOBJ (reg) {
 	}
 
 
-	if (j == 2) {
-		x86_prefix (s->code, X86_OPERAND_PREFIX);
-		x86_stosl (s->code);
-	} else {
-		for (i = 0; i < j; i++)
-			x86_stosb (s->code);
-	}
+	for (i = 0; i < j; i++)
+		x86_stosb (s->code);
 
 	if (tree->left->reg1 != X86_EDI)
 		x86_pop_reg (s->code, X86_EDI);
