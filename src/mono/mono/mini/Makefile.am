@@ -53,7 +53,7 @@ mono_LDADD = \
 	$(ICU_LIBS)
 
 mono_LDFLAGS = \
-	-export-dynamic
+	$(static_flags) -export-dynamic $(monoldflags)
 
 genmdesc_SOURCES = \
 	mini.h		\
@@ -71,6 +71,13 @@ x86_sources = \
 	mini-x86.h		\
 	exceptions-x86.c	\
 	tramp-x86.c
+
+amd64_sources = \
+	mini-exceptions.c	\
+	mini-amd64.c		\
+	mini-amd64.h		\
+	exceptions-amd64.c	\
+	tramp-amd64.c
 
 ppc_sources = \
 	mini-ppc.c		\
@@ -138,6 +145,13 @@ arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-x86.brg
 arch_built=cpu-pentium.h
 endif
 
+if AMD64
+libmono_la_SOURCES = \
+	$(common_sources) $(amd64_sources)
+arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-amd64.brg
+arch_built=cpu-amd64.h
+endif
+
 if POWERPC
 libmono_la_SOURCES = \
 	$(common_sources) $(ppc_sources)
@@ -192,6 +206,9 @@ TestDriver.dll: TestDriver.cs
 
 cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium_desc
+
+cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-amd64.md cpu-amd64.h amd64_desc
 
 cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
@@ -252,8 +269,10 @@ endif
 
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(test_sources) \
+	propagated_relations_table.def build_relations_propagation_table.pl \
 	inssel-long.brg inssel-long32.brg \
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \
+	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
 	$(s390_sources) inssel-s390.brg cpu-s390.md
