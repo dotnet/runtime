@@ -150,9 +150,8 @@ populate-runtime-subdir:
 	    cd $(mcs_topdir) && \
 	    $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime PROFILE=$$2 LIBRARY_INSTALL_DIR=$$srcdir/runtime/$$3 prefix=$$tmpinst/prefix install ) || exit 1 ; \
 	done
-	test -z "`find $(tmpinst)/prefix -name '*.dll' -print`"
-	test -z "`find $(tmpinst)/prefix -name '*.exe' -print`"
-	set fnord `find $(tmpinst)/prefix -type f -print | wc -l` ; test "$$2" = 9
+	find $(tmpinst)/prefix -type f -path '*/jay*' -exec rm -f '{}' ';'
+	test -z "`find $(tmpinst)/prefix -type f -print`"
 	rm -rf $(tmpinst)/prefix
 
 tmpinst-dir: 
