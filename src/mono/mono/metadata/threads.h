@@ -16,6 +16,8 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 
+extern int  mono_thread_get_abort_signal (void);
+
 extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 			      MonoThreadStartCB attach_cb);
 extern void mono_thread_cleanup(void);
