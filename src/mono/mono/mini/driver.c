@@ -380,7 +380,6 @@ mini_regression_list (int verbose, int count, char *images [])
 		}
 		total += mini_regression (mono_assembly_get_image (ass), verbose, &run);
 		total_run += run;
-		mono_assembly_close (ass);
 	}
 	g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n", 
 		total_run, total, (int)G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
