@@ -492,7 +492,12 @@ mono_label_cfg (MonoFlowGraph *cfg)
 	
 	for (i = 0; i < cfg->block_count; i++) {
 		GPtrArray *forest = cfg->bblocks [i].forest;
-		const int top = forest->len;
+		int top;
+
+		if (!cfg->bblocks [i].reached) /* unreachable code */
+			continue;
+		
+		top = forest->len;
 
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
@@ -650,7 +655,12 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 	
 	for (i = 0; i < cfg->block_count; i++) {
 		GPtrArray *forest = cfg->bblocks [i].forest;
-		const int top = forest->len;
+		int top;
+
+		if (!cfg->bblocks [i].reached) /* unreachable code */
+			continue;
+
+		top = forest->len;
 
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
@@ -702,7 +712,12 @@ mono_emit_cfg (MonoFlowGraph *cfg)
 	for (i = 0; i < cfg->block_count; i++) {
 		MonoBBlock *bb = &cfg->bblocks [i];
 		GPtrArray *forest = bb->forest;
-		const int top = forest->len;
+		int top;
+
+		if (!bb->reached) /* unreachable code */
+			continue;
+		
+		top = forest->len;
 
 		bb->addr = cfg->code - cfg->start;
 	  
@@ -727,7 +742,12 @@ mono_compute_branches (MonoFlowGraph *cfg)
 	for (j = 0; j < cfg->block_count; j++) {
 		MonoBBlock *bb = &cfg->bblocks [j];
 		GPtrArray *forest = bb->forest;
-		const int top = forest->len;
+		int top;
+		
+		if (!bb->reached) /* unreachable code */
+			continue;
+
+		top = forest->len;
 	
 		for (i = 0; i < top; i++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
@@ -1072,14 +1092,16 @@ arch_get_restore_context ()
 static gpointer
 arch_get_call_finally ()
 {
-	static guint8 *start = NULL;
+	static guint8 start [28];
+	static int inited = 0;
 	guint8 *code;
 
-	if (start)
+	if (inited)
 		return start;
 
+	inited = 1;
 	/* call_finally (struct sigcontext *ctx, unsigned long eip) */
-	start = code = malloc (1024);
+	code = start;
 
 	x86_push_reg (code, X86_EBP);
 	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
@@ -1106,6 +1128,7 @@ arch_get_call_finally ()
 	x86_leave (code);
 	x86_ret (code);
 
+	g_assert ((code - start) < 28);
 	return start;
 }
 
@@ -1285,13 +1308,15 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 gpointer 
 arch_get_throw_exception (void)
 {
-	static guint8 *start = NULL;
+	static guint8 start [24];
+	static int inited = 0;
 	guint8 *code;
 
-	if (start)
+	if (inited)
 		return start;
 
-	code = start = g_malloc (1024);
+	inited = 1;
+	code = start;
 
 	x86_push_reg (code, X86_ESP);
 	x86_push_membase (code, X86_ESP, 4); /* IP */
@@ -1307,6 +1332,7 @@ arch_get_throw_exception (void)
 	/* we should never reach this breakpoint */
 	x86_breakpoint (code);
 
+	g_assert ((code - start) < 24);
 	return start;
 }
 

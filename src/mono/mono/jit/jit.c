@@ -1069,6 +1069,8 @@ mono_cfg_free (MonoFlowGraph *cfg)
 	int i;
 
 	for (i = 0; i < cfg->block_count; i++) {
+		if (!cfg->bblocks [i].reached)
+			continue;
 		g_ptr_array_free (cfg->bblocks [i].forest, TRUE);
 	}
 
@@ -3055,7 +3057,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				superblock_end = TRUE;
 				//printf ("unreached block %d\n", i);
 				repeat = TRUE;
-				g_assert (repeat_count < 10);
+				if (repeat_count >= 10) {
+					/*mono_print_forest (forest);
+					g_warning ("repeat count exceeded at ip: 0x%04x in %s\n", bb->cli_addr, cfg->method->name);*/
+					repeat = FALSE;
+				}
 			}
 				//printf ("BBE %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
 		}
@@ -3146,12 +3152,9 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
-	int stack;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
-
-	mono_end_of_stack = &stack; /* a pointer to a local variable is always < BP */
 
 	if (method->signature->param_count) {
 		int i;
@@ -3171,13 +3174,15 @@ usage (char *name)
 		 "Usage is: %s [options] executable args...\n", name,  VERSION, name);
 	fprintf (stderr,
 		 "Valid Options are:\n"
-		 "-d            debug the jit, show disassembler output.\n"
-		 "--dump-asm    dumps the assembly code generated\n"
-		 "--dump-forest dumps the reconstructed forest\n"
-		 "--trace-calls printf function call trace\n"
-		 "--stabs       write stabs debug information\n"
-		 "--debug name  insert a breakpoint at the start of method name\n"
-		 "--help        print this help message\n");
+		 "-d               debug the jit, show disassembler output.\n"
+		 "--dump-asm       dumps the assembly code generated\n"
+		 "--dump-forest    dumps the reconstructed forest\n"
+		 "--trace-calls    printf function call trace\n"
+		 "--stabs          write stabs debug information\n"
+		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
+		 "--ncompile num   compile methods num times (default: 1000)\n"
+		 "--debug name     insert a breakpoint at the start of method name\n"
+		 "--help           print this help message\n");
 	exit (1);
 }
 
@@ -3249,8 +3254,13 @@ main (int argc, char *argv [])
 	struct sigaction sa;
 	MonoAssembly *assembly;
 	int retval = 0, i;
+	int compile_times = 1000;
+	char *compile_class = NULL;
 	char *file;
 	gboolean testjit = FALSE;
+	int stack, verbose = FALSE;
+
+	mono_end_of_stack = &stack; /* a pointer to a local variable is always < BP */
 
 	if (argc < 2)
 		usage (argv [0]);
@@ -3270,8 +3280,16 @@ main (int argc, char *argv [])
 			mono_jit_trace_calls = TRUE;
 		else if (strcmp (argv [i], "--debug") == 0) {
 			mono_debug_methods = g_list_append (mono_debug_methods, argv [++i]);
+		} else if (strcmp (argv [i], "--count") == 0) {
+			compile_times = atoi (argv [++i]);
+		} else if (strcmp (argv [i], "--compile") == 0) {
+			compile_class = argv [++i];
+		} else if (strcmp (argv [i], "--ncompile") == 0) {
+			compile_times = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--stabs") == 0) {
 			mono_debug_handle = mono_debug_open_file ("");
+		} else if (strcmp (argv [i], "--verbose") == 0) {
+			verbose = TRUE;;
 		} else
 			usage (argv [0]);
 	}
@@ -3322,6 +3340,54 @@ main (int argc, char *argv [])
 
 	if (testjit) {
 		mono_jit_assembly (assembly);
+	} else if (compile_class) {
+		char *cmethod = strrchr (compile_class, ':');
+		char *cname;
+		char *code;
+		int i, j;
+		MonoClass *class;
+
+		if (cmethod)
+			*cmethod++ = 0;
+		cname = strrchr (compile_class, '.');
+		if (cname)
+			*cname++ = 0;
+		else {
+			cname = compile_class;
+			compile_class = "";
+		}
+		class = mono_class_from_name (assembly->image, compile_class, cname);
+		if (!class)
+			g_error ("Cannot find class %s.%s", compile_class, cname);
+		mono_class_init (class);
+		if (cmethod) {
+			MonoMethod *m = NULL;
+			for (i = 0; i < class->method.count; ++i) {
+				if (strcmp (class->methods [i]->name, cmethod) == 0) {
+					m = class->methods [i];
+					break;;
+				}
+			}
+			if (!m)
+				g_error ("Cannot find method %s.%s:%s", compile_class, cname, cmethod);
+			for (j = 0; j < compile_times; ++j) {
+				code = arch_compile_method (m);
+				g_free (code);
+			}
+		} else {
+			for (j = 0; j < compile_times; ++j) {
+				for (i = 0; i < class->method.count; ++i) {
+					if (class->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+						continue;
+					if (class->methods [i]->flags & METHOD_ATTRIBUTE_ABSTRACT)
+						continue;
+					if (verbose)
+						g_print ("Compiling: %s\n", class->methods [i]->name);
+					code = arch_compile_method (class->methods [i]);
+					g_free (code);
+				}
+			}
+		}
 	} else {
 		/*
 		 * skip the program name from the args.
