@@ -16,6 +16,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/gc.h>
 #include <mono/metadata/appdomain.h>
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
@@ -456,6 +457,8 @@ mono_object_new_specific (MonoVTable *vtable)
 		o = (MonoObject *)(++t);
 	}
 	o->vtable = vtable;
+	if (vtable->klass->has_finalize)
+		mono_object_register_finalizer (o);
 	
 	return o;
 }
@@ -496,6 +499,8 @@ mono_object_clone (MonoObject *obj)
 
 	memcpy (o, obj, size);
 
+	if (obj->vtable->klass->has_finalize)
+		mono_object_register_finalizer (o);
 	return o;
 }
 
@@ -681,7 +686,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
 
-	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + (len * 2));
+	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
 	if (!s)
 		G_BREAKPOINT ();
 
@@ -785,6 +790,8 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 
 	memcpy ((char *)res + sizeof (MonoObject), value, size);
 
+	if (class->has_finalize)
+		mono_object_register_finalizer (res);
 	return res;
 }
 
