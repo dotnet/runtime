@@ -384,6 +384,7 @@ if test x$platform_win32 = xno; then
 	fi
 else
 	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
+	AC_CHECK_LIB(psapi, main, LIBS="$LIBS -lpsapi", AC_ERROR(bad mingw install?))
 fi
 
 dnl ****************************
