@@ -666,6 +666,19 @@ void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) {
 	ReleaseMutex(handle);
 }
 
+HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual,
+															  MonoBoolean initial,
+															  char *name) {
+	return (CreateEvent(NULL,manual,initial,name));
+}
+
+gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle) {
+	return (SetEvent(handle));
+}
+
+gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
+	return (ResetEvent(handle));
+}
 
 void mono_thread_init(void)
 {
