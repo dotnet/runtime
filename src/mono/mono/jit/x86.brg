@@ -1370,9 +1370,6 @@ reg: LDSFLDA (coni4) {
 
 # array support
 reg: LDLEN (reg) {	
-	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");
-
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
 			     G_STRUCT_OFFSET (MonoArray, max_length), 4);
 }
@@ -1516,9 +1513,6 @@ reg: NEWSTRUCT {
 reg: UNBOX (reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
-
-	x86_test_reg_reg (s->code, tree->reg1, tree->reg1);
-	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");	
 
 	x86_push_reg (s->code, tree->reg1);
 	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, 0, 4); 
