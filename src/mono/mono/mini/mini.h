@@ -36,7 +36,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "9"
+#define MONO_AOT_FILE_VERSION "10"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -796,6 +796,7 @@ MonoInst* mono_arch_get_domain_intrinsic        (MonoCompile* cfg);
 MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg);
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg);
+guint32  mono_arch_get_aot_patch_offset         (void);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,

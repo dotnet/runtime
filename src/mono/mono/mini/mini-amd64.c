@@ -124,9 +124,17 @@ amd64_patch (unsigned char* code, gpointer target)
 	if ((code [0] >= 0x40) && (code [0] <= 0x4f))
 		code += 1;
 
-	if (code [0] == 0xbb) {
+	if ((code [0] & 0xf8) == 0xb8) {
 		/* amd64_set_reg_template */
 		*(guint64*)(code + 1) = (guint64)target;
+	}
+	else if (code [0] == 0x8b) {
+		/* mov 0(%rip), %dreg */
+		*(guint32*)(code + 2) = (guint32)(guint64)target - 7;
+	}
+	else if ((code [0] == 0xff) && (code [1] == 0x15)) {
+		/* call *<OFFSET>(%rip) */
+		*(guint32*)(code + 2) = ((guint32)(guint64)target) - 7;
 	}
 	else
 		x86_patch (code, (unsigned char*)target);
@@ -1214,26 +1222,27 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 	amd64_fnstsw (code); \
 } while (0); 
 
-/*
- * Emitting a call and patching it later is expensive on amd64, so try to
- * determine the patch target immediately, and emit more efficient code if
- * possible.
- */
 static guint8*
 emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
-	/* FIXME: */
+	/*
+	 * FIXME: Emitting a call template and patching it later is expensive on 
+	 * amd64, so try to determine the patch target immediately, and emit more 
+	 * efficient code if possible.
+	 */
+
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
-	amd64_set_reg_template (code, GP_SCRATCH_REG);
-	amd64_call_reg (code, GP_SCRATCH_REG);
+
+	if (mono_compile_aot) {
+		amd64_call_membase (code, AMD64_RIP, 0);
+	}
+	else {
+		amd64_set_reg_template (code, GP_SCRATCH_REG);
+		amd64_call_reg (code, GP_SCRATCH_REG);
+	}
 
 	return code;
 }
-
-#define EMIT_CALL() do { \
-    amd64_set_reg_template (code, GP_SCRATCH_REG); \
-    amd64_call_reg (code, GP_SCRATCH_REG); \
-} while (0);
 
 /* FIXME: Add more instructions */
 #define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG))
@@ -3653,8 +3662,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_c0, 8);
 			break;
 		case OP_AOTCONST:
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
-			amd64_set_reg_template (code, ins->dreg);
+			if ((MonoJumpInfoType)ins->inst_i1 != MONO_PATCH_INFO_SWITCH)
+				mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			amd64_mov_reg_membase (code, ins->dreg, AMD64_RIP, 0, 8);
 			break;
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
@@ -3716,7 +3726,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_leave (code);
 			offset = code - cfg->native_code;
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			amd64_set_reg_template (code, AMD64_R11);
+			if (mono_compile_aot)
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+			else
+				amd64_set_reg_template (code, AMD64_R11);
 			amd64_jump_reg (code, AMD64_R11);
 			break;
 		}
@@ -4640,48 +4653,44 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_METHOD_REL:
-		case MONO_PATCH_INFO_METHOD_JUMP:
-			*((gconstpointer *)(ip + 2)) = target;
-			continue;
-		case MONO_PATCH_INFO_SWITCH: {
-			*((gconstpointer *)(ip + 2)) = target;
-			continue;
+		if (mono_compile_aot) {
+			switch (patch_info->type) {
+			case MONO_PATCH_INFO_BB:
+			case MONO_PATCH_INFO_LABEL:
+				break;
+			default: {
+				/* Just to make code run at aot time work */
+				const unsigned char **tmp;
+
+				mono_domain_lock (domain);
+				tmp = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer));
+				mono_domain_unlock (domain);
+
+				*tmp = target;
+				target = (const unsigned char*)(guint64)((guint8*)tmp - (guint8*)ip);
+				break;
+			}
+			}
 		}
-		case MONO_PATCH_INFO_IID:
-			*((guint32 *)(ip + 2)) = (guint32)(guint64)target;
-			continue;			
+
+		switch (patch_info->type) {
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			/* Might already been changed to a nop */
 			guint8* ip2 = ip;
-			amd64_set_reg_template (ip2, GP_SCRATCH_REG);
-			amd64_call_reg (ip2, GP_SCRATCH_REG);			
-			*((gconstpointer *)(ip + 2)) = target;
-			continue;
+			if (mono_compile_aot)
+				amd64_call_membase (ip2, AMD64_RIP, 0);
+			else {
+				amd64_set_reg_template (ip2, GP_SCRATCH_REG);
+				amd64_call_reg (ip2, GP_SCRATCH_REG);
+			}
+			break;
 		}
+		case MONO_PATCH_INFO_METHOD_REL:
 		case MONO_PATCH_INFO_R8:
 		case MONO_PATCH_INFO_R4:
 			g_assert_not_reached ();
 			continue;
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IMAGE:
-		case MONO_PATCH_INFO_FIELD:
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_SFLDA:
-		case MONO_PATCH_INFO_EXC_NAME:
-		case MONO_PATCH_INFO_LDSTR:
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		case MONO_PATCH_INFO_LDTOKEN:
-		case MONO_PATCH_INFO_IP:
-			*((gconstpointer *)(ip + 2)) = target;
-			continue;
-		case MONO_PATCH_INFO_METHOD:
-			*((gconstpointer *)(ip + 2)) = target;
-			continue;
-		case MONO_PATCH_INFO_ABS:
-		case MONO_PATCH_INFO_INTERNAL_METHOD:
+		case MONO_PATCH_INFO_BB:
 			break;
 		default:
 			break;
@@ -4988,14 +4997,21 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 			amd64_patch (patch_info->ip.i + cfg->native_code, code);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
-			amd64_set_reg_template (code, AMD64_RDI);
+			if (mono_compile_aot)
+				amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RIP, 0, 8);
+			else
+				amd64_set_reg_template (code, AMD64_RDI);
 			/* 7 is the length of the lea */
 			offset = (((guint64)code + 7) - (guint64)cfg->native_code) - (guint64)patch_info->ip.i;
 			amd64_lea_membase (code, AMD64_RSI, AMD64_RIP, - offset);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
-			EMIT_CALL ();
+			if (mono_compile_aot)
+				amd64_mov_reg_membase (code, GP_SCRATCH_REG, AMD64_RIP, 0, 8);
+			else
+				amd64_set_reg_template (code, GP_SCRATCH_REG);
+			amd64_call_reg (code, GP_SCRATCH_REG);
 			break;
 		}
 		default:
@@ -5320,6 +5336,16 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 	return FALSE;
 }
 
+/*
+ * Return the offset in the code generated by OP_AOTCONST where the offset to
+ * the GOT needs to be added.
+ */
+guint32
+mono_arch_get_aot_patch_offset (void)
+{
+	return 3;
+}
+
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 {
@@ -5338,6 +5364,10 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 
 	if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
 		/* call *%reg */
+		return NULL;
+	}
+	else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
+		/* call OFFSET(%rip) */
 		return NULL;
 	}
 	else if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {

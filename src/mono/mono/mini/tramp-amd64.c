@@ -117,6 +117,18 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				InterlockedExchangePointer ((gpointer*)(code - 11), addr);
 			}
 		}
+		else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
+			/* call *<OFFSET>(%rip) */
+			MonoJitInfo *ji = 
+				mono_jit_info_table_find (mono_domain_get (), code);
+			MonoJitInfo *target_ji = 
+				mono_jit_info_table_find (mono_domain_get (), addr);
+
+			if (mono_method_same_domain (ji, target_ji)) {
+				gpointer *got_entry = (gpointer*)((guint8*)code + (*(guint32*)(code - 4)));
+				InterlockedExchangePointer (got_entry, addr);
+			}
+		}
 		else {
 			/* FIXME: handle more cases */
 		}
@@ -171,15 +183,17 @@ amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint
 			buf [12] = 0x90;
 		}
 	}
-	else
-		if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
-			/* Already changed by another thread */
-			;
-		else {
-			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
+	else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
+		/* Already changed by another thread */
+		;
+	else if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15))
+		/* call *<OFFSET>(%rip) */
+		;
+	else {
+		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
-			g_assert_not_reached ();
-		}
+		g_assert_not_reached ();
+	}
 }
 
 static guchar*

@@ -695,13 +695,23 @@ stmt: CEE_SWITCH (reg) {
 	else
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
 	mono_bblock_add_inst (s->cbb, label);
-	 /* the backend must patch the address. we use 0xf0f0f0f0 to avoid the usage 
-	  * of special (short) opcodes on x86 */
-	if (sizeof (gpointer) == 8) {
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, (long)0xf0f0f0f0f0f0f0f1LL);
+	if (mono_compile_aot) {
+		int table_reg = mono_regstate_next_int (s->rs);
+		int sum_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_AOTCONST (s, table_reg, NULL, MONO_PATCH_INFO_SWITCH);
+
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, sum_reg, table_reg, offset_reg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, sum_reg, 0);
 	}
 	else {
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0);
+		 /* the backend must patch the address. we use 0xf0f0f0f0 to avoid the usage 
+		  * of special (short) opcodes on x86 */
+		if (sizeof (gpointer) == 8) {
+			MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, (long)0xf0f0f0f0f0f0f0f1LL);
+		}
+		else {
+			MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, offset_reg, 0xf0f0f0f0);
+		}
 	}
 	MONO_EMIT_UNALU (s, tree, OP_BR_REG, -1, target_reg);
 }
