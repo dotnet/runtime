@@ -961,22 +961,18 @@ gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
-	gint32 lowret;
-	gint32 highret;
+	gint64 ret;
 
 	MONO_ARCH_SAVE_REGS;
 
 	EnterCriticalSection(&interlocked_mutex);
 
-	lowret = InterlockedIncrement((gint32 *) location);
-	if (0 == lowret)
-		highret = InterlockedIncrement((gint32 *) location + 1);
-	else
-		highret = *((gint32 *) location + 1);
-
+	ret = ++ *location;
+	
 	LeaveCriticalSection(&interlocked_mutex);
 
-	return (gint64) highret << 32 | (gint64) lowret;
+	
+	return ret;
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
@@ -988,22 +984,17 @@ gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
-	gint32 lowret;
-	gint32 highret;
+	gint64 ret;
 
 	MONO_ARCH_SAVE_REGS;
 
 	EnterCriticalSection(&interlocked_mutex);
 
-	lowret = InterlockedDecrement((gint32 *) location);
-	if (-1 == lowret)
-		highret = InterlockedDecrement((gint32 *) location + 1);
-	else
-		highret = *((gint32 *) location + 1);
-
+	ret = -- *location;
+	
 	LeaveCriticalSection(&interlocked_mutex);
 
-	return (gint64) highret << 32 | (gint64) lowret;
+	return ret;
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location1, gint32 value)
