@@ -248,9 +248,21 @@ AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default]
 
 # Enable support for fast thread-local storage
 # Some systems have broken support, so we allow to disable it.
-# This is misnamed: __thread support has no relation to NPTL,
-# but people already use it...
-AC_ARG_WITH(nptl, [  --with-nptl=yes,no      enable/disable support for __thread support],[],[with_nptl=yes])
+AC_ARG_WITH(tls, [  --with-tls=__thread,pthread       select Thread Local Storage implementation],[],[with_tls=__thread])
+
+# Kept for compatibility
+AC_ARG_WITH(nptl, [  --with-nptl=yes,no      deprecated, use --with-tls instead],[],[with_nptl=default])
+
+if test "x$with_nptl" != "xdefault"; then
+   if test "x$with_nptl" = "xyes"; then
+      AC_MSG_WARN([--with-nptl=yes is deprecated, use --with-tls=__thread option instead.])
+	  with_tls=__thread
+   fi
+   if test "x$with_nptl" = "xno"; then
+      AC_MSG_WARN([--with-nptl=no is deprecated, use --with-tls=pthread option instead.])
+	  with_tls=pthread
+   fi
+fi
 
 # Enable support for using sigaltstack for SIGSEGV and stack overflow handling
 # This does not work on some platforms (bug #55253)
@@ -662,7 +674,7 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for working __thread ***
 	dnl ***********************************
 	AC_MSG_CHECKING(for working __thread)
-	if test "x$with_nptl" != "xyes"; then
+	if test "x$with_tls" != "x__thread"; then
 		AC_MSG_RESULT(disabled)
 	else
 		AC_TRY_RUN([
@@ -1305,7 +1317,7 @@ echo "
 
 	GC:	     $gc
 	ICU:	     $enable_icu
-	__thread:    $with_nptl
+	TLS:         $with_tls
 	SIGALTSTACK: $with_sigaltstack
 	Engine:      $jit_status
 	2.0 Alpha:   $PREVIEW
