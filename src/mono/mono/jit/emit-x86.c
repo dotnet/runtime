@@ -567,7 +567,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 {
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
-	guint16 *nts = mono_burg_nts [ern];
+	const guint16 *nts = mono_burg_nts [ern];
 	int i;
 	
 	mono_burg_kids (tree, ern, kids);
@@ -667,7 +667,7 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 {
 	MBTree *kids[10];
 	int i, ern = mono_burg_rule (tree->state, goal);
-	guint16 *nts = mono_burg_nts [ern];
+	const guint16 *nts = mono_burg_nts [ern];
 	MBEmitFunc emit;
 	int offset;
 
@@ -836,17 +836,29 @@ arch_compile_method (MonoMethod *method)
 
 		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
 			MonoMethodSignature *csig = method->signature;
-			int i, target, this_pos = 4;
+			int i, arg_size, target, this_pos = 4;
 			guint8 *source;
-
-			method->addr = g_malloc (64);
-
+			
 			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
 				g_assert (!csig->ret->byref);
 				this_pos = 8;
 			}
 
+			arg_size = 0;
+			if (csig->param_count) {
+				int align;
+				
+				for (i = 0; i < csig->param_count; ++i) {
+					arg_size += mono_type_stack_size (csig->params [i], &align);
+					g_assert (align == 4);
+				}
+			}
+
+			method->addr = g_malloc (64 + arg_size);
+
 			for (i = 0; i < 2; i ++) {
+				int j;
+
 				code = method->addr;
 				/* load the this pointer */
 				x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
@@ -864,21 +876,29 @@ arch_compile_method (MonoMethod *method)
 				x86_jump_membase (code, X86_EAX, method_offset);
 
 				/* static delegate methods: we have to remove the this pointer 
-				 * from the activation frame */
-				target = code - source;
-				if (this_pos == 8) {
-					x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4, 4);
-					x86_mov_membase_reg (code, X86_ESP, 8, X86_EDX, 4);
-				}
-				x86_mov_reg_membase (code, X86_EDX, X86_ESP, 0, 4);
-				x86_mov_membase_reg (code, X86_ESP, 4, X86_EDX, 4);
-				x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+				 * from the activation frame - I do this do creating a new 
+				 * stack frame an copy all arguments except the this pointer */
 
-				/* jump to method_ptr() */
-				x86_jump_membase (code, X86_EAX, method_offset);
+				target = code - source;
+				g_assert ((arg_size & 3) == 0);
+				for (j = 0; j < (arg_size>>2); j++) {
+					x86_push_membase (code, X86_ESP, (arg_size + this_pos));
+				}
+
+				if (this_pos == 8) 
+					x86_push_membase (code, X86_ESP, (arg_size + 4));
+				
+				x86_call_membase (code, X86_EAX, method_offset);
+				if (this_pos == 8) 
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
+				else
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size);
+				
+				x86_ret (code);
+
 			}
 
-			g_assert ((code - (guint8*)method->addr) < 64);
+			g_assert ((code - (guint8*)method->addr) < (64 + arg_size));
 
 		} else {
 			if (mono_debug_handle)

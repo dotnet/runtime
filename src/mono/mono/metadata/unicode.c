@@ -358,6 +358,7 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len, gboo
 			g_free (src);
 		} else {
 			int mb = max_len - outbytes_remaining;
+			int i;
 			for (i = 0; i < mb; i+=2) {
 				char t = dest [i];
 				dest [i] = dest [i + 1];
