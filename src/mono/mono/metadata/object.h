@@ -95,6 +95,9 @@ mono_string_new             (const char *text);
 char *
 mono_string_to_utf8         (MonoString *string_obj);
 
+char *
+mono_string_to_utf16        (MonoString *string_obj);
+
 void       
 mono_object_free            (MonoObject *o);
 

@@ -439,6 +439,26 @@ mono_string_to_utf8 (MonoString *s)
 	return as;
 }
 
+char *
+mono_string_to_utf16 (MonoString *s)
+{
+	char *as;
+
+	g_assert (s != NULL);
+
+	as=g_malloc((s->length*2)+2);
+	as[(s->length*2)]='\0';
+	as[(s->length*2)+1]='\0';
+
+	if (!s->length || !s->c_str) {
+		return (as);
+	}
+	
+	memcpy(as, mono_string_chars(s), s->length*2);
+	
+	return (as);
+}
+
 static void
 default_ex_handler (MonoException *ex)
 {

@@ -168,7 +168,7 @@ HANDLE ves_icall_System_PAL_OpSys_GetStdHandle(MonoObject *this,
 					       gint32 fd)
 {
 	HANDLE handle;
-	
+
 	if(fd!=0 && fd!=1 && fd!=2) {
 		mono_raise_exception(
 			get_io_exception("Invalid file descriptor"));
@@ -255,10 +255,15 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, gint32 mode, gint32 access, gint32 share)
 {
 	HANDLE handle;
-
-	handle=CreateFile(mono_string_chars(path), convert_access(access),
+	char *filename;
+	
+	filename=mono_string_to_utf16(path);
+	
+	handle=CreateFile(filename, convert_access(access),
 			  convert_share(share), NULL, convert_mode(mode),
 			  FILE_ATTRIBUTE_NORMAL, NULL);
+
+	g_free(filename);
 	
 	/* fixme: raise mor appropriate exceptions (errno) */
 	if(handle == INVALID_HANDLE_VALUE) {
@@ -300,7 +305,13 @@ gint64 ves_icall_System_PAL_OpSys_SeekFile(MonoObject *this, HANDLE handle,
 
 void ves_icall_System_PAL_OpSys_DeleteFile(MonoObject *this, MonoString *path)
 {
-	DeleteFile(mono_string_chars(path));
+	char *filename;
+	
+	filename=mono_string_to_utf16(path);
+	
+	DeleteFile(filename);
+
+	g_free(filename);
 }
 
 gboolean ves_icall_System_PAL_OpSys_ExistsFile(MonoObject *this, MonoString *path)
