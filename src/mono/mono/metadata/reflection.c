@@ -4124,8 +4124,6 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 				token = mono_image_get_methodspec_token (assembly, m->method);
 			else
 				token = mono_image_get_inflated_method_token (assembly, m->method);
-		} else if (m->method->signature->generic_param_count) {
-			g_assert_not_reached ();
 		} else if ((m->method->klass->image == &assembly->image) &&
 			 !m->method->klass->generic_inst) {
 			static guint32 method_table_idx = 0xffffff;
