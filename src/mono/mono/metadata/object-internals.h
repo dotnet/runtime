@@ -957,7 +957,7 @@ void
 mono_image_build_metadata (MonoReflectionModuleBuilder *module);
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, char *blob, void *value);
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value);
 
 void
 mono_release_type_locks (MonoThread *thread);

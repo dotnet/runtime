@@ -5481,7 +5481,6 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_MethodBody = NULL;
 	static MonoClass *System_Reflection_LocalVariableInfo = NULL;
-	MonoClass *klass;
 	MonoReflectionMethodBody *ret;
 	MonoMethodNormal *mn;
 	MonoMethodHeader *header;
@@ -7303,8 +7302,6 @@ void
 mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoClass *klass;
-	MonoGenericContainer *container;
-	int count, i;
 
 	MONO_ARCH_SAVE_REGS;
 

@@ -286,7 +286,7 @@ void
 mono_release_type_locks (MonoThread *thread)
 {
 	EnterCriticalSection (&type_initialization_section);
-	mono_g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, GUINT_TO_POINTER (thread->tid));
+	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, GUINT_TO_POINTER (thread->tid));
 	LeaveCriticalSection (&type_initialization_section);
 }
 
@@ -1199,7 +1199,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 }
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, char *blob, void *value)
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value)
 {
 	int retval = 0;
 	const char *p = blob;
