@@ -15,7 +15,7 @@
 
 #include "mono-codeman.h"
 
-#define MIN_PAGES 4
+#define MIN_PAGES 8
 #define MIN_ALIGN 8
 /* if a chunk has less than this amount of free space it's considered full */
 #define MAX_WASTAGE 32
@@ -36,7 +36,9 @@ struct _CodeChunck {
 	int pos;
 	int size;
 	CodeChunk *next;
-	int flags;
+	unsigned int flags: 8;
+	/* this number of bytes is available to resolve addresses far in memory */
+	unsigned int bsize: 24;
 };
 
 struct _MonoCodeManager {
@@ -93,6 +95,20 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 		memset (chunk->data, 42, chunk->size);
 }
 
+void
+mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void *user_data)
+{
+	CodeChunk *chunk;
+	for (chunk = cman->current; chunk; chunk = chunk->next) {
+		if (func (chunk->data, chunk->size, chunk->bsize, user_data))
+			return;
+	}
+	for (chunk = cman->full; chunk; chunk = chunk->next) {
+		if (func (chunk->data, chunk->size, chunk->bsize, user_data))
+			return;
+	}
+}
+
 static int
 query_pagesize (void)
 {
@@ -105,11 +121,21 @@ query_pagesize (void)
 #endif
 }
 
+/* BIND_ROOM is the divisor for the chunck of code size dedicated
+ * to binding branches (branches not reachable with the immediate displacement)
+ * bind_size = size/BIND_ROOM;
+ * we should reduce it and make MIN_PAGES bigger for such systems
+ */
+#if defined(__ppc__) || defined(__powerpc__)
+#define BIND_ROOM 16
+#endif
+
 static CodeChunk*
 new_codechunk (int size)
 {
 	static int pagesize = 0;
 	int minsize, flags = CODE_FLAG_MMAP;
+	int chunk_size, bsize = 0;
 	CodeChunk *chunk;
 	void *ptr;
 
@@ -118,27 +144,35 @@ new_codechunk (int size)
 
 	minsize = pagesize * MIN_PAGES;
 	if (size < minsize)
-		size = minsize;
+		chunk_size = minsize;
 	else {
-		size += pagesize - 1;
-		size &= ~ (pagesize - 1);
+		chunk_size = size;
+		chunk_size += pagesize - 1;
+		chunk_size &= ~ (pagesize - 1);
 	}
+#ifdef BIND_ROOM
+	bsize = chunk_size / BIND_ROOM;
+	if (chunk_size - size < bsize) {
+		chunk_size += pagesize;
+	}
+#endif
+
 #ifdef PLATFORM_WIN32
 	/* does it make sense to use the mmap-like API? */
-	ptr = malloc (size);
+	ptr = malloc (chunk_size);
 	if (!ptr)
 		return NULL;
 	flags = CODE_FLAG_MALLOC;
 #else
-	ptr = mmap (0, size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+	ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
 	if (ptr == (void*)-1) {
 		int fd = open ("/dev/zero", O_RDONLY);
 		if (fd != -1) {
-			ptr = mmap (0, size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE, fd, 0);
+			ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE, fd, 0);
 			close (fd);
 		}
 		if (ptr == (void*)-1) {
-			ptr = malloc (size);
+			ptr = malloc (chunk_size);
 			if (!ptr)
 				return NULL;
 			flags = CODE_FLAG_MALLOC;
@@ -152,16 +186,18 @@ new_codechunk (int size)
 			free (ptr);
 #ifndef PLATFORM_WIN32
 		else
-			munmap (ptr, size);
+			munmap (ptr, chunk_size);
 #endif
 		return NULL;
 	}
 	chunk->next = NULL;
-	chunk->size = size;
+	chunk->size = chunk_size;
 	chunk->data = ptr;
 	chunk->flags = flags;
-	chunk->pos = 0;
+	chunk->pos = bsize;
+	chunk->bsize = bsize;
 
+	/*printf ("code chunk at: %p\n", ptr);*/
 	return chunk;
 }
 
