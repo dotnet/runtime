@@ -1,3 +1,10 @@
+2002-03-24  Martin Baulig  <martin@gnome.org>
+
+	* man/mcs.1: Documented the new --debug option and added a section
+	about debugging support.
+
+	* man/mono.1: Documented the new --dwarf and --dwarf-plus options.
+
 2002-03-21  Martin Baulig  <martin@gnome.org>
 
 	* configure.in: Added check for <elf.h>.
