@@ -1,7 +1,6 @@
 #ifndef __MONO_MINI_PPC_H__
 #define __MONO_MINI_PPC_H__
 
-#include <mono/arch/x86/x86-codegen.h>
 #include <mono/arch/ppc/ppc-codegen.h>
 
 #define MONO_MAX_IREGS 32
@@ -12,10 +11,6 @@
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
-
-#define MONO_ARCH_BASEREG X86_EBP
-#define MONO_ARCH_RETREG1 ppc_r3
-#define MONO_ARCH_RETREG2 ppc_r4
 
 struct MonoLMF {
 	gpointer    previous_lmf;

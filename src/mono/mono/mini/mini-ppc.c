@@ -816,7 +816,16 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
 	int frame_reg = ppc_sp;
- 
+
+	/* 
+	 * FIXME: we'll use the frame register also for any method that has
+	 * filter clauses. This way, when the handlers are called,
+	 * the code will reference local variables using the frame reg instead of
+	 * the stack pointer: if we had to restore the stack pointer, we'd
+	 * corrupt the method frames that are already on the stack (since
+	 * filters get called before stack unwinding happens) when the filter
+	 * code would call any method.
+	 */ 
 	if (m->flags & MONO_CFG_HAS_ALLOCA)
 		frame_reg = ppc_r31;
 	m->frame_reg = frame_reg;
@@ -1178,6 +1187,19 @@ handle_enum:
 
 	return code;
 }
+/*
+ * Conditional branches have a small offset, so if it is likely overflowed,
+ * we do a branch to the end of the method (uncond branches have much larger
+ * offsets) where we perform the conditional and jump back unconditionally.
+ * It's slightly slower, since we add two uncond branches, but it's very simple
+ * with the current patch implementation and such large methods are likely not
+ * going to be perf critical anyway.
+ */
+typedef struct {
+	MonoBasicBlock *bb;
+	guint16 b0_cond;
+	guint16 b1_cond;
+} MonoOvfJump;
 
 #define EMIT_COND_BRANCH(ins,cond) \
 if (ins->flags & MONO_INST_BRLABEL) { \
@@ -1191,8 +1213,18 @@ if (ins->flags & MONO_INST_BRLABEL) { \
         if (0 && ins->inst_true_bb->native_offset) { \
 		ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
         } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-		ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], 0);	\
+		int br_disp = ins->inst_true_bb->max_offset - offset;	\
+		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
+			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
+			ovfj->bb = ins->inst_true_bb;	\
+			ovfj->b0_cond = branch_b0_table [cond];	\
+			ovfj->b1_cond = branch_b1_table [cond];	\
+		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB_OVF, ovfj); \
+			ppc_b (code, 0);	\
+		} else {	\
+		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+			ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], 0);	\
+		}	\
         } \
 }
 
@@ -2231,6 +2263,7 @@ ppc_patch (guchar *code, guchar *target)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 prim = ins >> 26;
+	guint32 ovf;
 
 //	g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 18) {
@@ -2253,12 +2286,18 @@ ppc_patch (guchar *code, guchar *target)
 		if (ins & 2) {
 			guint32 li = (guint32)target;
 			ins = (ins & 0xffff0000) | (ins & 3);
+			ovf  = li & 0xffff0000;
+			if (ovf != 0 && ovf != 0xffff0000)
+				g_assert_not_reached ();
 			li &= 0xffff;
 			ins |= li;
 			// FIXME: assert the top bits of li are 0
 		} else {
 			gint diff = target - code;
 			ins = (ins & 0xffff0000) | (ins & 3);
+			ovf  = diff & 0xffff0000;
+			if (ovf != 0 && ovf != 0xffff0000)
+				g_assert_not_reached ();
 			diff &= 0xffff;
 			ins |= diff;
 		}
@@ -2727,7 +2766,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_BR_REG:
 			ppc_mtctr (code, ins->sreg1);
-			ppc_bcctr (code, 20, 0);
+			ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			break;
 		case OP_CEQ:
 			ppc_li (code, ins->dreg, 0);
@@ -2823,11 +2862,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_X86_FP_LOAD_I8:
 			g_assert_not_reached ();
-			x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
+			/*x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);*/
 			break;
 		case OP_X86_FP_LOAD_I4:
 			g_assert_not_reached ();
-			x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
+			/*x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);*/
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
@@ -2956,13 +2995,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_neg (code, ppc_r0, ppc_r11);
 			ppc_rlwinm (code, ppc_r0, ppc_r0, 1, 31, 31);
 			g_assert_not_reached ();
-			x86_push_reg (code, X86_EAX);
+			/*x86_push_reg (code, X86_EAX);
 			x86_fxam (code);
 			x86_fnstsw (code);
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4100);
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
 			x86_pop_reg (code, X86_EAX);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");*/
 			break;
 		}
 		default:
@@ -3128,6 +3167,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			patch_lis_ori (ip, handle);
 			continue;
 		}
+		case MONO_PATCH_INFO_BB_OVF:
+			/* everything is dealt with at epilog output time */
+			continue;
 		default:
 			g_assert_not_reached ();
 		}
@@ -3152,16 +3194,16 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 
 	/* count the number of exception infos */
      
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			exc_count++;
-	}
-
 	/* 
 	 * make sure we have enough space for exceptions
 	 * 16 is the size of two push_imm instructions and a call
 	 */
-	max_epilog_size += exc_count*16;
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_EXC)
+			max_epilog_size += 16;
+		else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
+			max_epilog_size += 12;
+	}
 
 	return max_epilog_size;
 }
@@ -3225,20 +3267,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
 		ppc_mr (code, ppc_r31, ppc_sp);
 
-        /* compute max_offset in order to use short forward jumps */
+        /* compute max_offset in order to use short forward jumps
+	 * we always do it on ppc because the immediate displacement
+	 * for jumps is too small 
+	 */
 	max_offset = 0;
-	if (cfg->opt & MONO_OPT_BRANCH) {
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *ins = bb->code;
-			bb->max_offset = max_offset;
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *ins = bb->code;
+		bb->max_offset = max_offset;
 
-			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-				max_offset += 6; 
+		if (cfg->prof_options & MONO_PROFILE_COVERAGE)
+			max_offset += 6; 
 
-			while (ins) {
-				max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
-				ins = ins->next;
-			}
+		while (ins) {
+			max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+			ins = ins->next;
 		}
 	}
 
@@ -3399,7 +3442,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* *(lmf_addr) = previous_lmf */
 		ppc_stw (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
 		/* restore iregs */
-		ppc_lmw (code, ppc_f13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+		ppc_lmw (code, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
 		/* restore fregs */
 		for (i = 14; i < 32; i++) {
 			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
@@ -3424,6 +3467,20 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
+		case MONO_PATCH_INFO_BB_OVF: {
+			MonoOvfJump *ovfj = patch_info->data.target;
+			unsigned char *ip = patch_info->ip.i + cfg->native_code;
+			/* patch the initial jump */
+			ppc_patch (ip, code);
+			ppc_bc (code, ovfj->b0_cond, ovfj->b1_cond, 2);
+			ppc_b (code, 0);
+			ppc_patch (code - 4, ip + 4); /* jump back after the initiali branch */
+			/* jump back to the true target */
+			ppc_b (code, 0);
+			ip = ovfj->bb->native_offset + cfg->native_code;
+			ppc_patch (code - 4, ip);
+			break;
+		}
 		case MONO_PATCH_INFO_EXC:
 			/*x86_patch (patch_info->ip.i + cfg->native_code, code);
 			x86_push_imm (code, patch_info->data.target);
