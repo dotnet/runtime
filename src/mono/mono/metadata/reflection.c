@@ -2889,6 +2889,24 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	return result;
 }
 
+static MonoMethodSignature*
+ctor_builder_to_signature (MonoReflectionCtorBuilder *ctor) {
+	MonoMethodSignature *sig;
+	int count, i;
+
+	count = ctor->parameters? mono_array_length (ctor->parameters): 0;
+
+	sig = g_malloc0 (sizeof (MonoMethodSignature) + sizeof (MonoType*) * count);
+	sig->hasthis = 1;
+	sig->param_count = count;
+	sig->sentinelpos = -1; /* FIXME */
+	for (i = 0; i < count; ++i) {
+		MonoReflectionType *pt = mono_array_get (ctor->parameters, MonoReflectionType*, i);
+		sig->params [i] = pt->type;
+	}
+	return sig;
+}
+
 /*
  * mono_reflection_get_custom_attrs_blob:
  * @ctor: custom attribute constructor
@@ -2911,21 +2929,15 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	guint32 buflen, i, type;
 
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
-		g_warning ("ConstructorBuilder Custom attribute not yet supported");
-		/* 
-		 * maybe we should have a param array to method signature function and
-		 * continue with the normal codepath.
-		 */
-		result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, 4);
-		mono_array_set (result, char, 0, 1);
-		return result;
+		sig = ctor_builder_to_signature ((MonoReflectionCtorBuilder*)ctor);
+	} else {
+		sig = ((MonoReflectionMethod*)ctor)->method->signature;
 	}
 	buflen = 256;
 	p = buffer = g_malloc (buflen);
 	/* write the prolog */
 	*p++ = 1;
 	*p++ = 0;
-	sig = ((MonoReflectionMethod*)ctor)->method->signature;
 	/* FIXME: ENOENDIAN */
 	for (i = 0; i < sig->param_count; ++i) {
 		if ((p-buffer) + 10 >= buflen) {
@@ -3008,6 +3020,8 @@ handle_enum:
 	p = mono_array_addr (result, char, 0);
 	memcpy (p, buffer, buflen);
 	g_free (buffer);
+	if (strcmp (ctor->vtable->klass->name, "MonoCMethod"))
+		g_free (sig);
 	return result;
 }
 
