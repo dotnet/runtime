@@ -236,6 +236,9 @@ gint32
 mono_class_instance_size   (MonoClass *klass);
 
 gint32
+mono_class_array_element_size (MonoClass *klass);
+
+gint32
 mono_class_data_size       (MonoClass *klass);
 
 gint32

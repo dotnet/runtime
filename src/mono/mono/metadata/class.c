@@ -672,7 +672,9 @@ mono_class_setup_vtable (MonoClass *class)
 			if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
 				for (l = 0; l < ic->method.count; l++) {
 					char *msig;
-					MonoMethod *im = ic->methods [l];						
+					MonoMethod *im = ic->methods [l];
+					if (im->flags & METHOD_ATTRIBUTE_STATIC)
+							continue;
 					g_assert (io + l <= max_vtsize);
 					if (!(vtable [io + l])) {
 						for (j = 0; j < onum; ++j) {
@@ -1700,6 +1702,54 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	return mono_class_get (image, token);
 }
 
+/*
+ * Returns the nnumber of bytes an element of type klass
+ * uses when stored into an array.
+ */
+gint32
+mono_class_array_element_size (MonoClass *klass)
+{
+	int t = klass->byval_arg.type;
+	
+handle_enum:
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return 1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return 2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return 4;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return sizeof (gpointer);
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		return 8;
+	case MONO_TYPE_VALUETYPE:
+		if (klass->enumtype) {
+			t = klass->enum_basetype->type;
+			goto handle_enum;
+		}
+		return mono_class_instance_size (klass) - sizeof (MonoObject);
+	default:
+		g_error ("unknown type 0x%02x in mono_class_array_element_size", t);
+	}
+	return -1;
+}
+
 /**
  * mono_array_element_size:
  * @ac: pointer to a #MonoArrayClass
@@ -1709,10 +1759,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 gint32
 mono_array_element_size (MonoClass *ac)
 {
-	if (ac->element_class->valuetype)
-		return mono_class_instance_size (ac->element_class) - sizeof (MonoObject);
-	else
-		return sizeof (gpointer);
+	return mono_class_array_element_size (ac->element_class);
 }
 
 gpointer
