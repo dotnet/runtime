@@ -241,6 +241,19 @@ class Tests {
 		return o.GetHashCode ();
 	}
 
+	static int test_0_unbox_trampoline2 () {
+		int i = 12;
+		object o = i;
+			
+		if (i.ToString () != "12")
+			return 1;
+		if (((Int32)o).ToString () != "12")
+			return 2;
+		if (o.ToString () != "12")
+			return 3;
+		return 0;
+	}
+
 	// Test fields with big offsets
 	static int test_0_fields_with_big_offsets () {
 		StructWithBigOffsets s = new StructWithBigOffsets ();
