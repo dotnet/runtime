@@ -71,6 +71,14 @@
   </tr>
 </table>
 
+** Mar 12, 2002
+
+        At midnight, in Italy, Paolo got the Mono C# compiler to self
+        host on Linux, the last bug has been squashed to self
+        hostingness.  We have now a fully self hosting compiler in Linux.
+
+        A release will follow up shortly.
+
 ** Mar 9, 2002
 
 	Updated the <a href="class-status.html">class status</a>, now
