@@ -1,3 +1,11 @@
+2002-02-18  Radek Doulik  <rodo@ximian.com>
+
+	* mono/tests/Makefile.am: display # of passing tests too
+
+2002-02-17  Radek Doulik  <rodo@ximian.com>
+
+	* mono/tests/Makefile.am (test): display # of failed tests
+
 2002-02-16  Jeffrey Stedfast  <fejj@ximian.com>
 
 	* configure.in: Add checks for SOL_IP, SOL_TCP, and

@@ -84,13 +84,16 @@ EXTRA_DIST=test-driver $(TESTSRC)
 
 test: $(TEST_PROG) $(TESTSI)
 	@failed=0; \
+	passed=0; \
 	for i in $(TESTSI); do	\
-		if ! ./test-driver $(TEST_PROG) $$i; \
+		if ./test-driver $(TEST_PROG) $$i; \
 		then \
+			passed=`expr $${passed} + 1`; \
+		else \
 			failed=`expr $${failed} + 1`; \
 		fi \
 	done; \
-	echo "$${failed} test(s) failed."
+	echo "$${passed} test(s) passed. $${failed} test(s) failed."
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
