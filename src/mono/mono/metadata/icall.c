@@ -49,7 +49,7 @@ mono_double_ToStringImpl (double value)
 {
 	/* FIXME: Handle formats, etc. */
 	const gchar *retVal;
-	retVal = g_strdup_printf ("%f", value);
+	retVal = g_strdup_printf ("%g", value);
 	return mono_string_new (mono_domain_get (), retVal);
 }
 
