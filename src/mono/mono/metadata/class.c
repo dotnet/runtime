@@ -92,6 +92,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
  * class_compute_field_layout:
  * @m: pointer to the metadata.
  * @class: The class to initialize
+ * @pack: the value from the .pack directive (or 0)
  *
  * Initializes the class->fields.
  *
@@ -99,7 +100,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
  * a good job at it.  This is temporary to get the code for Paolo.
  */
 static void
-class_compute_field_layout (MonoClass *class)
+class_compute_field_layout (MonoClass *class, int pack)
 {
 	MonoImage *m = class->image; 
 	const int top = class->field.count;
@@ -154,6 +155,8 @@ class_compute_field_layout (MonoClass *class)
 
 			size = mono_type_size (class->fields [i].type, &align);
 
+			/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
+			align = pack? MIN (pack, align): align;
 			class->min_align = MAX (align, class->min_align);
 			class->fields [i].offset = class->instance_size;
 			class->fields [i].offset += align - 1;
@@ -395,7 +398,7 @@ mono_class_init (MonoClass *class)
 	 */
 	if (!class->size_inited && class->field.count > 0){
 		class->fields = g_new0 (MonoClassField, class->field.count);
-		class_compute_field_layout (class);
+		class_compute_field_layout (class, packing_size);
 	}
 
 	if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
@@ -1017,7 +1020,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (class->enumtype) {
 		class->fields = g_new0 (MonoClassField, class->field.count);
-		class_compute_field_layout (class);
+		class_compute_field_layout (class, 0);
 	} 
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
