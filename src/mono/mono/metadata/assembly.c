@@ -55,9 +55,18 @@ default_assembly_name_resolver (const char *name)
 {
 	char *file, *path;
 	
-	if (strcmp (name, "mscorlib") == 0)
+	if ((strcmp (name, "mscorlib") == 0) ||
+			(strcmp (name, "mscorlib.dll") == 0) ||
+			(strcmp (name, "corlib.dll") == 0) ||
+			(strcmp (name, "corlib") == 0))
 		return g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
 
+	if (g_file_test (name, G_FILE_TEST_EXISTS))
+		return g_strdup (name);
+	path = g_concat_dir_and_file (MONO_ASSEMBLIES, name);
+	if (g_file_test (path, G_FILE_TEST_EXISTS))
+		return g_strdup (path);
+	g_free (path);
 	file = g_strconcat (name, ".dll", NULL);
 	path = g_concat_dir_and_file (MONO_ASSEMBLIES, file);
 	g_free (file);
@@ -85,7 +94,8 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoImage *image;
 	MonoTableInfo *t;
 	int i;
-	const char *basename = strrchr (filename, '/');
+	char *fullname;
+	const char *basename = strrchr (filename, G_DIR_SEPARATOR);
 	static MonoAssembly *corlib;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
@@ -103,36 +113,19 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	else
 		basename++;
 
+	if (resolver == NULL)
+		resolver = default_assembly_name_resolver;
 
-	/*
-	 * Temporary hack until we have a complete corlib.dll
-	 */
-	if (strcmp (basename, CORLIB_NAME) == 0 || strcmp (basename, "mscorlib") == 0) {
-		char *fullname;
-		
-		if (corlib != NULL)
-			return corlib;
-		fullname = g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
-		image = mono_image_open (fullname, status);
-		g_free (fullname);
-	} else {
-		char *fullname;
-		image = mono_image_open (filename, status);
-		if (!image) {
-			fullname = g_concat_dir_and_file (MONO_ASSEMBLIES, filename);
-			image = mono_image_open (fullname, status);
-			g_free (fullname);
-		}
-	}
-	
+
+	fullname = resolver (filename);
+	image = mono_image_open (fullname, status);
+
 	if (!image){
 		if (status)
 			*status = MONO_IMAGE_ERROR_ERRNO;
+		g_free (fullname);
 		return NULL;
 	}
-
-	if (resolver == NULL)
-		resolver = default_assembly_name_resolver;
 
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
@@ -142,9 +135,10 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	 * Create assembly struct, and enter it into the assembly cache
 	 */
 	ass = g_new (MonoAssembly, 1);
-	ass->name = g_strdup (filename);
+	ass->name = fullname;
 	ass->image = image;
 
+	g_hash_table_insert (assemblies, image->name, ass);
 	g_hash_table_insert (assemblies, ass->name, ass);
 	
 	/*
