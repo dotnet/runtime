@@ -132,7 +132,6 @@ mono_type_blittable (MonoType *type)
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
 		return type->data.klass->blittable;
 		break;
 	default:
@@ -3073,7 +3072,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					fsig = mono_metadata_parse_signature (image, token);
 
 				n = fsig->param_count + fsig->hasthis;
-
 			} else {
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
