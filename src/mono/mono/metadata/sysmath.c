@@ -1,10 +1,8 @@
 /* math.c - these are based on bob smith's csharp routines */
 
+#define __USE_ISOC99
 #include <math.h>
 #include <mono/metadata/sysmath.h>
-
-static const gdouble MONO_NAN = 0.0 / 0.0;
-static const gdouble MONO_INF = 1.0 / 0.0;
 
 gdouble 
 ves_icall_System_Math_Sin (gdouble x)
@@ -46,7 +44,7 @@ gdouble
 ves_icall_System_Math_Acos (gdouble x)
 {
 	if (x < -1 || x > 1)
-		return MONO_NAN;
+		return NAN;
 
 	return acos (x);
 }
@@ -55,7 +53,7 @@ gdouble
 ves_icall_System_Math_Asin (gdouble x)
 {
 	if (x < -1 || x > 1)
-		return MONO_NAN;
+		return NAN;
 
 	return asin (x);
 }
@@ -82,9 +80,9 @@ gdouble
 ves_icall_System_Math_Log (gdouble x)
 {
 	if (x == 0)
-		return -MONO_INF;
+		return -HUGE_VAL;
 	else if (x < 0)
-		return MONO_NAN;
+		return NAN;
 
 	return log (x);
 }
@@ -93,9 +91,9 @@ gdouble
 ves_icall_System_Math_Log10 (gdouble x)
 {
 	if (x == 0)
-		return -MONO_INF;
+		return -HUGE_VAL;
 	else if (x < 0)
-		return MONO_NAN;
+		return NAN;
 
 	return log10 (x);
 }
@@ -110,7 +108,7 @@ gdouble
 ves_icall_System_Math_Sqrt (gdouble x)
 {
 	if (x < 0)
-		return MONO_NAN;
+		return NAN;
 
 	return sqrt (x);
 }

@@ -1,6 +1,7 @@
 #include <config.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/tokentype.h>
