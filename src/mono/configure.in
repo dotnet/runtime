@@ -217,7 +217,11 @@ case "x$gc" in
 		AC_SUBST(HAVE_BOEHM_GC)
 		LIBGC_LIBS="-lgc $libdl"
 
-		AC_CHECK_FUNCS(GC_gcj_malloc)
+		# AC_CHECK_FUNCS does not work for some reason...
+		AC_CHECK_LIB(gc, GC_gcj_malloc, found_gcj_malloc="yes",,$libdl)
+		if test "x$found_gcj_malloc" = "xyes"; then
+			AC_DEFINE(HAVE_GC_GCJ_MALLOC)
+		fi
 		;;
 
 	xincluded)
