@@ -1,5 +1,9 @@
 2004-01-15  Zoltan Varga  <vargaz@freemail.hu>
 
+	* scripts/Makefile.am: Add al.exe.
+
+	* scripts/al.in: New file.
+
 	* runtime/Makefile.am: Add al.exe.
 
 2004-01-10  Jackson Harper <jackson@ximian.com>
