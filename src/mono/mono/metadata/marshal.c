@@ -5513,7 +5513,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* fixme: we need conversions here */
 		mono_mb_emit_byte (mb, CEE_STLOC_3);
-
+		break;
 	default:
 		g_assert_not_reached ();
 	}
