@@ -82,6 +82,8 @@ allocate_symbol_file_entry (MonoDebuggerSymbolTable *table)
 
 	symfile = g_new0 (MonoDebuggerSymbolFile, 1);
 	symfile->index = table->num_symbol_files;
+	symfile->range_entry_size = sizeof (MonoDebuggerRangeInfo);
+	symfile->class_entry_size = sizeof (MonoDebuggerClassInfo);
 	table->symbol_files [table->num_symbol_files++] = symfile;
 	return symfile;
 }
@@ -472,8 +474,6 @@ allocate_range_entry (MonoDebuggerSymbolFile *symfile)
 	MonoDebuggerRangeInfo *retval;
 	guint32 size, chunks;
 
-	symfile->range_entry_size = sizeof (MonoDebuggerRangeInfo);
-
 	if (!symfile->range_table) {
 		size = sizeof (MonoDebuggerRangeInfo) * RANGE_TABLE_CHUNK_SIZE;
 		symfile->range_table = g_malloc0 (size);
@@ -498,8 +498,6 @@ allocate_class_entry (MonoDebuggerSymbolFile *symfile)
 {
 	MonoDebuggerClassInfo *retval;
 	guint32 size, chunks;
-
-	symfile->class_entry_size = sizeof (MonoDebuggerClassInfo);
 
 	if (!symfile->class_table) {
 		size = sizeof (MonoDebuggerClassInfo) * CLASS_TABLE_CHUNK_SIZE;
