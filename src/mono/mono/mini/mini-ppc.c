@@ -2743,38 +2743,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Implemented as helper calls */
 			break;
 		case OP_LCONV_TO_OVF_I: {
-#if 0
-			guint8 *br [3], *label [1];
-
-			/* 
-			 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
-			 */
-			x86_test_reg_reg (code, ins->sreg1, ins->sreg1);
-
-			/* If the low word top bit is set, see if we are negative */
-			br [0] = code; x86_branch8 (code, X86_CC_LT, 0, TRUE);
-			/* We are not negative (no top bit set, check for our top word to be zero */
-			x86_test_reg_reg (code, ins->sreg2, ins->sreg2);
-			br [1] = code; x86_branch8 (code, X86_CC_EQ, 0, TRUE);
-			label [0] = code;
-
-			/* throw exception */
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, "OverflowException");
-		        x86_jump32 (code, 0);
-	
-			x86_patch (br [0], code);
-			/* our top bit is set, check that top word is 0xfffffff */
-			x86_alu_reg_imm (code, X86_CMP, ins->sreg2, 0xffffffff);
-		
-			x86_patch (br [1], code);
-			/* nope, emit exception */
-			br [2] = code; x86_branch8 (code, X86_CC_NE, 0, TRUE);
-			x86_patch (br [2], label [0]);
-
-			if (ins->dreg != ins->sreg1)
-				x86_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
-#endif
-			g_assert_not_reached ();
+			ppc_mr (code, ins->dreg, ins->sreg1);
+			/* FIXME: emit exception if needed */
 			break;
 		}
 		case OP_FADD:
