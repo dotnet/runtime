@@ -16,6 +16,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/utils/mono-logger.h>
 #define GC_I_HIDE_POINTERS
 #include <mono/os/gc_wrapper.h>
 
@@ -644,6 +645,12 @@ static GCThreadFunctions mono_gc_thread_vtable = {
 	mono_gc_start_world
 };
 #endif /* WITH_INCLUDED_LIBGC */
+
+static void
+mono_gc_warning (char *msg, GC_word arg)
+{
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, msg, (unsigned long)arg);
+}
 
 void mono_gc_init (void)
 {
