@@ -7455,7 +7455,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 	rmb.refs = g_new0 (gpointer, mb->nrefs + 1);
 	for (i = 0; i < mb->nrefs; ++i) {
 		gpointer ref = resolve_object (mb->module->image, 
-									   mono_array_get (mb->refs, MonoObject*, i));
+					       mono_array_get (mb->refs, MonoObject*, i));
 		if (!ref) {
 			g_free (rmb.refs);
 			mono_raise_exception (mono_get_exception_type_load (NULL));
