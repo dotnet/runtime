@@ -50,15 +50,24 @@ dump_header_data (MonoImage *img)
 static void
 dump_cattrs (MonoImage *m, guint32 token, const char *indent)
 {
-	GList *tmp, *list;
+	GList *list;
 
 	list = dis_get_custom_attrs (m, token);
+	dump_cattrs_list (list, indent);
+}
+
+static void
+dump_cattrs_list (GList *list,  const char *indent)
+{
+	GList *tmp;
+
 	for (tmp = list; tmp; tmp = tmp->next) {
 		fprintf (output, "%s%s\n", indent, (char*)tmp->data);
 		g_free (tmp->data);
 	}
 	g_list_free (list);
 }
+
 
 static void
 dis_directive_assembly (MonoImage *m)
@@ -571,7 +580,7 @@ pinvoke_info (MonoImage *m, guint32 mindex)
 }
 
 static void
-cattrs_for_method (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
+dump_cattrs_for_method_params (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 	guint param_index, lastp, i;
@@ -587,9 +596,15 @@ cattrs_for_method (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
 	  	char *lit;
 	  	int crow;
 		guint32 param_cols [MONO_PARAM_SIZE];
-		mono_metadata_decode_row (paramt, i-1, param_cols, MONO_PARAM_SIZE);
+		GList *list;
+		
+		list = dis_get_custom_attrs (m, MONO_TOKEN_PARAM_DEF | i);
 
-		if (param_cols[MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_DEFAULT) {
+		mono_metadata_decode_row (paramt, i-1, param_cols, MONO_PARAM_SIZE);
+		if (!(param_cols[MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
+			if(list != NULL)
+				fprintf (output, "\t.param [%d]\n", param_cols[MONO_PARAM_SEQUENCE]);
+		} else {
 			fprintf (output, "\t.param [%d] = ", param_cols[MONO_PARAM_SEQUENCE]);
 		  
 			if(crow = mono_metadata_get_constant_index(m, MONO_TOKEN_PARAM_DEF | i, 0)) {
@@ -603,8 +618,7 @@ cattrs_for_method (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
 		  fprintf(output, "%s\n", lit);
 		  g_free(lit);
 		}
-
-		dump_cattrs (m, MONO_TOKEN_PARAM_DEF | i, "\t");
+		dump_cattrs_list (list, "\t");
 	}
 }
 
@@ -666,7 +680,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		
 		fprintf (output, "    {\n");
 		dump_cattrs (m, token, "        ");
-		cattrs_for_method (m, i, ms);
+		dump_cattrs_for_method_params (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
