@@ -1,3 +1,8 @@
+2004-08-14  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in (HAVE_KW_THREAD): Pass USE_COMPILER_TLS to libgc if
+	__thread works.
+
 2004-08-11  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix __thread test.

@@ -1312,6 +1312,9 @@ fi
 
 if test "x$with_tls" = "x__thread"; then
 	AC_DEFINE(HAVE_KW_THREAD)
+   # Pass the information to libgc
+	CPPFLAGS="$CPPFLAGS -DUSE_COMPILER_TLS"
+	export CPPFLAGS
 fi
 
 if test ${TARGET} = ARM; then
