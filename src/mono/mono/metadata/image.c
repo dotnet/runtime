@@ -1007,6 +1007,7 @@ mono_image_close (MonoImage *image)
 		g_free (image->raw_data);
 	}
 	g_free (image->name);
+	g_free (image->guid);
 	g_free (image->files);
 
 	g_hash_table_destroy (image->method_cache);
