@@ -206,7 +206,7 @@ guint32 _wapi_handle_new_internal (WapiHandleType type)
 	 * than they're freed. Leave 0 (NULL) as a guard
 	 */
 #ifdef HEAVY_DEBUG
-	print_handle_count (WAPI_HANDLE_SEM);
+	print_handle_count (0xFFF);
 #endif
 again:
 	for(i=last; i<_WAPI_MAX_HANDLES; i++) {
@@ -242,12 +242,11 @@ gpointer _wapi_handle_new (WapiHandleType type)
 	gpointer handle;
 	WapiHandleRequest new;
 	WapiHandleResponse new_resp;
+#if HAVE_BOEHM_GC
+	gboolean tried_collect=FALSE;
+#endif
 	
 	mono_once (&shared_init_once, shared_init);
-
-#if HAVE_BOEHM_GC
-	GC_gcollect ();
-#endif
 
 again:
 	if(shared==TRUE) {
@@ -273,6 +272,23 @@ again:
 		
 	if(idx==0) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Ran out of handles!");
+
+#if HAVE_BOEHM_GC
+		/* See if we can reclaim some handles by forcing a GC
+		 * collection
+		 */
+		if(tried_collect==FALSE) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": Seeing if GC collection helps...");
+			GC_gcollect (); /* FIXME: we should wait for finalizers to be called */
+			tried_collect=TRUE;
+			goto again;
+		} else {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": didn't help, returning error");
+		}
+#endif
+	
 		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
 	}
 
