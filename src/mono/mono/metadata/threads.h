@@ -16,6 +16,7 @@
 
 extern void mono_thread_init (MonoDomain *domain);
 extern void mono_thread_cleanup(void);
+MonoObject *mono_thread_create (MonoDomain *domain, gpointer func);
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this, HANDLE thread);

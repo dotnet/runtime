@@ -8,7 +8,7 @@ class Test {
 
 	static int F (int a) {
 		Console.WriteLine ("Test.F from delegate: " + a);
-		//Thread.Sleep (2000);
+		Thread.Sleep (200);
 		return a;
 	}
 

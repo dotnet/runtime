@@ -103,6 +103,32 @@ static void handle_remove(HANDLE thread)
 	CloseHandle(thread);
 }
 
+MonoObject *
+mono_thread_create (MonoDomain *domain, gpointer func)
+{
+	MonoClassField *field;
+	MonoObject *thread;
+	HANDLE thread_handle;
+	struct StartInfo *start_info;
+	guint32 tid;
+	
+	thread = mono_object_new (domain, mono_defaults.thread_class);
+
+	field=mono_class_get_field_from_name(mono_defaults.thread_class, "system_thread_handle");
+	g_assert (field);
+
+	start_info=g_new0 (struct StartInfo, 1);
+	start_info->func = func;
+	start_info->obj = thread;
+	start_info->domain = domain;
+		
+	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info, 0, &tid);
+	g_assert (thread_handle);
+
+	*(gpointer *)(((char *)thread) + field->offset) = thread_handle; 
+
+	return thread;
+}
 
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 							 MonoObject *start)

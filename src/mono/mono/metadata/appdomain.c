@@ -306,6 +306,9 @@ mono_init (const char *filename)
                 mono_defaults.corlib, "System", "Exception");
 	g_assert (mono_defaults.exception_class != 0);
 
+	mono_defaults.thread_class = mono_class_from_name (
+                mono_defaults.corlib, "System.Threading", "Thread");
+	g_assert (mono_defaults.thread_class != 0);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);

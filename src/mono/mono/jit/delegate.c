@@ -13,6 +13,7 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/threads.h>
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
 
@@ -443,7 +444,6 @@ async_invoke_thread ()
 	for (;;) {
 		MonoAsyncResult *ar;
 		gboolean new_worker = FALSE;
-		guint32 tid;
 
 		WaitForSingleObject (delegate_semaphore, INFINITE);
 		
@@ -469,13 +469,13 @@ async_invoke_thread ()
 		if (!ar)
 			continue;
 		
-		if (new_worker) 
-			CreateThread (NULL, 0, async_invoke_thread, NULL, 0, &tid);
-
 		/* worker threads invokes methods in different domains,
 		 * so we need to set the right domain here */
 		domain = ((MonoObject *)ar)->vtable->domain;
 		mono_domain_set (domain);
+
+		if (new_worker) 
+			mono_thread_create (domain, async_invoke_thread);
 
 		async_invoke (ar);
 	}
@@ -487,13 +487,13 @@ void
 mono_delegate_init ()
 {
 	MonoDomain *domain = mono_domain_get ();
-	HANDLE thread;
+	MonoObject *thread;
 	guint32 tid;
 
 	delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&delegate_section);
-	thread = CreateThread (NULL, 0, async_invoke_thread, NULL, 0, &tid);
+	thread = mono_thread_create (domain, async_invoke_thread);
 	g_assert (thread != NULL);
 }
 
