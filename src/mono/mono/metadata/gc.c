@@ -567,6 +567,9 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		g_ptr_array_free (objs, TRUE);
 	}
 
+	/* Process finalizers which are already in the queue */
+	GC_invoke_finalizers ();
+
 	/* printf ("DONE.\n"); */
 	SetEvent (req->done_event);
 
