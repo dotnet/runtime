@@ -641,6 +641,10 @@ ctree_create_dup (MonoMemPool *mp, MBTree *s)
 		t = ctree_dup_address (mp, s->left);
 		t->svt = VAL_I32;
 		return mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
+	case MB_TERM_LDIND_U4:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
+		return mono_ctree_new (mp, MB_TERM_LDIND_U4, t, NULL);
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
 		t = ctree_dup_address (mp, s->left);
@@ -697,7 +701,7 @@ mono_jit_init_class (MonoClass *klass)
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
 		    (strcmp (".cctor", method->name) == 0)) {
 	
-			cctor = arch_create_jit_trampoline (method);
+			cctor = arch_compile_method (method);
 			cctor ();
 			return;
 		}
@@ -809,14 +813,6 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_NOT:
 		case CEE_DUP:
 		case CEE_POP:
-		case CEE_CONV_U1: 
-		case CEE_CONV_I1:
-		case CEE_CONV_U2: 
-		case CEE_CONV_I2: 
-		case CEE_CONV_I: 
-		case CEE_CONV_I4:
-		case CEE_CONV_I8: 
-		case CEE_CONV_R8:
 		case CEE_ADD:
 		case CEE_SUB:
 		case CEE_AND:
@@ -869,6 +865,18 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_LDELEM_R4:
 		case CEE_LDELEM_R8:
 		case CEE_LDELEM_REF:
+		case CEE_CONV_I1:
+		case CEE_CONV_U1:
+		case CEE_CONV_I2:
+		case CEE_CONV_U2:
+		case CEE_CONV_I:
+		case CEE_CONV_U:
+		case CEE_CONV_I4:
+		case CEE_CONV_U4:
+		case CEE_CONV_I8:
+		case CEE_CONV_U8:
+		case CEE_CONV_R4:
+		case CEE_CONV_R8:
 			ip++;
 			break;
 		case CEE_RET:
@@ -1506,9 +1514,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			cm = mono_get_method (image, token, NULL);
 			g_assert (cm);
-
-			if (!cm->addr)
-				cm->addr = arch_create_jit_trampoline (cm);
 			
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
@@ -1549,24 +1554,33 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				sp = sp - nargs;
 			}
 
+			printf ("MINFO %s.%s::%s %d %d\n", cm->klass->name_space, 
+				cm->klass->name, cm->name, cm->flags & METHOD_ATTRIBUTE_VIRTUAL, virtual);
+ 
 			if (virtual) {
 				t2 = ctree_create_dup (mp, this);
-
+			       
 				if (!cm->klass->metadata_inited)
 					mono_class_metadata_init (cm->klass);
 
 				if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-					t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t1, NULL);
+					t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t2, NULL);
 					t2->data.i = cm->klass->interface_id << 2;
-					printf ("SLOT %s %d %d\n", cm->name, cm->klass->metadata_inited, cm->slot);
+					printf ("SLOT %s.%s::%s %d %d\n", cm->klass->name_space, 
+						cm->klass->name, cm->name, cm->klass->metadata_inited, 
+						cm->slot);
 					t2->size = cm->slot << 2;
 				} else {
-					t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t1, NULL);
+					t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t2, NULL);
 					t2->data.i = cm->slot << 2;
 				}
 			} else {
+				if (!cm->addr)
+					cm->addr = arch_create_jit_trampoline (cm, FALSE);
+
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
+
 			}
 
 			if (nargs) {
@@ -2006,6 +2020,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			break;
 		}
 		case CEE_CONV_I: 
+		case CEE_CONV_U: 
+		case CEE_CONV_U4: 
 		case CEE_CONV_I4: {
 			++ip;
 			sp--;
@@ -2142,7 +2158,7 @@ mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
 	} else {
 		MonoMainIntVoid mfunc;
 
-		mfunc = arch_create_jit_trampoline (method);
+		mfunc = arch_compile_method (method);
 		res = mfunc ();
 	}
 	

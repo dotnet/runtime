@@ -26,7 +26,7 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
-gpointer arch_compile_method (MonoMethod *method);
+gpointer arch_create_jit_trampoline (MonoMethod *method, gboolean virtual);
 
 static MonoClass *
 mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
@@ -343,7 +343,7 @@ mono_class_metadata_init (MonoClass *class)
 				if (im && !(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 					im->slot = io + l;
 					//printf ("  ASLOT%d %s.%s:%s\n", io + l, ic->name_space, ic->name, im->name);
-					vtable [io + l] = arch_compile_method (im);
+					vtable [io + l] = arch_create_jit_trampoline (im, TRUE);
 				}
 			}
 		}
@@ -380,7 +380,7 @@ mono_class_metadata_init (MonoClass *class)
 			cm->slot = cur_slot++;
 
 		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT))
-			vtable [cm->slot] = arch_compile_method (cm);
+			vtable [cm->slot] = arch_create_jit_trampoline (cm, TRUE);
 	}
 
 	/*

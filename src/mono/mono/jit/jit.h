@@ -91,7 +91,7 @@ gpointer
 arch_compile_method        (MonoMethod *method);
 
 gpointer
-arch_create_jit_trampoline (MonoMethod *method);
+arch_create_jit_trampoline (MonoMethod *method, gboolean virtual);
 
 /* some handy debugging functions */
 

@@ -136,6 +136,11 @@ acon: ADDR_G {
 	tree->data.ainfo.amode = AMImmediate;
 }
 
+acon: ADD (ADDR_G, CONST_I4) {
+	tree->data.ainfo.offset = (unsigned)tree->left->data.p + tree->right->data.i;
+	tree->data.ainfo.amode = AMImmediate;
+}
+
 base: acon
 
 base: reg {
@@ -158,7 +163,7 @@ base: ADDR_L {
 
 index: reg {
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.indexreg = tree->left->reg1;
+	tree->data.ainfo.indexreg = tree->reg1;
 	tree->data.ainfo.shift = 0;
 	tree->data.ainfo.amode = AMIndex;
 }
@@ -1390,6 +1395,16 @@ freg: CONV_R8 (LDIND_I4 (ADDR_G)) {
 	x86_fild (s->code, tree->left->left->data.p, FALSE);
 }
 
+freg: CONV_R8 (reg) {
+	/* I found no direct way to move an integer register to 
+	 * the floating point stack, so we need to store the register
+	 * to memory
+	 */
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_fild_membase (s->code, X86_ESP, 0, FALSE);
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+}
+
 freg: CONST_R4 {
 	x86_fld (s->code, tree->data.p, FALSE);
 }
@@ -1530,6 +1545,30 @@ freg: CALL_R8 (addr) {
 	default:
 		g_assert_not_reached ();
 	}
+
+	if (tree->size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+}
+
+freg: CALL_R8 (INTF_ADDR (reg)) {
+	int reg1 = tree->left->left->reg1;
+
+	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
+	x86_mov_reg_membase (s->code, reg1, reg1, 
+	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
+	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.i, 4);
+	x86_call_membase (s->code, reg1, tree->left->size);
+
+	if (tree->size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+}
+
+freg: CALL_R8 (VFUNC_ADDR (reg)) {
+	int reg1 = tree->left->left->reg1;
+
+	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
+	x86_call_membase (s->code, reg1, 
+	        G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
 
 	if (tree->size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);

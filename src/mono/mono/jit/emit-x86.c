@@ -30,12 +30,49 @@ enter_method (MonoMethod *method)
 }
 
 static void
-leave_method (MonoMethod *method)
+leave_method (MonoMethod *method, int edx, int eax, double test)
 {
-	printf ("LEAVE: %s.%s::%s\n", method->klass->name_space,
-		method->klass->name, method->name);
+	switch (method->signature->ret->type) {
+	case MONO_TYPE_VOID:
+		printf ("LEAVE: %s.%s::%s\n", method->klass->name_space,
+			method->klass->name, method->name);
+		break;
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		printf ("LEAVE: %s.%s::%s EAX=%d\n", method->klass->name_space,
+			method->klass->name, method->name, eax);
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+		printf ("LEAVE: %s.%s::%s EAX=%p\n", method->klass->name_space,
+			method->klass->name, method->name, (gpointer)eax);
+		break;
+	case MONO_TYPE_I8:
+		printf ("LEAVE: %s.%s::%s EAX=%d EDX=%d\n", method->klass->name_space,
+			method->klass->name, method->name, eax, edx);
+		break;
+	case MONO_TYPE_R8:
+		printf ("LEAVE: %s.%s::%s FP=%f\n", method->klass->name_space,
+			method->klass->name, method->name, test);
+		break;
+	default:
+		printf ("LEAVE: %s.%s::%s (unknown return type)\n", method->klass->name_space,
+			method->klass->name, method->name);
+	}
 }
-
 
 /**
  * arch_emit_prologue:
@@ -78,6 +115,9 @@ static void
 arch_emit_epilogue (MonoFlowGraph *cfg)
 {
 	if (mono_jit_trace_calls) {
+		x86_fld_reg (cfg->code, 0);
+		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, 8);
+		x86_fst_membase (cfg->code, X86_ESP, 0, TRUE, TRUE);
 		x86_push_reg (cfg->code, X86_EAX);
 		x86_push_reg (cfg->code, X86_EDX);
 		x86_push_imm (cfg->code, cfg->method);
@@ -85,6 +125,7 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
 		x86_pop_reg (cfg->code, X86_EDX);
 		x86_pop_reg (cfg->code, X86_EAX);
+		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
 	}
 
 	if (mono_regset_reg_used (cfg->rs, X86_EDI))
@@ -100,23 +141,36 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 	x86_ret (cfg->code);
 }
 
+static void
+arch_vtable_trampoline ()
+{
+	//guint8 *code, *buf;
+
+	g_assert_not_reached ();
+}
+
+
 /**
  * arch_create_jit_trampoline:
  * @method: pointer to the method info
  *
  * Creates a trampoline function for method. If the created
- * code is called then it first starts JIT compilation of method,
+ * code is called it first starts JIT compilation of method,
  * and then calls the newly created method. I also replaces the
- * address in method->addr with the result of the JIT compilation
- * step.
+ * address in method->addr with the result of the JIT 
+ * compilation step.
  * 
  * Returns: a pointer to the newly created code 
  */
 gpointer
-arch_create_jit_trampoline (MonoMethod *method)
+arch_create_jit_trampoline (MonoMethod *method, gboolean vtable)
 {
 	guint8 *code, *buf;
 
+/*
+	if (vtable)
+		return arch_vtable_trampoline; 
+*/
 	if (method->addr)
 		return method->addr;
 
@@ -129,11 +183,19 @@ arch_create_jit_trampoline (MonoMethod *method)
 	x86_call_code (buf, arch_compile_method);
 
 	/* free the allocated code buffer */
+	/* unfortunately this does not work, because we store the
+	 * trampoline in various places (for example the vtable of classes, 
+	 * and vtables are copied to inherited classes, there may be also 
+	 * several references in compiled code) - so we dont 
+	 * know how many references to the trampoline exists :-(
+	 */
+	/*
 	x86_push_reg (buf, X86_EAX);
 	x86_push_imm (buf, code);
 	x86_call_code (buf, g_free);
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
 	x86_pop_reg (buf, X86_EAX);
+	*/
 
 	x86_leave (buf);
 
@@ -394,6 +456,9 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
+	//g_assert (!method->addr);
+
+	printf ("Start JIT compilation %p %p\n", method, method->addr);
 	printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
 		method->klass->name, method->name);
 
@@ -439,6 +504,9 @@ arch_compile_method (MonoMethod *method)
 	mono_cfg_free (cfg);
 
 	mono_mempool_destroy (mp);
+
+	printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
+		method->klass->name, method->name, method, method->addr);
 
 	return method->addr;
 }
