@@ -357,6 +357,8 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	mono_class_init (field->parent);
 
 	vtable = mono_class_vtable (domain, field->parent);
+	if (!vtable->initialized)
+		mono_runtime_class_init (vtable);
 
 	//printf ("SFLDA1 %p\n", (char*)vtable->data + field->offset);
 
