@@ -831,6 +831,9 @@ mono_arch_allocate_vars (MonoCompile *m)
 			continue;
 		}
 
+		if (inst->flags & MONO_INST_IS_DEAD)
+			continue;
+
 		/* inst->unused indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
 		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
