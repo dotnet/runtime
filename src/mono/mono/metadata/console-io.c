@@ -24,6 +24,10 @@
 #ifdef HAVE_TERM_H
 #include <term.h>
 #endif
+/* Needed for FIONREAD under solaris */
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 #ifndef PLATFORM_WIN32
 #ifndef TIOCGWINSZ
 #include <sys/ioctl.h>
