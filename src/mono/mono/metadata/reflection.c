@@ -1648,9 +1648,10 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 
 	/* Write section tables */
 	strcpy (section->st_name, ".text");
-	section->st_virtual_size = 1024; /* FIXME */
 	section->st_virtual_address = START_TEXT_RVA;
-	section->st_raw_data_size = 1024; /* FIXME */
+	section->st_virtual_size = assembly->meta_size +  assembly->code.index;
+	section->st_raw_data_size = section->st_virtual_size + (FILE_ALIGN - 1);
+	section->st_raw_data_size &= ~(FILE_ALIGN - 1);
 	section->st_raw_data_ptr = TEXT_OFFSET;
 	section->st_flags = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
 

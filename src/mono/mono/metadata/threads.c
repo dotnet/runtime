@@ -11,6 +11,7 @@
 #include <glib.h>
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/io-layer/io-layer.h>
@@ -23,6 +24,7 @@ struct StartInfo
 {
 	guint32 (*func)(void *);
 	MonoObject *obj;
+	MonoDomain *domain;
 };
 
 /* Controls access to the 'threads' array */
@@ -62,6 +64,7 @@ static guint32 start_wrapper(void *data)
 	 */
 	TlsSetValue(current_object_key, start_info->obj);
 	start_func=start_info->func;
+	mono_domain_set (start_info->domain);
 	
 	g_free(start_info);
 	
@@ -128,6 +131,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		start_info=g_new0(struct StartInfo, 1);
 		start_info->func=start_func;
 		start_info->obj=this;
+		start_info->domain = mono_domain_get ();
 		
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
