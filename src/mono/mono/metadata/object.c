@@ -2478,7 +2478,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 
 	if (tp->klass->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		if (field_class->valuetype) mono_field_set_value (tp->rp->unwrapped_server, field, ((gchar *) arg) + sizeof (MonoObject));
-		else mono_field_set_value (tp->rp->unwrapped_server, field, &arg);
+		else mono_field_set_value (tp->rp->unwrapped_server, field, arg);
 		return;
 	}
 
