@@ -83,6 +83,13 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	gint32 capacity;
+	gint32 length;
+	MonoArray *chars;
+} MonoStringBuilder;
+
+typedef struct {
+	MonoObject object;
 	MonoType  *type;
 } MonoReflectionType;
 

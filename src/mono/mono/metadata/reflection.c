@@ -2928,12 +2928,13 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 		klass = NULL;
 		while (nested) {
 			klass = nested->data;
-			if (ignorecase)
+			if (ignorecase) {
 				if (g_strcasecmp (klass->name, mod->data) == 0)
 					break;
-			else
+			} else {
 				if (strcmp (klass->name, mod->data) == 0)
 					break;
+			}
 			klass = NULL;
 			nested = nested->next;
 		}
