@@ -20,7 +20,7 @@
 	      <b>JIT:</b>
 	    </td>
 	    <td>
-	      Works for Linux/x86;  PPC is missing exceptions: Linux/PPC, MacOS X 10.3
+	      Works for Linux/x86;  Solaris/SPARC; PPC is missing exceptions: Linux/PPC, MacOS X 10.3
 	    </td>
 	  </tr>
 	  <tr>
@@ -144,6 +144,12 @@
 </p>
 <br>
 <br>
+
+@item Mar 11th, 2004: Mono JIT ported to SPARC.
+
+	Zoltan Varga announced today that the SPARC port of the Mono
+	JIT engine has been completed.  Congratulations to Zoltan for
+	this amazing development.
 
 @item Feb 26th, 2004: Agenda: Mono Meeting in Boston.
 

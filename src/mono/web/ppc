@@ -11,11 +11,9 @@
 
 	Up to date.
 
-*** Jitter
+*** JIT and code precompiled:
 
-	Works on MacOS X 10.2 and Linux/PPC.   
-
-	There are known problems on MacOS 10.3
+	Works on MacOS X 10.2, 10.3 and Linux/PPC.   
 
 ** Documentation
 

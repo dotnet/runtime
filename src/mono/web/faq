@@ -1297,9 +1297,7 @@ A: Eto Demerzal has started a Rhino port to C#.
 Q: Has anyone succeeded in building a Mac version of the C# environment. 
    If so can you explain how?  
 
-A: You could try to check with the Darwin people, or the Fink people.
-   Mono/C# is self hosting on Linux/PPC which is the hard part, so it
-   should be relatively simple to get it to work on MacOS
+A: Yes, Mono works on Linux/PPC and MacOS X (10.2 and 10.3)
 
 <a name="reuse"></a>
 ** Reusing Existing Code

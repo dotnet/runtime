@@ -10,7 +10,8 @@
 
 	<ul>
 		* <b>mono:</b> Our Just-in-Time and Ahead-of-Time code
-		  generator for maximum performance.
+		  generator for maximum performance.  This supports
+		  x86, PowerPC and SPARC cpus.
 	
 		* <b>mint:</b> The Mono interpreter.  This is an
 		  easy-to-port runtime engine.
