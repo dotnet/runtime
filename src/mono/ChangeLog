@@ -1,3 +1,7 @@
+2003-08-25  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono.pc.in: Added gthread-2.0.
+
 2003-08-22  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Added gthread-2.0 to GLIB_CFLAGS and GLIB_LIBS, so we
