@@ -1353,11 +1353,20 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	 * greater flexibility.
 	 */
 	MonoMethod *m = method->method;
+	int pcount;
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (this)
+	if (this) {
+		if (!mono_object_isinst (this, m->klass))
+			mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
 		m = mono_object_get_virtual_method (this, m);
+	} else if (!(m->flags & METHOD_ATTRIBUTE_STATIC))
+		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
+
+	pcount = params? mono_array_length (params): 0;
+	if (pcount != m->signature->param_count)
+		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 
 	return mono_runtime_invoke_array (m, this, params, NULL);
 }
