@@ -231,9 +231,6 @@ AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h)
 
-# for mono/mini/tramp-x86.c
-AC_CHECK_HEADERS(valgrind/memcheck.h)
-
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
@@ -1171,7 +1168,8 @@ case "$host" in
 	x86_64-*-* | amd64-*-*)
 		TARGET=AMD64;
 		arch_target=amd64;
-		JIT_SUPPORTED=no
+		JIT_SUPPORTED=yes
+		jit_wanted=true
 		;;
 	sparc*-*-*)
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
@@ -1268,6 +1266,12 @@ case "$host" in
 	;;
 esac
 AC_SUBST(libsuffix)
+
+if test "x$TARGET" != "xAMD64"; then
+   # valgrind headers don't compile under x86-64
+   echo "A: $TARGET"
+   AC_CHECK_HEADERS(valgrind/memcheck.h)
+fi
 
 if test ${TARGET} = ARM; then
 	dnl ******************************************
