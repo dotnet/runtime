@@ -439,6 +439,11 @@ mono_fconv_u4 (double v)
 }
 
 #ifndef HAVE_TRUNCL
+
+#ifdef HAVE_AINTL
+extern long double aintl (long double);
+#define truncl aintl
+#else
 /* should mostly work */
 static double 
 truncl (double x)
@@ -447,8 +452,9 @@ truncl (double x)
 		x += 1.0;
 	return floor (x);
 }
+#endif /* HAVE_AINTL */
 
-#endif
+#endif /* HAVE_TRUNCL */
 
 static gint64
 mono_fconv_ovf_i8 (double v)
@@ -493,6 +499,14 @@ static float
 mono_lconv_to_r4 (gint64 a)
 {
 	return (float)a;
+}
+#endif
+
+#ifdef MONO_ARCH_EMULATE_CONV_R8_UN
+static double
+mono_conv_to_r8_un (guint32 a)
+{
+	return (double)a;
 }
 #endif
 
