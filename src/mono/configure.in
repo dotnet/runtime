@@ -372,7 +372,13 @@ if test x$platform_win32 = xno; then
 	AC_SUBST(ikvm_jni_dir)
 	AC_SUBST(IKVM_JNI_CFLAGS)
 
+	AC_CHECK_FUNCS(getgrgid_r)
+	AC_CHECK_FUNCS(getgrnam_r)
+	AC_CHECK_FUNCS(getpwnam_r)
 	AC_CHECK_FUNCS(getpwuid_r)
+	AC_CHECK_FUNCS(getresuid)
+	AC_CHECK_FUNCS(setresuid)
+
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
 	dnl *** (If we were using autoconf 2.50 we'd use AC_SYS_LARGEFILE) ***
