@@ -1665,6 +1665,7 @@ mono.spec
 tools/Makefile
 tools/locale-builder/Makefile
 runtime/Makefile
+monod/Makefile
 ])
 
 (

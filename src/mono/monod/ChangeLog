@@ -1,0 +1,4 @@
+2005-04-04  Joerg Rosenkranz <joergr@voelcker.com>
+
+	* monod.c: First commit: Daemon for running services built 
+	with System.ServiceProcess under Linux.
