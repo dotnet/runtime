@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.26 2002/04/22 07:32:11 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.27 2002/05/03 12:52:19 lupus Exp $
 */
 
 #ifndef X86_H
@@ -281,7 +281,7 @@ typedef union {
 		unsigned char* pos = (ins) + 1;	\
 		int disp, size = 0;	\
 		switch (*(ins)) {	\
-		case 0xe9: ++size; break; /* jump32 */	\
+		case 0xe8: case 0xe9: ++size; break; /* call, jump32 */	\
 		case 0x0f: if (!(*pos >= 0x70 && *pos <= 0x7f)) assert (0);	\
 		   ++size; ++pos; break; /* prefix for 32-bit disp */	\
 		case 0xe0: case 0xe1: case 0xe2: /* loop */	\
@@ -966,6 +966,12 @@ typedef union {
 		x86_mem_emit ((inst), (opc), (mem));	\
 	} while (0)
 
+#define x86_fp_op_membase(inst,opc,basereg,disp,is_double)	\
+	do {	\
+		*(inst)++ = (is_double) ? (unsigned char)0xdc : (unsigned char)0xd8;	\
+		x86_membase_emit ((inst), (opc), (basereg), (disp));	\
+	} while (0)
+
 #define x86_fp_op(inst,opc,index)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xd8;	\
@@ -989,6 +995,12 @@ typedef union {
 	do {	\
 		*(inst)++ = (unsigned char)0xde;	\
 		*(inst)++ = (unsigned char)0xd9;	\
+	} while (0)
+
+#define x86_fucompp(inst)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xda;	\
+		*(inst)++ = (unsigned char)0xe9;	\
 	} while (0)
 
 #define x86_fnstsw(inst)	\
@@ -1039,10 +1051,28 @@ typedef union {
 		*(inst)++ = (unsigned char)0xc8 + ((index) & 0x07);	\
 	} while (0)
 
+#define x86_fcomi(inst,index)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xdb;	\
+		*(inst)++ = (unsigned char)0xf0 + ((index) & 0x07);	\
+	} while (0)
+
 #define x86_fcomip(inst,index)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xdf;	\
 		*(inst)++ = (unsigned char)0xf0 + ((index) & 0x07);	\
+	} while (0)
+
+#define x86_fucomi(inst,index)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xdb;	\
+		*(inst)++ = (unsigned char)0xe8 + ((index) & 0x07);	\
+	} while (0)
+
+#define x86_fucomip(inst,index)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xdf;	\
+		*(inst)++ = (unsigned char)0xe8 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fld(inst,mem,is_double)	\
