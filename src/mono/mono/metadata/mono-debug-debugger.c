@@ -1147,6 +1147,16 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, method, index);
 }
 
+gboolean
+mono_debugger_unhandled_exception (gpointer addr, MonoObject *exc)
+{
+	if (!mono_debugger_initialized)
+		return FALSE;
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION, exc, addr);
+	return TRUE;
+}
+
 static gchar *
 get_exception_message (MonoObject *exc)
 {
@@ -1201,7 +1211,7 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	} else
 		retval = mono_runtime_invoke (method, obj, params, exc);
 
-	if (*exc == NULL)
+	if (!exc || (*exc == NULL))
 		return retval;
 
 	message = get_exception_message (*exc);
