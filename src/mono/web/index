@@ -162,13 +162,13 @@
 		  installation from scratch.  This includes the Mono
 	 	  runtime and all the assemblies we distribute.
 
-	 	* monocharge tarballs - These tarballs contain only
+		* monocharge tarballs - These tarballs contain only
 		  the assemblies built on that day.
 
 		* monolite tarballs - These tarballs contain a copy of
 		  'corlib.dll', 'mcs.exe' and 'System.dll'. They can be used to
 		  re-bootstrap an out-of-sync installation.
-	<ul>
+	</ul>
 
 	The daily builds are availble here: <a href="http://go-mono.com/daily">http://go-mono.com/daily</a>
 
