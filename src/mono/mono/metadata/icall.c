@@ -182,6 +182,14 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 	return mono_object_clone (this);
 }
 
+static MonoObject *
+ves_icall_get_cur_domain ()
+{
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+
+	return mono_new_object (klass);
+}
+
 static gpointer icall_map [] = {
 	/*
 	 * System.Array
@@ -205,6 +213,11 @@ static gpointer icall_map [] = {
 	 */
 	"System.String::IsInterned", mono_string_is_interned,
 	"System.String::Intern", mono_string_intern,
+
+	/*
+	 * System.AppDomain
+	 */
+	"System.AppDomain::getCurDomain", ves_icall_get_cur_domain,
 
 	/*
 	 * System.Threading

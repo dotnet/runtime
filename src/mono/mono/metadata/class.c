@@ -591,8 +591,10 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		return 0;
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 	
-	if (!token)
-		g_error ("token not found for %s.%s in image %s", name_space, name, image->name);
+	if (!token) {
+		g_warning ("token not found for %s.%s in image %s", name_space, name, image->name);
+		return NULL;
+	}
 
 	token = MONO_TOKEN_TYPE_DEF | token;
 

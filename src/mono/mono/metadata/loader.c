@@ -186,7 +186,7 @@ mono_lookup_internal_call (const char *name)
 
 	if (!(res = g_hash_table_lookup (icall_hash, name))) {
 		g_warning ("cant resolve internal call to \"%s\"", name);
-		g_assert_not_reached ();
+		return NULL;
 	}
 
 	return res;
@@ -276,11 +276,12 @@ method_from_memberref (MonoImage *image, guint32 index)
 					}
 				}
 			}
-			g_warning ("can't find method %s.%s::%s", nspace, name, mname);
-			g_assert_not_reached ();
-			break;
+			g_warning ("Missing method %s.%s::%s", nspace, name, mname);
+			mono_metadata_free_method_signature (sig);
+			return NULL;
 		default:
-			g_assert_not_reached ();
+			mono_metadata_free_method_signature (sig);
+			return NULL;
 		}
 		break;
 	}
@@ -382,14 +383,20 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
 
-	if (!gmodule)
-		g_error ("Failed to load library %s (%s)", full_name, scope);
+	mh->addr = NULL;
+	if (!gmodule) {
+		g_warning ("Failed to load library %s (%s)", full_name, scope);
+		g_free (full_name);
+		return;
+	}
 	g_free (full_name);
 
 	g_module_symbol (gmodule, import, &mh->addr); 
 
-	if (!mh->addr)
-		g_error ("Failed to load function %s from %s", import, scope);
+	if (!mh->addr) {
+		g_warning ("Failed to load function %s from %s", import, scope);
+		return;
+	}
 
 	mh->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 }
@@ -438,26 +445,11 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	}
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_TYPEDEF];
-		guint32 tdef;
-		guint32 tdcols [MONO_TYPEDEF_SIZE];
-
-		tdef = mono_metadata_typedef_from_method (image, index - 1) - 1;
-
-		mono_metadata_decode_row (t, tdef, tdcols, MONO_TYPEDEF_SIZE);
-
-		name = g_strconcat (mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAMESPACE]), ".",
-				    mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAME]), "::", 
+		name = g_strconcat (result->klass->name_space, ".", result->klass->name, "::", 
 				    mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]), NULL);
-
 		result->addr = mono_lookup_internal_call (name);
-
 		g_free (name);
-
-		g_assert (result->addr != NULL);
-
 		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
-
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index - 1);
 	} else {
