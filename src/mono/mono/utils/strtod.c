@@ -138,7 +138,7 @@ static char sccsid[] = "@(#)strtod.c	8.1 (Berkeley) 6/4/93";
  *	FLT_RADIX, FLT_ROUNDS, and DBL_MAX.
  */
 
-#if defined(i386) || defined(mips) && defined(MIPSEL)
+#if defined(i386) || defined(mips) && defined(MIPSEL) || defined (__arm__)
 
 #define IEEE_8087
 #define Long long
