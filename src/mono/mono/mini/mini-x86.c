@@ -13,6 +13,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/profiler-private.h>
 
 #include "mini-x86.h"
 #include "inssel.h"
@@ -2210,21 +2211,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_JMP: {
 			/*
 			 * Note: this 'frame destruction' logic is useful for tail calls, too.
+			 * Keep in sync with the code in emit_epilog.
 			 */
-			int pos = -4;
-			if (cfg->used_int_regs & (1 << X86_EBX)) {
-				x86_mov_reg_membase (code, X86_EBX, X86_EBP, pos, 4);
+			int pos = 0;
+
+			/* FIXME: no tracing support... */
+			if (mono_jit_profile)
+				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
+			/* reset offset to make max_len work */
+			offset = code - cfg->native_code;
+
+			g_assert (!cfg->method->save_lmf);
+
+			if (cfg->used_int_regs & (1 << X86_EBX))
 				pos -= 4;
-			}
-			if (cfg->used_int_regs & (1 << X86_EDI)) {
-				x86_mov_reg_membase (code, X86_EDI, X86_EBP, pos, 4);
+			if (cfg->used_int_regs & (1 << X86_EDI))
 				pos -= 4;
-			}
-			if (cfg->used_int_regs & (1 << X86_ESI)) {
-				x86_mov_reg_membase (code, X86_ESI, X86_EBP, pos, 4);
+			if (cfg->used_int_regs & (1 << X86_ESI))
 				pos -= 4;
-			}
-			/* FIXME: no tracing or profiling support... */
+			if (pos)
+				x86_lea_membase (code, X86_ESP, X86_EBP, pos);
+	
+			if (cfg->used_int_regs & (1 << X86_ESI))
+				x86_pop_reg (code, X86_ESI);
+			if (cfg->used_int_regs & (1 << X86_EDI))
+				x86_pop_reg (code, X86_EDI);
+			if (cfg->used_int_regs & (1 << X86_EBX))
+				x86_pop_reg (code, X86_EBX);
+	
 			/* restore ESP/EBP */
 			x86_leave (code);
 			offset = code - cfg->native_code;
@@ -3086,7 +3100,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (mono_jit_trace_calls)
 		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
 
-	
+	/* the code restoring the registers must be kept in sync with CEE_JMP */
 	pos = 0;
 	
 	if (method->save_lmf) {
