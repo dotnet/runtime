@@ -3093,170 +3093,162 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			break;
 		}
 		case CEE_CONV_U1: 
-		case CEE_CONV_I1: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_U1, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);		
+			break;
+		case CEE_CONV_I1:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I1, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
-		}
 		case CEE_CONV_U2: 
-		case CEE_CONV_I2: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_U2, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);		
+			break;
+		case CEE_CONV_I2:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I2, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
-		}
 		case CEE_CONV_I: 
-		case CEE_CONV_U: 
-		case CEE_CONV_U4: 
-		case CEE_CONV_I4: {
+		case CEE_CONV_I4:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
-		}
-		case CEE_CONV_I8: {
+		case CEE_CONV_U: 
+		case CEE_CONV_U4: 
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_U4, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);		
+			break;
+		case CEE_CONV_I8:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I8, *sp, NULL);
 			PUSH_TREE (t1, VAL_I64);		
 			break;
-		}
-		case CEE_CONV_U8: {
+		case CEE_CONV_U8:
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_I8, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_U8, *sp, NULL);
 			PUSH_TREE (t1, VAL_I64);		
 			break;
-		}
-		case CEE_CONV_R8: {
+		case CEE_CONV_R8:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_R8, *sp, NULL);
 			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
-		}
-		case CEE_CONV_R4: {
+		case CEE_CONV_R4:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_R4, *sp, NULL);
 			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
-		}
-		case CEE_CONV_R_UN: {
+		case CEE_CONV_R_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_R_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
-		}
 		case CEE_CONV_OVF_I:
-		case CEE_CONV_OVF_I4: {
+		case CEE_CONV_OVF_I4:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
 		case CEE_CONV_OVF_I_UN:
-		case CEE_CONV_OVF_I4_UN: {
+		case CEE_CONV_OVF_I4_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I4_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
-		}
 		case CEE_CONV_OVF_U:
-		case CEE_CONV_OVF_U4: {
+		case CEE_CONV_OVF_U4:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
-		}
-		case CEE_CONV_OVF_I1: {
+		case CEE_CONV_OVF_I1:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I1, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_I1_UN: {
+		case CEE_CONV_OVF_I1_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I1_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_U1_UN: {
+		case CEE_CONV_OVF_U1_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U1_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		
-		case CEE_CONV_OVF_U1: {
+		case CEE_CONV_OVF_U1:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U1, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_I2: {
+		case CEE_CONV_OVF_I2:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I2, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_U2_UN: {
+		case CEE_CONV_OVF_U2_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U2_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_U2: {
+		case CEE_CONV_OVF_U2:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U2, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_I2_UN: {
+		case CEE_CONV_OVF_I2_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I2_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
-		case CEE_CONV_OVF_U8: {
+		case CEE_CONV_OVF_U8:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U8, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
-		}
 		case CEE_CONV_OVF_U_UN:
-		case CEE_CONV_OVF_U4_UN: {
+		case CEE_CONV_OVF_U4_UN:
 			// fixme: raise exceptions ?
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
 			break;
-		}
-		case CEE_CONV_OVF_I8_UN: {
+		case CEE_CONV_OVF_I8_UN:
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I8_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I64);
 			break;
-		}
 		case CEE_PREFIX1: {
 			++ip;			
 			switch (*ip) {

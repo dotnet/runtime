@@ -189,7 +189,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT CLT_UN CGT CGT_UN
-%term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8 CONV_R_UN
+%term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U1 CONV_U2 CONV_U4 CONV_U8 CONV_R4 CONV_R8 CONV_R_UN
 %term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWARR_SPEC NEWOBJ NEWOBJ_SPEC NEWSTRUCT CPOBJ POP INITOBJ
 %term ISINST CASTCLASS UNBOX
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
@@ -952,8 +952,16 @@ reg: CONV_I1 (reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, FALSE);
 }
 
+reg: CONV_U1 (reg) {
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, FALSE);
+}
+
 reg: CONV_I2 (reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, TRUE);
+}
+
+reg: CONV_U2 (reg) {
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, TRUE);
 }
 
 # warning: this chain rule requires a register
@@ -965,6 +973,12 @@ reg: CONV_I4 (reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	PRINT_REG ("CONV_I4", tree->left->reg1);
+} 
+
+reg: CONV_U4 (reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	PRINT_REG ("CONV_U4", tree->left->reg1);
 } 
 
 reg: CONV_OVF_I4 (reg) {
@@ -2358,6 +2372,12 @@ lreg: CONV_I8 (reg) {
 
 lreg: CONV_U8 (coni4) 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
+	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
+}
+
+lreg: CONV_U8 (reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
 }
 
