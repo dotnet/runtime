@@ -285,14 +285,12 @@ mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 MonoMethod*
 mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass)
 {
-	int i;
-
-	mono_class_init (klass);
-	mono_class_setup_methods (klass);
-	for (i = 0; i < klass->method.count; ++i) {
-		if (mono_method_desc_match (desc, klass->methods [i]))
-			return klass->methods [i];
-	}
+	MonoMethod* m;
+	gpointer iter = NULL;
+	
+	while ((m = mono_class_get_methods (klass, &iter)))
+		if (mono_method_desc_match (desc, m))
+			return m;
 	return NULL;
 }
 
