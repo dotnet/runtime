@@ -197,6 +197,9 @@ gboolean mono_jit_trace_calls = FALSE;
 /* Force jit to share code between application domains */
 gboolean mono_jit_share_code = FALSE;
 
+/* maximum number of worker threads */
+int mono_worker_threads = 1;
+
 MonoDebugHandle *mono_debug_handle = NULL;
 GList *mono_debug_methods = NULL;
 
@@ -3138,6 +3141,7 @@ usage (char *name)
 		 "--trace-calls    printf function call trace\n"
 		 "--share-code     force jit to produce shared code\n"
 		 "--print-vtable   print the VTable of all used classes\n"
+		 "--workers n      maximum number of worker threads\n"
 		 "--stabs          write stabs debug information\n"
 		 "--dwarf          write dwarf2 debug information\n"
 		 "--stats          print statistics about the jit operations\n"
@@ -3294,6 +3298,10 @@ main (int argc, char *argv [])
 			mono_debug_methods = g_list_append (mono_debug_methods, desc);
 		} else if (strcmp (argv [i], "--count") == 0) {
 			compile_times = atoi (argv [++i]);
+		} else if (strcmp (argv [i], "--workers") == 0) {
+			mono_worker_threads = atoi (argv [++i]);
+			if (mono_worker_threads < 1)
+				mono_worker_threads = 1;
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			compile_class = argv [++i];
 		} else if (strcmp (argv [i], "--ncompile") == 0) {

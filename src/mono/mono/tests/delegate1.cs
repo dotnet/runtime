@@ -23,6 +23,7 @@ class Test {
 		string state2 = "STATE2";
 		string state3 = "STATE3";
 		string state4 = "STATE4";
+		int fin = 0;
 		
 		IAsyncResult ar1 = d.BeginInvoke (1, ac, state1);
 		IAsyncResult ar2 = d.BeginInvoke (2, ac, state2);
@@ -41,13 +42,20 @@ class Test {
 
 		ar1.AsyncWaitHandle.WaitOne ();
 		Console.WriteLine ("completed1: " + ar1.IsCompleted);
+		if (ar1.IsCompleted) fin++;
 		ar2.AsyncWaitHandle.WaitOne ();
 		Console.WriteLine ("completed2: " + ar2.IsCompleted);
+		if (ar2.IsCompleted) fin++;
 		ar3.AsyncWaitHandle.WaitOne ();
 		Console.WriteLine ("completed3: " + ar3.IsCompleted);
+		if (ar3.IsCompleted) fin++;
 		ar4.AsyncWaitHandle.WaitOne ();		
 		Console.WriteLine ("completed4: " + ar4.IsCompleted);
-				
+		if (ar4.IsCompleted) fin++;
+
+		if (fin != 4)
+			return 1;
+		
 		return 0;
 	}
 }

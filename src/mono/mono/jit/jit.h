@@ -141,6 +141,7 @@ extern gboolean mono_jit_dump_forest;
 extern gboolean mono_jit_trace_calls;
 extern gboolean mono_jit_share_code;
 extern gpointer mono_end_of_stack;
+extern int      mono_worker_threads;
 extern guint32  lmf_thread_id;
 extern guint32  exc_cleanup_id;
 extern guint32  async_result_id;

@@ -25,8 +25,6 @@
  * - worker threads should be domain specific
  */
 
-#define NUM_WORKERS 2
-
 typedef struct {
 	MonoMethod *begin_method;
 	MonoMethod *end_method;
@@ -117,16 +115,9 @@ arch_get_async_invoke ()
 
 	/* set inside_cb to 1 */
 	x86_mov_membase_imm (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, inside_cb), 1, 4);
-
-	/* call async callback */
-	/* push pointer to AsyncResult */
-	x86_push_reg (code, X86_ESI);
-	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_target));
-	x86_call_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code));
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-
-	/* set new AsyncResult state */
-	x86_mov_membase_imm (code, X86_ESI, G_STRUCT_OFFSET (MonoAsyncResult, completed), 1, sizeof (MonoBoolean));
+	/* set completed to 1 */
+	x86_mov_membase_imm (code, X86_ESI, G_STRUCT_OFFSET (MonoAsyncResult, completed), 
+			     1, sizeof (MonoBoolean));
 
 	/* notify listeners */
 	x86_push_imm (code, 0);
@@ -134,6 +125,13 @@ arch_get_async_invoke ()
 	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, wait_semaphore));
 	x86_call_code (code, ReleaseSemaphore);
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+
+	/* call async callback */
+	/* push pointer to AsyncResult */
+	x86_push_reg (code, X86_ESI);
+	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_target));
+	x86_call_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code));
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 	
 	/* restore caller saved regs */
 	x86_pop_reg (code, X86_ESI);
@@ -269,8 +267,8 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 	res_freg = ac->res_freg;
 
 	/* free resources */
-	g_free (ac->stack_frame);
-	/* fixme: this triggers a strange SEGV somethimes */
+	/* fixme: this triggers a strange SEGV somethimes with tests/delegate1.cs */
+	//g_free (ac->stack_frame);
 	//g_free (ac);
 	ares->data = NULL;
 
@@ -496,7 +494,7 @@ async_invoke_thread ()
 		EnterCriticalSection (&delegate_section);
 		
 		if (async_call_queue) {
-			if ((g_list_length (async_call_queue) > 1) && (workers <NUM_WORKERS)) {
+			if ((g_list_length (async_call_queue) > 1) && (workers < mono_worker_threads)) {
 				new_worker = TRUE;
 				workers++;
 			}
