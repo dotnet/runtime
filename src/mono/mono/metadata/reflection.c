@@ -174,15 +174,6 @@ make_room_in_stream (MonoDynamicStream *stream, int size)
 	stream->data = g_realloc (stream->data, stream->alloc_size);
 }
 
-static void
-mono_dynamic_stream_reset (MonoDynamicStream* stream)
-{
-	stream->alloc_size = stream->index = stream->offset = 0;
-	g_free (stream->data);
-	if (stream->hash)
-		g_hash_table_destroy (stream->hash);
-}
-
 static guint32
 string_heap_insert (MonoDynamicStream *sh, const char *str)
 {
@@ -215,16 +206,8 @@ string_heap_init (MonoDynamicStream *sh)
 	sh->index = 0;
 	sh->alloc_size = 4096;
 	sh->data = g_malloc (4096);
-	sh->hash = g_hash_table_new (g_str_hash, g_str_equal);
+	sh->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	string_heap_insert (sh, "");
-}
-
-static void
-string_heap_free (MonoDynamicStream *sh)
-{
-	g_free (sh->data);
-	g_hash_table_foreach (sh->hash, (GHFunc)g_free, NULL);
-	g_hash_table_destroy (sh->hash);
 }
 
 static guint32
@@ -4220,12 +4203,14 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image = g_new0 (MonoDynamicImage, 1);
 #endif
 
+	/*g_print ("created image %p\n", image);*/
 	/* keep in sync with image.c */
 	image->image.name = assembly_name;
 	image->image.assembly_name = image->image.name; /* they may be different */
 	image->image.module_name = module_name;
 	image->image.version = g_strdup (version);
 	image->image.dynamic = TRUE;
+	image->image.ref_count = 1;
 
 	image->image.references = g_new0 (MonoAssembly*, 1);
 	image->image.references [0] = NULL;
@@ -4284,6 +4269,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
+	MonoDomain *domain = mono_object_domain (assemblyb);
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -4296,6 +4282,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicImage, 1);
 #endif
 
+	assembly->assembly.ref_count = 1;
 	assembly->assembly.dynamic = TRUE;
 	assembly->assembly.corlib_internal = assemblyb->corlib_internal;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
@@ -4312,6 +4299,10 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
+
+	mono_domain_lock (domain);
+	domain->assemblies = g_list_prepend (domain->assemblies, assembly);
+	mono_domain_unlock (domain);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
 	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
@@ -4927,10 +4918,11 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	mono_dynamic_stream_reset (&assembly->us);
 	mono_dynamic_stream_reset (&assembly->blob);
 	mono_dynamic_stream_reset (&assembly->guid);
-	string_heap_free (&assembly->sheap);
+	mono_dynamic_stream_reset (&assembly->sheap);
 
 	g_hash_table_foreach (assembly->blob_cache, (GHFunc)g_free, NULL);
 	g_hash_table_destroy (assembly->blob_cache);
+	assembly->blob_cache = NULL;
 }
 
 MonoReflectionModule *

@@ -307,6 +307,14 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 }
 
 void
+mono_assembly_addref (MonoAssembly *assembly)
+{
+	EnterCriticalSection (&assemblies_mutex);
+	assembly->ref_count++;
+	LeaveCriticalSection (&assemblies_mutex);
+}
+
+void
 mono_assembly_load_reference (MonoImage *image, int index)
 {
 	MonoTableInfo *t;
@@ -390,11 +398,14 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		}
 	}
 
-	if (reference == NULL)
+	EnterCriticalSection (&assemblies_mutex);
+	if (reference == NULL) {
 		/* Flag as not found */
 		reference = (gpointer)-1;
+	} else {
+		reference->ref_count++;
+	}	
 
-	EnterCriticalSection (&assemblies_mutex);
 	if (!image->references [index])
 		image->references [index] = reference;
 	LeaveCriticalSection (&assemblies_mutex);
@@ -760,6 +771,7 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
 	ass->image = image;
+	ass->ref_count = 1;
 
 	mono_assembly_fill_assembly_name (image, &ass->aname);
 
@@ -1067,6 +1079,8 @@ mono_assembly_close (MonoAssembly *assembly)
 	g_return_if_fail (assembly != NULL);
 
 	EnterCriticalSection (&assemblies_mutex);
+	/*g_print ("destroy assembly %p %d (%s)\n", assembly, assembly->ref_count, assembly->image->name);*/
+	g_assert (assembly->ref_count > 0);
 	if (--assembly->ref_count != 0) {
 		LeaveCriticalSection (&assemblies_mutex);
 		return;
@@ -1084,7 +1098,8 @@ mono_assembly_close (MonoAssembly *assembly)
 	mono_image_close (assembly->image);
 
 	g_free (assembly->basedir);
-	g_free (assembly);
+	if (!assembly->dynamic)
+		g_free (assembly);
 }
 
 MonoImage*

@@ -754,6 +754,12 @@ remove_assembly (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
+add_assembly (gpointer key, gpointer value, gpointer user_data)
+{
+	g_hash_table_insert ((GHashTable*)user_data, value, value);
+}
+
+static void
 dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoJitDynamicMethodInfo *di = value;
@@ -770,6 +776,8 @@ delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
+	GHashTable *unique_assemblies;
+	GList *tmp;
 	if ((domain == mono_root_domain) && !force) {
 		g_warning ("cant unload root domain");
 		return;
@@ -793,14 +801,22 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->entry_assembly = NULL;
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	g_hash_table_foreach (domain->assemblies_by_name, remove_assembly, NULL);
-
-	mono_g_hash_table_destroy (domain->env);
-	domain->env = NULL;
+	/* some assemblies are in domain->assemblies_by_name and some only in domain->assemblies:
+	 * collect them in unique_assemblies so we don't free them twice.
+	 */
+	unique_assemblies = g_hash_table_new (NULL, NULL);
+	g_hash_table_foreach (domain->assemblies_by_name, add_assembly, unique_assemblies);
+	for (tmp = domain->assemblies; tmp; tmp = tmp->next)
+		g_hash_table_insert (unique_assemblies, tmp->data, tmp->data);
+	g_hash_table_foreach (unique_assemblies, remove_assembly, NULL);
+	g_hash_table_destroy (unique_assemblies);
 	g_hash_table_destroy (domain->assemblies_by_name);
 	domain->assemblies_by_name = NULL;
 	g_list_free (domain->assemblies);
 	domain->assemblies = NULL;
+
+	mono_g_hash_table_destroy (domain->env);
+	domain->env = NULL;
 	g_hash_table_destroy (domain->class_vtable_hash);
 	domain->class_vtable_hash = NULL;
 	mono_g_hash_table_destroy (domain->proxy_vtable_hash);

@@ -291,5 +291,8 @@ MonoGenericInst *
 mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
 					     MonoGenericContext    *context);
 
+void mono_dynamic_stream_reset (MonoDynamicStream* stream);
+void mono_assembly_addref      (MonoAssembly *assembly);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

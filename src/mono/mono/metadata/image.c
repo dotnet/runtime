@@ -989,6 +989,18 @@ mono_image_addref (MonoImage *image)
 	InterlockedIncrement (&image->ref_count);
 }	
 
+void
+mono_dynamic_stream_reset (MonoDynamicStream* stream)
+{
+	stream->alloc_size = stream->index = stream->offset = 0;
+	g_free (stream->data);
+	stream->data = NULL;
+	if (stream->hash) {
+		g_hash_table_destroy (stream->hash);
+		stream->hash = NULL;
+	}
+}
+
 /**
  * mono_image_close:
  * @image: The image file we wish to close
@@ -1004,6 +1016,8 @@ mono_image_close (MonoImage *image)
 	g_return_if_fail (image != NULL);
 
 	EnterCriticalSection (&images_mutex);
+	/*g_print ("destroy image %p (dynamic: %d) refcount: %d\n", image, image->dynamic, image->ref_count);*/
+	g_assert (image->ref_count > 0);
 	if (--image->ref_count) {
 		LeaveCriticalSection (&images_mutex);
 		return;
@@ -1083,9 +1097,47 @@ mono_image_close (MonoImage *image)
 		g_free (image->image_info);
 	}
 
-	if (!image->dynamic)
-		/* Dynamic images are GC_MALLOCed */
+	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
+	if (!image->dynamic) {
 		g_free (image);
+	} else {
+		/* Dynamic images are GC_MALLOCed */
+		struct _MonoDynamicImage *di = (struct _MonoDynamicImage*)image;
+		int i;
+		if (di->typespec)
+			g_hash_table_destroy (di->typespec);
+		if (di->typeref)
+			g_hash_table_destroy (di->typeref);
+		if (di->handleref)
+			g_hash_table_destroy (di->handleref);
+		if (di->tokens)
+			mono_g_hash_table_destroy (di->tokens);
+		if (di->blob_cache)
+			g_hash_table_destroy (di->blob_cache);
+		g_list_free (di->array_methods);
+		if (di->gen_params)
+			g_ptr_array_free (di->gen_params, TRUE);
+		if (di->token_fixups)
+			mono_g_hash_table_destroy (di->token_fixups);
+		if (di->method_to_table_idx)
+			g_hash_table_destroy (di->method_to_table_idx);
+		if (di->field_to_table_idx)
+			g_hash_table_destroy (di->field_to_table_idx);
+		if (di->method_aux_hash)
+			g_hash_table_destroy (di->method_aux_hash);
+		g_free (di->strong_name);
+		g_free (di->win32_res);
+		mono_dynamic_stream_reset (&di->sheap);
+		mono_dynamic_stream_reset (&di->code);
+		mono_dynamic_stream_reset (&di->resources);
+		mono_dynamic_stream_reset (&di->us);
+		mono_dynamic_stream_reset (&di->blob);
+		mono_dynamic_stream_reset (&di->tstream);
+		mono_dynamic_stream_reset (&di->guid);
+		for (i = 0; i < MONO_TABLE_NUM; ++i) {
+			g_free (di->tables [i].values);
+		}
+	}
 }
 
 /** 

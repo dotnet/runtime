@@ -541,6 +541,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
 		return; /* This is ok while no lazy loading of assemblies */
 	}
 
+	mono_assembly_addref (ass);
 	g_hash_table_insert (domain->assemblies_by_name, (gpointer) ass->aname.name, ass);
 	domain->assemblies = g_list_prepend (domain->assemblies, ass);
 	mono_domain_unlock (domain);
@@ -1388,6 +1389,7 @@ mono_domain_unload (MonoDomain *domain)
 		g_warning (thread_data.failure_reason);
 
 		g_free (thread_data.failure_reason);
+		thread_data.failure_reason = NULL;
 
 		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
 
