@@ -3043,6 +3043,48 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 	return mcpath;
 }
 
+static void
+ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoString *message)
+{
+#if defined (PLATFORM_WIN32)
+	static void (*output_debug) (gchar *);
+	static gboolean tried_loading = FALSE;
+	gchar *str;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!tried_loading && output_debug == NULL) {
+		GModule *k32;
+
+		tried_loading = TRUE;
+		k32 = g_module_open ("kernel32", G_MODULE_BIND_LAZY);
+		if (!k32) {
+			gchar *error = g_strdup (g_module_error ());
+			g_warning ("Failed to load kernel32.dll: %s\n", error);
+			g_free (error);
+			return;
+		}
+
+		g_module_symbol (k32, "OutputDebugStringW", (gpointer *) &output_debug);
+		if (!output_debug) {
+			gchar *error = g_strdup (g_module_error ());
+			g_warning ("Failed to load OutputDebugStringW: %s\n", error);
+			g_free (error);
+			return;
+		}
+	}
+
+	if (output_debug == NULL)
+		return;
+	
+	str = mono_string_to_utf8 (message);
+	output_debug (str);
+	g_free (str);
+#else
+	g_warning ("WriteWindowsDebugString called and PLATFORM_WIN32 not defined!\n");
+#endif
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3575,6 +3617,11 @@ static gconstpointer icall_map [] = {
 	"System.Configuration.DefaultConfig::get_machine_config_path",
 	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path,
 
+	/*
+	 * System.Diagnostics.DefaultTraceListener
+	 */
+	"System.Diagnostics.DefaultTraceListener::WriteWindowsDebugString",
+	ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString,
 	/*
 	 * add other internal calls here
 	 */
