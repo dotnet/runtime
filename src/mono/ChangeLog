@@ -1,3 +1,17 @@
+2001-08-02  Alex Graveley  <alex@ximian.com>
+
+        * libffi/*: Import libffi CVS version, with minor changes to make it 
+          compile.
+
+        * mono/interpreter/Makefile.am: Link against 
+          ../../libffi/.libs/libffi.a.
+
+        * Makefile.am: Add libffi
+
+        * autogen.sh: Replace with adapted gnome autogen.sh
+
+        * configure.in: Add AC_CONFIG_SUBDIRS(libffi).
+
 2001-08-02  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/pinvoke.cs: impl.

@@ -1,0 +1,13 @@
+global srcdir subdir
+
+catch "glob -nocomplain ${srcdir}/${subdir}/*.c" srcfiles
+verbose "srcfiles are $srcfiles"
+
+set prefix ""
+foreach x $srcfiles {
+    test_libffi $x
+}
+
+# Local Variables:
+# tcl-indent-level:4
+# End:

@@ -1,0 +1,167 @@
+dnl Process this with autoconf to create configure
+AC_INIT(fficonfig.h.in)
+AM_CONFIG_HEADER(fficonfig.h)
+
+dnl Default to --enable-multilib
+AC_ARG_ENABLE(multilib,
+[  --enable-multilib       build many library versions (default)],
+[case "${enableval}" in
+  yes) multilib=yes ;;
+  no)  multilib=no ;;
+  *)   AC_MSG_ERROR(bad value ${enableval} for multilib option) ;;
+ esac], [multilib=yes])dnl
+
+dnl We may get other options which we don't document:
+dnl --with-target-subdir, --with-multisrctop, --with-multisubdir
+
+### I don't understand this, so comment it out for now
+#if test "${srcdir}" = "."; then
+#  if test "${with_target_subdir}" != "."; then
+#    libffi_basedir="${srcdir}/${with_multisrctop}.."
+#  else
+#    libffi_basedir="${srcdir}/${with_multisrctop}"
+#  fi
+#else
+  libffi_basedir="${srcdir}"
+#fi
+AC_SUBST(libffi_basedir)
+
+AC_CANONICAL_HOST
+
+AM_INIT_AUTOMAKE(libffi,2.00-beta,no-define)
+
+AC_EXEEXT
+AM_MAINTAINER_MODE
+
+AC_PROG_CC
+AC_PROG_LIBTOOL
+AM_PROG_LIBTOOL
+AC_PROG_LN_S
+
+dnl The -no-testsuite modules omit the test subdir.
+AM_CONDITIONAL(TESTSUBDIR, test -d $srcdir/testsuite)
+
+TARGET="unknown"
+case "$host" in
+  alpha*-*-linux* | alpha*-*-osf*)
+	TARGET=ALPHA;
+	$LN_S ${srcdir}/alpha/ffi.c t-ffi.c;
+	$LN_S $srcdir/alpha/osf.S t-asm.S;;
+  arm*-*-linux-*)
+	TARGET=ARM;
+	$LN_S $srcdir/arm/ffi.c t-ffi.c;
+	$LN_S $srcdir/arm/ffi.S t-asm.S;;
+  i*86-*-beos*|i*86-*-freebsd*|i*86-*-linux*|i*86-*-solaris*)
+	TARGET=X86; 
+	$LN_S $srcdir/x86/ffi.c t-ffi.c;
+	$LN_S $srcdir/x86/sysv.S t-asm.S;;
+  i*86-*-cygwin*|i*86-*-mingw*|i*86-*-win32*)
+	TARGET=X86_WIN32;
+	$LN_S $srcdir/x86/ffi.c t-ffi.c;
+	$LN_S $srcdir/x86/win32.S t-asm.S;;
+  ia64*-*-*)
+	TARGET=IA64;
+	$LN_S $srcdir/ia64/ffi.c t-ffi.c;
+	$LN_S $srcdir/ia64/unix.S t-asm.S;;
+  m68k-*-linux*)
+	TARGET=M68K;
+	$LN_S $srcdir/m68k/ffi.c t-ffi.c;
+	$LN_S $srcdir/m68k/unix.S t-asm.S;;
+  mips-*-elf)
+	TARGET=MIPS;
+	$LN_S $srcdir/mips/ffi.c t-ffi.c;
+	$LN_S $srcdir/mips/o32.S t-asm.S;;
+  mips-sgi-irix5.*)
+	TARGET=MIPS;
+	$LN_S $srcdir/mips/ffi.c t-ffi.c;
+	$LN_S $srcdir/mips/o32.S t-asm.S;;
+  mips-sgi-irix6.*)
+	TARGET=MIPS;
+	$LN_S $srcdir/mips/ffi.c t-ffi.c;
+	$LN_S $srcdir/mips/n32.S t-asm.S;;
+  powerpc-*-linux* | powerpc-*-sysv* | powerpc-*-beos*) 
+	TARGET=POWERPC;
+	$LN_S $srcdir/powerpc/ffi.c t-ffi.c;
+	$LN_S $srcdir/powerpc/sysv.S t-asm.S;;
+  s390-*-linux*)
+	TARGET=S390;
+	$LN_S $srcdir/s390/ffi.c t-ffi.c;
+	$LN_S $srcdir/s390/v8.S t-asm.S;;
+  sparc-*-linux*|sparc-sun-*)
+	TARGET=SPARC;
+	$LN_S $srcdir/sparc/ffi.c t-ffi.c;
+	$LN_S $srcdir/sparc/v8.S t-asm.S;;
+  sparc64-*-linux*)
+	TARGET=SPARC;
+	$LN_S $srcdir/sparc/ffi.c t-ffi.c;
+	$LN_S $srcdir/sparc/v9.S t-asm.S;;
+esac
+
+AC_SUBST(AM_RUNTESTFLAGS)
+
+if test ${TARGET} = unknown; then
+  AC_ERROR("libffi has not been ported to $host.")
+fi
+
+AC_HEADER_STDC
+AC_CHECK_FUNCS(memcpy)
+AC_FUNC_ALLOCA
+
+dnl AC_CHECK_SIZEOF(char)
+AC_COMPILE_CHECK_SIZEOF(short)
+AC_COMPILE_CHECK_SIZEOF(int)
+AC_COMPILE_CHECK_SIZEOF(long)
+AC_COMPILE_CHECK_SIZEOF(long long)
+AC_COMPILE_CHECK_SIZEOF(float)
+AC_COMPILE_CHECK_SIZEOF(double)
+AC_COMPILE_CHECK_SIZEOF(long double)
+
+AC_COMPILE_CHECK_SIZEOF(void *)
+AC_C_BIGENDIAN_CROSS
+
+AC_SUBST(TARGET)
+AC_SUBST(TARGETDIR)
+
+AC_SUBST(SHELL)
+
+AC_ARG_ENABLE(debug,[  --enable-debug          debugging mode], AC_DEFINE(FFI_DEBUG))
+
+AC_ARG_ENABLE(debug,[  --disable-structs       omit code for struct support], AC_DEFINE(FFI_NO_STRUCTS))
+
+AC_ARG_ENABLE(debug,[  --disable-raw-api       make the raw api unavailable], AC_DEFINE(FFI_NO_RAW_API))
+
+AC_ARG_ENABLE(purify-safety,
+[  --enable-purify-safety  purify-safe mode], AC_DEFINE(USING_PURIFY))
+
+AM_CONDITIONAL(USE_LIBDIR, test -z "$with_cross_host")
+
+if test "${multilib}" = "yes"; then
+  multilib_arg="--enable-multilib"
+else
+  multilib_arg=
+fi
+
+AC_OUTPUT(include/Makefile testsuite/Makefile Makefile,
+[
+if test -n "$CONFIG_FILES"; then
+   ac_file=Makefile . ${libffi_basedir}/config-ml.in
+fi
+],
+srcdir=${srcdir}
+host=${host}
+target=${target}
+with_multisubdir=${with_multisubdir}
+ac_configure_args="${multilib_arg} ${ac_configure_args}"
+CONFIG_SHELL=${CONFIG_SHELL-/bin/sh}
+libffi_basedir=${libffi_basedir}
+CC="${CC}"
+DEFS="$DEFS"
+test ! -d include && mkdir include
+test ! -f include/fficonfig.h && cp fficonfig.h include/fficonfig.h
+if cmp -s fficonfig.h include/fficonfig.h 2>/dev/null; then 
+	echo fficonfig.h unchanged
+else
+	echo Moving fficonfig.h to include/fficonfig.h
+	cp fficonfig.h include/fficonfig.h
+fi
+)

@@ -1,1 +1,1 @@
-SUBDIRS = mono doc
+SUBDIRS = libffi mono doc

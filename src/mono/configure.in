@@ -29,8 +29,7 @@ GMODULE_LIBS=`glib-config --libs gmodule`
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-AC_CHECK_LIB(ffi, ffi_prep_cif, ,[
-AC_MSG_ERROR(libffi 1.20 or higher is required.  You can get this from http://sources.redhat.com/libffi)])
+AC_CONFIG_SUBDIRS(libffi)
 
 CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
 AC_SUBST(CFLAGS)

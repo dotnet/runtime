@@ -1,0 +1,44 @@
+# Copyright (C) 2001  Red Hat, Inc.
+
+load_lib "libgloss.exp"
+
+global tmpdir
+
+if ![info exists tmpdir] {
+    set tmpdir "/tmp"
+}
+
+proc test_libffi {src} {
+
+    global tmpdir srcdir
+
+    set executable $tmpdir/[file tail [file rootname $src].x]
+
+    regsub "^$srcdir/?" $src "" testcase
+    # If we couldn't rip $srcdir out of `src' then just do the best we can.
+    # The point is to reduce the unnecessary noise in the logs.  Don't strip
+    # out too much because different testcases with the same name can confuse
+    # `test-tool'.
+    if [string match "/*" $testcase] {
+	set testcase "[file tail [file dirname $src]]/[file tail $src]"
+    }
+
+    remote_file build delete $executable;
+    verbose "Testing $testcase" 1
+
+    set comp_output [target_compile $src $executable executable "additional_flags=-g additional_flags=-I$srcdir/../include libs=../.libs/libffi.a"]
+
+    set result [libffi_load "$executable" "" ""]
+    set status [lindex $result 0];
+    set output [lindex $result 1];
+
+    $status "$testcase"
+
+#    if { $status == "pass" } {
+#	remote_file build delete $executable;
+#    }
+} 
+
+# Local Variables:
+# tcl-indent-level:4
+# End:

@@ -1,0 +1,432 @@
+Sun Apr 22 15:50:08 2001  Anthony Green  <green@redhat.com>
+
+	* include/ffi_common.h: Delete, after moving contents to...
+	* include/ffi_private.h: Subsume contents of ffi_common.h.
+	* include/Makefile.am (noinst_HEADERS): Remove ffi_common.h.
+	* include/Makefile.in: Rebuilt.
+	* arm/ffi.c, m68k/ffi.c, mips/ffi.c, powerpc/ffi.c, s390/ffi.c,
+	ia64/ffi.c: Include ffi_private.h, not ffi_common.h.
+	* alpha/ffi.c, sparc/ffi.c, x86/ffi.c: Don't include ffi_common.h.
+	* types.c, raw_api.c, java_raw_api.c, prep_cif.c: Don't include
+	ffi_common.h.
+	* debug.c: Include ffi_private.h instead of ffi_common.h.
+
+	* mips/ffi.c (calc_n32_struct_flags): Make static.
+	(FIX_ARGP): Remove call to debugging routine ffi_stop_here.
+
+	* mips/n32.S: Include ffi_private.h.
+	* mips/o32.S: Include ffi_private.h.
+
+Sun Apr 22 12:37:44 2001  Anthony Green  <green@redhat.com>
+
+	* README: Update some comments.
+
+	* Makefile.am (SUBDIRS): Add include so ffi.h gets installed.
+	* Makefile.in: Rebuilt.
+
+	* include/ffi.h: Change ALPHA to __alpha__ and SPARC to __sparc__.
+	* types.c: Ditto.
+	* prep_cif.c (ffi_prep_cif): Ditto.
+
+	* alpha/ffi.c, alpha/osf.S, sparc/ffi.c, sparc/v8.S, sparc/v9.S:
+	Include ffi_private.h.
+
+	* include/ffi_private.h (FFI_TYPE_LAST): Define.
+
+Sun Apr 22 11:41:55 2001  Anthony Green  <green@redhat.com>
+
+	* Revolutionary changes.  Target independent ffi.h.  dejagnu
+	testing infrastructure.  Moved source files around.  Configure no
+	longer depends on run tests.
+
+Sat Apr 14 20:49:46 2001  Anthony Green  <green@cygnus.com>
+
+	* mips/ffi.c: Include mips/mips.h.
+	* mips/o32.S: Ditto.
+	* mips/n32.S: Ditto.
+	* mips/o32.s: Deleted.
+	* mips/n32.s: Deleted.
+
+Sat Apr 14 20:47:13 2001  Anthony Green  <green@cygnus.com>
+
+	* mips/mips.h: Moved from include/ffi_mips.h.
+
+Sat Apr 14 20:09:05 2001  Anthony Green  <green@cygnus.com>
+
+	* powerpc/asm.h: Remove rcs id.
+
+Sat Apr 14 15:04:08 2001  Anthony Green  <green@cygnus.com>
+
+	* configure.in: Use AC_COMPILE_CHECK_SIZEOF and
+	AC_C_BIGENDIAN_CROSS.
+
+Sat Apr 14 15:02:53 2001  Anthony Green  <green@cygnus.com>
+
+	* aclocal.m4: Rebuilt.
+	* acinclude.m4: New file.  Add AC_COMPILE_CHECK_SIZEOF and
+	AC_C_BIGENDIAN_CROSS.
+
+2001-04-8  Neale Ferguson <Neale.Ferguson@softwareAG-usa.com>
+
+	* src/s390/ffi.c: New file.
+	* src/s390/sysv.S: New file.
+	* include/ffi.h: Add s390 bits.
+	* configure.in: Ditto.
+	* configure: Rebuild.
+
+2001-03-29  Bryce McKinlay  <bryce@albatross.co.nz>
+
+	* configure.in: Use different syntax for subdirectory creation.
+	* configure: Rebuilt.
+
+2001-03-27  Jon Beniston  <jon@beniston.com>
+
+	* configure.in: Added X86_WIN32 target (Win32, CygWin, MingW).
+	* configure: Rebuilt.
+	* Makefile.am: Added X86_WIN32 target support.
+	* Makefile.in: Rebuilt.
+
+	* include/ffi.h.in: Added X86_WIN32 target support.
+
+	* src/ffitest.c: Doesn't run structure tests for X86_WIN32 targets.
+	* src/types.c: Added X86_WIN32 target support.
+
+	* src/x86/win32.S: New file. Based on sysv.S, but with EH
+	stuff removed and made to work with CygWin's gas.
+
+2001-03-26  Bryce McKinlay  <bryce@albatross.co.nz>
+
+	* configure.in: Make target subdirectory in build dir.
+	* Makefile.am: Override suffix based rules to specify correct output
+	subdirectory.
+	* Makefile.in: Rebuilt.
+	* configure: Rebuilt.
+
+2001-03-23  Kevin B Hendricks  <khendricks@ivey.uwo.ca>
+
+	* src/powerpc/ppc_closure.S: New file.
+	* src/powerpc/ffi.c (ffi_prep_args): Fixed ABI compatibility bug
+	involving long long and register pairs.
+	(ffi_prep_closure): New function.
+	(flush_icache): Likewise.
+	(ffi_closure_helper_SYSV): Likewise.
+	* include/ffi.h.in (FFI_CLOSURES): Define on PPC.
+	(FFI_TRAMPOLINE_SIZE): Likewise.
+	(FFI_NATIVE_RAW_API): Likewise.
+	* Makefile.in: Rebuilt.
+	* Makefile.am (EXTRA_DIST): Added src/powerpc/ppc_closure.S.
+	(TARGET_SRC_POWERPC): Likewise.
+
+2001-03-19  Tom Tromey  <tromey@redhat.com>
+
+	* Makefile.in: Rebuilt.
+	* Makefile.am (ffitest_LDFLAGS): New macro.
+
+2001-03-02  Nick Clifton  <nickc@redhat.com>
+
+	* include/ffi.h.in: Remove RCS ident string.
+	* include/ffi_mips.h: Remove RCS ident string.
+	* src/debug.c: Remove RCS ident string.
+	* src/ffitest.c: Remove RCS ident string.
+	* src/prep_cif.c: Remove RCS ident string.
+	* src/types.c: Remove RCS ident string.
+	* src/alpha/ffi.c: Remove RCS ident string.
+	* src/alpha/osf.S: Remove RCS ident string.
+	* src/arm/ffi.c: Remove RCS ident string.
+	* src/arm/sysv.S: Remove RCS ident string.
+	* src/mips/ffi.c: Remove RCS ident string.
+	* src/mips/n32.S: Remove RCS ident string.
+	* src/mips/o32.S: Remove RCS ident string.
+	* src/sparc/ffi.c: Remove RCS ident string.
+	* src/sparc/v8.S: Remove RCS ident string.
+	* src/sparc/v9.S: Remove RCS ident string.
+	* src/x86/ffi.c: Remove RCS ident string.
+	* src/x86/sysv.S: Remove RCS ident string.
+
+2001-02-08  Joseph S. Myers  <jsm28@cam.ac.uk>
+
+	* include/ffi.h.in: Change sourceware.cygnus.com references to
+	gcc.gnu.org.
+
+2000-12-09  Richard Henderson  <rth@redhat.com>
+
+	* src/alpha/ffi.c (ffi_call): Simplify struct return test.
+	(ffi_closure_osf_inner): Index rather than increment avalue
+	and arg_types.  Give ffi_closure_osf the raw return value type.
+	* src/alpha/osf.S (ffi_closure_osf): Handle return value type
+	promotion.
+
+2000-12-07  Richard Henderson  <rth@redhat.com>
+
+	* src/raw_api.c (ffi_translate_args): Fix typo.
+	(ffi_prep_closure): Likewise.
+
+	* include/ffi.h.in [ALPHA]: Define FFI_CLOSURES and
+	FFI_TRAMPOLINE_SIZE.
+	* src/alpha/ffi.c (ffi_prep_cif_machdep): Adjust minimal
+	cif->bytes for new ffi_call_osf implementation.
+	(ffi_prep_args): Absorb into ...
+	(ffi_call): ... here.  Do all stack allocation here and
+	avoid a callback function.
+	(ffi_prep_closure, ffi_closure_osf_inner): New.
+	* src/alpha/osf.S (ffi_call_osf): Reimplement with no callback.
+	(ffi_closure_osf): New.
+
+2000-09-10  Alexandre Oliva  <aoliva@redhat.com>
+
+	* config.guess, config.sub, install-sh: Removed.
+	* ltconfig, ltmain.sh, missing, mkinstalldirs: Likewise.
+	* Makefile.in: Rebuilt.
+
+	* acinclude.m4: Include libtool macros from the top level.
+	* aclocal.m4, configure: Rebuilt.
+
+2000-08-22  Alexandre Oliva  <aoliva@redhat.com>
+
+	* configure.in [i*86-*-freebsd*] (TARGET, TARGETDIR): Set.
+	* configure: Rebuilt.
+
+2000-05-11  Scott Bambrough  <scottb@netwinder.org>
+
+	* libffi/src/arm/sysv.S (ffi_call_SYSV): Doubles are not saved to 
+	memory correctly.  Use conditional instructions, not branches where 
+	possible.
+
+2000-05-04  Tom Tromey  <tromey@cygnus.com>
+
+	* configure: Rebuilt.
+	* configure.in: Match `arm*-*-linux-*'.
+	From Chris Dornan <cdornan@arm.com>.
+
+2000-04-28  Jakub Jelinek  <jakub@redhat.com>
+
+	* Makefile.am (SUBDIRS): Define.
+	(AM_MAKEFLAGS): Likewise.
+	(Multilib support.): Add section.
+	* Makefile.in: Rebuilt.
+	* ltconfig (extra_compiler_flags, extra_compiler_flags_value):
+        New variables. Set for gcc using -print-multi-lib. Export them
+        to libtool.
+        (sparc64-*-linux-gnu*): Use libsuff 64 for search paths.
+        * ltmain.sh (B|b|V): Don't throw away gcc's -B, -b and -V options
+        for -shared links.
+        (extra_compiler_flags_value, extra_compiler_flags): Check these
+        for extra compiler options which need to be passed down in
+        compiler_flags.
+
+2000-04-16  Anthony Green  <green@redhat.com>
+
+	* README: Credit updates.  Update supported platorms.
+
+	* include/ffi.h.in: Important size fixes from William Knottenblet
+	(wjk@doc.ic.ac.uk).
+
+2000-04-16  Anthony Green  <green@redhat.com>
+
+	* configure: Rebuilt.
+	* configure.in: Change i*86-pc-linux* to i*86-*-linux*.
+
+2000-04-14  Jakub Jelinek  <jakub@redhat.com>
+
+        * include/ffi.h.in (SPARC64): Define for 64bit SPARC builds.
+	Set SPARC FFI_DEFAULT_ABI based on SPARC64 define.
+	* src/sparc/ffi.c (ffi_prep_args_v8): Renamed from ffi_prep_args.
+	Replace all void * sizeofs with sizeof(int).
+	Only compare type with FFI_TYPE_LONGDOUBLE if LONGDOUBLE is
+	different than DOUBLE.
+	Remove FFI_TYPE_SINT32 and FFI_TYPE_UINT32 cases (handled elsewhere).
+	(ffi_prep_args_v9): New function.
+	(ffi_prep_cif_machdep): Handle V9 ABI and long long on V8.
+	(ffi_V9_return_struct): New function.
+	(ffi_call): Handle FFI_V9 ABI from 64bit code and FFI_V8 ABI from
+	32bit code (not yet cross-arch calls).
+	* src/sparc/v8.S: Add struct return delay nop.
+	Handle long long.
+	* src/sparc/v9.S: New file.
+	* src/prep_cif.c (ffi_prep_cif): Return structure pointer
+	is used on sparc64 only for structures larger than 32 bytes.
+	Pass by reference for structures is done for structure arguments
+	larger than 16 bytes.
+	* src/ffitest.c (main): Use 64bit rint on sparc64.
+	Run long long tests on sparc.
+	* src/types.c (FFI_TYPE_POINTER): Pointer is 64bit on alpha and
+	sparc64.
+	(FFI_TYPE_LONGDOUBLE): long double is 128 bit aligned to 128 bits
+	on sparc64.
+	* configure.in (sparc-*-linux*): New supported target.
+	(sparc64-*-linux*): Likewise.
+	* configure: Rebuilt.
+	* Makefile.am: Add v9.S to SPARC files.
+	* Makefile.in: Likewise.
+	(LINK): Surround $(CCLD) into double quotes, so that multilib
+	compiles work correctly.
+
+2000-04-04  Alexandre Petit-Bianco  <apbianco@cygnus.com>
+
+	* configure: Rebuilt.
+
+	* configure.in: (i*86-*-solaris*): New libffi target. Patch
+	proposed by Bryce McKinlay.
+
+2000-03-20  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.in: Hand edit for java_raw_api.lo.
+
+2000-03-08  Bryce McKinlay  <bryce@albatross.co.nz>
+
+	* config.guess, config.sub: Update from the gcc tree.
+	Fix for PR libgcj/168.
+
+2000-03-03  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.in: Fixed ia64 by hand.
+
+	* configure: Rebuilt.
+	* configure.in (--enable-multilib): New option.
+	(libffi_basedir): New subst.
+	(AC_OUTPUT): Added multilib code.
+
+2000-03-02  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.in: Rebuilt.
+	* Makefile.am (TARGET_SRC_IA64): Use `ia64', not `alpha', as
+	directory name.
+
+2000-02-25  Hans Boehm <boehm@acm.org>
+
+	* src/ia64/ffi.c, src/ia64/ia64_flags.h, src/ia64/unix.S: New
+	files.
+	* src/raw_api.c (ffi_translate_args): Fixed typo in argument
+	list.
+	(ffi_prep_raw_closure): Use ffi_translate_args, not
+	ffi_closure_translate.
+	* src/java_raw_api.c: New file.
+	* src/ffitest.c (closure_test_fn): New function.
+	(main): Define `rint' as long long on IA64.  Added new test when
+	FFI_CLOSURES is defined.
+	* include/ffi.h.in (ALIGN): Use size_t, not unsigned.
+	(ffi_abi): Recognize IA64.
+	(ffi_raw): Added `flt' field.
+	Added "Java raw API" code.
+	* configure.in: Recognize ia64.
+	* Makefile.am (TARGET_SRC_IA64): New macro.
+	(libffi_la_common_SOURCES): Added java_raw_api.c.
+	(libffi_la_SOURCES): Define in IA64 case.
+
+2000-01-04  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.in: Rebuilt with newer automake.
+
+1999-12-31  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.am (INCLUDES): Added -I$(top_srcdir)/src.
+
+1999-09-01  Tom Tromey  <tromey@cygnus.com>
+
+	* include/ffi.h.in: Removed PACKAGE and VERSION defines and
+	undefs.
+	* fficonfig.h.in: Rebuilt.
+	* configure: Rebuilt.
+	* configure.in: Pass 3rd argument to AM_INIT_AUTOMAKE.
+	Use AM_PROG_LIBTOOL (automake 1.4 compatibility).
+	* acconfig.h: Don't #undef PACKAGE or VERSION.
+
+1999-08-09  Anthony Green  <green@cygnus.com>
+
+	* include/ffi.h.in: Try to work around messy header problem
+	with PACKAGE and VERSION.
+
+	* configure: Rebuilt.
+	* configure.in: Change version to 2.00-beta.
+
+        * fficonfig.h.in: Rebuilt.
+	* acconfig.h (FFI_NO_STRUCTS, FFI_NO_RAW_API): Define.
+
+	* src/x86/ffi.c (ffi_raw_call): Rename.
+
+Mon Aug  9 18:33:38 1999  Rainer Orth  <ro@TechFak.Uni-Bielefeld.DE>
+
+	* include/Makefile.in: Rebuilt.
+	* Makefile.in: Rebuilt
+	* Makefile.am (toolexeclibdir): Add $(MULTISUBDIR) even for native
+	builds.
+	Use USE_LIBDIR.
+
+	* configure: Rebuilt.
+	* configure.in (USE_LIBDIR): Define for native builds.
+	Use lowercase in configure --help explanations.
+
+1999-08-08  Anthony Green  <green@cygnus.com>
+
+	* include/ffi.h.in (FFI_FN): Remove `...'.
+
+1999-08-08  Anthony Green  <green@cygnus.com>
+
+	* Makefile.in: Rebuilt.
+	* Makefile.am (AM_CFLAGS): Compile with -fexceptions.
+
+	* src/x86/sysv.S: Add exception handling metadata.
+
+1999-08-02  Kresten Krab Thorup  <krab@dominiq.is.s.u-tokyo.ac.jp>
+
+	* src/x86/ffi.c (ffi_closure_SYSV): New function.
+	(ffi_prep_incoming_args_SYSV): Ditto.
+	(ffi_prep_closure): Ditto.
+	(ffi_closure_raw_SYSV): Ditto.
+	(ffi_prep_raw_closure): More ditto.
+	(ffi_call_raw): Final ditto.
+
+	* include/ffi.h.in: Add definitions for closure and raw API.
+
+	* src/x86/ffi.c (ffi_prep_cif_machdep): Added case for
+	FFI_TYPE_UINT64.  
+
+	* Makefile.am (libffi_la_common_SOURCES): Added raw_api.c
+
+	* src/raw_api.c: New file.
+
+	* include/ffi.h.in (ffi_raw): New type.
+	(UINT_ARG, SINT_ARG): New defines.
+	(ffi_closure, ffi_raw_closure): New types.
+	(ffi_prep_closure, ffi_prep_raw_closure): New declarations.
+	
+	* configure.in: Add check for endianness and sizeof void*.
+
+	* src/x86/sysv.S (ffi_call_SYSV): Call fixup routine via argument,
+	instead of directly.
+
+	* configure: Rebuilt.
+
+Thu Jul  8 14:28:42 1999  Anthony Green  <green@cygnus.com>
+
+	* configure.in: Add x86 and powerpc BeOS configurations.
+	From Makoto Kato <m_kato@ga2.so-net.ne.jp>.
+
+1999-05-09  Anthony Green  <green@cygnus.com>
+
+	* configure.in: Add warning about this being beta code.
+	Remove src/Makefile.am from the picture.
+	* configure: Rebuilt.
+
+	* Makefile.am: Move logic from src/Makefile.am.  Add changes
+	to support libffi as a target library.
+	* Makefile.in: Rebuilt.
+
+	* aclocal.m4, config.guess, config.sub, ltconfig, ltmain.sh:
+	Upgraded to new autoconf, automake, libtool.
+
+	* README: Tweaks.
+
+	* LICENSE: Update copyright date.
+
+	* src/Makefile.am, src/Makefile.in: Removed.
+
+1998-11-29  Anthony Green  <green@cygnus.com>
+
+	* include/ChangeLog: Removed.
+	* src/ChangeLog: Removed.
+	* src/mips/ChangeLog: Removed.
+	* src/sparc/ChangeLog: Remboved.
+	* src/x86/ChangeLog: Removed.
+
+	* ChangeLog.v1: Created.
