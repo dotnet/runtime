@@ -24,6 +24,83 @@
 
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
+/* mono_find_jit_info:
+ *
+ * This function is used to gather information from @ctx. It return the 
+ * MonoJitInfo of the corresponding function, unwinds one stack frame and
+ * stores the resulting context into @new_ctx. It also stores a string 
+ * describing the stack location into @trace (if not NULL), and modifies
+ * the @lmf if necessary. @native_offset return the IP offset from the 
+ * start of the function or -1 if that info is not available.
+ */
+static MonoJitInfo *
+mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
+			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
+			 gboolean *managed)
+{
+	gboolean managed2;
+	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
+	MonoJitInfo *ji;
+
+	if (trace)
+		*trace = NULL;
+
+	if (native_offset)
+		*native_offset = -1;
+
+	if (managed)
+		*managed = FALSE;
+
+	ji = mono_arch_find_jit_info (domain, jit_tls, res, prev_ji, ctx, new_ctx, NULL, lmf, NULL, &managed2);
+
+	if (ji == (gpointer)-1)
+		return ji;
+
+	if (managed2 || ji->method->wrapper_type) {
+		char *source_location, *tmpaddr, *fname;
+		gint32 address, iloffset;
+
+		address = (char *)ip - (char *)ji->code_start;
+
+		if (native_offset)
+			*native_offset = address;
+
+		if (managed)
+			if (!ji->method->wrapper_type)
+				*managed = TRUE;
+
+		if (trace) {
+			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, domain);
+			iloffset = mono_debug_il_offset_from_address (ji->method, address, domain);
+
+			if (iloffset < 0)
+				tmpaddr = g_strdup_printf ("<0x%05x>", address);
+			else
+				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
+		
+			fname = mono_method_full_name (ji->method, TRUE);
+
+			if (source_location)
+				*trace = g_strdup_printf ("in %s (at %s) %s", tmpaddr, source_location, fname);
+			else
+				*trace = g_strdup_printf ("in %s %s", tmpaddr, fname);
+
+			g_free (fname);
+			g_free (source_location);
+			g_free (tmpaddr);
+		}
+	}
+	else {
+		if (trace) {
+			char *fname = mono_method_full_name (res->method, TRUE);
+			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
+			g_free (fname);
+		}
+	}
+
+	return ji;
+}
+
 MonoArray *
 ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
 {
@@ -95,7 +172,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
@@ -130,7 +207,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 
 		ctx = new_ctx;
 		
@@ -301,8 +378,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 				trace_str = g_string_new ("");
 		}
 
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-					      need_trace ? &trace : NULL, &lmf, NULL, NULL);
+		ji = mono_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
+								 need_trace ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
