@@ -3536,7 +3536,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else {
 						MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
 						NEW_PCONST (cfg, iargs [0], vtable);
-						temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+						if (cmethod->klass->has_finalize || cmethod->klass->marshalbyref || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
+							temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+						else
+							temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
 					}
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
@@ -4003,7 +4006,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
 				NEW_PCONST (cfg, iargs [0], vtable);
-				temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+				if (1 || klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
+					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+				else
+					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
 			}
 			NEW_TEMPLOAD (cfg, load, temp);
 			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
@@ -7000,6 +7006,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
 	mono_register_jit_icall (mono_object_new_specific, "mono_object_new_specific", helper_sig_object_new_specific, FALSE);
+	mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", helper_sig_object_new_specific, FALSE);
 	mono_register_jit_icall (mono_array_new, "mono_array_new", helper_sig_newarr, FALSE);
 	mono_register_jit_icall (mono_array_new_specific, "mono_array_new_specific", helper_sig_newarr_specific, FALSE);
 	mono_register_jit_icall (mono_string_to_utf16, "mono_string_to_utf16", helper_sig_ptr_obj, FALSE);
