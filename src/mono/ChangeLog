@@ -1,3 +1,10 @@
+2002-06-23  Miguel de Icaza  <miguel@ximian.com>
+
+	* man/Makefile.am (man_MANS): Added new man page
+
+	* man/mono-config.5: New manual page describing the mono-config
+	file format. 
+
 2002-06-10  Jaroslaw Kowalski <jarek@atm.com.pl>
 
 	* configure.in: added checks for MSG_NOSIGNAL
