@@ -879,6 +879,40 @@ split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
 	}
 }
 
+static guint32
+reverse_branch_op (guint32 opcode)
+{
+	static const int reverse_map [] = {
+		CEE_BNE_UN, CEE_BLT, CEE_BLE, CEE_BGT, CEE_BGE,
+		CEE_BEQ, CEE_BLT_UN, CEE_BLE_UN, CEE_BGT_UN, CEE_BGE_UN
+	};
+	static const int reverse_fmap [] = {
+		OP_FBNE_UN, OP_FBLT, OP_FBLE, OP_FBGT, OP_FBGE,
+		OP_FBEQ, OP_FBLT_UN, OP_FBLE_UN, OP_FBGT_UN, OP_FBGE_UN
+	};
+	static const int reverse_lmap [] = {
+		OP_LBNE_UN, OP_LBLT, OP_LBLE, OP_LBGT, OP_LBGE,
+		OP_LBEQ, OP_LBLT_UN, OP_LBLE_UN, OP_LBGT_UN, OP_LBGE_UN
+	};
+	static const int reverse_imap [] = {
+		OP_IBNE_UN, OP_IBLT, OP_IBLE, OP_IBGT, OP_IBGE,
+		OP_IBEQ, OP_IBLT_UN, OP_IBLE_UN, OP_IBGT_UN, OP_IBGE_UN
+	};
+				
+	if (opcode >= CEE_BEQ && opcode <= CEE_BLT_UN) {
+		opcode = reverse_map [opcode - CEE_BEQ];
+	} else if (opcode >= OP_FBEQ && opcode <= OP_FBLT_UN) {
+		opcode = reverse_fmap [opcode - OP_FBEQ];
+	} else if (opcode >= OP_LBEQ && opcode <= OP_LBLT_UN) {
+		opcode = reverse_lmap [opcode - OP_LBEQ];
+	} else if (opcode >= OP_IBEQ && opcode <= OP_IBLT_UN) {
+		opcode = reverse_imap [opcode - OP_IBEQ];
+	} else
+		g_assert_not_reached ();
+
+	return opcode;
+}
+
 guint
 mono_type_to_ldind (MonoType *type)
 {
@@ -7457,9 +7491,11 @@ optimize_branches (MonoCompile *cfg)
 					}
 				}
 
-				if (bb->last_ins && (bb->last_ins->opcode == CEE_BNE_UN)) {
+#ifdef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
+				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
 					if (bb->last_ins->inst_false_bb->out_of_line) {
-						bb->last_ins->opcode = CEE_BEQ;
+						/* Reverse the branch */
+						bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
 						bbn = bb->last_ins->inst_false_bb;
 						bb->last_ins->inst_false_bb = bb->last_ins->inst_true_bb;
 						bb->last_ins->inst_true_bb = bbn;
@@ -7470,6 +7506,7 @@ optimize_branches (MonoCompile *cfg)
 									 bb->block_num);
 					}
 				}
+#endif
 			}
 		}
 	} while (changed && (niterations > 0));
@@ -7608,23 +7645,6 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 static void 
 mini_select_instructions (MonoCompile *cfg)
 {
-	static const int reverse_map [] = {
-		CEE_BNE_UN, CEE_BLT, CEE_BLE, CEE_BGT, CEE_BGE,
-		CEE_BEQ, CEE_BLT_UN, CEE_BLE_UN, CEE_BGT_UN, CEE_BGE_UN
-	};
-	static const int reverse_fmap [] = {
-		OP_FBNE_UN, OP_FBLT, OP_FBLE, OP_FBGT, OP_FBGE,
-		OP_FBEQ, OP_FBLT_UN, OP_FBLE_UN, OP_FBGT_UN, OP_FBGE_UN
-	};
-	static const int reverse_lmap [] = {
-		OP_LBNE_UN, OP_LBLT, OP_LBLE, OP_LBGT, OP_LBGE,
-		OP_LBEQ, OP_LBLT_UN, OP_LBLE_UN, OP_LBGT_UN, OP_LBGE_UN
-	};
-	static const int reverse_imap [] = {
-		OP_IBNE_UN, OP_IBLT, OP_IBLE, OP_IBGT, OP_IBGE,
-		OP_IBEQ, OP_IBLT_UN, OP_IBLE_UN, OP_IBGT_UN, OP_IBGE_UN
-	};
-
 	MonoBasicBlock *bb;
 	
 	cfg->state_pool = mono_mempool_new ();
@@ -7641,16 +7661,8 @@ mini_select_instructions (MonoCompile *cfg)
 				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
 				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
 				bb->last_ins->inst_false_bb = tmp;
-				
-				if (bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
-					bb->last_ins->opcode = reverse_map [bb->last_ins->opcode - CEE_BEQ];
-				} else if (bb->last_ins->opcode >= OP_FBEQ && bb->last_ins->opcode <= OP_FBLT_UN) {
-					bb->last_ins->opcode = reverse_fmap [bb->last_ins->opcode - OP_FBEQ];
-				} else if (bb->last_ins->opcode >= OP_LBEQ && bb->last_ins->opcode <= OP_LBLT_UN) {
-					bb->last_ins->opcode = reverse_lmap [bb->last_ins->opcode - OP_LBEQ];
-				} else if (bb->last_ins->opcode >= OP_IBEQ && bb->last_ins->opcode <= OP_IBLT_UN) {
-					bb->last_ins->opcode = reverse_imap [bb->last_ins->opcode - OP_IBEQ];
-				}
+
+				bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
 			} else {			
 				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 				inst->opcode = CEE_BR;
