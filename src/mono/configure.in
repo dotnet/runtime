@@ -833,7 +833,7 @@ case "$host" in
 		;;
 	x86_64-*-* | amd64-*-*)
 		TARGET=AMD64;
-		arch_target=amd64;
+		arch_target=x86-64;
 		JIT_SUPPORTED=no
 		;;
 	sparc*-*-*)
@@ -955,6 +955,7 @@ mono/os/Makefile
 mono/os/win32/Makefile
 mono/os/unix/Makefile
 mono/arch/x86/Makefile
+mono/arch/amd64/Makefile
 mono/arch/hppa/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
