@@ -112,6 +112,8 @@ extern CRITICAL_SECTION mono_delegate_section;
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
 #define mono_domain_unlock(domain) LeaveCriticalSection(&(domain)->lock)
 
+typedef void (*MonoDomainFunc) (MonoDomain *domain, gpointer user_data);
+
 MonoDomain*
 mono_init                  (const char *filename);
 
@@ -133,6 +135,9 @@ mono_domain_get_by_id      (gint32 domainid);
 
 inline void
 mono_domain_set            (MonoDomain *domain);
+
+void
+mono_domain_foreach        (MonoDomainFunc func, gpointer user_data);
 
 MonoAssembly *
 mono_domain_assembly_open  (MonoDomain *domain, const char *name);

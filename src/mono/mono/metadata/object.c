@@ -1115,6 +1115,7 @@ mono_object_free (MonoObject *o)
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
+	MONO_ARCH_SAVE_REGS;
 	return mono_object_new_specific (mono_class_vtable (domain, klass));
 }
 
@@ -1130,6 +1131,8 @@ mono_object_new_specific (MonoVTable *vtable)
 {
 	MonoObject *o;
 
+	MONO_ARCH_SAVE_REGS;
+	
 	if (vtable->remote)
 	{
 		gpointer pa [1];
@@ -1623,6 +1626,23 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	return NULL;
 }
 
+typedef struct {
+	MonoDomain *orig_domain;
+	char *ins;
+	MonoString *res;
+} LDStrInfo;
+
+static void
+str_lookup (MonoDomain *domain, gpointer user_data)
+{
+	LDStrInfo *info = user_data;
+	if (info->res || domain == info->orig_domain)
+		return;
+	mono_domain_lock (domain);
+	info->res = mono_g_hash_table_lookup (domain->ldstr_table, info->ins);
+	mono_domain_unlock (domain);
+}
+
 static MonoString*
 mono_string_is_interned_lookup (MonoString *str, int insert)
 {
@@ -1670,6 +1690,22 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 		mono_g_hash_table_insert (ldstr_table, ins, str);
 		mono_domain_unlock (domain);
 		return str;
+	} else {
+		LDStrInfo ldstr_info;
+		ldstr_info.orig_domain = domain;
+		ldstr_info.ins = ins;
+		ldstr_info.res = NULL;
+
+		mono_domain_foreach (str_lookup, &ldstr_info);
+		if (ldstr_info.res) {
+			/* 
+			 * the string was already interned in some other domain:
+			 * intern it in the current one as well.
+			 */
+			mono_g_hash_table_insert (ldstr_table, ins, str);
+			mono_domain_unlock (domain);
+			return str;
+		}
 	}
 	mono_domain_unlock (domain);
 	g_free (ins);

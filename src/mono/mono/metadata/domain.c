@@ -26,7 +26,7 @@ static guint32 context_thread_id = 0;
 
 static gint32 appdomain_id_counter = 0;
 
-MonoGHashTable * appdomains_list = NULL;
+static MonoGHashTable * appdomains_list = NULL;
 
 MonoDomain *mono_root_domain = NULL;
 
@@ -461,6 +461,29 @@ mono_domain_set (MonoDomain *domain)
 {
 	TlsSetValue (appdomain_thread_id, domain);
 	TlsSetValue (context_thread_id, domain->default_context);
+}
+
+typedef struct {
+	MonoDomainFunc func;
+	gpointer user_data;
+} DomainInfo;
+
+static void
+foreach_domain (gconstpointer key, gconstpointer data, gpointer user_data)
+{
+	DomainInfo *dom_info = user_data;
+
+	dom_info->func ((MonoDomain*)data, dom_info->user_data);
+}
+
+void
+mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
+{
+	DomainInfo dom_info;
+
+	dom_info.func = func;
+	dom_info.user_data = user_data;
+	mono_g_hash_table_foreach (appdomains_list, foreach_domain, &dom_info);
 }
 
 /**
