@@ -1,0 +1,6 @@
+Random collection of notes
+
+	* What is the point of having the InlineVar argument to
+	  opcodes be a signed integer instead of unsigned?
+
+

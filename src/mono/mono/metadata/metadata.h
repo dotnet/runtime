@@ -172,6 +172,7 @@ char          *mono_metadata_locate_token (metadata_t *meta, guint32 token);
 
 const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);
 const char    *mono_metadata_blob_heap    (metadata_t *meta, guint32 index);
+const char    *mono_metadata_user_string  (metadata_t *meta, guint32 index);
 
 typedef enum {
 	MONO_META_EXCEPTION_CLAUSE_NONE,

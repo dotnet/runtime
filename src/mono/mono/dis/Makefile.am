@@ -5,7 +5,8 @@ bin_PROGRAMS = monodis
 monodis_SOURCES =	\
 	get.c		\
 	get.h		\
-	dis.h		\
+	dis-cil.c	\
+	dis-cil.h	\
 	dump.c		\
 	dump.h		\
 	main.c		\

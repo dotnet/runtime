@@ -1,5 +1,5 @@
 /*
- * dis.c: Sample disassembler
+ * main.c: Sample disassembler
  *
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)
@@ -290,11 +290,15 @@ dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 	mh = mono_metadata_parse_mh (ptr);
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	fprintf (output, "\t// Code size=%d (0x%x)\n", mh->code_size, mh->code_size);
-	printf ("Values Code Size=%d/0x%x\nMaxStack=%d\nLocalTok=%x",
-		mh->code_size, mh->code_size, mh->max_stack, mh->local_var_sig_tok);
-	hex_dump (mh->code, 0, mh->code_size);
-	printf ("\nAfter the code\n");
-	hex_dump (mh->code + mh->code_size, 0, 64);
+	printf ("\t// Values Code Size=%d/0x%x\n\t// LocalTok=%x\n\n",
+		mh->code_size, mh->code_size, mh->local_var_sig_tok);
+	dissasemble_cil (m, mh->code, mh->code_size);
+	
+/*
+  hex_dump (mh->code, 0, mh->code_size);
+  printf ("\nAfter the code\n");
+  hex_dump (mh->code + mh->code_size, 0, 64);
+*/
 	mono_metadata_free_mh (mh);
 }
 

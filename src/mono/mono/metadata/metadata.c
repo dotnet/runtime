@@ -643,6 +643,12 @@ mono_metadata_string_heap (metadata_t *meta, guint32 index)
 	return meta->raw_metadata + meta->heap_strings.sh_offset + index;
 }
 
+const char *
+mono_metadata_user_string (metadata_t *meta, guint32 index)
+{
+	return meta->raw_metadata + meta->heap_us.sh_offset + index;
+}
+
 /**
  * mono_metadata_blob_heap:
  * @meta: metadata context
@@ -699,6 +705,7 @@ parse_exception_handler (const char *ptr, gboolean is_fat)
 static void
 parse_section_data (MonoMetaMethodHeader *mh, const char *ptr)
 {
+#if 0
 	while ((*ptr) &  METHOD_HEADER_SECTION_MORE_SECTS){
 		/* align on 32-bit boundary */
 		/* FIXME: not 64-bit clean code */
@@ -723,6 +730,7 @@ parse_section_data (MonoMetaMethodHeader *mh, const char *ptr)
 		
 		ptr = dword_align (ptr);
 	}
+#endif
 }
 
 MonoMetaMethodHeader *

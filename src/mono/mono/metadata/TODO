@@ -1,0 +1,5 @@
+
+* Rename assembly.c to module.c
+
+	* Rename all symbols called `assembly' to module, because that is 
+	  what they actually are.

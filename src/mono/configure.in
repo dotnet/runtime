@@ -31,4 +31,5 @@ Makefile
 mono/Makefile
 mono/metadata/Makefile
 mono/dis/Makefile
+mono/cil/Makefile
 ])
