@@ -107,6 +107,25 @@
   </tr>
 </table>
 
+@item Apr 21st, 2003: Virtuoso 3.0 ships.
+
+	<a href="http://www.openlinksw.com">OpenLink's</a> released
+	their <a href="http://www.openlinksw.com/press/virt3rel.htm">Virtuoso
+	3.0</a> database system.  Virtuoso ships on Windows and Linux.
+	On Linux they use Mono as their runtime to host C#, .NET and
+	ASP.NET.  Congratulations to OpenLink for their release.
+
+	Virtuoso can be downloaded <a
+	href="http://oplweb2.openlinksw.com:8080/download/virtuoso.vsp">here</a>
+	and a demo is available <a
+	href="http://demo.openlinksw.com:8890/tutorial/hosting/ho_s_2/ho_s_2.vsp">here</a>.
+
+	OpenLink is contributing fixes and code to the Mono project on
+	an ongoing basis. 
+
+	Jon Udell wrote a small <a
+	href="http://www.infoworld.com/article/03/03/14/11stratdev_1.html">entry</a>
+
 @item Apr 19th, 2003: RelaxNG validating reader; Activities.
 
 	Atsushi has created a <a
