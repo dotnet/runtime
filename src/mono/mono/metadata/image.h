@@ -12,6 +12,7 @@ typedef struct {
 	const char *culture;
 	const char *hash_value;
 	const guint8* public_key;
+	const char *public_tok_value;
 	guint32 hash_alg;
 	guint32 hash_len;
 	guint32 flags;
@@ -21,6 +22,7 @@ typedef struct {
 typedef struct {
 	int   ref_count;
 	char *basedir;
+	gboolean in_gac;
 	MonoAssemblyName aname;
 	GModule *aot_module;
 	MonoImage *image;

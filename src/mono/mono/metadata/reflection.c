@@ -2028,10 +2028,7 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	table->rows ++;
 	alloc_table (table, table->rows);
 	values = table->values + token * MONO_ASSEMBLYREF_SIZE;
-	if (strcmp ("corlib", image->assembly_name) == 0)
-		values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, "mscorlib");
-	else
-		values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
+	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
 	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = cols [MONO_ASSEMBLY_MAJOR_VERSION];
 	values [MONO_ASSEMBLYREF_MINOR_VERSION] = cols [MONO_ASSEMBLY_MINOR_VERSION];
 	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = cols [MONO_ASSEMBLY_BUILD_NUMBER];
@@ -2059,8 +2056,7 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 		 * recognized by ms, yuck!
 		 * FIXME: need to add more assembly names, as needed.
 		 */
-		if (strcmp (image->assembly_name, "corlib") == 0 ||
-				strcmp (image->assembly_name, "mscorlib") == 0 ||
+		if (strcmp (image->assembly_name, "mscorlib") == 0 ||
 				strcmp (image->assembly_name, "System") == 0 ||
 				strcmp (image->assembly_name, "System.Runtime.Remoting") == 0 ||
 				strcmp (image->assembly_name, "System.Xml") == 0 ||
@@ -5186,6 +5182,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	memset (assembly, 0, sizeof (MonoAssemblyName));
 	assembly->name = p;
 	assembly->culture = "";
+	assembly->public_tok_value = NULL;
 	
 	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@'))
 		p++;
@@ -5229,24 +5226,10 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			}
 		} else if (*p == 'P' && strncmp (p, "PublicKeyToken=", 15) == 0) {
 			p += 15;
-			s = p;
-			while (*s && isxdigit (*s)) {
-				*s = tolower (*s);
-				s++;
-			}
-			assembly->hash_len = s - p;
-			if (!(s-p) || ((s-p) & 1))
-				return 1;
-			assembly->hash_value = s = p;
-			while (*s && isxdigit (*s)) {
-				int val;
-				val = *s >= '0' && *s <= '9'? *s - '0': *s - 'a' + 10;
-				s++;
-				*p = val << 4;
-				*p |= *s >= '0' && *s <= '9'? *s - '0': *s - 'a' + 10;
+			assembly->public_tok_value = p;
+			while (*p && *p != ',') {
 				p++;
 			}
-			p = s;
 		} else {
 			while (*p && *p != ',')
 				p++;

@@ -196,4 +196,7 @@ mono_loader_wine_init   (void);
 
 MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num);
 
+void
+mono_assembly_allow_user_gac (gboolean allow);
+
 #endif

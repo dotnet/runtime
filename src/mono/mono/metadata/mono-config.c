@@ -203,6 +203,32 @@ dllmap_handler = {
 	dllmap_finish
 };
 
+static void
+usergac_start (gpointer user_data, 
+	      const gchar	  *element_name,
+	      const gchar	 **attribute_names,
+	      const gchar	 **attribute_values)
+{
+	int i;
+
+	if (strcmp (element_name, "user_gac") == 0) {
+		for (i = 0; attribute_names [i]; ++i) {
+			if (strcmp (attribute_names [i], "allow") == 0)
+				mono_assembly_allow_user_gac (
+					strcasecmp (attribute_values [i], "true") == 0);
+		}
+	}
+}
+
+static const MonoParseHandler
+usergac_handler = {
+	"user_gac",
+	NULL,
+	usergac_start,
+	NULL, /* text */
+	NULL, /* end */
+	NULL
+};
 
 static int inited = 0;
 
@@ -212,6 +238,7 @@ mono_config_init (void)
 	inited = 1;
 	config_handlers = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_insert (config_handlers, (gpointer) dllmap_handler.element_name, (gpointer) &dllmap_handler);
+	g_hash_table_insert (config_handlers, (gpointer) usergac_handler.element_name, (gpointer) &usergac_handler);
 }
 
 /* FIXME: error handling */

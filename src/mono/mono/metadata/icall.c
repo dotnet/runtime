@@ -3030,6 +3030,16 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	return res;
 }
 
+static MonoBoolean *
+ves_icall_System_Reflection_Assembly_get_global_assembly_cache (MonoReflectionAssembly *assembly)
+{
+	MonoAssembly *mass = assembly->assembly;
+
+	MONO_ARCH_SAVE_REGS;
+
+	return mass->in_gac;
+}
+
 static MonoString *
 ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assembly)
 {
@@ -3113,10 +3123,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname = (MonoReflectionAssemblyName *) mono_object_new (
 			domain, System_Reflection_AssemblyName);
 
-		if (strcmp (assem->aname.name, "corlib") == 0)
-			aname->name = mono_string_new (domain, "mscorlib");
-		else
-			aname->name = mono_string_new (domain, assem->aname.name);
+		aname->name = mono_string_new (domain, assem->aname.name);
 		aname->major = assem->aname.major;
 
 		absolute = g_build_filename (assem->basedir, assem->image->module_name, NULL);
@@ -3476,11 +3483,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (strcmp (name->name, "corlib") == 0)
-		aname->name = mono_string_new (domain, "mscorlib");
-	else
-		aname->name = mono_string_new (domain, name->name);
-
+	aname->name = mono_string_new (domain, name->name);
 	aname->major = name->major;
 	aname->minor = name->minor;
 	aname->build = name->build;
@@ -5150,6 +5153,7 @@ static const IcallEntry assembly_icalls [] = {
 	/* normal icalls again */
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
 	{"get_code_base", ves_icall_System_Reflection_Assembly_get_code_base},
+	{"get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache},
 	{"get_location", ves_icall_System_Reflection_Assembly_get_location}
 };
 

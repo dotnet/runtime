@@ -22,9 +22,12 @@
 #ifdef WITH_BUNDLE
 #include "mono-bundle.h"
 #endif
+#include <mono/metadata/loader.h>
+#include <mono/metadata/tabledefs.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/utils/mono-digest.h>
 
 /* the default search path is just MONO_ASSEMBLIES */
 static const char*
@@ -47,6 +50,8 @@ static CRITICAL_SECTION assemblies_mutex;
 /* A hastable of thread->assembly list mappings */
 static GHashTable *assemblies_loading;
 
+static gboolean allow_user_gac = FALSE;
+
 #ifdef PLATFORM_WIN32
 
 static void
@@ -62,6 +67,23 @@ init_default_path (void)
 }
 #endif
 
+
+static gchar*
+encode_public_tok (const guchar *token, gint32 len)
+{
+	static gchar allowed [] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+	gchar *res;
+	int i;
+
+	res = g_malloc (len * 2 + 1);
+	for (i = 0; i < len; i++) {
+		res [i * 2] = allowed [token [i] >> 4];
+		res [i * 2 + 1] = allowed [token [i] & 0xF];
+	}
+	res [len * 2] = 0;
+	return res;
+}
+
 static void
 check_env (void) {
 	const char *path;
@@ -76,6 +98,37 @@ check_env (void) {
 	assemblies_path = splitted;
 }
 
+static gboolean
+mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
+{
+	if (!l->name || !r->name)
+		return FALSE;
+
+	if (strcmp (l->name, r->name))
+		return FALSE;
+
+        /*
+         * simply compare names until some other issues are resolved
+         * (version info not getting set correctly for custom
+         * attributes).
+         */
+        /*
+	if (l->major != r->major || l->minor != r->minor ||
+			l->build != r->build || l->revision != r->revision)
+		return FALSE;
+
+	if (!l->public_tok_value && !r->public_tok_value)
+		return TRUE;
+
+	if ((l->public_tok_value && !r->public_tok_value) || (!l->public_tok_value && r->public_tok_value))
+		return FALSE;
+
+	if (strcmp (l->public_tok_value, r->public_tok_value))
+		return FALSE;
+        */
+	return TRUE;
+}
+
 /* assemblies_mutex must be held by the caller */
 static MonoAssembly*
 search_loaded (MonoAssemblyName* aname)
@@ -86,11 +139,8 @@ search_loaded (MonoAssemblyName* aname)
 	
 	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
-		if (!ass->aname.name)
-			continue;
-		/* we just compare the name, but later we'll do all the checks */
 		/* g_print ("compare %s %s\n", aname->name, ass->aname.name); */
-		if (strcmp (aname->name, ass->aname.name))
+		if (!mono_assembly_names_equal (aname, &ass->aname))
 			continue;
 		/* g_print ("success\n"); */
 
@@ -104,9 +154,7 @@ search_loaded (MonoAssemblyName* aname)
 	loading = g_hash_table_lookup (assemblies_loading, GetCurrentThread ());
 	for (tmp = loading; tmp; tmp = tmp->next) {
 		ass = tmp->data;
-		if (!ass->aname.name)
-			continue;
-		if (strcmp (aname->name, ass->aname.name))
+		if (!mono_assembly_names_equal (aname, &ass->aname))
 			continue;
 
 		return ass;
@@ -199,6 +247,24 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	return TRUE;
 }
 
+static gchar*
+assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
+{
+	const gchar *public_tok;
+	int len;
+
+	public_tok = mono_metadata_blob_heap (image, key_index);
+	len = mono_metadata_decode_blob_size (public_tok, &public_tok);
+
+	if (flags & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG) {
+		gchar token [8];
+		mono_digest_get_public_token (token, public_tok, len);
+		return encode_public_tok (token, 8);
+	}
+
+	return encode_public_tok (public_tok, len);
+}
+
 void
 mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 {
@@ -242,6 +308,13 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 		aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
 		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
 		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+
+		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
+			aname.public_tok_value = assemblyref_public_tok (image,
+					cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname.flags);
+		} else {
+			aname.public_tok_value = NULL;
+		} 
 
 		references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
 
@@ -429,10 +502,6 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	
 	if (dot)
 		*dot = 0;
-	if (strcmp (name, "corlib") == 0) {
-		g_free (name);
-		name = g_strdup ("mscorlib");
-	}
 	/* we do a very simple search for bundled assemblies: it's not a general 
 	 * purpose assembly loading mechanism.
 	 */
@@ -642,6 +711,58 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	return ass;
 }
 
+/**
+ * mono_assembly_load_from_gac
+ *
+ * @aname: The assembly name object
+ */
+static MonoAssembly*
+mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status)
+{
+	MonoAssembly *result = NULL;
+	gchar *name, *version, *fullpath;
+	gint32 len;
+
+	if (!aname->public_tok_value) {
+		return NULL;
+	}
+
+	if (strstr (aname->name, ".dll")) {
+		len = strlen (filename) - 4;
+		name = g_malloc (len);
+		strncpy (name, aname->name, len);
+	} else {
+		name = g_strdup (aname->name);
+	}
+
+	version = g_strdup_printf ("%d.%d.%d.%d_%s_%s", aname->major,
+			aname->minor, aname->build, aname->revision,
+			aname->culture == NULL ? "" : aname->culture,
+			aname->public_tok_value);
+	
+	fullpath = g_build_path (G_DIR_SEPARATOR_S, MONO_ASSEMBLIES, "mono", "gac",
+			name, version, filename, NULL);
+	result = mono_assembly_open (fullpath, status);
+
+	g_free (fullpath);
+
+	if (!result && allow_user_gac) {
+		fullpath = g_build_path (G_DIR_SEPARATOR_S, g_get_home_dir (), ".mono", "gac",
+				name, version, filename, NULL);
+		result = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+	}
+
+	if (result)
+		result->in_gac = TRUE;
+	
+	g_free (name);
+	g_free (version);
+
+	return result;
+}
+
+	
 MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
@@ -651,10 +772,9 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
 	if (result)
 		return result;
-
 	/* g_print ("loading %s\n", aname->name); */
 	/* special case corlib */
-	if ((strcmp (aname->name, "mscorlib") == 0) || (strcmp (aname->name, "corlib") == 0)) {
+	if (strcmp (aname->name, "mscorlib") == 0) {
 		if (corlib) {
 			/* g_print ("corlib already loaded\n"); */
 			return corlib;
@@ -664,16 +784,12 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 			corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status);
 			if (corlib)
 				return corlib;
-			corlib = load_in_path ("corlib.dll", (const char**)assemblies_path, status);
-			if (corlib)
-				return corlib;
 		}
 		corlib = load_in_path ("mscorlib.dll", default_path, status);
-		if (!corlib)
-			corlib = load_in_path ("corlib.dll", default_path, status);
 		return corlib;
 	}
 	result = search_loaded (aname);
+
 	if (result)
 		return result;
 	/* g_print ("%s not found in cache\n", aname->name); */
@@ -681,11 +797,19 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 		filename = g_strdup (aname->name);
 	else
 		filename = g_strconcat (aname->name, ".dll", NULL);
+
+	result = mono_assembly_load_from_gac (aname, filename, status);
+	if (result) {
+		g_free (filename);
+		return result;
+	}
+
 	if (basedir) {
 		fullpath = g_build_filename (basedir, filename, NULL);
 		result = mono_assembly_open (fullpath, status);
 		g_free (fullpath);
 		if (result) {
+			result->in_gac = FALSE;
 			g_free (filename);
 			return result;
 		}
@@ -693,11 +817,15 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	if (assemblies_path) {
 		result = load_in_path (filename, (const char**)assemblies_path, status);
 		if (result) {
+			result->in_gac = FALSE;
 			g_free (filename);
 			return result;
 		}
 	}
 	result = load_in_path (filename, default_path, status);
+	
+	if (result)
+		result->in_gac = FALSE;
 	g_free (filename);
 	return result;
 }
@@ -789,3 +917,10 @@ mono_assembly_get_main (void)
 {
 	return(main_assembly);
 }
+
+void
+mono_assembly_allow_user_gac (gboolean allow)
+{
+	allow_user_gac = allow;
+}
+
