@@ -1290,13 +1290,13 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 const char*
 mono_image_get_name (MonoImage *image)
 {
-	return image->name;
+	return image->assembly_name;
 }
 
 const char*
 mono_image_get_filename (MonoImage *image)
 {
-	return image->assembly_name;
+	return image->name;
 }
 
 const MonoTableInfo*
