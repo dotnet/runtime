@@ -859,15 +859,6 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		return retval;
 
 	switch (type->type) {
-	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_CLASS: {
-		MonoClass *klass = type->data.klass;
-
-		mono_class_init (klass);
-		*((guint32 *) ptr)++ = type->data.klass->instance_size;
-		break;
-	}
-
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -921,7 +912,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		MonoArray array;
 		MonoArrayBounds bounds;
 
-		*((guint32 *) ptr)++ = -13 - sizeof (gpointer);
+		*((guint32 *) ptr)++ = -12 - sizeof (gpointer);
 		*ptr++ = 3;
 		*ptr++ = sizeof (MonoArray);
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
@@ -935,6 +926,23 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.length);
 		*((gpointer *) ptr)++ = write_type (symfile, type->data.array->type);
+		break;
+	}
+
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS: {
+		MonoClass *klass = type->data.klass;
+
+		mono_class_init (klass);
+		if (klass->enumtype) {
+			*((guint32 *) ptr)++ = -1 - sizeof (gpointer);
+			*ptr++ = 4;
+			*((gpointer *) ptr)++ = write_type (symfile, klass->enum_basetype);
+			break;
+		}
+
+		*((guint32 *) ptr)++ = -1;
+		*ptr++ = 5;
 		break;
 	}
 
