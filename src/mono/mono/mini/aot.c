@@ -653,6 +653,28 @@ emit_section_change (FILE *fp, const char *section_name, int subsection_index)
 #endif
 }
 
+static void
+emit_global (FILE *fp, const char *name)
+{
+#if defined(__ppc__) && defined(__MACH__)
+    // mach-o always uses a '_' prefix.
+	fprintf (fp, ".globl _%s\n", name);
+#else
+	fprintf (fp, ".globl %s\n", name);
+#endif
+}
+
+static void
+emit_label (FILE *fp, const char *name)
+{
+#if defined(__ppc__) && defined(__MACH__)
+    // mach-o always uses a '_' prefix.
+	fprintf (fp, "_%s:\n", name);
+#else
+	fprintf (fp, "%s:\n", name);
+#endif
+}
+
 #if 0
 static void
 write_data_symbol (FILE *fp, const char *name, guint8 *buf, int size, int align)
@@ -677,8 +699,8 @@ static void
 write_string_symbol (FILE *fp, const char *name, const char *value)
 {
 	emit_section_change (fp, ".text", 1);
-	fprintf (fp, ".globl %s\n", name);
-	fprintf (fp, "%s:\n", name);
+	emit_global(fp, name);
+	emit_label(fp, name);
 	fprintf (fp, "\t%s \"%s\"\n", AS_STRING_DIRECTIVE, value);
 }
 
@@ -739,6 +761,8 @@ static void emit_alignment(FILE *fp, int size)
 #if defined(__ppc__) && defined(__MACH__)
 	// the mach-o assembler specifies alignments as powers of 2.
 	fprintf (fp, "\t.align %d\t; ilog2\n", ilog2(size));
+#elif defined(__powerpc__)
+	/* ignore on linux/ppc */
 #else
 	fprintf (fp, "\t.align %d\n", size);
 #endif
@@ -822,7 +846,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	GList *l;
 	FILE *tmpfp;
 	int i, j, k, pindex;
-	guint8 *code, *mname;
+	guint8 *code, *mname, *mname_p;
 	int func_alignment = 16;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
@@ -835,14 +859,15 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_section_change (tmpfp, ".text", 0);
 	mname = g_strdup_printf ("m_%x", mono_metadata_token_index (method->token));
+	mname_p = g_strdup_printf ("%s_p", mname);
 	emit_alignment(tmpfp, func_alignment);
-	fprintf (tmpfp, ".globl %s\n", mname);
+	emit_global(tmpfp, mname);
 #if defined(sparc)
 	fprintf (tmpfp, "\t.type %s,#function\n", mname);
 #elif !(defined(__ppc__) && defined(__MACH__))
 	fprintf (tmpfp, "\t.type %s,@function\n", mname);
 #endif
-	fprintf (tmpfp, "%s:\n", mname);
+	emit_label(tmpfp, mname);
 
 	for (i = 0; i < cfg->code_len; i++) 
 		fprintf (tmpfp, ".byte %d\n", (unsigned int) code [i]);
@@ -994,9 +1019,9 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
-	fprintf (tmpfp, ".globl %s_p\n", mname);
-	emit_alignment(tmpfp, sizeof (gpointer));
-	fprintf (tmpfp, "%s_p:\n", mname);
+	emit_global (tmpfp, mname_p);
+	emit_alignment (tmpfp, sizeof (gpointer));
+	emit_label (tmpfp, mname_p);
 
 	fprintf (tmpfp, "\t.long %d\n", cfg->code_len);
 	fprintf (tmpfp, "\t.long %d\n", cfg->used_int_regs);
@@ -1133,6 +1158,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* fixme: save the rest of the required infos */
 
 	g_free (mname);
+	g_free (mname_p);
 }
 
 int
@@ -1271,9 +1297,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	symbol = g_strdup_printf ("mono_icall_table");
 	emit_section_change (tmpfp, ".text", 1);
-	fprintf (tmpfp, ".globl %s\n", symbol);
+	emit_global(tmpfp, symbol);
 	emit_alignment(tmpfp, 8);
-	fprintf (tmpfp, "%s:\n", symbol);
+	emit_label(tmpfp, symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->icall_table->len);
 	for (i = 0; i < acfg->icall_table->len; i++)
 		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, (char*)g_ptr_array_index (acfg->icall_table, i));
@@ -1282,9 +1308,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	symbol = g_strdup_printf ("mono_image_table");
 	emit_section_change (tmpfp, ".text", 1);
-	fprintf (tmpfp, ".globl %s\n", symbol);
+	emit_global(tmpfp, symbol);
 	emit_alignment(tmpfp, 8);
-	fprintf (tmpfp, "%s:\n", symbol);
+	emit_label(tmpfp, symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->image_table->len);
 	for (i = 0; i < acfg->image_table->len; i++)
 		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, ((MonoImage*)g_ptr_array_index (acfg->image_table, i))->guid);
@@ -1297,9 +1323,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	symbol = g_strdup_printf ("mono_methods_present_table");
 	emit_section_change (tmpfp, ".text", 1);
-	fprintf (tmpfp, ".globl %s\n", symbol);
+	emit_global(tmpfp, symbol);
 	emit_alignment(tmpfp, 8);
-	fprintf (tmpfp, "%s:\n", symbol);
+	emit_label(tmpfp, symbol);
 	{
 		guint32 k, nrows;
 		guint32 w;
@@ -1329,7 +1355,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 #if defined(sparc)
 	com = g_strdup_printf ("ld -shared -G -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
 #elif defined(__ppc__) && defined(__MACH__)
-	com = g_strdup_printf ("ld -dynamic -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+	com = g_strdup_printf ("gcc -dynamiclib -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
 #else
 	com = g_strdup_printf ("ld -shared -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
 #endif
