@@ -32,6 +32,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/os/gc_wrapper.h>
 
 MonoStats mono_stats;
@@ -804,7 +805,22 @@ init_events (MonoClass *class)
 			case METHOD_SEMANTIC_FIRE:
 				class->events [i - class->event.first].raise = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
-			case METHOD_SEMANTIC_OTHER: /* don't care for now */
+			case METHOD_SEMANTIC_OTHER: {
+				MonoEvent *event = &class->events [i - class->event.first];
+				int n;
+
+				if (event->other == NULL) {
+					event->other = g_new0 (MonoMethod*, 1);
+					n = 0;
+				}
+				else {
+					while (event->other [n])
+						n++;
+					event->other = g_realloc (event->other, (n + 1) * sizeof (MonoMethod*));
+				}
+				event->other [n] = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				break;
+			}
 			default:
 				break;
 			}
@@ -1079,7 +1095,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
-					cname = ic->name;
+					cname = (char*)ic->name;
 				}
 					
 				qname = g_strconcat (cname, ".", im->name, NULL);

@@ -501,6 +501,7 @@ typedef struct {
 	MonoReflectionMethod *remove_method;
 	MonoReflectionMethod *raise_method;
 	guint32 attrs;
+	MonoArray *other_methods;
 } MonoEventInfo;
 
 typedef struct {

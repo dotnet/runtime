@@ -1457,6 +1457,17 @@ ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
 	info->add_method = event->event->add ? mono_method_get_object (domain, event->event->add, NULL): NULL;
 	info->remove_method = event->event->remove ? mono_method_get_object (domain, event->event->remove, NULL): NULL;
 	info->raise_method = event->event->raise ? mono_method_get_object (domain, event->event->raise, NULL): NULL;
+
+	if (event->event->other) {
+		int i, n = 0;
+		while (event->event->other [n])
+			n++;
+		info->other_methods = mono_array_new (domain, mono_defaults.method_info_class, n);
+
+		for (i = 0; i < n; i++)
+			mono_array_set (info->other_methods, gpointer, i,
+							mono_method_get_object (domain, event->event->other [i], NULL));
+	}		
 }
 
 static MonoArray*
