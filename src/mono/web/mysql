@@ -43,7 +43,7 @@
  in the Microsoft .NET Environment</a> is an article
  by Mr. Venu who is a MySQL AB developer.</li>
 
- <p>Testing for Mono's Mono.Data.MySql and ByteFX's ByteFX.Data.MySQLClient is below.
+ <p>Testing for Mono's Mono.Data.MySql and ByteFX's ByteFX.Data.MySqlClient is below.
     
 ** Current Status
 
@@ -51,7 +51,7 @@
 
 <ul>
 
-	<li>ByteFX.Data.MySQLClient
+	<li>ByteFX.Data.MySqlClient
 		<ul>
 			<li>Build and Runs on Microsoft .NET and Mono</li>
 			<li>Works with SQL# (command-line and GTK# GUI versions)</li>
@@ -109,7 +109,7 @@
  The current plan for the MySQL data providers:
  
  <ul>
-	<li>ByteFX.Data.MySQLClient
+	<li>ByteFX.Data.MySqlClient
 		<ul>
 			<li>Testing and fixes</li>
 			<li>Implement missing features</li>
@@ -163,7 +163,7 @@
 <pre>
  using System;
  using System.Data;
- using ByteFX.Data.MySQLClient;
+ using ByteFX.Data.MySqlClient;
  
  public class Test 
  {
