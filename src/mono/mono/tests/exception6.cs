@@ -9,6 +9,104 @@ public class Ex {
 
 			ocount = 0;
 			try {
+				ulong a =  UInt64.MaxValue - 1;
+				ulong t = a++;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 1;
+
+			ocount = 0;
+			try {
+				ulong a =  UInt64.MaxValue;
+				ulong t = a++;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 2;
+
+			ocount = 0;
+			try {
+				long a = Int64.MaxValue - 1;
+				long t = a++;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 1;
+
+			try {
+				long a = Int64.MaxValue;
+				long t = a++;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+
+			ocount = 0;
+			try {
+				ulong a = UInt64.MaxValue - 1;
+				ulong t = a++;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 2;
+
+			try {
+				ulong a = UInt64.MaxValue;
+				ulong t = a++;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+
+			ocount = 0;
+			try {
+				long a = Int64.MinValue + 1;
+				long t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 1;
+
+			ocount = 0;
+			try {
+				long a = Int64.MinValue;
+				long t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+
+			ocount = 0;
+			try {
+				ulong a = UInt64.MinValue + 1;
+				ulong t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 1;
+
+			ocount = 0;
+			try {
+				ulong a = UInt64.MinValue;
+				ulong t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+
+			ocount = 0;
+			try {
 				int a = Int32.MinValue + 1;
 				int t = a--;
 			} catch {

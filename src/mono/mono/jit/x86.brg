@@ -143,9 +143,9 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 	} while (0)
 
 /* emit an exception if condition is fail */
-#define EMIT_COND_EXCEPTION(cond, exc)                                       \
+#define EMIT_COND_EXCEPTION(cond,signed,exc)                                 \
         do {                                                                 \
-	        x86_branch8 (s->code, cond, 12, TRUE);                       \
+	        x86_branch8 (s->code, cond, 12, signed);                     \
 	        x86_push_imm (s->code, exc);                                 \
 		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ());  \
 	        x86_call_reg (s->code, X86_EAX);                             \
@@ -627,7 +627,7 @@ reg: CONV_I4 (reg) {
 reg: CONV_OVF_U4 (reg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -635,7 +635,7 @@ reg: CONV_OVF_U4 (reg) {
 reg: CONV_OVF_I4_UN (reg) {
 	/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -643,9 +643,9 @@ reg: CONV_OVF_I4_UN (reg) {
 reg: CONV_OVF_I1 (reg) {
 	/* probe value to be within -128 to 127 */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 127);
-	EMIT_COND_EXCEPTION (X86_CC_LE, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_LE, TRUE, get_exception_overflow ());	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -128);
-	EMIT_COND_EXCEPTION (X86_CC_GT, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_GT, TRUE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -653,7 +653,7 @@ reg: CONV_OVF_I1 (reg) {
 reg: CONV_OVF_I1_UN (reg) {
 	/* probe values between 0 to 128 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff80);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -662,7 +662,7 @@ reg: CONV_OVF_U1 (reg) {
 	/* Keep in sync with CONV_OVF_U1_UN routine below, they are the same on 32-bit machines */
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -671,7 +671,7 @@ reg: CONV_OVF_U1_UN (reg) {
 	/* Keep in sync with CONV_OVF_U1 routine above, they are the same on 32-bit machines */
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -679,7 +679,7 @@ reg: CONV_OVF_U1_UN (reg) {
 reg: CONV_OVF_I2 (reg) {
 	/* Probe value to be within -32768 and 32767 */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 32767);
-	EMIT_COND_EXCEPTION (X86_CC_LE, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_LE, TRUE, get_exception_overflow ());	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -32768);
 	// fixme: check branch
 	g_assert_not_reached ();
@@ -692,7 +692,7 @@ reg: CONV_OVF_U2 (reg) {
 	/* Keep in sync with CONV_OVF_U2_UN below, they are the same on 32-bit machines */
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -701,7 +701,7 @@ reg: CONV_OVF_U2_UN (reg) {
 	/* Keep in sync with CONV_OVF_U2 above, they are the same on 32-bit machines */
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -709,7 +709,7 @@ reg: CONV_OVF_U2_UN (reg) {
 reg: CONV_OVF_I2_UN (reg) {
 	/* Convert uint value into short, value within 0 and 32767 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff8000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, FALSE, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -723,7 +723,7 @@ reg: MUL (reg, reg) {
 
 reg: MUL_OVF (reg, reg) {
 	x86_imul_reg_reg (s->code, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NO, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -808,7 +808,7 @@ reg: ADD (reg, reg) {
 
 reg: ADD_OVF (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NO, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -816,7 +816,7 @@ reg: ADD_OVF (reg, reg) {
 
 reg: ADD_OVF_UN (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NC, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -841,7 +841,7 @@ reg: SUB (reg, reg) {
 
 reg: SUB_OVF (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NO, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -849,7 +849,7 @@ reg: SUB_OVF (reg, reg) {
 
 reg: SUB_OVF_UN (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
-	EMIT_COND_EXCEPTION (X86_CC_NC, get_exception_overflow ());	
+	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -968,7 +968,7 @@ reg: SHR_UN (reg, reg) {
 # array support
 reg: LDLEN (reg) {	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
-	EMIT_COND_EXCEPTION (X86_CC_NE, get_exception_null_reference ());
+	EMIT_COND_EXCEPTION (X86_CC_NE, TRUE, get_exception_null_reference ());
 
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
 			     G_STRUCT_OFFSET (MonoArray, bounds), 4);
@@ -1039,9 +1039,9 @@ reg: UNBOX (reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
 	x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, 0);
-	EMIT_COND_EXCEPTION (X86_CC_NE, get_exception_null_reference ());	
+	EMIT_COND_EXCEPTION (X86_CC_NE, TRUE, get_exception_null_reference ());	
 	x86_alu_membase_imm (s->code, X86_CMP, tree->reg1, 0, ((int)(tree->data.klass)));
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_invalid_cast ());	
+	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, get_exception_invalid_cast ());	
 	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, sizeof (MonoObject));
 }
 
@@ -1074,7 +1074,7 @@ reg: CASTCLASS (reg) {
 		x86_pop_reg (s->code, X86_ECX);
 
 		x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0);
-		EMIT_COND_EXCEPTION (X86_CC_NE, get_exception_invalid_cast ());	
+		EMIT_COND_EXCEPTION (X86_CC_NE, TRUE, get_exception_invalid_cast ());	
 		if (tree->reg1 != X86_EAX) {
 			x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 			x86_pop_reg (s->code, X86_EAX);
@@ -1753,7 +1753,7 @@ reg: CONV_OVF_U4 (lreg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
 	/* top word must be 0 */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -1762,7 +1762,7 @@ reg: CONV_OVF_I4_UN (lreg) {
 	/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
 	/* top word must be 0 */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -1820,7 +1820,7 @@ lreg: CONV_OVF_I8_UN (CONST_I4) {
 
 lreg: CONV_OVF_U8 (reg) {
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, get_exception_overflow ());
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -1914,9 +1914,53 @@ lreg: ADD (lreg, lreg) {
 		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
 }
 
+lreg: ADD_OVF (lreg, lreg) {
+	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
+	x86_alu_reg_reg (s->code, X86_ADC, tree->left->reg2, tree->right->reg2);
+	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, get_exception_overflow ());	
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+}
+
+lreg: ADD_OVF_UN (lreg, lreg) {
+	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
+	x86_alu_reg_reg (s->code, X86_ADC, tree->left->reg2, tree->right->reg2);
+	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, get_exception_overflow ());	
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+}
+
 lreg: SUB (lreg, lreg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
-	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg2, tree->right->reg2);
+	x86_alu_reg_reg (s->code, X86_SBB, tree->left->reg2, tree->right->reg2);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+}
+
+lreg: SUB_OVF (lreg, lreg) {
+	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
+	x86_alu_reg_reg (s->code, X86_SBB, tree->left->reg2, tree->right->reg2);
+	EMIT_COND_EXCEPTION (X86_CC_NO, TRUE, get_exception_overflow ());	
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+}
+
+lreg: SUB_OVF_UN (lreg, lreg) {
+	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
+	x86_alu_reg_reg (s->code, X86_SBB, tree->left->reg2, tree->right->reg2);
+	EMIT_COND_EXCEPTION (X86_CC_NC, FALSE, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
