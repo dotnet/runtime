@@ -156,7 +156,7 @@ you've got all components.
 </para>
 
 <para>
-On a practical note, I had no depedency issues with the 
+On a practical note, I had no dependency issues with the 
 installation of mono 0.12 on a 'standard issue' Red Hat 7.3 build.
 </para>
 
@@ -527,7 +527,7 @@ Garbage Collection. Then in your <command>mono</command> directory, type
 <title>Basic steps</title>
 <para>
 To work with mono, you first have to create a C# program. Open up 
-your favorite editor, and type in the following code:
+your favourite editor, and type in the following code:
 </para>
 <programlisting>
 using System;
@@ -844,7 +844,7 @@ research in there for threads talking about the problem you have.
 <listitem>
 <para> 
 If you still cannot correct the problem, send a message to the
-mono list. When you do this, please be as precises as possible--i.e.
+mono list. When you do this, please be as precise as possible--i.e.
 mention the system you are running, the version of mono that you have the 
 problem with, and give any error codes and other output that might appear.
 </para>
