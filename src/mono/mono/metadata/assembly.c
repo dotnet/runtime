@@ -115,8 +115,15 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		fullname = g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
 		image = mono_image_open (fullname, status);
 		g_free (fullname);
-	} else
+	} else {
+		char *fullname;
 		image = mono_image_open (filename, status);
+		if (!image) {
+			fullname = g_concat_dir_and_file (MONO_ASSEMBLIES, filename);
+			image = mono_image_open (fullname, status);
+			g_free (fullname);
+		}
+	}
 	
 	if (!image){
 		if (status)
