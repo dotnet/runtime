@@ -9,8 +9,8 @@
 
 	There is work underway for both systems.  The Web Forms
 	support is more advanced at this point, and various ".aspx"
-	programs can be run using the Mono runtime and the XSP page
-	parser.
+	programs can be run using the Mono runtime (embedded into
+	either the XSP server or the mod_mono Apache module).
 
 	We are now working bug fixing and adding missing features
 	after making the whole pipeline compatible with MS.
@@ -20,41 +20,6 @@
 	(contributed by Jesus), most people will be using the ASP.NET
 	Web Services support.  Work for the supporting class libraries
 	just started recently.
-
-* Web Forms: The pieces
-
-	There are a couple of components to the puzzle:
-
-	<ul>
-		* .aspx page parser (converts .aspx to C# code).
-	
-		* System.Web.HttpRuntime support.
-	
-		* Web controls (System.Web.UI.HtmlControls and
-		  System.Web.UI.WebControls).
-	
-		* Underlying infrastructure for the controls (System.Web.UI).
-	
-		* HttpRuntime.ProcessRequest is the core of the ASP.NET
-		  implementation.
-	</ul>
-
-
-	Gonzalo has been working on an ASP.NET parser that takes .aspx
-	files and generated the code required to run them (the code lives in
-	module `xsp' along with a little web server for testing).
-
-	Most of the runtime support was written by Patrik Torstensson
-	(now at Intel).  This was interesting, because in order to implement
-	some of its features, Patrik had to go into the runtime/JIT engine and
-	he spent a few weeks doing work there.
-
-	The classes for running ASP.NET are being actively written.
-	Gaurav, Leen and Patrik worked in the core of the classes
-	required to run ASP.NET web application as well as a small
-	embeddable web server.
-
-	Duncan got our System.Web assembly to compile.
 
 ** HttpRuntime
 
@@ -104,29 +69,41 @@
 	over the web probably do not want to use direct ASP.NET but a
 	wrapper around it.
 
-** Roadmap
+* Web Forms: The pieces (historical)
 
-        1. The Parser.
+	There are a couple of components to the puzzle:
 
-        2. Get the parser to generate output compatible with ASP.NET.
-
-        3. Run the sample output with the real Microsoft runtime
-           but using our generated page.   
-
-        4. Run the sample with our classes with the .NET runtime.
-
-        5. Run the samples with our classes with the our runtime (without
-	using HttpRuntime).
-
-        6. Finish HttpRuntime.
+	<ul>
+		* .aspx page parser (converts .aspx to C# code).
 	
-        7. Running our sample code with our classes with our runtime.
-
-	8. Debug and add missing features.
-
-	We are in step 8. Among the missing features: server side includes,
-	better caching, some configuration stuff, more validators...
+		* System.Web.HttpRuntime support.
 	
+		* Web controls (System.Web.UI.HtmlControls and
+		  System.Web.UI.WebControls).
+	
+		* Underlying infrastructure for the controls (System.Web.UI).
+	
+		* HttpRuntime.ProcessRequest is the core of the ASP.NET
+		  implementation.
+	</ul>
+
+
+	Gonzalo has been working on an ASP.NET parser that takes .aspx
+	files and generated the code required to run them (the code lives in
+	module `xsp' along with a little web server for testing).
+
+	Most of the runtime support was written by Patrik Torstensson
+	(now at Intel).  This was interesting, because in order to implement
+	some of its features, Patrik had to go into the runtime/JIT engine and
+	he spent a few weeks doing work there.
+
+	The classes for running ASP.NET are being actively written.
+	Gaurav, Leen and Patrik worked in the core of the classes
+	required to run ASP.NET web application as well as a small
+	embeddable web server.
+
+	Duncan got our System.Web assembly to compile.
+
 ** How to Help
 
         Testing and fixing HtmlControls, WebControls and validators is an
