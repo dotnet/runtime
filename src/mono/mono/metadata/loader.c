@@ -4,6 +4,7 @@
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
  *   Miguel de Icaza (miguel@ximian.com)
+ *   Patrik Torstensson (patrik.torstensson@labs2.com)
  *
  * (C) 2001 Ximian, Inc.
  *
@@ -18,6 +19,7 @@
 #include <config.h>
 #include <glib.h>
 #include <gmodule.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <mono/metadata/metadata.h>
@@ -28,6 +30,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/debug-helpers.h>
 
 static gboolean dummy_icall = TRUE;
 
@@ -79,22 +82,43 @@ ves_icall_dummy (void)
 }
 
 gpointer
-mono_lookup_internal_call (const char *name)
+mono_lookup_internal_call (MonoMethod *method)
 {
+	char *name;
+	char *tmpsig;
 	gpointer res;
 
 	if (dummy_icall)
 		return ves_icall_dummy;
+
+	if (!method) {
+		g_warning ("can't resolve internal call, method is null");
+	}
 
 	if (!icall_hash) {
 		g_warning ("icall_hash not initialized");
 		g_assert_not_reached ();
 	}
 
+	name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, NULL);
 	if (!(res = g_hash_table_lookup (icall_hash, name))) {
-		g_warning ("cant resolve internal call to \"%s\"", name);
-		return NULL;
+		// trying to resolve with full signature
+		g_free (name);
+	
+		tmpsig = mono_signature_get_desc(method->signature, TRUE);
+		name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
+		if (!(res = g_hash_table_lookup (icall_hash, name))) {
+			g_free (name);
+			g_free(tmpsig);
+
+			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", name);
+			return NULL;
+		}
+
+		g_free(tmpsig);
 	}
+
+	g_free (name);
 
 	return res;
 }
@@ -279,7 +303,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank + 1 == sig->param_count);
 
-			result->addr = mono_lookup_internal_call ("__array_Set");
+			result->addr = mono_lookup_internal_call(result);
 			return result;
 		}
 
@@ -287,7 +311,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank == sig->param_count);
 
-			result->addr = mono_lookup_internal_call ("__array_Get");
+			result->addr = mono_lookup_internal_call(result);
 			return result;
 		}
 
@@ -295,7 +319,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank == sig->param_count);
 
-			result->addr = mono_lookup_internal_call ("__array_Address");
+			result->addr = mono_lookup_internal_call(result);
 			return result;
 		}
 
@@ -375,7 +399,6 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	int idx = mono_metadata_token_index (token);
 	MonoTableInfo *tables = image->tables;
 	const char *loc, *sig = NULL;
-	char *name;
 	int size;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
@@ -416,10 +439,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	}
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		name = g_strconcat (result->klass->name_space, ".", result->klass->name, "::", 
-				    mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]), NULL);
-		result->addr = mono_lookup_internal_call (name);
-		g_free (name);
+		result->addr = mono_lookup_internal_call (result);
 		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, idx - 1);
@@ -489,4 +509,3 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		}
 	}
 }
-

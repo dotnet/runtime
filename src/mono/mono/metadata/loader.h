@@ -81,7 +81,7 @@ void
 mono_add_internal_call     (const char *name, gconstpointer method);
 
 gpointer
-mono_lookup_internal_call  (const char *name);
+mono_lookup_internal_call (MonoMethod *method);
 
 void
 mono_method_get_param_names (MonoMethod *method, const char **names);
