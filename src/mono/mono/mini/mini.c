@@ -289,8 +289,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 			(tblock) = NEW_BBLOCK (cfg);	\
 			(tblock)->cil_code = (ip);	\
 			ADD_BBLOCK (cfg, (bbhash), (tblock));	\
-		}	\
-        	(tblock)->real_offset = real_offset; \
+		} \
 	} while (0)
 
 #define CHECK_BBLOCK(target,ip,tblock) do {	\
@@ -2876,6 +2875,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 		}
 
+		bblock->real_offset = real_offset;
+
 		if (cfg->coverage_info) {
 			MonoInst *store, *one;
 			guint32 cil_offset = ip - header->code;
@@ -2898,9 +2899,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		if (cfg->verbose_level > 3)
 			g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, sp-stack_start, mono_disasm_code_one (NULL, method, ip, NULL));
-
-		/* Workaround for bug #51126 */
-		bblock->real_offset = real_offset;
 
 		switch (*ip) {
 		case CEE_NOP:
@@ -4600,7 +4598,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
-			*sp++ = handle_box (cfg, bblock, *sp, ip, klass);
+			*sp++ = handle_box (cfg, bblock, val, ip, klass);
 			ip += 5;
 			inline_costs += 1;
 			break;
