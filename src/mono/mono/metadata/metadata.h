@@ -345,6 +345,8 @@ void                  mono_metadata_free_method_signature  (MonoMethodSignature 
 gboolean          mono_metadata_signature_equal (MonoMethodSignature *sig1, 
 						 MonoMethodSignature *sig2);
 
+guint             mono_signature_hash (MonoMethodSignature *sig);
+
 MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
 void              mono_metadata_free_mh  (MonoMethodHeader *mh);
 

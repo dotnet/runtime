@@ -2286,6 +2286,18 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	return TRUE;
 }
 
+guint
+mono_signature_hash (MonoMethodSignature *sig)
+{
+	guint i, res = sig->ret->type;
+
+	for (i = 0; i < sig->param_count; i++) { 
+		res += sig->params[i]->type;
+	}
+
+	return res;
+}
+
 /*
  * mono_metadata_encode_value:
  * @value: value to encode

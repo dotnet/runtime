@@ -398,9 +398,15 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
+	image->array_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, 
+					       (GCompareFunc)mono_metadata_type_equal);
 
-	image->delegate_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->delegate_begin_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+	image->delegate_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
 	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);

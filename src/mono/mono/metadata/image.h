@@ -99,9 +99,14 @@ struct _MonoImage {
 	GHashTable *array_cache;
 
 	/*
+	 * indexed by MonoMethodSignature 
+	 */
+	GHashTable *delegate_begin_invoke_cache;
+	GHashTable *delegate_invoke_cache;
+
+	/*
 	 * indexed by MonoMethod pointers 
 	 */
-	GHashTable *delegate_invoke_cache;
 	GHashTable *runtime_invoke_cache;
 	GHashTable *managed_wrapper_cache;
 	GHashTable *native_wrapper_cache;

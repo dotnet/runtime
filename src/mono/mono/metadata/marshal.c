@@ -611,15 +611,18 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	static MonoMethodSignature *csig = NULL;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	MonoClass *ret_class;
 	MonoType *ret_type;
+	GHashTable *cache;
 	int i;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
 
-
 	sig = method->signature;
+
+	cache = method->klass->image->delegate_begin_invoke_cache;
+	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
+		return res;
 
 	if (sig->ret->byref)
 		ret_type = &mono_defaults.int_class->byval_arg;
@@ -627,9 +630,6 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 		ret_type = sig->ret->data.klass->enum_basetype;
 	else 
 		ret_type = sig->ret;
-
-	ret_class = mono_class_from_mono_type (ret_type);
-
 
 	if (!csig) {
 		int sigsize = sizeof (MonoMethodSignature) + 2 * sizeof (MonoType *);
@@ -700,7 +700,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
 		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (ret_type)));
 		break;
 	default:
 		g_warning ("type 0x%x not handled", ret_type->type);
@@ -711,6 +711,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 
 	res = mono_mb_create_method (mb, sig, 0);
 	mono_mb_free (mb);
+	g_hash_table_insert (cache, sig, res);
 	return res;
 }
 
@@ -730,11 +731,11 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
 		
-	cache = method->klass->image->delegate_invoke_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
-		return res;
-
 	sig = method->signature;
+
+	cache = method->klass->image->delegate_invoke_cache;
+	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
+		return res;
 
 	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
 	static_sig = g_memdup (sig, sigsize);
@@ -840,7 +841,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	res = mono_mb_create_method (mb, sig, 0);
 	mono_mb_free (mb);
 
-	g_hash_table_insert (cache, method, res);
+	g_hash_table_insert (cache, sig, res);
 
 	return res;	
 }
@@ -890,7 +891,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 	/* allocate local 1 (object) exc */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-
 
 	/* cond set *exc to null */
 	mono_mb_emit_byte (mb, CEE_LDARG_2);
