@@ -82,7 +82,7 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 
 	fclose (ofd);
 #ifdef __APPLE__
-#define DIS_CMD "otool -V -v -t"
+#define DIS_CMD "otool -v -t"
 #else
 #if defined(sparc) && !defined(__GNUC__)
 #define DIS_CMD "dis"
