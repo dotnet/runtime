@@ -3,6 +3,9 @@
 	* runtime/Makefile.am (clean_profiles): Remove.
 	(clean-local): Use $(build_profiles).
 	(install-local, uninstall-local): Don't override $(prefix).
+	(SUPPORT_FILES): New.  List of dependencies from ...
+	(all-local): ... here.  Use it.
+	(install-local): Depend on $(SUPPORT_FILES).
 
 2005-03-02  Zoltan Varga  <vargaz@freemail.hu>
 
