@@ -7686,6 +7686,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 
 	gparam->type.type = g_new0 (MonoType, 1);
 	gparam->type.type->type = gparam->mbuilder ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+	gparam->type.type->attrs = TYPE_ATTRIBUTE_PUBLIC;
 	gparam->type.type->data.generic_param = param;
 }
 
