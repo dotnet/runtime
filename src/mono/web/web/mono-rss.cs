@@ -14,6 +14,35 @@ class X {
 	static Channel c;
 	static int item_count;
 	static int line;
+
+	static int GetMonth (string s)
+	{
+		switch (s){
+		case "Jan": return 1;
+		case "Feb": return 2; 
+		case "Mar": return 3;
+		case "Apr": return 4; 
+		case "May": return 5;
+		case "Jun": return 6; 
+		case "Jul": return 7;
+		case "Aug": return 8; 
+		case "Sep": return 9;
+		case "Oct": return 10; 
+		case "Nov": return 11; 
+		case "Dec": return 12; 
+		}
+		throw new Exception ("Can not parse month name: " + s);
+	}
+
+	static int GetDay (string s)
+	{
+		int d = s [0] - '0';
+
+		if (Char.IsDigit (s [1])){
+			d = d * 10 + (s [1] - '0');
+		}
+		return d;
+	}
 	
 	static void PopulateRSS (StreamReader input)
 	{
@@ -52,7 +81,8 @@ class X {
 				i = c.NewItem ();
 				i.Title = title;
 				i.Link = link;
-				i.PubDate = s.Substring (6, s.IndexOf (":") - 6) + ", 2003";
+				DateTime dt = new DateTime (2004, GetMonth (s.Substring (6, 3)), GetDay (s.Substring (10, 2)));
+				i.PubDate = dt.ToString ("R");
 			} else {
 				description += "\n" + (s == "\n" ? "<p>" : s);
 			}
