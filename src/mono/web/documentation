@@ -110,18 +110,18 @@
         As you document Gtk# you will have a number of tags that you can
         use inside the summary and remarks sections, these are:
 
-<pre>        
-        <para> </para>
+_Pre_        
+        &lt;para&gt; &lt;/para&gt;
 </pre>
         	Used to separate paragraphs.
       
 <pre>  
-        <paramref name="param_name"/>
+        &lt;paramref name="param_name"/&gt;
 </pre>
         	Used to reference a formal parameter to a function.
 
 <pre>  
-        <see cref="T:SomeTypeName"/>
+        &lt;see cref="T:SomeTypeName"/&gt;
 </pre>
         	Use this to reference a type, this will include an hyper
         	link to the page for type SomeTypeName.
@@ -129,11 +129,11 @@
         	For example, to reference "System.Enum", do:
         
 <pre>
-        	<see cref="T:System.Enum"/>
+        	&lt;see cref="T:System.Enum"/&gt;
 </pre>
 
 <pre>
-        <see cref="P:SomeTypeName.Property"/>
+        &lt;see cref="P:SomeTypeName.Property"/&gt;
 </pre>
         	Use this to reference a property, this will include an hyper
         	link to the page for the property `Property' of type `SomeTypeName'.
@@ -141,11 +141,11 @@
         	For example, to reference the BaseType property in System.Type, do:
         
 <pre>
-        	<see cref="P:System.Type.BaseType"/>
+        	&lt;see cref="P:System.Type.BaseType"/&gt;
 </pre>
 
 <pre>
-        <see cref="M:SomeTypeName.Method(type,type)"/>
+        &lt;see cref="M:SomeTypeName.Method(type,type)"/&gt;
 </pre>
         	Use this to reference a method, this will include an hyper
         	link to the page for the method `Method' of type `SomeTypeName'.
@@ -153,31 +153,31 @@
         	For example, to reference the ToString method in System.Object, do:
         
 <pre>
-        	<see cref="M:System.Object.ToString()"/>
+        	&lt;see cref="M:System.Object.ToString()"/&gt;
 </pre>
         
 <pre>
-        <see langword="keywrod"/>
+        &lt;see langword="keywrod"/&gt;
 </pre>
         	Use this to link to a keyword in the C# language, for
         	example to link to `true', do:
 
 <pre>
-        		<see langword="true"/>
+        		&lt;see langword="true"/&gt;
 </pre>
         
 <pre>
-        <example> ... </example>
+        &lt;example&gt; ... &lt;/example&gt;
 </pre>        
         	Use example to insert an example.  The example can 
         	contain explanatory text and code.
         
 <pre>
-        <code lang="C#">.. </code>
+        &lt;code lang="C#"&gt;.. &lt;/code&gt;
 </pre>
         
         	Use this to provide a sample C# program, typically used
-        	within the <example> tags.
+        	within the &lt;example&gt; tags.
 
         	When providing examples, try to provide a full example,
         	we would like to be able to have a button to compile and
@@ -187,38 +187,38 @@
         	You can link to an example like this:
 
 <pre>
-        	<code lang="C#" source="file.cs"> </code>
+        	&lt;code lang="C#" source="file.cs"&gt; &lt;/code&gt;
 </pre>
 
 <pre>
-        <item>
+        &lt;item&gt;
 </pre>
         	
 <pre>
-        <list type="bullet">  </list>
+        &lt;list type="bullet"&gt;  &lt;/list&gt;
 </pre>
         
-        	Use this to create lists.  Lists contains <item>
+        	Use this to create lists.  Lists contains &lt;item&gt;
         	elements
         
 <pre>
-        <list type="table"> </lits>
-                    <listheader>
-                      <term>YOUR FIRST COLUMN</term>
-                      <description>YOUR DESCRIPTION</description>
-                    </listheader>
+        &lt;list type="table"&gt; &lt;/lits&gt;
+                    &lt;listheader&gt;
+                      &lt;term&gt;YOUR FIRST COLUMN&lt;/term&gt;
+                      &lt;description&gt;YOUR DESCRIPTION&lt;/description&gt;
+                    &lt;/listheader&gt;
 </pre>
         	For two-column tables.  Inside use:
         
 <pre>
-        	<item>
-        		<term>First</term>
-        		<description>First descritpion</description>
-        	</item>
-        	<item>
-        		<term>Second</term>
-        		<description>Second descirption</description>
-        	</item>
+        	&lt;item&gt;
+        		&lt;term&gt;First&lt;/term&gt;
+        		&lt;description&gt;First descritpion&lt;/description&gt;
+        	&lt;/item&gt;
+        	&lt;item&gt;
+        		&lt;term&gt;Second&lt;/term&gt;
+        		&lt;description&gt;Second descirption&lt;/description&gt;
+        	&lt;/item&gt;
 </pre>
 
 ** Words of warning.
