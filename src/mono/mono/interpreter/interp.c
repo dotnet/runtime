@@ -813,7 +813,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	MonoInvocation frame;
 	MonoObject *retval;
 	MonoMethodSignature *sig = method->signature;
-	int i;
+	int i, type;
 	void *ret;
 	stackval *args = g_new0 (stackval, sig->param_count);
 
@@ -837,11 +837,50 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 			args [i].data.p = params [i];
 			continue;
 		}
-		switch (sig->params [i]->type) {
+		type = sig->params [i]->type;
+handle_enum:
+		switch (type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
 		case MONO_TYPE_BOOLEAN:
 			args [i].type = VAL_I32;
 			args [i].data.i = *(MonoBoolean*)params [i];
 			args [i].data.vt.klass = NULL;
+			break;
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+			args [i].type = VAL_I32;
+			args [i].data.i = *(gint16*)params [i];
+			args [i].data.vt.klass = NULL;
+			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_U: /* use VAL_POINTER? */
+		case MONO_TYPE_I:
+#endif
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+			args [i].type = VAL_I32;
+			args [i].data.i = *(gint32*)params [i];
+			args [i].data.vt.klass = NULL;
+			break;
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+#endif
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			args [i].type = VAL_I64;
+			args [i].data.l = *(gint64*)params [i];
+			args [i].data.vt.klass = NULL;
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->params [i]->data.klass->enumtype) {
+				type = sig->params [i]->data.klass->enum_basetype->type;
+				goto handle_enum;
+			} else {
+				g_warning ("generic valutype not handled in runtime invoke");
+			}
 			break;
 		case MONO_TYPE_STRING:
 			args [i].type = VAL_OBJ;
@@ -2243,7 +2282,13 @@ array_constructed:
 					    vt->interface_offsets [c->interface_id])
 						found = TRUE;
 				} else {
-					if ((oclass->baseval - c->baseval) <= c->diffval) {
+					/* handle array casts */
+					if (oclass->rank && oclass->rank == c->rank) {
+						if ((oclass->element_class->baseval - c->element_class->baseval) <= c->element_class->diffval) {
+							sp [-1].data.vt.klass = c;
+							found = TRUE;
+						}
+					} else if ((oclass->baseval - c->baseval) <= c->diffval) {
 						sp [-1].data.vt.klass = c;
 						found = TRUE;
 					}

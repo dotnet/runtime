@@ -3,6 +3,7 @@
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -206,6 +207,13 @@ mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 }
 
 static gint32
+ves_icall_AssemblyBuilder_getToken (MonoReflectionAssemblyBuilder *assb, MonoObject *obj)
+{
+	mono_image_basic_init (assb);
+	return mono_image_create_token (assb->dynamic_assembly, obj);
+}
+
+static gint32
 ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 type, MonoArray *buf)
 {
 	int count;
@@ -218,8 +226,10 @@ ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 type, Mono
 		MonoDynamicAssembly *ass = assb->dynamic_assembly;
 		char *p = mono_array_addr (buf, char, 0);
 		count = ass->code.index + ass->meta_size;
-		if (count > buf->bounds->length)
+		if (count > buf->bounds->length) {
+			g_print ("assembly data exceed supplied buffer\n");
 			return 0;
+		}
 		memcpy (p, ass->code.data, ass->code.index);
 		memcpy (p + ass->code.index, ass->assembly.image->raw_metadata, ass->meta_size);
 		return count;
@@ -1004,7 +1014,7 @@ static gpointer icall_map [] = {
 	 */
 	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_get_data_chunk,
 	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
-	"System.Reflection.Emit.AssemblyBuilder::getToken", mono_image_create_token,
+	"System.Reflection.Emit.AssemblyBuilder::getToken", ves_icall_AssemblyBuilder_getToken,
 
 	/*
 	 * Reflection stuff.
@@ -1015,6 +1025,7 @@ static gpointer icall_map [] = {
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
+	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
 	
 	/* System.Enum */
 

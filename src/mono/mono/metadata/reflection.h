@@ -142,6 +142,7 @@ typedef struct {
 	MonoObject object;
 	MonoObject* methodb;
 	MonoString *name;
+	MonoArray *cattrs;
 	guint32 attrs;
 	int position;
 	guint32 table_idx;
@@ -157,6 +158,7 @@ typedef struct {
 	guint32 call_conv;
 	MonoObject *type;
 	MonoArray *pinfo;
+	MonoArray *cattrs;
 } MonoReflectionCtorBuilder;
 
 typedef struct {
@@ -172,6 +174,7 @@ typedef struct {
 	MonoReflectionILGen *ilgen;
 	MonoObject *type;
 	MonoArray *pinfo;
+	MonoArray *cattrs;
 	MonoReflectionMethod *override_method;
 	MonoString *dll;
 	MonoString *dllentry;
@@ -206,6 +209,7 @@ typedef struct {
 	MonoReflectionMethodBuilder *entry_point;
 	MonoArray *modules;
 	MonoString *name;
+	MonoArray *cattrs;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
@@ -218,6 +222,7 @@ typedef struct {
 	gint32 table_idx;
 	MonoReflectionType *typeb;
 	MonoArray *rva_data;
+	MonoArray *cattrs;
 } MonoReflectionFieldBuilder;
 
 typedef struct {
@@ -226,6 +231,7 @@ typedef struct {
 	MonoString *name;
 	MonoReflectionType *type;
 	MonoArray *parameters;
+	MonoArray *cattrs;
 	MonoObject *def_value;
 	MonoReflectionMethodBuilder *set_method;
 	MonoReflectionMethodBuilder *get_method;
@@ -244,6 +250,7 @@ typedef struct {
 typedef struct {
 	MonoReflectionModule module;
 	MonoArray *types;
+	MonoArray *cattrs;
 	guint32    table_idx;
 } MonoReflectionModuleBuilder;
 
@@ -257,6 +264,7 @@ typedef struct {
 	MonoArray *ctors;
 	MonoArray *properties;
 	MonoArray *fields;
+	MonoArray *cattrs;
 	MonoArray *subtypes;
 	guint32 attrs;
 	guint32 table_idx;
@@ -271,6 +279,12 @@ typedef struct {
 	MonoString *codebase;
 	MonoObject *version;
 } MonoReflectionAssemblyName;
+
+typedef struct {
+	MonoObject  obj;
+	MonoReflectionMethod *ctor;
+	MonoArray *data;
+} MonoReflectionCustomAttr;
 
 typedef struct {
 	char *nest_name_space;
@@ -288,7 +302,7 @@ int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);
-guint32       mono_image_create_token  (MonoReflectionAssemblyBuilder *assembly, MonoObject *obj);
+guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObject *obj);
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
@@ -306,6 +320,7 @@ extern MonoInvokeFunc mono_default_runtime_invoke;
 void        mono_install_runtime_invoke (MonoInvokeFunc func);
 MonoObject* mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
+MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
 #endif /* __METADATA_REFLECTION_H__ */
 
