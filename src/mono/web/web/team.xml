@@ -142,5 +142,20 @@
       <task>Various fixes</task>
     </tasks>		
   </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Piers</first-name>
+      <last-name>Haken</last-name>
+    </name>
+    <e-mail>piersh@friskit.com</e-mail>
+    <image>none.png</image>
+    <location>San Francisco, CA</location>
+	<organization>Friskit Inc.</organization>
+    <tasks>
+      <task>XPath</task>
+	  <task>corcompare / class-status</task>
+    </tasks>
+  </contributor>
  
 </contributors>
