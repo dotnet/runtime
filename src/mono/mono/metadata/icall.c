@@ -1780,6 +1780,92 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 }
 
 static MonoReflectionMethod*
+ves_icall_System_Reflection_Assembly_get_EntryPoint (MonoReflectionAssembly *assembly) {
+	guint32 token = mono_image_get_entry_point (assembly->assembly->image);
+	if (!token)
+		return NULL;
+	return mono_method_get_object (mono_object_domain (assembly), mono_get_method (assembly->assembly->image, token, NULL));
+}
+
+static MonoArray*
+ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAssembly *assembly) {
+	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	MonoArray *result = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, table->rows);
+	int i;
+	const char *val;
+
+	for (i = 0; i < table->rows; ++i) {
+		val = mono_metadata_string_heap (assembly->assembly->image, mono_metadata_decode_row_col (table, i, MONO_MANIFEST_NAME));
+		mono_array_set (result, gpointer, i, mono_string_new (mono_object_domain (assembly), val));
+	}
+	return result;
+}
+
+/* move this in some file in mono/util/ */
+static char *
+g_concat_dir_and_file (const char *dir, const char *file)
+{
+	g_return_val_if_fail (dir != NULL, NULL);
+	g_return_val_if_fail (file != NULL, NULL);
+
+        /*
+	 * If the directory name doesn't have a / on the end, we need
+	 * to add one so we get a proper path to the file
+	 */
+	if (dir [strlen(dir) - 1] != G_DIR_SEPARATOR)
+		return g_strconcat (dir, G_DIR_SEPARATOR_S, file, NULL);
+	else
+		return g_strconcat (dir, file, NULL);
+}
+
+static MonoObject*
+ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name) {
+	char *n = mono_string_to_utf8 (name);
+	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	guint32 i;
+	guint32 cols [MONO_MANIFEST_SIZE];
+	const char *val;
+	MonoObject *result;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
+		val = mono_metadata_string_heap (assembly->assembly->image, cols [MONO_MANIFEST_NAME]);
+		if (strcmp (val, n) == 0)
+			break;
+	}
+	g_free (n);
+	if (i == table->rows)
+		return NULL;
+	/* FIXME */
+	if (!cols [MONO_MANIFEST_IMPLEMENTATION]) {
+		guint32 size;
+		MonoArray *data;
+		val = mono_image_get_resource (assembly->assembly->image, cols [MONO_MANIFEST_OFFSET], &size);
+		if (!val)
+			return NULL;
+		data = mono_array_new (mono_object_domain (assembly), mono_defaults.byte_class, size);
+		memcpy (mono_array_addr (data, char, 0), val, size);
+		return (MonoObject*)data;
+	}
+	switch (cols [MONO_MANIFEST_IMPLEMENTATION] & IMPLEMENTATION_MASK) {
+	case IMPLEMENTATION_FILE:
+		i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
+		table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+		i = mono_metadata_decode_row_col (table, i - 1, MONO_FILE_NAME);
+		val = mono_metadata_string_heap (assembly->assembly->image, i);
+		n = g_concat_dir_and_file (assembly->assembly->basedir, val);
+		result = (MonoObject*)mono_string_new (mono_object_domain (assembly), n);
+		g_free (n);
+		return result;
+	case IMPLEMENTATION_ASSEMBLYREF:
+	case IMPLEMENTATION_EXP_TYPE:
+		/* FIXME */
+		break;
+	}
+	return NULL;
+}
+
+static MonoReflectionMethod*
 ves_icall_GetCurrentMethod (void) {
 	MonoMethod *m = mono_method_get_last_managed ();
 	return mono_method_get_object (mono_domain_get (), m);
@@ -2589,6 +2675,9 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 	"System.Reflection.Assembly::GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly,
 	"System.Reflection.Assembly::GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly,
+	"System.Reflection.Assembly::get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint,
+	"System.Reflection.Assembly::GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames,
+	"System.Reflection.Assembly::GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal,
 
 	/*
 	 * System.MonoType.

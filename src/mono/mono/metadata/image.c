@@ -815,4 +815,23 @@ mono_image_get_entry_point (MonoImage *image)
 	return ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
 }
 
+const char*
+mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
+{
+	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIHeader *ch = &iinfo->cli_cli_header;
+	const char* data;
+
+	if (!ch->ch_resources.rva || offset + 4 > ch->ch_resources.size)
+		return NULL;
+	
+	data = mono_cli_rva_map (iinfo, ch->ch_resources.rva);
+	if (!data)
+		return NULL;
+	data += offset;
+	if (size)
+		*size = read32 (data);
+	data += 4;
+	return data;
+}
 

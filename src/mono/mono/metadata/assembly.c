@@ -285,7 +285,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		g_free (module_ref);
 	}
 
-	g_free (base_dir);
 	return ass;
 }
 
