@@ -660,23 +660,25 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
 
 	for (i = 0; i < header->num_locals; ++i) {
-		offsets [2 + i] = offset;
 		size = mono_type_size (header->locals [i], &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
+		offsets [2 + i] = offset;
 		offset += size;
 	}
 	offsets [0] = offset;
 	offset = 0;
 	if (hasthis) {
+		offset += sizeof (gpointer) - 1;
+		offset &= ~(sizeof (gpointer) - 1);
 		offsets [2 + header->num_locals] = offset;
 		offset += sizeof (gpointer);
 	}
 	for (i = 0; i < signature->param_count; ++i) {
-		offsets [2 + hasthis + header->num_locals + i] = offset;
 		size = mono_type_size (signature->params [i], &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
+		offsets [2 + hasthis + header->num_locals + i] = offset;
 		offset += size;
 	}
 	offsets [1] = offset;
@@ -2235,6 +2237,7 @@ array_constructed:
 			token = read32 (ip);
 			
 			c = mono_class_get (image, token);
+			mono_class_init (c);
 			
 			o = sp [-1].data.p;
 			if (!o)
@@ -2535,6 +2538,7 @@ array_constructed:
 			token = read32 (ip);
 
 			class = mono_class_get (image, token);
+			mono_class_init (class);
 			g_assert (class != NULL);
 
 			sp [-1].type = VAL_OBJ;
@@ -3482,8 +3486,9 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 
 	if (method->signature->param_count) {
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
-		for (i=0; i < argc; ++i) {
-			mono_array_set (args, gpointer, i, mono_string_new (domain, argv [i]));
+		for (i = 0; i < argc; ++i) {
+			MonoString *arg = mono_string_new (domain, argv [i]);
+			mono_array_set (args, gpointer, i, mono_string_intern (arg));
 		}
 	}
 	
