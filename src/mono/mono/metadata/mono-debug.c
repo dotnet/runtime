@@ -133,7 +133,8 @@ mono_debug_cleanup (void)
 {
 	release_symbol_file_table ();
 
-	g_hash_table_destroy (debug_handles);
+	if (debug_handles)
+		g_hash_table_destroy (debug_handles);
 	debug_handles = NULL;
 }
 
@@ -243,6 +244,9 @@ static MonoDebugMethodInfo *
 _mono_debug_lookup_method (MonoMethod *method)
 {
 	struct LookupMethodData data = { NULL, method };
+
+	if (!debug_handles)
+		return NULL;
 
 	g_hash_table_foreach (debug_handles, lookup_method_func, &data);
 	return data.minfo;
