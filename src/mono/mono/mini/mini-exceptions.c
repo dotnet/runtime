@@ -712,8 +712,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 					/* Switch back to normal stack */
 					if (stack_overflow)
 						/* Free up some stack space */
-						MONO_CONTEXT_SET_SP (&initial_ctx, (guint64)(MONO_CONTEXT_GET_SP (&initial_ctx)) + (64 * 1024));
-					MONO_CONTEXT_SET_IP (&initial_ctx, (guint64)jit_tls->abort_func);
+						MONO_CONTEXT_SET_SP (&initial_ctx, (gssize)(MONO_CONTEXT_GET_SP (&initial_ctx)) + (64 * 1024));
+					MONO_CONTEXT_SET_IP (&initial_ctx, (gssize)jit_tls->abort_func);
 					restore_context (&initial_ctx);
 				}
 				else
