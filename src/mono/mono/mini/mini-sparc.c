@@ -3539,6 +3539,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					     (gpointer)"mono_arch_throw_exception");
 			EMIT_CALL ();
 			break;
+		case OP_RETHROW:
+			sparc_mov_reg_reg (code, ins->sreg1, sparc_o0);
+			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_arch_rethrow_exception");
+			EMIT_CALL ();
+			break;
 		case OP_START_HANDLER: {
 			/*
 			 * The START_HANDLER instruction marks the beginning of a handler 

@@ -1,5 +1,5 @@
 /*
- * exceptions-sparc.c: exception support for 64 bit sparc
+ * exceptions-sparc.c: exception support for sparc
  *
  * Authors:
  *   Mark Crichton (crichton@gimp.org)
@@ -151,7 +151,7 @@ mono_arch_get_call_filter (void)
 }
 
 static void
-throw_exception (MonoObject *exc, gpointer sp, gpointer ip)
+throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 {
 	MonoContext ctx;
 	static void (*restore_context) (MonoContext *);
@@ -167,7 +167,8 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip)
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		mono_ex->stack_trace = NULL;
+		if (!rethrow)
+			mono_ex->stack_trace = NULL;
 	}
 	mono_handle_exception (&ctx, exc, ip, FALSE);
 	restore_context (&ctx);
@@ -175,24 +176,15 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip)
 	g_assert_not_reached ();
 }
 
-/**
- * mono_arch_get_throw_exception_by_name:
- *
- * Returns a function pointer which can be used to raise exceptions.
- * The returned function has the following 
- * signature: void (*func) (char *exc_name); 
- */
 gpointer 
-mono_arch_get_throw_exception (void)
+get_throw_exception (gboolean rethrow)
 {
-	static guint32 start [32];
-	static int inited = 0;
+	guint32 start [36];
 	guint32 *code;
 
 	if (inited)
 		return start;
 
-	inited = 1;
 	code = start;
 
 	sparc_save_imm (code, sparc_sp, -512, sparc_sp);
@@ -201,11 +193,51 @@ mono_arch_get_throw_exception (void)
 	sparc_mov_reg_reg (code, sparc_i0, sparc_o0);
 	sparc_mov_reg_reg (code, sparc_fp, sparc_o1);
 	sparc_mov_reg_reg (code, sparc_i7, sparc_o2);
+	sparc_set (code, rethrow, sparc_o3);
 	sparc_set (code, throw_exception, sparc_o7);
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
 	sparc_nop (code);
 
-	g_assert ((code - start) < 32);
+	g_assert ((code - start) < 36);
+
+	return start;
+}
+
+/**
+ * mono_arch_get_throw_exception:
+ *
+ * Returns a function pointer which can be used to raise exceptions.
+ * The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ */
+gpointer 
+mono_arch_get_throw_exception (void)
+{
+	static guint32* start;
+	static int inited = 0;
+
+	if (inited)
+		return start;
+
+	inited = 1;
+
+	start = get_throw_exception (FALSE);
+
+	return start;
+}
+
+gpointer 
+mono_arch_get_rethrow_exception (void)
+{
+	static guint32* start;
+	static int inited = 0;
+
+	if (inited)
+		return start;
+
+	inited = 1;
+
+	start = get_throw_exception (TRUE);
 
 	return start;
 }
