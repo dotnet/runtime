@@ -4647,12 +4647,21 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
 
 	/* 
-	 * no info is better than crashing: we'll need our own tz data to make 
-	 * this work properly, anyway. The range is reduced to 1970 .. 2037 because
-	 * that is what mktime is guaranteed to support (we get into an infinite loop 
+	 * no info is better than crashing: we'll need our own tz data
+	 * to make this work properly, anyway. The range is probably
+	 * reduced to 1970 .. 2037 because that is what mktime is
+	 * guaranteed to support (we get into an infinite loop
 	 * otherwise).
 	 */
-	if ((year < 1970) || (year > 2037)) {
+
+	memset (&start, 0, sizeof (start));
+
+	start.tm_mday = 1;
+	start.tm_year = year-1900;
+
+	t = mktime (&start);
+
+	if ((year < 1970) || (year > 2037) || (t == -1)) {
 		t = time (NULL);
 		tt = *localtime (&t);
 		strftime (tzone, sizeof (tzone), "%Z", &tt);
@@ -4661,12 +4670,6 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 		return 1;
 	}
 
-	memset (&start, 0, sizeof (start));
-
-	start.tm_mday = 1;
-	start.tm_year = year-1900;
-
-	t = mktime (&start);
 	gmtoff = gmt_offset (&start, t);
 
 	/* For each day of the year, calculate the tm_gmtoff. */
