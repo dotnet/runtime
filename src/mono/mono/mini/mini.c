@@ -46,6 +46,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/monitor.h>
+#include <mono/utils/mono-math.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -153,6 +154,31 @@ mono_running_on_valgrind (void)
 }
 
 /* debug function */
+G_GNUC_UNUSED static char*
+get_method_from_ip (void *ip)
+{
+	MonoJitInfo *ji;
+	char *method;
+	char *source;
+	char *res;
+	MonoDomain *domain = mono_domain_get ();
+	
+	ji = mono_jit_info_table_find (domain, ip);
+	if (!ji) {
+		return NULL;
+	}
+	method = mono_method_full_name (ji->method, TRUE);
+	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
+
+	res = g_strdup_printf (" %s + 0x%x (%p %p) [%p - %s]", method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
+
+	g_free (source);
+	g_free (method);
+
+	return res;
+}
+
+/* debug function */
 G_GNUC_UNUSED static void
 print_method_from_ip (void *ip)
 {
@@ -176,7 +202,6 @@ print_method_from_ip (void *ip)
 
 	g_free (source);
 	g_free (method);
-
 }
 
 G_GNUC_UNUSED void
@@ -2070,7 +2095,9 @@ mono_emit_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *met
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this;
 
-	if (virtual && (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+	if (!virtual)
+		mono_get_got_var (cfg);
+	else if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 		/* Needed by the code generated in inssel.brg */
 		mono_get_got_var (cfg);
 
@@ -2109,6 +2136,7 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 		g_assert_not_reached ();
 	}
 
+	mono_get_got_var (cfg);
 	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, args, ip, FALSE, FALSE);
 }
 
@@ -2130,6 +2158,8 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	call->signature = info->sig;
 
 	call = mono_arch_call_opcode (cfg, cfg->cbb, call, FALSE);
+
+	mono_get_got_var (cfg);
 
 	if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
 		temp = mono_compile_create_var (cfg, info->sig->ret, OP_LOCAL);
@@ -2401,6 +2431,39 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
 	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, TRUE, FALSE);
+}
+
+static void
+mono_emit_load_got_addr (MonoCompile *cfg)
+{
+	MonoInst *load, *store, *dummy_use;
+	MonoInst *get_got;
+
+	if (!cfg->got_var || cfg->got_var_allocated)
+		return;
+
+	MONO_INST_NEW (cfg, get_got, OP_LOAD_GOTADDR);
+	NEW_TEMPSTORE (cfg, store, cfg->got_var->inst_c0, get_got);
+
+	/* Add it to the start of the first bblock */
+	if (cfg->bb_entry->code) {
+		store->next = cfg->bb_entry->code;
+		cfg->bb_entry->code = store;
+	}
+	else
+		MONO_ADD_INS (cfg->bb_entry, store);
+
+	cfg->got_var_allocated = TRUE;
+
+	/* 
+	 * Add a dummy use to keep the got_var alive, since real uses might
+	 * only be generated in the decompose or instruction selection phases.
+	 * Add it to end_bblock, so the variable's lifetime covers the whole
+	 * method.
+	 */
+	NEW_TEMPLOAD (cfg, load, cfg->got_var->inst_c0);
+	NEW_DUMMY_USE (cfg, dummy_use, load);
+	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
@@ -2913,6 +2976,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
 
+		if (cfg->method->save_lmf)
+			/* Needed by the prolog code */
+			mono_get_got_var (cfg);
+
 		if (cfg->prof_options & MONO_PROFILE_INS_COVERAGE)
 			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 
@@ -3306,6 +3373,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			++ip;
 			readr4 (ip, f);
 			ins->inst_p0 = f;
+
+			if (!((*f == 0.0) && (mono_signbit (*f) == 0)) || (*f == 1.0))
+				mono_get_got_var (cfg);
+
 			ip += 4;
 			*sp++ = ins;			
 			break;
@@ -3319,6 +3390,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			++ip;
 			readr8 (ip, d);
 			ins->inst_p0 = d;
+
+			if (!((*d == 0.0) && (mono_signbit (*d) == 0)) || (*d == 1.0))
+				mono_get_got_var (cfg);
+
 			ip += 8;
 			*sp++ = ins;			
 			break;
@@ -3477,6 +3552,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cmethod->string_ctor)
 					g_assert_not_reached ();
 
+			}
+
+			if (!virtual) {
+				mono_get_got_var (cfg);
+			} else {
+				/* code in inssel.brg might transform a virtual call to a normal call */
+				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
+					((cmethod->flags & METHOD_ATTRIBUTE_FINAL) && 
+					 cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK))
+					mono_get_got_var (cfg);
 			}
 
 			if (cmethod && cmethod->klass->generic_container)
@@ -6026,23 +6111,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_ADD_INS (init_localsbb, store);
 	}
 
-	if (cfg->method == method && cfg->got_var) {
-		MonoInst *load, *store, *dummy_use;
-		MonoInst *get_got;
-		MONO_INST_NEW (cfg, get_got, OP_LOAD_GOTADDR);
-		NEW_TEMPSTORE (cfg, store, cfg->got_var->inst_c0, get_got);
-		MONO_ADD_INS (init_localsbb, store);
-
-		/* 
-		 * Add a dummy use to keep the got_var alive, since real uses might
-		 * only be generated in the decompose or instruction selection phases.
-		 * Add it to end_bblock, so the variable's lifetime covers the whole
-		 * method.
-		 */
-		NEW_TEMPLOAD (cfg, load, cfg->got_var->inst_c0);
-		NEW_DUMMY_USE (cfg, dummy_use, load);
-		MONO_ADD_INS (end_bblock, dummy_use);
-	}
+	if (cfg->method == method && cfg->got_var)
+		mono_emit_load_got_addr (cfg);
 
 	if (header->init_locals) {
 		MonoInst *store;
@@ -6081,7 +6151,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	
 	/* resolve backward branches in the middle of an existing basic block */
 	for (tmp = bb_recheck; tmp; tmp = tmp->next) {
 		bblock = tmp->data;
@@ -7722,8 +7791,7 @@ mono_codegen (MonoCompile *cfg)
 				 mono_method_full_name (cfg->method, TRUE), 
 				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->domain->friendly_name);
 
-	if (!cfg->compile_aot)
-		mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
+	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	if (cfg->method->dynamic) {
 		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
@@ -8208,6 +8276,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 
 	decompose_pass (cfg);
+
+	if (cfg->got_var)
+		/* The decompose pass may create calls which need the got var */
+		mono_emit_load_got_addr (cfg);
 
 	if (cfg->opt & MONO_OPT_LINEARS) {
 		GList *vars, *regs;
