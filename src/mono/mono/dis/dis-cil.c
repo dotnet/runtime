@@ -25,21 +25,32 @@
 static char *
 get_encoded_user_string (const char *ptr)
 {
-	char *res;
-	int len, i, j;
+	GString *res = g_string_new ("");
+	char *result;
+	int len, i;
 
 	len = mono_metadata_decode_blob_size (ptr, &ptr);
-	res = g_malloc (len + 1);
 
-	/*
-	 * I should really use some kind of libunicode here
-	 */
-	for (i = 0, j = 0; i < len; j++, i += 2)
-		res [j] = ptr [i];
+	for (i = 0; i < len; i += 2) {
+		switch (ptr [i]) {
+		case '\a': g_string_append (res, "\\a"); break;
+		case '\b': g_string_append (res, "\\b"); break;
+		case '\f': g_string_append (res, "\\f"); break;
+		case '\n': g_string_append (res, "\\n"); break;
+		case '\r': g_string_append (res, "\\r"); break;
+		case '\t': g_string_append (res, "\\t"); break;
+		case '\v': g_string_append (res, "\\v"); break;
+		case '\"': g_string_append (res, "\\\""); break;
+		case '\'': g_string_append (res, "\\'"); break;
+		case '\\': g_string_append (res, "\\\\"); break;
+		default: g_string_append_c (res, ptr [i]); break;
+		}
+	}
 
-	res [j] = 0;
+	result = res->str;
+	g_string_free (res, FALSE);
 		
-	return res;
+	return result;
 }
 
 #define CODE_INDENT g_assert (indent_level < 512); \
@@ -63,20 +74,34 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 	int i, indent_level = 0;
 	gboolean in_fault = 0;
 	const char *clause_names[] = {"catch", "filter", "finally", "", "fault"};
-
+	gboolean *trys = NULL;
 	indent [0] = 0;
 
 #ifdef DEBUG
 	for (i = 0; i < mh->num_clauses; ++i) {
 #define clause mh->clauses [i]
-		g_print ("out clause %d: from %d len=%d, handler at %d, %d\n", 
+	       g_print ("/* out clause %d: from %d len=%d, handler at %d, %d */\n",
 			clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len);
 #undef clause
 	}
 #endif
+
+       if (mh->num_clauses) {
+	       trys = g_malloc0 (sizeof (gboolean) * mh->num_clauses);
+	       trys [0] = 1;
+	       for (i=1; i < mh->num_clauses; ++i) {
+#define pcl mh->clauses [i-1]	
+#define cl mh->clauses [i]	
+		       if (pcl.try_offset != cl.try_offset || pcl.try_len != cl.try_len)
+			       trys [i] = 1;
+#undef pcl
+#undef cl
+	       }
+       }
+
 	while (ptr < end){
 		for (i = mh->num_clauses - 1; i >= 0 ; --i) {
-			if (ptr == start + mh->clauses[i].try_offset) {
+			if (ptr == start + mh->clauses[i].try_offset && trys [i]) {
 				fprintf (output, "\t%s.try { // %d\n", indent, i);
 				CODE_INDENT;
 			}
@@ -279,7 +304,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 
 		fprintf (output, "\n");
 		for (i = 0; i < mh->num_clauses; ++i) {
-			if (ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
+			if (ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len && trys [i]) {
 				CODE_UNINDENT;
 				fprintf (output, "\t%s} // end .try %d\n", indent, i);
 			}
@@ -291,4 +316,6 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 			}
 		}
 	}
+	if (trys)
+		g_free (trys);
 }
