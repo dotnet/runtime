@@ -981,6 +981,9 @@ type_to_eval_stack_type (MonoType *type, MonoInst *inst)
 
 handle_enum:
 	switch (type->type) {
+	case MONO_TYPE_VOID:
+		inst->type = STACK_INV;
+		return;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -2035,7 +2038,8 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call->args = args;
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
-
+	type_to_eval_stack_type (sig->ret, &call->inst);
+	
 	for (arg = call->out_args; arg;) {
 		MonoInst *narg = arg->next;
 		arg->next = NULL;
@@ -2540,6 +2544,124 @@ mono_find_jit_opcode_emulation (int opcode)
 		return NULL;
 }
 
+static MonoClassField* read_field (MonoCompile* cfg, MonoMethod* method, guint32 token, MonoClass** klass)
+{
+	MonoGenericContext *generic_context = NULL;
+	MonoGenericContainer *generic_container = ((MonoMethodNormal *) method)->generic_container;
+	
+	if (method->signature->is_inflated)
+		generic_context = ((MonoMethodInflated *) method)->context;
+	else if (generic_container)
+		generic_context = &generic_container->context;
+	
+	return mono_field_from_token (method->klass->image, token, klass, generic_context);
+}
+
+static MonoInst* try_inline_ldfld (MonoCompile *cfg, MonoMethodHeader* h, MonoMethod *method, MonoMethodSignature *sig, MonoInst **args)
+{
+	/* IL_0000:  ldarg.0
+	 * IL_0001:  ldfld  int32 X::x
+	 * IL_0006:  ret
+	 */
+	
+	MonoInst *offset_ins;
+	MonoInst *ins;
+	MonoInst *load;
+	MonoClassField *field;
+	MonoClass* klass;
+	guint foffset;
+
+	if (h->code_size != 7)
+		return NULL;
+
+	if (sig->param_count != 0 || !sig->hasthis)
+		return NULL;
+
+	if (!(h->code [0] == CEE_LDARG_0 && h->code [1] == CEE_LDFLD && h->code [6] == CEE_RET))
+		return NULL;
+
+	field = read_field (cfg, method, read32 (h->code + 2), &klass);
+	mono_class_init (klass);
+
+	foffset = klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset;
+	
+	NEW_ICONST (cfg, offset_ins, foffset);
+	MONO_INST_NEW (cfg, ins, OP_PADD);
+	ins->inst_left = *args;
+	ins->inst_right = offset_ins;
+	ins->type = STACK_MP;
+	
+	MONO_INST_NEW (cfg, load, mono_type_to_ldind (field->type));
+	type_to_eval_stack_type (field->type, load);
+	load->inst_left = ins;
+	
+	return load;
+}
+/* 
+ *
+ * This method does a quick-and-dirty inlining of a method. It tries to find
+ * common patterns and inlines specific code sequences. This is *NOT* a
+ * general inliner.
+ * 
+ * The goal here is to inline patterns with the following properties: 
+ *      - The pattern is very commonly used 
+ *      - Inlining the pattern will NEVER increase code size
+ * 
+ * Basically, we want to get calls that we don't even have to think about the
+ * cost/benefit tradeoffs.  The methods that this routine inlines are always
+ * good choices to inline, regardless of the call site.
+ *
+ */
+
+static MonoInst*
+quick_inline_method (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig, MonoInst **args)
+{
+	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoInst* ins;
+	
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) ||
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (method->klass->marshalbyref) ||
+	    !header || header->num_clauses ||
+	    /* fixme: why cant we inline valuetype returns? */
+	    MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+	
+	if (header->code_size > 10 || header->num_locals)
+		return NULL;
+	
+	if (mono_method_has_declsec (method))
+		return FALSE;
+	
+	if (!(cfg->opt & MONO_OPT_SHARED)) {
+		MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+			if (cfg->run_cctors)
+				mono_runtime_class_init (vtable);
+		}
+		else if (!vtable->initialized && mono_class_needs_cctor_run (method->klass, NULL))
+			return NULL;
+	} else {
+		/* 
+		 * If we're compiling for shared code
+		 * the cctor will need to be run at aot method load time, for example,
+		 * or at the end of the compilation of the inlining method.
+		 */
+		if (mono_class_needs_cctor_run (method->klass, NULL) && !((method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+			return NULL;
+	}
+	
+	ins = try_inline_ldfld (cfg, header, method, sig, args);
+	if (ins)
+		return ins;
+	
+	return NULL;
+	
+}
+
 static MonoInst*
 mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -2597,8 +2719,12 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			return ins;
 		return NULL;
 	}
-
-	return mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);
+	
+	ins = mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
+	
+	return quick_inline_method (cfg, cmethod, fsig, args);
 }
 
 static void
@@ -2828,10 +2954,24 @@ unverified:
 	return 1;
 }
 
+static gboolean
+ip_in_bb (MonoCompile *cfg, MonoBasicBlock *bb, const guint8* ip)
+{
+	MonoBasicBlock *b = g_hash_table_lookup (cfg->bb_hash, ip);
+	
+	return b == NULL || b == bb;
+}
+
 static MonoInst*
-emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins)
+emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8* ip_next)
 {
 	MonoInst *store, *temp, *load;
+	
+	if (ip_in_bb (cfg, bblock, ip_next) &&
+		(CODE_IS_STLOC (ip_next) || *ip_next == CEE_BRTRUE || *ip_next == CEE_BRFALSE ||
+		*ip_next == CEE_BRTRUE_S || *ip_next == CEE_BRFALSE_S || *ip_next == CEE_RET))
+			return ins;
+	
 	temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
 	NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 	store->cil_code = ins->cil_code;
@@ -3541,7 +3681,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins_flag = 0;
 				break;
 			}
-			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_get_inst_for_method (cfg, cmethod, fsig, sp))) {
+			
+			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || (cmethod->flags & METHOD_ATTRIBUTE_FINAL)) &&
+			    (ins = mini_get_inst_for_method (cfg, cmethod, fsig, sp))) {
+				
 				ins->cil_code = ip;
 
 				if (MONO_TYPE_IS_VOID (fsig->ret)) {
@@ -3695,7 +3838,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 			} else {
-				if (0 && CODE_IS_STLOC (ip + 5) && (!MONO_TYPE_ISSTRUCT (fsig->ret)) && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)) {
+				if (ip_in_bb (cfg, bblock, ip + 5) 
+				    && (!MONO_TYPE_ISSTRUCT (fsig->ret))
+				    && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)
+				    && (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_BRTRUE || ip [5] == CEE_BRFALSE ||
+					ip [5] == CEE_BRTRUE_S || ip [5] == CEE_BRFALSE_S || ip [5] == CEE_RET)) {
 					/* no need to spill */
 					ins = (MonoInst*)mono_emit_method_call (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
@@ -3969,7 +4116,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
 			}
 			ip++;
 			break;
@@ -3990,7 +4137,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ADD_UNOP (*ip);
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
 			}
 			ip++;			
 			break;
@@ -4358,7 +4505,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
 			}
 			break;
@@ -4542,7 +4689,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->klass = klass;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
 			}
 			break;
@@ -5290,7 +5437,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ADD_BINOP (*ip);
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
 			}
 			ip++;
 			break;
@@ -5525,7 +5672,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 6);
 				ip += 6;
 				break;
 			}
@@ -5602,7 +5749,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 */
 				if (cmp->inst_left->type == STACK_I8) {
 					--sp;
-					*sp++ = emit_tree (cfg, bblock, ins);
+					*sp++ = emit_tree (cfg, bblock, ins, ip + 2);
 				}
 				ip += 2;
 				break;
