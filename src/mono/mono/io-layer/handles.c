@@ -106,7 +106,7 @@ attach_again:
 	if(shared==TRUE) {
 		daemon_sock=socket (PF_UNIX, SOCK_STREAM, 0);
 		shared_socket_address.sun_family=AF_UNIX;
-		memcpy (shared_socket_address.sun_path, _wapi_shared_data->daemon, 108);
+		memcpy (shared_socket_address.sun_path, _wapi_shared_data->daemon, sizeof (shared_socket_address.sun_path));
 		ret=connect (daemon_sock, (struct sockaddr *)&shared_socket_address,
 			     sizeof(struct sockaddr_un));
 		if(ret==-1) {
