@@ -201,7 +201,7 @@ mono_domain_create (void)
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
-	domain->proxy_vtable_hash = mono_g_hash_table_new (NULL, NULL);
+	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->static_data_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);

@@ -873,7 +873,10 @@ ves_icall_System_Object_GetType (MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_type_get_object (mono_object_domain (obj), &obj->vtable->klass->byval_arg);
+	if (obj->vtable->klass != mono_defaults.transparent_proxy_class)
+		return mono_type_get_object (mono_object_domain (obj), &obj->vtable->klass->byval_arg);
+	else
+		return mono_type_get_object (mono_object_domain (obj), &((MonoTransparentProxy*)obj)->remote_class->proxy_class->byval_arg);
 }
 
 static void
@@ -4070,7 +4073,7 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 }
 
 static MonoObject *
-ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
+ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this, MonoString *class_name)
 {
 	MonoDomain *domain = mono_object_domain (this); 
 	MonoObject *res;
@@ -4088,16 +4091,17 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-		tp->klass = mono_defaults.marshalbyrefobject_class;
-	else
-		tp->klass = klass;
-	
 	tp->custom_type_info = (mono_object_isinst (this, mono_defaults.iremotingtypeinfo_class) != NULL);
-
-	res->vtable = mono_class_proxy_vtable (domain, klass);
+	tp->remote_class = mono_remote_class (domain, class_name, klass);
+	res->vtable = tp->remote_class->vtable;
 
 	return res;
+}
+
+static MonoReflectionType *
+ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxy *tp)
+{
+	return mono_type_get_object (mono_object_domain (tp), &tp->remote_class->proxy_class->byval_arg);
 }
 
 /* System.Environment */
@@ -5231,6 +5235,7 @@ static const IcallEntry monomethodmessage_icalls [] = {
 };
 	
 static const IcallEntry realproxy_icalls [] = {
+	{"InternalGetProxyType", ves_icall_Remoting_RealProxy_InternalGetProxyType},
 	{"InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy}
 };
 

@@ -193,10 +193,10 @@ typedef struct {
 } MonoRealProxy;
 
 typedef struct {
-	MonoObject     object;
-	MonoRealProxy *rp;	
-	MonoClass     *klass; 
-	MonoBoolean    custom_type_info;
+	MonoObject       object;
+	MonoRealProxy   *rp;	
+	MonoRemoteClass *remote_class;
+	MonoBoolean      custom_type_info;
 } MonoTransparentProxy;
 
 /* This is a copy of System.Runtime.Remoting.Messaging.CallType */
@@ -563,6 +563,12 @@ mono_delegate_ctor          (MonoObject *this_obj, MonoObject *target, gpointer 
 
 gpointer 
 mono_compile_method        (MonoMethod *method);
+
+MonoRemoteClass*
+mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class);
+
+void
+mono_upgrade_remote_class (MonoDomain *domain, MonoRemoteClass *remote_class, MonoClass *klass);
 
 /* accessors for fields and properties */
 void

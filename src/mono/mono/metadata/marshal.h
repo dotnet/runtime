@@ -194,6 +194,15 @@ mono_marshal_get_ldfld_wrapper (MonoType *type);
 MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method);
 
+MonoMethod *
+mono_marshal_get_isinst (MonoClass *klass);
+
+MonoMethod *
+mono_marshal_get_castclass (MonoClass *klass);
+
+MonoMethod *
+mono_marshal_get_proxy_cancast (MonoClass *klass);
+
 /* marshaling internal calls */
 
 void * 

@@ -1069,7 +1069,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
-		if (!tp->klass->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
+		if (!tp->remote_class->proxy_class->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
 
 			// If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
@@ -1509,7 +1509,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	/* skip the this pointer */
 	params++;
 
-	if (this->klass->contextbound && this->rp->context == (MonoObject *) mono_context_get ())
+	if (this->remote_class->proxy_class->contextbound && this->rp->context == (MonoObject *) mono_context_get ())
 	{
 		int i;
 		MonoMethodSignature *sig = method->signature;
@@ -3936,6 +3936,294 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	return res;
 }
 
+void
+mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
+
+static MonoReflectionType *
+type_from_handle (MonoType *handle)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *klass = mono_class_from_mono_type (handle);
+
+	MONO_ARCH_SAVE_REGS;
+
+	mono_class_init (klass);
+	return mono_type_get_object (domain, handle);
+}
+
+/*
+ * mono_marshal_get_isinst:
+ * @klass: the type of the field
+ *
+ * This method generates a function which can be used to check if an object is
+ * an instance of the given type, icluding the case where the object is a proxy.
+ * The generated function has the following signature:
+ * MonoObject* __isinst_wrapper_ (MonoObject *obj)
+ */
+MonoMethod *
+mono_marshal_get_isinst (MonoClass *klass)
+{
+	static MonoMethodSignature *isint_sig = NULL;
+	static GHashTable *isinst_hash = NULL; 
+	MonoMethod *res;
+	int pos_was_ok, pos_failed, pos_end, pos_end2;
+	char *name;
+	MonoMethodBuilder *mb;
+
+	EnterCriticalSection (&marshal_mutex);
+	if (!isinst_hash) 
+		isinst_hash = g_hash_table_new (NULL, NULL);
+	
+	res = g_hash_table_lookup (isinst_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
+		return res;
+
+	if (!isint_sig) {
+		isint_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		isint_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		isint_sig->ret = &mono_defaults.object_class->byval_arg;
+		isint_sig->pinvoke = 0;
+	}
+	
+	name = g_strdup_printf ("__isinst_wrapper_%s", klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_UNKNOWN);
+	g_free (name);
+	
+	mb->method->save_lmf = 1;
+
+	/* check if the object is a proxy that needs special cast */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_CISINST);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+
+	/* The result of MONO_ISINST can be:
+	   	0) the type check succeeded
+		1) the type check did not succeed
+		2) a CanCastTo call is needed */
+	
+	mono_mb_emit_byte (mb, CEE_DUP);
+	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	mono_mb_emit_byte (mb, CEE_LDC_I4_2);
+	pos_failed = mono_mb_emit_branch (mb, CEE_BNE_UN);
+	
+	/* get the real proxy from the transparent proxy*/
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_managed_call (mb, mono_marshal_get_proxy_cancast (klass), NULL);
+	pos_end = mono_mb_emit_branch (mb, CEE_BR);
+	
+	/* fail */
+	
+	mono_mb_patch_addr (mb, pos_failed, mb->pos - (pos_failed + 4));
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	pos_end2 = mono_mb_emit_branch (mb, CEE_BR);
+	
+	/* success */
+	
+	mono_mb_patch_addr (mb, pos_was_ok, mb->pos - (pos_was_ok + 4));
+	mono_mb_emit_byte (mb, CEE_POP);
+	mono_mb_emit_ldarg (mb, 0);
+	
+	/* the end */
+	
+	mono_mb_patch_addr (mb, pos_end, mb->pos - (pos_end + 4));
+	mono_mb_patch_addr (mb, pos_end2, mb->pos - (pos_end2 + 4));
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_and_cache (isinst_hash, klass, mb, isint_sig, isint_sig->param_count + 16);
+	mono_mb_free (mb);
+
+	return res;
+}
+
+/*
+ * mono_marshal_get_castclass:
+ * @klass: the type of the field
+ *
+ * This method generates a function which can be used to cast an object to
+ * an instance of the given type, icluding the case where the object is a proxy.
+ * The generated function has the following signature:
+ * MonoObject* __castclass_wrapper_ (MonoObject *obj)
+ */
+MonoMethod *
+mono_marshal_get_castclass (MonoClass *klass)
+{
+	static MonoMethodSignature *castclass_sig = NULL;
+	static GHashTable *castclass_hash = NULL; 
+	MonoMethod *res;
+	int pos_was_ok, pos_was_ok2;
+	char *name;
+	MonoMethodBuilder *mb;
+
+	EnterCriticalSection (&marshal_mutex);
+	if (!castclass_hash) 
+		castclass_hash = g_hash_table_new (NULL, NULL);
+	
+	res = g_hash_table_lookup (castclass_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
+		return res;
+
+	if (!castclass_sig) {
+		castclass_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		castclass_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		castclass_sig->ret = &mono_defaults.object_class->byval_arg;
+		castclass_sig->pinvoke = 0;
+	}
+	
+	name = g_strdup_printf ("__castclass_wrapper_%s", klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_UNKNOWN);
+	g_free (name);
+	
+	mb->method->save_lmf = 1;
+
+	/* check if the object is a proxy that needs special cast */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_CCASTCLASS);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+
+	/* The result of MONO_ISINST can be:
+	   	0) the cast is valid
+		1) cast of unknown proxy type
+		or an exception if the cast is is invalid
+	*/
+	
+	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/* get the real proxy from the transparent proxy*/
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_managed_call (mb, mono_marshal_get_proxy_cancast (klass), NULL);
+	pos_was_ok2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
+	
+	/* fail */
+	mono_mb_emit_exception (mb, "InvalidCastException", NULL);
+	
+	/* success */
+	mono_mb_patch_addr (mb, pos_was_ok, mb->pos - (pos_was_ok + 4));
+	mono_mb_patch_addr (mb, pos_was_ok2, mb->pos - (pos_was_ok2 + 4));
+	mono_mb_emit_ldarg (mb, 0);
+	
+	/* the end */
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_and_cache (castclass_hash, klass, mb, castclass_sig, castclass_sig->param_count + 16);
+	mono_mb_free (mb);
+
+	return res;
+}
+
+MonoMethod *
+mono_marshal_get_proxy_cancast (MonoClass *klass)
+{
+	static MonoMethodSignature *from_handle_sig = NULL;
+	static MonoMethodSignature *upgrade_proxy_sig = NULL;
+	static MonoMethodSignature *isint_sig = NULL;
+	static GHashTable *proxy_isinst_hash = NULL; 
+	MonoMethod *res;
+	int pos_failed, pos_end;
+	char *name;
+	MonoMethod *can_cast_to;
+	MonoMethodDesc *desc;
+	MonoMethodBuilder *mb;
+
+	EnterCriticalSection (&marshal_mutex);
+	if (!proxy_isinst_hash) 
+		proxy_isinst_hash = g_hash_table_new (NULL, NULL);
+	
+	res = g_hash_table_lookup (proxy_isinst_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
+		return res;
+
+	if (!isint_sig) {
+		upgrade_proxy_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		upgrade_proxy_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		upgrade_proxy_sig->params [1] = &mono_defaults.object_class->byval_arg;
+		upgrade_proxy_sig->ret = &mono_defaults.void_class->byval_arg;
+		upgrade_proxy_sig->pinvoke = 1;
+
+		from_handle_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		from_handle_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		from_handle_sig->ret = &mono_defaults.object_class->byval_arg;
+	
+		isint_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		isint_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		isint_sig->ret = &mono_defaults.object_class->byval_arg;
+		isint_sig->pinvoke = 0;
+	}
+	
+	name = g_strdup_printf ("__proxy_isinst_wrapper_%s", klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_UNKNOWN);
+	g_free (name);
+	
+	mb->method->save_lmf = 1;
+
+	/* get the real proxy from the transparent proxy*/
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	
+	/* get the refletion type from the type handle */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, &klass->byval_arg));
+	mono_mb_emit_native_call (mb, from_handle_sig, type_from_handle);
+	
+	mono_mb_emit_ldarg (mb, 0);
+	
+	/* make the call to CanCastTo (type, ob) */
+	desc = mono_method_desc_new ("IRemotingTypeInfo:CanCastTo", FALSE);
+	can_cast_to = mono_method_desc_search_in_class (desc, mono_defaults.iremotingtypeinfo_class);
+	g_assert (can_cast_to);
+	mono_method_desc_free (desc);
+	mono_mb_emit_byte (mb, CEE_CALLVIRT);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, can_cast_to));
+
+	
+	pos_failed = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/* Upgrade the proxy vtable by calling: mono_upgrade_remote_class_wrapper (type, ob)*/
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, &klass->byval_arg));
+	mono_mb_emit_native_call (mb, from_handle_sig, type_from_handle);
+	mono_mb_emit_ldarg (mb, 0);
+	
+	mono_mb_emit_native_call (mb, upgrade_proxy_sig, mono_upgrade_remote_class_wrapper);
+	
+	mono_mb_emit_ldarg (mb, 0);
+	pos_end = mono_mb_emit_branch (mb, CEE_BR);
+	
+	/* fail */
+	
+	mono_mb_patch_addr (mb, pos_failed, mb->pos - (pos_failed + 4));
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	
+	/* the end */
+	
+	mono_mb_patch_addr (mb, pos_end, mb->pos - (pos_end + 4));
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_and_cache (proxy_isinst_hash, klass, mb, isint_sig, isint_sig->param_count + 16);
+	mono_mb_free (mb);
+
+	return res;
+}
+
+void
+mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy)
+{
+	MonoClass *klass;
+	klass = mono_class_from_mono_type (rtype->type);
+	mono_upgrade_remote_class (((MonoObject*)tproxy)->vtable->domain, tproxy->remote_class, klass);
+	((MonoObject*)tproxy)->vtable = tproxy->remote_class->vtable;
+}
+
 /**
  * mono_marshal_get_struct_to_ptr:
  * @klass:
@@ -4056,18 +4344,6 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	klass->ptr_to_str = res;
 	return res;
-}
-
-static MonoReflectionType *
-type_from_handle (MonoType *handle)
-{
-	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass = mono_class_from_mono_type (handle);
-
-	MONO_ARCH_SAVE_REGS;
-
-	mono_class_init (klass);
-	return mono_type_get_object (domain, handle);
 }
 
 /*

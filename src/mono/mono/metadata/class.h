@@ -266,6 +266,14 @@ struct _MonoGenericParam {
 	MonoClass** constraints; /* NULL means end of list */
 };
 
+typedef struct {
+	MonoVTable *vtable;
+	MonoClass *proxy_class;
+	guint interface_count;
+	MonoClass **interfaces;
+	char* proxy_class_name;
+} MonoRemoteClass;
+
 #define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
 
 typedef struct {
@@ -299,9 +307,6 @@ mono_class_setup_vtable    (MonoClass *klass, MonoMethod **overrides, int onum);
 
 MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *klass);
-
-MonoVTable *
-mono_class_proxy_vtable    (MonoDomain *domain, MonoClass *klass);
 
 void
 mono_class_setup_mono_type (MonoClass *klass);
