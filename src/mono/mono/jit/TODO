@@ -9,7 +9,7 @@
 * document the functions and variables in the JIT 
 * implement a register set for FP registers (just count register usage on x86)
 
-* inline all calls in System.Math::*, we should use coprozessor instructions
+* inline all calls in System.Math::*, we should use coprocessor instructions
   directly whenever possible. 
 
 * Calling conventions:

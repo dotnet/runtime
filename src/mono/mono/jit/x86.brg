@@ -217,7 +217,7 @@ debug_memcopy (void *dest, const void *src, size_t n);
 # terminal definitions
 #
 
-# constatnts
+# constants
 %term CONST_I4 CONST_I8 CONST_R4 CONST_R8
 %term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8 LDIND_OBJ 
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
