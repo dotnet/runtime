@@ -86,6 +86,9 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		/* 
 		 * detected a reference to mscorlib, we simply return a reference to a dummy 
 		 * until we have a better solution.
+		 * 
+		 * once a better solution is in place, the System.MonoDummy
+		 * class should be removed from CVS.
 		 */
 		fprintf(stderr, "Sending dummy where %s.%s expected\n", mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]), mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME])); 
 		
