@@ -3079,6 +3079,20 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ADD_TREE (t1, cli_addr);			
 				break;
 			}
+			case CEE_STARG: {
+				guint32 arg_pos;
+				++ip;
+				--sp;
+
+				arg_pos = read16 (ip);
+				ip += 2;
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = ARG_POS (arg_pos);
+				t1 = ctree_create_store (cfg, ARG_TYPE (arg_pos), t1, *sp, TRUE);
+				ADD_TREE (t1, cli_addr);			
+				break;
+			}
 
 			MAKE_CMP (CEQ)
 			MAKE_CMP (CLT)
