@@ -1271,6 +1271,9 @@ mono_method_get_header (MonoMethod *method)
 	if (G_LIKELY (mn->header))
 		return mn->header;
 	
+	if (method->klass->dummy || (method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
+		return NULL;
+	
 	mono_loader_lock ();
 	
 	if (mn->header) {
@@ -1284,8 +1287,6 @@ mono_method_get_header (MonoMethod *method)
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 	loc = mono_image_rva_map (img, rva);
 	
-	g_return_val_if_fail (!method->klass->dummy && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT)
-	                      && !(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME), NULL);
 	g_assert (loc);
 	
 	mn->header = mono_metadata_parse_mh_full (img, mn->generic_container, loc);
