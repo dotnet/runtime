@@ -113,7 +113,7 @@ enum {
 
 #define ppc_emit32(c,x) do { *((guint32 *) c) = x; ((guint32 *)c)++;} while (0)
 
-#define ppc_is_imm16(val) ((gint)val >= -(1<<16) && (gint)val <= ((1<<16)-1))
+#define ppc_is_imm16(val) ((gint)val >= (gint)-(1<<15) && (gint)val <= (gint)((1<<15)-1))
 
 #define ppc_load(c,D,v) do {	\
 		if (ppc_is_imm16 ((v)))	{	\
