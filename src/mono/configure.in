@@ -166,7 +166,7 @@ case "$host" in
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
 		need_link_unlink=yes
-		libmono_cflags="-D_REENTRANT"
+		libmono_cflags="-D_REENTRANT -DSOLARIS_CURSES"
 		libgc_threads=pthreads
 		;;
 	*-*-darwin*)

@@ -1,3 +1,8 @@
+2005-02-04 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: define SOLARIS_CURSES when compiling for *solaris.
+	* mono/metadata/console-io.c: <curses.h> is needed by term.h on solaris.
+
 2005-02-04  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (wrapper-config): Elevated from being a test

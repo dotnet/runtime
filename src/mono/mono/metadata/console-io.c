@@ -17,6 +17,9 @@
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
+#ifdef SOLARIS_CURSES
+#include <curses.h>
+#endif
 #ifdef HAVE_TERM_H
 #include <term.h>
 #endif
