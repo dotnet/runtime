@@ -542,7 +542,7 @@
     <class name="System.Collections.Hashtable">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>jbarn@httcb.net</maintainer>
@@ -1152,6 +1152,34 @@
             <maintainer>tomasr@mvps.org</maintainer>
         </maintainers>
     </class>
-  
+
+    <class name="System.Collections.CaseInsensitiveComparer">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.CaseInsensitiveHashCodeProvider">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Comparer">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
+    
 </classes>
 
