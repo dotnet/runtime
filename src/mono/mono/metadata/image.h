@@ -35,6 +35,8 @@ void          mono_images_init    (void);
 
 MonoImage    *mono_image_open     (const char *fname,
 				   MonoImageOpenStatus *status);
+MonoImage    *mono_pe_file_open     (const char *fname,
+				     MonoImageOpenStatus *status);
 MonoImage    *mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy,
                                          MonoImageOpenStatus *status);
 MonoImage    *mono_image_loaded   (const char *name);

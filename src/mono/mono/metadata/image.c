@@ -615,7 +615,8 @@ mono_image_init (MonoImage *image)
 }
 
 static MonoImage *
-do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status)
+do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
+		    gboolean care_about_cli)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
@@ -759,6 +760,10 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status)
 	if (!load_section_tables (image, iinfo, offset))
 		goto invalid_image;
 	
+	if (care_about_cli == FALSE) {
+		goto done;
+	}
+	
 	/* Load the CLI header */
 	if (!load_cli_header (image, iinfo))
 		goto invalid_image;
@@ -780,6 +785,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status)
 
 	load_modules (image, status);
 
+done:
 	if (status)
 		*status = MONO_IMAGE_OK;
 
@@ -793,7 +799,8 @@ invalid_image:
 }
 
 static MonoImage *
-do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
+do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
+		    gboolean care_about_cli)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -812,7 +819,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->image_info = iinfo;
 	image->name = canonicalize_path (fname);
 
-	return do_mono_image_load (image, status);
+	return do_mono_image_load (image, status, care_about_cli);
 }
 
 MonoImage *
@@ -869,7 +876,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 
-	return do_mono_image_load (image, status);
+	return do_mono_image_load (image, status, TRUE);
 }
 
 /**
@@ -877,7 +884,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
  * @fname: filename that points to the module we want to open
  * @status: An error condition is returned in this field
  *
- * Retuns: An open image of type %MonoImage or NULL on error.
+ * Returns: An open image of type %MonoImage or NULL on error.
  * if NULL, then check the value of @status for details on the error
  */
 MonoImage *
@@ -907,7 +914,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	}
 	LeaveCriticalSection (&images_mutex);
 
-	image = do_mono_image_open (fname, status);
+	image = do_mono_image_open (fname, status, TRUE);
 	if (image == NULL)
 		return NULL;
 
@@ -928,6 +935,25 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	LeaveCriticalSection (&images_mutex);
 
 	return image;
+}
+
+/**
+ * mono_pe_file_open:
+ * @fname: filename that points to the module we want to open
+ * @status: An error condition is returned in this field
+ *
+ * Returns: An open image of type %MonoImage or NULL on error.  if
+ * NULL, then check the value of @status for details on the error.
+ * This variant for mono_image_open DOES NOT SET UP CLI METADATA.
+ * It's just a PE file loader, used for FileVersionInfo.  It also does
+ * not use the image cache.
+ */
+MonoImage *
+mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
+{
+	g_return_val_if_fail (fname != NULL, NULL);
+	
+	return(do_mono_image_open (fname, status, FALSE));
 }
 
 static void
@@ -1113,8 +1139,10 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 		}
 #endif
 	} else if (level==2) {
-		if((is_string==FALSE && entry->name_offset!=lang_id) ||
-		   (is_string==TRUE)) {
+		if ((is_string == FALSE &&
+		    entry->name_offset != lang_id &&
+		    lang_id != 0) ||
+		   (is_string == TRUE)) {
 			return(NULL);
 		}
 	} else {

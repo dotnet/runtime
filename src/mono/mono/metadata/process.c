@@ -257,7 +257,7 @@ static gpointer process_read_string_block (MonoObject *filever,
 					   gboolean store)
 {
 	version_data block;
-	guint16 string_len=0;
+	guint16 string_len=28; /* Length of the StringTable block */
 
 	/* data_ptr is pointing at an array of one or more String
 	 * blocks with total length (not including alignment padding)
@@ -363,7 +363,11 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 
 		language = g_utf16_to_utf8 (block.key, unicode_bytes (block.key), NULL, NULL, NULL);
 		g_strdown (language);
-		if (!strcmp (language, "007f04b0") || !strcmp (language, "000004b0")) {
+
+		/* Kludge: treat en_US as neutral too */
+		if (!strcmp (language, "007f04b0") ||
+		    !strcmp (language, "000004b0") ||
+		    !strcmp (language, "040904b0")) {
 			/* Got the one we're interested in */
 			process_set_field_string_utf8 (filever, "language",
 						       "Language Neutral");
@@ -644,8 +648,8 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 
 	STASH_SYS_ASS (this);
 	
-	filename_utf8=mono_string_to_utf8 (filename);
-	image=mono_image_open (filename_utf8, NULL);
+	filename_utf8 = mono_string_to_utf8 (filename);
+	image = mono_pe_file_open (filename_utf8, NULL);
 	g_free (filename_utf8);
 	
 	if(image==NULL) {
