@@ -1,7 +1,7 @@
 %%
 
 #
-# inssel-s390.brg: burg file for special s390 instructions
+# inssel-s390x.brg: burg file for special s390 instructions
 #
 # Author:
 #   Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com)
@@ -30,30 +30,6 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-lreg: OP_LADD_OVF (lreg, lreg) "0" {
-	/* ADC sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_BIALU (s, OP_ADD_OVF_CARRY, state->reg2, state->left->reg2, state->right->reg2);
-}
-
-lreg: OP_LADD_OVF_UN (lreg, lreg) "0" {
-	/* ADC sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_BIALU (s, OP_ADD_OVF_UN_CARRY, state->reg2, state->left->reg2, state->right->reg2);
-}
-
-lreg: OP_LSUB_OVF (lreg, lreg) "0" {
-	/* SBB sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_BIALU (s, OP_SUB_OVF_CARRY, state->reg2, state->left->reg2, state->right->reg2);
-}
-
-lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
-	/* SBB sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_BIALU (s, OP_SUB_OVF_UN_CARRY, state->reg2, state->left->reg2, state->right->reg2);
-}
-
 reg: CEE_ADD_OVF (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
@@ -70,13 +46,13 @@ reg: CEE_SUB_OVF_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
-	/*------------------------------------------------------*/
-	/* this should only happen for methods returning a long */
-	/* S/390 ABI uses r2/r3 for returning 64-bit integers   */
-	/*------------------------------------------------------*/
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, s390_r2, state->right->reg1);
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, s390_r3, state->right->reg2);
+stmt: CEE_STIND_I8 (OP_REGVAR, reg) {
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->left->tree->dreg, state->right->reg1);
+//	MONO_EMIT_NEW_UNALU (s, OP_MOVE, s390_r2, state->right->reg1);
+}
+
+reg: CEE_LDIND_I8 (OP_REGVAR) {
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->tree->dreg);
 }
 
 freg: OP_LCONV_TO_R8 (lreg) {
@@ -130,12 +106,12 @@ stmt: OP_SETRET (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_SETRET (lreg) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = s390_r2;
-	mono_bblock_add_inst (s->cbb, tree);
-}
+# stmt: OP_SETRET (lreg) {
+#	tree->opcode = OP_MOVE;
+#	tree->sreg1 = state->left->reg1;
+#	tree->dreg = s390_r2;
+#	mono_bblock_add_inst (s->cbb, tree);
+# }
 
 stmt: OP_SETRET (freg) {
 	if (s->method->signature->ret->type == MONO_TYPE_R4) {
@@ -157,15 +133,6 @@ stmt: OP_SETRET (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
-	/*----------------------------------------------------------------------*/
-	/* SBB sets the condition code - CC 0 or 1 indicates Borrow == Overflow */
-	/*----------------------------------------------------------------------*/
-	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_BIALU (s, OP_SBB, state->reg2, state->left->reg2, state->right->reg2);
-	MONO_EMIT_NEW_COND_EXC (s, NC, "OverflowException");
-}
-
 stmt: OP_OUTARG (reg) {
 	if (tree->inst_imm) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->reg1);
@@ -185,19 +152,6 @@ stmt: OP_OUTARG (OP_REGVAR) {
 	tree->opcode = OP_SETREG;
 	tree->dreg = tree->unused;
 	tree->sreg1 = state->left->tree->dreg;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (lreg) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->reg2);
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm + 4, state->left->reg1);
-		return;
-	}
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
-	tree->opcode = OP_SETREG;
-	tree->dreg = tree->unused + 1;
-	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -238,9 +192,46 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)) {
+	tree->opcode = OP_SETREG;
+	tree->dreg   = tree->unused;
+	tree->sreg1  = state->left->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (CEE_LDIND_I8 (OP_REGVAR)) {
+	tree->opcode = OP_SETREG;
+	tree->dreg   = tree->unused;
+	tree->sreg1  = state->left->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (CEE_LDIND_I4 (OP_REGVAR)) {
+	tree->opcode = OP_SETREG;
+	tree->dreg   = tree->unused;
+	tree->sreg1  = state->left->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (CEE_LDIND_I (base)) {
+	MONO_EMIT_LOAD_MEMBASE (s, tree, tree->unused, 
+				state->left->left->tree->inst_basereg,
+				state->left->left->tree->inst_offset);
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (CEE_LDIND_I4 (base)) {
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, 
+				tree->unused, state->left->left->tree->inst_basereg,
+				state->left->left->tree->inst_offset);
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_OUTARG (OP_LDADDR (OP_S390_LOADARG)) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->left->tree->dreg);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
+					     tree->inst_imm, 
+					     state->left->left->tree->dreg);
 		return;
 	}
 	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, tree->unused,

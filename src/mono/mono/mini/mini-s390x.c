@@ -968,7 +968,9 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
+	case MONO_TYPE_I8:
 	case MONO_TYPE_U:
+	case MONO_TYPE_U8:
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
@@ -1925,6 +1927,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
+		case CEE_CONV_OVF_U4:
 		case OP_MOVE:
 			/* 
 			 * OP_MOVE reg, reg 
@@ -2568,6 +2571,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			reginfod [ins->dreg].last_use = i;
 			if (reginfod [ins->dreg].born_in == 0 || reginfod [ins->dreg].born_in > i)
 				reginfod [ins->dreg].born_in = i;
+#if 0
 			if (spec [MONO_INST_DEST] == 'l') {
 				/* result in eax:edx, the virtual register is allocated sequentially */
 				reginfod [ins->dreg + 1].prev_use = reginfod [ins->dreg + 1].last_use;
@@ -2575,6 +2579,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (reginfod [ins->dreg + 1].born_in == 0 || reginfod [ins->dreg + 1].born_in > i)
 					reginfod [ins->dreg + 1].born_in = i;
 			}
+#endif
 		} else {
 			ins->dreg = -1;
 		}
@@ -2677,6 +2682,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			rs->isymbolic [val] = prev_dreg;
 			ins->dreg = val;
 			if (spec [MONO_INST_DEST] == 'l') {
+				if (ins->dreg != s390_r2)
+					create_copy_ins (cfg, ins->dreg, s390_r2, ins);
+#if 0
 				int hreg = prev_dreg + 1;
 				val = rs->iassign [hreg];
 				if (val < 0) {
@@ -2720,10 +2728,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 				}
 // #endif
-				if (reg_is_freeable (val) && hreg >= 0 && (reginfo [hreg].born_in >= i && !(cur_iregs & (1 << val)))) {
-					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
+				if (reg_is_freeable (val) && !(cur_iregs & (1 << val))) {
+					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), val));
 					mono_regstate_free_int (rs, val);
 				}
+#endif
 			} else if (spec [MONO_INST_DEST] == 'a' && ins->dreg != s390_r2 && spec [MONO_INST_CLOB] != 'd') {
 				/* this instruction only outputs to s390_r2, need to copy */
 				create_copy_ins (cfg, ins->dreg, s390_r2, ins);
@@ -3128,13 +3137,20 @@ guint8 cond;
 		}
 			break;
 		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4: {
+		case CEE_LDIND_I4: {
 			s390_basr (code, s390_r13, 0);
 			s390_j	  (code, 6);
 			s390_word (code, ins->inst_p0);
 			s390_lg   (code, s390_r13, 0, s390_r13, 4);
 			s390_lgf  (code, ins->dreg, 0, s390_r13, 0);
+		}
+			break;
+		case CEE_LDIND_U4: {
+			s390_basr (code, s390_r13, 0);
+			s390_j	  (code, 6);
+			s390_word (code, ins->inst_p0);
+			s390_lg   (code, s390_r13, 0, s390_r13, 4);
+			s390_llgf (code, ins->dreg, 0, s390_r13, 0);
 		}
 			break;
 		case OP_LOADU4_MEM:
@@ -3177,59 +3193,51 @@ guint8 cond;
 		}
 			break;
 		case OP_LOADU1_MEMBASE: {
-			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_ic   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
+				s390_llgc (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 6);
 				s390_llong(code, ins->inst_offset);
 				s390_lg   (code, s390_r13, 0, s390_r13, 4);
-				s390_ic   (code, s390_r0, s390_r13, ins->inst_basereg, 0);
+				s390_llgc (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
-			s390_lgr  (code, ins->dreg, s390_r0);
 		}
 			break;
 		case OP_LOADI1_MEMBASE: {
-			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_lgb  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
+				s390_lgb  (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 6);
 				s390_llong(code, ins->inst_offset);
 				s390_lg   (code, s390_r13, 0, s390_r13, 4);
-				s390_lgb  (code, s390_r0, s390_r13, ins->inst_basereg, 0);
+				s390_lgb  (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
 		}
 			break;
 		case OP_LOADU2_MEMBASE: {
-			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_icm  (code, s390_r0, 3, ins->inst_basereg, ins->inst_offset);
+				s390_llgh (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 6);
 				s390_llong(code, ins->inst_offset);
 				s390_lg   (code, s390_r13, 0, s390_r13, 4);
-				s390_agr  (code, s390_r13, ins->inst_basereg);
-				s390_icm  (code, s390_r0, 3, s390_r13, 0);
+				s390_llgh (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
-			s390_lgr (code, ins->dreg, s390_r0);
 		}
 			break;
 		case OP_LOADI2_MEMBASE: {
-			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_lh   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
+				s390_lh   (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 6);
 				s390_llong(code, ins->inst_offset);
 				s390_lg   (code, s390_r13, 0, s390_r13, 4);
-				s390_lh   (code, s390_r0, s390_r13, ins->inst_basereg, 0);
+				s390_lh   (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
-			s390_lgr (code, ins->dreg, s390_r0);
 		}
 			break;
 		case CEE_CONV_I1: {
@@ -3321,13 +3329,11 @@ guint8 cond;
 		}
 			break;
 		case OP_ICOMPARE: {
-			if ((ins->next) && 
-			    ((ins->next->opcode >= CEE_BNE_UN) &&
-			     (ins->next->opcode <= CEE_BLT_UN)) || 
-			    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
-			     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
-			    ((ins->next->opcode == OP_CLT_UN) ||
-			     (ins->next->opcode == OP_CGT_UN)))
+			if (((ins->next) && 
+			    (((ins->next->opcode >= OP_IBNE_UN) &&
+			     (ins->next->opcode <= OP_IBLT_UN)) || 
+			    ((ins->next->opcode == OP_ICLT_UN) ||
+			     (ins->next->opcode == OP_ICGT_UN)))))
 				s390_clr (code, ins->sreg1, ins->sreg2);
 			else
 				s390_cr  (code, ins->sreg1, ins->sreg2);
@@ -4238,7 +4244,10 @@ guint8 cond;
 		case CEE_CONV_I:
 		case CEE_CONV_I4:
 		case CEE_CONV_I8:
+		case CEE_CONV_U:
 		case CEE_CONV_U4:
+		case CEE_CONV_OVF_U4:
+		case CEE_CONV_U8:
 		case OP_MOVE:
 		case OP_SETREG: {
 			if (ins->dreg != ins->sreg1) {
@@ -5105,7 +5114,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 int
 mono_arch_max_epilog_size (MonoCompile *cfg)
 {
-	int max_epilog_size = 96;
+	int max_epilog_size = 256;
 	MonoJumpInfo *patch_info;
 	
 	if (cfg->method->save_lmf)
@@ -5123,7 +5132,7 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 	     patch_info; 
 	     patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			max_epilog_size += 26;
+			max_epilog_size += 48;
 	}
 
 	return max_epilog_size;

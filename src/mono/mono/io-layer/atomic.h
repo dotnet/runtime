@@ -295,7 +295,24 @@ InterlockedCompareExchange(volatile gint32 *dest,
 	return(old);
 }
 
-#define InterlockedCompareExchangePointer InterlockedCompareExchange
+#ifndef __s390x__
+#  define InterlockedCompareExchangePointer InterlockedCompareExchange
+# else
+static inline gpointer 
+InterlockedCompareExchangePointer(volatile gpointer *dest, 
+				  gpointer exch, 
+			          gpointer comp)
+{
+	__asm__ __volatile__ ("\tLA\t1,%0\n"
+			      "\tCSG\t%1,%2,0(1)\n"
+			      : "+m" (*dest), "+r" (comp)
+			      : "r" (exch)
+			      : "1", "2", "cc");
+
+	return(comp);
+}
+# endif
+
 
 static inline gint32 
 InterlockedIncrement(volatile gint32 *val)
@@ -348,7 +365,25 @@ InterlockedExchange(volatile gint32 *val, gint32 new_val)
 	return(ret);
 }
 
-#define InterlockedExchangePointer InterlockedExchange
+# ifndef __s390x__
+#  define InterlockedExchangePointer InterlockedExchange
+# else
+static inline gpointer
+InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
+{
+	gpointer ret;
+	
+	__asm__ __volatile__ ("\tLA\t1,%1\n"
+			      "0:\tLG\t%1,%0\n"
+			      "\tCSG\t%1,%2,0(1)\n"
+			      "\tJNZ\t0b"
+			      : "+m" (*val), "+r" (ret)
+			      : "r" (new_val)
+			      : "1", "cc");
+
+	return(ret);
+}
+# endif
 
 static inline gint32 
 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)

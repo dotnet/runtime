@@ -56,7 +56,7 @@ add_ovf_carry: dest:i src1:1 src2:i len:28
 add_ovf_un_carry: dest:i src1:1 src2:i len:12
 addcc: dest:i src1:i src2:i len:6
 and: dest:i src1:i src2:i len:6 clob:1
-and_imm: dest:i src1:i len:16
+and_imm: dest:i src1:i len:20
 aot_const: dest:i len:8
 arg:
 arglist:
@@ -119,8 +119,8 @@ cond_exc_nc: len:8
 cond_exc_ne_un: len:8
 cond_exc_no: len:8
 cond_exc_ov: len:8
-conv.i1: dest:i src1:i len:24
-conv.i2: dest:i src1:i len:24
+conv.i1: dest:i src1:i len:26
+conv.i2: dest:i src1:i len:32
 conv.i4: dest:i src1:i len:4
 conv.i8: dest:i src1:i len:4
 conv.i: dest:i src1:i len:2
@@ -211,10 +211,10 @@ float_conv_to_ovf_u8_un:
 float_conv_to_ovf_u_un:
 float_conv_to_r4: dest:f src1:f len:4
 float_conv_to_r8:
-float_conv_to_u1: dest:i src1:f len:62
-float_conv_to_u2: dest:i src1:f len:62
-float_conv_to_u4: dest:i src1:f len:62
-float_conv_to_u8: dest:l src1:f len:62
+float_conv_to_u1: dest:i src1:f len:66
+float_conv_to_u2: dest:i src1:f len:66
+float_conv_to_u4: dest:i src1:f len:66
+float_conv_to_u8: dest:l src1:f len:66
 float_conv_to_u: dest:i src1:f len:36
 float_div: dest:f src1:f src2:f len:6
 float_div_un: dest:f src1:f src2:f len:6
@@ -363,13 +363,13 @@ ldvirtftn:
 leave.s:
 leave:
 load:
-load_membase: dest:i src1:b len:18
+load_membase: dest:i src1:b len:26
 loadi1_membase: dest:i src1:b len:40
 loadi2_membase: dest:i src1:b len:24
-loadi4_membase: dest:i src1:b len:18
-loadi8_membase: dest:i src1:b len:18
+loadi4_membase: dest:i src1:b len:26
+loadi8_membase: dest:i src1:b len:26
 loadr4_membase: dest:f src1:b len:20
-loadr8_membase: dest:f src1:b len:18
+loadr8_membase: dest:f src1:b len:26
 loadu1_membase: dest:i src1:b len:26
 loadu2_membase: dest:i src1:b len:26
 loadu4_mem: dest:i len:8
@@ -484,7 +484,7 @@ prefix6:
 prefix7:
 prefixref:
 r4const: dest:f len:26
-r8const: dest:f len:18
+r8const: dest:f len:24
 refanytype:
 refanyval:
 reg:
