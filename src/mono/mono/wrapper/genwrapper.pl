@@ -16,7 +16,7 @@ if ($ENV{"OSTYPE"} eq "cygwin") {
 	     "errno.h");
 }
 
-$cflags = `glib-config --cflags glib`;
+$cflags = `pkg-config --cflags glib-2.0`;
 $cflags =~ s/\n//;
 
 $lib = "monowrapper";
