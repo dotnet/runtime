@@ -7,22 +7,22 @@
 	the code, making the source quite difficult to read.  Furthermore,
 	multilingual documentation makes for significant additional text.
 	
-	With these considerations in mind, Mono will use external XML files
-	for type documentation, rather than documenting the source
+	With these considerations in mind, Mono is using external XML files
+	for class documentation, rather than documenting the source
 	inline.  The XML file format used is inspired by the XML format used
 	to document the ECMA APIs.  
 
-	Several tools will be created for managing, verifying, generating,
-	and updating class library documentation, including:
+	Several tools exist for managing, verifying, generating,
+	and updating class library documentation.
+
+	The documentation infrastructure is part of the `Monodoc'
+	module.  Monodoc includes a graphical GUI browser and tools to
+	generate the initial stubbed XML document out of an assembly.
 	
-	<ul>
-		<li><a href="#monodoc">monodoc - A graphical documentation viewer.</a></li>
+	Download `monodoc' to start producing documentation for your
+	application. 
 
-		<li>xmllint: a tool used to validate a proper XML document.
-	</ul>
-
-	You can download the tools to document Mono from the CVS
-	repository from module `monodoc'.
+	For instructions, read the monodoc/README file.
 
 ** Documentation Tools
 
@@ -43,3 +43,7 @@
 	Help us develop Mono's documentation tools!  Subscribe to
 	<a href="http://lists.ximian.com/mailman/listinfo/mono-docs-list">mono-docs-list</a>
 	and wade right in.
+
+	Monodoc today also supports a GUI-based collaborative editing
+	system.  You can now edit the documentation from the browser
+	and upload your contributions directly to the Mono site.

@@ -141,6 +141,15 @@
   </tr>
 </table>
 
+@item Dec 2nd: Mono 0.29 has been released
+
+	Check out the <a
+	href="http://www.go-mono.com/archive/mono-0.29.html">Release
+	notes</a> for details on Mono 0.29.    
+
+	This release includes the PPC JIT engine running `Hello World'
+	and ASP.NET is considered feature-complete.
+	
 @item Nov 25th: Gtk# 0.14, System.DirectoryServices
 
 	Gtk# 0.14 has been released, and it is available from <a
