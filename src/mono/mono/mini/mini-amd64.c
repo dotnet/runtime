@@ -4632,7 +4632,10 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			*((guint32 *)(ip + 2)) = (guint32)(guint64)target;
 			continue;			
 		case MONO_PATCH_INFO_CLASS_INIT: {
-			/* FIXME: Might already been changed to a nop */
+			/* Might already been changed to a nop */
+			guint8* ip2 = ip;
+			amd64_set_reg_template (ip2, GP_SCRATCH_REG);
+			amd64_call_reg (ip2, GP_SCRATCH_REG);			
 			*((gconstpointer *)(ip + 2)) = target;
 			continue;
 		}
