@@ -22,7 +22,7 @@
 #endif
 #endif
 
-#define DEBUG(x)
+#define DEBUG(x) x
 
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
@@ -209,7 +209,7 @@ enum_retvalue:
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
-			NOT_IMPLEMENTED ("valuetype");
+			*code_size += 2*4;
 			break;
 		case MONO_TYPE_VOID:
 			break;
@@ -329,6 +329,22 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gbo
 		ppc_mr   (p, ppc_r12, ppc_r15);
 		ppc_lwz  (p, ppc_r14, stack_size - 16, ppc_r31);      /* restore r14 */
 		ppc_lwz  (p, ppc_r15, stack_size - 20, ppc_r31);      /* restore r15 */
+	}
+
+	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref) {
+		MonoClass *klass = sig->ret->data.klass;
+		if (!klass->enumtype) {
+			gint size = mono_class_native_size (klass, NULL);
+
+			DEBUG(printf ("retval value type size: %d\n", size));
+			if (size > 8) {
+				ppc_lwz (p, ppc_r3, stack_size - 12, ppc_r31);
+				ppc_lwz (p, ppc_r3, 0, ppc_r3);
+				gr ++;
+			} else {
+				NOT_IMPLEMENTED ("retval valuetype <= 8 bytes");
+			}
+		}
 	}
 
 	for (i = 0; i < sig->param_count; ++i) {
@@ -497,7 +513,6 @@ enum_retvalue:
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
-			NOT_IMPLEMENTED ("retval valuetype");
 			break;
 		case MONO_TYPE_VOID:
 			break;
