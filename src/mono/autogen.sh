@@ -31,8 +31,8 @@ fi
 }
 
 if [ -z "$LIBTOOL" ]; then
-  LIBTOOL=`which glibtool` 
-  if [ ! -x $LIBTOOL ]; then
+  LIBTOOL=`which glibtool 2>/dev/null` 
+  if [ ! -x "$LIBTOOL" ]; then
     LIBTOOL=`which libtool`
   fi
 fi

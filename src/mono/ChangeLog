@@ -1,3 +1,7 @@
+2003-11-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* autogen.sh: Fix previous patch and silence noisy GNU which.	
+
 2003-11-07  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* autogen.sh: tweak glibtool check so it works
@@ -5,6 +9,8 @@
 
 2003-11-07  Zoltan Varga  <vargaz@freemail.hu>
 
+	* autogen.sh: Silence noisy GNU which.
+	
 	* autogen.sh: Applied patch from Peter Teichman (peter@ximian.com). 
 	Use 'glibtool' instead of 'libtool' on OSX. 
 
