@@ -708,6 +708,7 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 											   gboolean add_sync_wrapper);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
+gboolean          mono_running_on_valgrind (void);
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);

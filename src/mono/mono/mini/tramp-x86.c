@@ -124,19 +124,12 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 			/* The first part of the condition means an icall without a wrapper */
 			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
-				gboolean do_patch = TRUE;
-
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-				if (RUNNING_ON_VALGRIND)
-					do_patch = FALSE;
-#endif
-
-				if (do_patch) {
+				if (!mono_running_on_valgrind ()) {
 					InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 					/* Tell valgrind to recompile the patched code */
-					VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
+					//VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
 #endif
 				}
 			}
@@ -211,14 +204,7 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	code -= 5;
 	if (code [0] == 0xe8) {
-		gboolean do_patch = TRUE;
-
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-		if (RUNNING_ON_VALGRIND)
-			do_patch = FALSE;
-#endif
-
-		if (do_patch) {
+		if (!mono_running_on_valgrind ()) {
 			guint32 ops;
 			/*
 			 * Thread safe code patching using the algorithm from the paper

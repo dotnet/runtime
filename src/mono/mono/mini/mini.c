@@ -119,6 +119,19 @@ static GHashTable *class_init_hash_addr = NULL;
 
 static GHashTable *jump_trampoline_hash = NULL;
 
+gboolean
+mono_running_on_valgrind (void)
+{
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+		if (RUNNING_ON_VALGRIND)
+			return TRUE;
+		else
+			return FALSE;
+#else
+		return FALSE;
+#endif
+}
+
 #ifdef MONO_USE_EXC_TABLES
 static gboolean
 mono_type_blittable (MonoType *type)

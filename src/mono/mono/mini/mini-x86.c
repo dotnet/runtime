@@ -17,10 +17,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-math.h>
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
-
 #include "trace.h"
 #include "mini-x86.h"
 #include "inssel.h"
@@ -3443,14 +3439,10 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 #ifndef PLATFORM_WIN32
 
 	/* Determine stack boundaries */
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-	if (!RUNNING_ON_VALGRIND) {
-#endif
-	pthread_getattr_np( self, &attr );
-	pthread_attr_getstack( &attr, &staddr, &stsize );
-#ifdef HAVE_VALGRIND_MEMCHECK_H
+	if (!mono_running_on_valgrind ()) {
+		pthread_getattr_np( self, &attr );
+		pthread_attr_getstack( &attr, &staddr, &stsize );
 	}
-#endif
 
 	/* 
 	 * staddr seems to be wrong for the main thread, so we keep the value in
