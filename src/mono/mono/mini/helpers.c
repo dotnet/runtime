@@ -99,7 +99,7 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 	system (cmd);
 	g_free (cmd);
 
-	cmd = g_strdup_printf ("objdump -d -M intel %s", o_file);
+	cmd = g_strdup_printf ("objdump -d %s", o_file);
 	system (cmd);
 	g_free (cmd);
 	g_free (o_file);
