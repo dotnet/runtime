@@ -13,6 +13,14 @@ enum {
 	MONO_PROFILE_END_UNLOAD
 };
 
+typedef struct {
+	int entries;
+	struct {
+                guchar* cil_code;
+                int count;
+        } data [1];
+} MonoProfileCoverageInfo;
+
 void mono_profiler_shutdown        (void);
 
 void mono_profiler_method_enter    (MonoMethod *method);
@@ -36,6 +44,9 @@ void mono_profiler_class_loaded (MonoClass *klass, int result);
 
 void mono_profiler_appdomain_event  (MonoDomain *domain, int code);
 void mono_profiler_appdomain_loaded (MonoDomain *domain, int result);
+
+MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries);
+void                     mono_profiler_coverage_free  (MonoMethod *method);
 
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
 

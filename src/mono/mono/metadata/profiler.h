@@ -19,7 +19,8 @@ typedef enum {
 	MONO_PROFILE_THREADS          = 1 << 9,
 	MONO_PROFILE_REMOTING         = 1 << 10,
 	MONO_PROFILE_TRANSITIONS      = 1 << 11,
-	MONO_PROFILE_ENTER_LEAVE      = 1 << 12
+	MONO_PROFILE_ENTER_LEAVE      = 1 << 12,
+	MONO_PROFILE_COVERAGE         = 1 << 13
 } MonoProfileFlags;
 
 typedef enum {
@@ -51,6 +52,20 @@ typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *par
 
 typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, guint32 tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
+
+/* coverage info */
+typedef struct {
+	MonoMethod *method;
+	int iloffset;
+	int counter;
+	const char *filename;
+	int line;
+	int col;
+} MonoProfileCoverageEntry;
+
+typedef void (*MonoProfileCoverageFunc)   (MonoProfiler *prof, const MonoProfileCoverageEntry *entry);
+
+void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 
 /*
  * Function the profiler may call.

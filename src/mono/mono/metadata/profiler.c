@@ -1,6 +1,7 @@
 
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
+#include "mono/metadata/mono-debug.h"
 #include <string.h>
 #include <gmodule.h>
 
@@ -321,6 +322,73 @@ mono_profiler_shutdown (void)
 {
 	if (current_profiler && shutdown_callback)
 		shutdown_callback (current_profiler);
+}
+
+static GHashTable *coverage_hash = NULL;
+
+MonoProfileCoverageInfo* 
+mono_profiler_coverage_alloc (MonoMethod *method, int entries)
+{
+	MonoProfileCoverageInfo *res;
+
+	if (!coverage_hash)
+		coverage_hash = g_hash_table_new (NULL, NULL);
+
+	res = g_malloc0 (sizeof (MonoProfileCoverageInfo) + sizeof (void*) * 2 * entries);
+
+	res->entries = entries;
+
+	g_hash_table_insert (coverage_hash, method, res);
+
+	return res;
+}
+
+/* safe only when the method antive code has been unloaded */
+void
+mono_profiler_coverage_free (MonoMethod *method)
+{
+	MonoProfileCoverageInfo* info;
+	if (!coverage_hash)
+		return;
+	info = g_hash_table_lookup (coverage_hash, method);
+	if (!info)
+		return;
+	g_free (info);
+	g_hash_table_remove (coverage_hash, method);
+}
+
+void 
+mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func)
+{
+	MonoProfileCoverageInfo* info;
+	int i, offset;
+	guint32 line, col;
+	unsigned char *start, *end, *cil_code;
+	MonoMethodHeader *header;
+	MonoProfileCoverageEntry entry;
+
+	info = g_hash_table_lookup (coverage_hash, method);
+	if (!info)
+		return;
+
+	header = ((MonoMethodNormal *)method)->header;
+	start = (unsigned char*)header->code;
+	end = start + header->code_size;
+	for (i = 0; i < info->entries; ++i) {
+		cil_code = info->data [i].cil_code;
+		if (cil_code && cil_code >= start && cil_code < end) {
+			offset = cil_code - start;
+			entry.iloffset = offset;
+			entry.method = method;
+			entry.counter = info->data [i].count;
+			/* the debug interface doesn't support column info, sigh */
+			col = line = 1;
+			entry.filename = mono_debug_source_location_from_il_offset (method, offset, &line);
+			entry.line = line;
+			entry.col = col;
+			func (prof, &entry);
+		}
+	}
 }
 
 /*
@@ -980,7 +1048,7 @@ mono_profiler_load (const char *desc)
 				func (desc);
 			}
 		} else {
-			g_warning ("Error loading profiler module: %s", libname);
+			g_warning ("Error loading profiler module '%s': %s", libname, g_module_error ());
 		}
 
 		g_free (libname);
