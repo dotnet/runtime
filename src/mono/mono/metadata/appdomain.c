@@ -99,15 +99,18 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 	MonoDomain* domain = mono_domain_get ();
 	MonoAssembly *assembly;
 	gchar *str;
-
+	gchar *config_suffix;
+	
 	MONO_ARCH_SAVE_REGS;
 
 	assembly = domain->entry_assembly;
 	g_assert (assembly);
 
 	setup->application_base = mono_string_new (domain, assembly->basedir);
-	str = g_strconcat (assembly->basedir, assembly->aname.name,
-			   ".exe.config", NULL);
+
+	config_suffix = g_strconcat (assembly->aname.name, ".exe.config", NULL);
+	str = g_build_filename (assembly->basedir, config_suffix, NULL);
+	g_free (config_suffix);
 	setup->configuration_file = mono_string_new (domain, str);
 	g_free (str);
 }
