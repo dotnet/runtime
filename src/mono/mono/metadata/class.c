@@ -898,7 +898,7 @@ mono_class_init (MonoClass *class)
 	}
 	
 	class->ghcimpl = 1;
-	if (class != mono_defaults.object_class) { 
+	if (class->parent) { 
 
 		if (class->vtable [ghc_slot] == default_ghc) {
 			class->ghcimpl = 0;
@@ -925,7 +925,7 @@ mono_class_init (MonoClass *class)
 
 	/* Object::Finalize should have empty implemenatation */
 	class->has_finalize = 0;
-	if (class != mono_defaults.object_class) { 
+	if (class->parent) { 
 		if (class->vtable [finalize_slot] != default_finalize)
 			class->has_finalize = 1;
 	}
@@ -1358,6 +1358,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	MonoClass *parent = NULL;
 	GSList *list;
 	int rnum = 0, nsize;
+	char *name;
 
 	eclass = mono_class_from_mono_type (element_type);
 	g_assert (rank <= 255);
@@ -1382,13 +1383,14 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	class->image = image;
 	class->name_space = eclass->name_space;
 	nsize = strlen (eclass->name);
-	class->name = g_malloc (nsize + 2 + rank);
-	memcpy (class->name, eclass->name, nsize);
-	class->name [nsize] = '[';
+	name = g_malloc (nsize + 2 + rank);
+	memcpy (name, eclass->name, nsize);
+	name [nsize] = '[';
 	if (rank > 1)
-		memset (class->name + nsize + 1, ',', rank - 1);
-	class->name [nsize + rank] = ']';
-	class->name [nsize + rank + 1] = 0;
+		memset (name + nsize + 1, ',', rank - 1);
+	name [nsize + rank] = ']';
+	name [nsize + rank + 1] = 0;
+	class->name = name;
 	class->type_token = 0;
 	class->flags = TYPE_ATTRIBUTE_CLASS;
 	class->parent = parent;
