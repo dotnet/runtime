@@ -57,6 +57,12 @@
   Quality and Speed in Linear-scan Register Allocation: Omri Traub, Glenn
   Holloway, Michael D. Smith</a> 
 
+* Loop Transformations
+
+  <a
+  href="http://citeseer.nj.nec.com/rd/71659407%2C98038%2C1%2C0.25%2CDownload/http%253A%252F%252Fciteseer.nj.nec.com/cache/papers/cs/3700/http%253AzSzzSzdocs.dcs.napier.ac.ukzSzDOCSzSzGETzSzbacon90azSzdocument.pdf/bacon93compiler.pdf">
+  Compiler Transformations for High-Performance Computing: David Bacon</a>
+
 * Interpreter
 
   <a
