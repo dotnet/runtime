@@ -148,6 +148,7 @@ TEST_CS_SRC=			\
 	marshal8.cs		\
 	marshal9.cs		\
 	marshal10.cs		\
+	test-byval-in-struct.cs	\
 	thread.cs		\
 	thread5.cs		\
 	thread6.cs		\

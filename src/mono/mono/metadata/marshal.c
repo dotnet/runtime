@@ -5402,9 +5402,12 @@ mono_marshal_load_type_info (MonoClass* klass)
 			info->native_size = info->fields [j].offset + size;
 			break;
 		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
-			/* FIXME: */
+			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
+						       &align, TRUE, klass->unicode);
+			align = klass->packing_size ? MIN (klass->packing_size, align): align;
+			min_align = MAX (align, min_align);
 			info->fields [j].offset = klass->fields [i].offset - sizeof (MonoObject);
-			info->native_size = klass->instance_size - sizeof (MonoObject);
+			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
 		}	
 		j++;
