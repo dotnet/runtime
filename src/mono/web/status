@@ -8,8 +8,9 @@
 	 	few features are still missing (for a list, check the
 		<a href="c-sharp.html">C# compiler</a> web page.
 
-		* The Mono JIT engine.  The JIT engine is the real
-		virtual machine that we will be supporting.  It is
+		* The Mono JIT engine (<b>mono</b>.  The JIT engine is
+	        the real
+		virtual machine that we support.  It is
 		functionaly currently, and we are improving its speed,
 		and making it feature complete.
 

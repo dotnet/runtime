@@ -3466,7 +3466,7 @@ check_corlib (MonoImage *corlib)
 			for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
 				field = mono_class_get_field_from_name (klass, fdesc->name);
 				if (!field || (field->offset != fdesc->offset))
-					g_error ("field %s mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
+					g_error ("field `%s' mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
 			}
 		}
 	}
