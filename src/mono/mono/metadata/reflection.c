@@ -61,6 +61,9 @@ typedef struct {
 	MonoMethod *mhandle;
 	guint32 nrefs;
 	gpointer *refs;
+	/* for PInvoke */
+	int charset, lasterr, native_cc;
+	MonoString *dll, *dllentry;
 } ReflectionMethodBuilder;
 
 typedef struct {
@@ -1265,6 +1268,14 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
+
+	if (mb->dll) {
+		rmb->charset = rmb->charset & 0xf;
+		rmb->lasterr = rmb->charset & 0x40;
+		rmb->native_cc = rmb->native_cc;
+		rmb->dllentry = mb->dllentry;
+		rmb->dll = mb->dll;
+	}
 }
 
 static void
@@ -7094,6 +7105,17 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	} else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		/* TODO */
 		m->signature->pinvoke = 1;
+
+		method_aux = g_new0 (MonoReflectionMethodAux, 1);
+
+		method_aux->dllentry = g_strdup (mono_string_to_utf8 (rmb->dllentry));
+		method_aux->dll = g_strdup (mono_string_to_utf8 (rmb->dll));
+		
+		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 1) | rmb->lasterr;
+
+		if (klass->image->dynamic)
+			mono_g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
+
 		return m;
 	} else if (!m->klass->dummy && 
 			   !(m->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
@@ -7216,9 +7238,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			method_aux = g_new0 (MonoReflectionMethodAux, 1);
 		method_aux->param_marshall = specs;
 	}
-
-	if (klass->image->dynamic && method_aux)
-		mono_g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
 	return m;
 }	

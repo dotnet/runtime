@@ -34,6 +34,7 @@ typedef struct {
 	char **param_names;
 	MonoMarshalSpec **param_marshall;
 	MonoCustomAttrInfo **param_cattr;
+	char *dllentry, *dll;
 } MonoReflectionMethodAux;
 
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
