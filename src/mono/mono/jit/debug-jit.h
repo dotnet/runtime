@@ -3,6 +3,6 @@
 
 #include <mono/jit/codegen.h>
 
-void           mono_debug_add_method (MonoFlowGraph *cfg);
+void           mono_debug_jit_add_method (MonoFlowGraph *cfg);
 
 #endif /* __MONO_JIT_DEBUG_JIT_H__ */
