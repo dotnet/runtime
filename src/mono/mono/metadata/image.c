@@ -278,6 +278,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	char *ptr;
 	
 	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
+	if (offset == INVALID_ADDRESS)
+		return FALSE;
+
 	size = iinfo->cli_cli_header.ch_metadata.size;
 
 	if (!image->f) {

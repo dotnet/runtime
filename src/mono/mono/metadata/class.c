@@ -318,6 +318,7 @@ class_compute_field_layout (MonoClass *class)
 	guint32 rva;
 	guint32 packing_size = 0;
 	gboolean explicit_size;
+	MonoClassField *field;
 
 	if (class->size_inited)
 		return;
@@ -360,48 +361,49 @@ class_compute_field_layout (MonoClass *class)
 		guint32 cols [MONO_FIELD_SIZE];
 		int idx = class->field.first + i;
 
+		field = &class->fields [i];
 		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
 		/* The name is needed for fieldrefs */
-		class->fields [i].name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
+		field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
-		class->fields [i].type = mono_metadata_parse_field_type (
+		field->type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
-		if (mono_field_is_deleted (&class->fields [i]))
+		if (mono_field_is_deleted (field))
 			continue;
 		if (class->generic_inst) {
-			class->fields [i].type = mono_class_inflate_generic_type (class->fields [i].type, class->generic_inst->data.generic_inst);
-			class->fields [i].type->attrs = cols [MONO_FIELD_FLAGS];
+			field->type = mono_class_inflate_generic_type (field->type, class->generic_inst->data.generic_inst);
+			field->type->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
-		class->fields [i].parent = class;
+		field->parent = class;
 
-		if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			if (class->fields [i].type->byref) {
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			if (field->type->byref) {
 				blittable = FALSE;
 			} else {
-				MonoClass *field_class = mono_class_from_mono_type (class->fields [i].type);
+				MonoClass *field_class = mono_class_from_mono_type (field->type);
 				if (!field_class || !field_class->blittable)
 					blittable = FALSE;
 			}
 		}
 		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
-			mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
-			if (class->fields [i].offset == (guint32)-1)
-				g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, class->fields [i].name);
+			mono_metadata_field_info (m, idx, &field->offset, NULL, NULL);
+			if (field->offset == (guint32)-1)
+				g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, field->name);
 		}
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
 			mono_metadata_field_info (m, idx, NULL, &rva, NULL);
 			if (!rva)
-				g_warning ("field %s in %s should have RVA data, but hasn't", class->fields [i].name, class->name);
-			class->fields [i].data = mono_cli_rva_map (class->image->image_info, rva);
+				g_warning ("field %s in %s should have RVA data, but hasn't", field->name, class->name);
+			field->data = mono_cli_rva_map (class->image->image_info, rva);
 		}
 
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC)) {
-			class->enum_basetype = class->fields [i].type;
+			class->enum_basetype = field->type;
 			class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
 			blittable = class->element_class->blittable;
 		}
@@ -436,6 +438,7 @@ mono_class_layout_fields (MonoClass *class)
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	guint32 pass, passes, real_size;
 	gboolean gc_aware_layout = FALSE;
+	MonoClassField *field;
 
 	/*
 	 * Enable GC aware auto layout: in this mode, reference
@@ -474,10 +477,11 @@ mono_class_layout_fields (MonoClass *class)
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				int size, align;
+				field = &class->fields [i];
 
-				if (mono_field_is_deleted (&class->fields [i]))
+				if (mono_field_is_deleted (field))
 					continue;
-				if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 					continue;
 
 				if (gc_aware_layout) {
@@ -488,7 +492,7 @@ mono_class_layout_fields (MonoClass *class)
 					 * some internal structures, we store GC_MALLOCed memory
 					 * in IntPtr fields...
 					 */
-					if (MONO_TYPE_IS_POINTER (class->fields [i].type)) {
+					if (MONO_TYPE_IS_POINTER (field->type)) {
 						if (pass == 1)
 							continue;
 					} else {
@@ -498,20 +502,20 @@ mono_class_layout_fields (MonoClass *class)
 				}
 
 				if ((top == 1) && (class->instance_size == sizeof (MonoObject)) &&
-					(strcmp (class->fields [i].name, "$PRIVATE$") == 0)) {
+					(strcmp (field->name, "$PRIVATE$") == 0)) {
 					/* This field is a hack inserted by MCS to empty structures */
 					continue;
 				}
 
-				size = mono_type_size (class->fields [i].type, &align);
+				size = mono_type_size (field->type, &align);
 			
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
 				align = class->packing_size ? MIN (class->packing_size, align): align;
 				class->min_align = MAX (align, class->min_align);
-				class->fields [i].offset = real_size;
-				class->fields [i].offset += align - 1;
-				class->fields [i].offset &= ~(align - 1);
-				real_size = class->fields [i].offset + size;
+				field->offset = real_size;
+				field->offset += align - 1;
+				field->offset &= ~(align - 1);
+				real_size = field->offset + size;
 			}
 
 			class->instance_size = MAX (real_size, class->instance_size);
@@ -526,31 +530,32 @@ mono_class_layout_fields (MonoClass *class)
 		real_size = 0;
 		for (i = 0; i < top; i++) {
 			int size, align;
+			field = &class->fields [i];
 
 			/*
 			 * There must be info about all the fields in a type if it
 			 * uses explicit layout.
 			 */
 
-			if (mono_field_is_deleted (&class->fields [i]))
+			if (mono_field_is_deleted (field))
 				continue;
-			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
-			size = mono_type_size (class->fields [i].type, &align);
+			size = mono_type_size (field->type, &align);
 			
 			/*
-			 * When we get here, class->fields [i].offset is already set by the
+			 * When we get here, field->offset is already set by the
 			 * loader (for either runtime fields or fields loaded from metadata).
 			 * The offset is from the start of the object: this works for both
 			 * classes and valuetypes.
 			 */
-			class->fields [i].offset += sizeof (MonoObject);
+			field->offset += sizeof (MonoObject);
 
 			/*
 			 * Calc max size.
 			 */
-			real_size = MAX (real_size, size + class->fields [i].offset);
+			real_size = MAX (real_size, size + field->offset);
 		}
 		class->instance_size = MAX (real_size, class->instance_size);
 		break;
@@ -563,17 +568,18 @@ mono_class_layout_fields (MonoClass *class)
 	 */
 	for (i = 0; i < top; i++){
 		int size, align;
+		field = &class->fields [i];
 			
-		if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
-		if (mono_field_is_deleted (&class->fields [i]))
+		if (mono_field_is_deleted (field))
 			continue;
 			
-		size = mono_type_size (class->fields [i].type, &align);
-		class->fields [i].offset = class->class_size;
-		class->fields [i].offset += align - 1;
-		class->fields [i].offset &= ~(align - 1);
-		class->class_size = class->fields [i].offset + size;
+		size = mono_type_size (field->type, &align);
+		field->offset = class->class_size;
+		field->offset += align - 1;
+		field->offset &= ~(align - 1);
+		class->class_size = field->offset + size;
 	}
 }
 
