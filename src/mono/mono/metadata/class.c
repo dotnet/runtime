@@ -1788,6 +1788,7 @@ mono_class_create_generic (MonoGenericInst *ginst)
 		MonoGenericInst *nginst = ginst->nested_in->data.generic_inst;
 		int offset = nginst->type_argc;
 
+		klass->nested_in = nginst->klass;
 		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst, nginst->type_argc);
 	} else if (!ginst->init_pending)
 		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst, 0);

@@ -1692,7 +1692,7 @@ ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *type_
 		types [i] = t->type;
 	}
 
-	geninst = mono_reflection_bind_generic_parameters (type, count, types, NULL);
+	geninst = mono_reflection_bind_generic_parameters (type, count, types);
 
 	return mono_type_get_object (mono_object_domain (type), geninst);
 }
@@ -1838,8 +1838,7 @@ ves_icall_MonoGenericInst_GetNestedTypes (MonoReflectionGenericInst *type)
 	MonoGenericInst *ginst;
 	MonoDomain *domain;
 	MonoArray *res;
-	GList *tmpn;
-	int count, i;
+	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1852,17 +1851,15 @@ ves_icall_MonoGenericInst_GetNestedTypes (MonoReflectionGenericInst *type)
 	domain = mono_object_domain (type);
 
 	ginst = type->type.type->data.generic_inst;
+	mono_reflection_generic_inst_get_nested_types (type);
 
-	for (count = 0, tmpn = ginst->nested; tmpn; tmpn = tmpn->next)
-		count++;
-
-	res = mono_array_new (domain, System_Reflection_MonoGenericInst, count);
-	for (i = 0, tmpn = ginst->nested; tmpn; tmpn = tmpn->next, i++) {
-		MonoClass *nc = mono_class_from_mono_type (tmpn->data);
+	res = mono_array_new (domain, System_Reflection_MonoGenericInst, ginst->count_nested);
+	for (i = 0; i < ginst->count_nested; i++) {
+		MonoClass *nc = mono_class_from_mono_type (ginst->nested [i]);
 		MonoReflectionType *type;
 
 		mono_class_init (nc);
-		type = mono_type_get_object (domain, tmpn->data);
+		type = mono_type_get_object (domain, ginst->nested [i]);
 		mono_array_set (res, gpointer, i, type);
 	}
 

@@ -230,7 +230,8 @@ struct _MonoGenericInst {
 	int count_ifaces;
 	MonoType **ifaces;
 	MonoType *nested_in;
-	GList *nested;
+	int count_nested;
+	MonoType **nested;
 	MonoType *generic_type;
 	MonoDynamicGenericInst *dynamic_info;
 	int type_argc;
