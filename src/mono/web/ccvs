@@ -44,8 +44,13 @@
 	updated sources, use:
 
 <pre>
-	cvs -z3 update mcs mono
+	cvs -z3 update -Pd mcs mono
 </pre>
+
+	Note: The '-z3' enables compression for the whole cvs action.
+	The '-Pd' makes the update operation (P)rune directories that
+	have been deleted and get new (d)irectories added to the
+	repository.
 
 ** Making patches
 
