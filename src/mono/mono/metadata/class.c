@@ -1961,6 +1961,8 @@ mono_class_create_generic (MonoGenericClass *gclass)
 		klass->inited = 1;
 
 		klass->valuetype = gklass->valuetype;
+
+		mono_class_setup_supertypes (klass);
 	}
 }
 
@@ -2812,6 +2814,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 			   gboolean check_interfaces)
 {
  again:
+	g_assert (klassc->idepth > 0);
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && !MONO_CLASS_IS_INTERFACE (klass)) {
 		if ((klassc->interface_id <= klass->max_interface_id) &&
 			(klass->interface_offsets [klassc->interface_id] >= 0))
