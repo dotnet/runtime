@@ -685,12 +685,14 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		// know if thats the correct behaviour
 		break;
 	}
+	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
+		g_error ("Structure field of type %s can't be marshalled as LPArray", mono_class_from_mono_type (type)->name);
+		break;
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR: 
 	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 	default:
@@ -2951,7 +2953,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			else {
 				MonoClass *eklass;
 				guint32 label1, label2, label3;
-				int index_var;
+				int index_var, dest_ptr;
+
+				dest_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 				/* Check null */
 				mono_mb_emit_ldarg (mb, argnum);
@@ -2970,6 +2974,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, CEE_PREFIX1);
 				mono_mb_emit_byte (mb, CEE_LOCALLOC);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
+
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_stloc (mb, dest_ptr);
 
 				/* Emit marshalling loop */
 				index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);				
@@ -2993,16 +3000,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, CEE_STLOC_0);
 
 				/* set dst_ptr */
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_ldloc (mb, dest_ptr);
 				mono_mb_emit_byte (mb, CEE_STLOC_1);
 
 				/* emit valuetype conversion code */
 				emit_struct_conv (mb, eklass, FALSE);
 
-				mono_mb_emit_ldloc (mb, index_var);
-				mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-				mono_mb_emit_byte (mb, CEE_ADD);
-				mono_mb_emit_stloc (mb, index_var);
+				mono_mb_emit_add_to_local (mb, index_var, 1);
+				mono_mb_emit_add_to_local (mb, dest_ptr, mono_class_native_size (eklass, NULL));
+
 				mono_mb_emit_byte (mb, CEE_BR);
 				mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
 
