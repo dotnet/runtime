@@ -173,7 +173,7 @@ AC_CONFIG_SUBDIRS(libgc)
 gc_headers=no
 AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
-gc=included
+gc=boehm
 use_included_gc=no
 AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc])
 
