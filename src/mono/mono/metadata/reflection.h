@@ -380,7 +380,16 @@ typedef struct {
 	MonoReflectionModuleBuilder *module;
 	gint32 class_size;
 	gint32 packing_size;
+	MonoArray *generic_params;
 } MonoReflectionTypeBuilder;
+
+typedef struct {
+	MonoObject obj;
+	MonoGenericParam *param;
+	MonoReflectionType *type;
+	MonoString *name;
+	MonoArray *constraints;
+} MonoReflectionGenericParam;
 
 typedef struct {
 	MonoObject  obj;
@@ -506,7 +515,11 @@ void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb
 
 void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb);
 
+void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb);
+
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
+
+MonoReflectionType* mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

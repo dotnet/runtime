@@ -95,7 +95,12 @@ const unsigned char table_sizes [64] = {
 	MONO_EXP_TYPE_SIZE,
 	MONO_MANIFEST_SIZE,
 	MONO_NESTED_CLASS_SIZE,
-	0	/* 0x2A */
+
+	MONO_GENERICPARAM_SIZE,	/* 0x2A */
+	MONO_METHODSPEC_SIZE,
+	MONO_GENPARCONSTRAINT_SIZE,
+
+	0	/* 0x2D */
 };
 
 /**
@@ -374,6 +379,11 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		}
 		break;
 	}
+	case MONO_TYPE_VAR:
+		mono_metadata_encode_value (type->type, p, &p);
+		mono_metadata_encode_value (type->data.type_param, p, &p);
+		break;
+
 	default:
 		g_error ("need to encode type %x", type->type);
 	}
@@ -1477,6 +1487,50 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicAssembly *
 	}
 }
 
+static void
+encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicAssembly *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 num_constraints, i;
+	guint32 *values;
+	guint32 table_idx;
+
+	table = &assembly->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
+	num_constraints = mono_array_length (gparam->constraints);
+	table->rows += num_constraints;
+	alloc_table (table, table->rows);
+
+	for (i = 0; i < num_constraints; i++) {
+		MonoReflectionType *constraint = mono_array_get (gparam->constraints, gpointer, i);
+
+		table_idx = table->next_idx ++;
+		values = table->values + table_idx * MONO_GENPARCONSTRAINT_SIZE;
+
+		values [MONO_GENPARCONSTRAINT_GENERICPAR] = owner;
+		values [MONO_GENPARCONSTRAINT_CONSTRAINT] = mono_image_typedef_or_ref (assembly, constraint->type);
+	}
+}
+
+static void
+mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicAssembly *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 table_idx;
+
+	table = &assembly->tables [MONO_TABLE_GENERICPARAM];
+	table_idx = table->next_idx ++;
+	values = table->values + table_idx * MONO_GENERICPARAM_SIZE;
+
+	values [MONO_GENERICPARAM_OWNER] = owner;
+	values [MONO_GENERICPARAM_FLAGS] = gparam->param->flags;
+	values [MONO_GENERICPARAM_NUMBER] = gparam->param->num;
+	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, gparam->param->name);
+
+	if (gparam->constraints)
+		encode_constraints (gparam, table_idx, assembly);
+}
+
 static guint32
 resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 {
@@ -2030,6 +2084,17 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 				ntable->next_idx, ntable->rows);*/
 			values += MONO_NESTED_CLASS_SIZE;
 			ntable->next_idx++;
+		}
+	}
+	if (tb->generic_params) {
+		table = &assembly->tables [MONO_TABLE_GENERICPARAM];
+		table->rows += mono_array_length (tb->generic_params);
+		alloc_table (table, table->rows);
+		for (i = 0; i < mono_array_length (tb->generic_params); ++i) {
+			guint32 owner = MONO_TYPEORMETHOD_TYPE | (tb->table_idx << MONO_TYPEORMETHOD_BITS);
+
+			mono_image_get_generic_param_info (
+				mono_array_get (tb->generic_params, MonoReflectionGenericParam*, i), owner, assembly);
 		}
 	}
 }
@@ -2917,6 +2982,8 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	image->generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
 
 	return image;
 }
@@ -5212,6 +5279,36 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 }
 
 /*
+ * mono_reflection_setup_generic_class:
+ * @tb: a TypeBuilder object
+ *
+ * Setup the generic class after all generic parameters have been added.
+ */
+void
+mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoClass *klass;
+	int count, i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = my_mono_class_from_mono_type (tb->type.type);
+
+	count = tb->generic_params ? mono_array_length (tb->generic_params) : 0;
+
+	if (klass->gen_params || (count == 0))
+		return;
+
+	klass->num_gen_params = count;
+	klass->gen_params = g_new0 (MonoGenericParam, count);
+
+	for (i = 0; i < count; i++) {
+		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
+		klass->gen_params [i] = *gparam->param;
+	}
+}
+
+/*
  * mono_reflection_create_internal_class:
  * @tb: a TypeBuilder object
  *
@@ -5704,6 +5801,37 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	if (!klass->enumtype)
 		g_assert (res != (MonoReflectionType*)tb);
 	return res;
+}
+
+MonoReflectionType *
+mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam)
+{
+	MonoClass *klass;
+	MonoImage *image;
+	MonoGenericParam *param;
+	int count, i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	image = tb->module->assemblyb->dynamic_assembly->assembly.image;
+
+	param = gparam->param = g_new0 (MonoGenericParam, 1);
+	param->name = mono_string_to_utf8 (gparam->name);
+	param->num = mono_array_length (tb->generic_params);
+
+	count = gparam->constraints ? mono_array_length (gparam->constraints) : 0;
+	param->constraints = g_new0 (MonoClass *, count + 1);
+	for (i = 0; i < count; i++) {
+		MonoReflectionType *constraint = mono_array_get (gparam->constraints, MonoReflectionType *, i);
+
+		param->constraints [i] = mono_class_from_mono_type (constraint->type);
+	}
+
+	klass = mono_class_from_gen_param (image, FALSE, param->num, param);
+
+	gparam->type = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+
+	return gparam->type;
 }
 
 MonoArray *

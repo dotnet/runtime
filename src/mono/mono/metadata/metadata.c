@@ -2232,6 +2232,10 @@ mono_type_size (MonoType *t, gint *align)
 		MonoClass *iclass = mono_class_from_mono_type (t);
 		return mono_type_size (&iclass->byval_arg, align);
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
 	default:
 		g_error ("mono_type_size: type 0x%02x unknown", t->type);
 	}

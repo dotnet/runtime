@@ -1463,7 +1463,7 @@ ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types
 	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
 	ginst->generic_type = &klass->byval_arg;
 	ginst->type_argc = klass->num_gen_params;
-	ginst->type_argv = g_new0 (MonoType, klass->num_gen_params);
+	ginst->type_argv = g_new0 (MonoType *, klass->num_gen_params);
 	for (i = 0; i < klass->num_gen_params; ++i) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
 		ginst->type_argv [i] = garg->type;
@@ -3983,6 +3983,8 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.TypeBuilder::setup_internal_class", mono_reflection_setup_internal_class,
 	"System.Reflection.Emit.TypeBuilder::create_internal_class", mono_reflection_create_internal_class,
 	"System.Reflection.Emit.TypeBuilder::create_runtime_class", mono_reflection_create_runtime_class,
+	"System.Reflection.Emit.TypeBuilder::setup_generic_class", mono_reflection_setup_generic_class,
+	"System.Reflection.Emit.TypeBuilder::define_generic_parameter", mono_reflection_define_generic_parameter,
 	
 	/*
 	 * MethodBuilder
