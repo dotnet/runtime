@@ -1399,7 +1399,7 @@
 
     </name>
 
-    <e-mail>vargaz -AT- NOSPAM.freemail.hu</e-mail>
+    <e-mail>vargaz CONCAT gmail CONCAT com</e-mail>
 
     <image>none.png</image>
 
@@ -1413,7 +1413,13 @@
 
       <task>IKVM port</task>
 
-      <task>Runtime hacking</task>
+      <task>Sparc and AMD64 port</task>
+
+      <task>Marshalling/Interop</task>
+
+      <task>Reflection and Ref.Emit</task>
+
+      <task>Random runtime hacking</task>
 
     </tasks>
     

@@ -1,3 +1,7 @@
+2004-10-04  Zoltan Varga  <vargaz@freemail.hu>
+
+	* web/team.xml: Update my info.
+
 2004-09-02  Atsushi Enomoto <atsushi@ximian.com>
 
 	* xml-classes : updates on 2.0 stuff. deprecating XPathDocument,
