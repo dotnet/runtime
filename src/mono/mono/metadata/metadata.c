@@ -1990,16 +1990,16 @@ mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token)
 	guint32 index = mono_metadata_token_index (token);
 
 	tdef = &meta->tables [MONO_TABLE_CONSTANT];
-	index <<= HASCOSTANT_BITS;
+	index <<= HASCONSTANT_BITS;
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_FIELD:
-		index |= HASCOSTANT_FIEDDEF;
+		index |= HASCONSTANT_FIEDDEF;
 		break;
 	case MONO_TABLE_PARAM:
-		index |= HASCOSTANT_PARAM;
+		index |= HASCONSTANT_PARAM;
 		break;
 	case MONO_TABLE_PROPERTY:
-		index |= HASCOSTANT_PROPERTY;
+		index |= HASCONSTANT_PROPERTY;
 		break;
 	default:
 		g_warning ("Not a valid token for the constant table: 0x%08x", token);
