@@ -396,6 +396,12 @@ A: The CIL is better suited to be JITed than JVM byte codes, but you
    can interpret them as trivially as you can interpret JVM byte
    codes. 
 
+Q: Could Java target the CLI?
+
+A: Yes, Java could target the CLI.  We have details on a <a
+   href="ideas.html#guavac">project</a> that someone could take on to
+   make this happen.
+
 ** Extending Mono
 
 Q: Would you allow other classes other than those in the
@@ -575,7 +581,7 @@ A: The JIT engine and runtime engine will be able to execute CIL
 
 Q: Is Mono part of the GNU project?
 
-A: Mono is an open source projected lead by Ximian.  
+A: Mono is an open source/free software projected lead by Ximian.  
 
    We wanted to make Mono part of the GNU project, but it was required
    that means we refer to Linux as `GNU/Linux' in our documentation

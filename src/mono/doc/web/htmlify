@@ -18,7 +18,9 @@ while (<>){
 		$q++;
 	} elsif (/^A: (.*)$/){
 		print "$1\n";
-	} else {
+	} elsif (/^TODO=(.*),$/){
+	        print "<a name=\"$1\">\n";
+        } else {
 		print "$_\n";
 	}
 }

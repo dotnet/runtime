@@ -20,9 +20,11 @@
 ** Classes
 
 	<ul>
+TODO=jxta,The JXTA Peer to Peer foundation
 		* Implement a JXTA protocol implementation:
 		<a href="http://www.jxta.org">http://www.jxta.org</a>
 
+TODO=camel,Mail API
 		* Implement a Mail API, similar to Camel or JavaMail (Camel has
 		  significant architecture features that are required on a real
 		  mailer).
@@ -31,23 +33,87 @@
 		<a href="http://cvs.gnome.org/bonsai/rview.cgi?dir=evolution%2Fcamel">
 		Camel implementation</a>.
 
+		  Such an implementation could be used both with
+		  Microsoft .NET and Mono.
+
+TODO=multimedia
 		* Interfacing to Multimedia systems.  You might want
 		  to look into the Quicktime API.  I know <a
 		  href="mailto:vladimir@ximian.com">Vladimir</a> has
 		  researched the problem before 
+
+TODO=gtk,Gtk+ wrappers for Mono and .NET
+		* Wrap the Gtk+ API.  This is simple and can be done
+		  on Windows as Gtk+ 1.3 works on Windows.
+
+	 	  This work can also be used on Windows and will
+		  enable developers on Windows to use some of Gtk+'s
+		  advanced features.
+
+		  The idea is to wrap the Gtk+ API and allow us to
+		  build GUI applications using Gtk+ and in the future
+		  other Gtk+-based libraries from Mono (Gal, GtkHTML).
+
+		  There is extensive knowledge on wrapping Gtk+ in
+		  other languages (this has been done this for Perl,
+		  Python, Java, Scheme, Haskel and other languages in
+		  the past).
 	</ul>
 
 <a name="projects">
 ** Projects
 
 	<ul>
+TODO=xmlStorage,
 		* Implement an xmlStorageSystem for the CLI:
 		<a href="http://www.soapware.org/xmlStorageSystem">
 		http://www.soapware.org/xmlStorageSystem</a>
 
+TODO=guavac,Java compiler for .NET
+		* You could take one of the existing Java compilers
+		  (Guavac comes to mind as it is so nice) and modify
+		  it to generate .NET code rather than JVM byte
+		  codes. 
+
+		  This should be a pretty straightforward task.
+		  Guavac has the advantage of being written in C++ and
+		  it could be compiled with the Microsoft Managed C++
+		  compiler and produce a .NET executable with it.
+
+TODO=CORBA,CORBA implementation
 		* Build a CORBA interoperability engine for the CLR.
 		  You do not need to do all of the work, just talking
 		  the protocol will get us a long way (<a
-		  href="http://www.omg.org">The OMG site</a> has the CORBA specs).
+		  href="http://www.omg.org">The OMG site</a> has the
+		  CORBA specs).
+
+		  Get in touch with David Taylor (dtaylo11 at bigpond
+		  dot net dot au) as he has been working on this
+		  project.
+
+TODO=Bonobo,Bonobo for Mono
+		* Once CORBA is done, implement the Bonobo interfaces
+		  to allow people to use Bonobo components in Mono and
+		  Mono components with Bonobo.  The best of both worlds!
+
+TODO=moniker,Object Naming System with Monikers
+		* A naming space for Mono.  An object naming space is
+		  a very powerful tool.  Bonobo implements a moniker
+		  system that is more powerful than the original
+		  moniker concept that was pioneered by COM/OLE in the
+		  Microsoft world.
+
+		  Our implementation builds on a concept, and we have
+		  made it simpler, more powerful, more extensible and
+		  a much better mechanism than the equivalent monikers
+		  on Windows. 
+
+		  Implementing Mono monikers would benefit both
+		  Windows users using .NET and Mono users on Unix and
+		  Windows.  
+
+		  Here is <a
+		  href="http://primates.ximian.com/~miguel/monikers.html">an
+		  overview of the moniker system</a> in Bonobo.
 
 	</ul>
