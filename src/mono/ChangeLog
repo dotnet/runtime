@@ -1,4 +1,7 @@
+2004-06-18  Jackson Harper  <jackson@ximian.com>
 
+	* man/mono.1: Add MONO_LOG_LEVEL and MONO_LOG_MASK
+		
 Fri Jun 18 19:39:09 CEST 2004 Paolo Molaro <lupus@ximian.com>
 
 	* Makefile.am: process data before runtime, so the config file is
