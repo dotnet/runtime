@@ -8755,3 +8755,119 @@ resolve_object (MonoImage *image, MonoObject *obj)
 	return result;
 }
 
+
+/* SECURITY_ACTION_* are defined in mono/metadata/tabledefs.h */
+const static guint32 declsec_flags_map[] = {
+	0x00000000,					/* empty */
+	MONO_DECLSEC_FLAG_REQUEST,			/* SECURITY_ACTION_REQUEST			(x01) */
+	MONO_DECLSEC_FLAG_DEMAND,			/* SECURITY_ACTION_DEMAND			(x02) */
+	MONO_DECLSEC_FLAG_ASSERT,			/* SECURITY_ACTION_ASSERT			(x03) */
+	MONO_DECLSEC_FLAG_DENY,				/* SECURITY_ACTION_DENY				(x04) */
+	MONO_DECLSEC_FLAG_PERMITONLY,			/* SECURITY_ACTION_PERMITONLY			(x05) */
+	MONO_DECLSEC_FLAG_LINKDEMAND,			/* SECURITY_ACTION_LINKDEMAND			(x06) */
+	MONO_DECLSEC_FLAG_INHERITANCEDEMAND,		/* SECURITY_ACTION_INHERITANCEDEMAND		(x07) */
+	MONO_DECLSEC_FLAG_REQUEST_MINIMUM,		/* SECURITY_ACTION_REQUEST_MINIMUM		(x08) */
+	MONO_DECLSEC_FLAG_REQUEST_OPTIONAL,		/* SECURITY_ACTION_REQUEST_OPTIONAL		(x09) */
+	MONO_DECLSEC_FLAG_REQUEST_REFUSE,		/* SECURITY_ACTION_REQUEST_REFUSE		(x0A) */
+	MONO_DECLSEC_FLAG_PREJIT_GRANT,			/* SECURITY_ACTION_PREJIT_GRANT			(x0B) */
+	MONO_DECLSEC_FLAG_PREJIT_DENY,			/* SECURITY_ACTION_PREJIT_DENY			(x0C) */
+	MONO_DECLSEC_FLAG_NONCAS_DEMAND,		/* SECURITY_ACTION_NONCAS_DEMAND		(x0D) */
+	MONO_DECLSEC_FLAG_NONCAS_LINKDEMAND,		/* SECURITY_ACTION_NONCAS_LINKDEMAND		(x0E) */
+	MONO_DECLSEC_FLAG_NONCAS_INHERITANCEDEMAND,	/* SECURITY_ACTION_NONCAS_INHERITANCEDEMAND	(x0F) */
+	MONO_DECLSEC_FLAG_LINKDEMAND_CHOICE,		/* SECURITY_ACTION_LINKDEMAND_CHOICE		(x10) */
+	MONO_DECLSEC_FLAG_INHERITANCEDEMAND_CHOICE,	/* SECURITY_ACTION_INHERITANCEDEMAND_CHOICE	(x11) */
+	MONO_DECLSEC_FLAG_DEMAND_CHOICE,		/* SECURITY_ACTION_DEMAND_CHOICE		(x12) */
+};
+
+/*
+ * Returns flags that includes all available security action associated to the handle.
+ * @token: metadata token (either for a class or a method)
+ * @image: image where resides the metadata.
+ */
+static guint32
+mono_declsec_get_flags (MonoImage *image, guint32 token)
+{
+	guint32 index = mono_metadata_declsec_from_index (image, token);
+	MonoTableInfo *t = &image->tables [MONO_TABLE_DECLSECURITY];
+	guint32 result = 0;
+	guint32 action;
+	int i;
+
+	for (i = index; i < t->rows; i++) {
+		guint32 cols [MONO_DECL_SECURITY_SIZE];
+
+		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
+		if (cols [MONO_DECL_SECURITY_PARENT] != token)
+			break;
+
+		action = cols [MONO_DECL_SECURITY_ACTION];
+		if ((action >= MONO_DECLSEC_ACTION_MIN) && (action <= MONO_DECLSEC_ACTION_MAX)) {
+			result |= declsec_flags_map [action];
+		} else {
+			g_assert_not_reached ();
+		}
+	}
+	return result;
+}
+
+/*
+ * Get the security actions (in the form of flags) associated with the specified method.
+ *
+ * @method: The method for which we want the declarative security flags.
+ * Return the declarative security flags for the method (only).
+ *
+ * Note: To keep MonoMethod size down we do not cache the declarative security flags
+ *       (except for the stack modifiers which are kept in the MonoJitInfo structure)
+ */
+guint32
+mono_declsec_flags_from_method (MonoMethod *method)
+{
+	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
+		/* FIXME: No cache (for the moment) */
+		guint32 idx = find_method_index (method);
+		idx <<= MONO_HAS_DECL_SECURITY_BITS;
+		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
+		return mono_declsec_get_flags (method->klass->image, idx);
+	}
+	return 0;
+}
+
+/*
+ * Get the security actions (in the form of flags) associated with the specified class.
+ *
+ * @klass: The class for which we want the declarative security flags.
+ * Return the declarative security flags for the class.
+ *
+ * Note: We cache the flags inside the MonoClass structure as this will get 
+ *       called very often (at least for each method).
+ */
+guint32
+mono_declsec_flags_from_class (MonoClass *klass)
+{
+	if (klass->flags & TYPE_ATTRIBUTE_HAS_SECURITY) {
+		if (!klass->declsec_flags) {
+			guint32 idx = mono_metadata_token_index (klass->type_token);
+			idx <<= MONO_HAS_DECL_SECURITY_BITS;
+			idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
+			/* we cache the flags on classes */
+			klass->declsec_flags = mono_declsec_get_flags (klass->image, idx);
+		}
+		return klass->declsec_flags;
+	}
+	return 0;
+}
+
+/*
+ * Get the security actions (in the form of flags) associated with the specified assembly.
+ *
+ * @assembly: The assembly for which we want the declarative security flags.
+ * Return the declarative security flags for the assembly.
+ */
+guint32
+mono_declsec_flags_from_assembly (MonoAssembly *assembly)
+{
+	guint32 idx = 1; /* there is only one assembly */
+	idx <<= MONO_HAS_DECL_SECURITY_BITS;
+	idx |= MONO_HAS_DECL_SECURITY_ASSEMBLY;
+	return mono_declsec_get_flags (assembly->image, idx);
+}

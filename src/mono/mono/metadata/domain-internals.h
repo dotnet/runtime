@@ -53,6 +53,13 @@ struct _MonoJitInfo {
 	signed      exvar_offset;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
+	gboolean    cas_inited:1;
+	gboolean    cas_class_assert:1;
+	gboolean    cas_class_deny:1;
+	gboolean    cas_class_permitonly:1;
+	gboolean    cas_method_assert:1;
+	gboolean    cas_method_deny:1;
+	gboolean    cas_method_permitonly:1;
 	MonoJitExceptionInfo *clauses;
 };
 

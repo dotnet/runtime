@@ -2168,6 +2168,26 @@ table_locator (const void *a, const void *b)
 		return 1;
 }
 
+static int
+declsec_locator (const void *a, const void *b)
+{
+	locator_t *loc = (locator_t *) a;
+	const char *bb = (const char *) b;
+	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 col;
+
+	col = mono_metadata_decode_row_col (loc->t, table_index, loc->col_idx);
+
+	if (loc->idx == col) {
+		loc->result = table_index;
+		return 0;
+	}
+	if (loc->idx < col)
+		return -1;
+	else
+		return 1;
+}
+
 /*
  * mono_metadata_typedef_from_field:
  * @meta: metadata context
@@ -2417,6 +2437,38 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return loc.result + 1;
+}
+
+/*
+ * mono_metadata_declsec_from_index:
+ * @meta: metadata context
+ * @index: token representing the parent
+ * 
+ * Returns: the 0-based index into the DeclarativeSecurity table of the first 
+ * attribute which belongs to the metadata object described by @index.
+ * Returns -1 if no such attribute is found.
+ */
+guint32
+mono_metadata_declsec_from_index (MonoImage *meta, guint32 index)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_DECLSECURITY];
+	locator_t loc;
+
+	if (!tdef->base)
+		return -1;
+
+	loc.idx = index;
+	loc.col_idx = MONO_DECL_SECURITY_PARENT;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, declsec_locator))
+		return -1;
+
+	/* Find the first entry by searching backwards */
+	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_DECL_SECURITY_PARENT) == index))
+		loc.result --;
+
+	return loc.result;
 }
 
 #ifdef DEBUG

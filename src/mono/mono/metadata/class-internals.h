@@ -211,6 +211,7 @@ struct _MonoClass {
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint dummy           : 1; /* temporary hack */
+	guint32 declsec_flags;     /* declarative security attributes flags */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
