@@ -15,13 +15,13 @@
 
 #include <mono/io-layer/io-layer.h>
 
-typedef struct
+struct _MonoThreadsSync
 {
 	guint32 owner;			/* thread ID */
 	guint32 nest;
 	volatile guint32 entry_count;
 	HANDLE entry_sem;
 	GSList *wait_list;
-} MonoThreadsSync;
+};
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

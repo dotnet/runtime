@@ -50,7 +50,9 @@ libmonoruntime_la_SOURCES = \
 	monitor.c	\
 	monitor.h	\
 	threads.c	\
+	threads-types.h	\
 	threadpool.c	\
+	threadpool.h	\
 	file-io.c	\
 	file-io.h	\
 	socket-io.c	\
@@ -114,11 +116,8 @@ libmonoruntimeinclude_HEADERS = \
 	mono-debug.h	\
 	mono-debug-debugger.h	\
 	debug-mono-symfile.h	\
-	threadpool.h	\
-	threads-types.h	\
 	threads.h	\
 	environment.h	\
-	monitor.h	\
 	locales.h
 
 libmetadatainclude_HEADERS = \

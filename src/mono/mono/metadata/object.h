@@ -2,7 +2,6 @@
 #define _MONO_CLI_OBJECT_H_
 
 #include <mono/metadata/class.h>
-#include <mono/metadata/threads-types.h>
 
 #if 1
 #ifdef __GNUC__
@@ -78,6 +77,7 @@ typedef guchar MonoBoolean;
 
 typedef struct _MonoReflectionMethod MonoReflectionMethod;
 typedef struct _MonoDelegate MonoDelegate;
+typedef struct _MonoThreadsSync MonoThreadsSync;
 
 typedef struct {
 	MonoVTable *vtable;
@@ -470,6 +470,12 @@ mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
 
 MonoObject *
 mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
+
+gboolean 
+mono_monitor_try_enter       (MonoObject *obj, guint32 ms);
+
+void 
+mono_monitor_exit            (MonoObject *obj);
 
 typedef void (*MonoExceptionFunc) (MonoException *ex);
 

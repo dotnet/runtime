@@ -31,13 +31,13 @@
 
 /* maximum number of worker threads */
 int mono_max_worker_threads = 25; /* fixme: should be 25 per available CPU */
-int mono_min_worker_threads = 0;
+static int mono_min_worker_threads = 0;
 
 /* current number of worker threads */
 static int mono_worker_threads = 0;
 
 /* current number of busy threads */
-int busy_worker_threads = 0;
+static int busy_worker_threads = 0;
 
 /* we use this to store a reference to the AsyncResult to avoid GC */
 static MonoGHashTable *ares_htable = NULL;
