@@ -54,6 +54,11 @@ typedef union {
 	gint32 ival;
 	gfloat fval;
 } IntFloatUnion;
+
+typedef union {
+	gint64 ival;
+	gdouble fval;
+} LongDoubleUnion;
  
 typedef struct {
 	int idx;
@@ -1152,11 +1157,12 @@ gdouble
 ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location1, gdouble value)
 {
 #if SIZEOF_VOID_P == 8
-	gint64 *val = (gint64*)&value;
-	gint64 res;
-	
-	res = (gint64)InterlockedExchangePointer((gpointer *) location1, (gpointer)(*val));
-	return *(gdouble*)&res;
+	LongDoubleUnion val, ret;
+
+	val.fval = value;
+	ret.ival = (gint64)InterlockedExchangePointer((gpointer *) location1, (gpointer)val.ival);
+
+	return ret.fval;
 #else
 	gdouble res;
 
@@ -1204,12 +1210,13 @@ gdouble
 ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location1, gdouble value, gdouble comparand)
 {
 #if SIZEOF_VOID_P == 8
-	gint64 *val = (gint64*)&value;
-	gint64 *comp = (gint64*)&comparand;
-	gint64 res;
-	
-	res = (gint64)InterlockedCompareExchangePointer((gpointer *) location1, (gpointer)(*val), (gpointer)(*comp));
-	return *(gdouble*)&res;
+	LongDoubleUnion val, comp, ret;
+
+	val.fval = value;
+	comp.fval = comparand;
+	ret.ival = (gint64)InterlockedCompareExchangePointer((gpointer *) location1, (gpointer)val.ival, (gpointer)comp.ival);
+
+	return ret.fval;
 #else
 	gdouble old;
 
