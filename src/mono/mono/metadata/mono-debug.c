@@ -169,9 +169,6 @@ mono_debug_open_image (MonoImage *image)
 
 	g_hash_table_insert (mono_debug_handles, image, handle);
 
-	if (mono_image_is_dynamic (image))
-		return handle;
-
 	handle->symfile = mono_debug_open_mono_symbol_file (handle, in_the_mono_debugger);
 	if (in_the_mono_debugger)
 		mono_debugger_add_symbol_file (handle);
@@ -186,7 +183,7 @@ mono_debug_close_image (MonoDebugHandle *handle)
 		mono_debug_close_mono_symbol_file (handle->symfile);
 	/* decrease the refcount added with mono_image_addref () */
 	mono_image_close (handle->image);
-	/* FIXME: should also free handle->image_file? */
+	g_free (handle->image_file);
 	g_free (handle->_priv);
 	g_free (handle);
 }
