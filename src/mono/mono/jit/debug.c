@@ -381,11 +381,14 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		} else
 			info->ilfile = g_strdup_printf ("%s.il", info->name);
 		break;
-	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
-		info->filename = g_strdup_printf ("%s-debug.s", info->name);
+	case MONO_DEBUG_FORMAT_DWARF2_PLUS: {
+		gchar *dirname = g_path_get_dirname (image->name);
+		info->filename = g_strdup_printf ("%s/%s-debug.s", dirname, info->name);
 		info->objfile = g_strdup_printf ("%s-debug.o", info->name);
 		mono_debug_open_assembly_dwarf2_plus (info);
+		g_free (dirname);
 		break;
+	}
 	default:
 		break;
 	}
