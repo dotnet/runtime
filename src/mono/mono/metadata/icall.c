@@ -419,7 +419,6 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 			sizes [i + aklass->rank] = mono_array_get (bounds, gint32, i);
 		else
 			sizes [i + aklass->rank] = 0;
-		sizes [i] -= sizes [i + aklass->rank];
 	}
 
 	array = mono_array_new_full (mono_domain_get (), aklass, sizes, sizes + aklass->rank);
