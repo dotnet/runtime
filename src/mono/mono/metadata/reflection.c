@@ -4681,8 +4681,6 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 
 	/* back-patch info */
 	msdos = (MonoMSDOSHeader*)pefile->data;
-	msdos->nlast_page = GUINT16_FROM_LE (file_offset & (512 - 1));
-	msdos->npages = GUINT16_FROM_LE ((file_offset + (512 - 1)) / 512);
 	msdos->pe_offset = GUINT32_FROM_LE (sizeof (MonoMSDOSHeader));
 
 	header = (MonoDotNetHeader*)(pefile->data + header_start);
