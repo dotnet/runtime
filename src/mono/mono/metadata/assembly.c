@@ -310,6 +310,7 @@ void
 mono_assembly_addref (MonoAssembly *assembly)
 {
 	EnterCriticalSection (&assemblies_mutex);
+	/*g_print ("adding ref from %d to %s (%p)\n", assembly->ref_count, assembly->aname.name, assembly);*/
 	assembly->ref_count++;
 	LeaveCriticalSection (&assemblies_mutex);
 }
@@ -1074,7 +1075,6 @@ void
 mono_assembly_close (MonoAssembly *assembly)
 {
 	MonoImage *image;
-	int i;
 	
 	g_return_if_fail (assembly != NULL);
 
@@ -1088,12 +1088,9 @@ mono_assembly_close (MonoAssembly *assembly)
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
 	LeaveCriticalSection (&assemblies_mutex);
 	image = assembly->image;
-	if (image->references) {
-		for (i = 0; image->references [i] != NULL; i++)
-			if (image->references [i] && (image->references [i] != (gpointer)-1))
-				mono_image_close (image->references [i]->image);
-		g_free (image->references);
-	}
+	/* assemblies belong to domains, so the domain code takes care of unloading the
+	 * referenced assemblies
+	 */
 
 	mono_image_close (assembly->image);
 

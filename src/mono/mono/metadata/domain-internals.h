@@ -87,8 +87,7 @@ struct _MonoDomain {
 	MonoMemPool        *mp;
 	MonoCodeManager    *code_mp;
 	MonoGHashTable     *env;
-	GHashTable         *assemblies_by_name;
-	GList              *assemblies;
+	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	MonoAppDomainSetup *setup;
 	char               *friendly_name;

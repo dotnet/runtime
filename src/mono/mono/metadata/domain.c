@@ -256,8 +256,7 @@ mono_domain_create (void)
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
-	domain->assemblies_by_name = g_hash_table_new (g_str_hash, g_str_equal);
-	domain->assemblies = NULL;
+	domain->domain_assemblies = NULL;
 	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->static_data_hash = mono_g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -706,11 +705,15 @@ MonoAssembly *
 mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
 	MonoAssembly *ass;
+	GSList *tmp;
 
 	mono_domain_lock (domain);
-	if ((ass = g_hash_table_lookup (domain->assemblies_by_name, name))) {
-		mono_domain_unlock (domain);
-		return ass;
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		ass = tmp->data;
+		if (strcmp (name, ass->aname.name) == 0) {
+			mono_domain_unlock (domain);
+			return ass;
+		}
 	}
 	mono_domain_unlock (domain);
 
@@ -718,18 +721,6 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 		return NULL;
 
 	return ass;
-}
-
-static void
-remove_assembly (gpointer key, gpointer value, gpointer user_data)
-{
-	mono_assembly_close ((MonoAssembly *)value);
-}
-
-static void
-add_assembly (gpointer key, gpointer value, gpointer user_data)
-{
-	g_hash_table_insert ((GHashTable*)user_data, value, value);
 }
 
 static void
@@ -749,8 +740,7 @@ delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
-	GHashTable *unique_assemblies;
-	GList *tmp;
+	GSList *tmp;
 	if ((domain == mono_root_domain) && !force) {
 		g_warning ("cant unload root domain");
 		return;
@@ -774,19 +764,13 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->entry_assembly = NULL;
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	/* some assemblies are in domain->assemblies_by_name and some only in domain->assemblies:
-	 * collect them in unique_assemblies so we don't free them twice.
-	 */
-	unique_assemblies = g_hash_table_new (NULL, NULL);
-	g_hash_table_foreach (domain->assemblies_by_name, add_assembly, unique_assemblies);
-	for (tmp = domain->assemblies; tmp; tmp = tmp->next)
-		g_hash_table_insert (unique_assemblies, tmp->data, tmp->data);
-	g_hash_table_foreach (unique_assemblies, remove_assembly, NULL);
-	g_hash_table_destroy (unique_assemblies);
-	g_hash_table_destroy (domain->assemblies_by_name);
-	domain->assemblies_by_name = NULL;
-	g_list_free (domain->assemblies);
-	domain->assemblies = NULL;
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *ass = tmp->data;
+		/*g_print ("Unloading domain %p, assembly %s, refcount: %d\n", domain, ass->aname.name, ass->ref_count);*/
+		mono_assembly_close (ass);
+	}
+	g_slist_free (domain->domain_assemblies);
+	domain->domain_assemblies = NULL;
 
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;

@@ -4209,7 +4209,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.name = assembly_name;
 	image->image.assembly_name = image->image.name; /* they may be different */
 	image->image.module_name = module_name;
-	image->image.version = g_strdup (version);
+	image->image.version = version;
 	image->image.dynamic = TRUE;
 	image->image.ref_count = 1;
 
@@ -4229,6 +4229,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 	image->gen_params = g_ptr_array_new ();
 
+	/*g_print ("string heap create for image %p (%s)\n", image, module_name);*/
 	string_heap_init (&image->sheap);
 	mono_image_add_stream_data (&image->us, "", 1);
 	add_to_blob_cached (image, (char*) "", 1, NULL, 0);
@@ -4280,7 +4281,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 #if HAVE_BOEHM_GC
 	assembly = assemblyb->dynamic_assembly = GC_MALLOC (sizeof (MonoDynamicAssembly));
 #else
-	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicImage, 1);
+	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
 #endif
 
 	assembly->assembly.ref_count = 1;
@@ -4302,7 +4303,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->assembly.image = &image->image;
 
 	mono_domain_lock (domain);
-	domain->assemblies = g_list_prepend (domain->assemblies, assembly);
+	domain->domain_assemblies = g_slist_prepend (domain->domain_assemblies, assembly);
 	mono_domain_unlock (domain);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
@@ -5051,6 +5052,9 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 	MonoDynamicImage *image = moduleb->dynamic_image;
 	MonoReflectionAssemblyBuilder *ab = moduleb->assemblyb;
 	if (!image) {
+		int module_count;
+		MonoImage **new_modules;
+		MonoImage *ass;
 		/*
 		 * FIXME: we already created an image in mono_image_basic_init (), but
 		 * we don't know which module it belongs to, since that is only 
@@ -5062,6 +5066,19 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 		moduleb->module.image = &image->image;
 		moduleb->dynamic_image = image;
 		register_module (mono_object_domain (moduleb), moduleb, image);
+
+		/* register the module with the assembly */
+		ass = ab->dynamic_assembly->assembly.image;
+		module_count = ass->module_count;
+		new_modules = g_new0 (MonoImage *, module_count + 1);
+
+		if (ass->modules)
+			memcpy (new_modules, ass->modules, module_count * sizeof (MonoImage *));
+		new_modules [module_count] = &image->image;
+
+		g_free (ass->modules);
+		ass->modules = new_modules;
+		ass->module_count ++;
 	}
 }
 

@@ -911,7 +911,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	g_free (absfname);
 	
 	if (image){
-		image->ref_count++;
+		mono_image_addref (image);
 		LeaveCriticalSection (&images_mutex);
 		return image;
 	}
@@ -926,7 +926,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 
 	if (image2) {
 		/* Somebody else beat us to it */
-		image2->ref_count ++;
+		mono_image_addref (image2);
 		LeaveCriticalSection (&images_mutex);
 		mono_image_close (image);
 		return image2;
@@ -1012,11 +1012,12 @@ void
 mono_image_close (MonoImage *image)
 {
 	MonoImage *image2;
+	int i;
 
 	g_return_if_fail (image != NULL);
 
 	EnterCriticalSection (&images_mutex);
-	/*g_print ("destroy image %p (dynamic: %d) refcount: %d\n", image, image->dynamic, image->ref_count);*/
+	/*g_print ("destroy image '%s' %p (dynamic: %d) refcount: %d\n", image->name, image, image->dynamic, image->ref_count);*/
 	g_assert (image->ref_count > 0);
 	if (--image->ref_count) {
 		LeaveCriticalSection (&images_mutex);
@@ -1034,12 +1035,16 @@ mono_image_close (MonoImage *image)
 		g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
 	LeaveCriticalSection (&images_mutex);
 
-	if (image->f)
+	if (image->f) {
 		fclose (image->f);
+		image->f = NULL;
+		if (image->raw_metadata != NULL)
+			mono_raw_buffer_free (image->raw_metadata);
+	}
+	
 	if (image->raw_data_allocated) {
 		/* image->raw_metadata and cli_sections might lie inside image->raw_data */
 		MonoCLIImageInfo *ii = image->image_info;
-		int i;
 
 		if ((image->raw_metadata > image->raw_data) &&
 			(image->raw_metadata <= (image->raw_data + image->raw_data_len)))
@@ -1078,12 +1083,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->helper_signatures);
 	
-	if (image->raw_metadata != NULL)
-		mono_raw_buffer_free (image->raw_metadata);
-	
 	if (image->image_info){
 		MonoCLIImageInfo *ii = image->image_info;
-		int i;
 
 		for (i = 0; i < ii->cli_section_count; i++){
 			if (!ii->cli_sections [i])
@@ -1097,6 +1098,10 @@ mono_image_close (MonoImage *image)
 		g_free (image->image_info);
 	}
 
+	for (i = 0; i < image->module_count; ++i) {
+		if (image->modules [i])
+			mono_image_close (image->modules [i]);
+	}
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
 		g_free (image);
@@ -1104,6 +1109,7 @@ mono_image_close (MonoImage *image)
 		/* Dynamic images are GC_MALLOCed */
 		struct _MonoDynamicImage *di = (struct _MonoDynamicImage*)image;
 		int i;
+		g_free ((char*)image->module_name);
 		if (di->typespec)
 			g_hash_table_destroy (di->typespec);
 		if (di->typeref)
@@ -1127,6 +1133,7 @@ mono_image_close (MonoImage *image)
 			g_hash_table_destroy (di->method_aux_hash);
 		g_free (di->strong_name);
 		g_free (di->win32_res);
+		/*g_print ("string heap destroy for image %p\n", di);*/
 		mono_dynamic_stream_reset (&di->sheap);
 		mono_dynamic_stream_reset (&di->code);
 		mono_dynamic_stream_reset (&di->resources);
