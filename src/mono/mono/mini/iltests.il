@@ -115,4 +115,58 @@
 		ldc.i4 1
 		ret
 	}
+
+	.class nested private auto ansi sealed beforefieldinit TailCallStruct 
+		extends [mscorlib]System.ValueType {
+		.field public int32 a
+		.field public int32 b
+	}
+
+	.method static valuetype Tests/TailCallStruct tail1 (valuetype Tests/TailCallStruct arg) {
+		ldarga 0
+		ldarga 0
+		ldfld int32 Tests/TailCallStruct::a
+		ldc.i4.1
+		add
+		stfld int32 Tests/TailCallStruct::a
+		ldarga 0
+		ldarga 0
+		ldfld int32 Tests/TailCallStruct::a
+		ldc.i4.2
+		add
+		stfld int32 Tests/TailCallStruct::a
+		ldarg.0
+		ret
+	}
+
+	.method static valuetype Tests/TailCallStruct tail2 (valuetype Tests/TailCallStruct arg) {
+		ldarg.0
+		tail.
+		call valuetype Tests/TailCallStruct Tests::tail1 (valuetype Tests/TailCallStruct)
+		ret
+	}
+
+	.method static public int32 test_0_tail_calls () il managed {
+		.maxstack 16
+		.locals init (
+			valuetype Tests/TailCallStruct arg
+		)
+		ldloca 0
+		ldc.i4.2
+		stfld int32 Tests/TailCallStruct::a
+		ldloca 0
+		ldc.i4.4
+		stfld int32 Tests/TailCallStruct::b
+		ldloc.0
+		call valuetype Tests/TailCallStruct Tests::tail2 (valuetype Tests/TailCallStruct)
+		stloc.0
+		ldloca 0
+		ldfld int32 Tests/TailCallStruct::a
+		ldloca 0
+		ldfld int32 Tests/TailCallStruct::b
+		add
+		ldc.i4 9
+		sub
+		ret
+	}
 }
