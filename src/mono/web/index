@@ -25,9 +25,11 @@
 
 ** Sep 5, 2001
 
-	The MCS compiler can compile the sample Hello World
-	application and generate a Windows/CIL executable that runs.
-	This executable runs with the Mono Interpreter.
+	The MCS compiler <b>can compile the sample Hello World</b>
+	application and generate a Windows/CIL executable that runs!
+
+	This executable runs with the Mono Interpreter of course (see
+	August 28)
 
 ** Sep 4, 2001
 
