@@ -43,3 +43,11 @@
 	and you have access to proprietary code.  We need to make sure
 	that we are not using someone else's copyrighted code
 	accidentally. 
+
+	Please do not use the <b>ildasm</b> program to disassemble
+	proprietary code when you are planning to reimplement a class
+	for Mono.  If you have done this, we might not be able to use
+	your code.
+
+	Please stick to published documentation for implementing any
+	classes.

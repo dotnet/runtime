@@ -143,14 +143,24 @@ A: Yes.  We will make sure that the licensing will allow developers to
    
 Q: What license is Mono on?
 
-A: The C# Compiler is released under the terms of the GPL.  The
-   class libraries are under the LGPL.  The runtime libraries are
-   under the LGPL. 
+A: The C# Compiler is released under the terms of the GPL.  The class
+   libraries will be under the LGPL or the GPL with a special
+   exception.  The runtime libraries are under the LGPL.
 
-   We are considering using the GPL with a special permission, to even
-   allow Mono to be used for embedded system work (I want to see mono
-   in my Tivo or the next generation toy for example).  This will be a
-   license that is even laxer than the LGPL. 
+   Here is the exception for the class libraries:
+
+   The library is distributed under the terms of the GNU General
+   Public License with the following exception:
+
+   If you link this library against your own program, then you do not
+   need to release the source code for that program. However, any
+   changes that you make to the library itself, or to any native
+   methods upon which the library relies, must be re-distributed in
+   accordance with the terms of the GPL.
+
+   This is similar in spirit to <a
+   href="http://www.gnu.org/software/classpath/classpath.html">GNU
+   Classpath.</a>
 
 Q: Will you accept code under the XXX License?
 
@@ -358,17 +368,6 @@ A: You can get very good tools for doing Java development on free
    designed to be a target for a
    wide variety of programming languages, and has a set of rules
    designed to be optimal for JITers.
-
-   Alex Graveley pointed out to this article: <a
-   href="http://www.objectwatch.com/issue_33.htm">http://www.objectwatch.com/issue_33.htm</a>.
-   
-   Alex said: <i>``Just found this article about the reality of Java's
-   language neutrality.  It does not point to any technical reason why
-   language neutrality is not possible in java, but rather attempts to
-   analyse real-world non-java-the-language java bytecode compiler
-   implementations.''</i> and finally added: <i>``Keep in mind of course
-   that Roger Sessions is strongly tied to Microsoft, COM, and now
-   .NET on a career-enabling basis. Still interesting nonetheless.''</i>
 
 
 Q: What kind of rules make the Common Intermediate Language useful for

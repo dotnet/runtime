@@ -81,6 +81,10 @@
 	<ul>
 		* Garbage collection list and FAQ:<br>
 		  <a href="http://www.iecc.com/gclist/">http://www.iecc.com/gclist/</a>
+
+		* The Microsoft .NET Garbage Collection Implementation:<br>
+		  <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp</a>
+		  <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp</a>
 	</ul>
 
 ** Useful links
