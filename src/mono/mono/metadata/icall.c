@@ -3639,30 +3639,13 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	domain = mono_object_domain (type);
 	klass = mono_class_from_mono_type (type->type);
 
-	// Bypass remoting object creation check
-	return mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
-}
-
-static MonoObject *
-ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_Internal (MonoReflectionType *type)
-{
-	MonoClass *klass;
-	MonoObject *obj;
-	MonoDomain *domain;
-	
-	MONO_ARCH_SAVE_REGS;
-
-	domain = mono_object_domain (type);
-	klass = mono_class_from_mono_type (type->type);
-
 	if (klass->rank >= 1) {
 		g_assert (klass->rank == 1);
-		obj = (MonoObject *) mono_array_new (domain, klass->element_class, 0);
+		return (MonoObject *) mono_array_new (domain, klass->element_class, 0);
 	} else {
-		obj = mono_object_new (domain, klass);
+		// Bypass remoting object creation check
+		return mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
 	}
-
-	return obj;
 }
 
 static MonoString *
@@ -4563,12 +4546,6 @@ static gconstpointer icall_map [] = {
 	 * System.Delegate
 	 */
 	"System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal,
-
-	/* 
-	 * System.Runtime.Serialization
-	 */
-	"System.Runtime.Serialization.FormatterServices::GetUninitializedObjectInternal",
-	ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_Internal,
 
 	/*
 	 * System.IO.Path
