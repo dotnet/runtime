@@ -18,6 +18,7 @@ TESTSRC=			\
 	switch.cs		\
 	outparm.cs		\
 	delegate.cs		\
+	bitconverter.cs		\
 	exception.cs		\
 	exception2.cs		\
 	exception3.cs		\
