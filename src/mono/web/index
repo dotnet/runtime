@@ -152,6 +152,9 @@
 	href="images/filedlg.png">here</a> and <a
 	href="images/finddlg.png">here</a>.
 
+	Johannes has patches to have Wine track the Gtk theme,
+	screenshot <a href="http://www.sport-huettn.de/jroith/swfsample.png">here</a>
+
 	<b>Security:</b> New authenticode support from Sebastien has
 	been checked into CVS.
 
