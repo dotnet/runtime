@@ -2499,11 +2499,6 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	 * than mess around with regexes.
 	 */
 
-	/* glibc allows the two last parameters to be NULL here: check
-	 * that other systems do too.  (If some break, just make the
-	 * last parameter "alphasort" - I don't care about the order
-	 * so it's NULL for now to avoid the call to qsort(3).)
-	 */
 	result = mono_io_scandir (dir_part, entry_part, &find_handle->namelist);
 	g_free (utf8_pattern);
 	g_free (entry_part);
