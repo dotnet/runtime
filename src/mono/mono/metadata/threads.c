@@ -165,6 +165,10 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 	/* start_info->this needs to be set? */
 		
 	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info, 0, &tid);
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
+		  tid, thread_handle);
+#endif
 	g_assert (thread_handle);
 
 	*(gpointer *)(((char *)thread) + field->offset) = thread_handle; 
@@ -339,7 +343,7 @@ static MonoThreadsSync *mon_new(void)
 	
 #if HAVE_BOEHM_GC
 	new=(MonoThreadsSync *)GC_debug_malloc (sizeof(MonoThreadsSync), "sync", 1);
-	GC_register_finalizer (new, mon_finalize, NULL, NULL, NULL);
+	GC_debug_register_finalizer (new, mon_finalize, NULL, NULL, NULL);
 #else
 	/* This should be freed when the object that owns it is
 	 * deleted
@@ -347,7 +351,7 @@ static MonoThreadsSync *mon_new(void)
 	new=(MonoThreadsSync *)g_new0 (MonoThreadsSync, 1);
 #endif
 	
-	new->monitor=CreateMutex(NULL, FALSE, "sync");
+	new->monitor=CreateMutex(NULL, FALSE, NULL);
 	if(new->monitor==NULL) {
 		/* Throw some sort of system exception? (ditto for the
 		 * sem and event handles below)
