@@ -14,13 +14,16 @@
 	<ul>
 
 		* The development tools (compilers, assembler tools,
-		  language reference, design time features).
+		  language reference, design time features): these
+	          live in the `monodoc' CVS module.
 
 		* Frequently Asked Question compilations.
 
 		* HOWTO documents.
 
-		* The Class Libraries
+		* The Class Libraries (Both the original .NET class
+	 	  libraries as well as the class libraries produced by
+		  the project).
 
 		* Tutorials on Mono and the specifics of running it. 
 
@@ -29,10 +32,163 @@
 
 	</ul>
 
-** Class Library documentation
+* Class Library documentation
 
 	We are moving to a new setup for documenting the class libraries, 
 	and you can read about it <a href="classlib-doc.html">here</a>.
+
+	There are two classes of documentation: free documentation for
+	existing .NET classes and documentation for the classes that
+	we have developed on top of .NET.
+
+	There is a large body of documentation that came from the ECMA
+	standarization effort that has been checked into CVS.  It does
+	not contain everything Mono and .NET have, so they need to be
+	updated and augmented.
+
+** Gtk# documentation
+
+	We also have a large body of class libraries that are specific
+	to Mono, for example the documentation for Gtk#.  
+
+	We have checked in stub documentation for Gtk# into the CVS
+	repository (on gtk-sharp/doc) and we need volunteers to help
+	populate the documentation for it.  Since Gtk# is a wrapper
+	for Gtk, plenty of documentation exists in the <a
+	href="http://developer.gnome.org/doc/API/2.0/">Gnome developer
+	site</a>.
+
+	To get started:
+
+	You need to download Gtk# from the CVS repository.  The module
+        name is `gtk-sharp'.  You can obtain a copy from both the CVS
+        repository or the anonymous CVS repository.
+        
+        To pull your copy type:
+        
+        	cvs co gtk-sharp
+        
+        Documentation lives in gtk-sharp/doc/en.  The "en" indicates the
+        English language, the first one we are targeting.  We can later
+        do translations, but for now we are focusing on a single
+        language.
+        
+        In that directory you will find the documentation organized by
+        namespaces.  One directory per namespace.  In the directories
+        you will find one XML file per class that needs to be
+        documented.  The mission is to fill in the data with useful
+        information.  Feel free to grab liberally information from the
+        Gtk documentation from:
+        
+       	<a href="http://developer.gnome.org/doc/API/">http://developer.gnome.org/doc/API/</a>
+        
+        Of course, the API does not apply directly.  It only applies at
+        a foundational level, so you can not really just copy and
+        paste.  Summaries, and remarks sections can probably be lifted
+        with little or no effort.
+        
+        Gtk# uses properties to represent get/set operations in the C
+        API, so you can also use some bits from there.
+        
+        Most of the documentation contains already place holders for
+        text, we use the internationally approved phrase for this
+        purpose, `To be added'.  So the quest is to remove all of the
+        "To be added" strings with information with resembles as closely
+        as possible the toolkit reality.
+
+*** The pieces to be filled.
+
+        Summaries are one or two line descriptions of the element
+        (class, struct, interface, method, field, event, delegate), and
+        its used to render summary pages.  So it has to be short.
+        
+        The "remarks" section is used to describe in detail the element.
+
+**** Tags.
+        
+        As you document Gtk# you will have a number of tags that you can
+        use inside the summary and remarks sections, these are:
+        
+        <para> </para>
+        	Used to separate paragraphs.
+        
+        <paramref name="param_name"/>
+        	Used to reference a formal parameter to a function.
+        
+        <see cref="T:SomeTypeName"/>
+        	Use this to reference a type, this will include an hyper
+        	link to the page for type SomeTypeName.
+        
+        	For example, to reference "System.Enum", do:
+        
+        	<see cref="T:System.Enum"/>
+
+        <see cref="P:SomeTypeName.Property"/>
+        	Use this to reference a property, this will include an hyper
+        	link to the page for the property `Property' of type `SomeTypeName'.
+        
+        	For example, to reference the BaseType property in System.Type, do:
+        
+        	<see cref="P:System.Type.BaseType"/>
+
+        <see cref="M:SomeTypeName.Method(type,type)"/>
+        	Use this to reference a method, this will include an hyper
+        	link to the page for the method `Method' of type `SomeTypeName'.
+        
+        	For example, to reference the ToString method in System.Object, do:
+        
+        	<see cref="M:System.Object.ToString()"/>
+        
+        <see langword="keywrod"/>
+        	Use this to link to a keyword in the C# language, for
+        	example to link to `true', do:
+        
+        		<see langword="true"/>
+        
+        <example> ... </example>
+        
+        	Use example to insert an example.  The example can 
+        	contain explanatory text and code.
+        
+        <code lang="C#">.. </code>
+        
+        	Use this to provide a sample C# program, typically used
+        	within the <example> tags.
+        
+        	When providing examples, try to provide a full example,
+        	we would like to be able to have a button to compile and
+        	run samples embedded into the documentation, or pop up
+        	an editor to let the user play with the sample.
+        
+        	You can link to an example like this:
+        
+        	<code lang="C#" source="file.cs"> </code>
+        
+        <item>
+        	
+        <list type="bullet">  </list>
+        
+        	Use this to create lists.  Lists contains <item>
+        	elements
+        
+        <list type="table"> </lits>
+                    <listheader>
+                      <term>YOUR FIRST COLUMN</term>
+                      <description>YOUR DESCRIPTION</description>
+                    </listheader>
+        
+        	For two-column tables.  Inside use:
+        
+        	<item>
+        		<term>First</term>
+        		<description>First descritpion</description>
+        	</item>
+        	<item>
+        		<term>Second</term>
+        		<description>Second descirption</description>
+        	</item>
+
+** Words of warning.
 
         A few words of warning and advice for class documentors:
 

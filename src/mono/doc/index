@@ -102,6 +102,19 @@
   </tr>
 </table>
 
+@item Feb 18th, 2003: Volunteers to document Gtk#
+
+	With the availability of a documentation browser, we are
+	looking for volunteers to help us complete the documentation
+	of the Gtk# binding for Mono.
+
+	Experience with Gtk is useful, but not mandatory.  We have
+	checked in stubs, and we have instructions, and resources to
+	how to complete this process <a
+	href="documentation.html">here</a>.  Mail the <a
+	href="mailto:mono-docs-list@ximian.com">mono-docs-list@ximian.com</a>
+	for further discussion.
+
 @item Feb 14th, 2003: OpenGL# bindings for Mono;  Mono Basic updates.
 
 	Mark Crichton has completed his OpenGL/GLUT bindings for
