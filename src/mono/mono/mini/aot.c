@@ -32,6 +32,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
+#include <mono/utils/mono-logger.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -81,8 +82,6 @@ typedef struct MonoAotCompile {
 static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
-
-static guint32 mono_aot_verbose = 0;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
@@ -134,8 +133,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	assembly->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
 
 	if (!assembly->aot_module) {
-		if (mono_aot_verbose > 0)
-			printf ("Failed to load AOT module %s: %s\n", aot_name, g_module_error ());
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Failed to load AOT module %s: %s\n", aot_name, g_module_error ());
 		g_free (aot_name);
 		return;
 	}
@@ -145,14 +143,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
-		if (mono_aot_verbose > 0)
-			printf ("AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
 		usable = FALSE;
 	}
 	else
 		if (!saved_guid || strcmp (assembly->image->guid, saved_guid)) {
-			if (mono_aot_verbose > 0)
-				printf ("AOT module %s is out of date.\n", aot_name);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is out of date.\n", aot_name);
 			usable = FALSE;
 		}
 
@@ -189,8 +185,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		for (i = 0; i < table_len; ++i) {
 			info->image_table [i] = mono_image_loaded_by_guid (table);
 			if (!info->image_table [i]) {
-				if (mono_aot_verbose > 0)
-					printf ("AOT module %s is out of date.\n", aot_name);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date.\n", aot_name);
 				mono_g_hash_table_destroy (info->methods);
 				g_free (info->image_table);
 #ifndef HAVE_BOEHM_GC
@@ -230,8 +225,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_g_hash_table_insert (aot_modules, assembly, info);
 	LeaveCriticalSection (&aot_mutex);
 
-	if (mono_aot_verbose > 0)
-		printf ("Loaded AOT Module for %s.\n", assembly->image->name);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Loaded AOT Module for %s.\n", assembly->image->name);
 }
 
 void
@@ -308,8 +302,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			code = mono_code_manager_reserve (domain->code_mp, minfo->info->code_size);
 			memcpy (code, minfo->info->code_start, minfo->info->code_size);
 
-			if (mono_aot_verbose > 1)
-				printf ("REUSE METHOD: %s %p - %p.\n", mono_method_full_name (method, TRUE), code, (char*)code + minfo->info->code_size);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT REUSE METHOD: %s %p - %p.\n", mono_method_full_name (method, TRUE), code, (char*)code + minfo->info->code_size);
 
 			/* Do this outside the lock to avoid deadlocks */
 			LeaveCriticalSection (&aot_mutex);
@@ -342,8 +335,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		guint32 w;
 		w = aot_module->methods_present_table [index / 32];
 		if (! (w & (1 << (index % 32)))) {
-			if (mono_aot_verbose > 1)
-				printf ("NOT FOUND: %s.\n", mono_method_full_name (method, TRUE));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
 	}
@@ -403,8 +395,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		code = code2;
 	}
 
-	if (mono_aot_verbose > 1)
-		printf ("FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);
 
 	/* Exception table */
 	if (header->num_clauses) {
@@ -800,7 +791,7 @@ static void emit_alignment(FILE *fp, int size)
 }
 
 static void
-emit_pointer (FILE *fp, char *target)
+emit_pointer (FILE *fp, const char *target)
 {
 	emit_alignment (fp, sizeof (gpointer));
 #if defined(sparc) && SIZEOF_VOID_P == 8
