@@ -5006,11 +5006,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip++;
 			break;
 		case CEE_ENDFINALLY:
-			/* FIXME: check stack state */
 			MONO_INST_NEW (cfg, ins, *ip);
 			MONO_ADD_INS (bblock, ins);
 			ins->cil_code = ip++;
 			start_new_bblock = 1;
+
+			/*
+			 * Control will leave the method so empty the stack, otherwise
+			 * the next basic block will start with a nonempty stack.
+			 */
+			while (sp != stack_start) {
+				MONO_INST_NEW (cfg, ins, CEE_POP);
+				ins->cil_code = ip;
+				sp--;
+				ins->inst_i0 = *sp;
+				MONO_ADD_INS (bblock, ins);
+			}
 			break;
 		case CEE_LEAVE:
 		case CEE_LEAVE_S: {

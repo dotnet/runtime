@@ -184,4 +184,18 @@
 		add
 		ret
 	}
+ 
+    .method public static int32 test_5_endfinally_with_nonempty_stack () il managed {
+		.maxstack 16
+
+        .try {
+          leave IL_0
+        }
+        finally  {
+          ldc.i4.0
+          endfinally
+        }
+        IL_0:  ldc.i4.5
+		ret
+    }
 }
