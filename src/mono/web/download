@@ -17,6 +17,129 @@
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
 	    <td>
+	      <b>Release 0.16</b><br>
+	      <a href="archive/mono-0.16">Release notes</a><br>
+	      Oct 1st, 2002.
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	 	      <li><a href="archive/mcs-0.16.tar.gz">Mono Class Libraries and C# Compiler.</a>
+	              <li><a href="archive/mono-0.16.tar.gz">Mono Runtime</a>
+		      <li><a href="archive/gc6.1.tar.gz">Boehm GC 6.1</a>
+	            </ul>
+		  </td>
+	        </tr>
+	        <tr bgcolor="#BBBBBB">
+		  <td>
+		     <b>Source RPMs</b>
+	          </td>
+		  <td>
+		    <ul>
+			<li><a href="archive/libgc-6.1-1.src.rpm">libgc-6.1-1.src.rpm</a>
+			<li><a href="archive/mono-0.16-1.src.rpm">mono-0.16-1.src.rpm</a>
+		    </ul>
+		  </td>
+	        </tr>
+		<tr>
+		 <td></td>
+	 	</tr>
+		<tr>
+		  <td bgcolor="#999999">
+		    <b>Red Hat 7.3/x86</b>
+                    <ul>
+			<li><a href="archive/redhat-73-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-73-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-73-i386/mono-0.16-1.i386.rpm">mono-0.16-1.i386.rpm</a>
+			<li><a href="archive/redhat-73-i386/mono-devel-0.16-1.i386.rpm">mono-devel-0.16-1.i386.rpm</a>
+		    </ul>
+		  </td>
+		  <td bgcolor="#999999">
+		    <b>Red Hat 7.1/x86</b>
+                    <ul>
+			<li><a href="archive/redhat-71-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-71-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-71-i386/mono-0.16-1.i386.rpm">mono-0.16-1.i386.rpm</a>
+			<li><a href="archive/redhat-71-i386/mono-devel-0.16-1.i386.rpm">mono-devel-0.16-1.i386.rpm</a>
+		    </ul>
+		  </td>
+		</tr>
+		<tr>
+		  <td bgcolor="#999999">
+		    <b>Mandrake 8.2/x86</b>
+                    <ul>
+			<li><a href="archive/mandrake-82-i386/libgc-6.1-1.i586.rpm">libgc-6.1-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1-1.i586.rpm">libgc-devel-6.1-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-0.16-1.i586.rpm">mono-0.16-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-devel-0.16-1.i586.rpm">mono-devel-0.16-1.i586.rpm</a>
+		    </ul>
+		  </td>
+		  <td bgcolor="#999999">
+		    <b>SuSE 8.0/x86</b>
+                    <ul>
+			<li><a href="archive/suse-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
+			<li><a href="archive/suse-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
+			<li><a href="archive/suse-80-i386/mono-0.16-1.i386.rpm">mono-0.16-1.i386.rpm</a>
+			<li><a href="archive/suse-80-i386/mono-devel-0.16-1.i386.rpm">mono-devel-0.16-1.i386.rpm</a>
+		    </ul>
+	          </td>
+	        </tr>
+		
+		<tr bgcolor="#999999">
+		  <td>
+		    <b>Windows (win95 friendly)</b>
+		    <ul>
+	              <li><a href="archive/mono-w32-Aug_28_2002.zip">Mono-w32</a>
+	            </ul>
+		  </td>
+		  <td bgcolor="#999999">
+		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+		    <ul>
+	              <li><a href="http://www.sport-huettn.de/mono/mono-0.16-stable.exe">Mono-Setup</a>
+	            </ul>
+	          </td>
+	        </tr>
+		<tr bgcolor="#999999">
+		  <td bgcolor="#999999">
+		    <b>Red Hat null-8.0/x86</b>
+                    <ul>
+			<li><a href="archive/redhat-null-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-null-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-null-i386/mono-0.16-1.i386.rpm">mono-0.16-1.i386.rpm</a>
+			<li><a href="archive/redhat-null-i386/mono-devel-0.16-1.i386.rpm">mono-devel-0.16-1.i386.rpm</a>
+		    </ul>
+	          </td>
+		  <td bgcolor="#999999">
+			&nbsp;		    
+
+	          </td>
+	        </tr>
+
+	      </table>
+	    </td>
+	  </tr>
+	  <tr>
+	    <tr bgcolor="#CCCCC">
+	    <td>
+	      <b>Regression Tests</b><br>
+	    </td>
+	    <td>
+		You can get binaries for the Mono Regression Test
+		Suite <a href="archive/mono-tests.tar.gz">here</a>
+	    </td>
+	  </tr>
+	  </tbody>
+	</table>
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
 	      <b>Release 0.15</b><br>
 	      <a href="archive/mono-0.15">Release notes</a><br>
 	      Aug 23rd, 2002.
@@ -49,46 +172,6 @@
 		<tr>
 		 <td></td>
 	 	</tr>
-		<tr>
-		  <td bgcolor="#999999">
-		    <b>Red Hat 7.3/x86</b>
-                    <ul>
-			<li><a href="archive/redhat-73-i386/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i386.rpm</a>
-			<li><a href="archive/redhat-73-i386/libgc-devel-6.1alpha5-1.i386.rpm">libgc-devel-6.1alpha5-1.i386.rpm</a>
-			<li><a href="archive/redhat-73-i386/mono-0.15-1.i386.rpm">mono-0.15-1.i386.rpm</a>
-			<li><a href="archive/redhat-73-i386/mono-devel-0.15-1.i386.rpm">mono-devel-0.15-1.i386.rpm</a>
-		    </ul>
-		  </td>
-		  <td bgcolor="#999999">
-		    <b>Red Hat 7.1/x86</b>
-                    <ul>
-			<li><a href="archive/redhat-71-i386/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i386.rpm</a>
-			<li><a href="archive/redhat-71-i386/libgc-devel-6.1alpha5-1.i386.rpm">libgc-devel-6.1alpha5-1.i386.rpm</a>
-			<li><a href="archive/redhat-71-i386/mono-0.15-1.i386.rpm">mono-0.15-1.i386.rpm</a>
-			<li><a href="archive/redhat-71-i386/mono-devel-0.15-1.i386.rpm">mono-devel-0.15-1.i386.rpm</a>
-		    </ul>
-		  </td>
-		</tr>
-		<tr>
-		  <td bgcolor="#999999">
-		    <b>Mandrake 8.2/x86</b>
-                    <ul>
-			<li><a href="archive/mandrake-82-i386/libgc-6.1alpha5-1.i586.rpm">libgc-6.1alpha5-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1alpha5-1.i586.rpm">libgc-devel-6.1alpha5-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-0.15-1.i586.rpm">mono-0.15-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-devel-0.15-1.i586.rpm">mono-devel-0.15-1.i586.rpm</a>
-		    </ul>
-		  </td>
-		  <td bgcolor="#999999">
-		    <b>SuSE 8.0/x86</b>
-                    <ul>
-			<li><a href="archive/suse-80-i386/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i386.rpm</a>
-			<li><a href="archive/suse-80-i386/libgc-devel-6.1alpha5-1.i386.rpm">libgc-devel-6.1alpha5-1.i386.rpm</a>
-			<li><a href="archive/suse-80-i386/mono-0.15-1.i386.rpm">mono-0.15-1.i386.rpm</a>
-			<li><a href="archive/suse-80-i386/mono-devel-0.15-1.i386.rpm">mono-devel-0.15-1.i386.rpm</a>
-		    </ul>
-	          </td>
-	        </tr>
 		
 		<tr bgcolor="#999999">
 		  <td>

@@ -94,6 +94,12 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Oct 1st, 2002: Mono 0.16 released
+
+	Mono 0.16 has been released.  Source and RPMs are <a
+	href="download.html">available</a>.  The release notes are <a
+	href="archive/mono-0.16">here</a>.  
+
 @item Sep 19th, 2002: Mono Survey.
 
 	Help us plan for the future of Mono by filing out the <a
