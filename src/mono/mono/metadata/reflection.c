@@ -1840,6 +1840,75 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 }
 
 static void
+encode_new_constraint (MonoDynamicImage *assembly, guint32 owner)
+{
+	static MonoClass *NewConstraintAttr;
+	static MonoMethod *NewConstraintAttr_ctor;
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 token, type;
+	char blob_size [4] = { 0x01, 0x00, 0x00, 0x00 };
+	char *buf, *p;
+
+	if (!NewConstraintAttr)
+		NewConstraintAttr = mono_class_from_name (
+			mono_defaults.corlib, "System.Runtime.CompilerServices",
+			"NewConstraintAttribute");
+	g_assert (NewConstraintAttr);
+
+	if (!NewConstraintAttr_ctor) {
+		int i;
+
+		for (i = 0; i < NewConstraintAttr->method.count; i++) {
+			MonoMethod *m = NewConstraintAttr->methods [i];
+
+			if (strcmp (m->name, ".ctor"))
+				continue;
+
+			NewConstraintAttr_ctor = m;
+			break;
+		}
+
+		g_assert (NewConstraintAttr_ctor);
+	}
+
+	table = &assembly->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	table->rows += 1;
+	alloc_table (table, table->rows);
+
+	values = table->values + table->next_idx * MONO_CUSTOM_ATTR_SIZE;
+	owner <<= CUSTOM_ATTR_BITS;
+	owner |= CUSTOM_ATTR_GENERICPAR;
+	values [MONO_CUSTOM_ATTR_PARENT] = owner;
+
+	token = mono_image_get_methodref_token (assembly, NewConstraintAttr_ctor);
+
+	type = mono_metadata_token_index (token);
+	type <<= CUSTOM_ATTR_TYPE_BITS;
+	switch (mono_metadata_token_table (token)) {
+	case MONO_TABLE_METHOD:
+		type |= CUSTOM_ATTR_TYPE_METHODDEF;
+		break;
+	case MONO_TABLE_MEMBERREF:
+		type |= CUSTOM_ATTR_TYPE_MEMBERREF;
+		break;
+	default:
+		g_warning ("got wrong token in custom attr");
+		return;
+	}
+	values [MONO_CUSTOM_ATTR_TYPE] = type;
+
+	buf = p = g_malloc (1);
+	mono_metadata_encode_value (4, p, &p);
+	g_assert (p-buf == 1);
+
+	values [MONO_CUSTOM_ATTR_VALUE] = add_to_blob_cached (assembly, buf, 1, blob_size, 4);
+
+	values += MONO_CUSTOM_ATTR_SIZE;
+	++table->next_idx;
+}
+
+static void
 encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
 {
 	MonoDynamicTable *table;
@@ -1861,6 +1930,9 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 		values [MONO_GENPARCONSTRAINT_GENERICPAR] = owner;
 		values [MONO_GENPARCONSTRAINT_CONSTRAINT] = mono_image_typedef_or_ref (assembly, constraint->type);
 	}
+
+	if (gparam->has_ctor_constraint)
+		encode_new_constraint (assembly, owner);
 }
 
 static void

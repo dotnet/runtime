@@ -434,6 +434,7 @@ typedef struct {
 	MonoString *name;
 	guint32 flags;
 	MonoArray *constraints;
+	guint32 has_ctor_constraint;
 	guint32 initialized;
 } MonoReflectionGenericParam;
 
