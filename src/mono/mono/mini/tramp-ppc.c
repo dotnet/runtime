@@ -479,6 +479,14 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	return code;
 }
 
+MonoJitInfo*
+mono_arch_create_jump_trampoline (MonoMethod *method)
+{
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
 /**
  * arch_create_jit_trampoline:
  * @method: pointer to the method info
