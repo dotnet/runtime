@@ -1046,12 +1046,23 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
 	g_free (method);
 }
 
-/* II 22.2.12 */
-MonoType *
-mono_metadata_parse_type (metadata_t *m, const char *ptr, const char **rptr)
+/* 
+ * do_mono_metadata_parse_type:
+ * @type: MonoType to be filled in with the return value
+ * @
+ * Internal routine used to "fill" the contents of @type from an 
+ * allocated pointer.  This is done this way to avoid doing too
+ * many mini-allocations (particularly for the MonoFieldType which
+ * most of the time is just a MonoType, but sometimes might be augmented).
+ *
+ * This routine is used by mono_metadata_parse_type and
+ * mono_metadata_parse_field_type
+ *
+ * This extracts a Type as specified in Partition II (22.2.12) 
+ */
+static void
+do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, const char **rptr)
 {
-	/* should probably be allocated in a memchunk */
-	MonoType *type = g_new0(MonoType, 1);
 	int val;
 	
 	ptr = mono_metadata_decode_value (ptr, &val);
@@ -1093,6 +1104,7 @@ mono_metadata_parse_type (metadata_t *m, const char *ptr, const char **rptr)
 			type->data.mtype = mtype = g_malloc0(sizeof(MonoModifiedType)+(count-1)*sizeof(MonoCustomMod));
 			mtype->num_modifiers = count;
 			count = 0;
+			
 			/* save them this time */
 			while (mono_metadata_parse_custom_mod (m, &(mtype->modifiers[count]), ptr, &ptr))
 				count++;
@@ -1125,6 +1137,25 @@ mono_metadata_parse_type (metadata_t *m, const char *ptr, const char **rptr)
 	
 	if (rptr)
 		*rptr = ptr;
+}
+
+/**
+ * mono_metadata_parse_type:
+ * @m: metadata context to scan
+ * @ptr: pointer to encoded Type stream.
+ * @rptr: the new position in the stream after parsing the type
+ *
+ * Returns: A MonoType structure that has the parsed information
+ * from the type stored at @ptr in the metadata table @m.
+ */
+MonoType *
+mono_metadata_parse_type (metadata_t *m, const char *ptr, const char **rptr)
+{
+	/* should probably be allocated in a memchunk */
+	MonoType *type = g_new0(MonoType, 1);
+
+	do_mono_metadata_parse_type (type, m, ptr, rptr);
+
 	return type;
 }
 
@@ -1295,5 +1326,34 @@ mono_metadata_free_mh (MonoMetaMethodHeader *mh)
 		mono_metadata_free_type (mh->locals[i]);
 	g_free (mh->locals);
 	g_free (mh);
+}
+
+/**
+ * mono_metadata_parse_field_type:
+ * @m: metadata context to extract information from
+ * @ptr: pointer to the field signature
+ *
+ * Parses the field signature, and returns the type information for it. 
+ *
+ * Returns: The MonoFieldType that was extracted from @ptr.
+ */
+MonoFieldType *
+mono_metadata_parse_field_type (metadata_t *m, const char *ptr, const char **rptr)
+{
+	MonoFieldType *ft;
+	int len;
+	
+	ft = g_new (MonoFieldType, 1);
+	ptr = mono_metadata_decode_value (ptr, &len);
+
+	/* FIELD signature == 0x06 */
+	g_assert (*ptr == 0x06);
+	ptr++;
+	len--;
+
+	mono_metadata_parse_custom_mod (m, &ft->custom_mod, ptr, &ptr);
+	do_mono_metadata_parse_type (&ft->type, m, ptr, rptr);
+
+	return ft;
 }
 

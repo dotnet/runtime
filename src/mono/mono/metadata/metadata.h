@@ -217,6 +217,7 @@ typedef struct {
 } MonoMetaExceptionHandler;
 
 typedef struct _MonoType MonoType;
+typedef struct _MonoFieldType MonoFieldType;
 typedef struct _MonoArray MonoArray;
 typedef struct _MonoMethodSignature MonoMethodSignature;
 
@@ -252,6 +253,14 @@ struct _MonoType {
 		MonoArray *array; /* for ARRAY */
 		MonoMethodSignature *method;
 	} data;
+};
+
+/*
+ * A Field Type is a Type that might have an optional Custom Modifier.
+ */
+struct _MonoFieldType {
+	MonoType type;
+	MonoCustomMod custom_mod;
 };
 
 typedef struct {
@@ -290,30 +299,32 @@ typedef struct {
 	GList      *exception_handler_list;
 } MonoMetaMethodHeader;
 
-typedef struct {
-	
-} MonoTypedef;
-
 guint32     mono_metadata_parse_typedef_or_ref (metadata_t      *m,
                                                 const char      *ptr,
                                                 const char     **rptr);
-int         mono_metadata_parse_custom_mod     (metadata_t      *m,
-                                                MonoCustomMod   *dest,
-                                                const char      *ptr,
-                                                const char     **rptr);
-MonoArray  *mono_metadata_parse_array          (metadata_t      *m,
-                                                const char      *ptr,
-                                                const char     **rptr);
-void        mono_metadata_free_array           (MonoArray       *array);
-MonoParam  *mono_metadata_parse_param          (metadata_t      *m,
-                                                int              rettype,
-                                                const char      *ptr,
-                                                const char     **rptr);
-void        mono_metadata_free_param           (MonoParam       *param);
-MonoType   *mono_metadata_parse_type           (metadata_t      *m,
-                                                const char      *ptr,
-                                                const char     **rptr);
-void        mono_metadata_free_type            (MonoType        *type);
+int            mono_metadata_parse_custom_mod  (metadata_t      *m,
+						MonoCustomMod   *dest,
+						const char      *ptr,
+						const char     **rptr);
+MonoArray     *mono_metadata_parse_array       (metadata_t      *m,
+						const char      *ptr,
+						const char     **rptr);
+void           mono_metadata_free_array        (MonoArray       *array);
+MonoParam     *mono_metadata_parse_param       (metadata_t      *m,
+						int              rettype,
+						const char      *ptr,
+						const char     **rptr);
+void           mono_metadata_free_param        (MonoParam       *param);
+MonoType      *mono_metadata_parse_type        (metadata_t      *m,
+               					const char      *ptr,
+               					const char     **rptr);
+void           mono_metadata_free_type         (MonoType        *type);
+
+MonoFieldType *mono_metadata_parse_field_type  (metadata_t      *m,
+						const char      *ptr,
+						const char      **rptr);
+void           mono_metadata_free_field_type   (MonoFieldType   *field_type);
+							
 
 MonoMethodSignature  *mono_metadata_parse_method_signature (metadata_t            *m,
                                                             int                    def,
@@ -334,7 +345,7 @@ void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
  */
 #define mono_metadata_token_table(token) ((token) >> 24)
 
-/*
+ /*
  * Returns the index that a token refers to
  */
 #define mono_metadata_token_index(token) ((token & 0xffffff))

@@ -14,6 +14,9 @@ MonoMethod        *mono_get_method    (MonoImage *image, guint32 token);
 void               mono_free_method   (MonoMethod *method);
 
 #include <mono/metadata/image.h>
+
 MonoImage         *mono_load_image    (const char *fname, enum MonoImageOpenStatus *status);
+
+#include <mono/cli/object.h>
 
 #endif

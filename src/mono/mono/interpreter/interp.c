@@ -4,8 +4,9 @@
  *
  * interp.c: Interpreter for CIL byte codes
  *
- * Author:
+ * Authors:
  *   Paolo Molaro (lupus@ximian.com)
+ *   Miguel de Icaza (miguel@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -30,7 +31,7 @@
 #include <mono/metadata/endian.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/blob.h>
-
+#include <mono/metadata/tokentype.h>
 #include <mono/cli/cli.h>
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -107,6 +108,8 @@ static int count = 0;
 #define SUB_SWITCH case 0xFE:
 #endif
 
+#define CSIZE(x) (sizeof (x) / 4)
+
 static void
 ves_real_abort (int line, MonoImage *image, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
@@ -124,8 +127,64 @@ ves_real_abort (int line, MonoImage *image, MonoMethod *mh,
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 	exit (1);
 }
-
 #define ves_abort() ves_real_abort(__LINE__, image, mh, ip, stack, sp)
+
+/*
+ * newobj:
+ * @image: image where the object is being referenced
+ * @token: method token to invoke
+ *
+ * This routine creates a new object based on the class where the
+ * constructor lives.x
+ */
+static MonoObject *
+newobj (MonoImage *image, guint32 token)
+{
+	cli_image_info_t *iinfo = image->image_info;
+	metadata_t *m = &iinfo->cli_metadata;
+	
+	switch (mono_metadata_token_code (token)){
+	case TOKEN_TYPE_METHOD_DEF:
+		g_error ("TOKEN_TYPE_METHOD_DEF not supported in newobj yet");
+		break;
+		
+	case TOKEN_TYPE_MEMBER_REF: {
+		guint32 member_cols [3];
+		guint32 mpr_token, table, idx;
+		
+		mono_metadata_decode_row (
+			&m->tables [META_TABLE_MEMBERREF],
+			mono_metadata_token_index (token) - 1,
+			member_cols, CSIZE (member_cols));
+		mpr_token = member_cols [0];
+		table = mpr_token & 7;
+		idx = mpr_token >> 3;
+		
+		switch (table){
+		case 0: /* TypeDef */
+			return mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+			
+		case 1: /* TypeRef */
+			return mono_object_new (image, TOKEN_TYPE_TYPE_REF | idx);
+			
+		case 2: /* ModuleRef */
+			g_error ("Unhandled: ModuleRef");
+			
+		case 3: /* MethodDef */
+			g_error ("Unhandled: MethodDef");
+			
+		case 4: /* TypeSpec */
+			g_error ("Unhandled: TypeSepc");
+		}
+		break;
+	}
+	}
+
+	/*
+	 * Failure
+	 */
+	return NULL;
+}
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -698,7 +757,16 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) ves_abort(); BREAK;
-		CASE (CEE_NEWOBJ) ves_abort(); BREAK;
+
+		CASE (CEE_NEWOBJ) {
+			MonoObject *o;
+			guint32 token = read32 (ip);
+			
+			o = newobj (image, token);
+			ip += 4;
+			BREAK;
+		}
+		
 		CASE (CEE_CASTCLASS) ves_abort(); BREAK;
 		CASE (CEE_ISINST) ves_abort(); BREAK;
 		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
