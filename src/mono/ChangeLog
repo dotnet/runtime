@@ -1,3 +1,7 @@
+2005-02-13  Zoltan Varga  <vargaz@freemail.hu>
+
+	* scripts/dtd2xsd: Remove generated file from SVN.
+
 2005-02-12  Cesar Lopez Nataren  <cnataren@novell.com>
 
 	* scripts/Makefile.am (bin_SCRIPTS): added mjs
