@@ -16,6 +16,7 @@
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/mono-config.h"
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/cil-coff.h>
 #include <mono/os/util.h>
 
 static MonoClass *
@@ -164,7 +165,8 @@ usage (char *name)
 		 "    --profile          record and dump profile info\n"
 		 "    --breakonex        set a breakpoint for unhandled exception\n"
 		 "    --break NAME       insert a breakpoint at the start of method NAME\n"
-		 "                       (NAME is in `namespace.name:methodname' format)\n"
+		 "                       (NAME is in `namespace.name:methodname' format\n"
+		 "                       or `Main' to break on the application's main method)\n"
 		 "    --precompile name  precompile NAME before executing the main application:\n"
 		 "                       NAME is in one of the following formats:\n"
 		 "                         namespace.name          compile the given class\n"
@@ -196,6 +198,7 @@ main (int argc, char *argv [])
 	gboolean testjit = FALSE;
 	int verbose = FALSE;
 	GList *precompile_classes = NULL;
+	int break_on_main = FALSE;
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -229,10 +232,15 @@ main (int argc, char *argv [])
 		else if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
 		else if (strcmp (argv [i], "--break") == 0) {
-			MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
-			if (!desc)
-				g_error ("Invalid method name '%s'", argv [i]);
-			mono_debug_methods = g_list_append (mono_debug_methods, desc);
+			if (!strcmp (argv [i+1], "Main")) {
+				break_on_main = TRUE;
+				i++;
+			} else {
+				MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
+				if (!desc)
+					g_error ("Invalid method name '%s'", argv [i]);
+				mono_debug_methods = g_list_append (mono_debug_methods, desc);
+			}
 		} else if (strcmp (argv [i], "--count") == 0) {
 			compile_times = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--config") == 0) {
@@ -322,6 +330,17 @@ main (int argc, char *argv [])
 
 		for (tmp = precompile_classes; tmp; tmp = tmp->next)
 			mono_jit_compile_class (assembly, tmp->data, 1, verbose);
+
+		if (break_on_main) {
+			MonoImage *image = assembly->image;
+			MonoCLIImageInfo *iinfo = image->image_info;
+			MonoMethodDesc *desc;
+			MonoMethod *method;
+
+			method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
+			desc = mono_method_desc_from_method (method);
+			mono_debug_methods = g_list_append (mono_debug_methods, desc);
+		}
 
 		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 	}
