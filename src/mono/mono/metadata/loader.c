@@ -428,7 +428,37 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	}
 	g_free (full_name);
 
-	g_module_symbol (gmodule, import, &method->addr); 
+	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
+		g_module_symbol (gmodule, import, &method->addr); 
+	} else {
+		char *mangled_name;
+		gpointer addr;
+
+		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+		case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+			mangled_name = g_strconcat (import, "W", NULL);
+			printf ("SEARCH %s\n", mangled_name);
+			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_free (mangled_name);
+
+			if (!method->addr)
+				g_module_symbol (gmodule, import, &method->addr); 
+			break;
+		case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+			g_module_symbol (gmodule, import, &method->addr); 
+			break;
+		case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
+		default:
+			mangled_name = g_strconcat (import, "A", NULL);
+			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_free (mangled_name);
+
+			if (!method->addr)
+				g_module_symbol (gmodule, import, &method->addr); 
+			       
+			break;					
+		}
+	}
 
 	if (!method->addr) {
 		g_warning ("Failed to load function %s from %s", import, scope);
@@ -604,6 +634,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 					mspecs [cols [MONO_PARAM_SEQUENCE]]= mono_metadata_parse_marshal_spec (klass->image, tp);
 				}
 			}
+
 			return;
 		}
 	}

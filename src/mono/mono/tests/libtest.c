@@ -289,3 +289,62 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 	g_free(data);
 	return (ret != 0);
 }
+
+int 
+HexDump(char *data)
+{
+	int i, res = 0;
+	char *p;
+
+	printf ("HEXDUMP DEFAULT VERSION\n");
+
+	p = data;
+	for (i=0; i < 8; ++i)
+	{
+		res += *p;
+		printf("%0x ", (int) *(p++));
+	}
+	putchar('\n');
+
+	return res;
+}
+
+int 
+HexDumpA(char *data)
+{
+	int i, res = 0;
+	char *p;
+
+	printf ("HEXDUMP ANSI VERSION\n");
+
+	p = data;
+	for (i=0; i < 8; ++i)
+	{
+		res += *p;
+		printf("%0x ", (int) *(p++));
+	}
+	putchar('\n');
+
+	return res + 100000;
+}
+
+int 
+HexDump1W(char *data)
+{
+	int i, res = 0;
+	char *p;
+
+	printf ("HEXDUMP UNICODE VERSION\n");
+
+	p = data;
+	for (i=0; i < 8; ++i)
+	{
+		res += *p;
+		printf("%0x ", (int) *(p++));
+	}
+	putchar('\n');
+
+	return res + 1000000;
+}
+
+

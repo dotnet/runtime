@@ -2433,6 +2433,7 @@ MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig;
+	MonoMethodPInvoke *piinfo;
 	MonoMethodBuilder *mb;
 	MonoMarshalSpec **mspecs;
 	MonoMethod *res;
@@ -2462,6 +2463,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	if (pinvoke && !method->addr)
 		mono_lookup_pinvoke_call (method);
+
+	piinfo = (MonoMethodPInvoke *)method;
 
 	if (!method->addr) {
 		mono_mb_emit_exception (mb);
@@ -2605,7 +2608,20 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 					g_assert_not_reached ();
 				}
 			} else {
-				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+				case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+					break;
+				case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPWSTR);
+					break;
+				case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPTSTR);
+					break;
+				default:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+					break;					
+				}
 			}
 
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
