@@ -3886,7 +3886,7 @@ mono_jit_compile_method (MonoMethod *method)
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
-		if (mono_debugger_method_has_breakpoint (method, FALSE))
+		if (mono_debugger_method_has_breakpoint (method))
 			x86_breakpoint (cfg->code);
 
 		if (!(ji = arch_jit_compile_cfg (target_domain, cfg))) {

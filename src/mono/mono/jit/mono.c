@@ -234,7 +234,7 @@ static void main_thread_handler (gpointer user_data)
 
 			method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 			desc = mono_method_desc_from_method (method);
-			mono_debugger_insert_breakpoint_full (desc, FALSE);
+			mono_debugger_insert_breakpoint_full (desc);
 		}
 
 		mono_jit_exec (main_args->domain, assembly, main_args->argc,
