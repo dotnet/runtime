@@ -242,6 +242,13 @@ Q: What is your opinion?
 A: You can read my personal <a href="passport.html">opinion on
    passport</a>.
 
+Q: Will Mono running on Linux make Passport available for Linux?
+
+A: The Passport toolkit for Linux-based web servers is available from
+   Microsoft.  
+
+   Again, Mono has nothing to do with Passport. 
+
 ** Mono and Windows
 
 Q: Will Mono allow me to run Microsoft Office on Linux?
@@ -576,18 +583,6 @@ Q: Why are you writing a JIT engine instead of a front-end to GCC?
 
 A: The JIT engine and runtime engine will be able to execute CIL
    executables generated on Windows.
-
-** Mono and GNU
-
-Q: Is Mono part of the GNU project?
-
-A: Mono is an open source/free software projected lead by Ximian.  
-
-   We wanted to make Mono part of the GNU project, but it was required
-   that means we refer to Linux as `GNU/Linux' in our documentation
-   and public appearances.   
-
-   So Mono is not part of the GNU project. 
 
 ** Mono and Portability
 

@@ -207,6 +207,18 @@
 	Currently, we are too far from the point where this is a real
 	issue. 
 
+** Passport and endangering Open Source.
+
+	A few people have said: `Mono will allow Passport to be
+	available for Linux and that is bad'.  This is plain
+	miss-information.
+
+	Currently, you can obtain Passport for Linux from Microsoft
+	itself and deploy it today on your Web server.  Mono does not
+	even enter the picture here.  Go to passport.com and download
+	the toolkit and you will see with your own eyes that passport
+	is <B>already</b> available for Linux. 
+
 ** Disclaimer
 
 	This is just a group of personal thoughts of mine that I have

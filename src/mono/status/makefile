@@ -11,7 +11,7 @@ xml:
 	./compare.exe $(NETDIR)\\mscorlib.dll $(MCSCLASSDIR)\\corlib\\corlib.dll > corlib.xml
 
 push:
-	scp *.xml web/*html www@www:/web/cvsmodules/mono/class-status
+	scp *.xml web/*html www@www.ximian.com:/web/cvsmodules/mono/class-status
 
 clean:
 	-rm -f compare.exe compare.pdb corlib.xml ByMaintainer.exe ByNamespace.exe commands *~ .*~
