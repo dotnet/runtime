@@ -3,19 +3,17 @@
 
 ** Status
 
-It passes and compiles the same amount of mono tests as on the x86 architecture.
+	It passes and compiles the same amount of mono tests as on the x86 architecture.
 
-mcs is self hosting on Linux/PPC.
-
-** To do
+	mcs is self hosting on Linux/PPC.
 
 *** Interpreter
 
-Up to date.
+	Up to date.
 
 *** Jitter
 
-Start the port
+	Start the port
 
 ** Documentation
 
