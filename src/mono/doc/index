@@ -86,10 +86,10 @@
 
 @item May 31, 2002
 
-	Gonzalo got the Mono XSP page parser to run its first ASP.NET
-	.aspx file today.  It is currently on its infancy.  But very
-	good news, now we need to upgrade our System.Web runtime to run
-	natively on Linux.
+	Gonzalo got the Mono XSP page parser to render its first ASP.NET
+	.aspx file today without using MS System.Web.Hosting classes.
+	It is currently on its infancy.  But very good news, now we need to 
+	upgrade our System.Web runtime to run natively on Linux.
 
 	Sergey's code for architecture and size-specific CPBLK has
 	been checked into CVS.
