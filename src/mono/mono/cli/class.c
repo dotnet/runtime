@@ -181,7 +181,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint32 cols [6], parent_token;
 	guint tidx = type_token & 0xffffff;
 	const char *name;
-	
+
+	memset (class, 0, sizeof (MonoClass));
+
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
 	name = mono_metadata_string_heap (m, cols[1]);
 	/*g_print ("Init class %s\n", name);*/

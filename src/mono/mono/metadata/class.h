@@ -16,6 +16,8 @@ struct _MonoClass {
 	MonoImage *image;
 	guint32    type_token;
 
+	guint inited : 1;
+
 	MonoClass *parent;
 	
 	/*

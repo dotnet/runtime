@@ -49,10 +49,11 @@ enum {
 typedef gint32 nati_t;
 
 #define GET_NATI(sp) ((guint32)(sp).data.i)
+#define CSIZE(x) (sizeof (x) / 4)
 
 static int count = 0;
 
-#define CSIZE(x) (sizeof (x) / 4)
+static void ves_exec_method (MonoMethod *mh, stackval *args);
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
@@ -73,6 +74,43 @@ ves_real_abort (int line, MonoMethod *mh,
 #define ves_abort() ves_real_abort(__LINE__, mh, ip, stack, sp)
 
 /*
+ * init_class:
+ * @klass: klass that needs to be initialized
+ *
+ * This routine calls the class constructor for @class if it needs it.
+ */
+static void
+init_class (MonoClass *klass)
+{
+	guint32 cols [META_METHOD_SIZE];
+	metadata_t *m;
+	metadata_tableinfo_t *t;
+	int i;
+	
+	if (klass->inited)
+		return;
+	if (klass->parent)
+		init_class (klass->parent);
+	
+	m = &klass->image->metadata;
+	t = &m->tables [META_TABLE_METHOD];
+
+	for (i = klass->method.first; i < klass->method.last; ++i) {
+		mono_metadata_decode_row (t, i, cols, META_METHOD_SIZE);
+		
+		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [META_METHOD_NAME])) == 0) {
+			MonoMethod *cctor = mono_get_method (klass->image, TOKEN_TYPE_METHOD_DEF | (i + 1));
+			ves_exec_method (cctor, NULL);
+			mono_free_method (cctor);
+			klass->inited = 1;
+			return;
+		}
+	}
+	/* No class constructor found */
+	klass->inited = 1;
+}
+
+/*
  * newobj:
  * @image: image where the object is being referenced
  * @token: method token to invoke
@@ -84,11 +122,13 @@ static MonoObject *
 newobj (MonoImage *image, guint32 token)
 {
 	metadata_t *m = &image->metadata;
+	MonoObject *result = NULL;
 	
 	switch (mono_metadata_token_code (token)){
 	case TOKEN_TYPE_METHOD_DEF: {
 		guint32 idx = mono_metadata_typedef_from_method (m, token);
-		return mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+		result = mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+		break;
 	}
 	case TOKEN_TYPE_MEMBER_REF: {
 		guint32 member_cols [3];
@@ -104,11 +144,11 @@ newobj (MonoImage *image, guint32 token)
 		
 		switch (table){
 		case 0: /* TypeDef */
-			return mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
-			
+			result = mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+			break;
 		case 1: /* TypeRef */
-			return mono_object_new (image, TOKEN_TYPE_TYPE_REF | idx);
-			
+			result = mono_object_new (image, TOKEN_TYPE_TYPE_REF | idx);
+			break;
 		case 2: /* ModuleRef */
 			g_error ("Unhandled: ModuleRef");
 			
@@ -121,10 +161,20 @@ newobj (MonoImage *image, guint32 token)
 		break;
 	}
 	}
+	
+	if (result)
+		init_class (result->klass);
+	return result;
+}
 
-	/*
-	 * Failure
-	 */
+static MonoMethod*
+get_virtual_method (MonoImage *image, guint32 token, stackval *args)
+{
+	switch (mono_metadata_token_table (token)) {
+	case META_TABLE_METHOD:
+		return mono_get_method (image, token);
+	}
+	g_error ("got virtual method: 0x%x\n", token);
 	return NULL;
 }
 
@@ -172,7 +222,6 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
 	}
-	g_print ("field value: %d\n", result.data.i);
 	return result;
 }
 
@@ -314,8 +363,9 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	 * use a different argument passing mechanism.
  	 */
 
-	stack = alloca (sizeof (stackval) * header->max_stack + 1);
+	stack = alloca (sizeof (stackval) * (header->max_stack + 1));
 	sp = stack + 1;
+	++stack;
 
 	if (header->num_locals)
 		locals = alloca (sizeof (stackval) * header->num_locals);
@@ -334,7 +384,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			for (h=0; h < level; ++h)
 				g_print ("\t");
 		}
-		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
+		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->data.header->code, *ip);
 		if (sp != stack){
 			printf ("[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type,
 				sp[-1].data.i, sp[-1].data.f);
@@ -474,14 +524,19 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			--sp;
 			BREAK;
 		CASE (CEE_JMP) ves_abort(); BREAK;
+		CASE (CEE_CALLVIRT)
 		CASE (CEE_CALL) {
 			MonoMethod *cmh;
 			guint32 token;
+			int virtual = *ip == CEE_CALLVIRT;
 
 			++ip;
 			token = read32 (ip);
 			ip += 4;
-			cmh = mono_get_method (mh->image, token);
+			if (virtual)
+				cmh = get_virtual_method (mh->image, token, sp);
+			else
+				cmh = mono_get_method (mh->image, token);
 			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
 
 			/* decrement by the actual number of args */
@@ -873,7 +928,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			}
 			BREAK;
 		CASE (CEE_CONV_U8) ves_abort(); BREAK;
-		CASE (CEE_CALLVIRT) ves_abort(); BREAK;
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) {
@@ -893,7 +947,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			ip += 4;
 			BREAK;
-
 		}
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
