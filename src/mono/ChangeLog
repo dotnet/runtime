@@ -1,5 +1,8 @@
+2003-07-10  Martin Willemoes Hansen
 
-Tue Jul 1 11:27:53 CEST 2003 Paolo Molaro <lupus@ximian.com>
+	* doc/web/team.xml : Modified my tasks a bit.
+
+2003-07-01  Paolo Molaro <lupus@ximian.com>
 
 	* acconfig.h, configure.in: added bundle support.
 
