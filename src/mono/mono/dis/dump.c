@@ -241,6 +241,7 @@ dump_table_property (metadata_t *m)
 	int i, j, pcount;
 	const char *ptr;
 	char flags[128];
+
 	fprintf (output, "Property Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
@@ -248,26 +249,30 @@ dump_table_property (metadata_t *m)
 		char *type;
 		
 		expand (t, i, cols, CSIZE (cols));
-		flags[0] = 0;
-		if (cols[0] & 0x0200)
-			strcat(flags, "special ");
-		if (cols[0] & 0x0400)
-			strcat(flags, "runtime ");
-		if (cols[0] & 0x1000)
-			strcat(flags, "hasdefault ");
+		flags [0] = 0;
+		if (cols [0] & 0x0200)
+			strcat (flags, "special ");
+		if (cols [0] & 0x0400)
+			strcat (flags, "runtime ");
+		if (cols [0] & 0x1000)
+			strcat (flags, "hasdefault ");
 
-		ptr = mono_metadata_blob_heap (m, cols[2]);
-		/* The data in the blob doesn't follow the specs:
-		 * there are 3 nibbles first (we skip also the 0x8 signature). */
+		ptr = mono_metadata_blob_heap (m, cols [2]);
+		/*
+		 * The data in the blob doesn't follow the specs:
+		 * there are 3 nibbles first (we skip also the 0x8 signature).
+		 */
 		ptr+=2;
 		ptr = get_encoded_value (ptr, &pcount);
 		ptr = get_type (m, ptr, &type);
-		fprintf (output, "%d: %s %s (", i, type, mono_metadata_string_heap (m, cols [1]));
-		g_free(type);
-		for (j=0; j < pcount; ++j) {
+		fprintf (output, "%d: %s %s (",
+			 i, type, mono_metadata_string_heap (m, cols [1]));
+		g_free (type);
+
+		for (j = 0; j < pcount; j++){
 				ptr = get_param (m, ptr, &type);
-				fprintf(output, "%s%s", j>0?", ":"",type);
-				g_free(type);
+				fprintf (output, "%s%s", j > 0? ", " : "",type);
+				g_free (type);
 		}
 		fprintf (output, ") %s\n", flags);
 	}
@@ -287,9 +292,10 @@ dump_table_event (metadata_t *m)
 		
 		expand (t, i, cols, CSIZE (cols));
 
-		name = mono_metadata_string_heap (m, cols[1]);
-		type = get_typedef_or_ref (m, cols[2]);
-		fprintf (output, "%d: %s %s %s\n", i, type, name, cols[0]&0x200?"specialname ":"");
+		name = mono_metadata_string_heap (m, cols [1]);
+		type = get_typedef_or_ref (m, cols [2]);
+		fprintf (output, "%d: %s %s %s\n", i, type, name,
+			 cols [0] & 0x200 ? "specialname " : "");
 		g_free (type);
 	}
 	
