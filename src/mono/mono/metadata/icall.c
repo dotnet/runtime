@@ -810,8 +810,22 @@ handle_enum:
 }
 
 static guint32
-class_is_subtype_of (MonoDomain *domain, MonoClass *klass, MonoClass *klassc, MonoBoolean check_interfaces)
+ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, MonoBoolean check_interfaces)
 {
+	MonoDomain *domain; 
+	MonoClass *klass;
+	MonoClass *klassc;
+
+	g_assert (type != NULL);
+	
+	domain = ((MonoObject *)type)->vtable->domain;
+
+	if (!c) /* FIXME: dont know what do do here */
+		return 0;
+
+	klass = mono_class_from_mono_type (type->type);
+	klassc = mono_class_from_mono_type (c->type);
+
 	/* cut&paste from mono_object_isinst (): keep in sync */
 	if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && !(klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 		MonoVTable *klass_vt = mono_class_vtable (domain, klass);
@@ -834,25 +848,6 @@ class_is_subtype_of (MonoDomain *domain, MonoClass *klass, MonoClass *klassc, Mo
 			return 1;
 	}
 	return 0;
-}
-
-static guint32
-ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, MonoBoolean check_interfaces)
-{
-	MonoDomain *domain; 
-	MonoClass *klass;
-	MonoClass *klassc;
-
-	g_assert (type != NULL);
-	
-	domain = ((MonoObject *)type)->vtable->domain;
-
-	if (!c) /* FIXME: dont know what do do here */
-		return 0;
-
-	klass = mono_class_from_mono_type (type->type);
-	klassc = mono_class_from_mono_type (c->type);
-	return class_is_subtype_of (domain, klass, klassc, check_interfaces);
 }
 
 static guint32
@@ -1349,10 +1344,8 @@ search_method (MonoReflectionType *type, const char *name, guint32 flags, MonoAr
 	MonoClass *klass, *start_class;
 	MonoMethod *m;
 	MonoReflectionType *paramt;
-	MonoDomain *domain;
 	int i, j;
 
-	domain = ((MonoObject *)type)->vtable->domain;
 	start_class = klass = mono_class_from_mono_type (type->type);
 	while (klass) {
 		for (i = 0; i < klass->method.count; ++i) {
@@ -1365,14 +1358,9 @@ search_method (MonoReflectionType *type, const char *name, guint32 flags, MonoAr
 				return m;
 			if (m->signature->param_count != mono_array_length (args))
 				continue;
-			
 			for (j = 0; j < m->signature->param_count; ++j) {
 				paramt = mono_array_get (args, MonoReflectionType*, j);
-				if (!mono_metadata_type_equal (paramt->type, m->signature->params [j]) &&
-				    class_is_subtype_of (domain,
-					    		 mono_class_from_mono_type (m->signature->params [j]),
-							 mono_class_from_mono_type (paramt->type),
-							 TRUE))
+				if (!mono_metadata_type_equal (paramt->type, m->signature->params [j]))
 					break;
 			}
 			if (j == m->signature->param_count)
