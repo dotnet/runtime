@@ -1651,6 +1651,48 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	return res;
 }
 
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
+								    gpointer dest, gint32 length)
+{
+	int element_size;
+	void *source_addr;
+
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (dest);
+
+	g_assert (src->obj.vtable->klass->rank == 1);
+	g_assert (start_index >= 0 && start_index < mono_array_length (src));
+	g_assert (start_index + length <= mono_array_length (src));
+
+	element_size = mono_array_element_size (src->obj.vtable->klass);
+	  
+	source_addr = mono_array_addr_with_size (src, element_size, start_index);
+
+	memcpy (dest, source_addr, length * element_size);
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
+								      MonoArray *dest, gint32 length)
+{
+	int element_size;
+	void *dest_addr;
+
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (dest);
+
+	g_assert (dest->obj.vtable->klass->rank == 1);
+	g_assert (start_index >= 0 && start_index < mono_array_length (dest));
+	g_assert (start_index + length <= mono_array_length (dest));
+
+	element_size = mono_array_element_size (dest->obj.vtable->klass);
+	  
+	dest_addr = mono_array_addr_with_size (dest, element_size, start_index);
+
+	memcpy (dest_addr, src, length * element_size);
+}
+
 static gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset)
 {
@@ -2504,6 +2546,9 @@ static gconstpointer icall_map [] = {
 	"System.Threading.WaitHandle::WaitAny_internal", ves_icall_System_Threading_WaitHandle_WaitAny_internal,
 	"System.Threading.WaitHandle::WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal,
 
+	/*
+	 * System.Runtime.InteropServices.Marshal
+	 */
 	"System.Runtime.InteropServices.Marshal::ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr,
 	"System.Runtime.InteropServices.Marshal::ReadByte", ves_icall_System_Runtime_InteropServices_Marshal_ReadByte,
 	"System.Runtime.InteropServices.Marshal::ReadInt16", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16,
@@ -2519,6 +2564,9 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::AllocHGlobal", mono_marshal_alloc,
 	"System.Runtime.InteropServices.Marshal::FreeHGlobal", mono_marshal_free,
 	"System.Runtime.InteropServices.Marshal::ReAllocHGlobal", mono_marshal_realloc,
+	"System.Runtime.InteropServices.Marshal::copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged,
+	"System.Runtime.InteropServices.Marshal::copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged,
+
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
