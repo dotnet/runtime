@@ -143,17 +143,17 @@ main (int argc, char *argv [])
 			memset (&mono_jit_stats, 0, sizeof (MonoJitStats));
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--stabs") == 0) {
-			if (mono_debug_handle)
-				g_error ("You can use either --stabs or --dwarf, but not both.");
-			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_STABS);
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				g_error ("You can only use one debugging format.");
+			mono_debug_format = MONO_DEBUG_FORMAT_STABS;
 		} else if (strcmp (argv [i], "--dwarf") == 0) {
-			if (mono_debug_handle)
-				g_error ("You can use either --stabs or --dwarf, but not both.");
-			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_DWARF2);
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				g_error ("You can only use one debugging format.");
+			mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
 		} else if (strcmp (argv [i], "--dwarf-plus") == 0) {
-			if (mono_debug_handle)
-				g_error ("You can use either --stabs or --dwarf, but not both.");
-			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_DWARF2_PLUS);
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				g_error ("You can only use one debugging format.");
+			mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
 		} else if (strcmp (argv [i], "--verbose") == 0) {
 			verbose = TRUE;;
 		} else if (strcmp (argv [i], "--fast-iconv") == 0) {
@@ -166,6 +166,9 @@ main (int argc, char *argv [])
 
 	if (!file)
 		usage (argv [0]);
+
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+		mono_debug_handle = mono_debug_open_file (file, mono_debug_format);
 
 	mono_set_rootdir (argv [0]);
 	domain = mono_jit_init (file);

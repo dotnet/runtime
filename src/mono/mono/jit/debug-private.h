@@ -29,6 +29,7 @@ struct _AssemblyDebugInfo {
 	FILE *f;
 	char *filename;
 	char *name;
+	char *objfile;
 	char *producer_name;
 	int total_lines;
 	int *mlines;
@@ -46,6 +47,7 @@ struct _AssemblyDebugInfo {
 
 struct _MonoDebugHandle {
 	char *name;
+	char *objfiles;
 	MonoDebugFormat default_format;
 	GList *info;
 };

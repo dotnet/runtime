@@ -18,6 +18,7 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (filename);
 	debug->default_format = format;
+	debug->objfiles = g_strdup ("");
 	return debug;
 }
 
@@ -233,14 +234,20 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 	info = g_new0 (AssemblyDebugInfo, 1);
 	info->format = handle->default_format;
 	switch (handle->default_format) {
+	case MONO_DEBUG_FORMAT_NONE:
+		g_free (info);
+		return NULL;
 	case MONO_DEBUG_FORMAT_STABS:
 		info->filename = g_strdup_printf ("%s-stabs.s", image->assembly_name);
+		info->objfile = g_strdup_printf ("%s-stabs.o", image->assembly_name);
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2:
 		info->filename = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
+		info->objfile = g_strdup_printf ("%s-dwarf.o", image->assembly_name);
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		info->filename = g_strdup_printf ("%s-debug.o", image->assembly_name);
+		info->objfile = g_strdup_printf ("%s-debug.o", image->assembly_name);
 
 		g_message (G_STRLOC ": %s - %s", image->assembly_name, image->name);
 
@@ -252,6 +259,7 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 				g_warning ("Can't open symbol file `%s', falling back to DWARF 2.",
 					   info->filename);
 				g_free (info->filename);
+				g_free (info->objfile);
 				info->filename = fname;
 				info->format = MONO_DEBUG_FORMAT_DWARF2;
 			} else
@@ -300,10 +308,19 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		mono_debug_open_assembly_dwarf2_plus (info);
 		break;
+	default:
+		g_assert_not_reached ();
 	}
 
 	info->next_idx = 100;
 	handle->info = g_list_prepend (handle->info, info);
+
+	if (info->objfile) {
+		gchar *objfiles = g_strdup_printf ("%s %s", handle->objfiles, info->objfile);
+
+		g_free (handle->objfiles);
+		handle->objfiles = objfiles;
+	}
 
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
 	info->mlines = g_new0 (int, info->nmethods);
@@ -319,6 +336,7 @@ mono_debug_make_symbols (void)
 {
 	GList *tmp;
 	AssemblyDebugInfo* info;
+	char *command;
 
 	if (!mono_debug_handle)
 		return;
@@ -336,8 +354,21 @@ mono_debug_make_symbols (void)
 		case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 			mono_debug_write_assembly_dwarf2_plus (info);
 			break;
+		default:
+			g_assert_not_reached ();
 		}
 	}
+
+	command = g_strdup_printf ("ld -r -o %s.o %s", mono_debug_handle->name,
+				   mono_debug_handle->objfiles);
+
+	g_print ("Creating symbol file %s.o (%s).\n", mono_debug_handle->name, command);
+
+	if (system (command))
+		g_warning ("Can't create symbol file `%s.o' (%s): %s", mono_debug_handle->name,
+			   command, g_strerror (errno));
+
+	g_free (command);
 }
 
 static void
@@ -347,6 +378,7 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 	g_free (info->moffsets);
 	g_free (info->name);
 	g_free (info->filename);
+	g_free (info->objfile);
 	g_ptr_array_free (info->source_files, TRUE);
 	g_hash_table_destroy (info->type_hash);
 	g_hash_table_destroy (info->methods);
@@ -375,11 +407,14 @@ mono_debug_close (MonoDebugHandle* debug)
 		case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 			mono_debug_close_assembly_dwarf2_plus (info);
 			break;
+		default:
+			g_assert_not_reached ();
 		}
 
 		mono_debug_close_assembly (info);
 	}
 
+	g_free (debug->objfiles);
 	g_free (debug->name);
 	g_free (debug);
 }

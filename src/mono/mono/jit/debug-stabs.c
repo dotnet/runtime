@@ -207,7 +207,7 @@ mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
 	info->f = NULL;
 
 	/* yes, it's completely unsafe */
-	buf = g_strdup_printf ("as %s -o /tmp/%s.o", info->filename, info->name);
+	buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
 	system (buf);
 	g_free (buf);
 }

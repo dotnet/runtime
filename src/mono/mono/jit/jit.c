@@ -220,6 +220,7 @@ int mono_worker_threads = 1;
 /* TLS id to store jit data */
 guint32  mono_jit_tls_id;
 
+MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 MonoDebugHandle *mono_debug_handle = NULL;
 GList *mono_debug_methods = NULL;
 
