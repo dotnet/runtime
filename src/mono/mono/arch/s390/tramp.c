@@ -796,7 +796,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_create_method_pointer			    */
+/* Name		- mono_arch_create_method_pointer			    */
 /*                                                                  */
 /* Function	- Returns a pointer to a native function that can   */
 /* 		  be used to call the specified method. 	    */
@@ -811,7 +811,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 /*								    */
 /* Logic:							    */
 /* ------							    */
-/*  mono_create_method_pointer (MonoMethod *method)  		    */
+/*  mono_arch_create_method_pointer (MonoMethod *method)  		    */
 /*	create the unmanaged->managed wrapper		 	    */
 /*	register it with mono_jit_info_table_add()		    */
 /*								    */
@@ -848,7 +848,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 /*------------------------------------------------------------------*/
 
 void *
-mono_create_method_pointer (MonoMethod *method)
+mono_arch_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;

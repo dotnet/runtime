@@ -698,7 +698,7 @@ emit_call_and_store_retval (guint32 *p, MonoMethodSignature *sig,
 }
 
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	guint32 *p, *code_buffer;
 	guint stack_size, code_size, i;
@@ -744,7 +744,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 #define MINV_POS (MINIMAL_STACK_SIZE * SLOT_SIZE + BIAS)
 
 void *
-mono_create_method_pointer (MonoMethod *method)
+mono_arch_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
@@ -754,16 +754,6 @@ mono_create_method_pointer (MonoMethod *method)
 	guint32 *p, *code_buffer;
 	gint *vtbuf;
 	gint32 simpletype;
-
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
-		ji = g_new0 (MonoJitInfo, 1);
-		ji->method = method;
-		ji->code_size = 1;
-		ji->code_start = method->addr;
-
-		mono_jit_info_table_add (mono_root_domain, ji);
-		return method->addr;
-	}
 
 	code_size = 1024; /* these should be calculated... */
 	stack_size = 1024;

@@ -213,7 +213,7 @@ static void calculate_size(MonoMethodSignature *sig, int * INSTRUCTIONS, int * S
 }
 
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	unsigned char *p;
 	unsigned char *buffer;
@@ -352,7 +352,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 }
 
 void *
-mono_create_method_pointer (MonoMethod *method)
+mono_arch_create_method_pointer (MonoMethod *method)
 {
 	g_error ("Unsupported arch");
 	return NULL;

@@ -32,7 +32,7 @@
 #define ARG_SIZE	sizeof (stackval)
 
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	unsigned char *p, *code_buffer;
 	guint32 stack_size = 0, code_size = 50;
@@ -339,7 +339,7 @@ enum_marshal:
  * across the managed/unmanaged boundary.
  */
 void *
-mono_create_method_pointer (MonoMethod *method)
+mono_arch_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
@@ -348,20 +348,6 @@ mono_create_method_pointer (MonoMethod *method)
 	gint32 stackval_pos, arg_pos = 8;
 	int i, size, align, cpos;
 	int *vtbuf;
-
-	/*
-	 * If it is a static P/Invoke method, we can just return the pointer
-	 * to the method implementation.
-	 */
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
-		ji = g_new0 (MonoJitInfo, 1);
-		ji->method = method;
-		ji->code_size = 1;
-		ji->code_start = method->addr;
-
-		mono_jit_info_table_add (mono_root_domain, ji);
-		return method->addr;
-	}
 
 	sig = method->signature;
 

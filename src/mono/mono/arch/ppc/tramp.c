@@ -591,7 +591,7 @@ emit_epilog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 }
 
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	guint8 *p, *code_buffer;
 	guint stack_size, code_size;
@@ -650,7 +650,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
  * across the managed/unmanaged boundary.
  */
 void *
-mono_create_method_pointer (MonoMethod *method)
+mono_arch_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
@@ -659,20 +659,6 @@ mono_create_method_pointer (MonoMethod *method)
 		this_flag, cpos, vt_cur;
 	gint *vtbuf;
 	guint32 simpletype;
-
-	/*
-	 * If it is a static P/Invoke method, we can just return the pointer
-	 * to the method implementation.
-	 */
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
-		ji = g_new0 (MonoJitInfo, 1);
-		ji->method = method;
-		ji->code_size = 1;
-		ji->code_start = method->addr;
-
-		mono_jit_info_table_add (mono_root_domain, ji);
-		return method->addr;
-	}
 
 	code_size = 1024;
 	stack_size = 1024;

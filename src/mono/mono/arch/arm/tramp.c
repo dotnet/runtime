@@ -97,7 +97,7 @@ void* alloc_code_buff (int num_instr)
 /*
  * Refer to ARM Procedure Call Standard (APCS) for more info.
  */
-MonoPIFunc mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+MonoPIFunc mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	MonoType* param;
 	MonoPIFunc code_buff;
@@ -435,7 +435,7 @@ enum_retvalue:
  * Still need to figure out how to handle the exception stuff
  * across the managed/unmanaged boundary.
  */
-void* mono_create_method_pointer (MonoMethod* method)
+void* mono_arch_create_method_pointer (MonoMethod* method)
 {
 	MonoMethodSignature* sig;
 	guchar* p, * p_method, * p_stackval_from_data, * p_exec;
@@ -443,20 +443,6 @@ void* mono_create_method_pointer (MonoMethod* method)
 	int i, stack_size, arg_pos, arg_add, stackval_pos, offs;
 	int areg, reg_args, shift, pos;
 	MonoJitInfo *ji;
-
-	/*
-	 * If it is a static P/Invoke method just
-	 * just return the pointer to the implementation
-	 */
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
-		ji = g_new0(MonoJitInfo, 1);
-		ji->method = method;
-		ji->code_size = 1;
-		ji->code_start = method->addr;
-
-		mono_jit_info_table_add(mono_root_domain, ji);
-		return method->addr;
-	}
 
 	code_buff = alloc_code_buff(128);
 	p = (guchar*)code_buff;

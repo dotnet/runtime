@@ -295,7 +295,7 @@ static void flush_cache(void *address, int length)
  */
 
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	int pc, save_pc;
 	int param;
@@ -677,7 +677,7 @@ generate:
 }
 
 void *
-mono_create_method_pointer (MonoMethod *method)
+mono_arch_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig = method->signature;
 	MonoJitInfo *ji;
@@ -704,20 +704,6 @@ mono_create_method_pointer (MonoMethod *method)
 		fprintf(stderr, "ret %d\n", sig->ret->type);
 		for (i = 0; i < sig->param_count; i++)
 			fprintf(stderr, "%d: %d\n", i, sig->params[i]->type);
-	}
-
-	/*
-	 * If it is a static P/Invoke method, we can just return the pointer
-	 * to the method implementation.
-	 */
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
-		ji = g_new0 (MonoJitInfo, 1);
-		ji->method = method;
-		ji->code_size = 1;
-		ji->code_start = method->addr;
-
-		mono_jit_info_table_add (mono_root_domain, ji);
-		return method->addr;
 	}
 
 	// the extra stackval is for the return val if necessary
