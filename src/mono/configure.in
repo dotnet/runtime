@@ -67,7 +67,60 @@ case "$host" in
 		libdl=
 		libgc_threads=no
 		;;
-	*-*-*freebsd*|*-*-*openbsd*)
+# these flags will work for all versions of -STABLE
+#
+	*-*-*freebsd4)
+		platform_win32=no
+		if test "x$PTHREAD_CFLAGS" = "x"; then
+			CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS"
+			libmono_cflags="-D_THREAD_SAFE"
+		else
+			CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags="$PTHREAD_CFLAGS"
+		fi
+		if test "x$PTHREAD_LIBS" = "x"; then
+			LDFLAGS="$LDFLAGS -pthread"
+			libmono_ldflags="-pthread"
+		else
+			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
+			libmono_ldflags="$PTHREAD_LIBS"
+		fi
+		need_link_unlink=yes
+		AC_DEFINE(PTHREAD_POINTER_ID)
+		libdl=
+		libgc_threads=pthreads
+# TLS isn't implemented at all on -STABLE
+		with_nptl=no
+		;;
+# older versions of -CURRENT will break with these flags but testing
+# indicates these older versions won't run Mono anyway
+#
+	*-*-*freebsd5)
+		platform_win32=no
+		if test "x$PTHREAD_CFLAGS" = "x"; then
+			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags=
+		else
+			CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags="$PTHREAD_CFLAGS"
+		fi
+		if test "x$PTHREAD_LIBS" = "x"; then
+			LDFLAGS="$LDFLAGS -lpthread"
+			libmono_ldflags="-lpthread"
+		else
+			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
+			libmono_ldflags="$PTHREAD_LIBS"
+		fi
+		need_link_unlink=yes
+		AC_DEFINE(PTHREAD_POINTER_ID)
+		libdl=
+		libgc_threads=pthreads
+# TLS is only partially implemented on -CURRENT (compiler support
+# but NOT library support)
+#
+		with_nptl=no
+		;;
+	*-*-*openbsd*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS"
 		libmono_cflags="-D_THREAD_SAFE"

@@ -1,3 +1,8 @@
+2004-07-23  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Changes for FreeBSD thread support by John
+	Merryweather Cooper <john_m_cooper@yahoo.com>.
+
 2004-07-15  Jackson Harper  <jackson@ximian.com>
 
 	* man/gacutil.1: MONO_GAC_PREFIX not MONO_GAC_PATH
