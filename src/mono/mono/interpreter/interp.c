@@ -2908,7 +2908,10 @@ array_constructed:
 			g_assert (field);
 			
 			vt = mono_class_vtable (domain, klass);
-			addr = (char*)(vt->data) + field->offset;
+			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
+				addr = (char*)(vt->data) + field->offset;
+			else
+				addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
 
 			if (load_addr) {
 				sp->type = VAL_TP;
@@ -2944,7 +2947,10 @@ array_constructed:
 			g_assert (field);
 
 			vt = mono_class_vtable (domain, klass);
-			addr = (char*)(vt->data) + field->offset;
+			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
+				addr = (char*)(vt->data) + field->offset;
+			else
+				addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
 
 			stackval_to_data (field->type, sp, addr, FALSE);
 			vt_free (sp);
