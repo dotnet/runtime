@@ -1158,8 +1158,9 @@ stat_prof_report (void)
 	char *mn;
 	gpointer ip;
 	GList *tmp, *sorted = NULL;
+	int pcount = ++ prof_counts;
 
-	prof_counts ++;
+	prof_counts = MAX_PROF_SAMPLES;
 	for (i = 0; i < count; ++i) {
 		ip = prof_addresses [i];
 		ji = mono_jit_info_table_find (mono_domain_get (), ip);
@@ -1202,7 +1203,7 @@ stat_prof_report (void)
 		if (c > 1)
 			g_free (mn);
 	}
-	g_print ("prof counts: total/unmanaged: %d/%d\n", prof_counts, prof_ucounts);
+	g_print ("prof counts: total/unmanaged: %d/%d\n", pcount, prof_ucounts);
 	g_hash_table_foreach (prof_table, (GHFunc)prof_foreach, &sorted);
 	for (tmp = sorted; tmp; tmp = tmp->next) {
 		double perc;
@@ -1252,6 +1253,7 @@ simple_shutdown (MonoProfiler *prof)
 	g_list_free (profile);
 
 	g_free (prof_addresses);
+	prof_addresses = NULL;
 	g_hash_table_destroy (prof_table);
 }
 
