@@ -1,3 +1,7 @@
+2004-12-29  Duncan Mak  <duncan@ximian.com>
+
+	* man/monop.1: Add docs on the new "--search" flag.
+
 2004-12-28  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add header & function checks for MonoPosixHelper.
