@@ -329,7 +329,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 gpointer
 mono_arch_get_rethrow_exception (void)
 {
-	static guint8 start [128];
+	static guint8 start [132];
 	static int inited = 0;
 
 	if (inited)
@@ -380,8 +380,9 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 		ppc_mr (code, ppc_r5, ppc_r3);
 		ppc_load (code, ppc_r3, mono_defaults.corlib);
 		ppc_load (code, ppc_r4, "System");
-		ppc_bl (code, 0);
-		ppc_patch (code - 4, mono_exception_from_name);
+		ppc_load (code, ppc_r0, mono_exception_from_name);
+		ppc_mtctr (code, ppc_r0);
+		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	}
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
@@ -400,8 +401,9 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	ppc_li (code, ppc_r8, rethrow);
 
-	ppc_bl (code, 0);
-	ppc_patch (code - 4, throw_exception);
+	ppc_load (code, ppc_r0, throw_exception);
+	ppc_mtctr (code, ppc_r0);
+	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	/* we should never reach this breakpoint */
 	ppc_break (code);
 	g_assert ((code - start) < size);
@@ -423,7 +425,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [128];
+	static guint8 start [132];
 	static int inited = 0;
 
 	if (inited)
@@ -448,7 +450,7 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [160];
+	static guint8 start [168];
 	static int inited = 0;
 
 	if (inited)
