@@ -1427,6 +1427,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 					} else 
 						*((gpointer *)this + k->fields [i].offset) = val;
 				
+					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
+					*outArgs = out_args;
+
 					g_assert (result);
 					g_free (str);
 					return NULL;
@@ -3220,6 +3223,10 @@ static gconstpointer icall_map [] = {
 	"System.AppDomain::LoadAssembly", ves_icall_System_AppDomain_LoadAssembly,
 	"System.AppDomain::Unload", ves_icall_System_AppDomain_Unload,
 	"System.AppDomain::ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly,
+	"System.AppDomain::InternalSetDomain", ves_icall_System_AppDomain_InternalSetDomain,
+	"System.AppDomain::InternalSetDomainByID", ves_icall_System_AppDomain_InternalSetDomainByID,
+	"System.AppDomain::InternalSetContext", ves_icall_System_AppDomain_InternalSetContext,
+	"System.AppDomain::InternalGetContext", ves_icall_System_AppDomain_InternalGetContext,
 
 	/*
 	 * System.AppDomainSetup
@@ -3604,7 +3611,7 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Runtime.Remoting.Proxies
 	 */	
-	"System.Runtime.Remoting.Proxies.RealProxy::GetTransparentProxy", 
+	"System.Runtime.Remoting.Proxies.RealProxy::InternalGetTransparentProxy", 
 	ves_icall_Remoting_RealProxy_GetTransparentProxy,
 
 	/*

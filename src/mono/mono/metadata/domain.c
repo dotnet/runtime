@@ -4,6 +4,7 @@
  *
  * Author:
  *	Dietmar Maurer (dietmar@ximian.com)
+ *	Patrik Torstensson
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -21,8 +22,11 @@
 #include <mono/metadata/cil-coff.h>
 
 static guint32 appdomain_thread_id = 0;
+static guint32 context_thread_id = 0;
 
 static gint32 appdomain_id_counter = 0;
+
+MonoGHashTable * appdomains_list = NULL;
 
 MonoDomain *mono_root_domain = NULL;
 
@@ -188,6 +192,9 @@ mono_domain_create (void)
 	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
+
+	mono_g_hash_table_insert(appdomains_list, GINT_TO_POINTER(domain->domain_id), domain);
+
 	return domain;
 }
 
@@ -212,6 +219,10 @@ mono_init (const char *filename)
 		g_assert_not_reached ();
 
 	appdomain_thread_id = TlsAlloc ();
+	context_thread_id = TlsAlloc ();
+
+	// FIXME: When should we release this memory?
+	appdomains_list = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
@@ -478,6 +489,8 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 		return;
 	}
 
+	mono_g_hash_table_remove(appdomains_list, GINT_TO_POINTER(domain->domain_id));
+	
 	g_free (domain->friendly_name);
 	g_hash_table_foreach (domain->assemblies, remove_assembly, NULL);
 
@@ -493,7 +506,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	mono_mempool_destroy (domain->code_mp);
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;
-	
+
 	/* FIXME: anything else required ? */
 
 #if HAVE_BOEHM_GC
@@ -505,3 +518,30 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 		mono_root_domain = NULL;
 }
 
+/**
+ * mono_domain_get_id:
+ *
+ * Returns the a domain for a specific domain id.
+ */
+MonoDomain * 
+mono_domain_get_by_id (gint32 domainid) 
+{
+	MonoDomain * domain;
+
+	if ((domain = mono_g_hash_table_lookup(appdomains_list, GINT_TO_POINTER(domainid)))) 
+		return domain;
+
+	return NULL;
+}
+
+void 
+mono_context_set (MonoAppContext * new_context)
+{
+	TlsSetValue (context_thread_id, new_context);
+}
+
+MonoAppContext * 
+mono_context_get ()
+{
+	return ((MonoAppContext *)TlsGetValue (context_thread_id));
+}

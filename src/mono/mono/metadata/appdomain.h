@@ -94,6 +94,12 @@ struct _MonoAppDomain {
 	MonoDomain *data;
 };
 
+typedef struct {
+	MonoObject obj;
+	gint32 domain_id;
+	gint32 context_id;
+} MonoAppContext;
+
 extern MonoDomain *mono_root_domain;
 
 extern HANDLE mono_delegate_semaphore;
@@ -117,6 +123,9 @@ mono_domain_create         (void);
 
 inline MonoDomain *
 mono_domain_get            (void);
+
+inline MonoDomain *
+mono_domain_get_by_id      (gint32 domainid);
 
 inline void
 mono_domain_set            (MonoDomain *domain);
@@ -183,5 +192,23 @@ ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad,
 						    MonoString    *file, 
 						    MonoObject    *evidence,
 						    MonoArray     *args);
+
+inline void 
+mono_context_set				   (MonoAppContext *new_context);
+
+inline MonoAppContext * 
+mono_context_get				   ();
+
+MonoAppDomain * 
+ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
+
+MonoAppDomain * 
+ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
+
+MonoAppContext * 
+ves_icall_System_AppDomain_InternalGetContext      ();
+
+MonoAppContext * 
+ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
 
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */
