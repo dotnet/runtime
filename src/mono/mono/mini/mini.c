@@ -7296,6 +7296,9 @@ mini_init (const char *filename)
 
 	create_helper_signature ();
 
+	/* Needs to be called here since register_jit_icall depends on it */
+	mono_marshal_init ();
+
 	mono_arch_register_lowlevel_calls ();
 	mono_register_jit_icall (mono_profiler_method_enter, "mono_profiler_method_enter", NULL, TRUE);
 	mono_register_jit_icall (mono_profiler_method_leave, "mono_profiler_method_leave", NULL, TRUE);
