@@ -48,15 +48,6 @@ dump_header_data (MonoImage *img)
 }
 
 static void
-dump_cattrs (MonoImage *m, guint32 token, const char *indent)
-{
-	GList *list;
-
-	list = dis_get_custom_attrs (m, token);
-	dump_cattrs_list (list, indent);
-}
-
-static void
 dump_cattrs_list (GList *list,  const char *indent)
 {
 	GList *tmp;
@@ -68,6 +59,14 @@ dump_cattrs_list (GList *list,  const char *indent)
 	g_list_free (list);
 }
 
+static void
+dump_cattrs (MonoImage *m, guint32 token, const char *indent)
+{
+	GList *list;
+
+	list = dis_get_custom_attrs (m, token);
+	dump_cattrs_list (list, indent);
+}
 
 static void
 dis_directive_assembly (MonoImage *m)
@@ -607,7 +606,7 @@ dump_cattrs_for_method_params (MonoImage *m, guint32 midx, MonoMethodSignature *
 		} else {
 			fprintf (output, "\t.param [%d] = ", param_cols[MONO_PARAM_SEQUENCE]);
 		  
-			if(crow = mono_metadata_get_constant_index(m, MONO_TOKEN_PARAM_DEF | i, 0)) {
+			if ((crow = mono_metadata_get_constant_index(m, MONO_TOKEN_PARAM_DEF | i, 0))) {
 				guint32 const_cols [MONO_CONSTANT_SIZE];
 				mono_metadata_decode_row( &m->tables[MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
 				lit = get_constant(m, const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
@@ -1233,8 +1232,8 @@ struct {
 	{ "--typespec",    MONO_TABLE_TYPESPEC,     	dump_table_typespec },
 	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
 	{ "--standalonesig", MONO_TABLE_STANDALONESIG,  dump_table_standalonesig },
-	{ "--blob",	   NULL,			dump_stream_blob },
-	{ NULL, -1 }
+	{ "--blob",	   0,			dump_stream_blob },
+	{ NULL, -1, }
 };
 
 /**
