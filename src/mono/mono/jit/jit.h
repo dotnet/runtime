@@ -7,6 +7,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mempool.h>
+#include <mono/io-layer/critical-sections.h>
 
 #include "regset.h"
 
@@ -149,8 +150,9 @@ extern gboolean mono_jit_trace_calls;
 extern gboolean mono_jit_share_code;
 extern MonoJitInfoTable *mono_jit_info_table;
 extern gpointer mono_end_of_stack;
-
 extern guint32  lmf_thread_id;
+
+extern WapiCriticalSection *metadata_section;
 
 MonoJitInfoTable *
 mono_jit_info_table_new    (void);

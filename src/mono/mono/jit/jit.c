@@ -206,6 +206,8 @@ guint32 lmf_thread_id = 0;
 
 MonoJitStats mono_jit_stats;
 
+WapiCriticalSection *metadata_section = NULL;
+
 /* 
  * We sometimes need static data, for example the forest generator need it to
  * store constants or class data.
@@ -3301,6 +3303,7 @@ main (int argc, char *argv [])
 	char *file;
 	gboolean testjit = FALSE;
 	int stack, verbose = FALSE;
+	WapiCriticalSection ms;
 
 	mono_end_of_stack = &stack; /* a pointer to a local variable is always < BP */
 
@@ -3371,6 +3374,9 @@ main (int argc, char *argv [])
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
 	mono_add_internal_call ("__array_Address", ves_array_element_address);
+
+	metadata_section = &ms;
+	InitializeCriticalSection (metadata_section);
 
 	mono_jit_info_table = mono_jit_info_table_new ();
 
@@ -3474,6 +3480,8 @@ main (int argc, char *argv [])
 		g_print ("Code reallocs:          %ld\n", mono_jit_stats.code_reallocs);
 		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
 	}
+
+	DeleteCriticalSection (metadata_section);
 
 	return retval;
 }

@@ -877,6 +877,8 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
+	EnterCriticalSection (metadata_section);
+
 	if (mono_jit_share_code)
 		jit_code_hash = mono_root_domain->jit_code_hash;
 	else
@@ -884,6 +886,7 @@ arch_compile_method (MonoMethod *method)
 
 	if ((addr = g_hash_table_lookup (jit_code_hash, method))) {
 		mono_jit_stats.methods_lookups++;
+		LeaveCriticalSection (metadata_section);
 		return addr;
 	}
 
@@ -1005,8 +1008,10 @@ arch_compile_method (MonoMethod *method)
 			g_assert ((code - (guint8*)addr) < (64 + arg_size));
 
 		} else {
-			if (mono_debug_handle)
+			if (mono_debug_handle) {
+				LeaveCriticalSection (metadata_section);
 				return NULL;
+			}
 			g_error ("Don't know how to exec runtime method %s.%s::%s", 
 				 method->klass->name_space, method->klass->name, method->name);
 		}
@@ -1019,13 +1024,15 @@ arch_compile_method (MonoMethod *method)
 		cfg = mono_cfg_new (method, mp);
 
 		mono_analyze_flow (cfg);
-		if (cfg->invalid)
+		if (cfg->invalid) {
+			LeaveCriticalSection (metadata_section);
 			return NULL;
-
+		}
 		mono_analyze_stack (cfg);
-		if (cfg->invalid)
+		if (cfg->invalid) {
+			LeaveCriticalSection (metadata_section);
 			return NULL;
-	
+		}
 		cfg->rs = mono_regset_new (X86_NREG);
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
@@ -1048,9 +1055,10 @@ arch_compile_method (MonoMethod *method)
 		}
 	
 		mono_label_cfg (cfg);
-		if (cfg->invalid)
+		if (cfg->invalid) {
+			LeaveCriticalSection (metadata_section);
 			return NULL;
-
+		}
 		arch_allocate_regs (cfg);
 
 		/* align to 8 byte boundary */
@@ -1137,6 +1145,7 @@ arch_compile_method (MonoMethod *method)
 
 	g_hash_table_insert (jit_code_hash, method, addr);
 
+	LeaveCriticalSection (metadata_section);
 	return addr;
 }
 
