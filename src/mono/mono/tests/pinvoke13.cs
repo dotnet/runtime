@@ -38,13 +38,13 @@ public class Tests
 		res = NameManglingAnsi ("ABC");
 		if (res != 198)
 			return 1;
-		res = NameManglingAnsi ("ABC");
+		res = NameManglingAnsi2 ("ABC");
 		if (res != 198)
 			return 2;
 		res = NameManglingUnicode ("ABC");
 		if (res != 198)
 			return 3;
-		res = NameManglingUnicode ("ABC");
+		res = NameManglingUnicode2 ("ABC");
 		if (res != 198)
 			return 4;
 
