@@ -104,6 +104,10 @@
 	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003500.html">
 	Thinking in C#</a>.  The book is Mono-friendly.
 
+	Another book that covers mono (available in German only) is <a
+	href="http://www.databecker.de/frames.php?PHPSESSD=4948515556575049525459495248485949485348&PHPSESSID=6cc68dbcfbcbacd7b82a984b0700d5d6&t=2">
+	here</a>.
+
 	Dan Morgan has implemented a DataGrid widget for Gtk#, you can
 	see Windows screenshots for it <a
 	href="images/GtkSharpDataGridScreenshot.png">here</a> and <a
