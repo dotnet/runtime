@@ -2236,6 +2236,15 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 		if (!strcmp (m->name, "FieldGetter")) {
 			MonoClass *k = this->vtable->klass;
+			
+			/* If this is a proxy, then it must be a CBO */
+			if (k == mono_defaults.transparent_proxy_class) {
+				MonoTransparentProxy *tp = (MonoTransparentProxy*) this;
+				this = tp->rp->unwrapped_server;
+				g_assert (this);
+				k = this->vtable->klass;
+			}
+			
 			MonoString *name = mono_array_get (params, MonoString *, 1);
 			char *str;
 
@@ -2268,6 +2277,15 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 		} else if (!strcmp (m->name, "FieldSetter")) {
 			MonoClass *k = this->vtable->klass;
+			
+			/* If this is a proxy, then it must be a CBO */
+			if (k == mono_defaults.transparent_proxy_class) {
+				MonoTransparentProxy *tp = (MonoTransparentProxy*) this;
+				this = tp->rp->unwrapped_server;
+				g_assert (this);
+				k = this->vtable->klass;
+			}
+			
 			MonoString *name = mono_array_get (params, MonoString *, 1);
 			int size, align;
 			char *str;
@@ -2311,9 +2329,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 	out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
 	
-	/* fixme: handle constructors? */
+	/* handle constructors only for objects already allocated */
 	if (!strcmp (method->method->name, ".ctor"))
-		g_assert_not_reached ();
+		g_assert (this);
 
 	/* This can be called only on MBR objects, so no need to unbox for valuetypes. */
 	g_assert (!method->method->klass->valuetype);
