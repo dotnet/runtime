@@ -3271,8 +3271,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alloc_size -= pos;
 
-	if (alloc_size)
+	if (alloc_size) {
+		/* See mono_emit_stack_alloc */
+#ifdef PLATFORM_WIN32
+		guint32 remaining_size = alloc_size;
+		while (remaining_size >= 0x1000) {
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x1000);
+			x86_test_membase_reg (code, X86_ESP, 0, X86_ESP);
+			remaining_size -= 0x1000;
+		}
+		if (remaining_size)
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, remaining_size);
+#else
 		x86_alu_reg_imm (code, X86_SUB, X86_ESP, alloc_size);
+#endif
+	}
 
         /* compute max_offset in order to use short forward jumps */
 	max_offset = 0;
