@@ -745,6 +745,7 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 {
 	const char *name = frame->method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
+	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)frame->obj;
 	MonoInvocation call;
 	MonoMethod *nm;
 
@@ -757,10 +758,26 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 			return;
 		}
 		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			nm = mono_marshal_get_delegate_invoke (frame->method);
-			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
-			ves_exec_method_with_context (&call, context);
-			frame->ex = call.ex;
+			guchar *code;
+			MonoJitInfo *ji;
+			MonoMethod *method;
+		
+			while (delegate) {
+
+				code = (guchar*)delegate->delegate.method_ptr;
+				if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
+					method = ji->method;
+					INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
+					ves_exec_method_with_context (&call, context);
+					frame->ex = call.ex;
+					if (frame->ex)
+						return;
+				} else {
+					g_assert_not_reached ();
+				}
+
+				delegate = delegate->prev;
+			}
 			return;
 		}
 		if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
