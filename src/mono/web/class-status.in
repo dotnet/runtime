@@ -15,6 +15,12 @@
 
 * List of not-implemented classes
 
-	This tree shows the hierarchy of classes in the CORLIB assembly
-	that are either <i>missing</i> from the Mono project, or
-	are not yet fully completed (<i>TODO</i>).
+	Pick from the list of assemblies in the menu on the left to
+	view the current status of that assembly.
+
+	The tree shows items that are either missing or that have TODO
+	attributes associated with them.
+	You can use the checkboxes to show only missing or only TODO items.
+
+	Clicking on a name will take you to the <a href="http://msdn.microsoft.com/">MSDN documentation</a> for that item.
+	CTRL-Clicking will take you to the <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?cvsroot=Mono">mono CVS tree</a>.
