@@ -10,7 +10,7 @@ typedef struct {
 	guint32 name_idx; 
 } MonoMethod;
 
-MonoMethod        *mono_get_method    (cli_image_info_t *iinfo, guint32 token);
+MonoMethod        *mono_get_method    (MonoImage *image, guint32 token);
 void               mono_free_method   (MonoMethod *method);
 
 #include <mono/metadata/image.h>

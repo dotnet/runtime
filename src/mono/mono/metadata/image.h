@@ -3,6 +3,11 @@
 
 typedef struct _MonoImage MonoImage;
 
+typedef struct {
+	MonoImage *image;
+	/* Load files here */
+} MonoAssembly;
+
 struct _MonoImage {
 	int   ref_count;
 	FILE *f;
@@ -15,7 +20,7 @@ struct _MonoImage {
 	 *
 	 * It is NULL terminated.
 	 */
-	MonoImage **references;
+	MonoAssembly **references;
 
 	/*
 	 * user_info is a public field and is not touched by the

@@ -25,6 +25,7 @@
 #include "interp.h"
 /* trim excessive headers */
 #include <mono/metadata/image.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/endian.h>
 #include <mono/metadata/typeattr.h>
@@ -111,14 +112,15 @@ static int count = 0;
 #endif
 
 static void
-ves_real_abort (int line, cli_image_info_t *iinfo, MonoMethod *mh,
+ves_real_abort (int line, MonoImage *image, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
 {
+	cli_image_info_t *iinfo = image->image_info;
 	metadata_t *m = &iinfo->cli_metadata;
 	const char *name = mono_metadata_string_heap (m, mh->name_idx);
 		
 	fprintf (stderr, "Execution aborted in method: %s\n", name);
-	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution", line,
+	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
 		 ip-(unsigned char *)mh->header->code);
 	g_print ("0x%04x %02x\n",
 		 ip-(unsigned char*)mh->header->code, *ip);
@@ -127,7 +129,7 @@ ves_real_abort (int line, cli_image_info_t *iinfo, MonoMethod *mh,
 	exit (1);
 }
 
-#define ves_abort() ves_real_abort(__LINE__, iinfo, mh, ip, stack, sp)
+#define ves_abort() ves_real_abort(__LINE__, image, mh, ip, stack, sp)
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -144,7 +146,7 @@ ves_real_abort (int line, cli_image_info_t *iinfo, MonoMethod *mh,
  * -fomit-frame-pointer gives about 2% speedup. 
  */
 static void 
-ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
+ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 {
 	/*
 	 * with alloca we get the expected huge performance gain
@@ -329,7 +331,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			token = read32 (ip);
 			ip += 4;
 			if (!(cmh = g_hash_table_lookup (method_cache, GINT_TO_POINTER (token)))) {
-				cmh = mono_get_method (iinfo, token);
+				cmh = mono_get_method (image, token);
 				g_hash_table_insert (method_cache, GINT_TO_POINTER (token), cmh);
 			}
 
@@ -338,7 +340,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
 
 			/* we need to truncate according to the type of args ... */
-			ves_exec_method (iinfo, cmh, sp);
+			ves_exec_method (image, cmh, sp);
 
 			/* need to handle typedbyref ... */
 			if (cmh->signature->ret->type)
@@ -908,38 +910,52 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 }
 
 static int 
-ves_exec (cli_image_info_t *iinfo)
+ves_exec (MonoAssembly *assembly)
 {
+	MonoImage *image = assembly->image;
+	cli_image_info_t *iinfo;
 	stackval result;
 	MonoMethod *mh;
 
+	iinfo = image->image_info;
+	
 	/* we need to exec the class and object constructors... */
 	method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	mh = mono_get_method (iinfo, iinfo->cli_cli_header.ch_entry_point);
-	ves_exec_method (iinfo, mh, &result);
+	mh = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
+	ves_exec_method (image, mh, &result);
 	fprintf (stderr, "result: %d\n", result.data.i);
 	mono_free_method (mh);
 
 	return 0;
 }
 
+static void
+usage (void)
+{
+	fprintf (stderr, "Usage is: mono-int executable args...");
+	exit (1);
+}
+
 int 
 main (int argc, char *argv [])
 {
-	cli_image_info_t *iinfo;
-	MonoImage *image;
+	MonoAssembly *assembly;
 	int retval = 0;
-	char *file = argv [1];
+	char *file;
 
-	image = mono_image_open (file, NULL);
-	if (!image){
+	if (argc < 2)
+		usage ();
+
+	file = argv [1];
+
+	assembly = mono_assembly_open (file, NULL, NULL);
+	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
 	}
-	iinfo = image->image_info;
-	retval = ves_exec (iinfo);
-	mono_image_close (image);
+	retval = ves_exec (assembly);
+	mono_assembly_close (assembly);
 	printf("count: %d\n", count);
 
 	return retval;

@@ -27,7 +27,7 @@ default_assembly_name_resolver (const char *name)
 	if (strcmp (name, "mscorlib") == 0)
 		return g_strdup (MONO_ASSEMBLIES "/corlib.dll");
 
-	return g_strconcat (MONO_ASSEMBLIES "/", name, NULL);
+	return g_strconcat (MONO_ASSEMBLIES "/", name, ".dll", NULL);
 }
 
 /**
@@ -51,8 +51,21 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	metadata_tableinfo_t *t;
 	cli_image_info_t *iinfo;
 	metadata_t *m;
-	int i;
+	int i, j;
+	const char *basename = strrchr (filename, '/');
+	static MonoAssembly *corlib;
 	
+	if (basename == NULL)
+		basename = filename;
+	else
+		basename++;
+
+	/*
+	 * Temporary hack until we have a complete corlib.dll
+	 */
+	if (strcmp (basename, "corlib.dll") && corlib != NULL)
+		return corlib;
+		
 	g_return_val_if_fail (filename != NULL, NULL);
 
 	image = mono_image_open (filename, status);
@@ -69,12 +82,15 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	m = &iinfo->cli_metadata;
 	t = &m->tables [META_TABLE_ASSEMBLYREF];
 
-	image->references = g_new (MonoImage *, t->rows + 1);
+	image->references = g_new (MonoAssembly *, t->rows + 1);
 
+	ass = g_new (MonoAssembly, 1);
+	ass->image = image;
+	
 	/*
 	 * Load any assemblies this image references
 	 */
-	for (i = 0; i < t->rows; i++){
+	for (i = j = 0; i < t->rows; i++){
 		char *assembly_ref;
 		const char *name;
 		guint32 cols [9];
@@ -82,29 +98,44 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
 		name = mono_metadata_string_heap (m, cols [6]);
 
+		/*
+		 * Special case until we have a passable corlib:
+		 *
+		 * ie, references to mscorlib from corlib.dll are ignored 
+		 * and we do not load corlib twice.
+		 */
+		if (strcmp (basename, "corlib.dll") == 0){
+			if (strcmp (name, "mscorlib") == 0)
+				continue;
+
+			if (corlib == NULL)
+				corlib = ass;
+		}
+		
 		assembly_ref = (*resolver) (name);
+
 		image->references [i] = mono_assembly_open (assembly_ref, resolver, status);
-		g_free (assembly_ref);
 		
 		if (image->references [i] == NULL){
 			int j;
 			
 			for (j = 0; j < i; j++)
-				mono_image_close (image->references [j]);
+				mono_assembly_close (image->references [j]);
 			g_free (image->references);
 			mono_image_close (image);
 
 			g_warning ("Could not find assembly %s %s", name, assembly_ref);
+			g_free (assembly_ref);
 			if (status)
 				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
+			g_free (ass);
 			return NULL;
 		}
+		g_free (assembly_ref);
+		j++;
 	}
-	image->references [i] = NULL;
+	image->references [j] = NULL;
 
-	ass = g_new (MonoAssembly, 1);
-	ass->image = image;
-	
 	return ass;
 }
 

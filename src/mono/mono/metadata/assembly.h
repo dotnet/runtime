@@ -3,11 +3,6 @@
 
 #include <mono/metadata/image.h>
 
-typedef struct {
-	MonoImage *image;
-	/* Load files here */
-} MonoAssembly;
-
 typedef char * (*MonoAssemblyResolverFn)(const char *name);
 
 MonoAssembly *mono_assembly_open     (const char *fname,
