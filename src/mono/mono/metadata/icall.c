@@ -1364,7 +1364,7 @@ handle_parent:
 		}
 		g_free (utf8_name);
 		
-		return mono_field_get_object (domain, klass, field);
+		return (MonoFieldInfo *)mono_field_get_object (domain, klass, field);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
@@ -2491,7 +2491,15 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::WriteInt16", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16,
 	"System.Runtime.InteropServices.Marshal::WriteInt32", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32,
 	"System.Runtime.InteropServices.Marshal::WriteInt64", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64,
-	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
+
+	"System.Runtime.InteropServices.Marshal::PtrToStringAnsi(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi,
+	"System.Runtime.InteropServices.Marshal::PtrToStringAnsi(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len,
+	"System.Runtime.InteropServices.Marshal::PtrToStringAuto(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi,
+	"System.Runtime.InteropServices.Marshal::PtrToStringAuto(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len,
+	"System.Runtime.InteropServices.Marshal::PtrToStringUni(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni,
+	"System.Runtime.InteropServices.Marshal::PtrToStringUni(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len,
+	"System.Runtime.InteropServices.Marshal::PtrToStringBSTR", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR,
+
 	"System.Runtime.InteropServices.Marshal::GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error,
 	"System.Runtime.InteropServices.Marshal::AllocHGlobal", mono_marshal_alloc,
 	"System.Runtime.InteropServices.Marshal::FreeHGlobal", mono_marshal_free,
@@ -2500,7 +2508,8 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged,
 	"System.Runtime.InteropServices.Marshal::SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf,
 	"System.Runtime.InteropServices.Marshal::StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr,
-	"System.Runtime.InteropServices.Marshal::PtrToStructure", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure,
+	"System.Runtime.InteropServices.Marshal::PtrToStructure(intptr,object)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure,
+	"System.Runtime.InteropServices.Marshal::PtrToStructure(intptr,System.Type)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type,
 
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,

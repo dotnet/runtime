@@ -24,7 +24,6 @@ public class Test {
 	
 	public unsafe static int Main () {
 		SimpleStruct ss = new SimpleStruct ();
-		SimpleStruct cp = new SimpleStruct ();
 		int size = Marshal.SizeOf (typeof (SimpleStruct));
 		
 		Console.WriteLine ("SimpleStruct:" + size);
@@ -73,10 +72,8 @@ public class Test {
 		if (Marshal.ReadInt32 (p, 32) == 0)
 			return 1;
 
-		object o = cp;
-		Marshal.PtrToStructure (p, o);
-		cp = (SimpleStruct)o;
-
+		SimpleStruct cp = (SimpleStruct)Marshal.PtrToStructure (p, ss.GetType ());
+		
 		if (cp.a != 1)
 			return 2;
 

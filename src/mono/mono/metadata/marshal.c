@@ -2248,12 +2248,46 @@ ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint3
 	*(gint64*)(p + offset) = val;
 }
 
-MonoString*
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto (gpointer ptr)
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr)
+{
+	return mono_string_new (mono_domain_get (), ptr);
+}
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len)
+{
+	return mono_string_new_len (mono_domain_get (), ptr, len);
+}
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	int len = 0;
+	guint16 *t = ptr;
+
+	while (t++)
+		len++;
+
+	return mono_string_new_utf16 (domain, ptr, len);
+}
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len)
 {
 	MonoDomain *domain = mono_domain_get (); 
 
-	return mono_string_new (domain, (char *)ptr);
+	return mono_string_new_utf16 (domain, ptr, len);
+}
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (gpointer ptr)
+{
+	g_warning ("PtrToStringBSTR not implemented");
+	g_assert_not_reached ();
+
+	return NULL;
 }
 
 guint32 
@@ -2307,4 +2341,21 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 	pa [1] = dst;
 
 	mono_runtime_invoke (method, NULL, pa, NULL);
+}
+
+MonoObject *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoMethod *method;
+	MonoObject *res;
+
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (type);
+
+	res = mono_object_new (domain, mono_class_from_mono_type (type->type));
+
+	ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (src, res);
+
+	return res;
 }

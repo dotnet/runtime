@@ -81,6 +81,9 @@ void
 mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num);
 
 void
+mono_mb_emit_ldloc_addr (MonoMethodBuilder *mb, guint locnum);
+
+void
 mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num);
 
 void
@@ -179,8 +182,20 @@ ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint3
 void
 ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint32 offset, gint64 val);
 
-MonoString*
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto (gpointer ptr);
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr);
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len);
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr);
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len);
+
+MonoString *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (gpointer ptr);
 
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
@@ -193,6 +208,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst);
+
+MonoObject *
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type);
 
 #endif /* __MONO_MARSHAL_H__ */
 
