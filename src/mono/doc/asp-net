@@ -12,11 +12,11 @@
 	programs can be run using the Mono runtime and the XSP page
 	parser.
 
-	Work for Web Services started early this week.  Although we
-	have a SoapFormatter as part of the remoting infrastructure
-	already (contributed by Jesus), most people will be using the
-	ASP.NET Web-services support.  Work for the supporting class
-	libraries just started recently.
+	Tim started work on the Web Services early this week.
+	Although we have a SoapFormatter as part of the remoting
+	infrastructure already (contributed by Jesus), most people
+	will be using the ASP.NET Web-services support.  Work for the
+	supporting class libraries just started recently.
 
 * Web Forms: The pieces
 
