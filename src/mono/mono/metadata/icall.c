@@ -4366,6 +4366,18 @@ ves_icall_Type_make_byref_type (MonoReflectionType *type)
 	return mono_type_get_object (mono_object_domain (type), &klass->this_arg);
 }
 
+static MonoReflectionType *
+ves_icall_Type_MakePointerType (MonoReflectionType *type)
+{
+	MonoClass *pklass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	pklass = mono_ptr_class_get (type->type);
+
+	return mono_type_get_object (mono_object_domain (type), &pklass->byval_arg);
+}
+
 static MonoObject *
 ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
 						   MonoReflectionMethod *info)
@@ -5085,8 +5097,8 @@ ves_icall_System_Text_Encoding_InternalCodePage (gint32 *int_code_page)
 	p = encodings [0];
 	code = 0;
 	for (i = 0; p != 0; ){
-		if ((int) p < 7){
-			code = (int) p;
+		if ((gssize) p < 7){
+			code = (gssize) p;
 			p = encodings [++i];
 			continue;
 		}
@@ -6270,6 +6282,7 @@ static const IcallEntry type_icalls [] = {
 	{"GetTypeCode", ves_icall_type_GetTypeCode},
 	{"IsArrayImpl", ves_icall_Type_IsArrayImpl},
 	{"IsInstanceOfType", ves_icall_type_IsInstanceOfType},
+	{"MakePointerType", ves_icall_Type_MakePointerType},
 	{"get_IsGenericInstance", ves_icall_Type_get_IsGenericInstance},
 	{"get_IsGenericTypeDefinition", ves_icall_Type_get_IsGenericTypeDefinition},
 	{"internal_from_handle", ves_icall_type_from_handle},
@@ -6648,6 +6661,7 @@ mono_create_icall_signature (const char *sigstr)
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
 	res->pinvoke = 1;
+	res->shared = 1;
 
 #ifdef PLATFORM_WIN32
 	/* 
