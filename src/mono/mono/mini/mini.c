@@ -7820,7 +7820,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #else 
 
 	/* fixme: add all optimizations which requires SSA */
-	if ((cfg->opt & (MONO_OPT_DEADCE)) || (cfg->opt & (MONO_OPT_ABCREM))) {
+	if (cfg->opt & (MONO_OPT_DEADCE | MONO_OPT_ABCREM)) {
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
 			mono_local_cprop (cfg);
 			mono_ssa_compute (cfg);
@@ -7850,9 +7850,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		//mono_ssa_strength_reduction (cfg);
 
 		if (cfg->opt & MONO_OPT_ABCREM)
-		{
 			mono_perform_abc_removal (cfg);
-		}
 
 		mono_ssa_remove (cfg);
 
