@@ -122,8 +122,8 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			MonoJitInfo *target_ji = 
 				mono_jit_info_table_find (mono_domain_get (), addr);
 
-			/* m->addr means pinvoke or icall */
-			if (m->addr || mono_method_same_domain (ji, target_ji)) {
+			/* The first part of the condition means an icall without a wrapper */
+			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
 				InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 				/* Tell valgrind to recompile the patched code */
