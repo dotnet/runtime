@@ -77,30 +77,34 @@ AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes")
+gc=none
+build_own_boehm=false
+AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
 
-AC_ARG_WITH(gc, [  --with-gc=boehm,none],
-	if test x$with_gc = "xyes"; then
-		with_gc="boehm"
-	fi
-	if test x$with_gc = "xboehm"; then
-		if test x$found_boehm != "xyes"; then
-			AC_MSG_ERROR(Boehm gc requested but libgc could not be found.)
+case "x$gc" in
+	xboehm|xyes)
+		if test "x$found_boehm" != "xyes"; then
+			build_own_boehm=true
 		fi
-	else
-    		AC_MSG_WARN("Compiling mono without GC.")
-	fi,
-	if test x$found_boehm != "xyes"; then
-    		AC_MSG_WARN("Compiling mono without GC.")
-	else
-		with_gc="none"
-	fi
-)
-if test x$with_gc = "xboehm"; then
-	AC_DEFINE(HAVE_BOEHM_GC)
-	AC_SUBST(HAVE_BOEHM_GC)
-	LIBS="$LIBS -lgc"
-    	AC_MSG_RESULT("Compiling mono with Boehm GC.")
-fi
+		AC_DEFINE(HAVE_BOEHM_GC)
+		AC_SUBST(HAVE_BOEHM_GC)
+		if $build_own; then
+	    		AC_MSG_RESULT("   using included copy")
+			CFLAGS="$CFLAGS -I\$(top_builddir)/libgc"
+			(mkdir libgc >& /dev/null; mkdir libgc/gc >& /dev/null; 
+			cp $srcdir/libgc/include/*.h libgc/gc;
+			true)
+			LIBS="$LIBS -L`pwd`/libgc"
+		else
+			LIBS="$LIBS -lgc"
+		fi
+		;;
+	*)
+		AC_MSG_WARN("Compiling mono without GC.")
+		;;
+esac
+
+AM_CONDITIONAL(USE_INCLUDED_BOEHM, $build_own)
 
 dnl ****************************************
 dnl *** Check if we're building on win32 ***
@@ -476,3 +480,9 @@ scripts/Makefile
 man/Makefile
 doc/Makefile
 ])
+
+echo "
+
+	GC:	$with_gc
+
+"

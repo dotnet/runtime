@@ -1,3 +1,6 @@
+2002-03-17  Miguel de Icaza  <miguel@ximian.com>
+
+	* configure.in: Add support for building the included boehm GC.
 
 Thu Mar 7 17:19:44 CET 2002 Paolo Molaro <lupus@ximian.com>
 
