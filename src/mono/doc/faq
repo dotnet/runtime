@@ -224,8 +224,12 @@ Q: How is this related to GNOME?
 A: In a number of ways:
 
 	* Mono will use existing
-	  components that have been developed for GNOME (Gtk+, Libart,
-	  Gnome-DB and maybe others).
+	  components that have been developed for GNOME when it makes
+	  sense.  For example on X systems, we will use Gtk+ and
+          Libart to implement Winforms and the Drawing2D API.  
+
+	  For database access, we will use LibGDA (not really
+          depending on GNOME, but related to).
 
 	* This project was born out of the need of providing improved
 	  tools for the GNOME community. 
@@ -484,3 +488,21 @@ A: People can already do this by targeting the JVM byte codes (there
    are about 130 compilers for various languages that target the JVM).
 
 
+** Mono and Portability
+
+Q: Will Mono work on other variants of Unix?
+
+A: Yes.  We do not expect to add any gratuitous incompatibilities.
+
+Q: Will Mono run on Windows?
+
+A: Hopefully yes.  Currently some parts of Mono only run on Windows
+   (the C# compiler is a .NET executable) and other parts have only
+   been compiled on Linux, but work on Windows with Cygwin.
+
+Q: Will Mono depend on GNOME?
+
+A: It will depend only if you are using a particular assembly (for
+   example, for doing GUI applications).  If you are just interested
+   in Mono for implementing a `Hello World Enterprise P2P Web
+   Service', you will not need any GNOME component.
