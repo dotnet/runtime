@@ -1711,13 +1711,11 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 static int
 ret_type_to_call_opcode (MonoType *type, int calli, int virt)
 {
-	int t = type->type;
-
 	if (type->byref)
 		return calli? OP_CALL_REG: virt? CEE_CALLVIRT: CEE_CALL;
 
 handle_enum:
-	switch (t) {
+	switch (type->type) {
 	case MONO_TYPE_VOID:
 		return calli? OP_VOIDCALL_REG: virt? OP_VOIDCALLVIRT: OP_VOIDCALL;
 	case MONO_TYPE_I1:
@@ -1747,14 +1745,14 @@ handle_enum:
 		return calli? OP_FCALL_REG: virt? OP_FCALLVIRT: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		} else
 			return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
 	case MONO_TYPE_TYPEDBYREF:
 		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
 	case MONO_TYPE_GENERICINST:
-		t = type->data.generic_inst->generic_type->type;
+		type = type->data.generic_inst->generic_type;
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in ret_type_to_call_opcode", type->type);
@@ -1818,7 +1816,8 @@ handle_loaded_temps (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst **stack,
 static int
 check_call_signature (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args)
 {
-	int i, simple_type;
+	MonoType *simple_type;
+	int i;
 
 	if (sig->hasthis) {
 		if (args [0]->type != STACK_OBJ && args [0]->type != STACK_MP && args [0]->type != STACK_PTR)
@@ -1850,9 +1849,9 @@ check_call_signature (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **arg
 				return 1;
 			continue;
 		}
-		simple_type = sig->params [i]->type;
+		simple_type = sig->params [i];
 handle_enum:
-		switch (simple_type) {
+		switch (simple_type->type) {
 		case MONO_TYPE_VOID:
 			return 1;
 			continue;
@@ -1892,8 +1891,8 @@ handle_enum:
 				return 1;
 			continue;
 		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				simple_type = sig->params [i]->data.klass->enum_basetype->type;
+			if (simple_type->data.klass->enumtype) {
+				simple_type = simple_type->data.klass->enum_basetype;
 				goto handle_enum;
 			}
 			if (args [i]->type != STACK_VTYPE)
@@ -1904,11 +1903,12 @@ handle_enum:
 				return 1;
 			continue;
 		case MONO_TYPE_GENERICINST:
-			simple_type = sig->params [i]->data.generic_inst->generic_type->type;
+			simple_type = sig->params [i]->data.generic_inst->generic_type;
 			goto handle_enum;
 
 		default:
-			g_error ("unknown type 0x%02x in check_call_signature", simple_type);
+			g_error ("unknown type 0x%02x in check_call_signature",
+				 simple_type->type);
 		}
 	}
 	return 0;
