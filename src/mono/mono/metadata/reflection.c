@@ -4872,6 +4872,8 @@ mono_image_load_module (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
 	MonoImage *image;
 	MonoImageOpenStatus status;
 	MonoDynamicAssembly *assembly;
+	guint32 module_count;
+	MonoImage **new_modules;
 	
 	name = mono_string_to_utf8 (fileName);
 
@@ -4890,6 +4892,17 @@ mono_image_load_module (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
 
 	assembly = ab->dynamic_assembly;
 	image->assembly = (MonoAssembly*)assembly;
+
+	module_count = image->assembly->image->module_count;
+	new_modules = g_new0 (MonoImage *, module_count + 1);
+
+	if (image->assembly->image->modules)
+		memcpy (new_modules, image->assembly->image->modules, module_count * sizeof (MonoImage *));
+	new_modules [module_count] = image;
+
+	g_free (image->assembly->image->modules);
+	image->assembly->image->modules = new_modules;
+	image->assembly->image->module_count ++;
 
 	mono_assembly_load_references (image, &status);
 	if (status) {
@@ -5041,7 +5054,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 		int i;
 		g_assert (image->assembly->image->modules);
 		res->token = 0;
-		while (image->assembly->image->modules [i]) {
+		for (i = 0; i < image->assembly->image->module_count; i++) {
 			if (image->assembly->image->modules [i] == image)
 				res->token = mono_metadata_make_token (MONO_TABLE_MODULEREF, i + 1);
 		}

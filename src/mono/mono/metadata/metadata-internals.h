@@ -75,6 +75,7 @@ struct _MonoImage {
 	MonoAssembly **references;
 
 	MonoImage **modules;
+	guint32 module_count;
 
 	MonoImage **files;
 

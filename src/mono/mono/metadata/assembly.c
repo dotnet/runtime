@@ -427,8 +427,7 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 	image->references = g_new0 (MonoAssembly *, t->rows + 1);
 
 	/* resolve assembly references for modules */
-	t = &image->tables [MONO_TABLE_MODULEREF];
-	for (i = 0; i < t->rows; i++){
+	for (i = 0; i < image->module_count; i++){
 		if (image->modules [i]) {
 			image->modules [i]->assembly = image->assembly;
 			mono_assembly_load_references (image->modules [i], status);

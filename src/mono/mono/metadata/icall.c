@@ -3701,14 +3701,10 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 	MonoDomain *domain = mono_domain_get();
 	MonoArray *res;
 	MonoClass *klass;
-	int i, module_count = 0, file_count = 0;
+	int i, file_count = 0;
 	MonoImage **modules = assembly->assembly->image->modules;
+	guint32 module_count = assembly->assembly->image->module_count;
 	MonoTableInfo *table;
-
-	if (modules) {
-		while (modules[module_count])
-			++module_count;
-	}
 
 	table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
 	file_count = table->rows;

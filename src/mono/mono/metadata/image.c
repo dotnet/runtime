@@ -439,6 +439,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 
 	t = &image->tables [MONO_TABLE_MODULEREF];
 	image->modules = g_new0 (MonoImage *, t->rows);
+	image->module_count = t->rows;
 	base_dir = g_path_get_dirname (image->name);
 	for (i = 0; i < t->rows; i++){
 		char *module_ref;
@@ -1224,10 +1225,9 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 	res = mono_image_open (name, NULL);
 	if (res) {
 		int i;
-		t = &res->tables [MONO_TABLE_MODULEREF];
 		/* g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly); */
 		res->assembly = image->assembly;
-		for (i = 0; i < t->rows; ++i) {
+		for (i = 0; i < res->module_count; ++i) {
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
