@@ -69,7 +69,6 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 static gboolean console_write(gpointer handle, gconstpointer buffer,
 			      guint32 numbytes, guint32 *byteswritten,
 			      WapiOverlapped *overlapped);
-static gboolean console_flush(gpointer handle);
 
 /* Console is mostly the same as file, except it can block waiting for
  * input or output
@@ -131,8 +130,7 @@ static struct {
 	{console_getfiletype,
 	 console_read,
 	 console_write,
-	 console_flush,
-	 NULL, NULL, NULL, NULL, NULL},
+	 NULL, NULL, NULL, NULL, NULL, NULL},
 	/* thread */
 	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
 	/* sem */
@@ -1031,45 +1029,6 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
-	}
-	
-	return(TRUE);
-}
-
-static gboolean console_flush(gpointer handle)
-{
-	struct _WapiHandle_file *console_handle;
-	struct _WapiHandlePrivate_file *console_private_handle;
-	gboolean ok;
-	int ret;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
-				(gpointer *)&console_handle,
-				(gpointer *)&console_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up console handle %p", handle);
-		return(FALSE);
-	}
-
-	if(!(console_handle->fileaccess&GENERIC_WRITE) &&
-	   !(console_handle->fileaccess&GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
-#endif
-
-		return(FALSE);
-	}
-
-	ret=fsync(console_private_handle->fd);
-	if (ret==-1) {
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": write of handle %p fd %d error: %s", handle,
-			  console_private_handle->fd, strerror(errno));
-#endif
-
-		return(FALSE);
 	}
 	
 	return(TRUE);
