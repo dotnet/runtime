@@ -296,6 +296,9 @@ mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
 gpointer 
 arch_get_lmf_addr          (void);
 
+char *
+arch_get_reg_name          (int regnum);
+
 /* delegate support functions */
 
 gpointer

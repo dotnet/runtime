@@ -30,6 +30,33 @@
 //#define DEBUG_REGALLOC
 //#define DEBUG_SPILLS
 
+char *
+arch_get_reg_name (int regnum)
+{
+	switch (regnum) {
+	case 0:
+		return "EAX";
+	case 1:
+		return "ECX";
+	case 2:
+		return "EDX";
+	case 3:
+		return "EBX";
+	case 4:
+		return "ESP";
+	case 5:
+		return "EBP";
+	case 6:
+		return "ESI";
+	case 7:
+		return "EDI";
+	}
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+
 /* 
  * we may want a x86-specific header or we 
  * can just declare it extern in x86.brg.

@@ -355,7 +355,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 			offset = -1;
 			/* restore caller saved registers */
-			if (ji->used_regs & X86_ESI_MASK) {
+			if (ji->used_regs & X86_EBX_MASK) {
 				ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
 				offset--;
 			}
@@ -363,7 +363,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 				ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
 				offset--;
 			}
-			if (ji->used_regs & X86_EBX_MASK) {
+			if (ji->used_regs & X86_ESI_MASK) {
 				ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
 			}
 

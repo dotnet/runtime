@@ -495,7 +495,8 @@ mono_print_ctree (MonoFlowGraph *cfg, MBTree *tree)
 		break;
 	case MB_TERM_ADDR_L:
 		if (VARINFO (cfg, tree->data.i).reg >= 0)
-			printf ("[R%d]", tree->data.i);
+			printf ("[%s|%d]", arch_get_reg_name (VARINFO (cfg, tree->data.i).reg), 
+				tree->data.i);
 		else
 			printf ("[%d]", tree->data.i);
 		break;
