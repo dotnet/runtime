@@ -1,6 +1,8 @@
 * Mono Debugger
 
-	<table>
+	Some shots of the <a href="jit-debug.html">Mono Debugger</a>
+
+	<table border=1>
 	  <tr>
 	    <td>
 	      <a href="images/Screenshot-Debugger-1.png"><img src="images/Screenshot-Debugger-1-thumb.png"></a>
@@ -23,7 +25,10 @@
 
 * Mono Documentation Browser
 
-	<table>
+	The Mono Documentation Browser is available from <a
+	href="anoncvs.html">CVS</a>, module `monodoc'.
+
+	<table border=1>
 	  <tr>
 	    <td>
 	      <a href="images/Screenshot-B2.png"><img src="images/Screenshot-B2-thumb.png"></a>
@@ -46,14 +51,47 @@
 
 * Mono Basic
 
-	<table>
+	The Mono Basic compiler ships with the Mono distribution.
+
+	<table border=1>
 	  <tr>
 	    <td>
 	      <a href="images/gtk-vb.png"><img src="images/gtk-vb-thumb.png"></a>
 	    </td>
 	  </tr>
 	  <tr>
-	     
+	     Mono Basic running a sample Gtk# application.
 	  </tr>
 	</table>
+
+* Platano Media Player
+
+	Alp's <a href="http://www.atoker.com/platano/">Platano</a>
+	Media Player is written with Gtk# (with GStreamer support):
+
+	<table border=1>
+	  <tr>
+	    <td>
+	      <img src="images/platano_s.png"></a>
+	    </td>
+	  </tr>
+	  <tr>
+	    Platano startup.
+	  </tr>
+	</table>
+	<table>
+	  <tr>
+	    <td>
+	      <img src="images/platano-playing_s.png">
+	    </td>
+	  </tr>
+	  <tr>
+	    Platano playing the <a
+	    href="http://developer.ximian.com/projects/third_party/codemonkey/index.html">Code
+	    Monkey At Work</a> video.
+	  </tr>
+	</table>
+
+* GSIRC
+
 	
