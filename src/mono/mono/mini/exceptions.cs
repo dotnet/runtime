@@ -1228,7 +1228,6 @@ class Tests {
 		if (failed)
 			return 2;
 		
-
 		try {
 			double d = System.Int64.MinValue - 1024.0;
 			failed = false;			
@@ -1268,6 +1267,12 @@ class Tests {
 		ulong a;
 		bool failed;
 
+		/*
+		 * These tests depend on properties of x86 fp arithmetic so they won't work
+		 * on other platforms.
+		 */
+
+		/*
 		try {
 			double d = System.UInt64.MaxValue - 1024.0;
 			failed = true;
@@ -1291,7 +1296,7 @@ class Tests {
 		}
 		if (failed)
 			return 2;
-		
+		*/	
 
 		try {
 			double d = 0;
@@ -1361,6 +1366,11 @@ class Tests {
 		if ((uint)d != 4294967295)
 			return 1;
 
+		/*
+		 * These tests depend on properties of x86 fp arithmetic so they won't work
+		 * on other platforms.
+		 */
+		/*
 		d = 0xffffffffffffffff;
 
 		if ((ulong)d != 0)
@@ -1371,6 +1381,7 @@ class Tests {
 			
 		if ((byte)d != 0)
 			return 4;
+		*/
 			
 		d = 0xffff;
 
