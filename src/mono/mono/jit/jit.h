@@ -152,6 +152,7 @@ typedef struct {
 	MonoBytecodeInfo *bcinfo;
 	MonoBBlock       *bblocks;
 	int               block_count;
+
 	GArray           *varinfo;
 	gint32            locals_size;
 	gint32            args_size;
@@ -172,12 +173,9 @@ typedef struct {
 	gint             *spillvars; 
 	gint              spillcount;
 	MonoJumpInfo     *jump_info;
-} MonoFlowGraph;
 
-typedef struct {
-	gint16 args_size;
-	gint16 vtype_num;
-} MonoJitCallInfo;
+	guint             frame_size;
+} MonoFlowGraph;
 
 typedef struct {
 	MonoClass *klass;

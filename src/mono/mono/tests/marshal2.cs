@@ -29,6 +29,7 @@ public class Test {
 		public SimpleStruct2 emb1;
 		public SimpleObj emb2;
 		public string s2;
+		public double x;
 	}
 	
 	public unsafe static int Main () {
@@ -36,7 +37,7 @@ public class Test {
 		int size = Marshal.SizeOf (typeof (SimpleStruct));
 		
 		Console.WriteLine ("SimpleStruct:" + size);
-		if (size != 44)
+		if (size != 56)
 			return 1;
 		
 		IntPtr p = Marshal.AllocHGlobal (size);
@@ -55,6 +56,7 @@ public class Test {
 		ss.emb2.a = 10;
 		ss.emb2.b = 11;
 		ss.s2 = "just a test";
+		ss.x = 1.5;
 		
 		Marshal.StructureToPtr (ss, p, false);
 		Type t = ss.GetType ();
@@ -122,6 +124,9 @@ public class Test {
 			return 2;
 
 		if (cp.s2 != "just a test")
+			return 2;
+
+		if (cp.x != 1.5)
 			return 2;
 		
 		return 0;
