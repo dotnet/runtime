@@ -1114,5 +1114,35 @@
 
   </contributor>
   
+  <contributor>
+
+    <name>
+
+      <first-name>Jean-Marc</first-name>
+
+      <last-name>Andre</last-name>
+
+    </name>
+
+    <e-mail>jean-marc.andre@polymtl.ca</e-mail>
+
+    <image>none.png</image>
+
+    <location>Montreal, Canada</location>
+
+    <organization>Ecole Polytechnique de Montreal</organization>
+
+    <description>External Contributor</description>
+
+    <tasks>
+
+      <task>SOAP formatting</task>
+
+      <task>NUnit tests</task>
+
+    </tasks>
+
+  </contributor>
+  
 </contributors>
 
