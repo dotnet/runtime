@@ -15,14 +15,20 @@
 	href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/gdicpp/GDIPlus/GDIPlusReference.asp">"GDI+
 	Flat API"</a>).
 
+	This means that the C# code is the same for Windows and Unix
+	systems.  The following graph explains the situation:
+
 	<center>
 	<img src="images/system-drawing.png">
 	</center>
 
-	In Windows Mono uses the GDI+ library that is included
-	with the operating system, while in Unix we provide an
-	implementation of this API which uses Cairo to do the heavy
-	lifting. 
+	In Windows Mono uses the GDI+ library that is included with
+	the operating system (<tt>GDIPLUS.DLL</tt>, while in Unix we
+	provide an implementation of this API in the
+	<tt>libgdiplus.so</tt> shared library.  Our
+	<tt>libgdiplus.so</tt> has the same C Flat API as the
+	<tt>GDIPLUS.DLL</tt>.  Our implementation usesuses Cairo to do
+	the heavy lifting.
 
 	The implementation of GDI+ lives in mcs/class/System.Drawing
 	in the gdiplus directory and requires <a
