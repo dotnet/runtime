@@ -3,6 +3,16 @@ Fri Nov 12 17:56:26 CET 2004 Paolo Molaro <lupus@ximian.com>
 	* configure.in, mono/mini/Makefile.am: control static
 	linking of the mono binary with a configure option.
 
+2004-11-12  Jonathan Pryor <jonpryor@vt.edu>
+
+	* configure.in: Check for `struct dirent' members which don't
+	  exist across all Unix platforms.
+
+2004-11-08  Jonathan Pryor <jonpryor@vt.edu>
+
+	* configure.in: Add new function/header/type checks for use by
+	  MonoPosixHelper (the support directory).
+
 2004-11-08  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (mcs_topdir, mcs_topdir_from_srcdir): New 'subst'ed
