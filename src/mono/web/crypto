@@ -155,7 +155,7 @@
 		* A RNGCryptoServiceProvider built on top of CryptoAPI.
 
 		* Wrapper classes for unmanaged versions of hash algorithms:
-		  MD2, MD4, MD5 and SHA1 are supported. <b>note<b>: some 
+		  MD2, MD4, MD5 and SHA1 are supported. <b>note</b>: some 
 		  algorithms shouldn't be used in new design (MD4 is broken and
 		  MD2 isn't considered safe). They are included to preserve
 		  interoperability with older applications (e.g. some old, but 
