@@ -736,12 +736,15 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 guint32
 mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
+	MonoInst *ins = cfg->varinfo [vmv->idx];
+
 	if (cfg->method->save_lmf)
 		/* The register is already saved */
-		return 1;
+		/* substract 1 for the invisible store in the prolog */
+		return (ins->opcode == OP_ARG) ? 0 : 1;
 	else
 		/* push+pop */
-		return 2;
+		return (ins->opcode == OP_ARG) ? 1 : 2;
 }
  
 void
