@@ -34,6 +34,9 @@ extern void mono_threads_clear_cached_culture (MonoDomain *domain);
 
 extern MonoThread *mono_thread_current (void);
 
+extern void        mono_thread_set_main (MonoThread *thread);
+extern MonoThread *mono_thread_get_main (void);
+
 extern void mono_thread_stop (MonoThread *thread);
 
 typedef struct {

@@ -1583,6 +1583,9 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		if (thread == mono_thread_current ())
 			return;
 
+		if (thread == mono_thread_get_main ())
+			return;
+
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL)
 			return;

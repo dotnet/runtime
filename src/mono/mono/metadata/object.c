@@ -112,6 +112,27 @@ static GHashTable *blocked_thread_hash;
 /* Main thread */
 static MonoThread *main_thread;
 
+/**
+ * mono_thread_set_main:
+ * @thread: thread to set as the main thread
+ *
+ * This function can be used to instruct the runtime to treat @thread
+ * as the main thread, ie, the thread that would normally execute the Main()
+ * method. This basically means that at the end of @thread, the runtime will
+ * wait for the existing foreground threads to quit and other such details.
+ */
+void
+mono_thread_set_main (MonoThread *thread)
+{
+	main_thread = thread;
+}
+
+MonoThread*
+mono_thread_get_main (void)
+{
+	return main_thread;
+}
+
 void
 mono_type_initialization_init (void)
 {
@@ -1545,7 +1566,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	gchar *utf8_fullpath;
 	int result;
 
-	main_thread = mono_thread_current ();
+	mono_thread_set_main (mono_thread_current ());
 
 	main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 
