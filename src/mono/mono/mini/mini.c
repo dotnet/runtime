@@ -6247,7 +6247,7 @@ print_dfn (MonoCompile *cfg) {
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		bb = cfg->bblocks [i];
-		if (bb->cil_code) {
+		/*if (bb->cil_code) {
 			char* code1, *code2;
 			code1 = mono_disasm_code_one (NULL, cfg->method, bb->cil_code, NULL);
 			if (bb->last_ins->cil_code)
@@ -6259,7 +6259,7 @@ print_dfn (MonoCompile *cfg) {
 			code = g_strdup_printf ("%s -> %s", code1, code2);
 			g_free (code1);
 			g_free (code2);
-		} else
+		} else*/
 			code = g_strdup ("\n");
 		g_print ("\nBB%d DFN%d (len: %d): %s", bb->block_num, i, bb->cil_length, code);
 		if (bb->code) {
