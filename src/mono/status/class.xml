@@ -986,7 +986,7 @@
         <last-activity>Aug-21-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion99</completion>
+        <completion>99</completion>
         <maintainers>
             <maintainer>ndrochak@gol.com</maintainer>
         </maintainers>
