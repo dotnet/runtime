@@ -21,7 +21,7 @@
 #endif
 #endif
 
-#define DEBUG(x)
+#define DEBUG(x) x
 
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
@@ -92,18 +92,15 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 }
 
 static void inline
-calculate_sizes (MonoMethod *method, guint *stack_size, guint *code_size, guint *strings, gint runtime)
+calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size, gboolean string_ctor)
 {
-	MonoMethodSignature *sig;
 	guint i, fr, gr;
 	guint32 simpletype;
 
 	fr = gr = 0;
 	*stack_size = MINIMAL_STACK_SIZE*4;
 	*code_size  = (PROLOG_INS + CALL_INS + EPILOG_INS)*4;
-	*strings = 0;
 
-	sig = method->signature;
 	if (sig->hasthis) {
 		add_general (&gr, stack_size, code_size, TRUE);
 	}
@@ -129,12 +126,11 @@ calculate_sizes (MonoMethod *method, guint *stack_size, guint *code_size, guint 
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
 			add_general (&gr, stack_size, code_size, TRUE);
 			break;
 		case MONO_TYPE_SZARRAY:
 			add_general (&gr, stack_size, code_size, TRUE);
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)
-				break;
 			*code_size += 4;
 			break;
 		case MONO_TYPE_VALUETYPE:
@@ -147,15 +143,6 @@ calculate_sizes (MonoMethod *method, guint *stack_size, guint *code_size, guint 
 					 mono_class_value_size (sig->params [i]->data.klass, NULL));
 			add_general (&gr, stack_size, code_size, TRUE);
 			*code_size += 4;
-			break;
-		case MONO_TYPE_STRING:
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				add_general (&gr, stack_size, code_size, TRUE);
-				break;
-			}
-			(*strings) ++;
-			*code_size += 12*4;
-			*stack_size += 4;
 			break;
 		case MONO_TYPE_I8:
 			add_general (&gr, stack_size, code_size, FALSE);
@@ -174,9 +161,7 @@ calculate_sizes (MonoMethod *method, guint *stack_size, guint *code_size, guint 
 		}
 	}
 
-	if (sig->ret->byref ||
-	    (method->klass == mono_defaults.string_class &&
-	     *method->name == '.' && !strcmp (method->name, ".ctor"))) {
+	if (sig->ret->byref || string_ctor) {
 		*code_size += 8;
 	} else {
 		simpletype = sig->ret->type;
@@ -198,13 +183,8 @@ enum_retvalue:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-			*code_size += 8;
-			break;
 		case MONO_TYPE_STRING:
 			*code_size += 8;
-			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !runtime) {
-				*code_size += 16;
-			}
 			break;
 		case MONO_TYPE_I8:
 			*code_size += 12;
@@ -223,15 +203,6 @@ enum_retvalue:
 		}
 	}
 
-	if (*strings) {
-		/* space to keep parameters and prepared strings */
-		 *stack_size += 8;
-		 *code_size += 16;
-		 if (sig->hasthis) {
-			 *stack_size += 4;
-			 *code_size  += 12;
-		 }
-	}
 	/* align stack size to 16 */
 	DEBUG (printf ("      stack size: %d (%d)\n       code size: %d\n", (*stack_size + 15) & ~15, *stack_size, *code_size));
 	*stack_size = (*stack_size + 15) & ~15;
@@ -239,7 +210,7 @@ enum_retvalue:
 }
 
 static inline guint8 *
-emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
+emit_prolog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 {
 	/* function prolog */
 	ppc_stwu (p, ppc_r1, -stack_size, ppc_r1);     /* sp      <--- sp - stack_size, sp[0] <---- sp save sp, alloc stack */
@@ -248,28 +219,15 @@ emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
 	ppc_stw  (p, ppc_r0, stack_size + 4, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
 	ppc_mr   (p, ppc_r31, ppc_r1);                 /* r31     <--- sp */
 
-	/* handle our parameters */
-	if (strings) {
-		ppc_stw  (p, ppc_r30, stack_size - 16, ppc_r1);
-		ppc_stw  (p, ppc_r29, stack_size - 12, ppc_r1);
-		if (method->signature->hasthis) {
-			ppc_stw  (p, ppc_r28, 24, ppc_r1);
-		}
-		ppc_mr   (p, ppc_r30, ppc_r6);                        /* args */
-		ppc_mr   (p, ppc_r29, ppc_r3);                        /* callme */
-		if (method->signature->hasthis) {
-			ppc_mr   (p, ppc_r28, ppc_r5);                /* this */
-		}
-	} else {
-		ppc_mr   (p, ppc_r12, ppc_r6);                        /* keep "arguments" in register */
-		ppc_mr   (p, ppc_r0, ppc_r3);                         /* keep "callme" in register */
-	}
+	ppc_mr   (p, ppc_r12, ppc_r6);                        /* keep "arguments" in register */
+	ppc_mr   (p, ppc_r0, ppc_r3);                         /* keep "callme" in register */
+
 	ppc_stw  (p, ppc_r4, stack_size - 12, ppc_r31);               /* preserve "retval", sp[+8] */
 
 	return p;
 }
 
-#define ARG_BASE strings ? ppc_r30 : ppc_r12
+#define ARG_BASE ppc_r12
 #define SAVE_4_IN_GENERIC_REGISTER \
 			if (gr < GENERAL_REGS) { \
 				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
@@ -281,31 +239,14 @@ emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
 			}
 
 inline static guint8*
-emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gint runtime)
+emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 {
-	MonoMethodSignature *sig;
 	guint i, fr, gr, act_strs, stack_par_pos;
 	guint32 simpletype;
 
 	fr = gr = 0;
 	act_strs = 0;
-	sig = method->signature;
 	stack_par_pos = 8;
-
-	if (strings) {
-		for (i = 0; i < sig->param_count; ++i) {
-			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING
-			    && !((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)) {
-				ppc_lis  (p, ppc_r0,     (guint32) mono_string_to_utf8 >> 16);
-				ppc_lwz  (p, ppc_r3, i*16, ppc_r30);
-				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) mono_string_to_utf8 & 0xffff);
-				ppc_mtlr (p, ppc_r0);
-				ppc_blrl (p);
-				ppc_stw  (p, ppc_r3, stack_size - 24 - act_strs, ppc_r31);
-				act_strs += 4;
-			}
-		}
-	}
 
 	if (sig->hasthis) {
 		ppc_mr (p, ppc_r3, ppc_r5);
@@ -334,13 +275,11 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_SZARRAY:
 			SAVE_4_IN_GENERIC_REGISTER;
 			break;
-		case MONO_TYPE_SZARRAY:
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				SAVE_4_IN_GENERIC_REGISTER;
-			} else {
-				g_warning ("untested marshaling\n");
+			/* g_warning ("untested marshaling\n");
 				if (gr < GENERAL_REGS) {
 					ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
 					ppc_lwz  (p, ppc_r3 + gr, G_STRUCT_OFFSET (MonoArray, vector), ppc_r3 + gr);
@@ -348,8 +287,7 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 				} else {
 					NOT_IMPLEMENTED ("save marshalled SZARRAY on stack");
 				}
-			}
-			break;
+				break; */
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
@@ -364,18 +302,6 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 				gr ++;
 			} else {
 				NOT_IMPLEMENTED ("save value type on stack");
-			}
-			break;
-		case MONO_TYPE_STRING:
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				SAVE_4_IN_GENERIC_REGISTER;
-			} else {
-				if (gr < 8) {
-					ppc_lwz (p, ppc_r3 + gr, stack_size - 24 - act_strs, ppc_r31);
-					gr ++;
-					act_strs += 4;
-				} else
-					NOT_IMPLEMENTED ("string on stack");
 			}
 			break;
 		case MONO_TYPE_I8:
@@ -439,19 +365,16 @@ mono_string_new_wrapper (const char *text)
 } */
 
 static inline guint8 *
-emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gint runtime)
+emit_call_and_store_retval (guint8 *p, MonoMethodSignature *sig, guint stack_size, gboolean string_ctor)
 {
-	MonoMethodSignature *sig = method->signature;
 	guint32 simpletype;
 
 	/* call "callme" */
-	ppc_mtlr (p, strings ? ppc_r29 : ppc_r0);
+	ppc_mtlr (p, ppc_r0);
 	ppc_blrl (p);
 
 	/* get return value */
-	if (sig->ret->byref ||
-	    (method->klass == mono_defaults.string_class &&
-	     *method->name == '.' && !strcmp (method->name, ".ctor"))) {
+	if (sig->ret->byref || string_ctor) {
 		ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
 		ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
 	} else {
@@ -478,20 +401,9 @@ enum_retvalue:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
-			ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
-			break;
 		case MONO_TYPE_STRING:
-			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !runtime) {
-				ppc_lis  (p, ppc_r0,     (guint32) mono_string_new_wrapper >> 16);
-				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) mono_string_new_wrapper & 0xffff);
-				ppc_mtlr (p, ppc_r0);
-				ppc_blrl (p);
-			}
-
 			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
 			ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
-
 			break;
 		case MONO_TYPE_R4:
 			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
@@ -524,34 +436,8 @@ enum_retvalue:
 }
 
 static inline guint8 *
-emit_epilog (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gboolean runtime)
+emit_epilog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 {
-	if (strings) {
-		MonoMethodSignature *sig = method->signature;
-		guint i, act_strs;
-
-		/* free allocated memory */
-		act_strs = 0;
-		for (i = 0; i < sig->param_count; ++i) {
-			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING
-			    && !((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)) {
-				ppc_lis  (p, ppc_r0,     (guint32) g_free >> 16);
-				ppc_lwz  (p, ppc_r3, stack_size - 24 - act_strs, ppc_r31);
-				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) g_free & 0xffff);
-				ppc_mtlr (p, ppc_r0);
-				ppc_blrl (p);
-				act_strs += 4;
-			}
-		}
-
-		/* restore volatile registers */
-		ppc_lwz  (p, ppc_r30, stack_size - 16, ppc_r1);
-		ppc_lwz  (p, ppc_r29, stack_size - 12, ppc_r1);
-		if (method->signature->hasthis) {
-			ppc_lwz  (p, ppc_r28, 24, ppc_r1);
-		}
-	}
-
 	/* function epilog */
 	ppc_lwz  (p, ppc_r11, 0,  ppc_r1);        /* r11     <--- sp[0]   load backchain from caller's function */
 	ppc_lwz  (p, ppc_r0, 4, ppc_r11);         /* r0      <--- r11[4]  load return address */
@@ -564,19 +450,19 @@ emit_epilog (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gbo
 }
 
 MonoPIFunc
-mono_create_trampoline (MonoMethod *method, int runtime)
+mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	guint8 *p, *code_buffer;
-	guint stack_size, code_size, strings;
+	guint stack_size, code_size;
 
-	DEBUG (printf ("\nPInvoke [start emiting] %s\n", method->name));
-	calculate_sizes (method, &stack_size, &code_size, &strings, runtime);
+	DEBUG (printf ("\nPInvoke [start emiting]\n"));
+	calculate_sizes (sig, &stack_size, &code_size, string_ctor);
 
 	p = code_buffer = alloc_code_memory (code_size);
-	p = emit_prolog (p, method, stack_size, strings);
-	p = emit_save_parameters (p, method, stack_size, strings, runtime);
-	p = emit_call_and_store_retval (p, method, stack_size, strings, runtime);
-	p = emit_epilog (p, method, stack_size, strings, runtime);
+	p = emit_prolog (p, sig, stack_size);
+	p = emit_save_parameters (p, sig, stack_size);
+	p = emit_call_and_store_retval (p, sig, stack_size, string_ctor);
+	p = emit_epilog (p, sig, stack_size);
 
 	/* {
 		guchar *cp;
