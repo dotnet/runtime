@@ -183,9 +183,11 @@ dis_directive_assemblyref (MonoImage *m)
 		return;
 
 	for (i = 0; i < t->rows; i++){
+		char *esc;
+
 		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 
-		char *esc = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
+		esc = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
 		
 		fprintf (output,
 			 ".assembly extern %s\n"
