@@ -5530,6 +5530,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	int dfn = 0, i, code_size_ratio;
 
 	mono_jit_stats.methods_compiled++;
+	if (mono_jit_profile)
+		mono_profiler_method_jit (method);
 
 	cfg = g_new0 (MonoCompile, 1);
 	cfg->method = method;
@@ -5549,6 +5551,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 
 	if ((i = mono_method_to_ir (cfg, method, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0)) < 0) {
 		mono_destroy_compile (cfg);
+		if (mono_jit_profile)
+			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
 		return NULL;
 	}
 
@@ -5725,6 +5729,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 		mono_jit_stats.max_ratio_method = method;
 	}
 	mono_jit_stats.native_code_size += cfg->code_len;
+
+	if (mono_jit_profile)
+		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 
 	return cfg;
 }
@@ -6116,13 +6123,14 @@ void
 mini_cleanup (MonoDomain *domain)
 {
 	/* 
-	 * mono_runtime_cleanup() needs to be called early since
-	 * it needs the execution engine still fully working (it will
-	 * wait for other threads to finish).
+	 * mono_runtime_cleanup() and mono_domain_finalize () need to
+	 * be called early since they need the execution engine still
+	 * fully working (mono_domain_finalize may invoke managed finalizers
+	 * and mono_runtime_cleanup will wait for other threads to finish).
 	 */
-	mono_runtime_cleanup (domain);
-
 	mono_domain_finalize (domain);
+
+	mono_runtime_cleanup (domain);
 
 	mono_profiler_shutdown ();
 

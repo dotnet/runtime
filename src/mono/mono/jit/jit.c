@@ -4272,9 +4272,9 @@ mono_jit_init (const char *file) {
 void
 mono_jit_cleanup (MonoDomain *domain)
 {
-	mono_runtime_cleanup (domain);
-
 	mono_domain_finalize (domain);
+
+	mono_runtime_cleanup (domain);
 
 	mono_debug_cleanup ();
 

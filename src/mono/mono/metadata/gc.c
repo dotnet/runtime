@@ -26,6 +26,11 @@ static int finalize_slot = -1;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
+#if HAVE_BOEHM_GC
+static void finalize_notify (void);
+static HANDLE pending_done_event;
+#endif
+
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
@@ -158,11 +163,15 @@ finalize_static_data (MonoClass *class, MonoVTable *vtable, GHashTable *todo) {
 	finalize_fields (class, vtable->data, FALSE, todo);
 }
 
-static guint32
-internal_domain_finalize (gpointer data) {
-	MonoDomain *domain=(MonoDomain *)data;
+void
+mono_domain_finalize (MonoDomain *domain) 
+{
 	GHashTable *todo = g_hash_table_new (NULL, NULL);
 
+	/* 
+	 * No need to create another thread 'cause the finalizer thread
+	 * is still working and will take care of running the finalizers
+	 */ 
 	mono_thread_new_init (GetCurrentThreadId (), todo, NULL);
 	
 #if HAVE_BOEHM_GC
@@ -173,24 +182,6 @@ internal_domain_finalize (gpointer data) {
 	g_hash_table_destroy (todo);
 
 	return(0);
-}
-
-void
-mono_domain_finalize (MonoDomain *domain) 
-{
-	HANDLE finalize_thread;
-	
-	/* Need to run managed code in a subthread.
-	 * Mono_domain_finalize() is called from the main thread in
-	 * the jit and the embedded example, hence the thread creation
-	 * here.
-	 */
-	finalize_thread=CreateThread (NULL, 0, internal_domain_finalize, domain, 0, NULL);
-	if(finalize_thread==NULL) {
-		g_assert_not_reached ();
-	}
-	WaitForSingleObject (finalize_thread, INFINITE);
-	CloseHandle (finalize_thread);
 }
 
 void
@@ -247,6 +238,18 @@ void
 ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
 	MONO_ARCH_SAVE_REGS;
+	
+#if HAVE_BOEHM_GC
+	if (!GC_should_invoke_finalizers ())
+		return;
+
+	ResetEvent (pending_done_event);
+	finalize_notify ();
+	/* g_print ("Waiting for pending finalizers....\n"); */
+	WaitForSingleObject (pending_done_event, INFINITE);
+	/* g_print ("Done pending....\n"); */
+#else
+#endif
 }
 
 static CRITICAL_SECTION allocator_section;
@@ -433,6 +436,12 @@ static void finalize_notify (void)
 #endif
 
 	SetEvent (finalizer_event);
+	if (finished) {
+		/* Finishing the finalizer thread, so wait a little bit... */
+		/* MS seems to wait for about 2 seconds */
+		ResetEvent (pending_done_event);
+		WaitForSingleObject (pending_done_event, 2000);
+	}
 }
 
 static guint32 finalizer_thread (gpointer unused)
@@ -452,6 +461,7 @@ static guint32 finalizer_thread (gpointer unused)
 #endif
 
 		GC_invoke_finalizers ();
+		SetEvent (pending_done_event);
 	}
 	
 	return(0);
@@ -510,7 +520,8 @@ void mono_gc_init (void)
 		return;
 	
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
-	if (finalizer_event == NULL) {
+	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	if (finalizer_event == NULL || pending_done_event == NULL) {
 		g_assert_not_reached ();
 	}
 
