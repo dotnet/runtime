@@ -438,7 +438,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	MonoGenericContainer *container = NULL;
 	const char *ptr;
 	guint32 cols [MONO_METHODSPEC_SIZE];
-	guint32 token, param_count, i;
+	guint32 token, param_count;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
 	token = cols [MONO_METHODSPEC_METHOD];
@@ -632,7 +632,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
-			mono_g_hash_table_lookup (
+			g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (!method_aux)
 			return NULL;
@@ -1035,7 +1035,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 	if (klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
-			mono_g_hash_table_lookup (
+			g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
 			for (i = 0; i < method->signature->param_count; ++i)
@@ -1109,7 +1109,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 
 	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
-			mono_g_hash_table_lookup (
+			g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_marshall) {
 			MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
@@ -1164,7 +1164,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 
 	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
-			mono_g_hash_table_lookup (
+			g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {

@@ -2171,7 +2171,7 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 														
 	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
-			mono_g_hash_table_lookup (
+			g_hash_table_lookup (
 									  ((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux) {
 			import = method_aux->dllentry;
