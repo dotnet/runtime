@@ -136,7 +136,8 @@ TEST_CS_SRC=			\
 	marshal4.cs		\
 	thread.cs		\
 	thread5.cs		\
-	thread6.cs
+	thread6.cs		\
+	float-pop.cs
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\

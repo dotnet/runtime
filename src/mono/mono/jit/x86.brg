@@ -4357,7 +4357,9 @@ freg: NEG (freg) {
 	x86_fchs (s->code);
 }
 
-stmt: POP (freg)
+stmt: POP (freg) {
+	x86_fstp (s->code, 0);
+}
 
 stmt: STIND_R4 (addr, freg) {
 
