@@ -206,10 +206,12 @@ mono_string_equal (MonoString *s1, MonoString *s2)
 	int l1 = mono_string_length (s1);
 	int l2 = mono_string_length (s2);
 
+	if (s1 == s2)
+		return TRUE;
 	if (l1 != l2)
 		return FALSE;
 
-	return memcmp (mono_string_chars (s1), mono_string_chars (s2), l1) == 0; 
+	return memcmp (mono_string_chars (s1), mono_string_chars (s2), l1 * 2) == 0; 
 }
 
 static guint
