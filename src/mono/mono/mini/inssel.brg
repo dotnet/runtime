@@ -841,6 +841,10 @@ stmt: CEE_THROW (reg) {
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
 }
 
+stmt: OP_RETHROW (reg) {
+	MONO_EMIT_UNALU (s, tree, OP_RETHROW, -1, state->left->reg1);
+}
+
 stmt: OP_THROW_OR_NULL (reg) {
 	MonoInst *object_is_null;
 

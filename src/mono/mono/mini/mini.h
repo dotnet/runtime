@@ -757,6 +757,7 @@ gint      mono_arch_get_opcode_for_method       (MonoCompile *cfg, MonoMethod *c
 void      mono_codegen                          (MonoCompile *cfg);
 const char *mono_arch_regname                   (int reg);
 gpointer  mono_arch_get_throw_exception         (void);
+gpointer  mono_arch_get_rethrow_exception       (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);

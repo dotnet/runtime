@@ -5690,7 +5690,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* FIXME: check we are in a catch handler */
 				NEW_TEMPLOAD (cfg, load, cfg->exvar->inst_c0);
 				load->cil_code = ip;
+#ifdef MONO_ARCH_HAVE_RETHROW
+				MONO_INST_NEW (cfg, ins, OP_RETHROW);
+#else
 				MONO_INST_NEW (cfg, ins, CEE_THROW);
+#endif
 				ins->inst_left = load;
 				ins->cil_code = ip;
 				MONO_ADD_INS (bblock, ins);
@@ -8220,7 +8224,7 @@ sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 	MonoException *exc;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	struct sigcontext *ctx = (struct sigcontext *)&(((ucontext_t*)context)->uc_mcontext);
-		
+
 	/* Can't allocate memory using Boehm GC on altstack */
 	if (jit_tls->stack_size && 
 		((guint8*)info->si_addr >= (guint8*)jit_tls->end_of_stack - jit_tls->stack_size) &&
@@ -8435,6 +8439,9 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
 
 	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);
+#ifdef MONO_ARCH_HAVE_RETHROW
+	mono_register_jit_icall (mono_arch_get_rethrow_exception (), "mono_arch_rethrow_exception", helper_sig_void_obj, TRUE);
+#endif
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
 				 helper_sig_void_ptr, TRUE);
 	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);

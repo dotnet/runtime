@@ -264,7 +264,7 @@ mono_arch_get_call_filter (void)
 static void
 throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 				 guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
-				 guint64 r14, guint64 r15)
+				 guint64 r14, guint64 r15, guint64 rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -286,7 +286,8 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		mono_ex->stack_trace = NULL;
+		if (!rethrow)
+			mono_ex->stack_trace = NULL;
 	}
 	mono_handle_exception (&ctx, exc, (gpointer)(rip + 1), FALSE);
 	restore_context (&ctx);
@@ -294,23 +295,11 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 	g_assert_not_reached ();
 }
 
-/**
- * mono_arch_get_throw_exception:
- *
- * Returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
- *
- */
-gpointer 
-mono_arch_get_throw_exception (void)
+static gpointer
+get_throw_trampoline (gboolean rethrow)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
+	guint8* start;
 	guint8 *code;
-
-	if (inited)
-		return start;
 
 	EnterCriticalSection (&code_manager_mutex);
 	start = code = mono_code_manager_reserve (code_manager, 64);
@@ -329,6 +318,7 @@ mono_arch_get_throw_exception (void)
 	amd64_mov_reg_reg (code, AMD64_R8, AMD64_RBP, 8);
 	amd64_mov_reg_reg (code, AMD64_R9, AMD64_R12, 8);
 	/* reverse order */
+	amd64_push_imm (code, rethrow);
 	amd64_push_reg (code, AMD64_R15);
 	amd64_push_reg (code, AMD64_R14);
 	amd64_push_reg (code, AMD64_R13);
@@ -338,6 +328,44 @@ mono_arch_get_throw_exception (void)
 	amd64_breakpoint (code);
 
 	g_assert ((code - start) < 64);
+
+	return start;
+}
+
+/**
+ * mono_arch_get_throw_exception:
+ *
+ * Returns a function pointer which can be used to raise 
+ * exceptions. The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ *
+ */
+gpointer 
+mono_arch_get_throw_exception (void)
+{
+	static guint8* start;
+	static gboolean inited = FALSE;
+
+	if (inited)
+		return start;
+
+	start = get_throw_trampoline (FALSE);
+
+	inited = TRUE;
+
+	return start;
+}
+
+gpointer 
+mono_arch_get_rethrow_exception (void)
+{
+	static guint8* start;
+	static gboolean inited = FALSE;
+
+	if (inited)
+		return start;
+
+	start = get_throw_trampoline (TRUE);
 
 	inited = TRUE;
 
@@ -565,7 +593,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	mctx.r14 = ctx->uc_mcontext.gregs [REG_R14];
 	mctx.r15 = ctx->uc_mcontext.gregs [REG_R15];
 
-	mono_handle_exception (&mctx, obj, mctx.rip, test_only);
+	mono_handle_exception (&mctx, obj, (gpointer)mctx.rip, test_only);
 
 	ctx->uc_mcontext.gregs [REG_RAX] = mctx.rax;
 	ctx->uc_mcontext.gregs [REG_RBX] = mctx.rbx;

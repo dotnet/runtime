@@ -3847,6 +3847,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					     (gpointer)"mono_arch_throw_exception");
 			break;
 		}
+		case OP_RETHROW: {
+			amd64_mov_reg_reg (code, AMD64_RDI, ins->sreg1, 8);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_arch_rethrow_exception");
+			break;
+		}
 		case OP_CALL_HANDLER: 
 			/* Align stack */
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
