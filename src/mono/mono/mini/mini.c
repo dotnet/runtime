@@ -3112,7 +3112,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, CEE_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
-			cmethod = mono_get_method_full (image, token, generic_context);
+			cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			ins->inst_p0 = cmethod;
 			MONO_ADD_INS (bblock, ins);
 			ip += 5;
@@ -3144,7 +3144,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
 				} else {
-					cmethod = mono_get_method_full (image, token, generic_context);
+					cmethod = mono_get_method_full (image, token, NULL, generic_context);
 				}
 
 				g_assert (cmethod);
@@ -3852,7 +3852,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				cmethod = mono_method_get_wrapper_data (method, token);
 			} else
-				cmethod = mono_get_method_full (image, token, generic_context);
+				cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
@@ -4915,7 +4915,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				if ((ip [5] == CEE_CALL) && (cmethod = mono_get_method_full (image, read32 (ip + 6), generic_context)) &&
+				if ((ip [5] == CEE_CALL) && (cmethod = mono_get_method_full (image, read32 (ip + 6), NULL, generic_context)) &&
 						(cmethod->klass == mono_defaults.monotype_class->parent) &&
 						(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
@@ -5353,7 +5353,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else {
-					cmethod = mono_get_method_full (image, n, generic_context);
+					cmethod = mono_get_method_full (image, n, NULL, generic_context);
 				}
 
 				mono_class_init (cmethod->klass);
@@ -5381,7 +5381,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else
-					cmethod = mono_get_method_full (image, n, generic_context);
+					cmethod = mono_get_method_full (image, n, NULL, generic_context);
 
 				mono_class_init (cmethod->klass);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
