@@ -1163,32 +1163,60 @@ Q: Could patents be used to completely disable Mono (either submarine
    patents filed now, or changes made by Microsoft specifically to
    create patent problems)?
 
-A: No.  First, its basic functional capabilities have pre-existed too
-   long to be held up by patents.  The basic components of Mono are
-   technologically equivalent to Sun's Java technology, which has been
-   around for years.  
+A: First some background information.
 
-   Mono will also implement multi-language and
-   multi-architecture support, but there are previous technologies
-   such as UCSD p-code and ANDF that also support multiple languages
-   using a common intermediate language.  The libraries are similar
-   to other language's libraries, so again, they're too similar to
-   be patentable in large measure.
+   The .NET Framework is divided in two parts: the ECMA/ISO covered
+   technologies and the other technologies developed on top of it like
+   ADO.NET, ASP.NET and Windows.Forms.
 
-   However, if Microsoft does patent some technology, then our plan is
-   to either (1) work around it, (2) chop out patented pieces, (3) 
-   find prior art that would render the patent useless.
+   Mono implements the ECMA/ISO covered parts, as well as being a
+   project that aims to implement the higher level blocks like
+   ASP.NET, ADO.NET and Windows.Forms.  
+
+   The Mono project has gone beyond both of those components and has
+   developed and integrated third party class libraries, the most
+   important being: Debugging APIs, integration with the Gnome
+   platform (Accessibility, Pango rendering, Gdk/Gtk, Glade, GnomeUI),
+   Mozilla, OpenGL, extensive database support (Microsoft only
+   supports a couple of providers out of the box, while Mono has
+   support for 11 different providers), our POSIX integration
+   libraries and finally the embedded API (used to add scripting to
+   applications and host the CLI, or for example as an embedded
+   runtime in Apache). 
+
+   The core of the .NET Framework, and what has been patented by
+   Microsoft falls under the ECMA/ISO submission.  Jim Miller at
+   Microsoft has made a statement on the patents covering ISO/ECMA,
+   (he is one of the inventors listed in the patent): <a
+   href="https://mailserver.di.unipi.it/pipermail/dotnet-sscli/msg00218.html">here</a>.
+
+   Basically a grant is given to anyone who want to implement those
+   components for free and for any purpose.
+
+   The controversial elements are the ASP.NET, ADO.NET and
+   Windows.Forms subsets.  Those are convenient for people who need
+   full compatibility with the Windows platform, but are not required
+   for the open source Mono platform, nor integration with today's
+   Mono's rich support of Linux. 
+
+   The Mono strategy for dealing with these tehcnologies is as
+   follows: (1) work around the patent by using a different
+   implementation techinque that retains the API, but changes the
+   mechanism; if that is not possible, we would (2) remove the pieces
+   of code that were covered by those patents, and also (3) find prior
+   art that would render the patent useless.
  
    Not providing a patented capability would weaken the
    interoperability, but it would still provide the free software /
    open source software community with good development tools, which
    is the primary reason for developing Mono.  
 
-   There is also a statement from Jim Miller at Microsoft, one of the
-   inventors listed in the patent: <a href="https://mailserver.di.unipi.it/pipermail/dotnet-sscli/msg00218.html">here</a>.
+   The patents do not apply in countries where software patents are
+   not allowed.
 
-   For Linux desktop use, we only need the ECMA components, and things that
-   we have developed (like Gtk#).  
+   For Linux server and desktop development, we only need the ECMA
+   components, and things that we have developed (like Gtk#) or Apache
+   integration.  
 
 <a name="etc"></a> 
 ** Miscellaneous Questions
