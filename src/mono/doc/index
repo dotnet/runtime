@@ -102,6 +102,17 @@
   </tr>
 </table>
 
+<b>Upcoming presentations</b>
+
+	Paolo Molaro, core Mono architect and developer will be
+	talking about Mono on Florence on Saturday 22nd, February at
+	the the Italian <a
+	href="http://http://www.it.gnome.org/GUADIC">Guadic</a> Conference.
+
+	Gonzalo Paniagua, core Mono developer (responsible for ASP.NET
+	in Mono) is doing a talk on Thursday in Badajoz, Spain.
+	Details are <a href="http://www.gulex.org/actividades.htm">here</a>
+
 @item Feb 18th, 2003: Volunteers to document Gtk#
 
 	With the availability of a documentation browser, we are
