@@ -838,8 +838,6 @@ reg: REM (reg, reg) {
 	x86_div_reg (s->code, tree->right->reg1, TRUE);
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
 
-		mono_assert_not_reached ();
-
 	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
