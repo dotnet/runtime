@@ -151,6 +151,15 @@
   </tr>
 </table>
 
+@item Jul 4th, 2003: Coverage Analysis
+
+	Zoltan's Coverage analysis tool has been checked into CVS.
+	With this tool it is now possible to find which class library
+	code paths are missing regression tests.  The module is
+	`monocov'.  Details are <a
+	href="http://www.nexus.hu/vargaz/">here</a>
+
+
 @item Jun 26th: Mono 0.25 has been released.
 
 	We have released Mono 0.25.  A list of the new features is
