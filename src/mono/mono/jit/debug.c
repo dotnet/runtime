@@ -180,7 +180,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	debug->dirty = TRUE;
 
 	debug->type_hash = g_hash_table_new (NULL, NULL);
-	debug->source_files = g_ptr_array_new ();
 
 	debug->images = g_hash_table_new_full (NULL, NULL, NULL,
 					       (GDestroyNotify) mono_debug_close_assembly);
@@ -658,9 +657,6 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 	int i;
 
 	g_assert (info->symfile);
-	if (info->symfile->is_dynamic)
-		return;
-
 	g_assert (!minfo->jit->line_numbers);
 	minfo->jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 
@@ -751,9 +747,6 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	info->wrapper_methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 						       NULL, (GDestroyNotify) free_wrapper_info);
 
-	info->source_file = debug->source_files->len;
-	g_ptr_array_add (debug->source_files, g_strdup_printf ("%s.il", image->assembly_name));
-
 	g_hash_table_insert (debug->images, image, info);
 
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
@@ -774,13 +767,11 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 			g_free (dirname);
 		} else
 			info->ilfile = g_strdup_printf ("%s.il", info->name);
+		info->source_file = debug->source_files->len;
+		g_ptr_array_add (debug->source_files, info->ilfile);
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
-		info->filename = replace_suffix (image->name, "dbg");
-		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
-			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
-		else if (running_in_the_mono_debugger)
-			info->symfile = mono_debug_create_mono_symbol_file (info->image);
+		info->symfile = mono_debug_open_mono_symbol_file (info->image, running_in_the_mono_debugger);
 		mono_debugger_symbol_file_table_generation++;
 		break;
 
@@ -875,7 +866,7 @@ mono_debug_cleanup (void)
 		mono_debug_write_symbols (mono_debug_handle);
 
 	g_hash_table_destroy (mono_debug_handle->images);
-	g_ptr_array_free (mono_debug_handle->source_files, TRUE);
+	g_ptr_array_free (mono_debug_handle->source_files, FALSE);
 	g_hash_table_destroy (mono_debug_handle->type_hash);
 	g_free (mono_debug_handle->producer_name);
 	g_free (mono_debug_handle->name);
