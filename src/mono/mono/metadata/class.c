@@ -1723,7 +1723,8 @@ mono_class_from_generic (MonoGenericInst *ginst)
 	MonoClass *class, *gklass, *pklass;
 
 	if (ginst->klass) {
-		mono_class_initialize_generic (ginst, TRUE);
+		if (!ginst->is_dynamic)
+			mono_class_initialize_generic (ginst, TRUE);
 		return ginst->klass;
 	}
 
@@ -1740,7 +1741,17 @@ mono_class_from_generic (MonoGenericInst *ginst)
 
 	class->generic_inst = ginst;
 
+	class->this_arg.type = class->byval_arg.type = MONO_TYPE_GENERICINST;
+	class->this_arg.data.generic_inst = class->byval_arg.data.generic_inst = ginst;
+	class->this_arg.byref = TRUE;
+
 	class->cast_class = class->element_class = class;
+
+	class->instance_size = gklass->instance_size;
+	class->class_size = gklass->class_size;
+	class->size_inited = 1;
+
+	class->valuetype = gklass->valuetype;
 
 	mono_loader_unlock ();
 

@@ -261,6 +261,7 @@ typedef struct {
 
 typedef struct _MonoType MonoType;
 typedef struct _MonoGenericInst MonoGenericInst;
+typedef struct _MonoDynamicGenericInst MonoDynamicGenericInst;
 typedef struct _MonoGenericMethod MonoGenericMethod;
 typedef struct _MonoGenericParam MonoGenericParam;
 typedef struct _MonoArrayType MonoArrayType;

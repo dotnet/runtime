@@ -440,9 +440,7 @@ typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;
 struct _MonoReflectionGenericInst {
 	MonoReflectionType type;
 	MonoReflectionType *generic_type;
-	MonoArray *methods;
-	MonoArray *ctors;
-	MonoArray *fields;
+	guint32 initialized;
 };
 
 typedef struct {
@@ -609,10 +607,8 @@ MonoType*
 mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types);
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
-MonoReflectionMethod*
-mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_type, MonoReflectionGenericInst *reflected_type, MonoObject *obj);
-MonoReflectionField*
-mono_reflection_inflate_field (MonoReflectionGenericInst *declaring_type, MonoReflectionGenericInst *reflected_type, MonoObject *obj);
+void
+mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

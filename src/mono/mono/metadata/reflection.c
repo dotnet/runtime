@@ -6822,6 +6822,8 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 	geninst->type = MONO_TYPE_GENERICINST;
 	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
 
+	ginst->is_dynamic = 1;
+
 	if (pklass && pklass->generic_inst)
 		parent = mono_reflection_bind_generic_parameters (parent, types);
 	else if (!pklass) {
@@ -6935,29 +6937,24 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		mono_object_domain (rmethod), inflated, NULL);
 }
 
-MonoReflectionMethod*
-mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_type,
-					MonoReflectionGenericInst *reflected_type,
-					MonoObject *obj)
+static MonoMethod *
+inflate_method (MonoReflectionGenericInst *type, MonoObject *obj)
 {
-	MonoMethod *method, *inflated, *declaring = NULL;
-	MonoClass *klass, *refclass;
 	MonoGenericMethod *gmethod;
 	MonoGenericInst *ginst;
+	MonoMethod *method;
+	MonoClass *klass;
 
-	MONO_ARCH_SAVE_REGS;
-
-	klass = mono_class_from_mono_type (declaring_type->type.type);
-	refclass = mono_class_from_mono_type (reflected_type->type.type);
-	ginst = declaring_type->type.type->data.generic_inst;
+	klass = mono_class_from_mono_type (type->type.type);
+	ginst = type->type.type->data.generic_inst;
 
 	if (!strcmp (obj->vtable->klass->name, "MethodBuilder"))
-		method = declaring = methodbuilder_to_mono_method (klass, (MonoReflectionMethodBuilder *) obj);
+		method = methodbuilder_to_mono_method (klass, (MonoReflectionMethodBuilder *) obj);
 	else if (!strcmp (obj->vtable->klass->name, "ConstructorBuilder"))
-		method = declaring = ctorbuilder_to_mono_method (klass, (MonoReflectionCtorBuilder *) obj);
+		method = ctorbuilder_to_mono_method (klass, (MonoReflectionCtorBuilder *) obj);
 	else if (!strcmp (obj->vtable->klass->name, "MonoMethod") ||
 		 !strcmp (obj->vtable->klass->name, "MonoCMethod"))
-		method = declaring = ((MonoReflectionMethod *) obj)->method;
+		method = ((MonoReflectionMethod *) obj)->method;
 	else
 		g_assert_not_reached ();
 
@@ -6965,46 +6962,78 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	gmethod->generic_method = method;
 	gmethod->generic_inst = ginst;
 	gmethod->klass = ginst->klass;
-	gmethod->declaring = declaring;
+	gmethod->declaring = method;
 
-	inflated = mono_class_inflate_generic_method (method, gmethod);
-
-	return mono_method_get_object (
-		mono_object_domain (declaring_type), inflated, refclass);
+	return mono_class_inflate_generic_method (method, gmethod);
 }
 
-MonoReflectionField*
-mono_reflection_inflate_field (MonoReflectionGenericInst *declaring_type,
-			       MonoReflectionGenericInst *reflected_type,
-			       MonoObject *obj)
+void
+mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
+					 MonoArray *methods, MonoArray *ctors,
+					 MonoArray *fields)
 {
-	MonoGenericInst *ginst, *type_ginst;
-	MonoClassField *field = NULL, *inflated;
-	MonoClass *klass;
+	MonoGenericInst *ginst;
+	MonoDynamicGenericInst *dginst;
+	MonoClass *klass, *gklass, *pklass;
+	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = mono_class_from_mono_type (reflected_type->type.type);
-	type_ginst = reflected_type->type.type->data.generic_inst;
+	klass = mono_class_from_mono_type (type->type.type);
+	ginst = type->type.type->data.generic_inst;
 
-	if (!strcmp (obj->vtable->klass->name, "FieldBuilder")) {
-		field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
-	} else if (!strcmp (obj->vtable->klass->name, "MonoField"))
-		field = ((MonoReflectionField *) obj)->field;
+	if (ginst->initialized)
+		return;
+
+	dginst = ginst->dynamic_info = g_new0 (MonoDynamicGenericInst, 1);
+
+	gklass = mono_class_from_mono_type (ginst->generic_type);
+	mono_class_init (gklass);
+
+	if (ginst->parent)
+		pklass = mono_class_from_mono_type (ginst->parent);
 	else
-		g_assert_not_reached ();
+		pklass = gklass->parent;
 
-	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->generic_type = reflected_type->type.type;
-	ginst->type_argc = type_ginst->type_argc;
-	ginst->type_argv = type_ginst->type_argv;
+	mono_class_setup_parent (klass, pklass);
 
-	inflated = g_new0 (MonoClassField, 1);
-	*inflated = *field;
-	inflated->generic_type = field->type;
-	inflated->type = mono_class_inflate_generic_type (field->type, ginst, NULL);
+	dginst->count_methods = methods ? mono_array_length (methods) : 0;
+	dginst->count_ctors = ctors ? mono_array_length (ctors) : 0;
+	dginst->count_fields = fields ? mono_array_length (fields) : 0;
 
-	return mono_field_get_object (mono_object_domain (obj), klass, inflated);
+	dginst->methods = g_new0 (MonoMethod *, dginst->count_methods);
+	dginst->ctors = g_new0 (MonoMethod *, dginst->count_ctors);
+	dginst->fields = g_new0 (MonoClassField, dginst->count_fields);
+
+	for (i = 0; i < dginst->count_methods; i++) {
+		MonoObject *obj = mono_array_get (methods, gpointer, i);
+
+		dginst->methods [i] = inflate_method (type, obj);
+	}
+
+	for (i = 0; i < dginst->count_ctors; i++) {
+		MonoObject *obj = mono_array_get (ctors, gpointer, i);
+
+		dginst->ctors [i] = inflate_method (type, obj);
+	}
+
+	for (i = 0; i < dginst->count_fields; i++) {
+		MonoObject *obj = mono_array_get (fields, gpointer, i);
+		MonoClassField *field;
+
+		if (!strcmp (obj->vtable->klass->name, "FieldBuilder"))
+			field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
+		else if (!strcmp (obj->vtable->klass->name, "MonoField"))
+			field = ((MonoReflectionField *) obj)->field;
+		else
+			g_assert_not_reached ();
+
+		dginst->fields [i] = *field;
+		dginst->fields [i].generic_type = field->type;
+		dginst->fields [i].type = mono_class_inflate_generic_type (field->type, ginst, NULL);
+	}
+
+	ginst->initialized = TRUE;
 }
 
 static void

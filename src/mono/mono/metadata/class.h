@@ -227,11 +227,22 @@ struct _MonoGenericInst {
 	MonoType *parent;
 	MonoType **ifaces;
 	MonoType *generic_type;
+	MonoDynamicGenericInst *dynamic_info;
 	int type_argc;
 	MonoType **type_argv;
 	guint is_open       : 1;
 	guint initialized   : 1;
 	guint init_pending  : 1;
+	guint is_dynamic    : 1;
+};
+
+struct _MonoDynamicGenericInst {
+	int count_methods;
+	MonoMethod **methods;
+	int count_ctors;
+	MonoMethod **ctors;
+	int count_fields;
+	MonoClassField *fields;
 };
 
 struct _MonoGenericMethod {
