@@ -544,9 +544,9 @@ typedef union {
 
 #define amd64_sse_comisd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0x66, 0x0f, 0x2f)
 
-#define amd64_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 0)
+#define amd64_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 8)
 
-#define amd64_sse_cvttsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2c, 0)
+#define amd64_sse_cvttsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2c, 8)
 
 #define amd64_sse_cvtsi2sd_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, 8)
 
