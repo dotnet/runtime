@@ -992,10 +992,11 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			MonoAsyncResult *ares;
 			MonoObject *exc;
 			MonoArray *out_args;
+			HANDLE handle;
 			method = delegate->method_info->method;
 
 			msg = mono_method_call_message_new (method, params, NULL, &async_callback, &state);
-			HANDLE handle = CreateEvent (NULL, TRUE, FALSE, NULL);
+			handle = CreateEvent (NULL, TRUE, FALSE, NULL);
 			ares = mono_async_result_new (mono_domain_get (), handle, state, handle);
 			ares->async_delegate = (MonoObject *)async_callback;
 			msg->async_result = ares;
