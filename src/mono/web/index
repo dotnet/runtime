@@ -23,6 +23,12 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Aug 23, 2001
+
+	Lloyd Dupont has announced his OpenGL bindings for C#, they
+	are available here: <a
+	href="http://csgl.sourceforge.net">http://csgl.sourceforge.net</a>
+
 ** Aug 22, 2001
 
 	New version of the Mono Runtime, Compiler and Classes has been
