@@ -153,7 +153,8 @@ TEST_IL_SRC=			\
 	calliTest.il		\
 	ckfiniteTest.il		\
 	locallocTest.il		\
-	initblkTest.il
+	initblkTest.il		\
+	bug-29859.il
 
 
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
