@@ -81,6 +81,7 @@ static MonoMethodSignature *helper_sig_object_new_specific = NULL;
 static MonoMethodSignature *helper_sig_compile = NULL;
 static MonoMethodSignature *helper_sig_compile_virt = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr = NULL;
+static MonoMethodSignature *helper_sig_obj_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_void = NULL;
 static MonoMethodSignature *helper_sig_ptr_void = NULL;
 static MonoMethodSignature *helper_sig_void_ptr = NULL;
@@ -2474,7 +2475,7 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoBasicBlock *bblock, MonoInst **sp,
-		guchar *ip, guint real_offset, GList *dont_inline, MonoBasicBlock **last_b)
+		guchar *ip, guint real_offset, GList *dont_inline, MonoBasicBlock **last_b, gboolean inline_allways)
 {
 	MonoInst *ins, *rvar = NULL;
 	MonoMethodHeader *cheader;
@@ -2510,7 +2511,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
 
-	if (costs >= 0 && costs < 60) {
+	if ((costs >= 0 && costs < 60) || inline_allways) {
 		if (cfg->verbose_level > 2)
 			g_print ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 		
@@ -3326,7 +3327,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 					cmethod = mono_marshal_get_native_wrapper (cmethod);
 
- 				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
+ 				if (costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock, FALSE)) {
 					ip += 5;
 					real_offset += 5;
 
@@ -4011,7 +4012,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				    !g_list_find (dont_inline, cmethod)) {
 					int costs;
 					MonoBasicBlock *ebblock;
-					if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
+					if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock, FALSE))) {
 
 						ip += 5;
 						real_offset += 5;
@@ -4065,7 +4066,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [0] = sp [0];
 				
 				costs = inline_method (cfg, mono_isinst, mono_isinst->signature, bblock, 
-							   iargs, ip, real_offset, dont_inline, &ebblock);
+							   iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 			
 				g_assert (costs > 0);
 				
@@ -4121,7 +4122,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					iargs [0] = sp [0];
 					
 					costs = inline_method (cfg, mono_castclass, mono_castclass->signature, bblock, 
-								   iargs, ip, real_offset, dont_inline, &ebblock);
+								   iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 				
 					g_assert (costs > 0);
 					
@@ -4239,7 +4240,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [0] = sp [0];
 				
 				costs = inline_method (cfg, mono_castclass, mono_castclass->signature, bblock, 
-							   iargs, ip, real_offset, dont_inline, &ebblock);
+							   iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 			
 				g_assert (costs > 0);
 				
@@ -4318,7 +4319,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					if (cfg->opt & MONO_OPT_INLINE) {
 						costs = inline_method (cfg, stfld_wrapper, stfld_wrapper->signature, bblock, 
-								       iargs, ip, real_offset, dont_inline, &ebblock);
+								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
 						      
 						ip += 5;
@@ -4372,7 +4373,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
 					if (cfg->opt & MONO_OPT_INLINE) {
 						costs = inline_method (cfg, ldfld_wrapper, ldfld_wrapper->signature, bblock, 
-								       iargs, ip, real_offset, dont_inline, &ebblock);
+								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
 						      
 						ip += 5;
@@ -5194,6 +5195,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				switch (ip [2]) {
 				case MONO_MARSHAL_CONV_ASANY:
 					func = mono_marshal_asany;
+					break;
+				case MONO_MARSHAL_CONV_FTN_DEL:
+					func = mono_ftnptr_to_delegate;
 					break;
 				default:
 					g_warning ("unknown conversion %d\n", ip [2]);
@@ -6117,6 +6121,8 @@ create_helper_signature (void)
 
 	/* object  amethod (intptr) */
 	helper_sig_obj_ptr = make_icall_sig ("object ptr");
+
+	helper_sig_obj_ptr_ptr = make_icall_sig ("object ptr ptr");
 
 	/* void amethod (intptr) */
 	helper_sig_void_ptr = make_icall_sig ("void ptr");
@@ -8499,6 +8505,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_array_to_savearray, "mono_array_to_savearray", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_array_to_lparray, "mono_array_to_lparray", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", helper_sig_ptr_obj, FALSE);
+	mono_register_jit_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", helper_sig_obj_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_marshal_string_array, "mono_marshal_string_array", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_marshal_string_array_to_unicode, "mono_marshal_string_array_to_unicode", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_marshal_asany, "mono_marshal_asany", helper_sig_ptr_obj_int, FALSE);
