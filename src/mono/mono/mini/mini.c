@@ -5513,6 +5513,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *iargs [3];
 				CHECK_STACK (3);
 				sp -= 3;
+				if ((cfg->opt & MONO_OPT_INTRINS) && (ip [1] == CEE_CPBLK) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5)) {
+					MonoInst *copy;
+					MONO_INST_NEW (cfg, copy, OP_MEMCPY);
+					copy->inst_left = sp [0];
+					copy->inst_right = sp [1];
+					copy->cil_code = ip;
+					copy->unused = n;
+					MONO_ADD_INS (bblock, copy);
+					ip += 2;
+					break;
+				}
 				iargs [0] = sp [0];
 				iargs [1] = sp [1];
 				iargs [2] = sp [2];
