@@ -234,6 +234,7 @@
 #endif
 
 #define	MONO_EMIT_NEW_CLASSCONST(cfg,dr,imm) MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,MONO_PATCH_INFO_CLASS)
+#define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable), MONO_PATCH_INFO_VTABLE)
 
 #define	MONO_EMIT_NEW_BRANCH_BLOCK(cfg,op,targetbb) do { \
                 MonoInst *inst; \
@@ -1429,22 +1430,34 @@ reg: OP_ARRAY_RANK (reg) {
 }
 
 reg: OP_CHECK_ARRAY_TYPE (reg) {
+
+	MonoClass* array_class = mono_array_class_get (tree->klass, 1);
+	
 	int vtable_reg = mono_regstate_next_int (s->rs);
 	int class_reg = mono_regstate_next_int (s->rs);
-	int elclass_reg = mono_regstate_next_int (s->rs);
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, vtable_reg, 
 				       state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, class_reg, 
-				       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, elclass_reg, 
-				       class_reg, G_STRUCT_OFFSET (MonoClass, element_class));
-	if (mono_compile_aot) {
-		int klass_reg = mono_regstate_next_int (s->rs);
-		MONO_EMIT_NEW_CLASSCONST (s, klass_reg, tree->klass);
-		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, elclass_reg, klass_reg);
+				       
+	if (s->opt & MONO_OPT_SHARED) {
+		int class_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, class_reg, 
+					       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		if (mono_compile_aot) {
+			int klass_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_CLASSCONST (s, klass_reg, array_class);
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, class_reg, klass_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, class_reg, array_class);
+		}
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, elclass_reg, tree->klass);
+		if (mono_compile_aot) {
+			int vt_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_VTABLECONST (s, vt_reg, mono_class_vtable (s->domain, array_class));
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, vtable_reg, vt_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, vtable_reg, mono_class_vtable (s->domain, array_class));
+		}
 	}
 	
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "ArrayTypeMismatchException");
