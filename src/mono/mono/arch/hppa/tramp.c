@@ -27,6 +27,7 @@
 #include "mono/interpreter/interp.h"
 #include "mono/metadata/appdomain.h"
 #include "mono/metadata/tabledefs.h"
+#include "hppa-codegen.h"
 
 #if SIZEOF_VOID_P != 8
 #error "HPPA code only currently supports 64bit pointers"
@@ -35,219 +36,6 @@
 // debugging flag which dumps code generated 
 static int debug_asm = 0;
 
-#define NOP 0x08000240
-
-#define LDB(disp, base, dest, neg) (0x40000000 | (((disp) & 0x1fff) << 1) | ((base) << 21) | ((dest) << 16) | neg)
-#define STB(src, disp, base, neg) (0x60000000 | (((disp) & 0x1fff) << 1) | ((base) << 21) | ((src) << 16) | neg)
-
-#define LDH(disp, base, dest, neg) (0x44000000 | (((disp) & 0x1fff) << 1) | ((base) << 21) | ((dest) << 16) | neg)
-#define STH(src, disp, base, neg) (0x64000000 | (((disp) & 0x1fff) << 1) | ((base) << 21) | ((src) << 16) | neg)
-
-#define LDW(disp, base, dest, neg) (0x48000000 | (((disp) & 0x1fff) << 1) | ((base) << 21) | ((dest) << 16) | neg)
-#define STW(src, disp, base, neg) (0x68000000 | (((disp) & 0x1fff) << 1) | ((base) << 21) | ((src) << 16) | neg)
-
-#define COPY(src, dest) 	  (0x34000000 | ((src) << 21) | ((dest) << 16))
-#define LDD(im10a, base, dest, m, a, neg) (0x50000000 | (((im10a) & 0x3ff) << 4) | ((base) << 21) | ((dest) << 16) | neg | (m ? 0x8 : 0) | (a ? 0x4 : 0))
-#define STD(src, im10a, base, m , a, neg) (0x70000000 | (((im10a) & 0x3ff) << 4) | ((base) << 21) | ((src) << 16) | neg | (m ? 0x8 : 0) | (a ? 0x4 : 0))
-
-#define FLDD(im10a, base, dest, m, a, neg) (0x50000002 | (((im10a) & 0x3ff) << 4) | ((base) << 21) | ((dest) << 16) | neg | (m ? 0x8 : 0) | (a ? 0x4 : 0))
-#define FSTD(src, im10a, base, m , a, neg) (0x70000002 | (((im10a) & 0x3ff) << 4) | ((base) << 21) | ((src) << 16) | neg | (m ? 0x8 : 0) | (a ? 0x4 : 0))
-
-#define FLDW(im11a, base, dest, r, neg) (0x5c000000 | (((im11a) & 0x7ff) << 3) | ((base) << 21) | ((dest) << 16) | neg | ((r) ? 0x2 : 0))
-#define FSTW(src, im11a, base, r, neg) (0x7c000000 | (((im11a) & 0x7ff) << 3) | ((base) << 21) | ((src) << 16) | neg | ((r) ? 0x2 : 0))
-
-/* only works on right half SP registers */
-#define FCNV(src, ssng, dest, dsng) (0x38000200 | ((src) << 21) | ((ssng) ? 0x80 : 0x800) | (dest) | ((dsng) ? 0x40 : 0x2000))
-
-#define LDIL(im21, dest) (0x20000000 | im21 | ((dest) << 21))
-
-#define LDO(off, base, dest, neg) (0x34000000 | (((off) & 0x1fff)) << 1 | ((base) << 21) | ((dest) << 16) | neg)
-
-#define EXTRDU(src, pos, len, dest) (0xd8000000 | ((src) << 21) | ((dest) << 16) | ((pos) > 32 ? 0x800 : 0) | (((pos) & 31) << 5) | ((len) > 32 ? 0x1000 : 0) | (32 - (len & 31))) 
-
-#define BVE(reg, link) (0xE8001000 | ((link ? 7 : 6) << 13) | ((reg) << 21))
-
-static unsigned int gen_copy(int src, int dest)
-{
-	if (debug_asm)
-		fprintf(stderr, "COPY %d,%d\n", src, dest);
-	return COPY(src, dest);
-}
-
-static unsigned int gen_ldb(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "LDB %d(%d),%d\n", disp, base, dest);
-	return LDB(disp, base, dest, neg);
-}
-
-static unsigned int gen_stb(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "STB %d,%d(%d)\n", src, disp, base);
-	return STB(src, disp, base, neg);
-}
-
-static unsigned int gen_ldh(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "LDH %d(%d),%d\n", disp, base, dest);
-	g_assert((disp & 1) == 0);
-	return LDH(disp, base, dest, neg);
-}
-
-static unsigned int gen_sth(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "STH %d,%d(%d)\n", src, disp, base);
-	g_assert((disp & 1) == 0);
-	return STH(src, disp, base, neg);
-}
-
-static unsigned int gen_ldw(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "LDW %d(%d),%d\n", disp, base, dest);
-	g_assert((disp & 3) == 0);
-	return LDW(disp, base, dest, neg);
-}
-
-static unsigned int gen_stw(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "STW %d,%d(%d)\n", src, disp, base);
-	g_assert((disp & 3) == 0);
-	return STW(src, disp, base, neg);
-}
-
-static unsigned int gen_ldd(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "LDD %d(%d),%d\n", disp, base, dest);
-	g_assert((disp & 7) == 0);
-	return LDD(disp >> 3, base, dest, 0, 0, neg);
-}
-
-static unsigned int gen_lddmb(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "LDD,MB %d(%d),%d\n", disp, base, dest);
-	g_assert((disp & 7) == 0);
-	return LDD(disp >> 3, base, dest, 1, 1, neg);
-}
-
-static unsigned int gen_std(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	g_assert((disp & 7) == 0);
-	if (debug_asm)
-		fprintf(stderr, "STD %d,%d(%d)\n", src, disp, base);
-	return STD(src, disp >> 3, base, 0, 0, neg);
-}
-
-static unsigned int gen_fldd(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "FLDD %d(%d),%d\n", disp, base, dest);
-	g_assert((disp & 7) == 0);
-	return FLDD(disp >> 3, base, dest, 0, 0, neg);
-}
-
-static unsigned int gen_fstd(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	g_assert((disp & 7) == 0);
-	if (debug_asm)
-		fprintf(stderr, "FSTD %d,%d(%d)\n", src, disp, base);
-	return FSTD(src, disp >> 3, base, 0, 0, neg);
-}
-
-static unsigned int gen_fldw(int disp, int base, int dest)
-{
-	int neg = disp < 0;
-	if (debug_asm)
-		fprintf(stderr, "FLDW %d(%d),%dr\n", disp, base, dest);
-	g_assert((disp & 3) == 0);
-	return FLDW(disp >> 2, base, dest, 1, neg);
-}
-
-static unsigned int gen_fstw(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	g_assert((disp & 3) == 0);
-	if (debug_asm)
-		fprintf(stderr, "FSTW %dr,%d(%d)\n", src, disp, base);
-	return FSTW(src, disp >> 2, base, 1, neg);
-}
-
-static unsigned int gen_fcnv_dbl_sng(int src, int dest)
-{
-	if (debug_asm)
-		fprintf(stderr, "FCNV,DBL,SGL %d,%dr\n", src, dest);
-	return FCNV(src, 0, dest, 1);
-}
-
-static unsigned int gen_fcnv_sng_dbl(int src, int dest)
-{
-	if (debug_asm)
-		fprintf(stderr, "FCNV,SGL,DBL %dr,%d\n", src, dest);
-	return FCNV(src, 1, dest, 0);
-}
-
-static unsigned int gen_stdma(int src, int disp, int base)
-{
-	int neg = disp < 0;
-	g_assert((disp & 7) == 0);
-	if (debug_asm)
-		fprintf(stderr, "STD,MA %d,%d(%d)\n", src, disp, base);
-	return STD(src, disp >> 3, base, 1, 0, neg);
-}
-
-/* load top 21 bits of val into reg */
-static unsigned int gen_ldil(unsigned int val, int reg)
-{
-	unsigned int t = (val >> 11) & 0x1fffff;
-	unsigned int im21 = ((t & 0x7c) << 14) | ((t & 0x180) << 7) | ((t & 0x3) << 12) | ((t & 0xffe00) >> 8) | ((t & 0x100000) >> 20);
-	return LDIL(reg, im21);
-}
-
-static unsigned int gen_ldo(int off, int base, int reg)
-{
-	int neg = off < 0;
-	if (debug_asm)
-		fprintf(stderr, "LDO %d(%d),%d\n", off, base, reg);
-	return LDO(off, base, reg, neg);
-}
-
-static unsigned int gen_nop(void)
-{
-	if (debug_asm)
-		fprintf(stderr, "NOP\n");
-	return NOP;
-}
-
-static unsigned int gen_bve(int reg, int link)
-{
-	if (debug_asm)
-		fprintf(stderr, "BVE%s (%d)%s\n", link ? ",L" : "", reg, link ? ",2" : "");
-	return BVE(reg, link);
-}
-
-static unsigned int gen_extrdu(int src, int pos, int len, int dest)
-{
-	if (debug_asm)
-		fprintf(stderr, "EXTRD,U %d,%d,%d,%d\n", src, pos, len, dest);
-	return EXTRDU(src, pos, len, dest);
-}
 
 static void flush_cache(void *address, int length)
 {
@@ -288,7 +76,21 @@ static void flush_cache(void *address, int length)
 #endif
 }
 
-#define ADD_INST(code, pc, gen_exp) ((code) == NULL ? (pc)++ : (code[(pc)++] = (gen_exp)))
+static void disassemble (guint32 *code, int n_instrs)
+{
+	const char *tmp_file = "/tmp/mono_adb.in";
+	FILE *fp = fopen(tmp_file, "w");
+	int i;
+	for (i = 0; i < n_instrs; i++)
+		fprintf(fp, "0x%08x=i\n", code[i]);
+	fprintf(fp, "$q\n");
+	fclose(fp);
+	system("adb64 </tmp/mono_adb.in");
+        unlink(tmp_file);
+}
+
+#define ADD_INST(code, pc, gen_exp) \
+	do { if ((code) == NULL) (pc)++; else { gen_exp; pc++; } } while (0)
 
 /*
  * void func (void (*callme)(), void *retval, void *this_obj, stackval *arguments);
@@ -301,6 +103,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	int param;
 	void **descriptor;
 	unsigned int *code = NULL;
+	unsigned int *code_start = NULL;
 	int arg_reg;
 #define FP_ARG_REG(r) (4 + (26 - arg_reg))
 	int arg_offset;
@@ -366,25 +169,25 @@ generate:
 	args_on_stack = 0;
 	parameter_slot = parameter_offset;
 
-	ADD_INST(code, pc, gen_std(2, -16, 30));  // STD	  %r2,-16(%r30)   
-	ADD_INST(code, pc, gen_stdma(3, frame_size, 30));
-	ADD_INST(code, pc, gen_std(4, spill_offset, 30));
-	ADD_INST(code, pc, gen_std(5, spill_offset + 8, 30));
-	ADD_INST(code, pc, gen_copy(29, 3));	   // COPY	  %r29,%r3		  
-	ADD_INST(code, pc, gen_std(27, spill_offset + 16, 30));
-	ADD_INST(code, pc, gen_nop()); 		   // NOP			  
+	ADD_INST(code, pc, hppa_std(code, 2, -16, 30));  // STD	  %r2,-16(%r30)   
+	ADD_INST(code, pc, hppa_std_ma(code, 3, frame_size, 30));
+	ADD_INST(code, pc, hppa_std(code, 4, spill_offset, 30));
+	ADD_INST(code, pc, hppa_std(code, 5, spill_offset + 8, 30));
+	ADD_INST(code, pc, hppa_copy(code, 29, 3));	   // COPY	  %r29,%r3		  
+	ADD_INST(code, pc, hppa_std(code, 27, spill_offset + 16, 30));
+	ADD_INST(code, pc, hppa_nop(code)); 		   // NOP			  
 
-	ADD_INST(code, pc, gen_std(26, -64, 29)); // STD	  %r26,-64(%r29)  callme
-	ADD_INST(code, pc, gen_std(25, -56, 29)); // STD	  %r25,-56(%r29)  retval
-	ADD_INST(code, pc, gen_std(24, -48, 29)); // STD	  %r24,-48(%r29)  this_obj
-	ADD_INST(code, pc, gen_std(23, -40, 29)); // STD	  %r23,-40(%r29)  arguments
+	ADD_INST(code, pc, hppa_std(code, 26, -64, 29)); // STD	  %r26,-64(%r29)  callme
+	ADD_INST(code, pc, hppa_std(code, 25, -56, 29)); // STD	  %r25,-56(%r29)  retval
+	ADD_INST(code, pc, hppa_std(code, 24, -48, 29)); // STD	  %r24,-48(%r29)  this_obj
+	ADD_INST(code, pc, hppa_std(code, 23, -40, 29)); // STD	  %r23,-40(%r29)  arguments
 
 	if (sig->param_count > 0)
-		ADD_INST(code, pc, gen_copy(23, 4));  // r4 is the current pointer to the stackval array of args
+		ADD_INST(code, pc, hppa_copy(code, 23, 4));  // r4 is the current pointer to the stackval array of args
 
 	if (sig->hasthis) {
 		if (sig->call_convention != MONO_CALL_THISCALL) {
-			ADD_INST(code, pc, gen_copy(24, arg_reg));
+			ADD_INST(code, pc, hppa_copy(code, 24, arg_reg));
 			--arg_reg;
 			parameter_slot += 8;
 		} else	{
@@ -396,10 +199,10 @@ generate:
 		int type = sig->params[param]->type;
 		if (sig->params[param]->byref) {
 			if (args_on_stack) {
-				ADD_INST(code, pc, gen_ldd(arg_offset, 4, 5));
-				ADD_INST(code, pc, gen_std(5, parameter_slot, 30));
+				ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, 5));
+				ADD_INST(code, pc, hppa_std(code, 5, parameter_slot, 30));
 			} else {
-				ADD_INST(code, pc, gen_ldd(arg_offset, 4, arg_reg));
+				ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, arg_reg));
 				--arg_reg;
 			}
 			arg_offset += sizeof(stackval);
@@ -417,25 +220,25 @@ generate:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 			if (args_on_stack) {
-				ADD_INST(code, pc, gen_ldw(arg_offset, 4, 5));
+				ADD_INST(code, pc, hppa_ldw(code, arg_offset, 4, 5));
 				switch (type) {
 				case MONO_TYPE_I4:
 				case MONO_TYPE_U4:
-					ADD_INST(code, pc, gen_stw(5, parameter_slot + 4, 30));
+					ADD_INST(code, pc, hppa_stw(code, 5, parameter_slot + 4, 30));
 					break;
 				case MONO_TYPE_CHAR:
 				case MONO_TYPE_I2:
 				case MONO_TYPE_U2:
-					ADD_INST(code, pc, gen_sth(5, parameter_slot + 6, 30));
+					ADD_INST(code, pc, hppa_sth(code, 5, parameter_slot + 6, 30));
 					break;
 				case MONO_TYPE_BOOLEAN:
 				case MONO_TYPE_I1:
 				case MONO_TYPE_U1:
-					ADD_INST(code, pc, gen_stb(5, parameter_slot + 7, 30));
+					ADD_INST(code, pc, hppa_stb(code, 5, parameter_slot + 7, 30));
 					break;
 				}
 			} else {
-				ADD_INST(code, pc, gen_ldw(arg_offset, 4, arg_reg));
+				ADD_INST(code, pc, hppa_ldw(code, arg_offset, 4, arg_reg));
 				--arg_reg;
 			}
 			arg_offset += sizeof(stackval);
@@ -451,10 +254,10 @@ generate:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_PTR:
 			if (args_on_stack) {
-				ADD_INST(code, pc, gen_ldd(arg_offset, 4, 5));
-				ADD_INST(code, pc, gen_std(5, parameter_slot, 30));
+				ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, 5));
+				ADD_INST(code, pc, hppa_std(code, 5, parameter_slot, 30));
 			} else {
-				ADD_INST(code, pc, gen_ldd(arg_offset, 4, arg_reg));
+				ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, arg_reg));
 				--arg_reg;
 			}
 			arg_offset += sizeof(stackval);
@@ -462,10 +265,10 @@ generate:
 			break;
 		case MONO_TYPE_R8:
 			if (args_on_stack) {
-				ADD_INST(code, pc, gen_ldd(arg_offset, 4, 5));
-				ADD_INST(code, pc, gen_std(5, parameter_slot, 30));
+				ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, 5));
+				ADD_INST(code, pc, hppa_std(code, 5, parameter_slot, 30));
 			} else {
-				ADD_INST(code, pc, gen_fldd(arg_offset, 4, FP_ARG_REG(arg_reg)));
+				ADD_INST(code, pc, hppa_fldd(code, arg_offset, 4, FP_ARG_REG(arg_reg)));
 				--arg_reg;
 			}
 			arg_offset += sizeof(stackval);
@@ -473,12 +276,12 @@ generate:
 			break;
 		case MONO_TYPE_R4:
 			if (args_on_stack) {
-				ADD_INST(code, pc, gen_fldd(arg_offset, 4, 22));
-				ADD_INST(code, pc, gen_fcnv_dbl_sng(22, 22));
-				ADD_INST(code, pc, gen_fstw(22, parameter_slot + 4, 30));
+				ADD_INST(code, pc, hppa_fldd(code, arg_offset, 4, 22));
+				ADD_INST(code, pc, hppa_fcnv_dbl_sng(code, 22, 22));
+				ADD_INST(code, pc, hppa_fstw(code, 22, parameter_slot + 4, 30));
 			} else {
-				ADD_INST(code, pc, gen_fldd(arg_offset, 4, FP_ARG_REG(arg_reg)));
-				ADD_INST(code, pc, gen_fcnv_dbl_sng(FP_ARG_REG(arg_reg), FP_ARG_REG(arg_reg)));
+				ADD_INST(code, pc, hppa_fldd(code, arg_offset, 4, FP_ARG_REG(arg_reg)));
+				ADD_INST(code, pc, hppa_fcnv_dbl_sng(code, FP_ARG_REG(arg_reg), FP_ARG_REG(arg_reg)));
 				--arg_reg;
 			}
 			arg_offset += sizeof(stackval);
@@ -494,12 +297,12 @@ generate:
 				// copies multiple of 8 bytes which may include some trailing garbage but should be safe
 				if (size <= 8) {
 					if (args_on_stack) {
-						ADD_INST(code, pc, gen_ldd(arg_offset, 4, 5));
-						ADD_INST(code, pc, gen_ldd(0, 5, 5));
-						ADD_INST(code, pc, gen_std(5, parameter_slot, 30));
+						ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, 5));
+						ADD_INST(code, pc, hppa_ldd(code, 0, 5, 5));
+						ADD_INST(code, pc, hppa_std(code, 5, parameter_slot, 30));
 					} else {
-						ADD_INST(code, pc, gen_ldd(arg_offset, 4, arg_reg));
-						ADD_INST(code, pc, gen_ldd(0, arg_reg, arg_reg));
+						ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, arg_reg));
+						ADD_INST(code, pc, hppa_ldd(code, 0, arg_reg, arg_reg));
 						--arg_reg;
 					}
 					parameter_slot += 8;
@@ -512,15 +315,15 @@ generate:
 						}
 						parameter_slot += 8;
 					}
-					ADD_INST(code, pc, gen_ldd(arg_offset, 4, 5));
+					ADD_INST(code, pc, hppa_ldd(code, arg_offset, 4, 5));
 					// might generate a lot of code for very large structs... should
 					// use a loop or routine call them
 					while (size > 0) {
 						if (args_on_stack) {
-							ADD_INST(code, pc, gen_ldd(soffset, 5, 31));
-							ADD_INST(code, pc, gen_std(31, parameter_slot, 30));
+							ADD_INST(code, pc, hppa_ldd(code, soffset, 5, 31));
+							ADD_INST(code, pc, hppa_std(code, 31, parameter_slot, 30));
 						} else {
-							ADD_INST(code, pc, gen_ldd(soffset, 5, arg_reg));
+							ADD_INST(code, pc, hppa_ldd(code, soffset, 5, arg_reg));
 							--arg_reg;
 							if (arg_reg < 19)
 								args_on_stack = 1;
@@ -548,23 +351,23 @@ generate:
 	if (sig->ret->type == MONO_TYPE_VALUETYPE && sig->ret->data.klass->enumtype == 0) {
 		int size = mono_class_native_size (sig->ret->data.klass, NULL);
 		if (size > 16) {
-			ADD_INST(code, pc, gen_ldd(-56, 3, 28));
-			ADD_INST(code, pc, gen_ldd(0, 28, 28));
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 28));
+			ADD_INST(code, pc, hppa_ldd(code, 0, 28, 28));
 		}
 	}
 
-	ADD_INST(code, pc, gen_nop()); 		   // NOP			  
-	ADD_INST(code, pc, gen_ldd(-64, 29, 5));
-	ADD_INST(code, pc, gen_ldd(24, 5, 27));
-	ADD_INST(code, pc, gen_ldd(16, 5, 5));
-	ADD_INST(code, pc, gen_bve(5, 1));
-	ADD_INST(code, pc, gen_ldo(parameter_offset + 64, 30, 29));
-	ADD_INST(code, pc, gen_ldd(spill_offset + 16, 30, 27));
-	ADD_INST(code, pc, gen_nop()); 		   // NOP			  
+	ADD_INST(code, pc, hppa_nop(code)); 		   // NOP			  
+	ADD_INST(code, pc, hppa_ldd(code, -64, 29, 5));
+	ADD_INST(code, pc, hppa_ldd(code, 24, 5, 27));
+	ADD_INST(code, pc, hppa_ldd(code, 16, 5, 5));
+	ADD_INST(code, pc, hppa_blve(code, 5));
+	ADD_INST(code, pc, hppa_ldo(code, parameter_offset + 64, 30, 29));
+	ADD_INST(code, pc, hppa_ldd(code, spill_offset + 16, 30, 27));
+	ADD_INST(code, pc, hppa_nop(code)); 		   // NOP			  
         
 	if (string_ctor) {
-		ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-		ADD_INST(code, pc, gen_std(28, 0, 19));  // STD	 %r28,0(%r19)	 
+		ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+		ADD_INST(code, pc, hppa_std(code, 28, 0, 19));  // STD	 %r28,0(%r19)	 
 	}
 	else if (sig->ret->type != MONO_TYPE_VOID) {
 		int type = sig->ret->type;
@@ -574,19 +377,19 @@ generate:
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-			ADD_INST(code, pc, gen_stb(28, 0, 19));  // STB	 %r28,0(%r19)	 
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+			ADD_INST(code, pc, hppa_stb(code, 28, 0, 19));  // STB	 %r28,0(%r19)	 
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
-			ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-			ADD_INST(code, pc, gen_stw(28, 0, 19));  // STW	 %r28,0(%r19)	 
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+			ADD_INST(code, pc, hppa_stw(code, 28, 0, 19));  // STW	 %r28,0(%r19)	 
 			break;
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-			ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-			ADD_INST(code, pc, gen_sth(28, 0, 19));  // STH	 %r28,0(%r19)
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+			ADD_INST(code, pc, hppa_sth(code, 28, 0, 19));  // STH	 %r28,0(%r19)
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -597,16 +400,16 @@ generate:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_PTR:
-			ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-			ADD_INST(code, pc, gen_std(28, 0, 19));  // STD	 %r28,0(%r19)	 
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+			ADD_INST(code, pc, hppa_std(code, 28, 0, 19));  // STD	 %r28,0(%r19)	 
 			break;
 		case MONO_TYPE_R8:
-			ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-			ADD_INST(code, pc, gen_fstd(4, 0, 19));  // FSTD	  %fr4,0(%r19)	  
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+			ADD_INST(code, pc, hppa_fstd(code, 4, 0, 19));  // FSTD	  %fr4,0(%r19)	  
 			break;
 		case MONO_TYPE_R4:
-			ADD_INST(code, pc, gen_ldd(-56, 3, 19)); // LDD	 -56(%r3),%r19	 
-			ADD_INST(code, pc, gen_fstw(4, 0, 19));  // FSTW	  %fr4r,0(%r19)    
+			ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19)); // LDD	 -56(%r3),%r19	 
+			ADD_INST(code, pc, hppa_fstw(code, 4, 0, 19));  // FSTW	  %fr4r,0(%r19)    
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->ret->data.klass->enumtype) {
@@ -617,28 +420,28 @@ generate:
 				if (size <= 16)	{
 					int reg = 28;
                                         int off = 0;
-					ADD_INST(code, pc, gen_ldd(-56, 3, 19));
-					ADD_INST(code, pc, gen_ldd(0, 19, 19));
+					ADD_INST(code, pc, hppa_ldd(code, -56, 3, 19));
+					ADD_INST(code, pc, hppa_ldd(code, 0, 19, 19));
 					if (size > 8) {
-						ADD_INST(code, pc, gen_std(28, 0, 19)); 
+						ADD_INST(code, pc, hppa_std(code, 28, 0, 19)); 
 						size -= 8;
 						reg = 29;
 						off += 8;
 					}
 					// get rest of value right aligned in the register
-					ADD_INST(code, pc, gen_extrdu(reg, 8 * size - 1, 8 * size, reg));
+					ADD_INST(code, pc, hppa_extrdu(code, reg, 8 * size - 1, 8 * size, reg));
 					if ((size & 1) != 0) {
-						ADD_INST(code, pc, gen_stb(reg, off + size - 1, 19));
-						ADD_INST(code, pc, gen_extrdu(reg, 55, 56, reg));
+						ADD_INST(code, pc, hppa_stb(code, reg, off + size - 1, 19));
+						ADD_INST(code, pc, hppa_extrdu(code, reg, 55, 56, reg));
 						size -= 1;
 					}
 					if ((size & 2) != 0) {
-						ADD_INST(code, pc, gen_sth(reg, off + size - 2, 19));
-						ADD_INST(code, pc, gen_extrdu(reg, 47, 48, reg));
+						ADD_INST(code, pc, hppa_sth(code, reg, off + size - 2, 19));
+						ADD_INST(code, pc, hppa_extrdu(code, reg, 47, 48, reg));
 						size -= 2;
 					}
 					if ((size & 4) != 0)
-						ADD_INST(code, pc, gen_stw(reg, off + size - 4, 19));
+						ADD_INST(code, pc, hppa_stw(code, reg, off + size - 4, 19));
 				}
 				break;
 			}
@@ -648,29 +451,32 @@ generate:
 		}
 	}
 
-	ADD_INST(code, pc, gen_ldd(-frame_size-16, 30, 2));
-	ADD_INST(code, pc, gen_ldd(spill_offset, 30, 4));
-	ADD_INST(code, pc, gen_ldd(spill_offset + 8, 30, 5));
-	ADD_INST(code, pc, gen_bve(2, 0));
-	ADD_INST(code, pc, gen_lddmb(-frame_size, 30, 3));
+	ADD_INST(code, pc, hppa_ldd(code, -frame_size-16, 30, 2));
+	ADD_INST(code, pc, hppa_ldd(code, spill_offset, 30, 4));
+	ADD_INST(code, pc, hppa_ldd(code, spill_offset + 8, 30, 5));
+	ADD_INST(code, pc, hppa_bve(code, 2, 0));
+	ADD_INST(code, pc, hppa_ldd_mb(code, -frame_size, 30, 3));
 
 	if (code == NULL) {
 		descriptor = (void **)g_malloc(4 * sizeof(void *) + pc * sizeof(unsigned int));
 		code = (unsigned int *)((char *)descriptor + 4 * sizeof(void *));
+		code_start = code;
 		save_pc = pc;
 		goto generate;
         } else 
 		g_assert(pc == save_pc);
 
-	if (debug_asm)
+	if (debug_asm) {
 		fprintf(stderr, "generated: %d bytes\n", pc * 4);
+		disassemble(code_start, pc);
+	}
 
         // must do this so we can actually execute the code we just put in memory
-	flush_cache(code, 4 * pc);
+	flush_cache(code_start, 4 * pc);
 
 	descriptor[0] = 0;
 	descriptor[1] = 0;
-	descriptor[2] = code;
+	descriptor[2] = code_start;
 	descriptor[3] = 0;
 
 	return (MonoPIFunc)descriptor;
@@ -687,6 +493,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	void **descriptor = NULL;
 	void **data = NULL;
 	unsigned int *code = NULL;
+	unsigned int *code_start = NULL;
 	int arg_reg = 26;
 	int arg_offset = 0;
 	int frame_size;
@@ -741,37 +548,37 @@ generate:
 	arg_val_pos = -64;
 	pc = 0;
 
-	ADD_INST(code, pc, gen_std(2, -16, 30));
-	ADD_INST(code, pc, gen_stdma(3, frame_size, 30));
-	ADD_INST(code, pc, gen_std(4, spill_offset, 30));
-	ADD_INST(code, pc, gen_copy(29, 3));
-	ADD_INST(code, pc, gen_std(27, spill_offset + 8, 30));
-	ADD_INST(code, pc, gen_std(28, spill_offset + 16, 30));
-	ADD_INST(code, pc, gen_nop());
+	ADD_INST(code, pc, hppa_std(code, 2, -16, 30));
+	ADD_INST(code, pc, hppa_std_ma(code, 3, frame_size, 30));
+	ADD_INST(code, pc, hppa_std(code, 4, spill_offset, 30));
+	ADD_INST(code, pc, hppa_copy(code, 29, 3));
+	ADD_INST(code, pc, hppa_std(code, 27, spill_offset + 8, 30));
+	ADD_INST(code, pc, hppa_std(code, 28, spill_offset + 16, 30));
+	ADD_INST(code, pc, hppa_nop(code));
 
-	ADD_INST(code, pc, gen_std(26, -64, 29)); // STD	  %r26,-64(%r29)
-	ADD_INST(code, pc, gen_std(25, -56, 29)); // STD	  %r25,-56(%r29)
-	ADD_INST(code, pc, gen_std(24, -48, 29)); // STD	  %r24,-48(%r29)
-	ADD_INST(code, pc, gen_std(23, -40, 29)); // STD	  %r23,-40(%r29)
-	ADD_INST(code, pc, gen_std(22, -32, 29)); // STD	  %r22,-32(%r29)
-	ADD_INST(code, pc, gen_std(21, -24, 29)); // STD	  %r21,-24(%r29)
-	ADD_INST(code, pc, gen_std(20, -16, 29)); // STD	  %r20,-16(%r29)
-	ADD_INST(code, pc, gen_std(19, -8, 29));  // STD	  %r19,-8(%r29)
+	ADD_INST(code, pc, hppa_std(code, 26, -64, 29)); // STD	  %r26,-64(%r29)
+	ADD_INST(code, pc, hppa_std(code, 25, -56, 29)); // STD	  %r25,-56(%r29)
+	ADD_INST(code, pc, hppa_std(code, 24, -48, 29)); // STD	  %r24,-48(%r29)
+	ADD_INST(code, pc, hppa_std(code, 23, -40, 29)); // STD	  %r23,-40(%r29)
+	ADD_INST(code, pc, hppa_std(code, 22, -32, 29)); // STD	  %r22,-32(%r29)
+	ADD_INST(code, pc, hppa_std(code, 21, -24, 29)); // STD	  %r21,-24(%r29)
+	ADD_INST(code, pc, hppa_std(code, 20, -16, 29)); // STD	  %r20,-16(%r29)
+	ADD_INST(code, pc, hppa_std(code, 19, -8, 29));  // STD	  %r19,-8(%r29)
 
-	ADD_INST(code, pc, gen_std(0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, parent), 30));
-	ADD_INST(code, pc, gen_std(0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, child), 30));
-	ADD_INST(code, pc, gen_std(0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ex), 30));
-	ADD_INST(code, pc, gen_std(0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ex_handler), 30));
-	ADD_INST(code, pc, gen_std(0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ip), 30));
+	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, parent), 30));
+	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, child), 30));
+	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ex), 30));
+	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ex_handler), 30));
+	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ip), 30));
 
 	if (data != NULL)
 		data[0] = method;
-	ADD_INST(code, pc, gen_ldd(0, 27, 19));
-	ADD_INST(code, pc, gen_std(19, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, method), 30));
+	ADD_INST(code, pc, hppa_ldd(code, 0, 27, 19));
+	ADD_INST(code, pc, hppa_std(code, 19, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, method), 30));
 
 	if (sig->hasthis) {
 		if (sig->call_convention != MONO_CALL_THISCALL)	{
-			ADD_INST(code, pc, gen_std(arg_reg, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, obj), 30));
+			ADD_INST(code, pc, hppa_std(code, arg_reg, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, obj), 30));
 			arg_val_pos += 8;
 		} else {
 			fprintf(stderr, "case I didn't handle 2\n");
@@ -784,10 +591,10 @@ generate:
 	for (i = 0; i < sig->param_count; ++i) {
 		if (data != NULL)
 			data[4 + i] = sig->params[i];
-		ADD_INST(code, pc, gen_ldd((4 + i) * 8, 27, 26)); // LDD	  x(%r27),%r26 == type
-		ADD_INST(code, pc, gen_ldo(stack_val_pos, 30, 25)); // LDD 	x(%r30),%r25 == &stackval
+		ADD_INST(code, pc, hppa_ldd(code, (4 + i) * 8, 27, 26)); // LDD	  x(%r27),%r26 == type
+		ADD_INST(code, pc, hppa_ldo(code, stack_val_pos, 30, 25)); // LDD 	x(%r30),%r25 == &stackval
 		if (sig->params[i]->byref) {
-			ADD_INST(code, pc, gen_ldo(arg_val_pos, 3, 24));
+			ADD_INST(code, pc, hppa_ldo(code, arg_val_pos, 3, 24));
 		} else {
 			int type = sig->params[i]->type;
 		typeswitch:
@@ -802,21 +609,21 @@ generate:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_R8:
-				ADD_INST(code, pc, gen_ldo(arg_val_pos, 3, 24));
+				ADD_INST(code, pc, hppa_ldo(code, arg_val_pos, 3, 24));
 				break;
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
-				ADD_INST(code, pc, gen_ldo(arg_val_pos + 4, 3, 24));
+				ADD_INST(code, pc, hppa_ldo(code, arg_val_pos + 4, 3, 24));
 				break;
 			case MONO_TYPE_CHAR:
 			case MONO_TYPE_I2:
 			case MONO_TYPE_U2:
-				ADD_INST(code, pc, gen_ldo(arg_val_pos + 6, 3, 24));
+				ADD_INST(code, pc, hppa_ldo(code, arg_val_pos + 6, 3, 24));
 				break;
 			case MONO_TYPE_I1:
 			case MONO_TYPE_U1:
 			case MONO_TYPE_BOOLEAN:
-				ADD_INST(code, pc, gen_ldo(arg_val_pos + 7, 3, 24));
+				ADD_INST(code, pc, hppa_ldo(code, arg_val_pos + 7, 3, 24));
 				break;
 			case MONO_TYPE_VALUETYPE:
 				if (sig->params [i]->data.klass->enumtype) {
@@ -825,11 +632,11 @@ generate:
 				} else {
 					int size = mono_class_native_size (sig->params[i]->data.klass, NULL);
 					if (size <= 8)
-						ADD_INST(code, pc, gen_ldo(arg_val_pos, 3, 24));
+						ADD_INST(code, pc, hppa_ldo(code, arg_val_pos, 3, 24));
 					else {
 						arg_val_pos += 15;
 						arg_val_pos &= ~15;
-						ADD_INST(code, pc, gen_ldo(arg_val_pos, 3, 24));
+						ADD_INST(code, pc, hppa_ldo(code, arg_val_pos, 3, 24));
 					}
 
 					arg_val_pos += size;
@@ -837,8 +644,8 @@ generate:
 					arg_val_pos &= ~7;
 					arg_val_pos -=8 ; // as it is incremented later
 
-					ADD_INST(code, pc, gen_ldo(vtoffsets[i], 30, 19));
-					ADD_INST(code, pc, gen_std(19, 0, 25));
+					ADD_INST(code, pc, hppa_ldo(code, vtoffsets[i], 30, 19));
+					ADD_INST(code, pc, hppa_std(code, 19, 0, 25));
 				}
 				break;
 			default:
@@ -847,44 +654,44 @@ generate:
 			}
 		}
 
-		ADD_INST(code, pc, gen_ldo(sig->pinvoke, 0, 23)); // LDI sig->pinvoke,%r23
-		ADD_INST(code, pc, gen_ldd(16, 27, 19));	// LDD	   x(%r27),%r19 == stackval_from_data
-		ADD_INST(code, pc, gen_ldd(16, 19, 20));	// LDD	   16(%r19),%r20   
-		ADD_INST(code, pc, gen_ldd(24, 19, 27));	// LDD	   24(%r19),%r27   
-		ADD_INST(code, pc, gen_bve(20, 1));		// BVE,L   (%r20),%r2	   
-		ADD_INST(code, pc, gen_ldo(-16, 30, 29));	// LDO	   -16(%r30),%r29
-		ADD_INST(code, pc, gen_ldd(spill_offset + 8, 30, 27));
+		ADD_INST(code, pc, hppa_ldo(code, sig->pinvoke, 0, 23)); // LDI sig->pinvoke,%r23
+		ADD_INST(code, pc, hppa_ldd(code, 16, 27, 19));	// LDD	   x(%r27),%r19 == stackval_from_data
+		ADD_INST(code, pc, hppa_ldd(code, 16, 19, 20));	// LDD	   16(%r19),%r20   
+		ADD_INST(code, pc, hppa_ldd(code, 24, 19, 27));	// LDD	   24(%r19),%r27   
+		ADD_INST(code, pc, hppa_blve(code, 20));		// BVE,L   (%r20),%r2	   
+		ADD_INST(code, pc, hppa_ldo(code, -16, 30, 29));	// LDO	   -16(%r30),%r29
+		ADD_INST(code, pc, hppa_ldd(code, spill_offset + 8, 30, 27));
 
 		stack_val_pos += sizeof (stackval);
 		arg_val_pos += 8;
 		g_assert(stack_val_pos < -96);
 	}
         
-	ADD_INST(code, pc, gen_ldo(stack_vals_offset, 30, 19));
-	ADD_INST(code, pc, gen_std(19, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, stack_args), 30));
-	ADD_INST(code, pc, gen_ldo(stack_val_pos, 30, 19));
-	ADD_INST(code, pc, gen_std(19, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, retval), 30));
+	ADD_INST(code, pc, hppa_ldo(code, stack_vals_offset, 30, 19));
+	ADD_INST(code, pc, hppa_std(code, 19, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, stack_args), 30));
+	ADD_INST(code, pc, hppa_ldo(code, stack_val_pos, 30, 19));
+	ADD_INST(code, pc, hppa_std(code, 19, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, retval), 30));
 
 	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->data.klass->enumtype) {
 		int size = mono_class_native_size (sig->ret->data.klass, NULL);
 		// for large return structs pass on the pointer given us by our caller.
 		if (size > 16)
-			ADD_INST(code, pc, gen_ldd(spill_offset + 16, 30, 28));
+			ADD_INST(code, pc, hppa_ldd(code, spill_offset + 16, 30, 28));
 		else // use space left on stack for the return value
-			ADD_INST(code, pc, gen_ldo(stack_val_pos + sizeof(stackval), 30, 28));
-		ADD_INST(code, pc, gen_std(28, stack_val_pos, 30));
+			ADD_INST(code, pc, hppa_ldo(code, stack_val_pos + sizeof(stackval), 30, 28));
+		ADD_INST(code, pc, hppa_std(code, 28, stack_val_pos, 30));
 	}
 
-	ADD_INST(code, pc, gen_ldo(invoke_rec_offset, 30, 26)); // address of invocation
+	ADD_INST(code, pc, hppa_ldo(code, invoke_rec_offset, 30, 26)); // address of invocation
 
 	if (data != NULL)
 		data[1] = (void *)ves_exec_method;
-	ADD_INST(code, pc, gen_ldd(8, 27, 19));	// LDD	   8(%r27),%r19
-	ADD_INST(code, pc, gen_ldd(16, 19, 20));	// LDD	   16(%r19),%r20   
-	ADD_INST(code, pc, gen_ldd(24, 19, 27));	// LDD	   24(%r19),%r27   
-	ADD_INST(code, pc, gen_bve(20, 1));		// BVE,L   (%r20),%r2	   
-	ADD_INST(code, pc, gen_ldo(-16, 30, 29));	// LDO	   -16(%r30),%r29
-	ADD_INST(code, pc, gen_ldd(spill_offset + 8, 30, 27));
+	ADD_INST(code, pc, hppa_ldd(code, 8, 27, 19));	// LDD	   8(%r27),%r19
+	ADD_INST(code, pc, hppa_ldd(code, 16, 19, 20));	// LDD	   16(%r19),%r20   
+	ADD_INST(code, pc, hppa_ldd(code, 24, 19, 27));	// LDD	   24(%r19),%r27   
+	ADD_INST(code, pc, hppa_blve(code, 20));		// BVE,L   (%r20),%r2	   
+	ADD_INST(code, pc, hppa_ldo(code, -16, 30, 29));	// LDO	   -16(%r30),%r29
+	ADD_INST(code, pc, hppa_ldd(code, spill_offset + 8, 30, 27));
 	if (sig->ret->byref) {
 		fprintf(stderr, "can'ty cope with ret byref\n");
 	} else {
@@ -901,7 +708,7 @@ generate:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
-			ADD_INST(code, pc, gen_ldw(stack_val_pos, 30, 28)); // LDW 	x(%r30),%r28
+			ADD_INST(code, pc, hppa_ldw(code, stack_val_pos, 30, 28)); // LDW 	x(%r30),%r28
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -912,10 +719,10 @@ generate:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_PTR:
-			ADD_INST(code, pc, gen_ldd(stack_val_pos, 30, 28)); // LDD 	x(%r30),%r28
+			ADD_INST(code, pc, hppa_ldd(code, stack_val_pos, 30, 28)); // LDD 	x(%r30),%r28
 			break;
 		case MONO_TYPE_R8:
-			ADD_INST(code, pc, gen_fldd(stack_val_pos, 30, 4)); // FLDD	 x(%r30),%fr4
+			ADD_INST(code, pc, hppa_fldd(code, stack_val_pos, 30, 4)); // FLDD	 x(%r30),%fr4
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->ret->data.klass->enumtype) {
@@ -924,10 +731,10 @@ generate:
 			} else {
 				int size = mono_class_native_size (sig->ret->data.klass, NULL);
 				if (size <= 16) {
-					ADD_INST(code, pc, gen_ldd(stack_val_pos, 30, 28));
+					ADD_INST(code, pc, hppa_ldd(code, stack_val_pos, 30, 28));
 					if (size > 8)
-						ADD_INST(code, pc, gen_ldd(8, 28, 29)); 
-					ADD_INST(code, pc, gen_ldd(0, 28, 28)); 
+						ADD_INST(code, pc, hppa_ldd(code, 8, 28, 29)); 
+					ADD_INST(code, pc, hppa_ldd(code, 0, 28, 28)); 
 				}
 			}
 			break;
@@ -937,22 +744,28 @@ generate:
 		}
 	}
 
-	ADD_INST(code, pc, gen_ldd(-frame_size-16, 30, 2));
-	ADD_INST(code, pc, gen_ldd(spill_offset, 30, 4));
-	ADD_INST(code, pc, gen_bve(2, 0));
-	ADD_INST(code, pc, gen_lddmb(-frame_size, 30, 3));
+	ADD_INST(code, pc, hppa_ldd(code, -frame_size-16, 30, 2));
+	ADD_INST(code, pc, hppa_ldd(code, spill_offset, 30, 4));
+	ADD_INST(code, pc, hppa_bve(code, 2, 0));
+	ADD_INST(code, pc, hppa_ldd_mb(code, -frame_size, 30, 3));
 	if (code == NULL) {
 		descriptor = (void **)malloc((8 + sig->param_count) * sizeof(void *) + sizeof(unsigned int) * pc);
 		data = descriptor + 4;
 		code = (unsigned int *)(data + 4 + sig->param_count);
+		code_start = code;
 		goto generate;
 	}
 
-        flush_cache(code, 4 * pc);
+	if (debug_asm) {
+		fprintf(stderr, "generated: %d bytes\n", pc * 4);
+		disassemble(code_start, pc);
+	}
+
+        flush_cache(code_start, 4 * pc);
 
 	descriptor[0] = 0;
 	descriptor[1] = 0;
-	descriptor[2] = code;
+	descriptor[2] = code_start;
 	descriptor[3] = data;
 
 	ji = g_new0 (MonoJitInfo, 1);
