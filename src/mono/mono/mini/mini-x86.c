@@ -4334,7 +4334,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				else
 					size = 5 + 5;
 
-				if ((code - cfg->native_code) - throw_ip < 127 - size) {
+				if ((code - cfg->native_code) - throw_ip < 126 - size) {
 					/* Use the shorter form */
 					buf = buf2 = code;
 					x86_push_imm (code, 0);
