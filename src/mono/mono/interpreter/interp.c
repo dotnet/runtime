@@ -285,7 +285,7 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 
 	obj = objs->data.p;
 	if ((klass = obj->vtable->klass) == mono_defaults.transparent_proxy_class) {
-		klass = ((MonoTransparentProxy *)obj)->klass;
+		klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
 		is_proxy = TRUE;
 	}
 	vtable = (MonoMethod **)klass->vtable;
@@ -3259,7 +3259,7 @@ array_constructed:
 			if (sp [-1].type == VAL_OBJ) {
 				obj = sp [-1].data.p;
 				if (obj->vtable->klass == mono_defaults.transparent_proxy_class && field->parent->marshalbyref) {
-					MonoClass *klass = ((MonoTransparentProxy*)obj)->klass;
+					MonoClass *klass = ((MonoTransparentProxy*)obj)->remote_class->proxy_class;
 					addr = mono_load_remote_field (obj, klass, field, NULL);
 				} else {
 					addr = (char*)obj + field->offset;
@@ -3297,7 +3297,7 @@ array_constructed:
 				obj = sp [0].data.p;
 
 				if (obj->vtable->klass == mono_defaults.transparent_proxy_class && field->parent->marshalbyref) {
-					MonoClass *klass = ((MonoTransparentProxy*)obj)->klass;
+					MonoClass *klass = ((MonoTransparentProxy*)obj)->remote_class->proxy_class;
 					mono_store_remote_field (obj, klass, field, &sp [1].data);
 				} else {
 					offset = field->offset;
