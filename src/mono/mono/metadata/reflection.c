@@ -4040,7 +4040,11 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	 * the support dlls. D'oh!
 	 * const char *version = "mono-" VERSION;
 	 */
-	const char *version = "v1.0.3705";
+	/*
+	 * To make binaries default to the .Net 1.0 version
+	 * const char *version = "v1.0.3705";
+	 */
+	const char *version = "v1.1.4322";
 
 #if HAVE_BOEHM_GC
 	image = GC_MALLOC (sizeof (MonoDynamicImage));
