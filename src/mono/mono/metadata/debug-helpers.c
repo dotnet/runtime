@@ -26,7 +26,8 @@ static const char *wrapper_type_names [] = {
 	"remoting-invoke-with-check",
 	"ldfld",
 	"stfld",
-	"synchronized"
+	"synchronized",
+	"unknown"
 };
 
 static void
