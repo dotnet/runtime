@@ -1421,6 +1421,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 		
 		arg = mono_string_new (domain, utf8_arg);
 		mono_array_set (main_args, gpointer, i, arg);
+		g_free (utf8_arg);
 	}
 	argc--;
 	argv++;
