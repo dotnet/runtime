@@ -91,6 +91,28 @@
   </tr>
 </table>
 
+@item Jan 3rd, 2002: Glade#, Code Coverage, Apache, MBas, Debugger.
+
+	Rachel has made Glade# use attributes so binding C# widgets to
+	the designed widgets is now easier than ever.  Alp has
+	improved this to use implicit names as well.
+
+	Martin's Mono debugger now has support for multi-thread
+	debugging.  Special feature: breakpoints can be defined in a
+	per-thread basis now.
+
+	Daniel López has checked in his Apache module to integrate
+	Mono and Mono's ASP.NET support as an Apache module.  Gonzalo
+	has folded his new Mono hosting classes into this module (they
+	are now shared between XSP and mod_mono).  You can get the
+	mod_apache from CVS (module name: mod_mono). 
+
+	Mono Basic improvements: Marco has added support for more
+	statements on the grammar.
+
+	Zoltan has <a href="http://www.nexus.hu/vargaz2/">posted</a>
+	his Code Coverage analysis tool for Mono.
+
 @item Dec 10th, 2002: Gtk# 0.6 released;  Mono 0.17 packages for Windows and Debian.
 
 	Mike Kestner <a
