@@ -309,52 +309,6 @@ ldtoken:
 ldvirtftn:
 leave.s:
 leave:
-<<<<<<< cpu-s390.md
-=======
-leave.s:
-stind.i:
-conv.u: dest:i src1:i len:4
-prefix7:
-prefix6:
-prefix5:
-prefix4:
-prefix3:
-prefix2:
-prefix1:
-prefixref:
-arglist:
-ceq: dest:i len:12
-cgt: dest:i len:12
-cgt.un: dest:i len:12
-clt: dest:i len:12
-clt.un: dest:i len:12
-ldftn:
-ldvirtftn:
-ldarg:
-ldarga:
-starg:
-ldloc:
-ldloca:
-stloc:
-localloc: dest:i src1:i len:40
-endfilter: len:12
-unaligned.:
-volatile.:
-tail.:
-initobj:
-cpblk:
-initblk:
-rethrow:
-sizeof:
-refanytype:
-illegal:
-endmac:
-mono_objaddr:
-mono_ldptr:
-mono_vtaddr:
-mono_newobj:
-mono_retobj:
->>>>>>> 1.3
 load:
 load_membase: dest:i src1:b len:18
 loadi1_membase: dest:i src1:b len:40
@@ -444,13 +398,9 @@ long_sub_ovf:
 long_sub_ovf_un:
 long_xor:
 mkrefany:
-mono_free:
-mono_func1:
 mono_ldptr:
 mono_newobj:
 mono_objaddr:
-mono_proc2:
-mono_proc3:
 mono_retobj:
 mono_vtaddr:
 move: dest:i src1:i len:4

@@ -742,13 +742,13 @@ handle_enum:
 	}
 	case MONO_TYPE_I: {
 		int *val = va_arg (ap, int*);
-		printf ("[INT:%p]", val);
+		printf ("[INT:%d]", val);
 		printf("]");
 		break;
 	}
 	case MONO_TYPE_U: {
 		int *val = va_arg (ap, int*);
-		printf ("[UINT:%p]", val);
+		printf ("[UINT:%d]", val);
 		printf("]");
 		break;
 	}
@@ -3359,7 +3359,7 @@ guint8 cond;
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
-			s390_sr (code, ins->dreg, ins->sreg2);
+			s390_slr (code, ins->dreg, ins->sreg2);
 		}
 			break;
 		case CEE_SUB: {
@@ -3425,7 +3425,7 @@ guint8 cond;
 			s390_slbr (code, s390_r0, s390_r1);
 			s390_sr   (code, ins->dreg, ins->sreg2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-			s390_sr   (code, ins->dreg, s390_r0);
+			s390_ar   (code, ins->dreg, s390_r0);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;
@@ -4313,32 +4313,34 @@ guint8 cond;
 		}
 			break;
 		case OP_S390_MOVE: {
-			if (ins->unused <= 256) {
-				s390_mvc  (code, ins->unused, ins->dreg, 
-					   ins->inst_offset, ins->sreg1, ins->inst_imm);
-			} else {
-				s390_lr   (code, s390_r0, ins->dreg);
-				if (s390_is_imm16 (ins->inst_offset)) {
-					s390_ahi  (code, s390_r0, ins->inst_offset);
+			if (ins->unused > 0) {
+				if (ins->unused <= 256) {
+					s390_mvc  (code, ins->unused, ins->dreg, 
+						   ins->inst_offset, ins->sreg1, ins->inst_imm);
 				} else {
-					s390_basr (code, s390_r13, 0);
-					s390_j    (code, 4);
-					s390_word (code, ins->inst_offset);
-					s390_a    (code, s390_r0, 0, s390_r13, 4);
+					s390_lr   (code, s390_r0, ins->dreg);
+					if (s390_is_imm16 (ins->inst_offset)) {
+						s390_ahi  (code, s390_r0, ins->inst_offset);
+					} else {
+						s390_basr (code, s390_r13, 0);
+						s390_j    (code, 4);
+						s390_word (code, ins->inst_offset);
+						s390_a    (code, s390_r0, 0, s390_r13, 4);
+					}
+					s390_lr   (code, s390_r1, ins->sreg2);
+					if (s390_is_imm16 (ins->inst_imm)) {
+						s390_ahi  (code, s390_r1, ins->inst_imm);
+					} else {
+						s390_basr (code, s390_r13, 0);
+						s390_j    (code, 4);
+							s390_word (code, ins->inst_imm);
+						s390_a    (code, s390_r1, 0, s390_r13, 4);
+					}
+					s390_lr   (code, s390_r12, ins->sreg1);
+					s390_lr   (code, s390_r13, s390_r1);
+					s390_mvcle(code, s390_r0, s390_r12, 0, 0);
+					s390_jo   (code, -2);
 				}
-				s390_lr   (code, s390_r1, ins->sreg2);
-				if (s390_is_imm16 (ins->inst_imm)) {
-					s390_ahi  (code, s390_r1, ins->inst_imm);
-				} else {
-					s390_basr (code, s390_r13, 0);
-					s390_j    (code, 4);
-					s390_word (code, ins->inst_imm);
-					s390_a    (code, s390_r1, 0, s390_r13, 4);
-				}
-				s390_lr   (code, s390_r12, ins->sreg1);
-				s390_lr   (code, s390_r13, s390_r1);
-				s390_mvcle(code, s390_r0, s390_r12, 0, 0);
-				s390_jo   (code, -2);
 			}
 		}
 			break;

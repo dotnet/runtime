@@ -720,8 +720,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		gint32 address, iloffset;
 		int offset;
 
-//		*new_ctx = *ctx;
-		memcpy(new_ctx, ctx, sizeof(*new_ctx));
+		*new_ctx = *ctx;
+//		memcpy(new_ctx, ctx, sizeof(*new_ctx));
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -1063,7 +1063,7 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 				for (i = 0; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 
-					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 

@@ -578,12 +578,14 @@ reg: OP_GROUP (reg, reg) {
 
 stmt: OP_MEMCPY (reg, reg) {
 	int size = tree->unused;
-	mini_emit_memcpy (s, state->left->reg1, 0, state->right->reg1, 0, size, 0);
+	if (size > 0)
+		mini_emit_memcpy (s, state->left->reg1, 0, state->right->reg1, 0, size, 0);
 }
 
 stmt: OP_MEMSET (reg) {
 	int size = tree->unused;
-	mini_emit_memset (s, state->left->reg1, 0, size, tree->inst_imm, 0);
+	if (size > 0)
+		mini_emit_memset (s, state->left->reg1, 0, size, tree->inst_imm, 0);
 }
 
 reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
