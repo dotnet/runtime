@@ -1009,6 +1009,14 @@ class Tests {
 		if (failed)
 			return 8;
 
+		{
+			int i; 
+			float f = 1.1f;
+			checked {
+				i = (int) f;
+			}
+		}
+
 		return 0;
 	}
 
@@ -1112,6 +1120,14 @@ class Tests {
 		}
 		if (failed)
 			return 8;
+
+		{
+			uint i; 
+			float f = 1.1f;
+			checked {
+				i = (uint) f;
+			}
+		}
 		
 		return 0;
 	}
@@ -1169,6 +1185,14 @@ class Tests {
 		if (failed)
 			return 4;
 
+		{
+			long i; 
+			float f = 1.1f;
+			checked {
+				i = (long) f;
+			}
+		}
+
 		return 0;
 	}
 
@@ -1224,6 +1248,14 @@ class Tests {
 		}
 		if (failed)
 			return 4;
+
+		{
+			ulong i; 
+			float f = 1.1f;
+			checked {
+				i = (ulong) f;
+			}
+		}
 
 		return 0;
 	}
