@@ -104,6 +104,11 @@
 	There are a number of related projects to Mono:
 
 	<ul>
+		
+		* <a
+		  href="http://qtcsharp.sourceforge.net">Qt#:</a> 
+		  C# bindings for the Qt toolkit.
+
 		* <a
 		  href="http://www.icsharpcode.net/OpenSource/SD/default.asp">Sharp
 		  Develop:</a> an IDE for the C# language written in C#.
