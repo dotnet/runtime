@@ -3202,10 +3202,6 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		oklass = oklass->generic_class->container_class;
 
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
-		if (oklass->reflection_info)
-			/* interface_offsets might not be set for dynamic classes */
-			return mono_reflection_call_is_assignable_from (klass, oklass);
-
 		if ((klass->interface_id <= oklass->max_interface_id) &&
 		    (oklass->interface_offsets [klass->interface_id] != -1))
 			return TRUE;
