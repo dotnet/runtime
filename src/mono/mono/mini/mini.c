@@ -7204,8 +7204,6 @@ mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
 	thread = mono_thread_current ();
 	if (thread)
 		thread->jit_data = jit_tls;
-	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
-		setup_stat_profiler ();
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -7227,6 +7225,8 @@ mono_thread_attach_cb (guint32 tid, gpointer stack_start)
 	thread = mono_thread_current ();
 	if (thread)
 		thread->jit_data = jit_tls;
+	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
+		setup_stat_profiler ();
 }
 
 static void
