@@ -80,6 +80,58 @@
   </tr>
 </table>
 
+@item Jul 9th, 2002
+
+	Ajay was the first to notice <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-July/000641.html">
+	Mono's first birthday</a>.
+
+	In a year, we have achieved plenty:
+	<ul>
+		* 94 contributors with CVS access (84 non-Ximian developers).
+		* A complete CLI implementation:
+		<ul>
+			<li> A fast and performing x86 JIT engine (inlining, constant propagation).
+			<li> An interpreter for other systems (PPC, Sparc, StrongArm).
+		</ul>
+		* A self-hosting C# compiler, which can compile its class libraries.
+		* 37,140 file changes in CVS.
+		* 92,000 lines of C code.
+		* 437,000 lines of C# code (compiler, classes, tests)
+		* A working core for ASP.NET and ADO.NET.
+		* Major subsystems are functional: RegularExpressions,
+		  System.XML, XML.Schema, System.Data, System.Web.
+		* The Gtk# project, which is maturing rapidly.
+	</ul>
+
+	Thanks to everyone who has made Mono possible with their
+	feedback, regression tests, their comments, their help on the mailing
+	list, code contributions, complete classes, bug reporting, the
+	countless hours of bug hunting.  This project would not have
+	been possible with every contribution.  
+
+	It has been a great year for everyone involved in the
+	project.  I think we have built a new and exciting community.
+
+	Now we have a solid foundation to build on, so this next year
+	looks even more exciting: not only because we will see more
+	Mono applications, but we will begin using Mono as an
+	`library' to be linked with applications that want to get
+	scripting-like features; Gtk# is our ticket to create nice
+	GNOME applications; And we will be developing CORBA bindings
+	to integrate with other object systems.
+
+	Also, for those interested in optimizations and tuning, this
+	year we will get to play with more advanced optimizations and
+	all kinds of interesting research ideas for improving Mono
+	code generation.
+
+	A special thanks to the Mono developers at Ximian for managing
+	to survive their manager and a special thanks to our
+	regression test marshal Nick Drochak, who has been hunting
+	down, and fixing code in our class libraries and keeping us on
+	track for so long.
+
 @item Jul 8th, 2002
 
 	Radek today fixed the last bugs to get Mono to self host on
