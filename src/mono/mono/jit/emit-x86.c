@@ -324,8 +324,12 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 
 	/* initialize local vars */
 	if (header->num_locals) {
+		gboolean unassigned_locals;
 
-		if (header->init_locals) {
+		i = mono_bitset_find_first (cfg->bblocks [0].live_in_set, cfg->locals_start_index - 1);
+		unassigned_locals = (i >= 0 && i < cfg->locals_start_index + header->num_locals);
+
+		if (unassigned_locals && header->init_locals) {
 			MonoVarInfo *vi = &VARINFO (cfg, cfg->locals_start_index + header->num_locals - 1);
 			int offset = vi->offset;  
 			int size = - offset;
