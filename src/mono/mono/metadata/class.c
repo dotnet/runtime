@@ -249,6 +249,8 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst, gmethod);
 		};
 
+		nginst->klass = NULL;
+
 		nt = dup_type (type);
 		nt->data.generic_inst = nginst;
 		return nt;
@@ -2419,8 +2421,9 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 
 gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
-						   gboolean check_interfaces)
+			   gboolean check_interfaces)
 {
+ again:
 	if (check_interfaces && (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) && !(klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 		if ((klassc->interface_id <= klass->max_interface_id) &&
 			(klass->interface_offsets [klassc->interface_id] >= 0))
@@ -2436,6 +2439,16 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	} else {
 		if (!(klass->flags & TYPE_ATTRIBUTE_INTERFACE) && mono_class_has_parent (klass, klassc))
 			return TRUE;
+		if (klass->generic_inst) {
+			MonoType *parent = klass->generic_inst->parent;
+			if (!parent)
+				return FALSE;
+
+			if (mono_metadata_type_equal (parent, &klassc->byval_arg))
+				return TRUE;
+			klass = mono_class_from_mono_type (parent);
+			goto again;
+		}
 	}
 
 	/* 
