@@ -89,6 +89,11 @@ run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
+	if (o->vtable->klass == mono_defaults.thread_class)
+		if (mono_gc_is_finalizer_thread ((MonoThread*)o))
+			/* Avoid finalizing ourselves */
+			return;
+
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 
@@ -512,8 +517,6 @@ finalize_domain_objects (DomainFinalizationReq *req)
 
 static guint32 finalizer_thread (gpointer unused)
 {
-	guint32 stack_start;
-	
 	gc_thread = mono_thread_current ();
 
 	SetEvent (thread_started_event);
