@@ -173,9 +173,7 @@ open_symfile (MonoImage *image, guint32 *size)
 		return NULL;
 	g_assert (!cols [MONO_MANIFEST_IMPLEMENTATION]);
 
-	val = mono_image_get_resource (image, cols [MONO_MANIFEST_OFFSET], size);
-	g_message (G_STRLOC ": %p,%d", val, *size);
-	return val;
+	return mono_image_get_resource (image, cols [MONO_MANIFEST_OFFSET], size);
 }
 
 MonoSymbolFile *
@@ -367,6 +365,11 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	range->dynamic_data = address;
 	range->dynamic_size = size;
 
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		return;
+
 	var_table = (MonoDebugVarInfo *) (ptr + variable_offset);
 	type_table = (guint32 *) (ptr + type_offset);
 
@@ -375,8 +378,8 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 
 	if (mep->entry->this_type_index) {
 		if (!mep->minfo->jit->this_var) {
-			g_warning (G_STRLOC ": Method %s.%s doesn't have `this'.",
-				   mep->method->klass->name, mep->method->name);
+			g_warning (G_STRLOC ": Method %d (%s.%s) doesn't have `this'.",
+				   range->index, mep->method->klass->name, mep->method->name);
 			var_table++;
 		} else {
 			*var_table++ = *mep->minfo->jit->this_var;
