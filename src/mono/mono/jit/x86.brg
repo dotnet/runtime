@@ -1919,7 +1919,7 @@ stmt: CPBLK (reg, CPSRC (reg, reg)) {
 	x86_push_reg (s->code, size_reg);
 	x86_push_reg (s->code, source_reg);
 	x86_push_reg (s->code, dest_reg);
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memcpy);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memmove);
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 }
@@ -4228,28 +4228,6 @@ guint64
 mono_llrem_un (guint64 a, guint64 b)
 {
 	return a % b;
-}
-
-MBTree *
-mono_ctree_new (MonoMemPool *mp, int op, MBTree *left, MBTree *right)
-{
-	MBTree *t = mono_mempool_alloc0 (mp, sizeof (MBTree));
-
-	t->op = op;
-	t->left = left;
-	t->right = right;
-	t->reg1 = -1;
-	t->reg2 = -1;
-	t->reg3 = -1;
-	t->svt = VAL_UNKNOWN;
-	t->cli_addr = -1;
-	return t;
-}
-
-MBTree *
-mono_ctree_new_leaf (MonoMemPool *mp, int op)
-{
-	return mono_ctree_new (mp, op, NULL, NULL);
 }
 
 MonoArray*

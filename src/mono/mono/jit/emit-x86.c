@@ -22,6 +22,7 @@
 #include <mono/metadata/profiler-private.h>
 
 #include "jit.h"
+#include "helpers.h"
 #include "codegen.h"
 #include "debug.h"
 

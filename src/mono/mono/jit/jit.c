@@ -36,6 +36,7 @@
 #include <mono/metadata/profiler-private.h>
 
 #include "jit.h"
+#include "helpers.h"
 #include "regset.h"
 #include "codegen.h"
 #include "debug.h"
@@ -45,12 +46,6 @@
  * gives great speedup for boolean expressions, but unfortunately it changes
  * semantics, so i disable it until we have a real solution  */
 /* #define OPT_BOOL */
-
-/* this is x86 specific */
-#define MB_TERM_LDIND_REF MB_TERM_LDIND_I4
-#define MB_TERM_LDIND_U4 MB_TERM_LDIND_I4
-#define MB_TERM_STIND_REF MB_TERM_STIND_I4
-#define MB_TERM_REMOTE_STIND_REF MB_TERM_REMOTE_STIND_I4
 
 #define MAKE_CJUMP(name)                                                      \
 case CEE_##name:                                                              \
@@ -86,7 +81,7 @@ case CEE_##name: {                                                            \
 	break;                                                                \
 }
 
-#if 0
+#ifndef ARCH_X86
 #define MAKE_SPILLED_BI_ALU1(name, s1, s2) {                                  \
 	t1 = mono_ctree_new (mp, MB_TERM_##name, s1, s2);                     \
 	PUSH_TREE (t1, s1->svt); }                                            
@@ -225,6 +220,9 @@ gboolean mono_use_fast_iconv = FALSE;
 /* TLS id to store jit data */
 guint32  mono_jit_tls_id;
 
+/* issue a breakpoint on unhandled excepions */
+gboolean mono_break_on_exc = FALSE;
+
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 GList *mono_debug_methods = NULL;
 
@@ -256,523 +254,6 @@ mono_alloc_static0 (int size)
 } 
 
 typedef void (*MonoCCtor) (void);
-
-
-inline static MBTree *
-mono_ctree_new_icon4 (MonoMemPool *mp, gint32 data)
-{
-	MBTree *t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-	t1->data.i = data;
-	return t1;
-}
-
-static int
-map_store_svt_type (int svt)
-{
-	switch (svt) {
-	case VAL_I32:
-		return MB_TERM_STIND_I4;
-	case VAL_POINTER:
-		return MB_TERM_STIND_REF;
-	case VAL_I64:
-		return MB_TERM_STIND_I8;
-	case VAL_DOUBLE:
-		return MB_TERM_STIND_R8;
-	default:
-		g_assert_not_reached ();
-	}
-
-	return 0;
-}
-
-/**
- * map_stind_type:
- * @type: the type to map
- *
- * Translates the MonoType @type into the corresponding store opcode 
- * for the code generator.
- */
-static int
-map_stind_type (MonoType *type)
-{
-	if (type->byref) 
-		return MB_TERM_STIND_REF;
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-
-		return MB_TERM_STIND_I1;	
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		return MB_TERM_STIND_I2;	
-	case MONO_TYPE_I:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return MB_TERM_STIND_I4;	
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		return MB_TERM_STIND_REF;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MB_TERM_STIND_I8;
-	case MONO_TYPE_R4:
-		return MB_TERM_STIND_R4;
-	case MONO_TYPE_R8:
-		return MB_TERM_STIND_R8;
-	case MONO_TYPE_VALUETYPE: 
-		if (type->data.klass->enumtype)
-			return map_stind_type (type->data.klass->enum_basetype);
-		else
-			return MB_TERM_STIND_OBJ;
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-/**
- * map_remote_stind_type:
- * @type: the type to map
- *
- * Translates the MonoType @type into the corresponding remote store opcode 
- * for the code generator.
- */
-static int
-map_remote_stind_type (MonoType *type)
-{
-	if (type->byref) {
-		return MB_TERM_REMOTE_STIND_REF;
-	}
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-		return MB_TERM_REMOTE_STIND_I1;	
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		return MB_TERM_REMOTE_STIND_I2;	
-	case MONO_TYPE_I:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return MB_TERM_REMOTE_STIND_I4;	
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		return MB_TERM_REMOTE_STIND_REF;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MB_TERM_REMOTE_STIND_I8;
-	case MONO_TYPE_R4:
-		return MB_TERM_REMOTE_STIND_R4;
-	case MONO_TYPE_R8:
-		return MB_TERM_REMOTE_STIND_R8;
-	case MONO_TYPE_VALUETYPE: 
-		if (type->data.klass->enumtype)
-			return map_remote_stind_type (type->data.klass->enum_basetype);
-		else
-			return MB_TERM_REMOTE_STIND_OBJ;
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-static int
-map_starg_type (MonoType *type)
-{
-	if (type->byref) 
-		return MB_TERM_STIND_REF;
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return MB_TERM_STIND_I4;
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		return MB_TERM_STIND_REF;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MB_TERM_STIND_I8;
-	case MONO_TYPE_R4:
-		return MB_TERM_STIND_R4;
-	case MONO_TYPE_R8:
-		return MB_TERM_STIND_R8;
-	case MONO_TYPE_VALUETYPE: 
-		if (type->data.klass->enumtype)
-			return map_starg_type (type->data.klass->enum_basetype);
-		else
-			return MB_TERM_STIND_OBJ;
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-static int
-map_arg_type (MonoType *type)
-{
-	if (type->byref) 
-		return MB_TERM_ARG_I4;
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		return MB_TERM_ARG_I4;
-	case MONO_TYPE_STRING:
-		return MB_TERM_ARG_I4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MB_TERM_ARG_I8;
-	case MONO_TYPE_R4:
-		return MB_TERM_ARG_R4;
-	case MONO_TYPE_R8:
-		return MB_TERM_ARG_R8;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype)
-			return map_arg_type (type->data.klass->enum_basetype);
-		else
-			return MB_TERM_ARG_OBJ;
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-/**
- * map_ldind_type:
- * @type: the type to map
- *
- * Translates the MonoType @type into the corresponding load opcode 
- * for the code generator.
- */
-static int
-map_ldind_type (MonoType *type, MonoValueType *svt)
-{
-	if (type->byref) {
-		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_REF;
-	}
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_I1;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_U1;
-	case MONO_TYPE_I2:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_I2;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_U2;
-	case MONO_TYPE_I:
-	case MONO_TYPE_I4:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_I4;
-	case MONO_TYPE_U4:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_U4;
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_REF;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		*svt = VAL_I64;
-		return MB_TERM_LDIND_I8;
-	case MONO_TYPE_R4:
-		*svt = VAL_DOUBLE;
-		return MB_TERM_LDIND_R4;
-	case MONO_TYPE_R8:
-		*svt = VAL_DOUBLE;
-		return MB_TERM_LDIND_R8;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
-			return map_ldind_type (type->data.klass->enum_basetype, svt);
-		} else {
-			*svt = VAL_UNKNOWN;
-			return MB_TERM_LDIND_OBJ;
-		}
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-static int
-map_ldarg_type (MonoType *type, MonoValueType *svt)
-{
-	if (type->byref) {
-		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_REF;
-	}
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		*svt = VAL_I32;
-		return MB_TERM_LDIND_U4;
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_U4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		*svt = VAL_I64;
-		return MB_TERM_LDIND_I8;
-	case MONO_TYPE_R4:
-		*svt = VAL_DOUBLE;
-		return MB_TERM_LDIND_R4;
-	case MONO_TYPE_R8:
-		*svt = VAL_DOUBLE;
-		return MB_TERM_LDIND_R8;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
-			return map_ldarg_type (type->data.klass->enum_basetype, svt);
-		} else {
-			*svt = VAL_UNKNOWN;
-			return MB_TERM_LDIND_OBJ;
-		}
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-/**
- * map_call_type:
- * @type: the type to map
- *
- * Translates the MonoType @type into the corresponding call opcode 
- * for the code generator.
- */
-static int
-map_call_type (MonoType *type, MonoValueType *svt)
-{
-	if (type->byref) 
-		return MB_TERM_CALL_I4;
-
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		*svt = VAL_UNKNOWN;
-		return MB_TERM_CALL_VOID;
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		*svt = VAL_I32;
-		return MB_TERM_CALL_I4;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
-			return map_call_type (type->data.klass->enum_basetype, svt);
-		} else {
-			*svt = VAL_I32;
-			return MB_TERM_CALL_VOID;
-		}
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY: 
-		*svt = VAL_POINTER;
-		return MB_TERM_CALL_I4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		*svt = VAL_I64;
-		return MB_TERM_CALL_I8;
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		*svt = VAL_DOUBLE;
-		return MB_TERM_CALL_R8;
-	default:
-		g_warning ("unknown type %02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return -1;
-}
-
-/*
- * prints the tree to stdout
- */
-void
-mono_print_ctree (MonoFlowGraph *cfg, MBTree *tree)
-{
-	int arity;
-
-	if (!tree)
-		return;
-
-	arity = (tree->left != NULL) + (tree->right != NULL);
-
-	if (arity)
-		printf (" (%s", mono_burg_term_string [tree->op]);
-	else 
-		printf (" %s", mono_burg_term_string [tree->op]);
-
-	switch (tree->op) {
-	case MB_TERM_CONST_I4:
-		printf ("[%d]", tree->data.i);
-		break;
-	case MB_TERM_ADDR_L:
-		if (VARINFO (cfg, tree->data.i).reg >= 0)
-			printf ("[R%d]", tree->data.i);
-		else
-			printf ("[%d]", tree->data.i);
-		break;
-	}
-
-	g_assert (!(tree->right && !tree->left));
-
-	mono_print_ctree (cfg, tree->left);
-	mono_print_ctree (cfg, tree->right);
-
-	if (arity)
-		printf (")");
-}
-
-/*
- * prints the whole forest to stdout
- */
-void
-mono_print_forest (MonoFlowGraph *cfg, GPtrArray *forest)
-{
-	const int top = forest->len;
-	int i;
-
-	for (i = 0; i < top; i++) {
-		MBTree *t = (MBTree *) g_ptr_array_index (forest, i);
-		printf ("       ");
-		mono_print_ctree (cfg, t);
-		printf ("\n");
-	}
-
-}
-
-/**
- * mono_disassemble_code:
- * @code: a pointer to the code
- * @size: the code size in bytes
- *
- * Disassemble to code to stdout.
- */
-void
-mono_disassemble_code (guint8 *code, int size, char *id)
-{
-	int i;
-	FILE *ofd;
-
-	if (!(ofd = fopen ("/tmp/test.s", "w")))
-		g_assert_not_reached ();
-
-	fprintf (ofd, "%s:\n", id);
-
-	for (i = 0; i < size; ++i) 
-		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
-
-	fclose (ofd);
-
-	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o"); 
-}
-
-inline static void
-mono_get_val_sizes (MonoValueType type, int *size, int *align) 
-{ 
-	switch (type) {
-	case VAL_I32:
-		*size = *align = sizeof (gint32);
-		break;
-	case VAL_I64:
-		*size = *align = sizeof (gint64);
-		break;
-	case VAL_POINTER:
-		*size = *align = sizeof (gpointer);
-		break;
-	case VAL_DOUBLE:
-		*size = *align = sizeof (double);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-}
 
 static int
 mono_allocate_intvar (MonoFlowGraph *cfg, int slot, MonoValueType type)
@@ -4049,14 +3530,11 @@ mono_thread_abort (MonoObject *obj)
 	
 	g_assert (obj);
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		mono_debug_make_symbols ();
-		G_BREAKPOINT ();
-	}
-
 	if (jit_tls->env) {	
 		longjmp (*jit_tls->env, (int)obj);
 	}
+
+	g_free (jit_tls);
 
 	ExitThread (-1);
 }
@@ -4076,14 +3554,12 @@ mono_thread_start_cb (gpointer stack_start)
 
 static CRITICAL_SECTION ms;
 
-MonoDomain*
-mono_jit_init (char *file) {
+static void
+mono_runtime_install_handlers (void)
+{
 #ifndef PLATFORM_WIN32
 	struct sigaction sa;
 #endif
-	MonoDomain *domain;
-
-	mono_cpu_detect ();
 
 #ifdef PLATFORM_WIN32
 	win32_seh_init();
@@ -4111,6 +3587,15 @@ mono_jit_init (char *file) {
 	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 #endif
 #endif /* PLATFORM_WIN32 */
+}
+
+MonoDomain*
+mono_jit_init (char *file) {
+	MonoDomain *domain;
+
+	mono_cpu_detect ();
+
+	mono_runtime_install_handlers ();
 
 	mono_init_icall ();
 	mono_add_internal_call ("System.Array::Set", ves_array_set);

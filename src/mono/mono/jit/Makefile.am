@@ -29,7 +29,9 @@ libmono_a_SOURCES =		\
 	exception.c		\
 	invoke.c		\
 	message.c		\
-	linear-scan.c
+	linear-scan.c		\
+	helpers.h		\
+	helpers.c
 
 mono_SOURCES = mono.c
 

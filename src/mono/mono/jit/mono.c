@@ -194,6 +194,7 @@ usage (char *name)
 		 "    --debug-args ARGS  comma-separated list of additional arguments for the\n"
 		 "                       symbol writer.  See the manpage for details.\n"
 		 "    --profile          record and dump profile info\n"
+		 "    --breakonex        set a breakpoint for unhandled exception\n"
 		 "    --break NAME       insert a breakpoint at the start of method NAME\n"
 		 "                       (NAME is in `namespace.name:methodname' format)\n"
 		 "    --precompile name  precompile NAME before executing the main application:\n"
@@ -251,6 +252,8 @@ main (int argc, char *argv [])
 			mono_jit_inline_code = FALSE;
 		else if (strcmp (argv [i], "--nols") == 0)
 			mono_use_linear_scan = FALSE;
+		else if (strcmp (argv [i], "--breakonex") == 0)
+			mono_break_on_exc = TRUE;
 		else if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
 		else if (strcmp (argv [i], "--break") == 0) {

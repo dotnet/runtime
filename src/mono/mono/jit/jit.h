@@ -33,6 +33,16 @@
 
 #include "regset.h"
 
+/* fixme: configure should set that */
+#define ARCH_X86 
+
+#ifdef ARCH_X86
+#define MB_TERM_LDIND_REF MB_TERM_LDIND_I4
+#define MB_TERM_LDIND_U4 MB_TERM_LDIND_I4
+#define MB_TERM_STIND_REF MB_TERM_STIND_I4
+#define MB_TERM_REMOTE_STIND_REF MB_TERM_REMOTE_STIND_I4
+#endif
+
 #define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
 
 #define VARINFO(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num))
@@ -215,6 +225,7 @@ extern gboolean mono_jit_share_code;
 extern gboolean mono_jit_inline_code;
 extern gboolean mono_use_linear_scan;
 extern gboolean mono_use_fast_iconv;
+extern gboolean mono_break_on_exc;
 
 extern guint32  mono_jit_tls_id;
 
@@ -237,18 +248,9 @@ mono_jit_compile_image     (MonoImage *image, int verbose);
 void
 mono_jit_compile_class     (MonoAssembly *assembly, char *compile_class,
 			    int compile_times, int verbose);
-MBTree *
-mono_ctree_new             (MonoMemPool *mp, int op, MBTree *left, 
-			    MBTree *right);
-MBTree *
-mono_ctree_new_leaf        (MonoMemPool *mp, int op);
-
 void
 mono_add_jump_info         (MonoFlowGraph *cfg, gpointer ip, 
 			    MonoJumpInfoType type, gpointer target);
-
-void
-mono_disassemble_code      (guint8 *code, int size, char *id);
 
 gpointer 
 mono_compile_method        (MonoMethod *method);
@@ -321,13 +323,5 @@ void
 arch_method_return_message_restore (MonoMethod *method, gpointer stack, 
 				    MonoObject *result, MonoArray *out_args);
 
-
-/* some handy debugging functions */
-
-void
-mono_print_ctree           (MonoFlowGraph *cfg, MBTree *tree);
-
-void
-mono_print_forest          (MonoFlowGraph *cfg, GPtrArray *forest);
 
 #endif

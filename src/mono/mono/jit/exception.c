@@ -215,11 +215,14 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			ip = (gpointer)(*((int *)bp + 1) - 5);
 			bp = (gpointer)(*((int *)bp));
 
-			if (bp >= end_of_stack)
-				return FALSE;
+			if (bp >= end_of_stack) {
+				if (!jit_tls->env)
+					return FALSE;
+				return TRUE;
+			}
 	
 		} else {
-			if (!lmf) 
+			if (!lmf)
 				return FALSE;
 
 			bp = (gpointer)lmf->ebp;
@@ -247,8 +250,11 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 
 			lmf = lmf->previous_lmf;
 
-			if (bp >= end_of_stack)
-				return FALSE;
+			if (bp >= end_of_stack) {
+				if (!jit_tls->env)
+					return FALSE;
+				return TRUE;
+			}
 		}
 	}
 	
@@ -295,8 +301,10 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	cleanup = jit_tls->abort_func;
 
 	if (!arch_exc_is_caught (domain, jit_tls, ip, (gpointer *)ctx->SC_EBP, obj)) {
-		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-			mono_debug_make_symbols ();
+		if (mono_break_on_exc) {
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+				mono_debug_make_symbols ();
+			G_BREAKPOINT ();
 		}
 		mono_unhandled_exception (obj);
 	}
