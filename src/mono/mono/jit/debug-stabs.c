@@ -1,0 +1,165 @@
+#include <stdlib.h>
+#include <string.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/tokentype.h>
+#include <mono/jit/codegen.h>
+#include <mono/jit/dwarf2.h>
+#include <mono/jit/debug.h>
+
+#include "debug-private.h"
+
+typedef struct {
+	char *name;
+	char *spec;
+} BaseTypes;
+
+/*
+ * Not 64 bit clean.
+ * Note: same order of MonoTypeEnum.
+ */
+static BaseTypes
+base_types[] = {
+	{"", NULL},
+	{"Void", "(0,1)"},
+	{"Boolean", ";0;255;"},
+	{"Char", ";0;65535;"},
+	{"SByte", ";-128;127;"},
+	{"Byte", ";0;255;"},
+	{"Int16", ";-32768;32767;"},
+	{"UInt16", ";0;65535;"},
+	{"Int32", ";0020000000000;0017777777777;"},
+	{"UInt32", ";0000000000000;0037777777777;"},
+	{"Int64", ";01000000000000000000000;0777777777777777777777;"},
+	{"UInt64", ";0000000000000;01777777777777777777777;"},
+	{"Single", "r(0,8);4;0;"},
+	{"Double", "r(0,8);8;0;"},
+	{"String", "(0,41)=*(0,42)=xsMonoString:"}, /*string*/
+	{"", }, /*ptr*/
+	{"", }, /*byref*/
+	{"", }, /*valuetype*/
+	{"Class", "(0,44)=*(0,45)=xsMonoObject:"}, /*class*/
+	{"", }, /*unused*/
+	{"Array", }, /*array*/
+	{"", }, /*typedbyref*/
+	{"", }, /*unused*/
+	{"", }, /*unused*/
+	{"IntPtr", ";0020000000000;0017777777777;"},
+	{"UIntPtr", ";0000000000000;0037777777777;"},
+	{"", }, /*unused*/
+	{"FnPtr", "*(0,1)"}, /*fnptr*/
+	{"Object", "(0,47)=*(0,48)=xsMonoObject:"}, /*object*/
+	{"SzArray", "(0,50)=*(0,51))=xsMonoArray:"}, /*szarray*/
+	{NULL, NULL}
+};
+
+void
+mono_debug_open_assembly_stabs (AssemblyDebugInfo* info)
+{
+}
+
+void
+mono_debug_close_assembly_stabs (AssemblyDebugInfo* info)
+{
+}
+
+static void
+write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
+{
+	int i;
+	MonoMethod *method = minfo->method;
+	MonoClass *klass = method->klass;
+	MonoMethodSignature *sig = method->signature;
+	char **names = g_new (char*, sig->param_count);
+
+	/*
+	 * We need to output all the basic info, if we change filename...
+	 * fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", klass->image->assembly_name);
+	 */
+	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", minfo->name, sig->ret->type,
+		 minfo->start_line, minfo->code_start);
+
+	/* params */
+	mono_method_get_param_names (method, (const char **)names);
+	if (sig->hasthis)
+		fprintf (info->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
+			 info->next_idx++, klass->byval_arg.type, minfo->start_line, 8); /* FIXME */
+	for (i = 0; i < minfo->num_params; i++) {
+		int stack_offset = minfo->params [i].offset;
+
+		fprintf (info->f, ".stabs \"%s:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
+			 names [i], info->next_idx++, sig->params [i]->type,
+			 minfo->start_line, stack_offset);
+	}
+
+	/* local vars */
+	for (i = 0; i < minfo->num_locals; ++i) {
+		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+		int stack_offset = minfo->locals [i].offset;
+
+		fprintf (info->f, ".stabs \"local_%d:(0,%d)=(0,%d)\",128,0,%d,%d\n",
+			 i, info->next_idx++, header->locals [i]->type, minfo->start_line, stack_offset);
+	}
+
+	fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->start_line, 0);
+
+	for (i = 1; i < minfo->line_numbers->len; i++) {
+		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
+
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line, lni->address - minfo->code_start);
+	}
+
+	/* end of function */
+	fprintf (info->f, ".stabs \"\",36,0,0,%d\n", minfo->code_size);
+
+	g_free (names);
+	fflush (info->f);
+}
+
+static void
+get_enumvalue (MonoClass *klass, int index, char *buf)
+{
+	guint32 const_cols [MONO_CONSTANT_SIZE];
+	const char *ptr;
+	guint32 crow = mono_metadata_get_constant_index (klass->image, MONO_TOKEN_FIELD_DEF | (index + 1));
+
+	if (!crow) {
+		buf [0] = '0';
+		buf [1] = 0;
+		return;
+	}
+	mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
+	ptr = mono_metadata_blob_heap (klass->image, const_cols [MONO_CONSTANT_VALUE]);
+	switch (const_cols [MONO_CONSTANT_TYPE]) {
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+		/* FIXME: add other types... */
+	default:
+		g_snprintf (buf, 64, "%d", *(gint32*)ptr);
+	}
+}
+
+static void
+write_method_func (gpointer key, gpointer value, gpointer user_data)
+{
+	write_method_stabs (user_data, value);
+}
+
+void
+mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
+{
+	int i;
+	for (i = 0; base_types [i].name; ++i) {
+		if (! base_types [i].spec)
+			continue;
+		fprintf (info->f, ".stabs \"%s:t(0,%d)=", base_types [i].name, i);
+		if (base_types [i].spec [0] == ';') {
+			fprintf (info->f, "r(0,%d)%s\"", i, base_types [i].spec);
+		} else {
+			fprintf (info->f, "%s\"", base_types [i].spec);
+		}
+		fprintf (info->f, ",128,0,0,0\n");
+	}
+
+	g_hash_table_foreach (info->methods, write_method_func, info);
+}
