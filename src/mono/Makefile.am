@@ -79,7 +79,7 @@ fasterstrap: tmpinst-mcs-full-build
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
-bootstrap-check: check mcs-do-run-test
+bootstrap-check: check mcs-do-run-test-profiles
 
 # building with monolite
 
@@ -137,18 +137,20 @@ mcs-do-short-build:
 mcs-do-full-build:
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
-	cd $(mcs_topdir) && $(MAKE) all-profiles
+	cd $(mcs_topdir) && $(MAKE) NO_SIGN_ASSEMBLY=yes all-profiles
 
 mcs-do-clean-profiles:
 	cd $(mcs_topdir) && $(MAKE) clean-profiles
 
-mcs-do-run-test: tmpinst-dir $(tmpinst)/bin/mbas
+mcs-do-run-test-profiles: tmpinst-dir $(tmpinst)/bin/mbas
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
-	cd $(mcs_topdir) && $(MAKE) PROFILE=default run-test
+	cd $(mcs_topdir) && $(MAKE) run-test-profiles
 
-mcs-do-compiler-tests:
-	cd $(mcs_topdir) && $(MAKE) test-compiler
+mcs-do-compiler-tests: tmpinst-dir $(tmpinst)/bin/mbas
+	tmpinst=`cd $(tmpinst) && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+	cd $(mcs_topdir) && $(MAKE) compiler-tests
 
 populate-runtime-subdir:
 	test -n '$(populate_profiles)'
