@@ -10,6 +10,7 @@
 		* <a href="#Forth">Forth</a>
 		* <a href="#mbas">Mono Basic</a> (Mono's VB.NET compiler)
 		* <a href="#dotlist">dotLisp</a>
+                * <a href="#nemerle">Nemerle</a>
 	</ul>
 
 	Languages which are known to run, but we have not done a
@@ -121,6 +122,14 @@
 	Cesar is working on Mono's implementation of JScript, the code
 	is available on CVS on module `mcs'.
 
+<a name="nemerle">
+* Nemerle
+
+        Nemerle is a new hybrid (functional, object-oriented and
+        imperative) programming language for the .NET platform. It is
+        available from <a
+        href="http://www.nemerle.org/">http://www.nemerle.org</a>.
+        
 * Missing languages
 
 	Here is a list of a few languages that we would like to see
