@@ -25,7 +25,7 @@
 		Support runtime for Visual Basic applications
 
 		<li><a
-		href="http://www.go-mono.com/class-status-Windows.Forms.html">Windows.Forms</a>:
+		href="http://www.go-mono.com/class-status-System.Windows.Forms.html">Windows.Forms</a>:
 		there is also a <a
 		href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mailing
 		list available</a>

@@ -1,3 +1,6 @@
+2002-12-27  Jeroen Janssen <japj@darius.demon.nl>
+	* fixed url for System.Windows.Forms in the class status
+	
 2002-12-18  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: moved struct tm field tm_gmtoff check before the check
