@@ -1,5 +1,16 @@
 2004-05-01  Duncan Mak  <duncan@ximian.com>
 
+	* runtime/net_1_1/Makefile.am:
+	* runtime/net_2_0/Makefile.am (gac_assemblies_list): Add NUnit
+	dlls here.
+	(non_gac_assemblies): Removed, every thing is migrated over to gac_assemblies.
+	(EXTRA_DIST): Include only gac_assemblies.
+	(dist_assemblies_DATA): It's referring to $(non_gac_assemblies)
+	and that is no gone now. So remove as well.
+	($(non_gac_assemblies)): Bye bye.
+
+2004-05-01  Duncan Mak  <duncan@ximian.com>
+	
 	* runtime/net_1_1/Makefile.am (gac_assemblies_list): Add
 	System.Web.Services. Someone accidentally took the line out.
 
