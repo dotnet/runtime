@@ -117,7 +117,7 @@
 	<p>The System.Data.dll gets built with the rest of the class library.
 	To compile the System.Data.dll assembly separately, you need:
 
-	<b>On GNU/Linux and Unix</b>
+	<b>On Unix</b>
 
 	<ul>
 		* update your mono sources. Be sure you have latest mcs.exe
@@ -175,13 +175,13 @@
 		
 	<p>Installation instructions for PostgreSQL DBMS:
 
-	<b>On GNU/Linux and Unix</b>
+	<b>On Unix</b>
 
 	<ul>
 		* Read the PostgreSQL Installation Instructions 
 		at \usr\doc\postgresql-x.x.x\html\installation.html
 		
-		* Depending on your GNU/Linux distribution or Unix, 
+		* Depending on your Unix system, 
 		PostgreSQL maybe already installed, a database user 'postgres' created, 
 		a linux user 'postgres' created and initdb ran.  Or maybe not.
 
