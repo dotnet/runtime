@@ -757,7 +757,7 @@ emit_epilog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_create_trampoline.			    */
+/* Name		- mono_arch_create_trampoline.			    */
 /*                                                                  */
 /* Function	- Create the code that will allow a mono method to  */
 /* 		  invoke a system subroutine.			    */
@@ -765,7 +765,7 @@ emit_epilog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 /*------------------------------------------------------------------*/
 
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	guint8 *p, *code_buffer;
 	size_data sz;
@@ -796,7 +796,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_create_method_pointer			    */
+/* Name		- mono_arch_create_method_pointer		    */
 /*                                                                  */
 /* Function	- Returns a pointer to a native function that can   */
 /* 		  be used to call the specified method. 	    */
@@ -811,7 +811,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 /*								    */
 /* Logic:							    */
 /* ------							    */
-/*  mono_arch_create_method_pointer (MonoMethod *method)  		    */
+/*  mono_arch_create_method_pointer (MonoMethod *method)	    */
 /*	create the unmanaged->managed wrapper		 	    */
 /*	register it with mono_jit_info_table_add()		    */
 /*								    */

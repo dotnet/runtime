@@ -266,10 +266,11 @@ InterlockedCompareExchange(volatile gint32 *dest,
 	gint32 old;
 
 	__asm__ __volatile__ ("\tL\t%1,%0\n"
-			      "\tCS\t%3,%2,%0\n"
+			      "\tLA\t1,%0\n"
+			      "\tCS\t%3,%2,0(1)\n"
 			      : "=m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
-			      : "cc");	
+			      : "1", "cc");	
 	return(old);
 }
 
@@ -280,13 +281,14 @@ InterlockedIncrement(volatile gint32 *val)
 {
 	gint32 tmp;
 	
-	__asm__ __volatile__ ("0:\tL\t%0,%1\n"
+	__asm__ __volatile__ ("\tLA\t2,%1\n"
+			      "\tL\t%0,%1\n"
 			      "\tLR\t1,%0\n"
 			      "\tAHI\t1,1\n"
-			      "0:\tCS\t%0,1,%1\n"
+			      "0:\tCS\t%0,1,0(2)\n"
 			      "\tJNZ\t0b"
 			      : "=r" (tmp), "+m" (*val)
-			      : : "1", "cc");
+			      : : "1", "2", "cc");
 
 	return(tmp+1);
 }
@@ -296,13 +298,14 @@ InterlockedDecrement(volatile gint32 *val)
 {
 	gint32 tmp;
 	
-	__asm__ __volatile__ ("0:\tL\t%0,%1\n"
+	__asm__ __volatile__ ("\tLA\t2,%1\n"
+			      "\tL\t%0,%1\n"
 			      "\tLR\t1,%0\n"
 			      "\tAHI\t1,-1\n"
-			      "0:\tCS\t%0,1,%1\n"
+			      "0:\tCS\t%0,1,0(2)\n"
 			      "\tJNZ\t0b"
 			      : "=r" (tmp), "+m" (*val)
-			      : : "1", "cc");
+			      : : "1", "2", "cc");
 
 	return(tmp-1);
 }
@@ -313,12 +316,13 @@ InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {
 	gint32 ret;
 	
-	__asm__ __volatile__ ("0:\tL\t%1,%0\n"
-			      "\tCS\t%1,%2,%0\n"
+	__asm__ __volatile__ ("\tLA\t1,%1\n"
+			      "0:\tL\t%1,%0\n"
+			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
 			      : "+m" (*val), "=r" (ret)
 			      : "r" (new_val)
-			      : "cc");
+			      : "1", "cc");
 
 	return(ret);
 }
@@ -330,14 +334,15 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 {
 	gint32 ret;
 
-	__asm__ __volatile__ ("0:\tL\t%0,%1\n"
+	__asm__ __volatile__ ("\tL\t%0,%1\n"
 			      "\tLR\t1,%0\n"
 			      "\tAR\t1,%2\n"
-			      "0:\tCS\t%0,1,%1\n"
+			      "\tLA\t2,%1\n"
+			      "0:\tCS\t%0,1,0(2)\n"
 			      "\tJNZ\t0b"
 			      : "=r" (ret), "+m" (*val)
 			      : "r" (add) 
-			      : "1", "cc");
+			      : "1", "2", "cc");
 	
 	return(ret);
 }
