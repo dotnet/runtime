@@ -7253,7 +7253,7 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 
 		dginst->fields [i] = *field;
 		dginst->fields [i].generic_type = field->type;
-		dginst->fields [i].type = mono_class_inflate_generic_type (field->type, ginst, NULL);
+		dginst->fields [i].type = mono_class_inflate_generic_type (field->type, ginst->context);
 	}
 
 	for (i = 0; i < dginst->count_properties; i++) {

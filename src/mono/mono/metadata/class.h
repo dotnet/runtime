@@ -349,7 +349,7 @@ MonoClass*
 mono_class_create_generic  (MonoGenericInst *ginst);
 
 MonoType*
-mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst, MonoGenericMethod *gmethod);
+mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context);
 
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context, MonoClass *klass);

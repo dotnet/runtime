@@ -200,30 +200,32 @@ mono_class_is_open_constructed_type (MonoType *t)
 }
 
 MonoType*
-mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
-				 MonoGenericMethod *gmethod)
+mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		if (gmethod && gmethod->mtype_argv)
-			return dup_type (gmethod->mtype_argv [type->data.generic_param->num],
-					 type);
+		if (context->gmethod && context->gmethod->mtype_argv)
+			return dup_type (
+				context->gmethod->mtype_argv [type->data.generic_param->num],
+				type);
 		else
 			return type;
 	case MONO_TYPE_VAR:
-		if (ginst)
-			return dup_type (ginst->type_argv [type->data.generic_param->num],
-					 type);
+		if (context->ginst)
+			return dup_type (
+				context->ginst->type_argv [type->data.generic_param->num],
+				type);
 		else
 			return type;
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
 		MonoType *nt;
-		if ((eclass->byval_arg.type == MONO_TYPE_MVAR) && gmethod && gmethod->mtype_argv) {
-			nclass = mono_class_from_mono_type (gmethod->mtype_argv [eclass->byval_arg.data.generic_param->num]);
-		} else if ((eclass->byval_arg.type == MONO_TYPE_VAR) && ginst) {
-			nclass = mono_class_from_mono_type (ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
+		if ((eclass->byval_arg.type == MONO_TYPE_MVAR) &&
+		    context->gmethod && context->gmethod->mtype_argv) {
+			nclass = mono_class_from_mono_type (context->gmethod->mtype_argv [eclass->byval_arg.data.generic_param->num]);
+		} else if ((eclass->byval_arg.type == MONO_TYPE_VAR) && context->ginst) {
+			nclass = mono_class_from_mono_type (context->ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
 		} else {
 			return type;
 		}
@@ -246,7 +248,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 
 		for (i = 0; i < oginst->type_argc; i++) {
 			MonoType *t = oginst->type_argv [i];
-			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst, gmethod);
+			nginst->type_argv [i] = mono_class_inflate_generic_type (t, context);
 
 			if (!nginst->is_open)
 				nginst->is_open = mono_class_is_open_constructed_type (nginst->type_argv [i]);
@@ -291,11 +293,9 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
 	MonoMethodSignature *res;
 	int i;
 	res = mono_metadata_signature_alloc (image, sig->param_count);
-	res->ret = mono_class_inflate_generic_type (
-		sig->ret, context->ginst, context->gmethod);
+	res->ret = mono_class_inflate_generic_type (sig->ret, context);
 	for (i = 0; i < sig->param_count; ++i)
-		res->params [i] = mono_class_inflate_generic_type (
-			sig->params [i], context->ginst, context->gmethod);
+		res->params [i] = mono_class_inflate_generic_type (sig->params [i], context);
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
@@ -319,8 +319,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 	res->clauses = header->clauses;
 	res->gen_params = header->gen_params;
 	for (i = 0; i < header->num_locals; ++i)
-		res->locals [i] = mono_class_inflate_generic_type (
-			header->locals [i], context->ginst, context->gmethod);
+		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], context);
 	return res;
 }
 
@@ -345,14 +344,20 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 		result->nmethod.method.klass = klass;
 	else {
 		MonoType *declaring = mono_class_inflate_generic_type (
-			&method->klass->byval_arg, context->ginst, context->gmethod);
+			&method->klass->byval_arg, context);
 		result->nmethod.method.klass = mono_class_from_mono_type (declaring);
 	}
 
 	result->nmethod.method.signature = inflate_generic_signature (
 		method->klass->image, method->signature, context);
 
-	result->context = context;
+	if (context->gmethod) {
+		result->context = g_new0 (MonoGenericContext, 1);
+		result->context->gmethod = context->gmethod;
+		result->context->ginst = result->nmethod.method.klass->generic_inst;
+	} else
+		result->context = result->nmethod.method.klass->generic_inst->context;
+
 	if (method->signature->is_inflated)
 		result->declaring = ((MonoMethodInflated *) method)->declaring;
 	else
@@ -438,7 +443,8 @@ class_compute_field_layout (MonoClass *class)
 		if (mono_field_is_deleted (field))
 			continue;
 		if (class->generic_inst) {
-			field->type = mono_class_inflate_generic_type (field->type, class->generic_inst, NULL);
+			field->type = mono_class_inflate_generic_type (
+				field->type, class->generic_inst->context);
 			field->type->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
@@ -1199,12 +1205,6 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 }
 
-static MonoMethod *
-inflate_method (MonoGenericInst *ginst, MonoMethod *method)
-{
-	return mono_class_inflate_generic_method (method, ginst->context, ginst->klass);
-}
-
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -1271,7 +1271,8 @@ mono_class_init (MonoClass *class)
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 
 		for (i = 0; i < class->method.count; i++)
-			class->methods [i] = inflate_method (ginst, gklass->methods [i]);
+			class->methods [i] = mono_class_inflate_generic_method (
+				gklass->methods [i], ginst->context, ginst->klass);
 
 		class->field = gklass->field;
 		class->fields = g_new0 (MonoClassField, class->field.count);
@@ -1281,7 +1282,7 @@ mono_class_init (MonoClass *class)
 			class->fields [i].generic_type = gklass->fields [i].type;
 			class->fields [i].parent = class;
 			class->fields [i].type = mono_class_inflate_generic_type (
-				class->fields [i].type, ginst, NULL);
+				class->fields [i].type, ginst->context);
 		}
 
 		class->property = gklass->property;
@@ -1293,16 +1294,19 @@ mono_class_init (MonoClass *class)
 			*prop = gklass->properties [i];
 
 			if (prop->get)
-				prop->get = inflate_method (ginst, prop->get);
+				prop->get = mono_class_inflate_generic_method (
+					prop->get, ginst->context, ginst->klass);
 			if (prop->set)
-				prop->set = inflate_method (ginst, prop->set);
+				prop->set = mono_class_inflate_generic_method (
+					prop->set, ginst->context, ginst->klass);
 		}
 
 		class->interface_count = gklass->interface_count;
 		class->interfaces = g_new0 (MonoClass *, class->interface_count);
 		for (i = 0; i < class->interface_count; i++) {
 			MonoType *it = &gklass->interfaces [i]->byval_arg;
-			MonoType *inflated = mono_class_inflate_generic_type (it, ginst, NULL);
+			MonoType *inflated = mono_class_inflate_generic_type (
+				it, ginst->context);
 			class->interfaces [i] = mono_class_from_mono_type (inflated);
 			mono_class_init (class->interfaces [i]);
 		}

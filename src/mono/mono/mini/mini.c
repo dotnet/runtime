@@ -2601,27 +2601,20 @@ unverified:
 }
 
 static MonoClassField *
-inflate_generic_field (MonoClassField *field, MonoMethod *method, MonoClass **retclass)
+inflate_generic_field (MonoClassField *field, MonoGenericContext *context, MonoClass **retclass)
 {
-	MonoGenericInst *ginst;
-	MonoGenericMethod *gmethod = NULL;
 	MonoClassField *res;
-
-	ginst = method->klass->generic_inst;
-	if (method->signature->is_inflated)
-		gmethod = ((MonoMethodInflated *) method)->context->gmethod;
 
 	res = g_new0 (MonoClassField, 1);
 	*res = *field;
-	if (ginst) {
-		*retclass = ginst->klass;
-		res->type = mono_class_inflate_generic_type (field->type, ginst, gmethod);
-	} else if (gmethod) {
+	if (context->ginst) {
+		*retclass = context->ginst->klass;
+		res->type = mono_class_inflate_generic_type (field->type, context);
+	} else if (context->gmethod) {
 		MonoType *declaring;
 
-		res->type = mono_class_inflate_generic_type (field->type, ginst, gmethod);
-		declaring = mono_class_inflate_generic_type (
-			&field->parent->byval_arg, ginst, gmethod);
+		res->type = mono_class_inflate_generic_type (field->type, context);
+		declaring = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
 		*retclass = mono_class_from_mono_type (declaring);
 	} else
 		g_assert_not_reached ();
@@ -2649,8 +2642,7 @@ mini_get_class (MonoImage *image, guint32 token, MonoGenericContext *context)
 	if (!context || !klass->generic_inst)
 		return klass;
 
-	inflated = mono_class_inflate_generic_type (
-		&klass->byval_arg, context->ginst, context->gmethod);
+	inflated = mono_class_inflate_generic_type (&klass->byval_arg, context);
 
 	return mono_class_from_mono_type (inflated);
 }
@@ -4265,8 +4257,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			field = mono_field_from_token (image, token, &klass);
 			g_assert (!field->parent->gen_params);
-			if (field->parent->generic_inst && field->parent->generic_inst->is_open)
-				field = inflate_generic_field (field, method, &klass);
+			if (generic_context && field->parent->generic_inst && field->parent->generic_inst->is_open)
+				field = inflate_generic_field (field, generic_context, &klass);
 			mono_class_init (klass);
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
@@ -4411,8 +4403,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			field = mono_field_from_token (image, token, &klass);
 			g_assert (!field->parent->gen_params);
-			if (field->parent->generic_inst && field->parent->generic_inst->is_open)
-				field = inflate_generic_field (field, method, &klass);
+			if (generic_context && field->parent->generic_inst && field->parent->generic_inst->is_open)
+				field = inflate_generic_field (field, generic_context, &klass);
 			mono_class_init (klass);
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
