@@ -229,7 +229,11 @@ dump_table_memberref (MonoImage *m)
 		case 3:
 			ks = "MethodDef"; break;
 		case 4:
-			ks = "TypeSpec"; break;
+			ks = "TypeSpec";
+			xx = get_typespec (m, idx);
+			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
+			g_free (xx);
+			break;
 		default:
 			g_error ("Unknown tag: %d\n", kind);
 		}
