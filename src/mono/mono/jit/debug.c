@@ -56,11 +56,15 @@ static AssemblyDebugInfo *mono_debug_open_image (MonoDebugHandle* debug, MonoIma
 
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2) = NULL;
 
+#ifndef PLATFORM_WIN32
+
 MonoDebuggerIOLayer mono_debugger_io_layer = {
 	InitializeCriticalSection, DeleteCriticalSection, TryEnterCriticalSection,
 	EnterCriticalSection, LeaveCriticalSection, WaitForSingleObject, SignalObjectAndWait,
 	WaitForMultipleObjects, CreateSemaphore, ReleaseSemaphore, CreateThread
 };
+
+#endif
 
 void
 mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpointer data2)
