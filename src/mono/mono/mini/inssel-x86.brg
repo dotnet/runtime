@@ -616,4 +616,36 @@ freg: OP_FCONV_TO_R4 (freg) "0" {
 	/* fixme: nothing to do ??*/
 }
 
+reg: CEE_ADD(reg, CEE_LDIND_I4 (base)) {
+	MonoInst *base = state->right->left->tree;
+
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = base->inst_basereg; 
+	tree->inst_offset = base->inst_offset; 
+	tree->opcode = OP_X86_ADD_MEMBASE; 
+	mono_bblock_add_inst (s->cbb, tree);
+} 
+
+reg: CEE_SUB(reg, CEE_LDIND_I4 (base)) {
+	MonoInst *base = state->right->left->tree;
+
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = base->inst_basereg; 
+	tree->inst_offset = base->inst_offset; 
+	tree->opcode = OP_X86_SUB_MEMBASE; 
+	mono_bblock_add_inst (s->cbb, tree);
+} 
+
+reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
+	MonoInst *base = state->right->left->tree;
+
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = base->inst_basereg; 
+	tree->inst_offset = base->inst_offset; 
+	tree->opcode = OP_X86_MUL_MEMBASE; 
+	mono_bblock_add_inst (s->cbb, tree);
+} 
 %%

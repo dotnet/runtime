@@ -8,7 +8,6 @@
  * (C) 2002 Ximian, Inc.
  *
  */
-
 #include <config.h>
 #include <string.h>
 

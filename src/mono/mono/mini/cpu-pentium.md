@@ -19,7 +19,11 @@
 #       d  EDX register
 #
 # len:number         describe the maximun length in bytes of the instruction
-# number is a positive integer
+# 		     number is a positive integer.  If the length is not specified
+#                    it defaults to zero.   But lengths are only checked if the given opcode 
+#                    is encountered during compilation. Some opcodes, like CONV_U4 are 
+#                    transformed into other opcodes in the brg files, so they do not show up 
+#                    during code generation.
 #
 # cost:number        describe how many cycles are needed to complete the instruction (unused)
 #
@@ -537,6 +541,9 @@ x86_fpop: src1:f len:2
 x86_fp_load_i8: dest:f src1:b len:7
 x86_fp_load_i4: dest:f src1:b len:7
 x86_seteq_membase: src1:b len:7
+x86_add_membase: dest:i src1:i src2:b clob:1 len:11
+x86_sub_membase: dest:i src1:i src2:b clob:1 len:11
+x86_mul_membase: dest:i src1:i src2:b clob:1 len:13
 adc: dest:i src1:i src2:i len:2 clob:1
 addcc: dest:i src1:i src2:i len:2 clob:1
 subcc: dest:i src1:i src2:i len:2 clob:1

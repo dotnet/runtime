@@ -1308,6 +1308,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	/* forward pass on the instructions to collect register liveness info */
 	while (ins) {
 		spec = ins_spec [ins->opcode];
+		
 		DEBUG (print_ins (i, ins));
 
 		if (spec [MONO_INST_SRC1]) {
@@ -2086,8 +2087,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_ADD_MEMBASE_IMM:
 			x86_alu_membase_imm (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
 			break;
+		case OP_X86_ADD_MEMBASE:
+			x86_alu_reg_membase (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset);
+			break;
 		case OP_X86_SUB_MEMBASE_IMM:
 			x86_alu_membase_imm (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
+			break;
+		case OP_X86_SUB_MEMBASE:
+			x86_alu_reg_membase (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
 		case OP_X86_INC_MEMBASE:
 			x86_inc_membase (code, ins->inst_basereg, ins->inst_offset);
@@ -2100,6 +2107,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_X86_DEC_REG:
 			x86_dec_reg (code, ins->dreg);
+			break;
+		case OP_X86_MUL_MEMBASE:
+			x86_imul_reg_membase (code, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
 		case CEE_BREAK:
 			x86_breakpoint (code);
@@ -3307,15 +3317,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	x86_leave (code);
 
 	if (CALLCONV_IS_STDCALL (sig->call_convention)) {
-	  MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-	  stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
-	}
+		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
+	} else if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
+		stack_to_pop = 4;
 	else
-	if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
-	  stack_to_pop = 4;
-	else
-	  stack_to_pop = 0;
+		stack_to_pop = 0;
 
 	if (stack_to_pop)
 		x86_ret_imm (code, stack_to_pop);

@@ -1093,5 +1093,10 @@ mono_loader_wine_init ()
 	}
 
 	g_module_symbol (module, "SharedWineInit", &shared_wine_init);
+	if (shared_wine_init == NULL)
+		return;
+
 	shared_wine_init ();
+
+	return;
 }

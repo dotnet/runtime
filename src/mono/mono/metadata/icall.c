@@ -13,6 +13,7 @@
 #include <glib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/time.h>
 #include <unistd.h>
 #if defined (PLATFORM_WIN32)
@@ -4329,23 +4330,82 @@ ves_icall_System_Environment_GetGacPath (void)
 	return mono_string_new (mono_domain_get (), MONO_ASSEMBLIES);
 }
 
+static const char *encodings [] = {
+	(char *) 1,
+		"ascii", "us_ascii", "us", "ansi_x3.4_1968",
+		"ansi_x3.4_1986", "cp367", "csascii", "ibm367",
+		"iso_ir_6", "iso646_us", "iso_646.irv:1991",
+	(char *) 2,
+		"utf_7", "csunicode11utf7", "unicode_1_1_utf_7",
+		"unicode_2_0_utf_7", "x_unicode_1_1_utf_7",
+		"x_unicode_2_0_utf_7",
+	(char *) 3,
+		"utf_8", "unicode_1_1_utf_8", "unicode_2_0_utf_8",
+		"x_unicode_1_1_utf_8", "x_unicode_2_0_utf_8",
+	(char *) 4,
+		"utf_16", "UTF_16LE", "ucs_2", "unicode",
+		"iso_10646_ucs2",
+	(char *) 5,
+		"unicodefffe", "utf_16be",
+	(char *) 6,
+		"iso_8859_1",
+	(char *) 0
+};
+
+/*
+ * Returns the internal codepage, if the value of "int_code_page" is
+ * 1 at entry, and we can not compute a suitable code page number,
+ * returns the code page as a string
+ */
 static MonoString*
-ves_icall_System_Text_Encoding_InternalCodePage (void) 
+ves_icall_System_Text_Encoding_InternalCodePage (gint32 *int_code_page) 
 {
 	const char *cset;
-
+	char *p;
+	char *codepage = NULL;
+	int code;
+	int want_name = *int_code_page;
+	int i;
+	
+	*int_code_page = -1;
 	MONO_ARCH_SAVE_REGS;
 
 	g_get_charset (&cset);
-	/* g_print ("charset: %s\n", cset); */
-	/* handle some common aliases */
-	switch (*cset) {
-	case 'A':
-		if (strcmp (cset, "ANSI_X3.4-1968") == 0)
-			cset = "us-ascii";
-		break;
+	p = codepage = strdup (cset);
+	for (p = codepage; *p; p++){
+		if (isascii (*p) && isalpha (*p))
+			*p = tolower (*p);
+		if (*p == '-')
+			*p = '_';
 	}
-	return mono_string_new (mono_domain_get (), cset);
+	/* g_print ("charset: %s\n", cset); */
+	
+	/* handle some common aliases */
+	p = encodings [0];
+	code = 0;
+	for (i = 0; p != 0; ){
+		if ((int) p < 7){
+			code = (int) p;
+			p = encodings [++i];
+			continue;
+		}
+		if (strcmp (p, codepage) == 0){
+			*int_code_page = code;
+			break;
+		}
+		p = encodings [++i];
+	}
+	
+	if (p - codepage > 5){
+		if (strstr (codepage, "utf_8") != -1)
+			*int_code_page |= 0x10000000;
+	}
+	free (codepage);
+	
+	if (want_name && *int_code_page == -1)
+		return mono_string_new (mono_domain_get (), cset);
+	else
+		return NULL;
 }
 
 static MonoBoolean

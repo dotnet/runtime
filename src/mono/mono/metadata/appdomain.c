@@ -26,7 +26,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 15
+#define MONO_CORLIB_VERSION 16
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -68,7 +68,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *class;
-
+	MonoString *arg;
+	
 	mono_marshal_init ();
 	
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
@@ -93,16 +94,21 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	mono_type_initialization_init ();
 
+	
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
-	domain->out_of_memory_ex = mono_exception_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
+	arg = mono_string_new (domain, "Out of memory");
+	domain->out_of_memory_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL);
+	
 	/* 
 	 * These two are needed because the signal handlers might be executing on
 	 * an alternate stack, and Boehm GC can't handle that.
 	 */
-	domain->null_reference_ex = mono_exception_from_name (mono_defaults.corlib, "System", "NullReferenceException");
-	domain->stack_overflow_ex = mono_exception_from_name (mono_defaults.corlib, "System", "StackOverflowException");
+	arg = mono_string_new (domain, "A null value was found where an object instance was required");
+	domain->null_reference_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL);
+	arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
+	domain->stack_overflow_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL);
 	
 	/* GC init has to happen after thread init */
 	mono_gc_init ();

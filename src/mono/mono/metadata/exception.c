@@ -33,10 +33,8 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
 }
 
 MonoException *
-mono_exception_from_name_domain (MonoDomain *domain,
-								 MonoImage *image, 
-								 const char* name_space, 
-								 const char *name)
+mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image, 
+				 const char* name_space, const char *name)
 {
 	MonoClass *klass;
 	MonoObject *o;
@@ -64,16 +62,19 @@ mono_exception_from_name_domain (MonoDomain *domain,
  *
  * Returns: the initialized exception instance.
  */
-static MonoException *
+MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
-									  const char *name, MonoString *a1, MonoString *a2)
+				      const char *name, MonoString *a1, MonoString *a2)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoClass *klass;
 	MonoMethod *method = NULL;
 	MonoObject *o;
-	int i;
+	int i, count = 1;
 	gpointer args [2];
+
+	if (a2 != NULL)
+		count++;
 	
 	klass = mono_class_from_name (image, name_space, name);
 	o = mono_object_new (domain, klass);
@@ -84,11 +85,12 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 		if (strcmp (".ctor", klass->methods [i]->name))
 			continue;
 		sig = klass->methods [i]->signature;
-		if (sig->param_count != 2)
+		if (sig->param_count != count)
 			continue;
 
-		if (sig->params [0]->type != MONO_TYPE_STRING ||
-		    sig->params [1]->type != MONO_TYPE_STRING)
+		if (sig->params [0]->type != MONO_TYPE_STRING)
+			continue;
+		if (count == 2 && sig->params [1]->type != MONO_TYPE_STRING)
 			continue;
 		method = klass->methods [i];
 	}
@@ -112,12 +114,12 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
  */
 MonoException *
 mono_exception_from_name_msg (MonoImage *image, const char *name_space,
-				  const char *name, const guchar *msg)
+			      const char *name, const guchar *msg)
 {
 	MonoException *ex;
 	MonoDomain *domain;
 
-    ex = mono_exception_from_name (image, name_space, name);
+	ex = mono_exception_from_name (image, name_space, name);
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -297,9 +299,8 @@ mono_get_exception_argument_out_of_range (const guchar *arg)
 MonoException *
 mono_get_exception_thread_state (const guchar *msg)
 {
-	return mono_exception_from_name_msg (mono_defaults.corlib, 
-										 "System.Threading", "ThreadStateException",
-										 msg);
+	return mono_exception_from_name_msg (
+		mono_defaults.corlib, "System.Threading", "ThreadStateException", msg);
 }
 
 MonoException *

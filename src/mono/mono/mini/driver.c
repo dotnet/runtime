@@ -88,6 +88,7 @@ opt_names [] = {
 	MONO_OPT_INTRINS |  \
     MONO_OPT_AOT)
 
+
 static guint32
 parse_optimizations (const char* p)
 {
