@@ -104,9 +104,36 @@
 	
 * Current Status
 
-	<p>We are still working on Step 1, but we are planning the other steps.
+	<p>We are working on Steps 1, 2, and 5.  We have only just begun on
+	steps 2 and 5 though.  We still have tons and tons of stuff to do.
 	If you have any ideas, let us know.
 	
+	<p>For Step 1, the PostgreSQL is starting to come together - it 
+	still needs a lot of work.
+	
+	<p>For Step 2, Rodrigo Moya has begun System.Data.OleDb which will use libgda
+	which is an OLE-DB/ADO data access for Unix.  The C-Sharp bindings to libgda
+	currently work - meaning they can compile, run, and you can connect to a
+	PostgreSQL database via libgda via the C-Sharp bindings to libgda.  He has also
+	added class stubs for System.Data.OleDb to cvs.
+	
+	<p>For Step 3, we need someone to start the FreeTDS .NET Data Provider so
+	we can have data access to Microsoft SQL Server and Sybase databases, or either
+	add the support in libgda.
+	
+	<p>For Step 4, we need someone to start the unixODBC .NET Data Provider, or add
+	the support in libgda.
+	
+	<p>For Step 5, we have just begun creating a Mono.Data .NET Provider - a MySQL
+	.NET Provider that uses the MySQL C Client Library.  This provider is 
+	found in Mono.Data.MySql.  We can currently connect and do a SQL INSERT and insert
+	a row into a MySQL database.  However, it currently only works on Cygwin because
+	the MySQL client library libmySQL.dll is different 
+	from the library on Linux libmysqlclient.dll.  Another problem, mysql thread functions
+	do not load for some reason.  Also, the provider only runs if you use "mint" (the Mono
+	runtime interpreter).  It does not work on "mono" (the Mono Just-In-Time compiler).
+	The C# Bindings to MySQL are thanks to Brad Meril.
+		
 	<p>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
 	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
 	
@@ -140,49 +167,82 @@
 	reader = selectCommand.ExecuteReader ();
 
 	do {
-		results++;
-		Console.WriteLine("Result Set " + results + "...");
-
 		// get the DataTable that holds
 		// the schema
-		DataTable dt = reader.GetSchemaTable();
+		DataTable dt = rdr.GetSchemaTable();
+
+		if(rdr.RecordsAffected != -1) {
+			// Results for 
+			// SQL INSERT, UPDATE, DELETE Commands 
+			// have RecordsAffected >= 0
+			Console.WriteLine("Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: " + rdr.RecordsAffected);
+		}
+		else if (dt == null)
+				Console.WriteLine("Result is from a SQL Command not (INSERT,UPDATE,DELETE).   Records Affected: " + rdr.RecordsAffected);
+		else {
+			// Results for
+			// SQL not INSERT, UPDATE, nor DELETE
+			// have RecordsAffected = -1
+			Console.WriteLine("Result is from a SQL SELECT Query.  Records Affected: " + rdr.RecordsAffected);
+		
+			// Results for a SQL Command (CREATE TABLE, SET, etc)
+			// will have a null reference returned from GetSchemaTable()
+			// 
+			// Results for a SQL SELECT Query
+			// will have a DataTable returned from GetSchemaTable()
+
+			results++;
+			Console.WriteLine("Result Set " + results + "...");
                         			
-		// number of columns in the table
-		Console.WriteLine("   Total Columns: " +
+			// number of columns in the table
+			Console.WriteLine("   Total Columns: " +
 				dt.Columns.Count);
 
-		// display the schema
-		for(c = 0; c < dt.Columns.Count; c++) {
-			Console.WriteLine("   Column Name: " + 
-						dt.Columns[c].ColumnName);
-			Console.WriteLine("          MaxLength: " +
-						dt.Columns[c].MaxLength);
-			Console.WriteLine("          Type: " +
-						dt.Columns[c].DataType);
-		}
-		int nRows = 0;
-
-		// Read and display the rows
-		while(rdr.Read()) {
-			Console.WriteLine("   Row " + nRows + ": ");
-
-			for(c = 0; c < rdr.FieldCount; c++) {
-				if(reader.IsDBNull(c) == true)
-					Console.WriteLine("      " + 
-							reader.GetName(c) + " is DBNull");
-				else
-					Console.WriteLine("      " + 
-							reader.GetName(c) + ": " +
-							reader[c].ToString());
+			// display the schema
+			foreach (DataRow schemaRow in dt.Rows) {
+				foreach (DataColumn schemaCol in dt.Columns)
+					Console.WriteLine(schemaCol.ColumnName + 
+						" = " + 
+						schemaRow[schemaCol]);
+				Console.WriteLine();
 			}
-			nRows++;
-		}
-		Console.WriteLine("   Total Rows: " + 
-					nRows);
-		} while(reader.NextResult());
+
+			int nRows = 0;
+			string output, metadataValue, dataValue;
+			// Read and display the rows
+			Console.WriteLine("Gonna do a Read() now...");
+			while(rdr.Read()) {
+				Console.WriteLine("   Row " + nRows + ": ");
+					
+				for(c = 0; c < rdr.FieldCount; c++) {
+					// column meta data 
+					DataRow dr = dt.Rows[c];
+					metadataValue = 
+						"    Col " + 
+						c + ": " + 
+						dr["ColumnName"];
+						
+					// column data
+					if(rdr.IsDBNull(c) == true)
+						dataValue = " is NULL";
+					else
+						dataValue = 
+							": " + 
+							rdr.GetValue(c);
+				
+					// display column meta data and data
+					output = metadataValue + dataValue;					
+					Console.WriteLine(output);
+				}
+				nRows++;
+			}
+			Console.WriteLine("   Total Rows: " + 
+				nRows);
+		}	
+	} while(rdr.NextResult());
 	Console.WriteLine("Total Result sets: " + results);
 			
-	reader.Close();
+	rdr.Close();
  }
 
 </pre>
@@ -226,12 +286,16 @@
  }
 </pre>
 			
-	<p>Parameters have not been tested and most likely do not work.
+	<p>We have the beginnings of Parameters support PostgreSQL.  Only
+	Input Parameters are currently supported.  Output, Input/Output,
+	and Return parameters still need to be done.
 	
 	<p>A lot of functionality in System.Data is missing, but the 
 	infrastructure is starting to come together.
 	
-	<p>A lot of Exceptions need to be thrown for various exceptions.
+	<p>A lot of Exceptions need to be thrown for various exceptions.  However,
+	SqlException, SqlErrorCollection, and SqlError have been partially
+	implemented.
 	
 	<p>Tim Coleman and Rodrigo Moya got the beginnings of the
 	SqlDataAdapter/DataSet/DataTable/DataRow to work.  Currently, 
@@ -254,9 +318,7 @@
 
  adapter = new SqlDataAdapter (sqlQuery, 
 			connectionString);
-
- adapter.SelectCommand.Connection.Open ();
-				
+ 				
  dataSet = new DataSet ();
 
  adapter.Fill (dataSet);
@@ -270,7 +332,9 @@
 	<p>We do need help on the DataSet/DataAdaptor/DataTable/DataRelation/XML 
 	functionality so we	can integrate with 
 	the ASP.NET controls and Windows.Forms controls by allowing the controls to bind 
-	to a data source.
+	to a data source.  Gonzalo, Gaurav, Leen, Patrik, Duncan, and others are 
+	working very hard on the ASP.NET support. If you want to help, 
+	contact <a href="mailto:gonzalo@ximian.com">Gonzalo Paniagua Javier</a>
 	
 	<P>Need to add XML support in System.Data.  This involves working on
 	the classes: DataSet and XmlDataDocument and the ExecuteXmlReader() in SqlCommand.
@@ -562,140 +626,110 @@ mint PostgresTest.exe
 mono PostgresTest.exe
 </pre>
     
-    <p>You should get something like:
+    <p>Below, I show how the output from PostgresTest.  I have omitted a lot
+    of the meta data for the columns except two columns.  The classes
+    used were from System.Data.SqlClient and were used to connect to a
+    PostgreSQL database and retrieve data.
 
 <p>
 <pre>   
- danmorg@DANPC ~/mono/mcs/class/System.Data/Test
- $ mcs PostgresTest.cs -r System.Data.dll
 
- danmorg@DANPC ~/mono/mcs/class/System.Data/Test
- $ mono PostgresTest.exe
+danmorg@DANPC ~/mono/mcs/class/System.Data/Test
+$ mcs PostgresTest.cs -r System.Data.dll
+
+danmorg@DANPC ~/mono/mcs/class/System.Data/Test
+$ mono PostgresTest.exe
         Postgres provider specific tests...
 
-                 Drop table:
- Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  
- table "mono_postgres_test" does not exist
-  <Stack Trace>
+                Drop table:
+Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  table "mono
+_postgres_test" does not exist
+ <Stack Trace>
 
                 Create table with all supported types:
- OK
+OK
                 Insert values for all known types:
- OK
+OK
                 Update values:
- OK
+OK
                 Insert values for all known types:
- OK
- Aggregate: count(*)
- Agg Result: 2
- Aggregate: min(text_value)
- Agg Result: This is a text
- Aggregate: max(int4_value)
- Agg Result: 1048000
- Aggregate: sum(int4_value)
- Agg Result: 1048003
-                 Select values from the database:
-                 Get Schema.
- dt.Columns.Count: 28
- * Column Name: boolean_value
-          MaxLength: 1
-          Type: System.Boolean
- * Column Name: int2_value
-          MaxLength: 2
-          Type: System.Int16
- * Column Name: int4_value
-          MaxLength: 4
-          Type: System.Int32
- * Column Name: bigint_value
-          MaxLength: 8
-          Type: System.Int64
- * Column Name: float_value
-          MaxLength: 4
-          Type: System.Single
- * Column Name: double_value
-          MaxLength: 8
-          Type: System.Double
- * Column Name: numeric_value
-          MaxLength: -1
-          Type: System.Decimal
- * Column Name: char_value
-          MaxLength: -1
-          Type: System.String
- * Column Name: varchar_value
-          MaxLength: -1
-          Type: System.String
- * Column Name: text_value
-          MaxLength: -1
-          Type: System.String
- * Column Name: point_value
-          MaxLength: 16
-          Type: System.String
- * Column Name: time_value
-          MaxLength: 8
-          Type: System.DateTime
- * Column Name: date_value
-          MaxLength: 4
-          Type: System.DateTime
- * Column Name: timestamp_value
-          MaxLength: 8
-          Type: System.DateTime
- * Column Name: null_boolean_value
-          MaxLength: 1
-          Type: System.Boolean
- * Column Name: null_int2_value
-          MaxLength: 2
-          Type: System.Int16
- * Column Name: null_int4_value
-          MaxLength: 4
-          Type: System.Int32
- * Column Name: null_bigint_value
-          MaxLength: 8
-          Type: System.Int64
- * Column Name: null_float_value
-          MaxLength: 4
-          Type: System.Single
- * Column Name: null_double_value
-          MaxLength: 8
-          Type: System.Double
- * Column Name: null_numeric_value
-          MaxLength: -1
-          Type: System.Decimal
- * Column Name: null_char_value
-          MaxLength: -1
-          Type: System.String
- * Column Name: null_varchar_value
-          MaxLength: -1
-          Type: System.String
- * Column Name: null_text_value
-          MaxLength: -1
-          Type: System.String
- * Column Name: null_point_value
-          MaxLength: 16
-          Type: System.String
- * Column Name: null_time_value
-          MaxLength: 8
-          Type: System.DateTime
- * Column Name: null_date_value
-          MaxLength: 4
-          Type: System.DateTime
- * Column Name: null_timestamp_value
-          MaxLength: 8
-          Type: System.DateTime
- Row 0:
+OK
+Aggregate: count(*)
+Agg Result: 2
+Aggregate: min(text_value)
+Agg Result: This is a text
+Aggregate: max(int4_value)
+Agg Result: 1048000
+Aggregate: sum(int4_value)
+Agg Result: 1048003
+                Select values from the database:
+Result is from a SELECT SQL Query.  Records Affected: -1
+Result Set 1...
+   Total Columns: 28
+ColumnName = boolean_value
+ColumnOrdinal = 1
+ColumnSize = 1
+NumericPrecision = 0
+NumericScale = 0
+IsUnique = False
+IsKey =
+BaseCatalogName =
+BaseColumnName = boolean_value
+BaseSchemaName =
+BaseTableName =
+DataType = System.Boolean
+AllowDBNull = False
+ProviderType = 16
+IsAliased = False
+IsExpression = False
+IsIdentity = False
+IsAutoIncrement = False
+IsRowVersion = False
+IsHidden = False
+IsLong = False
+IsReadOnly = False
+
+ ...
+
+ ColumnName = null_timestamp_value
+ ColumnOrdinal = 28
+ ColumnSize = 8
+ NumericPrecision = 0
+ NumericScale = 0
+ IsUnique = False
+ IsKey =
+ BaseCatalogName =
+ BaseColumnName = null_timestamp_value
+ BaseSchemaName =
+ BaseTableName =
+ DataType = System.DateTime
+ AllowDBNull = False
+ ProviderType = 1184
+ IsAliased = False
+ IsExpression = False
+ IsIdentity = False
+ IsAutoIncrement = False
+ IsRowVersion = False
+ IsHidden = False
+ IsLong = False
+ IsReadOnly = False
+
+ Gonna do a Read() now...
+   Row 0:
     Col 0: boolean_value: False
     Col 1: int2_value: 5
     Col 2: int4_value: 3
     Col 3: bigint_value: 9
     Col 4: float_value: 3.141590
-    Col 5: double_value: 3.141593
+    Col 5: double_value: 3.14159
     Col 6: numeric_value: 123456789012.345
     Col 7: char_value: Mono.Data!
     Col 8: varchar_value: It was not me!
     Col 9: text_value: We got data!
     Col 10: point_value: (1,0)
-    Col 11: time_value: Monday, 01 January 1 21:13:14
-    Col 12: date_value: Tuesday, 29 February 2000 00:00:00
-    Col 13: timestamp_value: Sunday, 29 February 2004 14:00:11
+    Col 11: time_value: 01/01/1 21:13:14
+    Col 12: date_value: 02/29/2000 00:00:00
+    Col 13: timestamp_value: 02/29/2004 14:00:11
     Col 14: null_boolean_value is NULL
     Col 15: null_int2_value is NULL
     Col 16: null_int4_value is NULL
@@ -710,21 +744,21 @@ mono PostgresTest.exe
     Col 25: null_time_value is NULL
     Col 26: null_date_value is NULL
     Col 27: null_timestamp_value is NULL
- Row 1:
+   Row 1:
     Col 0: boolean_value: True
     Col 1: int2_value: -22
     Col 2: int4_value: 1048000
     Col 3: bigint_value: 123456789012345
     Col 4: float_value: 3.141590
-    Col 5: double_value: 3.141593
+    Col 5: double_value: 3.14159
     Col 6: numeric_value: 123456789012.345
     Col 7: char_value: This is a char
     Col 8: varchar_value: This is a varchar
     Col 9: text_value: This is a text
     Col 10: point_value: (1,0)
-    Col 11: time_value: Monday, 01 January 1 21:13:14
-    Col 12: date_value: Tuesday, 29 February 2000 00:00:00
-    Col 13: timestamp_value: Sunday, 29 February 2004 14:00:11
+    Col 11: time_value: 01/01/1 21:13:14
+    Col 12: date_value: 02/29/2000 00:00:00
+    Col 13: timestamp_value: 02/29/2004 14:00:11
     Col 14: null_boolean_value is NULL
     Col 15: null_int2_value is NULL
     Col 16: null_int4_value is NULL
@@ -739,7 +773,16 @@ mono PostgresTest.exe
     Col 25: null_time_value is NULL
     Col 26: null_date_value is NULL
     Col 27: null_timestamp_value is NULL
- Rows: 2
+   Total Rows Retrieved: 2
+ Total Result sets: 1
+                Call ExecuteReader with a SQL Command. (Not INSERT,UPDATE,DELETE
+ ).
+ Result is from a SQL Command not (INSERT,UPDATE,DELETE).   Records Affected: -1
+ Total Result sets: 0
+                Call ExecuteReader with a SQL Command. (Is INSERT,UPDATE,DELETE)
+ .
+ Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: 1
+ Total Result sets: 0
                 Calling stored procedure version()
  Result: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.95.3-5
  Database Server Version: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.9
