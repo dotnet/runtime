@@ -1200,7 +1200,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 		MonoString *addr_string;
 		char addr[16];
 		
-		snprintf(addr, 16, "%u.%u.%u.%u",
+		g_snprintf(addr, 16, "%u.%u.%u.%u",
 			 (unsigned char)he->h_addr_list[i][0],
 			 (unsigned char)he->h_addr_list[i][1],
 			 (unsigned char)he->h_addr_list[i][2],

@@ -48,6 +48,10 @@
 #include "interp.h"
 #include "hacks.h"
 
+#ifdef _WIN32
+#define isnan _isnan
+#define finite _finite
+#endif
 
 typedef struct {
 	union {
@@ -637,7 +641,7 @@ db_match_method (gpointer data, gpointer user_data)
 		break_on_method = 1;
 		return;
 	}
-	startname = rindex ((char*)data, ':');
+	startname = strrchr ((char*)data, ':');
 	if (!startname)
 		return;
 	if (strcmp(startname + 1, m->name) != 0)
