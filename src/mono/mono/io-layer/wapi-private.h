@@ -17,6 +17,16 @@
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/daemon-private.h>
 
+/* for non-GCC compilers where Glib gives an empty pretty function 
+ * macro create one that gives file & line number instead
+ */
+#ifndef __GNUC__
+#undef G_GNUC_PRETTY_FUNCTION
+#define STRINGIZE_HELPER(exp) #exp
+#define STRINGIZE(exp) STRINGIZE_HELPER(exp)
+#define G_GNUC_PRETTY_FUNCTION __FILE__ "(" STRINGIZE(__LINE__) ")"
+#endif
+
 /* Catch this here rather than corrupt the shared data at runtime */
 #if MONO_SIZEOF_SUNPATH==0
 #error configure failed to discover size of unix socket path
