@@ -61,24 +61,20 @@ function getChildrenByTagName (elt, strTag)
 function viewAll (elt, dictTypes)
 {
 	var fView = false;
-	var rgElts = getChildrenByTagName (elt, 'DIV');
-	var cElts = rgElts.length;
-	if (cElts == 0)
+	var rgImages = getChildrenByTagName (elt, 'IMG');
+	var cImages = rgImages.length;
+	for (var iImage = 0; iImage < cImages; iImage++)
 	{
-		var rgImages = getChildrenByTagName (elt, 'IMG');
-		var cImages = rgImages.length;
-		for (var iImage = 0; iImage < cImages; iImage++)
+		var strImage = trimSrc (rgImages [iImage].src);
+		if (dictTypes [strImage])
 		{
-			var image = rgImages [iImage];
-			var strImage = trimSrc (rgImages [iImage].src);
-			if (dictTypes [strImage])
-			{
-				fView = true;
-				break;
-			}
+			fView = true;
+			break;
 		}
 	}
-	else
+	var rgElts = getChildrenByTagName (elt, 'DIV');
+	var cElts = rgElts.length;
+	if (cElts != 0)
 	{
 		var iElt;
 		for (iElt = 0; iElt < cElts; iElt ++)
@@ -322,7 +318,7 @@ function filterTree ()
 		dictTypes ['se'] = true;
 	if (eltExtra.checked)
 		dictTypes ['sx'] = true;
-	dictTypes ['sc'] = true;
+//	dictTypes ['sc'] = true;
 
 	viewAll (document.getElementById ('ROOT'), dictTypes);
 }
