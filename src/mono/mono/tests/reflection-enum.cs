@@ -21,7 +21,7 @@ namespace Test {
 			if (verbose != 0) {
 				Console.WriteLine ("Enum "+t.Name);
 				for (i = 0; i < names.Length; ++i) {
-					Console.WriteLine (names [i] + " = " + ((int)values.GetValue(i)).ToString());
+					Console.WriteLine ("{0} = {1} (ToString: {2})", names [i], ((int)values.GetValue(i)).ToString(), values.GetValue(i));
 				}
 			}
 			if (name == defaultn) {
