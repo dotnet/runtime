@@ -849,12 +849,12 @@ MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
 	MonoImage *image, *image2;
-	const char *absfname;
+	char *absfname;
 	
 	g_return_val_if_fail (fname != NULL, NULL);
 	
 	if (g_path_is_absolute (fname)) 
-		absfname = fname;
+		absfname = (char*)fname;
 	else {
 		gchar *path = g_get_current_dir ();
 		absfname = g_build_filename (path, fname, NULL);
@@ -960,9 +960,22 @@ mono_image_close (MonoImage *image)
 
 	if (image->f)
 		fclose (image->f);
-	if (image->raw_data_allocated)
-		g_free (image->raw_data);
+	if (image->raw_data_allocated) {
+		/* image->raw_metadata and cli_sections might lie inside image->raw_data */
+		MonoCLIImageInfo *ii = image->image_info;
+		int i;
 
+		if ((image->raw_metadata > image->raw_data) &&
+			(image->raw_metadata <= (image->raw_data + image->raw_data_len)))
+			image->raw_metadata = NULL;
+
+		for (i = 0; i < ii->cli_section_count; i++)
+			if (((char*)(ii->cli_sections [i]) > image->raw_data) &&
+				((char*)(ii->cli_sections [i]) <= ((char*)image->raw_data + image->raw_data_len)))
+				ii->cli_sections [i] = NULL;
+
+		g_free (image->raw_data);
+	}
 	g_free (image->name);
 	g_free (image->files);
 
