@@ -181,6 +181,7 @@ TEST_CS_SRC=			\
 	bug-46781.cs		\
 	bug-48015.cs		\
 	bug-42136.cs		\
+	interlocked.cs		\
 	cross-domain.cs
 
 if X86
