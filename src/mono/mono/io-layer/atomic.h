@@ -407,6 +407,125 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 	return(tmp);
 }
 
+#elif defined(__arm__)
+#define WAPI_ATOMIC_ASM
+
+static inline gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp)
+{
+	int a, b;
+
+	__asm__ __volatile__ (    "0:\n\t"
+				  "ldr %1, [%2]\n\t"
+				  "cmp %1, %4\n\t"
+				  "bne 1f\n\t"
+				  "swp %0, %3, [%2]\n\t"
+				  "cmp %0, %1\n\t"
+				  "swpne %3, %0, [%2]\n\t"
+				  "bne 0b\n\t"
+				  "1:"
+				  : "=&r" (a), "=&r" (b)
+				  : "r" (dest), "r" (exch), "r" (comp)
+				  : "cc", "memory");
+
+	return a;
+}
+
+static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
+{
+	gpointer a, b;
+
+	__asm__ __volatile__ (    "0:\n\t"
+				  "ldr %1, [%2]\n\t"
+				  "cmp %1, %4\n\t"
+				  "bne 1f\n\t"
+				  "swpeq %0, %3, [%2]\n\t"
+				  "cmp %0, %1\n\t"
+				  "swpne %3, %0, [%2]\n\t"
+				  "bne 0b\n\t"
+				  "1:"
+				  : "=&r" (a), "=&r" (b)
+				  : "r" (dest), "r" (exch), "r" (comp)
+				  : "cc", "memory");
+
+	return a;
+}
+
+static inline gint32 InterlockedIncrement(volatile gint32 *dest)
+{
+	int a, b, c;
+
+	__asm__ __volatile__ (  "0:\n\t"
+				"ldr %0, [%3]\n\t"
+				"add %1, %0, %4\n\t"
+				"swp %2, %1, [%3]\n\t"
+				"cmp %0, %2\n\t"
+				"swpne %1, %2, [%3]\n\t"
+				"bne 0b"
+				: "=&r" (a), "=&r" (b), "=&r" (c)
+				: "r" (dest), "r" (1)
+				: "cc", "memory");
+
+	return b;
+}
+
+static inline gint32 InterlockedDecrement(volatile gint32 *dest)
+{
+	int a, b, c;
+
+	__asm__ __volatile__ (  "0:\n\t"
+				"ldr %0, [%3]\n\t"
+				"add %1, %0, %4\n\t"
+				"swp %2, %1, [%3]\n\t"
+				"cmp %0, %2\n\t"
+				"swpne %1, %2, [%3]\n\t"
+				"bne 0b"
+				: "=&r" (a), "=&r" (b), "=&r" (c)
+				: "r" (dest), "r" (-1)
+				: "cc", "memory");
+
+	return b;
+}
+
+static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
+{
+	int a;
+
+	__asm__ __volatile__ (  "swp %0, %2, [%1]"
+				: "=&r" (a)
+				: "r" (dest), "r" (exch));
+
+	return a;
+}
+
+static inline gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
+{
+	gpointer a;
+
+	__asm__ __volatile__ (	"swp %0, %2, [%1]"
+				: "=&r" (a)
+				: "r" (dest), "r" (exch));
+
+	return a;
+}
+
+static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
+{
+	int a, b, c;
+
+	__asm__ __volatile__ (  "0:\n\t"
+				"ldr %0, [%3]\n\t"
+				"add %1, %0, %4\n\t"
+				"swp %2, %1, [%3]\n\t"
+				"cmp %0, %2\n\t"
+				"swpne %1, %2, [%3]\n\t"
+				"bne 0b"
+				: "=&r" (a), "=&r" (b), "=&r" (c)
+				: "r" (dest), "r" (add)
+				: "cc", "memory");
+
+	return a;
+}
+
 #else
 
 extern gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp);
