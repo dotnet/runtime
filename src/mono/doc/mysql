@@ -175,7 +175,7 @@
           "User ID=myuserid;" +
           "Password=mypassword;";
        IDbConnection dbcon;
-       dbcon = new MySQLConnection(connectionString);
+       dbcon = new MySqlConnection(connectionString);
        dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
