@@ -3095,6 +3095,7 @@ static gconstpointer icall_map [] = {
 	"System.IO.MonoIO::DeleteFile", ves_icall_System_IO_MonoIO_DeleteFile,
 	"System.IO.MonoIO::GetFileAttributes", ves_icall_System_IO_MonoIO_GetFileAttributes,
 	"System.IO.MonoIO::SetFileAttributes", ves_icall_System_IO_MonoIO_SetFileAttributes,
+	"System.IO.MonoIO::GetFileType(intptr)", ves_icall_System_IO_MonoIO_GetFileType,
 	"System.IO.MonoIO::GetFileStat", ves_icall_System_IO_MonoIO_GetFileStat,
 	"System.IO.MonoIO::Open", ves_icall_System_IO_MonoIO_Open,
 	"System.IO.MonoIO::Close", ves_icall_System_IO_MonoIO_Close,

@@ -100,6 +100,9 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path);
 extern gboolean
 ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs);
 
+extern gint32
+ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle);
+
 extern gboolean 
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat);
 

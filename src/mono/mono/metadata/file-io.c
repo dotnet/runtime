@@ -293,6 +293,12 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs)
 	return SetFileAttributes (mono_string_chars (path), attrs);
 }
 
+gint32
+ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle)
+{
+	return(GetFileType (handle));
+}
+
 gboolean 
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat)
 {

@@ -1202,6 +1202,12 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": writing up to %d bytes to pipe %p (fd %d)", numbytes,
+		   handle, pipe_private_handle->fd);
+#endif
+	
 	ret=write(pipe_private_handle->fd, buffer, numbytes);
 	if(ret==-1) {
 #ifdef DEBUG
@@ -1749,6 +1755,16 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		_wapi_handle_unlock_handle (handle);
 	} else {
 #ifdef DEBUG
+		ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+					(gpointer *)&file_handle,
+					(gpointer *)&file_private_handle);
+		if(ok==FALSE) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": error looking up console handle %p",
+				   handle);
+			return(NULL);
+		}
+
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": reusing handle %p with fd %d", handle,
 			  file_private_handle->fd);
