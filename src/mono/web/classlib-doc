@@ -17,6 +17,7 @@
 	
 	<ul>
 		<li><a href="#monodoc">monodoc - A graphical documentation viewer.</a></li>
+
 		<li>xmllint: a tool used to validate a proper XML document.
 	</ul>
 
@@ -27,11 +28,15 @@
 
 *** <a name="monodoc">MonoDoc</a>
 
-	 A graphical documentation viewer written in Gtk#.  In the
-	future we will have an ASP.NET front-end to present the
-	documentation on the web as well.
+	The MonoDoc system offers both a GUI client as well as a <a
+	href="http://www.go-mono.com:8080">Web-based interface</a> to
+	the documentation.
 
-** Status and Roadmap
+	The GUI edition uses <a
+	href="http://gtk-sharp.sf.net">Gtk#</a> and the Web edition
+	uses Mono's ASP.NET implementation. 
+
+	<img src="images/Screenshot-Monodoc.png">
 
 ** Get Involved
 

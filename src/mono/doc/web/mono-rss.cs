@@ -89,7 +89,7 @@ class X {
 			}
 		}
 		
-		rss.XmlDocument.Save (output, new UTF8Encoding (false, false));
+		rss.XmlDocument.Save (output);
 	}
 	
 	static int Main (string [] args)

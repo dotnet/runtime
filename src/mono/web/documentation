@@ -25,7 +25,11 @@
 	 	  libraries as well as the class libraries produced by
 		  the project).
 
-		* Tutorials on Mono and the specifics of running it. 
+		* Tutorials on Mono and the specifics of running it
+		  (The <a href="http://www.monohispano.org">Mono
+		  Hispano</a> team has produced lots of <a
+		  href="http://www.monohispano.org/tutoriales.php">tutorials
+		  in spanish</a>
 
 		* A guide to Mono as compared to the Microsoft.NET
 		  Framework SDK
