@@ -1395,6 +1395,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			case CEE_LDARG:
 			case CEE_INITOBJ:
 			case CEE_LDFTN:
+			case CEE_LDVIRTFTN:
 				ip +=5;
 				break;
 			case CEE_ENDFILTER:
@@ -1847,12 +1848,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip += 4;
 			
 			/* need to handle fieldrefs */
-			klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 
-			        mono_metadata_typedef_from_field (image, token & 0xffffff));
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				field = mono_field_from_memberref (image, token, &klass);
+				mono_class_init (klass);
+			} else {
+				klass = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+				mono_class_init (klass);
+				field = mono_class_get_field (klass, token);
+			}
 
-			mono_class_init (klass);
-
-			field = mono_class_get_field (klass, token);
 			g_assert (field);
 
 			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
@@ -1865,6 +1870,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t1->data.p = addr;
 				t1 = ctree_create_load (cfg, field->type, t1, &svt, FALSE);
+
 			}
 
 			PUSH_TREE (t1, svt);
@@ -1919,12 +1925,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			--sp;
 
 			/* need to handle fieldrefs */
-			klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 
-			        mono_metadata_typedef_from_field (image, token & 0xffffff));
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				field = mono_field_from_memberref (image, token, &klass);
+				mono_class_init (klass);
+			} else {
+				klass = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+				mono_class_init (klass);
+				field = mono_class_get_field (klass, token);
 
-			mono_class_init (klass);
-	
-			field = mono_class_get_field (klass, token);
+			}
 			g_assert (field);
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
@@ -3059,6 +3069,30 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
 				t1 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t1, NULL);
 				PUSH_TREE (t1, VAL_POINTER);
+				break;
+			}
+			case CEE_LDVIRTFTN: {
+				MonoMethod *cm;
+				guint32 token;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				--sp;
+
+				cm = mono_get_method (image, token, NULL);
+				g_assert (cm);
+
+				if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+					t2 = mono_ctree_new_leaf (mp, MB_TERM_INTF_ADDR);
+				else 
+					t2 = mono_ctree_new_leaf (mp, MB_TERM_VFUNC_ADDR);
+
+				t2->data.m = cm;
+
+				t1 = mono_ctree_new (mp, MB_TERM_LDFTN, *sp, t2);
+
+				PUSH_TREE (t1, VAL_POINTER);
+
 				break;
 			}
 			case CEE_INITOBJ: {

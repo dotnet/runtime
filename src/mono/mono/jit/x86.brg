@@ -176,7 +176,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
-%term LDLEN
+%term LDLEN LDFTN
 
 #
 # we start at stmt
@@ -1066,6 +1066,8 @@ reg: NEWARR (reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
+
+	PRINT_REG ("NEWARR", tree->reg1);
 }
 
 reg: NEWOBJ {
@@ -1085,6 +1087,7 @@ reg: NEWOBJ {
 		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
+	PRINT_REG ("NEWOBJ", tree->reg1);
 }
 
 reg: NEWSTRUCT {
@@ -1618,6 +1621,16 @@ reg: CALL_I4 (this, LDIND_REF (ADDR_G)) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
+reg: LDFTN (reg, INTF_ADDR) {
+	int lreg = tree->left->reg1;
+
+	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
+	x86_mov_reg_membase (s->code, lreg, lreg, 
+	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
+	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
+	x86_mov_reg_membase (s->code, tree->reg1, lreg, tree->right->data.m->slot << 2, 4);
+}
+
 reg: CALL_I4 (this, INTF_ADDR) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
@@ -1651,6 +1664,14 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
+reg: LDFTN (reg, VFUNC_ADDR) {
+	int lreg = tree->left->reg1;
+	
+	x86_mov_reg_membase (s->code, tree->reg1, lreg, 0, 4);
+	
+	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, G_STRUCT_OFFSET (MonoClass, vtable) + (tree->right->data.m->slot << 2), 4);
+}
+
 reg: CALL_I4 (this, VFUNC_ADDR) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
@@ -1670,10 +1691,7 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
-	
-	x86_mov_reg_membase (s->code, treg, lreg, G_STRUCT_OFFSET (MonoClass, vtable) + (tree->right->data.m->slot << 2), 4);
-
+	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);	
 	x86_call_virtual (s->code, lreg, 
 	        G_STRUCT_OFFSET (MonoClass, vtable) + (tree->right->data.m->slot << 2));
 

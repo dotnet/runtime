@@ -2287,10 +2287,15 @@ array_constructed:
 			--sp;
 
 			/* need to handle fieldrefs */
-			klass = mono_class_get (image, 
-				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-			mono_class_init (klass);
-			field = mono_class_get_field (klass, token);
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				field = mono_field_from_memberref (image, token, &klass);
+				mono_class_init (klass);
+			} else {
+				klass = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+				mono_class_init (klass);
+				field = mono_class_get_field (klass, token);
+			}
 			g_assert (field);
 			stackval_to_data (field->type, sp, (char*)MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			vt_free (sp);

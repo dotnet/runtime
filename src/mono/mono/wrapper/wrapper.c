@@ -134,6 +134,10 @@ mono_wrapper_readdir (gpointer dir)
 	struct dirent* p;
 
 	p = readdir((DIR*)dir);
+
+	// fixme: ugly hack - remove this code ASAP
+	return mono_string_new (p);
+
 	return p != NULL ? p->d_name : NULL;
 }
 
