@@ -8,6 +8,11 @@ TESTSRC=			\
 	fib.cs 			\
 	life.cs 		\
 	castclass.cs		\
+	cmov1.cs		\
+	cmov2.cs		\
+	cmov3.cs		\
+	cmov4.cs		\
+	cmov5.cs		\
 	commute.cs		\
 	isinst.cs		\
 	sbperf1.cs		\
@@ -20,6 +25,7 @@ TESTSRC=			\
 	inline5.cs		\
 	inline6.cs		\
 	inline-readonly.cs	\
+	max-min.cs		\
 	muldiv.cs		\
 	loops.cs		\
 	initlocals.cs		\
@@ -30,6 +36,8 @@ TESTSRC=			\
 	readonly-byte-array.cs  \
 	readonly-inst.cs	\
 	readonly-vt.cs		\
+	regalloc.cs		\
+	regalloc-2.cs		\
 	bulkcpy.il		\
 	math.cs			\
 	boxtest.cs		\
