@@ -11,6 +11,7 @@
 
 	.navi { font-size: 14px; background: #444444; }
 	.subnavi { font-size: 12px; }
+        .footnote { font-size: 10px; color: #aaaaaa; }
 
 	a.navi { color: #ffffff; text-decoration: none; font-weight: bold; }
 	a.navi:visited { color: #cccccc; }
@@ -62,6 +63,13 @@
         <td colspan="2" bgcolor="black"><img src="images/pixel.gif" height="1"></td>
         <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
         <td><img src="images/pixel.gif"></td>
+    </tr>
+
+    <td colspan="2"></td>
+    <td colspan="2" align="center">
+	<a class="footnote" href="mailto: webmaster@go-mono.com">webmaster@go-mono.com</a>
+    </td>
+    <td colspan="2"></td>
     </tr>
 </tr>
 </table>
