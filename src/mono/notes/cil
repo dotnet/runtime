@@ -4,3 +4,10 @@ Random collection of notes
 	  opcodes be a signed integer instead of unsigned?
 
 
+Storage
+
+	The CIL metadata is a very compressed file format, even the 
+	sizes of blobs and strings are recorded in a compressed form.
+	Still, all strings are encoded using 16-bit chars, instead of the
+	more efficient UTF-8.
+
