@@ -463,6 +463,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 	MonoClass *aklass;
 	MonoArray *array;
 	gint32 *sizes, i;
+	gboolean bounded = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -477,7 +478,13 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 		if (mono_array_get (lengths, gint32, i) < 0)
 			mono_raise_exception (mono_get_exception_argument_out_of_range (NULL));
 
-	aklass = mono_array_class_get (mono_class_from_mono_type (type->type), mono_array_length (lengths));
+	if (bounds && (mono_array_length (bounds) == 1) && (mono_array_get (bounds, gint32, 0) != 0))
+		/* vectors are not the same as one dimensional arrays with no-zero bounds */
+		bounded = TRUE;
+	else
+		bounded = FALSE;
+
+	aklass = mono_bounded_array_class_get (mono_class_from_mono_type (type->type), mono_array_length (lengths), bounded);
 
 	sizes = alloca (aklass->rank * sizeof(guint32) * 2);
 	for (i = 0; i < aklass->rank; ++i) {

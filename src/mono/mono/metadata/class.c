@@ -1983,15 +1983,16 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 }
 
 /**
- * mono_array_class_get:
+ * mono_bounded_array_class_get:
  * @element_class: element class 
  * @rank: the dimension of the array class
+ * @bounded: whenever the array has non-zero bounds
  *
  * Returns: a class object describing the array with element type @element_type and 
  * dimension @rank. 
  */
 MonoClass *
-mono_array_class_get (MonoClass *eclass, guint32 rank)
+mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 {
 	MonoImage *image;
 	MonoClass *class;
@@ -2010,7 +2011,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	if ((rootlist = list = g_hash_table_lookup (image->array_cache, eclass))) {
 		for (; list; list = list->next) {
 			class = list->data;
-			if (class->rank == rank) {
+			if ((class->rank == rank) && (class->byval_arg.type == (bounded ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
 				mono_loader_unlock ();
 				return class;
 			}
@@ -2058,7 +2059,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 
 	class->element_class = eclass;
 
-	if (rank > 1) {
+	if ((rank > 1) || bounded) {
 		MonoArrayType *at = g_new0 (MonoArrayType, 1);
 		class->byval_arg.type = MONO_TYPE_ARRAY;
 		class->byval_arg.data.array = at;
@@ -2066,7 +2067,6 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 		at->rank = rank;
 		/* FIXME: complete.... */
 	} else {
-		/* FIXME: this is not correct. the lbound could be >0 */
 		class->byval_arg.type = MONO_TYPE_SZARRAY;
 		class->byval_arg.data.klass = eclass;
 	}
@@ -2082,6 +2082,20 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	mono_loader_unlock ();
 
 	return class;
+}
+
+/**
+ * mono_array_class_get:
+ * @element_class: element class 
+ * @rank: the dimension of the array class
+ *
+ * Returns: a class object describing the array with element type @element_type and 
+ * dimension @rank. 
+ */
+MonoClass *
+mono_array_class_get (MonoClass *eclass, guint32 rank)
+{
+	return mono_bounded_array_class_get (eclass, rank, FALSE);
 }
 
 /**
@@ -2236,7 +2250,7 @@ mono_class_get_property_from_name (MonoClass *klass, const char *name)
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
-	MonoClass *class;
+	MonoClass *class = NULL;
 
 	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, type_token);

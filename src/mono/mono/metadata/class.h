@@ -319,6 +319,9 @@ MonoMethod**
 mono_class_get_overrides   (MonoImage *image, guint32 type_token, gint32 *num_overrides);
 
 MonoClass *
+mono_bounded_array_class_get (MonoClass *element_class, guint32 rank, gboolean bounded);
+
+MonoClass *
 mono_array_class_get       (MonoClass *element_class, guint32 rank);
 
 MonoClass *
