@@ -1127,11 +1127,15 @@ static guint32 convert_from_flags(int flags)
 {
 	guint32 fileaccess=0;
 	
-	if(flags&O_RDONLY) {
+#ifndef O_ACCMODE
+#define O_ACCMODE (O_RDONLY|O_WRONLY|O_RDWR)
+#endif
+
+	if((flags & O_ACCMODE) == O_RDONLY) {
 		fileaccess=GENERIC_READ;
-	} else if (flags&O_WRONLY) {
+	} else if ((flags & O_ACCMODE) == O_WRONLY) {
 		fileaccess=GENERIC_WRITE;
-	} else if (flags&O_RDWR) {
+	} else if ((flags & O_ACCMODE) == O_RDWR) {
 		fileaccess=GENERIC_READ|GENERIC_WRITE;
 	} else {
 #ifdef DEBUG
