@@ -110,6 +110,9 @@ int main() {
 	x86_mov_mem_reg (p, mem_addr, X86_EAX, 1);
 	x86_mov_membase_reg (p, X86_EBP, 4, X86_EAX, 1);
 
+	x86_mov_regp_reg (p, X86_EAX, X86_EAX, 4);
+	x86_mov_membase_reg (p, X86_EAX, 0, X86_EAX, 4);
+	x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
 	x86_mov_reg_reg (p, X86_EAX, X86_EAX, 1);
 	x86_mov_reg_reg (p, X86_EAX, X86_EAX, 4);
 	x86_mov_reg_mem (p, X86_EAX, mem_addr, 4);
@@ -179,7 +182,7 @@ int main() {
 	x86_branch (p, X86_CC_GT, target, 0);
 	x86_branch_disp (p, X86_CC_NE, -4, 0);
 
-	x86_call_imm (p, printf);
+	x86_call_code (p, printf);
 	x86_call_reg (p, X86_ECX);
 
 	x86_sahf (p);

@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.4 2001/08/18 06:55:29 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.5 2001/08/27 03:43:09 lupus Exp $
 */
 
 #ifndef X86_H
@@ -648,6 +648,17 @@ typedef union {
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
+#define x86_mov_regp_reg(inst,regp,reg,size)	\
+	do {	\
+		switch ((size)) {	\
+		case 1: *(inst)++ = (unsigned char)0x88; break;	\
+		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 4: *(inst)++ = (unsigned char)0x89; break;	\
+		default: assert (0);	\
+		}	\
+		x86_regp_emit ((inst), (reg), (regp));	\
+	} while (0)
+
 #define x86_mov_membase_reg(inst,basereg,disp,reg,size)	\
 	do {	\
 		switch ((size)) {	\
@@ -1121,8 +1132,8 @@ typedef union {
 
 #define x86_call_code(inst,target)	\
 	do {	\
-		int offset = (target) - (inst);	\
-		offset -= 5	\
+		int offset = (unsigned char*)(target) - (inst);	\
+		offset -= 5;	\
 		x86_call_imm ((inst), offset);	\
 	} while (0)
 
