@@ -23,8 +23,20 @@
 	<a href="http://lists.ximian.com/mailman/listinfo/mono-cvs-list">
 	mono-cvs-list</a> mailing list.
 
+<a name="feb-11">
+	New packaged versions of the Mono C# compiler and Mono runtime
+	are now available.  The latest version is 0.8.
+
+	<ul>
+		* <a href="archive/mcs-0.8.tar.gz">mcs-0.8.tar.gz</a>
+		Mono C# compiler
+		* <a href="archive/mono-0.8.tar.gz">mono-0.8.tar.gz</a>
+		Mono runtime
+	</ul>
+	
 <a name="snapshots">
-	It is recommended that you use the Mono source code from either the 
+	For up to date sources, it is recommended that you use the Mono 
+	source code from either the 
 	<a href="http://www.go-mono.com/snapshots">nightly snapshots</a> or 
 	the <a href="anoncvs.html">Anonymous CVS</a>.  The nightly
 	snapshots are done every night at 10pm EST (Boston Time).
@@ -46,10 +58,10 @@
 	here:
 
 	<ul>
-	<li><a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">
+		* <a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">
 	http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip</a>
 
-	<li><a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
+		* <a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
 	http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip</a>
 	</ul>
 
@@ -77,8 +89,9 @@
 		<a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
 		http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip</a>
 
-		* Download the Mono source code from 
-		  either the <a href="http://www.go-mono.com/snapshots">
+		* Download the Mono source code from the
+		  <a href="#feb-11">packaged versions</a> or
+		  the <a href="http://www.go-mono.com/snapshots">
 		  nightly snapshots</a> or the <a href="anoncvs.html">
 		  Anonymous CVS</a>.  The nightly snapshots are done every 
 		  night at 10pm EST (Boston Time). The nightly snapshots are 
