@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.2 2001/08/08 16:48:32 miguel Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.3 2001/08/08 17:21:29 lupus Exp $
 */
 
 #ifndef X86_H
@@ -685,6 +685,7 @@ x86_cc_signed_map [X86_NCC] = {
 			x86_alu_reg_reg ((inst), X86_XOR, (reg), (reg));	\
 		} else {	\
 			*(inst)++ = (unsigned char)0xb8 + (reg);	\
+			x86_imm_emit32 ((inst), (imm));	\
 		}	\
 	} while (0)
 
