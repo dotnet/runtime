@@ -2273,6 +2273,35 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 	}
 }
 
+static int
+handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, const guchar *ip)
+{
+	MonoInst *iargs [2];
+	void *alloc_ftn;
+
+	if (cfg->opt & MONO_OPT_SHARED) {
+		NEW_DOMAINCONST (cfg, iargs [0]);
+		NEW_CLASSCONST (cfg, iargs [1], klass);
+
+		alloc_ftn = mono_object_new;
+	} else {
+		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+		gboolean pass_lw;
+		
+		alloc_ftn = mono_class_get_allocation_ftn (vtable, &pass_lw);
+		if (pass_lw) {
+			guint32 lw = vtable->klass->instance_size;
+			lw = ((lw + (sizeof (gpointer) - 1)) & ~(sizeof (gpointer) - 1)) / sizeof (gpointer);
+			NEW_ICONST (cfg, iargs [0], lw);
+			NEW_VTABLECONST (cfg, iargs [1], vtable);
+		}
+		else
+			NEW_VTABLECONST (cfg, iargs [0], vtable);
+	}
+
+	return mono_emit_jit_icall (cfg, bblock, alloc_ftn, iargs, ip);
+}
+	
 static MonoInst *
 handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass)
 {
@@ -2280,20 +2309,7 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 	MonoInst *dest, *vtoffset, *add, *vstore;
 	int temp;
 
-	/* much like NEWOBJ */
-	if (cfg->opt & MONO_OPT_SHARED) {
-		NEW_DOMAINCONST (cfg, iargs [0]);
-		NEW_CLASSCONST (cfg, iargs [1], klass);
-
-		temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
-	} else {
-		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-		NEW_VTABLECONST (cfg, iargs [0], vtable);
-		if (klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
-			temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
-		else
-			temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
-	}
+	temp = handle_alloc (cfg, bblock, klass, ip);
 	NEW_TEMPLOAD (cfg, dest, temp);
 	NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
 	MONO_INST_NEW (cfg, add, OP_PADD);
@@ -4070,19 +4086,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					temp = iargs [0]->inst_c0;
 					NEW_TEMPLOADA (cfg, *sp, temp);
 				} else {
-					if (cfg->opt & MONO_OPT_SHARED) {
-						NEW_DOMAINCONST (cfg, iargs [0]);
-						NEW_CLASSCONST (cfg, iargs [1], cmethod->klass);
-
-						temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
-					} else {
-						MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
-						NEW_VTABLECONST (cfg, iargs [0], vtable);
-						if (cmethod->klass->has_finalize || cmethod->klass->marshalbyref || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
-							temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
-						else
-							temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
-					}
+					temp = handle_alloc (cfg, bblock, cmethod->klass, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
@@ -8342,7 +8346,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (helper_stelem_ref_check, "helper_stelem_ref_check", helper_sig_stelem_ref_check, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
 	mono_register_jit_icall (mono_object_new_specific, "mono_object_new_specific", helper_sig_object_new_specific, FALSE);
-	mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", helper_sig_object_new_specific, FALSE);
 	mono_register_jit_icall (mono_array_new, "mono_array_new", helper_sig_newarr, FALSE);
 	mono_register_jit_icall (mono_array_new_specific, "mono_array_new_specific", helper_sig_newarr_specific, FALSE);
 	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);

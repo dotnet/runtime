@@ -676,6 +676,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
+			mono_stats.enabled = TRUE;
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			mono_compile_aot = TRUE;
