@@ -358,7 +358,7 @@ typedef void (*MonoExceptionFunc) (MonoException *ex);
 void
 mono_install_handler        (MonoExceptionFunc func);
 
-G_GNUC_NORETURN void
+void
 mono_raise_exception        (MonoException *ex);
 
 void

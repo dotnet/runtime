@@ -1151,7 +1151,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		return mono_runtime_invoke (method, obj, pa, exc);
 }
 
-G_GNUC_NORETURN static void
+static void
 out_of_memory (size_t size)
 {
 	/* 
@@ -2003,7 +2003,7 @@ mono_string_from_utf16 (gunichar2 *data)
 	return mono_string_new_utf16 (domain, data, len);
 }
 
-G_GNUC_NORETURN static void
+static void
 default_ex_handler (MonoException *ex)
 {
 	MonoObject *o = (MonoObject*)ex;
@@ -2011,7 +2011,7 @@ default_ex_handler (MonoException *ex)
 	exit (1);
 }
 
-static G_GNUC_NORETURN MonoExceptionFunc ex_handler = default_ex_handler;
+static MonoExceptionFunc ex_handler = default_ex_handler;
 
 void
 mono_install_handler        (MonoExceptionFunc func)
@@ -2025,9 +2025,16 @@ mono_install_handler        (MonoExceptionFunc func)
  *
  * Signal the runtime that the exception @ex has been raised in unmanaged code.
  */
-G_GNUC_NORETURN void
+void
 mono_raise_exception (MonoException *ex) 
 {
+	/*
+	 * NOTE: Do NOT annotate this function with G_GNUC_NORETURN, since
+	 * that will cause gcc to omit the function epilog, causing problems when
+	 * the JIT tries to walk the stack, since the return address on the stack
+	 * will point into the next function in the executable, not this one.
+	 */
+
 	ex_handler (ex);
 }
 
