@@ -1780,6 +1780,37 @@ mono_metadata_nesting_typedef (MonoImage *meta, guint32 index)
 	return start + 1;
 }
 
+/*
+ * Return the info stored in the ClassLAyout table for the given typedef token.
+ * Returns 0 if the info is not found.
+ */
+guint32
+mono_metadata_packing_from_typedef (MonoImage *meta, guint32 index, guint32 *packing, guint32 *size)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CLASSLAYOUT];
+	locator_t loc;
+	guint32 cols [MONO_CLASS_LAYOUT_SIZE];
+	
+	if (!tdef->base)
+		return 0;
+
+	loc.idx = mono_metadata_token_index (index);
+	loc.col_idx = MONO_CLASS_LAYOUT_PARENT;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	mono_metadata_decode_row (tdef, loc.result, cols, MONO_CLASS_LAYOUT_SIZE);
+	if (packing)
+		*packing = cols [MONO_CLASS_LAYOUT_PACKING_SIZE];
+	if (size)
+		*size = cols [MONO_CLASS_LAYOUT_CLASS_SIZE];
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	return loc.result + 1;
+}
+
 #ifndef __GNUC__
 #define __alignof__(a) sizeof(a)
 #endif

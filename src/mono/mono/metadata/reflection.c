@@ -26,6 +26,7 @@
 #define TEXT_OFFSET 512
 #define CLI_H_SIZE 136
 #define FILE_ALIGN 512
+#define START_TEXT_RVA  0x00002000
 
 typedef struct {
 	MonoReflectionILGen *ilgen;
@@ -752,6 +753,19 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 		values [MONO_CONSTANT_TYPE] = field_type;
 		values [MONO_CONSTANT_PADDING] = 0;
 	}
+	if (fb->rva_data) {
+		guint32 rva_idx;
+		table = &assembly->tables [MONO_TABLE_FIELDRVA];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_FIELD_RVA_SIZE;
+		values [MONO_FIELD_RVA_FIELD] = fb->table_idx;
+		/*
+		 * We store it in the code section because it's simpler for now.
+		 */
+		rva_idx = mono_image_add_stream_data (&assembly->code, mono_array_addr (fb->rva_data, char, 0), mono_array_length (fb->rva_data));
+		values [MONO_FIELD_RVA_RVA] = rva_idx + assembly->text_rva + CLI_H_SIZE;
+	}
 }
 
 static guint32
@@ -939,7 +953,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	char *n;
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
-	tb->table_idx = table->next_idx ++;
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
 	values [MONO_TYPEDEF_FLAGS] = tb->attrs;
 	if (tb->parent) { /* interfaces don't have a parent */
@@ -959,6 +972,20 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	g_free (n);
 	values [MONO_TYPEDEF_FIELD_LIST] = assembly->tables [MONO_TABLE_FIELD].next_idx;
 	values [MONO_TYPEDEF_METHOD_LIST] = assembly->tables [MONO_TABLE_METHOD].next_idx;
+
+	/*
+	 * if we have explicitlayout or sequentiallayouts, output data in the
+	 * ClassLayout table.
+	 */
+	if ((tb->attrs & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		table = &assembly->tables [MONO_TABLE_CLASSLAYOUT];
+		table->rows++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_CLASS_LAYOUT_SIZE;
+		values [MONO_CLASS_LAYOUT_PARENT] = tb->table_idx;
+		values [MONO_CLASS_LAYOUT_CLASS_SIZE] = tb->class_size;
+		values [MONO_CLASS_LAYOUT_PACKING_SIZE] = tb->packing_size;
+	}
 
 	/*
 	 * FIXME: constructors and methods need to be output in the same order
@@ -1058,6 +1085,21 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	table->rows += mono_array_length (mb->types);
 	alloc_table (table, table->rows);
+	/*
+	 * We assign here the typedef indexes to avoid mismatches if a type that
+	 * has not yet been stored in the tables is referenced by another type.
+	 */
+	for (i = 0; i < mono_array_length (mb->types); ++i) {
+		int j;
+		MonoReflectionTypeBuilder *type = mono_array_get (mb->types, MonoReflectionTypeBuilder*, i);
+		type->table_idx = table->next_idx ++;
+		if (!type->subtypes)
+			continue;
+		for (j = 0; j < mono_array_length (type->subtypes); ++j) {
+			MonoReflectionTypeBuilder *subtype = mono_array_get (type->subtypes, MonoReflectionTypeBuilder*, j);
+			subtype->table_idx = table->next_idx ++;
+		}
+	}
 	for (i = 0; i < mono_array_length (mb->types); ++i)
 		mono_image_get_type_info (domain, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i), assembly);
 }
@@ -1274,7 +1316,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	char *name;
 	int i;
 	
-	assembly->text_rva =  0x00002000;
+	assembly->text_rva = START_TEXT_RVA;
 
 	table = &assembly->tables [MONO_TABLE_ASSEMBLY];
 	alloc_table (table, 1);
@@ -1517,7 +1559,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	/* Write section tables */
 	strcpy (section->st_name, ".text");
 	section->st_virtual_size = 1024; /* FIXME */
-	section->st_virtual_address = assembly->text_rva;
+	section->st_virtual_address = START_TEXT_RVA;
 	section->st_raw_data_size = 1024; /* FIXME */
 	section->st_raw_data_ptr = TEXT_OFFSET;
 	section->st_flags = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;

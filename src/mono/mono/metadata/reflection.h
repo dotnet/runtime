@@ -216,6 +216,8 @@ typedef struct {
 	MonoObject *def_value;
 	gint32 offset;
 	gint32 table_idx;
+	MonoReflectionType *typeb;
+	MonoArray *rva_data;
 } MonoReflectionFieldBuilder;
 
 typedef struct {
@@ -259,6 +261,8 @@ typedef struct {
 	guint32 attrs;
 	guint32 table_idx;
 	MonoReflectionModuleBuilder *module;
+	gint32 class_size;
+	gint32 packing_size;
 } MonoReflectionTypeBuilder;
 
 typedef struct {

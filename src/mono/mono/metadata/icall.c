@@ -288,6 +288,15 @@ ves_icall_type_from_handle (MonoType *handle)
 }
 
 static guint32
+ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
+{
+	if (type->type && c->type)
+		return mono_metadata_type_equal (type->type, c->type);
+	g_print ("type equals\n");
+	return 0;
+}
+
+static guint32
 ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
 {
 	MonoDomain *domain; 
@@ -1016,6 +1025,7 @@ static gpointer icall_map [] = {
 	"System.Type::get_method", ves_icall_get_method,
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
+	"System.Type::Equals", ves_icall_type_Equals,
 	"System.Type::FindMembers", ves_icall_type_find_members,
 
 	/*
