@@ -1535,7 +1535,7 @@ reg: OP_GETCHR (reg, reg) {
 
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, mult_reg, state->right->reg1, 1);
 	MONO_EMIT_NEW_BIALU (s, CEE_ADD, add_reg, mult_reg, state->left->reg1);
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI2_MEMBASE, state->reg1, 
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU2_MEMBASE, state->reg1, 
 				   add_reg, G_STRUCT_OFFSET (MonoString, chars));
 }
 
@@ -1548,7 +1548,7 @@ reg: OP_GETCHR (reg, OP_ICONST) {
 	MONO_EMIT_NEW_COND_EXC (s, LE_UN, "IndexOutOfRangeException");
        
 	ind = 2 * state->right->tree->inst_c0 + G_STRUCT_OFFSET (MonoString, chars);
-	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI2_MEMBASE, state->reg1, state->left->reg1, ind);
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU2_MEMBASE, state->reg1, state->left->reg1, ind);
 }
 
 #
