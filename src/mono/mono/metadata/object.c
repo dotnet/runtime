@@ -72,6 +72,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 	MonoClass *klass;
 	gchar *full_name;
 	gboolean found;
+	MonoDomain *last_domain = NULL;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -99,7 +100,14 @@ mono_runtime_class_init (MonoVTable *vtable)
 			return;
 		}
 		vtable->initializing = 1;
+		if (mono_domain_get () != vtable->domain) {
+			/* Transfer into the target domain */
+			last_domain = mono_domain_get ();
+			mono_domain_set (vtable->domain);
+		}
 		mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
+		if (last_domain)
+			mono_domain_set (last_domain);
 		vtable->initialized = 1;
 		vtable->initializing = 0;
 		/* FIXME: if the cctor fails, the type must be marked as unusable */

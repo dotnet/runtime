@@ -480,6 +480,21 @@ load_class_names (MonoImage *image)
 	}
 }
 
+static void
+register_guid (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoImage *image = (MonoImage*)value;
+
+	if (!g_hash_table_lookup (loaded_images_guid_hash, image))
+		g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
+}
+
+static void
+build_guid_table (void)
+{
+	g_hash_table_foreach (loaded_images_hash, register_guid, NULL);
+}
+
 void
 mono_image_init (MonoImage *image)
 {
@@ -852,6 +867,8 @@ mono_image_close (MonoImage *image)
 		if (image->assembly_name)
 			g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
 		g_hash_table_remove (loaded_images_guid_hash, image->guid);
+		/* Multiple images might have the same guid */
+		build_guid_table ();
 	}	
 	LeaveCriticalSection (&images_mutex);
 
