@@ -74,5 +74,6 @@ typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stack
 /*
  * defined in an arch specific file.
  */
-MonoPIFunc mono_create_trampoline (MonoMethod *method, int runtime);
+MonoPIFunc
+mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor);
 void *mono_create_method_pointer (MonoMethod *method);

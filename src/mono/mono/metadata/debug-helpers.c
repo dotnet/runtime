@@ -413,48 +413,17 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 char *
 mono_method_full_name (MonoMethod *method, gboolean signature)
 {
-	const char *prefix;
 	char *res;
-
-	switch (method->wrapper_type) {
-	case MONO_WRAPPER_NONE:
-		prefix = "";
-		break;
-	case MONO_WRAPPER_DELEGATE_INVOKE:
-		prefix = "(delegate invoke wrapper) ";
-		break;
-	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-		prefix = "(delegate begin invoke wrapper) ";
-		break;
-	case MONO_WRAPPER_DELEGATE_END_INVOKE:
-		prefix = "(delegate end invoke wrapper) ";
-		break;
-	case MONO_WRAPPER_RUNTIME_INVOKE:
-		prefix = "(runtime invoke wrapper) ";
-		break;
-	case MONO_WRAPPER_NATIVE_TO_MANAGED:
-		prefix = "(native to managed wrapper) ";
-		break;
-	case MONO_WRAPPER_MANAGED_TO_NATIVE:
-		prefix = "(managed to native wrapper) ";
-		break;
-	case MONO_WRAPPER_REMOTING_INVOKE:
-		prefix = "(remoting invoke wrapper) ";
-		break;
-	case MONO_WRAPPER_UNKNOWN:
-	default:
-		prefix = "(wrapper) ";
-	}
 
 	if (signature) {
 		char *tmpsig = mono_signature_get_desc (method->signature, TRUE);
 
-		res = g_strdup_printf ("%s%s.%s:%s (%s)", prefix, method->klass->name_space, 
+		res = g_strdup_printf ("%02d %s.%s:%s (%s)", method->wrapper_type, method->klass->name_space, 
 				       method->klass->name, method->name, tmpsig);
 		g_free (tmpsig);
 	} else {
 
-		res = g_strdup_printf ("%s%s.%s:%s", prefix, method->klass->name_space, 
+		res = g_strdup_printf ("%02d %s.%s:%s", method->wrapper_type, method->klass->name_space, 
 				       method->klass->name, method->name);
 	}
 

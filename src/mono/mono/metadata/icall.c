@@ -677,7 +677,7 @@ get_get_type_caller (MonoMethod *m, gint32 no, gint32 ilo, gpointer data) {
 	MonoImage **dest = data;
 
 	/* skip icalls and Type::GetType () */
-	if (m->wrapper_type || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	if (!m || m->wrapper_type || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 			(strcmp (m->name, "GetType") == 0 && m->klass == mono_defaults.monotype_class->parent))
 		return FALSE;
 	*dest = m->klass->image;

@@ -30,23 +30,22 @@
 #define ARG_SIZE	sizeof (stackval)
 
 MonoPIFunc
-mono_create_trampoline (MonoMethod *method, int runtime)
+mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
-	MonoMethodSignature *sig;
 	unsigned char *p, *code_buffer;
 	guint32 local_size = 0, stack_size = 0, code_size = 50;
 	guint32 arg_pos, simpletype;
 	int i, stringp;
-	int need_marshal;
-	GList *free_locs = NULL;
+	static GHashTable *cache = NULL;
+	MonoPIFunc res;
 
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)
-		need_marshal = 0;
-	else
-		need_marshal = 1;
+	if (!cache) 
+		cache = g_hash_table_new ((GHashFunc)mono_signature_hash, 
+					  (GCompareFunc)mono_metadata_signature_equal);
 
-	sig = method->signature;
-	
+	if ((res = (MonoPIFunc)g_hash_table_lookup (cache, sig)))
+		return res;
+
 	if (sig->hasthis) {
 		stack_size += sizeof (gpointer);
 		code_size += 5;
@@ -80,16 +79,22 @@ enum_calc_size:
 			stack_size += 4;
 			code_size += i < 10 ? 5 : 8;
 			break;
-		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_VALUETYPE: {
+			int size;
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (mono_class_value_size (sig->params [i]->data.klass, NULL) != 4)
-				g_error ("can only marshal enums, not generic structures (size: %d)", mono_class_value_size (sig->params [i]->data.klass, NULL));
-			stack_size += 4;
-			code_size += i < 10 ? 5 : 8;
+			if ((size = mono_class_value_size (sig->params [i]->data.klass, NULL)) != 4) {
+				stack_size += size + 3;
+				stack_size &= ~3;
+				code_size += 32;
+			} else {
+				stack_size += 4;
+				code_size += i < 10 ? 5 : 8;
+			}
 			break;
+		}
 		case MONO_TYPE_STRING:
 			stack_size += 4;
 			code_size += 20;
@@ -143,31 +148,7 @@ enum_calc_size:
 	for (i = sig->param_count; i; --i) {
 		arg_pos = ARG_SIZE * (i - 1);
 		if (sig->params [i - 1]->byref) {
-			if (!need_marshal) {
-				x86_push_membase (p, X86_EDX, arg_pos);
-				continue;
-			}
-			if (sig->params [i - 1]->type == MONO_TYPE_SZARRAY &&
-			    sig->params [i - 1]->data.type->type == MONO_TYPE_STRING) {
-				x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
-				x86_push_regp (p, X86_EAX);
-				x86_mov_reg_imm (p, X86_EDX, mono_marshal_string_array);
-				x86_call_reg (p, X86_EDX);
-				x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
-				/*
-				 * Store the pointer in a local we'll free later.
-				 */
-				stringp++;
-				x86_mov_membase_reg (p, X86_EBP, LOC_POS * stringp, X86_EAX, 4);
-				free_locs = g_list_prepend (free_locs, GUINT_TO_POINTER (LOC_POS * stringp));
-				/* load the pointer and push it */
-				x86_lea_membase (p, X86_EAX, X86_EBP, LOC_POS * stringp);
-				x86_push_reg (p, X86_EAX);
-				/* restore pointer to args in EDX */
-				x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
-			} else {
-				x86_push_membase (p, X86_EDX, arg_pos);
-			}
+			x86_push_membase (p, X86_EDX, arg_pos);
 			continue;
 		}
 		simpletype = sig->params [i - 1]->type;
@@ -193,32 +174,32 @@ enum_marshal:
 			x86_fst_membase (p, X86_ESP, 0, FALSE, TRUE);
 			break;
 		case MONO_TYPE_CLASS:
-			if (need_marshal) {
-				if (sig->params [i - 1]->data.klass->delegate) {
-					/* should we use a wrapper to invoke the multicast delegates? */
-					x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
-					x86_alu_reg_imm (p, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-					x86_push_reg (p, X86_EAX);
-				} else
-					g_error ("unhandled case");
-			} else {
-				x86_push_membase (p, X86_EDX, arg_pos);
-			}
+			x86_push_membase (p, X86_EDX, arg_pos);
 			break;
 		case MONO_TYPE_SZARRAY:
-			if (need_marshal) {
-				x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
-				x86_alu_reg_imm (p, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoArray, vector));
-				x86_push_reg (p, X86_EAX);
-			} else {
-				x86_push_membase (p, X86_EDX, arg_pos);
-			}
+			x86_push_membase (p, X86_EDX, arg_pos);
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (!sig->params [i - 1]->data.klass->enumtype) {
-				/* it's a structure that fits in 4 bytes, need to push the value pointed to */
-				x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
-				x86_push_regp (p, X86_EAX);
+				int size = mono_class_value_size (sig->params [i - 1]->data.klass, NULL);
+				if (size == 4) {
+					/* it's a structure that fits in 4 bytes, need to push the value pointed to */
+					x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
+					x86_push_regp (p, X86_EAX);
+				} else {
+					int ss = size;
+					ss += 3;
+					ss &= ~3;
+
+					x86_alu_reg_imm (p, X86_SUB, X86_ESP, ss);
+					x86_push_imm (p, size);
+					x86_push_membase (p, X86_EDX, arg_pos);
+					x86_lea_membase (p, X86_EAX, X86_ESP, 2*4);
+					x86_push_reg (p, X86_EAX);
+					x86_mov_reg_imm (p, X86_EAX, memcpy);
+					x86_call_reg (p, X86_EAX);
+					x86_alu_reg_imm (p, X86_ADD, X86_ESP, 12);
+				}
 			} else {
 				/* it's an enum value */
 				simpletype = sig->params [i - 1]->data.klass->enum_basetype->type;
@@ -226,31 +207,7 @@ enum_marshal:
 			}
 			break;
 		case MONO_TYPE_STRING:
-			/* 
-			 * If it is an internalcall we assume it's the object we want.
-			 * Yet another reason why MONO_TYPE_STRING should not be used to indicate char*.
-			 */
-			if (!need_marshal) {
-				x86_push_membase (p, X86_EDX, arg_pos);
-				break;
-			}
-			/*if (frame->method->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI*/
 			x86_push_membase (p, X86_EDX, arg_pos);
-			x86_mov_reg_imm (p, X86_EDX, mono_string_to_utf8);
-			x86_call_reg (p, X86_EDX);
-			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
-			x86_push_reg (p, X86_EAX);
-			/*
-			 * Store the pointer in a local we'll free later.
-			 */
-			stringp++;
-			x86_mov_membase_reg (p, X86_EBP, LOC_POS * stringp, X86_EAX, 4);
-			free_locs = g_list_prepend (free_locs, GUINT_TO_POINTER (LOC_POS * stringp));
-			/*
-			 * we didn't save the reg: restore it here.
-			 */
-			if (i > 1)
-				x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -285,14 +242,12 @@ enum_marshal:
 	 * FP values are on the FP stack.
 	 */
 
-	if (sig->ret->byref || 
-	    (method->klass == mono_defaults.string_class &&
-	     *method->name == '.' && !strcmp (method->name, ".ctor"))) {
+	if (sig->ret->byref || string_ctor) {
 		x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 		x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 	} else {
 		simpletype = sig->ret->type;
-enum_retvalue:
+	enum_retvalue:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -318,20 +273,6 @@ enum_retvalue:
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 			break;
 		case MONO_TYPE_STRING: 
-			if (!need_marshal) {
-				x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-				x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
-				break;
-			}
-
-			/* If the argument is non-null, then convert the value back */
-			x86_alu_reg_reg (p, X86_OR, X86_EAX, X86_EAX);
-			x86_branch8 (p, X86_CC_EQ, 11, FALSE);
-			x86_push_reg (p, X86_EAX);
-			x86_mov_reg_imm (p, X86_EDX, mono_string_new_wrapper);
-			x86_call_reg (p, X86_EDX);
-			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
-
 			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 			break;
@@ -361,25 +302,17 @@ enum_retvalue:
 	}
 
 	/*
-	 * free the allocated strings.
-	 */
-	if (need_marshal) {
-		GList* tmp;
-		for (tmp = free_locs; tmp; tmp = tmp->next) {
-			x86_mov_reg_imm (p, X86_EDX, g_free);
-			x86_push_membase (p, X86_EBP, GPOINTER_TO_UINT (tmp->data));
-			x86_call_reg (p, X86_EDX);
-		}
-		g_list_free (free_locs);
-	}
-	/*
 	 * Standard epilog.
 	 */
 	x86_leave (p);
 	x86_ret (p);
 
 	g_assert (p - code_buffer < code_size);
-	return g_memdup (code_buffer, p - code_buffer);
+	res = (MonoPIFunc)g_memdup (code_buffer, p - code_buffer);
+
+	g_hash_table_insert (cache, sig, res);
+
+	return res;
 }
 
 #define MINV_POS  (- sizeof (MonoInvocation))
@@ -437,7 +370,6 @@ mono_create_method_pointer (MonoMethod *method)
 	 * Set the method pointer.
 	 */
 	x86_mov_membase_imm (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)), (int)method, 4);
-
 	/*
 	 * Handle this.
 	 */
@@ -492,6 +424,8 @@ mono_create_method_pointer (MonoMethod *method)
 	if (sig->ret->byref) {
 		x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
 	} else {
+		int simpletype = sig->ret->type;	
+	enum_retvalue:
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
 			break;
@@ -513,6 +447,13 @@ mono_create_method_pointer (MonoMethod *method)
 			break;
 		case MONO_TYPE_R8:
 			x86_fld_membase (p, X86_EAX, 0, TRUE);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->ret->data.klass->enumtype) {
+				simpletype = sig->ret->data.klass->enum_basetype->type;
+				goto enum_retvalue;
+			}
+			/* do nothing ? */
 			break;
 		default:
 			g_error ("Type 0x%x not handled yet in thunk creation", sig->ret->type);

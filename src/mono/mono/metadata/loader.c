@@ -255,24 +255,24 @@ method_from_memberref (MonoImage *image, guint32 idx)
 		if (!strcmp (mname, "Set")) {
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank + 1 == sig->param_count);
-
-			result->addr = mono_lookup_internal_call(result);
+			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
+			result->addr = NULL;
 			return result;
 		}
 
 		if (!strcmp (mname, "Get")) {
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank == sig->param_count);
-
-			result->addr = mono_lookup_internal_call(result);
+			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
+			result->addr = NULL;
 			return result;
 		}
 
 		if (!strcmp (mname, "Address")) {
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank == sig->param_count);
-
-			result->addr = mono_lookup_internal_call(result);
+			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
+			result->addr = NULL;
 			return result;
 		}
 
