@@ -5195,7 +5195,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					token = mono_type_size (type, &align);
-					mono_metadata_free_type (type);
 				} else {
 					MonoClass *szclass = mono_class_get (image, token);
 					mono_class_init (szclass);
@@ -7228,8 +7227,13 @@ mono_jit_compile_method_inner (MonoMethod *method)
 		if (!method->info) {
 			MonoMethod *nm;
 
-			if (!method->addr && (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-				mono_lookup_pinvoke_call (method);
+			if (!method->addr) {
+				if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+					method->addr = mono_lookup_internal_call (method);
+				else
+					if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+						mono_lookup_pinvoke_call (method);
+			}
 #ifdef MONO_USE_EXC_TABLES
 			if (mono_method_blittable (method)) {
 				method->info = method->addr;
