@@ -1431,6 +1431,7 @@ static void
 do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *ptr, const char **rptr)
 {
 	MonoGenericInst *ginst = g_new0 (MonoGenericInst, 1);
+	MonoType *cached;
 	int i, count;
 
 	type->data.generic_inst = ginst;
@@ -1459,12 +1460,43 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 			ginst->is_open = mono_class_is_open_constructed_type (t);
 	}
 
-	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst, 0);
-
-	ginst->init_pending = FALSE;
 
 	if (rptr)
 		*rptr = ptr;
+
+	/*
+	 * We may be called multiple times on different metadata to create the same
+	 * instantiated type.  This happens for instance if we're part of a method or
+	 * local variable signature.
+	 *
+	 * It's important to return the same MonoGenericInst * for each particualar
+	 * instantiation of a generic type (ie "Stack<Int32>") to make static fields
+	 * work.
+	 *
+	 * According to the spec ($26.1.5), a static variable in a generic class
+	 * declaration is shared amongst all instances of the same closed constructed
+	 * type.
+	 */
+
+	cached = g_hash_table_lookup (m->generic_inst_cache, ginst);
+	if (cached) {
+		g_free (ginst->klass);
+		g_free (ginst->type_argv);
+		g_free (ginst);
+
+		type->data.generic_inst = cached->data.generic_inst;
+		return;
+	} else {
+		cached = g_new0 (MonoType, 1);
+		cached->type = MONO_TYPE_GENERICINST;
+		cached->data.generic_inst = ginst;
+
+		g_hash_table_insert (m->generic_inst_cache, ginst, cached);
+	}
+
+	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst, 0);
+
+	ginst->init_pending = FALSE;
 }
 
 static MonoGenericParam *
