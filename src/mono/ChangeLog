@@ -1,5 +1,9 @@
 2004-04-14  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am ($(assemblies_DATA)): Copy file into
+	$(srcdir).  Clean up output.
+	($(monobins_DATA)): Likewise.
+
 	* Makefile.am (mcs-tree-safe-build): Fix typo.
 
 2004-04-13  Sebastien Pouliot  <sebastien@ximian.com>
