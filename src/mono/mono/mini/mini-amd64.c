@@ -4155,7 +4155,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_X86_TLS_GET: {
 			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_reg_mem (code, AMD64_RAX, ins->inst_offset, 8);
+			amd64_mov_reg_mem (code, ins->dreg, ins->inst_offset, 8);
 			break;
 		}
 		default:
