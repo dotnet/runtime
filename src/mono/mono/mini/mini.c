@@ -3051,6 +3051,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
 				temp = mono_emit_jit_icall (cfg, bblock, mono_ldstr, iargs, ip);
 				NEW_TEMPLOAD (cfg, *sp, temp);
+				mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
 			} else {
 				NEW_PCONST (cfg, ins, NULL);
 				ins->cil_code = ip;
