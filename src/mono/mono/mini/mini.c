@@ -4607,6 +4607,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((*ip) == CEE_STSFLD)
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
+			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
+			 * to be called here.
+			 */
+			if (!(cfg->opt & MONO_OPT_SHARED))
+				mono_class_vtable (cfg->domain, klass);
+			
 			if (cfg->domain->special_static_fields)
 				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
 
