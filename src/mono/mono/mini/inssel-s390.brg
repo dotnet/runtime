@@ -699,4 +699,9 @@ base: CEE_LDOBJ (OP_S390_STKARG) "0" {
 	tree->inst_basereg = tmpr;
 }
 
+reg: OP_S390_TLS_GET {
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 %%

@@ -319,7 +319,7 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");
 
-	return(comp);
+	return(old);
 }
 # endif
 
@@ -330,15 +330,16 @@ InterlockedIncrement(volatile gint32 *val)
 	gint32 tmp;
 	
 	__asm__ __volatile__ ("\tLA\t2,%1\n"
-			      "\tL\t%0,%1\n"
+			      "0:\tL\t%0,%1\n"
 			      "\tLR\t1,%0\n"
 			      "\tAHI\t1,1\n"
-			      "0:\tCS\t%0,1,0(2)\n"
-			      "\tJNZ\t0b"
+			      "\tCS\t%0,1,0(2)\n"
+			      "\tJNZ\t0b\n"
+			      "\tLR\t%0,1"
 			      : "=r" (tmp), "+m" (*val)
 			      : : "1", "2", "cc");
 
-	return(tmp+1);
+	return(tmp);
 }
 
 static inline gint32 
@@ -347,15 +348,16 @@ InterlockedDecrement(volatile gint32 *val)
 	gint32 tmp;
 	
 	__asm__ __volatile__ ("\tLA\t2,%1\n"
-			      "\tL\t%0,%1\n"
+			      "0:\tL\t%0,%1\n"
 			      "\tLR\t1,%0\n"
 			      "\tAHI\t1,-1\n"
-			      "0:\tCS\t%0,1,0(2)\n"
-			      "\tJNZ\t0b"
+			      "\tCS\t%0,1,0(2)\n"
+			      "\tJNZ\t0b\n"
+			      "\tLR\t%0,1"
 			      : "=r" (tmp), "+m" (*val)
 			      : : "1", "2", "cc");
 
-	return(tmp-1);
+	return(tmp);
 }
 
 
@@ -400,11 +402,11 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 {
 	gint32 ret;
 
-	__asm__ __volatile__ ("\tL\t%0,%1\n"
+	__asm__ __volatile__ ("\tLA\t2,%1\n"
+			      "0:\tL\t%0,%1\n"
 			      "\tLR\t1,%0\n"
 			      "\tAR\t1,%2\n"
-			      "\tLA\t2,%1\n"
-			      "0:\tCS\t%0,1,0(2)\n"
+			      "\tCS\t%0,1,0(2)\n"
 			      "\tJNZ\t0b"
 			      : "=r" (ret), "+m" (*val)
 			      : "r" (add) 

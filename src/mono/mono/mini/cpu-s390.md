@@ -449,6 +449,7 @@ ret:
 retarg:
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4 clob:r
+s390_tls_get: dest:i len:44
 sbb: dest:i src1:i src2:i len:6
 sbb_imm: dest:i src1:i len:14
 setfreg: dest:f src1:f len:4 clob:r

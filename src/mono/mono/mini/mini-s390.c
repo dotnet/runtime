@@ -251,6 +251,18 @@ static const char*const * ins_spec = s390;
 
 static gboolean tls_offset_inited = FALSE;
 
+static int appdomain_tls_offset = -1,
+       	   lmf_tls_offset = -1,
+           thread_tls_offset = -1;
+
+#if 0
+
+extern __thread MonoDomain *tls_appdomain;
+extern __thread MonoThread *tls_current_object;
+extern __thread gpointer   mono_lmf_addr;
+		
+#endif
+
 /*====================== End of Global Variables ===================*/
 
 /*------------------------------------------------------------------*/
@@ -3965,6 +3977,19 @@ guint8 cond;
 			s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
+		case OP_S390_TLS_GET: {
+			if (s390_is_uimm16 (ins->inst_offset)) {
+				s390_lhi (code, s390_r13, ins->inst_offset);
+			} else {
+				s390_bras (code, s390_r13, 0);
+				s390_j	  (code, 4);
+				s390_word (code, ins->inst_offset);
+				s390_l    (code, s390_r13, 0, s390_r13, 4);
+			}
+			s390_ear (code, s390_r1, 0);
+			s390_l   (code, ins->dreg, s390_r13, s390_r1, 0);
+		}
+			break;
 		case OP_FCONV_TO_R4: {
 			if ((ins->next) &&
 			    (ins->next->opcode != OP_STORER4_MEMBASE_REG))
@@ -5237,9 +5262,24 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
 
-//		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
-//		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
-//		thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
+#if HAVE_KW_THREAD
+# if 0
+	__asm__ ("\tear\t%r1,0\n"
+		 "\tlr\t%0,%3\n"
+		 "\tsr\t%0,%r1\n"
+		 "\tlr\t%1,%4\n"
+		 "\tsr\t%1,%r1\n"
+		 "\tlr\t%2,%5\n"
+		 "\tsr\t%2,%r1\n"
+		 : "=r" (appdomain_tls_offset),
+		   "=r" (thread_tls_offset),
+		   "=r" (lmf_tls_offset)
+		 : "r" (&tls_appdomain),
+		   "r" (&tls_current_object),
+		   "r" (&mono_lmf_addr)
+		 : "1", "cc");
+# endif
+#endif
 	}		
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -5399,6 +5439,13 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 			printf ("[f%d,f%d]", 
 				mono_arch_regname (tree->dreg),
 				mono_arch_regname (tree->sreg1));
+			done = 1;
+			break;
+		case OP_S390_TLS_GET:
+			printf ("[0x%x(0x%x,%s)]", tree->inst_offset,
+			        tree->inst_imm,
+				mono_arch_regname (tree->sreg1));
+			done = 1;
 		default:
 			done = 0;
 	}
@@ -5442,7 +5489,14 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 MonoInst * 
 mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 {
-	return NULL;
+	MonoInst *ins;
+
+	if (appdomain_tls_offset == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_S390_TLS_GET);
+	ins->inst_offset = appdomain_tls_offset;
+	return (ins);
 }
 
 /*========================= End of Function ========================*/
@@ -5460,7 +5514,14 @@ mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 MonoInst * 
 mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
-	return NULL;
+	MonoInst *ins;
+
+	if (thread_tls_offset == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_S390_TLS_GET);
+	ins->inst_offset = thread_tls_offset;
+	return (ins);
 }
 
 /*========================= End of Function ========================*/
