@@ -396,6 +396,7 @@ Function windowsBatCore
 	FileWrite $0 "SETLOCAL$\r$\n"
 	FileWrite $0 'SET PATH="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%PATH%"$\r$\n'
 	FileWrite $0 '"$INSTDIR\bin\$1.exe" %MONOARGS%$\r$\n'
+	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
 	FileWrite $0 "ENDLOCAL$\r$\n"
 	FileClose $0
 
@@ -425,6 +426,7 @@ Function windowsBat
 	FileWrite $0 "SETLOCAL$\r$\n"
 	FileWrite $0 'SET PATH="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%PATH%"$\r$\n'
 	FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\lib\$1.exe" %MONOARGS%$\r$\n'
+	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
 	FileWrite $0 "ENDLOCAL$\r$\n"
 	FileClose $0
 
