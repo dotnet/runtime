@@ -7980,7 +7980,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	MonoJitInfo *info;
 	gpointer p;
 
-	if (default_opt & MONO_OPT_SHARED)
+	if (opt & MONO_OPT_SHARED)
 		target_domain = mono_root_domain;
 	else 
 		target_domain = domain;
