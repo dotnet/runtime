@@ -2592,7 +2592,6 @@ guint32
 mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 {
 	locator_t loc;
-	guint32 start, end;
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_IMPLMAP];
 
 	if (!tdef->base)

@@ -129,7 +129,7 @@ typedef struct {
 	guint       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data;
-        gpointer    vtable [0];	
+        gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 } MonoVTable;
 
 
