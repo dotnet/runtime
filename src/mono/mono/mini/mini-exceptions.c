@@ -604,8 +604,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
 							/* store the exception object int cfg->excvar */
-							g_assert (ji->exvar_offset);
-							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
+							g_assert (ei->exvar_offset);
+							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
 							if (!initial_stack_trace && trace_str) {
 								mono_ex->stack_trace = mono_string_new (domain, trace_str->str);
 							}

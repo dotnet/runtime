@@ -707,7 +707,7 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
  *   that is in none of try/catch/filter.
  */
 static int
-mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
+mono_find_block_region (MonoCompile *cfg, int offset)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodHeader *header = mono_method_get_header (method);
@@ -718,7 +718,7 @@ mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->data.filter_offset) &&
-		    (offset < (clause->data.filter_offset + filter_lengths [i])))
+		    (offset < (clause->handler_offset)))
 			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
 			   
 		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
@@ -783,6 +783,30 @@ mono_create_spvar_for_region (MonoCompile *cfg, int region)
 	var->flags |= MONO_INST_INDIRECT;
 
 	g_hash_table_insert (cfg->spvars, GINT_TO_POINTER (region), var);
+}
+
+MonoInst *
+mono_find_exvar_for_offset (MonoCompile *cfg, int offset)
+{
+	return g_hash_table_lookup (cfg->exvars, GINT_TO_POINTER (offset));
+}
+
+static MonoInst*
+mono_create_exvar_for_offset (MonoCompile *cfg, int offset)
+{
+	MonoInst *var;
+
+	var = g_hash_table_lookup (cfg->exvars, GINT_TO_POINTER (offset));
+	if (var)
+		return var;
+
+	var = mono_compile_create_var (cfg, &mono_defaults.object_class->byval_arg, OP_LOCAL);
+	/* prevent it from being register allocated */
+	var->flags |= MONO_INST_INDIRECT;
+
+	g_hash_table_insert (cfg->exvars, GINT_TO_POINTER (offset), var);
+
+	return var;
 }
 
 static void
@@ -2991,7 +3015,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	GList *bb_recheck = NULL, *tmp;
 	int i, n, start_new_bblock, align;
 	int num_calls = 0, inline_costs = 0;
-	int *filter_lengths = NULL;
 	int breakpoint_id = 0;
 	guint real_offset, num_args;
 	MonoBoolean security;
@@ -3052,11 +3075,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			arg_array [i] = cfg->varinfo [i];
 
 		if (header->num_clauses) {
-			int size = sizeof (int) * header->num_clauses;
-			filter_lengths = alloca (size);
-			memset (filter_lengths, 0, size);
-
 			cfg->spvars = g_hash_table_new (NULL, NULL);
+			cfg->exvars = g_hash_table_new (NULL, NULL);
 		}
 		/* handle exception clauses */
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -3082,21 +3102,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 				/* mostly like handle_stack_args (), but just sets the input args */
 				/* g_print ("handling clause at IL_%04x\n", clause->handler_offset); */
-				if (!cfg->exvar) {
-					cfg->exvar = mono_compile_create_var (cfg, &mono_defaults.object_class->byval_arg, OP_LOCAL);
-					/* prevent it from being register allocated */
-					cfg->exvar->flags |= MONO_INST_INDIRECT;
-				}
 				tblock->in_scount = 1;
 				tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
-				tblock->in_stack [0] = cfg->exvar;
+				tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
 				
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					GET_BBLOCK (cfg, bbhash, tblock, ip + clause->data.filter_offset);
 					tblock->real_offset = clause->data.filter_offset;
 					tblock->in_scount = 1;
 					tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
-					tblock->in_stack [0] = cfg->exvar;
+					tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->data.filter_offset);
 					MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
 					MONO_ADD_INS (tblock, ins);
 				}
@@ -5554,6 +5569,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LEAVE:
 		case CEE_LEAVE_S: {
 			GList *handlers;
+
 			if (*ip == CEE_LEAVE) {
 				CHECK_OPSIZE (5);
 				target = ip + 5 + (gint32)read32(ip + 1);
@@ -5577,14 +5593,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			for (i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
-				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code)) {
+
+				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) && (ip - header->code + ((*ip == CEE_LEAVE) ? 5 : 2)) == (clause->handler_offset + clause->handler_len)) {
 					int temp;
+					MonoInst *load;
+
+					NEW_TEMPLOAD (cfg, load, mono_find_exvar_for_offset (cfg, clause->handler_offset)->inst_c0);
+					load->cil_code = ip;
 
 					temp = mono_emit_jit_icall (cfg, bblock, mono_thread_get_pending_exception, NULL, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
-
+				
 					MONO_INST_NEW (cfg, ins, OP_THROW_OR_NULL);
 					ins->inst_left = *sp;
+					ins->inst_right = load;
 					ins->cil_code = ip;
 					MONO_ADD_INS (bblock, ins);
 				}
@@ -6036,7 +6058,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				}
 				g_assert (nearest);
-				filter_lengths [nearest_num] = (ip - header->code) -  nearest->data.filter_offset;
+				if ((ip - header->code) != nearest->handler_offset)
+					goto unverified;
 
 				break;
 			}
@@ -6132,8 +6155,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_RETHROW: {
 				MonoInst *load;
-				/* FIXME: check we are in a catch handler */
-				NEW_TEMPLOAD (cfg, load, cfg->exvar->inst_c0);
+				int handler_offset = -1;
+
+				for (i = 0; i < header->num_clauses; ++i) {
+					MonoExceptionClause *clause = &header->clauses [i];
+					if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY))
+						handler_offset = clause->handler_offset;
+				}
+
+				g_assert (handler_offset != -1);
+
+				NEW_TEMPLOAD (cfg, load, mono_find_exvar_for_offset (cfg, handler_offset)->inst_c0);
 				load->cil_code = ip;
 				MONO_INST_NEW (cfg, ins, OP_RETHROW);
 				ins->inst_left = load;
@@ -6267,14 +6299,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	/*
-	 * we compute regions here, because the length of filter clauses is not known in advance.
-	 * It is computed in the CEE_ENDFILTER case in the above switch statement
-	 */
 	if (cfg->method == method) {
 		MonoBasicBlock *bb;
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			bb->region = mono_find_block_region (cfg, bb->real_offset, filter_lengths);
+			bb->region = mono_find_block_region (cfg, bb->real_offset);
 			if (cfg->spvars)
 				mono_create_spvar_for_region (cfg, bb->region);
 			if (cfg->verbose_level > 2)
@@ -8483,7 +8511,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (header->num_clauses) {
 		int i;
 
-		jinfo->exvar_offset = cfg->exvar? cfg->exvar->inst_offset: 0;
 		jinfo->num_clauses = header->num_clauses;
 		jinfo->clauses = mono_mempool_alloc0 (cfg->domain->mp, 
 		        sizeof (MonoJitExceptionInfo) * header->num_clauses);
@@ -8492,8 +8519,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			MonoExceptionClause *ec = &header->clauses [i];
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 			MonoBasicBlock *tblock;
+			MonoInst *exvar;
 
 			ei->flags = ec->flags;
+
+			exvar = mono_find_exvar_for_offset (cfg, ec->handler_offset);
+			ei->exvar_offset = exvar ? exvar->inst_offset : 0;
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 				tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->data.filter_offset);
@@ -9005,6 +9036,7 @@ mono_runtime_install_handlers (void)
 #endif /* PLATFORM_WIN32 */
 }
 
+
 #ifdef HAVE_LINUX_RTC_H
 #include <linux/rtc.h>
 #include <sys/ioctl.h>
@@ -9325,6 +9357,7 @@ mini_cleanup (MonoDomain *domain)
 	if (rtc_fd >= 0)
 		enable_rtc_timer (FALSE);
 #endif
+
 	/* 
 	 * mono_runtime_cleanup() and mono_domain_finalize () need to
 	 * be called early since they need the execution engine still

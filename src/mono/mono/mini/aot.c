@@ -650,13 +650,13 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitExceptionInfo) * header->num_clauses);
 		jinfo->num_clauses = header->num_clauses;
 
-		jinfo->exvar_offset = decode_value (p, &p);
-
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoExceptionClause *ec = &header->clauses [i];				
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
 			ei->flags = ec->flags;
+			ei->exvar_offset = decode_value (p, &p);
+
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 				ei->data.filter = code + decode_value (p, &p);
 			else
@@ -1383,10 +1383,10 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (header->num_clauses) {
 		MonoJitInfo *jinfo = cfg->jit_info;
 
-		encode_value (jinfo->exvar_offset, p, &p);
-
 		for (k = 0; k < header->num_clauses; ++k) {
 			MonoJitExceptionInfo *ei = &jinfo->clauses [k];
+
+			encode_value (ei->exvar_offset, p, &p);
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 				encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);

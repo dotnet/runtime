@@ -36,7 +36,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "14"
+#define MONO_AOT_FILE_VERSION "15"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -522,16 +522,16 @@ typedef struct {
 	gint             spill_count;
 	/* unsigned char   *cil_code; */
 	MonoMethod      *inlined_method; /* the method which is currently inlined */
-
-	/* the exception object passed to catch/filter blocks */
-	MonoInst        *exvar;
-	
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
 
 	/* A hashtable of region ID-> SP var mappings */
 	/* An SP var is a place to store the stack pointer (used by handlers)*/
 	GHashTable      *spvars;
+
+	/* A hashtable of region ID -> EX var mappings */
+	/* An EX var stores the exception object passed to catch/filter blocks */
+	GHashTable      *exvars;
 
 	GList           *ldstr_list; /* used by AOT */
 	

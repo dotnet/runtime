@@ -884,9 +884,9 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
 							/* store the exception object int cfg->excvar */
-							g_assert (ji->exvar_offset);
+							g_assert (ei->exvar_offset);
 							/* need to use the frame pointer (ppc_r31), not r1 (regs start from register r13): methods with clauses always have r31 */
-							*((gpointer *)((char *)(ctx->regs [ppc_r31-13]) + ji->exvar_offset)) = obj;
+							*((gpointer *)((char *)(ctx->regs [ppc_r31-13]) + ei->exvar_offset)) = obj;
 							if (!initial_stack_trace && trace_str) {
 								mono_ex->stack_trace = mono_string_new (domain, trace_str->str);
 							}
