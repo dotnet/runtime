@@ -82,7 +82,8 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	mono_method_get_param_names (method, (const char **)names);
 	if (sig->hasthis)
 		fprintf (info->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
-			 info->next_idx++, klass->byval_arg.type, minfo->start_line, 8); /* FIXME */
+			 info->next_idx++, klass->byval_arg.type, minfo->start_line,
+			 minfo->method_info.this_offset);
 	for (i = 0; i < minfo->method_info.num_params; i++) {
 		int stack_offset = minfo->method_info.param_offsets [i];
 
@@ -100,13 +101,15 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 			 i, info->next_idx++, header->locals [i]->type, minfo->start_line, stack_offset);
 	}
 
-	fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->start_line, 0);
+	if (minfo->line_numbers) {
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->start_line, 0);
 
-	for (i = 1; i < minfo->line_numbers->len; i++) {
-		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
+		for (i = 1; i < minfo->line_numbers->len; i++) {
+			DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
 
-		fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line,
-			 lni->address - minfo->method_info.code_start);
+			fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line,
+				 lni->address - minfo->method_info.code_start);
+		}
 	}
 
 	/* end of function */

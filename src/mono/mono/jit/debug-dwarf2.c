@@ -841,6 +841,9 @@ write_method_lines_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	gpointer st_address = 0;
 	int i;
 
+	if (!minfo->line_numbers)
+		return;
+
 	// Start of statement program
 	dwarf2_write_dw_lns_advance_line (info->f, minfo->start_line - 1);
 	dwarf2_write_dw_lne_set_address (info->f, minfo->method_info.code_start);
@@ -1034,7 +1037,8 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	}
 
 	if (minfo->method_info.method->signature->hasthis)
-		dwarf2_write_parameter (info, minfo, "this", 8, minfo->method_info.method->klass);
+		dwarf2_write_parameter (info, minfo, "this", minfo->method_info.this_offset,
+					minfo->method_info.method->klass);
 
 	names = g_new (char *, minfo->method_info.method->signature->param_count);
 	mono_method_get_param_names (minfo->method_info.method, (const char **) names);

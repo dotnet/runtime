@@ -118,6 +118,9 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	GPtrArray *il_offsets;
 	int i;
 
+	if (!info->moffsets)
+		return;
+
 	il_offsets = g_ptr_array_new ();
 	minfo->line_numbers = g_ptr_array_new ();
 
@@ -259,7 +262,10 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
 	info->mlines = g_new0 (int, info->nmethods);
-	debug_load_method_lines (info);
+
+	if (handle->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
+		debug_load_method_lines (info);
+
 	return info;
 }
 
@@ -441,11 +447,18 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	minfo->method_info.code_size = cfg->code_size;
 	minfo->method_number = method_number;
 	minfo->method_info.method = method;
-	minfo->method_info.num_params = method->signature->param_count + method->signature->hasthis;
-	minfo->method_info.param_offsets = g_new0 (guint32, minfo->method_info.num_params + 1);
+	minfo->method_info.num_params = method->signature->param_count;
+	minfo->method_info.param_offsets = g_new0 (guint32, minfo->method_info.num_params);
+
+	if (method->signature->hasthis) {
+		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index;
+
+		minfo->method_info.this_offset = ptr->offset;
+	}
 
 	for (i = 0; i < minfo->method_info.num_params; i++) {
-		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index;
+		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index +
+			method->signature->hasthis;
 
 		minfo->method_info.param_offsets [i] = ptr [i].offset;
 	}
