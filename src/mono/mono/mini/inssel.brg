@@ -1184,10 +1184,7 @@ stmt: CEE_THROW (reg) {
 }
 
 stmt: OP_THROW_OR_NULL (reg) {
-	     	MonoClass *klass = tree->inst_newa_class;
-	MonoInst *object_is_null, *end_label, *false_label;
-	int obj_reg = state->left->reg1;
-	int vtable_reg = mono_regstate_next_int (s->rs);
+	MonoInst *object_is_null;
 
 	MONO_NEW_LABEL (s, object_is_null);
 
@@ -1643,7 +1640,7 @@ stmt: CEE_MKREFANY (OP_GROUP (reg, OP_ICONST), reg) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		int type_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, state->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, type), const_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, state->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, klass), const_reg);
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, type_reg, const_reg, G_STRUCT_OFFSET (MonoClass, byval_arg));
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, state->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, type), type_reg);
 	}
