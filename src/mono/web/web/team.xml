@@ -1152,6 +1152,35 @@
 
   </contributor>
 
+    <contributor>
+
+    <name>
+
+      <first-name>Eduardo</first-name>
+
+      <last-name>Garcia Cebollero</last-name>
+
+    </name>
+
+    <e-mail>kiwnix@yahoo.es</e-mail>
+
+    <image>none.png</image>
+
+    <location>Madrid, Spain</location>
+
+    <description>External Contributor</description>
+
+    <tasks>
+
+      <task>Small Bugfixes</task>
+
+      <task>NUnit Tests</task>
+
+    </tasks>
+
+  </contributor>
+
+
   <contributor>
 
     <name>
@@ -1238,7 +1267,7 @@
       <task>System.IO</task>
     </tasks>
   </contributor>
-</contributors>
+
 
   <contributor>
 
@@ -1269,3 +1298,4 @@
     </tasks>
 
   </contributor>
+</contributors>
