@@ -4297,7 +4297,10 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 	src_buf = (gint8 *)src->vector + src_offset;
 	dest_buf = (gint8 *)dest->vector + dest_offset;
 
-	memcpy (dest_buf, src_buf, count);
+	if (src != dest)
+		memcpy (dest_buf, src_buf, count);
+	else
+		memmove (dest_buf, src_buf, count); /* Source and dest are the same array */
 
 	return TRUE;
 }
