@@ -5477,9 +5477,36 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	assembly = 
 		mono_domain_try_type_resolve (
 			mono_domain_get (), fullName->str, NULL);
-	if (assembly && (!image || (assembly->assembly->image == image)))
-		type = mono_reflection_get_type_internal (assembly->assembly->image, 
-										 info, ignorecase);
+	if (assembly && (!image || (assembly->assembly->image == image))) {
+
+		if (assembly->assembly->dynamic) {
+			/* Enumerate all modules */
+			MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
+			int i;
+
+			type = NULL;
+			if (abuilder->modules) {
+				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
+					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
+					type = mono_reflection_get_type_internal (&mb->dynamic_image->image, info, ignorecase);
+					if (type)
+						break;
+				}
+			}
+
+			if (!type && abuilder->loaded_modules) {
+				for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
+					MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
+					type = mono_reflection_get_type_internal (mod->image, info, ignorecase);
+					if (type)
+						break;
+				}
+			}
+		}
+		else
+			type = mono_reflection_get_type_internal (assembly->assembly->image, 
+													  info, ignorecase);
+	}
 	g_string_free (fullName, TRUE);
 	return type;
 }
