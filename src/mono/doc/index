@@ -150,6 +150,13 @@
   </tr>
 </table>
 
+@item Feb 2nd, 2004: Mono 0.30 has been released
+
+	Check out the <a
+	href="http://www.go-mono.com/archive/mono-0.30.html">Release
+	notes</a> for details on Mono 0.30.  Or go directly to our <a
+	href="download.html">download</a> section
+
 @item Jan 18th, 2004: LDAP class libraries in Mono tutorial.
 
 	Sunil Kumar has written an <a
