@@ -902,71 +902,36 @@ ves_icall_get_field_info (MonoReflectionField *field, MonoFieldInfo *info)
 }
 
 static MonoObject *
-ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *obj)
-{	
-	MonoObject *o;
-	MonoClassField *cf = field->field;
+ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *obj) {
+	MonoObject *res;
 	MonoClass *klass;
-	MonoVTable *vtable;
-	MonoDomain *domain = mono_domain_get ();
-	gchar *v;
-	gboolean is_static = FALSE;
-	gboolean is_ref = FALSE;
+	MonoType *ftype = field->field->type;
+	int type = ftype->type;
+	char *p, *r;
+	guint32 align;
 
-	switch (cf->type->type) {
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-		is_ref = TRUE;
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_VALUETYPE:
-		is_ref = cf->type->byref;
-		break;
-	default:
-		g_error ("type 0x%x not handled in "
-			 "ves_icall_Monofield_GetValue", cf->type->type);
-		return NULL;
-	}
-
-	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		is_static = TRUE;
-		vtable = mono_class_vtable (domain, field->klass);
-	}
-	
-	if (is_ref) {
-		if (is_static) {
-			mono_field_static_get_value (vtable, cf, &o);
-		} else {
-			mono_field_get_value (obj, cf, &o);
-		}
-		return o;
-	}
-
-	/* boxed value type */
-	klass = mono_class_from_mono_type (cf->type);
-	o = mono_object_new (domain, klass);
-	v = ((gchar *) o) + sizeof (MonoObject);
-	if (is_static) {
-		mono_field_static_get_value (vtable, cf, v);
+	mono_class_init (field->klass);
+	if (ftype->attrs & FIELD_ATTRIBUTE_STATIC) {
+		MonoVTable *vtable;
+		vtable = mono_class_vtable (mono_domain_get (), field->klass);
+		p = (char*)(vtable->data) + field->field->offset;
 	} else {
-		mono_field_get_value (obj, cf, v);
+		p = (char*)obj + field->field->offset;
 	}
 
-	return o;
+	switch (type) {
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		return *(MonoObject**)p;
+	}
+	klass = mono_class_from_mono_type (ftype);
+	res = mono_object_new (mono_domain_get (), klass);
+	r = (char*)res + sizeof (MonoObject);
+	memcpy (r, p, mono_class_value_size (klass, &align));
+
+	return res;
 }
 
 static void
