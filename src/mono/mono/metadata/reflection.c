@@ -5333,20 +5333,13 @@ MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_ParameterInfo;
-	static MonoClassField *dbnull_value_field;
 	MonoClass *klass;
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
-	char **names;
+	char **names, **blobs = NULL;
+	MonoObject *dbnull = mono_get_dbnull_object (domain);
 	int i;
-
-	if (!dbnull_value_field) {
-		klass = mono_class_from_name (mono_defaults.corlib, "System", "DBNull");
-		mono_class_init (klass);
-		dbnull_value_field = mono_class_get_field_from_name (klass, "Value");
-		g_assert (dbnull_value_field);
-	}
 
 	if (!System_Reflection_ParameterInfo)
 		System_Reflection_ParameterInfo = mono_class_from_name (
@@ -5366,19 +5359,149 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 
 	res = mono_array_new (domain, System_Reflection_ParameterInfo, method->signature->param_count);
 	for (i = 0; i < method->signature->param_count; ++i) {
-		param = (MonoReflectionParameter *)mono_object_new (domain, 
-															System_Reflection_ParameterInfo);
+		param = (MonoReflectionParameter *)mono_object_new (domain, System_Reflection_ParameterInfo);
 		param->ClassImpl = mono_type_get_object (domain, method->signature->params [i]);
-		param->DefaultValueImpl = mono_field_get_value_object (domain, dbnull_value_field, NULL); /* FIXME */
 		param->MemberImpl = (MonoObject*)member;
 		param->NameImpl = mono_string_new (domain, names [i]);
 		param->PositionImpl = i;
 		param->AttrsImpl = method->signature->params [i]->attrs;
+
+		if (!(param->AttrsImpl & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
+			param->DefaultValueImpl = dbnull;
+		} else {
+			MonoType *type = param->ClassImpl->type;
+			
+			if (!blobs) {
+				blobs = g_new0 (char *, method->signature->param_count);
+				get_default_param_value_blobs (method, blobs); 
+			}
+
+			param->DefaultValueImpl = mono_get_object_from_blob (domain, type, blobs [i]);
+
+			if (!param->DefaultValueImpl) {
+				param->DefaultValueImpl = dbnull;
+			}
+		}
+		
 		mono_array_set (res, gpointer, i, param);
 	}
 	g_free (names);
+	g_free (blobs);
+	
 	CACHE_OBJECT (&(method->signature), res, NULL);
 	return res;
+}
+
+MonoObject *
+mono_get_dbnull_object (MonoDomain *domain)
+{
+	MonoObject *obj;
+	MonoClass *klass;
+	static MonoClassField *dbnull_value_field = NULL;
+	
+	if (!dbnull_value_field) {
+		klass = mono_class_from_name (mono_defaults.corlib, "System", "DBNull");
+		mono_class_init (klass);
+		dbnull_value_field = mono_class_get_field_from_name (klass, "Value");
+		g_assert (dbnull_value_field);
+	}
+	obj = mono_field_get_value_object (domain, dbnull_value_field, NULL); 
+	g_assert (obj);
+	return obj;
+}
+
+
+static void
+get_default_param_value_blobs (MonoMethod *method, char **blobs)
+{
+	guint32 param_index, i, lastp, crow = 0;
+	guint32 param_cols [MONO_PARAM_SIZE], const_cols [MONO_CONSTANT_SIZE];;
+	gint32 idx = -1;
+
+	MonoClass *klass = method->klass;
+	MonoImage *image = klass->image;
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethodSignature *methodsig = method->signature;
+
+	MonoTableInfo *constt;
+	MonoTableInfo *methodt;
+	MonoTableInfo *paramt;
+
+	if (!methodsig->param_count)
+		return;
+
+	if (klass->generic_inst) {
+		return; /* FIXME - ??? */
+	}
+
+	mono_class_init (klass);
+
+	if (klass->image->dynamic) {
+		return;	/* FIXME */
+	}
+
+	methodt = &klass->image->tables [MONO_TABLE_METHOD];
+	paramt = &klass->image->tables [MONO_TABLE_PARAM];
+	constt = &image->tables [MONO_TABLE_CONSTANT];
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (method == klass->methods [i]) {
+			idx = klass->method.first + i;
+			break;
+		}
+	}
+
+	g_assert (idx != -1);
+
+	param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
+	if (idx + 1 < methodt->rows)
+		lastp = mono_metadata_decode_row_col (methodt, idx + 1, MONO_METHOD_PARAMLIST);
+	else
+		lastp = paramt->rows + 1;
+
+	for (i = param_index; i < lastp; ++i) {
+		guint32 paramseq;
+
+		mono_metadata_decode_row (paramt, i - 1, param_cols, MONO_PARAM_SIZE);
+		paramseq = param_cols [MONO_PARAM_SEQUENCE];
+
+		if (!param_cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_DEFAULT) 
+			continue;
+
+		crow = mono_metadata_get_constant_index (image, MONO_TOKEN_PARAM_DEF | i, crow + 1);
+		if (!crow) {
+			continue;
+		}
+	
+		mono_metadata_decode_row (constt, crow - 1, const_cols, MONO_CONSTANT_SIZE);
+		blobs [paramseq - 1] = (gpointer) mono_metadata_blob_heap (image, const_cols [MONO_CONSTANT_VALUE]);
+	}
+
+	return;
+}
+
+static MonoObject *
+mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob)
+{
+	void *retval;
+	MonoClass *klass;
+	MonoObject *object;
+
+	if (!blob)
+		return NULL;
+	
+	klass = mono_class_from_mono_type (type);
+	if (klass->valuetype) {
+		object = mono_object_new (domain, klass);
+		retval = ((gchar *) object + sizeof (MonoObject));
+	} else {
+		retval = &object;
+	}
+			
+	if (!mono_get_constant_value_from_blob (domain, type->type,  blob, retval))
+		return object;
+	else
+		return NULL;
 }
 
 static int

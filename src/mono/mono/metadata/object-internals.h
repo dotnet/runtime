@@ -892,5 +892,8 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token);
 void
 mono_image_build_metadata (MonoReflectionModuleBuilder *module);
 
+int
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, char *blob, void *value);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

@@ -1161,15 +1161,14 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	return o;
 }
 
-static void
-get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
+int
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, char *blob, void *value)
 {
-	const char *p = field->data;
-	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
-		
+	int retval = 0;
+	const char *p = blob;
 	mono_metadata_decode_blob_size (p, &p);
 
-	switch (field->def_type) {
+	switch (type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
@@ -1195,15 +1194,25 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 		readr8 (p, (double*) value);
 		break;
 	case MONO_TYPE_STRING:
-		*(gpointer*) value = mono_ldstr_metdata_sig (domain, field->data);
+		*(gpointer*) value = mono_ldstr_metdata_sig (domain, blob);
 		break;
 	case MONO_TYPE_CLASS:
 		*(gpointer*) value = NULL;
 		break;
 	default:
-		g_warning ("type 0x%02x should not be in constant table", field->def_type);
+		retval = -1;
+		g_warning ("type 0x%02x should not be in constant table", type);
 	}
+	return retval;
 }
+
+static void
+get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
+{
+	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
+	mono_get_constant_value_from_blob (domain, field->def_type, field->data, value);
+}
+
 
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
