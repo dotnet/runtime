@@ -286,7 +286,9 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	MONO_ARCH_SAVE_REGS;
 
 	g_assert (ad != NULL);
-	g_assert (name != NULL);
+
+	if (name == NULL)
+		mono_raise_exception (mono_get_exception_argument_null ("name"));
 
 	str = mono_string_to_utf8 (name);
 
@@ -330,7 +332,9 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 	MONO_ARCH_SAVE_REGS;
 
 	g_assert (ad != NULL);
-	g_assert (name != NULL);
+
+	if (name == NULL)
+		mono_raise_exception (mono_get_exception_argument_null ("name"));
 
 	mono_domain_lock (add);
 
