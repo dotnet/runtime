@@ -629,9 +629,9 @@
 
     <class name="System.Collections.Hashtable">
         <last-activity>Jul-15-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>yes</test-suite>
-        <completion>?</completion>
+        <completion>75</completion>
         <maintainers>
             <maintainer>jbarn@httcb.net</maintainer>
         </maintainers>
@@ -1270,10 +1270,10 @@
     </class>
 
     <class name="System.Collections.Specialized.ListDictionary">
-        <last-activity>Jul-16-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>100</completion>
         <maintainers>
             <maintainer>jbarn@httcb.net</maintainer>
             <maintainer>josh@narf.com</maintainer>
@@ -1283,7 +1283,7 @@
     <class name="System.Collections.Specialized.StringCollection">
         <last-activity>Jul-16-2001</last-activity>
         <implementation>yes</implementation>
-        <test-suite>no</test-suite>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>jbarn@httcb.net</maintainer>
