@@ -204,6 +204,7 @@ typedef struct {
 	MonoBoolean init_locals;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
+	MonoArray *permissions;
 } MonoReflectionCtorBuilder;
 
 typedef struct {
@@ -232,6 +233,7 @@ typedef struct {
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
+	MonoArray *permissions;
 } MonoReflectionMethodBuilder;
 
 typedef struct {
@@ -316,6 +318,11 @@ typedef struct {
 	MonoString *filename;
 	guint32 attrs;
 } MonoReflectionResource;
+
+typedef struct {
+	guint32 action;
+	MonoString *pset;
+} MonoReflectionPermissionSet;
 
 typedef struct {
 	MonoReflectionAssembly assembly;

@@ -54,6 +54,7 @@ typedef struct {
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
+	MonoArray *permissions;
 	MonoMethod *mhandle;
 	guint32 nrefs;
 	gpointer *refs;
@@ -304,6 +305,30 @@ add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int 
 		mono_image_add_stream_data (&assembly->blob, b2, s2);
 		mono_g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
 	}
+	return idx;
+}
+
+static guint32
+add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
+{
+	char blob_size [64];
+	char *b = blob_size;
+	guint32 idx = 0, len;
+
+	len = str->length * 2;
+	mono_metadata_encode_value (len, b, &b);
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	{
+		char *swapped = g_malloc (2 * mono_string_length (str));
+		const char *p = (const char*)mono_string_chars (str);
+
+		swap_with_size (swapped, p, 2, mono_string_length (str));
+		idx = add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
+		g_free (swapped);
+	}
+#else
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
+#endif
 	return idx;
 }
 
@@ -900,6 +925,52 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	}
 }
 
+static void
+mono_image_add_decl_security (MonoDynamicImage *assembly, guint32 parent_token,
+							  MonoArray *permissions)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 count, i, idx;
+	MonoReflectionPermissionSet *perm;
+
+	if (!permissions)
+		return;
+
+	count = mono_array_length (permissions);
+	table = &assembly->tables [MONO_TABLE_DECLSECURITY];
+	table->rows += count;
+	alloc_table (table, table->rows);
+
+	for (i = 0; i < mono_array_length (permissions); ++i) {
+		perm = (MonoReflectionPermissionSet*)mono_array_addr (permissions, MonoReflectionPermissionSet, i);
+
+		values = table->values + table->next_idx * MONO_DECL_SECURITY_SIZE;
+
+		idx = mono_metadata_token_index (parent_token);
+		idx <<= HAS_DECL_SECURITY_BITS;
+		switch (mono_metadata_token_table (parent_token)) {
+		case MONO_TABLE_TYPEDEF:
+			idx |= HAS_DECL_SECURITY_TYPEDEF;
+			break;
+		case MONO_TABLE_METHOD:
+			idx |= HAS_DECL_SECURITY_METHODDEF;
+			break;
+		case MONO_TABLE_ASSEMBLY:
+			idx |= HAS_DECL_SECURITY_ASSEMBLY;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		values [MONO_DECL_SECURITY_ACTION] = perm->action;
+		values [MONO_DECL_SECURITY_PARENT] = idx;
+		values [MONO_DECL_SECURITY_PERMISSIONSET] = add_mono_string_to_blob_cached (assembly, perm->pset);
+
+		++table->next_idx;
+	}
+}
+
 /*
  * Fill in the MethodDef and ParamDef tables for a method.
  * This is used for both normal methods and constructors.
@@ -927,6 +998,10 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 	
 	table = &assembly->tables [MONO_TABLE_PARAM];
 	values [MONO_METHOD_PARAMLIST] = table->next_idx;
+
+	mono_image_add_decl_security (assembly, 
+								  mono_metadata_make_token (MONO_TABLE_METHOD, *mb->table_idx),
+								  mb->permissions);
 
 	if (mb->pinfo) {
 		MonoDynamicTable *mtable;
@@ -990,6 +1065,7 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	rmb->return_modopt = mb->return_modopt;
 	rmb->param_modreq = mb->param_modreq;
 	rmb->param_modopt = mb->param_modopt;
+	rmb->permissions = mb->permissions;
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -1018,6 +1094,7 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb,
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = mb->param_modreq;
 	rmb->param_modopt = mb->param_modopt;
+	rmb->permissions = mb->permissions;
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -1044,6 +1121,7 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb,
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = NULL;
 	rmb->param_modopt = NULL;
+	rmb->permissions = NULL;
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -1233,7 +1311,7 @@ encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type)
 	char *b = blob_size;
 	char *p, *box_val;
 	char* buf;
-	guint32 idx, len, dummy = 0;
+	guint32 idx = 0, len = 0, dummy = 0;
 	
 	p = buf = g_malloc (64);
 	if (!val) {
