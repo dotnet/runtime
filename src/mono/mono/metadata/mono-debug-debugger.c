@@ -1196,8 +1196,11 @@ mono_debugger_lookup_type (const gchar *type_name)
 		MonoDebuggerSymbolFile *symfile = mono_debugger_symbol_table->symbol_files [i];
 		MonoType *type;
 		guint32 offset;
+		gchar *name;
 
-		type = mono_reflection_type_from_name (type_name, symfile->image);
+		name = g_strdup (type_name);
+		type = mono_reflection_type_from_name (name, symfile->image);
+		g_free (name);
 		if (!type)
 			continue;
 
