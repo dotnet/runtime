@@ -25,31 +25,23 @@
 static char *
 get_encoded_user_string (const char *ptr)
 {
-	GString *res = g_string_new ("");
-	char *result;
-	int len, i;
+	char *res, *result;
+	int len, i, j;
 
 	len = mono_metadata_decode_blob_size (ptr, &ptr);
+	res = g_malloc (len + 1);
 
-	for (i = 0; i < len; i += 2) {
-		switch (ptr [i]) {
-		case '\a': g_string_append (res, "\\a"); break;
-		case '\b': g_string_append (res, "\\b"); break;
-		case '\f': g_string_append (res, "\\f"); break;
-		case '\n': g_string_append (res, "\\n"); break;
-		case '\r': g_string_append (res, "\\r"); break;
-		case '\t': g_string_append (res, "\\t"); break;
-		case '\v': g_string_append (res, "\\v"); break;
-		case '\"': g_string_append (res, "\\\""); break;
-		case '\'': g_string_append (res, "\\'"); break;
-		case '\\': g_string_append (res, "\\\\"); break;
-		default: g_string_append_c (res, ptr [i]); break;
-		}
-	}
+	/*
+	 * I should really use some kind of libunicode here
+	 */
+	for (i = 0, j = 0; i < len; j++, i += 2)
+		res [j] = ptr [i];
 
-	result = res->str;
-	g_string_free (res, FALSE);
-		
+	res [j] = 0;
+
+	result = g_strescape (res, NULL);
+	g_free (res);
+	
 	return result;
 }
 
