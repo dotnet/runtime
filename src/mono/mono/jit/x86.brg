@@ -16,9 +16,11 @@ struct _MBTree {
 	gpointer emit;
 
 	guint is_jump:1;
+	guint last_instr:1;
 
-	guint32 vaddr;
-	guint32 addr;
+	gint32 cli_addr;   /* virtual cli address */
+	gint32 addr;       /* address of emitted instruction */
+	gint32 first_addr; /* first code address of a tree */ 
 
 	int reg;
 	MonoTypeEnum type;
@@ -38,7 +40,7 @@ gboolean same_tree (MBTree *t1, MBTree *t2);
 #
 
 # constatnts
-%term CONST LDLOC LDARG STLOC BR RET RETV ARG CALL
+%term CONST_I4 LDLOC LDARG STLOC BR RET RETV ARG CALL
 %term ADD SUB MUL
 %term BLT BEQ BGE 
 #
@@ -50,9 +52,15 @@ gboolean same_tree (MBTree *t1, MBTree *t2);
 # tree definitions
 #
 
-con: CONST
+locaddr: LDLOC {
+	tree->data.i = - tree->data.i - 4;
+}
 
-reg: LDLOC {
+locaddr: LDARG {
+	tree->data.i = tree->data.i + 8;
+}
+
+reg: LDLOC 1 {
 	switch (tree->type) {
 	case MONO_TYPE_I4:  
 		x86_mov_reg_membase (*code, tree->reg, X86_EBP,
@@ -64,7 +72,7 @@ reg: LDLOC {
 	}
 }
 
-reg: LDARG {
+reg: LDARG 1 {
 	switch (tree->type) {
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
@@ -84,53 +92,35 @@ reg: MUL (reg, reg) {
 	if (tree->reg != tree->left->reg)
 		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_imul_reg_reg (*code, tree->reg, tree->right->reg);
-} cost {
-	MBCOND (tree->right->type == MONO_TYPE_I4);
-	return 0;
 }
 
-reg: ADD (reg, con) {
+reg: ADD (reg, CONST_I4) {
 	if (tree->reg != tree->left->reg)
 		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_imm (*code, X86_ADD, tree->reg, tree->right->data.i);
-} cost {
-	MBCOND (tree->right->type == MONO_TYPE_I4);
-	return 0;
 }
 
 reg: ADD (reg, reg) {
 	if (tree->reg != tree->left->reg)
 		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_reg (*code, X86_ADD, tree->reg, tree->right->reg);
-} cost {
-	MBCOND (tree->right->type == MONO_TYPE_I4);
-	return 0;
 }
 
-reg: SUB (reg, con) {
+reg: SUB (reg, CONST_I4) {
 	if (tree->reg != tree->left->reg)
 		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_imm (*code, X86_SUB, tree->reg, tree->right->data.i);
-} cost {
-	MBCOND (tree->right->type == MONO_TYPE_I4);
-	return 0;
 }
 
 reg: SUB (reg, reg) {
 	if (tree->reg != tree->left->reg)
 		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_reg (*code, X86_SUB, tree->reg, tree->right->reg);
-} cost {
-	MBCOND (tree->right->type == MONO_TYPE_I4);
-	return 0;
 }
 
-stmt: STLOC (con) {
+stmt: STLOC (CONST_I4) {
 	x86_mov_membase_imm (*code, X86_EBP, - tree->data.i - 4,
 			     tree->left->data.i, 4);
-} cost {
-	MBCOND (tree->left->type == MONO_TYPE_I4);
-	return 0;
 }
 
 stmt: STLOC (reg) {	
@@ -150,36 +140,54 @@ stmt: BR {
 	x86_jump32 (*code, tree->data.i - 5); 
 }
 
-stmt: BLT (reg, con) {
+stmt: BLT (reg, CONST_I4) {
+	guint8 *start = *code;
+	gint32 offset;
+
 	tree->is_jump = 1;
 	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
-	x86_branch32 (*code, X86_CC_LT, tree->data.i - 11, TRUE); 
+	offset = 6 + *code - start;
+	x86_branch32 (*code, X86_CC_LT, tree->data.i - offset, TRUE); 
 }
 
-stmt: BEQ (reg, con) {
+stmt: BEQ (reg, CONST_I4) {
+	guint8 *start = *code;
+	gint32 offset;
+
 	tree->is_jump = 1;
 	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
-	x86_branch32 (*code, X86_CC_EQ, tree->data.i - 11, TRUE);
+	offset = 6 + *code - start;
+	x86_branch32 (*code, X86_CC_EQ, tree->data.i - offset, TRUE);
 }
 
-stmt: BGE (reg, con) {
+stmt: BGE (reg, CONST_I4) {
+	guint8 *start = *code;
+	gint32 offset;
+
 	tree->is_jump = 1;
 	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
-	x86_branch32 (*code, X86_CC_GE, tree->data.i - 11, TRUE);
+	offset = 6 + *code - start;
+	x86_branch32 (*code, X86_CC_GE, tree->data.i - offset, TRUE);
 }
 
 stmt: RETV (reg) {
-	tree->is_jump = 1;
-	x86_jump32 (*code, tree->data.i - 5);      
+
+	if (!tree->last_instr) {
+		tree->is_jump = 1;
+		x86_jump32 (*code, tree->data.i - 5);      
+	}
+
 	g_assert (tree->left->reg == X86_EAX); // return must be in EAX
 }
 
 stmt: RET {
-	tree->is_jump = 1;
-	x86_jump32 (*code, tree->data.i - 5); 
+	if (!tree->last_instr) {
+		tree->is_jump = 1;
+		x86_jump32 (*code, tree->data.i - 5);
+	} 
 }
 
-stmt: ARG (con) {
+stmt: ARG (CONST_I4) {
 	x86_push_imm (*code, tree->left->data.i);
 }
 
@@ -205,6 +213,70 @@ stmt: CALL {
 	x86_mov_reg_imm (*code, X86_EAX, tree->data.p);
 	x86_call_membase (*code, X86_EAX, G_STRUCT_OFFSET (MonoMethod, addr));
 }
+
+
+#
+# just some optimizazions
+#
+
+reg: ADD (locaddr, reg) {
+	if (tree->reg != tree->right->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->right->reg, 4);
+	x86_alu_reg_membase (*code, X86_ADD, tree->reg, X86_EBP, 
+			     tree->left->data.i);	
+} cost {
+	MBCOND (tree->left->type == MONO_TYPE_I4 ||
+		tree->left->type == MONO_TYPE_U4);
+	return 0;
+}
+
+reg: MUL (locaddr, reg) {
+	if (tree->reg != tree->right->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->right->reg, 4);
+	x86_imul_reg_membase (*code, tree->reg, X86_EBP, tree->left->data.i);
+} cost {
+	MBCOND (tree->left->type == MONO_TYPE_I4 ||
+		tree->left->type == MONO_TYPE_U4);
+	return 0;
+}
+
+stmt: BEQ (locaddr, CONST_I4) {
+	guint8 *start = *code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_membase_imm (*code, X86_CMP, X86_EBP, tree->left->data.i, tree->right->data.i);
+	offset = 6 + *code - start;
+	x86_branch32 (*code, X86_CC_EQ, tree->data.i - offset, TRUE);
+} cost {
+	MBCOND (tree->left->type == MONO_TYPE_I4 ||
+		tree->left->type == MONO_TYPE_U4);
+	return 0;
+}
+
+stmt: BGE (locaddr, CONST_I4) {
+	guint8 *start = *code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_membase_imm (*code, X86_CMP, X86_EBP, tree->left->data.i, tree->right->data.i);
+	offset = 6 + *code - start;
+	x86_branch32 (*code, X86_CC_GE, tree->data.i - offset, TRUE);
+} cost {
+	MBCOND (tree->left->type == MONO_TYPE_I4 ||
+		tree->left->type == MONO_TYPE_U4);
+	return 0;
+}
+
+stmt: STLOC (ADD (LDLOC, CONST_I4)) {
+	x86_alu_membase_imm (*code, X86_ADD, X86_EBP, - tree->data.i - 4, tree->left->right->data.i);
+} cost {
+	MBCOND (tree->type == MONO_TYPE_I4 &&
+		tree->left->left->type == MONO_TYPE_I4 &&
+		tree->data.i == tree->left->left->data.i);
+	return 0;
+}
+
 
 %% 
 
