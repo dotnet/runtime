@@ -2716,10 +2716,15 @@ handle_parent:
 				continue;
 		}
 		
-		if (method->slot != -1) {
-			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
+		if (prop->get && prop->get->slot != -1) {
+			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (prop->get->slot)))
 				continue;
-			g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
+			g_hash_table_insert (method_slots, GUINT_TO_POINTER (prop->get->slot), prop);
+		}
+		if (prop->set && prop->set->slot != -1) {
+			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (prop->set->slot)))
+				continue;
+			g_hash_table_insert (method_slots, GUINT_TO_POINTER (prop->set->slot), prop);
 		}
 
 		l = g_slist_prepend (l, mono_property_get_object (domain, startklass, prop));
