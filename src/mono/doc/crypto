@@ -20,23 +20,25 @@
 
 **** TODO
 	<ul>
-		* Support for adding/modifying algorithms and OID using the
-		  <code>machine.config</code> configuration file (in progress).
+		* Support for adding/modifying OID using the 
+		  <code>machine.config</code> configuration file (algorithms 
+		  are done).
 
 		* RNGCryptoServiceProvider is currently only working on Linux.
 		  The current implementation reside in Mono's runtime and use 
 		  the <code>/dev/[u]random</code> device (which do not exists 
-		  under Windows). A Windows alternative is in the work...
+		  under Windows). A Windows alternative is in the work (see 
+		  Mono.Security.Win32 assembly section).
 
 		* Keypair persistance for RSA and DSA. This persistance must
 		  somehow be linked with X509 certificate stores (in planning).
 
-		* <code>PasswordDeriveBytes</code> is currently limited to 
-		  generating keys with the maximum length equals to the hash 
-		  output (as specified in PKCS #5). However the framework 
-		  implementation allows for longer keys to be generated. Also 
-		  the algorithms used by CryptDeriveKey (used by Windows 
-		  applications) are unknown.
+		* <code>PasswordDeriveBytes.CryptDeriveKey</code> is included 
+		  in the BCL to provide compatibility with existing Windows 
+		  applications. The main problem is that the key derivation 
+		  algorithm can be different for every CSP (Crypto Service 
+		  Provider). However for compatibility we should provide an
+		  implementation compatible with the MS CSP (most likely used).
 
 		* Analyse the current coverage of the unit tests on the 
 		  cryptographic classes and complete the unit tests.
@@ -59,7 +61,8 @@
 
 **** Status
 	<ul>
-		* X.509 certificates are parsed using 100% managed code. 
+		* X.509 certificates are parsed using 100% managed code 
+		  (using an internal ASN.1 class). 
 
 		* Software Publisher Certificates (SPC) used by Authenticode
 		  (tm) to sign assemblies are supported (extraction from PE 
@@ -77,7 +80,7 @@
 		* Authenticode(tm) support is incomplete. We can extract the
 		  certificates from PE files but cannot validate the signature
 		  nor the certificate chain (and we're still missing some trust
-		  anchors).
+		  anchors). See Tools section for more information.
 
 		* Integration with CryptoAPI (on Windows) isn't possible as 
 		  long as the <code>X509Certificate(IntPtr)</code> constructor 
@@ -89,15 +92,16 @@
 		* <b>There's no validation of the certificates</b> done in this
 		  class (this isn't a restriction of Mono!). This means that
 		  certificate signatures and validity dates are <b>never</b>
-		  checked!
+		  checked (except when used for Authenticode, i.e. 
+		  <code>CreateFromSignedFile</code>).
 
 		* The newer X509Certificate class included in Microsoft's Web 
 		  Service Enhancement (WSE) is a little better (as it includes 
 		  CryptoAPI's validation) when <code>IsCurrent</code> is called.
 
 		* Microsoft implementation of <code>X509Certificate</code> is 
-		  done by using CryptoAPI. From the exceptions thrown 
-		  Authenticode(tm) support is done via COM.
+		  done by using CryptoAPI (unmanaged). From the exceptions 
+		  thrown Authenticode(tm) support is done via COM.
 	</ul>
 
 <hr>
@@ -111,7 +115,8 @@
 
 **** Status
 	<ul>
-		* All classes are present but some are only stubbed.
+		* All classes are present but some (Transforms) are only 
+		  stubbed.
 
 		* Most classes have their unit tests.
 
@@ -124,7 +129,9 @@
 		* All the transforms needs to be done. But this requires far 
 		  more XML knowledge than crypto. Note: Most tests runs because
 		  the feeded XML is pre-c14n (by hand in the code) before 
-		  signing (not because the transforms works).
+		  signing (not because the transforms works). In the short
+		  term <code>libxml2</code> could be used to provide C14N, but 
+		  in the long term a fully managed class would be much better.
 
 		* Makefile for building under non-Windows operating systems.
 	</ul>
@@ -147,17 +154,21 @@
 	<ul>
 		* A RNGCryptoServiceProvider built on top of CryptoAPI.
 
+		* Wrapper classes for unmanaged versions of hash algorithms:
+		  MD2, MD4, MD5 and SHA1 are supported.
+
 		* Not (yet) commited in CVS - i'm still playing with the base
 		  classes so I can easily add other CryptoAPI-based algorithms.
 	</ul>
 
 **** TODO
 	<ul>
-		* Unmanaged versions of hash algorithms (SHA1 and MD5).
-		* Unmanaged versions of symmetric encryption algorithms 
-		  (like DES, TripleDES, RC2 and others present in CryptoAPI).
-		* Unmanaged versions of asymmetric algorithms (like DSA and 
-		  RSA) which persist their keypair into the specified CSP.
+		* Wrapper classes for unmanaged versions of symmetric 
+		  encryption algorithms (like DES, TripleDES, RC2 and others 
+		  present in default CSP).
+		* Wrapper classes for unmanaged versions of asymmetric 
+		  algorithms (like DSA and RSA) which persist their keypair 
+		  into the specified CSP.
 	</ul>
 
 <hr>
@@ -219,6 +230,8 @@
 
 	There are many tools in the .NET framework that indirectly interacts 
 	with some cryptographic classes. Mono will eventually need these tools.
+	Unless noted the tools should work on any CLR (tested with both Mono 
+	and Microsoft).
 
 **** Status
 
@@ -229,8 +242,8 @@
 		  re-used in source code (C# or VB.NET syntax).
 
 		* <code>cert2spc</code> is a tool to transform multiple X.509 
-		   certificates (a chain) into a Software Publisher Certificate
-		  (SPC) - which is a long name for a simple PKCS#7 file.
+		   certificates and CRLs into a Software Publisher Certificate
+		  (SPC) file - which is a long name for a simple PKCS#7 file.
 	</ul>
 
 **** TODO
@@ -238,10 +251,11 @@
 	<ul>
 		* <code>monosn</code> is a clone of the <code>sn</code> to manage
 		  strongnames. This tools is part of the runtime (not the class
-		  library) and as such is written in C.
+		  library) and as such is written in C and won't run without Mono.
 
-		* <code>signcode</code> and <code>chktrust</code> for signing 
-		  and validating  Authenticode(tm) signatures on assemblies.
+		* <code>signcode</code> and <code>chktrust</code> (in progress)
+		  for signing and validating Authenticode(tm) signatures on 
+		  assemblies (or any PE file).
 
 		* <code>makecert</code> to create X.509 test certificates that 
 		  can be used (once transformed in SPC) to sign assemblies.
@@ -272,4 +286,4 @@
 	informations about the status of the cryptographic classes.
 
 <hr>
-Last reviewed: January 19, 2003 (post mono 0.18)
+Last reviewed: February 4, 2003 (post mono 0.19)
