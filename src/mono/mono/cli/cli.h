@@ -31,6 +31,9 @@ typedef struct {
 MonoMethod        *mono_get_method      (MonoImage *image, guint32 token);
 void               mono_free_method     (MonoMethod *method);
 
+guint32            mono_typedef_from_name (MonoImage *image, const char *name, 
+					   const char *nspace, guint32 *mlist);
+
 guint32            mono_get_string_class_info (guint *ttoken, MonoImage **cl);
 
 

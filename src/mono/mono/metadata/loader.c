@@ -50,6 +50,28 @@ mono_map_dll (const char *name)
 	return name;
 }
 
+guint32
+mono_typedef_from_name (MonoImage *image, const char *name, 
+			const char *nspace, guint32 *mlist)
+{
+	MonoMetadata *m = &image->metadata;
+	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
+	guint32 i;
+	guint32 cols [MONO_TYPEDEF_SIZE];
+
+	for (i=0; i < t->rows; ++i) {
+		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
+		if (strcmp (name, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME])) == 0 
+				&& strcmp (nspace, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
+			if (mlist)
+				*mlist = cols [MONO_TYPEDEF_METHOD_LIST];
+			return i + 1;
+		}
+	}
+	g_assert_not_reached ();
+	return 0;
+}
+
 /**
  * mono_get_string_class_info:
  * @ttoken: pointer to location to store type definition token
@@ -143,26 +165,6 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 	return ctor;
 }
 
-static guint32
-typedef_from_name (MonoImage *image, const char *name, const char *nspace, guint32 *mlist)
-{
-	MonoMetadata *m = &image->metadata;
-	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
-	guint32 i;
-	guint32 cols [MONO_TYPEDEF_SIZE];
-
-	for (i=0; i < t->rows; ++i) {
-		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
-		if (strcmp (name, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME])) == 0 
-				&& strcmp (nspace, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
-			*mlist = cols [MONO_TYPEDEF_METHOD_LIST];
-			return i + 1;
-		}
-	}
-	g_assert_not_reached ();
-	return 0;
-}
-
 static void
 methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, guint32 *rindex)
 {
@@ -208,7 +210,7 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 
 			m = &image->metadata;
 			tables = &m->tables [MONO_TABLE_METHOD];
-			typedef_from_name (image, name, nspace, &i);
+			mono_typedef_from_name (image, name, nspace, &i);
 			/* mostly dumb search for now */
 			for (;i < tables->rows; ++i) {
 				mono_metadata_decode_row (tables, i, cols, MONO_METHOD_SIZE);
@@ -338,7 +340,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 		args[i] = ves_map_ffi_type (mh->signature->params [i]->type);
 
 	rettype = ves_map_ffi_type (mh->signature->ret->type);
-
+	
 	if (!ffi_prep_cif (piinfo->cif, FFI_DEFAULT_ABI, acount, rettype, 
 			   args) == FFI_OK) {
 		g_warning ("prepare pinvoke failed");

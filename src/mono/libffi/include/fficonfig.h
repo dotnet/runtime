@@ -42,9 +42,6 @@
 /* Define if you have the memcpy function.  */
 #define HAVE_MEMCPY 1
 
-/* Define if you have the <dlfcn.h> header file.  */
-#define HAVE_DLFCN_H 1
-
 /* The number of bytes in type short */
 #define SIZEOF_SHORT 2
 

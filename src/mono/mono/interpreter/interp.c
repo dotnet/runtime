@@ -217,10 +217,12 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 		result.type = VAL_DOUBLE;
 		result.data.f = *(double*)(data + offset);
 		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 		result.type = VAL_OBJ;
 		result.data.p = *(gpointer*)(data + offset);
-		break;
+		break; 
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
@@ -253,6 +255,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 	case MONO_TYPE_R8:
 		*(double*)(data + offset) = val->data.f;
 		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 		*(gpointer*)(data + offset) = val->data.p;
 		break;
@@ -262,21 +266,99 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 	}
 }
 
+/*
+ * newarr:
+ * @image: image where the object is being referenced
+ * @token: type token
+ * @n: number of array elements
+ *
+ * This routine creates a new array with @n elements of type @token
+ */
+static MonoObject *
+newarr (MonoImage *image, guint32 token, guint32 n)
+{
+	MonoClass *tc;
+	MonoObject *o;
+	MonoArrayObject *ao;
+	static guint32 arr_token = 0;
+	static MonoImage *corlib = NULL;
+
+	tc = mono_class_get (image, token);
+	g_assert (tc != 0);
+
+	if (!arr_token) {
+		MonoAssembly *ass;
+		enum MonoImageOpenStatus status = MONO_IMAGE_OK; 
+
+		ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
+		g_assert (status == MONO_IMAGE_OK);
+		g_assert (ass != NULL);
+
+		corlib = ass->image;
+		
+		arr_token = mono_typedef_from_name (corlib, "Array", "System",
+						    NULL);
+		g_assert (arr_token != 0);
+
+		arr_token =  MONO_TOKEN_TYPE_DEF | arr_token;
+	}
+
+        o = mono_object_new (corlib, arr_token);
+	g_assert (o != NULL);
+
+	g_assert (o->klass->field.count == 3);
+
+	ao = (MonoArrayObject *)o;
+
+	ao->lower_bound = 0;
+	ao->length = n;
+	ao->rank = 1;
+	ao->vector = g_malloc0 (n * (o->klass->instance_size - 
+				     sizeof (MonoObject)));
+
+	return o;
+}
+
+static char *
+mono_get_ansi_string (MonoObject *o)
+{
+	MonoStringObject *s = (MonoStringObject *)o;
+	char *as, *vector;
+	int i;
+
+	if (!s->length)
+		return g_strdup ("");
+
+	vector = s->c_str->vector;
+
+	g_assert (vector != NULL);
+
+	as = g_malloc (s->length + 1);
+
+	/* fixme: replace with a real unicode/ansi conversion */
+	for (i = 0; i < s->length; i++) {
+		as [i] = vector [i*2];
+	}
+
+	as [i] = '\0';
+
+	return as;
+}
+
 static void 
 ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 {
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)mh;
-	static void *values[256];
-	static float tmp_float[256];
-	int i, acount;
-	static char res[256]; /* fixme */
+	gpointer *values;
+	float *tmp_float;
+	char **tmp_string;
+	int i, acount, rsize, align;
+	gpointer res = NULL; 
+	GSList *t, *l = NULL;
 
 	acount = mh->signature->param_count;
 
-	/* hardcoded limit of max 256 parameter - this prevents us from 
-	   dynamic memory alocation for args, values, ... */
-
-	g_assert (acount < 256);
+	values = alloca (sizeof (gpointer) * acount);
 
 	/* fixme: only works on little endian mashines */
 
@@ -295,14 +377,27 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 			values[i] = &sp [i].data.i;
 			break;
 		case MONO_TYPE_R4:
-			tmp_float [i] = sp [i].data.f;
-			values[i] = &tmp_float [i];
+			tmp_float = alloca (sizeof (float));
+			*tmp_float = sp [i].data.f;
+			values[i] = tmp_float;
 			break;
 		case MONO_TYPE_R8:
 			values[i] = &sp [i].data.f;
 			break;
-		case MONO_TYPE_STRING: /* fixme: this is wrong ? */
-			values[i] = &sp [i].data.p;
+		case MONO_TYPE_STRING:
+			if (mh->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI) {
+				tmp_string = alloca (sizeof (char *));
+				*tmp_string = mono_get_ansi_string (sp [i].data.p);
+				l = g_slist_prepend (l, *tmp_string);
+				values[i] = tmp_string;				
+			} else {
+				/* 
+				 * fixme: may we pass the object - I assume 
+				 * that is wrong ?? 
+				 */
+				values[i] = &sp [i].data.p;
+			}
+			
 			break;
  		default:
 			g_warning ("not implemented %x", 
@@ -312,8 +407,19 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 
 	}
 
+	if ((rsize = mono_type_size (mh->signature->ret->type, &align)))
+		res = alloca (rsize);
+
 	ffi_call (piinfo->cif, piinfo->addr, res, values);
 		
+	t = l;
+	while (t) {
+		g_free (t->data);
+		t = t->next;
+	}
+
+	g_slist_free (l);
+
 	if (mh->signature->ret->type)
 		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
 }
@@ -828,7 +934,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp[0].data.l < (guint64)sp[1].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				isunordered (sp [0].data.f, sp [1].data.f) ||
+				result = isunordered (sp [0].data.f, sp [1].data.f) ||
 					(sp [0].data.f < sp [1].data.f);
 			else
 				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
@@ -1097,16 +1203,22 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			BREAK;
 		CASE (CEE_CONV_I1) ves_abort(); BREAK;
 		CASE (CEE_CONV_I2) ves_abort(); BREAK;
-		CASE (CEE_CONV_I4)
+		CASE (CEE_CONV_I4) {
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
-			if (sp [-1].type == VAL_DOUBLE) {
+
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
 				sp [-1].data.i = (gint32)sp [-1].data.f;
 				sp [-1].type = VAL_I32;
-			} else {
+				break;
+			case VAL_I32:
+				break;
+			default:
 				ves_abort();
 			}
 			BREAK;
+		}
 		CASE (CEE_CONV_I8) ves_abort(); BREAK;
 		CASE (CEE_CONV_R4) ves_abort(); BREAK;
 		CASE (CEE_CONV_R8)
@@ -1129,6 +1241,15 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 				ves_abort();
 			}
 			BREAK;
+		CASE (CEE_CONV_U) 
+			++ip;
+			/* FIXME: handle other cases */
+			if (sp [-1].type == VAL_I32) {
+				/* defined as NOP */
+			} else {
+				ves_abort();
+			}
+			BREAK;
 		CASE (CEE_CONV_U8) ves_abort(); BREAK;
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
@@ -1145,9 +1266,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			ip++;
 			index = mono_metadata_token_index (read32 (ip));
+			ip += 4;
+
 			name = mono_metadata_user_string (m, index);
 			len = mono_metadata_decode_blob_size (name, &name);
-
 			/* 
 			 * terminate with 0, maybe we should use another 
 			 * constructor and pass the len
@@ -1311,27 +1433,160 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_OVF_I_UN) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U_UN) ves_abort(); BREAK;
 		CASE (CEE_BOX) ves_abort(); BREAK;
-		CASE (CEE_NEWARR) ves_abort(); BREAK;
-		CASE (CEE_LDLEN) ves_abort(); BREAK;
+		CASE (CEE_NEWARR) {
+			MonoObject *o;
+			guint32 token;
+
+			ip++;
+			token = read32 (ip);
+			o = newarr (mh->image, token, sp [-1].data.i);
+			ip += 4;
+
+			sp [-1].type = VAL_OBJ;
+			sp [-1].data.p = o;
+
+			BREAK;
+		}
+		CASE (CEE_LDLEN) {
+			MonoArrayObject *o;
+
+			ip++;
+
+			g_assert (sp [-1].type == VAL_OBJ);
+
+			o = sp [-1].data.p;
+			g_assert (o != NULL);
+			
+			/* must be a szarray */
+			g_assert (o->vector != NULL);
+
+			sp [-1].type = VAL_I32;
+			sp [-1].data.i = o->length;
+
+			BREAK;
+		}
 		CASE (CEE_LDELEMA) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_I1) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_U1) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_I2) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_U2) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_I4) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_U4) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_I1) /* fall through */
+		CASE (CEE_LDELEM_U1) /* fall through */
+		CASE (CEE_LDELEM_I2) /* fall through */
+		CASE (CEE_LDELEM_U2) /* fall through */
+		CASE (CEE_LDELEM_I4) /* fall through */
+		CASE (CEE_LDELEM_U4) /* fall through */
+		CASE (CEE_LDELEM_I)  /* fall through */
+		CASE (CEE_LDELEM_R4) /* fall through */
+		CASE (CEE_LDELEM_R8) {
+			MonoArrayObject *o;
+
+			sp -= 2;
+
+			g_assert (sp [0].type == VAL_OBJ);
+			o = sp [0].data.p;
+			/* must be a szarray */
+			g_assert (o->vector != NULL);
+
+			g_assert (sp [1].data.i >= 0);
+			g_assert (sp [1].data.i < o->length);
+			
+			switch (*ip) {
+			case CEE_LDELEM_I1:
+				sp [0].data.i = ((gint8 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I32;
+				break;
+			case CEE_LDELEM_U1:
+				sp [0].data.i = ((guint8 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I32;
+				break;
+			case CEE_LDELEM_I2:
+				sp [0].data.i = ((gint16 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I32;
+				break;
+			case CEE_LDELEM_U2:
+				sp [0].data.i = ((guint16 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I32;
+				break;
+			case CEE_LDELEM_I:
+				sp [0].data.i = ((gint32 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_NATI;
+				break;
+			case CEE_LDELEM_I4:
+				sp [0].data.i = ((gint32 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I32;
+				break;
+			case CEE_LDELEM_U4:
+				sp [0].data.i = ((guint32 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I32;
+				break;
+			case CEE_LDELEM_R4:
+				sp [0].data.f = ((float *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_DOUBLE;
+				break;
+			case CEE_LDELEM_R8:
+				sp [0].data.i = ((double *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_DOUBLE;
+				break;
+			default:
+				ves_abort();
+			}
+
+			++ip;
+			++sp;
+
+			BREAK;
+		}
 		CASE (CEE_LDELEM_I8) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_I) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_R4) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_R8) ves_abort(); BREAK;
 		CASE (CEE_LDELEM_REF) ves_abort(); BREAK;
-		CASE (CEE_STELEM_I) ves_abort(); BREAK;
-		CASE (CEE_STELEM_I1) ves_abort(); BREAK;
-		CASE (CEE_STELEM_I2) ves_abort(); BREAK;
-		CASE (CEE_STELEM_I4) ves_abort(); BREAK;
-		CASE (CEE_STELEM_I8) ves_abort(); BREAK;
-		CASE (CEE_STELEM_R4) ves_abort(); BREAK;
-		CASE (CEE_STELEM_R8) ves_abort(); BREAK;
+		CASE (CEE_STELEM_I)  /* fall through */
+		CASE (CEE_STELEM_I1) /* fall through */ 
+		CASE (CEE_STELEM_I2) /* fall through */
+		CASE (CEE_STELEM_I4) /* fall through */
+		CASE (CEE_STELEM_R4) /* fall through */
+		CASE (CEE_STELEM_R8) {
+			MonoArrayObject *o;
+
+			sp -= 3;
+
+			g_assert (sp [0].type == VAL_OBJ);
+			o = sp [0].data.p;
+			/* must be a szarray */
+			g_assert (o->vector != NULL);
+
+			g_assert (sp [1].data.i >= 0);
+			g_assert (sp [1].data.i < o->length);
+
+			switch (*ip) {
+			case CEE_STELEM_I:
+				((gint32 *)o->vector)[sp [1].data.i] = 
+					sp [2].data.i;
+				break;
+			case CEE_STELEM_I1:
+				((gint8 *)o->vector)[sp [1].data.i] = 
+					sp [2].data.i;
+				break;
+			case CEE_STELEM_I2:
+				((gint16 *)o->vector)[sp [1].data.i] = 
+					sp [2].data.i;
+				break;
+			case CEE_STELEM_I4:
+				((gint32 *)o->vector)[sp [1].data.i] = 
+					sp [2].data.i;
+				break;
+			case CEE_STELEM_R4:
+				((float *)o->vector)[sp [1].data.i] = 
+					sp [2].data.f;
+				break;
+			case CEE_STELEM_R8:
+				((double *)o->vector)[sp [1].data.i] = 
+					sp [2].data.f;
+				break;
+			default:
+				ves_abort();
+			}
+
+			++ip;
+
+			BREAK;
+		}
+		CASE (CEE_STELEM_I8)  ves_abort(); BREAK;
 		CASE (CEE_STELEM_REF) ves_abort(); BREAK;
 		CASE (CEE_UNUSED2) 
 		CASE (CEE_UNUSED3) 
@@ -1354,7 +1609,15 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_OVF_I2) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U2) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I4) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U4) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U4)
+			++ip;
+			/* FIXME: handle other cases */
+			if (sp [-1].type == VAL_I32) {
+				/* defined as NOP */
+			} else {
+				ves_abort();
+			}
+			BREAK;
 		CASE (CEE_CONV_OVF_I8) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U8) ves_abort(); BREAK;
 		CASE (CEE_UNUSED50) 
@@ -1394,7 +1657,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_LEAVE) ves_abort(); BREAK;
 		CASE (CEE_LEAVE_S) ves_abort(); BREAK;
 		CASE (CEE_STIND_I) ves_abort(); BREAK;
-		CASE (CEE_CONV_U) ves_abort(); BREAK;
 		CASE (CEE_UNUSED26) 
 		CASE (CEE_UNUSED27) 
 		CASE (CEE_UNUSED28) 

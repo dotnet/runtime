@@ -43,8 +43,8 @@ class_compute_field_layout (MonoMetadata *m, MonoClass *class)
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
-	int i;
-	
+	int i, j;
+
 	/*
 	 * Fetch all the field information.
 	 */
@@ -56,15 +56,12 @@ class_compute_field_layout (MonoMetadata *m, MonoClass *class)
 		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
 		sig = mono_metadata_blob_heap (m, cols [2]);
 		mono_metadata_decode_value (sig, &sig);
-
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
-		
 		class->fields [i].type = mono_metadata_parse_field_type (
-			m, sig, &sig);
+			m, sig + 1, &sig);
 		class->fields [i].flags = cols [0];
 	}
-
 	/*
 	 * Compute field layout and total size.
 	 */
@@ -87,7 +84,33 @@ class_compute_field_layout (MonoMetadata *m, MonoClass *class)
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
-		g_error ("TODO: Explicit layout not supported yet");
+		for (i = 0; i < top; i++){
+			guint32 cols [2];
+			int size, align;
+			int idx = class->field.first + i;
+
+			t = &m->tables [MONO_TABLE_FIELDLAYOUT];
+
+			for (j = 0; j < t->rows; j++) {
+
+				mono_metadata_decode_row (t, j, cols, CSIZE (cols));
+				if (cols [1] == idx) {
+					g_warning ("TODO: Explicit layout not supported yet");
+				}
+			}
+			
+			size = mono_type_size (class->fields [i].type->type, &align);
+			if (class->fields [i].flags & FIELD_ATTRIBUTE_STATIC) {
+				class->fields [i].offset = class->class_size;
+				class->class_size += (class->class_size % align);
+				class->class_size += size;
+			} else {
+				class->fields [i].offset = class->instance_size;
+				class->instance_size += (class->instance_size % align);
+				class->instance_size += size;
+			}
+		}
+		break;
 	}
 }
 
@@ -102,7 +125,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	MonoTableInfo *tt = &m->tables [MONO_TABLE_TYPEDEF];
 	MonoClass stack_class;
 	MonoClass *class = &stack_class;
-	guint32 cols [6], parent_token;
+	guint32 cols [MONO_TYPEDEF_SIZE], parent_token;
 	guint tidx = type_token & 0xffffff;
 	const char *name, *nspace;
      
@@ -124,6 +147,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->parent = mono_class_get (image, parent_token);
 		class->instance_size = class->parent->instance_size;
 	}
+
+	/* reserve space to store vector pointer in arrays */
+	if (!strcmp (name, "Object") && !strcmp (nspace, "Array")) {
+		class->instance_size += sizeof (gpointer);
+		g_assert (class->instance_size != sizeof (MonoArrayObject));
+	}
+
 	
 	class->image = image;
 	class->type_token = tidx;
@@ -133,26 +163,27 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	/*
 	 * Compute the field and method lists
 	 */
-	class->field.first  = cols [4] - 1;
-	class->method.first = cols [5] - 1;
+	class->field.first  = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
+	class->method.first = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
 
-	if (tt->rows > tidx + 1){
-		guint32 cols_next [6];
+	if (tt->rows > tidx){
+		guint32 cols_next [MONO_TYPEDEF_SIZE];
 		
-		mono_metadata_decode_row (tt, tidx + 1, cols_next, CSIZE (cols_next));
-		class->field.last  = cols_next [4] - 1;
-		class->method.last = cols_next [5] - 1;
+		mono_metadata_decode_row (tt, tidx, cols_next, CSIZE (cols_next));
+		class->field.last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
+		class->method.last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
 	} else {
 		class->field.last  = m->tables [MONO_TABLE_FIELD].rows;
 		class->method.last = m->tables [MONO_TABLE_METHOD].rows;
 	}
 
-	if (cols [4] && cols [4] <= m->tables [MONO_TABLE_FIELD].rows)
+	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
+	    cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
 		class->field.count = class->field.last - class->field.first;
 	else
 		class->field.count = 0;
 
-	if (cols [5] <= m->tables [MONO_TABLE_METHOD].rows)
+	if (cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
 		class->method.count = class->method.last - class->method.first;
 	else
 		class->method.count = 0;
@@ -212,10 +243,10 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 	return mono_class_get_field_idx (class, idx - 1);
 }
 
-static void
+void
 typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, guint32 *index)
 {
-	guint32 cols[6];
+	guint32 cols[MONO_TYPEDEF_SIZE];
 	MonoMetadata *m = &image->metadata;
 	MonoTableInfo  *t = &m->tables[MONO_TABLE_TYPEREF];
 	guint32 idx, i;
@@ -232,7 +263,7 @@ typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, 
 	t = &m->tables [MONO_TABLE_TYPEDEF];
 	/* dumb search for now */
 	for (i=0; i < t->rows; ++i) {
-		mono_metadata_decode_row (t, i, cols, 6);
+		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
 
 		if (!strcmp (name, mono_metadata_string_heap (m, cols [1])) &&
 		    !strcmp (nspace, mono_metadata_string_heap (m, cols [2]))) {

@@ -26,7 +26,6 @@ struct _MonoClass {
 	int        instance_size;
 	int        class_size;
 
-
 	/*
 	 * From the TypeDef table
 	 */

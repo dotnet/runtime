@@ -1,3 +1,9 @@
+2001-08-06  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/pinvoke.cs: we can now print strings ;-)
+
+	* mono/tests/array.cs: new test for arrays
+
 2001-08-02  Alex Graveley  <alex@ximian.com>
 
         * libffi/*: Import libffi CVS version, with minor changes to make it 

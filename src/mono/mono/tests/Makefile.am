@@ -2,29 +2,31 @@
 TEST_PROG=../interpreter/mono-int
 CSC=csc
 
-TESTSRC=	\
-	test-ops.cs	\
-	fib.cs	\
-	obj.cs	\
-	random.cs	\
-	switch.cs	\
-	outparm.cs	\
-	nested-loops.cs	\
-	exception.cs	\
-	struct.cs	\
-	pinvoke.cs
+TESTSRC=			\
+	test-ops.cs		\
+	fib.cs			\
+	obj.cs			\
+	random.cs		\
+	switch.cs		\
+	outparm.cs		\
+	nested-loops.cs		\
+	exception.cs		\
+	struct.cs		\
+	pinvoke.cs		\
+	array.cs
 
-TESTS=	\
-	test-ops.exe	\
-	fib.exe	\
-	obj.exe	\
-	random.exe	\
-	switch.exe	\
-	outparm.exe	\
+TESTS=				\
+	test-ops.exe		\
+	fib.exe			\
+	obj.exe			\
+	random.exe		\
+	switch.exe		\
+	outparm.exe		\
 	nested-loops.exe	\
-	exception.exe	\
-	struct.exe	\
-	pinvoke.exe
+	exception.exe		\
+	struct.exe		\
+	pinvoke.exe		\
+	array.exe
 
 EXTRA_DIST=test-driver $(TESTSRC)
 
