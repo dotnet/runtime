@@ -352,6 +352,7 @@ arch_create_jit_trampoline (MonoMethod *method)
 gpointer
 arch_create_remoting_trampoline (MonoMethod *method)
 {
+	MonoJitInfo *ji;
 	guint8 *code, *buf;
 
 	if (method->remoting_tramp)
@@ -366,6 +367,16 @@ arch_create_remoting_trampoline (MonoMethod *method)
 	g_assert ((buf - code) <= 16);
 
 	method->remoting_tramp = code;
+
+	/* we store a jit info, so that mono_delegate_ctor
+	 * is able to find a method info */
+	ji = mono_mempool_alloc0 (mono_root_domain->mp, sizeof (MonoJitInfo));
+	ji->method = method;
+	ji->code_start = code;
+	ji->code_size = buf - code;
+	ji->used_regs = 0;
+	ji->num_clauses = 0;
+	mono_jit_info_table_add (mono_root_domain, ji);
 
 	return code;
 }

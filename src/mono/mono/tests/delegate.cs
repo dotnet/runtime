@@ -25,15 +25,22 @@ class Test {
 			throw new Exception ("Something went wrong in H");
 		return "H got: " + a.ToString () + " and " + data.ToString ();
 	}
+
+	public virtual void VF () {
+		Console.WriteLine ("Test.VF from delegate");
+	}
+	
 	public Test () {
 		data = 5;
 	}
 	static int Main () {
 		Test test = new Test ();
 		SimpleDelegate d = new SimpleDelegate (F);
+		SimpleDelegate d1 = new SimpleDelegate (test.VF);
 		NotSimpleDelegate d2 = new NotSimpleDelegate (G);
 		NotSimpleDelegate d3 = new NotSimpleDelegate (test.H);
 		d ();
+		d1 ();
 		// we run G() and H() before and after using them as delegates
 		// to be sure we don't corrupt them.
 		G (2);

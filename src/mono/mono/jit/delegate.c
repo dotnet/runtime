@@ -62,6 +62,7 @@ void
 mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
 {
 	MonoDomain *domain = mono_domain_get ();
+	MonoMethod *method = NULL;
 	MonoClass *class;
 	MonoJitInfo *ji;
 
@@ -71,18 +72,25 @@ mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
 	class = this->object.vtable->klass;
 
 	if ((ji = mono_jit_info_table_find (domain, addr))) {
-		this->method_info = mono_method_get_object (domain, ji->method);
+		method = ji->method;
+		this->method_info = mono_method_get_object (domain, method);
 	}
-	
-	this->target = target;
-	this->method_ptr = addr;
 
+	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
+		g_assert (method);
+		this->method_ptr = arch_create_remoting_trampoline (method);
+		this->target = target;
+	} else {
+		this->method_ptr = addr;
+		this->target = target;
+	}
 }
 
 static gpointer
 arch_get_async_invoke (void)
 {
 	static guint8 *start = NULL, *code;
+	guint8 *br, *pos;
 
 	/* async_invoke (MonoAsyncResult *ar) */
 
@@ -104,7 +112,7 @@ arch_get_async_invoke (void)
 	x86_mov_reg_membase (code, X86_EDI, X86_EBX, G_STRUCT_OFFSET (ASyncCall, frame_size), 4);
 	/* allocate stack frame */
 	x86_alu_reg_reg (code, X86_SUB, X86_ESP, X86_EDI);
-	
+
 	/* memcopy activation frame to the stack */
 	x86_push_reg (code, X86_EDI);
 	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, stack_frame));
@@ -135,13 +143,19 @@ arch_get_async_invoke (void)
 	x86_call_code (code, ReleaseSemaphore);
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
 
-	/* call async callback */
+	/* call async callback if cb_code != null*/
+	x86_alu_membase_imm (code, X86_CMP, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code), 0);
+	br = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
+	pos = code;
+
 	/* push pointer to AsyncResult */
 	x86_push_reg (code, X86_ESI);
 	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_target));
 	x86_call_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code));
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 	
+	x86_branch8 (br, X86_CC_EQ, code - pos, FALSE);
+
 	/* restore caller saved regs */
 	x86_pop_reg (code, X86_ESI);
 	x86_pop_reg (code, X86_EDI);
@@ -259,6 +273,7 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 	EnterCriticalSection (&delegate_section);	
 	if ((l = g_list_find (async_call_queue, handle))) {
 		async_call_queue = g_list_remove_link (async_call_queue, l);
+		printf("ENDINVOKE1\n");
 		async_invoke (ares);
 	}		
 	LeaveCriticalSection (&delegate_section);
@@ -424,6 +439,7 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 	 * target
 	 */
 	x86_mov_membase_reg (code, X86_ESP, this_pos, X86_EDX, 4); 
+
 	/* jump to method_ptr() */
 	x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 

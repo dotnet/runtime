@@ -89,86 +89,24 @@ class R1 : MarshalByRefObject {
 
 class Test {
 
-	delegate MyStruct RemoteDelegate1 (int a, out int c, int b);
 	delegate long RemoteDelegate2 (int a, int b);
 
-	static long test_call (R1 o)
-	{
-		return o.nonvirtual_Add (2, 3);
-	}
 	
 	static int Main () {
 		R1 myobj = new R1 ();
-		int res = 0;
 		long lres;
 		
 		MyProxy real_proxy = new MyProxy (myobj);
 
 		R1 o = (R1)real_proxy.GetTransparentProxy ();
 
-		if (RemotingServices.IsTransparentProxy (null))
-			return 1;
-		
-		if (!RemotingServices.IsTransparentProxy (o))
-			return 1;
-
-		Console.WriteLine (o.GetType ());
-		
-		MyStruct myres = o.Add (2, out res, 3);
-
-		Console.WriteLine ("Result: " + myres.a + " " +
-				   myres.b + " " + myres.c +  " " + res);
-
-		if (myres.a != 2)
-			return 1;
-		
-		if (myres.b != 3)
-			return 1;
-		
-		if (myres.c != 5)
-			return 1;
-
-		if (res != 5)
-			return 1;
-
-		R1 o2 = new R1 ();
-		
-		lres = test_call (o2);
-		
-		lres = test_call (o);
-
-		Console.WriteLine ("Result: " + lres);
-		if (lres != 5)
-			return 1;
-		
-		lres = test_call (o);
-
-		o.test_field = 2;
-		
-		Console.WriteLine ("test_field: " + o.test_field);
-		if (o.test_field != 2)
-			return 1;
-
-		RemoteDelegate1 d1 = new RemoteDelegate1 (o.Add);
-		MyStruct myres2 = d1 (2, out res, 3);
-
-		Console.WriteLine ("Result: " + myres2.a + " " +
-				   myres2.b + " " + myres2.c +  " " + res);
-
-		if (myres2.a != 2)
-			return 1;
-		
-		if (myres2.b != 3)
-			return 1;
-		
-		if (myres2.c != 5)
-			return 1;
-
-		if (res != 5)
-			return 1;
-
 		RemoteDelegate2 d2 = new RemoteDelegate2 (o.nonvirtual_Add);
 		d2 (6, 7);
+		
+		IAsyncResult ar1 = d2.BeginInvoke (2, 4, null, null);
+		lres = d2.EndInvoke (ar1);
+		if (lres != 6)
+			return 1;
 
 		return 0;
 	}

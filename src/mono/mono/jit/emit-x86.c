@@ -707,7 +707,7 @@ arch_compile_method (MonoMethod *method)
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			x86_ret (code);
 		} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
-			/* this an raise exceptions, so we need a wrapper to save/restore LMF */
+			/* this can raise exceptions, so we need a wrapper to save/restore LMF */
 			method->addr = (gpointer)arch_end_invoke;
 			addr = arch_create_native_wrapper (method);
 		} else {

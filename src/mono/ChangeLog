@@ -1,3 +1,7 @@
+2002-04-05  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/remoting2.cs: new test for async invoke of proxy calls
+
 2002-03-29  Martin Baulig  <martin@gnome.org>
 
 	* doc/jit-debug, docs/jit-debug-sample, docs/jit-debug-sample2:
