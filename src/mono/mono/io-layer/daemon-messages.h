@@ -108,6 +108,7 @@ typedef struct
 typedef struct
 {
 	guint32 idx;
+	gboolean remap;
 } WapiHandleResponse_Scratch;
 
 typedef struct

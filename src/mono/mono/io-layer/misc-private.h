@@ -14,5 +14,6 @@
 #include <sys/time.h>
 
 extern void _wapi_calc_timeout(struct timespec *timeout, guint32 ms);
+extern gpointer _wapi_g_renew0 (gpointer mem, gulong old_len, gulong new_len);
 
 #endif /* _WAPI_MISC_PRIVATE_H_ */

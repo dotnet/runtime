@@ -36,10 +36,13 @@
 
 /* Keep track of the number of clients */
 static int nfds=0;
-/* Array to keep track of handles that have been referenced by the
- * daemon.
+/* Arrays to keep track of handles that have been referenced by the
+ * daemon and clients.  client_handles is indexed by file descriptor
+ * value.
  */
-static guint32 *daemon_handles=NULL;
+static guint32 *daemon_handles=NULL, **client_handles=NULL;
+static int client_handles_length=0;
+
 /* The socket which we listen to new connections on */
 static int main_sock;
 
@@ -55,10 +58,18 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
  */
 static void cleanup (void)
 {
+	int i;
+	
 #ifdef NEED_LINK_UNLINK
-        unlink(_wapi_shared_data->daemon);
+        unlink(_wapi_shared_data[0]->daemon);
 #endif 
-	_wapi_shm_destroy ();
+	for(i=1; i<_wapi_shared_data[0]->num_segments; i++) {
+		unlink (_wapi_shm_file (WAPI_SHM_DATA, i));
+	}
+	unlink (_wapi_shm_file (WAPI_SHM_DATA, 0));
+	
+	/* There's only one scratch file */
+	unlink (_wapi_shm_file (WAPI_SHM_SCRATCH, 0));
 }
 
 /* If there is only one socket, and no child processes, we can exit.
@@ -80,7 +91,9 @@ static void maybe_exit (void)
 		return;
 	}
 
-	for(i=0; i<_WAPI_MAX_HANDLES; i++) {
+	for(i=0;
+	    i<_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT;
+	    i++) {
 		if(daemon_handles[i]>0) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -93,7 +106,7 @@ static void maybe_exit (void)
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Byebye");
 #endif
-
+	
 	cleanup ();
 	exit (0);
 }
@@ -149,7 +162,7 @@ static void startup (void)
 	
 #ifdef NEED_LINK_UNLINK
 	/* Here's a more portable method... */
-	snprintf (_wapi_shared_data->daemon, MONO_SIZEOF_SUNPATH-1,
+	snprintf (_wapi_shared_data[0]->daemon, MONO_SIZEOF_SUNPATH-1,
 		  "/tmp/mono-handle-daemon-%d-%ld-%ld", getuid (), random (),
 		  time (NULL));
 #else
@@ -160,7 +173,7 @@ static void startup (void)
 	 * The name is intended to be unique, not cryptographically
 	 * secure...
 	 */
-	snprintf (_wapi_shared_data->daemon+1, MONO_SIZEOF_SUNPATH-2,
+	snprintf (_wapi_shared_data[0]->daemon+1, MONO_SIZEOF_SUNPATH-2,
 		  "mono-handle-daemon-%d-%d-%ld", getuid (), getpid (),
 		  time (NULL));
 #endif
@@ -177,17 +190,21 @@ static void startup (void)
  */
 static void ref_handle (guint32 *open_handles, guint32 handle)
 {
+	guint32 segment, idx;
+	
 	if(handle==0) {
 		return;
 	}
 	
-	_wapi_shared_data->handles[handle].ref++;
+	_wapi_handle_segment (GUINT_TO_POINTER (handle), &segment, &idx);
+	
+	_wapi_shared_data[segment]->handles[idx].ref++;
 	open_handles[handle]++;
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": handle 0x%x ref now %d (%d this process)", handle,
-		   _wapi_shared_data->handles[handle].ref,
+		   _wapi_shared_data[segment]->handles[idx].ref,
 		   open_handles[handle]);
 #endif
 }
@@ -196,20 +213,15 @@ static void ref_handle (guint32 *open_handles, guint32 handle)
  * unref_handle:
  * @open_handles: An array of handles referenced by the calling client
  * @handle: handle to inc refcnt
- * @daemon_initiated: set to %TRUE if the daemon is unreffing a
- * handle.  Controls whether or not to set the handle type to UNUSED.
- * This must not happen here if a client process is unreffing a
- * handle, because it has more cleaning up to do and must still be
- * able to locate the handle and specify the type.
  *
  * Decrease ref count of handle for the calling client. If global ref
  * count reaches 0 it is free'ed. Return TRUE if the local ref count
  * is 0. Handle 0 is ignored.
  */
-static gboolean unref_handle (guint32 *open_handles, guint32 handle,
-			      gboolean daemon_initiated)
+static gboolean unref_handle (guint32 *open_handles, guint32 handle)
 {
 	gboolean destroy=FALSE;
+	guint32 segment, idx;
 	
 	if(handle==0) {
 		return(FALSE);
@@ -222,13 +234,15 @@ static gboolean unref_handle (guint32 *open_handles, guint32 handle,
                 return TRUE;
         }
 
-	_wapi_shared_data->handles[handle].ref--;
+	_wapi_handle_segment (GUINT_TO_POINTER (handle), &segment, &idx);
+	
+	_wapi_shared_data[segment]->handles[idx].ref--;
 	open_handles[handle]--;
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": handle 0x%x ref now %d (%d this process)", handle,
-		   _wapi_shared_data->handles[handle].ref,
+		   _wapi_shared_data[segment]->handles[idx].ref,
 		   open_handles[handle]);
 #endif
 
@@ -237,7 +251,7 @@ static gboolean unref_handle (guint32 *open_handles, guint32 handle,
 		destroy=TRUE;
 	}
 	
-	if(_wapi_shared_data->handles[handle].ref==0) {
+	if(_wapi_shared_data[segment]->handles[idx].ref==0) {
 		if (open_handles[handle]!=0) {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": per-process open_handles mismatch, set to %d, should be 0", open_handles[handle]);
 		}
@@ -250,14 +264,12 @@ static gboolean unref_handle (guint32 *open_handles, guint32 handle,
 		_wapi_handle_ops_close_shared (GUINT_TO_POINTER (handle));
 		
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-		mono_mutex_destroy (&_wapi_shared_data->handles[handle].signal_mutex);
-		pthread_cond_destroy (&_wapi_shared_data->handles[handle].signal_cond);
+		mono_mutex_destroy (&_wapi_shared_data[segment]->handles[idx].signal_mutex);
+		pthread_cond_destroy (&_wapi_shared_data[segment]->handles[idx].signal_cond);
 #endif
 
-		memset (&_wapi_shared_data->handles[handle].u, '\0', sizeof(_wapi_shared_data->handles[handle].u));
-		if(daemon_initiated) {
-			_wapi_shared_data->handles[handle].type=WAPI_HANDLE_UNUSED;
-		}
+		memset (&_wapi_shared_data[segment]->handles[idx].u, '\0', sizeof(_wapi_shared_data[segment]->handles[idx].u));
+		_wapi_shared_data[segment]->handles[idx].type=WAPI_HANDLE_UNUSED;
 	}
 
 	if(open_handles==daemon_handles) {
@@ -287,7 +299,7 @@ static void add_fd(int fd)
 	g_io_channel_set_encoding (io_channel, NULL, NULL);
 	g_io_channel_set_buffered (io_channel, FALSE);
 	
-	refs=g_new0 (guint32, _WAPI_MAX_HANDLES);
+	refs=g_new0 (guint32,_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT);
 	if(daemon_handles==NULL) {
 		/* We rely on the daemon channel being created first.
 		 * That's safe, because every other channel is the
@@ -295,9 +307,29 @@ static void add_fd(int fd)
 		 */
 		daemon_handles=refs;
 	}
+
+	if(fd>=client_handles_length) {
+		/* Add a bit of padding, so we dont resize for _every_
+		 * new connection
+		 */
+		int old_len=client_handles_length * sizeof(guint32 *);
+		
+		client_handles_length=fd+10;
+		if(client_handles==NULL) {
+			client_handles=g_new0 (guint32 *,
+					       client_handles_length);
+		} else {
+			/* Can't use g_renew here, because the unused
+			 * elements must be NULL and g_renew doesn't
+			 * initialise the memory it returns
+			 */
+			client_handles=_wapi_g_renew0 (client_handles, old_len, client_handles_length * sizeof(guint32 *));
+		}
+	}
+	client_handles[fd]=refs;
 	
 	g_io_add_watch (io_channel, G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-			fd_activity, refs);
+			fd_activity, NULL);
 
 	nfds++;
 }
@@ -312,9 +344,11 @@ static void add_fd(int fd)
 static void rem_fd(GIOChannel *channel, guint32 *open_handles)
 {
 	guint32 handle_count;
-	int i, j;
+	int i, j, fd;
 	
-	if(g_io_channel_unix_get_fd (channel) == main_sock) {
+	fd=g_io_channel_unix_get_fd (channel);
+	
+	if(fd == main_sock) {
 		/* We shouldn't be deleting the daemon's fd */
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Deleting daemon fd!");
 		cleanup ();
@@ -322,13 +356,14 @@ static void rem_fd(GIOChannel *channel, guint32 *open_handles)
 	}
 	
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Removing client fd %d",
-		   g_io_channel_unix_get_fd (channel));
+	g_message (G_GNUC_PRETTY_FUNCTION ": Removing client fd %d", fd);
 #endif
 
 	g_io_channel_shutdown (channel, TRUE, NULL);
 
-	for(i=0; i<_WAPI_MAX_HANDLES; i++) {
+	for(i=0;
+	    i<_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT;
+	    i++) {
 		handle_count=open_handles[i];
 		
 		for(j=0; j<handle_count; j++) {
@@ -338,11 +373,12 @@ static void rem_fd(GIOChannel *channel, guint32 *open_handles)
 			/* Ignore the hint to the client to destroy
 			 * the handle private data
 			 */
-			unref_handle (open_handles, i, TRUE);
+			unref_handle (open_handles, i);
 		}
 	}
 	
 	g_free (open_handles);
+	client_handles[fd]=NULL;
 	
 	nfds--;
 	if(nfds==1) {
@@ -379,6 +415,7 @@ static gboolean process_thread_compare (gpointer handle, gpointer user_data)
 {
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
+	guint32 segment, idx;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				(gpointer *)&thread_handle, NULL);
@@ -411,7 +448,8 @@ static gboolean process_thread_compare (gpointer handle, gpointer user_data)
 		 * to cope with missing condition signals for when
 		 * process-shared pthread support is missing.
 		 */
-		_wapi_shared_data->handles[GPOINTER_TO_UINT (handle)].signalled=TRUE;
+		_wapi_handle_segment (handle, &segment, &idx);
+		_wapi_shared_data[segment]->handles[idx].signalled=TRUE;
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 	}
 	
@@ -429,6 +467,7 @@ static void process_post_mortem (pid_t pid, int status)
 {
 	gpointer process_handle;
 	struct _WapiHandle_process *process_handle_data;
+	guint32 segment, idx;
 	
 	process_handle=_wapi_search_handle (WAPI_HANDLE_PROCESS,
 					    process_compare,
@@ -474,7 +513,8 @@ static void process_post_mortem (pid_t pid, int status)
 		 * to cope with missing condition signals for when
 		 * process-shared pthread support is missing.
 		 */
-		_wapi_shared_data->handles[GPOINTER_TO_UINT (process_handle)].signalled=TRUE;
+		_wapi_handle_segment (process_handle, &segment, &idx);
+		_wapi_shared_data[segment]->handles[idx].signalled=TRUE;
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 	}
 
@@ -486,10 +526,8 @@ static void process_post_mortem (pid_t pid, int status)
 				   process_handle, NULL, NULL);
 
 	unref_handle (daemon_handles,
-		      GPOINTER_TO_UINT (process_handle_data->main_thread),
-		      TRUE);
-	unref_handle (daemon_handles, GPOINTER_TO_UINT (process_handle),
-		      TRUE);
+		      GPOINTER_TO_UINT (process_handle_data->main_thread));
+	unref_handle (daemon_handles, GPOINTER_TO_UINT (process_handle));
 }
 
 static void process_died (void)
@@ -549,10 +587,52 @@ static void process_new (GIOChannel *channel, guint32 *open_handles,
 			 WapiHandleType type)
 {
 	guint32 handle;
-	WapiHandleResponse resp;
+	WapiHandleResponse resp={0};
 	
-	/* handle might be set to 0.  This is handled at the client end */
 	handle=_wapi_handle_new_internal (type);
+	if(handle==0) {
+		/* Try and allocate a new shared segment, and have
+		 * another go
+		 */
+		guint32 segment=_wapi_shared_data[0]->num_segments;
+		int i;
+		
+		_wapi_handle_ensure_mapped (segment);
+		if(_wapi_shared_data[segment]!=NULL) {
+			/* Got a new segment */
+			gulong old_len, new_len;
+			
+			old_len=_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT * sizeof(guint32);
+			_wapi_shared_data[0]->num_segments++;
+			new_len=_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT * sizeof(guint32);
+
+			/* Need to expand all the handle reference
+			 * count arrays
+			 */
+
+			for(i=0; i<client_handles_length; i++) {
+				if(client_handles[i]!=NULL) {
+					client_handles[i]=_wapi_g_renew0 (client_handles[i], old_len, new_len);
+				}
+			}
+
+			/* And find the new location for open_handles... */
+			i=g_io_channel_unix_get_fd (channel);
+			open_handles=client_handles[i];
+			daemon_handles=client_handles[main_sock];
+			
+			handle=_wapi_handle_new_internal (type);
+		} else {
+			/* Map failed.  Just return 0 meaning "out of
+			 * handles"
+			 */
+		}
+	}
+	
+	/* handle might still be set to 0.  This is handled at the
+	 * client end
+	 */
+
 	ref_handle (open_handles, handle);
 
 #ifdef DEBUG
@@ -579,8 +659,12 @@ static void process_new (GIOChannel *channel, guint32 *open_handles,
 static void process_open (GIOChannel *channel, guint32 *open_handles,
 			  guint32 handle)
 {
-	WapiHandleResponse resp;
-	struct _WapiHandleShared *shared=&_wapi_shared_data->handles[handle];
+	WapiHandleResponse resp={0};
+	guint32 segment, idx;
+	struct _WapiHandleShared *shared;
+
+	_wapi_handle_segment (GUINT_TO_POINTER (handle), &segment, &idx);
+	shared=&_wapi_shared_data[segment]->handles[idx];
 		
 	if(shared->type!=WAPI_HANDLE_UNUSED && handle!=0) {
 		ref_handle (open_handles, handle);
@@ -617,10 +701,10 @@ static void process_open (GIOChannel *channel, guint32 *open_handles,
 static void process_close (GIOChannel *channel, guint32 *open_handles,
 			   guint32 handle)
 {
-	WapiHandleResponse resp;
+	WapiHandleResponse resp={0};
 	
 	resp.type=WapiHandleResponseType_Close;
-	resp.u.close.destroy=unref_handle (open_handles, handle, FALSE);
+	resp.u.close.destroy=unref_handle (open_handles, handle);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unreffing handle 0x%x", handle);
@@ -638,11 +722,10 @@ static void process_close (GIOChannel *channel, guint32 *open_handles,
  */
 static void process_scratch (GIOChannel *channel, guint32 length)
 {
-	WapiHandleResponse resp;
+	WapiHandleResponse resp={0};
 	
 	resp.type=WapiHandleResponseType_Scratch;
-	resp.u.scratch.idx=_wapi_handle_scratch_store_internal (length);
-
+	resp.u.scratch.idx=_wapi_handle_scratch_store_internal (length, &resp.u.scratch.remap);
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": allocating scratch index 0x%x",
 		   resp.u.scratch.idx);
@@ -660,7 +743,7 @@ static void process_scratch (GIOChannel *channel, guint32 length)
  */
 static void process_scratch_free (GIOChannel *channel, guint32 scratch_idx)
 {
-	WapiHandleResponse resp;
+	WapiHandleResponse resp={0};
 	
 	resp.type=WapiHandleResponseType_ScratchFree;
 	_wapi_handle_scratch_delete_internal (scratch_idx);
@@ -687,7 +770,7 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 				  WapiHandleRequest_ProcessFork process_fork,
 				  int *fds)
 {
-	WapiHandleResponse resp;
+	WapiHandleResponse resp={0};
 	guint32 process_handle, thread_handle;
 	struct _WapiHandle_process *process_handle_data;
 	struct _WapiHandle_thread *thread_handle_data;
@@ -711,10 +794,10 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 	
 	if(process_handle==0 || thread_handle==0) {
 		/* unref_handle() copes with the handle being 0 */
-		unref_handle (daemon_handles, process_handle, TRUE);
-		unref_handle (open_handles, process_handle, TRUE);
-		unref_handle (daemon_handles, thread_handle, TRUE);
-		unref_handle (open_handles, thread_handle, TRUE);
+		unref_handle (daemon_handles, process_handle);
+		unref_handle (open_handles, process_handle);
+		unref_handle (daemon_handles, thread_handle);
+		unref_handle (open_handles, thread_handle);
 		process_handle=0;
 		thread_handle=0;
 	} else {
@@ -731,9 +814,9 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 		 * gets to see it.  Also explode argv here so we can
 		 * use it to set the process name.
 		 */
-		cmd=_wapi_handle_scratch_lookup_as_string (process_fork.cmd);
-		dir=_wapi_handle_scratch_lookup_as_string (process_fork.dir);
-		env=_wapi_handle_scratch_lookup_string_array (process_fork.env);
+		cmd=_wapi_handle_scratch_lookup (process_fork.cmd);
+		dir=_wapi_handle_scratch_lookup (process_fork.dir);
+		env=_wapi_handle_scratch_lookup (process_fork.env);
 		
 		ret=g_shell_parse_argv (cmd, NULL, &argv, &gerr);
 		if(ret==FALSE) {
@@ -813,6 +896,20 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 					exit (-1);
 				}
 			
+				/* pass process and thread handle info
+				 * to the child, so it doesn't have to
+				 * do an expensive search over the
+				 * whole list
+				 */
+				{
+					char *proc_env, *thr_env;
+					
+					proc_env=g_strdup_printf ("_WAPI_PROCESS_HANDLE=%d", process_handle);
+					thr_env=g_strdup_printf ("_WAPI_THREAD_HANDLE=%d", process_handle);
+					putenv (proc_env);
+					putenv (thr_env);
+				}
+				
 				/* exec */
 				execve (argv[0], argv, env);
 		
@@ -906,13 +1003,13 @@ static void read_message (GIOChannel *channel, guint32 *open_handles)
 		break;
 	case WapiHandleRequestType_Open:
 #ifdef DEBUG
-		g_assert(req.u.open.handle < _WAPI_MAX_HANDLES);
+		g_assert(req.u.open.handle < _wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT);
 #endif
 		process_open (channel, open_handles, req.u.open.handle);
 		break;
 	case WapiHandleRequestType_Close:
 #ifdef DEBUG
-		g_assert(req.u.close.handle < _WAPI_MAX_HANDLES);
+		g_assert(req.u.close.handle < _wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT);
 #endif
 		process_close (channel, open_handles, req.u.close.handle);
 		break;
@@ -959,17 +1056,20 @@ static void read_message (GIOChannel *channel, guint32 *open_handles)
 static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 			     gpointer data)
 {
+	int fd=g_io_channel_unix_get_fd (channel);
+	guint32 *open_handles=client_handles[fd];
+	
 	if(condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
 #ifdef DEBUG
-		g_message ("fd %d error", g_io_channel_unix_get_fd (channel));
+		g_message ("fd %d error", fd);
 #endif
 
-		rem_fd (channel, data);
+		rem_fd (channel, open_handles);
 		return(FALSE);
 	}
 
 	if(condition & (G_IO_IN | G_IO_PRI)) {
-		if(g_io_channel_unix_get_fd (channel)==main_sock) {
+		if(fd==main_sock) {
 			int newsock;
 			struct sockaddr addr;
 			socklen_t addrlen=sizeof(struct sockaddr);
@@ -989,11 +1089,10 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 			add_fd (newsock);
 		} else {
 #ifdef DEBUG
-			g_message ("reading data on fd %d",
-				   g_io_channel_unix_get_fd (channel));
+			g_message ("reading data on fd %d", fd);
 #endif
 
-			read_message (channel, data);
+			read_message (channel, open_handles);
 		}
 		return(TRUE);
 	}
@@ -1007,7 +1106,7 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
  * Open socket, create shared mem segment and begin listening for
  * clients.
  */
-void _wapi_daemon_main(gpointer shm)
+void _wapi_daemon_main(gpointer data, gpointer scratch)
 {
 	struct sockaddr_un main_socket_address;
 	int ret;
@@ -1016,20 +1115,27 @@ void _wapi_daemon_main(gpointer shm)
 	g_message ("Starting up...");
 #endif
 
-	_wapi_shared_data=shm;
+	_wapi_shared_data[0]=data;
+	_wapi_shared_scratch=scratch;
+	_wapi_shared_scratch->is_shared=TRUE;
+	
+	/* Note that we've got the starting segment already */
+	_wapi_shared_data[0]->num_segments=1;
+	_wapi_shm_mapped_segments=1;
+	
 	startup ();
 	
 	main_sock=socket(PF_UNIX, SOCK_STREAM, 0);
 
 	main_socket_address.sun_family=AF_UNIX;
-	memcpy(main_socket_address.sun_path, _wapi_shared_data->daemon,
+	memcpy(main_socket_address.sun_path, _wapi_shared_data[0]->daemon,
 	       MONO_SIZEOF_SUNPATH);
 
 	ret=bind(main_sock, (struct sockaddr *)&main_socket_address,
 		 sizeof(struct sockaddr_un));
 	if(ret==-1) {
 		g_critical ("bind failed: %s", g_strerror (errno));
-		_wapi_shared_data->daemon_running=DAEMON_DIED_AT_STARTUP;
+		_wapi_shared_data[0]->daemon_running=DAEMON_DIED_AT_STARTUP;
 		exit(-1);
 	}
 
@@ -1040,7 +1146,7 @@ void _wapi_daemon_main(gpointer shm)
 	ret=listen(main_sock, 5);
 	if(ret==-1) {
 		g_critical ("listen failed: %s", g_strerror (errno));
-		_wapi_shared_data->daemon_running=DAEMON_DIED_AT_STARTUP;
+		_wapi_shared_data[0]->daemon_running=DAEMON_DIED_AT_STARTUP;
 		exit(-1);
 	}
 
@@ -1054,7 +1160,7 @@ void _wapi_daemon_main(gpointer shm)
 	 * ready.  From now on, it's up to us to delete the shared
 	 * memory segment when appropriate.
 	 */
-	_wapi_shared_data->daemon_running=DAEMON_RUNNING;
+	_wapi_shared_data[0]->daemon_running=DAEMON_RUNNING;
 
 	while(TRUE) {
 		if(check_processes==TRUE) {

@@ -28,7 +28,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-#define _WAPI_HANDLE_VERSION 0
+#define _WAPI_HANDLE_VERSION 1
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -100,11 +100,36 @@ struct _WapiHandleShared
 	} u;
 };
 
-#define _WAPI_MAX_HANDLES 4096
+#define _WAPI_HANDLES_PER_SEGMENT 4096
 #define _WAPI_HANDLE_INVALID (gpointer)-1
 
+#define _WAPI_SHM_SCRATCH_SIZE 512000
+
 /*
- * This is the layout of the shared memory segment
+ * This is the layout of the shared scratch data.  When the data array
+ * is filled, it will be expanded by _WAPI_SHM_SCRATCH_SIZE
+ * bytes. (scratch data is always copied out of the shared memory, so
+ * it doesn't matter that the mapping will move around.)
+ */
+struct _WapiHandleScratch
+{
+	guint32 data_len;
+
+	/* This is set to TRUE by the daemon.  It determines whether a
+	 * resize will go via mremap() or just realloc().
+	 */
+	gboolean is_shared;
+	guchar scratch_data[0];
+};
+
+/*
+ * This is the layout of the shared memory segments.  When the handles
+ * array is filled, another shared memory segment will be allocated
+ * with the same structure.  This is to avoid having the shared memory
+ * potentially move if it is resized and remapped.
+ *
+ * Note that the additional segments have the same structure, but only
+ * the handle array is used.
  */
 struct _WapiHandleShared_list
 {
@@ -115,12 +140,16 @@ struct _WapiHandleShared_list
 	mono_mutex_t signal_mutex;
 	pthread_cond_t signal_cond;
 #endif
-	struct _WapiHandleShared handles[_WAPI_MAX_HANDLES];
-	guchar scratch_base[0];
+
+	/* This holds the number of segments */
+	guint32 num_segments;
+	struct _WapiHandleShared handles[_WAPI_HANDLES_PER_SEGMENT];
 };
 
 struct _WapiHandlePrivate
 {
+	WapiHandleType type;
+
 	union 
 	{
 		struct _WapiHandlePrivate_event event;
@@ -134,8 +163,11 @@ struct _WapiHandlePrivate
 	} u;
 };
 
-/* Per-process handle info. For lookup convenience, each index matches
- * the corresponding shared data.
+/* Per-process handle info. For lookup convenience, each segment and
+ * index matches the corresponding shared data.
+ *
+ * Note that the additional segments have the same structure, but only
+ * the handle array is used.
  */
 struct _WapiHandlePrivate_list
 {
@@ -143,7 +175,8 @@ struct _WapiHandlePrivate_list
 	mono_mutex_t signal_mutex;
 	pthread_cond_t signal_cond;
 #endif
-	struct _WapiHandlePrivate handles[_WAPI_MAX_HANDLES];
+	
+	struct _WapiHandlePrivate handles[_WAPI_HANDLES_PER_SEGMENT];
 };
 
 

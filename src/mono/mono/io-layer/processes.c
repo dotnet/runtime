@@ -250,10 +250,10 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 
 			/* Executable existing ? */
 			if(access (prog, X_OK)!=0) {
-				g_free (prog);
 #ifdef DEBUG
-				g_message (G_GNUC_PRETTY_FUNCTION ": Couldn't find executable %s", token);
+				g_message (G_GNUC_PRETTY_FUNCTION ": Couldn't find executable %s", prog);
 #endif
+				g_free (prog);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto cleanup;
 			}
@@ -453,40 +453,15 @@ cleanup:
 	return(ret);
 }
 
-static gboolean process_compare (gpointer handle, gpointer user_data)
-{
-	struct _WapiHandle_process *process_handle;
-	gboolean ok;
-	pid_t pid;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
-				(gpointer *)&process_handle, NULL);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up process handle %p", handle);
-		return(FALSE);
-	}
-
-	pid=GPOINTER_TO_UINT (user_data);
-	if(process_handle->id==pid) {
-		return(TRUE);
-	} else {
-		return(FALSE);
-	}
-}
-	
 static void process_set_current (void)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	pid_t pid=getpid ();
+	char *handle_env;
 	
-	current_process=_wapi_search_handle (WAPI_HANDLE_PROCESS,
-					     process_compare,
-					     GUINT_TO_POINTER (pid),
-					     (gpointer *)&process_handle,
-					     NULL);
-	if(current_process==0) {
+	handle_env=getenv ("_WAPI_PROCESS_HANDLE");
+	if(handle_env==NULL) {
 		gchar *progname, *slash;
 		
 #ifdef DEBUG
@@ -537,8 +512,10 @@ static void process_set_current (void)
 		 */
 		_wapi_handle_ref (current_process);
 	} else {
+		current_process=GUINT_TO_POINTER (atoi (handle_env));
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": Found my process handle");
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Found my process handle: %p", current_process);
 #endif
 	}
 }
@@ -813,7 +790,7 @@ guint32 GetModuleBaseName (gpointer process, gpointer module,
 #endif
 
 		pid=process_handle->id;
-		procname_utf8=_wapi_handle_scratch_lookup_as_string (process_handle->proc_name);
+		procname_utf8=_wapi_handle_scratch_lookup (process_handle->proc_name);
 	
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": Process name is [%s]",

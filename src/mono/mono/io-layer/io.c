@@ -887,7 +887,7 @@ static gboolean file_setfiletime(gpointer handle,
 		  utbuf.actime, utbuf.modtime);
 #endif
 
-	name=_wapi_handle_scratch_lookup_as_string (file_handle->filename);
+	name=_wapi_handle_scratch_lookup (file_handle->filename);
 
 	ret=utime(name, &utbuf);
 	if(ret==-1) {
@@ -1655,86 +1655,19 @@ done:
 	return TRUE;
 }
 
-static gboolean console_find_fd (gpointer handle, gpointer user_data)
-{
-	struct _WapiHandlePrivate_file *file_private_handle;
-	gboolean ok;
-	guint32 fd;
+static mono_once_t stdhandle_once=MONO_ONCE_INIT;
+static gpointer stdin_handle=NULL;
+static gpointer stdout_handle=NULL;
+static gpointer stderr_handle=NULL;
 
-	fd=GPOINTER_TO_UINT (user_data);
-	
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
-		   ": Looking up a console handle for fd %d", fd);
-#endif
-
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE, NULL,
-				(gpointer *)&file_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up console handle %p", handle);
-		return(FALSE);
-	}
-	
-	if(file_private_handle->fd==fd &&
-	   file_private_handle->assigned==TRUE) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": Returning console handle %p", handle);
-#endif
-	
-		return(TRUE);
-	} else {
-		return(FALSE);
-	}
-}
-
-/**
- * GetStdHandle:
- * @stdhandle: specifies the file descriptor
- *
- * Returns a handle for stdin, stdout, or stderr.  Always returns the
- * same handle for the same @stdhandle.
- *
- * Return value: the handle, or %INVALID_HANDLE_VALUE on error
- */
-
-gpointer GetStdHandle(WapiStdHandle stdhandle)
+static gpointer stdhandle_create (int fd, const guchar *name)
 {
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
 	gpointer handle;
-	const guchar *name;
-	int flags, fd;
-
-	mono_once (&io_ops_once, io_ops_init);
+	int flags;
 	
-	switch(stdhandle) {
-	case STD_INPUT_HANDLE:
-		fd=0;
-		name="<stdin>";
-		break;
-
-	case STD_OUTPUT_HANDLE:
-		fd=1;
-		name="<stdout>";
-		break;
-
-	case STD_ERROR_HANDLE:
-		fd=2;
-		name="<stderr>";
-		break;
-
-	default:
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": unknown standard handle type");
-#endif
-
-		return(INVALID_HANDLE_VALUE);
-	}
-
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": creating standard handle type %s",
 		  name);
@@ -1754,67 +1687,92 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	/* See if we already have a handle for this fd */
-	handle=_wapi_search_handle (WAPI_HANDLE_CONSOLE, console_find_fd,
-				    GUINT_TO_POINTER (fd), NULL, NULL);
-	if(handle==0) {
-		/* Create a new one */
-		handle=_wapi_handle_new (WAPI_HANDLE_CONSOLE);
-		if(handle==_WAPI_HANDLE_INVALID) {
-			g_warning (G_GNUC_PRETTY_FUNCTION
-				   ": error creating file handle");
-			return(NULL);
-		}
-
-		_wapi_handle_lock_handle (handle);
-	
-		ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
-					(gpointer *)&file_handle,
-					(gpointer *)&file_private_handle);
-		if(ok==FALSE) {
-			g_warning (G_GNUC_PRETTY_FUNCTION
-				   ": error looking up console handle %p",
-				   handle);
-			_wapi_handle_unlock_handle (handle);
-			return(NULL);
-		}
-	
-		file_private_handle->fd=fd;
-		file_private_handle->assigned=TRUE;
-		file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
-		/* some default security attributes might be needed */
-		file_handle->security_attributes=0;
-		file_handle->fileaccess=convert_from_flags(flags);
-		file_handle->sharemode=0;
-		file_handle->attrs=0;
-	
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": returning handle %p with fd %d", handle,
-			  file_private_handle->fd);
-#endif
-
-		_wapi_handle_unlock_handle (handle);
-	} else {
-#ifdef DEBUG
-		ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
-					(gpointer *)&file_handle,
-					(gpointer *)&file_private_handle);
-		if(ok==FALSE) {
-			g_warning (G_GNUC_PRETTY_FUNCTION
-				   ": error looking up console handle %p",
-				   handle);
-			return(NULL);
-		}
-
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": reusing handle %p with fd %d", handle,
-			  file_private_handle->fd);
-#endif
-
-		/* Add a reference to this reused handle */
-		_wapi_handle_ref (handle);
+	handle=_wapi_handle_new (WAPI_HANDLE_CONSOLE);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating file handle");
+		return(NULL);
 	}
+
+	_wapi_handle_lock_handle (handle);
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(NULL);
+	}
+	
+	file_private_handle->fd=fd;
+	file_private_handle->assigned=TRUE;
+	file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
+	/* some default security attributes might be needed */
+	file_handle->security_attributes=0;
+	file_handle->fileaccess=convert_from_flags(flags);
+	file_handle->sharemode=0;
+	file_handle->attrs=0;
+	
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": returning handle %p with fd %d",
+		  handle, file_private_handle->fd);
+#endif
+
+	_wapi_handle_unlock_handle (handle);
+
+	return(handle);
+}
+
+static void stdhandle_init (void)
+{
+	stdin_handle=stdhandle_create (0, "<stdin>");
+	stdout_handle=stdhandle_create (1, "<stdout>");
+	stderr_handle=stdhandle_create (2, "<stderr>");
+}
+
+/**
+ * GetStdHandle:
+ * @stdhandle: specifies the file descriptor
+ *
+ * Returns a handle for stdin, stdout, or stderr.  Always returns the
+ * same handle for the same @stdhandle.
+ *
+ * Return value: the handle, or %INVALID_HANDLE_VALUE on error
+ */
+
+gpointer GetStdHandle(WapiStdHandle stdhandle)
+{
+	gpointer handle;
+	
+	mono_once (&io_ops_once, io_ops_init);
+	mono_once (&stdhandle_once, stdhandle_init);
+	
+	switch(stdhandle) {
+	case STD_INPUT_HANDLE:
+		handle=stdin_handle;
+		break;
+
+	case STD_OUTPUT_HANDLE:
+		handle=stdout_handle;
+		break;
+
+	case STD_ERROR_HANDLE:
+		handle=stderr_handle;
+		break;
+
+	default:
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": unknown standard handle type");
+#endif
+
+		return(INVALID_HANDLE_VALUE);
+	}
+
+	/* Add a reference to this handle */
+	_wapi_handle_ref (handle);
 	
 	return(handle);
 }

@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/mman.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -64,8 +65,16 @@ static int daemon_sock;
 static pthread_mutexattr_t mutex_shared_attr;
 static pthread_condattr_t cond_shared_attr;
 
-struct _WapiHandleShared_list *_wapi_shared_data=NULL;
-struct _WapiHandlePrivate_list *_wapi_private_data=NULL;
+struct _WapiHandleShared_list **_wapi_shared_data=NULL;
+struct _WapiHandleScratch *_wapi_shared_scratch=NULL;
+struct _WapiHandlePrivate_list **_wapi_private_data=NULL;
+pthread_mutex_t _wapi_shared_mutex=PTHREAD_MUTEX_INITIALIZER;
+
+/* This holds the length of the _wapi_shared_data and
+ * _wapi_private_data arrays, so we know if a segment is off the end
+ * of the array, requiring a realloc
+ */
+guint32 _wapi_shm_mapped_segments;
 
 static void shared_init (void)
 {
@@ -73,6 +82,9 @@ static void shared_init (void)
 	gboolean tried_once=FALSE;
 	int ret;
 
+	_wapi_shared_data=g_new0 (struct _WapiHandleShared_list *, 1);
+	_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list *, 1);
+	
 attach_again:
 
 #ifndef DISABLE_SHARED_HANDLES
@@ -82,15 +94,13 @@ attach_again:
 		shared=FALSE;
 #ifndef DISABLE_SHARED_HANDLES
 	} else {
-		gboolean success;
-		
 		/* Ensure that shared==FALSE while _wapi_shm_attach()
 		 * calls fork()
 		 */
 		shared=FALSE;
 		
-		_wapi_shared_data=_wapi_shm_attach (&success);
-		shared=success;
+		shared=_wapi_shm_attach (&_wapi_shared_data[0],
+					 &_wapi_shared_scratch);
 		if(shared==FALSE) {
 			g_warning ("Failed to attach shared memory! "
 				   "Falling back to non-shared handles");
@@ -103,8 +113,9 @@ attach_again:
 		daemon_sock=socket (PF_UNIX, SOCK_STREAM, 0);
 		shared_socket_address.sun_family=AF_UNIX;
 		memcpy (shared_socket_address.sun_path,
-			_wapi_shared_data->daemon, MONO_SIZEOF_SUNPATH);
-		ret=connect (daemon_sock, (struct sockaddr *)&shared_socket_address,
+			_wapi_shared_data[0]->daemon, MONO_SIZEOF_SUNPATH);
+		ret=connect (daemon_sock,
+			     (struct sockaddr *)&shared_socket_address,
 			     sizeof(struct sockaddr_un));
 		if(ret==-1) {
 			if(tried_once==TRUE) {
@@ -139,11 +150,13 @@ attach_again:
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Using process-private handles");
 #endif
-		_wapi_shared_data=
-			g_malloc0 (sizeof(struct _WapiHandleShared_list)+
-				   _WAPI_SHM_SCRATCH_SIZE);
+		_wapi_shared_data[0]=g_new0 (struct _WapiHandleShared_list, 1);
+		_wapi_shared_data[0]->num_segments=1;
+
+		_wapi_shared_scratch=g_new0 (struct _WapiHandleScratch, 1);
 	}
-	_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
+	_wapi_private_data[0]=g_new0 (struct _WapiHandlePrivate_list, 1);
+	_wapi_shm_mapped_segments=1;
 
 	pthread_mutexattr_init (&mutex_shared_attr);
 	pthread_condattr_init (&cond_shared_attr);
@@ -160,7 +173,7 @@ attach_again:
 static void
 print_handle_count (gint mask)
 {
-	gint count [WAPI_HANDLE_COUNT];
+	gint *count, num_handles;
 	gint i;
 	static const gchar *names [] = {"WAPI_HANDLE_UNUSED",
 				  "WAPI_HANDLE_FILE",
@@ -176,16 +189,25 @@ print_handle_count (gint mask)
 				};
 
 
-	memset (count, 0, sizeof (gint) * WAPI_HANDLE_COUNT);
+	num_handles=_wapi_handle_get_shared_segment (0)->num_segments * _WAPI_HANDLES_PER_SEGMENT;
+	count=g_new0 (gint, num_handles);
 
-	for (i = 1; i < _WAPI_MAX_HANDLES; i++) {
-		struct _WapiHandleShared *shared = &_wapi_shared_data->handles [i];
+	for (i = 1; i < num_handles; i++) {
+		struct _WapiHandleShared *shared;
+		guint32 segment, idx;
+		
+		_wapi_handle_segment (GUINT_TO_POINTER (i), &segment, &idx);
+		_wapi_handle_ensure_mapped (segment);
+		
+		shared = &_wapi_handle_get_shared_segment (segment)->handles[idx];
 		count [shared->type]++;
 	}
 
-	for (i = 0; i < WAPI_HANDLE_COUNT; i++)
+	for (i = 0; i < num_handles; i++)
 		if ((i & mask) == i) /* Always prints the UNUSED count */
 			g_print ("%s: %d\n", names [i], count [i]);
+
+	g_free (count);
 }
 #endif /* HEAVY_DEBUG */
 
@@ -194,11 +216,12 @@ print_handle_count (gint mask)
  * @type: Init handle to this type
  *
  * Search for a free handle and initialize it. Return the handle on
- * succes and 0 on failure.
+ * success and 0 on failure.
  */
 guint32 _wapi_handle_new_internal (WapiHandleType type)
 {
-	guint32 i;
+	guint32 segment, idx;
+	guint32 i, j;
 	static guint32 last=1;
 	
 	/* A linear scan should be fast enough.  Start from the last
@@ -209,19 +232,34 @@ guint32 _wapi_handle_new_internal (WapiHandleType type)
 	print_handle_count (0xFFF);
 #endif
 again:
-	for(i=last; i<_WAPI_MAX_HANDLES; i++) {
-		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
+	_wapi_handle_segment (GUINT_TO_POINTER (last), &segment, &idx);
+	for(i=segment; i<_wapi_handle_get_shared_segment (0)->num_segments;
+	    i++) {
+		if(i!=segment) {
+			idx=0;
+		}
 		
-		if(shared->type==WAPI_HANDLE_UNUSED) {
-			last=i+1;
-			shared->type=type;
-			shared->signalled=FALSE;
+		for(j=idx; j<_WAPI_HANDLES_PER_SEGMENT; j++) {
+			struct _WapiHandleShared *shared;
+		
+			/* Make sure we dont try and assign handle 0 */
+			if (i==0 && j==0) {
+				continue;
+			}
+			
+			shared=&_wapi_handle_get_shared_segment (i)->handles[j];
+		
+			if(shared->type==WAPI_HANDLE_UNUSED) {
+				last=(_wapi_handle_index (i, j)+1) % (_wapi_handle_get_shared_segment (0)->num_segments * _WAPI_HANDLES_PER_SEGMENT);
+				shared->type=type;
+				shared->signalled=FALSE;
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-			mono_mutex_init (&_wapi_shared_data->handles[i].signal_mutex, &mutex_shared_attr);
-			pthread_cond_init (&_wapi_shared_data->handles[i].signal_cond, &cond_shared_attr);
+				mono_mutex_init (&shared.signal_mutex, &mutex_shared_attr);
+				pthread_cond_init (&shared.signal_cond, &cond_shared_attr);
 #endif
-
-			return(i);
+				
+				return(_wapi_handle_index (i, j));
+			}
 		}
 	}
 
@@ -231,6 +269,8 @@ again:
 		goto again;
 	}
 
+	/* Will need a new segment.  The caller will sort it out */
+
 	return(0);
 }
 
@@ -238,10 +278,10 @@ gpointer _wapi_handle_new (WapiHandleType type)
 {
 	static mono_once_t shared_init_once = MONO_ONCE_INIT;
 	static pthread_mutex_t scan_mutex=PTHREAD_MUTEX_INITIALIZER;
-	guint32 idx;
+	guint32 handle_idx, idx, segment;
 	gpointer handle;
-	WapiHandleRequest new;
-	WapiHandleResponse new_resp;
+	WapiHandleRequest new={0};
+	WapiHandleResponse new_resp={0};
 #if HAVE_BOEHM_GC
 	gboolean tried_collect=FALSE;
 #endif
@@ -256,7 +296,7 @@ again:
 		_wapi_daemon_request_response (daemon_sock, &new, &new_resp);
 	
 		if (new_resp.type==WapiHandleResponseType_New) {
-			idx=new_resp.u.new.handle;
+			handle_idx=new_resp.u.new.handle;
 		} else {
 			g_warning (G_GNUC_PRETTY_FUNCTION
 				   ": bogus daemon response, type %d",
@@ -265,12 +305,29 @@ again:
 		}
 	} else {
 		pthread_mutex_lock (&scan_mutex);
-		idx=_wapi_handle_new_internal (type);
-		_wapi_shared_data->handles[idx].ref++;
+		handle_idx=_wapi_handle_new_internal (type);
+		if(handle_idx==0) {
+			/* Try and get a new segment, and have another go */
+			segment=_wapi_handle_get_shared_segment (0)->num_segments;
+			_wapi_handle_ensure_mapped (segment);
+			
+			if(_wapi_handle_get_shared_segment (segment)!=NULL) {
+				/* Got a new segment */
+				_wapi_handle_get_shared_segment (0)->num_segments++;
+				handle_idx=_wapi_handle_new_internal (type);
+			} else {
+				/* Map failed.  Just return 0 meaning
+				 * "out of handles"
+				 */
+			}
+		}
+		
+		_wapi_handle_segment (GUINT_TO_POINTER (handle_idx), &segment, &idx);
+		_wapi_handle_get_shared_segment (segment)->handles[idx].ref++;
 		pthread_mutex_unlock (&scan_mutex);
 	}
 		
-	if(idx==0) {
+	if(handle_idx==0) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Ran out of handles!");
 
 #if HAVE_BOEHM_GC
@@ -292,16 +349,23 @@ again:
 		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
 	}
 
+	_wapi_handle_segment (GUINT_TO_POINTER (handle_idx), &segment, &idx);
+	_wapi_handle_ensure_mapped (segment);
+
+	if(_wapi_private_data!=NULL) {
+		_wapi_handle_get_private_segment (segment)->handles[idx].type=type;
+	}
+	
 #if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
-	mono_mutex_init (&_wapi_shared_data->handles[idx].signal_mutex, &mutex_shared_attr);
-	pthread_cond_init (&_wapi_shared_data->handles[idx].signal_cond, &cond_shared_attr);
+	mono_mutex_init (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex, &mutex_shared_attr);
+	pthread_cond_init (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond, &cond_shared_attr);
 #endif
-	handle=GUINT_TO_POINTER (idx);
+	handle=GUINT_TO_POINTER (handle_idx);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Allocated new handle %p", handle);
 #endif
-
+	
 	return(handle);
 }
 
@@ -310,22 +374,37 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 {
 	struct _WapiHandleShared *shared_handle_data;
 	struct _WapiHandlePrivate *private_handle_data;
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx;
+	guint32 segment;
 
-	shared_handle_data=&_wapi_shared_data->handles[idx];
-
-	if(shared_handle_data->type!=type) {
-		return(FALSE);
-	}
+	_wapi_handle_segment (handle, &segment, &idx);
+	_wapi_handle_ensure_mapped (segment);
+	
+	shared_handle_data=&_wapi_handle_get_shared_segment (segment)->handles[idx];
 
 	if(shared!=NULL) {
 		*shared=&shared_handle_data->u;
 	}
 	
 	if(private!=NULL) {
-		private_handle_data=&_wapi_private_data->handles[idx];
+		private_handle_data=&_wapi_handle_get_private_segment (segment)->handles[idx];
 
 		*private=&private_handle_data->u;
+	}
+
+	if(shared_handle_data->type!=type) {
+		/* If shared type is UNUSED, see if the private type
+		 * matches what we are looking for - this can happen
+		 * when the handle is being destroyed and the
+		 * close_private function is looking up the private
+		 * data
+		 */
+		if(shared_handle_data->type==WAPI_HANDLE_UNUSED &&
+		   (private!=NULL && private_handle_data->type==type)) {
+			return(TRUE);
+		} else {
+			return(FALSE);
+		}
 	}
 	
 	return(TRUE);
@@ -338,10 +417,15 @@ gpointer _wapi_search_handle (WapiHandleType type,
 {
 	struct _WapiHandleShared *shared_handle_data;
 	struct _WapiHandlePrivate *private_handle_data;
-	guint32 i;
+	guint32 i, segment, idx;
 
-	for(i=1; i<_WAPI_MAX_HANDLES; i++) {
-		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
+	for(i=1; i<_wapi_handle_get_shared_segment (0)->num_segments * _WAPI_HANDLES_PER_SEGMENT; i++) {
+		struct _WapiHandleShared *shared;
+		
+		_wapi_handle_segment (GUINT_TO_POINTER (i), &segment, &idx);
+		_wapi_handle_ensure_mapped (segment);
+		
+		shared=&_wapi_handle_get_shared_segment (segment)->handles[idx];
 		
 		if(shared->type==type) {
 			if(check (GUINT_TO_POINTER (i), user_data)==TRUE) {
@@ -350,18 +434,18 @@ gpointer _wapi_search_handle (WapiHandleType type,
 		}
 	}
 
-	if(i==_WAPI_MAX_HANDLES) {
+	if(i==_wapi_handle_get_shared_segment (0)->num_segments * _WAPI_HANDLES_PER_SEGMENT) {
 		return(GUINT_TO_POINTER (0));
 	}
 	
 	if(shared!=NULL) {
-		shared_handle_data=&_wapi_shared_data->handles[i];
+		shared_handle_data=&_wapi_handle_get_shared_segment (segment)->handles[idx];
 
 		*shared=&shared_handle_data->u;
 	}
 	
 	if(private!=NULL) {
-		private_handle_data=&_wapi_private_data->handles[i];
+		private_handle_data=&_wapi_handle_get_private_segment (segment)->handles[idx];
 
 		*private=&private_handle_data->u;
 	}
@@ -371,14 +455,12 @@ gpointer _wapi_search_handle (WapiHandleType type,
 
 void _wapi_handle_ref (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
-
 	if(shared==TRUE) {
-		WapiHandleRequest req;
-		WapiHandleResponse resp;
+		WapiHandleRequest req={0};
+		WapiHandleResponse resp={0};
 	
 		req.type=WapiHandleRequestType_Open;
-		req.u.open.handle=idx;
+		req.u.open.handle=GPOINTER_TO_UINT (handle);
 	
 		_wapi_daemon_request_response (daemon_sock, &req, &resp);
 		if(resp.type!=WapiHandleResponseType_Open) {
@@ -388,23 +470,30 @@ void _wapi_handle_ref (gpointer handle)
 			g_assert_not_reached ();
 		}
 	} else {
-		_wapi_shared_data->handles[idx].ref++;
+		guint32 idx, segment;
+
+		_wapi_handle_segment (handle, &segment, &idx);
+		
+		_wapi_handle_get_shared_segment (segment)->handles[idx].ref++;
 	
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p ref now %d",
-			   handle, _wapi_shared_data->handles[idx].ref);
+			   handle,
+			   _wapi_handle_get_shared_segment (segment)->handles[idx].ref);
 #endif
 	}
 }
 
 void _wapi_handle_unref (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	gboolean destroy;
+
+	_wapi_handle_segment (handle, &segment, &idx);
 	
 	if(shared==TRUE) {
-		WapiHandleRequest req;
-		WapiHandleResponse resp;
+		WapiHandleRequest req={0};
+		WapiHandleResponse resp={0};
 	
 		req.type=WapiHandleRequestType_Close;
 		req.u.close.handle=GPOINTER_TO_UINT (handle);
@@ -419,11 +508,10 @@ void _wapi_handle_unref (gpointer handle)
 			destroy=resp.u.close.destroy;
 		}
 	} else {
-		_wapi_shared_data->handles[idx].ref--;
+		_wapi_handle_get_shared_segment (segment)->handles[idx].ref--;
 	
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p ref now %d",
-			   handle, _wapi_shared_data->handles[idx].ref);
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p ref now %d", handle, _wapi_handle_get_shared_segment (segment)->handles[idx].ref);
 #endif
 
 		/* Possible race condition here if another thread refs
@@ -432,7 +520,7 @@ void _wapi_handle_unref (gpointer handle)
 		 * that allowing a handle reference to reach 0 isn't
 		 * an application bug anyway.
 		 */
-		destroy=(_wapi_shared_data->handles[idx].ref==0);
+		destroy=(_wapi_handle_get_shared_segment (segment)->handles[idx].ref==0);
 	}
 
 	if(destroy==TRUE) {
@@ -444,53 +532,64 @@ void _wapi_handle_unref (gpointer handle)
 		if(shared==FALSE) {
 			_wapi_handle_ops_close_shared (handle);
 
-			mono_mutex_destroy (&_wapi_shared_data->handles[idx].signal_mutex);
-			pthread_cond_destroy (&_wapi_shared_data->handles[idx].signal_cond);
-			memset (&_wapi_shared_data->handles[idx].u, '\0', sizeof(_wapi_shared_data->handles[idx].u));
+			mono_mutex_destroy (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
+			pthread_cond_destroy (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond);
+			memset (&_wapi_handle_get_shared_segment (segment)->handles[idx].u, '\0', sizeof(_wapi_handle_get_shared_segment (segment)->handles[idx].u));
 		
 		}
 #if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
 		else {
-			mono_mutex_destroy (&_wapi_shared_data->handles[idx].signal_mutex);
-			pthread_cond_destroy (&_wapi_shared_data->handles[idx].signal_cond);
+			mono_mutex_destroy (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
+			pthread_cond_destroy (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond);
 		}
 #endif
 
 		_wapi_handle_ops_close_private (handle);
-		_wapi_shared_data->handles[idx].type=WAPI_HANDLE_UNUSED;
+		_wapi_handle_get_shared_segment (segment)->handles[idx].type=WAPI_HANDLE_UNUSED;
 	}
 }
 
 #define HDRSIZE sizeof(struct _WapiScratchHeader)
 
-/*
- * _wapi_handle_scratch_store_internal:
- * @bytes: Allocate no. bytes
- *
- * Like malloc(3) except its for the shared memory segment's scratch
- * part. Memory block returned is zeroed out.
+static pthread_mutex_t _wapi_scratch_mutex=PTHREAD_MUTEX_INITIALIZER;
+
+/* _wapi_scratch_mutex must be held when this function is called in
+ * the non-shared case
  */
-guint32 _wapi_handle_scratch_store_internal (guint32 bytes)
+static void _wapi_handle_scratch_expand (void)
+{
+	guint32 old_len, new_len;
+		
+	old_len=sizeof(struct _WapiHandleScratch) +
+		_wapi_shared_scratch->data_len;
+	new_len=old_len+_WAPI_SHM_SCRATCH_SIZE;
+		
+	if(_wapi_shared_scratch->is_shared==TRUE) {
+		/* expand via mmap() */
+		_wapi_shared_scratch=_wapi_shm_file_expand (_wapi_shared_scratch, WAPI_SHM_SCRATCH, 0, old_len, new_len);
+	} else {
+		_wapi_shared_scratch=_wapi_g_renew0 (_wapi_shared_scratch, old_len, new_len);
+	}
+	_wapi_shared_scratch->data_len+=_WAPI_SHM_SCRATCH_SIZE;
+}
+
+/* _wapi_scratch_mutex must be held when this function is called in
+ * the non-shared case
+ */
+static guint32 _wapi_handle_scratch_locate_space (guint32 bytes)
 {
 	guint32 idx=0, last_idx=0;
 	struct _WapiScratchHeader *hdr, *last_hdr;
 	gboolean last_was_free=FALSE;
-	guchar *storage=&_wapi_shared_data->scratch_base[0];
+	guchar *storage=_wapi_shared_scratch->scratch_data;
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": looking for %d bytes of scratch space (%d bytes total)",
-		   bytes, _WAPI_SHM_SCRATCH_SIZE);
+		   bytes, _wapi_shared_scratch->data_len);
 #endif
-
-	hdr=(struct _WapiScratchHeader *)&storage[0];
-	if(hdr->flags==0 && hdr->length==0) {
-		/* Need to initialise scratch data */
-		hdr->flags |= WAPI_SHM_SCRATCH_FREE;
-		hdr->length = _WAPI_SHM_SCRATCH_SIZE - HDRSIZE;
-	}
 	
-	while(idx< _WAPI_SHM_SCRATCH_SIZE) {
+	while(idx< _wapi_shared_scratch->data_len) {
 		hdr=(struct _WapiScratchHeader *)&storage[idx];
 		
 		/* Do a simple first-fit allocation, coalescing
@@ -573,60 +672,150 @@ guint32 _wapi_handle_scratch_store_internal (guint32 bytes)
 
 			/* Don't let the coalescing blow away this block */
 			last_was_free=FALSE;
+
+			/* But remember where the last block started */
+			last_idx=idx;
 		}
 	}
+
+	/* Not enough free space.  last_idx points to the last block.
+	 * If it's free, just tack on more space and update the
+	 * length.  If it's allocated, it must have fit right into the
+	 * available space, so add more space and add a new header
+	 * after this block.
+	 */
+	_wapi_handle_scratch_expand ();
+	storage=_wapi_shared_scratch->scratch_data;
 	
+	hdr=(struct _WapiScratchHeader *)&storage[last_idx];
+	if(hdr->flags & WAPI_SHM_SCRATCH_FREE) {
+		hdr->length+=_WAPI_SHM_SCRATCH_SIZE;
+	} else {
+		idx=(hdr->length+HDRSIZE);
+		hdr=(struct _WapiScratchHeader *)&storage[idx];
+		hdr->flags |= WAPI_SHM_SCRATCH_FREE;
+		hdr->length = _WAPI_SHM_SCRATCH_SIZE-HDRSIZE;
+	}
+
+	/* The caller will try again */
 	return(0);
+}
+
+/*
+ * _wapi_handle_scratch_store_internal:
+ * @bytes: Allocate no. bytes
+ *
+ * Like malloc(3) except its for the shared memory segment's scratch
+ * part. Memory block returned is zeroed out.
+ */
+guint32 _wapi_handle_scratch_store_internal (guint32 bytes, gboolean *remap)
+{
+	guchar *storage;
+	guint32 idx;
+	struct _WapiScratchHeader *hdr;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": storing %d bytes", bytes);
+#endif
+	
+	*remap=FALSE;
+	
+	if(_wapi_shared_scratch->data_len==0) {
+		/* Need to expand the data array for the first use */
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": setting up scratch space");
+#endif
+
+		_wapi_handle_scratch_expand ();
+		*remap=TRUE;
+	}
+
+	storage=_wapi_shared_scratch->scratch_data;
+	hdr=(struct _WapiScratchHeader *)&storage[0];
+	if(hdr->flags==0 && hdr->length==0) {
+		/* Need to initialise scratch data */
+		hdr->flags |= WAPI_SHM_SCRATCH_FREE;
+		hdr->length = _wapi_shared_scratch->data_len - HDRSIZE;
+	}
+
+	idx=_wapi_handle_scratch_locate_space (bytes);
+	if(idx==0) {
+		/* Some more space will have been allocated, so try again */
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": trying again");
+#endif
+
+		idx=_wapi_handle_scratch_locate_space (bytes);
+		*remap=TRUE;
+	}
+	
+	return(idx);
 }
 
 guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 {
-	static pthread_mutex_t scratch_mutex=PTHREAD_MUTEX_INITIALIZER;
-	guint32 idx;
-	
+	guint32 idx, store_bytes;
+	gboolean remap;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": storing %d bytes", bytes);
+#endif
+
 	/* No point storing no data */
 	if(bytes==0) {
 		return(0);
 	}
 
 	/* Align bytes to 32 bits (needed for sparc at least) */
-	bytes = (((bytes) + 3) & (~3));
+	store_bytes = (((bytes) + 3) & (~3));
+
+	pthread_mutex_lock (&_wapi_scratch_mutex);
 
 	if(shared==TRUE) {
-		WapiHandleRequest scratch;
-		WapiHandleResponse scratch_resp;
-	
+		WapiHandleRequest scratch={0};
+		WapiHandleResponse scratch_resp={0};
+		guint32 old_len=sizeof(struct _WapiHandleScratch) +
+			_wapi_shared_scratch->data_len;
+		
 		scratch.type=WapiHandleRequestType_Scratch;
-		scratch.u.scratch.length=bytes;
+		scratch.u.scratch.length=store_bytes;
 	
 		_wapi_daemon_request_response (daemon_sock, &scratch,
 					       &scratch_resp);
 	
 		if(scratch_resp.type==WapiHandleResponseType_Scratch) {
 			idx=scratch_resp.u.scratch.idx;
+			remap=scratch_resp.u.scratch.remap;
 		} else {
 			g_warning (G_GNUC_PRETTY_FUNCTION
 				   ": bogus daemon response, type %d",
 				   scratch_resp.type);
 			g_assert_not_reached ();
 		}
+	
+		if(remap==TRUE) {
+			munmap (_wapi_shared_scratch, old_len);
+			_wapi_shared_scratch=_wapi_shm_file_map (WAPI_SHM_SCRATCH, 0, NULL);
+		}
 	} else {
-		pthread_mutex_lock (&scratch_mutex);
-		idx=_wapi_handle_scratch_store_internal (bytes);
-		pthread_mutex_unlock (&scratch_mutex);
-		
+		idx=_wapi_handle_scratch_store_internal (store_bytes, &remap);
 		if(idx==0) {
 			/* Failed to allocate space */
+			pthread_mutex_unlock (&_wapi_scratch_mutex);
 			return(0);
 		}
 	}
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": stored [%s] at %d (len %d)",
-		   (char *)data, idx, bytes);
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": stored [%s] at %d (len %d, aligned len %d)",
+		   (char *)data, idx, bytes, store_bytes);
 #endif
 	
-	memcpy (&_wapi_shared_data->scratch_base[idx], data, bytes);
+	memcpy (&_wapi_shared_scratch->scratch_data[idx], data, bytes);
+
+	pthread_mutex_unlock (&_wapi_scratch_mutex);
 	
 	return(idx);
 }
@@ -670,41 +859,36 @@ guint32 _wapi_handle_scratch_store_string_array (gchar **data)
 	return(idx);
 }
 
-guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx)
+gpointer _wapi_handle_scratch_lookup (guint32 idx)
 {
 	struct _WapiScratchHeader *hdr;
-	guchar *str;
-	guchar *storage=&_wapi_shared_data->scratch_base[0];
+	gpointer ret;
+	guchar *storage;
 	
-	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
+	if(idx < HDRSIZE || idx > _wapi_shared_scratch->data_len) {
 		return(NULL);
 	}
+
+	pthread_mutex_lock (&_wapi_scratch_mutex);
+	
+	storage=_wapi_shared_scratch->scratch_data;
 	
 	hdr=(struct _WapiScratchHeader *)&storage[idx - HDRSIZE];
-	str=g_malloc0 (hdr->length+1);
-	memcpy (str, &storage[idx], hdr->length);
+	ret=g_malloc0 (hdr->length+1);
+	memcpy (ret, &storage[idx], hdr->length);
 
-	return(str);
-}
+	pthread_mutex_unlock (&_wapi_scratch_mutex);
 
-gconstpointer _wapi_handle_scratch_lookup (guint32 idx)
-{
-	guchar *storage=&_wapi_shared_data->scratch_base[0];
-	
-	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
-		return(NULL);
-	}
-	
-	return(&storage[idx]);
+	return(ret);
 }
 
 gchar **_wapi_handle_scratch_lookup_string_array (guint32 idx)
 {
 	gchar **strings;
-	const guint32 *stored_strings;
+	guint32 *stored_strings;
 	guint32 count, i;
 	
-	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
+	if(idx < HDRSIZE || idx > _wapi_shared_scratch->data_len) {
 		return(NULL);
 	}
 
@@ -727,13 +911,15 @@ gchar **_wapi_handle_scratch_lookup_string_array (guint32 idx)
 	strings=g_new0 (gchar *, count+1);
 	
 	for(i=0; i<count; i++) {
-		strings[i]=_wapi_handle_scratch_lookup_as_string (stored_strings[i+1]);
+		strings[i]=_wapi_handle_scratch_lookup (stored_strings[i+1]);
 
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": string %d is [%s]", i,
 			   strings[i]);
 #endif
 	}
+
+	g_free (stored_strings);
 	
 	return(strings);
 }
@@ -748,11 +934,15 @@ gchar **_wapi_handle_scratch_lookup_string_array (guint32 idx)
 void _wapi_handle_scratch_delete_internal (guint32 idx)
 {
 	struct _WapiScratchHeader *hdr;
-	guchar *storage=&_wapi_shared_data->scratch_base[0];
+	guchar *storage;
 	
-	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
+	if(idx < HDRSIZE || idx > _wapi_shared_scratch->data_len) {
 		return;
 	}
+
+	pthread_mutex_lock (&_wapi_scratch_mutex);
+	
+	storage=_wapi_shared_scratch->scratch_data;
 	
 	hdr=(struct _WapiScratchHeader *)&storage[idx - HDRSIZE];
 	memset (&storage[idx], '\0', hdr->length);
@@ -761,13 +951,15 @@ void _wapi_handle_scratch_delete_internal (guint32 idx)
 	/* We could coalesce forwards here if the next block is also
 	 * free, but the _store() function will do that anyway.
 	 */
+
+	pthread_mutex_unlock (&_wapi_scratch_mutex);
 }
 
 void _wapi_handle_scratch_delete (guint32 idx)
 {
 	if(shared==TRUE) {
-		WapiHandleRequest scratch_free;
-		WapiHandleResponse scratch_free_resp;
+		WapiHandleRequest scratch_free={0};
+		WapiHandleResponse scratch_free_resp={0};
 	
 		scratch_free.type=WapiHandleRequestType_ScratchFree;
 		scratch_free.u.scratch_free.idx=idx;
@@ -788,7 +980,7 @@ void _wapi_handle_scratch_delete (guint32 idx)
 
 void _wapi_handle_scratch_delete_string_array (guint32 idx)
 {
-	const guint32 *stored_strings;
+	guint32 *stored_strings;
 	guint32 count, i;
 	
 	stored_strings=_wapi_handle_scratch_lookup (idx);
@@ -811,6 +1003,8 @@ void _wapi_handle_scratch_delete_string_array (guint32 idx)
 	}
 	
 	_wapi_handle_scratch_delete (idx);
+
+	g_free (stored_strings);
 }
 
 void _wapi_handle_register_capabilities (WapiHandleType type,
@@ -822,10 +1016,12 @@ void _wapi_handle_register_capabilities (WapiHandleType type,
 gboolean _wapi_handle_test_capabilities (gpointer handle,
 					 WapiHandleCapability caps)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	WapiHandleType type;
 
-	type=_wapi_shared_data->handles[idx].type;
+	_wapi_handle_segment (handle, &segment, &idx);
+	
+	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": testing 0x%x against 0x%x (%d)",
@@ -837,10 +1033,12 @@ gboolean _wapi_handle_test_capabilities (gpointer handle,
 
 void _wapi_handle_ops_close_shared (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	WapiHandleType type;
 
-	type=_wapi_shared_data->handles[idx].type;
+	_wapi_handle_segment (handle, &segment, &idx);
+	
+	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
 
 	if(handle_ops[type]!=NULL && handle_ops[type]->close_shared!=NULL) {
 		handle_ops[type]->close_shared (handle);
@@ -849,10 +1047,19 @@ void _wapi_handle_ops_close_shared (gpointer handle)
 
 void _wapi_handle_ops_close_private (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	WapiHandleType type;
 
-	type=_wapi_shared_data->handles[idx].type;
+	_wapi_handle_segment (handle, &segment, &idx);
+
+	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
+
+	/* When a handle in the process of being destroyed the shared
+	 * type has already been set to UNUSED
+	 */
+	if(type==WAPI_HANDLE_UNUSED && _wapi_private_data!=NULL) {
+		type=_wapi_handle_get_private_segment (segment)->handles[idx].type;
+	}
 
 	if(handle_ops[type]!=NULL && handle_ops[type]->close_private!=NULL) {
 		handle_ops[type]->close_private (handle);
@@ -861,10 +1068,12 @@ void _wapi_handle_ops_close_private (gpointer handle)
 
 void _wapi_handle_ops_signal (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	WapiHandleType type;
 
-	type=_wapi_shared_data->handles[idx].type;
+	_wapi_handle_segment (handle, &segment, &idx);
+
+	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
 
 	if(handle_ops[type]!=NULL && handle_ops[type]->signal!=NULL) {
 		handle_ops[type]->signal (handle);
@@ -873,10 +1082,12 @@ void _wapi_handle_ops_signal (gpointer handle)
 
 void _wapi_handle_ops_own (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	WapiHandleType type;
 
-	type=_wapi_shared_data->handles[idx].type;
+	_wapi_handle_segment (handle, &segment, &idx);
+	
+	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
 
 	if(handle_ops[type]!=NULL && handle_ops[type]->own_handle!=NULL) {
 		handle_ops[type]->own_handle (handle);
@@ -885,10 +1096,12 @@ void _wapi_handle_ops_own (gpointer handle)
 
 gboolean _wapi_handle_ops_isowned (gpointer handle)
 {
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	WapiHandleType type;
 
-	type=_wapi_shared_data->handles[idx].type;
+	_wapi_handle_segment (handle, &segment, &idx);
+	
+	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
 
 	if(handle_ops[type]!=NULL && handle_ops[type]->is_owned!=NULL) {
 		return(handle_ops[type]->is_owned (handle));
@@ -927,14 +1140,16 @@ gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 	/* Lock all the handles, with backoff */
 again:
 	for(i=0; i<numhandles; i++) {
-		guint32 idx=GPOINTER_TO_UINT (handles[i]);
+		guint32 idx, segment;
+		
+		_wapi_handle_segment (handles[i], &segment, &idx);
 		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": attempting to lock %p",
 			   handles[i]);
 #endif
 
-		ret=mono_mutex_trylock (&_wapi_shared_data->handles[idx].signal_mutex);
+		ret=mono_mutex_trylock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 		if(ret!=0) {
 			/* Bummer */
 			struct timespec sleepytime;
@@ -944,8 +1159,8 @@ again:
 #endif
 
 			while(i--) {
-				idx=GPOINTER_TO_UINT (handles[i]);
-				mono_mutex_unlock (&_wapi_shared_data->handles[idx].signal_mutex);
+				_wapi_handle_segment (handles[i], &segment, &idx);
+				mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 			}
 
 			/* If iter ever reaches 100 the nanosleep will
@@ -980,7 +1195,9 @@ again:
 	*lowest=numhandles;
 	
 	for(i=0; i<numhandles; i++) {
-		guint32 idx=GPOINTER_TO_UINT (handles[i]);
+		guint32 idx, segment;
+
+		_wapi_handle_segment (handles[i], &segment, &idx);
 		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": Checking handle %p",
@@ -989,7 +1206,7 @@ again:
 
 		if(((_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_OWN)==TRUE) &&
 		    (_wapi_handle_ops_isowned (handles[i])==TRUE)) ||
-		   (_wapi_shared_data->handles[idx].signalled==TRUE)) {
+		   (_wapi_handle_get_shared_segment (segment)->handles[idx].signalled==TRUE)) {
 			count++;
 			
 #ifdef DEBUG
@@ -1028,14 +1245,16 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	guint32 i;
 	
 	for(i=0; i<numhandles; i++) {
-		guint32 idx=GPOINTER_TO_UINT (handles[i]);
-		
+		guint32 idx, segment;
+
+		_wapi_handle_segment (handles[i], &segment, &idx);
+
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p",
 			   handles[i]);
 #endif
 
-		mono_mutex_unlock (&_wapi_shared_data->handles[idx].signal_mutex);
+		mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 	}
 }
 
@@ -1051,16 +1270,16 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 int _wapi_handle_wait_signal (void)
 {
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-	return(mono_cond_wait (&_wapi_shared_data->signal_cond,
-			       &_wapi_shared_data->signal_mutex));
+	return(mono_cond_wait (&_wapi_handle_get_shared_segment (0)->signal_cond,
+			       &_wapi_handle_get_shared_segment (0)->signal_mutex));
 #else
 	struct timespec fake_timeout;
 	int ret;
 	
 	_wapi_calc_timeout (&fake_timeout, 100);
 
-	ret=mono_cond_timedwait (&_wapi_private_data->signal_cond,
-				 &_wapi_private_data->signal_mutex,
+	ret=mono_cond_timedwait (&_wapi_handle_get_private_segment (0)->signal_cond,
+				 &_wapi_handle_get_private_segment (0)->signal_mutex,
 				 &fake_timeout);
 	if(ret==ETIMEDOUT) {
 		ret=0;
@@ -1073,8 +1292,8 @@ int _wapi_handle_wait_signal (void)
 int _wapi_handle_timedwait_signal (struct timespec *timeout)
 {
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-	return(mono_cond_timedwait (&_wapi_shared_data->signal_cond,
-				    &_wapi_shared_data->signal_mutex,
+	return(mono_cond_timedwait (&_wapi_handle_get_shared_segment (0)->signal_cond,
+				    &_wapi_handle_get_shared_segment (0)->signal_mutex,
 				    timeout));
 #else
 	struct timespec fake_timeout;
@@ -1086,12 +1305,12 @@ int _wapi_handle_timedwait_signal (struct timespec *timeout)
 	   (fake_timeout.tv_sec==timeout->tv_sec &&
 	    fake_timeout.tv_nsec > timeout->tv_nsec)) {
 		/* Real timeout is less than 100ms time */
-		ret=mono_cond_timedwait (&_wapi_private_data->signal_cond,
-					 &_wapi_private_data->signal_mutex,
+		ret=mono_cond_timedwait (&_wapi_handle_get_private_segment (0)->signal_cond,
+					 &_wapi_handle_get_private_segment (0)->signal_mutex,
 					 timeout);
 	} else {
-		ret=mono_cond_timedwait (&_wapi_private_data->signal_cond,
-					 &_wapi_private_data->signal_mutex,
+		ret=mono_cond_timedwait (&_wapi_handle_get_private_segment (0)->signal_cond,
+					 &_wapi_handle_get_private_segment (0)->signal_mutex,
 					 &fake_timeout);
 		if(ret==ETIMEDOUT) {
 			ret=0;
@@ -1105,19 +1324,22 @@ int _wapi_handle_timedwait_signal (struct timespec *timeout)
 int _wapi_handle_wait_signal_handle (gpointer handle)
 {
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
+
+	_wapi_handle_segment (handle, &segment, &idx);
 	
-	return(mono_cond_wait (&_wapi_shared_data->handles[idx].signal_cond,
-			       &_wapi_shared_data->handles[idx].signal_mutex));
+	return(mono_cond_wait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
+			       &_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex));
 #else
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	struct timespec fake_timeout;
 	int ret;
 	
+	_wapi_handle_segment (handle, &segment, &idx);
 	_wapi_calc_timeout (&fake_timeout, 100);
 	
-	ret=mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
-				 &_wapi_shared_data->handles[idx].signal_mutex,
+	ret=mono_cond_timedwait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
+				 &_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex,
 				 &fake_timeout);
 	if(ret==ETIMEDOUT) {
 		ret=0;
@@ -1131,28 +1353,31 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 					  struct timespec *timeout)
 {
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
+
+	_wapi_handle_segment (handle, &segment, &idx);
 	
-	return(mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
-				    &_wapi_shared_data->handles[idx].signal_mutex,
+	return(mono_cond_timedwait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
+				    &_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex,
 				    timeout));
 #else
-	guint32 idx=GPOINTER_TO_UINT (handle);
+	guint32 idx, segment;
 	struct timespec fake_timeout;
 	int ret;
 	
+	_wapi_handle_segment (handle, &segment, &idx);
 	_wapi_calc_timeout (&fake_timeout, 100);
 	
 	if((fake_timeout.tv_sec>timeout->tv_sec) ||
 	   (fake_timeout.tv_sec==timeout->tv_sec &&
 	    fake_timeout.tv_nsec > timeout->tv_nsec)) {
 		/* Real timeout is less than 100ms time */
-		ret=mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
-					 &_wapi_shared_data->handles[idx].signal_mutex,
+		ret=mono_cond_timedwait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
+					 &_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex,
 					 timeout);
 	} else {
-		ret=mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
-					 &_wapi_shared_data->handles[idx].signal_mutex,
+		ret=mono_cond_timedwait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
+					 &_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex,
 					 &fake_timeout);
 		if(ret==ETIMEDOUT) {
 			ret=0;
@@ -1172,8 +1397,8 @@ gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env, guint32 dir,
 				    gpointer *thread_handle, guint32 *pid,
 				    guint32 *tid)
 {
-	WapiHandleRequest fork_proc;
-	WapiHandleResponse fork_proc_resp;
+	WapiHandleRequest fork_proc={0};
+	WapiHandleResponse fork_proc_resp={0};
 	int in_fd, out_fd, err_fd;
 	
 	if(shared!=TRUE) {

@@ -61,25 +61,41 @@
 
 #undef DEBUG
 
-static guchar *shared_file (void)
+/* Define this to make it easier to run valgrind on the daemon.  Then
+ * the first process to start will turn into a daemon without forking
+ * (the debug utility mono/handles/hps is ideal for this.)
+ */
+#undef VALGRINDING
+
+guchar *_wapi_shm_file (_wapi_shm_t type, guint32 segment)
 {
-	static guchar *file=NULL;
-	guchar *name, *dir;
-	
-	if(file!=NULL) {
-		return(file);
-	}
+	static guchar file[_POSIX_PATH_MAX];
+	guchar *name, *filename, *dir, *wapi_dir;
 	
 	/* Change the filename whenever the format of the contents
 	 * changes
 	 */
-	name=g_strdup_printf ("shared_data-%d", _WAPI_HANDLE_VERSION);
+	if(type==WAPI_SHM_DATA) {
+		name=g_strdup_printf ("shared_data-%d-%d",
+				      _WAPI_HANDLE_VERSION, segment);
+	} else if (type==WAPI_SHM_SCRATCH) {
+		name=g_strdup_printf ("shared_scratch-%d-%d",
+				      _WAPI_HANDLE_VERSION, segment);
+	} else {
+		g_assert_not_reached ();
+	}
 
 	/* I don't know how nfs affects mmap.  If mmap() of files on
 	 * nfs mounts breaks, then there should be an option to set
 	 * the directory.
 	 */
-	file=g_build_filename (g_get_home_dir (), ".wapi", name, NULL);
+	wapi_dir=getenv ("MONO_SHARED_DIR");
+	if(wapi_dir==NULL) {
+		filename=g_build_filename (g_get_home_dir (), ".wapi", name,
+					   NULL);
+	} else {
+		filename=g_build_filename (wapi_dir, ".wapi", name, NULL);
+	}
 	g_free (name);
 
 	/* No need to check if the dir already exists or check
@@ -90,7 +106,202 @@ static guchar *shared_file (void)
 	mkdir (dir, 0755);
 	g_free (dir);
 		
+	g_snprintf (file, _POSIX_PATH_MAX, "%s", filename);
+	
 	return(file);
+}
+
+gpointer _wapi_shm_file_expand (gpointer mem, _wapi_shm_t type,
+				guint32 segment, guint32 old_len,
+				guint32 new_len)
+{
+	int fd;
+	gpointer new_mem;
+	guchar *filename=_wapi_shm_file (type, segment);
+
+	if(old_len>=new_len) {
+		return(mem);
+	}
+	
+	munmap (mem, old_len);
+	
+	fd=open (filename, O_RDWR, 0600);
+	if(fd==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+			    ": shared file [%s] open error: %s", filename,
+			    g_strerror (errno));
+		return(NULL);
+	}
+
+	if(lseek (fd, new_len-1, SEEK_SET)==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+			    ": shared file [%s] lseek error: %s", filename,
+			    g_strerror (errno));
+		return(NULL);
+	}
+	
+	if(write (fd, "", 1)==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+			    ": shared file [%s] write error: %s", filename,
+			    g_strerror (errno));
+		return(NULL);
+	}
+	close (fd);
+	
+	new_mem=_wapi_shm_file_map (type, segment, NULL);
+	
+	return(new_mem);
+}
+
+static int _wapi_shm_file_open (const guchar *filename, _wapi_shm_t type,
+				gboolean *created)
+{
+	int fd;
+	struct stat statbuf;
+	guint32 wanted_size;
+	
+	if(created) {
+		*created=FALSE;
+	}
+	
+	if(type==WAPI_SHM_DATA) {
+		wanted_size=sizeof(struct _WapiHandleShared_list);
+	} else if (type==WAPI_SHM_SCRATCH) {
+		wanted_size=sizeof(struct _WapiHandleScratch);
+	} else {
+		g_assert_not_reached ();
+	}
+	
+try_again:
+	/* No O_CREAT yet, because we need to initialise the file if
+	 * we have to create it.
+	 */
+	fd=open (filename, O_RDWR, 0600);
+	if(fd==-1 && errno==ENOENT) {
+		/* OK, its up to us to create it.  O_EXCL to avoid a
+		 * race condition where two processes can
+		 * simultaneously try and create the file
+		 */
+		fd=open (filename, O_CREAT|O_EXCL|O_RDWR, 0600);
+		if(fd==-1 && errno==EEXIST) {
+			/* It's possible that the file was created in
+			 * between finding it didn't exist, and trying
+			 * to create it.  Just try opening it again
+			 */
+			goto try_again;
+		} else if (fd==-1) {
+			g_critical (G_GNUC_PRETTY_FUNCTION
+				    ": shared file [%s] open error: %s",
+				    filename, g_strerror (errno));
+			return(-1);
+		} else {
+			/* We created the file, so we need to expand
+			 * the file and inform the caller so it can
+			 * fork the handle daemon too.
+			 *
+			 * (wanted_size-1, because we're about to
+			 * write the other byte to actually expand the
+			 * file.)
+			 */
+			if(lseek (fd, wanted_size-1, SEEK_SET)==-1) {
+				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] lseek error: %s", filename, g_strerror (errno));
+				close (fd);
+				unlink (filename);
+				return(-1);
+			}
+			
+			if(write (fd, "", 1)==-1) {
+				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] write error: %s", filename, g_strerror (errno));
+				close (fd);
+				unlink (filename);
+				return(-1);
+			}
+			
+			if(created) {
+				*created=TRUE;
+			}
+
+			/* The contents of the file is set to all
+			 * zero, because it is opened up with lseek,
+			 * so we don't need to do any more
+			 * initialisation here
+			 */
+		}
+	} else if(fd==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+			    ": shared file [%s] open error: %s", filename,
+			    g_strerror (errno));
+		return(-1);
+	}
+	
+	/* From now on, we need to delete the file before exiting on
+	 * error if we created it (ie, if *created==TRUE)
+	 */
+
+	/* Use stat to find the file size (instead of hard coding it)
+	 * because we can expand the file later if needed (for more
+	 * handles or scratch space.)
+	 */
+	if(fstat (fd, &statbuf)==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION ": fstat error: %s",
+			    g_strerror (errno));
+		if(*created==TRUE) {
+			unlink (filename);
+		}
+		close (fd);
+		return(-1);
+	}
+
+	if(statbuf.st_size < wanted_size) {
+#ifdef HAVE_LARGE_FILE_SUPPORT
+		/* Keep gcc quiet... */
+		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %lld, need %d bytes)", filename, statbuf.st_size, wanted_size);
+#else
+		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %ld, need %d bytes)", filename, statbuf.st_size, wanted_size);
+#endif
+		if(*created==TRUE) {
+			unlink (filename);
+		}
+		close (fd);
+		return(-1);
+	}
+	
+	return(fd);
+}
+
+gpointer _wapi_shm_file_map (_wapi_shm_t type, guint32 segment,
+			     gboolean *created)
+{
+	gpointer shm_seg;
+	int fd;
+	struct stat statbuf;
+	guchar *filename=_wapi_shm_file (type, segment);
+	
+	fd=_wapi_shm_file_open (filename, type, created);
+	if(fd==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+			    ": shared file [%s] open error", filename);
+		return(NULL);
+	}
+	
+	if(fstat (fd, &statbuf)==-1) {
+		g_critical (G_GNUC_PRETTY_FUNCTION ": fstat error: %s",
+			    g_strerror (errno));
+		close (fd);
+		return(NULL);
+	}
+
+	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
+		      fd, 0);
+	if(shm_seg==MAP_FAILED) {
+		g_critical (G_GNUC_PRETTY_FUNCTION ": mmap error: %s",
+			    g_strerror (errno));
+		close (fd);
+		return(NULL);
+	}
+		
+	close (fd);
+	return(shm_seg);
 }
 
 /*
@@ -102,120 +313,34 @@ static guchar *shared_file (void)
  * forked into existence. Returns the memory area the file was mmapped
  * to.
  */
-gpointer _wapi_shm_attach (gboolean *success)
+gboolean _wapi_shm_attach (struct _WapiHandleShared_list **data,
+			   struct _WapiHandleScratch **scratch)
 {
-	gpointer shm_seg;
-	int fd;
-	gboolean fork_daemon=FALSE;
-	struct stat statbuf;
-	struct _WapiHandleShared_list *data;
+	gboolean data_created=FALSE, scratch_created=FALSE;
 	int tries;
-	int wanted_size=sizeof(struct _WapiHandleShared_list) +
-		_WAPI_SHM_SCRATCH_SIZE;
-	
-	*success=FALSE;
 
-try_again:
-	/* No O_CREAT yet, because we need to initialise the file if
-	 * we have to create it.
-	 */
-	fd=open (shared_file (), O_RDWR, 0600);
-	if(fd==-1 && errno==ENOENT) {
-		/* OK, its up to us to create it.  O_EXCL to avoid a
-		 * race condition where two processes can
-		 * simultaneously try and create the file
-		 */
-		fd=open (shared_file (), O_CREAT|O_EXCL|O_RDWR, 0600);
-		if(fd==-1 && errno==EEXIST) {
-			/* It's possible that the file was created in
-			 * between finding it didn't exist, and trying
-			 * to create it.  Just try opening it again
-			 */
-			goto try_again;
-		} else if (fd==-1) {
-			g_critical (G_GNUC_PRETTY_FUNCTION
-				    ": shared file [%s] open error: %s",
-				    shared_file (), g_strerror (errno));
-			return(NULL);
-		} else {
-			/* We created the file, so we need to expand
-			 * the file and fork the handle daemon too
-			 */
-			if(lseek (fd, wanted_size, SEEK_SET)==-1) {
-				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] lseek error: %s", shared_file (), g_strerror (errno));
-				_wapi_shm_destroy ();
-				return(NULL);
-			}
-			
-			if(write (fd, "", 1)==-1) {
-				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] write error: %s", shared_file (), g_strerror (errno));
-				_wapi_shm_destroy ();
-				return(NULL);
-			}
-			
-			fork_daemon=TRUE;
-
-			/* The contents of the file is set to all
-			 * zero, because it is opened up with lseek,
-			 * so we don't need to do any more
-			 * initialisation here
-			 */
-		}
-	} else if(fd==-1) {
-		g_critical (G_GNUC_PRETTY_FUNCTION
-			    ": shared file [%s] open error: %s",
-			    shared_file (), g_strerror (errno));
-		return(NULL);
-	} else {
-		/* We dont need to fork the handle daemon */
+	*data=_wapi_shm_file_map (WAPI_SHM_DATA, 0, &data_created);
+	if(*data==NULL) {
+		return(FALSE);
 	}
 	
-	/* From now on, we need to delete the file before exiting on
-	 * error if we created it (ie, if fork_daemon==TRUE)
-	 */
-
-	/* Use stat to find the file size (instead of hard coding it)
-	 * so that we can expand the file later if needed (for more
-	 * handles or scratch space, though that will require a tweak
-	 * to the file format to store the count).
-	 */
-	if(fstat (fd, &statbuf)==-1) {
-		g_critical (G_GNUC_PRETTY_FUNCTION ": fstat error: %s",
-			    g_strerror (errno));
-		if(fork_daemon==TRUE) {
+	*scratch=_wapi_shm_file_map (WAPI_SHM_SCRATCH, 0, &scratch_created);
+	if(*scratch==NULL) {
+		if(data_created) {
 			_wapi_shm_destroy ();
 		}
-		return(NULL);
+		return(FALSE);
 	}
-
-	if(statbuf.st_size < wanted_size) {
-#ifdef HAVE_LARGE_FILE_SUPPORT
-		/* Keep gcc quiet... */
-		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %lld, need %d bytes)", shared_file (), statbuf.st_size, wanted_size);
+	
+	if(data_created==TRUE) {
+#ifdef VALGRINDING
+		/* _wapi_daemon_main() does not return */
+		_wapi_daemon_main (*data, *scratch);
+			
+		/* But just in case... */
+		(*data)->daemon_running=DAEMON_DIED_AT_STARTUP;
+		exit (-1);
 #else
-		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %ld, need %d bytes)", shared_file (), statbuf.st_size, wanted_size);
-#endif
-		if(fork_daemon==TRUE) {
-			_wapi_shm_destroy ();
-		}
-		return(NULL);
-	}
-	
-	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
-		      fd, 0);
-	if(shm_seg==MAP_FAILED) {
-		g_critical (G_GNUC_PRETTY_FUNCTION ": mmap error: %s",
-			    g_strerror (errno));
-		if(fork_daemon==TRUE) {
-			_wapi_shm_destroy ();
-		}
-		return(NULL);
-	}
-	close (fd);
-		
-	data=shm_seg;
-
-	if(fork_daemon==TRUE) {
 		pid_t pid;
 			
 		pid=fork ();
@@ -223,17 +348,14 @@ try_again:
 			g_critical (G_GNUC_PRETTY_FUNCTION ": fork error: %s",
 				    strerror (errno));
 			_wapi_shm_destroy ();
-			return(NULL);
+			return(FALSE);
 		} else if (pid==0) {
 			int i;
 			
 			/* child */
 			setsid ();
 			
-			/* FIXME: Clean up memory.  We can delete all
-			 * the managed data
-			 */
-			/* FIXME2: Set process title to something
+			/* FIXME: Set process title to something
 			 * informative
 			 */
 
@@ -245,35 +367,36 @@ try_again:
 			}
 			
 			/* _wapi_daemon_main() does not return */
-			_wapi_daemon_main (data);
+			_wapi_daemon_main (*data, *scratch);
 			
 			/* But just in case... */
-			data->daemon_running=DAEMON_DIED_AT_STARTUP;
+			(*data)->daemon_running=DAEMON_DIED_AT_STARTUP;
 			exit (-1);
 		}
 		/* parent carries on */
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": Daemon pid %d", pid);
 #endif
+#endif /* !VALGRINDING */
 	} else {
 		/* Do some sanity checking on the shared memory we
 		 * attached
 		 */
-		if(!(data->daemon_running==DAEMON_STARTING || 
-		     data->daemon_running==DAEMON_RUNNING ||
-		     data->daemon_running==DAEMON_DIED_AT_STARTUP) ||
+		if(!((*data)->daemon_running==DAEMON_STARTING || 
+		     (*data)->daemon_running==DAEMON_RUNNING ||
+		     (*data)->daemon_running==DAEMON_DIED_AT_STARTUP) ||
 #ifdef NEED_LINK_UNLINK
-		   (strncmp (data->daemon, "/tmp/mono-handle-daemon-",
+		   (strncmp ((*data)->daemon, "/tmp/mono-handle-daemon-",
 			     24)!=0)) {
 #else
-		   (strncmp (data->daemon+1, "mono-handle-daemon-", 19)!=0)) {
+		   (strncmp ((*data)->daemon+1, "mono-handle-daemon-", 19)!=0)) {
 #endif
 			g_warning ("Shared memory sanity check failed.");
-			return(NULL);
+			return(FALSE);
 		}
 	}
 		
-	for(tries=0; data->daemon_running==DAEMON_STARTING && tries < 100;
+	for(tries=0; (*data)->daemon_running==DAEMON_STARTING && tries < 100;
 	    tries++) {
 		/* wait for the daemon to sort itself out.  To be
 		 * completely safe, we should have a timeout before
@@ -286,39 +409,42 @@ try_again:
 			
 		nanosleep (&sleepytime, NULL);
 	}
-	if(tries==100 && data->daemon_running==DAEMON_STARTING) {
+	if(tries==100 && (*data)->daemon_running==DAEMON_STARTING) {
 		/* Daemon didnt get going */
-		if(fork_daemon==TRUE) {
+		if(data_created==TRUE) {
 			_wapi_shm_destroy ();
 		}
 		g_warning ("The handle daemon didnt start up properly");
-		return(NULL);
+		return(FALSE);
 	}
 	
-	if(data->daemon_running==DAEMON_DIED_AT_STARTUP) {
+	if((*data)->daemon_running==DAEMON_DIED_AT_STARTUP) {
 		/* Oh dear, the daemon had an error starting up */
-		if(fork_daemon==TRUE) {
+		if(data_created==TRUE) {
 			_wapi_shm_destroy ();
 		}
 		g_warning ("Handle daemon failed to start");
-		return(NULL);
+		return(FALSE);
 	}
 		
 	/* From now on, it's up to the daemon to delete the shared
 	 * memory segment
 	 */
 	
-	*success=TRUE;
-	return(shm_seg);
+	return(TRUE);
 }
 
 void _wapi_shm_destroy (void)
 {
 #ifndef DISABLE_SHARED_HANDLES
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": unlinking %s", shared_file ());
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlinking shared data");
 #endif
-	unlink (shared_file ());
+	/* Only delete the first segments.  The daemon will destroy
+	 * any others when it exits
+	 */
+	unlink (_wapi_shm_file (WAPI_SHM_DATA, 0));
+	unlink (_wapi_shm_file (WAPI_SHM_SCRATCH, 0));
 #endif /* DISABLE_SHARED_HANDLES */
 }
 
