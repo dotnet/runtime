@@ -708,6 +708,22 @@ mono_compile_method (MonoMethod *method)
 			ip += near_jump ? 1: 4;		
 			break;
 		}
+		case CEE_BNE_UN:
+		case CEE_BNE_UN_S: {
+			int near_jump = *ip == CEE_BNE_UN_S;
+			++ip;
+			sp -= 2;
+			t1 = ctree_new (MB_TERM_BNE_UN, 0, sp [0], sp [1]);
+			if (near_jump)
+				t1->data.i = cli_addr + 2 + (signed char) *ip;
+			else 
+				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
+
+			t1->cli_addr = sp [0]->cli_addr;
+			ADD_TREE (t1);
+			ip += near_jump ? 1: 4;		
+			break;
+		}
 		case CEE_BEQ:
 		case CEE_BEQ_S: {
 			int near_jump = *ip == CEE_BEQ_S;

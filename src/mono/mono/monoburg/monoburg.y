@@ -216,7 +216,7 @@ yylex (void)
       while ((c = *next++) != '"' && c)
 	buf [i++] = c;
       
-      buf [--i] = '\0';
+      buf [i] = '\0';
       yylval.text = strdup (buf);
 
       return STRING;

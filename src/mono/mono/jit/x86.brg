@@ -51,6 +51,21 @@ gboolean same_tree (MBTree *t1, MBTree *t2);
 gint64 mono_llmult (gint64 a, gint64 b);
 gint64 mono_lldiv  (gint64 a, gint64 b);
 
+#define MB_OPT_LEVEL 1
+
+#if MB_OPT_LEVEL == 0
+#define MB_USE_OPT1(c) 65535
+#define MB_USE_OPT2(c) 65535
+#endif
+#if MB_OPT_LEVEL == 1
+#define MB_USE_OPT1(c) c
+#define MB_USE_OPT2(c) 65535
+#endif
+#if MB_OPT_LEVEL >= 2
+#define MB_USE_OPT1(c) c
+#define MB_USE_OPT2(c) c
+#endif
+
 %%
 
 #
@@ -61,7 +76,7 @@ gint64 mono_lldiv  (gint64 a, gint64 b);
 %term CONST_I4 CONST_R8
 %term LDLOC LDARG STLOC BR RET RETV ARG CALL
 %term ADD SUB MUL DIV
-%term BLT BEQ BGE BRTRUE BRFALSE
+%term BLT BEQ BGE BRTRUE BRFALSE BNE_UN
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8
 #
 # we start at stmt
@@ -90,6 +105,10 @@ reg: CONV_I2 (reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	x86_alu_reg_imm (s->code, X86_AND, tree->reg1, 0xffff);
+}
+
+reg: CONST_I4 1 {
+	x86_mov_reg_imm (s->code, tree->reg1, tree->data.i);
 }
 
 # do nothing
@@ -186,7 +205,7 @@ reg: DIV (reg, reg) {
 		  tree->reg2 == X86_EDX);
 }
 
-reg: ADD (reg, CONST_I4) {
+reg: ADD (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, tree->right->data.i);
@@ -198,7 +217,7 @@ reg: ADD (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
 }
 
-reg: SUB (reg, CONST_I4) {
+reg: SUB (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	x86_alu_reg_imm (s->code, X86_SUB, tree->reg1, tree->right->data.i);
@@ -210,7 +229,7 @@ reg: SUB (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->reg1, tree->right->reg1);
 }
 
-stmt: STLOC (CONST_I4) {
+stmt: STLOC (CONST_I4) "MB_USE_OPT1(0)" {
 	x86_mov_membase_imm (s->code, X86_EBP, tree->data.i,
 			     tree->left->data.i, 4);
 }
@@ -250,7 +269,17 @@ stmt: BR {
 	x86_jump32 (s->code, tree->data.i - 5); 
 }
 
-stmt: BLT (reg, CONST_I4) {
+stmt: BLT (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LT, tree->data.i - offset, TRUE); 
+}
+
+stmt: BLT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	guint8 *start = s->code;
 	gint32 offset;
 
@@ -260,7 +289,7 @@ stmt: BLT (reg, CONST_I4) {
 	x86_branch32 (s->code, X86_CC_LT, tree->data.i - offset, TRUE); 
 }
 
-stmt: BEQ (reg, CONST_I4) {
+stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	guint8 *start = s->code;
 	gint32 offset;
 
@@ -270,7 +299,47 @@ stmt: BEQ (reg, CONST_I4) {
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
 }
 
-stmt: BGE (reg, CONST_I4) {
+stmt: BEQ (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
+}
+
+stmt: BNE_UN (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, FALSE);
+}
+
+stmt: BNE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, FALSE);
+}
+
+stmt: BGE (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GE, tree->data.i - offset, TRUE);
+}
+
+stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	guint8 *start = s->code;
 	gint32 offset;
 
@@ -317,12 +386,12 @@ stmt: RET {
 	} 
 }
 
-stmt: ARG (CONST_I4) {
-	x86_push_imm (s->code, tree->left->data.i);
+stmt: ARG (reg) 1 {
+	x86_push_reg (s->code, tree->left->reg1);
 }
 
-stmt: ARG (reg) {
-	x86_push_reg (s->code, tree->left->reg1);
+stmt: ARG (CONST_I4) "MB_USE_OPT1(0)" {
+	x86_push_imm (s->code, tree->left->data.i);
 }
 
 reg: CALL {
@@ -613,7 +682,7 @@ reg: ADD (locaddr, reg) {
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4 ||
 		tree->left->type == MONO_TYPE_U4);
-	return 0;
+	return MB_USE_OPT2 (0);
 }
 
 reg: ADD (reg, locaddr) {
@@ -624,7 +693,7 @@ reg: ADD (reg, locaddr) {
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4 ||
 		tree->right->type == MONO_TYPE_U4);
-	return 0;
+	return MB_USE_OPT2 (0);
 }
 
 reg: MUL (locaddr, reg) {
@@ -634,7 +703,7 @@ reg: MUL (locaddr, reg) {
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4 ||
 		tree->left->type == MONO_TYPE_U4);
-	return 0;
+	return MB_USE_OPT2 (0);
 }
 
 stmt: BEQ (locaddr, CONST_I4) {
@@ -648,7 +717,7 @@ stmt: BEQ (locaddr, CONST_I4) {
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4 ||
 		tree->left->type == MONO_TYPE_U4);
-	return 0;
+	return MB_USE_OPT2 (0);
 }
 
 stmt: BGE (locaddr, CONST_I4) {
@@ -663,7 +732,7 @@ stmt: BGE (locaddr, CONST_I4) {
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4 ||
 		tree->left->type == MONO_TYPE_U4);
-	return 0;
+	return MB_USE_OPT2 (0);
 }
 
 stmt: STLOC (ADD (LDLOC, CONST_I4)) {
@@ -673,10 +742,10 @@ stmt: STLOC (ADD (LDLOC, CONST_I4)) {
 	MBCOND (tree->type == MONO_TYPE_I4 &&
 		tree->left->left->type == MONO_TYPE_I4 &&
 		tree->data.i == tree->left->left->data.i);
-	return 0;
+	return MB_USE_OPT2 (0);
 }
 
-stmt: ARG (CONV_I8 (CONST_I4)) {
+stmt: ARG (CONV_I8 (CONST_I4)) "MB_USE_OPT2 (0)" {
 	x86_push_imm (s->code, tree->left->left->data.i);
 
 	if (tree->left->data.i >= 0)
