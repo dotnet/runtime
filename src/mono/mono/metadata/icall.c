@@ -1091,6 +1091,8 @@ handle_enum:
 			}
 		}
 		return TYPECODE_OBJECT;
+	case MONO_TYPE_GENERICINST:
+		return TYPECODE_OBJECT;
 	default:
 		g_error ("type 0x%02x not handled in GetTypeCode()", t);
 	}
@@ -2395,7 +2397,7 @@ handle_parent:
 		}
 		g_free (utf8_name);
 		
-		return mono_field_get_object (domain, klass, field);
+		return mono_field_get_object (domain, startklass, field);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
