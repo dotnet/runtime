@@ -4583,9 +4583,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 1;
 			break;
 		case CEE_BOX: {
-			MonoInst *iargs [2];
-			MonoInst *load, *vtoffset, *add, *val, *vstore;
-			int temp;
+			MonoInst *val;
 			CHECK_STACK (1);
 			--sp;
 			val = *sp;
@@ -8142,7 +8140,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	
 	thread = mono_thread_current ();
 
-	thread->abort_exc = mono_get_exception_thread_abort ();        
+	thread->abort_exc = mono_get_exception_thread_abort ();
 
 	mono_arch_handle_exception (ctx, thread->abort_exc, FALSE);
 }
