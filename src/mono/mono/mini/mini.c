@@ -5526,6 +5526,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
 				ins->inst_left = *sp;
 				ins->cil_code = ip;
+				ins->type = STACK_MP;
 
 				cfg->flags |= MONO_CFG_HAS_ALLOCA;
 				if (header->init_locals)

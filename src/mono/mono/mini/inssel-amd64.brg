@@ -117,6 +117,7 @@ reg: OP_LOCALLOC (OP_ICONST) {
 	if (tree->flags & MONO_INST_INIT) {
 		/* microcoded in mini-x86.c */
 		tree->sreg1 = mono_regstate_next_int (s->rs);
+		tree->dreg = state->reg1;
 		MONO_EMIT_NEW_ICONST (s, tree->sreg1, state->left->tree->inst_c0);
 		mono_bblock_add_inst (s->cbb, tree);
 	} else {
@@ -570,7 +571,13 @@ stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_I2 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_I1 (OP_REGVAR, OP_ICONST),
 stmt: CEE_STIND_REF (OP_REGVAR, OP_ICONST),
-stmt: CEE_STIND_I (OP_REGVAR, OP_ICONST) {
+stmt: CEE_STIND_I (OP_REGVAR, OP_ICONST),
+stmt: CEE_STIND_I8 (OP_REGVAR, OP_I8CONST),
+stmt: CEE_STIND_I4 (OP_REGVAR, OP_I8CONST),
+stmt: CEE_STIND_I2 (OP_REGVAR, OP_I8CONST),
+stmt: CEE_STIND_I1 (OP_REGVAR, OP_I8CONST),
+stmt: CEE_STIND_REF (OP_REGVAR, OP_I8CONST),
+stmt: CEE_STIND_I (OP_REGVAR, OP_I8CONST) {
 	int r = state->left->tree->dreg;
 	MONO_EMIT_BIALU (s, tree, CEE_XOR, r, r, r);
 } cost {
