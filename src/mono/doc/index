@@ -23,6 +23,48 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Nov 14, 2001
+
+	Paolo today got the Mono C# compiler running <a
+	href="http://mail.ximian.com/archives/public/mono-list/2001-November/001941.html">on
+	Linux</a>.  It compiles a sample program and then the sample
+	program is executed.
+
+	Mutator unary operators (++ and --) in the compiler are fully
+	functional, they used to only work on variables, and now they
+	are complete.
+
+	To sum things up: The Mono C# compiler is written in C# and
+	uses the .NET classes to get its work done.  To make this work
+	on Linux work has to happen in various fronts:
+<ul>
+		* The C# compiler is being worked on and can compile
+		  many programs now (our test suite at this point is 
+		  made up of 40 tests).
+
+		* The class libraries need to be mature enough to support
+		  the compiler, particularly System.Reflection.Emit (which is 
+		  what Paolo has been working on lately). 
+
+	  	  The compiler currently requires 103 classes from the
+		  .NET runtime (you can get the list by running: <b>monodis --typeref mcs.exe</b>
+
+		* The interpreter should be mature enough to run the actual
+		  compiler byte codes and the corlib bytecodes.
+</ul>
+
+	At the same time, Dietmar is working on the JIT engine which will
+	replace our interpreter in production.
+
+** Nov 12, 2001
+
+	Dietmar got value types working on the JIT engine.  Sean has
+	got assembly loading in the runtime (required for NUnit).
+
+	More progress on enumerations and attributes from Ravi.
+
+	Nick keeps working on improving our class libraries. 
+
 ** Nov 8, 2001
 
 	Enumerations, array access and attributes for the C# compiler are into the CVS now.
@@ -104,8 +146,8 @@
 	properties.  <a href="http://www.nat.org/evolution.php3">11
 	days</a> until Evolution 1.0 ships.  
 
-	Ximian users around the world <a
-	href="http://www.bez.it/IMAGES/nora.jpg">rejoice</a> with
+	Ximian users around the world <!--a
+	href="http://www.bez.it/IMAGES/nora.jpg"-->rejoice<!--/a--> with
 	recent C# compiler progress.
 
 ** Oct 17, 2001
