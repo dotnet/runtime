@@ -2,6 +2,46 @@
 #define __MONO_MINI_X86_H__
 
 #include <mono/arch/x86/x86-codegen.h>
+#ifdef PLATFORM_WIN32
+#include <windows.h>
+/* use SIG* defines if possible */
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+/* sigcontext surrogate */
+struct sigcontext {
+	unsigned int eax;
+	unsigned int ebx;
+	unsigned int ecx;
+	unsigned int edx;
+	unsigned int ebp;
+	unsigned int esp;
+	unsigned int esi;
+	unsigned int edi;
+	unsigned int eip;
+};
+
+typedef void (* MonoW32ExceptionHandler) (int);
+void win32_seh_init(void);
+void win32_seh_cleanup(void);
+void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler);
+
+#ifndef SIGFPE
+#define SIGFPE 4
+#endif
+
+#ifndef SIGILL
+#define SIGILL 8
+#endif
+
+#ifndef	SIGSEGV
+#define	SIGSEGV 11
+#endif
+
+LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
+
+#endif /* PLATFORM_WIN32 */
 
 #define MONO_MAX_IREGS 8
 #define MONO_MAX_FREGS 6
@@ -72,7 +112,6 @@ typedef struct sigcontext MonoContext;
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->SC_ESP))
 
 #ifndef PLATFORM_WIN32
-
 #ifdef HAVE_WORKING_SIGALTSTACK
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 /* NetBSD doesn't define SA_STACK */
@@ -86,3 +125,4 @@ typedef struct sigcontext MonoContext;
 #define MONO_ARCH_BIGMUL_INTRINS 1
 
 #endif /* __MONO_MINI_X86_H__ */  
+
