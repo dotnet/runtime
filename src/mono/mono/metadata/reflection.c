@@ -2472,6 +2472,10 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	guint32 token, pclass, parent, sig;
 	gchar *name;
 
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, fb));
+	if (token)
+		return token;
+
 	klass = mono_class_from_mono_type (fb->typeb->type);
 	name = mono_string_to_utf8 (fb->name);
 
@@ -2495,7 +2499,7 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
-
+	g_hash_table_insert (assembly->handleref, fb, GUINT_TO_POINTER(token));
 	return token;
 }
 
