@@ -89,11 +89,11 @@ static gint32 convert_family(MonoAddressFamily mono_family)
 		family=AF_INET;
 		break;
 		
-#ifdef AF_IPX
 	case AddressFamily_Ipx:
+#ifdef AF_IPX
 		family=AF_IPX;
-		break;
 #endif
+		break;
 		
 	case AddressFamily_Sna:
 		family=AF_SNA;
@@ -107,16 +107,16 @@ static gint32 convert_family(MonoAddressFamily mono_family)
 		family=AF_APPLETALK;
 		break;
 		
-#ifdef AF_INET6
 	case AddressFamily_InterNetworkV6:
+#ifdef AF_INET6
 		family=AF_INET6;
-		break;
 #endif
-#ifdef AF_IRDA	
+		break;
 	case AddressFamily_Irda:
+#ifdef AF_IRDA	
 		family=AF_IRDA;
-		break;
 #endif
+		break;
 	default:
 		g_warning("System.Net.Sockets.AddressFamily has unknown value 0x%x", mono_family);
 	}
