@@ -5115,7 +5115,7 @@ mono_ldintftn (MonoObject *this, int slot)
 		is_proxy = TRUE;
 	}
 
-	g_assert (slot < class->max_interface_id);
+	g_assert (slot <= class->max_interface_id);
 
 	slot = class->interface_offsets [slot];
 
