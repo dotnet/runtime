@@ -1,7 +1,8 @@
 2004-03-20  Zoltan Varga  <vargaz@freemail.hu>
 
+	* configure.in: Disable sigaltstack test for now since it can hang.
+	
 	* configure.in: Add test for working sigaltstack.
-
 2004-03-16  Duncan Mak  <duncan@ximian.com>
 
 	* runtime/Makefile.am

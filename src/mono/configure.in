@@ -650,6 +650,9 @@ if test x$platform_win32 = xno; then
 			pthread_attr_t attr;
 			char *ptr = NULL;
 
+			/* Disabled for now since it can hang */
+			exit (1);
+
 			sa.sa_sigaction = sigsegv_signal_handler;
 			sigemptyset (&sa.sa_mask);
 			sa.sa_flags = SA_SIGINFO | SA_STACK;
