@@ -180,6 +180,19 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	return regs;
 }
 
+/*
+ * mono_arch_regalloc_cost:
+ *
+ *  Return the cost, in number of memory references, of the action of 
+ * allocating the variable VMV into a register during global register
+ * allocation.
+ */
+guint32
+mono_arch_regalloc_cost (MonoMethodVar *vmv)
+{
+	return 0;
+}
+
 #ifdef __GNUC__
 #define flushi(addr)    __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
 #else /* assume Sun's compiler */
