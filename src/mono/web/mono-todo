@@ -91,7 +91,7 @@ Happy hacking!
 		by the MS runtime.
 		<td>Medium-hard (thesis subject)
 		<td>2-4 months
-		<td>not assigned
+		<td><a href="http://bugzilla.ximian.com/show_bug.cgi?id=52605">52605</a>
 	</tr>
 
 	<tr>
@@ -126,13 +126,13 @@ Happy hacking!
 		support the generics requirements.
 		<td>Medium-hard
 		<td>2-3 months
-		<td>not assigned
+		<td>lupus and Martin
 	</tr>
 
 	<tr>
 		<td>JIT (mono/mini/)
 		<td>Port the JIT to additional architectures.
-		Currently ports are in the works for ppc, arm, sparc, s390. None of the ports
+		Currently ports are in the works for mips, arm, sparc, s390. None of the ports
 		are as feature-complete as the x86 one, yet, so help is needed in getting them
 		up to speed. Ports to more architectures are welcome as well.
 		<td>Medium-hard
@@ -162,7 +162,7 @@ Happy hacking!
 		stack walking to collect security info.
 		<td>Medium-hard (thesis subject)
 		<td>4-5 months
-		<td>not assigned
+		<td><a href="http://bugzilla.ximian.com/show_bug.cgi?id=52606">52606</a>
 	</tr>
 
 	<tr>
