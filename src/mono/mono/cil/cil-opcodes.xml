@@ -303,5 +303,6 @@
 <opcode name="mono_ccastclass" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x08" flow="next" />
 <opcode name="mono_save_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x09" flow="next" />
 <opcode name="mono_restore_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0A" flow="next" />
-<opcode name="mono_classconst" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0B" flow="next" />
+<opcode name="mono_classconst" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0B" flow="next" />
+<opcode name="mono_not_taken" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0C" flow="next" />
 </opdesc>
