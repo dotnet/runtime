@@ -57,6 +57,11 @@ static void startup (void)
 	sa.sa_flags=0;
 	sigaction (SIGINT, &sa, NULL);
 	sigaction (SIGTERM, &sa, NULL);
+
+#ifndef HAVE_MSG_NOSIGNAL
+	sa.sa_handler=SIG_IGN;
+	sigaction (SIGPIPE, &sa, NULL);
+#endif
 	
 	_wapi_shared_data=_wapi_shm_attach (TRUE, &success, &shm_id);
 	if(success==FALSE) {

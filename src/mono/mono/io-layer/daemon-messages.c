@@ -79,16 +79,11 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 void _wapi_daemon_request (int fd, WapiHandleRequest *req)
 {
 	int ret;
-#ifndef HAVE_MSG_NOSIGNAL
-	void (*old_sigpipe)(int);
-#endif
 	
 #ifdef HAVE_MSG_NOSIGNAL
 	ret=recv (fd, req, sizeof(WapiHandleRequest), MSG_NOSIGNAL);
 #else
-	old_sigpipe = signal (SIGPIPE, SIG_IGN);
 	ret=recv (fd, req, sizeof(WapiHandleRequest), 0);
-	signal (SIGPIPE, old_sigpipe);
 #endif
 	if(ret==-1) {
 #ifdef DEBUG
@@ -103,16 +98,11 @@ void _wapi_daemon_request (int fd, WapiHandleRequest *req)
 void _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 {
 	int ret;
-#ifndef HAVE_MSG_NOSIGNAL
-	void (*old_sigpipe)(int);
-#endif
 	
 #ifdef HAVE_MSG_NOSIGNAL
 	ret=send (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
 #else
-	old_sigpipe = signal (SIGPIPE, SIG_IGN);
 	ret=send (fd, resp, sizeof(WapiHandleResponse), 0);
-	signal (SIGPIPE, old_sigpipe);
 #endif
 	if(ret==-1) {
 #ifdef DEBUG
