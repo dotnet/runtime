@@ -517,7 +517,7 @@ class_compute_field_layout (MonoClass *class)
 			mono_metadata_field_info (m, idx, NULL, &rva, NULL);
 			if (!rva)
 				g_warning ("field %s in %s should have RVA data, but hasn't", field->name, class->name);
-			field->data = mono_cli_rva_map (class->image->image_info, rva);
+			field->data = mono_image_rva_map (class->image, rva);
 		}
 
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC)) {

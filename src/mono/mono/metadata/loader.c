@@ -804,7 +804,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		MonoGenericParam *gen_params = NULL;
 
 		/* if this is a methodref from another module/assembly, this fails */
-		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
+		loc = mono_image_rva_map (image, cols [0]);
 
 		if (result->signature->generic_param_count) {
 			MonoMethodSignature *sig = result->signature;

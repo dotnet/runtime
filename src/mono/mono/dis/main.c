@@ -473,8 +473,7 @@ static void
 dis_code (MonoImage *m, guint32 rva)
 {
 	MonoMethodHeader *mh;
-	MonoCLIImageInfo *ii = m->image_info;
-	const char *ptr = mono_cli_rva_map (ii, rva);
+	const char *ptr = mono_image_rva_map (m, rva);
 	const char *loc;
 	guint32 entry_point;
 
@@ -1105,7 +1104,7 @@ dis_data (MonoImage *m)
 
 	for (i = 0; i < t->rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_RVA_SIZE);
-		rva = mono_cli_rva_map (m->image_info, cols [MONO_FIELD_RVA_RVA]);
+		rva = mono_image_rva_map (m, cols [MONO_FIELD_RVA_RVA]);
 		sig = mono_metadata_blob_heap (m, mono_metadata_decode_row_col (ft, cols [MONO_FIELD_RVA_FIELD] -1, MONO_FIELD_SIGNATURE));
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */

@@ -53,8 +53,9 @@ mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
 }
 
 char *
-mono_cli_rva_map (MonoCLIImageInfo *iinfo, guint32 addr)
+mono_image_rva_map (MonoImage *image, guint32 addr)
 {
+	MonoCLIImageInfo *iinfo = image->image_info;
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
@@ -62,6 +63,10 @@ mono_cli_rva_map (MonoCLIImageInfo *iinfo, guint32 addr)
 	for (i = 0; i < top; i++){
 		if ((addr >= tables->st_virtual_address) &&
 		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
+			if (!iinfo->cli_sections [i]) {
+				if (!mono_image_ensure_section_idx (image, i))
+					return NULL;
+			}
 			return (char*)iinfo->cli_sections [i] +
 				(addr - tables->st_virtual_address);
 		}
@@ -189,10 +194,6 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo, guint32 offset)
 		/* consistency checks here */
 	}
 
-	for (i = 0; i < top; i++)
-		if (!mono_image_ensure_section_idx (image, i))
-			return FALSE;
-	
 	return TRUE;
 }
 
@@ -1134,7 +1135,7 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 		return(NULL);
 	}
 
-	resource_dir=(MonoPEResourceDir *)mono_cli_rva_map (info, rsrc->rva);
+	resource_dir=(MonoPEResourceDir *)mono_image_rva_map (image, rsrc->rva);
 	if(resource_dir==NULL) {
 		return(NULL);
 	}
@@ -1173,7 +1174,7 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 	if (!ch->ch_resources.rva || offset + 4 > ch->ch_resources.size)
 		return NULL;
 	
-	data = mono_cli_rva_map (iinfo, ch->ch_resources.rva);
+	data = mono_image_rva_map (image, ch->ch_resources.rva);
 	if (!data)
 		return NULL;
 	data += offset;
@@ -1232,7 +1233,7 @@ mono_image_get_strong_name (MonoImage *image, guint32 *size)
 
 	if (!de->size || !de->rva)
 		return NULL;
-	data = mono_cli_rva_map (iinfo, de->rva);
+	data = mono_image_rva_map (image, de->rva);
 	if (!data)
 		return NULL;
 	if (size)
@@ -1329,9 +1330,4 @@ mono_image_is_dynamic (MonoImage *image)
 	return image->dynamic;
 }
 
-char*
-mono_image_rva_map (MonoImage *image, guint32 rva)
-{
-	return mono_cli_rva_map (image->image_info, rva);
-}
 

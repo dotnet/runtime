@@ -257,6 +257,5 @@ typedef struct {
 } MonoCLIImageInfo;
 
 guint32       mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 rva);
-char         *mono_cli_rva_map       (MonoCLIImageInfo *iinfo, guint32 rva);
 
 #endif /* __MONO_CIL_COFF_H__ */
