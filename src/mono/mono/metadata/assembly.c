@@ -1128,7 +1128,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 
 	/* g_print ("loading %s\n", aname->name); */
 	/* special case corlib */
-	if (strcmp (aname->name, "mscorlib") == 0) {
+	if (strcmp (aname->name, "mscorlib") == 0 || strcmp (aname->name, "mscorlib.dll") == 0) {
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
 
