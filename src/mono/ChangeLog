@@ -1,3 +1,7 @@
+2003-05-02  Alp Toker  <alp@atoker.com>
+
+	* data/config.in: new dll mapping entry for libglade
+
 2003-05-01  Duncan Mak  <duncan@ximian.com>
 
 	* scripts/Makefile.am: 
