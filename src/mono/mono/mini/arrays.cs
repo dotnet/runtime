@@ -187,5 +187,14 @@ class Tests {
 		
 		return 0;
 	}
+
+	public static int test_0_bug_71454 () {
+		int[,] a = new int[4,4];
+		int[,] b = new int[4,4];
+		for(int i = 0; i < 4; ++i) {
+			b[0,0] = a[0,i % 4];
+		}
+		return 0;
+	}
 }
 
