@@ -65,20 +65,16 @@ static pthread_condattr_t cond_shared_attr;
 struct _WapiHandleShared_list *_wapi_shared_data=NULL;
 struct _WapiHandlePrivate_list *_wapi_private_data=NULL;
 
-int disable_shm = 0;
 static void shared_init (void)
 {
 	struct sockaddr_un shared_socket_address;
 	gboolean tried_once=FALSE;
 	int ret;
 
-	if (getenv ("MONO_ENABLE_SHM"))
-		disable_shm = 0;
-	
 attach_again:
 
 #ifndef DISABLE_SHARED_HANDLES
-	if(getenv ("MONO_DISABLE_SHM") || disable_shm)
+	if(getenv ("MONO_DISABLE_SHM"))
 #endif
 	{
 		shared=FALSE;
@@ -544,7 +540,10 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 	if(bytes==0) {
 		return(0);
 	}
-	
+
+	/* Align bytes to 32 bits (needed for sparc at least) */
+	bytes = (((bytes) + 3) & (~3));
+
 	if(shared==TRUE) {
 		WapiHandleRequest scratch;
 		WapiHandleResponse scratch_resp;
@@ -594,6 +593,17 @@ guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx)
 	memcpy (str, &storage[idx], hdr->length);
 
 	return(str);
+}
+
+gconstpointer _wapi_handle_scratch_lookup (guint32 idx)
+{
+	guchar *storage=&_wapi_shared_data->scratch_base[0];
+	
+	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
+		return(NULL);
+	}
+	
+	return(&storage[idx]);
 }
 
 /*
