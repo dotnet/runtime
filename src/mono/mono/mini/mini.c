@@ -2357,7 +2357,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define BIG_BRANCH_OFFSET 13
 
 static int
-get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header, guint real_offset, unsigned char *start, unsigned char *end)
+get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header, guint real_offset, unsigned char *start, unsigned char *end, unsigned char **pos)
 {
 	unsigned char *ip = start;
 	unsigned char *target;
@@ -2426,6 +2426,7 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 	}
 	return 0;
 unverified:
+	*pos = ip;
 	return 1;
 }
 
@@ -2460,7 +2461,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoImage *image;
 	guint32 token, ins_flag;
 	MonoClass *klass;
-	unsigned char *ip, *end, *target;
+	unsigned char *ip, *end, *target, *err_pos;
 	static double r8_0 = 0.0;
 	MonoMethodSignature *sig;
 	MonoType **param_types;
@@ -2602,8 +2603,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		link_bblock (cfg, start_bblock, bblock);
 	}
 
-	if (get_basic_blocks (cfg, bbhash, header, real_offset, ip, end))
+	if (get_basic_blocks (cfg, bbhash, header, real_offset, ip, end, &err_pos)) {
+		ip = err_pos;
 		goto unverified;
+	}
 
 	mono_debug_init_method (cfg, bblock, breakpoint_id);
 
