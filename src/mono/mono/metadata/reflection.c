@@ -3350,7 +3350,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	int32val = (guint32*)p;
 	*int32val = GUINT32_TO_LE ((strlen (meta->version) + 3) & (~3)); /* needs to be multiple of 4 */
 	p += 4;
-	memcpy (p, meta->version, GUINT32_FROM_LE (strlen (meta->version)));
+	memcpy (p, meta->version, strlen (meta->version));
 	p += GUINT32_FROM_LE (*int32val);
 	align_pointer (meta->raw_metadata, p);
 	int16val = (guint16*)p;
