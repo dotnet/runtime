@@ -789,6 +789,34 @@
         </maintainers>
     </class>
 
+    <class name="System.IAsyncResult">
+        <last-activity>Jul-21-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.WaitHandle">
+        <last-activity>Jul-21-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.IntPtr">
+        <last-activity>Jul-21-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
+        </maintainers>
+    </class>
+  
     <class name="System.IO.MemoryStream">
         <last-activity>Jul-19-2001</last-activity>
         <implementation>yes</implementation>

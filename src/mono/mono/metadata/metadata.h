@@ -290,6 +290,10 @@ typedef struct {
 	GList      *exception_handler_list;
 } MonoMetaMethodHeader;
 
+typedef struct {
+	
+} MonoTypedef;
+
 guint32     mono_metadata_parse_typedef_or_ref (metadata_t      *m,
                                                 const char      *ptr,
                                                 const char     **rptr);
