@@ -1303,6 +1303,7 @@ case "$host" in
 	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin*)
 		TARGET=POWERPC;
+		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
@@ -1314,12 +1315,14 @@ case "$host" in
 		;;
 	s390-*-linux*)
 		TARGET=S390;
+		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=s390;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		;;
 	s390x-*-linux*)
 		TARGET=S390x;
+		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=s390x;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes

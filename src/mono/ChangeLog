@@ -1,3 +1,8 @@
+2004-12-01  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
+
+	* configure.in : Add a flag for systems which pass parameters in
+	registers as well as the stack.
+
 2004-11-30  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (AC_OUTPUT): Move runtime/Makefile to the end to

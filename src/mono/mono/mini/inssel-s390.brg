@@ -470,8 +470,9 @@ stmt: OP_OUTARG_VT (reg) {
 		}
 	} else {
 		if (start_reg != STK_BASE) {
-			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE,
-					 state->left->tree->inst_offset);
+//			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE,
+//					 state->left->tree->inst_offset);
+			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE, soffset);
 		} else {
 			MONO_OUTPUT_VTS (s, size, STK_BASE, soffset, tmpr,
 					 state->left->tree->inst_offset);
@@ -481,6 +482,15 @@ stmt: OP_OUTARG_VT (reg) {
 		}
 	}
 }
+
+stmt: OP_OUTARG_VT (OP_REFANYTYPE (reg)) "0" {
+//printf("OP_OUTARG_VT (OP_REFANYTYPE (base))\n");
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->tree->sreg1, state->left->left->reg1, 
+				    G_STRUCT_OFFSET (MonoTypedRef, type));
+//	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, STK_BASE,
+//				     tree->sreg2, state->reg1);
+//	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, STK_BASE, tree->sreg2);
+}	
 
 stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
 	/* nothing to do: the value is already on the FP stack */

@@ -323,7 +323,7 @@ loadu2_membase: dest:i src1:b len:26
 loadu4_mem: dest:i len:8
 loadu4_membase: dest:i src1:b len:18
 local:
-localloc: dest:i src1:i len:40
+localloc: dest:i src1:i len:62
 long_add:
 long_add_imm:
 long_add_ovf:
@@ -418,7 +418,7 @@ op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 op_endfilter: src1:i len:12
 op_rethrow: src1:i len:8
-oparglist: src1:i len:18
+oparglist: src1:i len:20
 or: dest:i src1:i src2:i len:4 clob:1
 or_imm: dest:i src1:i len:16
 outarg: src1:i len:1

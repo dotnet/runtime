@@ -113,6 +113,8 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 
 #define S390_TRACE_STACK_SIZE (5*sizeof(gint32)+3*sizeof(gdouble))
 
+#define MAX (a, b) ((a) > (b) ? (a) : (b))
+
 /*========================= End of Defines =========================*/
 
 /*------------------------------------------------------------------*/
@@ -193,6 +195,7 @@ typedef struct {
 	guint32 stack_usage;
 	guint32 struct_ret;
 	ArgInfo ret;
+	ArgInfo sigCookie;
 	ArgInfo args [1];
 } CallInfo;
 
@@ -391,6 +394,33 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- retFitsInReg.                                     */
+/*                                                                  */
+/* Function	- Determines if a value can be returned in one or   */
+/*                two registers.                                    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static inline gboolean
+retFitsInReg(guint32 size)
+{
+	switch (size) {
+		case 0:
+		case 1:
+		case 2:
+		case 4:
+		case 8:
+			return (TRUE);
+		break;
+		default:
+			return (FALSE);
+	}
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- backStackPtr.                                     */
 /*                                                                  */
 /* Function	- Restore Stack Pointer to previous frame.          */
@@ -558,6 +588,14 @@ enum_parmtype:
 				printf("]");
 				break;
 			}
+			case MONO_TYPE_TYPEDBYREF: {
+				int i;
+				printf("[TYPEDBYREF:");
+				for (i = 0; i < size; i++)
+					printf("%02x,", *((guint8 *)curParm+i));
+				printf("]");
+				break;
+			}
 			default :
 				printf("[?? - %d], ",simpleType);
 		}
@@ -653,21 +691,14 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				else
 					curParm = sp+ainfo->offset;
 
-				switch (ainfo->vtsize) {
-					case 0:
-					case 1:
-					case 2:
-					case 4:
-					case 8:
-						decodeParm(sig->params[i], 
+				if (retFitsInReg (ainfo->vtsize)) 
+					decodeParm(sig->params[i], 
 				 	           curParm,
 					           ainfo->size);
-						break;
-					default:
-						decodeParm(sig->params[i], 
+				else
+					decodeParm(sig->params[i], 
 				 	           *((char **) curParm),
 					           ainfo->vtsize);
-					}
 				break;
 			case RegTypeStructByAddr :
 				if (ainfo->reg != STK_BASE) 
@@ -840,6 +871,16 @@ handle_enum:
 			printf ("]");
 		}
 		break;
+	case MONO_TYPE_TYPEDBYREF: {
+		guint8 *p = va_arg (ap, gpointer);
+		int j, size, align;
+		size = mono_type_size (type, &align);
+		printf ("[");
+		for (j = 0; p && j < size; j++)
+			printf ("%02x,", p [j]);
+		printf ("]");
+	}
+		break;
 	default:
 		printf ("(unknown return type %x)", 
 			method->signature->ret->type);
@@ -909,7 +950,7 @@ static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
-	switch (t->type) {
+	switch (mono_type_get_underlying_type (t)->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
@@ -1086,16 +1127,9 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-//	if (sig->ret->byref || string_ctor) {
-//		sz->code_size += 8;
-//		add_general (&gr, sz, cinfo->args+nParm, TRUE);
-//		cinfo->args[nParm].size = sizeof(gpointer);
-//		nParm++;
-//	} else {
-	{
-		simpletype = sig->ret->type;
+	simpletype = mono_type_get_underlying_type (sig->ret)->type;
 enum_retvalue:
-		switch (simpletype) {
+	switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -1125,15 +1159,16 @@ enum_retvalue:
 			cinfo->ret.reg = s390_r2;
 			sz->code_size += 4;
 			break;
-		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_VALUETYPE: {
+			MonoClass *klass = mono_class_from_mono_type (sig->ret);
 			if (sig->ret->data.klass->enumtype) {
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
 			if (sig->pinvoke)
-				size = mono_class_native_size (sig->ret->data.klass, &align);
+				size = mono_class_native_size (klass, &align);
 			else
-                        	size = mono_class_value_size (sig->ret->data.klass, &align);
+                        	size = mono_class_value_size (klass, &align);
 			cinfo->ret.reg    = s390_r2;
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -1142,12 +1177,21 @@ enum_retvalue:
 			sz->stack_size   += S390_ALIGN(size, align);
 			gr++;
                         break;
+		}
 		case MONO_TYPE_TYPEDBYREF:
+			size = sizeof (MonoTypedRef);
+			cinfo->ret.reg    = s390_r2;
+			cinfo->struct_ret = 1;
+			cinfo->ret.size   = size;
+			cinfo->ret.vtsize = size;
+			cinfo->ret.offset = sz->stack_size;
+			sz->stack_size   += S390_ALIGN(size, align);
+			gr++;
+			break;
 		case MONO_TYPE_VOID:
 			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
-		}
 	}
 
 	if (sig->hasthis) {
@@ -1163,6 +1207,16 @@ enum_retvalue:
 	/*----------------------------------------------------------*/
 
 	for (i = 0; i < sig->param_count; ++i) {
+		/*--------------------------------------------------*/
+		/* Handle vararg type calls. All args are put on    */
+		/* the stack.                                       */
+		/*--------------------------------------------------*/
+		if ((sig->call_convention == MONO_CALL_VARARG) &&
+		    (i == sig->sentinelpos)) {
+			gr = S390_LAST_ARG_REG + 1;
+			add_general (&gr, sz, &cinfo->sigCookie, TRUE);
+		}
+
 		if (sig->params [i]->byref) {
 			add_general (&gr, sz, cinfo->args+nParm, TRUE);
 			cinfo->args[nParm].size = sizeof(gpointer);
@@ -1204,15 +1258,12 @@ enum_retvalue:
 			add_general (&gr, sz, cinfo->args+nParm, TRUE);
 			nParm++;
 			break;
-		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				simpletype = sig->params [i]->data.klass->enum_basetype->type;
-				goto enum_calc_size;
-			}
+		case MONO_TYPE_VALUETYPE: {
+			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
 			if (sig->pinvoke)
-				size = mono_class_native_size (sig->params [i]->data.klass, &align);
+				size = mono_class_native_size (klass, &align);
 			else
-				size = mono_class_value_size (sig->params [i]->data.klass, &align);
+				size = mono_class_value_size (klass, &align);
 			nWords = (size + sizeof(gpointer) - 1) /
 			         sizeof(gpointer);
 
@@ -1254,6 +1305,53 @@ enum_retvalue:
 						sz->local_size += sizeof(gpointer);
 					nParm++;
 			}
+		}
+			break;
+		case MONO_TYPE_TYPEDBYREF: {
+			int size = sizeof (MonoTypedRef);
+
+			nWords = (size + sizeof(gpointer) - 1) /
+			         sizeof(gpointer);
+
+			cinfo->args[nParm].vtsize  = 0;
+			cinfo->args[nParm].size    = 0;
+			cinfo->args[nParm].offparm = sz->local_size;
+
+			switch (size) {
+				/*----------------------------------*/
+				/* On S/390, structures of size 1,  */
+				/* 2, 4, and 8 bytes are passed in  */
+				/* (a) register(s).		    */
+				/*----------------------------------*/
+				case 0:
+				case 1:
+				case 2:
+				case 4:
+					add_general(&gr, sz, cinfo->args+nParm, TRUE);
+					cinfo->args[nParm].size    = size;
+					cinfo->args[nParm].regtype = RegTypeStructByVal; 
+					nParm++;
+					sz->local_size 		  += sizeof(long);
+					break;
+				case 8:
+					add_general(&gr, sz, cinfo->args+nParm, FALSE);
+					cinfo->args[nParm].size    = sizeof(long long);
+					cinfo->args[nParm].regtype = RegTypeStructByVal; 
+					nParm++;
+					sz->local_size 		  += sizeof(long);
+					break;
+				default:
+					add_general(&gr, sz, cinfo->args+nParm, TRUE);
+					cinfo->args[nParm].size    = sizeof(int);
+					cinfo->args[nParm].regtype = RegTypeStructByAddr; 
+					cinfo->args[nParm].vtsize  = size;
+					sz->code_size  		  += 40;
+					sz->local_size 		  += size;
+					if (cinfo->args[nParm].reg == STK_BASE)
+						sz->local_size += sizeof(gpointer);
+					nParm++;
+			}
+		}
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -1358,8 +1456,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->ret->opcode = OP_REGVAR;
 		cfg->ret->inst_c0 = s390_r2;
 	} else {
-		/* FIXME: handle long and FP values */
-		switch (sig->ret->type) {
+		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -1371,12 +1468,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/*--------------------------------------------------------------*/
 	/* local vars are at a positive offset from the stack pointer 	*/
-	/* 								*/
 	/* also note that if the function uses alloca, we use s390_r11	*/
 	/* to point at the local variables.				*/
 	/* add parameter area size for called functions 		*/
 	/*--------------------------------------------------------------*/
-	offset = (cfg->param_area + S390_MINIMAL_STACK_SIZE);
+	offset		= (cfg->param_area + S390_MINIMAL_STACK_SIZE);
+	cfg->sig_cookie = 0;
 
 	if (cinfo->struct_ret) {
 		inst 		   = cfg->ret;
@@ -1385,6 +1482,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		inst->opcode 	   = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
 		offset 		  += sizeof(gpointer);
+		if ((sig->call_convention == MONO_CALL_VARARG) &&
+		    (!retFitsInReg (cinfo->ret.size)))
+			cfg->sig_cookie += cinfo->ret.size;
 	}
 
 	if (sig->hasthis) {
@@ -1402,6 +1502,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	eArg = sig->param_count + sArg;
+
+	if (sig->call_convention == MONO_CALL_VARARG)
+		cfg->sig_cookie += S390_MINIMAL_STACK_SIZE;
 
 	for (iParm = sArg; iParm < eArg; ++iParm) {
 		inst = cfg->varinfo [curinst];
@@ -1442,6 +1545,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					size		   = sizeof(long);
 				} 
 			}
+			if ((sig->call_convention == MONO_CALL_VARARG) && 
+			    (cinfo->args[iParm].regtype != RegTypeGeneral) &&
+			    (iParm < sig->sentinelpos)) 
+				cfg->sig_cookie += size;
+
 			offset += size;
 		}
 		curinst++;
@@ -1460,7 +1568,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* call functions returning structure 		    */
 		/*--------------------------------------------------*/
 		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
-			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
+			size = mono_class_native_size (mono_class_from_mono_type(inst->inst_vtype), &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
 
@@ -1526,8 +1634,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 
 	call->stack_usage = cinfo->stack_usage;
-	lParamArea        = cinfo->stack_usage - S390_MINIMAL_STACK_SIZE;
-	cfg->param_area   = MAX (cfg->param_area, lParamArea);
+	lParamArea        = MAX((cinfo->stack_usage - S390_MINIMAL_STACK_SIZE), 0);
+	cfg->param_area   = MAX (((signed) cfg->param_area), lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
 
 	if (cinfo->struct_ret)
@@ -1535,8 +1643,23 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
-		DEBUG (g_print ("Parameter %d - Register: %d Type: %d\n",
-				i+1,ainfo->reg,ainfo->regtype));
+
+		if ((sig->call_convention == MONO_CALL_VARARG) &&
+		    (i == sig->sentinelpos)) {
+			MonoInst *sigArg;
+			
+			cfg->disable_aot = TRUE;
+			MONO_INST_NEW (cfg, sigArg, OP_ICONST);
+			sigArg->inst_p0 = call->signature;
+
+			MONO_INST_NEW (cfg, arg, OP_OUTARG);
+			arg->inst_imm  = cinfo->sigCookie.offset;
+			arg->inst_left = sigArg;
+
+			arg->next      = call->out_args;
+			call->out_args = arg;
+		}
+
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
 			in = call->args [i];
@@ -1707,7 +1830,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int   	   save_mode = SAVE_NONE,
 		   saveOffset;
 	MonoMethod *method = cfg->method;
-	int        rtype = method->signature->ret->type;
+	int        rtype = mono_type_get_underlying_type (method->signature->ret)->type;
 
 	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
 	if (method->save_lmf)
@@ -3875,11 +3998,18 @@ guint8 cond;
 		}
 			break;
 		case OP_ARGLIST: {
-			NOT_IMPLEMENTED("OP_ARGLIST");
-			s390_basr (code, s390_r13, 0);
-			s390_j    (code, 4);
-			s390_word (code, cfg->sig_cookie);
-			s390_mvc  (code, 4, ins->sreg1, 0, s390_r13, 4);
+			int offset = cfg->sig_cookie + cfg->stack_usage;
+
+			if (s390_is_uimm16 (offset))
+				s390_lhi  (code, s390_r0, offset);
+			else {
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 4);
+				s390_word (code, offset);
+				s390_l    (code, s390_r0, 0, s390_r13, 0);
+			}
+			s390_ar   (code, s390_r0, cfg->frame_reg);
+			s390_st	  (code, s390_r0, 0, ins->sreg1, 0);
 		}
 			break;
 		case OP_FCALL: {
@@ -3947,6 +4077,8 @@ guint8 cond;
 					  S390_STACK_ALIGNMENT - 1;
 			int area_offset = S390_ALIGN(alloca_skip, S390_STACK_ALIGNMENT);
 			s390_lr   (code, s390_r1, ins->sreg1);
+			if (ins->flags & MONO_INST_INIT)
+				s390_lr   (code, s390_r0, ins->sreg1);
 			s390_ahi  (code, s390_r1, 14);
 			s390_srl  (code, s390_r1, 0, 3);
 			s390_sll  (code, s390_r1, 0, 3);
@@ -3957,6 +4089,15 @@ guint8 cond;
 			s390_la   (code, ins->dreg, 0, STK_BASE, area_offset);
 			s390_srl  (code, ins->dreg, 0, 3);
 			s390_sll  (code, ins->dreg, 0, 3);
+			if (ins->flags & MONO_INST_INIT) {
+				s390_lr   (code, s390_r1, s390_r0);
+				s390_lr   (code, s390_r0, ins->dreg);
+				s390_lr	  (code, s390_r14, s390_r12);
+				s390_lhi  (code, s390_r13, 0);
+				s390_mvcle(code, s390_r0, s390_r12, 0, 0);
+				s390_jo   (code, -2);
+				s390_lr   (code, s390_r12, s390_r14);
+			}
 		}
 			break;
 		case CEE_RET: {
@@ -5298,7 +5439,8 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
+MonoInst * 
+mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 {
 	return NULL;
 }
@@ -5315,7 +5457,8 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
+MonoInst * 
+mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
 	return NULL;
 }
