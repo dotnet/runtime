@@ -4,10 +4,10 @@
                 <assembly name="mscorlib"/>
         </person>
         <person email="fejj@ximian.com" name="Jeffrey Stedfast">
-                <class name="System.String"/>
+                <class name="System.String" date="Jul-15-2001"/>
         </person>
         <person email="jbarn@httcb.net" name="John Barnette">
-                <class name="System.Collections.Hashtable"/>
+                <class name="System.Collections.Hashtable" date="Jul-15-2001"/>
         </person>
         <person email="iain@ximian.com" name="Iain">
                 <class name="System.Collections.Queue"/>
@@ -19,14 +19,14 @@
                 <class name="System.Array"/>
         </person>
 	<person email="marcins@zipworld.com.au" name="Marcin Szczepanski">
-		<class name="System.StringBuilder"/>
-                <class name="System.IO.TextReader"/>
-                <class name="System.IO.StringReader"/>
-                <class name="System.IO.TextWriter"/>
-                <class name="System.IO.StringWriter"/>
+		<class name="System.StringBuilder" date="Jul-15-2001"/>
+                <class name="System.IO.TextReader" date="Jul-15-2001"/>
+                <class name="System.IO.StringReader" date="Jul-15-2001"/>
+                <class name="System.IO.TextWriter" date="Jul-15-2001"/>
+                <class name="System.IO.StringWriter" date="Jul-15-2001"/>
 	</person>
         <person email="rooneg@electricjellyfish.net" name="Garrett Rooney">
-		<class name="System.Collections.Stack"/>
+		<class name="System.Collections.Stack" date="Jul-15-2001"/>
         </person>
 </maintainers>
 
