@@ -75,6 +75,9 @@
 #define DW_AT_virtuality		0x4c
 #define DW_AT_vtable_elem_location	0x4d
 
+/* Martin Baulig's extensions. */
+#define DW_AT_end_scope			0x2121
+
 #define DW_FORM_addr			0x01
 #define DW_FORM_block4			0x04
 #define DW_FORM_data2			0x05
@@ -166,7 +169,7 @@ dwarf2_write_2byte (FILE *f, int word)
 static void
 dwarf2_write_pair (FILE *f, int a, int b)
 {
-	fprintf (f, "\t.byte\t\t%d, %d\n", a, b);
+	fprintf (f, "\t.uleb128\t\t%d, %d\n", a, b);
 }
 
 static void
@@ -812,7 +815,7 @@ dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const g
 
 static void
 dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gchar *name,
-		       int stack_offset, MonoClass *klass)
+		       MonoDebugLocalInfo *local, MonoClass *klass)
 {
 	static long label_index = 0;
 	int type_index = mono_debug_get_type (info, klass);
@@ -831,9 +834,10 @@ dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gc
 	dwarf2_write_section_size (info->f, start, end);
 	dwarf2_write_label (info->f, start);
 	dwarf2_write_byte (info->f, DW_OP_fbreg);
-	dwarf2_write_sleb128 (info->f, stack_offset);
+	dwarf2_write_sleb128 (info->f, local->offset);
 	dwarf2_write_label (info->f, end);
-	dwarf2_write_long (info->f, minfo->method_info.prologue_end);
+	dwarf2_write_address (info->f, minfo->method_info.code_start + local->begin_scope);
+	dwarf2_write_address (info->f, minfo->method_info.code_start + local->end_scope);
 }
 
 static void 
@@ -1063,7 +1067,7 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		char name [BUFSIZ];
 
 		sprintf (name, "V_%d", i);
-		dwarf2_write_variable (info, minfo, name, minfo->method_info.locals [i].offset, klass);
+		dwarf2_write_variable (info, minfo, name, &minfo->method_info.locals [i], klass);
 	}
 
 	dwarf2_write_byte (info->f, 0);
@@ -1157,7 +1161,8 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_pair (info->f, DW_AT_name, DW_FORM_string);
 	dwarf2_write_pair (info->f, DW_AT_type, DW_FORM_ref4);
 	dwarf2_write_pair (info->f, DW_AT_location, DW_FORM_block4);
-	dwarf2_write_pair (info->f, DW_AT_start_scope, DW_FORM_data4);
+	dwarf2_write_pair (info->f, DW_AT_start_scope, DW_FORM_addr);
+	dwarf2_write_pair (info->f, DW_AT_end_scope, DW_FORM_addr);
 	dwarf2_write_pair (info->f, 0, 0);
 
 	dwarf2_write_byte (info->f, ABBREV_STRUCT_TYPE);
