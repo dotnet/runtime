@@ -111,6 +111,8 @@ TEST_CS_SRC=			\
 	delegate3.cs		\
 	delegate4.cs		\
 	delegate5.cs		\
+	delegate6.cs		\
+	delegate7.cs		\
 	remoting1.cs		\
 	remoting2.cs		\
 	remoting3.cs		\
