@@ -460,6 +460,7 @@ AC_SUBST(CFLAGS)
 AC_OUTPUT([
 Makefile
 mono/Makefile
+mono/utils/Makefile
 mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile

@@ -78,6 +78,6 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
-pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) ../io-layer/libwapi.a -lm
+pedump_LDADD = ../io-layer/libwapi.a ../utils/libmonoutils.a $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 
