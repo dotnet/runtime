@@ -415,11 +415,23 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 	int i, count = 0;
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		MonoMethodSignature *sig;
+
+		if (mono_metadata_has_generic_params (image, token))
+			continue;
+
+		method = mono_get_method (image, token, NULL);
 		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+			continue;
+
+		if (method->klass->generic_container)
+			continue;
+		sig = mono_method_signature (method);
+		if (sig->has_type_parameters)
 			continue;
 
 		count++;
