@@ -510,7 +510,7 @@ mono_create_method_pointer (MonoMethod *method)
 		fflush (stderr);
         }
 
-	return NULL;
+	return 0xdeadbeef;
 }
 
 MonoMethod*

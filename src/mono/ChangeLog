@@ -1,3 +1,8 @@
+2002-09-19  Mark Crichton  <crichton@gimp.org>
+
+	* configure.in: Added checks for Solaris to use X/Open functionality.
+	Really needed for the io-layer code.
+
 2002-09-15  Andrew Birkett  <andy@nobugs.org>
 
 	* man/mcs.1: --probe is now --expect-error.

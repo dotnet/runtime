@@ -30,6 +30,9 @@
 
 #undef DEBUG
 
+/* The shared thread codepath doesn't seem to work yet... */
+#undef _POSIX_THREAD_PROCESS_SHARED
+
 /* Keep track of the number of clients */
 static int nfds=0;
 /* Array to keep track of handles that have been referenced by the

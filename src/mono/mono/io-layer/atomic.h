@@ -107,7 +107,144 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	
 	return(ret);
 }
+
+#elif defined(sparc)
+#define WAPI_ATOMIC_ASM
+
+#define BEGIN_SPIN(tmp,lock) \
+__asm__ __volatile__("1:        ldstub [%1],%0\n\t"  \
+                             "          cmp %0, 0\n\t" \
+                             "          bne 1b\n\t" \
+                             "          nop" \
+                             : "=&r" (tmp) \
+                             : "r" (&lock) \
+                             : "memory"); 
+
+#define END_SPIN(lock) \
+__asm__ __volatile__("stb	%%g0, [%0]"  \
+                      : /* no outputs */ \
+                      : "r" (&lock)\
+                      : "memory");
+
+
+static inline gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp)
+{
+	static unsigned char lock;
+	int tmp;
+	gint32 old;
+
+	BEGIN_SPIN(tmp,lock)
+
+	old = *dest;
+	if (old==comp) {
+		*dest=exch;
+	}
+
+	END_SPIN(lock)
+
+	return(old);
+}
+
+static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
+{
+        static unsigned char lock;
+        int tmp;
+        gpointer old;
+
+        BEGIN_SPIN(tmp,lock)
+
+        old = *dest;
+        if (old==comp) {
+                *dest=exch;
+        }
+
+        END_SPIN(lock)
+
+        return(old);
+}
+
+static inline gint32 InterlockedIncrement(volatile gint32 *dest)
+{
+        static unsigned char lock;
+        int tmp;
+        gint32 ret;
+
+        BEGIN_SPIN(tmp,lock)
+
+        *dest++;
+        ret = *dest;
+
+        END_SPIN(lock)
+
+        return(ret);
+}
+
+static inline gint32 InterlockedDecrement(volatile gint32 *dest)
+{
+        static unsigned char lock;
+        int tmp;
+        gint32 ret;
+
+        BEGIN_SPIN(tmp,lock)
+
+	*dest--;
+        ret = *dest;
+
+        END_SPIN(lock)
+
+        return(ret);
+}
+
+static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
+{
+        static unsigned char lock;
+        int tmp;
+        gint32 ret;
+
+        BEGIN_SPIN(tmp,lock)
+
+        ret = *dest;
+        *dest = exch;
+
+        END_SPIN(lock)
+
+        return(ret);
+}
+
+static inline gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
+{
+        static unsigned char lock;
+        int tmp;
+        gpointer ret;
+
+        BEGIN_SPIN(tmp,lock)
+
+        ret = *dest;
+        *dest = exch;
+
+        END_SPIN(lock)
+
+        return(ret);
+}
+
+static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
+{
+        static unsigned char lock;
+        int tmp;
+        gint32 ret;
+
+        BEGIN_SPIN(tmp,lock)
+
+        ret = *dest;
+        *dest += add;
+
+        END_SPIN(lock)
+
+        return(ret);
+}
+
 #else
+
 extern gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp);
 extern gint32 InterlockedIncrement(volatile gint32 *dest);

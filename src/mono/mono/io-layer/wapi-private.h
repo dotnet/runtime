@@ -17,6 +17,9 @@
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/daemon-private.h>
 
+/* Shared threads don't seem to work yet */
+#undef _POSIX_THREAD_PROCESS_SHARED
+
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  *

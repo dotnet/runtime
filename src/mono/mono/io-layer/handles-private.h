@@ -18,6 +18,9 @@
 
 #undef DEBUG
 
+/* Shared threads dont seem to work yet */
+#undef _POSIX_THREAD_PROCESS_SHARED
+
 extern struct _WapiHandleShared_list *_wapi_shared_data;
 extern struct _WapiHandlePrivate_list *_wapi_private_data;
 

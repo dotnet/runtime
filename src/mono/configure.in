@@ -311,6 +311,28 @@ if test x$platform_win32 = xno; then
 	AC_DEFINE_UNQUOTED(MONO_SIZEOF_SUNPATH, $cv_mono_sizeof_sunpath)
 
 	dnl *****************************
+	dnl *** Checks for libxnet    ***
+	dnl *****************************
+	case "${host}" in
+		*solaris* )
+			AC_MSG_CHECKING(for Solaris XPG4 support)
+			if test -f /usr/lib/libxnet.so; then
+				CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE=500"
+	    			CPPFLAGS="$CPPFLAGS -D__EXTENSIONS__"
+				CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE_EXTENDED=1"
+           			LIBS="$LIBS -lxnet"
+  	    			AC_MSG_RESULT(yes)
+			else
+  	    			AC_MSG_RESULT(no)
+			fi
+
+			if test "$GCC" = "yes"; then
+		    		CFLAGS="$CFLAGS -Wno-char-subscripts"
+			fi
+    		;;
+	esac
+
+	dnl *****************************
 	dnl *** Checks for libpthread ***
 	dnl *****************************
 	AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")

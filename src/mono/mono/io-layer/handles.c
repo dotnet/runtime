@@ -28,6 +28,9 @@
 
 #undef DEBUG
 
+/* Shared threads don't seem to work yet */
+#undef _POSIX_THREAD_PROCESS_SHARED
+
 /*
  * This flag _MUST_ remain set to FALSE in the daemon process.  When
  * we exec()d a standalone daemon, that happened because shared_init()
