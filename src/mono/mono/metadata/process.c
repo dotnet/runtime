@@ -733,6 +733,7 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 	mono_image_close (image);
 }
 
+/* Only used when UseShellExecute is false */
 static gchar *
 quote_path (const gchar *path)
 {
@@ -750,26 +751,22 @@ quote_path (const gchar *path)
 	return res;
 }
 
+/* Only used when UseShellExecute is false */
 static gboolean
-complete_path (const gunichar2 *appname, gunichar2 **completed)
+complete_path (const gunichar2 *appname, gchar **completed)
 {
 	gchar *utf8app;
 	gchar *found;
-	gchar *quoted8;
 
 	utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
 	if (g_path_is_absolute (utf8app)) {
-		quoted8 = quote_path (utf8app);
-		*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
-		g_free (quoted8);
+		*completed = quote_path (utf8app);
 		g_free (utf8app);
 		return TRUE;
 	}
 
 	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
-		quoted8 = quote_path (utf8app);
-		*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
-		g_free (quoted8);
+		*completed = quote_path (utf8app);
 		g_free (utf8app);
 		return TRUE;
 	}
@@ -781,9 +778,7 @@ complete_path (const gunichar2 *appname, gunichar2 **completed)
 		return FALSE;
 	}
 
-	quoted8 = quote_path (found);
-	*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
-	g_free (quoted8);
+	*completed = quote_path (found);
 	g_free (found);
 	g_free (utf8app);
 	return TRUE;
@@ -798,6 +793,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 	gunichar2 *shell_path = NULL;
 	gchar *env_vars = NULL;
 	gboolean free_shell_path = TRUE;
+	gchar *newcmd, *tmp;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -819,7 +815,6 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 #endif
 		if (spath != NULL) {
 			gint dummy;
-			gchar *newcmd, *tmp;
 			gchar *quoted;
 
 			shell_path = mono_unicode_from_external (spath, &dummy);
@@ -842,12 +837,27 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 			g_free (newcmd);
 		}
 	} else {
+		gchar *spath = NULL;
 		shell_path = mono_string_chars (appname);
-		free_shell_path = complete_path (shell_path, &shell_path);
-		if (shell_path == NULL) {
+		complete_path (shell_path, &spath);
+		if (spath == NULL) {
 			process_info->pid = -ERROR_FILE_NOT_FOUND;
 			return FALSE;
 		}
+#ifdef PLATFORM_WIN32
+		/* Seems like our CreateProcess does not work as the windows one.
+		 * This hack is needed to deal with paths containing spaces */
+		shell_path = NULL;
+		free_shell_path = FALSE;
+		tmp = mono_string_to_utf8 (cmd);
+		newcmd = g_strdup_printf ("%s %s", spath, tmp);
+		cmd = mono_string_new_wrapper (newcmd);
+		g_free (newcmd);
+		g_free (tmp);
+#else
+		shell_path = g_utf8_to_utf16 (spath, -1, NULL, NULL, NULL);
+#endif
+		g_free (spath);
 	}
 
 	if (process_info->env_keys != NULL) {
