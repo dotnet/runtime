@@ -6,7 +6,19 @@
 	is very common to introduce bugs in existing code.  A test suite
 	helps us fix the bugs as soon as they are introduced.
 
-** Class Library Tests
+	There are various kinds of tests in Mono:
+	<ul>
+		<li><a href="#unit"><b>Class Library Unit
+		Tests:</b></a> These are used to test the class
+		libraries.
+
+		<li><a href="#compiler"><b>Compiler tests</b></a>: Both
+		tests that should pass and tests that should fail are included. 
+
+	</ul>
+
+<a name="unit"></a>
+* Class Library Tests
 
 	All classes in Mono libraries should have comprehensive unit test
 	suites to go with them.  Unit testing is a software engineering
@@ -145,3 +157,14 @@
 	Normally, after you send a couple of well-written new files
 	and/or patches to the list, you will be given cvs access.
 
+<a name="compiler"></a>
+* Compiler tests
+
+	Mono ships with three compilers: C#, VB.NET and JScript.  The
+	tests are ran by running the makefile target `make
+	run-test-local' in the appropriate directory.
+
+	The C# compilation tests live in mcs/tests, and the C# error
+	tests live in mcs/errors.
+
+	The VB.NET compilation tests live in mcs/btests. 
