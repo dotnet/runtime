@@ -17,6 +17,7 @@ struct _MBTree {
 
 	guint is_jump:1;
 	guint last_instr:1;
+	guint jump_target:1;
 
 	gint32 cli_addr;   /* virtual cli address */
 	gint32 addr;       /* address of emitted instruction */
@@ -40,9 +41,11 @@ gboolean same_tree (MBTree *t1, MBTree *t2);
 #
 
 # constatnts
-%term CONST_I4 LDLOC LDARG STLOC BR RET RETV ARG CALL
+%term CONST_I4 CONST_R8
+%term LDLOC LDARG STLOC BR RET RETV ARG CALL
 %term ADD SUB MUL
-%term BLT BEQ BGE 
+%term BLT BEQ BGE BRTRUE
+%term CONV_I4 CONV_I1 CONV_I2
 #
 # we start at stmt
 #
@@ -60,9 +63,48 @@ locaddr: LDARG {
 	tree->data.i = tree->data.i + 8;
 }
 
+# do nothing
+reg: CONV_I4 (reg) 
+
+reg: CONV_I1 (reg) {
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_alu_reg_imm (*code, X86_AND, tree->reg, 0xff);
+}
+
+reg: CONV_I2 (reg) {
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	x86_alu_reg_imm (*code, X86_AND, tree->reg, 0xffff);
+}
+
 reg: LDLOC 1 {
 	switch (tree->type) {
-	case MONO_TYPE_I4:  
+	case MONO_TYPE_I1:
+		x86_widen_membase (*code, tree->reg, X86_EBP,
+				   - tree->data.i - 4, TRUE, FALSE);
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		x86_widen_membase (*code, tree->reg, X86_EBP,
+				   - tree->data.i - 4, FALSE, FALSE);
+		break;
+	case MONO_TYPE_I2:
+		x86_widen_membase (*code, tree->reg, X86_EBP,
+				   - tree->data.i - 4, TRUE, TRUE);
+		break;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		x86_widen_membase (*code, tree->reg, X86_EBP,
+				   - tree->data.i - 4, FALSE, TRUE);
+		break;
+
+	case MONO_TYPE_I:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_PTR:
 		x86_mov_reg_membase (*code, tree->reg, X86_EBP,
 				     - tree->data.i - 4, 4);
 		break;
@@ -74,8 +116,15 @@ reg: LDLOC 1 {
 
 reg: LDARG 1 {
 	switch (tree->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
@@ -125,7 +174,24 @@ stmt: STLOC (CONST_I4) {
 
 stmt: STLOC (reg) {	
 	switch (tree->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		x86_mov_membase_reg (*code, X86_EBP, - tree->data.i - 4,
+				     tree->left->reg, 1);
+		break;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		x86_mov_membase_reg (*code, X86_EBP, - tree->data.i - 4,
+				     tree->left->reg, 2);
+		break;
+	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_PTR:
 		x86_mov_membase_reg (*code, X86_EBP, - tree->data.i - 4,
 				     tree->left->reg, 4);
 		break;
@@ -170,6 +236,16 @@ stmt: BGE (reg, CONST_I4) {
 	x86_branch32 (*code, X86_CC_GE, tree->data.i - offset, TRUE);
 }
 
+stmt: BRTRUE (reg) {
+	guint8 *start = *code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, 0);
+	offset = 6 + *code - start;
+	x86_branch32 (*code, X86_CC_NE, tree->data.i - offset, TRUE);
+}
+
 stmt: RETV (reg) {
 
 	if (!tree->last_instr) {
@@ -197,7 +273,18 @@ stmt: ARG (reg) {
 
 reg: CALL {
 	switch (tree->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_PTR:
 		x86_mov_reg_imm (*code, X86_EAX, tree->data.p);
 		x86_call_membase (*code, X86_EAX, 
 				  G_STRUCT_OFFSET (MonoMethod, addr));
@@ -213,6 +300,28 @@ stmt: CALL {
 	x86_mov_reg_imm (*code, X86_EAX, tree->data.p);
 	x86_call_membase (*code, X86_EAX, G_STRUCT_OFFSET (MonoMethod, addr));
 }
+
+#
+# floating point 
+#
+
+freg: CONST_R8 {
+	g_assert_not_reached ();
+}
+
+freg: ADD (freg, freg) {
+	g_assert_not_reached ();
+}
+
+stmt: STLOC (freg) {
+	g_assert_not_reached ();
+}
+
+stmt: ARG (freg) {
+	g_assert_not_reached ();
+	x86_push_reg (*code, tree->left->reg);
+}
+
 
 
 #

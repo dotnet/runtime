@@ -108,8 +108,10 @@ get_address (GPtrArray *forest, guint32 cli_addr, gint base, gint len)
 		pos--;
 	}
 
-	if (t1->cli_addr == cli_addr)
+	if (t1->cli_addr == cli_addr) {
+		t1->jump_target = 1;
 		return t1->first_addr;
+	}
 
 	if (len <= 1)
 		return -1;
@@ -133,6 +135,12 @@ compute_branches (guint8 *cstart, GPtrArray *forest, guint32 epilog)
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 
 		if (t1->is_jump) {
+
+			if ((i + 1) < forest->len) {
+				MBTree *t2 = (MBTree *) g_ptr_array_index (forest, i + 1);
+				t2->jump_target = 1;
+			}
+
 			if (t1->data.i >= 0) {
 				addr = get_address (forest, t1->data.i, 0, forest->len);
 				if (addr == -1)
@@ -160,6 +168,7 @@ ctree_new (int op, MonoTypeEnum type, MBTree *left, MBTree *right)
 	t->type = type;
 	t->reg = -1;
 	t->is_jump = 0;
+	t->jump_target = 0;
 	t->last_instr = 0;
 	t->cli_addr = -1;
 	t->addr = 0;
@@ -206,10 +215,10 @@ print_forest (GPtrArray *forest)
 
 	for (i = 0; i < top; i++) {
 		MBTree *t = (MBTree *) g_ptr_array_index (forest, i);
-		if (t->cli_addr >= 0)
+		if (t->jump_target && t->cli_addr >= 0)
 			printf ("IL%04x:", t->cli_addr);
 		else
-			printf ("ILXXXX:");
+			printf ("       ");
 
 		print_tree (t);
 		printf ("\n");
@@ -301,6 +310,7 @@ emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
 
 	mono_regset_free (rs);
 
+	print_forest (forest);
 	mono_disassemble_code (start, buf - start);
 }
 
@@ -404,6 +414,10 @@ mono_compile_method (MonoMethod *method)
 		for (i = 0; i < signature->param_count; ++i) {
 			args_offsets [i + has_this] = offset;
 			size = mono_type_size (signature->params [i], &align);
+			if (size < 4) {
+				size = 4; 
+				align = 4;
+			}
 			offset += align - 1;
 			offset &= ~(align - 1);
 			offset += size;
@@ -509,6 +523,15 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			t1->cli_addr = cli_addr;
 			PUSH_TREE (t1);
+			break;
+
+		case CEE_LDC_R8: 
+			++ip;
+			t1 = ctree_new_leaf (MB_TERM_CONST_R8, MONO_TYPE_R8);
+			t1->data.p = ip;
+			t1->cli_addr = cli_addr;
+			ip += 8;
+			PUSH_TREE (t1);		
 			break;
 
 		case CEE_LDLOC_0:
@@ -652,6 +675,26 @@ mono_compile_method (MonoMethod *method)
 			ip += near_jump ? 1: 4;		
 			break;
 		}
+
+		case CEE_BRTRUE:
+		case CEE_BRTRUE_S: {
+			int near_jump = *ip == CEE_BRTRUE_S;
+			++ip;
+			--sp;
+
+			t1 = ctree_new (MB_TERM_BRTRUE, 0, sp [0], NULL);
+
+			if (near_jump)
+				t1->data.i = cli_addr + 2 + (signed char) *ip;
+			else 
+				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
+
+			ip += near_jump ? 1: 4;
+			t1->cli_addr = sp [0]->cli_addr;
+			ADD_TREE (t1);
+			break;
+		}
+
 		case CEE_RET:
 			ip++;
 
@@ -687,6 +730,45 @@ mono_compile_method (MonoMethod *method)
 			break;
 		}
 
+		case CEE_DUP: 
+			++ip; 
+
+			if (sp [-1]->op == MB_TERM_LDARG) {
+				t1 = ctree_new (0, 0, NULL, NULL);
+				*t1 = *sp [-1];
+				PUSH_TREE (t1);		
+			} else 
+				g_assert_not_reached ();
+
+			break;
+
+		case CEE_CONV_U1: 
+		case CEE_CONV_I1: 
+			++ip;
+			sp--;
+			t1 = ctree_new (MB_TERM_CONV_I1, MONO_TYPE_I4, *sp, NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);		
+			break;
+	       
+		case CEE_CONV_U2: 
+		case CEE_CONV_I2: 
+			++ip;
+			sp--;
+			t1 = ctree_new (MB_TERM_CONV_I2, MONO_TYPE_I4, *sp, NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);		
+			break;
+	       
+		case CEE_CONV_I: 
+		case CEE_CONV_I4:
+			++ip;
+			sp--;
+			t1 = ctree_new (MB_TERM_CONV_I4, MONO_TYPE_I4, *sp, NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);		
+			break;
+	       
 		case 0xFE:
 			++ip;			
 			switch (*ip) {
@@ -715,7 +797,6 @@ mono_compile_method (MonoMethod *method)
 	}
 	
 	printf ("LOCALS ARE: %d\n", local_offset);
-	print_forest (forest);
 	emit_method (method, forest, local_offset);
 
 	// printf ("COMPILED %p %p\n", method, method->addr);
