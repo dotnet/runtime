@@ -19,13 +19,15 @@
 	we make the first tarball release.
 
 	<ul>
-		<b>July 12th, 2001</b>
+		<a name="july-14">
+		<b>July 14th, 2001</b>
 		<ul>
 		* <a href="archive/jay.cs.tar.gz">archive/jay.cs.tar.gz</a>: Sources to Jay.
 		* <a href="archive/mcs-12-Jul-2001.tar.gz">mcs-12-Jul-2001.tar.gz</a>: CVS snapshot.
 		* <a href="archive/mono-0.3.tar.gz">mono-0.3.tar.gz</a>: Packaged Source Code.
 		</ul>
 
+		<a name="july-8">
 		<b>July 8th, 2001</b>
 
 		<ul>
