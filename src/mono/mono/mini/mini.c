@@ -7190,9 +7190,10 @@ mono_jit_compile_method (MonoMethod *method)
 
 	cfg = mini_method_compile (method, default_opt, target_domain, 0);
 	code = cfg->native_code;
-	mono_destroy_compile (cfg);
 
 	g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
+
+	mono_destroy_compile (cfg);
 
 	if (target_domain->jump_target_hash) {
 		MonoJumpInfo patch_info;
