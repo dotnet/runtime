@@ -1232,6 +1232,9 @@ fi
 AC_SUBST(ICU_CFLAGS)
 AC_SUBST(ICU_LIBS)
 
+AC_ARG_ENABLE(nunit-tests, [ --enable-nunit-tests	Run the nunit tests of the class library on 'make check'])
+AM_CONDITIONAL(ENABLE_NUNIT_TESTS, [test x$enable_nunit_tests = xyes])
+
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 

@@ -1,5 +1,11 @@
 2004-12-03  Raja R Harinath  <rharinath@novell.com>
 
+	* configure.in (ENABLE_NUNIT_TESTS): New.
+	* runtime/Makefile.am (check-local): Use it to disable nunit
+	tests.  Ensure that the test dlls are always built, however.
+
+2004-12-03  Raja R Harinath  <rharinath@novell.com>
+
 	* Makefile.am (dist-hook): Ensure we use the 'default' profile.
 	* mono/Makefile.am (HANDLES): New.  Disable 'handles' dir on Win32.
 	(SUBDIRS): Use it.  Move 'cil' before 'metadata'.
