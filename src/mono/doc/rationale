@@ -18,7 +18,7 @@
 	standard GNOME interfaces for easily creating reusable,
 	language independent components, controls and compound
 	documents.  This technology is known as <a
-	href="http://developer.ximian.com/tech/bonobo.html">Bonobo</a>.
+	href="http://developer.ximian.com/articles/whitepapers/bonobo">Bonobo</a>.
 	Interfaces to Bonobo exist for C, Perl, Python, and
 	Java.
 
