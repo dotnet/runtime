@@ -521,6 +521,8 @@ void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 
 MonoReflectionType* mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam);
+MonoClass*
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

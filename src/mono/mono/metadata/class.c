@@ -244,8 +244,8 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *tgen, MonoGen
 	return res;
 }
 
-static MonoMethod*
-inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, MonoGenericInst *mgen)
+MonoMethod*
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, MonoGenericInst *mgen)
 {
 	MonoMethod *result;
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
@@ -1145,13 +1145,7 @@ mono_class_init (MonoClass *class)
 			class->methods [1] = ctor;
 		}
 	} else {
-		if (class->generic_inst) {
-			for (i = 0; i < class->method.count; ++i) {
-				class->methods [i] = inflate_generic_method (class->methods [i], class->generic_inst->data.generic_inst, NULL);
-				class->methods [i]->klass = class;
-				/*g_print ("inflated method %s in %s\n", class->methods [i]->name, class->name);*/
-			}
-		} else if (!class->methods) {
+		if (!class->generic_inst && !class->methods) {
 			class->methods = g_new (MonoMethod*, class->method.count);
 			for (i = 0; i < class->method.count; ++i) {
 				class->methods [i] = mono_get_method (class->image,
@@ -1586,7 +1580,7 @@ get_instantiation_name (const char *name, MonoGenericInst *ginst)
 }
 
 MonoClass*
-mono_class_from_generic (MonoType *gtype)
+mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 {
 	MonoGenericInst *ginst = gtype->data.generic_inst;
 	MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
@@ -1612,15 +1606,19 @@ mono_class_from_generic (MonoType *gtype)
 	class->generic_inst = gtype;
 
 	class->cast_class = class->element_class = class;
-	mono_class_setup_parent (class, gklass->parent);
-	mono_class_setup_mono_type (class);
 
-	class->field = gklass->field;
-	class->method = gklass->method;
-	class->methods = gklass->methods;
+	if (inflate_methods) {
+		int i;
 
-	/*g_print ("instantiating class from %s.%s to %s\n", gklass->name_space, gklass->name, class->name);
-	g_print ("methods: %d, fields: %d\n", class->method.count, class->field.count);*/
+		mono_class_setup_parent (class, gklass->parent);
+		mono_class_setup_mono_type (class);
+
+		class->field = gklass->field;
+		class->method = gklass->method;
+		class->methods = g_new0 (MonoMethod *, class->method.count);
+		for (i = 0; i < class->method.count; i++)
+			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst, NULL);
+	}
 
 	g_hash_table_insert (image->generics_cache, gtype, class);
 
@@ -1813,7 +1811,7 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
 	case MONO_TYPE_GENERICINST:
-		return mono_class_from_generic (type);
+		return mono_class_from_generic (type, TRUE);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* NOTE: Unless this is a dynamic type, only the `num' field is valid in

@@ -2533,10 +2533,17 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 			idx = tb->table_idx;
 			break;
 		case MONO_TABLE_MEMBERREF:
-			if (strcmp (iltoken->member->vtable->klass->name, "MonoArrayMethod"))
+			if (!strcmp (iltoken->member->vtable->klass->name, "MonoArrayMethod")) {
+				am = (MonoReflectionArrayMethod*)iltoken->member;
+				idx = am->table_idx;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") ||
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
+				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
+				g_assert (m->klass->generic_inst);
+				continue;
+			} else {
 				g_assert_not_reached ();
-			am = (MonoReflectionArrayMethod*)iltoken->member;
-			idx = am->table_idx;
+			}
 			break;
 		default:
 			g_error ("got unexpected table 0x%02x in fixup", target [3]);
@@ -2889,7 +2896,8 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		if (m->method->klass->image == assembly->assembly.image) {
+		if ((m->method->klass->image == assembly->assembly.image) &&
+		    !m->method->klass->generic_inst) {
 			static guint32 method_table_idx = 0xffffff;
 			/*
 			 * Each token should have a unique index, but the indexes are
@@ -4736,6 +4744,11 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	method_index = find_method_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
 
+	if (method->klass->generic_inst || method->klass->gen_params) {
+		// FIXME FIXME FIXME
+		return NULL;
+	}
+
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
 	if (method_index == ca->rows) {
 		ca = &image->tables [MONO_TABLE_PARAM];
@@ -5577,6 +5590,73 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	return mb->mhandle;
 }
 
+MonoClass*
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types)
+{
+	MonoType *geninst;
+	MonoGenericInst *ginst;
+	MonoClass *klass, *iklass, *parent = NULL;
+	MonoReflectionTypeBuilder *tb = NULL;
+	int i;
+
+	klass = mono_class_from_mono_type (type->type);
+	if (klass->num_gen_params != mono_array_length (types))
+		return NULL;
+
+	if (klass->wastypebuilder && klass->reflection_info) {
+		tb = klass->reflection_info;
+
+		parent = mono_reflection_bind_generic_parameters (tb->parent, types);
+	}
+
+	geninst = g_new0 (MonoType, 1);
+	geninst->type = MONO_TYPE_GENERICINST;
+	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
+	ginst->generic_type = &klass->byval_arg;
+	ginst->type_argc = klass->num_gen_params;
+	ginst->type_argv = g_new0 (MonoType *, klass->num_gen_params);
+	for (i = 0; i < klass->num_gen_params; ++i) {
+		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
+		ginst->type_argv [i] = garg->type;
+	}
+
+	iklass = mono_class_from_generic (geninst, FALSE);
+
+	mono_class_setup_parent (iklass, parent ? parent : mono_defaults.object_class);
+	mono_class_setup_mono_type (iklass);
+
+	if (tb) {
+		int mcount, ccount;
+		int pos = 0;
+
+		mcount = tb->methods ? mono_array_length (tb->methods) : 0;
+		ccount = tb->ctors ? mono_array_length (tb->ctors) : 0;
+
+		iklass->method.count = mcount + ccount;
+		iklass->methods = g_new0 (MonoMethod *, iklass->method.count);
+
+		for (i = 0; i < mcount; i++) {
+			MonoReflectionMethodBuilder *mb = mono_array_get (tb->methods, gpointer, i);
+			MonoMethod *method = methodbuilder_to_mono_method (iklass, mb);
+
+			iklass->methods [pos++] = mono_class_inflate_generic_method (method, ginst, NULL);
+		}
+
+		for (i = 0; i < ccount; i++) {
+			MonoReflectionCtorBuilder *cb = mono_array_get (tb->ctors, gpointer, i);
+			MonoMethod *method = ctorbuilder_to_mono_method (iklass, cb);
+
+			iklass->methods [pos++] = mono_class_inflate_generic_method (method, ginst, NULL);
+		}
+	} else {
+		iklass->field = klass->field;
+		iklass->method = klass->method;
+		iklass->methods = klass->methods;
+	}
+
+	return iklass;
+}
+
 static void
 ensure_runtime_vtable (MonoClass *klass)
 {
@@ -5854,11 +5934,20 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 		klass->parent = mono_defaults.object_class;
 
 	if (count - pos > 0) {
+		int j;
+
 		klass->interface_count = count - pos;
 		klass->interfaces = g_new0 (MonoClass *, count - pos);
 		for (i = pos; i < count; i++) {
 			klass->interfaces [i - pos] = param->constraints [i];
 			klass->method.count += param->constraints [i]->method.count;
+		}
+
+		klass->methods = g_new0 (MonoMethod *, klass->method.count);
+		for (i = pos; i < count; i++) {
+			MonoClass *iface = klass->interfaces [i - pos];
+			for (j = 0; j < iface->method.count; j++)
+				klass->methods [klass->method.last++] = iface->methods [j];
 		}
 	}
 

@@ -268,7 +268,10 @@ MonoClass *
 mono_class_from_gen_param  (MonoGenericParam *param, gboolean mvar);
 
 MonoClass*
-mono_class_from_generic    (MonoType *gtype);
+mono_class_from_generic    (MonoType *gtype, gboolean inflate_methods);
+
+MonoMethod*
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, MonoGenericInst *mgen);
 
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);

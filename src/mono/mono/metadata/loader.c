@@ -772,7 +772,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 	mono_class_init (klass);
 
-	if (klass->wastypebuilder) /* copy the names later */
+	if (klass->wastypebuilder || klass->generic_inst) /* copy the names later */
 		return;
 
 	methodt = &klass->image->tables [MONO_TABLE_METHOD];
