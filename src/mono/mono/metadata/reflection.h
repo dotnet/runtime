@@ -203,6 +203,8 @@ typedef struct {
 	MonoArray *pinfo;
 	MonoArray *cattrs;
 	MonoBoolean init_locals;
+	MonoArray *param_modreq;
+	MonoArray *param_modopt;
 } MonoReflectionCtorBuilder;
 
 typedef struct {
@@ -227,6 +229,10 @@ typedef struct {
 	guint32 call_conv;
 	MonoBoolean init_locals;
 	MonoArray *generic_params;
+	MonoArray *return_modreq;
+	MonoArray *return_modopt;
+	MonoArray *param_modreq;
+	MonoArray *param_modopt;
 } MonoReflectionMethodBuilder;
 
 typedef struct {
@@ -345,6 +351,8 @@ typedef struct {
 	MonoArray *cattrs;
 	MonoReflectionMarshal *marshal_info;
 	MonoClassField *handle;
+	MonoArray *modreq;
+	MonoArray *modopt;
 } MonoReflectionFieldBuilder;
 
 typedef struct {
@@ -480,6 +488,20 @@ typedef struct {
 	MonoReflectionMethod *ctor;
 	MonoArray *data;
 } MonoReflectionCustomAttr;
+
+typedef struct {
+	MonoObject object;
+	MonoMethod *mhandle;
+	MonoString *name;
+	MonoReflectionType *rtype;
+	MonoArray *parameters;
+	guint32 attrs;
+	guint32 call_conv;
+	MonoReflectionModule *module;
+	gboolean skip_visibility;
+	gboolean init_locals;
+	MonoReflectionILGen *ilgen;
+} MonoReflectionDynamicMethod;	
 
 typedef struct MonoTypeNameParse MonoTypeNameParse;
 

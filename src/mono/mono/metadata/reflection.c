@@ -50,6 +50,10 @@ typedef struct {
 	MonoObject *type;
 	MonoString *name;
 	MonoBoolean init_locals;
+	MonoArray *return_modreq;
+	MonoArray *return_modopt;
+	MonoArray *param_modreq;
+	MonoArray *param_modopt;
 	MonoMethod *mhandle;
 } ReflectionMethodBuilder;
 
@@ -418,6 +422,30 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, ch
 
 }
 
+static void
+encode_custom_modifiers (MonoDynamicImage *assembly, MonoArray *modreq, MonoArray *modopt, char *p, char **endbuf)
+{
+	int i;
+
+	if (modreq) {
+		for (i = 0; i < mono_array_length (modreq); ++i) {
+			MonoReflectionType *mod = mono_array_get (modreq, MonoReflectionType*, i);
+			*p = MONO_TYPE_CMOD_REQD;
+			p++;
+			mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, mod->type), p, &p);
+		}
+	}
+	if (modopt) {
+		for (i = 0; i < mono_array_length (modopt); ++i) {
+			MonoReflectionType *mod = mono_array_get (modopt, MonoReflectionType*, i);
+			*p = MONO_TYPE_CMOD_OPT;
+			p++;
+			mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, mod->type), p, &p);
+		}
+	}
+	*endbuf = p;
+}
+
 static guint32
 method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 {
@@ -468,7 +496,7 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	int i;
 	guint32 nparams =  mb->parameters ? mono_array_length (mb->parameters): 0;
 	guint32 ngparams = mb->generic_params ? mono_array_length (mb->generic_params): 0;
-	guint32 size = 11 + nparams * 10;
+	guint32 size = 21 + nparams * 20;
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
@@ -486,8 +514,17 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	if (ngparams)
 		mono_metadata_encode_value (ngparams, p, &p);
 	mono_metadata_encode_value (nparams, p, &p);
+	encode_custom_modifiers (assembly, mb->return_modreq, mb->return_modopt, p, &p);
 	encode_reflection_type (assembly, mb->rtype, p, &p);
 	for (i = 0; i < nparams; ++i) {
+		MonoArray *modreq = NULL;
+		MonoArray *modopt = NULL;
+
+		if (mb->param_modreq && (i < mono_array_length (mb->param_modreq)))
+			modreq = mono_array_get (mb->param_modreq, MonoArray*, i);
+		if (mb->param_modopt && (i < mono_array_length (mb->param_modopt)))
+			modopt = mono_array_get (mb->param_modopt, MonoArray*, i);
+		encode_custom_modifiers (assembly, modreq, modopt, p, &p);
 		MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
 		encode_reflection_type (assembly, pt, p, &p);
 	}
@@ -945,6 +982,10 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	rmb->name = mb->name;
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
+	rmb->return_modreq = mb->return_modreq;
+	rmb->return_modopt = mb->return_modopt;
+	rmb->param_modreq = mb->param_modreq;
+	rmb->param_modopt = mb->param_modopt;
 	rmb->mhandle = mb->mhandle;
 }
 
@@ -967,6 +1008,10 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb,
 	rmb->name = mono_string_new (mono_domain_get (), name);
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
+	rmb->return_modreq = NULL;
+	rmb->return_modopt = NULL;
+	rmb->param_modreq = mb->param_modreq;
+	rmb->param_modopt = mb->param_modopt;
 	rmb->mhandle = mb->mhandle;
 }
 
@@ -1093,6 +1138,7 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 	p = buf = g_malloc (64);
 	
 	mono_metadata_encode_value (0x06, p, &p);
+	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, p, &p);
 	/* encode custom attributes before the type */
 	encode_reflection_type (assembly, fb->type, p, &p);
 	g_assert (p-buf < 64);
