@@ -96,7 +96,8 @@ TESTSRC=			\
 	nonvirt.cs		\
 	largeexp.cs		\
 	largeexp2.cs		\
-	marshalbyref1.cs
+	marshalbyref1.cs	\
+	static-ctor.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)

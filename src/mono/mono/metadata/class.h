@@ -39,7 +39,7 @@ struct _MonoClass {
 
 	guint dummy           : 1; /* temorary hack */
 	guint inited          : 1;
-
+	guint runtime_inited  : 1;
 	/* We use init_pending to detect cyclic calls to mono_class_init */
 	guint init_pending    : 1;
 
