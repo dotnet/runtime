@@ -1097,7 +1097,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 				if (ic->generic_inst) {
 					MonoClass *the_ic = mono_class_from_mono_type (ic->generic_inst->generic_type);
-					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, FALSE);
+					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, TRUE);
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
