@@ -1522,3 +1522,86 @@ mono_test_marshal_small_struct_delegate7 (SmallStructDelegate7 delegate)
 
 	return 0;
 }
+
+typedef struct {
+	float i;
+} SmallStruct8;
+	
+typedef SmallStruct8 (STDCALL *SmallStructDelegate8) (SmallStruct8 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate8 (SmallStructDelegate8 delegate)
+{
+	SmallStruct8 ss, res;
+
+	ss.i = 1.0;
+
+	res = delegate (ss);
+	if (! ((res.i == -1.0)))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	double i;
+} SmallStruct9;
+	
+typedef SmallStruct9 (STDCALL *SmallStructDelegate9) (SmallStruct9 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate9 (SmallStructDelegate9 delegate)
+{
+	SmallStruct9 ss, res;
+
+	ss.i = 1.0;
+
+	res = delegate (ss);
+	if (! ((res.i == -1.0)))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	float i, j;
+} SmallStruct10;
+	
+typedef SmallStruct10 (STDCALL *SmallStructDelegate10) (SmallStruct10 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate10 (SmallStructDelegate10 delegate)
+{
+	SmallStruct10 ss, res;
+
+	ss.i = 1.0;
+	ss.j = 2.0;
+
+	res = delegate (ss);
+	if (! ((res.i == -1.0) && (res.j == -2.0)))
+		return 1;
+
+	return 0;
+}
+
+typedef struct {
+	float i;
+	int j;
+} SmallStruct11;
+	
+typedef SmallStruct11 (STDCALL *SmallStructDelegate11) (SmallStruct11 ss);
+
+STDCALL int
+mono_test_marshal_small_struct_delegate11 (SmallStructDelegate11 delegate)
+{
+	SmallStruct11 ss, res;
+
+	ss.i = 1.0;
+	ss.j = 2;
+
+	res = delegate (ss);
+	if (! ((res.i == -1.0) && (res.j == -2)))
+		return 1;
+
+	return 0;
+}
