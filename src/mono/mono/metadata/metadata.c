@@ -2457,6 +2457,20 @@ mono_metadata_type_hash (MonoType *t1)
 	return hash;
 }
 
+static gboolean
+mono_metadata_class_equal (MonoClass *c1, MonoClass *c2)
+{
+	if (c1 == c2)
+		return TRUE;
+	if (c1->generic_inst && c2->generic_inst)
+		return mono_metadata_generic_inst_equal (c1->generic_inst, c2->generic_inst);
+	if ((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR))
+		return c1->byval_arg.data.generic_param->num == c2->byval_arg.data.generic_param->num;
+	if ((c1->byval_arg.type == MONO_TYPE_MVAR) && (c2->byval_arg.type == MONO_TYPE_MVAR))
+		return c1->byval_arg.data.generic_param->num == c2->byval_arg.data.generic_param->num;
+	return FALSE;
+}
+
 /*
  * mono_metadata_type_equal:
  * @t1: a type
@@ -2495,13 +2509,13 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
-		return t1->data.klass == t2->data.klass;
+		return mono_metadata_class_equal (t1->data.klass, t2->data.klass);
 	case MONO_TYPE_PTR:
 		return mono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
-		return t1->data.array->eklass == t2->data.array->eklass;
+		return mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass);
 	case MONO_TYPE_GENERICINST:
 		return mono_metadata_generic_inst_equal (t1->data.generic_inst,
 							 t2->data.generic_inst);
