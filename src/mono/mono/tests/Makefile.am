@@ -164,12 +164,15 @@ TEST_CS_SRC=			\
 	classinit.cs		\
 	classinit2.cs		\
 	synchronized.cs		\
-	vararg.cs		\
 	async_read.cs		\
 	threadpool.cs		\
 	threadpool1.cs		\
-	base-definition.cs
+	base-definition.cs	\
+	bug-27420.cs
 
+# These only compile with MS CSC
+TEST_CSC_SRC=			\
+	vararg.cs
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\
@@ -206,6 +209,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
+			if [ $$? = 2 ]; then break; fi; \
 			failed=`expr $${failed} + 1`; \
 		fi \
 	done; \
@@ -220,6 +224,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
+			if [ $$? = 2 ]; then break; fi; \
 			failed=`expr $${failed} + 1`; \
 		fi \
 	done; \
@@ -230,7 +235,7 @@ testb: $(TEST_PROG) $(TESTBS)
 		./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS);	\
 	done
 
-testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
+testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
@@ -247,6 +252,28 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
 	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
+
+testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
+	for i in $(TESTSI_CS) $(TESTSI_IL); do \
+		echo $$i; \
+		if [ $$i == thread5.exe ]; then \
+			continue; \
+		fi; \
+		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			if [ $$? = 2 ]; then break; fi; \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi ;
 
 testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\

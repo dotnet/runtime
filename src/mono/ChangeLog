@@ -1,5 +1,9 @@
 2003-07-22  Zoltan Varga  <vargaz@freemail.hu>
 
+	* mono/tests/Makefile.am: Add missing test. Make tests interruptable
+	by Ctrl-C. Add testinterp target to run the tests with the interpreter.
+	Do not try to build vararg.cs under mcs.
+
 	* configure.in: Fix detection of GC_gcj_malloc.
 
 2003-07-14  Jerome Laban <jlaban@wanadoo.fr>
