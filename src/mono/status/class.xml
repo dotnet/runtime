@@ -729,6 +729,15 @@
         </maintainers>
     </class>
 
+    <class name="System.Environment">
+        <last-activity>Aug-12-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>genesis@houston.rr.com</maintainer>
+        </maintainers>
+    </class>
     <class name="System.IO.Path">
         <last-activity>Jul-20-2001</last-activity>
         <implementation>no</implementation>
