@@ -717,16 +717,6 @@ ves_runtime_method (MonoInvocation *frame)
 					INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
 					ves_exec_method (&call);
 				} else {
-#if 0
-					if (!method->addr)
-						method->addr = mono_create_trampoline (method, 1);
-					func = method->addr;
-				/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
-					func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, 
-					      delegate->target, frame->stack_args);
-					stackval_from_data (frame->method->signature->ret, frame->retval, 
-							    (char*)&frame->retval->data.p);
-#endif
 					g_assert_not_reached ();
 				}
 
@@ -1305,6 +1295,7 @@ ves_exec_method (MonoInvocation *frame)
 		if (!frame->method->addr) {
 			if (!mono_lookup_pinvoke_call (frame->method)) {
 				frame->ex = (MonoException*)mono_get_exception_missing_method ();
+				goto handle_exception;
 				DEBUG_LEAVE ();
 				return;
 			}

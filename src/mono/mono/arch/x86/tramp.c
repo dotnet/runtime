@@ -344,6 +344,16 @@ mono_create_method_pointer (MonoMethod *method)
 	 * If it is a static P/Invoke method, we can just return the pointer
 	 * to the method implementation.
 	 */
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
+		ji = g_new0 (MonoJitInfo, 1);
+		ji->method = method;
+		ji->code_size = 1;
+		ji->code_start = method->addr;
+
+		mono_jit_info_table_add (mono_root_domain, ji);
+		return method->addr;
+	}
+
 	sig = method->signature;
 
 	code_buffer = p = alloca (512); /* FIXME: check for overflows... */
