@@ -70,6 +70,13 @@
   </tr>
 </table>
 
+** May 9, 2002
+
+	Linear register allocator has been deployed in the Mono JIT
+engine.  Read <a
+href="http://lists.ximian.com/archives/public/mono-list/2002-May/005489.html">about
+it</a>
+
 ** May 5, 2002
 
 	We are able to retrieve simple data from the database 
