@@ -16,6 +16,7 @@
 #include "mini-ppc.h"
 #include "inssel.h"
 #include "cpu-g4.h"
+#include "trace.h"
 
 int mono_exc_esp_offset = 0;
 
