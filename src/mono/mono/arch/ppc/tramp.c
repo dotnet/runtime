@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include <stdlib.h>
+#include <string.h>
 #include "ppc-codegen.h"
 #include "mono/metadata/class.h"
 #include "mono/metadata/tabledefs.h"
@@ -21,7 +22,7 @@
 #endif
 #endif
 
-#define DEBUG(x)
+#define DEBUG(x) x
 
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
@@ -92,7 +93,7 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 }
 
 static void inline
-calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size, gboolean string_ctor)
+calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size, gboolean string_ctor, gboolean *use_memcpy)
 {
 	guint i, fr, gr;
 	guint32 simpletype;
@@ -133,17 +134,31 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size, 
 			add_general (&gr, stack_size, code_size, TRUE);
 			*code_size += 4;
 			break;
-		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_VALUETYPE: {
+			gint size;
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (mono_class_value_size (sig->params [i]->data.klass, NULL) != 4)
-				g_error ("can only marshal enums, not generic structures (size: %d)",
-					 mono_class_value_size (sig->params [i]->data.klass, NULL));
-			add_general (&gr, stack_size, code_size, TRUE);
-			*code_size += 4;
+			size = mono_class_value_size (sig->params [i]->data.klass, NULL);
+			if (size != 4) {
+				DEBUG(printf ("copy %d bytes struct on stack\n",
+					      mono_class_value_size (sig->params [i]->data.klass, NULL)));
+				*use_memcpy = TRUE;
+				*code_size += 8*4;
+				*stack_size += (size + 3) & (~3);
+				if (gr > GENERAL_REGS) {
+					*code_size += 4;
+					*stack_size += 4;
+				}
+			} else {
+				DEBUG(printf ("load %d bytes struct\n",
+					      mono_class_value_size (sig->params [i]->data.klass, NULL)));
+				add_general (&gr, stack_size, code_size, TRUE);
+				*code_size += 4;
+			}
 			break;
+		}
 		case MONO_TYPE_I8:
 			add_general (&gr, stack_size, code_size, FALSE);
 			break;
@@ -203,10 +218,18 @@ enum_retvalue:
 		}
 	}
 
+	if (*use_memcpy) {
+		*stack_size += 2*4;           /* for r14, r15 */
+		*code_size += 6*4;
+		if (sig->hasthis) {
+			*stack_size += 4;     /* for r16 */
+			*code_size += 4;
+		}
+	}
+
 	/* align stack size to 16 */
 	DEBUG (printf ("      stack size: %d (%d)\n       code size: %d\n", (*stack_size + 15) & ~15, *stack_size, *code_size));
 	*stack_size = (*stack_size + 15) & ~15;
-
 }
 
 static inline guint8 *
@@ -218,11 +241,6 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 	ppc_stw  (p, ppc_r31, stack_size - 4, ppc_r1); /* sp[+4]  <--- r31     save r31 */
 	ppc_stw  (p, ppc_r0, stack_size + 4, ppc_r1);  /* sp[-4]  <--- LR      save return address for "callme" */
 	ppc_mr   (p, ppc_r31, ppc_r1);                 /* r31     <--- sp */
-
-	ppc_mr   (p, ppc_r12, ppc_r6);                        /* keep "arguments" in register */
-	ppc_mr   (p, ppc_r0, ppc_r3);                         /* keep "callme" in register */
-
-	ppc_stw  (p, ppc_r4, stack_size - 12, ppc_r31);               /* preserve "retval", sp[+8] */
 
 	return p;
 }
@@ -237,23 +255,82 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 				ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
                                 stack_par_pos += 4; \
 			}
+#define SAVE_4_VAL_IN_GENERIC_REGISTER \
+			if (gr < GENERAL_REGS) { \
+				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
+				ppc_lwz  (p, ppc_r3 + gr, 0, ppc_r3 + gr); \
+				gr ++; \
+			} else { \
+				ppc_lwz  (p, ppc_r11, i*16, ARG_BASE); \
+				ppc_lwz  (p, ppc_r11, 0, ppc_r11); \
+				ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
+                                stack_par_pos += 4; \
+			}
 
 inline static guint8*
-emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size)
+emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gboolean use_memcpy)
 {
-	guint i, fr, gr, act_strs, stack_par_pos;
+	guint i, fr, gr, stack_par_pos, struct_pos, cur_struct_pos;
 	guint32 simpletype;
 
 	fr = gr = 0;
-	act_strs = 0;
 	stack_par_pos = 8;
 
+	ppc_stw  (p, ppc_r4, stack_size - 12, ppc_r31);               /* preserve "retval", sp[+8] */
+
+	if (use_memcpy) {
+		ppc_stw  (p, ppc_r14, stack_size - 16, ppc_r31);      /* save r14 */
+		ppc_stw  (p, ppc_r15, stack_size - 20, ppc_r31);      /* save r15 */
+		ppc_mr   (p, ppc_r14, ppc_r3);                        /* keep "callme" in register */
+		ppc_mr   (p, ppc_r15, ppc_r6);                        /* keep "arguments" in register */
+	} else {
+		ppc_mr   (p, ppc_r12, ppc_r6);                        /* keep "arguments" in register */
+		ppc_mr   (p, ppc_r0, ppc_r3);                         /* keep "callme" in register */
+	}
+
 	if (sig->hasthis) {
-		ppc_mr (p, ppc_r3, ppc_r5);
+		if (use_memcpy) {
+			ppc_stw  (p, ppc_r16, stack_size - 24, ppc_r31);      /* save r16 */
+			ppc_mr   (p, ppc_r16, ppc_r5);
+		} else
+			ppc_mr (p, ppc_r3, ppc_r5);
 		gr ++;
 	}
 
-	act_strs = 0;
+	if (use_memcpy) {
+		cur_struct_pos = struct_pos = stack_par_pos;
+		for (i = 0; i < sig->param_count; ++i) {
+			if (sig->params [i]->byref)
+				continue;
+			if (sig->params [i]->type == MONO_TYPE_VALUETYPE && !sig->params [i]->data.klass->enumtype) {
+				gint size;
+
+				size = mono_class_value_size (sig->params [i]->data.klass, NULL);
+				if (size != 4) {
+					/* call memcpy */
+					ppc_addi (p, ppc_r3, ppc_r1, stack_par_pos);
+					ppc_lwz  (p, ppc_r4, i*16, ppc_r15);
+					/* FIXME check if size > 0xffff */
+					ppc_li   (p, ppc_r5, size & 0xffff);
+					ppc_lis  (p, ppc_r0, (guint32) memcpy >> 16);
+					ppc_ori  (p, ppc_r0, ppc_r0, (guint32) memcpy & 0xffff);
+					ppc_mtlr (p, ppc_r0);
+					ppc_blrl (p);
+					stack_par_pos += (size + 3) & (~3);
+				}
+			}
+		}
+
+		if (sig->hasthis) {
+			ppc_mr   (p, ppc_r3, ppc_r16);
+			ppc_lwz  (p, ppc_r16, stack_size - 24, ppc_r31);      /* restore r16 */
+		}
+		ppc_mr   (p, ppc_r0,  ppc_r14);
+		ppc_mr   (p, ppc_r12, ppc_r15);
+		ppc_lwz  (p, ppc_r14, stack_size - 16, ppc_r31);      /* restore r14 */
+		ppc_lwz  (p, ppc_r15, stack_size - 20, ppc_r31);      /* restore r15 */
+	}
+
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
 			SAVE_4_IN_GENERIC_REGISTER;
@@ -279,31 +356,28 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 		case MONO_TYPE_SZARRAY:
 			SAVE_4_IN_GENERIC_REGISTER;
 			break;
-			/* g_warning ("untested marshaling\n");
-				if (gr < GENERAL_REGS) {
-					ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
-					ppc_lwz  (p, ppc_r3 + gr, G_STRUCT_OFFSET (MonoArray, vector), ppc_r3 + gr);
-					gr ++;
-				} else {
-					NOT_IMPLEMENTED ("save marshalled SZARRAY on stack");
-				}
-				break; */
-		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_VALUETYPE: {
+			gint size;
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (mono_class_value_size (sig->params [i]->data.klass, NULL) != 4)
-				g_error ("can only marshal enums, not generic structures (size: %d)",
-					 mono_class_value_size (sig->params [i]->data.klass, NULL));
-			if (gr < GENERAL_REGS) {
-				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
-				ppc_lwz  (p, ppc_r3 + gr, 0, ppc_r3 + gr);
-				gr ++;
+			size = mono_class_value_size (sig->params [i]->data.klass, NULL);
+			if (size == 4) {
+				SAVE_4_VAL_IN_GENERIC_REGISTER;
 			} else {
-				NOT_IMPLEMENTED ("save value type on stack");
+				if (gr < GENERAL_REGS) {
+					ppc_addi (p, ppc_r3 + gr, ppc_r1, cur_struct_pos);
+					gr ++;
+				} else {
+					ppc_lwz  (p, ppc_r11, cur_struct_pos, ppc_r1);
+					ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1);
+					stack_par_pos += 4;
+				}
+				cur_struct_pos += (size + 3) & (~3);
 			}
 			break;
+		}
 		case MONO_TYPE_I8:
 			if (gr < 7) {
 				if (gr & 1)
@@ -454,13 +528,14 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	guint8 *p, *code_buffer;
 	guint stack_size, code_size;
+	gboolean use_memcpy = FALSE;
 
 	DEBUG (printf ("\nPInvoke [start emiting]\n"));
-	calculate_sizes (sig, &stack_size, &code_size, string_ctor);
+	calculate_sizes (sig, &stack_size, &code_size, string_ctor, &use_memcpy);
 
 	p = code_buffer = alloc_code_memory (code_size);
 	p = emit_prolog (p, sig, stack_size);
-	p = emit_save_parameters (p, sig, stack_size);
+	p = emit_save_parameters (p, sig, stack_size, use_memcpy);
 	p = emit_call_and_store_retval (p, sig, stack_size, string_ctor);
 	p = emit_epilog (p, sig, stack_size);
 
@@ -512,6 +587,20 @@ mono_create_method_pointer (MonoMethod *method)
 	guint i, align = 0, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param,
 		this_flag;
 	guint32 simpletype;
+
+	/*
+	 * If it is a static P/Invoke method, we can just return the pointer
+	 * to the method implementation.
+	 */
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
+		ji = g_new0 (MonoJitInfo, 1);
+		ji->method = method;
+		ji->code_size = 1;
+		ji->code_start = method->addr;
+
+		mono_jit_info_table_add (mono_root_domain, ji);
+		return method->addr;
+	}
 
 	code_size = 1024;
 	stack_size = 1024;
@@ -572,6 +661,9 @@ mono_create_method_pointer (MonoMethod *method)
 
 	/* add stackval arguments */
 	for (i = 0; i < sig->param_count; ++i) {
+		/* if (vtbuf [i] >= 0) {
+			NOT_IMPLEMENTED ("vtbuf");
+			} */
 		if (reg_param < 8) {
 			ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - this_flag)*4);
 			reg_param ++;
