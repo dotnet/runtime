@@ -2680,21 +2680,34 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 		SetLastError (ERROR_FILE_NOT_FOUND);
 		return FALSE;
 	}
-
-	if (attrs == 0x80000000){
-		result = chmod (utf8_name, buf.st_mode | S_IEXEC | S_IXOTH | S_IXGRP);
-		g_free (utf8_name);
-		if (result != 0) {
-			g_free (utf8_name);
-			SetLastError (ERROR_FILE_NOT_FOUND);
-			return FALSE;
-		}
-
-		return TRUE;
+	
+	/* Contrary to the documentation, ms allows NORMAL to be
+	 * specified along with other attributes, so dont bother to
+	 * catch that case here.
+	 */
+	if (attrs & FILE_ATTRIBUTE_READONLY) {
+		result = chmod (utf8_name, buf.st_mode & ~(S_IWRITE | S_IWOTH | S_IWGRP));
+	} else {
+		result = chmod (utf8_name, buf.st_mode | S_IWRITE | S_IWOTH | S_IWGRP);
 	}
 
-	SetLastError (ERROR_INVALID_FUNCTION);
-	return FALSE;
+	/* Ignore the other attributes for now */
+
+	if (attrs & 0x80000000){
+		result = chmod (utf8_name, buf.st_mode | S_IEXEC | S_IXOTH | S_IXGRP);
+	}
+	/* Don't bother to reset executable (might need to change this
+	 * policy)
+	 */
+	
+	g_free (utf8_name);
+
+	if (result != 0) {
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		return(FALSE);
+	}
+
+	return(TRUE);
 }
 
 /**

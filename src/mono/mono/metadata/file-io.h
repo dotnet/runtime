@@ -59,6 +59,25 @@ typedef struct _MonoIOStat {
 	gint64 last_write_time;
 } MonoIOStat;
 
+/* This is a copy of System.IO.FileAttributes */
+typedef enum {
+	FileAttributes_ReadOnly=0x00001,
+	FileAttributes_Hidden=0x00002,
+	FileAttributes_System=0x00004,
+	FileAttributes_Directory=0x00010,
+	FileAttributes_Archive=0x00020,
+	FileAttributes_Device=0x00040,
+	FileAttributes_Normal=0x00080,
+	FileAttributes_Temporary=0x00100,
+	FileAttributes_SparseFile=0x00200,
+	FileAttributes_ReparsePoint=0x00400,
+	FileAttributes_Compressed=0x00800,
+	FileAttributes_Offline=0x01000,
+	FileAttributes_NotContentIndexed=0x02000,
+	FileAttributes_Encrypted=0x04000,
+	FileAttributes_MonoExecutable=0x80000000,
+} MonoFileAttributes;
+
 /* System.IO.MonoIO */
 
 extern MonoBoolean

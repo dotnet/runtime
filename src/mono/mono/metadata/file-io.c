@@ -177,6 +177,18 @@ static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *
 	stat->name = mono_string_new_utf16 (mono_domain_get (), name, len);
 }
 
+/* Managed file attributes have nearly but not quite the same values
+ * as the w32 equivalents.
+ */
+static guint32 convert_attrs(MonoFileAttributes attrs)
+{
+	if(attrs & FileAttributes_Encrypted) {
+		attrs |= FILE_ATTRIBUTE_ENCRYPTED;
+	}
+	
+	return(attrs);
+}
+
 /* System.IO.MonoIO internal calls */
 
 MonoBoolean
@@ -404,7 +416,8 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 
 	*error=ERROR_SUCCESS;
 	
-	ret=SetFileAttributes (mono_string_chars (path), attrs);
+	ret=SetFileAttributes (mono_string_chars (path),
+			       convert_attrs (attrs));
 	if(ret==FALSE) {
 		*error=GetLastError ();
 	}
