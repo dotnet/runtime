@@ -34,6 +34,17 @@
 	(For example, managed XSLT has standalone test which downloads and
 	expands some megabytes of OASIS test suite.)
 
+	Here I list them up as long as I know. If you are going to add another
+	standalone tests, please add one line here. It is also recommended that
+	you add some notes on how to build and run tests.
+
+	- Mono.Data/test/
+	- System.Web/Test/TestMonoWeb : see README
+	- System.Web.Services/Test/standalone : see README
+	- System.Windows.Forms/SWFTest/
+	- System.XML/System.Xml.Serialization/standalone_tests/
+	- System.XML/Tests/System.Xml.Xsl/standalone_tests : see README
+
 ** Getting started
 
 	If you are new to writing NUnit tests, there is a template you may use
