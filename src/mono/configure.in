@@ -372,14 +372,6 @@ fi
 
 AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
 
-# assembly bundle support, see metadata/make-bundle.pl for more info
-AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
-	BUNDLE_FILE=$with_bundle
-	AC_SUBST(BUNDLE_FILE)
-	AC_DEFINE(WITH_BUNDLE)
-],[with_bundle=no])
-AM_CONDITIONAL(WITH_BUNDLE, test x$with_bundle != xno)
-
 LIBGC_CFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=

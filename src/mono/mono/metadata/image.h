@@ -77,4 +77,5 @@ void          mono_image_add_to_name_cache (MonoImage *image,
 											const char *name, guint32 idx);
 gboolean      mono_image_has_authenticode_entry (MonoImage *image);
 
+
 #endif

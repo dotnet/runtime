@@ -17,9 +17,6 @@
 #include "image.h"
 #include "cil-coff.h"
 #include "rawbuffer.h"
-#ifdef WITH_BUNDLE
-#include "mono-bundle.h"
-#endif
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
@@ -40,7 +37,11 @@ default_path [] = {
 	NULL
 };
 
+/* Contains the list of directories to be searched for assemblies (MONO_PATH) */
 static char **assemblies_path = NULL;
+
+/* Contains the list of directories that point to auxiliary GACs */
+static char **extra_gac_paths = NULL;
 
 /*
  * keeps track of loaded assemblies
@@ -54,7 +55,8 @@ static CRITICAL_SECTION assemblies_mutex;
 /* A hastable of thread->assembly list mappings */
 static GHashTable *assemblies_loading;
 
-static char **extra_gac_paths = NULL;
+/* If defined, points to the bundled assembly information */
+const MonoBundledAssembly **bundles;
 
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
@@ -73,7 +75,8 @@ encode_public_tok (const guchar *token, gint32 len)
 }
 
 static void
-check_path_env (void) {
+check_path_env (void)
+{
 	const char *path;
 	char **splitted;
 	
@@ -586,26 +589,31 @@ absolute_dir (const gchar *filename)
 	return res;
 }
 
-static MonoImage*
-do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
+/** 
+ * mono_assembly_open_from_bundle:
+ * @filename: Filename requested
+ * @status: return value
+ *
+ * This routine tries to open the assembly specified by `filename' from the
+ * defined bundles, if found, returns the MonoImage for it, if not found
+ * returns NULL
+ */
+static MonoImage *
+mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *status)
 {
-	MonoImage *image = NULL;
-#ifdef WITH_BUNDLE
 	int i;
 	char *name = g_path_get_basename (filename);
 	char *dot = strrchr (name, '.');
-	GList *tmp;
-	MonoAssembly *ass;
-	
-	if (dot)
-		*dot = 0;
-	/* we do a very simple search for bundled assemblies: it's not a general 
+	MonoImage *image = NULL;
+
+	/*
+	 * we do a very simple search for bundled assemblies: it's not a general 
 	 * purpose assembly loading mechanism.
 	 */
 	EnterCriticalSection (&assemblies_mutex);
-	for (i = 0; !image && bundled_assemblies [i]; ++i) {
-		if (strcmp (bundled_assemblies [i]->name, name) == 0) {
-			image = mono_image_open_from_data ((char*)bundled_assemblies [i]->data, bundled_assemblies [i]->size, FALSE, status);
+	for (i = 0; !image && bundles [i]; ++i) {
+		if (strcmp (bundles [i]->name, name) == 0) {
+			image = mono_image_open_from_data ((char*)bundles [i]->data, bundles [i]->size, FALSE, status);
 			break;
 		}
 	}
@@ -615,7 +623,20 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		mono_image_addref (image);
 		return image;
 	}
-#endif
+	return NULL;
+}
+
+static MonoImage*
+do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
+{
+	MonoImage *image = NULL;
+
+	if (bundles != NULL){
+		image = mono_assembly_open_from_bundle (filename, status);
+
+		if (image != NULL)
+			return image;
+	}
 	EnterCriticalSection (&assemblies_mutex);
 	image = mono_image_open (filename, status);
 	LeaveCriticalSection (&assemblies_mutex);
@@ -1086,7 +1107,7 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 	GList *copy;
 
 	/*
-     * We make a copy of the list to avoid calling the callback inside the 
+	 * We make a copy of the list to avoid calling the callback inside the 
 	 * lock, which could lead to deadlocks.
 	 */
 	EnterCriticalSection (&assemblies_mutex);
@@ -1098,7 +1119,8 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 	g_list_free (copy);
 }
 
-/* Holds the assembly of the application, for
+/*
+ * Holds the assembly of the application, for
  * System.Diagnostics.Process::MainModule
  */
 static MonoAssembly *main_assembly=NULL;
@@ -1119,4 +1141,10 @@ MonoImage*
 mono_assembly_get_image (MonoAssembly *assembly)
 {
 	return assembly->image;
+}
+
+void
+mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
+{
+	bundles = assemblies;
 }

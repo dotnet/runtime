@@ -1,3 +1,7 @@
+2004-11-27  Miguel de Icaza  <miguel@ximian.com>
+
+	* configure.in: Removed support for configured-based bundles. 
+
 2004-11-26  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am ($(symlinks)): Depend on config.status too.

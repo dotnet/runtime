@@ -55,5 +55,12 @@ void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func,
 
 void          mono_assembly_invoke_load_hook (MonoAssembly *ass);
 
+typedef struct {
+	const char *name;
+	const unsigned char *data;
+	const unsigned int size;
+} MonoBundledAssembly;
+
+void          mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies);
 #endif
 
