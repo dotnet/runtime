@@ -102,7 +102,6 @@ static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref_check = NULL;
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
-static MonoMethodSignature *helper_sig_obj_obj_cls = NULL;
 
 static guint32 default_opt = MONO_OPT_PEEPHOLE;
 
@@ -3969,14 +3968,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
 		
-			if (klass->marshalbyref) {
-				MonoInst *iargs [2];
-				int temp;			
-				iargs [0] = *sp;
-				NEW_CLASSCONST (cfg, iargs [1], klass);
-				temp = mono_emit_native_call (cfg, bblock, mono_object_isinst_mbyref, helper_sig_obj_obj_cls, iargs, ip, FALSE);
+			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			
+				MonoMethod *mono_isinst;
+				MonoInst *iargs [1];
+				MonoBasicBlock *ebblock;
+				int costs;
+				int temp;
+				
+				mono_isinst = mono_marshal_get_isinst (klass); 
+				iargs [0] = sp [0];
+				
+				costs = inline_method (cfg, mono_isinst, mono_isinst->signature, bblock, 
+							   iargs, ip, real_offset, dont_inline, &ebblock);
+			
+				g_assert (costs > 0);
+				
+				ip += 5;
+				real_offset += 5;
+			
+				GET_BBLOCK (cfg, bbhash, bblock, ip);
+				ebblock->next_bb = bblock;
+				link_bblock (cfg, ebblock, bblock);
+
+				temp = iargs [0]->inst_i0->inst_c0;
 				NEW_TEMPLOAD (cfg, *sp, temp);
-				sp++;
+				
+ 				sp++;
+				bblock = ebblock;
+				inline_costs += costs;
+
 			}
 			else {
 				MONO_INST_NEW (cfg, ins, *ip);
@@ -3985,8 +4006,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
 				*sp++ = ins;
+				ip += 5;
 			}
-			ip += 5;
 			break;
 		case CEE_UNBOX_ANY: {
 			MonoInst *add, *vtoffset;
@@ -4009,14 +4030,34 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				/* CASTCLASS */
-				if (klass->marshalbyref) {
-					MonoInst *iargs [2];
+				if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+					MonoMethod *mono_castclass;
+					MonoInst *iargs [1];
+					MonoBasicBlock *ebblock;
+					int costs;
 					int temp;
-					iargs [0] = *sp;
-					NEW_CLASSCONST (cfg, iargs [1], klass);
-					temp = mono_emit_jit_icall (cfg, bblock, mono_object_castclass_mbyref, iargs, ip);
+					
+					mono_castclass = mono_marshal_get_castclass (klass); 
+					iargs [0] = sp [0];
+					
+					costs = inline_method (cfg, mono_castclass, mono_castclass->signature, bblock, 
+								   iargs, ip, real_offset, dont_inline, &ebblock);
+				
+					g_assert (costs > 0);
+					
+					ip += 5;
+					real_offset += 5;
+				
+					GET_BBLOCK (cfg, bbhash, bblock, ip);
+					ebblock->next_bb = bblock;
+					link_bblock (cfg, ebblock, bblock);
+	
+					temp = iargs [0]->inst_i0->inst_c0;
 					NEW_TEMPLOAD (cfg, *sp, temp);
+					
 					sp++;
+					bblock = ebblock;
+					inline_costs += costs;				
 				}
 				else {
 					MONO_INST_NEW (cfg, ins, CEE_CASTCLASS);
@@ -4115,14 +4156,35 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
 				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 		
-			if (klass->marshalbyref) {
-				MonoInst *iargs [2];
+			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+				
+				MonoMethod *mono_castclass;
+				MonoInst *iargs [1];
+				MonoBasicBlock *ebblock;
+				int costs;
 				int temp;
-				iargs [0] = *sp;
-				NEW_CLASSCONST (cfg, iargs [1], klass);
-				temp = mono_emit_jit_icall (cfg, bblock, mono_object_castclass_mbyref, iargs, ip);
+				
+				mono_castclass = mono_marshal_get_castclass (klass); 
+				iargs [0] = sp [0];
+				
+				costs = inline_method (cfg, mono_castclass, mono_castclass->signature, bblock, 
+							   iargs, ip, real_offset, dont_inline, &ebblock);
+			
+				g_assert (costs > 0);
+				
+				ip += 5;
+				real_offset += 5;
+			
+				GET_BBLOCK (cfg, bbhash, bblock, ip);
+				ebblock->next_bb = bblock;
+				link_bblock (cfg, ebblock, bblock);
+
+				temp = iargs [0]->inst_i0->inst_c0;
 				NEW_TEMPLOAD (cfg, *sp, temp);
-				sp++;
+				
+ 				sp++;
+				bblock = ebblock;
+				inline_costs += costs;
 			}
 			else {
 				MONO_INST_NEW (cfg, ins, *ip);
@@ -4132,8 +4194,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
 				*sp++ = ins;
+				ip += 5;
 			}
-			ip += 5;
 			break;
 		case CEE_THROW:
 			CHECK_STACK (1);
@@ -4176,7 +4238,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
 			if (*ip == CEE_STFLD) {
-				if (klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) {
+				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound) {
 					MonoMethod *stfld_wrapper = mono_marshal_get_stfld_wrapper (field->type); 
 					MonoInst *iargs [5];
 
@@ -4231,7 +4293,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MONO_ADD_INS (bblock, store);
 				}
 			} else {
-				if (klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) {
+				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound) {
 					/* fixme: we need to inline that call somehow */
 					MonoMethod *ldfld_wrapper = mono_marshal_get_ldfld_wrapper (field->type); 
 					MonoInst *iargs [4];
@@ -5222,6 +5284,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				start_new_bblock = 1;
 				ip += 6;
 				break;
+			case CEE_MONO_CISINST:
+			case CEE_MONO_CCASTCLASS: {
+				int token;
+				CHECK_STACK (1);
+				--sp;
+				CHECK_OPSIZE (6);
+				token = read32 (ip + 2);
+				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
+				MONO_INST_NEW (cfg, ins, (ip [1] == CEE_MONO_CISINST) ? OP_CISINST : OP_CCASTCLASS);
+				ins->type = STACK_I4;
+				ins->inst_left = *sp;
+				ins->inst_newa_class = klass;
+				ins->cil_code = ip;
+				*sp++ = ins;
+				ip += 6;
+				break;
+			}
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;
@@ -6050,13 +6129,6 @@ create_helper_signature (void)
 	helper_sig_class_init_trampoline = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	helper_sig_class_init_trampoline->ret = &mono_defaults.void_class->byval_arg;
 	helper_sig_class_init_trampoline->pinvoke = 1;	
-	
-	/* MonoObject * amethod (MonoObject *obj, MonoClass *klass) */
-	helper_sig_obj_obj_cls = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_obj_obj_cls->params [0] = &mono_defaults.object_class->byval_arg;
-	helper_sig_obj_obj_cls->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_obj_obj_cls->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_obj_obj_cls->pinvoke = 1;
 }
 
 static GHashTable *jit_icall_hash_name = NULL;
@@ -8185,7 +8257,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldftn_nosync, "mono_ldftn_nosync", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
-	mono_register_jit_icall (mono_object_castclass_mbyref, "mono_object_castclass", helper_sig_obj_obj_cls, FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS

@@ -315,6 +315,9 @@ MINI_OP(OP_LDELEMA2D, "getldelema2")
 MINI_OP(OP_MEMCPY, "memcpy")
 /* inlined small memset with constant length */
 MINI_OP(OP_MEMSET, "memset")
+/* type check that support custom remoting types */
+MINI_OP(OP_CISINST, "cisinst")
+MINI_OP(OP_CCASTCLASS, "ccastclass")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")

@@ -1348,6 +1348,87 @@ reg: CEE_ISINST (reg) {
 	mono_bblock_add_inst (s->cbb, end_label);
 }
 
+reg: OP_CISINST (reg) {
+	/* This opcode takes as input an object reference and a class, and returns:
+	0) if the object is an instance of the class,
+	1) if the object is not instance of the class,
+	2) if the object is a proxy whose type cannot be determined */
+	
+    MonoClass *klass = tree->inst_newa_class;
+	MonoInst *end_label, *true_label, *false_label, *false2_label;
+	MonoInst *no_proxy_label, *interface_fail_label;
+	int obj_reg = state->left->reg1;
+	int tmp_reg = mono_regstate_next_int (s->rs);
+	int klass_reg = mono_regstate_next_int (s->rs);
+
+	MONO_NEW_LABEL (s, end_label);
+	MONO_NEW_LABEL (s, true_label);
+	MONO_NEW_LABEL (s, false_label);
+	MONO_NEW_LABEL (s, false2_label);
+
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, obj_reg, 0);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, false_label);
+
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		MONO_NEW_LABEL (s, interface_fail_label);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		mini_emit_isninst_iface_cast (s, tmp_reg, klass, interface_fail_label, true_label);
+		
+		mono_bblock_add_inst (s->cbb, interface_fail_label);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		
+		if (mono_compile_aot) {
+			int tproxy_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+		}
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false2_label);
+		
+	} else {
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		
+		MONO_NEW_LABEL (s, no_proxy_label);
+		
+		if (mono_compile_aot) {
+			int tproxy_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+		}
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, no_proxy_label);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, no_proxy_label);
+		
+		mini_emit_isninst_cast (s, klass_reg, klass, false2_label, true_label);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false2_label);
+		
+		mono_bblock_add_inst (s->cbb, no_proxy_label);
+		mini_emit_isninst_cast (s, klass_reg, klass, false_label, true_label);
+	}
+
+	mono_bblock_add_inst (s->cbb, false_label);
+	MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+	mono_bblock_add_inst (s->cbb, false2_label);
+	MONO_EMIT_NEW_ICONST (s, state->reg1, 2);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+	mono_bblock_add_inst (s->cbb, true_label);
+	MONO_EMIT_NEW_ICONST (s, state->reg1, 0);
+	mono_bblock_add_inst (s->cbb, end_label);
+}
+
 reg: OP_UNBOXCAST (reg) {
      	MonoClass *klass = tree->inst_newa_class;
 	int obj_reg = state->left->reg1;
@@ -1473,6 +1554,92 @@ reg: CEE_CASTCLASS (reg) {
 
 	mono_bblock_add_inst (s->cbb, object_is_null);
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
+}
+
+reg: OP_CCASTCLASS (reg) {
+	/* This opcode takes as input an object reference and a class, and returns:
+	0) if the object is an instance of the class,
+	1) if the object is a proxy whose type cannot be determined
+	an InvalidCastException exception is thrown otherwhise*/
+	
+	MonoClass *klass = tree->inst_newa_class;
+	MonoInst *end_label, *fail_label, *no_proxy_label, *ok_result_label;
+	int obj_reg = state->left->reg1;
+	int tmp_reg = mono_regstate_next_int (s->rs);
+	int klass_reg = mono_regstate_next_int (s->rs);
+
+	MONO_NEW_LABEL (s, end_label);
+	MONO_NEW_LABEL (s, ok_result_label);
+
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, obj_reg, 0);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, ok_result_label);
+
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	
+		MONO_NEW_LABEL (s, fail_label);
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		mini_emit_isninst_iface_cast (s, tmp_reg, klass, fail_label, ok_result_label);
+		
+		mono_bblock_add_inst (s->cbb, fail_label);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+
+		if (mono_compile_aot) {
+			int tproxy_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+		}
+		
+		MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_COND_EXC (s, EQ, "InvalidCastException");
+		
+		MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+		
+	} else {
+
+		MONO_NEW_LABEL (s, no_proxy_label);
+		MONO_NEW_LABEL (s, fail_label);
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+
+		if (mono_compile_aot) {
+			int tproxy_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+		}
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, no_proxy_label);
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+		
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, no_proxy_label);
+		
+		mini_emit_isninst_cast (s, klass_reg, klass, fail_label, ok_result_label);
+		mono_bblock_add_inst (s->cbb, fail_label);
+		MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+		
+		mono_bblock_add_inst (s->cbb, no_proxy_label);
+		mini_emit_castclass (s, klass_reg, klass);
+	}
+
+	mono_bblock_add_inst (s->cbb, ok_result_label);
+	MONO_EMIT_NEW_ICONST (s, state->reg1, 0);
+	mono_bblock_add_inst (s->cbb, end_label);
 }
 
 reg: CEE_NEWARR (reg) {
