@@ -759,7 +759,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				td.is_bb_start [td.ip - td.il_code] == 3 ? "<>" :
 				td.is_bb_start [td.ip - td.il_code] == 2 ? "< " :
 				td.is_bb_start [td.ip - td.il_code] == 1 ? " >" : "  ",
-				mono_opcode_names [*td.ip], td.new_ip - td.new_code, td.sp - td.stack, 
+				mono_opcode_name (*td.ip), td.new_ip - td.new_code, td.sp - td.stack, 
 				td.sp > td.stack ? stack_type_string [td.sp [-1].type] : "  ",
 				(td.sp > td.stack && (td.sp [-1].type == STACK_TYPE_O || td.sp [-1].type == STACK_TYPE_VT)) ? (td.sp [-1].klass == NULL ? "?" : td.sp [-1].klass->name) : "",
 				td.vt_sp, td.max_vt_sp);

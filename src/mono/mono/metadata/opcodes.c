@@ -23,13 +23,28 @@ mono_opcodes [MONO_CEE_LAST + 1] = {
 
 #undef OPDEF
 
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) b,
-
-const char* const
-mono_opcode_names [MONO_CEE_LAST + 1] = {
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+static const struct msgstr_t {
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) char MSGSTRFIELD(__LINE__) [sizeof (b)];
 #include "mono/cil/opcode.def"
-	NULL
+#undef OPDEF
+} opstr = {
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) b,
+#include "mono/cil/opcode.def"
+#undef OPDEF
 };
+static const int opidx [] = {
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) [MONO_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "mono/cil/opcode.def"
+#undef OPDEF
+};
+
+const char*
+mono_opcode_name (int opcode)
+{
+	return (const char*)&opstr + opidx [opcode];
+}
 
 MonoOpcodeEnum
 mono_opcode_value (const guint8 **ip, const guint8 *end)

@@ -12,7 +12,7 @@
 #endif
 #define MINI_OP(a,b) b,
 /* keep in sync with the enum in mini.h */
-static const char* 
+static const char* const
 opnames[] = {
 #include "mini-ops.h"
 };
@@ -23,7 +23,7 @@ mono_inst_name (int op) {
 	if (op >= OP_LOAD && op <= OP_LAST)
 		return opnames [op - OP_LOAD];
 	if (op < OP_LOAD)
-		return mono_opcode_names [op];
+		return mono_opcode_name (op);
 	g_error ("unknown opcode name for %d", op);
 	return NULL;
 }

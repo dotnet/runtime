@@ -61,7 +61,9 @@ typedef struct {
 } MonoOpcode;
 
 extern const MonoOpcode mono_opcodes [];
-extern const char* const mono_opcode_names [];
+
+const char*
+mono_opcode_name (int opcode);
 
 MonoOpcodeEnum
 mono_opcode_value (const guint8 **ip, const guint8 *end);

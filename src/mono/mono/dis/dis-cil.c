@@ -129,7 +129,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
                 if (in_fault && entry->opval == 0xDC)
                         fprintf (output, " %s", "endfault");
                 else
-                        fprintf (output, " %s ", mono_opcode_names [i]);
+                        fprintf (output, " %s ", mono_opcode_name (i));
 		ptr++;
 		switch (entry->argument){
 		case MonoInlineBrTarget: {

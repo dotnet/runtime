@@ -236,10 +236,10 @@ method_stats (MonoMethod *method) {
 			n = read32 (ip + 1);
 			if (n >= -1 && n <= 8) {
 				int_waste += 4;
-				g_print ("%s %d\n", mono_opcode_names [i], n);
+				g_print ("%s %d\n", mono_opcode_name (i), n);
 			} else if (n < 128 && n >= -128) {
 				int_waste += 3;
-				g_print ("%s %d\n", mono_opcode_names [i], n);
+				g_print ("%s %d\n", mono_opcode_name (i), n);
 			}
 			ip += 5;
 			break;
@@ -280,16 +280,16 @@ method_stats (MonoMethod *method) {
 					case MONO_CEE_LDLOC:
 					case MONO_CEE_STLOC:
 						var_waste += 3;
-						g_print ("%s %d\n", mono_opcode_names [i], n);
+						g_print ("%s %d\n", mono_opcode_name (i), n);
 						break;
 					default:
 						var_waste += 2;
-						g_print ("%s %d\n", mono_opcode_names [i], n);
+						g_print ("%s %d\n", mono_opcode_name (i), n);
 						break;
 					}
 				} else {
 					var_waste += 2;
-					g_print ("%s %d\n", mono_opcode_names [i], n);
+					g_print ("%s %d\n", mono_opcode_name (i), n);
 				}
 			}
 			ip += 3;
@@ -301,7 +301,7 @@ method_stats (MonoMethod *method) {
 				case MONO_CEE_LDLOC_S:
 				case MONO_CEE_STLOC_S:
 					var_waste++;
-					g_print ("%s %d\n", mono_opcode_names [i], (signed char)ip [1]);
+					g_print ("%s %d\n", mono_opcode_name (i), (signed char)ip [1]);
 					break;
 				default:
 					break;
@@ -311,7 +311,7 @@ method_stats (MonoMethod *method) {
 			break;
 		case MonoShortInlineI:
 			if ((signed char)ip [1] <= 8 && (signed char)ip [1] >= -1) {
-				g_print ("%s %d\n", mono_opcode_names [i], (signed char)ip [1]);
+				g_print ("%s %d\n", mono_opcode_name (i), (signed char)ip [1]);
 				int_waste ++;
 			}
 			ip += 2;
