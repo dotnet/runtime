@@ -6102,8 +6102,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	csig->call_convention = MONO_CALL_STDCALL;
 #endif
 
-	/* FIXME: Handle the 2.0 UnmanagedFunctionPointerAttribute as well */
-
 	/* Change default calling convention if needed */
 	/* Why is this a modopt ? */
 	if (invoke_sig->ret && invoke_sig->ret->num_mods) {
