@@ -360,6 +360,7 @@ mono_aot_init (void)
 {
 	InitializeCriticalSection (&aot_mutex);
 
+	MONO_GC_REGISTER_ROOT (aot_modules);
 	aot_modules = mono_g_hash_table_new (NULL, NULL);
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
