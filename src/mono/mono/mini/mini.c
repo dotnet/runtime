@@ -3893,7 +3893,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			n = read32 (ip + 1);
 
-			if (method->wrapper_type != MONO_WRAPPER_NONE) {
+			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, n));								
+				ins->cil_code = ip;
+				ins->type = STACK_OBJ;
+				*sp = ins;
+			}
+			else if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				int temp;
 				MonoInst *iargs [1];
 
