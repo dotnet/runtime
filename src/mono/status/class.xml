@@ -768,37 +768,73 @@
     </class>
 
     <class name="System.Environment">
-        <last-activity>Aug-12-2001</last-activity>
+        <last-activity>Aug-22-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>40</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
     <class name="System.IO.Path">
-        <last-activity>Jul-20-2001</last-activity>
+        <last-activity>Aug-22-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>yes</test-suite>
-        <completion>50</completion>
+        <completion>75</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
     <class name="System.OperatingSystem">
-        <last-activity>Aug-13-2001</last-activity>
+        <last-activity>Aug-21-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>yes</test-suite>
-        <completion>50</completion>
+        <completion>75</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
     <class name="System.IO.Directory">
-        <last-activity>Aug-13-2001</last-activity>
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>develop@wtfo-guru.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.IO.File">
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>develop@wtfo-guru.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.IO.FileSystemInfo">
+        <last-activity>Aug-22-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>develop@wtfo-guru.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.IO.DirectoryInfo">
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
+        <maintainers>
+            <maintainer>develop@wtfo-guru.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.IO.FileInfo">
+        <last-activity>Aug-22-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
