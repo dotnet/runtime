@@ -51,7 +51,7 @@ TESTSRC=			\
 	time.cs
 
 
-TESTS=$(TESTSRC:.cs=.exe)
+TESTSI=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 
 EXTRA_DIST=test-driver $(TESTSRC)
@@ -59,8 +59,8 @@ EXTRA_DIST=test-driver $(TESTSRC)
 %.exe: %.cs
 	$(CSC) $<
 
-test: $(TEST_PROG) $(TESTS)
-	for i in $(TESTS); do	\
+test: $(TEST_PROG) $(TESTSI)
+	for i in $(TESTSI); do	\
 		./test-driver $(TEST_PROG) $$i;	\
 	done
 
@@ -69,8 +69,8 @@ testb: $(TEST_PROG) $(TESTBS)
 		./test-driver $(TEST_PROG) $$i;	\
 	done
 
-testjit: $(JITTEST_PROG) $(TESTS) $(TESTBS)
-	for i in $(TESTS) $(TESTBS); do	\
+testjit: $(JITTEST_PROG) $(TESTSI) $(TESTBS)
+	for i in $(TESTSI) $(TESTBS); do	\
 		./test-driver $(JITTEST_PROG) $$i;	\
 	done
 
@@ -80,3 +80,5 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 		time $(JITTEST_PROG) $$i;	\
 	done
 
+check:
+	@echo no check yet
