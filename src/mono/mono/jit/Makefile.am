@@ -25,7 +25,6 @@ libmono_a_SOURCES =		\
 	debug-dwarf2-plus.c	\
 	jit.c			\
 	trampoline.c		\
-	delegate.c		\
 	exception.c		\
 	message.c		\
 	linear-scan.c		\

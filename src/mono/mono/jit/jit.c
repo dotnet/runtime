@@ -1560,7 +1560,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip += 4;
 			sp--;
 
-			c = mono_class_get (image, token);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				c = (MonoClass *)mono_method_get_wrapper_data (method, token);
+			else
+				c = mono_class_get (image, token);
 			g_assert (c->valuetype);
 
 			t1 = ctree_create_load (cfg, &c->byval_arg, *sp, &svt, FALSE);
@@ -2782,7 +2785,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ADD_TREE (t1, cli_addr);
 
 			if (sp > stack) {
-				g_warning ("more values on stack at IL_%04x: %d",  ip - header->code, sp - stack);
+				g_warning ("more values on stack at %s IL_%04x: %d",  
+					   mono_method_full_name (method, TRUE), 
+					   ip - header->code, sp - stack);
 				mono_print_ctree (cfg, sp [-1]);
 				printf ("\n");
 			}
@@ -3272,7 +3277,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ip += 4;
 
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					cm = mono_method_get_wrapper_data (method, token);
+					cm = (MonoMethod *)mono_method_get_wrapper_data (method, token);
 				else 
 					cm = mono_get_method (image, token, NULL);
 
@@ -3545,17 +3550,10 @@ mono_get_runtime_method (MonoMethod* method)
 		MonoMethod *invoke = mono_marshal_get_delegate_invoke (method);
 		addr = mono_compile_method (invoke);
 	} else if (delegate && *name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-		addr = (gpointer)arch_begin_invoke;
+		nm = mono_marshal_get_delegate_begin_invoke (method);
+		addr = mono_compile_method (nm);
 	} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
-		/* EndInvoke can raise exceptions, so we need a wrapper 
-		 * to save/restore LMF */
-		if (ISSTRUCT (method->signature->ret)) {
-			method->addr = (gpointer)arch_end_invoke_vt;
-		} else
-			method->addr = (gpointer)arch_end_invoke;
-
-		
-		nm = mono_marshal_get_native_wrapper (method);
+		nm = mono_marshal_get_delegate_end_invoke (method);
 		addr = mono_compile_method (nm);
 	}
 
@@ -3734,6 +3732,26 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 
 	g_hash_table_insert (jit_code_hash, method, addr);
+
+	return addr;
+}
+
+/* mono_jit_create_remoting_trampoline:
+ * @method: pointer to the method info
+ *
+ * Creates a trampoline which calls the remoting functions. This
+ * is used in the vtable of transparent proxies.
+ * 
+ * Returns: a pointer to the newly created code 
+ */
+gpointer
+mono_jit_create_remoting_trampoline (MonoMethod *method)
+{
+	MonoMethod *nm;
+	guint8 *addr = NULL;
+
+	nm = mono_marshal_get_remoting_invoke (method);
+	addr = mono_compile_method (nm);
 
 	return addr;
 }
@@ -3936,7 +3954,7 @@ mono_jit_init (char *file) {
 
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (arch_create_jit_trampoline);
-	mono_install_remoting_trampoline (arch_create_remoting_trampoline);
+	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 	mono_install_handler (arch_get_throw_exception ());
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 

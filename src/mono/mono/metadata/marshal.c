@@ -16,6 +16,7 @@
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
 #include "mono/metadata/debug-helpers.h"
+#include "mono/metadata/threadpool.h"
 
 //#define DEBUG_RUNTIME_CODE
 
@@ -36,6 +37,7 @@ struct _MonoMethodBuilder {
 	unsigned char *code;
 };
 
+#ifdef DEBUG_RUNTIME_CODE
 static char*
 indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)
 {
@@ -50,6 +52,7 @@ static MonoDisHelper marshal_dh = {
 	NULL,
 	NULL
 };
+#endif 
 
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
@@ -611,11 +614,79 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 	}
 }
 
-static MonoObject *
-delegate_test (MonoDelegate *delegate, gpointer *params)
+static MonoAsyncResult *
+mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 {
-	g_assert_not_reached ();
-	return NULL;
+	MonoMethodMessage *msg;
+	MonoDelegate *async_callback;
+	MonoObject *state;
+	MonoMethod *im;
+	MonoClass *klass;
+	MonoMethod *method = NULL;
+	int i;
+
+	g_assert (delegate);
+
+	klass = delegate->object.vtable->klass;
+
+	method = mono_get_delegate_invoke (klass);
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'B' && 
+		    !strcmp ("BeginInvoke", klass->methods [i]->name)) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	g_assert (method != NULL);
+
+	im = mono_get_delegate_invoke (method->klass);
+	
+	msg = mono_method_call_message_new (method, params, im, &async_callback, &state);
+
+	return mono_thread_pool_add ((MonoObject *)delegate, msg, async_callback, state);
+}
+
+static int
+mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolean save_this)
+{
+	int i, params_var, tmp_var;
+
+	/* allocate local (pointer) *params[] */
+	params_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	/* allocate local (pointer) tmp */
+	tmp_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+	/* alloate space on stack to store an array of pointers to the arguments */
+	mono_mb_emit_icon (mb, sizeof (gpointer) * (sig->param_count + 1));
+	mono_mb_emit_byte (mb, CEE_PREFIX1);
+	mono_mb_emit_byte (mb, CEE_LOCALLOC);
+	mono_mb_emit_stloc (mb, params_var);
+
+	/* tmp = params */
+	mono_mb_emit_ldloc (mb, params_var);
+	mono_mb_emit_stloc (mb, tmp_var);
+
+	if (save_this && sig->hasthis) {
+		mono_mb_emit_ldloc (mb, tmp_var);
+		mono_mb_emit_ldarg_addr (mb, 0);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		/* tmp = tmp + sizeof (gpointer) */
+		if (sig->param_count)
+			mono_mb_emit_add_to_local (mb, tmp_var, sizeof (gpointer));
+
+	}
+
+	for (i = 0; i < sig->param_count; i++) {
+		mono_mb_emit_ldloc (mb, tmp_var);
+		mono_mb_emit_ldarg_addr (mb, i + sig->hasthis);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		/* tmp = tmp + sizeof (gpointer) */
+		if (i < (sig->param_count - 1))
+			mono_mb_emit_add_to_local (mb, tmp_var, sizeof (gpointer));
+	}
+
+	return params_var;
 }
 
 MonoMethod *
@@ -625,9 +696,8 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	static MonoMethodSignature *csig = NULL;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	MonoType *ret_type;
 	GHashTable *cache;
-	int i;
+	int params_var;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
@@ -638,18 +708,13 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
 		return res;
 
-	if (sig->ret->byref)
-		ret_type = &mono_defaults.int_class->byval_arg;
-	else if (sig->ret->type == MONO_TYPE_VALUETYPE && sig->ret->data.klass->enumtype)
-		ret_type = sig->ret->data.klass->enum_basetype;
-	else 
-		ret_type = sig->ret;
+	g_assert (sig->hasthis);
 
 	if (!csig) {
 		int sigsize = sizeof (MonoMethodSignature) + 2 * sizeof (MonoType *);
 		csig = g_malloc0 (sigsize);
 
-		/* MonoObject *begin_invoke (MonoDelegate *delegate, gpointer params[]) */
+		/* MonoAsyncResult * begin_invoke (MonoDelegate *delegate, gpointer params[]) */
 		csig->param_count = 2;
 		csig->ret = &mono_defaults.object_class->byval_arg;
 		csig->params [0] = &mono_defaults.object_class->byval_arg;
@@ -658,75 +723,300 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 
 	mb = mono_mb_new (method->klass, method->name);
 	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_BEGIN_INVOKE;
+	mb->method->save_lmf = 1;
 
-	/* allocate local 0 (pointer) *params[] */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	/* allocate local 1 (pointer) tmo */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-
-	/* alloate space on stack to store an array of pointers to the arguments */
-	mono_mb_emit_icon (mb, sizeof (gpointer) * (sig->param_count + 1));
-	mono_mb_emit_byte (mb, CEE_PREFIX1);
-	mono_mb_emit_byte (mb, CEE_LOCALLOC);
-	mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-	/* tmp = params */
-	mono_mb_emit_byte (mb, CEE_LDLOC_0);
-	mono_mb_emit_byte (mb, CEE_STLOC_1);
-
-	for (i = 0; i < sig->param_count; i++) {
-
-		mono_mb_emit_byte (mb, CEE_LDLOC_1);
-		mono_mb_emit_ldarg_addr (mb, i);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
-		/* tmp = tmp + sizeof (gpointer) */
-		if (i < (sig->param_count - 1))
-			mono_mb_emit_add_to_local (mb, 1, sizeof (gpointer));
-	}
+	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
 
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_byte (mb, CEE_LDLOC_0);
-	mono_mb_emit_native_call (mb, csig, delegate_test);
-
-	/* unbox the result if necessary */
-
-	switch (ret_type->type) {
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS: 
-	case MONO_TYPE_OBJECT: 
-	case MONO_TYPE_ARRAY: 
-	case MONO_TYPE_SZARRAY: 
-	case MONO_TYPE_VOID:
-		/* nothing to do */
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_VALUETYPE:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (ret_type)));
-		break;
-	default:
-		g_warning ("type 0x%x not handled", ret_type->type);
-		g_assert_not_reached ();
-	}
-
+	mono_mb_emit_ldloc (mb, params_var);
+	mono_mb_emit_native_call (mb, csig, mono_delegate_begin_invoke);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_method (mb, sig, 0);
 	mono_mb_free (mb);
 	g_hash_table_insert (cache, sig, res);
+	return res;
+}
+
+static MonoObject *
+mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoAsyncResult *ares;
+	MonoMethod *method = NULL;
+	MonoMethodSignature *sig;
+	MonoMethodMessage *msg;
+	MonoObject *res, *exc;
+	MonoArray *out_args;
+	MonoClass *klass;
+	int i;
+
+	g_assert (delegate);
+
+	if (!delegate->method_info || !delegate->method_info->method)
+		g_assert_not_reached ();
+
+	klass = delegate->object.vtable->klass;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'E' && 
+		    !strcmp ("EndInvoke", klass->methods [i]->name)) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	g_assert (method != NULL);
+
+	sig = method->signature;
+
+	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
+
+	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
+	g_assert (ares);
+
+	res = mono_thread_pool_finish (ares, &out_args, &exc);
+
+	if (exc) {
+		char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);
+		char  *tmp;
+		tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
+		g_free (strace);	
+		((MonoException*)exc)->stack_trace = mono_string_new (domain, tmp);
+		g_free (tmp);
+		mono_raise_exception ((MonoException*)exc);
+	}
+
+	mono_method_return_message_restore (method, params, out_args);
+	return res;
+}
+
+static void
+mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
+{
+	if (return_type->byref)
+		return_type = &mono_defaults.int_class->byval_arg;
+	else if (return_type->type == MONO_TYPE_VALUETYPE && return_type->data.klass->enumtype)
+		return_type = return_type->data.klass->enum_basetype;
+
+	switch (return_type->type) {
+	case MONO_TYPE_VOID:
+		g_assert_not_reached ();
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS: 
+	case MONO_TYPE_OBJECT: 
+	case MONO_TYPE_ARRAY: 
+	case MONO_TYPE_SZARRAY: 
+		/* nothing to do */
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_U1);
+		break;
+	case MONO_TYPE_I1:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_I1);
+		break;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_U2);
+		break;
+	case MONO_TYPE_I2:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_I2);
+		break;
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_I4:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		break;
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_U:
+#endif
+	case MONO_TYPE_U4:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_U4);
+		break;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_I8);
+		break;
+	case MONO_TYPE_R4:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_R4);
+		break;
+	case MONO_TYPE_R8:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_R8);
+		break;
+	case MONO_TYPE_VALUETYPE: {
+		int class;
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		class = mono_mb_add_data (mb, mono_class_from_mono_type (return_type));
+		mono_mb_emit_i4 (mb, class);
+		mono_mb_emit_byte (mb, CEE_LDOBJ);
+		mono_mb_emit_i4 (mb, class);
+		break;
+	}
+	default:
+		g_warning ("type 0x%x not handled", return_type->type);
+		g_assert_not_reached ();
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+MonoMethod *
+mono_marshal_get_delegate_end_invoke (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	static MonoMethodSignature *csig = NULL;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	int params_var;
+
+	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
+		  !strcmp (method->name, "EndInvoke"));
+
+	sig = method->signature;
+
+	cache = method->klass->image->delegate_end_invoke_cache;
+	if ((res = (MonoMethod *)g_hash_table_lookup (cache, sig)))
+		return res;
+
+	g_assert (sig->hasthis);
+
+	if (!csig) {
+		int sigsize = sizeof (MonoMethodSignature) + 2 * sizeof (MonoType *);
+		csig = g_malloc0 (sigsize);
+
+		/* MonoObject *end_invoke (MonoDelegate *delegate, gpointer params[]) */
+		csig->param_count = 2;
+		csig->ret = &mono_defaults.object_class->byval_arg;
+		csig->params [0] = &mono_defaults.object_class->byval_arg;
+		csig->params [1] = &mono_defaults.int_class->byval_arg;
+	}
+
+	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_END_INVOKE;
+	mb->method->save_lmf = 1;
+
+	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldloc (mb, params_var);
+	mono_mb_emit_native_call (mb, csig, mono_delegate_end_invoke);
+
+	if (sig->ret->type == MONO_TYPE_VOID)
+		mono_mb_emit_byte (mb, CEE_POP);
+	else
+		mono_mb_emit_restore_result (mb, sig->ret);
+
+	res = mono_mb_create_method (mb, sig, 0);
+	mono_mb_free (mb);
+	g_hash_table_insert (cache, sig, res);
+	return res;
+}
+
+static MonoObject *
+mono_remoting_wrapper (MonoMethod *method, gpointer *params)
+{
+	MonoMethodMessage *msg;
+	MonoTransparentProxy *this;
+	MonoObject *res, *exc;
+	MonoArray *out_args;
+
+	this = *((MonoTransparentProxy **)params [0]);
+
+	g_assert (this);
+	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
+	
+	/* skip the this pointer */
+	params++;
+
+	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
+
+	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
+
+	if (exc)
+		mono_raise_exception ((MonoException *)exc);
+
+	mono_method_return_message_restore (method, params, out_args);
+
+	return res;
+} 
+
+MonoMethod *
+mono_marshal_get_remoting_invoke (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	static MonoMethodSignature *csig = NULL;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	int params_var;
+
+	g_assert (method);
+
+	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
+		return method;
+
+	sig = method->signature;
+
+	/* we cant remote methods without this pointer */
+	if (!sig->hasthis)
+		return method;
+
+	cache = method->klass->image->remoting_invoke_cache;
+	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+		return res;
+
+	if (!csig) {
+		int sigsize = sizeof (MonoMethodSignature) + 2 * sizeof (MonoType *);
+		csig = g_malloc0 (sigsize);
+
+		/* MonoObject *remoting_wrapper (MonoMethod *method, gpointer params[]) */
+		csig->param_count = 2;
+		csig->ret = &mono_defaults.object_class->byval_arg;
+		csig->params [0] = &mono_defaults.int_class->byval_arg;
+		csig->params [1] = &mono_defaults.int_class->byval_arg;
+	}
+
+	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_REMOTING_INVOKE;
+
+	params_var = mono_mb_emit_save_args (mb, sig, TRUE);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	mono_mb_emit_ldloc (mb, params_var);
+	mono_mb_emit_native_call (mb, csig, mono_remoting_wrapper);
+
+	if (sig->ret->type == MONO_TYPE_VOID)
+		mono_mb_emit_byte (mb, CEE_POP);
+	else
+		mono_mb_emit_restore_result (mb, sig->ret);
+
+	res = mono_mb_create_method (mb, sig, 0);
+	mono_mb_free (mb);
+	g_hash_table_insert (cache, method, res);
 	return res;
 }
 

@@ -34,7 +34,7 @@ struct _MonoReflectionMethod {
 	MonoString *name;
 };
 
-typedef struct {
+struct _MonoDelegate {
 	MonoObject object;
 	MonoObject *target_type;
 	MonoObject *target;
@@ -42,7 +42,7 @@ typedef struct {
 	gpointer method_ptr;
 	gpointer delegate_trampoline;
 	MonoReflectionMethod *method_info;
-} MonoDelegate;
+};
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
 struct _MonoMulticastDelegate {

@@ -251,6 +251,10 @@ mono_jit_compile_image     (MonoImage *image, int verbose);
 void
 mono_jit_compile_class     (MonoAssembly *assembly, char *compile_class,
 			    int compile_times, int verbose);
+
+gpointer
+mono_jit_create_remoting_trampoline (MonoMethod *method);
+
 void
 mono_add_jump_info         (MonoFlowGraph *cfg, gpointer ip, 
 			    MonoJumpInfoType type, gpointer target);
@@ -288,9 +292,6 @@ arch_jit_compile_cfg       (MonoDomain *target_domain, MonoFlowGraph *cfg);
 gpointer
 arch_create_jit_trampoline (MonoMethod *method);
 
-gpointer
-arch_create_remoting_trampoline (MonoMethod *method);
-
 int
 arch_allocate_var          (MonoFlowGraph *cfg, int size, int align, 
 			    MonoVarType vartype, MonoValueType type);
@@ -301,17 +302,6 @@ mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
 const char *
 arch_get_reg_name          (int regnum);
 
-/* delegate support functions */
-
-gpointer 
-arch_begin_invoke          (MonoDelegate *delegate, ...);
-
-void
-arch_end_invoke            (gpointer first_arg, ...);
-
-void
-arch_end_invoke_vt         (gpointer first_arg, MonoObject *sec_arg, ...);
-
 /* remoting support */
 
 gpointer
@@ -319,16 +309,5 @@ mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *
 
 void
 mono_store_remote_field    (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
-
-/* stack/message transition */
-
-MonoMethodMessage *
-arch_method_call_message_new (MonoMethod *method, gpointer stack, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state);
-
-void
-arch_method_return_message_restore (MonoMethod *method, gpointer stack, 
-				    MonoObject *result, MonoArray *out_args);
-
 
 #endif

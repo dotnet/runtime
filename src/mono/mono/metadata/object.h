@@ -54,6 +54,7 @@
 typedef guchar MonoBoolean;
 
 typedef struct _MonoReflectionMethod MonoReflectionMethod;
+typedef struct _MonoDelegate MonoDelegate;
 
 typedef struct {
 	MonoVTable *vtable;
@@ -315,6 +316,13 @@ mono_remoting_invoke        (MonoObject *real_proxy, MonoMethodMessage *msg,
 MonoObject *
 mono_message_invoke         (MonoObject *target, MonoMethodMessage *msg, 
 			     MonoObject **exc, MonoArray **out_args);
+
+MonoMethodMessage *
+mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
+			      MonoDelegate **cb, MonoObject **state);
+
+void
+mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);
 
 void
 mono_unhandled_exception    (MonoObject *exc);

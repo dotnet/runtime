@@ -283,6 +283,8 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
 			} else if  (o->vtable->klass == mono_defaults.int32_class) {
 				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
+			} else if  (o->vtable->klass == mono_defaults.int64_class) {
+				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
 			} else
 				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
 		} else

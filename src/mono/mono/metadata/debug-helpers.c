@@ -438,6 +438,9 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 	case MONO_WRAPPER_MANAGED_TO_NATIVE:
 		prefix = "(managed to native wrapper) ";
 		break;
+	case MONO_WRAPPER_REMOTING_INVOKE:
+		prefix = "(remoting invoke wrapper) ";
+		break;
 	case MONO_WRAPPER_UNKNOWN:
 	default:
 		prefix = "(wrapper) ";

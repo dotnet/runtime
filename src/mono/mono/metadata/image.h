@@ -102,6 +102,7 @@ struct _MonoImage {
 	 * indexed by MonoMethodSignature 
 	 */
 	GHashTable *delegate_begin_invoke_cache;
+	GHashTable *delegate_end_invoke_cache;
 	GHashTable *delegate_invoke_cache;
 
 	/*
@@ -110,6 +111,7 @@ struct _MonoImage {
 	GHashTable *runtime_invoke_cache;
 	GHashTable *managed_wrapper_cache;
 	GHashTable *native_wrapper_cache;
+	GHashTable *remoting_invoke_cache;
 
 	void *reflection_info;
 

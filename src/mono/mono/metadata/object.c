@@ -19,6 +19,8 @@
 #include <mono/metadata/gc.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/threadpool.h>
+#include "mono/metadata/debug-helpers.h"
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
 #endif
@@ -1421,6 +1423,113 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 	} else {
 		delegate->method_ptr = addr;
 		delegate->target = target;
+	}
+}
+
+/**
+ * mono_method_call_message_new:
+ *
+ * Translates arguments pointers into a Message.
+ */
+MonoMethodMessage *
+mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
+			      MonoDelegate **cb, MonoObject **state)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethodSignature *sig = method->signature;
+	MonoMethodMessage *msg;
+	int i, count, type;
+
+	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
+	
+	if (invoke) {
+		mono_message_init (domain, msg, mono_method_get_object (domain, invoke), NULL);
+		count =  sig->param_count - 2;
+	} else {
+		mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
+		count =  sig->param_count;
+	}
+
+	for (i = 0; i < count; i++) {
+		gpointer vpos;
+		MonoClass *class;
+		MonoObject *arg;
+
+		if (sig->params [i]->byref)
+			vpos = *((gpointer *)params [i]);
+		else 
+			vpos = params [i];
+
+		type = sig->params [i]->type;
+		class = mono_class_from_mono_type (sig->params [i]);
+
+		if (class->valuetype)
+			arg = mono_value_box (domain, class, vpos);
+		else 
+			arg = *((MonoObject **)vpos);
+		      
+		mono_array_set (msg->args, gpointer, i, arg);
+	}
+
+	if (invoke) {
+		*cb = *((MonoDelegate **)params [i]);
+		i++;
+		*state = *((MonoObject **)params [i]);
+	}
+
+	return msg;
+}
+
+/**
+ * mono_method_return_message_restore:
+ *
+ * Restore results from message based processing back to arguments pointers
+ */
+void
+mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args)
+{
+	MonoMethodSignature *sig = method->signature;
+	int i, j, type, size, align;
+	
+	for (i = 0, j = 0; i < sig->param_count; i++) {
+		size = mono_type_stack_size (sig->params [i], &align);
+		
+		if (sig->params [i]->byref) {
+			char *arg = mono_array_get (out_args, gpointer, j);
+			type = sig->params [i]->type;
+			
+			switch (type) {
+			case MONO_TYPE_VOID:
+				g_assert_not_reached ();
+				break;
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_VALUETYPE: {
+				memcpy (*((gpointer *)params [i]), arg + sizeof (MonoObject), size); 
+				break;
+			}
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_CLASS: 
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				*((MonoObject **)params [i]) = (MonoObject *)arg;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+
+			j++;
+		}
 	}
 }
 

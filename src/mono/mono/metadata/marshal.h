@@ -104,7 +104,13 @@ mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data);
 /* functions to create various architecture independent helper functions */
 
 MonoMethod *
+mono_marshal_get_remoting_invoke (MonoMethod *method);
+
+MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method);
+
+MonoMethod *
+mono_marshal_get_delegate_end_invoke (MonoMethod *method);
 
 MonoMethod *
 mono_marshal_get_delegate_invoke (MonoMethod *method);

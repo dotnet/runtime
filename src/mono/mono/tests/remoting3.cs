@@ -98,7 +98,6 @@ class Test {
 		MyProxy real_proxy = new MyProxy (myobj);
 
 		R1 o = (R1)real_proxy.GetTransparentProxy ();
-
 		
 		RemoteDelegate1 d1 = new RemoteDelegate1 (o.Add);
 

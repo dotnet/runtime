@@ -404,12 +404,17 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
+	image->delegate_end_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
 	image->delegate_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
+
 	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	header = &iinfo->cli_header;
 		

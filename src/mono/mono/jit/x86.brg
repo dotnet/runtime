@@ -5062,7 +5062,7 @@ mono_ldvirtftn (MonoObject *this, int slot)
 	m = class->vtable [slot];
 
 	if (is_proxy) {
-		return arch_create_remoting_trampoline (m);
+		return mono_jit_create_remoting_trampoline (m);
 	} else {
 		EnterCriticalSection (metadata_section);
 		addr = mono_compile_method (m);
@@ -5092,7 +5092,7 @@ mono_ldintftn (MonoObject *this, int slot)
 	m = class->vtable [slot];
 
 	if (is_proxy) {
-		return arch_create_remoting_trampoline (m);
+		return mono_jit_create_remoting_trampoline (m);
 	} else {
 		EnterCriticalSection (metadata_section);
 		addr = mono_compile_method (m);

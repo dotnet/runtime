@@ -17,40 +17,6 @@
 #include "jit.h"
 #include "codegen.h"
 
-static void
-arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
-{
-	MonoMethodSignature *sig = method->signature;
-	MonoMethodMessage *msg;
-	MonoTransparentProxy *this;
-	MonoObject *res, *exc;
-	MonoArray *out_args;
-	int this_pos = 0;
-
-	//printf ("REMOTING %s.%s:%s\n", method->klass->name_space, method->klass->name,
-	//method->name);
-
-	if (ISSTRUCT (sig->ret))
-		this_pos += 4;
-
-	this = *(MonoTransparentProxy **)(((char *)&first_arg) + this_pos);
-
-	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
-
-	msg = arch_method_call_message_new (method, &first_arg, NULL, NULL, NULL);
-
-	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
-
-	if (exc)
-		mono_raise_exception ((MonoException *)exc);
-
-	arch_method_return_message_restore (method, &first_arg, res, out_args);
-
-	/* WARNING: do not write any code here, because that would destroy 
-	 * the return value 
-	 */
-}
-
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -299,46 +265,6 @@ arch_create_jit_trampoline (MonoMethod *method)
 	method->info = code;
 
 	mono_jit_stats.method_trampolines++;
-
-	return code;
-}
-
-/* arch_create_remoting_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline which calls the remoting functions. This
- * is used in the vtable of transparent proxies.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-arch_create_remoting_trampoline (MonoMethod *method)
-{
-	MonoJitInfo *ji;
-	guint8 *code, *buf;
-
-	if (method->remoting_tramp)
-		return method->remoting_tramp;
-	
-	code = buf = g_malloc (16);
-	x86_push_imm (buf, method);
-	x86_call_code (buf, arch_remoting_invoke);
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
-	x86_ret (buf);
-	
-	g_assert ((buf - code) <= 16);
-
-	method->remoting_tramp = code;
-
-	/* we store a jit info, so that mono_delegate_ctor
-	 * is able to find a method info */
-	ji = mono_mempool_alloc0 (mono_root_domain->mp, sizeof (MonoJitInfo));
-	ji->method = method;
-	ji->code_start = code;
-	ji->code_size = buf - code;
-	ji->used_regs = 0;
-	ji->num_clauses = 0;
-	mono_jit_info_table_add (mono_root_domain, ji);
 
 	return code;
 }

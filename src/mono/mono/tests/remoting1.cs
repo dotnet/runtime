@@ -82,7 +82,7 @@ class R1 : MarshalByRefObject {
 	}
 
 	public long nonvirtual_Add (int a, int b) {
-		Console.WriteLine ("nonvirtual_Add");
+		Console.WriteLine ("nonvirtual_Add " + a + " + " + b);
 		return a + b;
 	}
 }
