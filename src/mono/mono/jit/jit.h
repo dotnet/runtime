@@ -236,6 +236,7 @@ extern gboolean mono_use_fast_iconv;
 extern gboolean mono_break_on_exc;
 extern gboolean mono_inline_memcpy;
 extern guint32  mono_jit_tls_id;
+extern gboolean mono_jit_boundcheck;
 
 extern CRITICAL_SECTION *metadata_section;
 

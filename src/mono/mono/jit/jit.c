@@ -212,6 +212,9 @@ gboolean mono_use_linear_scan = TRUE;
 /* inline code */
 gboolean mono_jit_inline_code = TRUE;
 
+/* generate bound checking */
+gboolean mono_jit_boundcheck = TRUE;
+
 /* inline memcpy */
 gboolean mono_inline_memcpy = TRUE;
 

@@ -1645,8 +1645,10 @@ reg: LDLEN (reg) {
 reg: LDELEMA (reg, CONST_I4) {
 	int ind;
 
-	x86_alu_membase_imm (s->code, X86_CMP, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length), tree->right->data.i);
-	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GT, FALSE, "IndexOutOfRangeException");
+	if (mono_jit_boundcheck){
+		x86_alu_membase_imm (s->code, X86_CMP, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length), tree->right->data.i);
+		EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GT, FALSE, "IndexOutOfRangeException");
+	}
        
 	ind = tree->data.i * tree->right->data.i + G_STRUCT_OFFSET (MonoArray, vector);
 	
@@ -1655,8 +1657,10 @@ reg: LDELEMA (reg, CONST_I4) {
 
 reg: LDELEMA (reg, reg) {
 
-	x86_alu_reg_membase (s->code, X86_CMP, tree->right->reg1, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
-	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LT, FALSE, "IndexOutOfRangeException");
+	if (mono_jit_boundcheck){
+		x86_alu_reg_membase (s->code, X86_CMP, tree->right->reg1, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length));
+		EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LT, FALSE, "IndexOutOfRangeException");
+	}
 
 	if (tree->data.i == 1 || tree->data.i == 2 || 
 	    tree->data.i == 4 || tree->data.i == 8) {

@@ -228,6 +228,8 @@ main (int argc, char *argv [])
 			mono_jit_inline_code = FALSE;
 		else if (strcmp (argv [i], "--nointrinsic") == 0)
 			mono_inline_memcpy = FALSE;
+		else if (strcmp (argv [i], "--noboundcheck") == 0)
+			mono_jit_boundcheck = FALSE;
 		else if (strcmp (argv [i], "--nols") == 0)
 			mono_use_linear_scan = FALSE;
 		else if (strcmp (argv [i], "--breakonex") == 0)
