@@ -140,8 +140,10 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	
 	LeaveCriticalSection (&mono_delegate_section);
 
-	if (l)
+	if (l) {
+		g_list_free_1 (l);
 		mono_async_invoke (ares);
+	}
 		
 	
 	/* wait until we are really finished */
@@ -174,6 +176,7 @@ async_invoke_thread ()
 		EnterCriticalSection (&mono_delegate_section);
 		
 		if (async_call_queue) {
+			GList *tmp;
 			if ((g_list_length (async_call_queue) > 1) && 
 			    (mono_worker_threads < mono_max_worker_threads)) {
 				new_worker = TRUE;
@@ -181,7 +184,9 @@ async_invoke_thread ()
 			}
 
 			ar = (MonoAsyncResult *)async_call_queue->data;
+			tmp = async_call_queue;
 			async_call_queue = g_list_remove_link (async_call_queue, async_call_queue); 
+			g_list_free_1 (tmp);
 		}
 
 		LeaveCriticalSection (&mono_delegate_section);
