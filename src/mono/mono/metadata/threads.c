@@ -705,7 +705,12 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 			  GetCurrentThreadId ());
 #endif
 		return(FALSE);
-	} else if(ret==WAIT_TIMEOUT) {
+	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
+		/* Do we want to try again if we get
+		 * WAIT_IO_COMPLETION? The documentation for
+		 * WaitHandle doesn't give any clues.  (We'd have to
+		 * fiddle with the timeout if we retry.)
+		 */
 #ifdef THREAD_WAIT_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
 			  GetCurrentThreadId ());
@@ -793,7 +798,12 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 			  GetCurrentThreadId ());
 #endif
 		return(FALSE);
-	} else if(ret==WAIT_TIMEOUT) {
+	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
+		/* Do we want to try again if we get
+		 * WAIT_IO_COMPLETION? The documentation for
+		 * WaitHandle doesn't give any clues.  (We'd have to
+		 * fiddle with the timeout if we retry.)
+		 */
 #ifdef THREAD_WAIT_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait timed out",
 			  GetCurrentThreadId ());
