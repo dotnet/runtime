@@ -22,6 +22,8 @@
 #define MRT_method_end_address		0x04
 #define MRT_local_variable		0x05
 #define MRT_method_parameter		0x06
+#define MRT_type_sizeof			0x07
+#define MRT_type_field_offset		0x08
 
 #define MRS_debug_info			0x01
 #define MRS_debug_abbrev		0x02
@@ -255,7 +257,9 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
+#if 0
 			g_message ("Start of `%s' relocated to %p", minfo->method->name, minfo->code_start);
+#endif
 
 			* (void **) base_ptr = minfo->code_start;
 
@@ -301,9 +305,11 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				}
 			}
 
+#if 0
 			g_message ("Relocating IL offset %d in `%s' to %d (%p)",
 				   original, minfo->method->name, address,
 				   minfo->code_start + address);
+#endif
 
 			* (void **) base_ptr = minfo->code_start + address;
 
@@ -332,8 +338,10 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			address = minfo->local_offsets [original];
 
+#if 0
 			g_message ("Relocating local variable %d (%s) to stack offset %d",
 				   original, minfo->method->name, address);
+#endif
 
 			* (gint32 *) base_ptr = address;
 
@@ -362,10 +370,45 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			address = minfo->param_offsets [original];
 
+#if 0
 			g_message ("Relocating parameter %d (%s) to stack offset %d",
 				   original, minfo->method->name, address);
+#endif
 
 			* (gint32 *) base_ptr = address;
+
+			break;
+		}
+		case MRT_type_sizeof: {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			MonoClass *klass = mono_class_get (symfile->image, token);
+
+			g_message ("Setting size of type %u to %d", token, klass->instance_size);
+
+			* (gint8 *) base_ptr = klass->instance_size;
+
+			break;
+		}
+		case MRT_type_field_offset: {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			guint32 original = *((guint32 *) tmp_ptr)++;
+			MonoClass *klass = mono_class_get (symfile->image, token);
+			guint32 offset;
+
+			if (original > klass->field.count) {
+				g_warning ("Symbol file %s contains invalid field offset entry.",
+					   symfile->file_name);
+				continue;
+			}
+
+			offset = klass->fields [original].offset;
+			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE)
+				offset -= sizeof (MonoObject);
+
+			g_message ("Setting field %d of type %u to offset %d", original,
+				   token, offset);
+
+			* (guint32 *) base_ptr = offset;
 
 			break;
 		}
@@ -380,7 +423,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 }
 
 MonoReflectionType *
-mono_debug_local_type_from_signature (MonoReflectionAssembly *assembly, MonoArray *signature)
+ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssembly *assembly,
+							     MonoArray *signature)
 {
 	MonoDomain *domain; 
 	MonoImage *image;
@@ -410,7 +454,7 @@ mono_debug_local_type_from_signature (MonoReflectionAssembly *assembly, MonoArra
 }
 
 MonoReflectionMethod *
-mono_debug_method_from_token (MonoReflectionAssembly *assembly, guint32 token)
+ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionAssembly *assembly, guint32 token)
 {
 	MonoDomain *domain; 
 	MonoImage *image;
@@ -424,4 +468,14 @@ mono_debug_method_from_token (MonoReflectionAssembly *assembly, guint32 token)
 	method = mono_get_method (image, token, NULL);
 
 	return mono_method_get_object (domain, method);
+}
+
+guint32
+ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type)
+{
+    MonoClass *klass = mono_class_from_mono_type (type->type);
+
+    mono_class_init (klass);
+
+    return klass->type_token;
 }

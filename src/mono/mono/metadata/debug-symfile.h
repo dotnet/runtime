@@ -50,7 +50,7 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			5
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			6
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01
@@ -80,11 +80,16 @@ void    mono_debug_update_symbol_file (MonoDebugSymbolFile      *symbol_file,
 
 void    mono_debug_close_symbol_file  (MonoDebugSymbolFile      *symbol_file);
 
-MonoReflectionType *mono_debug_local_type_from_signature (MonoReflectionAssembly *assembly,
-							  MonoArray *signature);
+MonoReflectionType *
+ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssembly *assembly,
+							     MonoArray *signature);
 
-MonoReflectionMethod *mono_debug_method_from_token (MonoReflectionAssembly *assembly,
-						    guint32 token);
+MonoReflectionMethod *
+ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionAssembly *assembly,
+						       guint32 token);
+
+guint32
+ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type);
 
 
 #endif /* __MONO_DEBUG_SYMFILE_H__ */

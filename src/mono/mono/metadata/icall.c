@@ -1145,7 +1145,7 @@ handle_parent:
 			mono_defaults.corlib, "System.Reflection", "FieldInfo");
 	res = mono_array_new (domain, System_Reflection_FieldInfo, len);
 	i = 0;
-	tmp = l;
+	tmp = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
@@ -2027,8 +2027,10 @@ static gpointer icall_map [] = {
 	/*
 	 * Mono.CSharp.Debugger
 	 */
-	"Mono.CSharp.Debugger.MonoSymbolWriter::get_local_type_from_sig", mono_debug_local_type_from_signature,
-	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method", mono_debug_method_from_token,
+	"Mono.CSharp.Debugger.MonoSymbolWriter::get_local_type_from_sig", ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig,
+	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method", ves_icall_Debugger_MonoSymbolWriter_method_from_token,
+	"Mono.CSharp.Debugger.DwarfFileWriter::get_type_token", ves_icall_Debugger_DwarfFileWriter_get_type_token,
+
 
 
 	/*
