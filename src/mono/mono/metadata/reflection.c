@@ -4779,7 +4779,12 @@ handle_enum:
 	case MONO_TYPE_CLASS: {
 		char *str;
 		guint32 slen;
-		MonoClass *k = mono_object_class (arg);
+		MonoClass *k;
+		if (!arg) {
+			*p++ = 0xFF;
+			break;
+		}
+		k = mono_object_class (arg);
 		if (!mono_object_isinst (arg, mono_defaults.monotype_class) &&
 				(strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit")))
 			g_error ("only types allowed, not %s.%s", k->name_space, k->name);
