@@ -21,6 +21,10 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/cil-coff.h>
 
+HANDLE mono_delegate_semaphore = NULL;
+CRITICAL_SECTION mono_delegate_section;
+int mono_runtime_shutdown = 0;
+
 /*
  * mono_runtime_init:
  * @domain: domain returned by mono_init ()
@@ -30,7 +34,7 @@
  * operational.
  */
 void
-mono_runtime_init (MonoDomain *domain)
+mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb)
 {
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
@@ -46,7 +50,30 @@ mono_runtime_init (MonoDomain *domain)
 	domain->domain = ad;
 	domain->setup = setup;
 
+	mono_delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+	g_assert (mono_delegate_semaphore != INVALID_HANDLE_VALUE);
+	InitializeCriticalSection (&mono_delegate_section);
+	
+	mono_thread_init (domain, start_cb);
+
+	mono_network_init ();
+
 	return;
+}
+
+void
+mono_runtime_cleanup (MonoDomain *domain)
+{
+	mono_runtime_shutdown = 1;
+
+	mono_network_cleanup ();
+
+	/* signal all waiters in order to stop all workers (max. 0xffff) */
+	ReleaseSemaphore (mono_delegate_semaphore, 0xffff, NULL);
+
+	mono_thread_cleanup ();
+		
+
 }
 
 void

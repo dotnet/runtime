@@ -16,12 +16,14 @@ libmonoruntime_a_SOURCES = \
 	icall.c		\
 	decimal.c	\
 	decimal.h	\
-	gc.c	\
-	gc.h	\
+	gc.c		\
+	gc.h		\
 	marshal.c	\
 	marshal.h	\
 	threads.c	\
 	threads.h	\
+	threadpool.c	\
+	threadpool.h	\
 	threads-types.h	\
 	file-io.c	\
 	file-io.h	\

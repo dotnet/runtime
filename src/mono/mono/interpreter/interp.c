@@ -44,6 +44,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
@@ -571,32 +572,37 @@ ves_runtime_method (MonoInvocation *frame)
 	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
-		delegate->delegate.target = frame->stack_args[0].data.p;
-		delegate->delegate.method_ptr = frame->stack_args[1].data.p;
-		delegate->delegate.method_info = mono_method_get_object (mono_object_domain(delegate), mono_method_pointer_get (delegate->delegate.method_ptr));
+
+		mono_delegate_ctor (obj, frame->stack_args[0].data.p, frame->stack_args[1].data.p);
 		return;
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
 		guchar *code;
+		MonoJitInfo *ji;
 		MonoMethod *method;
 		
 		while (delegate) {
 
 			code = (guchar*)delegate->delegate.method_ptr;
-			method = mono_method_pointer_get (code);
-#if 1
-			/* FIXME: check for NULL method */
-			INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
-			ves_exec_method (&call);
-#else
-			if (!method->addr)
-				method->addr = mono_create_trampoline (method, 1);
-			func = method->addr;
-			/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
-			func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
-			stackval_from_data (frame->method->signature->ret, frame->retval, (char*)&frame->retval->data.p);
+			if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
+				method = ji->method;
+				INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
+				ves_exec_method (&call);
+			} else {
+#if 0
+				if (!method->addr)
+					method->addr = mono_create_trampoline (method, 1);
+				func = method->addr;
+				/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
+				func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, 
+				      delegate->target, frame->stack_args);
+				stackval_from_data (frame->method->signature->ret, frame->retval, 
+						    (char*)&frame->retval->data.p);
 #endif
+				g_assert_not_reached ();
+			}
+
 			delegate = delegate->prev;
 		}
 		return;
@@ -1463,12 +1469,17 @@ ves_exec_method (MonoInvocation *frame)
 			token = read32 (ip);
 			ip += 4;
 			if (calli) {
+				MonoJitInfo *ji;
 				unsigned char *code;
 				--sp;
 				code = sp->data.p;
-				child_frame.method = mono_method_pointer_get (code);
-				/* check for NULL with native code */
-				csignature = child_frame.method->signature;
+				if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
+					child_frame.method = ji->method;
+					csignature = child_frame.method->signature;
+				} else {
+					/* fixme: native code ? */
+					g_assert_not_reached ();
+				}
 			} else {
 				child_frame.method = mono_get_method (image, token, NULL);
 				if (!child_frame.method)
@@ -3945,6 +3956,9 @@ usage (void)
 		 "   --profile\n"
 		 "   --trace\n"
 		 "   --traceops\n"
+		 "\n"
+		 "Runtime:\n"
+		 "   --workers n        maximum number of worker threads\n"
 		);
 	exit (1);
 }
@@ -3999,6 +4013,11 @@ main (int argc, char *argv [])
 			mono_profiler_install_simple ();
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
+		if (strcmp (argv [i], "--workers") == 0) {
+			mono_worker_threads = atoi (argv [++i]);
+			if (mono_worker_threads < 1)
+				mono_worker_threads = 1;
+		}
 		if (strcmp (argv [i], "--help") == 0)
 			usage ();
 #if DEBUG_INTERP
@@ -4036,9 +4055,7 @@ main (int argc, char *argv [])
 
 	InitializeCriticalSection (&metadata_lock);
 	domain = mono_init (file);
-	mono_runtime_init (domain);
-	mono_thread_init (domain, NULL);
-	mono_network_init ();
+	mono_runtime_init (domain, NULL);
 
 	assembly = mono_domain_assembly_open (domain, file);
 
@@ -4064,9 +4081,7 @@ main (int argc, char *argv [])
 #endif
 	mono_profiler_shutdown ();
 	
-	mono_network_cleanup ();
-	mono_thread_cleanup ();
-
+	mono_runtime_cleanup (domain);
 	mono_domain_unload (domain, TRUE);
 
 #if DEBUG_INTERP

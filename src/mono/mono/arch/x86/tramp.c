@@ -376,6 +376,7 @@ void *
 mono_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
+	MonoJitInfo *ji;
 	unsigned char *p, *code_buffer;
 	gint32 local_size;
 	gint32 stackval_pos, arg_pos = 8;
@@ -393,13 +394,8 @@ mono_create_method_pointer (MonoMethod *method)
 	stackval_pos = -local_size;
 
 	/*
-	 * Standard function prolog with magic trick.
+	 * Standard function prolog.
 	 */
-	x86_jump_code (p, code_buffer + 8);
-	*p++ = 'M';
-	*p++ = 'o';
-	*(void**)p = method;
-	p += 4;
 	x86_push_reg (p, X86_EBP);
 	x86_mov_reg_reg (p, X86_EBP, X86_ESP, 4);
 	x86_alu_reg_imm (p, X86_SUB, X86_ESP, local_size);
@@ -506,19 +502,13 @@ mono_create_method_pointer (MonoMethod *method)
 	x86_ret (p);
 
 	g_assert (p - code_buffer < 512);
-	return g_memdup (code_buffer, p - code_buffer);
-}
 
-/*
- * mono_create_method_pointer () will insert a pointer to the MonoMethod
- * so that the interp can easily get at the data: this function will retrieve 
- * the method from the code stream.
- */
-MonoMethod*
-mono_method_pointer_get (void *code)
-{
-	unsigned char *c = code;
-	if (c [2] != 'M' || c [3] != 'o')
-		return NULL;
-	return *(MonoMethod**)(c + sizeof (gpointer));
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->method = method;
+	ji->code_size = p - code_buffer;
+	ji->code_start = g_memdup (code_buffer, p - code_buffer);
+
+	mono_jit_info_table_add (mono_root_domain, ji);
+
+	return ji->code_start;
 }

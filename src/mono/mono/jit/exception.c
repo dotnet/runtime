@@ -158,14 +158,14 @@ arch_exc_is_catched (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			m = ji->method;
 			
 			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-				char    *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+				char    *strace;
 				char    *tmp, *tmpsig, *source_location, *tmpaddr;
 				gint32   address, iloffset;
 
-				if (!strcmp (strace, "TODO: implement stack traces")){
-					g_free (strace);
+				if (!((MonoException*)obj)->stack_trace)
 					strace = g_strdup ("");
-				}
+				else
+					strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
 
 				address = (char *)ip - (char *)ji->code_start;
 
@@ -228,11 +228,13 @@ arch_exc_is_catched (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			m = lmf->method;
 
 			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-				char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+				char  *strace; 
 				char  *tmp;
 
-				if (!strcmp (strace, "TODO: implement stack traces"))
+				if (!((MonoException*)obj)->stack_trace)
 					strace = g_strdup ("");
+				else
+					strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
 
 				tmp = g_strdup_printf ("%sin (unmanaged) %s.%s:%s ()\n", strace, m->klass->name_space,  
 						       m->klass->name, m->name);
@@ -277,7 +279,9 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		ex->message = mono_string_new (domain, 
 		        "Object reference not set to an instance of an object");
 		obj = (MonoObject *)ex;
-	}
+	} 
+
+	((MonoException *)obj)->stack_trace = NULL;
 
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();

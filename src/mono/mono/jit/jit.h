@@ -200,7 +200,6 @@ typedef struct {
 	gpointer          end_of_stack;
 	jmp_buf          *env;
 	MonoLMF          *lmf;
-	MonoAsyncResult  *async_result;
 	void            (*abort_func) (MonoObject *object);
 } MonoJitTlsData;
 
@@ -215,7 +214,6 @@ extern gboolean mono_use_linear_scan;
 extern gboolean mono_use_fast_iconv;
 
 extern guint32  mono_jit_tls_id;
-extern int      mono_worker_threads;
 
 extern CRITICAL_SECTION *metadata_section;
 
@@ -279,15 +277,6 @@ gpointer
 arch_get_lmf_addr          (void);
 
 /* delegate support functions */
-
-void
-mono_delegate_init         (void);
-
-void
-mono_delegate_cleanup      (void);
-
-void
-mono_delegate_ctor         (MonoDelegate *this, MonoObject *target, gpointer addr);
 
 gpointer 
 arch_begin_invoke          (MonoMethod *method, gpointer ret_ip, MonoObject *delegate);

@@ -311,24 +311,32 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
-MonoObject*
-mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
+MonoMethod *
+mono_get_delegate_invoke (MonoClass *klass)
 {
-	MonoClass *klass;
 	MonoMethod *im;
 	int i;
 
-	klass = ((MonoObject *)delegate)->vtable->klass;
 	im = NULL;
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (klass->methods [i]->name[0] == 'I' && 
-		    !strcmp ("Invoke", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 2) {
+		    !strcmp ("Invoke", klass->methods [i]->name)) {
 			im = klass->methods [i];
 		}
 	}
 
+	g_assert (im);
+
+	return im;
+}
+
+MonoObject*
+mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
+{
+	MonoMethod *im;
+
+	im = mono_get_delegate_invoke (delegate->vtable->klass);
 	g_assert (im);
 
 	return mono_runtime_invoke (im, delegate, params, exc);
@@ -1348,6 +1356,45 @@ mono_print_unhandled_exception (MonoObject *exc)
 	g_free (message);
 	g_free (trace);
 }
+
+/**
+ * mono_delegate_ctor:
+ * @this: pointer to an uninitialized delegate object
+ * @target: target object
+ * @addr: pointer to native code
+ *
+ * This is used to initialize a delegate. We also insert the method_info if
+ * we find the info with mono_jit_info_table_find().
+ */
+void
+mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoDelegate *delegate = (MonoDelegate *)this;
+	MonoMethod *method = NULL;
+	MonoClass *class;
+	MonoJitInfo *ji;
+
+	g_assert (this);
+	g_assert (addr);
+
+	class = this->vtable->klass;
+
+	if ((ji = mono_jit_info_table_find (domain, addr))) {
+		method = ji->method;
+		delegate->method_info = mono_method_get_object (domain, method);
+	}
+
+	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
+		g_assert (method);
+		delegate->method_ptr = arch_create_remoting_trampoline (method);
+		delegate->target = target;
+	} else {
+		delegate->method_ptr = addr;
+		delegate->target = target;
+	}
+}
+
 
 
 

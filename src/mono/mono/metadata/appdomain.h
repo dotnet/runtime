@@ -19,6 +19,8 @@
 #include <mono/utils/mono-hash.h>
 #include <mono/io-layer/io-layer.h>
 
+typedef void (*MonoThreadStartCB) (gpointer stack_start);
+
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
 	MonoObject object;
@@ -80,6 +82,10 @@ struct _MonoAppDomain {
 
 extern MonoDomain *mono_root_domain;
 
+extern HANDLE mono_delegate_semaphore;
+extern CRITICAL_SECTION mono_delegate_section;
+extern int mono_runtime_shutdown;
+
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
 #define mono_domain_unlock(domain) LeaveCriticalSection(&(domain)->lock)
 
@@ -87,7 +93,10 @@ MonoDomain*
 mono_init                  (const char *filename);
 
 void
-mono_runtime_init          (MonoDomain *domain);
+mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb);
+
+void
+mono_runtime_cleanup       (MonoDomain *domain);
 
 MonoDomain *
 mono_domain_create         (void);

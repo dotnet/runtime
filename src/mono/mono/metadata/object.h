@@ -261,6 +261,9 @@ MonoObject*
 mono_runtime_invoke         (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
 
+MonoMethod *
+mono_get_delegate_invoke    (MonoClass *klass);
+
 MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, 
 			      MonoObject **exc);
@@ -304,6 +307,10 @@ mono_unhandled_exception    (MonoObject *exc);
 
 void
 mono_print_unhandled_exception (MonoObject *exc);
+
+void
+mono_delegate_ctor          (MonoObject *this, MonoObject *target, gpointer addr);
+
 
 #endif
 

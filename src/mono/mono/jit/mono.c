@@ -13,6 +13,7 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/verify.h"
 #include "mono/metadata/profiler.h"
+#include "mono/metadata/threadpool.h"
 #include <mono/os/util.h>
 
 /**

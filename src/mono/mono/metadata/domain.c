@@ -82,7 +82,7 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 
 	/* maybe irt is shared code, so we also search in the root domain */
 	if (domain != mono_root_domain)
-		return mono_jit_info_table_find (domain, addr);
+		return mono_jit_info_table_find (mono_root_domain, addr);
 
 	return NULL;
 }

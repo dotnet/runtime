@@ -283,7 +283,6 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 				return corlib;
 		}
 		corlib = load_in_path (CORLIB_NAME, default_path, status);
-		g_free (CORLIB_NAME);
 		return corlib;
 	}
 	result = search_loaded (aname);

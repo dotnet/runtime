@@ -214,9 +214,6 @@ gboolean mono_jit_inline_code = TRUE;
 /* Use alternative (faster) sequence to convert FP values to integers */
 gboolean mono_use_fast_iconv = FALSE;
 
-/* maximum number of worker threads */
-int mono_worker_threads = 1;
-
 /* TLS id to store jit data */
 guint32  mono_jit_tls_id;
 
@@ -3811,10 +3808,7 @@ mono_jit_init (char *file) {
 	mono_install_runtime_invoke (arch_runtime_invoke);
 
 	domain = mono_init (file);
-	mono_runtime_init (domain);
-	mono_thread_init (domain, mono_thread_start_cb);
-	mono_network_init ();
-	mono_delegate_init ();
+	mono_runtime_init (domain, mono_thread_start_cb);
 
 	return domain;
 }
@@ -3828,9 +3822,7 @@ mono_jit_cleanup (MonoDomain *domain)
 	win32_seh_cleanup();
 #endif
 
-	mono_delegate_cleanup ();
-	mono_network_cleanup ();
-	mono_thread_cleanup ();
+	mono_runtime_cleanup (domain);
 
 	mono_domain_unload (domain, TRUE);
 

@@ -13,164 +13,22 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/threads.h>
-#ifndef PLATFORM_WIN32
-#include "mono/io-layer/wapi.h"
-#include "mono/io-layer/uglify.h"
-#endif
 
 #include "jit.h"
 #include "codegen.h"
 
-/* FIXME:
- * - worker threads need to be initialized correctly.
- * - worker threads should be domain specific
- */
-
-static int workers = 0;
-
-typedef struct {
-	MonoMethodMessage *msg;
-	HANDLE            wait_semaphore;
-	MonoMethod        *cb_method;
-	MonoDelegate      *cb_target;
-	MonoObject        *state;
-	MonoObject        *res;
-	MonoArray         *out_args;
-} ASyncCall;
-
-static void async_invoke_thread (void);
-
-static GList *async_call_queue = NULL;
-static CRITICAL_SECTION delegate_section;
-static HANDLE delegate_semaphore = NULL;
-static int stop_worker = 0;
-
-/**
- * mono_delegate_ctor:
- * @this: pointer to an uninitialized delegate object
- * @target: target object
- * @addr: pointer to native code
- *
- * This is used to initialize a delegate. We also insert the method_info if
- * we find the info with mono_jit_info_table_find().
- */
-void
-mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoMethod *method = NULL;
-	MonoClass *class;
-	MonoJitInfo *ji;
-
-	g_assert (this);
-	g_assert (addr);
-
-	class = this->object.vtable->klass;
-
-	if ((ji = mono_jit_info_table_find (domain, addr))) {
-		method = ji->method;
-		this->method_info = mono_method_get_object (domain, method);
-	}
-
-	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
-		g_assert (method);
-		this->method_ptr = arch_create_remoting_trampoline (method);
-		this->target = target;
-	} else {
-		this->method_ptr = addr;
-		this->target = target;
-	}
-}
-
-static void
-mono_async_invoke (MonoAsyncResult *ares)
-{
-	ASyncCall *ac = (ASyncCall *)ares->data;
-
-	ac->msg->exc = NULL;
-	ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
-				       &ac->msg->exc, &ac->out_args);
-       
-	ares->completed = 1;
-		
-	/* notify listeners */
-	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
-
-	/* call async callback if cb_method != null*/
-	if (ac->cb_method) {
-		MonoObject *exc = NULL;
-		void *pa = &ares;
-		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
-		if (!ac->msg->exc)
-			ac->msg->exc = exc;
-	}
-}
-
 gpointer 
 arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
 {
-	MonoDomain *domain = mono_domain_get ();
-	MonoAsyncResult *ares;
+	MonoMethodMessage *msg;
 	MonoDelegate *async_callback;
-	MonoClass *klass;
+	MonoObject *state;
 	MonoMethod *im;
-	ASyncCall *ac;
-	int i;
 	
-	ac = g_new0 (ASyncCall, 1);
-	ac->wait_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-	
-	klass = method->klass;
-	im = NULL;
+	im = mono_get_delegate_invoke (method->klass);
+	msg = arch_method_call_message_new (method, &delegate, im, &async_callback, &state);
 
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == 'I' && 
-		    !strcmp ("Invoke", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 
-		    (method->signature->param_count - 2)) {
-			im = klass->methods [i];
-		}
-	}
-
-	g_assert (im);
-
-	ac->msg = arch_method_call_message_new (method, &delegate, im, &async_callback, &ac->state);
-
-	if (async_callback) {
-		klass = ((MonoObject *)async_callback)->vtable->klass;
-		im = NULL;
-		for (i = 0; i < klass->method.count; ++i) {
-			if (klass->methods [i]->name[0] == 'I' && 
-			    !strcmp ("Invoke", klass->methods [i]->name) &&
-			    klass->methods [i]->signature->param_count == 1) {
-				im = klass->methods [i];
-				break;
-			}
-		}
-		g_assert (im);
-		ac->cb_method = im;
-		ac->cb_target = async_callback;
-	}
-
-	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
-	ares->async_delegate = delegate;
-
-
-	EnterCriticalSection (&delegate_section);	
-	async_call_queue = g_list_append (async_call_queue, ares); 
-	ReleaseSemaphore (delegate_semaphore, 1, NULL);
-
-	if (workers == 0) {
-		MonoObject *thread;
-		workers++;
-		thread = mono_thread_create (domain, async_invoke_thread);
-		g_assert (thread != NULL);
-	}
-	LeaveCriticalSection (&delegate_section);
-
-
-	return ares;
+	return mono_thread_pool_add (delegate, msg, async_callback, state);
 }
 
 void
@@ -180,8 +38,8 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 	MonoAsyncResult *ares;
 	MonoMethodSignature *sig = method->signature;
 	MonoMethodMessage *msg;
-	ASyncCall *ac;
-	GList *l;
+	MonoObject *res, *exc;
+	MonoArray *out_args;
 
 	g_assert (method);
 
@@ -190,42 +48,22 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	g_assert (ares);
 
-	ac = (ASyncCall *)ares->data;
+	res = mono_thread_pool_finish (ares, &out_args, &exc);
 
-	/* check if we call EndInvoke twice */
-	if (ares->endinvoke_called) {
-		MonoException *e;
-		e = mono_exception_from_name (mono_defaults.corlib, "System", 
-					      "InvalidOperationException");
-		mono_raise_exception (e);
-	}
-
-	ares->endinvoke_called = 1;
-
-	EnterCriticalSection (&delegate_section);	
-	if ((l = g_list_find (async_call_queue, ares))) {
-		async_call_queue = g_list_remove_link (async_call_queue, l);
-		mono_async_invoke (ares);
-	}		
-	LeaveCriticalSection (&delegate_section);
-	
-	/* wait until we are really finished */
-	WaitForSingleObject (ac->wait_semaphore, INFINITE);
-
-	if (ac->msg->exc) {
-		char *strace = mono_string_to_utf8 (((MonoException*)ac->msg->exc)->stack_trace);
+	if (exc) {
+		char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);
 		char  *tmp;
 		tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
 		g_free (strace);	
-		((MonoException*)ac->msg->exc)->stack_trace = mono_string_new (domain, tmp);
+		((MonoException*)exc)->stack_trace = mono_string_new (domain, tmp);
 		g_free (tmp);
-		mono_raise_exception ((MonoException*)ac->msg->exc);
+		mono_raise_exception ((MonoException*)exc);
 	}
 
 	/* restore return value */
 	if (method->signature->ret->type != MONO_TYPE_VOID) {
-		g_assert (ac->res);
-		arch_method_return_message_restore (method, &first_arg, ac->res, ac->out_args);
+		g_assert (res);
+		arch_method_return_message_restore (method, &first_arg, res, out_args);
 	}
 }
 
@@ -341,83 +179,4 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 		*size = code - addr;
 
 	return addr;
-}
-
-static void
-async_invoke_thread ()
-{
-	MonoDomain *domain;
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-      
-	for (;;) {
-		MonoAsyncResult *ar;
-		gboolean new_worker = FALSE;
-
-		if (WaitForSingleObject (delegate_semaphore, 3000) == WAIT_TIMEOUT) {
-			EnterCriticalSection (&delegate_section);
-			workers--;
-			LeaveCriticalSection (&delegate_section);
-			ExitThread (0);
-		}
-		
-		ar = NULL;
-		EnterCriticalSection (&delegate_section);
-		
-		if (async_call_queue) {
-			if ((g_list_length (async_call_queue) > 1) && 
-			    (workers < mono_worker_threads)) {
-				new_worker = TRUE;
-				workers++;
-			}
-
-			ar = (MonoAsyncResult *)async_call_queue->data;
-			async_call_queue = g_list_remove_link (async_call_queue, async_call_queue); 
-
-		}
-
-		LeaveCriticalSection (&delegate_section);
-
-		if (stop_worker) {
-			EnterCriticalSection (&delegate_section);
-			workers--;
-			LeaveCriticalSection (&delegate_section);
-			ExitThread (0);
-		}
-
-		if (!ar)
-			continue;
-		
-		/* worker threads invokes methods in different domains,
-		 * so we need to set the right domain here */
-		domain = ((MonoObject *)ar)->vtable->domain;
-		mono_domain_set (domain);
-
-		if (new_worker) 
-			mono_thread_create (domain, async_invoke_thread);
-
-		jit_tls->async_result = ar;
-
-		mono_async_invoke (ar);
-	}
-
-	g_assert_not_reached ();
-}
-
-void
-mono_delegate_init ()
-{
-	MonoDomain *domain = mono_domain_get ();
-
-	delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-	g_assert (delegate_semaphore != INVALID_HANDLE_VALUE);
-	InitializeCriticalSection (&delegate_section);
-}
-
-void
-mono_delegate_cleanup ()
-{
-	stop_worker = 1;
-
-	/* signal all waiters in order to stop all workers (max. 0xffff) */
-	ReleaseSemaphore (delegate_semaphore, 0xffff, NULL);
 }
