@@ -49,7 +49,12 @@ enter_method (MonoMethod *method, gpointer ebp)
 		} else {
 			o = *((MonoObject **)ebp);
 			class = o->klass;
-			printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
+			if (!strcmp (class->name_space, "System") &&
+			    !strcmp (class->name, "String")) {
+				printf ("this:%p[STRING:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+
+			} else 
+				printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
 		}
 		ebp += sizeof (gpointer);
 	}
@@ -73,6 +78,8 @@ enter_method (MonoMethod *method, gpointer ebp)
 			printf ("%d, ", *((int *)(ebp)));
 			break;
 		case MONO_TYPE_STRING:
+			printf ("[STRING:%s], ", mono_string_to_utf8 (*(MonoString **)(ebp)));
+			break;
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
@@ -128,6 +135,8 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 			method->klass->name, method->name, eax);
 		break;
 	case MONO_TYPE_STRING:
+		printf ("[STRING:%s], ", mono_string_to_utf8 ((MonoString *)(eax)));
+		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
@@ -490,9 +499,9 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
 			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
 		}
-		if (tree->op == MB_TERM_CALL_I4) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
-		}
+		//if (tree->op == MB_TERM_CALL_I4) {
+		//tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+		//}
 		break;
 		
 	case MB_NTERM_base:
@@ -633,55 +642,143 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
-	if (mono_jit_trace_calls) {
+	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
 		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
 			method->klass->name, method->name);
 	}
 
-	cfg = mono_cfg_new (method, mp);
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+		MonoClassField *field;
+		const char *name = method->name;
+		static guint target_offset = 0;
+		static guint method_offset = 0;
+		guint8 *code;
+		gboolean delegate = FALSE;
 
-	mono_analyze_flow (cfg);
+		if (method->klass->parent && 
+		    method->klass->parent->parent == mono_defaults.delegate_class)
+			delegate = TRUE;
+				
+		if (!target_offset) {
+			mono_jit_init_class (mono_defaults.delegate_class);
 
-	mono_analyze_stack (cfg);
-
-	cfg->code = NULL;
-	cfg->rs = mono_regset_new (X86_NREG);
-	mono_regset_reserve_reg (cfg->rs, X86_ESP);
-	mono_regset_reserve_reg (cfg->rs, X86_EBP);
-
-	// fixme: remove limitation to 4096 bytes
-	method->addr = cfg->start = cfg->code = g_malloc (4096);
-
-	if (mono_jit_dump_forest) {
-		int i;
-		for (i = 0; i < cfg->block_count; i++) {
-			printf ("BLOCK %d:\n", i);
-			mono_print_forest (cfg->bblocks [i].forest);
+			field = mono_class_get_field_from_name (mono_defaults.delegate_class, "m_target");
+			target_offset = field->offset;
+			field = mono_class_get_field_from_name (mono_defaults.delegate_class, "method_ptr");
+			method_offset = field->offset;
 		}
+		
+		if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
+			method->addr = code = g_malloc (32);
+			x86_push_reg (code, X86_EBP);
+			x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+			
+			/* load the this pointer */
+			x86_mov_reg_membase (code, X86_EAX, X86_EBP, 8, 4); 
+			/* load m_target arg */
+			x86_mov_reg_membase (code, X86_EDX, X86_EBP, 12, 4);
+			/* store mtarget */
+			x86_mov_membase_reg (code, X86_EAX, target_offset, X86_EDX, 4); 
+			/* load method_ptr arg */
+			x86_mov_reg_membase (code, X86_EDX, X86_EBP, 16, 4);
+			/* store method_ptr */
+			x86_mov_membase_reg (code, X86_EAX, method_offset, X86_EDX, 4); 
+
+			x86_leave (code);
+			x86_ret (code);
+
+			g_assert ((code - (guint8*)method->addr) < 32);
+		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
+			MonoMethodSignature *csig = method->signature;
+			int i, target, this_pos = 4;
+			guint8 *source;
+
+			method->addr = g_malloc (1024);
+
+			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
+				int size, align;
+				if ((size = mono_type_size (csig->ret, &align)) > 4 || size == 3)
+					this_pos = 8;
+			}
+
+			for (i = 0; i < 2; i ++) {
+				code = method->addr;
+				/* load the this pointer */
+				x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
+				/* load mtarget */
+				x86_mov_reg_membase (code, X86_EDX, X86_EAX, target_offset, 4); 
+				/* check if zero (static method call without this pointer) */
+				x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
+				x86_branch32 (code, X86_CC_EQ, target, TRUE); 
+				source = code;
+				
+				/* virtual call -  we have to replace the this pointer */
+				x86_mov_membase_reg (code, X86_ESP, this_pos, X86_EDX, 4); 
+
+				/* jump to method_ptr() */
+				target = code - source;
+				x86_jump_membase (code, X86_EAX, method_offset);
+			}
+
+		} else {
+			g_error ("Don't know how to exec runtime method %s.%s::%s", 
+				 method->klass->name_space, method->klass->name, method->name);
+		}
+	
+	} else {
+
+		cfg = mono_cfg_new (method, mp);
+
+		mono_analyze_flow (cfg);
+
+		mono_analyze_stack (cfg);
+	
+		cfg->code = NULL;
+		cfg->rs = mono_regset_new (X86_NREG);
+		mono_regset_reserve_reg (cfg->rs, X86_ESP);
+		mono_regset_reserve_reg (cfg->rs, X86_EBP);
+
+		// fixme: remove limitation to 8192 bytes
+		method->addr = cfg->start = cfg->code = g_malloc (8192);
+		
+		if (mono_jit_dump_forest) {
+			int i;
+			for (i = 0; i < cfg->block_count; i++) {
+				printf ("BLOCK %d:\n", i);
+				mono_print_forest (cfg->bblocks [i].forest);
+			}
+		}
+	
+		mono_label_cfg (cfg);
+
+		arch_allocate_regs (cfg);
+
+		/* align to 8 byte boundary */
+		cfg->locals_size += 7;
+		cfg->locals_size &= ~7;
+
+		arch_emit_prologue (cfg);
+
+		mono_emit_cfg (cfg);
+
+		g_assert ((cfg->code - cfg->start) < 8100);
+
+		arch_emit_epilogue (cfg);
+
+		mono_compute_branches (cfg);
+		
+		if (mono_jit_dump_asm)
+			mono_disassemble_code (cfg->start, cfg->code - cfg->start);
+
+		mono_regset_free (cfg->rs);
+
+		mono_cfg_free (cfg);
+
+		mono_mempool_destroy (mp);
+
 	}
 
-	mono_label_cfg (cfg);
-
-	arch_allocate_regs (cfg);
-
-	arch_emit_prologue (cfg);
-
-	mono_emit_cfg (cfg);
-
-	arch_emit_epilogue (cfg);
-
-	mono_compute_branches (cfg);
-		
-	if (mono_jit_dump_asm)
-		mono_disassemble_code (cfg->start, cfg->code - cfg->start);
-
-	mono_regset_free (cfg->rs);
-
-	mono_cfg_free (cfg);
-
-	mono_mempool_destroy (mp);
-
-	if (mono_jit_trace_calls) {
+	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
 		printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
 			method->klass->name, method->name, method, method->addr);
 	}

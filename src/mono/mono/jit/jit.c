@@ -164,7 +164,7 @@ typedef void (*MonoCCtor) (void);
  * Initialise the class @klass by calling the class
  * constructor.
  */
-static void
+void
 mono_jit_init_class (MonoClass *klass)
 {
 	MonoCCtor cctor;
@@ -770,6 +770,8 @@ mono_cfg_new (MonoMethod *method, MonoMemPool *mp)
 	MonoVarInfo vi;
 	MonoFlowGraph *cfg;
 
+	g_assert (((MonoMethodNormal *)method)->header);
+
 	cfg = mono_mempool_alloc0 (mp, sizeof (MonoFlowGraph));
 
 	cfg->method = method;
@@ -1063,6 +1065,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 				break;
 			case CEE_LDARG:
 			case CEE_INITOBJ:
+			case CEE_LDFTN:
 				ip +=5;
 				break;
 			default:
@@ -1864,6 +1867,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ADD_TREE (t1);
 				size = mono_type_size (cm->signature->params [i], &align);
 				args_size += (size + 3) & ~3;
+
+				// fixme: align value type arguments  to 8 byte boundary on the stack
 			}
 
 			if (csig->hasthis) {
@@ -2441,6 +2446,25 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			MAKE_BI_ALU (CEQ)
 			MAKE_BI_ALU (CLT)
 
+			case CEE_LDFTN: {
+				MonoMethod *cm;
+				guint32 token;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+
+				cm = mono_get_method (image, token, NULL);
+				g_assert (cm);
+				
+				if (!cm->addr)
+					cm->addr = arch_create_simple_jit_trampoline (cm);
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t1->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t1, NULL);
+				PUSH_TREE (t1, VAL_POINTER);
+				break;
+			}
 			case CEE_INITOBJ: {
 				MonoClass *class;
 				guint32 token;

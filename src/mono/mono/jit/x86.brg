@@ -398,6 +398,7 @@ reg: LDIND_I4 (addr) {
 		break;		
 	}
 
+	
 	PRINT_REG ("LDIND_I4", tree->reg1);
 }
 
