@@ -1276,7 +1276,7 @@ mono_test_marshal_return_enum_delegate (ReturnEnumDelegate func)
 
 typedef struct {
 	int a, b, c;
-	long d;
+	gint64 d;
 } BlittableStruct;
 	
 typedef BlittableStruct (STDCALL *SimpleDelegate10) (BlittableStruct ss);
