@@ -1,3 +1,9 @@
+2004-11-30  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (AC_OUTPUT): Move runtime/Makefile to the end to
+	workaround a bug in automake 1.7.x.
+	* runtime/Makefile.am ($(symlinks)): Don't depend on config.status.
+
 2004-11-27  Miguel de Icaza  <miguel@ximian.com>
 
 	* configure.in: Removed support for configured-based bundles. 

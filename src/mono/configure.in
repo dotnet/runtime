@@ -1546,7 +1546,6 @@ mono/handles/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
 ikvm-jni/Makefile
-runtime/Makefile
 scripts/Makefile
 man/Makefile
 web/Makefile
@@ -1560,6 +1559,7 @@ data/config
 mono.spec
 tools/Makefile
 tools/locale-builder/Makefile
+runtime/Makefile
 ])
 
 echo "
