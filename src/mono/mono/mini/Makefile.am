@@ -242,6 +242,7 @@ endif
 
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(test_sources) \
+	propagated_relations_table.def build_relations_propagation_table.pl \
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
