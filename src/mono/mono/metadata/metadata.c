@@ -675,14 +675,23 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			field_size = rtsize (n, 16 - 3);
 			break;
 			
-		case MONO_MT_MDOR_IDX:
-
 			/*
 			 * MethodDefOrRef: MethodDef, MemberRef
 			 */
-		case MONO_MT_HS_IDX:
+		case MONO_MT_MDOR_IDX:
 			n = MAX (meta->tables [MONO_TABLE_METHOD].rows,
 				 meta->tables [MONO_TABLE_MEMBERREF].rows);
+
+			/* 1 bit used to encode tag */
+			field_size = rtsize (n, 16-1);
+			break;
+			
+			/*
+			 * HasSemantics: Property, Event
+			 */
+		case MONO_MT_HS_IDX:
+			n = MAX (meta->tables [MONO_TABLE_PROPERTY].rows,
+				 meta->tables [MONO_TABLE_EVENT].rows);
 
 			/* 1 bit used to encode tag */
 			field_size = rtsize (n, 16-1);
