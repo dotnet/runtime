@@ -71,6 +71,7 @@ TESTSRC=			\
 	indexer.cs		\
 	stream.cs		\
 	console.cs		\
+	shift.cs		\
 	jit-int.cs		\
 	jit-uint.cs		\
 	jit-long.cs		\

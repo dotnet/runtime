@@ -542,7 +542,6 @@ stmt: STIND_I4 (addr, coni4) {
 }
 
 stmt: STIND_I4 (addr, reg) {
-	PRINT_REG ("STIND_I4", tree->right->reg1);
 
 	switch (tree->left->data.ainfo.amode) {
 
@@ -1522,15 +1521,20 @@ reg: SHL (reg, coni4) {
 }
 
 reg: SHL (reg, reg) {
-	if (tree->right->reg1 != X86_ECX)
+	if (tree->right->reg1 != X86_ECX) {
+		x86_push_reg (s->code, X86_ECX);
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
+	}
 	x86_shift_reg (s->code, X86_SHL, tree->left->reg1);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
+	if (tree->right->reg1 != X86_ECX)
+		x86_pop_reg (s->code, X86_ECX);
+
 	mono_assert (tree->reg1 != X86_ECX &&
-		  tree->left->reg1 != X86_ECX);
+		     tree->left->reg1 != X86_ECX);
 }
 
 reg: SHR (reg, coni4) {
@@ -1541,15 +1545,21 @@ reg: SHR (reg, coni4) {
 }
 
 reg: SHR (reg, reg) {
-	if (tree->right->reg1 != X86_ECX)
+	if (tree->right->reg1 != X86_ECX) {
+		x86_push_reg (s->code, X86_ECX);
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
+	}
+
 	x86_shift_reg (s->code, X86_SAR, tree->left->reg1);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
+	if (tree->right->reg1 != X86_ECX)
+		x86_pop_reg (s->code, X86_ECX);
+
 	mono_assert (tree->reg1 != X86_ECX &&
-		  tree->left->reg1 != X86_ECX);
+		     tree->left->reg1 != X86_ECX);
 }
 
 reg: SHR_UN (reg, coni4) {
@@ -1560,15 +1570,21 @@ reg: SHR_UN (reg, coni4) {
 }
 
 reg: SHR_UN (reg, reg) {
-	if (tree->right->reg1 != X86_ECX)
+	if (tree->right->reg1 != X86_ECX) {
+		x86_push_reg (s->code, X86_ECX);
 		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
+	}
+
 	x86_shift_reg (s->code, X86_SHR, tree->left->reg1);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
+	if (tree->right->reg1 != X86_ECX)
+		x86_pop_reg (s->code, X86_ECX);
+
 	mono_assert (tree->reg1 != X86_ECX &&
-		  tree->left->reg1 != X86_ECX);
+		     tree->left->reg1 != X86_ECX);
 }
 
 reg: LDSFLDA (coni4) {
