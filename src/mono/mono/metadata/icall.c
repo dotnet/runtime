@@ -805,8 +805,8 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 	/*
 	 * Do the comparison for fields of primitive type and return a result if
 	 * possible. Otherwise, return the remaining fields in an array to the 
-     * managed side. This way, we can avoid costly reflection operations in 
-     * managed code.
+	 * managed side. This way, we can avoid costly reflection operations in 
+	 * managed code.
 	 */
 	*fields = NULL;
 	for (i = 0; i < klass->field.count; ++i) {

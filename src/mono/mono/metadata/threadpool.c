@@ -136,7 +136,6 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	if (ares->endinvoke_called) {
 		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
 					      "InvalidOperationException");
-		LeaveCriticalSection (&mono_delegate_section);
 		return NULL;
 	}
 
@@ -146,7 +145,8 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	g_assert (ac != NULL);
 
 	/* wait until we are really finished */
-	WaitForSingleObject (ac->wait_semaphore, INFINITE);
+	if (!ares->completed)
+		WaitForSingleObject (ac->wait_semaphore, INFINITE);
 
 	*exc = ac->msg->exc;
 	*out_args = ac->out_args;

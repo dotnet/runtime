@@ -415,6 +415,7 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 			GC_unregister_disappearing_link (&(gc_handles [idx]));
 	}
 #else
+	LeaveCriticalSection (&handle_section);
 	mono_raise_exception (mono_get_exception_execution_engine ("No GCHandle support"));
 #endif
 
