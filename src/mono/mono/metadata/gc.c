@@ -16,6 +16,11 @@
 #define GC_I_HIDE_POINTERS
 #include <mono/os/gc_wrapper.h>
 
+#ifndef HIDE_POINTER
+#define HIDE_POINTER(v)         (v)
+#define REVEAL_POINTER(v)       (v)
+#endif
+
 static int finalize_slot = -1;
 
 /* 
