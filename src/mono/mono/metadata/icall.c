@@ -3771,6 +3771,7 @@ static gconstpointer icall_map [] = {
 	"System.Threading.NativeEventCalls::CreateEvent_internal", ves_icall_System_Threading_Events_CreateEvent_internal,
 	"System.Threading.NativeEventCalls::SetEvent_internal",    ves_icall_System_Threading_Events_SetEvent_internal,
 	"System.Threading.NativeEventCalls::ResetEvent_internal",  ves_icall_System_Threading_Events_ResetEvent_internal,
+	"System.Threading.NativeEventCalls::CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal,
 
 	/*
 	 * System.Threading.WaitHandle

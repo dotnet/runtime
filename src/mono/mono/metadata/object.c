@@ -1853,8 +1853,10 @@ mono_string_to_utf8 (MonoString *s)
 		return g_strdup ("");
 
 	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, NULL, &error);
-	if (error)
+	if (error) {
 		g_warning (error->message);
+		g_error_free (error);
+	}
 
 	return as;
 }

@@ -681,9 +681,7 @@ void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) {
 	ReleaseMutex(handle);
 }
 
-HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual,
-															  MonoBoolean initial,
-															  char *name) {
+HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, char *name) {
 	MONO_ARCH_SAVE_REGS;
 
 	return (CreateEvent(NULL,manual,initial,name));
@@ -699,6 +697,13 @@ gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
 	MONO_ARCH_SAVE_REGS;
 
 	return (ResetEvent(handle));
+}
+
+void
+ves_icall_System_Threading_Events_CloseEvent_internal (HANDLE handle) {
+	MONO_ARCH_SAVE_REGS;
+
+	CloseHandle (handle);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)

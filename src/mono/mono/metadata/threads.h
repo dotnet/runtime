@@ -70,6 +70,7 @@ extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handl
 extern HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual,MonoBoolean initial,char *name);
 extern gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle);
 extern gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle);
+extern void ves_icall_System_Threading_Events_CloseEvent_internal (HANDLE handle);
 
 extern gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
 extern gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
