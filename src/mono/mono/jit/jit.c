@@ -3676,9 +3676,6 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 
 	rval = mono_runtime_run_main (method, argc, argv, &exc);
 
-	if (exc)
-		mono_print_unhandled_exception (exc);
-
 	return rval;
 }
 
@@ -3740,9 +3737,6 @@ static void
 mono_thread_abort (MonoObject *obj)
 {
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoDomain *domain = mono_domain_get ();
-	MonoClassField *field;
-	MonoDelegate *d;
 	
 	g_assert (obj);
 
@@ -3750,19 +3744,8 @@ mono_thread_abort (MonoObject *obj)
 		longjmp (*jit_tls->env, obj);
 	}
 	       
-	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, "UnhandledException");
-	g_assert (field);
-
-	
-	d = *(MonoDelegate **)(((char *)domain->domain) + field->offset); 
-
-	if (!d) {
-		mono_print_unhandled_exception (obj);
-	} else {
-		/* FIXME: call the event handler */ 
-		g_assert_not_reached ();
-
-	}
+	if (obj) 
+		mono_unhandled_exception (obj);
 	
 	ExitThread (-1);
 }

@@ -351,6 +351,57 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 }
 
 /*
+ * We call this function when we dectect an unhandled exception. It invokes the
+ * UnhandledException event in AppDomain or print a warning to the console 
+ */
+void
+mono_unhandled_exception (MonoObject *exc)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoClassField *field;
+	MonoDelegate *d;
+	
+	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, 
+					     "UnhandledException");
+	g_assert (field);
+
+	d = *(MonoDelegate **)(((char *)domain->domain) + field->offset); 
+
+	if (!d) {
+		mono_print_unhandled_exception (exc);
+	} else {
+		MonoObject *e = NULL;
+		MonoClass *klass;
+		MonoMethod *im;
+		gpointer pa [2];
+		int i;
+
+		/* FIXME: call the event handler */ 
+
+		klass = ((MonoObject *)d)->vtable->klass;
+		im = NULL;
+
+		for (i = 0; i < klass->method.count; ++i) {
+			if (klass->methods [i]->name[0] == 'I' && 
+			    !strcmp ("Invoke", klass->methods [i]->name) &&
+			    klass->methods [i]->signature->param_count == 2) {
+				im = klass->methods [i];
+			}
+		}
+
+		g_assert (im);
+
+		/* fixme: pass useful arguments */
+		pa [0] = NULL;
+		pa [1] = NULL;
+		mono_runtime_invoke (im, d, pa, &e);
+		/* fixme: what if an exception occured */
+
+		mono_print_unhandled_exception (exc);
+	}
+}
+
+/*
  * Execute a standard Main() method (args doesn't contain the
  * executable name).
  */
@@ -377,6 +428,9 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		else
 			rval = -1;
 	}
+
+	if (exc && *exc) 
+		mono_unhandled_exception (*exc);
 
 	return rval;
 }

@@ -3756,13 +3756,7 @@ array_constructed:
 		 */
 die_on_ex:
 		ex_obj = (MonoObject*)frame->ex;
-		message = frame->ex->message? mono_string_to_utf8 (frame->ex->message): NULL;
-		g_print ("Unhandled exception %s.%s %s.\n", ex_obj->vtable->klass->name_space, ex_obj->vtable->klass->name,
-				message?message:"");
-		g_free (message);
-		message = dump_frame (frame);
-		g_print ("%s", message);
-		g_free (message);
+		mono_unhandled_exception (ex_obj);
 		exit (1);
 	}
 	handle_finally:
@@ -3851,9 +3845,6 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 		g_error ("No entry point method found in %s", image->name);
 
 	rval = mono_runtime_run_main (method, argc, argv, &exc);
-
-	if (exc)
-		mono_print_unhandled_exception (exc);
 
 	return rval;
 }

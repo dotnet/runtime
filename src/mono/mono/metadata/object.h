@@ -296,6 +296,9 @@ mono_message_invoke         (MonoObject *target, MonoMethodMessage *msg,
 			     MonoObject **exc, MonoArray **out_args);
 
 void
+mono_unhandled_exception    (MonoObject *exc);
+
+void
 mono_print_unhandled_exception (MonoObject *exc);
 
 #endif

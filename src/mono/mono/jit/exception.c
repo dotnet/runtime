@@ -212,7 +212,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			}
 
 			tmpsig = mono_signature_get_desc(m->signature, TRUE);
-			tmp = g_strdup_printf ("%sin %04x %s.%s:%s (%s)\n", strace, 
+			tmp = g_strdup_printf ("%sin 0x%05x %s.%s:%s (%s)\n", strace, 
 					       (char *)ip - (char *)ji->code_start,
 					       m->klass->name_space, m->klass->name, m->name, tmpsig);
 			g_free (tmpsig);
