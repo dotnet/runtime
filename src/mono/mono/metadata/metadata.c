@@ -1667,6 +1667,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 				      const char *ptr, const char **rptr)
 {
 	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
+	MonoGenericContainer *container;
 	MonoGenericClass *cached;
 	MonoGenericInst *ginst;
 	MonoClass *gklass;
@@ -1684,7 +1685,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
 
 	g_assert ((gclass->context->container = gklass->generic_container) != NULL);
-
 	count = mono_metadata_decode_value (ptr, &ptr);
 
 	/*
@@ -1755,7 +1755,12 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 		*rptr = ptr;
 
 	g_assert (generic_context);
-	generic_container = generic_context->container;
+	if (generic_context->gmethod)
+		generic_container = generic_context->gmethod->container;
+	else if (generic_context->gclass)
+		generic_container = generic_context->gclass->container_class->generic_container;
+	else
+		generic_container = generic_context->container;
 
 	if (!is_mvar) {
 		g_assert (generic_container);

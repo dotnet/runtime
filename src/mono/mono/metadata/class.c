@@ -305,7 +305,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		ngclass->klass = NULL;
 
 		ngclass->context = g_new0 (MonoGenericContext, 1);
-		ngclass->context->container = ngclass->container_class->generic_container;
+		ngclass->context->container = context->container;
 		ngclass->context->gclass = ngclass;
 
 		ngclass->initialized = FALSE;
