@@ -46,6 +46,9 @@ typedef	struct {
 
 struct _MBTree {
 	guint16   op;
+	unsigned      is_jump:1;
+	unsigned      last_instr:1;
+	
 	MBTree   *left, *right;
 	gpointer  state;
 	gpointer  emit;
@@ -53,9 +56,6 @@ struct _MBTree {
 	gint32    addr;
 	gint32    cli_addr;
 
-	unsigned      is_jump:1;
-	unsigned      last_instr:1;
-	
 	guint8    exclude_mask;
 
 	gint8     reg1;
@@ -1159,7 +1159,7 @@ reg: UNBOX (reg) {
 	x86_push_reg (s->code, tree->reg1);
 	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1, 0, 4); 
 	x86_alu_membase_imm (s->code, X86_CMP, tree->reg1, 
-			     G_STRUCT_OFFSET (MonoClass, element_class), ((int)(tree->data.klass)));
+			     G_STRUCT_OFFSET (MonoClass, element_class), ((int)(tree->data.klass->element_class)));
 	EMIT_COND_EXCEPTION (X86_CC_EQ, TRUE, mono_get_exception_invalid_cast ());
 	x86_pop_reg (s->code, tree->reg1);
 	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, sizeof (MonoObject));
