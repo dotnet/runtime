@@ -3183,6 +3183,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = mini_get_method (image, token, method);
 				}
 
+				g_assert (cmethod);
+
 				if (!cmethod->klass->inited)
 					mono_class_init (cmethod->klass);
 
@@ -8106,17 +8108,20 @@ SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 static void
 sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 {
-	MonoException *exc;
+	MonoException *exc = NULL;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoDomain *domain = mono_domain_get ();
 	struct sigcontext *ctx = (struct sigcontext *)&(((ucontext_t*)context)->uc_mcontext);
 
 	/* Can't allocate memory using Boehm GC on altstack */
-	if (jit_tls->stack_size && 
+	if (jit_tls && jit_tls->stack_size && 
 		((guint8*)info->si_addr >= (guint8*)jit_tls->end_of_stack - jit_tls->stack_size) &&
-		((guint8*)info->si_addr < (guint8*)jit_tls->end_of_stack))
-		exc = mono_domain_get ()->stack_overflow_ex;
-	else
-		exc = mono_domain_get ()->null_reference_ex;
+		((guint8*)info->si_addr < (guint8*)jit_tls->end_of_stack)) {
+		if (domain)
+			exc = domain->stack_overflow_ex;
+	} else if (domain) {
+			exc = domain->null_reference_ex;
+	}
 			
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
