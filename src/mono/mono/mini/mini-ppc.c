@@ -31,6 +31,7 @@ int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
 static int lmf_pthread_key = -1;
 static int monothread_key = -1;
+static int monodomain_key = -1;
 
 static int
 offsets_from_pthread_key (guint32 key, int *offset2)
@@ -4033,6 +4034,15 @@ setup_tls_access (void)
 			return;
 		}
 	}
+	if (monodomain_key == -1) {
+		ptk = mono_domain_get_tls_key ();
+		if (ptk < 1024) {
+			ptk = mono_pthread_key_for_tls (ptk);
+			if (ptk < 1024) {
+				monodomain_key = ptk;
+			}
+		}
+	}
 	if (lmf_pthread_key == -1) {
 		ptk = mono_pthread_key_for_tls (mono_jit_tls_id);
 		if (ptk < 1024) {
@@ -4122,7 +4132,15 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 
 MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 {
-	return NULL;
+	MonoInst* ins;
+
+	setup_tls_access ();
+	if (monodomain_key == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->inst_offset = monodomain_key;
+	return ins;
 }
 
 MonoInst* 
