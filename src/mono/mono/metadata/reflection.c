@@ -5576,7 +5576,9 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	CHECK_OBJECT (MonoReflectionMethodBody *, method, NULL);
 
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		(method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return NULL;
 	mn = (MonoMethodNormal *)method;
 	header = mono_method_get_header (method);
