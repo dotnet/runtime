@@ -210,6 +210,9 @@ MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method);
 
 MonoMethod *
+mono_marshal_get_unbox_wrapper (MonoMethod *method);
+
+MonoMethod *
 mono_marshal_get_isinst (MonoClass *klass);
 
 MonoMethod *

@@ -126,6 +126,7 @@ struct _MonoImage {
 	GHashTable *native_wrapper_cache;
 	GHashTable *remoting_invoke_cache;
 	GHashTable *synchronized_cache;
+	GHashTable *unbox_wrapper_cache;
 
 	void *reflection_info;
 

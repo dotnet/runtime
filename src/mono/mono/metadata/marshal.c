@@ -6433,6 +6433,44 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	return res;	
 }
 
+
+/*
+ * the returned method calls 'method' unboxing the this argument
+ */
+MonoMethod *
+mono_marshal_get_unbox_wrapper (MonoMethod *method)
+{
+	MonoMethodSignature *sig = method->signature;
+	int i;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+
+	cache = method->klass->image->unbox_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, method)))
+		return res;
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNBOX);
+
+	g_assert (sig->hasthis);
+	
+	mono_mb_emit_ldarg (mb, 0); 
+	mono_mb_emit_icon (mb, sizeof (MonoObject));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	for (i = 0; i < sig->param_count; ++i)
+		mono_mb_emit_ldarg (mb, i + 1);
+	mono_mb_emit_managed_call (mb, method, NULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_and_cache (cache, method,
+										 mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+
+	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */
+
+	return res;	
+}
+
 MonoMethod*
 mono_marshal_get_stelemref ()
 {

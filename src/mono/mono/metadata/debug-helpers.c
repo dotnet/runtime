@@ -35,6 +35,7 @@ static const char *wrapper_type_names [] = {
 	"cancast",
 	"proxy_isinst",
 	"stelemref",
+	"unbox",
 	"unknown"
 };
 

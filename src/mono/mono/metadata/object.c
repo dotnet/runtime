@@ -723,7 +723,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	for (i = 0; i < class->vtable_size; ++i) {
 		MonoMethod *cm;
 	       
-		if (cm = class->vtable [i]) {
+		if ((cm = class->vtable [i])) {
 			if (cm->signature->generic_param_count)
 				vt->vtable [i] = cm;
 			else
@@ -3258,6 +3258,10 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
+		delegate->method_ptr = mono_compile_method (method);
+		delegate->target = target;
+	} else if (method->signature->hasthis && method->klass->valuetype) {
+		method = mono_marshal_get_unbox_wrapper (method);
 		delegate->method_ptr = mono_compile_method (method);
 		delegate->target = target;
 	} else {
