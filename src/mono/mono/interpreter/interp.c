@@ -61,6 +61,7 @@
 
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
+#include "embed.h"
 #include "hacks.h"
 
 /* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
@@ -5049,14 +5050,67 @@ quit_function (MonoDomain *domain, gpointer user_data)
 
 }
 
+void
+mono_interp_cleanup(MonoDomain *domain)
+{
+    quit_function (domain, NULL);
+}
+
+int
+mono_interp_exec(MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
+{
+    return ves_exec (domain, assembly, argc, argv);
+}
+
+MonoDomain *
+mono_interp_init(const char *file)
+{
+	MonoDomain *domain;
+
+	g_set_prgname (file);
+	mono_set_rootdir ();
+	
+	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
+
+	g_thread_init (NULL);
+
+	thread_context_id = TlsAlloc ();
+	TlsSetValue (thread_context_id, NULL);
+	InitializeCriticalSection(&calc_section);
+	InitializeCriticalSection(&create_method_pointer_mutex);
+
+	mono_install_compile_method (mono_create_method_pointer);
+	mono_install_runtime_invoke (interp_mono_runtime_invoke);
+	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
+
+	mono_install_handler (interp_ex_handler);
+	mono_install_stack_walk (interp_walk_stack);
+	mono_runtime_install_cleanup (quit_function);
+
+	domain = mono_init (file);
+#ifdef __hpux /* generates very big stack frames */
+	mono_threads_set_default_stacksize(32*1024*1024);
+#endif
+	mono_init_icall ();
+	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
+	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
+	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
+
+	mono_runtime_init (domain, NULL, NULL);
+
+	return domain;
+}
+
 int 
-main (int argc, char *argv [])
+mono_main (int argc, char *argv [])
 {
 	MonoDomain *domain;
 	int retval = 0, i, ocount = 0;
 	char *file, *config_file = NULL;
 	int enable_debugging = FALSE;
 	MainThreadArgs main_args;
+	const char *error;
 	
 	if (argc < 2)
 		usage ();
@@ -5102,38 +5156,21 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
-	g_set_prgname (file);
-	mono_set_rootdir ();
-	
-	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
-	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
-
-	g_thread_init (NULL);
-
-	thread_context_id = TlsAlloc ();
-	TlsSetValue (thread_context_id, NULL);
-	InitializeCriticalSection(&calc_section);
-	InitializeCriticalSection(&create_method_pointer_mutex);
-
-	mono_install_compile_method (mono_create_method_pointer);
-	mono_install_runtime_invoke (interp_mono_runtime_invoke);
-	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
-
-	mono_install_handler (interp_ex_handler);
-	mono_install_stack_walk (interp_walk_stack);
-	mono_runtime_install_cleanup (quit_function);
-
-	domain = mono_init (file);
-#ifdef __hpux /* generates very big stack frames */
-	mono_threads_set_default_stacksize(32*1024*1024);
-#endif
+	domain = mono_interp_init(file);
 	mono_config_parse (config_file);
-	mono_init_icall ();
-	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
-	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
-	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
 
-	mono_runtime_init (domain, NULL, NULL);
+	error = mono_verify_corlib ();
+	if (error) {
+		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		exit (1);
+	}
+
+	error = mono_check_corlib_version ();
+	if (error) {
+		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		fprintf (stderr, "Download a newer corlib at http://go-mono/daily.\n");
+		exit (1);
+	}
 
 	main_args.domain=domain;
 	main_args.file=file;

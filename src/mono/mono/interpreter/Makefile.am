@@ -13,12 +13,25 @@ endif
 
 bin_PROGRAMS = mint
 
+lib_LTLIBRARIES = libmint.la
+
 mint_SOURCES =		\
+	main.c
+
+mint_LDADD =		\
+	libmint.la
+
+libmint_la_SOURCES =	\
 	hacks.h		\
 	interp.h	\
 	interp.c	
 
-mint_LDADD =				\
+libmintincludedir = $(includedir)/mono/interpreter
+
+libmintinclude_HEADERS = 	\
+	embed.h
+
+libmint_la_LIBADD =				\
 	../arch/libmonoarch.la		\
 	../metadata/libmonoruntime.la	\
 	../metadata/libmetadata.la	\
