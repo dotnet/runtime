@@ -1,3 +1,8 @@
+2004-12-08  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (get-monolite-latest): Update to new location of
+	bootstrap files in the mcs/ tree.
+
 2004-12-07  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in: Set 'tar-pax' option for automake-1.9.
