@@ -672,6 +672,8 @@ static void
 interp_walk_stack (MonoStackWalk func, gpointer user_data)
 {
 	ThreadContext *context = TlsGetValue (thread_context_id);
+	if (!context) return;
+		
 	MonoInvocation *frame = context->current_frame;
 	int il_offset;
 	MonoMethodHeader *hd;
