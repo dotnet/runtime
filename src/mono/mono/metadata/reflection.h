@@ -317,6 +317,7 @@ typedef struct {
 	MonoString *name;
 	MonoString *filename;
 	guint32 attrs;
+	guint32 offset;
 } MonoReflectionResource;
 
 typedef struct {
@@ -341,7 +342,6 @@ typedef struct {
 	guint32 pekind;
 	MonoBoolean delay_sign;
 	guint32 access;
-	gpointer main_module;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
@@ -396,6 +396,7 @@ typedef struct {
 	MonoArray *global_methods;
 	MonoArray *global_fields;
 	gboolean is_main;
+	MonoArray *resources;
 } MonoReflectionModuleBuilder;
 
 typedef struct {

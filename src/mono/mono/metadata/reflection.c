@@ -3122,7 +3122,27 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 }
 
 static void
-assembly_add_resource (MonoDynamicImage *assembly, MonoReflectionResource *rsrc)
+assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly, MonoReflectionResource *rsrc, guint32 implementation)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	char *name;
+
+	table = &assembly->tables [MONO_TABLE_MANIFESTRESOURCE];
+	table->rows++;
+	alloc_table (table, table->rows);
+	values = table->values + table->next_idx * MONO_MANIFEST_SIZE;
+	values [MONO_MANIFEST_OFFSET] = rsrc->offset;
+	values [MONO_MANIFEST_FLAGS] = rsrc->attrs;
+	name = mono_string_to_utf8 (rsrc->name);
+	values [MONO_MANIFEST_NAME] = string_heap_insert (&assembly->sheap, name);
+	g_free (name);
+	values [MONO_MANIFEST_IMPLEMENTATION] = implementation;
+	table->next_idx++;
+}
+
+static void
+assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly, MonoReflectionResource *rsrc)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -3150,29 +3170,28 @@ assembly_add_resource (MonoDynamicImage *assembly, MonoReflectionResource *rsrc)
 		mono_image_add_stream_data (&assembly->blob, hash, 20);
 		g_free (name);
 		idx = table->next_idx++;
+		rsrc->offset = 0;
 		idx = IMPLEMENTATION_FILE | (idx << IMPLEMENTATION_BITS);
-		offset = 0;
 	} else {
 		char sizebuf [4];
 		offset = mono_array_length (rsrc->data);
 		sizebuf [0] = offset; sizebuf [1] = offset >> 8;
 		sizebuf [2] = offset >> 16; sizebuf [3] = offset >> 24;
-		offset = mono_image_add_stream_data (&assembly->resources, sizebuf, 4);
+		rsrc->offset = mono_image_add_stream_data (&assembly->resources, sizebuf, 4);
 		mono_image_add_stream_data (&assembly->resources, mono_array_addr (rsrc->data, char, 0), mono_array_length (rsrc->data));
-		idx = 0;
+
+		if (!mb->is_main)
+			/* 
+			 * The entry should be emitted into the MANIFESTRESOURCE table of 
+			 * the main module, but that needs to reference the FILE table
+			 * which isn't emitted yet.
+			 */
+			return;
+		else
+			idx = 0;
 	}
 
-	table = &assembly->tables [MONO_TABLE_MANIFESTRESOURCE];
-	table->rows++;
-	alloc_table (table, table->rows);
-	values = table->values + table->next_idx * MONO_MANIFEST_SIZE;
-	values [MONO_MANIFEST_OFFSET] = offset;
-	values [MONO_MANIFEST_FLAGS] = rsrc->attrs;
-	name = mono_string_to_utf8 (rsrc->name);
-	values [MONO_MANIFEST_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
-	values [MONO_MANIFEST_IMPLEMENTATION] = idx;
-	table->next_idx++;
+	assembly_add_resource_manifest (mb, assembly, rsrc, idx);
 }
 
 static void
@@ -3291,6 +3310,25 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 				}
 			}
 		}
+
+		/* Emit MANIFESTRESOURCE table */
+		module_index = 0;
+		for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
+			int j;
+			MonoReflectionModuleBuilder *file_module = 
+				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i);
+			/* The table for the main module is emitted later */
+			if (file_module != moduleb) {
+				module_index ++;
+				if (file_module->resources) {
+					int len = mono_array_length (file_module->resources);
+					for (j = 0; j < len; ++j) {
+						MonoReflectionResource* res = (MonoReflectionResource*)mono_array_addr (file_module->resources, MonoReflectionResource, j);
+						assembly_add_resource_manifest (file_module, assembly, res, IMPLEMENTATION_FILE | (module_index << IMPLEMENTATION_BITS));
+					}
+				}
+			}
+		}		
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
@@ -3726,13 +3764,18 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	
 	mono_image_build_metadata (mb);
 
-	if (assemblyb->resources) {
+	if (mb->is_main && assemblyb->resources) {
 		int len = mono_array_length (assemblyb->resources);
 		for (i = 0; i < len; ++i)
-			assembly_add_resource (assembly, (MonoReflectionResource*)mono_array_addr (assemblyb->resources, MonoReflectionResource, i));
+			assembly_add_resource (mb, assembly, (MonoReflectionResource*)mono_array_addr (assemblyb->resources, MonoReflectionResource, i));
 	}
 
-	
+	if (mb->resources) {
+		int len = mono_array_length (mb->resources);
+		for (i = 0; i < len; ++i)
+			assembly_add_resource (mb, assembly, (MonoReflectionResource*)mono_array_addr (mb->resources, MonoReflectionResource, i));
+	}
+
 	build_compressed_metadata (assembly);
 
 	nsections = calc_section_size (assembly);
