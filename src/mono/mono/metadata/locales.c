@@ -3,13 +3,16 @@
  *
  * Author:
  *	Dick Porter (dick@ximian.com)
+ *	Mohammad DAMT (mdamt@cdl2000.com)
  *
  * (C) 2003 Ximian, Inc.
+ * (C) 2003 PT Cakram Datalingga Duaribu  http://www.cdl2000.com
  */
 
 #include <config.h>
 #include <glib.h>
 
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/exception.h>
@@ -38,7 +41,11 @@ static void set_field_by_name (MonoObject *obj, const guchar *fieldname,
 
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
-	mono_field_set_value (obj, field, value);
+	if(field!=NULL) {
+		mono_field_set_value (obj, field, value);
+	} else {
+		g_warning (G_GNUC_PRETTY_FUNCTION ": Runtime mismatch with class lib! (Looking for field [%s] in %s.%s)", fieldname, mono_object_class (obj)->name_space, mono_object_class (obj)->name);
+	}
 }
 
 static gpointer get_field_by_name (MonoObject *obj, const guchar *fieldname)
@@ -48,6 +55,12 @@ static gpointer get_field_by_name (MonoObject *obj, const guchar *fieldname)
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
+
+	if(field==NULL) {
+		g_warning (G_GNUC_PRETTY_FUNCTION ": Runtime mismatch with class lib! (Looking for field [%s] in %s.%s)", fieldname, mono_object_class (obj)->name_space, mono_object_class (obj)->name);
+		return(NULL);
+	}
+	
 	mono_field_get_value (obj, field, &ret);
 	return(ret);
 }
@@ -293,6 +306,183 @@ error0:
 	return(new_dtf);
 }
 
+static MonoObject *create_NumberFormat (const char *locale)
+{
+	MonoObject *new_nf;
+	MonoClass *class;
+	MonoMethodDesc* methodDesc;
+	MonoMethod *method;
+	UConverter *conv;
+	UResourceBundle *bundle, *subbundle, *table_entries;
+	UErrorCode ec;
+	int32_t count;
+	static char country [7]; //FIXME
+	const UChar *res_str;
+	int32_t res_strlen;
+
+	class=mono_class_from_name (mono_defaults.corlib,
+				    "System.Globalization",
+				    "NumberFormatInfo");
+	new_nf=mono_object_new (mono_domain_get (), class);
+	mono_runtime_object_init (new_nf);
+
+	ec=U_ZERO_ERROR;
+	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
+	if(U_FAILURE (ec)) {
+		goto error0;
+	}
+
+	bundle=ures_open (NULL, locale, &ec);
+	if(U_FAILURE (ec)) {
+		goto error1;
+	}
+
+	/* Number Elements */
+	ec=U_ZERO_ERROR;
+	subbundle=ures_getByKey (bundle, "NumberElements", NULL, &ec);
+	if(U_FAILURE (ec)) {
+		/* Couldn't find the subbundle */
+		goto error1;
+	}
+		
+	count=ures_countArrayItems (bundle, "NumberElements", &ec);
+	if(U_FAILURE (ec)) {
+		/* Couldn't count the subbundle */
+		ures_close (subbundle);
+		goto error1;
+	}
+
+	if(subbundle!=NULL) {
+		set_field_by_name (new_nf, "numberDecimalSeparator",
+				   monostring_from_resource_index (subbundle,
+								   conv, 0));
+		set_field_by_name (new_nf, "numberGroupSeparator",
+				   monostring_from_resource_index (subbundle,
+								   conv, 1));
+		set_field_by_name (new_nf, "percentDecimalSeparator",
+				   monostring_from_resource_index (subbundle,
+								   conv, 0));
+		set_field_by_name (new_nf, "percentGroupSeparator",
+				   monostring_from_resource_index (subbundle,
+								   conv, 1));
+		set_field_by_name (new_nf, "percentSymbol",
+				   monostring_from_resource_index (subbundle,
+								   conv, 3));
+		set_field_by_name (new_nf, "zeroPattern",
+				   monostring_from_resource_index (subbundle,
+								   conv, 4));
+		set_field_by_name (new_nf, "digitPattern",
+				   monostring_from_resource_index (subbundle,
+								   conv, 5));
+		set_field_by_name (new_nf, "negativeSign",
+				   monostring_from_resource_index (subbundle,
+								   conv, 6));
+		set_field_by_name (new_nf, "perMilleSymbol",
+				   monostring_from_resource_index (subbundle,
+								   conv, 8));
+		set_field_by_name (new_nf, "positiveInfinitySymbol",
+				   monostring_from_resource_index (subbundle,
+								   conv, 9));
+		/* we dont have this in CLDR, so copy it from positiveInfinitySymbol */
+		set_field_by_name (new_nf, "negativeInfinitySymbol",
+				   monostring_from_resource_index (subbundle,
+								   conv, 9));
+		set_field_by_name (new_nf, "naNSymbol",
+				   monostring_from_resource_index (subbundle,
+								   conv, 10)); 
+		set_field_by_name (new_nf, "currencyDecimalSeparator",
+				   monostring_from_resource_index (subbundle,
+								   conv, 0));
+		set_field_by_name (new_nf, "currencyGroupSeparator",
+				   monostring_from_resource_index (subbundle,
+								   conv, 1));
+
+		ures_close (subbundle);
+	}
+ 
+	/* get country name */
+	ec = U_ZERO_ERROR;
+	uloc_getCountry (locale, country, sizeof (country), &ec);
+	if (U_SUCCESS (ec)) {						
+		ec = U_ZERO_ERROR;
+		/* find country name in root.CurrencyMap */
+		subbundle = ures_getByKey (bundle, "CurrencyMap", NULL, &ec);
+		if (U_SUCCESS (ec)) {
+			ec = U_ZERO_ERROR;
+			/* get currency id for specified country */
+			table_entries = ures_getByKey (subbundle, country, NULL, &ec);
+			if (U_SUCCESS (ec)) {
+				ures_close (subbundle);
+				ec = U_ZERO_ERROR;
+				
+				res_str = ures_getStringByIndex (
+					table_entries, 0, &res_strlen, &ec);				
+				if(U_SUCCESS (ec)) {
+					/* now we have currency id string */
+					ures_close (table_entries);
+					ec = U_ZERO_ERROR;
+					u_UCharsToChars (res_str, country,
+							 sizeof (country));
+					if(U_SUCCESS (ec)) {
+						ec = U_ZERO_ERROR;
+						/* find currency string in locale data */
+						subbundle = ures_getByKey (
+							bundle, "Currencies",
+							NULL, &ec);
+							
+						if (U_SUCCESS (ec)) {
+							ec = U_ZERO_ERROR;
+							/* find currency symbol under specified currency id */
+							table_entries = ures_getByKey (subbundle, country, NULL, &ec);
+							if (U_SUCCESS (ec)) {
+								/* get the first string only, 
+								 * the second is international currency symbol (not used)*/
+								set_field_by_name (new_nf, "currencySymbol",
+										   monostring_from_resource_index (table_entries,
+														   conv, 0));
+								ures_close (table_entries);
+							}
+							ures_close (subbundle);
+						}		
+					}
+				}
+			}
+		}
+	}
+
+	subbundle=open_subbundle (bundle, "NumberPatterns", 4);
+	if(subbundle!=NULL) {
+		set_field_by_name (new_nf, "decimalFormats",
+				   monostring_from_resource_index (subbundle,
+								   conv, 0));
+		set_field_by_name (new_nf, "currencyFormats",
+				   monostring_from_resource_index (subbundle,
+								   conv, 1));
+		set_field_by_name (new_nf, "percentFormats",
+				   monostring_from_resource_index (subbundle,
+								   conv, 2));			
+		ures_close (subbundle);
+		
+		/* calls InitPatterns to parse the patterns
+		 */
+		methodDesc = mono_method_desc_new (
+			"System.Globalization.NumberFormatInfo:InitPatterns()",
+			TRUE);
+		method = mono_method_desc_search_in_class (methodDesc, class);
+		if(method!=NULL) {
+			mono_runtime_invoke (method, new_nf, NULL, NULL);
+		} else {
+			g_warning (G_GNUC_PRETTY_FUNCTION ": Runtime mismatch with class lib! (Looking for System.Globalization.NumberFormatInfo:InitPatterns())");
+		}
+	}
+
+	ures_close (bundle);
+error1:
+	ucnv_close (conv);
+error0:
+	return(new_nf);
+}
+
 static char *mono_string_to_icu_locale (MonoString *locale)
 {
 	UErrorCode ec;
@@ -342,9 +532,8 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	
 	/* Fill in the static fields */
 
-	/* TODO: Calendar, CurrentCulture,
-	 * CurrentUICulture, InstalledUICulture, NumberFormat,
-	 * OptionalCalendars, Parent, TextInfo
+	/* TODO: Calendar, InstalledUICulture, OptionalCalendars,
+	 * TextInfo
 	 */
 
 	str_len=256;	/* Should be big enough for anything */
@@ -381,6 +570,9 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	set_field_by_name (this, "datetime_format",
 			   create_DateTimeFormat (icu_locale));
 	
+	set_field_by_name (this, "number_format",
+			   create_NumberFormat (icu_locale));
+ 
 	g_free (str);
 	g_free (ustr);
 	g_free (icu_locale);
