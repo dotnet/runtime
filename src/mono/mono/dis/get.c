@@ -850,8 +850,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type)
 	}
 
 	if (*ptr == MONO_TYPE_TYPEDBYREF){
-		/* TODO: what does `typedbyref' mean? */
-		g_string_append (str, "/* FIXME: What does this mean? */ typedbyref ");
+		g_string_append (str, "typedbyref");
 		ptr++;
 	} else if (*ptr == MONO_TYPE_VOID){
 		 g_string_append (str, "void");
