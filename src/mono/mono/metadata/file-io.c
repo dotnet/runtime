@@ -248,19 +248,27 @@ ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat,
 {
 	WIN32_FIND_DATA data;
 	HANDLE result;
+	gboolean r = TRUE;
 
 	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
-	
+
 	result = FindFirstFile (mono_string_chars (path), &data);
 
 	/* note: WIN32_FIND_DATA is an extension of WIN32_FILE_ATTRIBUTE_DATA */
-
-	if (result != INVALID_HANDLE_VALUE) {
-		convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
-						   &data.cFileName [0], stat);
-	} else {
+	while (result != INVALID_HANDLE_VALUE && r) {
+		if ((data.cFileName [0] == '.' && data.cFileName [1] == 0) ||
+		    (data.cFileName [0] == '.' && data.cFileName [1] == '.' && data.cFileName [2] == 0)) {
+			r = FindNextFile (result, &data);
+		} else {
+			convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
+							   &data.cFileName [0], stat);
+			break;
+		} 
+	}
+	
+	if (result == INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
 	}
 
@@ -279,10 +287,18 @@ ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
 	*error=ERROR_SUCCESS;
 	
 	result = FindNextFile (find, &data);
-	if (result) {
-		convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
-						   &data.cFileName [0], stat);
-	} else {
+	while (result != INVALID_HANDLE_VALUE) {
+		if ((data.cFileName [0] == '.' && data.cFileName [1] == 0) ||
+		    (data.cFileName [0] == '.' && data.cFileName [1] == '.' && data.cFileName [2] == 0)) {
+			result = FindNextFile (find, &data);
+		} else {
+			convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
+							   &data.cFileName [0], stat);
+			break;
+		} 
+	}
+	
+	if (result == INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
 	}
 
