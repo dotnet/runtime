@@ -1118,6 +1118,7 @@ ves_array_element_address (MonoArray *this, ...)
 
 	esize = mono_array_element_size (class);
 	ea = (gpointer*)((char*)this->vector + (ind * esize));
+	//printf ("AADDRESS %p %p %d\n", this, ea, ind);
 
 	va_end(ap);
 
@@ -1188,7 +1189,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	MonoMethodSignature *signature;
 	MonoImage *image;
 	MonoValueType svt;
-	MBTree **sp, **stack, **arg_sp, *t1, *t2;
+	MBTree **sp, **stack, **arg_sp, *t1, *t2, *t3;
 	register const unsigned char *ip, *end;
 	GPtrArray *forest;
 	int i, j, depth, repeat_count;
@@ -1311,13 +1312,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1->data.p = c;
 			t1->svt = VAL_POINTER;
 
-			t1 = mono_store_tree (cfg, -1, t1, &t2);
+			t1 = mono_store_tree (cfg, -1, t1, &t3);
 			g_assert (t1);
-
 			ADD_TREE (t1);
-			PUSH_TREE (t2, VAL_POINTER);
 
-			t1 = ctree_create_dup (mp, t2);
+			t1 = ctree_create_dup (mp, t3);
 			t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t2->data.i = sizeof (MonoObject);
 			t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);
@@ -1325,8 +1324,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, map_stvalue_type (c), t1, *sp);
 			ADD_TREE (t1);
 
-			// I need to test this first
-			g_assert_not_reached ();
+			PUSH_TREE (t3, VAL_POINTER);
+
 			break;
 		}
 		case CEE_UNBOX: {
