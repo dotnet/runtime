@@ -263,6 +263,7 @@ is_regsize_var (MonoType *t) {
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
+	}
 	return FALSE;
 }
 
@@ -504,7 +505,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					type = MONO_TYPE_U;
 				else
 					type = ptype->type;
-handle_enum:
 				/* FIXME: validate arguments... */
 				switch (type) {
 				case MONO_TYPE_I:
