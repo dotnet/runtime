@@ -492,12 +492,16 @@ enum_marshal:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
-			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_TYPEDBYREF:
 			case MONO_TYPE_R4:
 				x86_push_membase (code, X86_ESP, offset);
+				break;
+			case MONO_TYPE_SZARRAY:
+				x86_mov_reg_membase (code, X86_EAX, X86_ESP, offset, 4);
+				x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoArray, vector));
+				x86_push_reg (code, X86_EAX);
 				break;
 			case MONO_TYPE_FNPTR:
 				/* fixme: dont know when this is used */
