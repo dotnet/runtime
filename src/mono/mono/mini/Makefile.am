@@ -90,8 +90,9 @@ genmdesc_SOURCES = \
 	genmdesc.c	\
 	helpers.c
 
+# Don't link this against libmetadata to speed up rebuilds
 genmdesc_LDADD = \
-	$(libs) -lm	\
+	$(monodir)/mono/utils/libmonoutils.la $(monodir)/mono/metadata/opcodes.lo -lm	\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS)
 
