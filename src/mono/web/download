@@ -118,8 +118,10 @@
                     <img src="images/macos-36.gif"><b>Mac OS X package</b>
 		  </td>
 		  <td>
-<!--		    <a href="archive/beta3/macos/mono-0.96-framework.dmg">mono-0.96-framework.dmg</a>: in /Library/Framework.<br> -->
 		    <a href="archive/beta3/macos/mono-0.96.dmg">mono-0.96.dmg</a> in /opt.
+		    <br/><br/>
+		    The Cocoa# folks have provided a version fo /Library/Framework:<br>
+		    <a href="http://forge.novell.com/modules/xfmod/project/showfiles.php?group_id=1443&release_id=1687#selected">here</a>
 		  </td>
 		</tr>
              </table>
