@@ -1054,6 +1054,7 @@ case "$host" in
 		arch_target=sparc;
 		JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
+		LIBC="libc.so"
 		jit_wanted=true
 		;;
 #       alpha*-*-linux* | alpha*-*-osf*)
