@@ -8,7 +8,7 @@
 <!--
    body { font-family: "trebuchet ms", lucida, verdana, helvetica; 
           
-          background-attachment: fixed; }
+   }
    body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; 
                      font-size: 14px; }
 
