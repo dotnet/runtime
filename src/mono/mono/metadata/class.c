@@ -779,7 +779,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	mono_stats.used_class_count++;
 	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
-	vt = g_malloc0 (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+	vt = mono_mempool_alloc0 (domain->mp,  sizeof (MonoVTable) + 
+				  class->vtable_size * sizeof (gpointer));
 	vt->klass = class;
 	vt->domain = domain;
 
@@ -790,7 +791,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		/*GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);*/
 		mono_g_hash_table_insert (domain->static_data_hash, class, vt->data);
 #else
-		vt->data = g_malloc0 (class->class_size + 8);
+		vt->data = mono_mempool_alloc0 (domain->mp, class->class_size + 8);
+		
 #endif
 		mono_stats.class_static_data_size += class->class_size + 8;
 	}
@@ -859,7 +861,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
-	vt->interface_offsets = g_malloc0 (sizeof (gpointer) * (class->max_interface_id + 1));
+	vt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
+	        sizeof (gpointer) * (class->max_interface_id + 1));
 
 	/* initialize interface offsets */
 	for (k = class; k ; k = k->parent) {
@@ -910,7 +913,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 
 	mono_stats.class_vtable_size += vtsize;
 
-	pvt = g_malloc (vtsize);
+	pvt = mono_mempool_alloc (domain->mp, vtsize);
 	memcpy (pvt, vt, vtsize);
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
