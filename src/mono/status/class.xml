@@ -677,12 +677,12 @@
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.Debug">
-		<last-activity>Jul-15-2001</last-activity>
-		<implementation>no</implementation>
+		<last-activity>March-08-2002</last-activity>
+		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>angryjohn69@nc.rr.com</maintainer>
+			<maintainer>jonpryor@vt.edu</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.DebuggableAttribute">
@@ -731,12 +731,12 @@
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.Trace">
-		<last-activity>Jul-15-2001</last-activity>
-		<implementation>no</implementation>
-		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<last-activity>April-06-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>yes</test-suite>
+		<completion>100</completion>
 		<maintainers>
-			<maintainer>angryjohn69@nc.rr.com</maintainer>
+			<maintainer>jonpryor@vt.edu</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.TraceLevel">
@@ -749,12 +749,12 @@
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.TraceListener">
-		<last-activity>Jul-15-2001</last-activity>
-		<implementation>no</implementation>
+		<last-activity>Apr-07-2002</last-activity>
+		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>angryjohn69@nc.rr.com</maintainer>
+			<maintainer>jonpryor@vt.edu</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.TraceSwitch">
