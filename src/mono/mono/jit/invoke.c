@@ -389,8 +389,9 @@ arch_create_native_wrapper (MonoMethod *method)
 	if (csig->hasthis)
 		arg_size += sizeof (gpointer);
 
-	if (csig->ret->type == MONO_TYPE_VALUETYPE) {
-		g_assert (!csig->ret->byref);
+	if (!csig->ret->byref && csig->ret->type == MONO_TYPE_VALUETYPE) {
+		//printf ("XTEST %s.%s:%s\n", 
+			//g_assert (!csig->ret->byref);
 		arg_size += sizeof (gpointer);		
 	}
 		
@@ -543,8 +544,7 @@ enum_marshal:
 			}
 		}			
 
-		if (csig->ret->type == MONO_TYPE_VALUETYPE) {
-			g_assert (!csig->ret->byref);
+		if (!csig->ret->byref && csig->ret->type == MONO_TYPE_VALUETYPE) {
 			x86_push_membase (code, X86_ESP, offset);
 		}
 
@@ -592,7 +592,7 @@ enum_marshal:
 		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + (locals<<2) + 
 				 (end_invoke ? 4 : 0));
 
-	if (pinvoke && !csig->ret->byref && (csig->ret->type == MONO_TYPE_STRING)) {
+	if (pinvoke && !csig->ret->byref && csig->ret->type == MONO_TYPE_STRING) {
 		/* If the argument is non-null, then convert the value back */
 		x86_alu_reg_reg (code, X86_OR, X86_EAX, X86_EAX);
 		x86_branch8 (code, X86_CC_EQ, 9, FALSE);
