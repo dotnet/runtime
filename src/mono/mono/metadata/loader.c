@@ -746,8 +746,36 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		}	
 		result->signature->call_convention = conv;
 	} else {
+		MonoGenericParam *gen_params = NULL;
+
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
+
+		if (result->signature->generic_param_count) {
+			MonoMethodSignature *sig = result->signature;
+
+			gen_params = mono_metadata_load_generic_params (image, token, NULL);
+
+			for (i = 0; i < sig->generic_param_count; i++) {
+				gen_params [i].method = result;
+
+				mono_class_from_generic_parameter (
+					&gen_params [i], image, TRUE);
+			}
+
+			if (sig->ret->type == MONO_TYPE_MVAR) {
+				int num = sig->ret->data.generic_param->num;
+				sig->ret->data.generic_param = &gen_params [num];
+			}
+
+			for (i = 0; i < sig->param_count; i++) {
+				MonoType *t = sig->params [i];
+				if (t->type == MONO_TYPE_MVAR) {
+					int num = t->data.generic_param->num;
+					sig->params [i]->data.generic_param = &gen_params [num];
+				}
+			}
+		}
 
 		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
 					!(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -755,13 +783,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 			g_assert (loc);
 			mn->header = mono_metadata_parse_mh (image, loc);
-
-			if (result->signature->generic_param_count) {
-				mn->header->gen_params = mono_metadata_load_generic_params (image, token, NULL);
-
-				for (i = 0; i < result->signature->generic_param_count; i++)
-					mn->header->gen_params [i].method = result;
-			}
+			mn->header->gen_params = gen_params;
 		}
 	}
 
