@@ -111,6 +111,17 @@
   </tr>
 </table>
 
+@item May 20th, 2003: OpenLink releases WineLib patches.
+
+	OpenLink <a
+	href="http://lists.ximian.com/archives/public/mono-winforms-list/2003-May/000284.html">announced</a>
+	the release of Vladimir's work to turn Wine into a library
+	that can be used dynamically from Mono.  This work simplifies
+	the work on System.Windows.Forms as it is no longer necessary
+	have a special version of the GC, nor have a stub program.
+	The patches are available <a
+	href="http://www.openlinksw.com/mono/">here</a>.
+
 @item May 10th, 2003: Eclipse runs on Mono
 
 	Today Zoltan Varga announced that he got the <a
