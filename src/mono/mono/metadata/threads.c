@@ -268,6 +268,8 @@ mono_thread_attach (MonoDomain *domain)
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 							 MonoObject *start)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)start;
 	guint32 (*start_func)(void *);
 	struct StartInfo *start_info;
@@ -325,6 +327,8 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 							     HANDLE thread)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Closing thread %p, handle %p",
 		   this, thread);
@@ -336,6 +340,8 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 						      HANDLE thread)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Launching thread %p", this);
 #endif
@@ -351,6 +357,8 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms);
 #endif
@@ -361,12 +369,16 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 gint32
 ves_icall_System_Threading_Thread_GetDomainID (void) 
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return mono_domain_get()->domain_id;
 }
 
 MonoThread *
 mono_thread_current (void)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoThread *thread;
 	
 	/* Find the current thread object */
@@ -382,6 +394,8 @@ mono_thread_current (void)
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 							 int ms, HANDLE thread)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	if(ms== -1) {
@@ -410,6 +424,8 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 
 void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Storing key %p", data);
 #endif
@@ -420,6 +436,8 @@ void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data)
 
 MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoObject *data;
 
 	data=TlsGetValue(slothash_key);
@@ -481,6 +499,8 @@ static MonoThreadsSync *mon_new(void)
 gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 							      int ms)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoThreadsSync *mon;
 	guint32 ret;
 	
@@ -527,6 +547,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 
 void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoThreadsSync *mon;
 	
 #ifdef THREAD_LOCK_DEBUG
@@ -568,6 +590,8 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 
 gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoThreadsSync *mon;
 	gboolean ret=FALSE;
 	
@@ -604,6 +628,8 @@ finished:
 
 gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoThreadsSync *mon;
 	gboolean ret=FALSE;
 	
@@ -637,6 +663,8 @@ finished:
 	
 void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean have_waiters;
 	MonoThreadsSync *mon;
 	
@@ -669,6 +697,8 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
 
 void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean have_waiters=FALSE;
 	MonoThreadsSync *mon;
 	
@@ -711,6 +741,8 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
 gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 							 int ms)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean last_waiter;
 	MonoThreadsSync *mon;
 	guint32 save_count;
@@ -811,6 +843,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
@@ -850,6 +884,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 /* FIXME: exitContext isnt documented */
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
@@ -880,6 +916,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guint32 ret;
 	
 #ifdef THREAD_WAIT_DEBUG
@@ -909,35 +947,49 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	return(TRUE);
 }
 
-HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,char *name) {    
-   return(CreateMutex(NULL,owned,name));	                 
+HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,char *name) { 
+	MONO_ARCH_SAVE_REGS;
+   
+	return(CreateMutex(NULL,owned,name));	                 
 }                                                                   
 
 void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
+	MONO_ARCH_SAVE_REGS;
+
 	ReleaseMutex(handle);
 }
 
 HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual,
 															  MonoBoolean initial,
 															  char *name) {
+	MONO_ARCH_SAVE_REGS;
+
 	return (CreateEvent(NULL,manual,initial,name));
 }
 
 gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle) {
+	MONO_ARCH_SAVE_REGS;
+
 	return (SetEvent(handle));
 }
 
 gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
+	MONO_ARCH_SAVE_REGS;
+
 	return (ResetEvent(handle));
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return InterlockedIncrement (location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gint32 lowret;
 	gint32 highret;
 
@@ -956,11 +1008,15 @@ gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 
 gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return InterlockedDecrement(location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gint32 lowret;
 	gint32 highret;
 
@@ -979,16 +1035,22 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location1, gint32 value)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return InterlockedExchange(location1, value);
 }
 
 MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject **location1, MonoObject *value)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return (MonoObject *) InterlockedExchangePointer((gpointer *) location1, value);
 }
 
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location1, gfloat value)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	IntFloatUnion val, ret;
 
 	val.fval = value;
@@ -999,16 +1061,22 @@ gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location1
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return InterlockedCompareExchange(location1, value, comparand);
 }
 
 MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject **location1, MonoObject *value, MonoObject *comparand)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location1, value, comparand);
 }
 
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location1, gfloat value, gfloat comparand)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	IntFloatUnion val, ret, cmp;
 
 	val.fval = value;
@@ -1021,6 +1089,8 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 void
 ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	thread->abort_state = state;
 	thread->abort_exc = mono_get_exception_thread_abort ();
 
@@ -1040,6 +1110,8 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 void
 ves_icall_System_Threading_Thread_ResetAbort (void)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoThread *thread = mono_thread_current ();
 	
 	if (!thread->abort_exc) {

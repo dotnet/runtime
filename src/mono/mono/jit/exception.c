@@ -52,6 +52,271 @@ typedef struct sigcontext MonoContext;
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
 
+#ifdef MONO_USE_EXC_TABLES
+
+/*************************************/
+/*    STACK UNWINDING STUFF          */
+/*************************************/
+
+/* These definitions are from unwind-dw2.c in glibc 2.2.5 */
+
+/* For x86 */
+#define DWARF_FRAME_REGISTERS 17
+
+typedef struct frame_state
+{
+  void *cfa;
+  void *eh_ptr;
+  long cfa_offset;
+  long args_size;
+  long reg_or_offset[DWARF_FRAME_REGISTERS+1];
+  unsigned short cfa_reg;
+  unsigned short retaddr_column;
+  char saved[DWARF_FRAME_REGISTERS+1];
+} frame_state;
+
+static long
+get_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum)
+{
+	switch (dwarf_regnum) {
+	case X86_EAX:
+		return ctx->eax;
+	case X86_EBX:
+		return ctx->ebx;
+	case X86_ECX:
+		return ctx->ecx;
+	case X86_EDX:
+		return ctx->edx;
+	case X86_ESI:
+		return ctx->esi;
+	case X86_EDI:
+		return ctx->edi;
+	case X86_EBP:
+		return ctx->ebp;
+	case X86_ESP:
+		return ctx->esp;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return 0;
+}
+
+static void
+set_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum, long value)
+{
+	switch (dwarf_regnum) {
+	case X86_EAX:
+		ctx->eax = value;
+		break;
+	case X86_EBX:
+		ctx->ebx = value;
+		break;
+	case X86_ECX:
+		ctx->ecx = value;
+		break;
+	case X86_EDX:
+		ctx->edx = value;
+		break;
+	case X86_ESI:
+		ctx->esi = value;
+		break;
+	case X86_EDI:
+		ctx->edi = value;
+		break;
+	case X86_EBP:
+		ctx->ebp = value;
+		break;
+	case X86_ESP:
+		ctx->esp = value;
+		break;
+	case 8:
+		ctx->eip = value;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+typedef struct frame_state * (*framesf) (void *, struct frame_state *);
+
+static framesf frame_state_for = NULL;
+
+static gboolean inited = FALSE;
+
+typedef char ** (*get_backtrace_symbols_type) (void *__const *__array, int __size);
+
+static get_backtrace_symbols_type get_backtrace_symbols = NULL;
+
+static void
+init_frame_state_for (void)
+{
+	GModule *module;
+
+	/*
+	 * There are two versions of __frame_state_for: one in libgcc.a and the
+	 * other in glibc.so. We need the version from glibc.
+	 * For more info, see this:
+	 * http://gcc.gnu.org/ml/gcc/2002-08/msg00192.html
+	 */
+	if ((module = g_module_open ("libc.so.6", G_MODULE_BIND_LAZY))) {
+	
+		if (!g_module_symbol (module, "__frame_state_for", (gpointer*)&frame_state_for))
+			frame_state_for = NULL;
+
+		if (!g_module_symbol (module, "backtrace_symbols", (gpointer*)&get_backtrace_symbols)) {
+			get_backtrace_symbols = NULL;
+			frame_state_for = NULL;
+		}
+
+		g_module_close (module);
+	}
+
+	inited = TRUE;
+}
+
+/* mono_has_unwind_info:
+ *
+ * Tests if a function has an DWARF exception table able to restore
+ * all caller saved registers. 
+ */
+gboolean
+mono_has_unwind_info (MonoMethod *method)
+{
+	struct frame_state state_in;
+	struct frame_state *res;
+
+	if (!inited) 
+		init_frame_state_for ();
+	
+	if (!frame_state_for)
+		return FALSE;
+
+	g_assert (method->addr);
+
+	memset (&state_in, 0, sizeof (state_in));
+
+	/* offset 10 is just a guess, but it works for all methods tested */
+	if ((res = frame_state_for ((char *)method->addr + 10, &state_in))) {
+
+		if (res->saved [X86_EBX] != 1 ||
+		    res->saved [X86_EDI] != 1 ||
+		    res->saved [X86_EBP] != 1 ||
+		    res->saved [X86_ESI] != 1) {
+			return FALSE;
+		}
+		return TRUE;
+	} else 
+		return FALSE;
+}
+
+struct stack_frame
+{
+  void *next;
+  void *return_address;
+};
+
+static MonoJitInfo *
+x86_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sigcontext *ctx, 
+			 struct sigcontext *new_ctx, MonoLMF *lmf, char **trace)
+{
+	struct stack_frame *frame;
+	gpointer max_stack;
+	MonoJitInfo *ji;
+	struct frame_state state_in;
+	struct frame_state *res;
+
+	if (trace)
+		*trace = NULL;
+
+	if (!inited) 
+		init_frame_state_for ();
+
+	if (!frame_state_for)
+		return FALSE;
+
+	frame = MONO_CONTEXT_GET_BP (ctx);
+
+	max_stack = lmf ? lmf : jit_tls->end_of_stack;
+
+	*new_ctx = *ctx;
+
+	memset (&state_in, 0, sizeof (state_in));
+
+	while ((gpointer)frame->next < (gpointer)max_stack) {
+		gpointer ip, addr = frame->return_address;
+		void *cfa;
+		char *tmp, **symbols;
+
+		if (trace) {
+			ip = MONO_CONTEXT_GET_IP (new_ctx);
+			symbols = get_backtrace_symbols (&ip, 1);
+			if (*trace)
+				tmp = g_strdup_printf ("%s\nin (unmanaged) %s", *trace, symbols [0]);
+			else
+				tmp = g_strdup_printf ("in (unmanaged) %s", symbols [0]);
+
+			free (symbols);
+			g_free (*trace);
+			*trace = tmp;
+		}
+
+		if ((res = frame_state_for (addr, &state_in))) {	
+			int i;
+
+			cfa = (gint8*) (get_sigcontext_reg (new_ctx, res->cfa_reg) + res->cfa_offset);
+			frame = (struct stack_frame *)((gint8*)cfa - 8);
+			for (i = 0; i < DWARF_FRAME_REGISTERS + 1; i++) {
+				int how = res->saved[i];
+				long val;
+				g_assert ((how == 0) || (how == 1));
+			
+				if (how == 1) {
+					val = * (long*) ((gint8*)cfa + res->reg_or_offset[i]);
+					set_sigcontext_reg (new_ctx, i, val);
+				}
+			}
+			new_ctx->esp = (long)cfa;
+
+			if (res->saved [X86_EBX] == 1 &&
+			    res->saved [X86_EDI] == 1 &&
+			    res->saved [X86_EBP] == 1 &&
+			    res->saved [X86_ESI] == 1 &&
+			    (ji = mono_jit_info_table_find (domain, frame->return_address))) {
+				//printf ("FRAME CFA %s\n", mono_method_full_name (ji->method, TRUE));
+				return ji;
+			}
+
+		} else {
+			//printf ("FRAME %p %p %p\n", frame, MONO_CONTEXT_GET_IP (new_ctx), mono_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (new_ctx)));
+
+			MONO_CONTEXT_SET_IP (new_ctx, frame->return_address);
+			frame = frame->next;
+			MONO_CONTEXT_SET_BP (new_ctx, frame);
+
+			/* stop if we detect an unexpected managed frame */
+			if (mono_jit_info_table_find (domain, frame->return_address)) {
+				if (trace) {
+					g_free (*trace);
+					*trace = NULL;
+				}
+				return NULL;
+			}
+		}
+	}
+
+	if (!lmf)
+		g_assert_not_reached ();
+
+	if (trace) {
+		g_free (*trace);
+		*trace = NULL;
+	}
+	return NULL;
+}
+
+#endif
+
 /*
  * arch_get_restore_context:
  *
@@ -310,12 +575,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 	if (native_offset)
 		*native_offset = -1;
 
-	*new_ctx = *ctx;
-
 	if (ji != NULL) {
 		char *source_location, *tmpaddr, *fname;
 		gint32 address, iloffset;
 		int offset;
+
+		*new_ctx = *ctx;
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -371,9 +636,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
 
 		return ji;
-
+#ifdef MONO_USE_EXC_TABLES
+	} else if ((ji = x86_unwind_native_frame (domain, jit_tls, ctx, new_ctx, *lmf, trace))) {
+		return ji;
+#endif
 	} else if (*lmf) {
 		
+		*new_ctx = *ctx;
+
 		if (trace)
 			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
 		
@@ -393,13 +663,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 
 		return ji;
 		
-	} else {
-		/* no lmf available - usually a serious error? */
-		new_ctx->SC_EBP = (unsigned long)jit_tls->end_of_stack;
-		return NULL;
 	}
 
-	g_assert_not_reached ();
+	return NULL;
 }
 
 MonoArray *
@@ -565,7 +831,10 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		
 		ji = mono_arch_find_jit_info (domain, jit_tls, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL);
-		g_assert (ji);
+		if (!ji) {
+			g_warning ("Exception insinde function without unwind info");
+			g_assert_not_reached ();
+		}
 
 		if (ji->method != mono_start_method) {
 			

@@ -1,6 +1,14 @@
 #ifndef _MONO_METADATA_EXCEPTION_H_
 #define _MONO_METADATA_EXCEPTION_H_
 
+#include <config.h>
+
+#ifdef MONO_USE_EXC_TABLES
+#define MONO_ARCH_SAVE_REGS __builtin_unwind_init ()
+#else
+#define MONO_ARCH_SAVE_REGS 
+#endif
+
 #include <mono/metadata/object.h>
 #include <mono/metadata/image.h>
 

@@ -455,7 +455,9 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 			result->string_ctor = 1;
 
 		result->addr = mono_lookup_internal_call (result);
+		result->signature->pinvoke = 1;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		result->signature->pinvoke = 1;
 		((MonoMethodPInvoke *)result)->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */

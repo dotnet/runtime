@@ -17,6 +17,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/gc.h>
+#include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/threadpool.h>
@@ -879,6 +880,8 @@ mono_object_clone (MonoObject *obj)
 MonoArray*
 mono_array_clone (MonoArray *array)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoArray *o;
 	int size, i;
 	guint32 *sizes;

@@ -15,6 +15,7 @@
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/appdomain.h"
 #include "mono/metadata/opcodes.h"
+#include <mono/metadata/exception.h>
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
@@ -2262,6 +2263,8 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 guint32
 mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guint32 idx;
 	char buf [16];
 	char *b = buf;
@@ -2382,6 +2385,8 @@ typedef struct {
 void
 mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	static const guchar entrycode [16] = {0xff, 0x25, 0};
 	MonoDynamicAssembly *assembly;
 	MonoImage *image;
@@ -3746,6 +3751,8 @@ find_event_index (MonoClass *klass, MonoEvent *event) {
 MonoArray*
 mono_reflection_get_custom_attrs (MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+	
 	guint32 idx, mtoken, i, len;
 	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
 	MonoClass *klass;
@@ -4155,6 +4162,9 @@ handle_type:
  */
 MonoArray*
 mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) {
+
+	MONO_ARCH_SAVE_REGS;
+
 	MonoArray *result;
 	MonoMethodSignature *sig;
 	MonoObject *arg;
@@ -4244,6 +4254,8 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 void
 mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoClass *klass, *parent;
 
 	klass = g_new0 (MonoClass, 1);
@@ -4298,6 +4310,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 void
 mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoClass *klass;
 
 	klass = my_mono_class_from_mono_type (tb->type.type);
@@ -4436,6 +4450,8 @@ typebuilder_setup_fields (MonoClass *klass)
 MonoReflectionType*
 mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoClass *klass;
 	MonoReflectionType* res;
 
@@ -4480,6 +4496,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 MonoArray *
 mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoDynamicAssembly *assembly = sig->module->assemblyb->dynamic_assembly;
 	guint32 na = mono_array_length (sig->arguments);
 	guint32 buflen, i;
@@ -4507,6 +4525,8 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 MonoArray *
 mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoDynamicAssembly *assembly = sig->module->assemblyb->dynamic_assembly;
 	guint32 na = mono_array_length (sig->arguments);
 	guint32 buflen, i;

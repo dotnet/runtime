@@ -466,6 +466,8 @@ static MonoException *get_socket_exception(guint32 error_code)
 
 gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	SOCKET sock;
 	gint32 sock_family;
 	gint32 sock_proto;
@@ -515,6 +517,8 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
  */
 void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": closing 0x%x", sock);
 #endif
@@ -524,6 +528,8 @@ void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
 
 gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", WSAGetLastError());
 #endif
@@ -533,6 +539,8 @@ gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(voi
 
 gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret, amount;
 	
 	ret=ioctlsocket(sock, FIONREAD, &amount);
@@ -547,6 +555,8 @@ gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock)
 void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 							   gboolean block)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	
 	ret=ioctlsocket(sock, FIONBIO, &block);
@@ -557,6 +567,8 @@ void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 
 gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	SOCKET newsock;
 	
 	newsock=accept(sock, NULL, 0);
@@ -571,6 +583,8 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 							 guint32 backlog)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	
 	ret=listen(sock, backlog);
@@ -642,6 +656,8 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	struct sockaddr sa;
 	int salen;
 	int ret;
@@ -662,6 +678,8 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	struct sockaddr sa;
 	int salen;
 	int ret;
@@ -727,6 +745,8 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 
 extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoObject *sockaddr)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	struct sockaddr *sa;
 	int sa_size;
 	int ret;
@@ -747,6 +767,8 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 
 extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, MonoObject *sockaddr)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	struct sockaddr *sa;
 	int sa_size;
 	int ret;
@@ -767,6 +789,8 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 
 gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	guchar *buf;
 	gint32 alen;
@@ -789,6 +813,8 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 
 gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	guchar *buf;
 	gint32 alen;
@@ -820,6 +846,8 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 
 gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	guchar *buf;
 	gint32 alen;
@@ -850,6 +878,8 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 
 gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject *sockaddr)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	guchar *buf;
 	gint32 alen;
@@ -897,6 +927,8 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 
 void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	fd_set readfds, writefds, errfds;
 	struct timeval tv;
 	div_t divvy;
@@ -1018,6 +1050,8 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 
 void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int system_level;
 	int system_name;
 	int ret;
@@ -1098,6 +1132,8 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 
 void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET sock, gint32 level, gint32 name, MonoArray **byte_val)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int system_level;
 	int system_name;
 	int ret;
@@ -1137,6 +1173,8 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int system_level;
 	int system_name;
 	int ret;
@@ -1230,6 +1268,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 							   gint32 how)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int ret;
 	
 	/* Currently, the values for how (recv=0, send=1, both=2) match
@@ -1296,6 +1336,8 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	char *hostname;
 	struct hostent *he;
 	
@@ -1351,6 +1393,8 @@ inet_pton (int family, const char *address, void *inaddrp)
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	struct in_addr inaddr;
 	struct hostent *he;
 	char *address;
@@ -1370,6 +1414,8 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guchar hostname[256];
 	int ret;
 	

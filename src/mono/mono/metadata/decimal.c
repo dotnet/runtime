@@ -13,6 +13,7 @@
  * CSharp value type System.Decimal
  */
 
+#include <mono/metadata/exception.h>
 #include <stdio.h>
 #include <memory.h>
 #include <stdlib.h>
@@ -736,6 +737,8 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
 /* performs a += b */
 gint32 mono_decimalIncr(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 alo, ahi, blo, bhi;
     int log2A, log2B, log2Result, log10Result, rc;
     int subFlag, sign, scaleA, scaleB;
@@ -1048,6 +1051,8 @@ gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 de
 gint32 mono_decimal2string(/*[In]*/decimal_repr* pA, gint32 digits, gint32 decimals,
                                    MonoArray* pArray, gint32 bufSize, gint32* pDecPos, gint32* pSign)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint16 tmp[41];
     guint16 *buf = (guint16*) mono_array_addr(pArray, guint16, 0);
     guint16 *q, *p = tmp;
@@ -1142,6 +1147,8 @@ gint32 mono_decimal2string(/*[In]*/decimal_repr* pA, gint32 digits, gint32 decim
  */
 gint32 mono_decimal2UInt64(/*[In]*/decimal_repr* pA, guint64* pResult)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 alo, ahi;
     int scale;
 
@@ -1163,6 +1170,8 @@ gint32 mono_decimal2UInt64(/*[In]*/decimal_repr* pA, guint64* pResult)
  */
 gint32 mono_decimal2Int64(/*[In]*/decimal_repr* pA, gint64* pResult)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 alo, ahi;
     int sign, scale;
 
@@ -1188,6 +1197,8 @@ gint32 mono_decimal2Int64(/*[In]*/decimal_repr* pA, gint64* pResult)
 
 void mono_decimalFloorAndTrunc(/*[In, Out]*/decimal_repr* pA, gint32 floorFlag)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 alo, ahi;
     guint32 factor, rest;
     int scale, sign, idx;
@@ -1216,6 +1227,8 @@ void mono_decimalFloorAndTrunc(/*[In, Out]*/decimal_repr* pA, gint32 floorFlag)
 
 void mono_decimalRound(/*[In, Out]*/decimal_repr* pA, gint32 decimals)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 alo, ahi;
     int scale, sign;
 
@@ -1232,6 +1245,8 @@ void mono_decimalRound(/*[In, Out]*/decimal_repr* pA, gint32 decimals)
 
 gint32 mono_decimalMult(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 low, mid, high;
     guint32 factor;
     int scale, sign, rc;
@@ -1330,6 +1345,8 @@ static int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
 
 gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 clo, chi; /* result */
     int scale, texp, rc;
 
@@ -1351,6 +1368,8 @@ gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[I
 
 gint32 mono_decimalIntDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 clo, chi; /* result */
     int scale, texp, rc;
 
@@ -1395,6 +1414,8 @@ DECINLINE static int decimalIsZero(/*[In]*/decimal_repr* pA)
 
 gint32 mono_decimalCompare(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
+    MONO_ARCH_SAVE_REGS;
+
     int log2a, log2b, delta, sign;
     decimal_repr aa;
 
@@ -1433,6 +1454,8 @@ DECINLINE static void buildIEEE754Double(double* pd, int sign, int texp, guint64
 
 double mono_decimal2double(/*[In]*/decimal_repr* pA)
 {
+    MONO_ARCH_SAVE_REGS;
+
     double d;
     guint64 alo, ahi, mantisse;
     guint32 overhang, factor, roundBits;
@@ -1499,6 +1522,8 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA)
 /* a *= 10^exp */
 gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp)
 {
+    MONO_ARCH_SAVE_REGS;
+
     guint64 alo, ahi;
     int rc;
     int scale = pA->signscale.scale;

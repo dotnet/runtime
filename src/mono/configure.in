@@ -25,7 +25,8 @@ case "$host" in
 		;;
 	*-*-linux*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT"
+		AC_DEFINE(MONO_USE_EXC_TABLES)
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -fexceptions"
 		libdl="-ldl"
 		;;
 	*-*-solaris*)

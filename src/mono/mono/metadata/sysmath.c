@@ -3,6 +3,7 @@
 #define __USE_ISOC99
 #include <math.h>
 #include <mono/metadata/sysmath.h>
+#include <mono/metadata/exception.h>
 
 #ifndef NAN
 # if G_BYTE_ORDER == G_BIG_ENDIAN
@@ -31,42 +32,56 @@ static __huge_val_t __huge_val = { __HUGE_VAL_bytes };
 gdouble 
 ves_icall_System_Math_Sin (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return sin (x);
 }
 
 gdouble 
 ves_icall_System_Math_Cos (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return cos (x);
 }
 
 gdouble 
 ves_icall_System_Math_Tan (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return tan (x);
 }
 
 gdouble 
 ves_icall_System_Math_Sinh (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return sinh (x);
 }
 
 gdouble 
 ves_icall_System_Math_Cosh (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return cosh (x);
 }
 
 gdouble 
 ves_icall_System_Math_Tanh (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return tanh (x);
 }
 
 gdouble 
 ves_icall_System_Math_Acos (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	if (x < -1 || x > 1)
 		return NAN;
 
@@ -76,6 +91,8 @@ ves_icall_System_Math_Acos (gdouble x)
 gdouble 
 ves_icall_System_Math_Asin (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	if (x < -1 || x > 1)
 		return NAN;
 
@@ -85,24 +102,32 @@ ves_icall_System_Math_Asin (gdouble x)
 gdouble 
 ves_icall_System_Math_Atan (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return atan (x);
 }
 
 gdouble 
 ves_icall_System_Math_Atan2 (gdouble y, gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return atan2 (y, x);
 }
 
 gdouble 
 ves_icall_System_Math_Exp (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return exp (x);
 }
 
 gdouble 
 ves_icall_System_Math_Log (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	if (x == 0)
 		return -HUGE_VAL;
 	else if (x < 0)
@@ -114,6 +139,8 @@ ves_icall_System_Math_Log (gdouble x)
 gdouble 
 ves_icall_System_Math_Log10 (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	if (x == 0)
 		return -HUGE_VAL;
 	else if (x < 0)
@@ -125,12 +152,16 @@ ves_icall_System_Math_Log10 (gdouble x)
 gdouble 
 ves_icall_System_Math_Pow (gdouble x, gdouble y)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return pow (x, y);
 }
 
 gdouble 
 ves_icall_System_Math_Sqrt (gdouble x)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	if (x < 0)
 		return NAN;
 

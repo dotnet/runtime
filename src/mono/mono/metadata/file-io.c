@@ -182,6 +182,8 @@ static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *
 MonoBoolean
 ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -197,6 +199,8 @@ ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error)
 MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -213,6 +217,8 @@ HANDLE
 ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat,
 					  gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	WIN32_FIND_DATA data;
 	HANDLE result;
 
@@ -236,6 +242,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
 					 gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	WIN32_FIND_DATA data;
 	gboolean result;
 
@@ -255,6 +263,8 @@ ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
 MonoBoolean
 ves_icall_System_IO_MonoIO_FindClose (HANDLE find, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -270,6 +280,8 @@ ves_icall_System_IO_MonoIO_FindClose (HANDLE find, gint32 *error)
 MonoString *
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoString *result;
 	gunichar2 *buf;
 	int len;
@@ -298,6 +310,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
 						gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -314,6 +328,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest,
 				     gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -330,6 +346,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
 				     MonoBoolean overwrite, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -345,6 +363,8 @@ ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
 MonoBoolean
 ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -360,6 +380,8 @@ ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error)
 gint32 
 ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gint32 ret;
 	
 	*error=ERROR_SUCCESS;
@@ -376,6 +398,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 					      gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -391,6 +415,8 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 gint32
 ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -410,6 +436,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 					gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean result;
 	WIN32_FILE_ATTRIBUTE_DATA data;
 
@@ -433,6 +461,8 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 				 gint32 access_mode, gint32 share,
 				 gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	HANDLE ret;
 	
 	*error=ERROR_SUCCESS;
@@ -451,6 +481,8 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 MonoBoolean
 ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -468,6 +500,8 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 				 gint32 dest_offset, gint32 count,
 				 gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guchar *buffer;
 	gboolean result;
 	guint32 n;
@@ -493,6 +527,8 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 				  gint32 src_offset, gint32 count,
 				  gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guchar *buffer;
 	gboolean result;
 	guint32 n;
@@ -517,6 +553,8 @@ gint64
 ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 				 gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guint32 offset_hi;
 
 	*error=ERROR_SUCCESS;
@@ -535,6 +573,8 @@ ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 MonoBoolean
 ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
@@ -550,6 +590,8 @@ ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error)
 gint64 
 ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gint64 length;
 	guint32 length_hi;
 
@@ -567,6 +609,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
 				      gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gint64 offset, offset_set;
 	gint32 offset_hi;
 	gint32 length_hi;
@@ -616,6 +660,8 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 					gint64 last_access_time,
 					gint64 last_write_time, gint32 *error)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	const FILETIME *creation_filetime;
 	const FILETIME *last_access_filetime;
@@ -649,18 +695,24 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleOutput ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return GetStdHandle (STD_OUTPUT_HANDLE);
 }
 
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleInput ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return GetStdHandle (STD_INPUT_HANDLE);
 }
 
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleError ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return GetStdHandle (STD_ERROR_HANDLE);
 }
 
@@ -668,6 +720,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 				       HANDLE *write_handle)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	SECURITY_ATTRIBUTES attr;
 	gboolean ret;
 	
@@ -687,6 +741,8 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 #if defined (PLATFORM_WIN32)
 	return (gunichar2) 0x003a;	/* colon */
 #else
@@ -697,6 +753,8 @@ ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 gunichar2 
 ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 #if defined (PLATFORM_WIN32)
 	return (gunichar2) 0x005c;	/* backslash */
 #else
@@ -707,6 +765,8 @@ ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar ()
 gunichar2 
 ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 #if defined (PLATFORM_WIN32)
 	return (gunichar2) 0x002f;	/* forward slash */
 #else
@@ -717,6 +777,8 @@ ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 gunichar2 
 ves_icall_System_IO_MonoIO_get_PathSeparator ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 #if defined (PLATFORM_WIN32)
 	return (gunichar2) 0x003b;	/* semicolon */
 #else
@@ -737,6 +799,8 @@ static gunichar2 invalid_path_chars [] = {
 MonoArray *
 ves_icall_System_IO_MonoIO_get_InvalidPathChars ()
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoArray *chars;
 	MonoDomain *domain;
 	int i, n;

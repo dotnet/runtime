@@ -228,8 +228,19 @@ arch_create_jit_trampoline (MonoMethod *method)
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm;
 		
-		nm = mono_marshal_get_native_wrapper (method);
-		method->info = mono_compile_method (nm);
+		if (!method->addr && (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+			mono_lookup_pinvoke_call (method);
+
+#ifdef MONO_USE_EXC_TABLES
+		if (mono_method_blittable (method)) {
+			method->info = method->addr;
+		} else {
+#endif
+			nm = mono_marshal_get_native_wrapper (method);
+			method->info = mono_compile_method (nm);
+#ifdef MONO_USE_EXC_TABLES
+		}
+#endif
 		return method->info;
 	}
 

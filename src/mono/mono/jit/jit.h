@@ -320,4 +320,10 @@ arch_get_reg_name          (int regnum);
 int 
 arch_activation_frame_size (MonoMethodSignature *sig);
 
+gboolean
+mono_has_unwind_info       (MonoMethod *method);
+
+gboolean
+mono_method_blittable      (MonoMethod *method);
+
 #endif

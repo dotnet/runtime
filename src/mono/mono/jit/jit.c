@@ -302,6 +302,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 {
 	MonoMethod *invoke;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
+
 	invoke = mono_marshal_get_runtime_invoke (method);
 	runtime_invoke = mono_compile_method (invoke);       
 	return runtime_invoke (obj, params, exc);
@@ -812,6 +813,8 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 static gpointer 
 ves_array_element_address (MonoArray *this, ...)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoClass *class;
 	va_list ap;
 	int i, ind, esize;
@@ -3727,6 +3730,68 @@ mono_get_runtime_method (MonoMethod* method)
 	return NULL;
 }
 
+#ifdef MONO_USE_EXC_TABLES
+static gboolean
+mono_type_blittable (MonoType *type)
+{
+	if (type->byref)
+		return FALSE;
+
+	switch (type->type){
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TRUE;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		return type->data.klass->blittable;
+		break;
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
+gboolean
+mono_method_blittable (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	int i;
+
+	if (!method->addr)
+		return FALSE;
+
+	if (!mono_has_unwind_info (method)) {
+		return FALSE;
+	}
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return TRUE;
+
+	sig = method->signature;
+
+	if (!mono_type_blittable (sig->ret))
+		return FALSE;
+
+	for (i = 0; i < sig->param_count; i++)
+		if (!mono_type_blittable (sig->params [i]))
+			return FALSE;
+
+	return TRUE;
+}
+#endif
+
 /**
  * mono_compile_method:
  * @method: pointer to the method info
@@ -3748,9 +3813,19 @@ mono_jit_compile_method (MonoMethod *method)
 
 		if (!method->info) {
 			MonoMethod *nm;
-    
-			nm = mono_marshal_get_native_wrapper (method);
-			method->info = mono_compile_method (nm);
+
+			if (!method->addr && (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+				mono_lookup_pinvoke_call (method);
+#ifdef MONO_USE_EXC_TABLES
+			if (mono_method_blittable (method)) {
+				method->info = method->addr;
+			} else {
+#endif
+				nm = mono_marshal_get_native_wrapper (method);
+				method->info = mono_compile_method (nm);
+#ifdef MONO_USE_EXC_TABLES
+			}
+#endif
 		}
 		return method->info;
 	}

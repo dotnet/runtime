@@ -17,12 +17,15 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/cil-coff.h>
+#include <mono/metadata/exception.h>
 #include <mono/io-layer/io-layer.h>
 
 #undef DEBUG
 
 HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	HANDLE handle;
 	
 	/* GetCurrentProcess returns a pseudo-handle, so use
@@ -40,12 +43,16 @@ HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 
 guint32 ves_icall_System_Diagnostics_Process_GetPid_internal (void)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return(GetCurrentProcessId ());
 }
 
 void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *this,
 								 HANDLE process)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Closing process %p, handle %p",
 		   this, process);
@@ -597,6 +604,8 @@ static void process_scan_modules (gpointer data, gpointer user_data)
 /* Returns an array of System.Diagnostics.ProcessModule */
 MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	/* I was going to use toolhelp for this, but then realised I
 	 * was being an idiot :)
 	 *
@@ -631,6 +640,8 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 
 void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoImage *image;
 	guchar *filename_utf8;
 	
@@ -657,6 +668,8 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 
 MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	gunichar2 *dir;
 	STARTUPINFO startinfo={0};
@@ -691,6 +704,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 
 MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObject *this, HANDLE process, gint32 ms)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guint32 ret;
 	
 	if(ms<0) {
@@ -709,6 +724,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObjec
 
 gint64 ves_icall_System_Diagnostics_Process_ExitTime_internal (HANDLE process)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	gint64 ticks;
 	FILETIME create_time, exit_time, kernel_time, user_time;
@@ -727,6 +744,8 @@ gint64 ves_icall_System_Diagnostics_Process_ExitTime_internal (HANDLE process)
 
 gint64 ves_icall_System_Diagnostics_Process_StartTime_internal (HANDLE process)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	gint64 ticks;
 	FILETIME create_time, exit_time, kernel_time, user_time;
@@ -745,6 +764,8 @@ gint64 ves_icall_System_Diagnostics_Process_StartTime_internal (HANDLE process)
 
 gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	guint32 code;
 	
 	GetExitCodeProcess (process, &code);
@@ -758,6 +779,8 @@ gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 
 MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoString *string;
 	gboolean ok;
 	HMODULE mod;
@@ -788,6 +811,8 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 /* Returns an array of pids */
 MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoArray *procs;
 	gboolean ret;
 	guint32 needed, count, i;
@@ -811,6 +836,8 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 
 MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE process, guint32 *min, guint32 *max)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	
 	ret=GetProcessWorkingSetSize (process, min, max);
@@ -820,6 +847,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE 
 
 MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE process, guint32 min, guint32 max, MonoBoolean use_min)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gboolean ret;
 	guint32 ws_min;
 	guint32 ws_max;

@@ -13,6 +13,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/unicode.h>
+#include <mono/metadata/exception.h>
 
 static MonoUnicodeCategory catmap[] = {
 	/* G_UNICODE_CONTROL = */              Control,
@@ -50,48 +51,64 @@ static MonoUnicodeCategory catmap[] = {
 double 
 ves_icall_System_Char_GetNumericValue (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return (double)g_unichar_digit_value (c);
 }
 
 MonoUnicodeCategory 
 ves_icall_System_Char_GetUnicodeCategory (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return catmap [g_unichar_type (c)];
 }
 
 gboolean 
 ves_icall_System_Char_IsControl (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_iscntrl (c);
 }
 
 gboolean 
 ves_icall_System_Char_IsDigit (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_isdigit (c);
 }
 
 gboolean 
 ves_icall_System_Char_IsLetter (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_isalpha (c);
 }
 
 gboolean 
 ves_icall_System_Char_IsLower (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_islower (c);
 }
 
 gboolean 
 ves_icall_System_Char_IsUpper (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_isupper (c);
 }
 
 gboolean 
 ves_icall_System_Char_IsNumber (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	GUnicodeType t = g_unichar_type (c);
 	return t == G_UNICODE_DECIMAL_NUMBER ||
 		t == G_UNICODE_LETTER_NUMBER ||
@@ -101,12 +118,16 @@ ves_icall_System_Char_IsNumber (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsPunctuation (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_ispunct (c);
 }
 
 gboolean 
 ves_icall_System_Char_IsSeparator (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	GUnicodeType t = g_unichar_type (c);
 
 	return (t == G_UNICODE_LINE_SEPARATOR ||
@@ -117,12 +138,16 @@ ves_icall_System_Char_IsSeparator (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsSurrogate (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return (g_unichar_type (c) == G_UNICODE_SURROGATE);
 }
 
 gboolean 
 ves_icall_System_Char_IsSymbol (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	GUnicodeType t = g_unichar_type (c);
 
 	return (t == G_UNICODE_CURRENCY_SYMBOL ||
@@ -134,18 +159,24 @@ ves_icall_System_Char_IsSymbol (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsWhiteSpace (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_isspace (c);
 }
 
 gunichar2
 ves_icall_System_Char_ToLower (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_tolower (c);
 }
 
 gunichar2
 ves_icall_System_Char_ToUpper (gunichar2 c)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	return g_unichar_toupper (c);
 }
 

@@ -13,6 +13,7 @@
 #include <mono/metadata/gc.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/exception.h>
 #define GC_I_HIDE_POINTERS
 #include <mono/os/gc_wrapper.h>
 
@@ -170,6 +171,8 @@ mono_domain_finalize (MonoDomain *domain) {
 void
 ves_icall_System_GC_InternalCollect (int generation)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #if HAVE_BOEHM_GC
 	GC_gcollect ();
 #endif
@@ -178,6 +181,8 @@ ves_icall_System_GC_InternalCollect (int generation)
 gint64
 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 {
+	MONO_ARCH_SAVE_REGS;
+
 #if HAVE_BOEHM_GC
 	if (forceCollection)
 		GC_gcollect ();
@@ -190,6 +195,8 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 void
 ves_icall_System_GC_KeepAlive (MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	/*
 	 * Does nothing.
 	 */
@@ -198,18 +205,23 @@ ves_icall_System_GC_KeepAlive (MonoObject *obj)
 void
 ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	object_register_finalizer (obj, run_finalize);
 }
 
 void
 ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	object_register_finalizer (obj, NULL);
 }
 
 void
 ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
+	MONO_ARCH_SAVE_REGS;
 }
 
 /*static CRITICAL_SECTION handle_section;*/
@@ -238,6 +250,8 @@ typedef enum {
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoObject *obj;
 	gint32 type;
 
@@ -259,6 +273,8 @@ ves_icall_System_GCHandle_GetTarget (guint32 handle)
 guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	gpointer val = obj;
 	guint32 h, idx = next_handle++;
 
@@ -329,6 +345,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 void
 ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	int idx = handle >> 2;
 	int type = handle & 0x3;
 
@@ -349,6 +367,8 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 gpointer
 ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoObject *obj;
 	int type = handle & 0x3;
 
