@@ -534,6 +534,7 @@ typedef struct {
 
 typedef struct {
 	int num_attrs;
+	int cached;
 	MonoImage *image;
 	MonoCustomAttrEntry attrs [MONO_ZERO_LEN_ARRAY];
 } MonoCustomAttrInfo;

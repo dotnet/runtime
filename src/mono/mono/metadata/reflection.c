@@ -1037,6 +1037,7 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 		dynamic_custom_attrs = g_hash_table_new (NULL, NULL);
 
 	g_hash_table_insert (dynamic_custom_attrs, obj, ainfo);
+	ainfo->cached = TRUE;
 }
 
 void
@@ -6292,7 +6293,8 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 
 	if (cinfo) {
 		result = mono_custom_attrs_construct (cinfo);
-		mono_custom_attrs_free (cinfo);
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
 	} else {
 		klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
 		result = mono_array_new (mono_domain_get (), klass, 0);

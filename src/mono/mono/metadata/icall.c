@@ -1212,11 +1212,12 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 	info->implattrs = method->iflags;
 	if (method->signature->call_convention == MONO_CALL_DEFAULT)
 		info->callconv = 1;
-	else
+	else {
 		if (method->signature->call_convention == MONO_CALL_VARARG)
 			info->callconv = 2;
 		else
 			info->callconv = 0;
+	}
 	info->callconv |= (method->signature->hasthis << 5) | (method->signature->explicit_this << 6); 
 }
 
