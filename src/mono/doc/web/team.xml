@@ -1224,3 +1224,32 @@
   </contributor>
 </contributors>
 
+  <contributor>
+
+    <name>
+
+      <first-name>Charles Iliya</first-name>
+
+      <last-name>Krempeaux</last-name>
+
+    </name>
+
+    <e-mail>charles@reptile.ca</e-mail>
+
+    <image>none.png</image>
+
+    <location>Surrey, BC, Canada</location>
+
+    <organization>Reptile Consulting &amp; Services Ltd.</organization>
+
+    <description>Consultant</description>
+
+    <tasks>
+
+      <task>Gtk# - GNOME .NET binding</task>
+
+      <task>System.Drawing.Printing</task>
+
+    </tasks>
+
+  </contributor>

@@ -1,3 +1,7 @@
+2003-04-16  Charles Iliya Krempeaux  <charles@reptile.ca>
+
+	* doc/web/team.xml : Added myself to it.
+
 2003-04-10  Duncan Mak  <duncan@ximian.com>
 
 	* doc/web/render-team-page.cs (Compare): Correctly fix
