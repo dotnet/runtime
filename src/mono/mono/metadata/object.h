@@ -25,28 +25,31 @@ typedef struct {
 } MonoStringObject;
 
 MonoObject *
-mono_object_new       (MonoImage *image, guint32 type_token);
+mono_new_object             (MonoClass *klass);
 
 MonoObject *
-mono_new_szarray      (MonoImage *image, guint32 etype, guint32 n);
+mono_new_object_from_token  (MonoImage *image, guint32 token);
 
 MonoObject *
-mono_new_utf16_string (const char *text, gint32 len);
+mono_new_szarray            (MonoClass *eclass, guint32 n);
 
 MonoObject *
-mono_new_string       (const char *text);
+mono_new_utf16_string       (const char *text, gint32 len);
+
+MonoObject *
+mono_new_string             (const char *text);
 
 void       
-mono_object_free      (MonoObject *o);
+mono_object_free            (MonoObject *o);
 
 MonoObject *
-mono_value_box        (MonoClass *class, gpointer val);
+mono_value_box              (MonoClass *klass, gpointer val);
 		      
 MonoObject *
-mono_object_clone     (MonoObject *obj);
+mono_object_clone           (MonoObject *obj);
 
 gboolean
-mono_object_isinst    (MonoObject *obj, MonoClass *klass);
+mono_object_isinst          (MonoObject *obj, MonoClass *klass);
 
 #endif
 

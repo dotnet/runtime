@@ -68,18 +68,17 @@ mono_init ()
 	g_assert (ass != NULL);
 	mono_defaults.corlib = ass->image;
 
-	mono_defaults.array_token = mono_class_token_from_name (
+	mono_defaults.array_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Array");
-	g_assert (mono_defaults.array_token != 0);
+	g_assert (mono_defaults.array_class != 0);
 
-	mono_defaults.char_token = mono_class_token_from_name (
+	mono_defaults.char_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Char");
-	g_assert (mono_defaults.char_token != 0);
+	g_assert (mono_defaults.char_class != 0);
 
-	mono_defaults.string_token = mono_class_token_from_name (
+	mono_defaults.string_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "String");
-	
-	g_assert (mono_defaults.string_token != 0);
+	g_assert (mono_defaults.string_class != 0);
 
 }
 
@@ -161,8 +160,9 @@ method_from_memberref (MonoImage *image, guint32 index)
 
 			mimage = image->references [scopeindex-1]->image;
 
-			i = mono_class_token_from_name (mimage, nspace, name);
-			klass = mono_class_get (mimage, i);
+			klass = mono_class_from_name (mimage, nspace, name);
+			mono_class_metadata_init (klass);
+
 			/* mostly dumb search for now */
 			for (i = 0; i < klass->method.count; ++i) {
 				MonoMethod *m = klass->methods [i];
@@ -197,7 +197,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			g_assert_not_reached ();		
 
 		result = (MonoMethod *)g_new0 (MonoMethod, 1);
-		result->klass = mono_class_get (mono_defaults.corlib, mono_defaults.array_token);
+		result->klass = mono_defaults.array_class;
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		result->signature = sig;
 		
@@ -421,13 +421,15 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	} else if (!(result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
-		g_assert (loc);
+
 		if (!result->klass) {
 			guint32 type = mono_metadata_typedef_from_method (image, token);
 			result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 		}
-		((MonoMethodNormal *)result)->header = 
-			mono_metadata_parse_mh (image, loc);
+
+		g_assert (loc);
+
+		((MonoMethodNormal *)result)->header = mono_metadata_parse_mh (image, loc);
 	}
 
 	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);

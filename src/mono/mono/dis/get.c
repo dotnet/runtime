@@ -15,6 +15,7 @@
 #include "meta.h"
 #include "util.h"
 #include "get.h"
+#include <mono/metadata/class.h>
 
 char *
 get_typedef (MonoMetadata *m, int idx)
@@ -534,7 +535,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		bare = dis_stringify_token (m, type->data.token);
+		bare = dis_stringify_token (m, type->data.klass->type_token);
 		break;
 		
 	case MONO_TYPE_FNPTR:

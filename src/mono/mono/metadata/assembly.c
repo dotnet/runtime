@@ -148,6 +148,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		assembly_ref = (*resolver) (name);
 
 		image->references [i] = mono_assembly_open (assembly_ref, resolver, status);
+
 		if (image->references [i] == NULL){
 			int j;
 			

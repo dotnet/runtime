@@ -14,6 +14,8 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
+typedef struct _MonoClass MonoClass;
+
 typedef enum {
 	MONO_TABLE_MODULE,
 	MONO_TABLE_TYPEREF,
@@ -153,7 +155,7 @@ struct _MonoType {
 	guchar byref; /* when included in a MonoRetType */
 	guchar constraint; /* valid when included in a local var signature */
 	union {
-		guint32 token; /* for VALUETYPE and CLASS */
+		MonoClass *klass; /* for VALUETYPE and CLASS */
 		MonoType *type;
 		MonoModifiedType *mtype;
 		MonoArray *array; /* for ARRAY */

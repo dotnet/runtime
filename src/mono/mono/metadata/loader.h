@@ -5,8 +5,6 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 
-typedef struct _MonoClass MonoClass;
-
 typedef struct {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
@@ -30,9 +28,9 @@ typedef struct {
 
 typedef struct {
 	MonoImage *corlib;
-	guint32    array_token;
-	guint32    string_token;
-	guint32    char_token;
+	MonoClass *array_class;
+	MonoClass *string_class;
+	MonoClass *char_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

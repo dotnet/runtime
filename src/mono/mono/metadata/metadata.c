@@ -17,6 +17,7 @@
 #include "cil-coff.h"
 #include "tokentype.h"
 #include "private.h"
+#include "class.h"
 
 /*
  * Encoding of the "description" argument:
@@ -1112,9 +1113,14 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
 	case MONO_TYPE_TYPEDBYREF:
 		break;
 	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_CLASS:
-		type->data.token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
+	case MONO_TYPE_CLASS: {
+		guint32 token;
+
+		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
+		type->data.klass = mono_class_get (m, token);
+
 		break;
+	}
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
 		if (mono_metadata_parse_custom_mod (m, NULL, ptr, NULL)) {
@@ -1678,59 +1684,6 @@ mono_type_size (MonoType *t, gint *align)
 }
 
 static gboolean
-mono_metadata_type_token_equal (MonoMetadata *m1, guint32 token1, 
-				MonoMetadata *m2, guint32 token2)
-{
-	int table1 = mono_metadata_token_table (token1);
-	int index1 = mono_metadata_token_index (token1);
-	int table2 = mono_metadata_token_table (token2);
-	int index2 = mono_metadata_token_index (token2);
-	guint32 cols[MAX (MONO_TYPEDEF_SIZE, MONO_TYPEREF_SIZE)];
-	const char *name1, *nspace1;
-	const char *name2, *nspace2;
-
-	switch (table1) {
-	case MONO_TABLE_TYPEDEF:
-		mono_metadata_decode_row (&m1->tables [table1], index1 - 1, cols, MONO_TYPEDEF_SIZE);
-		name1 = mono_metadata_string_heap (m1, cols [MONO_TYPEDEF_NAME]);
-		nspace1 = mono_metadata_string_heap (m1, cols [MONO_TYPEDEF_NAMESPACE]);
-		break;
-	case MONO_TABLE_TYPEREF:
-		mono_metadata_decode_row (&m1->tables [table1], index1 - 1, cols, MONO_TYPEREF_SIZE);
-		name1 = mono_metadata_string_heap (m1, cols [MONO_TYPEREF_NAME]);
-		nspace1 = mono_metadata_string_heap (m1, cols [MONO_TYPEREF_NAMESPACE]);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-
-	switch (table2) {
-	case MONO_TABLE_TYPEDEF:
-		mono_metadata_decode_row (&m2->tables [table2], index2 - 1, cols, MONO_TYPEDEF_SIZE);
-		name2 = mono_metadata_string_heap (m2, cols [MONO_TYPEDEF_NAME]);
-		nspace2 = mono_metadata_string_heap (m2, cols [MONO_TYPEDEF_NAMESPACE]);
-		break;
-	case MONO_TABLE_TYPEREF:
-		mono_metadata_decode_row (&m2->tables [table2], index2 -1, cols, MONO_TYPEREF_SIZE);
-		name2 = mono_metadata_string_heap (m2, cols [MONO_TYPEREF_NAME]);
-		nspace2 = mono_metadata_string_heap (m2, cols [MONO_TYPEREF_NAMESPACE]);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-
-	if (strcmp (nspace1, nspace2))
-		return FALSE;
-
-	if (strcmp (name1, name2))
-		return FALSE;
-
-	return TRUE;
-}
-
-static gboolean
 mono_metadata_type_equal (MonoMetadata *m1, MonoType *t1, MonoMetadata *m2, MonoType *t2)
 {
 	if (t1->type != t2->type ||
@@ -1758,7 +1711,7 @@ mono_metadata_type_equal (MonoMetadata *m1, MonoType *t1, MonoMetadata *m2, Mono
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		return mono_metadata_type_token_equal (m1, t1->data.token, m2, t2->data.token);
+		return t1->data.klass == t2->data.klass;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;

@@ -149,7 +149,7 @@ ves_icall_System_Array_SetValue (MonoInvocation *frame)
 	ea = ao->vector + (pos * esize);
 
 	if (ac->element_class->valuetype) {
-		g_assert (vc->class.valuetype);
+		g_assert (vc->klass.valuetype);
 
 		memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
 	} else

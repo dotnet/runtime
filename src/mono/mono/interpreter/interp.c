@@ -97,12 +97,17 @@ init_class (MonoClass *klass)
 	MonoInvocation call;
 	int i;
 
+	if (!klass->metadata_inited)
+		mono_class_metadata_init (klass);
+
 	if (klass->inited)
 		return;
 	if (klass->parent && !klass->parent->inited)
 		init_class (klass->parent);
 	
 	klass->inited = 1;
+
+	klass->data = g_malloc0 (klass->class_size);
 
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
@@ -135,7 +140,8 @@ newobj (MonoImage *image, guint32 token)
 		guint32 idx;
 
 		idx = mono_metadata_typedef_from_method (image, token);
-		result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
+
+		result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
 		break;
 	}
 	case MONO_TOKEN_MEMBER_REF: {
@@ -155,10 +161,10 @@ newobj (MonoImage *image, guint32 token)
 
 		switch (table){
 		case 0: /* TypeDef */
-			result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
+			result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
 			break;
 		case 1: /* TypeRef */
-			result = mono_object_new (image, MONO_TOKEN_TYPE_REF | idx);
+			result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_REF | idx);
 			break;
 		case 2: /* ModuleRef */
 			g_error ("Unhandled: ModuleRef");
@@ -167,7 +173,7 @@ newobj (MonoImage *image, guint32 token)
 			g_error ("Unhandled: MethodDef");
 			
 		case 4: /* TypeSpec */			
-			result = mono_object_new (image, MONO_TOKEN_TYPE_SPEC | idx);
+			result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_SPEC | idx);
 		}
 		break;
 	}
@@ -193,37 +199,6 @@ get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 	return NULL;
 }
 
-/*
- * When this is tested, export it from cli/.
- */
-static int
-match_signature (const char *name, MonoMethodSignature *sig, MonoMethod *method)
-{
-	int i;
-	MonoMethodSignature *sig2 = method->signature;
-	/* 
-	 * compare the signatures.
-	 * First the cheaper comparisons.
-	 */
-	if (sig->param_count != sig2->param_count)
-		return 0;
-	if (sig->hasthis != sig2->hasthis)
-		return 0;
-	/*if (!sig->ret) {
-		if (sig2->ret) return 0;
-	} else {
-		if (!sig2->ret) return 0;
-		if (sig->ret->type->type != sig2->ret->type->type)
-			return 0;
-	}*/
-	for (i = sig->param_count - 1; i >= 0; ++i) {
-		if (sig->params [i]->type->type != sig2->params [i]->type->type)
-			return 0;
-	}
-	/* compare the function name */
-	return strcmp (name, method->name) == 0;
-}
-
 static MonoObject*
 get_named_exception (const char *name)
 {
@@ -232,14 +207,11 @@ get_named_exception (const char *name)
 	MonoMethod *method = NULL;
 	MonoObject *o;
 	int i;
-	guint32 tdef;
 
-	tdef = mono_class_token_from_name (mono_defaults.corlib, "System", name);
+	klass = mono_class_from_name (mono_defaults.corlib, "System", name);
 
-	o = mono_object_new (mono_defaults.corlib, tdef);
+	o = mono_new_object (klass);
 	g_assert (o != NULL);
-
-	klass = mono_class_get (mono_defaults.corlib, tdef);
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
@@ -1764,7 +1736,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp->type = VAL_TP;
 				sp->data.p = (char*)klass + field->offset;
 			} else {
-				stackval_from_data (field->type->type, sp, (char*)klass + field->offset);
+				stackval_from_data (field->type->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			}
 			++sp;
 			BREAK;
@@ -1786,7 +1758,7 @@ ves_exec_method (MonoInvocation *frame)
 				init_class (klass);
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			stackval_to_data (field->type->type, sp, (char*)klass + field->offset);
+			stackval_to_data (field->type->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
 			BREAK;
 		}
 		CASE (CEE_STOBJ) ves_abort(); BREAK;
@@ -1818,12 +1790,14 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		}
 		CASE (CEE_NEWARR) {
+			MonoClass *class;
 			MonoObject *o;
 			guint32 token;
 
 			ip++;
 			token = read32 (ip);
-			o = mono_new_szarray (image, token, sp [-1].data.i);
+			class = mono_class_get (image, token);
+			o = mono_new_szarray (class, sp [-1].data.i);
 			ip += 4;
 
 			sp [-1].type = VAL_OBJ;
@@ -2330,7 +2304,6 @@ ves_exec (MonoAssembly *assembly)
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
-
 	INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
 	
 	ves_exec_method (&call);

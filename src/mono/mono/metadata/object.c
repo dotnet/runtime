@@ -45,25 +45,44 @@ mono_object_free (MonoObject *o)
 }
 
 /**
- * mono_object_new:
- * @image: Context where the type_token is hosted
- * @type_token: a token of the type that we want to create
+ * mono_new_object:
+ * @klass: the class of the object that we want to create
  *
  * Returns: A newly created object whose definition is
- * looked up using @type_token in the @image image
+ * looked up using @klass
  */
 MonoObject *
-mono_object_new (MonoImage *image, guint32 type_token)
+mono_new_object (MonoClass *klass)
 {
-	MonoClass *c;
 	MonoObject *o;
 
-	c = mono_class_get (image, type_token);
-	o = mono_object_allocate (c->instance_size);
-	o->klass = c;
+	if (!klass->metadata_inited)
+		mono_class_metadata_init (klass);
+
+	o = mono_object_allocate (klass->instance_size);
+	o->klass = klass;
 
 	return o;
 }
+
+/**
+ * mono_new_object_from_token:
+ * @image: Context where the type_token is hosted
+ * @token: a token of the type that we want to create
+ *
+ * Returns: A newly created object whose definition is
+ * looked up using @token in the @image image
+ */
+MonoObject *
+mono_new_object_from_token  (MonoImage *image, guint32 token)
+{
+	MonoClass *class;
+
+	class = mono_class_get (image, token);
+
+	return mono_new_object (class);
+}
+
 
 /**
  * mono_object_clone:
@@ -88,24 +107,23 @@ mono_object_clone (MonoObject *obj)
 /*
  * mono_new_szarray:
  * @image: image where the object is being referenced
- * @etype: element type token
+ * @eclass: element class
  * @n: number of array elements
  *
  * This routine creates a new szarray with @n elements of type @token
  */
 MonoObject *
-mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
+mono_new_szarray (MonoClass *eclass, guint32 n)
 {
 	MonoClass *c;
 	MonoObject *o;
 	MonoArrayObject *ao;
 	MonoArrayClass *ac;
 
-	c = mono_array_class_get (image, etype, 1);
+	c = mono_array_class_get (eclass, 1);
 	g_assert (c != NULL);
 
-	o = mono_object_allocate (c->instance_size);
-	o->klass = c;
+	o = mono_new_object (c);
 
 	ao = (MonoArrayObject *)o;
 	ac = (MonoArrayClass *)c;
@@ -113,7 +131,6 @@ mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
 	ao->bounds = g_malloc0 (sizeof (MonoArrayBounds));
 	ao->bounds [0].length = n;
 	ao->bounds [0].lower_bound = 0;
-
 	
 	ao->vector = g_malloc0 (n * mono_array_element_size (ac));
 
@@ -133,10 +150,10 @@ mono_new_utf16_string (const char *text, gint32 len)
 	MonoObject *s;
 	MonoArrayObject *ca;
 
-	s = mono_object_new (mono_defaults.corlib, mono_defaults.string_token);
+	s = mono_new_object (mono_defaults.string_class);
 	g_assert (s != NULL);
 
-	ca = (MonoArrayObject *)mono_new_szarray (mono_defaults.corlib, mono_defaults.string_token, len);
+	ca = (MonoArrayObject *)mono_new_szarray (mono_defaults.string_class, len);
 	g_assert (ca != NULL);
 	
 	((MonoStringObject *)s)->c_str = ca;
@@ -190,10 +207,11 @@ mono_value_box (MonoClass *class, gpointer value)
 
 	g_assert (class->valuetype);
 
-	res = mono_object_allocate (class->instance_size);
+	size = mono_class_instance_size (class);
+	res = mono_object_allocate (size);
 	res->klass = class;
 
-	size = res->klass->instance_size - sizeof (MonoObject);
+	size = size - sizeof (MonoObject);
 
 	memcpy ((char *)res + sizeof (MonoObject), value, size);
 

@@ -805,6 +805,8 @@ main (int argc, char *argv [])
 	if (input_files == NULL)
 		usage ();
 	
+	mono_init ();
+
 	for (l = input_files; l; l = l->next)
 		disassemble_file (l->data);
 
