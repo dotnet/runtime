@@ -1684,9 +1684,13 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	g_assert (method != NULL);
 
 	cache = method->klass->image->managed_wrapper_cache;
-	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+	if (!this && (res = (MonoMethod *)g_hash_table_lookup (cache, method)))
 		return res;
 
+	if (this) {
+		/* fime: howto free that memory ? */
+	}
+	
 	sig = method->signature;
 
 	mb = mono_mb_new (method->klass, method->name);
@@ -1914,7 +1918,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
 
-	g_hash_table_insert (cache, method, res);
+	if (!this)
+		g_hash_table_insert (cache, method, res);
 
 	return res;
 }
