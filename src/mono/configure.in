@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.10)
+AM_INIT_AUTOMAKE(mono, 0.11)
 AM_MAINTAINER_MODE
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -95,14 +95,15 @@ case "x$gc" in
 	*)
 dnl When the JIT works with libgc, use this chunk.
 dnl		# If libgc was found, use it.  Otherwise just warn.
-dnl		if test "x$found_boehm" != "xyes"; then
-dnl			AC_MSG_WARN("Compiling mono without GC.")
-dnl		else
-dnl			AC_DEFINE(HAVE_BOEHM_GC)
-dnl			AC_SUBST(HAVE_BOEHM_GC)
-dnl			LIBS="$LIBS -lgc"
-dnl		fi
-		AC_MSG_WARN("Compiling mono without GC.")
+		if test "x$found_boehm" != "xyes"; then
+			AC_MSG_WARN("Compiling mono without GC.")
+		else
+			AC_DEFINE(HAVE_BOEHM_GC)
+			AC_SUBST(HAVE_BOEHM_GC)
+			LIBS="$LIBS -lgc"
+			gc="boehm"
+		fi
+dnl		AC_MSG_WARN("Compiling mono without GC.")
 		;;
 esac
 
