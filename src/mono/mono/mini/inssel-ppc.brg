@@ -43,25 +43,36 @@ lreg: OP_LNEG (lreg) "2" {
 }
 
 freg: OP_LCONV_TO_R8 (lreg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->left->reg2;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: OP_LCONV_TO_R4 (lreg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->left->reg2;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: CEE_CONV_R_UN (reg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 reg: OP_LOCALLOC (OP_ICONST) {
 	/* microcoded in mini-ppc.c */
 	tree->sreg1 = mono_regstate_next_int (s->rs);
+	tree->dreg = state->reg1;
 	MONO_EMIT_NEW_ICONST (s, tree->sreg1, state->left->tree->inst_c0);
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 reg: OP_LOCALLOC (reg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -76,6 +87,7 @@ stmt: OP_SETRET (lreg) {
 	tree->opcode = OP_SETLRET;
 	tree->sreg1 = state->left->reg1;
 	tree->sreg2 = state->left->reg2;
+	tree->dreg = ppc_r3;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
