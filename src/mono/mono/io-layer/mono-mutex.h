@@ -33,12 +33,6 @@ extern "C" {
 #include <pthread.h>
 #include <time.h>
 
-#ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
-extern int pthread_mutex_timedlock (pthread_mutex_t *mutex,
-				    const struct timespec *timeout);
-#endif /* HAVE_PTHREAD_MUTEX_TIMEDLOCK */
-
-
 typedef struct {
 	pthread_mutex_t mutex;
 	gboolean complete;
