@@ -25,6 +25,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 
 #define MONO_CORLIB_VERSION 28
@@ -407,6 +408,12 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	data->setup = setup;
 	data->friendly_name = mono_string_to_utf8 (friendly_name);
 	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
+
+	if (!setup->application_base) {
+		/* Inherit from the root domain since MS.NET does this */
+		MonoDomain *root = mono_get_root_domain ();
+		setup->application_base = mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base));
+	}
 
 	mono_context_init (data);
 
