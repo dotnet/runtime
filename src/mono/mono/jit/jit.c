@@ -1155,7 +1155,10 @@ check_inlining (MonoMethod *method)
 			token = read32 (ip);
 			ip += 4;
 
-			cm = mono_get_method (method->klass->image, token, NULL);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				cm = mono_method_get_wrapper_data (method, token);
+			else
+				cm = mono_get_method (method->klass->image, token, NULL);
 			g_assert (cm);
 
 			if (cm == method)
@@ -1913,7 +1916,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			token = read32 (ip);
 			ip += 4;
 
-			cm = mono_get_method (image, token, NULL);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				cm = mono_method_get_wrapper_data (method, token);
+			else
+				cm = mono_get_method (image, token, NULL);
 			g_assert (cm);
 			g_assert (!strcmp (cm->name, ".ctor"));
 			
