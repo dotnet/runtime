@@ -43,6 +43,8 @@ libmetadata_a_SOURCES = \
 	mempool.c	\
 	appdomain.h	\
 	appdomain.c	\
+	debug-helpers.h	\
+	debug-helpers.c	\
 	rand.h		\
 	rand.c
 
