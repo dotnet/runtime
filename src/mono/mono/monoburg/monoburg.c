@@ -283,9 +283,12 @@ emit_state ()
 	output ("struct _MBState {\n");
 	output ("\tint\t\t op;\n");
 
-	if (dag_mode)
+	if (dag_mode) {
 		output ("\tMBTREE_TYPE\t *tree;\n");
-		
+		output ("\tgint8 reg1, reg2, reg3;\n");
+		output ("\tunsigned spilled:1;\n");
+	}
+	
 	output ("\tMBState\t\t*left, *right;\n");
 	output ("\tguint16\t\tcost[%d];\n", g_list_length (nonterm_list) + 1);
 
@@ -651,7 +654,10 @@ emit_emitter_func ()
 
 			emit_rule_string (rule, "");
 
-			output ("mono_burg_emit_%d (MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n", i);
+			if (dag_mode)
+				output ("mono_burg_emit_%d (MBState *state, MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n", i);
+			else
+				output ("mono_burg_emit_%d (MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n", i);
 			output ("{\n");
 			output ("%s\n", rule->code);
 			output ("}\n\n");
@@ -830,8 +836,11 @@ emit_vardefs ()
 static void
 emit_prototypes ()
 {
-	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
-
+	if (dag_mode)
+		output ("typedef void (*MBEmitFunc) (MBState *state, MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
+	else
+		output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
+	
 	output ("extern const char * const mono_burg_term_string [];\n");
 	output ("extern const char * const mono_burg_rule_string [];\n");
 	output ("extern const guint16 *const mono_burg_nts [];\n");
