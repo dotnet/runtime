@@ -41,6 +41,7 @@ mono/cil/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile
+mono/monoburg/Makefile
 runtime/Makefile
 doc/Makefile
 ])

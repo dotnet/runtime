@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+.libs
+.deps
+monoburg
+sample
+sample.c

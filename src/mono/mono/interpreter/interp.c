@@ -590,13 +590,11 @@ ves_pinvoke_method (MonoInvocation *frame)
 	GSList *t, *l = NULL;
 	guint8 *p;
  
-	p = piinfo->code = alloca (128);
-
-	x86_enter (p, 16);
-
 	acount = sig->param_count;
 
-	printf ("PIENTER %d %p\n", hasthis, frame->obj);
+	(gpointer)piinfo->code = p = alloca ((acount+hasthis)*32);
+
+	x86_enter (p, 0);
 
 	/* fixme: only works on little endian machines */
 

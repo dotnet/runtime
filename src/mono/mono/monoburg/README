@@ -1,0 +1,9 @@
+This is an implementation of an IBurg like code generator generator. It is
+based on the papers from Christopher W. Fraser, Robert R. Henry and Todd
+A. Proebsting:
+
+Reference 1: BURG - Fast Optimal Instruction Selection and Tree Parsing
+Reference 2: Engineering a Simple, Efficient Code Generator Generator
+
+Examples: sample.brg
+
