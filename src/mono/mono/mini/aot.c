@@ -391,13 +391,18 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	}
 
 	if (*info) {
-		MonoMemPool *mp = mono_mempool_new (); 
+		MonoMemPool *mp;
 		MonoImage *image;
 		guint8 *page_start;
 		gpointer *table;
 		int pages;
 		int i, err;
 		guint32 last_offset;
+
+		if (aot_module->opts & MONO_OPT_SHARED)
+			mp = mono_mempool_new ();
+		else
+			mp = domain->mp;
 
 		last_offset = 0;
 		while (*info) {
@@ -521,7 +526,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		EnterCriticalSection (&aot_mutex);
 
 		if (aot_module->opts & MONO_OPT_SHARED)
-			/* No need to cache this */
+			/* No need to cache patches */
 			mono_mempool_destroy (mp);
 		else
 			minfo->patch_info = patch_info;
