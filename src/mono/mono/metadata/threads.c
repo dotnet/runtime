@@ -42,6 +42,11 @@ typedef union {
 	gfloat fval;
 } IntFloatUnion;
  
+typedef struct {
+	int idx;
+	int offset;
+} StaticDataInfo;
+
 /*
  * The "os_handle" field of the WaitHandle class.
  */
@@ -49,6 +54,13 @@ static MonoClassField *wait_handle_os_handle_field = NULL;
 
 /* Controls access to the 'threads' hash table */
 static CRITICAL_SECTION threads_mutex;
+
+/* Controls access to context static data */
+static CRITICAL_SECTION contexts_mutex;
+
+/* Holds current status of static data heap */
+static StaticDataInfo thread_static_info;
+static StaticDataInfo context_static_info;
 
 /* The hash of existing threads (key is thread ID) that need joining
  * before exit
@@ -77,6 +89,8 @@ static guint32 slothash_key = -1;
 static guint32 default_stacksize = 0;
 
 static void thread_adjust_static_data (MonoThread *thread);
+static void mono_init_static_data_info (StaticDataInfo *static_data);
+static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 static CRITICAL_SECTION interlocked_mutex;
@@ -995,7 +1009,11 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 {
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
+	InitializeCriticalSection(&contexts_mutex);
 	
+	mono_init_static_data_info (&thread_static_info);
+	mono_init_static_data_info (&context_static_info);
+
 	current_object_key=TlsAlloc();
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Allocated current_object_key %d",
@@ -1309,37 +1327,94 @@ mono_thread_get_pending_exception (void)
 	return NULL;
 }
 
-static int static_data_idx = 0;
-static int static_data_offset = 0;
 #define NUM_STATIC_DATA_IDX 8
 static const int static_data_size [NUM_STATIC_DATA_IDX] = {
 	1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216
 };
 
+
+/*
+ *  mono_alloc_static_data
+ *
+ *   Allocate memory blocks for storing threads or context static data
+ */
 static void 
-thread_alloc_static_data (MonoThread *thread, guint32 offset)
+mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset)
 {
 	guint idx = (offset >> 24) - 1;
 	int i;
 
-	if (!thread->static_data) {
+	gpointer* static_data = *static_data_ptr;
+	if (!static_data) {
 #if HAVE_BOEHM_GC
-		thread->static_data = GC_MALLOC (static_data_size [0]);
+		static_data = GC_MALLOC (static_data_size [0]);
 #else
-		thread->static_data = g_malloc0 (static_data_size [0]);
+		static_data = g_malloc0 (static_data_size [0]);
 #endif
-		thread->static_data [0] = thread->static_data;
-	}
-	for (i = 1; i < idx; ++i) {
-		if (thread->static_data [i])
-			continue;
-#if HAVE_BOEHM_GC
-		thread->static_data [i] = GC_MALLOC (static_data_size [i]);
-#else
-		thread->static_data [i] = g_malloc0 (static_data_size [i]);
-#endif
+		*static_data_ptr = static_data;
+		static_data [0] = static_data;
 	}
 	
+	for (i = 1; i < idx; ++i) {
+		if (static_data [i])
+			continue;
+#if HAVE_BOEHM_GC
+		static_data [i] = GC_MALLOC (static_data_size [i]);
+#else
+		static_data [i] = g_malloc0 (static_data_size [i]);
+#endif
+	}
+}
+
+/*
+ *  mono_init_static_data_info
+ *
+ *   Initializes static data counters
+ */
+static void mono_init_static_data_info (StaticDataInfo *static_data)
+{
+	static_data->idx = 0;
+	static_data->offset = 0;
+}
+
+/*
+ *  mono_alloc_static_data_slot
+ *
+ *   Generates an offset for static data. static_data contains the counters
+ *  used to generate it.
+ */
+static guint32
+mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align)
+{
+	guint32 offset;
+
+	if (!static_data->idx && !static_data->offset) {
+		/* 
+		 * we use the first chunk of the first allocation also as
+		 * an array for the rest of the data 
+		 */
+		static_data->offset = sizeof (gpointer) * NUM_STATIC_DATA_IDX;
+	}
+	static_data->offset += align - 1;
+	static_data->offset &= ~(align - 1);
+	if (static_data->offset + size >= static_data_size [static_data->idx]) {
+		static_data->idx ++;
+		g_assert (size <= static_data_size [static_data->idx]);
+		/* 
+		 * massive unloading and reloading of domains with thread-static
+		 * data may eventually exceed the allocated storage...
+		 * Need to check what the MS runtime does in that case.
+		 * Note that for each appdomain, we need to allocate a separate
+		 * thread data slot for security reasons. We could keep track
+		 * of the slots per-domain and when the domain is unloaded
+		 * out the slots on a sort of free list.
+		 */
+		g_assert (static_data->idx < NUM_STATIC_DATA_IDX);
+		static_data->offset = 0;
+	}
+	offset = static_data->offset | ((static_data->idx + 1) << 24);
+	static_data->offset += size;
+	return offset;
 }
 
 /* 
@@ -1352,10 +1427,10 @@ thread_adjust_static_data (MonoThread *thread)
 	guint32 offset;
 
 	EnterCriticalSection (&threads_mutex);
-	if (static_data_offset || static_data_idx > 0) {
+	if (thread_static_info.offset || thread_static_info.idx > 0) {
 		/* get the current allocated size */
-		offset = static_data_offset | ((static_data_idx + 1) << 24);
-		thread_alloc_static_data (thread, offset);
+		offset = thread_static_info.offset | ((thread_static_info.idx + 1) << 24);
+		mono_alloc_static_data (&(thread->static_data), offset);
 	}
 	LeaveCriticalSection (&threads_mutex);
 }
@@ -1366,62 +1441,65 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 	MonoThread *thread = value;
 	guint32 offset = GPOINTER_TO_UINT (user);
 	
-	thread_alloc_static_data (thread, offset);
+	mono_alloc_static_data (&(thread->static_data), offset);
 }
 
 /*
- * The offset for a thread static variable is composed of two parts:
+ * The offset for a special static variable is composed of three parts:
+ * a bit that indicates the type of static data (0:thread, 1:context),
  * an index in the array of chunks of memory for the thread (thread->static_data)
  * and an offset in that chunk of mem. This allows allocating less memory in the 
  * common case.
  */
+
 guint32
-mono_threads_alloc_static_data (guint32 size, guint32 align)
+mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align)
 {
 	guint32 offset;
-	
-	EnterCriticalSection (&threads_mutex);
-
-	if (!static_data_idx && !static_data_offset) {
-		/* 
-		 * we use the first chunk of the first allocation also as
-		 * an array for the rest of the data 
-		 */
-		static_data_offset = sizeof (gpointer) * NUM_STATIC_DATA_IDX;
+	if (static_type == SPECIAL_STATIC_THREAD)
+	{
+		EnterCriticalSection (&threads_mutex);
+		offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
+		mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
+		LeaveCriticalSection (&threads_mutex);
 	}
-	static_data_offset += align - 1;
-	static_data_offset &= ~(align - 1);
-	if (static_data_offset + size >= static_data_size [static_data_idx]) {
-		static_data_idx ++;
-		g_assert (size <= static_data_size [static_data_idx]);
-		/* 
-		 * massive unloading and reloading of domains with thread-static
-		 * data may eventually exceed the allocated storage...
-		 * Need to check what the MS runtime does in that case.
-		 * Note that for each appdomain, we need to allocate a separate
-		 * thread data slot for security reasons. We could keep track
-		 * of the slots per-domain and when the domain is unloaded
-		 * out the slots on a sort of free list.
-		 */
-		g_assert (static_data_idx < NUM_STATIC_DATA_IDX);
-		static_data_offset = 0;
+	else
+	{
+		g_assert (static_type == SPECIAL_STATIC_CONTEXT);
+		EnterCriticalSection (&contexts_mutex);
+		offset = mono_alloc_static_data_slot (&context_static_info, size, align);
+		LeaveCriticalSection (&contexts_mutex);
+		offset |= 0x80000000;	// Set the high bit to indicate context static data
 	}
-	offset = static_data_offset | ((static_data_idx + 1) << 24);
-	static_data_offset += size;
-	
-	mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
-
-	LeaveCriticalSection (&threads_mutex);
 	return offset;
 }
 
 gpointer
-mono_threads_get_static_data (guint32 offset)
+mono_get_special_static_data (guint32 offset)
 {
-	MonoThread *thread = mono_thread_current ();
-	int idx = offset >> 24;
-	
-	return ((char*) thread->static_data [idx - 1]) + (offset & 0xffffff);
+	// The high bit means either thread (0) or static (1) data.
+
+	guint32 static_type = (offset & 0x80000000);
+	offset &= 0x7fffffff;
+	int idx = (offset >> 24) - 1;
+
+	if (static_type == 0)
+	{
+		MonoThread *thread = mono_thread_current ();
+		return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
+	}
+	else
+	{
+		// Allocate static data block under demand, since we don't have a list
+		// of contexts
+		MonoAppContext *context = mono_context_get ();
+		if (!context->static_data || !context->static_data [idx]) {
+			EnterCriticalSection (&contexts_mutex);
+			mono_alloc_static_data (&(context->static_data), offset);
+			LeaveCriticalSection (&contexts_mutex);
+		}
+		return ((char*) context->static_data [idx]) + (offset & 0xffffff);	
+	}
 }
 
 static void gc_stop_world (gpointer key, gpointer value, gpointer user)

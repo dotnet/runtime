@@ -28,6 +28,10 @@ typedef enum {
 	ThreadState_Aborted = 0x00000100,
 } MonoThreadState;
 
+#define SPECIAL_STATIC_NONE 0
+#define SPECIAL_STATIC_THREAD 1
+#define SPECIAL_STATIC_CONTEXT 2
+
 typedef void (*MonoThreadCleanupFunc) (MonoThread* thread);
 
 extern int  mono_thread_get_abort_signal (void);
@@ -65,8 +69,8 @@ void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
 
 extern void mono_threads_set_default_stacksize (guint32 stacksize);
 extern guint32 mono_threads_get_default_stacksize (void);
-guint32  mono_threads_alloc_static_data (guint32 size, guint32 align);
-gpointer mono_threads_get_static_data   (guint32 offset);
+guint32  mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align);
+gpointer mono_get_special_static_data   (guint32 offset);
 
 void mono_gc_stop_world (void);
 

@@ -69,7 +69,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 	int i;
 	MonoException *exc;
 	MonoException *exc_to_throw;
-	MonoMethod *method;
+	MonoMethod *method = NULL;
 	MonoClass *klass;
 	gchar *full_name;
 	gboolean found;
@@ -323,8 +323,14 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 }
 #endif /* CREATION_SPEEDUP */
 
-static gboolean
-field_is_thread_static (MonoClass *fklass, MonoClassField *field)
+/**
+ * field_is_special_static:
+ *
+ * Returns SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
+ * SPECIAL_STATIC_NONE otherwise.
+ */
+static gint32
+field_is_special_static (MonoClass *fklass, MonoClassField *field)
 {
 	MonoCustomAttrInfo *ainfo;
 	int i;
@@ -333,13 +339,19 @@ field_is_thread_static (MonoClass *fklass, MonoClassField *field)
 		return FALSE;
 	for (i = 0; i < ainfo->num_attrs; ++i) {
 		MonoClass *klass = ainfo->attrs [i].ctor->klass;
-		if (strcmp (klass->name, "ThreadStaticAttribute") == 0 && klass->image == mono_defaults.corlib) {
-			mono_custom_attrs_free (ainfo);
-			return TRUE;
+		if (klass->image == mono_defaults.corlib) {
+			if (strcmp (klass->name, "ThreadStaticAttribute") == 0) {
+				mono_custom_attrs_free (ainfo);
+				return SPECIAL_STATIC_THREAD;
+			}
+			else if (strcmp (klass->name, "ContextStaticAttribute") == 0) {
+				mono_custom_attrs_free (ainfo);
+				return SPECIAL_STATIC_CONTEXT;
+			}
 		}
 	}
 	mono_custom_attrs_free (ainfo);
-	return FALSE;
+	return SPECIAL_STATIC_NONE;
 }
 
 /**
@@ -423,13 +435,14 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-			if (field_is_thread_static (class, field)) {
+			gint32 special_static = field_is_special_static (class, field);
+			if (special_static != SPECIAL_STATIC_NONE) {
 				guint32 size, align, offset;
 				size = mono_type_size (field->type, &align);
-				offset = mono_threads_alloc_static_data (size, align);
-				if (!domain->thread_static_fields)
-					domain->thread_static_fields = g_hash_table_new (NULL, NULL);
-				g_hash_table_insert (domain->thread_static_fields, field, GUINT_TO_POINTER (offset));
+				offset = mono_alloc_special_static_data (special_static, size, align);
+				if (!domain->special_static_fields)
+					domain->special_static_fields = g_hash_table_new (NULL, NULL);
+				g_hash_table_insert (domain->special_static_fields, field, GUINT_TO_POINTER (offset));
 				continue;
 			}
 		}

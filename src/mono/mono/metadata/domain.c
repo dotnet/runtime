@@ -619,8 +619,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 	mono_g_hash_table_destroy (domain->class_init_trampoline_hash);
 	g_hash_table_destroy (domain->finalizable_objects_hash);
-	if (domain->thread_static_fields)
-		g_hash_table_destroy (domain->thread_static_fields);
+	if (domain->special_static_fields)
+		g_hash_table_destroy (domain->special_static_fields);
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;
 

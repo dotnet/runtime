@@ -71,6 +71,7 @@ typedef struct {
 	MonoObject obj;
 	gint32 domain_id;
 	gint32 context_id;
+	gpointer *static_data;
 } MonoAppContext;
 
 typedef enum {
@@ -110,7 +111,8 @@ struct _MonoDomain {
 	MonoMethod         *private_invoke_method;
 	MonoAppContext     *default_context;
 	MonoException      *out_of_memory_ex;
-	GHashTable         *thread_static_fields;
+	/* Used to store offsets of thread and context static fields */
+	GHashTable         *special_static_fields;
 	GHashTable         *jump_target_hash;
 	MonoGHashTable     *class_init_trampoline_hash;
 	/* 
