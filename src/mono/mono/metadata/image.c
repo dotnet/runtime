@@ -401,6 +401,10 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		module_ref = g_build_filename (base_dir, name, NULL);
 		image->modules [i] = mono_image_open (module_ref, status);
+		if (image->modules [i]) {
+			image->modules [i]->assembly = image->assembly;
+			//g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly);
+		}
 		/* 
 		 * FIXME: what do we do here? it could be a native dll...
 		 * We should probably do lazy-loading of modules.
