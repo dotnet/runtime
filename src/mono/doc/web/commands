@@ -4,7 +4,11 @@
 1,Runtime,runtime.html,runtime.src
 1,Classes,class-library.html,class-library.src
 1,Gtk#,http://gtk-sharp.sourceforge.net
-2,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
+1,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
+2,corlib,class-status-corlib.html,class-status-corlib.src,cm/cormissing.css,cm/cormissing.js
+2,System,class-status-System.html,class-status-System.src,cm/cormissing.css,cm/cormissing.js
+2,System.Xml,class-status-System.Xml.html,class-status-System.Xml.src,cm/cormissing.css,cm/cormissing.js
+2,System.Data,class-status-System.Data.html,class-status-System.Data.src,cm/cormissing.css,cm/cormissing.js
 1,C# Compiler,c-sharp.html,c-sharp.src
 1,Status,status.html,status.src
 0,Download,download.html,download.src
