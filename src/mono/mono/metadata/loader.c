@@ -394,6 +394,8 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			method = find_method (klass, mname, sig);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+			else if (klass->generic_inst)
+				method = mono_class_inflate_generic_method (method, klass->generic_inst->data.generic_inst);
 			mono_metadata_free_method_signature (sig);
 			return method;
 		}
@@ -468,7 +470,7 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	MonoTableInfo *tables = image->tables;
 	MonoGenericInst *ginst;
 	const char *ptr;
-	guint32 cols[6];
+	guint32 cols [MONO_METHODSPEC_SIZE];
 	guint32 token, param_count, i;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
@@ -494,7 +496,7 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	for (i = 0; i < param_count; i++)
 		ginst->type_argv [i] = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-	return mono_class_inflate_generic_method (method, NULL, ginst);
+	return mono_class_inflate_generic_method (method, ginst);
 }
 
 typedef struct MonoDllMap MonoDllMap;

@@ -216,7 +216,6 @@ struct _MonoGenericInst {
 	MonoClass *klass;
 	MonoType *generic_type;
 	MonoMethod *generic_method;
-	gpointer mbuilder;
 	int type_argc;
 	MonoType **type_argv;
 };
@@ -292,10 +291,16 @@ MonoClass*
 mono_class_from_generic    (MonoType *gtype, gboolean inflate_methods);
 
 MonoMethodSignature*
-mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *tgen, MonoGenericInst *mgen);
+mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *ginst);
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, MonoGenericInst *mgen);
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst);
+
+MonoClass*
+mono_class_create_from_generic (MonoImage *image, MonoType *gtype);
+
+void
+mono_class_initialize_generic (MonoClass *class, gboolean inflate_methods);
 
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);

@@ -180,25 +180,24 @@ mono_type_get_name (MonoType *type)
 }
 
 static MonoType*
-inflate_generic_type (MonoType *type, MonoGenericInst *tgen, MonoGenericInst *mgen)
+inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		if (mgen)
-			return dup_type (mgen->type_argv [type->data.generic_param->num]);
+		if (ginst)
+			return dup_type (ginst->type_argv [type->data.generic_param->num]);
 		else
 			return type;
 	case MONO_TYPE_VAR:
-		/*g_print ("inflating var %d to %s\n", type->data.type_param, mono_type_get_name (tgen->type_argv [type->data.type_param]));*/
-		return dup_type (tgen->type_argv [type->data.generic_param->num]);
+		return dup_type (ginst->type_argv [type->data.generic_param->num]);
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
 		MonoType *nt;
 		if (eclass->byval_arg.type == MONO_TYPE_MVAR) {
-			nclass = mono_class_from_mono_type (mgen->type_argv [eclass->byval_arg.data.generic_param->num]);
+			nclass = mono_class_from_mono_type (ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
 		} else if (eclass->byval_arg.type == MONO_TYPE_VAR) {
-			nclass = mono_class_from_mono_type (tgen->type_argv [eclass->byval_arg.data.generic_param->num]);
+			nclass = mono_class_from_mono_type (ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
 		} else {
 			return type;
 		}
@@ -213,14 +212,14 @@ inflate_generic_type (MonoType *type, MonoGenericInst *tgen, MonoGenericInst *mg
 }
 
 MonoMethodSignature*
-mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *tgen, MonoGenericInst *mgen)
+mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *ginst)
 {
 	MonoMethodSignature *res;
 	int i;
 	res = mono_metadata_signature_alloc (image, sig->param_count);
-	res->ret = inflate_generic_type (sig->ret, tgen, mgen);
+	res->ret = inflate_generic_type (sig->ret, ginst);
 	for (i = 0; i < sig->param_count; ++i) {
-		res->params [i] = inflate_generic_type (sig->params [i], tgen, mgen);
+		res->params [i] = inflate_generic_type (sig->params [i], ginst);
 	}
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
@@ -230,7 +229,7 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 }
 
 static MonoMethodHeader*
-inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *tgen, MonoGenericInst *mgen)
+inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *ginst)
 {
 	MonoMethodHeader *res;
 	int i;
@@ -243,15 +242,15 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *tgen, MonoGen
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
 	res->gen_params = header->gen_params;
-	res->geninst = mgen;
+	res->geninst = ginst;
 	for (i = 0; i < header->num_locals; ++i) {
-		res->locals [i] = inflate_generic_type (header->locals [i], tgen, mgen);
+		res->locals [i] = inflate_generic_type (header->locals [i], ginst);
 	}
 	return res;
 }
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, MonoGenericInst *mgen)
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst)
 {
 	MonoMethod *result;
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
@@ -262,9 +261,11 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *tgen, Mo
 		MonoMethodNormal *nmethod = g_new0 (MonoMethodNormal, 1);
 		*nmethod = *(MonoMethodNormal*)method;
 		result = (MonoMethod*)nmethod;
-		nmethod->header = inflate_generic_header (((MonoMethodNormal*)method)->header, tgen, mgen);
+		nmethod->header = inflate_generic_header (((MonoMethodNormal*)method)->header, ginst);
 	}
-	result->signature = mono_class_inflate_generic_signature (method->klass->image, result->signature, tgen, mgen);
+	if (ginst->klass)
+		result->klass = ginst->klass;
+	result->signature = mono_class_inflate_generic_signature (method->klass->image, result->signature, ginst);
 	return result;
 }
 
@@ -343,7 +344,7 @@ class_compute_field_layout (MonoClass *class)
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (class->generic_inst) {
-			class->fields [i].type = inflate_generic_type (class->fields [i].type, class->generic_inst->data.generic_inst, NULL);
+			class->fields [i].type = inflate_generic_type (class->fields [i].type, class->generic_inst->data.generic_inst);
 			class->fields [i].type->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
@@ -1635,7 +1636,7 @@ mono_class_initialize_generic (MonoClass *class, gboolean inflate_methods)
 		class->method = gklass->method;
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 		for (i = 0; i < class->method.count; i++)
-			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst, NULL);
+			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
 	}
 
 	g_hash_table_insert (class->image->generics_cache, ginst->generic_type, class);
@@ -1682,7 +1683,7 @@ mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 		class->method = gklass->method;
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 		for (i = 0; i < class->method.count; i++)
-			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst, NULL);
+			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
 	}
 
 	g_hash_table_insert (image->generics_cache, gtype, class);
