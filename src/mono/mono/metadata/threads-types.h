@@ -54,6 +54,10 @@ extern MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentCulture (Mo
 extern MonoArray* ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoThread *this_obj);
 extern void ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this_obj, MonoObject *culture);
 void ves_icall_System_Threading_Thread_SetSerializedCurrentCulture (MonoThread *this_obj, MonoArray *arr);
+extern MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoThread *this_obj);
+extern MonoArray* ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture (MonoThread *this_obj);
+extern void ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this_obj, MonoObject *culture);
+void ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *this_obj, MonoArray *arr);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
 extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name, MonoBoolean *created);

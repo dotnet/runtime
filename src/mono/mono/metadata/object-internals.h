@@ -214,8 +214,8 @@ typedef struct {
 struct _MonoThread {
 	MonoObject  obj;
 	HANDLE	    handle;
-	MonoObject *culture_info;
-	MonoObject *ui_culture_info;
+	MonoObject **culture_info;
+	MonoObject **ui_culture_info;
 	MonoBoolean threadpool_thread;
 	gunichar2  *name;
 	guint32	    name_len;
