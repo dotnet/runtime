@@ -3028,10 +3028,10 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_IP:
-			*((gpointer *)(ip)) = target;
+			*((gconstpointer *)(ip)) = target;
 			continue;
 		case MONO_PATCH_INFO_METHOD_REL:
-			*((gpointer *)(ip)) = target;
+			*((gconstpointer *)(ip)) = target;
 			continue;
 		case MONO_PATCH_INFO_SWITCH: {
 			*((gconstpointer *)(ip + 2)) = target;
@@ -3039,7 +3039,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			continue;
 		}
 		case MONO_PATCH_INFO_IID:
-			*((guint32 *)(ip + 1)) = target;
+			*((guint32 *)(ip + 1)) = (guint32)target;
 			continue;			
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			guint8 *code = ip;
