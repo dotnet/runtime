@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 				  int f, int g, int h, int i, int j);
@@ -88,6 +89,24 @@ mono_test_return_vtype ()
 	return res;
 }
 
+typedef int (*RefVTypeDelegate) (int a, simplestruct *ss, int b);
+
+int
+mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
+{
+	if (a == 1 && b == 2 && ss->a == 0 && ss->b == 1 && ss->c == 0 &&
+	    !strcmp (ss->d, "TEST1")) {
+		ss->a = 1;
+		ss->b = 0;
+		ss->c = 1;
+		ss->d = "TEST2";
+	
+		return func (a, ss, b);
+	}
+
+	return 1;
+}
+
 int 
 mono_test_marshal_struct (simplestruct ss)
 {
@@ -120,5 +139,13 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 	ss.d = "TEST";
 
 	return delegate (ss);
+}
+
+int 
+mono_test_marshal_stringbuilder (char *s, int n)
+{
+	const char m[] = "This is my message.  Isn't it nice?";
+	strncpy(s, m, n);
+	return 0;
 }
 

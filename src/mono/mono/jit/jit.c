@@ -292,6 +292,8 @@ mono_allocate_excvar (MonoFlowGraph *cfg)
 
 	cfg->excvar = arch_allocate_var (cfg, 4, 4, MONO_TEMPVAR, VAL_POINTER);
 
+	VARINFO (cfg, cfg->excvar).isvolatile = 1;
+	
 	return cfg->excvar;
 }
 
@@ -3794,8 +3796,6 @@ mono_jit_compile_method (MonoMethod *method)
 				g_assert (cfg->bcinfo [ec->handler_offset].is_block_start);
 				start_block = cfg->bcinfo [ec->handler_offset].block_id;
 				ei->handler_start = cfg->start + cfg->bblocks [start_block].addr;	
-				
-				//printf ("TEST %x %x %x\n", ei->try_start, ei->try_end, ei->handler_start);
 			}
 		}
 		

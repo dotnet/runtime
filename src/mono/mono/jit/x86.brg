@@ -380,16 +380,12 @@ addr: ADD (index, base) {
 # we pass exception in ECX to catch handler
 reg: EXCEPTION {
 	int offset = VARINFO (s, tree->data.i).offset;
-	int reg = VARINFO (s, tree->data.i).reg;
 
 	if (tree->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, tree->reg1, X86_ECX, 4);
 	
 	/* store it so that we can RETHROW it later */
-	if (reg < 0)
-		x86_mov_membase_reg (s->code, X86_EBP, offset, tree->reg1, 4);
-	else
-		x86_mov_reg_reg (s->code, reg, tree->reg1, 4);
+	x86_mov_membase_reg (s->code, X86_EBP, offset, tree->reg1, 4);
 }
 
 stmt: THROW (reg) {
@@ -402,14 +398,10 @@ stmt: THROW (reg) {
 }
 
 stmt: RETHROW {
-	int off = VARINFO (s, tree->data.i).offset;
-	int reg = VARINFO (s, tree->data.i).reg;
+	int offset = VARINFO (s, tree->data.i).offset;
 	gpointer target;
 
-	if (reg < 0)
-		x86_push_membase (s->code, X86_EBP, off);
-	else
-		x86_push_reg (s->code, reg);
+	x86_push_membase (s->code, X86_EBP, offset);
 
 	target = arch_get_throw_exception ();
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, target);
