@@ -33,6 +33,25 @@
 #define DECODE_TYPE(v) ((v) >> 24)
 #define DECODE_POS(v) ((v) & 0xffffff)
 
+static MonoClass * 
+decode_class_info (gpointer *data)
+{
+	MonoImage *image;
+	MonoClass *klass;
+	
+	image = mono_image_loaded_by_guid ((char *)data [1]);
+	g_assert (image);
+
+	if (data [0]) {
+		return mono_class_get (image, (guint32)data [0]);
+	} else {
+		klass = decode_class_info (data [3]);
+		return mono_array_class_get (&klass->byval_arg, (guint32)data [2]);
+	}
+
+	return NULL;
+}
+ 
 gpointer
 mono_aot_get_method (MonoMethod *method)
 {
@@ -101,9 +120,7 @@ mono_aot_get_method (MonoMethod *method)
 
 			switch (ji->type) {
 			case MONO_PATCH_INFO_CLASS:
-				image = mono_image_loaded_by_guid ((char *)data [1]);
-				g_assert (image);
-				ji->data.klass = mono_class_get (image, (guint32)data [0]);
+				ji->data.klass = decode_class_info (data);
 				g_assert (ji->data.klass);
 				mono_class_init (ji->data.klass);
 				break;
@@ -280,22 +297,30 @@ cond_emit_method_label (FILE *tmpfp, GHashTable *hash, MonoJumpInfo *patch_info)
 }
 
 static char *
-cond_emit_klass_label (FILE *tmpfp, GHashTable *hash, MonoJumpInfo *patch_info)
+cond_emit_klass_label (FILE *tmpfp, GHashTable *hash, MonoClass *klass)
 {
-	MonoClass *klass = patch_info->data.klass;
-	char *l1, *l2;
+	char *l1, *l2, *el = NULL;
 
 	if ((l1 = g_hash_table_lookup (hash, klass))) 
 		return l1;
+
+	if (!klass->type_token) {
+		g_assert (klass->rank > 0);
+		el = cond_emit_klass_label (tmpfp, hash, klass->element_class);
+	}
 	
 	l2 = cond_emit_image_label (tmpfp, hash, klass->image);
 	fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
 	l1 = g_strdup_printf ("klass_patch_info_%08x_%p", klass->type_token, klass);
 	fprintf (tmpfp, "%s:\n", l1);
 	fprintf (tmpfp, "\t.long 0x%08x\n", klass->type_token);
-	g_assert (klass->type_token);
 	fprintf (tmpfp, "\t.long %s\n", l2);
-		
+
+	if (el) {
+		fprintf (tmpfp, "\t.long %d\n", klass->rank);	
+		fprintf (tmpfp, "\t.long %s\n", el);
+	}
+
 	g_hash_table_insert (hash, klass, l1);
 
 	return l1;
@@ -474,7 +499,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 				j++;
 				break;
 			case MONO_PATCH_INFO_CLASS:
-				patch_info->data.name = cond_emit_klass_label (tmpfp, ref_hash, patch_info);
+				patch_info->data.name = cond_emit_klass_label (tmpfp, ref_hash, patch_info->data.klass);
 				j++;
 				break;
 			case MONO_PATCH_INFO_IMAGE:
