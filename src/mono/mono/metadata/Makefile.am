@@ -26,6 +26,8 @@ libmetadata_a_SOURCES = \
 	icall.c		\
 	decimal.c	\
 	decimal.h	\
+	marshal.c	\
+	marshal.h	\
 	threads.c	\
 	threads.h	\
 	threads-types.h	\

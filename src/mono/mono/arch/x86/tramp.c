@@ -14,6 +14,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
 #include "mono/metadata/appdomain.h"
+#include "mono/metadata/marshal.h"
 
 /*
  * The resulting function takes the form:
@@ -43,6 +44,13 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	guint32 local_size = 0, stack_size = 0, code_size = 30;
 	guint32 arg_pos, simpletype;
 	int i, stringp;
+	int need_marshal;
+	GList *free_locs = NULL;
+
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)
+		need_marshal = 0;
+	else
+		need_marshal = 1;
 
 	sig = method->signature;
 	
@@ -54,7 +62,8 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
 			stack_size += sizeof (gpointer);
-			code_size += i < 10 ? 5 : 8;
+			code_size += 20;
+			local_size++;
 			continue;
 		}
 		simpletype = sig->params [i]->type;
@@ -141,7 +150,31 @@ enum_calc_size:
 	for (i = sig->param_count; i; --i) {
 		arg_pos = ARG_SIZE * (i - 1);
 		if (sig->params [i - 1]->byref) {
-			x86_push_membase (p, X86_EDX, arg_pos);
+			if (!need_marshal) {
+				x86_push_membase (p, X86_EDX, arg_pos);
+				continue;
+			}
+			if (sig->params [i - 1]->type == MONO_TYPE_SZARRAY &&
+					sig->params [i - 1]->data.type->type == MONO_TYPE_STRING) {
+				x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
+				x86_push_regp (p, X86_EAX);
+				x86_mov_reg_imm (p, X86_EDX, mono_marshal_string_array);
+				x86_call_reg (p, X86_EDX);
+				x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
+				/*
+				 * Store the pointer in a local we'll free later.
+				 */
+				stringp++;
+				x86_mov_membase_reg (p, X86_EBP, LOC_POS * stringp, X86_EAX, 4);
+				free_locs = g_list_prepend (free_locs, GUINT_TO_POINTER (LOC_POS * stringp));
+				/* load the pointer and push it */
+				x86_lea_membase (p, X86_EAX, X86_EBP, LOC_POS * stringp);
+				x86_push_reg (p, X86_EAX);
+				/* restore pointer to args in EDX */
+				x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
+			} else {
+				x86_push_membase (p, X86_EDX, arg_pos);
+			}
 			continue;
 		}
 		simpletype = sig->params [i - 1]->type;
@@ -185,7 +218,7 @@ enum_marshal:
 			 * If it is an internalcall we assume it's the object we want.
 			 * Yet another reason why MONO_TYPE_STRING should not be used to indicate char*.
 			 */
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
+			if (!need_marshal) {
 				x86_push_membase (p, X86_EDX, arg_pos);
 				break;
 			}
@@ -200,6 +233,7 @@ enum_marshal:
 			 */
 			stringp++;
 			x86_mov_membase_reg (p, X86_EBP, LOC_POS * stringp, X86_EAX, 4);
+			free_locs = g_list_prepend (free_locs, GUINT_TO_POINTER (LOC_POS * stringp));
 			/*
 			 * we didn't save the reg: restore it here.
 			 */
@@ -267,7 +301,7 @@ enum_retvalue:
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 			break;
 		case MONO_TYPE_STRING: 
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
+			if (!need_marshal) {
 				x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 				x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 				break;
@@ -312,12 +346,14 @@ enum_retvalue:
 	/*
 	 * free the allocated strings.
 	 */
-	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
-		for (i = 1; i <= local_size; ++i) {
+	if (need_marshal) {
+		GList* tmp;
+		for (tmp = free_locs; tmp; tmp = tmp->next) {
 			x86_mov_reg_imm (p, X86_EDX, g_free);
-			x86_push_membase (p, X86_EBP, LOC_POS * i);
+			x86_push_membase (p, X86_EBP, GPOINTER_TO_UINT (tmp->data));
 			x86_call_reg (p, X86_EDX);
 		}
+		g_list_free (free_locs);
 	}
 	/*
 	 * Standard epilog.
