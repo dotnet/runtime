@@ -13,12 +13,19 @@
 #include <glib.h>
 
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-ppc.h"
+
+typedef enum {
+	MONO_TRAMPOLINE_GENERIC,
+	MONO_TRAMPOLINE_JUMP,
+	MONO_TRAMPOLINE_CLASS_INIT
+} MonoTrampolineType;
 
 /* adapt to mini later... */
 #define mono_jit_share_code (1)
@@ -198,59 +205,50 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	return addr;
 }
 
-/**
- * arch_create_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for virtual methods. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. It also replaces the
- * corresponding vtable entry (see ppc_magic_trampoline).
- *
- * A trampoline consists of two parts: a main fragment, shared by all method
- * trampolines, and some code specific to each method, which hard-codes a
- * reference to that method and then calls the main fragment.
- *
- * The main fragment contains a call to 'ppc_magic_trampoline', which performs
- * call to the JIT compiler and substitutes the method-specific fragment with
- * some code that directly calls the JIT-compiled method.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_jit_trampoline (MonoMethod *method)
+static void
+ppc_class_init_trampoline (void *vtable, guint32 *code, char *sp)
 {
-	guint8 *code, *buf;
-	static guint8 *vc = NULL;
+	mono_runtime_class_init (vtable);
 
-	/* previously created trampoline code */
-	if (method->info)
-		return method->info;
+	/* This is the 'bl' instruction */
+	--code;
+	
+	if (((*code) >> 26) == 18) {
+		ppc_ori (code, 0, 0, 0); /* nop */
+		mono_arch_flush_icache (code, 4);
+		return;
+	} else {
+		g_assert_not_reached ();
+	}
+}
 
-	/* we immediately compile runtime provided functions */
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		method->info = mono_compile_method (method);
-		return method->info;
+static guchar*
+create_trampoline_code (MonoTrampolineType tramp_type)
+{
+	guint8 *buf, *code = NULL;
+	static guint8* generic_jump_trampoline = NULL;
+	static guint8 *generic_class_init_trampoline = NULL;
+
+	switch (tramp_type) {
+	case MONO_TRAMPOLINE_GENERIC:
+		if (mono_generic_trampoline_code)
+			return mono_generic_trampoline_code;
+		break;
+	case MONO_TRAMPOLINE_JUMP:
+		if (generic_jump_trampoline)
+			return generic_jump_trampoline;
+		break;
+	case MONO_TRAMPOLINE_CLASS_INIT:
+		if (generic_class_init_trampoline)
+			return generic_class_init_trampoline;
+		break;
 	}
 
-	/* icalls use method->addr */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
-		
-		nm = mono_marshal_get_native_wrapper (method);
-		method->info = mono_compile_method (nm);
-		return method->info;
-	}
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
-
-	if(!vc) {
+	if(!code) {
 		/* Now we'll create in 'buf' the PowerPC trampoline code. This
 		 is the trampoline code common to all methods  */
 		
-		vc = buf = g_malloc(512);
+		code = buf = g_malloc(512);
 		
 		/*-----------------------------------------------------------
 		STEP 0: First create a non-standard function prologue with a
@@ -337,19 +335,30 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 		/* Arg 1: MonoMethod *method. It was put in r11 by the
 		method-specific trampoline code, and then saved before the call
 		to mono_get_lmf_addr()'. Restore r11, by the way :-) */
-		ppc_lwz  (buf, ppc_r3,  STACK - 124, ppc_r1);
+		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+			ppc_li (buf, ppc_r3, 0);
+		} else
+			ppc_lwz  (buf, ppc_r3,  STACK - 124, ppc_r1);
 		ppc_lwz  (buf, ppc_r11, STACK - 44,  ppc_r1);
 		
 		/* Arg 2: code (next address to the instruction that called us) */
-		ppc_lwz  (buf, ppc_r4, STACK + 4, ppc_r1);
+		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+			ppc_li (buf, ppc_r4, 0);
+		} else
+			ppc_lwz  (buf, ppc_r4, STACK + 4, ppc_r1);
 		
 		/* Arg 3: stack pointer */
 		ppc_mr   (buf, ppc_r5, ppc_r1);
 		
 		/* Calculate call address, restore r0 and call
 		'ppc_magic_trampoline'. Return value will be in r3 */
-		ppc_lis  (buf, ppc_r0, (guint32) ppc_magic_trampoline >> 16);
-		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_magic_trampoline & 0xffff);
+		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+			ppc_lis  (buf, ppc_r0, (guint32) ppc_class_init_trampoline >> 16);
+			ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_class_init_trampoline & 0xffff);
+		} else {
+			ppc_lis  (buf, ppc_r0, (guint32) ppc_magic_trampoline >> 16);
+			ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_magic_trampoline & 0xffff);
+		}
 		ppc_mtlr (buf, ppc_r0);
 		ppc_lwz	 (buf, ppc_r0, STACK - 8,  ppc_r1);
 		ppc_blrl (buf);
@@ -418,11 +427,76 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 		ppc_blr  (buf);	
 		
 		/* Flush instruction cache, since we've generated code */
-		mono_arch_flush_icache (vc, buf - vc);
+		mono_arch_flush_icache (code, buf - code);
 	
 		/* Sanity check */
-		g_assert ((buf - vc) <= 512);
+		g_assert ((buf - code) <= 512);
 	}
+
+	switch (tramp_type) {
+	case MONO_TRAMPOLINE_GENERIC:
+		mono_generic_trampoline_code = code;
+		break;
+	case MONO_TRAMPOLINE_JUMP:
+		generic_jump_trampoline = code;
+		break;
+	case MONO_TRAMPOLINE_CLASS_INIT:
+		generic_class_init_trampoline = code;
+		break;
+	}
+
+	return code;
+}
+
+/**
+ * arch_create_jit_trampoline:
+ * @method: pointer to the method info
+ *
+ * Creates a trampoline function for virtual methods. If the created
+ * code is called it first starts JIT compilation of method,
+ * and then calls the newly created method. It also replaces the
+ * corresponding vtable entry (see ppc_magic_trampoline).
+ *
+ * A trampoline consists of two parts: a main fragment, shared by all method
+ * trampolines, and some code specific to each method, which hard-codes a
+ * reference to that method and then calls the main fragment.
+ *
+ * The main fragment contains a call to 'ppc_magic_trampoline', which performs
+ * call to the JIT compiler and substitutes the method-specific fragment with
+ * some code that directly calls the JIT-compiled method.
+ * 
+ * Returns: a pointer to the newly created code 
+ */
+gpointer
+mono_arch_create_jit_trampoline (MonoMethod *method)
+{
+	guint8 *code, *buf;
+	static guint8 *vc = NULL;
+
+	/* previously created trampoline code */
+	if (method->info)
+		return method->info;
+
+	/* we immediately compile runtime provided functions */
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+		method->info = mono_compile_method (method);
+		return method->info;
+	}
+
+	/* icalls use method->addr */
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+		MonoMethod *nm;
+		
+		nm = mono_marshal_get_native_wrapper (method);
+		method->info = mono_compile_method (nm);
+		return method->info;
+	}
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
+
+	vc = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	/* This is the method-specific part of the trampoline. Its purpose is
 	to provide the generic part with the MonoMethod *method pointer. We'll
@@ -683,6 +757,60 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 }
 
 #endif
+
+/**
+ * mono_arch_create_class_init_trampoline:
+ *  @vtable: the type to initialize
+ *
+ * Creates a trampoline function to run a type initializer. 
+ * If the trampoline is called, it calls mono_runtime_class_init with the
+ * given vtable, then patches the caller code so it does not get called any
+ * more.
+ * 
+ * Returns: a pointer to the newly created code 
+ */
+gpointer
+mono_arch_create_class_init_trampoline (MonoVTable *vtable)
+{
+	guint8 *code, *buf, *tramp;
+
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+
+	/* This is the method-specific part of the trampoline. Its purpose is
+	to provide the generic part with the MonoMethod *method pointer. We'll
+	use r11 to keep that value, for instance. However, the generic part of
+	the trampoline relies on r11 having the same value it had before coming
+	here, so we must save it before. */
+	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	
+	/* Save r11. There's nothing magic in the '44', its just an arbitrary
+	position - see above */
+	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);
+	
+	/* Now save LR - we'll overwrite it now */
+	ppc_mflr (buf, ppc_r11);
+	ppc_stw  (buf, ppc_r11, 4, ppc_r1);
+	
+	/* Prepare the jump to the generic trampoline code.*/
+	ppc_lis  (buf, ppc_r11, (guint32) tramp >> 16);
+	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) tramp & 0xffff);
+	ppc_mtlr (buf, ppc_r11);
+	
+	/* And finally put 'vtable' in r11 and fly! */
+	ppc_lis  (buf, ppc_r11, (guint32) vtable >> 16);
+	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) vtable & 0xffff);
+	ppc_blr  (buf);
+	
+	/* Flush instruction cache, since we've generated code */
+	mono_arch_flush_icache (code, buf - code);
+		
+	/* Sanity check */
+	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
+
+	mono_jit_stats.method_trampolines++;
+
+	return code;
+}
 
 /*
  * This method is only called when running in the Mono Debugger.
