@@ -59,6 +59,7 @@ usage (char *name)
 		 "--dwarf          write dwarf2 debug information\n"
 		 "--dwarf-plus     write extended dwarf2 debug information\n"
 		 "--stats          print statistics about the jit operations\n"
+		 "--noinline       do not inline code\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
 		 "--debug name     insert a breakpoint at the start of method name\n"
@@ -99,6 +100,8 @@ main (int argc, char *argv [])
 			mono_jit_trace_calls = TRUE;
 		else if (strcmp (argv [i], "--share-code") == 0)
 			mono_jit_share_code = TRUE;
+		else if (strcmp (argv [i], "--noinline") == 0)
+			mono_jit_inline_code = FALSE;
 		else if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
 		else if (strcmp (argv [i], "--debug") == 0) {

@@ -39,9 +39,6 @@
 #include "codegen.h"
 #include "debug.h"
 
-/* enable inlining */
-#define INLINE_CALLS
-
 /*
  * Pull the list of opcodes
  */
@@ -203,6 +200,9 @@ gboolean mono_jit_profile = FALSE;
 
 /* Force jit to share code between application domains */
 gboolean mono_jit_share_code = FALSE;
+
+/* inline code */
+gboolean mono_jit_inline_code = TRUE;
 
 /* maximum number of worker threads */
 int mono_worker_threads = 1;
@@ -2382,8 +2382,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
 
-#ifdef INLINE_CALLS
-			if (!virtual && cm->inline_count != -1 &&
+			if (mono_jit_inline_code && !virtual && cm->inline_count != -1 &&
 			    (cm->inline_info || check_inlining (cm) >= 0)) {
 				MonoInlineInfo *ii = alloca (sizeof (MonoInlineInfo));
 				int args;
@@ -2414,7 +2413,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				image = cm->klass->image;
 				continue;
 			}
-#endif
 			
 			csig = cm->signature;
 			nargs = csig->param_count;
