@@ -140,7 +140,8 @@ TEST_CS_SRC=			\
 	thread5.cs		\
 	thread6.cs		\
 	float-pop.cs		\
-	interfacecast.cs
+	interfacecast.cs	\
+	array3.cs
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\
