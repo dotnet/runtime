@@ -350,6 +350,42 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 	return pvt;
 }
 
+/*
+ * Retrieve the MonoMethod that would to be called on obj if obj is passed as
+ * the instance of a callvirt of method.
+ */
+MonoMethod*
+mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
+	MonoClass *klass;
+	MonoMethod **vtable;
+	gboolean is_proxy;
+	MonoMethod *res;
+
+	if ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+			return method;
+
+	klass = mono_object_class (obj);
+	if (klass == mono_defaults.transparent_proxy_class) {
+		klass = ((MonoTransparentProxy *)obj)->klass;
+		is_proxy = TRUE;
+	} else {
+		is_proxy = FALSE;
+	}
+	vtable = klass->vtable;
+
+	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		res = vtable [method->klass->interface_id + method->slot];
+	} else {
+		res = vtable [method->slot];
+	}
+	g_assert (res);
+
+	if (is_proxy)
+		return mono_marshal_get_remoting_invoke (res);
+	
+	return res;
+}
+
 static MonoObject*
 dummy_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {

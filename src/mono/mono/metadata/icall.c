@@ -1165,7 +1165,16 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
-	return mono_runtime_invoke_array (method->method, this, params, NULL);
+	/* 
+	 * Invoke from reflection is supposed to always be a virtual call (the API
+	 * is stupid), mono_runtime_invoke_*() calls the provided method, allowing
+	 * greater flexibility.
+	 */
+	MonoMethod *m = method->method;
+	if (this)
+		m = mono_object_get_virtual_method (this, m);
+
+	return mono_runtime_invoke_array (m, this, params, NULL);
 }
 
 static MonoObject *

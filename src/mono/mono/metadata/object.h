@@ -296,6 +296,9 @@ mono_install_runtime_invoke (MonoInvokeFunc func);
 void        
 mono_install_compile_method (MonoCompileFunc func);
 
+MonoMethod*
+mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);
+
 MonoObject*
 mono_runtime_invoke         (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
