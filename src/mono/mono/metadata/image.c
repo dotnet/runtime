@@ -865,6 +865,32 @@ mono_image_get_strong_name (MonoImage *image, guint32 *size)
 	return data;
 }
 
+guint32
+mono_image_strong_name_position (MonoImage *image, guint32 *size)
+{
+	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
+	const int top = iinfo->cli_section_count;
+	MonoSectionTable *tables = iinfo->cli_section_tables;
+	int i;
+	guint32 addr = de->rva;
+	
+	if (size)
+		*size = de->size;
+	if (!de->size || !de->rva)
+		return 0;
+	for (i = 0; i < top; i++){
+		if ((addr >= tables->st_virtual_address) &&
+		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
+			return tables->st_raw_data_ptr +
+				(addr - tables->st_virtual_address);
+		}
+		tables++;
+	}
+
+	return 0;
+}
+
 const char*
 mono_image_get_public_key (MonoImage *image, guint32 *size)
 {
