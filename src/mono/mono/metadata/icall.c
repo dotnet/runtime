@@ -1743,7 +1743,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	MonoTypeNameParse info;
 
 	str = mono_string_to_utf8 (name);
-	/*g_print ("requested type %s in %s\n", str, assembly->assembly->name);*/
+	/*g_print ("requested type %s in %s\n", str, assembly->assembly->aname.name);*/
 	if (!mono_reflection_parse_type (str, &info)) {
 		g_free (str);
 		g_list_free (info.modifiers);
@@ -1828,7 +1828,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 				count++;
 		}
 	} else {
-		count = tdef->rows;
+		count = tdef->rows - 1;
 	}
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 	count = 0;
