@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.29 2002/05/10 07:24:08 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.30 2002/05/10 19:25:15 serge Exp $
 */
 
 #ifndef X86_H
@@ -1006,13 +1006,13 @@ typedef union {
 	} while (0)
 
 /**
- * @x86_fp_int_op_mem
+ * @x86_fp_int_op_membase
  * Supports FPU operations between ST(0) and integer operand in memory.
  * Operation encoded using X86_FP_Opcode enum.
  * Operand is addressed by [basereg + disp].
  * is_int specifies whether operand is int32 (TRUE) or int16 (FALSE).
  */
-#define x86_fp_int_op_mem(inst,opc,basereg,disp,is_int)	\
+#define x86_fp_int_op_membase(inst,opc,basereg,disp,is_int)	\
 	do {	\
 		*(inst)++ = (is_int) ? (unsigned char)0xda : (unsigned char)0xde;	\
 		x86_membase_emit ((inst), opc, (basereg), (disp));	\
