@@ -48,6 +48,9 @@ mono_string_intern          (MonoObject *o);
 MonoObject *
 mono_new_string             (const char *text);
 
+char *
+mono_string_to_utf8         (MonoObject *string_obj);
+
 void       
 mono_object_free            (MonoObject *o);
 

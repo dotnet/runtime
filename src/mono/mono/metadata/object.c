@@ -302,20 +302,7 @@ mono_string_intern (MonoObject *o)
 	
 	/* Encode the length */
 	p = ins;
-	if (str->length <= 127)
-		*p++ = 127;
-	else if (str->length <= 16384) {
-		p [0] = 0x80 | (str->length >> 8);
-		p [1] = str->length & 0xff;
-		p += 2;
-	} else {
-		guint32 l = str->length;
-		p [0] = (l >> 24) | 0xc0;
-		p [1] = (l >> 16) & 0xff;
-		p [2] = (l >> 8) & 0xff;
-		p [3] = l & 0xff;
-		p += 4;
-	}
+	mono_metadata_encode_value (str->length, p, &p);
 	memcpy (p, str->c_str->vector, str->length * 2);
 	
 	if ((res = g_hash_table_lookup (ldstr_table, str))) {
@@ -346,5 +333,33 @@ mono_ldstr (MonoImage *image, guint32 index)
 	g_hash_table_insert (ldstr_table, sig, o);
 
 	return o;
+}
+
+char *
+mono_string_to_utf8 (MonoObject *o)
+{
+	MonoStringObject *s = (MonoStringObject *)o;
+	char *as, *vector;
+	int i;
+
+	g_assert (o != NULL);
+
+	if (!s->length)
+		return g_strdup ("");
+
+	vector = s->c_str->vector;
+
+	g_assert (vector != NULL);
+
+	as = g_malloc (s->length + 1);
+
+	/* fixme: replace with a real unicode/ansi conversion */
+	for (i = 0; i < s->length; i++) {
+		as [i] = vector [i*2];
+	}
+
+	as [i] = '\0';
+
+	return as;
 }
 

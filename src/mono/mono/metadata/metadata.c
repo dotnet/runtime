@@ -1883,3 +1883,25 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	return TRUE;
 }
 
+void
+mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
+{
+	char *p = buf;
+	
+	if (value <= 127)
+		*p++ = 127;
+	else if (value <= 16384) {
+		p [0] = 0x80 | (value >> 8);
+		p [1] = value & 0xff;
+		p += 2;
+	} else {
+		p [0] = (value >> 24) | 0xc0;
+		p [1] = (value >> 16) & 0xff;
+		p [2] = (value >> 8) & 0xff;
+		p [3] = value & 0xff;
+		p += 4;
+	}
+	if (endbuf)
+		*endbuf = p;
+}
+

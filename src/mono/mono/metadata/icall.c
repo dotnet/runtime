@@ -10,6 +10,7 @@
 #include <config.h>
 #include <glib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
@@ -191,27 +192,95 @@ ves_icall_app_get_cur_domain ()
 }
 
 static MonoObject *
+my_mono_new_object (MonoClass *klass, gpointer data)
+{
+	MonoClassField *field;
+	MonoObject *res = mono_new_object (klass);
+	gpointer *slot;
+
+	field = mono_class_get_field_from_name (klass, "_impl");
+	slot = (gpointer*)((char*)res + field->offset);
+	*slot = data;
+	return res;
+}
+
+static gpointer
+object_impl_pointer (MonoObject *obj)
+{
+	MonoClassField *field;
+	gpointer *slot;
+
+	field = mono_class_get_field_from_name (obj->klass, "_impl");
+	slot = (gpointer*)((char*)obj + field->offset);
+	return *slot;
+}
+
+
+static MonoObject *
 ves_icall_app_define_assembly (MonoObject *appdomain, MonoObject *assembly_name, int access)
 {
 	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "AssemblyBuilder");
+	MonoDynamicAssembly *ass = g_new0 (MonoDynamicAssembly, 1);
+	MonoClassField *field;
+	MonoObject *name;
 
-	return mono_new_object (klass);
+	field = mono_class_get_field_from_name (assembly_name->klass, "name");
+	name = (MonoObject*)((char*)assembly_name + field->offset);
+
+	ass->name = mono_string_to_utf8 (name);
+
+	return my_mono_new_object (klass, ass);
 }
 
-static MonoObject *
-ves_icall_define_type (MonoObject *moduleb, MonoObject *name, int attrs)
+static gint32
+ves_icall_get_data_chunk (MonoObject *assb, gint32 type, MonoArrayObject *buf)
 {
-	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "TypeBuilder");
+	MonoDynamicAssembly *ass = object_impl_pointer (assb);
+	int count;
 
-	return mono_new_object (klass);
+	count = mono_image_get_header (ass, buf->vector, buf->bounds->length);
+	if (count != -1)
+		return count;
+	
+	return 0;
 }
 
 static MonoObject *
 ves_icall_define_module (MonoObject *assb, MonoObject *name, MonoObject *fname)
 {
 	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "ModuleBuilder");
+	MonoModuleBuilder *mb = g_new0 (MonoModuleBuilder, 1);
+	MonoDynamicAssembly *ass = object_impl_pointer (assb);
+	ass->modules = g_list_prepend (ass->modules, mb);
 
-	return mono_new_object (klass);
+	mb->name = mono_string_to_utf8 (name);
+	mb->fname = mono_string_to_utf8 (fname);
+
+	return my_mono_new_object (klass, mb);
+}
+
+static MonoObject *
+ves_icall_define_type (MonoObject *moduleb, MonoObject *name, int attrs)
+{
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "TypeBuilder");
+	MonoTypeBuilder *tb = g_new0 (MonoTypeBuilder, 1);
+	MonoModuleBuilder *mb = object_impl_pointer (moduleb);
+	char *nspace = mono_string_to_utf8 (name);
+	char *name = strrchr (nspace, '.');
+	
+	if (name) {
+		*name = 0;
+		name++;
+	} else {
+		nspace = "";
+	}
+	
+	tb->name = name;
+	tb->nspace = nspace;
+	tb->attrs = attrs;
+	mb->types = g_list_prepend (mb->types, tb);
+
+	return my_mono_new_object (klass, tb);
 }
 
 static MonoObject *
@@ -261,6 +330,7 @@ static gpointer icall_map [] = {
 	 * AssemblyBuilder
 	 */
 	"System.Reflection.Emit.AssemblyBuilder::defineModule", ves_icall_define_module,
+	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_get_data_chunk,
 	
 	/*
 	 * TypeBuilder

@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
+#include <time.h>
 #include <string.h>
 #include "image.h"
 #include "cil-coff.h"
@@ -364,6 +365,38 @@ load_class_names (MonoImage *image) {
 		}
 		g_hash_table_insert (nspace_table, name, GUINT_TO_POINTER (i));
 	}
+}
+
+int
+mono_image_get_header (MonoDynamicAssembly *assembly, char *buffer, int maxsize)
+{
+	MonoMSDOSHeader *msdos;
+	MonoDotNetHeader *header;
+
+	if (maxsize < sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader))
+		return -1;
+
+	memset (buffer, 0, sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader));
+
+	msdos = (MonoMSDOSHeader *)buffer;
+	header = (MonoDotNetHeader *)(buffer + sizeof (MonoMSDOSHeader));
+
+	/* FIXME: byteswap as needed */
+	msdos->msdos_header [0] = 'M';
+	msdos->msdos_header [1] = 'Z';
+
+	msdos->pe_offset = sizeof (MonoMSDOSHeader);
+
+	header->coff.coff_machine = 0x14c;
+	header->coff.coff_time = time (NULL);
+	header->coff.coff_opt_header_size = sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4;
+	header->pe.pe_magic = 0x10B;
+	header->pe.pe_major = 6;
+	header->pe.pe_minor = 0;
+
+	/* Write section tables */
+
+	return sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader);
 }
 
 static MonoImage *

@@ -15,7 +15,7 @@
 
 #define PAGESIZE 8192
 
-GHashTable *malloc_map;
+static GHashTable *malloc_map = NULL;
 
 void *
 mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
@@ -34,7 +34,7 @@ mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 	end = (base + size + PAGESIZE - 1) & ~(PAGESIZE - 1);
 
 	/*
-	 * Apparently on cygwin the mmpa succedes, but not all the
+	 * Apparently on cygwin the mmap succedes, but not all the
 	 * area is mapped in and we get segfaults later.
 	 */
 #ifdef __CYGWIN__

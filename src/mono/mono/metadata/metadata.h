@@ -118,6 +118,8 @@ guint32 mono_metadata_decode_value     (const char            *ptr,
 guint32 mono_metadata_decode_blob_size (const char            *ptr,
                                         const char           **rptr);
 
+void mono_metadata_encode_value (guint32 value, char *bug, char **endbuf);
+
 typedef struct {
 	guint32 flags;
 	guint32 try_offset;

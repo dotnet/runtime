@@ -20,7 +20,6 @@ class CGen {
 		abuilder = AppDomain.CurrentDomain.DefineDynamicAssembly (an, AssemblyBuilderAccess.Save);
 
 		mbuilder = abuilder.DefineDynamicModule (name, name);
-		abuilder.Save(name);
 
 		tbuilder = mbuilder.DefineType ("Test.CodeGen", attrs);
 		Type result = typeof(int);
