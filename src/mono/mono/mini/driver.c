@@ -68,10 +68,11 @@ opt_names [] = {
 	{"cmov",     "Conditional moves"},
 	{"shared",   "Emit per-domain code"},
 	{"sched",    "Instruction scheduling"},
-	{"intrins", "Intrinsic method implementations"},
+	{"intrins",  "Intrinsic method implementations"},
 	{"tailc",    "Tail recursion and tail calls"},
 	{"loop",     "Loop related optimizations"},
-	{"fcmov",    "Fast x86 FP compares"}
+	{"fcmov",    "Fast x86 FP compares"},
+	{"leaf",     "Leaf procedures optimizations"}
 };
 
 static guint32

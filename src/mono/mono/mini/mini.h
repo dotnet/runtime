@@ -388,7 +388,8 @@ enum {
 	MONO_OPT_INTRINS  = 1 << 11,
 	MONO_OPT_TAILC    = 1 << 12,
 	MONO_OPT_LOOP     = 1 << 13,
-	MONO_OPT_FCMOV    = 1 << 14
+	MONO_OPT_FCMOV    = 1 << 14,
+	MONO_OPT_LEAF     = 1 << 15
 };
 
 /*
