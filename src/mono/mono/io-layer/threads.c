@@ -189,6 +189,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 {
 	struct _WapiHandle_thread *thread_handle;
 	struct _WapiHandlePrivate_thread *thread_private_handle;
+	pthread_attr_t attr;
 	gpointer handle;
 	gboolean ok;
 	int ret;
@@ -231,7 +232,15 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	 */
 	mono_mutex_lock(&thread_hash_mutex);
 	
-	ret=_wapi_timed_thread_create(&thread_private_handle->thread, NULL,
+	/* Set a 2M stack size.  This is the default on Linux, but BSD
+	 * needs it.  (The original bug report from Martin Dvorak <md@9ll.cz>
+	 * set the size to 2M-4k.  I don't know why it's short by 4k, so
+	 * I'm leaving it as 2M until I'm told differently.)
+	 */
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, 1024*1024*2);
+
+	ret=_wapi_timed_thread_create(&thread_private_handle->thread, &attr,
 				      create, start, thread_exit, param,
 				      handle);
 	if(ret!=0) {
