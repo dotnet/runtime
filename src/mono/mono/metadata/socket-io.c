@@ -1450,13 +1450,17 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "_numbers");
 	data=*(MonoArray **)(((char *)ipaddr) + field->offset);
 
-/* MacOSX doesn't provide the define... */
+/* Solaris has only the 8 bit version. */
 #ifndef s6_addr16
-#define s6_addr16 __u6_addr.__u6_addr16
-#endif
+	for(i=0; i<8; i++) {
+		guint16 s = mono_array_get (data, guint16, i);
+		in6addr.s6_addr[2 * i] = (s >> 8) & 0xff;
+		in6addr.s6_addr[2 * i + 1] = s & 0xff;
+	}
+#else
 	for(i=0; i<8; i++)
 		in6addr.s6_addr16[i] = mono_array_get (data, guint16, i);
-
+#endif
 	return(in6addr);
 }
 #endif /* AF_INET6 */
