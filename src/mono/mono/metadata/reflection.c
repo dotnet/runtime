@@ -306,13 +306,13 @@ add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int 
 	copy = g_malloc (s1+s2);
 	memcpy (copy, b1, s1);
 	memcpy (copy + s1, b2, s2);
-	if (mono_g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
+	if (g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
 		g_free (copy);
 		idx = GPOINTER_TO_UINT (oldval);
 	} else {
 		idx = mono_image_add_stream_data (&assembly->blob, b1, s1);
 		mono_image_add_stream_data (&assembly->blob, b2, s2);
-		mono_g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
+		g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
 	}
 	return idx;
 }
@@ -1217,7 +1217,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 	/* room in this table is already allocated */
 	table = &assembly->tables [MONO_TABLE_METHOD];
 	*mb->table_idx = table->next_idx ++;
-	mono_g_hash_table_insert (assembly->method_to_table_idx, mb->mhandle, GUINT_TO_POINTER ((*mb->table_idx)));
+	g_hash_table_insert (assembly->method_to_table_idx, mb->mhandle, GUINT_TO_POINTER ((*mb->table_idx)));
 	values = table->values + *mb->table_idx * MONO_METHOD_SIZE;
 	name = mono_string_to_utf8 (mb->name);
 	values [MONO_METHOD_NAME] = string_heap_insert (&assembly->sheap, name);
@@ -1742,7 +1742,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		fb->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
 	table = &assembly->tables [MONO_TABLE_FIELD];
 	fb->table_idx = table->next_idx ++;
-	mono_g_hash_table_insert (assembly->field_to_table_idx, fb->handle, GUINT_TO_POINTER (fb->table_idx));
+	g_hash_table_insert (assembly->field_to_table_idx, fb->handle, GUINT_TO_POINTER (fb->table_idx));
 	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
 	name = mono_string_to_utf8 (fb->name);
 	values [MONO_FIELD_NAME] = string_heap_insert (&assembly->sheap, name);
@@ -3532,7 +3532,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				idx = field->table_idx;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
-				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->field_to_table_idx, f));
+				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->field_to_table_idx, f));
 			} else {
 				g_assert_not_reached ();
 			}
@@ -3547,7 +3547,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") || 
 					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
-				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, m));
+				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 			} else {
 				g_assert_not_reached ();
 			}
@@ -3625,7 +3625,7 @@ fixup_cattrs (MonoDynamicImage *assembly)
 
 			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
-				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, m));
+				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
 			}
 		}
@@ -4224,14 +4224,14 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	mono_image_init (&image->image);
 
 	image->token_fixups = mono_g_hash_table_new (NULL, NULL);
-	image->method_to_table_idx = mono_g_hash_table_new (NULL, NULL);
-	image->field_to_table_idx = mono_g_hash_table_new (NULL, NULL);
-	image->method_aux_hash = mono_g_hash_table_new (NULL, NULL);
+	image->method_to_table_idx = g_hash_table_new (NULL, NULL);
+	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
+	image->method_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
 	image->tokens = mono_g_hash_table_new (NULL, NULL);
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
-	image->blob_cache = mono_g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
+	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 	image->gen_params = g_ptr_array_new ();
 
 	string_heap_init (&image->sheap);
@@ -4804,7 +4804,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 			MonoReflectionMethodBuilder *methodb = (MonoReflectionMethodBuilder*)assemblyb->entry_point;
 			table_idx = methodb->table_idx;
 		} else {
-			table_idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, assemblyb->entry_point->method));
+			table_idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, assemblyb->entry_point->method));
 		}
 		cli_header->ch_entry_point = GUINT32_FROM_LE (table_idx | MONO_TOKEN_METHOD_DEF);
 	} else {
@@ -4922,8 +4922,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	mono_dynamic_stream_reset (&assembly->guid);
 	string_heap_free (&assembly->sheap);
 
-	mono_g_hash_table_foreach (assembly->blob_cache, (GHFunc)g_free, NULL);
-	mono_g_hash_table_destroy (assembly->blob_cache);
+	g_hash_table_foreach (assembly->blob_cache, (GHFunc)g_free, NULL);
+	g_hash_table_destroy (assembly->blob_cache);
 }
 
 MonoReflectionModule *
@@ -5617,7 +5617,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs)
 	mono_class_init (klass);
 
 	if (klass->image->dynamic) {
-		MonoReflectionMethodAux *aux = mono_g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+		MonoReflectionMethodAux *aux = g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (aux && aux->param_defaults)
 			memcpy (blobs, &(aux->param_defaults [1]), methodsig->param_count * sizeof (char*));
 		return;
@@ -6719,7 +6719,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	MonoReflectionMethodAux *aux;
 
 	if (method->klass->image->dynamic) {
-		aux = mono_g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+		aux = g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (!aux || !aux->param_cattr)
 			return NULL;
 		return aux->param_cattr [param];
@@ -7588,7 +7588,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 1) | rmb->lasterr;
 
 		if (klass->image->dynamic)
-			mono_g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
+			g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
 		return m;
 	} else if (!m->klass->dummy && 
@@ -7737,7 +7737,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	}
 
 	if (klass->image->dynamic && method_aux)
-		mono_g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
+		g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
 	return m;
 }	

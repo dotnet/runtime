@@ -89,7 +89,7 @@ static MonoDisHelper marshal_dh = {
 static CRITICAL_SECTION marshal_mutex;
 
 /* Maps wrapper methods to the methods they wrap */
-static MonoGHashTable *wrapper_hash;
+static GHashTable *wrapper_hash;
 
 static guint32 last_error_tls_id;
 
@@ -125,8 +125,7 @@ mono_marshal_init (void)
 	if (!module_initialized) {
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
-		MONO_GC_REGISTER_ROOT (wrapper_hash);
-		wrapper_hash = mono_g_hash_table_new (NULL, NULL);
+		wrapper_hash = g_hash_table_new (NULL, NULL);
 		last_error_tls_id = TlsAlloc ();
 
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
@@ -1655,7 +1654,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 		/* This does not acquire any locks */
 		res = mono_mb_create_method (mb, sig, max_stack);
 		g_hash_table_insert (cache, key, res);
-		mono_g_hash_table_insert (wrapper_hash, res, key);
+		g_hash_table_insert (wrapper_hash, res, key);
 	}
 	LeaveCriticalSection (&marshal_mutex);
 
@@ -1712,7 +1711,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	if (*res == NULL) {
 		/* This does not acquire any locks */
 		*res = mono_mb_create_method (mb, sig, max_stack);
-		mono_g_hash_table_insert (wrapper_hash, *res, key);
+		g_hash_table_insert (wrapper_hash, *res, key);
 	}
 
 	LeaveCriticalSection (&marshal_mutex);
@@ -1729,7 +1728,7 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 		return wrapper;
 
 	EnterCriticalSection (&marshal_mutex);
-	res = mono_g_hash_table_lookup (wrapper_hash, wrapper);
+	res = g_hash_table_lookup (wrapper_hash, wrapper);
 	LeaveCriticalSection (&marshal_mutex);
 	return res;
 }
@@ -3480,7 +3479,7 @@ handle_enum:
 	if (!res) {
 		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 		g_hash_table_insert (cache, callsig, res);
-		mono_g_hash_table_insert (wrapper_hash, res, callsig);
+		g_hash_table_insert (wrapper_hash, res, callsig);
 	}
 
 	LeaveCriticalSection (&marshal_mutex);
