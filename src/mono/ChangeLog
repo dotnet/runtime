@@ -1,3 +1,7 @@
+2002-05-10  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ado-net: added links
+
 2002-05-09  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Set CPPFLAGS not CFLAGS (bug 23767)

@@ -13,85 +13,121 @@
 
 	<ul>
 		* Implementation of System.Data.SqlClient based on
-		  the PostgreSQL C API.
+		  the <a href="http://www.postgresql.org/idocs/">PostgreSQL C API</a>
 
-		* Once the System.Data.SqlClient code is functional and
-		  is usable by other people, we willl move it to
+		* Once the <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a>
+		  code is functional and is usable by other people, we willl move it to
 		  System.Data.PostgreSQL, and will convert the existing
 		  System.Data.SqlClient to be just a wrapper around
 		  System.Data.PostgreSQL.  
 
 	</ul>
 
-	<b>Step 2:</b> OleDB:
+	<b>Step 2:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfSystemDataOleDb.asp?frame=true">System.Data.OleDb</a> Provider:
+		
 	<ul>
-		* On Unix systems: System.Data.OleDb will use LibGDA as its
-		  engine. 
+		* On Unix systems: System.Data.OleDb will use the
+		<a href="http://www.gnome-db.org/">LibGDA</a>
+		 engine. 
 
-		  LibGDA is the data access engine that is used by
-		  Gnome-Db (only libgda, not libgnomedb at all).
+		  LibGDA is a data access engine like ADO/OLE-DB, but for Unix.  It is
+		  used by Gnome-Db and libgnomedb.  There is work under way to get libgda
+		  working under Windows by the Gnome-Db developers.
 
 		* On Windows systems: System.Data.OleDb will use OLE-DB as
 		  its engine.  It may have the option of using libgda too.
 	</ul>
 
-	<b>Step 3:</b> System.Data.SqlClient Provider:
+	<b>Step 3:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a> Provider:
 
 	<ul>
-		* System.Data.SqlClient will then become a managed
-		  provider for MS SQL Server, both on Windows and
+		* <p>System.Data.SqlClient will then become a managed
+		  provider for Microsoft SQL Server, both on Windows and
 		  Linux, to be compatible with applications written
-		  for MS .NET.
+		  for the Microsoft .NET Development Framework.
+		  
+		  <p>Once Step 1 has been completed and the PostgreSQL
+		  provider support has been moved to its own place at 
+		  System.Data.PostgreSQL, we will use 
+		  <a href="http://www.freetds.org/">FreeTDS</a> as the basis
+		  for providing access to Microsoft SQL Server databases.
+		  
+		  FreeTDS is a C API for Unix and Windows that implements 
+		  the TDS (Tabular Data Stream) protocol used in accessing 
+		  Microsoft SQL Server and Sybase databases.
 	</ul>
 
-	<b>Step 4:</b> Other System.Data providers:
+	<b>Step 4:</b> <a href="http://msdn.microsoft.com/downloads/sample.asp?url=/MSDN-FILES/027/001/668/msdncompositedoc.xml&frame=true">System.Data.Odbc</a> Provider:
+	
+	<ul>
+		* We will create a .NET Managaed Provider for ODBC
+		  in System.Data.Odbc for those using ODBC.
+		  On Unix and Windows, <a href="http://www.unixodbc.org/">unixODBC</a> will be used.
+		  
+		  unixODBC works on Unix and Windows.  Providers exist for
+		  Oracle, Microsoft SQL Server and Sybase via FreeTDS, 
+		  MySQL, PostgreSQL, IBM DB2, Interbase, and others.
+		  
+	</ul>
+
+	<b>Step 5:</b> Other System.Data providers:
 
 	<ul>
-		* The idea in MS .NET System.Data seems to be to have
+		* The idea in Microsoft .NET System.Data seems to be to have
 		  a managed provider for each supported DBMS. So, apart
 		  from System.Data.OleDb (generic) and System.Data.SqlClient,
-		  we'll need to have System.Data.ODBC, System.Data.MySQL,
-		  System.Data.Oracle, System.Data.PostgreSQL, etc. Others,
+		  we'll need to have System.Data.MySQL,
+		  System.Data.Oracle, and System.Data.PostgreSQL. Others,
 		  of course, are welcomed.
 	</ul>
 	
 * Current Status
-	>
-	<p>We are able to do simple CREATE TABLE, DROP TABLE, INSERT, and
+
+	<p>We are still working on Step 1, but we are planning the other steps.
+	
+	<p>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
 	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
 	
 	<p>We are also able to do simple aggregate functions, 
-	ie, count(), sum(), avg(), min(), and
-	max() in a simple SELECT SQL query using ExecuteSecalar() now.  
+	ie, count(), sum(), min(), and max() 
+	in a simple SELECT SQL query using the ExecuteScalar() now.  
 	
 	<p>We are also able to retrieve data with a simple SELECT SQL query 
 	using ExecuteReader() which returns a SqlDataReader.  We are able to
 	use GetSchemaTable() to get the meta data about the table columns.  
 	We are able	to Read() to get each row from the result set.  We are able to get 
 	String data (char, bpchar (character), text, varchar), Int16 (int2 or smallint),
-	and Int32 (int4 or integer), and Int64 (int8 or bigint).  More data types will
-	follow later on.
+	Int32 (int4 or integer), Int64 (int8 or bigint), DateTime (time, date, timestamp),
+	Boolean (boolean), Single (float), and Double (double).
+	Other More data types will follow later on.
 		
-	<p>Parameters are not working nor has stored procedures 
-	been tested - but they will be.
+	<p>Parameters and stored procedures have not been tested and most likely
+	do not work yet.
 	
 	<p>A lot of functionality in System.Data is missing, but the 
 	infrastructure is starting to come together.
+	
+	<p>Need help on the DataSet/DataAdaptor/DataTable/DataRelation/XML 
+	functionality so we	can integrate with 
+	the ASP.NET controls and Windows.Forms.  
+	
+	<P>Need to add XML support in System.Data.
 	
 	<p>To compile that test program, you need:
 
 	<b>On Linux</b>
 
 	<ul>
-		* update your mono sources.
+		* update your mono and mcs sources.
 
 		* get the files from mcs/class/lib/*.dll and mcs/mcs/mcs* 
 		  built on windows, and put them on your
-		  linux machine.
+		  linux machine at, for example,  ~/mono/install/bin and 
+		  ~/mono/install/lib
 
 		* compile the test program along with the System.Data,
 		  System.Data.Common, System.Data.SqlClient, and
-		  System.Data.SqlTypes.
+		  System.Data.SqlTypes.  The test program to use is PostgreTest.cs
 	</ul>
 
 * Testing
@@ -102,8 +138,8 @@
 	implementation of System.Data.SqlClient.
 		
 	<p>Why?  Because it is open source, has a client 
-	library that is easy to use, PostgreSQL is easy to install 
-	using the Cygwin install program, not difficult to setup after
+	library that is easy to use, PostgreSQL on Windows is easy to install on
+	Unix and Windows (using the Cygwin install program), not difficult to setup after
 	installation, and it runs under: Linux, 
 	Windows (via cygwin and ipc-daemon), Unix, and
 	others.  This allowed us to create the
@@ -126,7 +162,7 @@
 	<b>On Windows</b>
 
 	<ul>
-		* Use the cygwin installer to install the PostgreSQL DBMS.  It is
+		* Use the <a href="http://www.cygwin.com/">Cygwin</a> installer to install the PostgreSQL DBMS.  It is
 		  found in the database category.
 		  
 		* <p>Read the file postgres-x.x.README at /usr/doc/Cygwin and read 
@@ -135,78 +171,72 @@
 		  of cygwin does not install everything you will need, so on the 
 		  safe side, just include everything when installing cygwin.
 		
-		  <p>The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
+		* <p>The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
 		
-		* <p>Once cygwin has installed PostgreSQL on your computer,
+		* <p>Once Cygwin has installed the PostgreSQL DBMS on your computer,
 		  read the file FAQ_MSWIN which is available 
-		  in /usr/doc/postgres-x.x\FAQ_MSWIN
-		  
-		  <p>The -x.x in postgres-x.x is the version of your PostgreSQL DBMS.
-		  
-		  <p>Important notes from this file are:
+		  in /usr/doc/postgres-x.x 
+				  
+		* <p>Important notes from this file are:
 		  
 		  <ul>
-			* <p>Point 2. - Install the latest cygipc package, 
-			  available at
-			  http://www.neuro.gatech.edu/users/cwilson/cygutils/V1.1/cygipc/
+				<p><b>2.</b> - Install the latest <a href="http://www.neuro.gatech.edu/users/cwilson/cygutils/OBSOLETE/V1.1/cygipc/index.html">CygIPC</a> package.
+			  			  
+				<p>The cygipc package contains the ipc-daemon you will need 
+				to run before you can
+				run the PostgreSQL DBMS Server daemon (postmaster) or run
+				initdb which initializes the PostgreSQL database.
 			  
-			  <p>The cygipc package contains the ipc-daemon you will need 
-			  to run before you can
-			  run the PostgreSQL DBMS Server daemon (postmaster) or run
-			  initdb which initializes the PostgreSQL database.
+				<p><b>3.</b>  The Cygwin bin directory has to be placed in 
+				the path before the Windows program directories, 
+				for example, C:\cygwin\bin 
 			  
-			* <p>Point 3.  The Cygwin bin directory has to be placed in 
-			  the path before the Windows program directories, 
-			  for example, C:\cygwin\bin 
+				My own note, in the Windows control panel, I set
+				the environment variables PATH to my cygwin /usr/local/bin,
+				/usr/bin, and /bin.  I also set my LD_LIBRARY_PATH to 
+				/usr/local/lib and /usr/lib.  For example:
 			  
-			  My own note, in the Windows control panel, I set
-			  the environment variables PATH to my cygwin /usr/local/bin,
-			  /usr/bin, and /bin.  I also set my LD_LIBRARY_PATH to 
-			  /usr/local/lib and /usr/lib.  For example:
-			  
-			* <p>
+				<p>
 <pre>
 PATH=c:\cygwin\usr\local\bin;c:\cygwin\usr\bin;c:\cygwin\bin;
 LD_LIBRARY_PATH=c:\cygwin\usr\local\lib;c:\cygwin\usr\lib;
 </pre>
+							  
+				<p><b>4.</b> Start the ipc-daemon that came with the cygipc package.  There
+				are two ways to do this: run it from the command line as:
 			  
-			  </p>
-			* <p>Point 4. Start the ipc-daemon that came with the cygipc package.  There
-			  are two ways to do this: run it from the command line as:
-			  
-			  <p>
+				<p>
 <pre>
 ipc-daemon &
-</pre>
-			  			  
-			  <p>or you can set it up as a Windows service.  See the 
-			  file cygrunsrv.README at /usr/doc/Cygwin on how to do this
-			  for ipc-daemon and postmaster.  Note the
-			  troubleshooting section at the end of 
-			  the cygrunsrv.README file.
+</pre> 			  
+				<p>or you can set it up as a Windows service.  See the 
+				file cygrunsrv.README at /usr/doc/Cygwin on how to do this
+				for ipc-daemon and postmaster.  Note the
+				troubleshooting section at the end of 
+				the cygrunsrv.README file.
 			  
-			  <p>To install ipc-daemon as a service, 
-			  you just have to run
+				<p>To install ipc-daemon as a service, 
+				you just have to run
 			  
-			  <p>
+				<p>
 <pre>
 ipc-daemon --install-as-service' (--remove-as-service) 
 </pre>
 			  
-			  <p>
-			  and then run
+				<p>and then run
 			  
 <pre>
 net start ipc-daemon
 </pre>
-			  </ul>
+			</ul>
 			  
-		* <p>Read the installation.html file 
-		  at /usr/doc/postgresql-x.x/html/installation.html
+			<p>Read the installation.html file 
+			at /usr/doc/postgresql-x.x/html/installation.html
 		
-		  <p>You will see in this file that you will need to 
-		  run the following commands:
+			<p>You will see in this file that you will need to 
+			run the following commands:
 		  
+			<p>
 <pre>
 mkdir /usr/local/pgsql/data
 initdb -D /usr/local/pgsql/data
@@ -215,24 +245,23 @@ createdb test
 psql test  		
 </pre>
 		  
-		* <p>When you need to connect to the database, 
-		  you will need ipc-daemon and postmaster running.  Start ipc-daemon
-		  before any of the command above.  
+			<p>When you need to connect to the database, 
+			you will need ipc-daemon and postmaster running.  Start ipc-daemon
+			before any of the command above.  
 		  
-		* <p>psql is a command-line PostgreSQL client tool to 
-		  enter and run SQL commands and queries.
+			<p>psql is a command-line PostgreSQL client tool to 
+			enter and run SQL commands and queries.
 		  
-		* <p>If there is no database user named postgres, create a user named
-		  postgres with the following SQL command in the client tool psql:
+			<p>If there is no database user named postgres, create a user named
+			postgres with the following SQL command in the client tool psql:
 		  
-		  <p>
+			<p>
 <pre>
-plsql test
+psql test
 create user postgres with password 'fun2db';
 </pre>
-		  
-		  <p>The only reason I say this is so you can easily use the System.Data tests
-		  without having to change the database, userid, etc.
+			<p>The only reason I say this is so you can easily use the System.Data tests
+			without having to change the database, userid, etc.
 	</ul>
 	
 	<p>In the path mcs/class/System.Data/Test
@@ -243,7 +272,7 @@ create user postgres with password 'fun2db';
 	<p>To use it to test System.Data, you
 	modify the file to your PostgreSQL database
 	connection requirements:
-	
+
 	<p>
 <pre>	
 dbname is the database, ie, test
@@ -257,7 +286,7 @@ password is the password, ie, mypass1234
 	
 	<p>
 <pre>
-OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
+    OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
 PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
 </pre>
 
