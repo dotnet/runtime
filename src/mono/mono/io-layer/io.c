@@ -1792,9 +1792,7 @@ gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *securit
 
 	switch (errno) {
 	case EEXIST:
-		SetLastError (ERROR_ALREADY_EXISTS);
-		break;
-	
+		return TRUE;
 	default:
 		_wapi_set_last_error_from_errno ();
 		break;
