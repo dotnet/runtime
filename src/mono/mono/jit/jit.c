@@ -1095,7 +1095,7 @@ mono_cfg_free (MonoFlowGraph *cfg)
 }
 
 static MonoBBlock *
-mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, int type)
+mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, guint32 target, int type)
 {
 	MonoMethod *method = cfg->method;
 	MonoBytecodeInfo *bcinfo = cfg->bcinfo;
@@ -1105,15 +1105,13 @@ mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, int type)
 
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if (MONO_OFFSET_IN_HANDLER (clause, ip))
-			return NULL;
 
-		if (MONO_OFFSET_IN_CLAUSE (clause, ip)) {
+		if (MONO_OFFSET_IN_CLAUSE (clause, ip) && 
+		    (!MONO_OFFSET_IN_CLAUSE (clause, target))) {
 			if (clause->flags & type) {
 				g_assert (bcinfo [clause->handler_offset].is_block_start);
 				return &cfg->bblocks [bcinfo [clause->handler_offset].block_id];
-			} else
-				return NULL;
+			}
 		}
 	}
 	return NULL;
@@ -3067,7 +3065,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			/* fixme: fault handler */
 
-			if ((hb = mono_find_final_block (cfg, cli_addr, MONO_EXCEPTION_CLAUSE_FINALLY))) {
+			if ((hb = mono_find_final_block (cfg, cli_addr, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
 				mark_reached (cfg, hb, NULL, 0);
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_HANDLER);
 				t1->data.p = hb;
