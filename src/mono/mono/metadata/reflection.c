@@ -524,7 +524,7 @@ fat_header:
 						clause.try_len = GUINT32_TO_LE (ex_info->len);
 					clause.handler_offset = GUINT32_TO_LE (ex_block->start);
 					clause.handler_len = GUINT32_TO_LE (ex_block->len);
-					finally_start = clause.handler_offset + clause.handler_len;
+					finally_start = ex_block->start + ex_block->len;
 					clause.token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
 							mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
 					clause.token_or_filter = GUINT32_TO_LE (clause.token_or_filter);
