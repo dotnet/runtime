@@ -4041,6 +4041,10 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		mono_mb_emit_byte (mb, CEE_STOBJ);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 		break;
+	case MONO_TYPE_GENERICINST:
+		mono_mb_emit_byte (mb, CEE_STOBJ);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		break;
 	default:
 		g_warning ("type %x not implemented", type->type);
 		g_assert_not_reached ();
