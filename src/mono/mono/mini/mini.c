@@ -2036,10 +2036,6 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
 
-	if (virtual)
-		/* Needed by the code generated in inssel.brg */
-		mono_get_got_var (cfg);
-
 	for (arg = call->out_args; arg;) {
 		MonoInst *narg = arg->next;
 		arg->next = NULL;
@@ -2083,6 +2079,10 @@ mono_emit_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *met
 	}
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this;
+
+	if (virtual && (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+		/* Needed by the code generated in inssel.brg */
+		mono_get_got_var (cfg);
 
 	return call;
 }
