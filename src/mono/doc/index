@@ -71,6 +71,21 @@
   </tr>
 </table>
 
+** Mar 7, 2002
+
+	MCS compiles on Linux!   
+
+	Today Paolo got the <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-March/003726.html">MCS
+	compiler compiling itself on Linux</a>
+	completely for the first time!  The resulting image still contains
+	some errors, but the whole compiler process goes now.  
+
+	We are very close to have a complete self hosting environment now.
+
+	Mono is temporarly using the Bohem GC garbage collector while
+	we deploy the more advanced ORP one. 
+
 ** Mar 5, 2002
 
 	The CVS repository <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?hidenonreadable=1&f=u&logsort=date&sortby=file&hideattic=1&cvsroot=Mono">can be browsed</a>
