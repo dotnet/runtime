@@ -921,13 +921,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			break;
 		case MonoInlineField:
 			token = read32 (ip + 1);
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				mono_field_from_memberref (image, token, &class);
-			} else {
-				class = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-			}
-			mono_class_init (class);
+			mono_field_from_token (image, token, &class);
 			mono_class_vtable (domain, class);
 			ip += 5;
 			break;
@@ -2845,15 +2839,12 @@ array_constructed:
 					field = mono_class_get_field (klass, token);
 					addr = mono_load_remote_field (obj, klass, field, NULL);
 				} else {
-					if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
-						field = mono_field_from_memberref (image, token, NULL);
-					else
-						field = mono_class_get_field (obj->vtable->klass, token);
+					field = mono_field_from_token (image, token, NULL);
 					addr = (char*)obj + field->offset;
 				}				
 			} else {
 				obj = sp [-1].data.vt.vt;
-				field = mono_class_get_field (sp [-1].data.vt.klass, token);
+				field = mono_field_from_token (image, token, NULL);
 				addr = (char*)obj + field->offset - sizeof (MonoObject);
 			}
 
@@ -2892,17 +2883,14 @@ array_constructed:
 					mono_store_remote_field (obj, klass, field, &sp [1].data);
 					offset = field->offset;
 				} else {
-					if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
-						field = mono_field_from_memberref (image, token, NULL);
-					else
-						field = mono_class_get_field (obj->vtable->klass, token);
+					field = mono_field_from_token (image, token, NULL);
 					offset = field->offset;
 					stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
 					vt_free (&sp [1]);
 				}
 			} else {
 				obj = sp [0].data.vt.vt;
-				field = mono_class_get_field (sp [0].data.vt.klass, token);
+				field = mono_field_from_token (image, token, NULL);
 				offset = field->offset - sizeof (MonoObject);
 				stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
 				vt_free (&sp [1]);
@@ -2923,14 +2911,7 @@ array_constructed:
 			token = read32 (ip);
 			ip += 4;
 			
-			/* need to handle fieldrefs */
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				field = mono_field_from_memberref (image, token, &klass);
-			} else {
-				klass = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				field = mono_class_get_field (klass, token);
-			}
+			field = mono_field_from_token (image, token, &klass);
 			g_assert (field);
 			
 			vt = mono_class_vtable (domain, klass);
@@ -2964,14 +2945,7 @@ array_constructed:
 			ip += 4;
 			--sp;
 
-			/* need to handle fieldrefs */
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				field = mono_field_from_memberref (image, token, &klass);
-			} else {
-				klass = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				field = mono_class_get_field (klass, token);
-			}
+			field = mono_field_from_token (image, token, &klass);
 			g_assert (field);
 
 			vt = mono_class_vtable (domain, klass);
