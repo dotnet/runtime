@@ -68,7 +68,7 @@ opt_names [] = {
 	{"cmov",     "Conditional moves"},
 	{"shared",   "Emit per-domain code"},
 	{"sched",    "Instruction scheduling"},
-	{"instrins", "Intrinsic method implementations"},
+	{"intrins", "Intrinsic method implementations"},
 	{"tailc",    "Tail recursion and tail calls"},
 	{"loop",     "Loop related optimizations"},
 	{"fcmov",    "Fast x86 FP compares"}
@@ -202,12 +202,12 @@ opt_sets [] = {
        MONO_OPT_BRANCH,
        MONO_OPT_CFOLD,
        MONO_OPT_FCMOV,
-       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_INTRINS,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_CFOLD,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE,
-       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS
 };
 
 typedef int (*TestMethod) (void);
