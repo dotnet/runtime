@@ -1,3 +1,10 @@
+2005-01-25  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am ($(tmpinst)/config): New test support file.
+	Map 'MonoPosixHelper' to in-tree version.
+	($(tmpinst)/bin/mono): Use it.
+	(mcs-do-run-test-profiles): Use $(tmpinst)/bin/mono as the RUNTIME.
+
 2005-01-20  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* runtime/Makefile.am (centum_nunit_tests): Add class/Mono.Posix and
