@@ -2211,12 +2211,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
-	/*
-	 * We need to use the current ms version or the ms runtime it won't find
-	 * the support dlls. D'oh!
-	 * const char *version = "mono-" VERSION;
-	 */
-	const char *version = "v1.0.3705";
+
 	struct StreamDesc {
 		const char *name;
 		MonoDynamicStream *stream;
@@ -2276,9 +2271,9 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	p += 8;
 	/* version string */
 	int32val = (guint32*)p;
-	*int32val = GUINT32_TO_LE ((strlen (version) + 3) & (~3)); /* needs to be multiple of 4 */
+	*int32val = GUINT32_TO_LE ((strlen (meta->version) + 3) & (~3)); /* needs to be multiple of 4 */
 	p += 4;
-	memcpy (p, version, GUINT32_FROM_LE (*int32val));
+	memcpy (p, meta->version, GUINT32_FROM_LE (*int32val));
 	p += GUINT32_FROM_LE (*int32val);
 	align_pointer (meta->raw_metadata, p);
 	int16val = (guint16*)p;
@@ -2866,12 +2861,21 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 {
 	MonoImage *image;
 
+	/*
+	 * We need to use the current ms version or the ms runtime it won't find
+	 * the support dlls. D'oh!
+	 * const char *version = "mono-" VERSION;
+	 */
+	const char *version = "v1.0.3705";
+
 	image = g_new0 (MonoImage, 1);
 	
 	/* keep in sync with image.c */
 	image->name = assembly_name;
 	image->assembly_name = image->name; /* they may be different */
 	image->module_name = module_name;
+	image->version = g_strdup (version);
+
 	image->references = g_new0 (MonoAssembly*, 1);
 	image->references [0] = NULL;
 

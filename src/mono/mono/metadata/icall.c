@@ -2230,6 +2230,16 @@ ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assem
 	return res;
 }
 
+static MonoString *
+ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion (MonoReflectionAssembly *assembly)
+{
+	MonoDomain *domain = mono_object_domain (assembly); 
+
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_string_new (domain, assembly->assembly->image->version);
+}
+
 static MonoReflectionMethod*
 ves_icall_System_Reflection_Assembly_get_EntryPoint (MonoReflectionAssembly *assembly) 
 {
@@ -3895,6 +3905,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 	"System.Reflection.Assembly::get_location", ves_icall_System_Reflection_Assembly_get_location,
+	"System.Reflection.Assembly::InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion,
 	"System.Reflection.Assembly::GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly,
 	"System.Reflection.Assembly::GetEntryAssembly", ves_icall_System_Reflection_Assembly_GetEntryAssembly,
 	"System.Reflection.Assembly::GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly,
