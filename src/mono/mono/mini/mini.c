@@ -1849,8 +1849,11 @@ handle_loaded_temps (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst **stack,
 	while (stack < sp) {
 		ins = *stack;
 		/* handle also other constants */
-		if (ins->opcode != OP_ICONST) {
+		if ((ins->opcode != OP_ICONST) &&
+		    /* temps never get written to again, so we can safely avoid duplicating them */
+		    !(ins->ssa_op == MONO_SSA_LOAD && ins->inst_i0->opcode == OP_LOCAL && ins->inst_i0->flags & MONO_INST_IS_TEMP)) {
 			temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+			temp->flags |= MONO_INST_IS_TEMP;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 			store->cil_code = ins->cil_code;
 			if (store->opcode == CEE_STOBJ) {
@@ -1990,6 +1993,8 @@ mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, M
 			type_to_eval_stack_type (ret, ins);
 			temp = mono_compile_create_var (cfg, ret, OP_LOCAL);
 		}
+		
+		temp->flags |= MONO_INST_IS_TEMP;
 
 		if (MONO_TYPE_ISSTRUCT (ret)) {
 			MonoInst *loada;
@@ -2147,6 +2152,7 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 
 	if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
 		temp = mono_compile_create_var (cfg, info->sig->ret, OP_LOCAL);
+		temp->flags |= MONO_INST_IS_TEMP;
 		NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 		store->cil_code = tree->cil_code;
 	} else {
@@ -2851,6 +2857,7 @@ emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8
 			return ins;
 	
 	temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+	temp->flags |= MONO_INST_IS_TEMP;
 	NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 	store->cil_code = ins->cil_code;
 	MONO_ADD_INS (bblock, store);
@@ -3392,6 +3399,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					sp++;
 				} else {
 					temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+					temp->flags |= MONO_INST_IS_TEMP;
 					temp->cil_code = ip;
 					NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 					store->cil_code = ip;
