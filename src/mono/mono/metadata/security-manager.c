@@ -107,6 +107,11 @@ mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent)
 	if (klass->exception_type != 0)
 		return;
 
+	/* short-circuit corlib as it is fully trusted (within itself)
+	 * and because this cause major recursion headaches */
+	if ((klass->image == mono_defaults.corlib) && (parent->image == mono_defaults.corlib))
+		return;
+
 	/* Check if there are an InheritanceDemand on the parent class */
 	if (mono_declsec_get_inheritdemands_class (parent, &demands)) {
 		/* If so check the demands on the klass (inheritor) */
@@ -125,6 +130,11 @@ mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base)
 
 	/* don't hide previous results -and- don't calc everything for nothing */
 	if (override->klass->exception_type != 0)
+		return;
+
+	/* short-circuit corlib as it is fully trusted (within itself)
+	 * and because this cause major recursion headaches */
+	if ((override->klass->image == mono_defaults.corlib) && (base->klass->image == mono_defaults.corlib))
 		return;
 
 	/* Check if there are an InheritanceDemand on the base (virtual) method */
