@@ -323,10 +323,11 @@ static gpointer process_read_string_block (MonoObject *filever,
 		value=(gunichar2 *)data_ptr;
 		/* Skip over the value */
 		data_ptr=((gunichar2 *)data_ptr)+block.value_len;
-		
+
 		if(store==TRUE) {
 			if(!memcmp (block.key, &comments_key,
 				    unicode_bytes (block.key))) {
+
 				process_set_field_string (filever, "comments", value, unicode_chars (value));
 			} else if (!memcmp (block.key, &compname_key,
 					    unicode_bytes (block.key))) {
@@ -382,18 +383,9 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 						guint16 data_len)
 {
 	version_data block;
+	const char *language;
 	guint16 string_len=36;	/* length of the StringFileInfo block */
 
-	/* Specifies language-neutral unicode string block */
-	guchar uni_key[]= {'0', '\0', '0', '\0', '0', '\0', '0', '\0',
-			   '0', '\0', '4', '\0', 'b', '\0', '0', '\0',
-			   '\0', '\0'
-	};
-	guchar uni_key_uc[]= {'0', '\0', '0', '\0', '0', '\0', '0', '\0',
-			      '0', '\0', '4', '\0', 'B', '\0', '0', '\0',
-			      '\0', '\0'
-	};
-	
 	/* data_ptr is pointing at an array of StringTable blocks,
 	 * with total length (not including alignment padding) of
 	 * data_len.
@@ -415,9 +407,10 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 			return(NULL);
 		}
 		string_len=string_len+block.data_len;
-	
-		if(!memcmp (block.key, &uni_key, unicode_bytes (block.key)) ||
-		   !memcmp (block.key, &uni_key_uc, unicode_bytes (block.key))) {
+
+		language = g_utf16_to_utf8 (block.key, unicode_bytes (block.key), NULL, NULL, NULL);
+		g_strdown (language);
+		if (!strcmp (language, "007f04b0") || !strcmp (language, "000004b0")) {
 			/* Got the one we're interested in */
 			process_set_field_string_utf8 (filever, "language",
 						       "Language Neutral");
@@ -433,6 +426,7 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 							    block.data_len,
 							    FALSE);
 		}
+		g_free (language);
 
 		if(data_ptr==NULL) {
 			/* Child block hit padding */
