@@ -652,7 +652,7 @@
 
     <image>jackson.png</image>
 
-    <location>Victoria, Canada</location>
+    <location>Southern California</location>
 
     <description>Hacker</description>
 
@@ -660,7 +660,7 @@
 
       <task>IL Assembler</task>
 
-      <task>System.Web</task>
+      <task>System.Windows.Forms</task>
 
       <task>Bug Fix0r</task>
 
