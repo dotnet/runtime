@@ -111,8 +111,8 @@ decode_class_info (MonoAotModule *module, guint32 *data)
 	if (data [0]) {
 		return mono_class_get (image, data [0]);
 	} else {
-		/* the pointer is dword aligned so it is in data [4] */
-		klass = decode_class_info (module, *(guint32**)&(data [4]));
+		/* the pointer is dword aligned */
+		klass = decode_class_info (module, *(guint32**)(ALIGN_PTR_TO (&data[3], sizeof (gpointer))));
 		return mono_array_class_get (klass, data [2]);
 	}
 
@@ -557,8 +557,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			}
 			case MONO_PATCH_INFO_FIELD:
 			case MONO_PATCH_INFO_SFLDA: {
-				/* The pointer is dword aligned so it is in data [2] */
-				gpointer class_ptr = *(gpointer*)(data + 2);
+				/* The pointer is dword aligned */
+				gpointer class_ptr = *(gpointer*)(ALIGN_PTR_TO (&data[1], sizeof (gpointer)));
 				MonoClass *klass = decode_class_info (aot_module, class_ptr);
 				mono_class_init (klass);
 				ji->data.field = mono_class_get_field (klass, data [0]);
@@ -802,8 +802,8 @@ static void emit_alignment(FILE *fp, int size)
 static void
 emit_pointer (FILE *fp, char *target)
 {
+	emit_alignment (fp, sizeof (gpointer));
 #if defined(sparc) && SIZEOF_VOID_P == 8
-	emit_alignment (fp, 8);
 	fprintf (fp, "\t.xword %s\n", target);
 #else
 	fprintf (fp, "\t.long %s\n", target);
