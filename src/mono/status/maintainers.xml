@@ -24,6 +24,7 @@
     <class name="System.IO.StringReader" date="Jul-15-2001"/>
     <class name="System.IO.TextWriter" date="Jul-15-2001"/>
     <class name="System.IO.StringWriter" date="Jul-15-2001"/>
+    <class name="System.IO.MemoryStream" date="Jul-15-2001"/>
   </person>
   <person email="rooneg@electricjellyfish.net" name="Garrett Rooney">
     <class name="System.Collections.Stack" date="Jul-15-2001"/>
