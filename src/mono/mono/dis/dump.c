@@ -252,7 +252,9 @@ dump_table_memberref (MonoImage *m)
 		case 2:
 			ks = "ModuleRef"; break;
 		case 3:
-			ks = "MethodDef"; break;
+			ks = "MethodDef";
+			x = get_methoddef (m, idx);
+			break;
 		case 4:
 			ks = "TypeSpec";
 			xx = get_typespec (m, idx);
