@@ -225,16 +225,15 @@
 
   Tim Coleman started ADO.NET 2.0 related works. Currently I have no plan to
   implement System.Xml v2.0 classes and won't touch with them immediately, 
-  but will start in next some months. If any of you wants to try this
-  frontier, we welcome your effort.
+  but will start in some months. If any of you wants to try this frontier,
+  we welcome your effort.
 
 *** XPathNavigator2
 
   System.Xml v2.0 implementation will be started from XPathDocument2 and
-  XPathNavigator2 implementations. Firstly, its document structure and
-  basic navigation feature will be implemented. And next, XPath2 engine
-  should be implemented (XPathNavigator2 looks very different from
-  XPathNavigator). 
+  XPathNavigator2 implementations. First, its document structure and basic
+  navigation feature will be implemented. And next, XPath2 engine should
+  be implemented (XPathNavigator2 looks very different from XPathNavigator).
 
   It is once described as to contain schema validation feature, but MS
   guys said that they have removed that feature (It is just a beta version,
@@ -280,13 +279,16 @@
 
 *** RELAX NG
 
-  I implemented an experimental RelaxngValidatingReader. It is far from
-  complete, especially simplification stuff (see RELAX NG spec chapter 4),
-  some constraints (in chapter 7), and datatype handling.
+  I implemented an experimental RelaxngValidatingReader. It is still not
+  complete, for example some simplification stuff (see RELAX NG spec 
+  chapter 4; especially 4.17-19) and some constraints (especially 7.3).
 
-  I am planning improvements (starts with renaming classes, giving more
-  kind error messages, supporting compact syntax and even object mapping),
-  but it is still my wishlist.
+  It now supports custom datatype handling. Right now, you can use XML
+  schema datatypes ( http://www.w3.org/2001/XMLSchema-datatypes ) as well
+  as RELAX NG default datatypes (as used in relaxng.rng).
+
+  I am planning improvements (giving more kind error messages, supporting
+  compact syntax and even object mapping), but it is still my wishlist.
 
 
 ** Tools
