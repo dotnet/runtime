@@ -39,10 +39,6 @@ extern int __imp_GC_finalize_on_demand;
 #define GC_finalize_on_demand __imp_GC_finalize_on_demand
 #endif
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
-
 static int finalize_slot = -1;
 
 static gboolean gc_disabled = FALSE;
@@ -675,20 +671,6 @@ mono_gc_warning (char *msg, GC_word arg)
 	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, msg, (unsigned long)arg);
 }
 
-static gboolean
-mono_running_on_valgrind (void)
-{
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-		if (RUNNING_ON_VALGRIND)
-			return TRUE;
-		else
-			return FALSE;
-#else
-		return FALSE;
-#endif
-}
-
-
 void mono_gc_init (void)
 {
 	InitializeCriticalSection (&handle_section);
@@ -711,20 +693,6 @@ void mono_gc_init (void)
 #ifdef ENABLE_FINALIZER_THREAD
 
 	if (g_getenv ("GC_DONT_GC")) {
-		gc_disabled = TRUE;
-		return;
-	}
-	
-	/* valgrind does not play nicely with the GC,
-	 * so, turn it off when we are under vg.
-	 */
-	if (mono_running_on_valgrind ()) {
-		/* valgrind doesnt like g_warning for some reason... */
-		printf ("You are running under valgrind. Currently, valgrind does "
-		           "not support the GC. This program will run with the GC "
-			   "turned off. Your program may take up a fair amount of "
-			   "memory. Also, finalizers will not be run.\n");
-		
 		gc_disabled = TRUE;
 		return;
 	}
