@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
+#include <mono/io-layer/io-layer.h>
 
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
 typedef struct _MonoDebuggerSymbolTable		MonoDebuggerSymbolTable;
