@@ -511,47 +511,59 @@ static void main_thread_handler (gpointer user_data)
 }
 
 static void
-mini_usage (void)
+mini_usage_jitdeveloper ()
 {
 	int i;
-
+	
 	fprintf (stdout,
-		"Usage is: mono [options] assembly\n\n"
-		"Runtime and JIT debugging:\n"
-		"    --compile METHOD       Just compile METHOD in assembly\n"
-		"    --ncompile N           Number of times to compile METHOD (default: 1)\n"
-		"    --regression           Runs the regression test contained in the assembly\n"
-		"    --print-vtable         Print the vtable of all used classes\n"
-		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
-		"    --compile-all          Compiles all the methods in the assembly\n"
-		"    --breakonex            Inserts a breakpoint on exceptions\n"
-		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
-		"    --debug                Enable debugging support\n"
-	        "    --stats                Print statistics about the JIT operations\n"
-		"\n"
-		"Development:\n"
-		"    --statfile FILE        Sets the stat file to FILE\n"
-		"    --aot                  Compiles the assembly to native code\n"
-		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
-		"    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
+		 "Runtime and JIT debugging options:\n"
+		 "    --breakonex            Inserts a breakpoint on exceptions\n"
+		 "    --break METHOD         Inserts a breakpoint at METHOD entry\n"
+		 "    --compile METHOD       Just compile METHOD in assembly\n"
+		 "    --compile-all          Compiles all the methods in the assembly\n"
+		 "    --ncompile N           Number of times to compile METHOD (default: 1)\n"
+		 "    --print-vtable         Print the vtable of all used classes\n"
+		 "    --regression           Runs the regression test contained in the assembly\n"
+		 "    --statfile FILE        Sets the stat file to FILE\n"
+		 "    --stats                Print statistics about the JIT operations\n"
+		 "\n"
+		 "Other options:\n" 
+		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
 	
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
 		fprintf (stdout, "                           %-10s %s\n", graph_names [i].name, graph_names [i].desc);
 	}
+}
 
+static void
+mini_usage_list_opt ()
+{
+	int i;
+	
+	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
+		fprintf (stdout, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
+}
+
+static void
+mini_usage (void)
+{
 	fprintf (stdout,
+		"Usage is: mono [options] program [program-options]\n"
+		"\n"
+		"Development:\n"
+		"    --aot                  Compiles the assembly to native code\n"
+		"    --debug                Enable debugging support\n"
+		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
+		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
+		"    --help-devel           Shows more options available to developers\n"
 		"\n"
 		"Runtime:\n"
 		"    --config FILE          Loads FILE as the Mono config\n"
 		"    --verbose, -v          Increases the verbosity level\n"
 		"    --help, -h             Show usage information\n"
 		"    --version, -V          Show version information\n"
-		"    --optimize=OPT         Turns on a specific optimization:\n");
-
-	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
-		fprintf (stdout, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
-
-	fprintf (stdout,
+		"    --optimize=OPT         Turns on or off a specific optimization\n"
+		"                           Use --list-opt to get a list of optimizations\n"
 		"    --security             Turns on the security manager (unsupported, default is off)\n");
 }
 
@@ -662,6 +674,12 @@ mono_main (int argc, char* argv[])
 			return 0;
 		} else if (strcmp (argv [i], "--help-trace") == 0){
 			mini_trace_usage ();
+			return 0;
+		} else if (strcmp (argv [i], "--help-devel") == 0){
+			mini_usage_jitdeveloper ();
+			return 0;
+		} else if (strcmp (argv [i], "--list-opt") == 0){
+			mini_usage_list_opt ();
 			return 0;
 		} else if (strncmp (argv [i], "--statfile", 10) == 0) {
 			mini_stats_fd = fopen (argv [++i], "w+");
