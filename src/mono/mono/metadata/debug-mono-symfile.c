@@ -14,6 +14,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -96,6 +97,7 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 {
 	MonoSymbolFile *symfile;
 
+	mono_debugger_lock ();
 	symfile = g_new0 (MonoSymbolFile, 1);
 
 	symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
@@ -104,13 +106,16 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 				  &symfile->raw_contents_size, NULL))
 		symfile->raw_contents = NULL;
 
-	if (load_symfile (handle, symfile))
+	if (load_symfile (handle, symfile)) {
+		mono_debugger_unlock ();
 		return symfile;
-	else if (!create_symfile) {
+	} else if (!create_symfile) {
 		mono_debug_close_mono_symbol_file (symfile);
+		mono_debugger_unlock ();
 		return NULL;
 	}
 
+	mono_debugger_unlock ();
 	return symfile;
 }
 
@@ -120,10 +125,12 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 	if (!symfile)
 		return;
 
+	mono_debugger_lock ();
 	if (symfile->method_hash)
 		g_hash_table_destroy (symfile->method_hash);
 
 	g_free (symfile);
+	mono_debugger_unlock ();
 }
 
 static int
@@ -163,12 +170,17 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	const char *ptr;
 	int i;
 
-	if (!symfile->method_hash)
+	mono_debugger_lock ();
+	if (!symfile->method_hash) {
+		mono_debugger_unlock ();
 		return NULL;
+	}
 
 	minfo = g_hash_table_lookup (symfile->method_hash, method);
-	if (!minfo)
+	if (!minfo) {
+		mono_debugger_unlock ();
 		return NULL;
+	}
 
 	if (read32(&(minfo->entry->_source_index))) {
 		int offset = read32(&(symfile->offset_table->_source_table_offset)) +
@@ -188,6 +200,7 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 
 		if (line_number) {
 			*line_number = read32(&(lne->_row));
+			mono_debugger_unlock ();
 			if (source_file)
 				return source_file;
 			else
@@ -195,11 +208,16 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 		} else if (source_file) {
 			gchar *retval = g_strdup_printf ("%s:%d", source_file, read32(&(lne->_row)));
 			g_free (source_file);
+			mono_debugger_unlock ();
 			return retval;
-		} else
-			return g_strdup_printf ("%d", read32(&(lne->_row)));
+		} else {
+			gchar* retval = g_strdup_printf ("%d", read32(&(lne->_row)));
+			mono_debugger_unlock ();
+			return retval;
+		}
 	}
 
+	mono_debugger_unlock ();
 	return NULL;
 }
 
@@ -245,6 +263,7 @@ mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
 	if (handle->image != mono_class_get_image (mono_method_get_class (method)))
 		return NULL;
 
+	mono_debugger_lock ();
 	first_ie = (MonoSymbolFileMethodIndexEntry *)
 		(symfile->raw_contents + read32(&(symfile->offset_table->_method_table_offset)));
 
@@ -252,8 +271,10 @@ mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
 				   read32(&(symfile->offset_table->_method_count)),
 				   sizeof (MonoSymbolFileMethodIndexEntry), compare_method);
 
-	if (!ie)
+	if (!ie) {
+		mono_debugger_unlock ();
 		return NULL;
+	}
 
 	me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + read32(&(ie->_file_offset)));
 
@@ -268,5 +289,6 @@ mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
 
 	g_hash_table_insert (symfile->method_hash, method, minfo);
 
+	mono_debugger_unlock ();
 	return minfo;
 }
