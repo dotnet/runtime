@@ -484,10 +484,17 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #define STACK_PARAM_OFFSET 8
 #endif
 
+enum {
+	RegTypeGeneral,
+	RegTypeBase,
+	RegTypeFP
+};
+
 typedef struct {
 	gint16 offset;
 	gint8  reg;
-	gint8  regtype; /* 0 general, 1 basereg, 2 floating point register */
+	guint8  regtype : 2; /* 0 general, 1 basereg, 2 floating point register */
+	guint8  size    : 6; /* 1, 2, 4, 8 */
 } ArgInfo;
 
 typedef struct {
@@ -507,7 +514,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		if (*gr >= 3 + GENERAL_REGS) {
 			ainfo->offset = *stack_size;
 			ainfo->reg = ppc_sp; /* in the caller */
-			ainfo->regtype = 1;
+			ainfo->regtype = RegTypeBase;
 			*stack_size += 4;
 		} else {
 			ALWAYS_ON_STACK (*stack_size += 4);
@@ -517,7 +524,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		if (*gr >= 3 + GENERAL_REGS - 1) {
 			ainfo->offset = *stack_size;
 			ainfo->reg = ppc_sp; /* in the caller */
-			ainfo->regtype = 1;
+			ainfo->regtype = RegTypeBase;
 			*stack_size += 8;
 #ifdef ALIGN_DOUBLES
 			*stack_size += (*stack_size % 8);
@@ -571,13 +578,25 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+			cinfo->args [n].size = 1;
+			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			n++;
+			break;
+		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
+			cinfo->args [n].size = 2;
+			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			n++;
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
+			cinfo->args [n].size = 4;
+			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			n++;
+			break;
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
@@ -586,6 +605,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
+			cinfo->args [n].size = sizeof (gpointer);
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 			n++;
 			break;
@@ -604,11 +624,15 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		}
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
+			cinfo->args [n].size = 8;
 			add_general (&gr, &stack_size, cinfo->args + n, FALSE);
 			n++;
 			break;
 		case MONO_TYPE_R4:
+			cinfo->args [n].size = 4;
 			if (fr < 7) {
+				cinfo->args [n].regtype = RegTypeFP;
+				cinfo->args [n].reg = fr;
 				fr ++;
 				FP_ALSO_IN_REG (gr ++);
 				ALWAYS_ON_STACK (stack_size += 4);
@@ -618,7 +642,10 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			n++;
 			break;
 		case MONO_TYPE_R8:
+			cinfo->args [n].size = 8;
 			if (fr < 7) {
+				cinfo->args [n].regtype = RegTypeFP;
+				cinfo->args [n].reg = fr;
 				fr ++;
 				FP_ALSO_IN_REG (gr += 2);
 				ALWAYS_ON_STACK (stack_size += 8);
@@ -660,7 +687,7 @@ enum_retvalue:
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			cinfo->ret.reg = ppc_f1;
-			cinfo->ret.regtype = 2;
+			cinfo->ret.regtype = RegTypeFP;
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->ret->data.klass->enumtype) {
@@ -862,12 +889,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			/* prepend, we'll need to reverse them later */
 			arg->next = call->out_args;
 			call->out_args = arg;
-			if (ainfo->regtype == 0) {
+			if (ainfo->regtype == RegTypeGeneral) {
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
-			} else if (ainfo->regtype == 1) {
+			} else if (ainfo->regtype == RegTypeBase) {
 				g_assert_not_reached ();
-			} else if (ainfo->regtype == 2) {
+			} else if (ainfo->regtype == RegTypeFP) {
 				arg->opcode = OP_OUTARG_R8;
 				arg->unused = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
@@ -991,9 +1018,10 @@ handle_enum:
 		}
 		break;
 	case SAVE_FP:
-		ppc_stfd (code, ppc_f3, cfg->stack_usage - 8, cfg->frame_reg);
+		ppc_stfd (code, ppc_f1, cfg->stack_usage - 8, cfg->frame_reg);
 		if (enable_arguments) {
-			ppc_mr (code, ppc_r4, ppc_r3);
+			/* FIXME: what reg?  */
+			ppc_fmr (code, ppc_f3, ppc_f1);
 		}
 		break;
 	case SAVE_STRUCT:
@@ -1021,7 +1049,7 @@ handle_enum:
 		ppc_lwz (code, ppc_r3, cfg->stack_usage - 8, cfg->frame_reg);
 		break;
 	case SAVE_FP:
-		ppc_lfd (code, ppc_f3, cfg->stack_usage - 8, cfg->frame_reg);
+		ppc_lfd (code, ppc_f1, cfg->stack_usage - 8, cfg->frame_reg);
 		break;
 	case SAVE_NONE:
 	default:
@@ -1588,7 +1616,7 @@ create_spilled_store (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoIn
 	MonoInst *store;
 	MONO_INST_NEW (cfg, store, OP_STORE_MEMBASE_REG);
 	store->sreg1 = reg;
-	store->inst_destbasereg = ppc_r1;
+	store->inst_destbasereg = cfg->frame_reg;
 	store->inst_offset = mono_spillvar_offset (cfg, spill);
 	if (ins) {
 		store->next = ins->next;
@@ -1604,7 +1632,7 @@ create_spilled_store_float (MonoCompile *cfg, int spill, int reg, int prev_reg, 
 	MonoInst *store;
 	MONO_INST_NEW (cfg, store, OP_STORER8_MEMBASE_REG);
 	store->sreg1 = reg;
-	store->inst_destbasereg = ppc_r1;
+	store->inst_destbasereg = cfg->frame_reg;
 	store->inst_offset = mono_spillvar_offset_float (cfg, spill);
 	if (ins) {
 		store->next = ins->next;
@@ -1798,9 +1826,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", mono_arch_regname (val), ins->dreg));
 				rs->fsymbolic [val] = prev_dreg;
 				ins->dreg = val;
-				if (spec [MONO_INST_CLOB] == 'c' && ins->dreg != ppc_f3) {
+				if (spec [MONO_INST_CLOB] == 'c' && ins->dreg != ppc_f1) {
 					/* this instruction only outputs to ppc_f3, need to copy */
-					create_copy_ins_float (cfg, ins->dreg, ppc_f3, ins);
+					create_copy_ins_float (cfg, ins->dreg, ppc_f1, ins);
 				}
 			} else {
 				prev_dreg = -1;
@@ -2658,12 +2686,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_lfs (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			break;
 		case CEE_CONV_R4: /* FIXME: change precision */
-		case CEE_CONV_R8:
-			g_assert_not_reached ();
-			x86_push_reg (code, ins->sreg1);
-			x86_fild_membase (code, X86_ESP, 0, FALSE);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+		case CEE_CONV_R8: {
+			static const guint64 adjust_val = 0x4330000000000000UL;
+			ppc_li (code, ppc_r0, 0);
+			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
+			ppc_stw (code, ins->sreg1, -8, ppc_sp);
+			ppc_xoris (code, ppc_r11, ins->sreg1, 0x8000);
+			ppc_stw (code, ppc_r11, -4, ppc_sp);
+			ppc_lfd (code, ins->dreg, -8, ppc_sp);
+			ppc_li (code, ppc_r11, &adjust_val);
+			ppc_lfd (code, ppc_f0, 0, ppc_r11);
+			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
 			break;
+		}
 		case OP_X86_FP_LOAD_I8:
 			g_assert_not_reached ();
 			x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
@@ -2697,37 +2732,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			/* Implemented as helper calls */
 			break;
-		case OP_LCONV_TO_R_UN: { 
-#if 0
-			static guint8 mn[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f, 0x40 };
-			guint8 *br;
-
-			/* load 64bit integer to FP stack */
-			x86_push_imm (code, 0);
-			x86_push_reg (code, ins->sreg2);
-			x86_push_reg (code, ins->sreg1);
-			x86_fild_membase (code, X86_ESP, 0, TRUE);
-			/* store as 80bit FP value */
-			x86_fst80_membase (code, X86_ESP, 0);
-			
-			/* test if lreg is negative */
-			x86_test_reg_reg (code, ins->sreg2, ins->sreg2);
-			br = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
-	
-			/* add correction constant mn */
-			x86_fld80_mem (code, mn);
-			x86_fld80_membase (code, X86_ESP, 0);
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
-			x86_fst80_membase (code, X86_ESP, 0);
-
-			x86_patch (br, code);
-
-			x86_fld80_membase (code, X86_ESP, 0);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
-#endif
+		case OP_LCONV_TO_R_UN:
 			g_assert_not_reached ();
+			/* Implemented as helper calls */
 			break;
-		}
 		case OP_LCONV_TO_OVF_I: {
 #if 0
 			guint8 *br [3], *label [1];
@@ -2779,7 +2787,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_fneg (code, ins->dreg, ins->sreg1);
 			break;		
 		case OP_FREM:
-			//g_assert_not_reached ();
+			/* emulated */
+			g_assert_not_reached ();
 			break;
 		case OP_FCOMPARE:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
@@ -3169,13 +3178,40 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		inst = cfg->varinfo [pos];
 		
 		if (inst->opcode == OP_REGVAR) {
-			g_assert (!ainfo->regtype); // fine for now
-			ppc_mr (code, inst->dreg, ainfo->reg);
+			if (ainfo->regtype == RegTypeGeneral)
+				ppc_mr (code, inst->dreg, ainfo->reg);
+			else if (ainfo->regtype == RegTypeFP)
+				ppc_fmr (code, inst->dreg, ainfo->reg);
+			else
+				g_assert_not_reached ();
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
 			/* the argument should be put on the stack: FIXME handle size != word  */
-			ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+			if (ainfo->regtype == RegTypeGeneral) {
+				switch (ainfo->size) {
+				case 1:
+					ppc_stb (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				case 2:
+					ppc_sth (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				case 8:
+					ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					ppc_stw (code, ainfo->reg + 1, inst->inst_offset + 4, inst->inst_basereg);
+					break;
+				default:
+					ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+				}
+			} else if (ainfo->regtype == RegTypeFP) {
+				if (ainfo->size == 8)
+					ppc_stfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+				else if (ainfo->size == 4)
+					ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+				else
+					g_assert_not_reached ();
+			} else
+				g_assert_not_reached ();
 		}
 		pos++;
 	}
@@ -3184,6 +3220,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 
 	cfg->code_len = code - cfg->native_code;
+	g_free (cinfo);
 
 	return code;
 }

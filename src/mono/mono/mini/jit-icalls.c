@@ -453,3 +453,11 @@ mono_lconv_to_r8 (gint64 a)
 }
 #endif
 
+#ifdef MONO_ARCH_EMULATE_LCONV_TO_R8_UN
+static double
+mono_lconv_to_r8_un (guint64 a)
+{
+	return (double)a;
+}
+#endif
+

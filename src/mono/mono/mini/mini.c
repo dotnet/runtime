@@ -11,6 +11,7 @@
 #include <config.h>
 #include <signal.h>
 #include <unistd.h>
+#include <math.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -91,6 +92,7 @@ static MonoMethodSignature *helper_sig_memset = NULL;
 static MonoMethodSignature *helper_sig_ulong_double = NULL;
 static MonoMethodSignature *helper_sig_long_double = NULL;
 static MonoMethodSignature *helper_sig_double_long = NULL;
+static MonoMethodSignature *helper_sig_double_double_double = NULL;
 static MonoMethodSignature *helper_sig_uint_double = NULL;
 static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
@@ -5721,6 +5723,13 @@ create_helper_signature (void)
 	helper_sig_double_long->ret = &mono_defaults.double_class->byval_arg;
 	helper_sig_double_long->pinvoke = 1;
 
+	/* double amethod (double, double) */
+	helper_sig_double_double_double = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	helper_sig_double_double_double->params [0] = &mono_defaults.double_class->byval_arg;
+	helper_sig_double_double_double->params [1] = &mono_defaults.double_class->byval_arg;
+	helper_sig_double_double_double->ret = &mono_defaults.double_class->byval_arg;
+	helper_sig_double_double_double->pinvoke = 1;
+
 	/* uint amethod (double) */
 	helper_sig_uint_double = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 	helper_sig_uint_double->params [0] = &mono_defaults.double_class->byval_arg;
@@ -7718,6 +7727,12 @@ mini_init (const char *filename)
 #endif
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
 	mono_register_opcode_emulation (OP_LCONV_TO_R8, "__emul_lconv_to_r8", helper_sig_double_long, mono_lconv_to_r8, FALSE);
+#endif
+#ifdef MONO_ARCH_EMULATE_LCONV_TO_R8_UN
+	mono_register_opcode_emulation (OP_LCONV_TO_R_UN, "__emul_lconv_to_r8_un", helper_sig_double_long, mono_lconv_to_r8_un, FALSE);
+#endif
+#ifdef MONO_ARCH_EMULATE_FREM
+	mono_register_opcode_emulation (OP_FREM, "__emul_frem", helper_sig_double_double_double, fmod, FALSE);
 #endif
 
 #if SIZEOF_VOID_P == 4

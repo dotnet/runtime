@@ -65,7 +65,10 @@ stmt: OP_SETRET (lreg) {
 }
 
 stmt: OP_SETRET (freg) {
-	/* FIXME */
+	tree->opcode = OP_FMOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = ppc_f1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_SETRET (OP_ICONST) {
@@ -146,29 +149,23 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 #}
 
 stmt: OP_OUTARG (freg) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
-	tree->opcode = OP_STORER8_MEMBASE_REG;
+	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
-	tree->inst_destbasereg = X86_ESP;
-	tree->inst_offset = 0;
+	tree->dreg = tree->unused;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_OUTARG_R4 (freg) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 4);
-	tree->opcode = OP_STORER4_MEMBASE_REG;
+	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
-	tree->inst_destbasereg = X86_ESP;
-	tree->inst_offset = 0;
+	tree->dreg = tree->unused;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_OUTARG_R8 (freg) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
-	tree->opcode = OP_STORER8_MEMBASE_REG;
+	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
-	tree->inst_destbasereg = X86_ESP;
-	tree->inst_offset = 0;
+	tree->dreg = tree->unused;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -254,6 +251,14 @@ stmt: CEE_POP (freg) "0" {
 }     
 
 freg: OP_LCONV_TO_R8 (lreg) {
+	/* nothing to do - emulated */
+}
+
+freg: OP_LCONV_TO_R_UN (lreg) {
+	/* nothing to do - emulated */
+}
+
+freg: OP_FREM (freg, freg) {
 	/* nothing to do - emulated */
 }
 

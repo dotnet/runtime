@@ -151,8 +151,8 @@ conv.i1: dest:i src1:i len:4
 conv.i2: dest:i src1:i len:4
 conv.i4: dest:i src1:i len:4
 conv.i8:
-conv.r4: dest:f src1:i len:7
-conv.r8: dest:f src1:i len:7
+conv.r4: dest:f src1:i len:36
+conv.r8: dest:f src1:i len:36
 conv.u4: dest:i src1:i
 conv.u8:
 callvirt:
