@@ -152,6 +152,8 @@ mono_create_domain (void)
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
+
+	InitializeCriticalSection (&domain->lock);
 	return domain;
 }
 
@@ -444,6 +446,7 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 
 	str = mono_string_to_utf8 (name);
 
+	mono_domain_lock (add);
 	if (!strcmp (str, "APPBASE"))
 		o = (MonoObject *)add->setup->application_base;
 	else if (!strcmp (str, "APP_CONFIG_FILE"))
@@ -465,6 +468,7 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	else 
 		o = g_hash_table_lookup (add->env, str);
 
+	mono_domain_unlock (add);
 	g_free (str);
 
 	if (!o)
@@ -488,7 +492,9 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 
 	/* fixme: need a hash func for MonoString */
 	str = mono_string_to_utf8 (name);
+	mono_domain_lock (add);
 	g_hash_table_insert (add->env, str, o);
+	mono_domain_unlock (add);
 	g_free (str);
 }
 
@@ -593,7 +599,9 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 	ah.domain = domain;
 	ah.res = res;
 	ah.idx = 0;
+	mono_domain_lock (domain);
 	g_hash_table_foreach (domain->assemblies, add_assembly, &ah);
+	mono_domain_unlock (domain);
 
 	return res;
 }
@@ -654,7 +662,9 @@ mono_domain_assembly_open (MonoDomain *domain, char *name)
 	if (!(ass = mono_assembly_open (name, NULL, NULL)))
 		return NULL;
 
+	mono_domain_lock (domain);
 	g_hash_table_insert (domain->assemblies, ass->name, ass);
+	mono_domain_unlock (domain);
 
 	// fixme: maybe this must be recursive ?
 	for (i = 0; (tmp = ass->image->references [i]) != NULL; i++) {
@@ -691,6 +701,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	mono_jit_info_table_free (domain->jit_info_table);
 	mono_mempool_destroy (domain->mp);
+	DeleteCriticalSection (&domain->lock);
 	
 	// fixme: anything else required ? */
 

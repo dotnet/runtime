@@ -533,6 +533,7 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 {
 	MonoGHashTable *ldstr_table;
 	MonoString *res;
+	MonoDomain *domain;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
 	int bloblen;
@@ -562,15 +563,20 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 #else
 	memcpy (p, str->c_str->vector, str->length * 2);
 #endif
-	ldstr_table = ((MonoObject *)str)->vtable->domain->ldstr_table;
+	domain = ((MonoObject *)str)->vtable->domain;
+	ldstr_table = domain->ldstr_table;
+	mono_domain_lock (domain);
 	if ((res = mono_g_hash_table_lookup (ldstr_table, ins))) {
+		mono_domain_unlock (domain);
 		g_free (ins);
 		return res;
 	}
 	if (insert) {
 		mono_g_hash_table_insert (ldstr_table, ins, str);
+		mono_domain_unlock (domain);
 		return str;
 	}
+	mono_domain_unlock (domain);
 	g_free (ins);
 	return NULL;
 }
@@ -603,9 +609,12 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	size_t len2;
 		
 	sig = str = mono_metadata_user_string (image, idx);
-	
-	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig)))
+
+	mono_domain_lock (domain);
+	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig))) {
+		mono_domain_unlock (domain);
 		return o;
+	}
 	
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
@@ -622,6 +631,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	}
 #endif
 	mono_g_hash_table_insert (domain->ldstr_table, (gpointer)sig, o);
+	mono_domain_unlock (domain);
 
 	return o;
 }

@@ -17,6 +17,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 #include <mono/utils/mono-hash.h>
+#include <mono/io-layer/critical-sections.h>
 
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
@@ -57,6 +58,7 @@ typedef struct _MonoAppDomain MonoAppDomain;
 
 struct _MonoDomain {
 	MonoAppDomain      *domain;
+	CRITICAL_SECTION    lock;
 	MonoMemPool        *mp;
 	GHashTable         *env;
 	GHashTable         *assemblies;
@@ -77,6 +79,9 @@ struct _MonoAppDomain {
 };
 
 extern MonoDomain *mono_root_domain;
+
+#define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
+#define mono_domain_unlock(domain) LeaveCriticalSection(&(domain)->lock)
 
 MonoDomain*
 mono_init                  (const char *filename);
