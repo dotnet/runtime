@@ -1149,6 +1149,11 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	
 	signature_len = mono_metadata_decode_value (ptr, &ptr);
 
+	if (*ptr & 0x05){
+		g_string_append (res, "vararg ");
+		has_vararg = 1;
+	}
+
 	if (*ptr & 0x20){
 		if (*ptr & 0x40)
 			g_string_append (res, "explicit-this ");
@@ -1156,8 +1161,6 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 			g_string_append (res, "instance "); /* has-this */
 	}
 
-	if (*ptr & 0x05)
-		has_vararg = 1;
 	if (*ptr & 0x10)
 		gen_count = 1;
 	cconv = *ptr & 0x0f;
