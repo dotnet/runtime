@@ -160,7 +160,14 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	return regs;
 }
 
-#define flushi(addr)  __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
+#ifdef __GNUC__
+#define flushi(addr)    __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
+#else /* assume Sun's compiler */
+static void flushi(void *addr)
+{
+    asm("flush %i0");
+}
+#endif
 
 void
 mono_arch_flush_icache (guint8 *code, gint size)
@@ -2528,7 +2535,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		default:
+#ifdef __GNUC__
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+#else
+			g_warning ("%s:%d: unknown opcode %s\n", __FILE__, __LINE__, mono_inst_name (ins->opcode));
+#endif
 			g_assert_not_reached ();
 		}
 

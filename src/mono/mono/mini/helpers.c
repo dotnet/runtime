@@ -85,7 +85,11 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 #ifdef __APPLE__
 #define DIS_CMD "otool -V -v -t"
 #else
+#if defined(sparc) && !defined(__GNUC__)
+#define DIS_CMD "dis"
+#else
 #define DIS_CMD "objdump -d"
+#endif
 #endif
 	o_file = g_strdup_printf ("%s/test.o", tmp);    
 	cmd = g_strdup_printf ("as %s -o %s", as_file, o_file);
