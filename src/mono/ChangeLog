@@ -1,3 +1,7 @@
+2005-03-26  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in, */Makefile.am: fix up lib/lib64 type stuff
+
 2005-03-24  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (libgdiplus): Make more intuitive.
