@@ -1,3 +1,24 @@
+	<a href="http://www.ximian.com">Ximian</a> announced the
+	launch of the Mono project, an effort to create a <a
+	href="http://www.gnu.org/philosophy/free-sw.html">Free
+	Software</a> (sometimes called open source) implementation of
+	the .NET Development Framework.
+
+	You can read our <a href="rationale.html">rationale</a> for
+	this project.  If you have questions about the project, please
+	read our list of <a href="faq.html">Frequently Asked
+	Questions</a> or contact us.
+
+	You might also want to <a href="download.html">Download the
+	source</a> for our work so far.  
+
+	You might want to <a
+	href="resources.html#mailing">subscribe</a> to our mono-list
+	and mono-announce-list
+
+	You can contact the team at: <a
+	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
+
 ** Jul 17, 2001
 
 	Another release of the class libraries is out, check the <a
@@ -32,25 +53,7 @@
 
 ** Jul 9, 2001
 
-	Today <a href="http://www.ximian.com">Ximian</a> announced the
-	launch of the Mono
-	project, an effort to create a free software
-        (sometimes called open source) implementation of the .NET
-	Development Framework.
-
-	If you have questions about the
-	project, please read our list of <a
-	href="faq.html">Frequently Asked Questions</a>. 
-
-	You might also want to <a href="download.html">Download the
-	source</a> for our work so far.  
-
-	You might want to <a
-	href="resources.html#mailing">subscribe</a> to our mono-list
-	and mono-announce-list
-
-	You can contact the team at: <a
-	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
+	Project launched.
 
 ** O'Reilly
 
