@@ -28,6 +28,9 @@ extern struct _WapiHandlePrivate_list **_wapi_private_data;
 extern pthread_mutex_t _wapi_shared_mutex;
 extern guint32 _wapi_shm_mapped_segments;
 
+extern guint32 _wapi_fd_offset_table_size;
+extern gpointer *_wapi_fd_offset_table;
+
 extern guint32 _wapi_handle_new_internal (WapiHandleType type);
 extern gpointer _wapi_handle_new (WapiHandleType type);
 extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
@@ -92,6 +95,43 @@ extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 					       guint32 *old_access);
 extern void _wapi_handle_set_share (dev_t device, ino_t inode,
 				    guint32 sharemode, guint32 access);
+
+static inline void _wapi_handle_fd_offset_store (int fd, gpointer handle)
+{
+	g_assert (fd < _wapi_fd_offset_table_size);
+	g_assert (_wapi_fd_offset_table[fd]==NULL || handle==NULL);
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size || handle==NULL);
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Assigning fd offset %d to %p", fd,
+		   handle);
+#endif
+
+	_wapi_fd_offset_table[fd]=handle;
+}
+
+static inline gpointer _wapi_handle_fd_offset_to_handle (gpointer fd_handle)
+{
+	int fd = GPOINTER_TO_INT (fd_handle);
+	gpointer handle;
+	
+	if (fd >= _wapi_fd_offset_table_size) {
+		return(NULL);
+	}
+	
+	handle = _wapi_fd_offset_table[fd];
+	
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		return(NULL);
+	}
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Returning fd offset %d of %p", fd,
+		   handle);
+#endif
+
+	return(handle);
+}
 
 static inline struct _WapiHandleShared_list *_wapi_handle_get_shared_segment (guint32 segment)
 {
@@ -225,6 +265,10 @@ static inline WapiHandleType _wapi_handle_type (gpointer handle)
 	guint32 idx;
 	guint32 segment;
 	
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+	
 	_wapi_handle_segment (handle, &segment, &idx);
 
 	if(segment>=_wapi_shm_mapped_segments)
@@ -241,6 +285,8 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	guint32 segment;
 	struct _WapiHandleShared *shared_handle;
 	int thr_ret;
+	
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
 	
 	_wapi_handle_segment (handle, &segment, &idx);
 	shared_handle=&_wapi_handle_get_shared_segment (segment)->handles[idx];
@@ -317,6 +363,8 @@ static inline gboolean _wapi_handle_issignalled (gpointer handle)
 	guint32 idx;
 	guint32 segment;
 	
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
+	
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	return(_wapi_handle_get_shared_segment (segment)->handles[idx].signalled);
@@ -352,6 +400,8 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 	guint32 idx;
 	guint32 segment;
 	
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
+	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", handle);
 #endif
@@ -368,6 +418,8 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 	guint32 idx;
 	guint32 segment;
 	int ret;
+	
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", handle);

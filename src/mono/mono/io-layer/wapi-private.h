@@ -35,7 +35,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-#define _WAPI_HANDLE_VERSION 1
+#define _WAPI_HANDLE_VERSION 3
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -152,6 +152,7 @@ struct _WapiHandleShared_list
 {
 	guchar daemon[MONO_SIZEOF_SUNPATH];
 	_wapi_daemon_status daemon_running;
+	guint32 fd_offset_table_size;
 	
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	mono_mutex_t signal_mutex;

@@ -271,6 +271,9 @@ static void file_close_private (gpointer handle)
 		  handle, file_private_handle->fd);
 #endif
 	
+	/* Blank out the mapping, to make catching errors easier */
+	_wapi_handle_fd_offset_store (file_private_handle->fd, NULL);
+	
 	close(file_private_handle->fd);
 }
 
@@ -1142,6 +1145,9 @@ static void console_close_private (gpointer handle)
 		  console_private_handle->fd);
 #endif
 	
+	/* Blank out the mapping, to make catching errors easier */
+	_wapi_handle_fd_offset_store (console_private_handle->fd, NULL);
+	
 	close(console_private_handle->fd);
 }
 
@@ -1300,6 +1306,9 @@ static void pipe_close_private (gpointer handle)
 		  ": closing pipe handle %p with fd %d", handle,
 		  pipe_private_handle->fd);
 #endif
+	
+	/* Blank out the mapping, to make catching errors easier */
+	_wapi_handle_fd_offset_store (pipe_private_handle->fd, NULL);
 	
 	close(pipe_private_handle->fd);
 }
@@ -1619,6 +1628,19 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
+	if (fd >= _wapi_fd_offset_table_size) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": File descriptor is too big");
+#endif
+
+		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+		
+		close (fd);
+		g_free (filename);
+		
+		return(INVALID_HANDLE_VALUE);
+	}
+
 	ret = fstat (fd, &statbuf);
 	if (ret == -1) {
 #ifdef DEBUG
@@ -1705,7 +1727,9 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		close (fd);
 		goto cleanup;
 	}
-	cf_ret = handle;
+
+	_wapi_handle_fd_offset_store (fd, handle);
+	cf_ret = GINT_TO_POINTER (fd);
 
 	file_private_handle->fd=fd;
 	file_private_handle->assigned=TRUE;
@@ -1991,16 +2015,16 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 }
 
 static mono_once_t stdhandle_once=MONO_ONCE_INIT;
-static gpointer stdin_handle=NULL;
-static gpointer stdout_handle=NULL;
-static gpointer stderr_handle=NULL;
+static gpointer stdin_handle=INVALID_HANDLE_VALUE;
+static gpointer stdout_handle=INVALID_HANDLE_VALUE;
+static gpointer stderr_handle=INVALID_HANDLE_VALUE;
 
 static gpointer stdhandle_create (int fd, const guchar *name)
 {
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
-	gpointer handle, ret = NULL;
+	gpointer handle, ret = INVALID_HANDLE_VALUE;
 	int flags;
 	int thr_ret;
 	
@@ -2031,7 +2055,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating file handle");
-		return(NULL);
+		return(INVALID_HANDLE_VALUE);
 	}
 
 	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
@@ -2047,7 +2071,10 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 			   ": error looking up console handle %p", handle);
 		goto cleanup;
 	}
-	ret = handle;
+
+	/* We know this is fd 0, 1 or 2 */
+	_wapi_handle_fd_offset_store (fd, handle);
+	ret = GINT_TO_POINTER (fd);
 	
 	file_private_handle->fd=fd;
 	file_private_handle->assigned=TRUE;
@@ -2117,8 +2144,13 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		return(INVALID_HANDLE_VALUE);
 	}
 
+	if (handle == INVALID_HANDLE_VALUE) {
+		SetLastError (ERROR_NO_MORE_FILES);
+		return(INVALID_HANDLE_VALUE);
+	}
+	
 	/* Add a reference to this handle */
-	_wapi_handle_ref (handle);
+	_wapi_handle_ref (_wapi_handle_fd_offset_to_handle (handle));
 	
 	return(handle);
 }
@@ -2150,12 +2182,21 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
  * read due to an attempt to read past the end of the file), %FALSE on
  * error.
  */
-gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
+gboolean ReadFile(gpointer fd_handle, gpointer buffer, guint32 numbytes,
 		  guint32 *bytesread, WapiOverlapped *overlapped)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].readfile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2188,12 +2229,21 @@ gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
  *
  * Return value: %TRUE if the write succeeds, %FALSE on error.
  */
-gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
+gboolean WriteFile(gpointer fd_handle, gconstpointer buffer, guint32 numbytes,
 		   guint32 *byteswritten, WapiOverlapped *overlapped)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].writefile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2211,11 +2261,20 @@ gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean FlushFileBuffers(gpointer handle)
+gboolean FlushFileBuffers(gpointer fd_handle)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].flushfile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2232,11 +2291,20 @@ gboolean FlushFileBuffers(gpointer handle)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean SetEndOfFile(gpointer handle)
+gboolean SetEndOfFile(gpointer fd_handle)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].setendoffile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2272,13 +2340,22 @@ gboolean SetEndOfFile(gpointer handle)
  * If @highmovedistance is not %NULL, the high 32 bits of the new file
  * pointer are stored there.  On failure, %INVALID_SET_FILE_POINTER.
  */
-guint32 SetFilePointer(gpointer handle, gint32 movedistance,
+guint32 SetFilePointer(gpointer fd_handle, gint32 movedistance,
 		       gint32 *highmovedistance, WapiSeekMethod method)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_SET_FILE_POINTER);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].seek==NULL) {
-		return(FALSE);
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_SET_FILE_POINTER);
 	}
 	
 	return(io_ops[type].seek (handle, movedistance, highmovedistance,
@@ -2296,11 +2373,20 @@ guint32 SetFilePointer(gpointer handle, gint32 movedistance,
  * %FILE_TYPE_CHAR - @handle is a character device, such as a console.
  * %FILE_TYPE_PIPE - @handle is a named or anonymous pipe.
  */
-WapiFileType GetFileType(gpointer handle)
+WapiFileType GetFileType(gpointer fd_handle)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FILE_TYPE_UNKNOWN);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].getfiletype==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FILE_TYPE_UNKNOWN);
 	}
 	
@@ -2323,12 +2409,21 @@ WapiFileType GetFileType(gpointer handle)
  * @highsize is non-%NULL then the high 32 bits of the file size are
  * stored here.  On failure %INVALID_FILE_SIZE is returned.
  */
-guint32 GetFileSize(gpointer handle, guint32 *highsize)
+guint32 GetFileSize(gpointer fd_handle, guint32 *highsize)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_FILE_SIZE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].getfilesize==NULL) {
-		return(FALSE);
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_FILE_SIZE);
 	}
 	
 	return(io_ops[type].getfilesize (handle, highsize));
@@ -2359,12 +2454,21 @@ guint32 GetFileSize(gpointer handle, guint32 *highsize)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean GetFileTime(gpointer handle, WapiFileTime *create_time,
+gboolean GetFileTime(gpointer fd_handle, WapiFileTime *create_time,
 		     WapiFileTime *last_access, WapiFileTime *last_write)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].getfiletime==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2395,13 +2499,22 @@ gboolean GetFileTime(gpointer handle, WapiFileTime *create_time,
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean SetFileTime(gpointer handle, const WapiFileTime *create_time,
+gboolean SetFileTime(gpointer fd_handle, const WapiFileTime *create_time,
 		     const WapiFileTime *last_access,
 		     const WapiFileTime *last_write)
 {
-	WapiHandleType type=_wapi_handle_type (handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].setfiletime==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -3400,10 +3513,14 @@ extern gboolean SetCurrentDirectory (const gunichar2 *path)
 	return result;
 }
 
-int _wapi_file_handle_to_fd (gpointer handle)
+/* When we're confident there are no more bugs in the fd->handle
+ * mapping, this can be replaced as a no-op: GPOINTER_TO_INT(fd_handle) == fd
+ */
+int _wapi_file_handle_to_fd (gpointer fd_handle)
 {
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": looking up fd for %p", handle);
@@ -3431,6 +3548,8 @@ int _wapi_file_handle_to_fd (gpointer handle)
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %d",
 		   file_private_handle->fd);
 #endif
+	
+	g_assert (file_private_handle->fd == GPOINTER_TO_INT (fd_handle));
 	
 	return(file_private_handle->fd);
 }
@@ -3465,6 +3584,20 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 #endif
 		
 		_wapi_set_last_error_from_errno ();
+		return(FALSE);
+	}
+
+	if (filedes[0] >= _wapi_fd_offset_table_size ||
+	    filedes[1] >= _wapi_fd_offset_table_size) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": File descriptor is too big");
+#endif
+
+		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+		
+		close (filedes[0]);
+		close (filedes[1]);
+		
 		return(FALSE);
 	}
 	
@@ -3528,18 +3661,18 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	pipe_read_private_handle->assigned=TRUE;
 	pipe_read_handle->fileaccess=GENERIC_READ;
 	
-	*readpipe=read_handle;
+	_wapi_handle_fd_offset_store (filedes[0], read_handle);
+	*readpipe=GINT_TO_POINTER (filedes[0]);
 
 	pipe_write_private_handle->fd=filedes[1];
 	pipe_write_private_handle->assigned=TRUE;
 	pipe_write_handle->fileaccess=GENERIC_WRITE;
 	
-	*writepipe=write_handle;
+	_wapi_handle_fd_offset_store (filedes[1], write_handle);
+	*writepipe=GINT_TO_POINTER (filedes[1]);
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
-		   ": Returning pipe: read handle %p, write handle %p",
-		   read_handle, write_handle);
+	g_message (G_GNUC_PRETTY_FUNCTION ": Returning pipe: read handle %p (fd %d), write handle %p (fd %d)", read_handle, filedes[0], write_handle, filedes[1]);
 #endif
 
 write_cleanup:
@@ -3612,7 +3745,7 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 }
 
 gboolean
-_wapi_io_add_callback (gpointer handle,
+_wapi_io_add_callback (gpointer fd_handle,
 		       WapiOverlappedCB callback,
 		       guint64 flags G_GNUC_UNUSED)
 {
@@ -3621,6 +3754,12 @@ _wapi_io_add_callback (gpointer handle,
 	gboolean ok;
 	int thr_ret;
 	gboolean ret = FALSE;
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *) &file_handle,
@@ -3794,13 +3933,19 @@ static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length)
 	return(TRUE);
 }
 
-gboolean LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
+gboolean LockFile (gpointer fd_handle, guint32 offset_low, guint32 offset_high,
 		   guint32 length_low, guint32 length_high)
 {
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
 	off_t offset, length;
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *)&file_handle,
@@ -3846,13 +3991,20 @@ gboolean LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
 				       length));
 }
 
-gboolean UnlockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
-		     guint32 length_low, guint32 length_high)
+gboolean UnlockFile (gpointer fd_handle, guint32 offset_low,
+		     guint32 offset_high, guint32 length_low,
+		     guint32 length_high)
 {
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
 	off_t offset, length;
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *)&file_handle,

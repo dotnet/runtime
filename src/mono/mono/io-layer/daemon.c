@@ -1498,6 +1498,9 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 	/* Note that we've got the starting segment already */
 	_wapi_shared_data[0]->num_segments=1;
 	_wapi_shm_mapped_segments=1;
+
+	_wapi_fd_offset_table_size=getdtablesize ();
+	_wapi_shared_data[0]->fd_offset_table_size = _wapi_fd_offset_table_size;
 	
 	startup ();
 	
