@@ -4246,7 +4246,7 @@ freg: CONV_R_UN (lreg) {
 	x86_fst80_membase (s->code, X86_ESP, 0);
 
 	/* test if lreg is negative */
-	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
+	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
 	br [0] = s->code; x86_branch8 (s->code, X86_CC_GEZ, 0, TRUE);
 
 	/* add correction constant mn */
@@ -4254,7 +4254,7 @@ freg: CONV_R_UN (lreg) {
 	x86_fld80_membase (s->code, X86_ESP, 0);
 	x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
 	x86_fst80_membase (s->code, X86_ESP, 0);
-
+	//x86_breakpoint (s->code);
 	x86_patch (br [0], s->code);
 
 	x86_fld80_membase (s->code, X86_ESP, 0);
