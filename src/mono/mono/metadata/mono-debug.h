@@ -19,6 +19,7 @@ typedef struct _MonoDebugHandle			MonoDebugHandle;
 typedef struct _MonoDebugHandlePriv		MonoDebugHandlePriv;
 
 typedef struct _MonoDebugLineNumberEntry	MonoDebugLineNumberEntry;
+typedef struct _MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
 
 typedef struct _MonoDebugVarInfo		MonoDebugVarInfo;
 typedef struct _MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
@@ -113,6 +114,8 @@ struct _MonoDebugMethodJitInfo {
 	const guint8 *wrapper_addr;
 	guint32 num_line_numbers;
 	MonoDebugLineNumberEntry *line_numbers;
+	guint32 num_lexical_blocks;
+	MonoDebugLexicalBlockEntry *lexical_blocks;
 	guint32 num_params;
 	MonoDebugVarInfo *this_var;
 	MonoDebugVarInfo *params;
