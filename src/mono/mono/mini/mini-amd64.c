@@ -3205,15 +3205,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_set_membase (code, X86_CC_EQ, ins->inst_basereg, ins->inst_offset, TRUE);
 			break;
 		case OP_STOREI1_MEMBASE_IMM:
-			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 1);
 			break;
 		case OP_STOREI2_MEMBASE_IMM:
-			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 2);
 			break;
 		case OP_STOREI4_MEMBASE_IMM:
-			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 4);
 			break;
 		case OP_STOREI1_MEMBASE_REG:
