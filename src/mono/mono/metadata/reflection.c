@@ -9410,3 +9410,25 @@ mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDe
 
 	return get_declsec_action (assembly->image, idx, action, entry);
 }
+
+gboolean
+mono_reflection_call_is_assignable_from (MonoClass *klass, MonoClass *oklass)
+{
+	MonoObject *res, *exc;
+	void *params [1];
+	static MonoMethod *method = NULL;
+
+	if (method == NULL) {
+		method = mono_class_get_method_from_name (mono_defaults.monotype_class->parent, "IsAssignableFrom", 1);
+		g_assert (method);
+	}
+
+	params [0] = mono_type_get_object (mono_domain_get (), &oklass->byval_arg);
+
+	res = mono_runtime_invoke (method, mono_type_get_object (mono_domain_get (), &klass->byval_arg), params, &exc);
+	if (exc)
+		return FALSE;
+	else
+		return *(MonoBoolean*)mono_object_unbox (res);
+}
+

@@ -1023,6 +1023,9 @@ MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *do
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token);
 
+gboolean
+mono_reflection_call_is_assignable_from (MonoClass *klass, MonoClass *oklass);
+
 void
 mono_image_build_metadata (MonoReflectionModuleBuilder *module);
 
