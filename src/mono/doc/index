@@ -151,6 +151,21 @@
   </tr>
 </table>
 
+@item Aug 14th, 2003: Mono 0.26 has been released
+
+	A new version of Mono is available, the new features include:
+	<a href="http://www.cairographics.org/">Cairo support</a>, <a
+	href="http://remoting-corba.sf.net">Remoting.Corba</a>
+	support, as well as a managed XSLT implementation.  
+
+	Existing features have been improved vastly: better
+	Windows.Forms, runtime, faster compiler, web services, better
+	compliance to the spec and more. 
+
+	Check out the <a
+	href="http://www.go-mono.com/archive/mono-0.26.html">Release
+	notes</a> for details.
+
 @item Aug 9th, 2003: Python for .NET Preview 2 available;  Mono Documentation site up.
 
 	Brian Lloyd has <a
