@@ -38,7 +38,7 @@ mono_regset_reserve_reg (MonoRegSet *rs, int regnum)
 }
 
 int
-mono_regset_alloc_reg (MonoRegSet *rs, int regnum, gboolean exclude_edx)
+mono_regset_alloc_reg (MonoRegSet *rs, int regnum, guint8 exclude_mask)
 {
 	guint32 i, ind;
 
@@ -47,7 +47,7 @@ mono_regset_alloc_reg (MonoRegSet *rs, int regnum, gboolean exclude_edx)
 
 	if (regnum < 0) {
 		for (i = 0, ind = 1; i < rs->max_regs; i++, ind = ind << 1) {
-			if (exclude_edx && i == X86_EDX)
+			if (exclude_mask & ind)
 				continue;
 			if ((rs->free_mask & ind) && !(rs->reserved_mask & ind)) {
 				rs->free_mask &= ~ind;
@@ -57,10 +57,11 @@ mono_regset_alloc_reg (MonoRegSet *rs, int regnum, gboolean exclude_edx)
 		}
 		return -1;
 	} else {
-		if (exclude_edx && regnum == X86_EDX)
+		ind = 1 << regnum;
+
+		if (exclude_mask & ind)
 			return -1;
 
-		ind = 1 << regnum;
 		if ((rs->free_mask & ind) && !(rs->reserved_mask & ind)) {
 			rs->free_mask &= ~ind;
 			rs->used_mask |= ind;

@@ -26,7 +26,11 @@ TESTSRC=			\
 	intptrcast.cs		\
 	stream.cs		\
 	stream-writer.cs	\
-	console.cs
+	console.cs		\
+	jit-int.cs		\
+	jit-uint.cs		\
+	jit-long.cs		\
+	jit-ulong.cs	
 
 TESTS=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)

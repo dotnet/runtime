@@ -422,6 +422,7 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->data.f = *(float*)data;
 		return;
 	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
 		result->type = VAL_I64;
 		result->data.l = *(gint64*)data;
 		return;
@@ -489,6 +490,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_U:
 #endif
 	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
 		*(gint64*)data = val->data.l;
 		return;
 	case MONO_TYPE_R4:
@@ -1044,7 +1046,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDC_I4_S) 
 			++ip;
 			sp->type = VAL_I32;
-			sp->data.i = *ip; /* FIXME: signed? */
+			sp->data.i = *(gint8 *)ip;
 			++ip;
 			++sp;
 			BREAK;

@@ -108,17 +108,26 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 
 	if (goal == MB_NTERM_reg || (goal == MB_NTERM_lreg)) {
 		switch (tree->op) {
+		case MB_TERM_SHL:
+		case MB_TERM_SHR:
+		case MB_TERM_SHR_UN:
+			tree->exclude_mask |= (1 << X86_ECX);
+			tree->left->exclude_mask |= (1 << X86_ECX);
+			break;
 		case MB_TERM_CALL:
 		case MB_TERM_MUL:
 			tree->reg1 = X86_EAX;
 			tree->reg2 = X86_EDX;
 			break;
 		case MB_TERM_DIV:
+		case MB_TERM_DIV_UN:
+		case MB_TERM_REM:
+		case MB_TERM_REM_UN:
 			tree->reg1 = X86_EAX;
 			tree->reg2 = X86_EDX;
 			if (goal == MB_NTERM_reg) {
-				tree->left->exclude_edx = 1;
-				tree->right->exclude_edx = 1;
+				tree->left->exclude_mask |= (1 << X86_EDX);
+				tree->right->exclude_mask |= (1 << X86_EDX);
 			}
 			break;
 		default:
@@ -137,7 +146,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	switch (goal) {
 	case MB_NTERM_reg:
 		if ((tree->reg1 = 
-		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_edx)) == -1) {
+		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1) {
 			g_warning ("register allocation failed\n");
 			g_assert_not_reached ();
 		}
@@ -146,9 +155,9 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 
 	case MB_NTERM_lreg:
 		if ((tree->reg1 = 
-		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_edx)) == -1 ||
+		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1 ||
 		    (tree->reg2 = 
-		     mono_regset_alloc_reg (rs, tree->reg2, tree->exclude_edx)) == -1) {
+		     mono_regset_alloc_reg (rs, tree->reg2, tree->exclude_mask)) == -1) {
 			g_warning ("register allocation failed\n");
 			g_assert_not_reached ();
 		}
@@ -405,7 +414,7 @@ emit_method (MonoMethod *method, MBCodeGenStatus *s)
 }
 
 static gpointer
-create_jit_trampoline (MonoMethod *method)
+arch_create_jit_trampoline (MonoMethod *method)
 {
 	guint8 *code, *buf;
 
@@ -592,7 +601,7 @@ mono_compile_method (MonoMethod *method)
 			} else
 				fa = cli_addr;
 
-			cm->addr = create_jit_trampoline (cm);
+			cm->addr = arch_create_jit_trampoline (cm);
 			
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				t1 = ctree_new_leaf (mp, MB_TERM_CALL, csig->ret->type);
@@ -621,7 +630,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDC_I4_S: { 
 			++ip;
 			t1 = ctree_new_leaf (mp, MB_TERM_CONST_I4, MONO_TYPE_I4);
-			t1->data.i = *ip;
+			t1->data.i = *(gint8 *)ip;
 			++ip;
 			t1->cli_addr = cli_addr;
 			PUSH_TREE (t1);
@@ -749,14 +758,14 @@ mono_compile_method (MonoMethod *method)
 		MAKE_BI_ALU (AND)
 		MAKE_BI_ALU (OR)
 		MAKE_BI_ALU (XOR)
-			//MAKE_BI_ALU (SHL)
-			//MAKE_BI_ALU (SHR)
-			//MAKE_BI_ALU (SHR_UN)
+		MAKE_BI_ALU (SHL)
+		MAKE_BI_ALU (SHR)
+		MAKE_BI_ALU (SHR_UN)
 		MAKE_BI_ALU (MUL)
 		MAKE_BI_ALU (DIV)
-			//MAKE_BI_ALU (DIV_UN)
-			//MAKE_BI_ALU (REM)
-			//MAKE_BI_ALU (REM_UN)
+		MAKE_BI_ALU (DIV_UN)
+		MAKE_BI_ALU (REM)
+		MAKE_BI_ALU (REM_UN)
 
 	        case CEE_BR_S: {
 			++ip;
@@ -1006,7 +1015,7 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 	} else {
 		MonoMainIntVoid mfunc;
 
-		mfunc = create_jit_trampoline (method);
+		mfunc = arch_create_jit_trampoline (method);
 		res = mfunc ();
 	}
 	
