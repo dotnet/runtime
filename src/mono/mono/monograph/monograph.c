@@ -165,6 +165,7 @@ static int has_switch = 0;
 static int num_switch = 0;
 static int max_switch = 0;
 static int cast_sealed = 0;
+static int cast_iface = 0;
 static int total_cast = 0;
 static int nonvirt_callvirt = 0;
 static int total_callvirt = 0;
@@ -248,6 +249,8 @@ method_stats (MonoMethod *method) {
 				MonoClass *k = mono_class_get (method->klass->image, token);
 				if (k && k->flags & TYPE_ATTRIBUTE_SEALED)
 					cast_sealed++;
+				if (k && k->flags & TYPE_ATTRIBUTE_INTERFACE)
+					cast_iface++;
 				total_cast++;
 			}
 			ip += 5;
@@ -399,32 +402,69 @@ method_stats (MonoMethod *method) {
 	return;
 }
 
+static int num_pdepth = 0;
+static int max_pdepth = 0;
+static int num_ifaces = 0;
+
+static void
+type_stats (MonoClass *klass) {
+	MonoClass *parent;
+	int depth = 0;
+
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		num_ifaces++;
+		return;
+	}
+	parent = klass->parent;
+	while (parent) {
+		depth++;
+		parent = parent->parent;
+	}
+	num_pdepth += depth;
+	if (max_pdepth < depth)
+		max_pdepth = depth;
+}
+
 static void
 stats (MonoImage *image, const char *name) {
-	int i;
+	int i, num_methods, num_types;
 	MonoMethod *method;
+	MonoClass *klass;
 	
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		method_stats (method);
 	}
+	num_methods = image->tables [MONO_TABLE_METHOD].rows;
+	for (i = 0; i < image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | (i + 1));
+		type_stats (klass);
+	}
+	num_types = image->tables [MONO_TABLE_TYPEDEF].rows;
+
+	g_print ("Methods and code stats:\n");
 	g_print ("back branch waste: %d\n", back_branch_waste);
 	g_print ("branch waste: %d\n", branch_waste);
 	g_print ("var waste: %d\n", var_waste);
 	g_print ("int waste: %d\n", int_waste);
 	g_print ("nop waste: %d\n", nop_waste);
-	g_print ("has exceptions: %d/%d, total: %d, max: %d, mean: %f\n", has_exceptions, i, num_exceptions, max_exceptions, num_exceptions/(double)has_exceptions);
-	g_print ("has locals: %d/%d, total: %d, max: %d, mean: %f\n", has_locals, i, num_locals, max_locals, num_locals/(double)has_locals);
-	g_print ("has args: %d/%d, total: %d, max: %d, mean: %f\n", has_args, i, num_args, max_args, num_args/(double)has_args);
-	g_print ("has maxstack: %d/%d, total: %d, max: %d, mean: %f\n", has_maxstack, i, num_maxstack, max_maxstack, num_maxstack/(double)i);
-	g_print ("has code: %d/%d, total: %d, max: %d, mean: %f\n", has_code, i, num_code, max_code, num_code/(double)has_code);
-	g_print ("has branch: %d/%d, total: %d, max: %d, mean: %f\n", has_branch, i, num_branch, max_branch, num_branch/(double)has_branch);
-	g_print ("has condbranch: %d/%d, total: %d, max: %d, mean: %f\n", has_condbranch, i, num_condbranch, max_condbranch, num_condbranch/(double)has_condbranch);
-	g_print ("has switch: %d/%d, total: %d, max: %d, mean: %f\n", has_switch, i, num_switch, max_switch, num_switch/(double)has_switch);
-	g_print ("has calls: %d/%d, total: %d, max: %d, mean: %f\n", has_calls, i, num_calls, max_calls, num_calls/(double)has_calls);
-	g_print ("has throw: %d/%d, total: %d, max: %d, mean: %f\n", has_throw, i, num_throw, max_throw, num_throw/(double)has_throw);
+	g_print ("has exceptions: %d/%d, total: %d, max: %d, mean: %f\n", has_exceptions, num_methods, num_exceptions, max_exceptions, num_exceptions/(double)has_exceptions);
+	g_print ("has locals: %d/%d, total: %d, max: %d, mean: %f\n", has_locals, num_methods, num_locals, max_locals, num_locals/(double)has_locals);
+	g_print ("has args: %d/%d, total: %d, max: %d, mean: %f\n", has_args, num_methods, num_args, max_args, num_args/(double)has_args);
+	g_print ("has maxstack: %d/%d, total: %d, max: %d, mean: %f\n", has_maxstack, num_methods, num_maxstack, max_maxstack, num_maxstack/(double)i);
+	g_print ("has code: %d/%d, total: %d, max: %d, mean: %f\n", has_code, num_methods, num_code, max_code, num_code/(double)has_code);
+	g_print ("has branch: %d/%d, total: %d, max: %d, mean: %f\n", has_branch, num_methods, num_branch, max_branch, num_branch/(double)has_branch);
+	g_print ("has condbranch: %d/%d, total: %d, max: %d, mean: %f\n", has_condbranch, num_methods, num_condbranch, max_condbranch, num_condbranch/(double)has_condbranch);
+	g_print ("has switch: %d/%d, total: %d, max: %d, mean: %f\n", has_switch, num_methods, num_switch, max_switch, num_switch/(double)has_switch);
+	g_print ("has calls: %d/%d, total: %d, max: %d, mean: %f\n", has_calls, num_methods, num_calls, max_calls, num_calls/(double)has_calls);
+	g_print ("has throw: %d/%d, total: %d, max: %d, mean: %f\n", has_throw, num_methods, num_throw, max_throw, num_throw/(double)has_throw);
 	g_print ("sealed type cast: %d/%d\n", cast_sealed, total_cast);
+	g_print ("interface type cast: %d/%d\n", cast_iface, total_cast);
 	g_print ("non virtual callvirt: %d/%d\n", nonvirt_callvirt, total_callvirt);
+	
+	g_print ("\nType stats:\n");
+	g_print ("interface types: %d/%d\n", num_ifaces, num_types);
+	g_print ("parent depth: max: %d, mean: %d\n", max_pdepth, num_pdepth/(num_types - num_ifaces));
 }
 
 static char *
