@@ -151,6 +151,34 @@
 		* <A
 	href="http://developer.gnome.org/arch/">Architecture Overview</a>
 	</ul>
+	
+** Assembly Language Manuals online
 
-	
-	
+	<ul>
+		* <a href="http://www.agner.org/assem/#optimize">
+	Pentium optimization tutorial</a> by Agner Fog
+
+		* <a href="http://webster.cs.ucr.edu/">
+	Art of Assembly</a> (x86 only)
+
+		* Documentation for various CPUs
+	(<a href="http://www.mit.edu/afs/sipb/contrib/doc/specs/ic/cpu/">
+	x86, IA64, MIPS, ARM, Alpha</a>)
+
+		* <a href="http://www.heyrick.co.uk/assembler/">
+	ARM Assembler</a> tutorial
+
+		* PowerPC
+	<a href="http://www-3.ibm.com/chips/techlib/techlib.nsf/techdocs/852569B20050FF7785256996007558C6">
+	Compiler Writer's Guide</a>
+
+		* <a href="http://www.lightsoft.co.uk/Fantasm/Beginners/begin1.html">
+	Beginners Guide to PowerPC Assembler</a>
+	</ul>
+
+** Win32
+
+	<ul>
+		* Win32 <a href="http://www.jorgon.freeserve.co.uk/ExceptFrame.htm">
+	Structured Exception Handling (SEH)</a> internals (x86 specific)
+	</ul>
