@@ -53,6 +53,8 @@ static gpointer mono_jit_compile_method (MonoMethod *method);
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 
 			  const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native);
 
+static void dec_foreach (MonoInst *tree, MonoCompile *cfg);
+
 static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 		   int locals_offset, MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call);
@@ -1974,9 +1976,8 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	int nargs;
 	MonoCallInst *call;
 
-	/*g_print ("emulating: ");
-	mono_print_tree (tree);
-	g_print ("\n");*/
+	//g_print ("emulating: ");
+	//mono_print_tree_nl (tree);
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (info->sig->ret, FALSE, FALSE));
 	ins = (MonoInst*)call;
 	
@@ -2007,6 +2008,11 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		begin = store;
 
 	if (cfg->prev_ins) {
+		/* 
+		 * This assumes that that in a tree, emulate_opcode is called for a
+		 * node before it is called for its children. dec_foreach needs to
+		 * take this into account.
+		 */
 		store->next = cfg->prev_ins->next;
 		cfg->prev_ins->next = begin;
 	} else {
@@ -5729,6 +5735,7 @@ decompose_foreach (MonoInst *tree, gpointer data)
 	static MonoJitICallInfo *newarr_info = NULL;
 	static MonoJitICallInfo *newarr_specific_info = NULL;
 	MonoJitICallInfo *info;
+	int i;
 
 	switch (tree->opcode) {
 	case CEE_NEWARR: {
@@ -5759,6 +5766,10 @@ decompose_foreach (MonoInst *tree, gpointer data)
 		}
 
 		mono_emulate_opcode (cfg, tree, iargs, info);
+
+		/* Need to decompose arguments after the the opcode is decomposed */
+		for (i = 0; i < info->sig->param_count; ++i)
+			dec_foreach (iargs [i], cfg);
 		break;
 	}
 
@@ -6042,6 +6053,8 @@ static void
 dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 	MonoJitICallInfo *info;
 
+	decompose_foreach (tree, cfg);
+
 	switch (mono_burg_arity [tree->opcode]) {
 	case 0: break;
 	case 1: 
@@ -6089,7 +6102,6 @@ dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 	default:
 		g_assert_not_reached ();
 	}
-	decompose_foreach (tree, cfg);
 }
 
 static void
