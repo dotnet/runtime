@@ -92,7 +92,7 @@
                     </ul>
                   </td>
   		  <td bgcolor="#999999">
- 		    <b>Windows Setup Wizard (XP, 2000, NT)</b>
+ 		    <b>Windows Setup Wizard (XP, 2000, NT)</b> <img align="rigth" src="images/windows-36.png">
  		    <ul>
  	              <li><a href="archive/mono-0.24-win32-1.exe">Setup program.</a>
  	            </ul>
@@ -110,7 +110,7 @@
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
-		    <b>Mandrake 8.2/x86</b>
+		    <b>Mandrake 8.2/x86</b><img align="rigth" src="images/mandrake-36.png">
                     <ul>
 			<li><a href="archive/mandrake-82-i386/libgc-6.1-1.i586.rpm">libgc-6.1-1.i586.rpm</a>
 			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1-1.i586.rpm">libgc-devel-6.1-1.i586.rpm</a>
@@ -122,7 +122,7 @@
 
 		<tr>
  		  <td bgcolor="#999999"> 
- 		    <b>SuSE 8.0/x86</b> 
+ 		    <b>SuSE 8.0/x86</b> <img align="rigth" src="images/suse-36.png">
                      <ul> 
  			<li><a href="archive/suse-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a> 
  			<li><a href="archive/suse-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a> 
