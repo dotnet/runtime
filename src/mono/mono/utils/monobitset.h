@@ -4,6 +4,7 @@
 #include <glib.h>
 
 typedef struct MonoBitSet MonoBitSet;
+typedef void (*MonoBitSetFunc) (guint idx, gpointer data);
 
 enum {
 	MONO_BITSET_DONT_FREE = 1
@@ -35,6 +36,8 @@ guint32     mono_bitset_count        (MonoBitSet *set);
  * Find the first bit set _after_ (not including) pos.
  */
 int         mono_bitset_find_first   (MonoBitSet *set, gint pos);
+/* Equivalent to find_first (set, -1) but faster */
+int         mono_bitset_find_start   (MonoBitSet *set);
 
 /*
  * Find the first bit set _before_ (not including) pos.
@@ -53,5 +56,7 @@ void        mono_bitset_intersection (MonoBitSet *dest, MonoBitSet *src);
 void        mono_bitset_sub          (MonoBitSet *dest, MonoBitSet *src);
 
 gboolean    mono_bitset_equal        (MonoBitSet *src, MonoBitSet *src1);
+
+void        mono_bitset_foreach      (MonoBitSet *set, MonoBitSetFunc func, gpointer data);
 
 #endif /* __MONO_BITSET_H__ */
