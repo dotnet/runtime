@@ -1,3 +1,7 @@
+2003-01-26  Duncan Mak  <duncan@ximian.com>
+
+	* doc/jit-debug: Update the links. Thanks for Andy Oliver for the report.
+
 2003-01-22  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Set version number to 0.19.1.
