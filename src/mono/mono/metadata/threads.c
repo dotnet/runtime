@@ -84,11 +84,11 @@ static guint32 current_object_key = -1;
 static __thread MonoThread * tls_current_object;
 #define SET_CURRENT_OBJECT(x) do { \
 	tls_current_object = x; \
-	TlsSetValue (current_object_key, thread); \
+	TlsSetValue (current_object_key, x); \
 } while (FALSE)
 #define GET_CURRENT_OBJECT() tls_current_object
 #else
-#define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, thread);
+#define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, x);
 #define GET_CURRENT_OBJECT() (MonoThread*) TlsGetValue (current_object_key);
 #endif
 
