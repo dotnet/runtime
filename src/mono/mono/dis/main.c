@@ -398,13 +398,14 @@ dis_code (MonoImage *m, guint32 rva)
 	MonoCLIImageInfo *ii = m->image_info;
 	const char *ptr = mono_cli_rva_map (ii, rva);
 	const char *loc;
+	guint32 entry_point;
 
 	if (rva == 0)
 		return;
 
 	mh = mono_metadata_parse_mh (m, ptr);
-	if (ii->cli_cli_header.ch_entry_point){
-		loc = mono_metadata_locate_token (m, ii->cli_cli_header.ch_entry_point);
+	if ((entry_point = mono_image_get_entry_point (m))){
+		loc = mono_metadata_locate_token (m, entry_point);
 		if (rva == read32 (loc))
 			fprintf (output, "\t.entrypoint\n");
 	}
