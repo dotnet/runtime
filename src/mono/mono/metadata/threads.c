@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include <mono/metadata/object.h>
-#include <mono/metadata/appdomain.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threadpool.h>

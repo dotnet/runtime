@@ -16,7 +16,7 @@
 #include <mono/os/gc_wrapper.h>
 
 #include <mono/metadata/object.h>
-#include <mono/metadata/appdomain.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/cil-coff.h>
@@ -659,6 +659,12 @@ mono_domain_get_by_id (gint32 domainid)
 	LeaveCriticalSection (&appdomains_mutex);
 
 	return domain;
+}
+
+gint32
+mono_domain_get_id (MonoDomain *domain)
+{
+	return domain->domain_id;
 }
 
 void 

@@ -2,6 +2,7 @@
 #include <glib.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/domain-internals.h>
 #include "config.h"
 
 enum {

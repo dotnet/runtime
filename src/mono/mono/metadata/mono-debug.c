@@ -421,13 +421,14 @@ MonoDebugDomainData *
 mono_debug_get_domain_data (MonoDebugHandle *handle, MonoDomain *domain)
 {
 	MonoDebugDomainData *data;
+	int domain_id = mono_domain_get_id (domain);
 
 	for (data = handle->_priv->domain_table; data; data = data->_priv->next)
-		if (data->domain_id == domain->domain_id)
+		if (data->domain_id == domain_id)
 			return data;
 
 	data = g_new0 (MonoDebugDomainData, 1);
-	data->domain_id = domain->domain_id;
+	data->domain_id = domain_id;
 	data->jit = g_new0 (MonoDebugMethodJitInfo *, read32(&(handle->symfile->offset_table->_method_count)) + 1);
 
 	data->_priv = g_new0 (MonoDebugDomainDataPriv, 1);

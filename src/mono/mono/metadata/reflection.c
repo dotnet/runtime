@@ -12,7 +12,7 @@
 #include "mono/metadata/reflection.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
-#include "mono/metadata/appdomain.h"
+#include "mono/metadata/domain-internals.h"
 #include "mono/metadata/opcodes.h"
 #include "mono/metadata/assembly.h"
 #include <mono/metadata/exception.h>

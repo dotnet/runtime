@@ -11,6 +11,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 
 #include "mini-arch.h"

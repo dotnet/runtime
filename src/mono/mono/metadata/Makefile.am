@@ -90,6 +90,7 @@ libmonoruntime_la_SOURCES = \
 libmetadata_la_SOURCES = \
 	assembly.c	\
 	domain.c	\
+	domain-internals.h	\
 	opcodes.c	\
 	image.c		\
 	metadata.c	\

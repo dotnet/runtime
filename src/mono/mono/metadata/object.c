@@ -19,7 +19,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/exception.h>
-#include <mono/metadata/appdomain.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/marshal.h>
