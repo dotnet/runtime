@@ -129,17 +129,18 @@ mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 			res = (MonoObject *)mono_array_new_full (dst, klass, sizes, sizes + klass->rank);
 		}
 		if (klass->element_class->valuetype) {
-			memcpy (res, (char *)ao + sizeof(MonoArray), esize * ecount);
+			memcpy (((MonoArray *)res)->vector, ao->vector, esize * ecount);
 		} else {
 			g_assert (esize == sizeof (gpointer));
 			for (i = 0; i < ecount; i++) {
-				int offset = sizeof (MonoArray) + esize * i;
-				gpointer *src_ea = (gpointer *)((char *)ao + offset);
-				gpointer *dst_ea = (gpointer *)((char *)res + offset);
+				gpointer *src_ea = (gpointer *)mono_array_addr_with_size (ao, esize, i);
+				gpointer *dst_ea = (gpointer *)mono_array_addr_with_size ((MonoArray *)res, esize, i);
 
 				*dst_ea = mono_domain_transfer_object (src, dst, *src_ea);
 			}
 		}
+	} else if (klass->valuetype) {
+		res = mono_value_box (dst, klass, (char *)obj + sizeof (MonoObject));
 	} else if (klass == mono_defaults.string_class) {
 		MonoString *str = (MonoString *)obj;
 		res = (MonoObject *)mono_string_new_utf16 (dst, 
@@ -185,7 +186,7 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	else if (!strcmp (str, "FORCE_CACHE_INSTALL"))
 		o = (MonoObject *)add->setup->shadow_copy_files;
 	else 
-		o = g_hash_table_lookup (add->env, str);
+		o = mono_g_hash_table_lookup (add->env, name);
 
 	mono_domain_unlock (add);
 	g_free (str);
@@ -202,19 +203,16 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 	MonoDomain *add = ad->data;
 	MonoDomain *cur = mono_domain_get ();
 	MonoObject *o;
-	char *str;
 
 	g_assert (ad != NULL);
 	g_assert (name != NULL);
 
 	o = mono_domain_transfer_object (cur, add, data);
 
-	/* fixme: need a hash func for MonoString */
-	str = mono_string_to_utf8 (name);
 	mono_domain_lock (add);
-	g_hash_table_insert (add->env, str, o);
+	g_hash_table_insert (add->env, name, o);
+
 	mono_domain_unlock (add);
-	g_free (str);
 }
 
 MonoAppDomainSetup *

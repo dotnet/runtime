@@ -65,7 +65,7 @@ struct _MonoDomain {
 	CRITICAL_SECTION    lock;
 	MonoMemPool        *mp;
 	MonoMemPool        *code_mp;
-	GHashTable         *env;
+	MonoGHashTable     *env;
 	GHashTable         *assemblies;
 	MonoAppDomainSetup *setup;
 	char               *friendly_name;

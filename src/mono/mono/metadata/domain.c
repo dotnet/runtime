@@ -125,6 +125,33 @@ ldstr_equal (const char *str1, const char *str2) {
 	return memcmp (str1, str2, len) == 0;
 }
 
+static gboolean
+mono_string_equal (MonoString *s1, MonoString *s2)
+{
+	int l1 = mono_string_length (s1);
+	int l2 = mono_string_length (s2);
+
+	if (l1 != l2)
+		return FALSE;
+
+	return memcmp (mono_string_chars (s1), mono_string_chars (s2), l1) == 0; 
+}
+
+static guint
+mono_string_hash (MonoString *s)
+{
+	const guint16 *p = mono_string_chars (s);
+	int i, len = mono_string_length (s);
+	guint h = 0;
+
+	for (i = 0; i < len; i++) {
+		h = (h << 5) - h + *p;
+		p++;
+	}
+
+	return h;	
+}
+
 #if HAVE_BOEHM_GC
 static void
 domain_finalizer (void *obj, void *data) {
@@ -149,7 +176,7 @@ mono_domain_create (void)
 
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_mempool_new ();
-	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
+	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->proxy_vtable_hash = mono_g_hash_table_new (NULL, NULL);
@@ -447,7 +474,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	g_free (domain->friendly_name);
 	g_hash_table_foreach (domain->assemblies, remove_assembly, NULL);
 
-	g_hash_table_destroy (domain->env);
+	mono_g_hash_table_destroy (domain->env);
 	g_hash_table_destroy (domain->assemblies);
 	mono_g_hash_table_destroy (domain->class_vtable_hash);
 	mono_g_hash_table_destroy (domain->proxy_vtable_hash);

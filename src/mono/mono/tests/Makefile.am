@@ -101,6 +101,7 @@ TEST_CS_SRC=			\
 	pop.cs			\
 	time.cs			\
 	appdomain.cs		\
+	appdomain1.cs		\
 	appdomain-client.cs	\
 	pointer.cs		\
 	vararg.cs		\
