@@ -1,3 +1,8 @@
+2004-06-24  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/net_2_0/Makefile.am (gac_assemblies_list): Don't mention nunit.*.
+	Fix for #60443.
+
 2004-06-22  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (bootstrap) [PLATFORM_WIN32]: Make two-stage.
