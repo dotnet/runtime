@@ -664,13 +664,21 @@ void mono_gc_cleanup (void)
 void
 mono_gc_disable (void)
 {
+#ifdef HAVE_GC_ENABLE
 	GC_disable ();
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 void
 mono_gc_enable (void)
 {
+#ifdef HAVE_GC_ENABLE
 	GC_enable ();
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 #else
