@@ -229,6 +229,7 @@ again:
 	} else {
 		pthread_mutex_lock (&scan_mutex);
 		idx=_wapi_handle_new_internal (type);
+		_wapi_shared_data->handles[idx].ref++;
 		pthread_mutex_unlock (&scan_mutex);
 	}
 		
