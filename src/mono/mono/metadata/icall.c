@@ -1794,7 +1794,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 }
 
 static MonoReflectionType*
-ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
+ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
 	gchar *str;
 	MonoType *type;
@@ -2929,7 +2929,7 @@ static gconstpointer icall_map [] = {
 
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
-	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
+	"System.Reflection.Assembly::InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType,
 	"System.Reflection.Assembly::GetTypes", ves_icall_System_Reflection_Assembly_GetTypes,
 	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,

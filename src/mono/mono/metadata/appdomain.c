@@ -26,6 +26,8 @@ CRITICAL_SECTION mono_delegate_section;
 
 static MonoObject *
 mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj);
+static void
+mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
 /*
  * mono_runtime_init:
@@ -42,6 +44,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb)
 	MonoAppDomain *ad;
 	MonoClass *class;
 	
+	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
+
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
 	ves_icall_System_AppDomainSetup_InitAppDomainSetup (setup);
@@ -534,6 +538,71 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 	return res;
 }
 
+/*
+ * Used to find methods in AppDomain class.
+ * It only works if there are no multiple signatures for any given method name
+ */
+static MonoMethod *
+look_for_method_by_name (MonoClass *klass, const gchar *name)
+{
+	gint i;
+	MonoMethod *method;
+
+	for (i = 0; i < klass->method.count; i++) {
+		method = klass->methods [i];
+		if (!strcmp (method->name, name))
+			return method;
+	}
+
+	return NULL;
+}
+
+static MonoReflectionAssembly *
+try_assembly_resolve (MonoDomain *domain, MonoString *fname)
+{
+	MonoClass *klass;
+	MonoMethod *method;
+	void *params [1];
+
+	g_assert (domain != NULL && fname != NULL);
+
+	klass = domain->domain->object.vtable->klass;
+	g_assert (klass);
+	
+	method = look_for_method_by_name (klass, "DoAssemblyResolve");
+	if (method == NULL) {
+		g_warning ("Method AppDomain.DoAssemblyResolve not found.\n");
+		return NULL;
+	}
+
+	*params = fname;
+	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
+}
+
+static void
+mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoReflectionAssembly *ref_assembly;
+	MonoClass *klass;
+	MonoMethod *method;
+	void *params [1];
+
+	klass = domain->domain->object.vtable->klass;
+	
+	method = look_for_method_by_name (klass, "DoAssemblyLoad");
+	if (method == NULL) {
+		g_warning ("Method AppDomain.DoAssemblyLoad not found.\n");
+		return;
+	}
+
+	ref_assembly = mono_assembly_get_object (domain, assembly);
+	g_assert (ref_assembly);
+
+	*params = ref_assembly;
+	mono_runtime_invoke (method, domain->domain, params, NULL);
+}
+
 MonoReflectionAssembly *
 ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 {
@@ -569,6 +638,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
 	MonoAssemblyName aname;
+	MonoReflectionAssembly *refass = NULL;
 
 	memset (&aname, 0, sizeof (aname));
 
@@ -585,11 +655,14 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 	
 	g_free (name);
 
-	if (!ass) {
+	if (!ass && (refass = try_assembly_resolve (domain, assRef->name)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
 		MonoException *exc = mono_get_exception_file_not_found (assRef->name);
 		mono_raise_exception (exc);
 	}
+
+	if (refass != NULL)
+		return refass;
 
 	return mono_assembly_get_object (domain, ass);
 }
@@ -632,7 +705,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	margs = mono_domain_transfer_object (cdom, ad->data, (MonoObject *)args);
 	if (!margs)
-		margs = mono_array_new (ad->data, mono_defaults.string_class, 0);
+		margs = (MonoObject *) mono_array_new (ad->data, mono_defaults.string_class, 0);
 	res = mono_runtime_exec_main (method, (MonoArray *)margs, NULL);
 
 	mono_domain_set (cdom);
