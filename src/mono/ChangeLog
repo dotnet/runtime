@@ -1,3 +1,9 @@
+2004-11-12  Jonathan Pryor <jonpryor@vt.edu>
+
+	* configure.in: Check for `struct dirent' members which don't exist across
+	  all Unix platforms.
+	* support/dirent.c: Only access members which exist on the target platform.
+
 2004-11-08  Jonathan Pryor <jonpryor@vt.edu>
 
 	* configure.in: Add new function/header/type checks for use by

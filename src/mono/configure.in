@@ -1025,15 +1025,22 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
 	AC_CHECK_FUNCS(posix_fadvise)
+	AC_CHECK_FUNCS(posix_madvise)
 	AC_CHECK_FUNCS(posix_fallocate)
 	AC_CHECK_FUNCS(fgetgrent)
 	AC_CHECK_FUNCS(fgetpwent)
 	AC_CHECK_FUNCS(fgetpwent)
 	AC_CHECK_HEADERS(sys/sendfile.h)
 	AC_CHECK_FUNCS(sendfile)
+	AC_CHECK_FUNCS(sethostid)
 	AC_CHECK_FUNCS(stime)
+	AC_CHECK_FUNCS(strerror_r)
 	AC_CHECK_FUNCS(ttyname_r)
 	AC_CHECK_SIZEOF(size_t)
+	AC_CHECK_MEMBERS(
+		[struct dirent.d_off, struct dirent.d_reclen, struct dirent.d_type],,, 
+		[#include <sys/types.h>
+		 #include <dirent.h>])
 else
 	jdk_headers_found=no
 	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
