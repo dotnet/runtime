@@ -27,6 +27,11 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
 
+static void     setup_filter          (MonoImage *image);
+static gboolean should_include_type   (int idx);
+static gboolean should_include_method (int idx);
+static gboolean should_include_field  (int idx);
+
 FILE *output;
 
 /* True if you want to get a dump of the header data */
@@ -368,7 +373,9 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 	for (i = start; i < end; i++){
 		char *sig, *flags, *attrs = NULL;
 		guint32 field_offset = -1;
-		
+
+		if (!should_include_field (i + 1))
+			continue;
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_SIZE);
 		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
@@ -740,7 +747,9 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		const char *sig;
 		char *sig_str;
 		guint32 token;
-		
+
+		if (!should_include_method (i + 1))
+			continue;
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 
 		flags = method_flags (cols [MONO_METHOD_FLAGS]);
@@ -822,12 +831,13 @@ dis_property_methods (MonoImage *m, guint32 prop)
 	const char *type[] = {NULL, ".set", ".get", NULL, ".other"};
 
 	start = mono_metadata_methods_from_property (m, prop, &end);
-	while (start < end) {
+	for (; start < end; ++start) {
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
+		if (!should_include_method (cols [MONO_METHOD_SEMA_METHOD]))
+			continue;
 		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], TRUE);
 		fprintf (output, "\t\t%s %s\n", type [cols [MONO_METHOD_SEMA_SEMANTICS]], sig);
 		g_free (sig);
-		++start;
 	}
 }
 static char*
@@ -934,8 +944,10 @@ dis_event_methods (MonoImage *m, guint32 event)
 	const char *type = "";
 
 	start = mono_metadata_methods_from_event (m, event, &end);
-	while (start < end) {
+	for (; start < end; ++start) {
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
+		if (!should_include_method (cols [MONO_METHOD_SEMA_METHOD]))
+			continue;
 		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], TRUE);
 		switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 		case METHOD_SEMANTIC_OTHER:
@@ -951,7 +963,6 @@ dis_event_methods (MonoImage *m, guint32 event)
 		}
 		fprintf (output, "\t\t%s %s\n", type, sig);
 		g_free (sig);
-		++start;
 	}
 }
 
@@ -1098,6 +1109,8 @@ dis_type (MonoImage *m, int n)
 	gboolean next_is_valid, last;
 	guint32 nested;
 
+	if (!should_include_type (n + 1))
+		return;
 	mono_metadata_decode_row (t, n, cols, MONO_TYPEDEF_SIZE);
 
 	if (t->rows > n + 1) {
@@ -1352,6 +1365,8 @@ disassemble_file (const char *file)
 
 	img = ass->image;
 
+	setup_filter (img);
+
 	if (dump_table != -1){
 		(*table_list [dump_table].dumper) (img);
 	} else {
@@ -1369,10 +1384,188 @@ disassemble_file (const char *file)
 	mono_image_close (img);
 }
 
+typedef struct {
+	int size;
+	int count;
+	int *elems;
+} TableFilter;
+
+typedef struct {
+	char *name;
+	char *guid;
+	TableFilter types;
+	TableFilter fields;
+	TableFilter methods;
+} ImageFilter;
+
+static GList *filter_list = NULL;
+static ImageFilter *cur_filter = NULL;
+
+static void     
+setup_filter (MonoImage *image)
+{
+	ImageFilter *ifilter;
+	GList *item;
+	const char *name = mono_image_get_name (image);
+
+	for (item = filter_list; item; item = item->next) {
+		ifilter = item->data;
+		if (strcmp (ifilter->name, name) == 0) {
+			cur_filter = ifilter;
+			return;
+		}
+	}
+	cur_filter = NULL;
+}
+
+static int
+int_cmp (const void *e1, const void *e2)
+{
+	const int *i1 = e1;
+	const int *i2 = e2;
+	return *i1 - *i2;
+}
+
+static gboolean 
+table_includes (TableFilter *tf, int idx)
+{
+	if (!tf->count)
+		return FALSE;
+	return bsearch (&idx, tf->elems, tf->count, sizeof (int), int_cmp) != NULL;
+}
+
+static gboolean 
+should_include_type (int idx)
+{
+	if (!cur_filter)
+		return TRUE;
+	return table_includes (&cur_filter->types, idx);
+}
+
+static gboolean
+should_include_method (int idx)
+{
+	if (!cur_filter)
+		return TRUE;
+	return table_includes (&cur_filter->methods, idx);
+}
+
+static gboolean
+should_include_field (int idx)
+{
+	if (!cur_filter)
+		return TRUE;
+	return table_includes (&cur_filter->fields, idx);
+}
+
+static ImageFilter*
+add_filter (const char *name)
+{
+	ImageFilter *ifilter;
+	GList *item;
+
+	for (item = filter_list; item; item = item->next) {
+		ifilter = item->data;
+		if (strcmp (ifilter->name, name) == 0)
+			return ifilter;
+	}
+	ifilter = g_new0 (ImageFilter, 1);
+	ifilter->name = g_strdup (name);
+	filter_list = g_list_prepend (filter_list, ifilter);
+	return ifilter;
+}
+
+static void
+add_item (TableFilter *tf, int val)
+{
+	if (tf->count >= tf->size) {
+		if (!tf->size) {
+			tf->size = 8;
+			tf->elems = g_malloc (sizeof (int) * tf->size);
+		} else {
+			tf->size *= 2;
+			tf->elems = g_realloc (tf->elems, sizeof (int) * tf->size);
+		}
+	}
+	tf->elems [tf->count++] = val;
+}
+
+static void
+sort_filter_elems (void)
+{
+	ImageFilter *ifilter;
+	GList *item;
+
+	for (item = filter_list; item; item = item->next) {
+		ifilter = item->data;
+		qsort (ifilter->types.elems, ifilter->types.count, sizeof (int), int_cmp);
+		qsort (ifilter->fields.elems, ifilter->fields.count, sizeof (int), int_cmp);
+		qsort (ifilter->methods.elems, ifilter->methods.count, sizeof (int), int_cmp);
+	}
+}
+
+static void
+load_filter (const char* filename)
+{
+	FILE *file;
+	char buf [1024];
+	char *p, *s, *endptr;
+	int line = 0;
+	ImageFilter *ifilter = NULL;
+	int value = 0;
+	
+	if (!(file = fopen (filename, "r"))) {
+		g_print ("Cannot open filter file '%s'\n", filename);
+		exit (1);
+	}
+	while (fgets (buf, sizeof (buf), file) != NULL) {
+		++line;
+		s = buf;
+		while (*s && g_ascii_isspace (*s)) ++s;
+		switch (*s) {
+		case 0:
+		case '#':
+			break;
+		case '[':
+			p = strchr (s, ']');
+			if (!p)
+				g_error ("No matching ']' in filter at line %d\n", line);
+			*p = 0;
+			ifilter = add_filter (s + 1);
+			break;
+		case 'T':
+			if (!ifilter)
+				g_error ("Invalid format in filter at line %d\n", line);
+			if ((s [1] != ':') || !(value = strtol (s + 2, &endptr, 0)) || (endptr == s + 2))
+				g_error ("Invalid type number in filter at line %d\n", line);
+			add_item (&ifilter->types, value);
+			break;
+		case 'M':
+			if (!ifilter)
+				g_error ("Invalid format in filter at line %d\n", line);
+			if ((s [1] != ':') || !(value = strtol (s + 2, &endptr, 0)) || (endptr == s + 2))
+				g_error ("Invalid method number in filter at line %d\n", line);
+			add_item (&ifilter->methods, value);
+			break;
+		case 'F':
+			if (!ifilter)
+				g_error ("Invalid format in filter at line %d\n", line);
+			if ((s [1] != ':') || !(value = strtol (s + 2, &endptr, 0)) || (endptr == s + 2))
+				g_error ("Invalid field number in filter at line %d\n", line);
+			add_item (&ifilter->fields, value);
+			break;
+		default:
+			g_error ("Invalid format in filter at line %d\n", line);
+		}
+	}
+	fclose (file);
+	sort_filter_elems ();
+}
+
 static void
 usage (void)
 {
-	GString *args = g_string_new ("[--output=filename] [--help] [--mscorlib]\n");
+	GString *args = g_string_new ("[--output=filename] [--filter=filename] [--help] [--mscorlib]\n");
 	int i;
 	
 	for (i = 0; table_list [i].name != NULL; i++){
@@ -1417,6 +1610,9 @@ main (int argc, char *argv [])
 						 argv [i]+9, strerror (errno));
 					exit (1);
 				}
+				continue;
+			} else if (strncmp (argv [i], "--filter=", 9) == 0) {
+				load_filter (argv [i]+9);
 				continue;
 			} else if (strcmp (argv [i], "--help") == 0)
 				usage ();
