@@ -2803,10 +2803,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (method->signature->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
-	else if (generic_container) {
-		generic_context = g_new0 (MonoGenericContext, 1);
-		generic_context->container = generic_container;
-	}
+	else if (generic_container)
+		generic_context = generic_container->context;
 
 	if (cfg->method == method) {
 		real_offset = 0;
