@@ -217,7 +217,7 @@ get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
 		klass = obj->klass;
 	for (; klass ; klass = klass->parent) {
 		for (i = 0; i < klass->method.count; ++i) {
-			if (!klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
+			if (!(klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				continue;
 			if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature)) {
 				return klass->methods [i];
@@ -362,10 +362,18 @@ void inline
 stackval_from_data (MonoType *type, stackval *result, const char *data)
 {
 	if (type->byref) {
-		if (type->type == MONO_TYPE_VALUETYPE)
-			result->type = VAL_VALUETA;
-		else
+		switch (type->type) {
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
 			result->type = VAL_OBJ;
+			break;
+		default:
+			result->type = VAL_VALUETA;
+			break;
+		}
 		result->data.p = *(gpointer*)data;
 		result->data.vt.klass = mono_class_from_mono_type (type);
 		return;
@@ -949,6 +957,8 @@ ves_exec_method (MonoInvocation *frame)
 			if ((LOCAL_TYPE (header, n))->type == MONO_TYPE_I4) {
 				sp->type = VAL_I32;
 				sp->data.i = *(gint32*) LOCAL_POS (n);
+				++sp;
+				BREAK;
 			} else {
 				vt_alloc (LOCAL_TYPE (header, n), sp);
 				stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
@@ -966,11 +976,12 @@ ves_exec_method (MonoInvocation *frame)
 			if ((LOCAL_TYPE (header, n))->type == MONO_TYPE_I4) {
 				gint32 *p = (gint32*)LOCAL_POS (n);
 				*p = sp->data.i;
+				BREAK;
 			} else {
 				stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
 				vt_free (sp);
+				BREAK;
 			}
-			BREAK;
 		}
 		CASE (CEE_LDARG_S)
 			++ip;
@@ -1367,12 +1378,14 @@ ves_exec_method (MonoInvocation *frame)
 				result = (gint)GET_NATI(sp[0]) < (gint)GET_NATI(sp[1]);
 			if (result) {
 				if (near_jump)
-					ip += (signed char)*ip;
+					ip += 1 + (signed char)*ip;
 				else
-					ip += (gint32) read32 (ip);
+					ip += 4 + (gint32) read32 (ip);
+				BREAK;
+			} else {
+				ip += near_jump ? 1: 4;
+				BREAK;
 			}
-			ip += near_jump ? 1: 4;
-			BREAK;
 		}
 		CASE (CEE_BLE) /* fall through */
 		CASE (CEE_BLE_S) {
@@ -3163,7 +3176,14 @@ ves_exec_method (MonoInvocation *frame)
 								 * and fault blocks before branching to the handler code.
 								 */
 								inv->ex_handler = clause;
-								goto handle_finally;
+								/*
+								 * It seems that if the catch handler is found in the same method,
+								 * it gets executed before the finally handler.
+								 */
+								if (inv == frame)
+									goto handle_fault;
+								else
+									goto handle_finally;
 							}
 					} else {
 						/* FIXME: handle filter clauses */

@@ -235,25 +235,77 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			class->valuetype = 1;
 			class->enumtype = 1;
 		}
-		if (class->valuetype) {
-			int t = MONO_TYPE_VALUETYPE;
-			/* 
-			 * FIXME: add more cases so that we use the simpler monotype
-			 * for the fundamental types.
-			 */
+	}
+	
+	if (class->valuetype) {
+		int t = MONO_TYPE_VALUETYPE;
+		if (!strcmp (nspace, "System")) {
 			switch (*name) {
+			case 'B':
+				if (!strcmp (name, "Boolean")) {
+					t = MONO_TYPE_BOOLEAN;
+				} else if (!strcmp(name, "Byte")) {
+					t = MONO_TYPE_U1;
+				}
+				break;
+			case 'C':
+				if (!strcmp (name, "Char")) {
+					t = MONO_TYPE_CHAR;
+				}
+				break;
+			case 'D':
+				if (!strcmp (name, "Double")) {
+					t = MONO_TYPE_R8;
+				}
+				break;
 			case 'I':
 				if (!strcmp (name, "Int32")) {
 					t = MONO_TYPE_I4;
+				} else if (!strcmp(name, "Int16")) {
+					t = MONO_TYPE_I2;
+				} else if (!strcmp(name, "Int64")) {
+					t = MONO_TYPE_I8;
+				} else if (!strcmp(name, "IntPtr")) {
+					t = MONO_TYPE_I;
+				}
+				break;
+			case 'O':
+				if (!strcmp (name, "Object")) {
+					t = MONO_TYPE_OBJECT;
+				}
+				break;
+			case 'S':
+				if (!strcmp (name, "Single")) {
+					t = MONO_TYPE_R4;
+				} else if (!strcmp(name, "String")) {
+					t = MONO_TYPE_STRING;
+				} else if (!strcmp(name, "SByte")) {
+					t = MONO_TYPE_I1;
+				}
+				break;
+			case 'U':
+				if (!strcmp (name, "UInt32")) {
+					t = MONO_TYPE_U4;
+				} else if (!strcmp(name, "UInt16")) {
+					t = MONO_TYPE_U2;
+				} else if (!strcmp(name, "UInt64")) {
+					t = MONO_TYPE_U8;
+				} else if (!strcmp(name, "UIntPtr")) {
+					t = MONO_TYPE_U;
+				}
+				break;
+			case 'V':
+				if (!strcmp (name, "Void")) {
+					t = MONO_TYPE_CHAR;
 				}
 				break;
 			default:
 				break;
 			}
-			class->this_arg.type = class->byval_arg.type = t;
 		}
+		class->this_arg.type = class->byval_arg.type = t;
 	}
-	
+
 	/*
 	 * Compute the field and method lists
 	 */
