@@ -11,6 +11,11 @@
 #include <glib.h>
 #include <mono/os/gc_wrapper.h>
 #include <pthread.h>
+#ifdef HAVE_SEMAPHORE_H
+#include <semaphore.h>
+#endif
+
+#include <mono/io-layer/processes.h>
 
 #include "timed-thread.h"
 
@@ -81,6 +86,11 @@ static void *timed_thread_start_routine(gpointer args)
 	mono_once(&timed_thread_once, timed_thread_init);
 	pthread_setspecific(timed_thread_key, (void *)thread);
 	pthread_detach(thread->id);
+
+	if(thread->create_flags & CREATE_SUSPENDED) {
+		_wapi_timed_thread_suspend (thread);
+	}
+	
 	_wapi_timed_thread_exit(thread->start_routine(thread->arg));
 }
 
@@ -88,6 +98,7 @@ static void *timed_thread_start_routine(gpointer args)
  */
 int _wapi_timed_thread_create(TimedThread **threadp,
 			      const pthread_attr_t *attr,
+			      guint32 create_flags,
 			      guint32 (*start_routine)(gpointer),
 			      void (*exit_routine)(guint32, gpointer),
 			      gpointer arg, gpointer exit_userdata)
@@ -99,6 +110,8 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 	
 	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
+	thread->create_flags = create_flags;
+	sem_init (&thread->suspend_sem, 0, 0);
 	thread->start_routine = start_routine;
 	thread->exit_routine = exit_routine;
 	thread->arg = arg;
@@ -153,6 +166,43 @@ void _wapi_timed_thread_destroy (TimedThread *thread)
 {
 	mono_mutex_destroy (&thread->join_mutex);
 	pthread_cond_destroy (&thread->exit_cond);
+	sem_destroy (&thread->suspend_sem);
 	
 	g_free(thread);
+}
+
+/* I was going to base thread suspending on the algorithm presented at
+ * http://home.earthlink.net/~anneart/family/Threads/code/susp.c
+ *
+ * Unfortunately the Boehm GC library also wants to use this technique
+ * to stop the world, and will deadlock if a thread has already been
+ * suspended when it tries.
+ *
+ * While Mono is still using libgc this will just have to be a kludge
+ * to implement suspended creation of threads, rather than the general
+ * purpose thread suspension.
+ */
+void _wapi_timed_thread_suspend (TimedThread *thread)
+{
+	TimedThread *self;
+	void *specific;
+	
+	if((specific = pthread_getspecific (timed_thread_key))==NULL) {
+		g_warning (G_GNUC_PRETTY_FUNCTION ": thread lookup failed");
+		return;
+	}
+	self=(TimedThread *)specific;
+	
+	if(thread != self) {
+		g_error (G_GNUC_PRETTY_FUNCTION
+			 ": attempt to suspend a different thread!");
+		exit (-1);
+	}
+	
+	sem_wait (&thread->suspend_sem);
+}
+
+void _wapi_timed_thread_resume (TimedThread *thread)
+{
+	sem_post (&thread->suspend_sem);
 }

@@ -259,8 +259,12 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 		this->handle=thread;
 		this->tid=tid;
-		
-		handle_store(this);
+
+		/* Don't call handle_store() here, delay it to Start.
+		 * We can't join a thread (trying to will just block
+		 * forever) until it actually starts running, so don't
+		 * store the handle till then.
+		 */
 
 #ifdef THREAD_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -288,6 +292,12 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Launching thread %p", this);
 #endif
+
+	/* Only store the handle when the thread is about to be
+	 * launched, to avoid the main thread deadlocking while trying
+	 * to clean up a thread that will never be signalled.
+	 */
+	handle_store(this);
 
 	ResumeThread(thread);
 }
