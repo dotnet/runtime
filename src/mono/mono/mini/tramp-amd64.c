@@ -73,7 +73,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * amd64_magic_trampoline:
  */
 static gpointer
-amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m)
+amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
@@ -93,11 +93,33 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m)
 		if (m->klass->valuetype)
 			addr = get_unbox_trampoline (m, addr);
 
-		/* FIXME: Fill in vtable slot */
+		g_assert (*vtable_slot);
+
+		*vtable_slot = addr;
 	}
-	else
-		/* FIXME: Patch calling code */
-		;
+	else {
+		/* Patch calling code */
+
+		if ((code [-13] == 0x49) && (code [-12] == 0xbb)) {
+			MonoJitInfo *ji = 
+				mono_jit_info_table_find (mono_domain_get (), code);
+			MonoJitInfo *target_ji = 
+				mono_jit_info_table_find (mono_domain_get (), addr);
+
+			/* The first part of the condition means an icall without a wrapper */
+			if ((!target_ji && m->addr) || mono_method_same_domain (ji, target_ji)) {
+				InterlockedExchangePointer ((gpointer*)(code - 11), addr);
+			}
+		}
+		else {
+			/* FIXME: handle more cases */
+
+			/* Patch trampoline in case the calling code can't be patched */
+			/* FIXME: Make this thread safe */
+			amd64_mov_reg_imm (tramp, AMD64_R11, addr);
+			amd64_jump_reg (tramp, AMD64_R11);
+		}
+	}
 
 	return addr;
 }
@@ -115,37 +137,12 @@ amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable)
 
 	/* FIXME: patch calling code */
 
-#if 0
-	code -= 5;
-	if (code [0] == 0xe8) {
+	code -= 3;
+	if ((code [0] == 0x49) && (code [1] == 0xff)) {
 		if (!mono_running_on_valgrind ()) {
-			guint32 ops;
-			/*
-			 * Thread safe code patching using the algorithm from the paper
-			 * 'Practicing JUDO: Java Under Dynamic Optimizations'
-			 */
-			/* 
-			 * First atomically change the the first 2 bytes of the call to a
-			 * spinning jump.
-			 */
-			ops = 0xfeeb;
-			InterlockedExchange ((gint32*)code, ops);
 
-			/* Then change the other bytes to a nop */
-			code [2] = 0x90;
-			code [3] = 0x90;
-			code [4] = 0x90;
-
-			/* Then atomically change the first 4 bytes to a nop as well */
-			ops = 0x90909090;
-			InterlockedExchange ((guint32*)code, ops);
-
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-			/* FIXME: the calltree skin trips on the self modifying code above */
-
-			/* Tell valgrind to recompile the patched code */
-			//VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
-#endif
+			/* FIXME: Make this thread safe */
+			code [0] = code [1] = code [2] = 0x90;
 		}
 	}
 	else
@@ -157,14 +154,13 @@ amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable)
 				code [4], code [5], code [6]);
 			g_assert_not_reached ();
 		}
-#endif
 }
 
 static guchar*
 create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp;
-	int i, lmf_offset, offset, method_offset, saved_regs_offset, saved_fpregs_offset, framesize;
+	int i, lmf_offset, offset, method_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
 	static guint8* generic_jump_trampoline = NULL;
 	static guint8 *generic_class_init_trampoline = NULL;
 
@@ -187,18 +183,32 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	framesize = 512 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
+
+	offset = 0;
+
+	/* 
+	 * Allocate a new stack frame and transfer the two arguments received on 
+	 * the stack to our frame.
+	 */
+	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
+	amd64_pop_reg (code, AMD64_R11);
+
 	amd64_push_reg (code, AMD64_RBP);
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
-	offset = 0;
-
-	/* Save the method/vtable received in RAX */
+	/* 
+	 * The method is at offset -8 from the new RBP, so no need to
+	 * copy it.
+	 */
 	offset += 8;
 	method_offset = - offset;
-	amd64_mov_membase_reg (code, AMD64_RBP, method_offset, AMD64_RAX, 8);
 
-	/* Save argument registers */
+	offset += 8;
+	tramp_offset = - offset;
+	amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
+
+	/* Save all registers */
 
 	offset += AMD64_NREG * 8;
 	saved_regs_offset = - offset;
@@ -213,7 +223,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	offset += sizeof (MonoLMF);
 	lmf_offset = - offset;
-	
+
 	/* Save ip */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		amd64_mov_reg_imm (code, AMD64_R11, 0);
@@ -258,10 +268,13 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Arg3 is the method/vtable ptr */
 	amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RBP, method_offset, 8);
 
+	/* Arg4 is the trampoline address */
+	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, tramp_offset, 8);
+
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp = amd64_class_init_trampoline;
+		tramp = (guint8*)amd64_class_init_trampoline;
 	else
-		tramp = amd64_magic_trampoline;
+		tramp = (guint8*)amd64_magic_trampoline;
 
 	amd64_mov_reg_imm (code, AMD64_RAX, tramp);
 	amd64_call_reg (code, AMD64_RAX);
@@ -306,7 +319,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	return buf;
 }
 
-#define TRAMPOLINE_SIZE 24
+#define TRAMPOLINE_SIZE 30
 
 static MonoJitInfo*
 create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain)
@@ -320,8 +333,15 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
 	mono_domain_unlock (domain);
 
-	amd64_mov_reg_imm (code, AMD64_RAX, arg1);
-	/* FIXME: optimize this */
+	/* push trampoline address */
+	amd64_lea_membase (code, AMD64_R11, AMD64_RIP, -7);
+	amd64_push_reg (code, AMD64_R11);
+
+	/* push argument */
+	amd64_mov_reg_imm (code, AMD64_R11, arg1);
+	amd64_push_reg (code, AMD64_R11);
+
+	/* FIXME: Optimize this */
 	amd64_mov_reg_imm (code, AMD64_R11, tramp);
 	amd64_jump_reg (code, AMD64_R11);
 

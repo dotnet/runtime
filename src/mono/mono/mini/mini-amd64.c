@@ -4234,7 +4234,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, offset, max_offset, i;
+	int alloc_size, pos, max_offset, i;
 	guint8 *code;
 	CallInfo *cinfo;
 
@@ -4285,49 +4285,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
-
-		if (lmf_tls_offset != -1) {
-			/* Load lmf quicky using the FS register */
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_reg_mem (code, AMD64_RAX, 0, 8);
-			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, lmf_tls_offset, 8);
-		}
-		else {
-			offset = ALIGN_TO ((AMD64_NREG * 8) + (8 * 8), 16);
-
-			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, offset);
-
-			pos += offset;
-
-			/* Save argument registers */
-			for (i = 0; i < AMD64_NREG; ++i)
-				if (AMD64_IS_ARGUMENT_REG (i))
-					amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + sizeof (MonoLMF) + (i * 8), i, 8);
-
-			for (i = 0; i < 8; ++i)
-				amd64_movsd_membase_reg (code, AMD64_RBP, lmf_offset + sizeof (MonoLMF) + (AMD64_NREG * 8) + (i * 8), i);
-
-			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-								 (gpointer)"mono_get_lmf_addr");		
-			EMIT_CALL ();
-
-			/* Restore argument registers */
-			for (i = AMD64_NREG - 1; i >= 0; --i)
-				if (AMD64_IS_ARGUMENT_REG (i))
-					amd64_mov_reg_membase (code, i, AMD64_RBP, lmf_offset + sizeof (MonoLMF) + (i * 8), 8);
-
-			for (i = 0; i < 8; ++i)
-				amd64_movsd_reg_membase (code, i, AMD64_RBP, lmf_offset + sizeof (MonoLMF) + (AMD64_NREG * 8) + (i * 8));
-		}
-
-		/* Save lmf_addr */
-		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, 8);
-		/* Save previous_lmf */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, 8);
-		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, 8);
-		/* Set new lmf */
-		amd64_lea_membase (code, AMD64_R11, AMD64_RBP, lmf_offset);
-		amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, 8);
 	} else {
 
 		for (i = 0; i < AMD64_NREG; ++i)
@@ -4440,6 +4397,37 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			NOT_IMPLEMENTED;
 		}
 	}
+
+	if (method->save_lmf) {
+		if (lmf_tls_offset != -1) {
+			/* Load lmf quicky using the FS register */
+			x86_prefix (code, X86_FS_PREFIX);
+			amd64_mov_reg_mem (code, AMD64_RAX, 0, 8);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, lmf_tls_offset, 8);
+		}
+		else {
+			/* 
+			 * The call might clobber argument registers, but they are already
+			 * saved to the stack/global regs.
+			 */
+
+			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+								 (gpointer)"mono_get_lmf_addr");		
+			EMIT_CALL ();
+		}
+
+		gint32 lmf_offset = - cfg->arch.lmf_offset;
+
+		/* Save lmf_addr */
+		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, 8);
+		/* Save previous_lmf */
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, 8);
+		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, 8);
+		/* Set new lmf */
+		amd64_lea_membase (code, AMD64_R11, AMD64_RBP, lmf_offset);
+		amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, 8);
+	}
+
 
 	g_free (cinfo);
 
@@ -4851,8 +4839,6 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 	 */
 	code -= 6;
 
-	/* FIXME: Read register extensions from REX */
-
 	if (IS_REX (code [3]) && (code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x3)) {
 		/* call *%reg */
 		return NULL;
@@ -4884,7 +4870,7 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 	reg += amd64_rex_b (rex);
 
 	/* FIXME: */
-	return (gpointer)1;
+	return (gpointer)((regs [reg]) + disp);
 }
 
 /*
