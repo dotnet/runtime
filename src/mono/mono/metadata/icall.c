@@ -453,7 +453,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 {
 	int element_size = mono_array_element_size (source->obj.vtable->klass);
 	void * dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
-	void * source_addr = mono_array_addr_with_size (source, element_size, dest_idx);
+	void * source_addr = mono_array_addr_with_size (source, element_size, source_idx);
 
 	memcpy (dest_addr, source_addr, element_size * length);
 }
