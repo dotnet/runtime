@@ -79,7 +79,8 @@ reg: LDARG {
 }
 
 reg: MUL (reg, reg) {
-	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_imul_reg_reg (*code, tree->reg, tree->right->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
@@ -87,7 +88,8 @@ reg: MUL (reg, reg) {
 }
 
 reg: ADD (reg, con) {
-	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_imm (*code, X86_ADD, tree->reg, tree->right->data.i);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
@@ -95,7 +97,8 @@ reg: ADD (reg, con) {
 }
 
 reg: ADD (reg, reg) {
-	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_reg (*code, X86_ADD, tree->reg, tree->right->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
@@ -103,7 +106,8 @@ reg: ADD (reg, reg) {
 }
 
 reg: SUB (reg, con) {
-	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_imm (*code, X86_SUB, tree->reg, tree->right->data.i);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);
@@ -111,7 +115,8 @@ reg: SUB (reg, con) {
 }
 
 reg: SUB (reg, reg) {
-	x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
+	if (tree->reg != tree->left->reg)
+		x86_mov_reg_reg (*code, tree->reg, tree->left->reg, 4);
 	x86_alu_reg_reg (*code, X86_SUB, tree->reg, tree->right->reg);
 } cost {
 	MBCOND (tree->right->type == MONO_TYPE_I4);

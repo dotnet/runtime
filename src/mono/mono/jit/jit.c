@@ -56,6 +56,9 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	for (i = 0; nts [i]; i++) 
 		tree_allocate_regs (kids [i], nts [i], rs);
 
+	for (i = 0; nts [i]; i++) 
+		mono_regset_free_reg (rs, kids [i]->reg);
+
 	if (goal == MB_NTERM_reg) {
 		if ((tree->reg = mono_regset_alloc_reg (rs, -1)) == -1) {
 			g_warning ("register allocation failed\n");
@@ -65,8 +68,6 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 
 	tree->emit = mono_burg_func [ern];
 
-	for (i = 0; nts [i]; i++) 
-		mono_regset_free_reg (rs, kids [i]->reg);
 }
 
 static void
