@@ -43,6 +43,25 @@
 		ret
 	}
 	
+	.method static public int32 test_1_fceq_to_i4 () il managed {
+	
+		.locals init (
+			float64	foo,
+			int32   val
+		)
+
+		ldc.r8      2
+		stloc       foo
+		
+		ldloc       foo
+		ldc.r8      2
+		ceq
+		stloc       val
+		
+		ldloc       val
+		ret
+	}
+
 	//
 	// This should be manually checked. Basically under -O=linears,
 	// you should not see tons of register spilling.
@@ -122,6 +141,45 @@
 		
 		ldloc      pdest
 		ldind.i1
+		ret
+	}
+	
+	.method static public int32 test_1_shift_regvar () il managed {
+	
+		.locals init (
+			int32   v7FFFFFFF,
+			int32   v1
+		)
+		
+		ldc.i4	0x7FFFFFFF
+		stloc   v7FFFFFFF
+	
+		ldc.i4.1
+		stloc v1
+		
+		ldloc   v7FFFFFFF
+		ldloc   v1
+		shl
+		ldc.i4	0xFFFFFFFE
+		ceq
+		ret
+	}
+	
+	// this only happens with the managed pointer, not an unmanaged one.
+	.method static public int32 test_0_foo () il managed {
+	
+		.locals init (
+			int32&	buf
+		)
+		
+		ldc.i4.5
+		localloc
+		
+		stloc buf
+		ldloc buf
+		
+		ldind.i4
+		
 		ret
 	}
 	

@@ -712,6 +712,12 @@ class Tests {
 			return 1;
 		return 0;
 	}
+	
+	static int test_1_a_eq_b_plus_a () {
+		int a = 0, b = 1;
+		a = b + a;
+		return a;
+	}
 
 	static int test_0_comp_unsigned () {
 		uint a = 1;
