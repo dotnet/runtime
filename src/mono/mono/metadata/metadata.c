@@ -1367,6 +1367,7 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
 	method->call_convention = call_convention;
+	method->generic_param_count = gen_param_count;
 	if (call_convention != 0xa)
 		method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
 
@@ -3233,6 +3234,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 	n = 1;
 	do {
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
+		params [n - 1].pklass = NULL;
 		params [n - 1].method = method;
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];

@@ -1581,6 +1581,20 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 	return mono_method_get_object (mono_object_domain (type), method, klass);
 }
 
+static gboolean
+ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
+{
+	MonoMethodNormal *mn;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return FALSE;
+
+	mn = (MonoMethodNormal *) method->method;
+	return mn->header->gen_params != NULL;
+}
 
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
@@ -4136,6 +4150,9 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::get_HasGenericArguments", ves_icall_MonoType_get_HasGenericArguments,
 	"System.MonoType::get_IsGenericParameter", ves_icall_MonoType_get_IsGenericParameter,
 	"System.MonoType::get_DeclaringMethod", ves_icall_MonoType_get_DeclaringMethod,
+
+	/* Method generics icalls */
+	"System.Reflection.MethodInfo::get_IsGenericMethodDefinition", ves_icall_MethodInfo_get_IsGenericMethodDefinition,
 
 
 	/*
