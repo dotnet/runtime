@@ -357,7 +357,8 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len)
 		g_assert_not_reached ();
 		return 0;
 	} else {
-		return len;
+		/* we return the number of bytes written in dest */
+		return max_len - outbytes_remaining;
 	}
 }
 
@@ -431,5 +432,6 @@ ves_icall_iconv_get_chars (gpointer converter, MonoArray *bytes, gint32 byteInde
 
 	max_len = (mono_array_length (chars) - charIndex) * 2;
 
-	return iconv_convert (cd, src, len, dest, max_len);
+	/* iconv_convert () returns the number of bytes */
+	return iconv_convert (cd, src, len, dest, max_len) / 2;
 }
