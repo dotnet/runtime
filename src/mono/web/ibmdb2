@@ -2,16 +2,14 @@
 <ul>
 	<li>ADO.NET Data Provider for <a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a></li>
 
-	<li>Exists in namespace DB2ClientCS and assembly Mono.Data.DB2Client</li>
+	<li>Exists in namespace IBM.Data.DB2 and assembly IBM.Data.DB2</li>
 	
-	<li>The source code exists at mcs/class/Mono.Data.DB2Client</li>
+	<li>The source code exists at mcs/class/IBM.Data.DB2</li>
 			
 	<li>Requires the Call Level Interface to IBM DB2 shared library.  This
-	is db2cli.dll on Windows.  The IBM DB2 CLI API is very similar to the ODBC API. If
-	you take a look at Mono's <a href="http://www.go-mono.com/odbc.html">System.Data.Odbc</a> ODBC provider, you will see the
-	DllImport's have similiar function names.</li>
+	is db2cli.dll on Windows and db2_36.so under Linux.</li>
 			
-	<li>IBM DB2 Provider created by Christopher Bockner.</li>
+	<li>IBM DB2 Provider maintained by Victor Vatamanescu. For questions, complaints or anything else regarding the managed provider <a href="mailto:victor.vatamanescu@hqsoftconsult.com">contact me<a>. </li>
 	
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
@@ -24,26 +22,21 @@
 ** Current Status
 
 <ul>
-	<li>Compiles on Windows and Linux.  Works on Windows.  Still needs to be tested on Linux.</li>
+	<li>Compiles on Windows and Linux. Works on Linux. Still needs testing on Windows.</li>
 	
-	<li>Able to connect to IBM DB2</li>
-	
-	<li>Able to execute DML, such as, CREATE TABLE via ExecuteNonQuery()</li>
-	
-	<li>Christopher says it can retrieve data via the DB2ClientDataReader</li>
+	<li>The data provider is officially in beta. Still have missing features.</li>
 	   
 </ul>
 	
 ** Action Plan
 
 <ul>
-		<li>Still needs work to get it to retrieve data via ExecuteReader() and
-	use the data reader to read data.</li>
+		<li>GetSchemaTable implementation.</li>
 
 </ul>
 
 ** Testing
-
+<br>
 In order to test.
 <ul>
 	<li>Have working mono and mcs setup</li>
@@ -52,104 +45,66 @@ In order to test.
 	<a href="http://www-306.ibm.com/software/data/db2/">IBM DB2</a> software.  There 
 	are versions for Windows, Linux, AIX, and Sun Solaris.</li>
 	
-	<li>Make sure the assembly Mono.Data.DB2Client.dll was built and installed 
+	<li>Make sure the assembly IBM.Data.DB2.dll was built and installed 
 	where the other class libraries are installed.</li>
 	
 	<li>If you do not have the source to mcs, get the source from
 	<a href="http://www.go-mono.com/download.html">here</a></li>
 	
-	<li>Has a ConnectionString format like ODBC</li>
-	
-	<li>Here is a ConnectionString format if you have a DSN setup: 
+	<li>Here is a sample ConnectionString: 
 <pre>
- "DSN=dataSetName;UID=myuserid;PWD=mypassword"
-</pre>
-	</li>
-
-	<li>Here is a ConnectionString format if you do not have a DSN (have not
-	gotten this to work though, so, I am open to suggestions):
-<pre>
- "DRIVER={DB2 Driver};SERVER=localhost;DATABASE=test;UID=myuserid;PASSWORD=mypassword"
+ "server=sample;uid=myuserid;pwd=mypwd"
 </pre>
 	</li>
 	
-	<li>In mcs/class/Mono.Data.DB2Client/Test/DBConnTest, you will find
-	a DBConnTest.cs.</li> 
-	
-	<li>To build DBConnTest:
-		<ul>
-			<li>On Unix:</li>
-<pre>
-mcs DBConnTest.cs -r System.Data.dll -r Mono.Data.DB2Client.dll
-</pre>
-			</li>
-			<li>On Windows via Cygwin:
-<pre>
-mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe DBConnTest.cs \ 
-     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-     -r System.Data.dll -r Mono.Data.DB2Client.dll
-</pre>
-			</li>
-			<li>To run it on mono:
-<pre>
-mono DBConnTest.exe database userid password
-</pre>
-			</li>
-		</ul>
-		</li>
 		
 	<li>C# Example:
 <pre>
  using System;
  using System.Data;
- using Mono.Data.DB2Client;
+ using IBM.Data.DB2;
  
  public class Test 
  {
     public static void Main(string[] args)
     {
        string connectionString = 
-          "DSN=sample;UID=db2admin;PWD=mypass";
-       IDbConnection dbcon = new DB2ClientConnection(connectionString);
-       dbcon.Open();
-       IDbCommand dbcmd = dbcon.CreateCommand();
-       string sql =
-            "CREATE TABLE mono_db2_test1 ( " +
-            "   testid varchar(2), " +
-            "   testdesc varchar(16) " +
-            ")";
-       dbcmd.CommandText = sql;
-       dbcmd.ExecuteNonQuery();
-       dbcmd.Dispose();
-       dbcmd = null;
-       dbcon.Close();
-       dbcon = null;
+          "server=" + args[0] + ";UID=" + args[1] + ";PWD=" + args[2];
+       DB2Connection cn = new DB2Connection(connectionString);
+       cn.Open();
+       DB2Command cm = new DB2Command("SELECT * FROM schema.employees", cn);
+       DB2DataReader dr = cm.ExecuteReader();
+       while(dr.Read()){
+             Console.WriteLine("{0}:{1}:{2}", dr[0], dr[1], dr[2]);
+       }
+       cm.Dispose();
+       cn.Close();
     }
  }
 </pre>
 	</li>
 	<li>Building C# Example:
 	<ul>
-		<li>Save the example to a file, such as, TestExample.cs</li>
+		<li>Save the example to a file, such as, DB2Test.cs</li>
 		<li>Build on Linux:
 <pre>
-	mcs TestExample.cs -r System.Data.dll \
-	    -r Mono.Data.DB2Client.dll
+	mcs DB2Test.cs -r System.Data.dll \
+	    -r IBM.Data.DB2.dll
 </pre>
 		</li>
 		<li>Build on Windows via Cygwin:
 <pre>
 	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-	     TestExample.cs \
+	     DB2Test.cs \
 	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-	     -r System.Data.dll -r Mono.Data.DB2Client.dll
+	     -r System.Data.dll -r IBM.Data.DB2.dll
 </pre>
 		</li>
 	</ul>
 	</li>
 	<li>Running the Example:
 <pre>
-mono TestExample.exe
+mono TestExample.exe sample myuser mypasswd
 </pre>
 	</li>
 		
