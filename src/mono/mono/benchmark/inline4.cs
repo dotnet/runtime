@@ -20,7 +20,10 @@ public class Tests {
 
 		for (int i = 0; i < repeat; i++)
 			for (int j = 0; j < 500000000; j++)
-				sum += test (12345);
+				sum += test (1234);
+
+		if (sum != 1000000000)
+			return 1;
 		
 		return 0;
 	}
