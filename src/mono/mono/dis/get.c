@@ -2322,3 +2322,36 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "to", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "value", GINT_TO_POINTER (TRUE));
 }
+
+guint32
+method_dor_to_token (guint32 idx) {
+	switch (idx & MONO_METHODDEFORREF_MASK) {
+	case MONO_METHODDEFORREF_METHODDEF:
+		return MONO_TOKEN_METHOD_DEF | (idx >> MONO_METHODDEFORREF_BITS);
+	case MONO_METHODDEFORREF_METHODREF:
+		return MONO_TOKEN_MEMBER_REF | (idx >> MONO_METHODDEFORREF_BITS);
+	}
+	return -1;
+}
+
+char *
+get_method_override (MonoImage *m, guint32 token)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODIMPL];
+	int i;
+
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_METHODIMPL_SIZE];
+		guint32 decl, impl;
+
+		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODIMPL_SIZE);
+
+		impl = method_dor_to_token (cols [MONO_METHODIMPL_BODY]);
+		decl = method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]);
+
+		if (token == impl)
+			return get_method (m, decl);
+	}
+
+	return NULL;
+}

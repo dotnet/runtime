@@ -497,15 +497,22 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 }
 
 static void
-dis_code (MonoImage *m, guint32 rva)
+dis_code (MonoImage *m, guint32 token, guint32 rva)
 {
 	MonoMethodHeader *mh;
 	const char *ptr = mono_image_rva_map (m, rva);
 	const char *loc;
+	gchar *override;
 	guint32 entry_point;
 
 	if (rva == 0)
 		return;
+
+	override = get_method_override (m, token);
+	if (override) {
+		fprintf (output, "\t.override method %s\n", override);
+		g_free (override);
+	}
 
 	mh = mono_metadata_parse_mh (m, ptr);
 	if ((entry_point = mono_image_get_entry_point (m))){
@@ -609,6 +616,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		char *flags, *impl_flags;
 		const char *sig;
 		char *sig_str;
+		guint32 token;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 
@@ -635,16 +643,18 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		fprintf (output, " %s\n", impl_flags);
 		g_free (flags);
 		g_free (impl_flags);
+
+		token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		
 		fprintf (output, "    {\n");
-		dump_cattrs (m, MONO_TOKEN_METHOD_DEF | (i + 1), "        ");
+		dump_cattrs (m, token, "        ");
 		cattrs_for_method (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
 			fprintf (output, "          // Disassembly of native methods is not supported\n");
 		else
-			dis_code (m, cols [MONO_METHOD_RVA]);
+			dis_code (m, token, cols [MONO_METHOD_RVA]);
 		fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
@@ -987,8 +997,13 @@ dis_type (MonoImage *m, int n)
 			fprintf (output, "  \textends %s\n", base);
 			g_free (base);
 		}
-	} else
-		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), esname);
+	} else {
+		fprintf (output, "  .class interface %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), esname);
+
+                cnst_block = dis_generic_param_and_constraints (m, MONO_TYPEORMETHOD_TYPE, n+1);
+		fprintf (output, "\n");
+	}
+
 	g_free (esname);
 	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");

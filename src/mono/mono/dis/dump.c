@@ -607,17 +607,6 @@ dump_table_implmap (MonoImage *m)
 	}
 }
 
-static guint32
-method_dor_to_token (guint32 idx) {
-	switch (idx & MONO_METHODDEFORREF_MASK) {
-	case MONO_METHODDEFORREF_METHODDEF:
-		return MONO_TOKEN_METHOD_DEF | (idx >> MONO_METHODDEFORREF_BITS);
-	case MONO_METHODDEFORREF_METHODREF:
-		return MONO_TOKEN_MEMBER_REF | (idx >> MONO_METHODDEFORREF_BITS);
-	}
-	return -1;
-}
-
 void
 dump_table_methodimpl (MonoImage *m)
 {
