@@ -1290,6 +1290,14 @@ reg: CEE_ISINST (reg) {
 			} else if (klass->cast_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				mini_emit_isninst_iface_class_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			} else {
+				if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY)) {
+					/* Check that the object is a vector too */
+					int bounds_reg = mono_regstate_next_int (s->rs);
+					MONO_EMIT_NEW_LOAD_MEMBASE (s, bounds_reg, obj_reg, G_STRUCT_OFFSET (MonoArray, bounds));
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, bounds_reg, 0);
+					MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
+				}
+
 				/* the object_is_null target simply copies the input register to the output */
 				mini_emit_isninst_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			}
@@ -1416,6 +1424,14 @@ reg: CEE_CASTCLASS (reg) {
 				mini_emit_castclass_iface_class (s, eclass_reg, klass->cast_class);
 			} else {
 				mini_emit_castclass (s, eclass_reg, klass->cast_class);
+			}
+
+			if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY)) {
+				/* Check that the object is a vector too */
+				int bounds_reg = mono_regstate_next_int (s->rs);
+				MONO_EMIT_NEW_LOAD_MEMBASE (s, bounds_reg, obj_reg, G_STRUCT_OFFSET (MonoArray, bounds));
+				MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, bounds_reg, 0);
+				MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 			}
 		} else {
 			mini_emit_castclass (s, klass_reg, klass);

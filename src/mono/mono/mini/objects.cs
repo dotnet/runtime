@@ -258,6 +258,33 @@ class Tests {
 		return 0;
 	}
 
+	static int test_0_vector_array_cast () {
+		Array arr1 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {0});
+		Array arr2 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {10});
+
+		if (arr1.GetType () != typeof (int[]))
+			return 1;
+
+		if (arr2.GetType () == typeof (int[]))
+			return 2;
+
+		int[] b;
+
+		b = (int[])arr1;
+
+		try {
+			b = (int[])arr2;
+			return 3;
+		}
+		catch (InvalidCastException) {
+		}
+
+		if (arr2 is int[])
+			return 4;
+
+		return 0;
+	}
+
 	static int test_0_enum_array_cast () {
 		TypeCode[] tc = new TypeCode [0];
 		object[] oa;
