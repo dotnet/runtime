@@ -1927,7 +1927,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 
 	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->typeref = g_hash_table_new (mono_metadata_type_hash, mono_metadata_type_equal);
+	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);

@@ -204,6 +204,7 @@ mono_init (const char *filename)
 			break;
 		case MONO_IMAGE_OK:
 			/* to suppress compiler warning */
+			break;
 		}
 		
 		exit (1);

@@ -8,6 +8,7 @@
  * (C) 2002 Ximian, Inc.
  */
 #include <glib.h>
+#include <string.h>
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
 

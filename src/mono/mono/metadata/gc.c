@@ -8,6 +8,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <string.h>
 
 #include <mono/metadata/gc.h>
 #include <mono/metadata/threads.h>

@@ -305,7 +305,7 @@ load_tables (MonoImage *image)
 {
 	const char *heap_tables = image->heap_tables.data;
 	const guint32 *rows;
-	guint64 valid_mask;
+	guint64 valid_mask, sorted_mask;
 	int valid = 0, table;
 	int heap_sizes;
 	
@@ -315,6 +315,7 @@ load_tables (MonoImage *image)
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
 	
 	valid_mask = read64 (heap_tables + 8);
+	sorted_mask = read64 (heap_tables + 16);
 	rows = (const guint32 *) (heap_tables + 24);
 	
 	for (table = 0; table < 64; table++){
@@ -325,6 +326,9 @@ load_tables (MonoImage *image)
 		if (table > 0x2b) {
 			g_warning("bits in valid must be zero above 0x2b (II - 23.1.6)");
 		}
+		/*if ((sorted_mask & ((guint64) 1 << table)) == 0){
+			g_print ("table %s (0x%02x) is sorted\n", mono_meta_table_name (table), table);
+		}*/
 		image->tables [table].rows = read32 (rows);
 		rows++;
 		valid++;
@@ -393,7 +397,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (mono_metadata_type_hash, mono_metadata_type_equal);
+	image->array_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 
 	header = &iinfo->cli_header;
 		

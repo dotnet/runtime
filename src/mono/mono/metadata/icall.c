@@ -166,7 +166,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 }G_STMT_END
 
 #define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{\
-	if (esize < vsize + ## extra) \
+	if (esize < vsize + (extra)) \
 		mono_raise_exception (mono_get_exception_argument ( \
 			"value", "not a widening conversion")); \
 }G_STMT_END
@@ -236,7 +236,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(0); \
-		*(## etype *) ea = (## etype) u64; \
+		*(etype *) ea = (etype) u64; \
 		return; \
 	/* You can't assign a signed value to an unsigned array. */ \
 	case MONO_TYPE_I1: \
@@ -257,7 +257,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	case MONO_TYPE_I4: \
 	case MONO_TYPE_I8: \
 		CHECK_WIDENING_CONVERSION(0); \
-		*(## etype *) ea = (## etype) i64; \
+		*(etype *) ea = (etype) i64; \
 		return; \
 	/* You can assign an unsigned value to a signed array if the array's */ \
 	/* element size is larger than the value size. */ \
@@ -267,7 +267,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(1); \
-		*(## etype *) ea = (## etype) u64; \
+		*(etype *) ea = (etype) u64; \
 		return; \
 	/* You can't assign a floating point number to an integer array. */ \
 	case MONO_TYPE_R4: \
@@ -281,7 +281,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
 		CHECK_WIDENING_CONVERSION(0); \
-		*(## etype *) ea = (## etype) r64; \
+		*(etype *) ea = (etype) r64; \
 		return; \
 	/* All integer values fit into a floating point array, so we don't */ \
 	/* need to CHECK_WIDENING_CONVERSION here. */ \
@@ -289,14 +289,14 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	case MONO_TYPE_I2: \
 	case MONO_TYPE_I4: \
 	case MONO_TYPE_I8: \
-		*(## etype *) ea = (## etype) i64; \
+		*(etype *) ea = (etype) i64; \
 		return; \
 	case MONO_TYPE_U1: \
 	case MONO_TYPE_U2: \
 	case MONO_TYPE_U4: \
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
-		*(## etype *) ea = (## etype) u64; \
+		*(etype *) ea = (etype) u64; \
 		return; \
 	} \
 }G_STMT_END

@@ -97,7 +97,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 }
 
 static MonoAssembly *
-load_in_path (const char *basename, char** search_path, MonoImageOpenStatus *status)
+load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status)
 {
 	int i;
 	char *fullpath;
@@ -278,7 +278,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 		}
 		/* g_print ("corlib load\n"); */
 		if (assemblies_path) {
-			corlib = load_in_path (CORLIB_NAME, assemblies_path, status);
+			corlib = load_in_path (CORLIB_NAME, (const char**)assemblies_path, status);
 			if (corlib)
 				return corlib;
 		}
@@ -303,7 +303,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 		}
 	}
 	if (assemblies_path) {
-		result = load_in_path (filename, assemblies_path, status);
+		result = load_in_path (filename, (const char**)assemblies_path, status);
 		if (result) {
 			g_free (filename);
 			return result;

@@ -65,7 +65,7 @@ struct _MonoDomain {
 	GHashTable         *env;
 	GHashTable         *assemblies;
 	MonoAppDomainSetup *setup;
-	char*              *friendly_name;
+	char               *friendly_name;
 	MonoGHashTable     *ldstr_table;
 	MonoGHashTable     *class_vtable_hash;
 	MonoGHashTable     *proxy_vtable_hash;

@@ -21,6 +21,7 @@
 gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
 
+/* unused
 static void
 hex_dump (const char *buffer, int base, int count)
 {
@@ -33,6 +34,7 @@ hex_dump (const char *buffer, int base, int count)
 		printf ("%02x ", (unsigned char) (buffer [i]));
 	}
 }
+*/
 
 static void
 hex8 (const char *label, unsigned char x)

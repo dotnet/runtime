@@ -345,7 +345,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 
 	/* FIXME : examine version, culture info */
 
-	name = aname.name = mono_string_to_utf8 (assRef->name);
+	aname.name = name = mono_string_to_utf8 (assRef->name);
 
 	ass = mono_assembly_load (&aname, NULL, &status);
 	
