@@ -272,6 +272,10 @@ mono_config_for_assembly (MonoImage *assembly)
 	const char *home;
 	
 	state.assembly = assembly;
+	cfg_name = g_strdup_printf ("%s.config", assembly->name);
+	mono_config_parse_file_with_context (&state, cfg_name);
+	g_free (cfg_name);
+
 	cfg_name = g_strdup_printf ("%s.config", assembly->assembly_name);
 
 	home = g_get_home_dir ();
