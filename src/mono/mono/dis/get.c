@@ -528,14 +528,120 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 	char *t;
 	char *result;
 	char *attribs;
+	const char *in = param->attrs & PARAM_ATTRIBUTE_IN ? "[in]" : "";
 	const char *out = param->attrs & PARAM_ATTRIBUTE_OUT ? "[out]": "";
 	const char *opt = param->attrs & PARAM_ATTRIBUTE_OPTIONAL ? "[opt]": "";
-	attribs = g_strconcat(out, opt, NULL);
+	attribs = g_strconcat(in, out, opt, NULL);
 	t = dis_stringify_type (m, param, TRUE);
 	result = g_strjoin(attribs[0] ? " ":"", attribs, t, NULL);
 	g_free (t);
 	g_free (attribs);
 	return result;
+}
+
+static char*
+dis_stringify_native_type (MonoMarshalNative native)
+{
+	switch (native) {
+	case MONO_NATIVE_BOOLEAN:
+		return g_strdup ("bool");
+	case MONO_NATIVE_I1:
+		return g_strdup ("int8");
+	case MONO_NATIVE_U1:
+		return g_strdup ("unsigned int8");
+	case MONO_NATIVE_I2:
+		return g_strdup ("int16");
+	case MONO_NATIVE_U2:
+		return g_strdup ("unsigned int16");
+	case MONO_NATIVE_I4:
+		return g_strdup ("int32");
+	case MONO_NATIVE_U4:
+		return g_strdup ("unsigned int32");
+	case MONO_NATIVE_I8:
+		return g_strdup ("int64");
+	case MONO_NATIVE_U8:
+		return g_strdup ("unsigned int64");
+	case MONO_NATIVE_R4:
+		return g_strdup ("float32");
+	case MONO_NATIVE_R8:
+		return g_strdup ("float64");
+	case MONO_NATIVE_CURRENCY:
+		return g_strdup ("currency");
+	case MONO_NATIVE_BSTR:
+		return g_strdup ("bstr");
+	case MONO_NATIVE_LPSTR:
+		return g_strdup ("lpstr");
+	case MONO_NATIVE_LPWSTR:
+		return g_strdup ("lpwstr");
+	case MONO_NATIVE_LPTSTR:
+		return g_strdup ("lptstr");
+	case MONO_NATIVE_IUNKNOWN:
+		return g_strdup ("iunknown");
+	case MONO_NATIVE_IDISPATCH:
+		return g_strdup ("idispatch");
+	case MONO_NATIVE_STRUCT:
+		return g_strdup ("struct");
+	case MONO_NATIVE_INTERFACE:
+		return g_strdup ("interface");
+	case MONO_NATIVE_SAFEARRAY:
+		return g_strdup ("safearray");
+	case MONO_NATIVE_INT:
+		return g_strdup ("int");
+	case MONO_NATIVE_UINT:
+		return g_strdup ("unsigned int");
+	case MONO_NATIVE_VBBYREFSTR:
+		return g_strdup ("vbbyrefstr");
+	case MONO_NATIVE_ANSIBSTR:
+		return g_strdup ("ansi bstr");
+	case MONO_NATIVE_TBSTR:
+		return g_strdup ("tbstr");
+	case MONO_NATIVE_VARIANTBOOL:
+		return g_strdup ("variant bool");
+	case MONO_NATIVE_FUNC:
+		return g_strdup ("method");
+	case MONO_NATIVE_ASANY:
+		return g_strdup ("as any");
+	case MONO_NATIVE_LPSTRUCT:
+		return g_strdup ("lpstruct");
+	case MONO_NATIVE_CUSTOM:
+		return g_strdup ("custom");
+	case MONO_NATIVE_ERROR:
+		return g_strdup ("error");
+	case MONO_NATIVE_MAX:
+		return g_strdup ("");
+	default:
+		return g_strdup ("unknown");
+	}
+}
+
+static char*
+dis_stringify_marshal_spec (MonoMarshalSpec *spec)
+{
+	switch (spec->native) {
+	case MONO_NATIVE_BYVALTSTR:
+		return g_strdup_printf ("fixed sysstring [%d]", spec->data.array_data.num_elem);
+	case MONO_NATIVE_BYVALARRAY:
+		return g_strdup_printf ("fixed array [%d]", spec->data.array_data.num_elem);
+	case MONO_NATIVE_LPARRAY: {
+		char *elem_type, *elems;
+		guint32 num_elem = spec->data.array_data.num_elem;
+		guint32 param_num = spec->data.array_data.param_num;
+
+		elem_type = dis_stringify_native_type (spec->data.array_data.elem_type);
+		if (num_elem == -1 && param_num == -1)
+			elems = g_strdup ("");
+		else if (param_num == -1)
+			elems = g_strdup_printf ("%d", num_elem);
+		else if ((num_elem == -1) || (num_elem == 0))
+			elems = g_strdup_printf ("+ %d", param_num);
+		else
+			elems = g_strdup_printf ("%d + %d", num_elem, param_num);
+
+		return g_strdup_printf ("%s[%s]", elem_type, elems);
+	}
+	default:
+		return dis_stringify_native_type (spec->native);
+	}
 }
 
 /**
@@ -616,6 +722,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	int free_method = 0;
 	char *retval, *esname;
 	char *type = NULL;
+	char *marshal_info = NULL;
 	char *gen_param = NULL;
 	GString *result = g_string_new ("");
 	MonoGenericContainer *container = NULL;
@@ -671,6 +778,17 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
 			name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
 			method->params [i]->attrs = pcols [MONO_PARAM_FLAGS];
+
+			if (pcols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
+				const char *tp;
+				MonoMarshalSpec *spec;
+				tp = mono_metadata_get_marshal_info (m, param_index - 1, FALSE);
+				g_assert (tp);
+				spec = mono_metadata_parse_marshal_spec (m, tp);
+
+				marshal_info = g_strdup_printf (" marshal (%s)", dis_stringify_marshal_spec (spec));
+			}
+
 			param_index++;
 		} else {
 			name = "";
@@ -678,8 +796,9 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		if (i)
 			g_string_append (result, ", ");
 		retval = dis_stringify_param (m, method->params [i]);
+
 		esname = get_escaped_name (name);
-		g_string_append_printf (result, "%s %s", retval, esname);
+		g_string_append_printf (result, "%s %s%s", retval, esname, marshal_info ? marshal_info : "");
 		g_free (retval);
 		g_free (esname);
 	}
