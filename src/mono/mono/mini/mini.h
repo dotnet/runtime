@@ -11,10 +11,9 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/profiler-private.h>
-#include "regalloc.h"
 
-/* fixme: configure should set this */
-#define SIZEOF_VOID_P 4
+#include "mini-arch.h"
+#include "regalloc.h"
 
 #define MONO_USE_AOT_COMPILER
 
@@ -188,7 +187,7 @@ struct MonoInst {
 		union {
 			MonoInst *src;
 			MonoMethodVar *var;
-			gint32 const_val;
+			ssize_t const_val;
 			gpointer p;
 			MonoMethod *method;
 			MonoMethodSignature *signature;
@@ -223,8 +222,8 @@ struct MonoCallInst {
 	MonoInst *out_args;
 	gconstpointer fptr;
 	guint stack_usage;
-	guint32 used_iregs;
-	guint32 used_fregs;
+	regmask_t used_iregs;
+	regmask_t used_fregs;
 };
 
 /* 
@@ -439,7 +438,7 @@ typedef struct {
 	guint            code_len;
 	guint            prolog_end;
 	guint            epilog_begin;
-	guint32          used_int_regs;
+	regmask_t        used_int_regs;
 	guint32          opt;
 	guint32          prof_options;
 	guint32          flags;
@@ -454,6 +453,9 @@ typedef struct {
 	gpointer         debug_info;
 	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
+#ifdef __ia64
+	guint8           ins, locals, outs; /* reg stack region sizes */
+#endif /* __ia64 */
 } MonoCompile;
 
 typedef enum {
@@ -600,7 +602,7 @@ void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
 gpointer  mono_get_lmf_addr                 (void);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end);
 void      mono_analyze_liveness             (MonoCompile *cfg);
-void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GList *regs, guint32 *used_mask);
+void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, int parts);

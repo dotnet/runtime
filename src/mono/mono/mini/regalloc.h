@@ -1,4 +1,6 @@
 
+typedef size_t regmask_t;
+
 enum {
 	MONO_REG_FREE,
 	MONO_REG_FREEABLE,
@@ -12,10 +14,6 @@ enum {
 	MONO_REG_DOUBLE
 };
 
-/* make this arch-dependent */
-#define MONO_MAX_IREGS 8
-#define MONO_MAX_FREGS 7
-
 typedef struct {
 	/* symbolic registers */
 	int next_vireg;
@@ -25,8 +23,8 @@ typedef struct {
 	int num_iregs;
 	int num_fregs;
 
-	guint32 ifree_mask;
-	guint32 ffree_mask;
+	regmask_t ifree_mask;
+	regmask_t ffree_mask;
 
 	/* symbolic -> hard register assignment */
 	char *iassign;
@@ -48,7 +46,9 @@ MonoRegState* mono_regstate_new (void);
 void          mono_regstate_free      (MonoRegState *rs);
 void          mono_regstate_reset     (MonoRegState *rs);
 void          mono_regstate_assign    (MonoRegState *rs);
-int           mono_regstate_alloc_int (MonoRegState *rs, guint32 allow);
+int           mono_regstate_alloc_int   (MonoRegState *rs, regmask_t allow);
 void          mono_regstate_free_int  (MonoRegState *rs, int reg);
+int           mono_regstate_alloc_float (MonoRegState *rs, regmask_t allow);
+void          mono_regstate_free_float  (MonoRegState *rs, int reg);
 inline int    mono_regstate_next_long (MonoRegState *rs);
 

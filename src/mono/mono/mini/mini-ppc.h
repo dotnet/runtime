@@ -4,6 +4,9 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/arch/ppc/ppc-codegen.h>
 
+#define MONO_MAX_IREGS 32
+#define MONO_MAX_FREGS 32
+
 #define MONO_ARCH_FRAME_ALIGNMENT 4
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 

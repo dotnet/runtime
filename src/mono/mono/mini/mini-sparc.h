@@ -3,6 +3,9 @@
 
 #include <mono/arch/sparc/sparc-codegen.h>
 
+#define MONO_MAX_IREGS 32
+#define MONO_MAX_FREGS 32
+
 /* Check this for Sparc.  I think it is right. */
 #define MONO_ARCH_FRAME_ALIGNMENT 4
 

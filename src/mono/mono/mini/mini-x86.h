@@ -3,6 +3,9 @@
 
 #include <mono/arch/x86/x86-codegen.h>
 
+#define MONO_MAX_IREGS 8
+#define MONO_MAX_FREGS 7
+
 #define MONO_ARCH_FRAME_ALIGNMENT 4
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 

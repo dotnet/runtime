@@ -46,12 +46,12 @@ mono_varlist_insert_sorted (MonoCompile *cfg, GList *list, MonoMethodVar *mv, in
 //#define DEBUG_LSCAN
 
 void
-mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, guint32 *used_mask)
+mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask)
 {
 	GList *l, *a, *active = NULL;
 	MonoMethodVar *vmv, *amv;
-	int max_regs, gains [32];
-	guint32 used_regs = 0;
+	int max_regs, gains [sizeof (regmask_t) * 8];
+	regmask_t used_regs = 0;
 	gboolean cost_driven;
 
 	cost_driven = (cfg->comp_done & MONO_COMP_LOOPS);
@@ -136,14 +136,14 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, guint32 *used_mask
 
 			vmv->reg = (int)regs->data;
 
-			used_regs |= 1 << vmv->reg;
+			used_regs |= 1LL << vmv->reg;
 
 			regs = g_list_remove_link (regs, regs);
 
 #ifdef DEBUG_LSCAN
-			printf ("ADD    %2d %08x %08x C%d\n",  vnum, 
+			printf ("ADD    %2d %08x %08x C%d R%d\n",  vmv->idx, 
 				vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos, 
-				vmv->spill_costs);
+				vmv->spill_costs, vmv->reg);
 #endif
 			active = mono_varlist_insert_sorted (cfg, active, vmv, TRUE);		
 		}
@@ -168,14 +168,13 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, guint32 *used_mask
 		vmv = l->data;
 		
 		if (vmv->reg >= 0)  {
-			if (gains [vmv->reg] > 5) {
+			if (gains [vmv->reg] > 3) {
 				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;
 				cfg->varinfo [vmv->idx]->dreg = vmv->reg;
-#ifdef DEBUG_LSCAN
-				printf ("REGVAR %d C%d R%d\n", vmv->idx, vmv->spill_costs, vmv->reg);
-#endif
+				if (cfg->verbose_level > 2)
+					printf ("REGVAR %d C%d R%d\n", vmv->idx, vmv->spill_costs, vmv->reg);
 			} else {
-				used_regs &= ~(1 << vmv->reg); 
+				used_regs &= ~(1LL << vmv->reg); 
 				vmv->reg = -1;
 			}
 		}
@@ -187,3 +186,4 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, guint32 *used_mask
 	g_list_free (active);
 	g_list_free (vars);
 }
+
