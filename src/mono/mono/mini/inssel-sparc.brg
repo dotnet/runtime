@@ -447,6 +447,15 @@ reg: OP_LOCALLOC (reg) {
 # Optimizations
 #
 
+reg: CEE_LDIND_REF (OP_REGVAR),
+reg: CEE_LDIND_I (OP_REGVAR),
+reg: CEE_LDIND_I4 (OP_REGVAR),
+reg: CEE_LDIND_U4 (OP_REGVAR) "0" {
+	/* This rule might not work on all archs, hence it is sparc only */
+	state->reg1 = state->left->tree->dreg;
+	tree->dreg = state->reg1;
+}
+
 stmt: CEE_STIND_I1 (OP_REGVAR, OP_ICONST) {
 	tree->opcode = OP_ICONST;
 	tree->dreg = state->left->tree->dreg;
