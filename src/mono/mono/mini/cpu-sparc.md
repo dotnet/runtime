@@ -46,7 +46,7 @@
 # See the code in mini-sparc32.c for more details on how the specifiers are used.
 #
 nop: len:4
-break: len:4
+break: len:8
 ldarg.0:
 ldarg.1:
 ldarg.2:
@@ -152,7 +152,7 @@ conv.i2: dest:i src1:i len:8
 conv.i4: dest:i src1:i len:4
 conv.i8:
 conv.r4: dest:f src1:i len:16
-conv.r8: dest:f src1:i len:4
+conv.r8: dest:f src1:i len:12
 conv.u4: dest:i src1:i len:
 conv.u8:
 callvirt:
@@ -323,18 +323,18 @@ regvar:
 reg:
 regoffset:
 label:
-store_membase_imm: dest:b len:12
-store_membase_reg: dest:b src1:i len:8
-storei1_membase_imm: dest:b len:12
+store_membase_imm: dest:b len:20
+store_membase_reg: dest:b src1:i len:12
+storei1_membase_imm: dest:b len:20
 storei1_membase_reg: dest:b src1:i len:8
-storei2_membase_imm: dest:b len:12
+storei2_membase_imm: dest:b len:20
 storei2_membase_reg: dest:b src1:i len:8
-storei4_membase_imm: dest:b len:12
-storei4_membase_reg: dest:b src1:i len:8
-storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i len:4
+storei4_membase_imm: dest:b len:20
+storei4_membase_reg: dest:b src1:i len:12
+storei8_membase_imm: dest:b len:20
+storei8_membase_reg: dest:b src1:i len:12
 storer4_membase_reg: dest:b src1:f len:8
-storer8_membase_reg: dest:b src1:f len:12
+storer8_membase_reg: dest:b src1:f len:20
 load_membase: dest:i src1:b len:12
 loadi1_membase: dest:i src1:b len:12
 loadu1_membase: dest:i src1:b len:12
@@ -352,7 +352,7 @@ sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:12
 div_imm: dest:a src1:i src2:i len:20
 div_un_imm: dest:a src1:i src2:i len:12
-rem_imm: dest:d src1:i src2:i len:20
+rem_imm: dest:d src1:i src2:i len:28
 rem_un_imm: dest:d src1:i src2:i len:16
 and_imm: dest:i src1:i len:12
 or_imm: dest:i src1:i len:12
