@@ -193,6 +193,9 @@ static inline WapiHandleType _wapi_handle_type (gpointer handle)
 	guint32 segment;
 	
 	_wapi_handle_segment (handle, &segment, &idx);
+
+	if(segment>=_wapi_shm_mapped_segments)
+		return WAPI_HANDLE_UNUSED;
 	
 	return(_wapi_handle_get_shared_segment (segment)->handles[idx].type);
 }
