@@ -1797,7 +1797,7 @@ mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *kl
 
 	mini_emit_max_iid_check_class (s, klass_reg, klass, false_target);
 	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, -1);
 	/* the object_is_null target simply copies the input register to the output */
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BGE, true_target);
 }
@@ -1848,7 +1848,7 @@ mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass
 
 	mini_emit_max_iid_check_class (s, klass_reg, klass, NULL);
 	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, -1);
 	MONO_EMIT_NEW_COND_EXC (s, EQ, "InvalidCastException");
 }
 
