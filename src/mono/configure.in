@@ -893,7 +893,12 @@ USEJIT=false
 if test x$JIT_SUPPORTED = xyes; then
    if $jit_wanted; then
       USEJIT=true
+      jit_status="Building and using the JIT"
+   else
+      jit_status="Building the JIT, defaulting to the interpreter"
    fi
+else
+   jit_status="interpreter"
 fi
 
 AM_CONDITIONAL(USE_JIT, test x$USEJIT = xtrue)
@@ -1002,8 +1007,10 @@ mono.spec
 
 echo "
 
-	GC:	$gc
-	ICU:	$enable_icu
-	NPTL:   $with_nptl
+	GC:	     $gc
+	ICU:	     $enable_icu
+	NPTL:        $with_nptl
 	SIGALTSTACK: $with_sigaltstack
+	Engine:      $jit_status
+	
 "
