@@ -1065,9 +1065,11 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 	
 	set_collator_options (coll, options);
 
-	keylen=ucol_getSortKey (coll, mono_string_chars (source), -1, NULL, 0);
+	keylen=ucol_getSortKey (coll, mono_string_chars (source),
+				mono_string_length (source), NULL, 0);
 	keybuf=g_malloc (sizeof(char)* keylen);
-	ucol_getSortKey (coll, mono_string_chars (source), -1, keybuf, keylen);
+	ucol_getSortKey (coll, mono_string_chars (source),
+			 mono_string_length (source), keybuf, keylen);
 
 	mono_monitor_exit ((MonoObject *)this);
 	
@@ -1143,8 +1145,9 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
 			   &ec);
 	
-	search=usearch_openFromCollator (mono_string_chars (value), -1,
-					 usrcstr, -1, coll, NULL, &ec);
+	search=usearch_openFromCollator (mono_string_chars (value),
+					 mono_string_length (value),
+					 usrcstr, count, coll, NULL, &ec);
 	if(U_SUCCESS (ec)) {
 		if(first) {
 			pos=usearch_first (search, &ec);
@@ -1172,8 +1175,9 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
 			usearch_getMatchedText (search, match, match_len, &ec);
 
-			uret = ucol_strcoll (coll, match, -1,
-					     mono_string_chars (value), -1);
+			uret = ucol_strcoll (coll, match, match_len,
+					     mono_string_chars (value),
+					     mono_string_length (value));
 			g_free (match);
 			
 			if (uret == UCOL_EQUAL) {
@@ -1278,8 +1282,8 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
 			   &ec);
 			
-	search=usearch_openFromCollator (uvalstr, -1, usrcstr, -1, coll, NULL,
-					 &ec);
+	search=usearch_openFromCollator (uvalstr, 1, usrcstr, count, coll,
+					 NULL, &ec);
 	if(U_SUCCESS (ec)) {
 		if(first) {
 			pos=usearch_first (search, &ec);
@@ -1307,7 +1311,8 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
 			usearch_getMatchedText (search, match, match_len, &ec);
 
-			uret = ucol_strcoll (coll, match, -1, uvalstr, -1);
+			uret = ucol_strcoll (coll, match, match_len, uvalstr,
+					     1);
 			g_free (match);
 			
 			if (uret == UCOL_EQUAL) {
@@ -1406,9 +1411,11 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
 			   &ec);
 			
-	search=usearch_openFromCollator (mono_string_chars (old), -1,
-					 mono_string_chars (this), -1, coll,
-					 NULL, &ec);
+	search=usearch_openFromCollator (mono_string_chars (old),
+					 mono_string_length (old),
+					 mono_string_chars (this),
+					 mono_string_length (this),
+					 coll, NULL, &ec);
 	if(U_SUCCESS (ec)) {
 		int pos, oldpos, len_delta=0;
 		int32_t newstr_len=mono_string_length (new), match_len;
@@ -1427,7 +1434,9 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
 			usearch_getMatchedText (search, match, match_len, &ec);
 
-			if (ucol_strcoll (coll, match, -1, mono_string_chars (old), -1) == UCOL_EQUAL) {
+			if (ucol_strcoll (coll, match, match_len,
+					  mono_string_chars (old),
+					  mono_string_length (old)) == UCOL_EQUAL) {
 				/* OK, we really did get a match */
 #ifdef DEBUG
 				g_message (G_GNUC_PRETTY_FUNCTION
@@ -1464,7 +1473,9 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 			/* Add the unmatched text */
 			u_strncat (uret, mono_string_chars (this)+oldpos,
 				   pos-oldpos);
-			if (ucol_strcoll (coll, match, -1, mono_string_chars (old), -1) == UCOL_EQUAL) {
+			if (ucol_strcoll (coll, match, match_len,
+					  mono_string_chars (old),
+					  mono_string_length (old)) == UCOL_EQUAL) {
 				/* Then the replacement */
 				u_strcat (uret, mono_string_chars (new));
 			} else {
@@ -1531,13 +1542,14 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, Mono
 
 	ec=U_ZERO_ERROR;
 	len=u_strToLower (udest, mono_string_length (this)+1,
-			  mono_string_chars (this), -1, icu_loc, &ec);
+			  mono_string_chars (this), mono_string_length (this),
+			  icu_loc, &ec);
 	if(ec==U_BUFFER_OVERFLOW_ERROR ||
 	   ec==U_STRING_NOT_TERMINATED_WARNING) {
 		g_free (udest);
 		udest=(UChar *)g_malloc0 (sizeof(UChar)*(len+1));
-		len=u_strToLower (udest, len+1, mono_string_chars (this), -1,
-				  icu_loc, &ec);
+		len=u_strToLower (udest, len+1, mono_string_chars (this),
+				  mono_string_length (this), icu_loc, &ec);
 	}
 
 	if(U_SUCCESS (ec)) {
@@ -1593,13 +1605,14 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, Mono
 
 	ec=U_ZERO_ERROR;
 	len=u_strToUpper (udest, mono_string_length (this)+1,
-			  mono_string_chars (this), -1, icu_loc, &ec);
+			  mono_string_chars (this), mono_string_length (this),
+			  icu_loc, &ec);
 	if(ec==U_BUFFER_OVERFLOW_ERROR ||
 	   ec==U_STRING_NOT_TERMINATED_WARNING) {
 		g_free (udest);
 		udest=(UChar *)g_malloc0 (sizeof(UChar)*(len+1));
-		len=u_strToUpper (udest, len+1, mono_string_chars (this), -1,
-				  icu_loc, &ec);
+		len=u_strToUpper (udest, len+1, mono_string_chars (this),
+				  mono_string_length (this), icu_loc, &ec);
 	}
 
 	if(U_SUCCESS (ec)) {
