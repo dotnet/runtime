@@ -21,8 +21,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/cil-coff.h>
 
-static guint32 appdomain_thread_id = 0;
-static guint32 context_thread_id = 0;
+static guint32 appdomain_thread_id = -1;
+static guint32 context_thread_id = -1;
 
 static gint32 appdomain_id_counter = 0;
 

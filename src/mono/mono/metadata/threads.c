@@ -56,7 +56,7 @@ static CRITICAL_SECTION threads_mutex;
 static MonoGHashTable *threads=NULL;
 
 /* The TLS key that holds the MonoObject assigned to each thread */
-static guint32 current_object_key;
+static guint32 current_object_key = -1;
 
 /* function called at thread start */
 static MonoThreadStartCB mono_thread_start_cb = NULL;
@@ -71,7 +71,7 @@ static MonoThreadCleanupFunc mono_thread_cleanup = NULL;
 static MonoThreadCallbacks *mono_thread_callbacks = NULL;
 
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
-static guint32 slothash_key;
+static guint32 slothash_key = -1;
 
 static void thread_adjust_static_data (MonoThread *thread);
 
