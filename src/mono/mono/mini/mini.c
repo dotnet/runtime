@@ -7014,6 +7014,7 @@ mono_jit_compile_method (MonoMethod *method)
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoCompile *cfg;
 	GHashTable *jit_code_hash;
+	MonoJitInfo *info;
 	gpointer code;
 
 	if (default_opt & MONO_OPT_SHARED)
@@ -7023,21 +7024,27 @@ mono_jit_compile_method (MonoMethod *method)
 
 	jit_code_hash = target_domain->jit_code_hash;
 
-	if ((code = g_hash_table_lookup (jit_code_hash, method))) {
-		mono_jit_stats.methods_lookups++;
-		return code;
+	if ((info = g_hash_table_lookup (jit_code_hash, method))) {
+		/* We can't use a domain specific method in another domain */
+		if (! ((domain != target_domain) && !info->domain_neutral)) {
+			mono_jit_stats.methods_lookups++;
+			return info->code_start;
+		}
 	}
 
 #ifdef MONO_USE_AOT_COMPILER
 	if (!mono_compile_aot && !mono_no_aot) {
+		MonoJitInfo *info;
+
 		mono_class_init (method->klass);
-		if ((code = mono_aot_get_method (target_domain, method))) {
-			g_hash_table_insert (jit_code_hash, method, code);
+		if ((info = mono_aot_get_method (domain, method))) {
+
+			g_hash_table_insert (domain->jit_code_hash, method, info);
 
 			/* make sure runtime_init is called */
-			mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
+			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
 
-			return code;
+			return info->code_start;
 		}
 	}
 #endif
@@ -7090,7 +7097,7 @@ mono_jit_compile_method (MonoMethod *method)
 	code = cfg->native_code;
 	mono_destroy_compile (cfg);
 
-	g_hash_table_insert (jit_code_hash, method, code);
+	g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
 
 	if (target_domain->jump_target_hash) {
 		MonoJumpInfo patch_info;

@@ -18,7 +18,7 @@
 #define MONO_USE_AOT_COMPILER
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "3"
+#define MONO_AOT_FILE_VERSION "4"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -354,7 +354,8 @@ typedef enum {
 	MONO_PATCH_INFO_TYPE_FROM_HANDLE,
 	MONO_PATCH_INFO_R4,
 	MONO_PATCH_INFO_R8,
-	MONO_PATCH_INFO_IP
+	MONO_PATCH_INFO_IP,
+	MONO_PATCH_INFO_IID
 } MonoJumpInfoType;
 
 typedef struct MonoJumpInfo MonoJumpInfo;
@@ -624,7 +625,7 @@ int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_aot_init                     (void);
-gpointer  mono_aot_get_method               (MonoDomain *domain,
+MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
 											 MonoMethod *method);
 gboolean  mono_method_blittable             (MonoMethod *method);
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);

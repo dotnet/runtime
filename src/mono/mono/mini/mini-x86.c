@@ -3050,6 +3050,10 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_FIELD:
 			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
 			continue;
+		case MONO_PATCH_INFO_IID:
+			mono_class_init (patch_info->data.klass);
+			*((guint32 *)(ip + 1)) = patch_info->data.klass->interface_id;
+			continue;			
 		case MONO_PATCH_INFO_VTABLE:
 			*((gconstpointer *)(ip + 1)) = mono_class_vtable (domain, patch_info->data.klass);
 			continue;
