@@ -77,7 +77,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		libmono_cflags="-D_REENTRANT"
-		libgc_threads=solaris
+		libgc_threads=pthreads
 		;;
 	*-*-darwin*)
 		platform_win32=no
