@@ -27,7 +27,104 @@
 		ldc.i4.0
 		ret
 	}
+	
+	
+	.method static public int32 test_1_ceq_to_i4 () il managed {
+		.locals init (
+			int32   foo
+		)
+		ldc.i4 500
+		stloc foo
+		ldloc foo
+		ldc.i4 500
+		ceq
+		stloc foo
+		ldloc foo
+		ret
+	}
+	
+	//
+	// This should be manually checked. Basically under -O=linears,
+	// you should not see tons of register spilling.
+	//
+	.method static public int32 test_1_bytedreg_free () il managed {
+		.locals init (
+			int32   foo
+		)
+		ldc.i4 500
+		stloc foo
+		ldloc foo
+		ldc.i4 500
+		ceq
+		stloc foo
+		
+		ldloc foo
+		ldc.i4 1
+		ceq
+		stloc foo
 
+		ldloc foo
+		ldc.i4 1
+		ceq
+		stloc foo
+
+		ldloc foo
+		ldc.i4 1
+		ceq
+		stloc foo
+		
+		ldloc foo
+		ldc.i4 1
+		ceq
+		stloc foo
+		
+		ldloc foo
+		ret
+	}
+	
+	//
+	// This should be manually checked. Basically under -O=linears,
+	// you should not see tons of register spilling.
+	//
+	.method static public int32 test_0_bytesreg1_free () il managed {
+		.locals init (
+			unsigned int8	   dest,
+			int32	           src,
+			unsigned int8&	   pdest
+		)
+
+		ldloca     dest
+		stloc      pdest
+		
+		ldloc      pdest
+		ldloc      src
+		stind.i1
+		
+		ldloc      pdest
+		ldloc      src
+		stind.i1
+		
+		ldloc      pdest
+		ldloc      src
+		stind.i1
+		
+		ldloc      pdest
+		ldloc      src
+		stind.i1
+		
+		ldloc      pdest
+		ldloc      src
+		stind.i1
+		
+		ldloc      pdest
+		ldloc      src
+		stind.i1
+		
+		ldloc      pdest
+		ldind.i1
+		ret
+	}
+	
 	.method static public int32 test_3_copy_used_bug () il managed {
 
 		.locals init (
