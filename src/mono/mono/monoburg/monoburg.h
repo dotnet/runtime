@@ -7,6 +7,7 @@ void yyerror (char *fmt, ...);
 int  yylex   (void);
 
 extern FILE *inputfd;
+extern FILE *outputfd;
 
 typedef struct _Rule Rule;
 

@@ -118,7 +118,7 @@ nextchar ()
 	  if (ll) {
 	    next_state = 1;
 	  } else 
-	    fputs (input, stdout);
+	    fputs (input, outputfd);
 	  break;
 	case 1:
 	  if (ll) {
@@ -141,9 +141,9 @@ nextchar ()
 void
 yyparsetail (void)
 {
-  fputs (input, stdout);
+  fputs (input, outputfd);
   while (fgets (input, sizeof (input), inputfd))
-    fputs (input, stdout);
+    fputs (input, outputfd);
 }
 
 int 

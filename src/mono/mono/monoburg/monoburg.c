@@ -20,15 +20,15 @@ static GList *nonterm_list;
 static GList *rule_list;
 
 FILE *inputfd;
+FILE *outputfd;
 static FILE *deffd;
-static FILE *outfd;
 
 static void output (char *fmt, ...) 
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	vfprintf (outfd, fmt, ap);
+	vfprintf (outputfd, fmt, ap);
 	va_end (ap);
 }
 
@@ -205,6 +205,12 @@ emit_header ()
 	output ("#include <glib.h>\n");
 	output ("\n");
 
+	output ("#ifndef MBTREE_TYPE\n#error MBTREE_TYPE undefined\n#endif\n");
+	output ("#ifndef MBTREE_OP\n#define MBTREE_OP(t) ((t)->op)\n#endif\n");
+	output ("#ifndef MBTREE_LEFT\n#define MBTREE_LEFT(t) ((t)->left)\n#endif\n");
+	output ("#ifndef MBTREE_RIGHT\n#define MBTREE_RIGHT(t) ((t)->right)\n#endif\n");
+	output ("#ifndef MBTREE_STATE\n#define MBTREE_STATE(t) ((t)->state)\n#endif\n");
+
 	for (l = term_list; l; l = l->next) {
 		Term *t = (Term *)l->data;
 		if (t->number == -1)
@@ -259,13 +265,6 @@ emit_state ()
 		output ("\tunsigned int\t rule_%s:%d;\n",  n->name, j); 
 	}
 	output ("};\n\n");
-
-	output ("typedef struct _MBTree MBTree;\n");
-	output ("struct _MBTree {\n");
-	output ("\tguint16 op;\n");
-	output ("\tMBTree *left, *right;\n");
-	output ("\tMBState *state;\n");
-	output ("};\n\n");
 }
 
 static void
@@ -315,13 +314,9 @@ emit_rule_match (Rule *rule)
 	Tree *t = rule->tree; 
 
 	if ((t->left && t->left->op) || 
-	    (t->right && t->right->op)) {
-	
+	    (t->right && t->right->op)) {	
 		output ("\t\tif (\n");
-		if (t->left && t->left->op)
-			emit_tree_match ("left->", t->left);
-		if (t->right && t->right->op)
-			emit_tree_match ("right->", t->right);
+		emit_tree_match ("p->", t);
 		output ("\n\t\t)\n");
 	}
 }
@@ -381,31 +376,31 @@ emit_label_func ()
 	int i;
 
 	output ("static MBState *\n");
-	output ("mono_burg_label_priv (MBTree *tree) {\n");
+	output ("mono_burg_label_priv (MBTREE_TYPE *tree) {\n");
 
 	output ("\tint arity;\n");
 	output ("\tint c;\n");
 	output ("\tMBState *p, *left, *right;\n\n");
 
-	output ("\tswitch (mono_burg_arity [tree->op]) {\n");
+	output ("\tswitch (mono_burg_arity [MBTREE_OP(tree)]) {\n");
 	output ("\tcase 0:\n");
 	output ("\t\tleft = NULL;\n");
 	output ("\t\tright = NULL;\n");
 	output ("\t\tbreak;\n");
 	output ("\tcase 1:\n");
-	output ("\t\tleft = mono_burg_label_priv (tree->left);\n");
+	output ("\t\tleft = mono_burg_label_priv (MBTREE_LEFT(tree));\n");
 	output ("\t\tright = NULL;\n");
 	output ("\t\tbreak;\n");
 	output ("\tcase 2:\n");
-	output ("\t\tleft = mono_burg_label_priv (tree->left);\n");
-	output ("\t\tright = mono_burg_label_priv (tree->right);\n");
+	output ("\t\tleft = mono_burg_label_priv (MBTREE_LEFT(tree));\n");
+	output ("\t\tright = mono_burg_label_priv (MBTREE_RIGHT(tree));\n");
 	output ("\t}\n\n");
 
 	output ("\tarity = (left != NULL) + (right != NULL);\n");
-	output ("\tg_assert (arity == mono_burg_arity [tree->op]);\n\n");
+	output ("\tg_assert (arity == mono_burg_arity [MBTREE_OP(tree)]);\n\n");
 
 	output ("\tp = g_new0 (MBState, 1);\n");
-	output ("\tp->op = tree->op;\n");
+	output ("\tp->op = MBTREE_OP(tree);\n");
 	output ("\tp->left = left;\n");
 	output ("\tp->right = right;\n");
 	
@@ -414,7 +409,7 @@ emit_label_func ()
 	}
 	output ("\n");
 
-	output ("\tswitch (tree->op) {\n");
+	output ("\tswitch (MBTREE_OP(tree)) {\n");
 	for (l = term_list; l; l = l->next) {
 		Term *t = (Term *)l->data;
 		GList *rl;
@@ -448,14 +443,14 @@ emit_label_func ()
 	output ("\t\tg_error (\"unknown operator\");\n");
 	output ("\t}\n\n");
 
-	output ("\ttree->state = p;\n");
+	output ("\tMBTREE_STATE(tree) = p;\n");
 
 	output ("\treturn p;\n");
 
 	output ("}\n\n");
 
 	output ("MBState *\n");
-	output ("mono_burg_label (MBTree *tree)\n{\n");
+	output ("mono_burg_label (MBTREE_TYPE *tree)\n{\n");
 	output ("\tMBState *p = mono_burg_label_priv (tree);\n");
 	output ("\treturn p->rule_%s ? p : NULL;\n", ((NonTerm *)nonterm_list->data)->name);
 	output ("}\n\n");
@@ -471,10 +466,10 @@ compute_kids (char *ts, Tree *tree, int *n)
 	} else if (tree->op && tree->op->arity) {
 		char *res2 = NULL;
 
-		res = compute_kids (g_strdup_printf ("%s->left", ts), 
+		res = compute_kids (g_strdup_printf ("MBTREE_LEFT(%s)", ts), 
 				    tree->left, n);
 		if (tree->op->arity == 2)
-			res2 = compute_kids (g_strdup_printf ("%s->right", ts), 
+			res2 = compute_kids (g_strdup_printf ("MBTREE_RIGHT(%s)", ts), 
 					     tree->right, n);
 		return g_strconcat (res, res2, NULL);
 	}
@@ -509,10 +504,10 @@ emit_kids ()
 	output ("}\n\n");
 
 
-	output ("MBTree **\n");
-	output ("mono_burg_kids (MBTree *tree, int rulenr, MBTree *kids [])\n{\n");
+	output ("MBTREE_TYPE **\n");
+	output ("mono_burg_kids (MBTREE_TYPE *tree, int rulenr, MBTREE_TYPE *kids [])\n{\n");
 	output ("\tg_return_val_if_fail (tree != NULL, NULL);\n");
-	output ("\tg_return_val_if_fail (tree->state != NULL, NULL);\n");
+	output ("\tg_return_val_if_fail (MBTREE_STATE(tree) != NULL, NULL);\n");
 	output ("\tg_return_val_if_fail (kids != NULL, NULL);\n\n");
 
 	output ("\tswitch (rulenr) {\n");
@@ -566,7 +561,7 @@ emit_emitter_func ()
 
 			emit_rule_string (rule, "");
 
-			output ("mono_burg_emit_%d (MBTree *tree)\n", i);
+			output ("mono_burg_emit_%d (MBTREE_TYPE *tree)\n", i);
 			output ("{\n");
 			output ("%s\n", rule->code);
 			output ("}\n\n");
@@ -654,6 +649,14 @@ emit_vardefs ()
 	}
 	output ("};\n\n");
 
+	output ("char *mono_burg_term_string [] = {\n");
+	output ("\tNULL,\n");
+	for (l = term_list, i = 0; l; l = l->next) {
+		Term *t = (Term *)l->data;
+		output ("\t\"%s\",\n", t->name);
+	}
+	output ("};\n\n");
+
 	output ("char *mono_burg_rule_string [] = {\n");
 	output ("\tNULL,\n");
 	for (l = rule_list, i = 0; l; l = l->next) {
@@ -698,15 +701,16 @@ emit_vardefs ()
 static void
 emit_prototypes ()
 {
-	output ("typedef void (*MBEmitFunc) (MBTree *tree);\n\n");
+	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree);\n\n");
 
+	output ("extern char *mono_burg_term_string [];\n");
 	output ("extern char *mono_burg_rule_string [];\n");
 	output ("extern guint16 *mono_burg_nts [];\n");
 	output ("extern MBEmitFunc mono_burg_func [];\n");
 
-	output ("MBState *mono_burg_label (MBTree *tree);\n");
+	output ("MBState *mono_burg_label (MBTREE_TYPE *tree);\n");
 	output ("int mono_burg_rule (MBState *state, int goal);\n");
-	output ("MBTree **mono_burg_kids (MBTree *tree, int rulenr, MBTree *kids []);\n");
+	output ("MBTREE_TYPE **mono_burg_kids (MBTREE_TYPE *tree, int rulenr, MBTREE_TYPE *kids []);\n");
 
 	output ("\n");
 }
@@ -793,11 +797,11 @@ main (int argc, char *argv [])
 			perror ("cant open header output file");
 			exit (-1);
 		}
-		outfd = deffd;
+		outputfd = deffd;
 		output ("#ifndef _MONO_BURG_DEFS_\n");
 		output ("#define _MONO_BURG_DEFS_\n\n");
 	} else 
-		outfd = stdout;
+		outputfd = stdout;
 
 
 	if (infile) {
@@ -824,7 +828,7 @@ main (int argc, char *argv [])
 	if (deffd) {
 		output ("#endif /* _MONO_BURG_DEFS_ */\n");
 		fclose (deffd);
-		outfd = stdout;
+		outputfd = stdout;
 
 		output ("#include \"%s\"\n\n", deffile);
 	}

@@ -3,7 +3,17 @@
  * directly to the output.
  */
 
+#include <glib.h>
 #include <stdio.h>
+
+#define MBTREE_TYPE  MBTree
+
+typedef struct _MBTree MBTree;
+struct _MBTree {
+	guint16 op;
+	MBTree *left, *right;
+	gpointer state;
+};
 
 %% these are the monoburg definition
 #
@@ -75,17 +85,29 @@ reduce (MBTree *tree, int goal)
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
 	guint16 *nts = mono_burg_nts [ern];
-	int i;
+	int i, n;
 
 	mono_burg_kids (tree, ern, kids);
 
-	//printf ("TEST %d %d %s\n", goal, ern, mono_burg_rule_string [ern]);
-
-	for (i = 0; nts [i]; i++)
+	// printf ("TEST %d %d %s %d\n", goal, ern, mono_burg_rule_string [ern], nts [0]);
+	
+	for (i = 0; nts [i]; i++) 
 		reduce (kids [i], nts [i]);
 
-	if (mono_burg_func [ern])
-		mono_burg_func [ern] (tree);
+	n = (tree->left != NULL) + (tree->right != NULL);
+
+	if (n) { /* not a terminal */
+	  // printf ("XXTE %s %d\n", mono_burg_rule_string [ern], n);
+		if (mono_burg_func [ern])
+			mono_burg_func [ern] (tree);
+		else
+			g_warning ("no code for rule %s\n", 
+				   mono_burg_rule_string [ern]);
+	} else {
+		if (mono_burg_func [ern])
+			g_warning ("unused code in rule %s\n", 
+				   mono_burg_rule_string [ern]);
+	}
 }
 
 int
