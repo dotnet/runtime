@@ -1,0 +1,44 @@
+* ADO.NET
+
+	The coordinator for the ADO.NET implementation is <a
+	href="mailto:rodrigo@ximian.com">Rodrigo Moya</a>.  
+
+* Action plan
+
+	The current plan to implement ADO.NET is as follows:
+
+	<b>Step 1:</b> SqlClient:
+
+	<ul>
+		* Implementation of System.Data.SqlClient based on
+		  the PostgreSQL C API.
+
+		* Once the System.Data.SqlClient code is functional and
+		  is usable by other people, we willl move it to
+		  System.Data.PostgreSQL, and will convert the existing
+		  System.Data.SqlClient to be just a wrapper around
+		  System.Data.PostgreSQL.  
+
+	</ul>
+
+	<b>Step 2:</b> OleDBClient:
+	<ul>
+		* On Unix systems: OleDBClient will use LibGDA as its
+		  engine. 
+
+		  LibGDA is the "engine" that is used by
+		  Gnome-Db (only libgda, not libgnomedb at all).
+
+		* On Windows systems: OleDBClient We will use OleDB as
+		  its engine.
+	</ul>
+
+	<b>Step 3:</b> SqlClient Providers:
+
+	<ul>
+		* System.Data.SqlClient will then become a generic
+		  proxy for binding to other SQL implementations other
+		  than Postgress (MySQL on Unix/Windows; MS SQL on
+		  Window; Interbase on Unix/Windows). 
+	</ul>
+

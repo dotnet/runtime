@@ -3,7 +3,9 @@ CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
 CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=	\
+	deploy/ado-net.html			\
 	deploy/anoncvs.html			\
+	deploy/books.html			\
 	deploy/contributing.html		\
 	deploy/class-status.html		\
 	deploy/class-status-corlib.html		\
@@ -27,17 +29,17 @@ OBJECTS=	\
 	deploy/jit-debug-sample2.html		\
 	deploy/mailing-lists.html		\
 	deploy/monodoc-xml.html			\
+	deploy/papers.html			\
 	deploy/passport.html			\
+	deploy/porting.html			\
 	deploy/rationale.html			\
 	deploy/resources.html			\
 	deploy/roadmap.html			\
 	deploy/runtime.html			\
 	deploy/status.html			\
 	deploy/testing.html			\
-	deploy/porting.html			\
 	deploy/tools.html			\
-	deploy/books.html			\
-	deploy/papers.html
+	deploy/winforms.html
 
 NON_HTML_SOURCES=	\
 	../mono-build.sh	\

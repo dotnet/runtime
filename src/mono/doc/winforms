@@ -1,0 +1,90 @@
+* System.Windows.Forms
+
+	System.Windows.Forms eventually will support multiple
+	toolkits.  Ximian will be delivering a product that will allow
+	for System.Windows.Forms applications to integrate with GNOME
+	through Gtk and MacOS X using Cocoa.
+
+	There are no current plans to support embedded devices, but
+	Gtk/FrameBuffer is an option.  If you have suggestions or
+	recommendations, please let us <a
+	href="mailto:mono-hackers-list@ximian.com">let us know</a>
+
+* Contributing
+
+	Currently Ximian developers are busy making our JIT engine
+	feature complete, and dealing with the low-level details of
+	the Mono runtime.
+
+	If you are interested in contributing, you can start stubbing
+	out classes and providing enumerations.  That will help us
+	significantly when we start working on the actual bindings.  
+
+	Christian Meyer is currently organizing this effort.
+
+* System.Drawing
+
+	Using existing libraries to implement some of the functionality required
+
+	<ul>
+ 		* gdk-pixbuf is a generic image loader that loads an image
+		  and leaves it into an RGB buffer.  It hides all the details
+		  about what image file format is being loaded.
+
+		* Libart is a general framework for rendering RGB/RGBA
+		  buffers into RGB buffers and rendering postscript-like paths into
+		  RGB/RGBA buffers.
+	</ul>
+
+	We want to use gdk-pixbuf as the image loader for the image
+	classes, and then we need operations to render that into the
+	windowing system (Gtk+, MacOS, etc).  But notice how there is
+	very little dependnecies in Gdk-pixbuf on gtk, and libart has
+	none.
+
+	They are pretty independent from a windowing system
+	(gdk-pixbuf comes with some "helper" routines for rendering
+	data into a pixmap and to load pixmaps into RGB buffers).
+
+	A few things to keep in mind:
+	
+	<ul>
+	
+	        * gdk-pixbuf can be used to load images for Gtk+,
+		  MacOS X and Windows, it should be pretty portable,
+		  although we might need in the future to back-port
+		  some new features from Gtk head. 
+
+	        * Libart is probably only going to be used with X11,
+		  as the MacOS X provides the same features in Quartz,
+		  and Win32 *probably* has that in GDI+.  If not, we
+		  should use libart in Win32 as well (or for older
+		  Windows systems).
+	</ul>
+
+* Directory Layout
+
+        System.Drawing  (assembly directory)
+                System.Drawing.Blah
+                        Common code for "Blah"
+                        Stubs for "Blah" to ease ports.
+
+                Gtk
+                        System.Drawing.Blah.
+                                Gtk ports of "System.Drawing.Blah"
+                MacOS
+                        System.Drawing.Blah
+                                MacOS ports of "System.Drawing.Blah"
+                Win32
+                        System.Drawing.Blah
+                                Win32 ports of "System.Drawing.Blah"
+
+	Then we use nant targets to include/exclude the right set of
+	files to create the assembly.
+
+* Open questions:
+
+	I believe that the graphics contexts that are used to render
+	can accept either libart-like rendering operations and
+	X11-like rendering operations.  This complicates matters, but
+	I am not sure.  Someone needs to investigate this.
