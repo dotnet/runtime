@@ -2808,7 +2808,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 
-	char *start, *p, *w, *last_point;
+	char *start, *p, *w, *last_point, *startn;
 	int in_modifiers = 0;
 	int isbyref = 0, rank;
 
@@ -2825,10 +2825,10 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		switch (*p) {
 		case '+':
 			*p = 0; /* NULL terminate the name */
-			start = p + 1;
+			startn = p + 1;
 			/* we have parsed the nesting namespace + name */
 			if (info->name) {
-				info->nested = g_list_append (info->nested, start);
+				info->nested = g_list_append (info->nested, startn);
 				break;
 			}
 			if (last_point) {
@@ -2861,7 +2861,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 	}
 	
 	if (info->name) {
-		info->nested = g_list_append (info->nested, start);
+		info->nested = g_list_append (info->nested, startn);
 	} else {
 		if (last_point) {
 			info->name_space = start;
