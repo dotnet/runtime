@@ -728,8 +728,6 @@ mono_label_cfg (MonoFlowGraph *cfg)
 			mbstate =  mono_burg_label (t1, cfg);
 
 			if (!mbstate) {
-				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-					return FALSE;
 				g_warning ("tree does not match in %s: 0x%04x",
 					   mono_method_full_name (cfg->method, TRUE), t1->cli_addr);
 				mono_print_ctree (cfg, t1); printf ("\n\n");
