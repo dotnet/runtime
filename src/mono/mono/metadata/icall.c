@@ -6436,6 +6436,10 @@ static const IcallEntry keypair_icalls [] = {
 	{"_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser}
 };
 
+static const IcallEntry evidence_icalls [] = {
+	{"IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent}
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -6508,6 +6512,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Runtime.Remoting.RemotingServices", remotingservices_icalls, G_N_ELEMENTS (remotingservices_icalls)},
 	{"System.RuntimeMethodHandle", methodhandle_icalls, G_N_ELEMENTS (methodhandle_icalls)},
 	{"System.Security.Cryptography.RNGCryptoServiceProvider", rng_icalls, G_N_ELEMENTS (rng_icalls)},
+	{"System.Security.Policy.Evidence", evidence_icalls, G_N_ELEMENTS (evidence_icalls)},
 	{"System.Security.Principal.WindowsIdentity", identity_icalls, G_N_ELEMENTS (identity_icalls)},
 	{"System.Security.Principal.WindowsImpersonationContext", impersonation_icalls, G_N_ELEMENTS (impersonation_icalls)},
 	{"System.Security.Principal.WindowsPrincipal", principal_icalls, G_N_ELEMENTS (principal_icalls)},

@@ -45,4 +45,8 @@ extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_Prote
 extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path);
 
 
+/* System.Security.Policy.Evidence */
+MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass);
+
+
 #endif /* _MONO_METADATA_SECURITY_H_ */

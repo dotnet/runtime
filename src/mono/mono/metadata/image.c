@@ -1380,4 +1380,12 @@ mono_image_is_dynamic (MonoImage *image)
 	return image->dynamic;
 }
 
-
+gboolean
+mono_image_has_authenticode_entry (MonoImage *image)
+{
+	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoDotNetHeader *header = &iinfo->cli_header;
+	MonoPEDirEntry *de = &header->datadir.pe_certificate_table;
+	// the Authenticode "pre" (non ASN.1) header is 8 bytes long
+	return ((de->rva != 0) && (de->size > 8));
+}

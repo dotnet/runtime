@@ -12,7 +12,10 @@
 #endif
 
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/image.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object-internals.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/security.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strenc.h>
@@ -931,4 +934,20 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString 
 	ret = Protect (path, (S_IRUSR | S_IWUSR), S_IXUSR);
 #endif
 	return ret;
+}
+
+
+/*
+ * Returns TRUE if there is "something" where the Authenticode signature is 
+ * normally located. Returns FALSE is data directory is empty.
+ *
+ * Note: Neither the structure nor the signature is verified by this function.
+ */
+MonoBoolean
+ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass)
+{
+	if (refass && refass->assembly && refass->assembly->image) {
+		return mono_image_has_authenticode_entry (refass->assembly->image);
+	}
+	return FALSE;
 }
