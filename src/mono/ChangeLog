@@ -1,3 +1,9 @@
+2004-07-02  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (mcs-do-basic-build, mcs-do-short-build):
+	Pass NO_SIGN_ASSEMBLY=yes to sub-make.
+	($(tmpinst)/bin/mono) [PLATFORM_WIN32]: Make it work.
+
 2004-07-02  Zoltan Varga  <vargaz@freemail.hu>
 
 	* man/mono.1: Added 'aot' to trace options.

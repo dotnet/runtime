@@ -118,14 +118,14 @@ mono-do-runtime-only: $(CONFIG_HEADER)
 mcs-do-basic-build:
 	rm -f $(MCS_FILES)
 	for dir in $(MCS_BASIC_DIRS); do \
-	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default USE_BOOT_COMPILE=yes BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB") || exit 1 ; \
+	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default NO_SIGN_ASSEMBLY=yes USE_BOOT_COMPILE=yes BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB") || exit 1 ; \
 	done
 
 mcs-do-short-build:
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH; export PATH ; \
 	for dir in $(MCS_DIRS); do \
-	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default) || exit 1 ; \
+	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default NO_SIGN_ASSEMBLY=yes) || exit 1 ; \
 	done
 
 mcs-do-full-build:
@@ -170,7 +170,7 @@ $(tmpinst)/bin/mono: $(srcdir)/Makefile.am
 	echo 'if test -z "$$MONO_PATH" ; then MONO_PATH="$$tmpinst\\lib"; else MONO_PATH="$${MONO_PATH};$$tmpinst\\lib" ; fi' >> $@
 	echo 'MONO_CFG_DIR="$$tmpinst\\etc"' >> $@
 	echo 'export MONO_PATH MONO_CFG_DIR' >> $@
-	echo 'exec "$$builddir/libtool" --mode=execute "$$builddir/mono.exe" "$$@"' >> $@
+	echo 'exec "$$builddir/libtool" --mode=execute "$$builddir/$(mono_runtime).exe" "$$@"' >> $@
 	chmod +x $@
 
 else
