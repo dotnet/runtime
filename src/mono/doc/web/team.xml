@@ -75,4 +75,16 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Pedro</first-name>
+      <last-name>Martinez</first-name>
+    </name>
+    <e-mail>yoros@wanadoo.es</e-mail>
+    <location>Spain</location>
+    <tasks>
+      <task>Coding little things</task>
+    </tasks>
+  </contributor>
+
 </contributors>
