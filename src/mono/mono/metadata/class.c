@@ -84,25 +84,11 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	}
 
 	references = image->references;
-	if (!references ||  !references [idx-1]) {
-		/* 
-		 * detected a reference to mscorlib, we simply return a reference to a dummy 
-		 * until we have a better solution.
-		 * 
-		 * once a better solution is in place, the System.MonoDummy
-		 * class should be removed from CVS.
-		 */
-		fprintf(stderr, "Sending dummy where %s.%s expected\n", mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]), mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME])); 
-		
-		res = mono_class_from_name (image, "System", "MonoDummy");
-		/* prevent method loading */
-		res->dummy = 1;
-		/* some storage if the type is used  - very ugly hack */
-		res->instance_size = 2*sizeof (gpointer);
-		return res;
-	}	
+	if (!references [idx-1])
+		mono_assembly_load_reference (image, idx - 1);
+	if (references [idx - 1] == (gpointer)-1)
+		return NULL;
 
-	/* load referenced assembly */
 	image = references [idx-1]->image;
 
 	return mono_class_from_name (image, nspace, name);

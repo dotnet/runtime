@@ -316,116 +316,115 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 }
 
 void
-mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
+mono_assembly_load_reference (MonoImage *image, int index)
 {
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	const char *hash;
-	int i;
-	MonoAssembly **references = NULL;
+	MonoAssembly *reference;
+	MonoAssemblyName aname;
+	MonoImageOpenStatus status;
 
-	*status = MONO_IMAGE_OK;
-	
 	/*
 	 * image->references is shared between threads, so we need to access
 	 * it inside a critical section.
 	 */
 	EnterCriticalSection (&assemblies_mutex);
-	references = image->references;
+	reference = image->references [index];
 	LeaveCriticalSection (&assemblies_mutex);
-	if (references)
+	if (reference)
 		return;
 
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
-	references = g_new0 (MonoAssembly *, t->rows + 1);
-
-	/*
-	 * Load any assemblies this image references
-	 */
-	for (i = 0; i < t->rows; i++) {
-		MonoAssemblyName aname;
-
-		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
+	mono_metadata_decode_row (t, index, cols, MONO_ASSEMBLYREF_SIZE);
 		
-		hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
-		aname.hash_len = mono_metadata_decode_blob_size (hash, &hash);
-		aname.hash_value = hash;
-		aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
-		aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
-		aname.flags = cols [MONO_ASSEMBLYREF_FLAGS];
-		aname.major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
-		aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
-		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
-		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+	hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
+	aname.hash_len = mono_metadata_decode_blob_size (hash, &hash);
+	aname.hash_value = hash;
+	aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
+	aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
+	aname.flags = cols [MONO_ASSEMBLYREF_FLAGS];
+	aname.major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
+	aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
+	aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
+	aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
 
-		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-			gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname.flags);
-			g_strlcpy (aname.public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-			g_free (token);
-		} else {
-			memset (aname.public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-		} 
+	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
+		gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname.flags);
+		g_strlcpy (aname.public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_free (token);
+	} else {
+		memset (aname.public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	} 
 
-		references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
+	reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
 
-		if (references [i] == NULL){
-			int j;
-
-			/*
-			** Temporary work around: any System.* which are 3300 build, will get
-			** remapped, this is to keep old applications running that might have
-			** been linked against our 5000 API, before we were strongnamed, and
-			** hence were labeled as 3300 builds by reflection.c
-			*/
-			if (aname.build == 3300 && strncmp (aname.name, "System", 6) == 0){
-				aname.build = 5000;
+	if (reference == NULL){
+		/*
+		** Temporary work around: any System.* which are 3300 build, will get
+		** remapped, this is to keep old applications running that might have
+		** been linked against our 5000 API, before we were strongnamed, and
+		** hence were labeled as 3300 builds by reflection.c
+		*/
+		if (aname.build == 3300 && strncmp (aname.name, "System", 6) == 0){
+			aname.build = 5000;
 				
-				references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
-			}
-			if (references [i] != NULL){
-				if (g_getenv ("MONO_SILENT_WARNING") == NULL)
-					g_printerr ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
-						 image->name, aname.name);
-				
-			} else {
-				char *extra_msg = g_strdup ("");
-
-				if (*status == MONO_IMAGE_ERROR_ERRNO) {
-					extra_msg = g_strdup_printf ("System error: %s\n", strerror (errno));
-				} else if (*status == MONO_IMAGE_MISSING_ASSEMBLYREF) {
-					extra_msg = g_strdup ("Cannot find an assembly referenced from this one.\n");
-				} else if (*status == MONO_IMAGE_IMAGE_INVALID) {
-					extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
-				}
+			reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
+		}
+		if (reference != NULL){
+			if (g_getenv ("MONO_SILENT_WARNING") == NULL)
+				g_printerr ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
+							image->name, aname.name);
 			
-				for (j = 0; j < i; j++)
-					mono_assembly_close (references [j]);
-				g_free (references);
-				
-				g_warning ("Could not find assembly %s, references from %s (assemblyref_index=%d)\n"
+		} else {
+			char *extra_msg = g_strdup ("");
+
+			if (status == MONO_IMAGE_ERROR_ERRNO) {
+				extra_msg = g_strdup_printf ("System error: %s\n", strerror (errno));
+			} else if (status == MONO_IMAGE_MISSING_ASSEMBLYREF) {
+				extra_msg = g_strdup ("Cannot find an assembly referenced from this one.\n");
+			} else if (status == MONO_IMAGE_IMAGE_INVALID) {
+				extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
+			}
+			
+			g_warning ("Could not find assembly %s, references from %s (assemblyref_index=%d)\n"
 					   "     Major/Minor: %d,%d\n"
 					   "     Build:       %d,%d\n"
 					   "     Token:       %s\n%s",
-					   aname.name, image->name, i,
+					   aname.name, image->name, index,
 					   aname.major, aname.minor, aname.build, aname.revision,
 					   aname.public_key_token, extra_msg);
-				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
-				g_free (extra_msg);
-				return;
-			}
+			g_free (extra_msg);
 		}
-
-		/* 
-		 * This check is disabled since lots of people seem to have an older
-		 * corlib which triggers this.
-		 */
-		/* 
-		if (image->references [i]->image == image)
-			g_error ("Error: Assembly %s references itself", image->name);
-		*/
 	}
-	references [i] = NULL;
+
+	if (reference == NULL)
+		/* Flag as not found */
+		reference = (gpointer)-1;
+
+	EnterCriticalSection (&assemblies_mutex);
+	if (!image->references [index])
+		image->references [index] = reference;
+	LeaveCriticalSection (&assemblies_mutex);
+
+	if (image->references [index] != reference) {
+		/* Somebody loaded it before us */
+		mono_assembly_close (reference);
+	}
+}
+
+void
+mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
+{
+	MonoTableInfo *t;
+	int i;
+
+	*status = MONO_IMAGE_OK;
+
+	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+	
+	image->references = g_new0 (MonoAssembly *, t->rows + 1);
 
 	/* resolve assembly references for modules */
 	t = &image->tables [MONO_TABLE_MODULEREF];
@@ -434,18 +433,6 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			image->modules [i]->assembly = image->assembly;
 			mono_assembly_load_references (image->modules [i], status);
 		}
-	}
-
-	EnterCriticalSection (&assemblies_mutex);
-	if (!image->references)
-		image->references = references;
-	LeaveCriticalSection (&assemblies_mutex);
-
-	if (image->references != references) {
-		/* Somebody loaded it before us */
-		for (i = 0; i < t->rows; i++)
-			mono_assembly_close (references [i]);
-		g_free (references);
 	}
 }
 
@@ -763,10 +750,6 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 
 	image->assembly = ass;
 
-	/*
-	 * We load referenced assemblies outside the lock to prevent deadlocks
-	 * with regards to preload hooks.
-	 */
 	mono_assembly_load_references (image, status);
 
 	EnterCriticalSection (&assemblies_mutex);
@@ -1059,7 +1042,8 @@ mono_assembly_close (MonoAssembly *assembly)
 	image = assembly->image;
 	if (image->references) {
 		for (i = 0; image->references [i] != NULL; i++)
-			mono_image_close (image->references [i]->image);
+			if (image->references [i] && (image->references [i] != (gpointer)-1))
+				mono_image_close (image->references [i]->image);
 		g_free (image->references);
 	}
 

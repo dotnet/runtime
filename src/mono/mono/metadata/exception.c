@@ -307,6 +307,15 @@ mono_get_exception_file_not_found (MonoString *fname)
 }
 
 MonoException *
+mono_get_exception_file_not_found2 (const guchar *msg, MonoString *fname)
+{
+	MonoString *s = mono_string_new (mono_domain_get (), msg);
+
+	return mono_exception_from_name_two_strings (
+		mono_get_corlib (), "System.IO", "FileNotFoundException", s, fname);
+}
+
+MonoException *
 mono_get_exception_type_initialization (const gchar *type_name, MonoException *inner)
 {
 	MonoClass *klass;

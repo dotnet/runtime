@@ -3212,10 +3212,10 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 {
 	static MonoClass *System_Reflection_AssemblyName;
 	MonoArray *result;
-	MonoAssembly **ptr;
 	MonoDomain *domain = mono_object_domain (assembly);
 	int i, count = 0;
 	static MonoMethod *create_culture = NULL;
+	MonoTableInfo *t;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3223,8 +3223,8 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		System_Reflection_AssemblyName = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "AssemblyName");
 
-	for (ptr = assembly->assembly->image->references; ptr && *ptr; ptr++)
-		count++;
+	t = &assembly->assembly->image->tables [MONO_TABLE_ASSEMBLYREF];
+	count = t->rows;
 
 	result = mono_array_new (domain, System_Reflection_AssemblyName, count);
 
@@ -3237,9 +3237,20 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	}
 
 	for (i = 0; i < count; i++) {
-		MonoAssembly *assem = assembly->assembly->image->references [i];
+		MonoAssembly *assem;
 		MonoReflectionAssemblyName *aname;
 		char *codebase, *absolute;
+
+		/* FIXME: There is no need to load the assemblies themselves */
+		mono_assembly_load_reference (assembly->assembly->image, i);
+
+		assem = assembly->assembly->image->references [i];
+		if (assem == (gpointer)-1) {
+			char *msg = g_strdup_printf ("Assembly %d referenced from assembly %s not found ", i, assembly->assembly->image->name);
+			MonoException *ex = mono_get_exception_file_not_found2 (msg, NULL);
+			g_free (msg);
+			mono_raise_exception (ex);
+		}
 
 		aname = (MonoReflectionAssemblyName *) mono_object_new (
 			domain, System_Reflection_AssemblyName);
@@ -3444,6 +3455,13 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 
 		case MONO_IMPLEMENTATION_ASSEMBLYREF:
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
+			mono_assembly_load_reference (assembly->assembly->image, i - 1);
+			if (assembly->assembly->image->references [i - 1] == (gpointer)-1) {
+				char *msg = g_strdup_printf ("Assembly %d referenced from assembly %s not found ", i - 1, assembly->assembly->image->name);
+				MonoException *ex = mono_get_exception_file_not_found2 (msg, NULL);
+				g_free (msg);
+				mono_raise_exception (ex);
+			}
 			info->assembly = mono_assembly_get_object (mono_domain_get (), assembly->assembly->image->references [i - 1]);
 
 			/* Obtain info recursively */

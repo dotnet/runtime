@@ -73,7 +73,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	
 	MONO_GC_PRE_INIT ();
 	mono_marshal_init ();
-	
+
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
@@ -116,6 +116,9 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_gc_init ();
 
 	mono_network_init ();
+
+	/* mscorlib is loaded before we install the load hook */
+	mono_domain_fire_assembly_load (mono_defaults.corlib->assembly, NULL);
 
 	return;
 }
@@ -512,7 +515,6 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 
 	klass = domain->domain->mbr.obj.vtable->klass;
 
-	
 	method = look_for_method_by_name (klass, "DoAssemblyLoad");
 	if (method == NULL) {
 		g_warning ("Method AppDomain.DoAssemblyLoad not found.\n");
