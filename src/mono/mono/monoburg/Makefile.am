@@ -18,5 +18,5 @@ sample_LDADD = $(GLIB_LIBS)
 
 BUILT_SOURCES = parser.c sample.c
 
-CLEANFILES += $(BUILT_SOURCES)
+CLEANFILES = $(BUILT_SOURCES)
 
