@@ -761,19 +761,20 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		return((struct sockaddr *)sa);
 #ifdef HAVE_SYS_UN_H
 	} else if (family == AF_UNIX) {
-		struct sockaddr_un *sun = g_new0 (struct sockaddr_un, 1);
+		struct sockaddr_un *sock_un = g_new0 (struct sockaddr_un, 1);
 		int i;
 
 		if (len - 2 > MONO_SIZEOF_SUNPATH)
 			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
-		sun->sun_family = family;
+		sock_un->sun_family = family;
 		for (i = 0; i < len - 2; i++)
-			sun->sun_path [i] = mono_array_get (data, guint8, i + 2);
-		sun->sun_path [len - 2] = '\0';
+			sock_un->sun_path [i] = mono_array_get (data, guint8,
+								i + 2);
+		sock_un->sun_path [len - 2] = '\0';
 		*sa_size = sizeof (struct sockaddr_un);
 
-		return (struct sockaddr *)sun;
+		return (struct sockaddr *)sock_un;
 #endif
 	} else {
 		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
