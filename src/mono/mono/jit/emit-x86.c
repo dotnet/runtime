@@ -492,7 +492,7 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 }
 
 int
-arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, MonoValueType type)
+arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoVarType vartype, MonoValueType type)
 {
 	MonoVarInfo vi;
 
@@ -508,14 +508,14 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 	if (size != sizeof (gpointer))
 		vi.isvolatile = 1;
 	
-	switch (kind) {
+	switch (vartype) {
 	case MONO_TEMPVAR:
 	case MONO_LOCALVAR: {
 		cfg->locals_size += size;
 		cfg->locals_size += align - 1;
 		cfg->locals_size &= ~(align - 1);
 
-		SET_VARINFO (vi, type, kind, - cfg->locals_size, size);
+		SET_VARINFO (vi, type, vartype, - cfg->locals_size, size);
 		g_array_append_val (cfg->varinfo, vi);
 		break;
 	}
@@ -524,7 +524,7 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 
 		g_assert ((align & 3) == 0);
 
-		SET_VARINFO (vi, type, kind, cfg->args_size + arg_start, size);
+		SET_VARINFO (vi, type, vartype, cfg->args_size + arg_start, size);
 		g_array_append_val (cfg->varinfo, vi);
 		
 		cfg->args_size += size;

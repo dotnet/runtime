@@ -47,7 +47,7 @@
 
 #define VARINFO(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num))
 
-#define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.kind=k; vi.offset=o; vi.size=s; } while (0)
+#define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.vartype=k; vi.offset=o; vi.size=s; } while (0)
 
 
 typedef struct _MBTree MBTree;
@@ -64,7 +64,7 @@ typedef enum {
 	MONO_ARGVAR,
 	MONO_LOCALVAR,
 	MONO_TEMPVAR,
-} MonoValueKind;
+} MonoVarType;
 
 typedef struct {
 	gpointer    previous_lmf;
@@ -91,7 +91,7 @@ typedef struct {
 
 typedef struct {
 	MonoValueType type;
-	MonoValueKind kind;
+	MonoVarType vartype;
 	int offset;
 	int size;
 	MonoLiveRange range;
@@ -286,7 +286,7 @@ arch_create_native_wrapper (MonoMethod *method);
 
 int
 arch_allocate_var          (MonoFlowGraph *cfg, int size, int align, 
-			    MonoValueKind kind, MonoValueType type);
+			    MonoVarType vartype, MonoValueType type);
 
 void
 mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
