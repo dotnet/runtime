@@ -168,6 +168,8 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 	if (!minfo || !minfo->jit)
 		return;
 
+	symfile->generation++;
+
 	size = sizeof (MonoSymbolFileMethodAddress);
 
 	num_variables = minfo->entry->num_parameters + minfo->entry->num_locals;
