@@ -718,6 +718,11 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			g_module_symbol (gmodule, mangled_name, &method->addr); 
 			g_free (mangled_name);
 		}
+		if (!method->addr) {
+			mangled_name = g_strdup_printf ("_%s@%d", import, method->signature->param_count * sizeof (gpointer));
+			g_module_symbol (gmodule, mangled_name, &method->addr); 
+			g_free (mangled_name);
+		}
 #endif
 	}
 
