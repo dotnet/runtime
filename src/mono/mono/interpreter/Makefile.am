@@ -24,7 +24,11 @@ mint_LDADD =		\
 libmint_la_SOURCES =	\
 	hacks.h		\
 	interp.h	\
-	interp.c	
+	interp.c	\
+	mintops.h	\
+	mintops.def	\
+	mintops.c	\
+	transform.c
 
 libmintincludedir = $(includedir)/mono/interpreter
 

@@ -1,4 +1,4 @@
-
+#include <setjmp.h>
 #include <glib.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
@@ -39,42 +39,88 @@ typedef struct {
 		mono_u nati;
 		gpointer vt;
 	} data;
-	unsigned int type;
 } stackval;
 
 typedef struct _MonoInvocation MonoInvocation;
 
+typedef void (*MonoFunc) (void);
+typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
+
+/* 
+ * Structure representing a method transformed for the interpreter 
+ * This is domain specific
+ */
+typedef struct 
+{
+	guint32 locals_size;
+	guint32 args_size;
+	guint32 stack_size;
+	guint32 vt_stack_size;
+	guint32 alloca_size;
+	unsigned short *code;
+	unsigned short *new_body_start; /* after all STINARG instrs */
+	MonoMethod *method;
+	MonoPIFunc func;
+	int num_clauses;
+	MonoExceptionClause *clauses;
+	void **data_items;
+	int transformed;
+	guint32 *arg_offsets;
+	guint32 *local_offsets;
+	unsigned int param_count;
+	unsigned int hasthis;
+	unsigned int valuetype;
+} RuntimeMethod;
+
 struct _MonoInvocation {
 	MonoInvocation *parent; /* parent */
+	RuntimeMethod  *runtime_method; /* parent */
 	MonoMethod     *method; /* parent */
 	stackval       *retval; /* parent */
 	void           *obj;    /* this - parent */
-	char           *locals;
 	char           *args;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
 	stackval       *sp; /* For GC stack marking */
 	/* exception info */
-	int             invoke_trap;
-	const unsigned char  *ip;
+	unsigned char  invoke_trap;
+	const unsigned short  *ip;
 	MonoException     *ex;
 	MonoExceptionClause *ex_handler;
 };
 
+typedef struct {
+	MonoDomain *domain;
+	MonoInvocation *base_frame;
+	MonoInvocation *current_frame;
+	MonoInvocation *env_frame;
+	jmp_buf *current_env;
+	unsigned char search_for_handler;
+	unsigned char managed_code;
+	unsigned char abort_thread;
+} ThreadContext;
+
 void mono_init_icall (void);
+
+MonoException *
+mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *context);
+
+void
+mono_interp_transform_init (void);
 
 void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
 void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
 void ves_exec_method (MonoInvocation *frame);
-
-typedef void (*MonoFunc) (void);
-typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
-
-void *mono_create_method_pointer (MonoMethod *method);
 
 /*
  * defined in an arch specific file.
  */
 MonoPIFunc
 mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor);
+
+RuntimeMethod *
+mono_interp_get_runtime_method (MonoMethod *method);
+
 void *mono_arch_create_method_pointer (MonoMethod *method);
+
+extern int mono_interp_traceopt;
