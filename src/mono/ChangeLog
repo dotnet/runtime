@@ -1,4 +1,8 @@
+2004-05-19  Jackson Harper  <jackson@ximain.com>
 
+	* tools/
+	* tools/Makefile.am: Add tools directory
+	
 Wed May 19 13:22:19 EDT 2004 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: make MacOSX default to use the included libgc.
