@@ -378,6 +378,7 @@ mono_thread_attach (MonoDomain *domain)
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
+	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
 
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Attached thread ID %d (handle %p)",
