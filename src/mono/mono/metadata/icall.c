@@ -1702,6 +1702,49 @@ handle_parent:
 	return res;
 }
 
+static MonoReflectionEvent *
+ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32 bflags)
+{
+	MonoDomain *domain;
+	MonoClass *klass;
+	gint i;
+	MonoEvent *event;
+	MonoMethod *method;
+	gchar *event_name;
+
+	event_name = mono_string_to_utf8 (name);
+	klass = mono_class_from_mono_type (type->type);
+	domain = mono_object_domain (type);
+
+handle_parent:	
+	for (i = 0; i < klass->event.count; i++) {
+		event = &klass->events [i];
+		if (strcmp (event->name, event_name))
+			continue;
+
+		method = event->add;
+		if (!method)
+			method = event->remove;
+
+		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+			if (!(bflags & BFLAGS_Public))
+				continue;
+		} else {
+			if (!(bflags & BFLAGS_NonPublic))
+				continue;
+		}
+
+		g_free (event_name);
+		return mono_event_get_object (domain, klass, event);
+	}
+
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+
+	g_free (event_name);
+	return NULL;
+}
+
 static MonoArray*
 ves_icall_Type_GetEvents (MonoReflectionType *type, guint32 bflags)
 {
@@ -2969,6 +3012,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
 	"System.MonoType::GetProperties", ves_icall_Type_GetProperties,
 	"System.MonoType::GetEvents", ves_icall_Type_GetEvents,
+	"System.MonoType::InternalGetEvent", ves_icall_MonoType_GetEvent,
 	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
 	"System.MonoType::GetNestedTypes", ves_icall_Type_GetNestedTypes,
 
