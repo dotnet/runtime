@@ -23,6 +23,12 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 28, 2001
+
+	<a
+	href="http://www.icsharpcode.net/OpenSource/SD/default.asp">Sharp
+	Develop 0.80</a> was released today.
+
 ** Sep 26, 2001
 
 	More progress: more opcodes are working (Paolo); The compiler
