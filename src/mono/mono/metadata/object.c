@@ -226,6 +226,9 @@ mono_string_new (const char *text)
 	glong items_written;
 	int l;
 
+	if (text == NULL)
+		return NULL;
+
 	l = strlen (text);
 	
 	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
