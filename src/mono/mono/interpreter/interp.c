@@ -4153,7 +4153,11 @@ array_constructed:
 					sp->data.p = mono_string_to_ansibstr (sp->data.p);
 					break;
 				case MONO_MARSHAL_CONV_SB_LPSTR:
+				case MONO_MARSHAL_CONV_SB_LPTSTR:
 					sp->data.p = mono_string_builder_to_utf8 (sp->data.p);
+					break;
+				case MONO_MARSHAL_CONV_SB_LPWSTR:
+					sp->data.p = mono_string_builder_to_utf16 (sp->data.p);
 					break;
 				case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 					sp->data.p = mono_array_to_savearray (sp->data.p);
@@ -4187,7 +4191,11 @@ array_constructed:
 
 				switch (conv) {
 				case MONO_MARSHAL_CONV_LPSTR_SB:
+				case MONO_MARSHAL_CONV_LPTSTR_SB:
 					mono_string_utf8_to_builder (sp [0].data.p, sp [1].data.p);
+					break;
+				case MONO_MARSHAL_CONV_LPWSTR_SB:
+					mono_string_utf16_to_builder (sp [0].data.p, sp [1].data.p);
 					break;
 				case MONO_MARSHAL_FREE_ARRAY:
 					mono_marshal_free_array (sp [0].data.p, sp [1].data.i);
