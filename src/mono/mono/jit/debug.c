@@ -109,9 +109,7 @@ static void
 mono_debugger_wait (void)
 {
 #ifndef PLATFORM_WIN32
-	pthread_mutex_lock (&debugger_finished_mutex);
 	pthread_cond_wait (&debugger_finished_cond, &debugger_finished_mutex);
-	pthread_mutex_unlock (&debugger_finished_mutex);
 #endif
 }
 
@@ -1392,6 +1390,12 @@ initialize_debugger_support ()
 
 #ifndef PLATFORM_WIN32
 	pthread_mutex_lock (&debugger_start_mutex);
+
+	/*
+	 * This mutex is only unlocked by the pthread_cond_wait() in
+	 * mono_debugger_wait().
+	 */
+	pthread_mutex_lock (&debugger_finished_mutex);
 
 	ret = pthread_create (&thread, NULL, debugger_thread_func, ptr);
 	g_assert (ret == 0);
