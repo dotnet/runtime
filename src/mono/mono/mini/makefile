@@ -1,6 +1,6 @@
 count=100000
 mtest=for_loop
-monodir=../mono/
+monodir=../../
 libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/metadata/libmetadata.la	\
