@@ -132,6 +132,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				   ": unicode conversion returned NULL");
 #endif
 
+			SetLastError(ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 
@@ -151,6 +152,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				   ": unicode conversion returned NULL");
 #endif
 
+			SetLastError(ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 
@@ -170,6 +172,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				   ": unicode conversion returned NULL");
 #endif
 
+			SetLastError(ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 
@@ -323,6 +326,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				   ": Couldn't find what to exec");
 #endif
 
+			SetLastError(ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 		
@@ -417,6 +421,10 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		process_info->hThread=thread_handle;
 		process_info->dwProcessId=pid;
 		process_info->dwThreadId=tid;
+	} else if(ret==FALSE) {
+		/* FIXME: work out a better error code
+		 */
+		SetLastError(ERROR_PATH_NOT_FOUND);
 	}
 	
 cleanup:
