@@ -2529,8 +2529,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);
@@ -2547,8 +2546,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 		/* initialize src_ptr to point to the start of object data */
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_STLOC_0);
 
 		/* initialize dst_ptr */
@@ -2590,8 +2588,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
@@ -2609,8 +2606,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 		/* initialize dst_ptr */
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_STLOC_1);
 
 		emit_struct_conv (mb, klass, TRUE);
