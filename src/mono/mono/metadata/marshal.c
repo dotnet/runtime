@@ -4110,26 +4110,28 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* Free the structure returned by the native code */
 			emit_struct_free (mb, klass, conv_arg);
 
-			/* 
-			 * If the native function changed the pointer, then free
-			 * the original structure plus the new pointer.
-			 */
-			mono_mb_emit_ldloc (mb, m->orig_conv_args [argnum]);
-			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_byte (mb, CEE_BEQ);
-			pos2 = mb->pos;
-			mono_mb_emit_i4 (mb, 0);
+			if (m->orig_conv_args [argnum]) {
+				/* 
+				 * If the native function changed the pointer, then free
+				 * the original structure plus the new pointer.
+				 */
+				mono_mb_emit_ldloc (mb, m->orig_conv_args [argnum]);
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_byte (mb, CEE_BEQ);
+				pos2 = mb->pos;
+				mono_mb_emit_i4 (mb, 0);
 
-			if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
-				g_assert (m->orig_conv_args [argnum]);
+				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
+					g_assert (m->orig_conv_args [argnum]);
 
-				emit_struct_free (mb, klass, m->orig_conv_args [argnum]);
+					emit_struct_free (mb, klass, m->orig_conv_args [argnum]);
+				}
+
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_icall (mb, g_free);
+
+				mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 			}
-
-			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_icall (mb, g_free);
-
-			mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		}
 		else
 			/* Free the original structure passed to native code */
