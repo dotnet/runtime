@@ -1,3 +1,7 @@
+2004-07-11  Atsushi Enomoto <atsushi@ximian.com>
+
+	* xml-classes : updates and plans/ideas for Mono 1.2.
+
 2004-06-15  Sebastien Pouliot  <sebastien@ximian.com>
 
 	* crypto: Updated status for beta 3. Removed stuff that is better 
