@@ -339,6 +339,8 @@ mono_test_marshal_struct_array (simplestruct2 *ss)
 simplestruct2 *
 mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 {
+	simplestruct2 *res;
+
 	if (!ss)
 		return NULL;
 
@@ -349,7 +351,7 @@ mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 		   ss->e == 99 && ss->f == 1.5 && ss->g == 42 && ss->h == (guint64)123))
 		return NULL;
 
-	simplestruct2 *res = g_new0 (simplestruct2, 1);
+	res = g_new0 (simplestruct2, 1);
 	memcpy (res, ss, sizeof (simplestruct2));
 	return res;
 }
@@ -358,13 +360,14 @@ int
 mono_test_marshal_byref_class (simplestruct2 **ssp)
 {
 	simplestruct2 *ss = *ssp;
+	simplestruct2 *res;
 	
 	if (! (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
 		   !strcmp (ss->d, "TEST") && 
 		   ss->e == 99 && ss->f == 1.5 && ss->g == 42 && ss->h == (guint64)123))
 		return 1;
 
-	simplestruct2 *res = g_new0 (simplestruct2, 1);
+	res = g_new0 (simplestruct2, 1);
 	memcpy (res, ss, sizeof (simplestruct2));
 	res->d = (char*)"TEST-RES";
 
