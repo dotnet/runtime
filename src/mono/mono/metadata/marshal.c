@@ -1856,7 +1856,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			break;
 		case MONO_TYPE_VALUETYPE:
 			klass = sig->params [i]->data.klass;
-			if (klass->blittable || klass->enumtype) {
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype) {
 				mono_mb_emit_ldarg (mb, i);
 				break;
 			}
@@ -2254,7 +2255,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			break;
 		case MONO_TYPE_VALUETYPE:
 			klass = sig->params [i]->data.klass;
-			if (klass->blittable || klass->enumtype) {
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype) {
 				mono_mb_emit_ldarg (mb, argnum);
 				break;
 			}			
