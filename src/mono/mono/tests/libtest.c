@@ -11,7 +11,20 @@
 #define STDCALL
 #endif
 
+#ifdef WIN32
+extern __declspec(dllimport) __stdcall void CoTaskMemFree(void *ptr);
+#endif
+
 typedef int (STDCALL *SimpleDelegate) (int a);
+
+static void marshal_free (void *ptr)
+{
+#ifdef WIN32
+	CoTaskMemFree (ptr);
+#else
+	g_free (ptr);
+#endif
+}
 
 unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
@@ -295,9 +308,10 @@ mono_test_return_string (ReturnStringDelegate func)
 	// printf ("mono_test_return_string\n");
 
 	res = func ("TEST");
+	marshal_free (res);
 
 	// printf ("got string: %s\n", res);
-	return res;
+	return g_strdup ("12345");
 }
 
 typedef int (STDCALL *RefVTypeDelegate) (int a, simplestruct *ss, int b);
@@ -802,7 +816,7 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 	// printf ("T1: %s\n", data->a);
 	// printf ("T2: %s\n", correctString);
 
-	g_free(data);
+	marshal_free (data);
 	return (ret != 0);
 }
 
@@ -1246,13 +1260,8 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 	return res;
 }
 
-#ifdef WIN32
-__declspec(dllexport) 
-#endif
 STDCALL int
 mono_test_stdcall_name_mangling (int a, int b, int c)
 {
         return a + b + c;
 }
-
-
