@@ -32,7 +32,7 @@
 	 	      <li><a href="archive/mcs-0.22.tar.gz">Mono Class Libraries and C# Compiler.</a>
 	              <li><a href="archive/mono-0.22.tar.gz">Mono Runtime</a>
 		      <li><a href="archive/gc6.1.tar.gz">Boehm GC 6.1</a>
-<!-- 		      <li><a href="archive/xsp-0.3.tar.gz">XSP web server (0.3)</a> -->
+ 		      <li><a href="archive/xsp-0.3.tar.gz">XSP web server (0.3)</a>
 	            </ul>
 		  </td>
 	        </tr>
@@ -102,15 +102,7 @@
  		    </ul>
  	          </td>
 	        </tr>
-<!--  		<tr> -->
-<!--  		  <td bgcolor="#999999"> -->
-<!--  		    <b>Debian packages</b> -->
-<!-- 		    <ul> -->
-<!-- 	              <li><a href="http://www.atoker.com/mono/">Alp's web site</a> -->
-<!-- 	            </ul> -->
-<!--  	          </td> -->
-<!--  		</tr> -->
-  		<tr> -->
+  		<tr> 
   		  <td bgcolor="#999999">
  		    <b>Windows Setup Wizard (NT/2000/XP)</b>
  		    <ul>
@@ -137,7 +129,7 @@
 
 
 
-der Releases:
+* Older Releases:
 
 	We provide binaries for older releases until we have packages for the new release.
 	<table>
@@ -550,7 +542,7 @@ der Releases:
 	  </tbody>
 	</table>
 
-inaries for other platforms.
+* Binaries for other platforms.
 
 	Already daily volunteer's made binaries:
 
@@ -559,9 +551,9 @@ inaries for other platforms.
 		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> (works without cygwin!)
 	</ul>
 
-apshots
+* Snapshots
 
-ame="snapshots">
+<a name="snapshots">
 
 	<a href="http://www.go-mono.com/snapshots">Nightly snapshots</a> of 
 	the CVS repository are made every day at 10pm EST (Boston
@@ -571,7 +563,7 @@ ame="snapshots">
 	The <a href="anoncvs.html">anoncvs</a> mirrors provided by
 	Hispalinux are updated every six hours.
 
-mpiling the code
+* Compiling the code
 
 	There are a number of ways of compiling Mono
 
@@ -585,8 +577,8 @@ mpiling the code
 
 	(which is an easy way to get the latest CVS information)
 
-ame="scripts">
-mpiling with scripts
+<a name="scripts">
+* Compiling with scripts
 
 	There are scripts to help build mono for both Unix and Windows.  Get
 	<a href="mono-build.sh">mono-build.sh</a> for Unix, or <a
@@ -617,14 +609,14 @@ mpiling with scripts
 	set your CVSROOT environment variable before running the script to
 	select a particular cvs server.
 
-ame="install">
-uilding the software manually
+<a name="install">
+** Building the software manually
 
 	You will need to obtain the Mono dependencies first: <a
 	href="http://www.gtk.org">glib 2.x</a> and 
 	<a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a>.
 
-Building on Linux
+*** Building on Linux
 
 	<ul>
 		Unpack the Mono runtime distribution:
@@ -666,9 +658,9 @@ Building on Linux
 	</ul>
 
 	
-On Windows, to install and work on the compiler and the class libraries:
+*** On Windows, to install and work on the compiler and the class libraries:
 
- Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
+**** Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
 
 	<ul>
 
@@ -697,7 +689,7 @@ On Windows, to install and work on the compiler and the class libraries:
 		</pre>
 	</ul>
 
-On Windows, to compile the mono runtime:
+*** On Windows, to compile the mono runtime:
 
 	<ul>
 		
@@ -716,7 +708,7 @@ On Windows, to compile the mono runtime:
 
 	</ul>
 
-ftware resources and notes
+* Software resources and notes
 
 		The required and additional software can be downloaded here:
 
@@ -751,7 +743,7 @@ ftware resources and notes
 	</ul>
 
 
-Notes on compiling GLIB 2.0 and pkg-config from source:
+*** Notes on compiling GLIB 2.0 and pkg-config from source:
 
 
 	<ul>
@@ -766,13 +758,13 @@ Notes on compiling GLIB 2.0 and pkg-config from source:
 		  <nobr><tt>extern char *strsignal (int sig);</tt></nobr> to
 		  <nobr><tt>extern const char *strsignal (int sig);</tt></nobr>.
 
->
-xzvf pkg-config-0.8.0.tar.gz
-kg-config-0.8.0
-nfigure --prefix=/usr
-
- install
-e>
+<pre>
+tar xzvf pkg-config-0.8.0.tar.gz
+cd pkg-config-0.8.0
+./configure --prefix=/usr
+make
+make install
+</pre>
 
 		* Download, compile and install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a> from source.<br>
 		  If you dont have MS Visual C/C++ 4.0 or 5.0 or 6.0 you can also try
@@ -787,8 +779,8 @@ e>
 
 	</ul>
 
-ame="upgrading">
-pgrading
+<a name="upgrading">
+** Upgrading
 
 	To upgrade your Mono installation from CVS, it is very
 	important that you update your Mono and MCS modules from CVS
