@@ -986,8 +986,8 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 	}
 
 	fullname = g_strconcat (klass->name_space, ".",
-	                           klass->name, ",",
-	                           klass->image->assembly_name, append, NULL);
+	                           klass->name, append, ",",
+	                           klass->image->assembly_name, NULL);
 	res = mono_string_new (domain, fullname);
 	g_free (fullname);
 
