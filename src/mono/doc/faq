@@ -708,6 +708,16 @@ Q: I'm wondering if there are any plans to start using nant to build the
 A: Maybe well be doing some sort of automated build process + testing when
    the summer finish.
 
+Q: My C code uses the __stdcall which is not availble on Linux, how can I
+   make the code portable Windows/Unix across platforms?
+
+A: Replace the __stdcall attribute with the STDCALL macro, and include this
+   in your C code for newer gcc versions:
+
+	#ifndef STDCALL
+	#define STDCALL __attribute__((stdcall))
+	#endif
+
 <a name="asp">
 ** Mono and ASP.NET
 
