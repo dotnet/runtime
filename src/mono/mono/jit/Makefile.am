@@ -27,7 +27,6 @@ libmono_la_SOURCES =		\
 	jit.c			\
 	trampoline.c		\
 	exception.c		\
-	message.c		\
 	linear-scan.c		\
 	helpers.h		\
 	helpers.c

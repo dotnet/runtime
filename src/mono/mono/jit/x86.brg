@@ -938,7 +938,7 @@ reg: REMOTE_LDFLDA (reg) {
 		x86_push_reg (s->code, X86_EDX);
 	x86_push_reg (s->code, X86_ECX);
 
-	x86_push_reg (s->code, X86_ESP);
+	x86_push_imm (s->code, 0);
 	x86_push_imm (s->code, tree->data.fi.field);
 	x86_push_imm (s->code, tree->data.fi.klass);
 	x86_push_reg (s->code, lreg);

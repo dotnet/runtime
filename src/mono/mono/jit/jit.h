@@ -318,12 +318,4 @@ arch_get_reg_name          (int regnum);
 int 
 arch_activation_frame_size (MonoMethodSignature *sig);
 
-/* remoting support */
-
-gpointer
-mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res);
-
-void
-mono_store_remote_field    (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
-
 #endif

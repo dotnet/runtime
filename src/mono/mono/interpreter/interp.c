@@ -206,80 +206,10 @@ ves_real_abort (int line, MonoMethod *mh,
 }
 #define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (mono_get_exception_execution_engine (NULL), ip);} while (0);
 
-static MonoMethodMessage *
-arch_method_call_message_new (MonoMethod *method, void *obj, stackval *args, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoMethodSignature *sig = method->signature;
-	MonoMethodMessage *msg;
-	int i, count, type, size, align;
-	/*char *cpos = stack;*/
-
-	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
-	
-	if (invoke) {
-		mono_message_init (domain, msg, mono_method_get_object (domain, invoke), NULL);
-		count =  sig->param_count - 2;
-	} else {
-		mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
-		count =  sig->param_count;
-	}
-
-	for (i = 0; i < count; i++) {
-		gpointer vpos;
-		MonoClass *class;
-		MonoObject *arg;
-
-		size = mono_type_stack_size (sig->params [i], &align);
-
-		/* FIXME: endian issues */
-		if (sig->params [i]->byref)
-			vpos = *((gpointer *)args [i].data.p);
-		else 
-			vpos = &args [i].data;
-
-		type = sig->params [i]->type;
-		class = mono_class_from_mono_type (sig->params [i]);
-
-		if (class->valuetype)
-			arg = mono_value_box (domain, class, vpos);
-		else 
-			arg = args [i].data.p;
-		      
-		mono_array_set (msg->args, gpointer, i, arg);
-	}
-
-	if (invoke) {
-		/* the last two arguments of begininvoke */
-		*cb = args [count].data.p;
-		*state = args [count + 1].data.p;
-	}
-	return msg;
-}
-
 static gpointer
 interp_create_remoting_trampoline (MonoMethod *method)
 {
-	return method;
-}
-
-static void
-invoke_remoting_trampoline (MonoInvocation *frame) {
-	MonoMethodMessage *msg;
-	MonoTransparentProxy *this;
-	MonoObject *res, *exc;
-	MonoArray *out_args;
-
-	this = frame->obj;
-	msg = arch_method_call_message_new (frame->method, frame->obj, frame->stack_args, NULL, NULL, NULL);
-
-	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
-
-	if (exc)
-		mono_raise_exception ((MonoException *)exc);
-
-	/*arch_method_return_message_restore (method, &first_arg, res, out_args);*/
+	return mono_marshal_get_remoting_invoke (method);
 }
 
 static MonoMethod*
@@ -288,21 +218,30 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 	MonoObject *obj;
 	MonoClass *klass;
 	MonoMethod **vtable;
+	gboolean is_proxy = FALSE;
+	MonoMethod *res;
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
 
 	obj = objs->data.p;
-	klass = obj->vtable->klass;
-	vtable = (MonoMethod **)obj->vtable->vtable;
+	if ((klass = obj->vtable->klass) == mono_defaults.transparent_proxy_class) {
+		klass = ((MonoTransparentProxy *)obj)->klass;
+		is_proxy = TRUE;
+	}
+	vtable = (MonoMethod **)klass->vtable;
 
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		return *(MonoMethod**)((char*)obj->vtable->interface_offsets [m->klass->interface_id] + (m->slot<<2));
+		res = *(MonoMethod**)((char*)obj->vtable->interface_offsets [m->klass->interface_id] + (m->slot<<2));
+	} else {
+		res = vtable [m->slot];
 	}
+	g_assert (res);
 
-	g_assert (vtable [m->slot]);
-
-	return vtable [m->slot];
+	if (is_proxy)
+		return mono_marshal_get_remoting_invoke (res);
+	
+	return res;
 }
 
 void inline
@@ -1704,11 +1643,9 @@ ves_exec_method (MonoInvocation *frame)
 				ves_pinvoke_method (&child_frame, csignature, code, FALSE);
 			} else if (csignature->hasthis && sp->type == VAL_OBJ &&
 					((MonoObject *)sp->data.p)->vtable->klass == mono_defaults.transparent_proxy_class) {
-				/* implement remoting */
 				g_assert (child_frame.method);
 				child_frame.method = mono_marshal_get_remoting_invoke (child_frame.method);
 				ves_exec_method (&child_frame);
-				//invoke_remoting_trampoline (&child_frame);
 			} else {
 				switch (GPOINTER_TO_UINT (child_frame.method->addr)) {
 				case INLINE_STRING_LENGTH:
@@ -2836,8 +2773,9 @@ array_constructed:
 		CASE (CEE_LDFLD) {
 			MonoObject *obj;
 			MonoClassField *field;
-			guint32 token, offset;
+			guint32 token;
 			int load_addr = *ip == CEE_LDFLDA;
+			char *addr;
 
 			if (!sp [-1].data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip);
@@ -2850,27 +2788,29 @@ array_constructed:
 				obj = sp [-1].data.p;
 
 				if (obj->vtable->klass == mono_defaults.transparent_proxy_class) {
-					g_assert_not_reached ();
+					MonoClass *klass = ((MonoTransparentProxy*)obj)->klass;
+					field = mono_class_get_field (klass, token);
+					addr = mono_load_remote_field (obj, klass, field, NULL);
 				} else {
 					if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
 						field = mono_field_from_memberref (image, token, NULL);
 					else
 						field = mono_class_get_field (obj->vtable->klass, token);
-					offset = field->offset;
+					addr = (char*)obj + field->offset;
 				}				
 			} else {
 				obj = sp [-1].data.vt.vt;
 				field = mono_class_get_field (sp [-1].data.vt.klass, token);
-				offset = field->offset - sizeof (MonoObject);
+				addr = (char*)obj + field->offset - sizeof (MonoObject);
 			}
 
 			if (load_addr) {
 				sp [-1].type = VAL_TP;
-				sp [-1].data.p = (char*)obj + offset;
+				sp [-1].data.p = addr;
 				sp [-1].data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, &sp [-1], FALSE);
-				stackval_from_data (field->type, &sp [-1], (char*)obj + offset, FALSE);
+				stackval_from_data (field->type, &sp [-1], addr, FALSE);
 				
 			}
 			BREAK;
@@ -2893,22 +2833,28 @@ array_constructed:
 				obj = sp [0].data.p;
 
 				if (obj->vtable->klass == mono_defaults.transparent_proxy_class) {
-					g_assert_not_reached ();
+					MonoClass *klass = ((MonoTransparentProxy*)obj)->klass;
+					field = mono_class_get_field (klass, token);
+
+					mono_store_remote_field (obj, klass, field, &sp [1].data);
+					offset = field->offset;
 				} else {
 					if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
 						field = mono_field_from_memberref (image, token, NULL);
 					else
 						field = mono_class_get_field (obj->vtable->klass, token);
 					offset = field->offset;
+					stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
+					vt_free (&sp [1]);
 				}
 			} else {
 				obj = sp [0].data.vt.vt;
 				field = mono_class_get_field (sp [0].data.vt.klass, token);
 				offset = field->offset - sizeof (MonoObject);
+				stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
+				vt_free (&sp [1]);
 			}
 
-			stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
-			vt_free (&sp [1]);
 			BREAK;
 		}
 		CASE (CEE_LDSFLD) /* Fall through */
@@ -3976,6 +3922,7 @@ array_constructed:
 					--sp;
 					if (!sp->data.p)
 						THROW_EX (mono_get_exception_null_reference (), ip - 5);
+					
 					m = get_virtual_method (domain, m, sp);
 				}
 				sp->type = VAL_NATI;

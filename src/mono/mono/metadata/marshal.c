@@ -1205,6 +1205,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	res = mono_mb_create_method (mb, sig, 0);
 	mono_mb_free (mb);
 	g_hash_table_insert (cache, sig, res);
+
 	return res;
 }
 
