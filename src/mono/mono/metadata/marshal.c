@@ -577,16 +577,26 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 {
 	switch (conv) {
 	case MONO_MARSHAL_CONV_BOOL_I4:
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
-		mono_mb_emit_byte (mb, 5);
-		mono_mb_emit_byte (mb, CEE_LDLOC_1);
-		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-		mono_mb_emit_byte (mb, CEE_STIND_I1);
-		mono_mb_emit_byte (mb, CEE_BR_S);
 		mono_mb_emit_byte (mb, 3);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+		mono_mb_emit_byte (mb, CEE_BR_S);
+		mono_mb_emit_byte (mb, 1);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		break;
+	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I2);
+		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
+		mono_mb_emit_byte (mb, 3);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+		mono_mb_emit_byte (mb, CEE_BR_S);
+		mono_mb_emit_byte (mb, 1);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 		mono_mb_emit_byte (mb, CEE_STIND_I1);
 		break;
@@ -694,7 +704,6 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR: 
-	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 	default:
 		g_warning ("marshaling conversion %d not implemented", conv);
 		g_assert_not_reached ();
@@ -713,6 +722,13 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
 		mono_mb_emit_byte (mb, CEE_LDIND_U1);
 		mono_mb_emit_byte (mb, CEE_STIND_I4);
+		break;
+	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_U1);
+		mono_mb_emit_byte (mb, CEE_NEG);
+		mono_mb_emit_byte (mb, CEE_STIND_I2);
 		break;
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
@@ -837,7 +853,6 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
 		break;
 	}
-	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 	default:
 		g_warning ("marshalling conversion %d not implemented", conv);
 		g_assert_not_reached ();
@@ -3017,6 +3032,36 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			}
 
 			break;
+		case MONO_TYPE_BOOLEAN: {
+			MonoType *local_type;
+			int variant_bool = 0;
+			if (!t->byref)
+				continue;
+			if (spec == NULL) {
+				local_type = &mono_defaults.int32_class->byval_arg;
+			} else {
+				switch (spec->native) {
+				case MONO_NATIVE_I1:
+					local_type = &mono_defaults.byte_class->byval_arg;
+					break;
+				case MONO_NATIVE_VARIANTBOOL:
+					local_type = &mono_defaults.int16_class->byval_arg;
+					variant_bool = 1;
+					break;
+				default:
+					g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+				break;
+				}
+			}
+			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
+			tmp_locals [i] = mono_mb_add_local (mb, local_type);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_I1);
+			if (variant_bool)
+				mono_mb_emit_byte (mb, CEE_NEG);
+			mono_mb_emit_stloc (mb, tmp_locals [i]);
+			break;
+		}
 		}
 	}
 
@@ -3032,9 +3077,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		switch (t->type) {
 		case MONO_TYPE_BOOLEAN:
-			if (t->byref)
-				g_warning ("byref boolean marshalling not inplemented");
-			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref) {
+				g_assert (tmp_locals [i]);
+				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
+			} else
+				mono_mb_emit_ldarg (mb, argnum);
 			break;
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -3410,6 +3457,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			}
 
 			break;
+
+		case MONO_TYPE_BOOLEAN:
+			if (!t->byref)
+				continue;
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc (mb, tmp_locals [i]);
+			if (mspecs [i + 1] != NULL && mspecs [i + 1]->native == MONO_NATIVE_VARIANTBOOL)
+				mono_mb_emit_byte (mb, CEE_NEG);
+			mono_mb_emit_byte (mb, CEE_STIND_I1);
 		}
 	}
 
@@ -4344,6 +4400,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 		return 1;
 	case MONO_NATIVE_I2:
 	case MONO_NATIVE_U2:
+	case MONO_NATIVE_VARIANTBOOL:
 		*align = 2;
 		return 2;
 	case MONO_NATIVE_I4:
@@ -4375,7 +4432,6 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 	case MONO_NATIVE_IDISPATCH:
 	case MONO_NATIVE_INTERFACE:
 	case MONO_NATIVE_ASANY:
-	case MONO_NATIVE_VARIANTBOOL:
 	case MONO_NATIVE_FUNC:
 	case MONO_NATIVE_LPSTRUCT:
 		*align = ALIGNMENT(gpointer);

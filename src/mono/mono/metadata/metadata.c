@@ -2946,8 +2946,9 @@ handle_enum:
 			case MONO_NATIVE_BOOLEAN:
 				*conv = MONO_MARSHAL_CONV_BOOL_I4;
 				return MONO_NATIVE_BOOLEAN;
+			case MONO_NATIVE_I1:
 			case MONO_NATIVE_U1:
-				return MONO_NATIVE_U1;
+				return mspec->native;
 			default:
 				g_error ("cant marshal bool to native type %02x", mspec->native);
 			}
