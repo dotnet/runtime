@@ -43,6 +43,9 @@ mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	if (obj == NULL)
+		mono_raise_exception (mono_get_exception_null_reference ());
+
 	method = mono_object_get_virtual_method (obj, method);
 
 	return mono_ldftn (method);
