@@ -565,6 +565,12 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 	return mono_object_clone (this);
 }
 
+#if HAVE_BOEHM_GC
+#define MONO_OBJECT_ALIGNMENT_SHIFT	3
+#else
+#define MONO_OBJECT_ALIGNMENT_SHIFT	2
+#endif
+
 /*
  * Return hashcode based on object address. This function will need to be
  * smarter in the presence of a moving garbage collector, which will cache
@@ -576,7 +582,10 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 static gint32
 ves_icall_System_Object_GetHashCode (MonoObject *this)
 {
-	return (GPOINTER_TO_INT (this) >> 3) * 2654435761;
+	register guint32 key;
+	key = (GPOINTER_TO_UINT (this) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+
+	return key & 0x7fffffff;
 }
 
 /*
