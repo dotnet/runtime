@@ -7,6 +7,7 @@
  * (C) 2002 Ximian, Inc. (http://www.ximian.com)
  */
 #include <config.h>
+#include <mono/metadata/metadata.h>
 #include <mono/os/util.h>
 
 /*
@@ -19,7 +20,12 @@
 void
 mono_set_rootdir (const char *vm_filename)
 {
+	char *dir = g_dirname (base);
+	char *root = g_strconcat (dir, "/lib");
+
+	mono_assembly_setrootdir (root);
+	g_free (root);
+	g_free (dir);
 }
 
  
-
