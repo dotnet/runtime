@@ -227,9 +227,11 @@ static WaitQueueItem *wait_item_new(guint32 timeout, gboolean waitall)
 	new->state=WQ_NEW;
 	new->timeout=timeout;
 	new->waitall=waitall;
+	new->lowest_signal=MAXIMUM_WAIT_OBJECTS;
 	
 	for(i=0; i<WAPI_HANDLE_COUNT; i++) {
 		new->handles[i]=g_ptr_array_new();
+		new->waitindex[i]=g_array_new(FALSE, FALSE, sizeof(guint32));
 	}
 	
 	return(new);
@@ -237,9 +239,10 @@ static WaitQueueItem *wait_item_new(guint32 timeout, gboolean waitall)
 
 /* Adds our queue item to the work queue, and blocks until the monitor
  * thread thinks it's done the work.  Returns TRUE for done, FALSE for
- * timed out.
+ * timed out.  Sets lowest to the index of the first signalled handle
+ * in the list.
  */
-static gboolean wait_for_item(WaitQueueItem *item)
+static gboolean wait_for_item(WaitQueueItem *item, guint32 *lowest)
 {
 	gboolean ret;
 	int i;
@@ -277,6 +280,9 @@ static gboolean wait_for_item(WaitQueueItem *item)
 			}
 		}
 	}
+
+	*lowest=item->lowest_signal;
+	
 	pthread_mutex_unlock(&item->mutex);
 
 	return(ret);
@@ -307,6 +313,7 @@ static void wait_item_destroy(WaitQueueItem *item)
 			g_free(item->thread[i]);
 		}
 		g_ptr_array_free(item->handles[i], FALSE);
+		g_array_free(item->waitindex[i], FALSE);
 	}
 }
 
@@ -403,6 +410,7 @@ guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles,
 	gboolean duplicate=FALSE, bogustype=FALSE;
 	gboolean wait;
 	guint i;
+	guint32 lowest;
 	
 	pthread_once(&wait_once, wait_init);
 	
@@ -466,9 +474,10 @@ guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles,
 	/* Sort the handles by type */
 	for(i=0; i<numobjects; i++) {
 		g_ptr_array_add(item->handles[handles[i]->type], handles[i]);
+		g_array_append_val(item->waitindex[handles[i]->type], i);
 	}
 	
-	wait=wait_for_item(item);
+	wait=wait_for_item(item, &lowest);
 	wait_dequeue_item(item);
 	wait_item_destroy(item);
 
@@ -477,14 +486,5 @@ guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles,
 		return(WAIT_TIMEOUT);
 	}
 
-	for(i=0; i<numobjects; i++) {
-		if(handles[i]->signalled==TRUE) {
-			return(WAIT_OBJECT_0+i);
-		}
-	}
-	
-	/* Oh dear. Something returned from the wait, but nothing
-	 * appears to be signalled.
-	 */
-	return(WAIT_FAILED);
+	return(WAIT_OBJECT_0+lowest);
 }

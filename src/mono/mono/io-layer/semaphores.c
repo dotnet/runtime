@@ -10,6 +10,7 @@
 #include "wapi-private.h"
 #include "wait-private.h"
 #include "misc-private.h"
+#include "handles-private.h"
 
 #define DEBUG
 
@@ -205,9 +206,15 @@ success:
 		/* Decrease all waited semaphores */
 		for(i=0; i<numhandles; i++) {
 			struct _WapiHandle_sem *sem_handle;
+			guint32 idx;
 			
 			sem_handle=g_ptr_array_index(
 				item->handles[WAPI_HANDLE_SEM], i);
+
+			idx=g_array_index(item->waitindex[WAPI_HANDLE_SEM],
+					  guint32, i);
+			_wapi_handle_set_lowest(item, idx);
+			
 			if(sem_handle->val>0) {
 				sem_handle->val--;
 			}

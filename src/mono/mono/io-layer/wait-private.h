@@ -28,6 +28,11 @@ typedef struct _WaitQueueItem
 	TimedThread *thread[WAPI_HANDLE_COUNT];
 	gboolean waited[WAPI_HANDLE_COUNT];
 	guint32 waitcount[WAPI_HANDLE_COUNT];
+	/* waitindex must be kept synchronised with the handles array,
+	 * such that index n of one matches index n of the other
+	 */
+	GArray *waitindex[WAPI_HANDLE_COUNT];
+	guint32 lowest_signal;
 } WaitQueueItem;
 
 #endif /* _WAPI_WAIT_PRIVATE_H_ */

@@ -7,6 +7,7 @@
 #include "wapi-private.h"
 #include "wait-private.h"
 #include "misc-private.h"
+#include "handles-private.h"
 
 #define DEBUG
 
@@ -219,10 +220,16 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 			 */
 			for(i=0; i<numhandles; i++) {
 				struct _WapiHandle_mutex *mutex_handle;
+				guint32 idx;
 
 				mutex_handle=g_ptr_array_index(
 					item->handles[WAPI_HANDLE_MUTEX], i);
 		
+				idx=g_array_index(
+					item->waitindex[WAPI_HANDLE_MUTEX],
+					guint32, i);
+				_wapi_handle_set_lowest(item, idx);
+				
 #ifdef DEBUG
 				g_message(G_GNUC_PRETTY_FUNCTION
 					  ": Updating mutex %p", mutex_handle);

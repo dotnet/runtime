@@ -1,29 +1,38 @@
 #include <config.h>
 #include <glib.h>
+#include <pthread.h>
 
 #include "mono/io-layer/wapi.h"
 #include "wapi-private.h"
 #include "handles-private.h"
 
-guint32 _wapi_handle_count_signalled(GPtrArray *handles)
+#define DEBUG
+
+guint32 _wapi_handle_count_signalled(WaitQueueItem *item, WapiHandleType type)
 {
 	guint32 i, ret=0;
 	
 	/* Count how many of the interesting thread handles are signalled */
-	for(i=0; i<handles->len; i++) {
+	for(i=0; i<item->handles[type]->len; i++) {
 		WapiHandle *handle;
 
-		handle=(WapiHandle *)g_ptr_array_index(handles, i);
+		handle=(WapiHandle *)g_ptr_array_index(item->handles[type], i);
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Checking handle %p",
 			  handle);
 #endif
 		
 		if(handle->signalled==TRUE) {
+			guint32 idx;
+			
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
-				  ": Thread %p signalled", handle);
+				  ": Handle %p signalled", handle);
 #endif
+
+			idx=g_array_index(item->waitindex[type], guint32, i);
+			_wapi_handle_set_lowest(item, idx);
+			
 			ret++;
 		}
 	}
@@ -33,6 +42,22 @@ guint32 _wapi_handle_count_signalled(GPtrArray *handles)
 #endif
 
 	return(ret);
+}
+
+void _wapi_handle_set_lowest(WaitQueueItem *item, guint32 idx)
+{
+	pthread_mutex_lock(&item->mutex);
+
+	if(item->lowest_signal>idx) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Set %p lowest index to %d",
+			  item, idx);
+#endif
+	
+		item->lowest_signal=idx;
+	}
+	
+	pthread_mutex_unlock(&item->mutex);
 }
 
 /**

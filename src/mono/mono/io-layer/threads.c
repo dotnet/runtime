@@ -129,7 +129,7 @@ static guint32 thread_wait_multiple(gpointer data)
 	 * signalled. If waitall is specified we only return if all
 	 * handles have been signalled.
 	 */
-	count=_wapi_handle_count_signalled(item->handles[WAPI_HANDLE_THREAD]);
+	count=_wapi_handle_count_signalled(item, WAPI_HANDLE_THREAD);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -171,8 +171,7 @@ again:
 		g_message(G_GNUC_PRETTY_FUNCTION ": Wait timed out");
 #endif
 
-		count=_wapi_handle_count_signalled(
-			item->handles[WAPI_HANDLE_THREAD]);
+		count=_wapi_handle_count_signalled(item, WAPI_HANDLE_THREAD);
 		goto success;
 	}
 	
@@ -183,7 +182,7 @@ again:
 	/* Another thread exited, so see if it was one we are
 	 * interested in
 	 */
-	count=_wapi_handle_count_signalled(item->handles[WAPI_HANDLE_THREAD]);
+	count=_wapi_handle_count_signalled(item, WAPI_HANDLE_THREAD);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION

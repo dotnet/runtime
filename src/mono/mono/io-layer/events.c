@@ -184,7 +184,7 @@ again:
 	return(FALSE);
 }
 
-static gboolean event_count_signalled(GPtrArray *handles, guint32 numhandles,
+static gboolean event_count_signalled(WaitQueueItem *item, guint32 numhandles,
 				      gboolean waitall, guint32 *retcount)
 {
 	guint32 count, i;
@@ -195,13 +195,15 @@ again:
 	for(i=0; i<numhandles; i++) {
 		struct _WapiHandle_event *event_handle;
 		
-		event_handle=g_ptr_array_index(handles, i);
+		event_handle=g_ptr_array_index(
+			item->handles[WAPI_HANDLE_EVENT], i);
 		
 		ret=pthread_mutex_trylock(&event_handle->mutex);
 		if(ret!=0) {
 			/* Bummer */
 			while(i--) {
-				event_handle=g_ptr_array_index(handles, i);
+				event_handle=g_ptr_array_index(
+					item->handles[WAPI_HANDLE_EVENT], i);
 				pthread_mutex_unlock(&event_handle->mutex);
 			}
 
@@ -226,7 +228,7 @@ again:
 	g_message(G_GNUC_PRETTY_FUNCTION ": Locked all event handles");
 #endif
 	
-	count=_wapi_handle_count_signalled(handles);
+	count=_wapi_handle_count_signalled(item, WAPI_HANDLE_EVENT);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": %d event handles signalled",
@@ -244,7 +246,8 @@ again:
 	for(i=0; i<numhandles; i++) {
 		struct _WapiHandle_event *event_handle;
 		
-		event_handle=g_ptr_array_index(handles, i);
+		event_handle=g_ptr_array_index(
+			item->handles[WAPI_HANDLE_EVENT], i);
 		
 		pthread_mutex_unlock(&event_handle->mutex);
 	}
@@ -278,8 +281,7 @@ static guint32 event_wait_multiple(gpointer data)
 	 * signalled. If waitall is specified we only return if all
 	 * handles have been signalled.
 	 */
-	done=event_count_signalled(item->handles[WAPI_HANDLE_EVENT],
-				   numhandles, item->waitall, &count);
+	done=event_count_signalled(item, numhandles, item->waitall, &count);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -349,9 +351,8 @@ static guint32 event_wait_multiple(gpointer data)
 			 * if it was an auto-reset event and someone
 			 * else got in before us.)
 			 */
-			done=event_count_signalled(
-				item->handles[WAPI_HANDLE_EVENT], numhandles,
-				item->waitall, &count);
+			done=event_count_signalled(item, numhandles,
+						   item->waitall, &count);
 	
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
