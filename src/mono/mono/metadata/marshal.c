@@ -15,6 +15,9 @@
 #include "metadata/tabledefs.h"
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
+#include "mono/metadata/debug-helpers.h"
+
+//#define DEBUG_RUNTIME_CODE
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -31,6 +34,21 @@ struct _MonoMethodBuilder {
 	int locals;
 	guint32 code_size, pos;
 	unsigned char *code;
+};
+
+static char*
+indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)
+{
+	return g_strdup (" ");
+}
+
+static MonoDisHelper marshal_dh = {
+	"\n",
+	NULL,
+	"IL_%04x",
+	indenter, 
+	NULL,
+	NULL
 };
 
 gpointer
@@ -227,13 +245,9 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 
-#if 0
-	printf ("MB METHOD %s.%s:%s\n", mb->method->klass->name_space, mb->method->klass->name,
-		mb->method->name);
-	
-	for (i = 0; i < mb->pos; i++)
-		printf (" IL%05x %02x\n", i, mb->code [i]);
-
+#ifdef DEBUG_RUNTIME_CODE
+	printf ("RUNTIME CODE FOR %s\n", mono_method_full_name (mb->method, TRUE));
+	printf ("%s\n", mono_disasm_code (&marshal_dh, mb->method, mb->code, mb->code + mb->pos));
 #endif
 
 	return mb->method;

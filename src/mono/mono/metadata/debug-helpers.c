@@ -264,12 +264,8 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	if (dh->label_format)
 		g_string_sprintfa (str, dh->label_format, label);
 	
-	i = *ip;
-	if (*ip == 0xfe) {
-		ip++;
-		i = *ip + 256;
-	}
-	++ip;
+	i = mono_opcode_value (&ip);
+	ip++;
 	opcode = &mono_opcodes [i];
 	g_string_sprintfa (str, "%-10s", mono_opcode_names [i]);
 
