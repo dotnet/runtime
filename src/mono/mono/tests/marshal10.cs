@@ -56,19 +56,123 @@ public class MyMarshal: ICustomMarshaler
 	}
 }
 
+// From Gtk#
+public class time_t_CustomMarshaler : ICustomMarshaler {
+
+	static time_t_CustomMarshaler marshaler;
+	int utc_offset;
+	DateTime local_epoch;
+
+	private time_t_CustomMarshaler () 
+	{
+		utc_offset = (int) DateTime.Now.Subtract (DateTime.UtcNow).TotalSeconds;
+		local_epoch = new DateTime (1970, 1, 1, 0, 0, 0);
+	}
+
+	public static ICustomMarshaler GetInstance (string cookie)
+	{
+		if (marshaler == null)
+			marshaler = new time_t_CustomMarshaler ();
+
+		return marshaler;
+	}
+
+	public IntPtr MarshalManagedToNative (object obj)
+	{
+		//
+		// This method should return a pointer to a memory buffer holding
+		// the unmanaged representation of 'obj'
+		// The first 4 bytes of the buffer is unused
+		// The unmanaged function will receive the address of the buffer
+		// as the parameter
+		//
+
+		DateTime dt = (DateTime) obj;
+		int size = Marshal.SizeOf (typeof (int)) + GetNativeDataSize ();
+		IntPtr ptr = Marshal.AllocCoTaskMem (size);
+		IntPtr time_t_ptr = new IntPtr (ptr.ToInt32 () + Marshal.SizeOf (typeof(int)));
+		int secs = ((int)dt.Subtract (local_epoch).TotalSeconds) + utc_offset;
+		if (GetNativeDataSize () == 4)
+			Marshal.WriteInt32 (time_t_ptr, secs);
+		else if (GetNativeDataSize () == 8)
+			Marshal.WriteInt64 (time_t_ptr, secs);
+		else
+			throw new Exception ("Unexpected native size for time_t.");
+
+		return ptr;
+	}
+
+	public void CleanUpNativeData (IntPtr data)
+	{
+		Marshal.FreeCoTaskMem (data);
+	}
+
+	public object MarshalNativeToManaged (IntPtr data)
+	{
+		//
+		// This function receives the return value of the unmanaged function
+		// as a pointer.
+		//
+
+		int secs;
+		secs = (int)data;
+
+		TimeSpan span = new TimeSpan (0, 0, secs - utc_offset);
+		return local_epoch.Add (span);
+	}
+
+	public void CleanUpManagedData (object obj)
+	{
+	}
+
+    [DllImport("libtest")]
+	private static extern int time_t_sizeof ();
+
+	public int GetNativeDataSize ()
+	{
+		return time_t_sizeof ();
+	}
+}
+
+public class Foo {
+	static Foo () {
+	}
+
+	[DllImport("libtest2")]
+	[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MyMarshal))]
+	public static extern string functionReturningString();
+}
+
 public class Testing
 {
 	[DllImport("libtest")]
 	[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MyMarshal))]
 	private static extern string functionReturningString();
 
+    [DllImport("libtest", EntryPoint="mono_test_marshal_time_t")]
+	[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(time_t_CustomMarshaler))]
+	private static extern DateTime mono_test_marshal_time_t (
+		 [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(time_t_CustomMarshaler))]
+		 DateTime t);
+
 	public static int Main()
 	{
-		string res = functionReturningString();
-		Console.WriteLine ("native string function returns {0}", res);
+		bool b = false;
 
-		if (res != "*ABC*")
-			return 1;
+		if (b) {
+			string res = Foo.functionReturningString();
+			Console.WriteLine ("native string function returns {0}", res);
+
+			if (res != "*ABC*")
+				return 1;
+
+			DateTime d = DateTime.Now;
+			DateTime d2 = mono_test_marshal_time_t (d);
+
+			if (((d2 - d).TotalSeconds < 3599) || ((d2 - d).TotalSeconds > 3601))
+				return 2;
+		}
+
 		return 0;
 	}
 
