@@ -30,6 +30,8 @@ static gint lmf_tls_offset = -1;
 #define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
 #endif
 
+static gpointer mono_arch_get_lmf_addr (void);
+
 const char*
 mono_arch_regname (int reg) {
 	switch (reg) {
@@ -3214,6 +3216,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
+	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
 	mono_register_jit_icall (enter_method, "mono_enter_method", NULL, TRUE);
 	mono_register_jit_icall (leave_method, "mono_leave_method", NULL, TRUE);
 }
@@ -3437,8 +3440,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			x86_mov_reg_membase (code, X86_EAX, X86_EAX, lmf_tls_offset, 4);
 		}
 		else {
+#ifdef HAVE_KW_THREAD
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+								 (gpointer)"mono_arch_get_lmf_addr");
+#else
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 								 (gpointer)"mono_get_lmf_addr");
+#endif
 			x86_call_code (code, 0);
 		}
 
