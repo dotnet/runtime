@@ -1,9 +1,24 @@
 * ASP.NET
 
-	The classes for running ASP.NET are being actively written.
-	Gaurav, Leen and Patrik have been building the classes
-	required to run ASP.NET web application as well as a small
-	embeddable web server.
+	ASP.NET support is divided in two pieces:
+	<ul>
+		* Web Forms (Web Applications infrastructure).
+
+		* Web Services (the SOAP-based rpc system).
+	</ul>
+
+	There is work underway for both systems.  The Web Forms
+	support is more advanced at this point, and various ".aspx"
+	programs can be run using the Mono runtime and the XSP page
+	parser.
+
+	Work for Web Services started early this week.  Although we
+	have a SoapFormatter as part of the remoting infrastructure
+	already (contributed by Jesus), most people will be using the
+	ASP.NET Web-services support.  Work for the supporting class
+	libraries just started recently.
+
+* Web Forms: The pieces
 
 	There are a couple of components to the puzzle:
 
@@ -30,6 +45,11 @@
 	(now at Intel).  This was interesting, because in order to implement
 	some of its features, Patrik had to go into the runtime/JIT engine and
 	he spent a few weeks doing work there.
+
+	The classes for running ASP.NET are being actively written.
+	Gaurav, Leen and Patrik worked in the core of the classes
+	required to run ASP.NET web application as well as a small
+	embeddable web server.
 
 	Duncan got our System.Web assembly to compile.
 
