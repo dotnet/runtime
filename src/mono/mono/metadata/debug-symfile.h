@@ -91,7 +91,7 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			13
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			14
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01

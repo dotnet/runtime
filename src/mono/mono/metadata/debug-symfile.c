@@ -41,6 +41,9 @@
 #define MRT_mono_string_byte_size	0x15
 #define MRT_mono_string_data_location	0x16
 #define MRT_static_type_field_offset	0x17
+#define MRT_mono_array_data_location	0x18
+#define MRT_mono_array_max_length	0x19
+#define MRT_mono_array_length_byte_size	0x1a
 
 #define MRI_string_offset_length	0x00
 #define MRI_string_offset_chars		0x01
@@ -568,7 +571,12 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 		}
 		case MRT_type_sizeof: {
 			guint32 token = *((guint32 *) tmp_ptr)++;
-			MonoClass *klass = mono_debug_class_get (symfile, token);
+			MonoClass *klass;
+
+			if (!token)
+				klass = mono_defaults.object_class;
+			else
+				klass = mono_debug_class_get (symfile, token);
 
 			if (!klass)
 				continue;
@@ -878,6 +886,40 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 #endif
 
 			* (void **) base_ptr = vtable->data + off;
+
+			break;
+		}
+
+		case MRT_mono_array_data_location: {
+			MonoArray array;
+			guint32 offset = (guchar *) &array.vector - (guchar *) &array;
+
+			* ((guint8 *) base_ptr)++ = DW_OP_const4u;
+			* ((gint32 *) base_ptr)++ = offset;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+
+			break;
+		}
+
+		case MRT_mono_array_max_length: {
+			MonoArray array;
+			guint32 offset = (guchar *) &array.max_length - (guchar *) &array;
+
+			* ((guint8 *) base_ptr)++ = DW_OP_const4u;
+			* ((gint32 *) base_ptr)++ = offset;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+
+			break;
+		}
+
+		case MRT_mono_array_length_byte_size: {
+			MonoArray array;
+
+			* (guint32 *) base_ptr = sizeof (array.max_length);
 
 			break;
 		}
