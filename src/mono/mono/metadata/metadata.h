@@ -237,7 +237,6 @@ typedef struct {
 	guint32 handler_offset;
 	guint32 handler_len;
 	guint32 token_or_filter;
-	guint32 filter_len;
 } MonoExceptionClause;
 
 typedef struct _MonoType MonoType;
