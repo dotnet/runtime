@@ -2692,6 +2692,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (sreg2_copy)
 				insert_before_ins (copy, tmp, sreg2_copy);
 
+			/*
+			 * Need to prevent sreg2 to be allocated to sreg1, since that
+			 * would screw up the previous copy.
+			 */
+			src2_mask &= ~ (1 << ins->sreg1);
 			/* we set sreg1 to dest as well */
 			prev_sreg1 = ins->sreg1 = ins->dreg;
 			src2_mask &= ~ (1 << ins->dreg);
