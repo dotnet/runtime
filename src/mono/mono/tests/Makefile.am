@@ -181,6 +181,7 @@ TEST_IL_SRC=			\
 	initblkTest.il		\
 	even-odd.il		\
 	qt-instance.il		\
+	vararg.il			\
 	bug-29859.il
 
 
