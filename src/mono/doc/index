@@ -94,6 +94,11 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Nov 8th, 2002: Mono s390
+
+	Neale Ferguson has contributed <a href="download.html">RPM
+	packages</a> of Mono for the Linux/s390.
+
 @item Nov 1st, 2002: TDS, Crypto, Gtk#, Winforms, bug fixes.
 
 	Tim's SqlClient is <a
