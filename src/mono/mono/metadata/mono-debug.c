@@ -182,7 +182,7 @@ lookup_method_func (gpointer key, gpointer value, gpointer user_data)
 		return;
 
 	if (handle->symfile)
-		data->minfo = mono_debug_find_method (handle->symfile, data->method);
+		data->minfo = mono_debug_find_method (handle, data->method);
 }
 
 static MonoDebugMethodInfo *

@@ -119,7 +119,7 @@ struct _MonoSymbolFile {
 };
 
 #define MONO_SYMBOL_FILE_VERSION		36
-#define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
+#define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614UL
 
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file   (MonoDebugHandle           *handle,
@@ -139,7 +139,7 @@ _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo   *jit,
 				    guint32                   il_offset);
 
 MonoDebugMethodInfo *
-mono_debug_find_method             (MonoSymbolFile           *symfile,
+mono_debug_find_method             (MonoDebugHandle           *handle,
 				    MonoMethod               *method);
 
 #endif /* __MONO_SYMFILE_H__ */

@@ -44,12 +44,9 @@ get_class_name (MonoClass *klass)
 static int
 load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 {
-	MonoSymbolFileMethodEntry *me;
-	MonoSymbolFileMethodIndexEntry *ie;
 	const char *ptr, *start;
 	guint64 magic;
 	long version;
-	int i;
 
 	ptr = start = symfile->raw_contents;
 	if (!ptr)
@@ -58,7 +55,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	magic = *((guint64 *) ptr);
 	ptr += sizeof(guint64);
 	if (magic != MONO_SYMBOL_FILE_MAGIC) {
-		g_warning ("Symbol file %s has is not a mono symbol file", handle->image_file);
+		g_warning ("Symbol file %s is not a mono symbol file", handle->image_file);
 		return FALSE;
 	}
 
@@ -73,39 +70,8 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 
 	symfile->offset_table = (MonoSymbolFileOffsetTable *) ptr;
 
-	/*
-	 * Read method table.
-	 *
-	 */
-
 	symfile->method_hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
 							     (GDestroyNotify) free_method_info);
-
-	ie = (MonoSymbolFileMethodIndexEntry *)
-		(symfile->raw_contents + symfile->offset_table->method_table_offset);
-
-	for (i = 0; i < symfile->offset_table->method_count; i++, me++, ie++) {
-		MonoMethod *method;
-		MonoDebugMethodInfo *minfo;
-
-		me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + ie->file_offset);
-
-		method = mono_get_method (handle->image, me->token, NULL);
-
-		if (!method)
-			continue;
-
-		minfo = g_new0 (MonoDebugMethodInfo, 1);
-		minfo->index = i + 1;
-		minfo->method = method;
-		minfo->handle = handle;
-		minfo->num_il_offsets = me->num_line_numbers;
-		minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
-			(symfile->raw_contents + me->line_number_table_offset);
-		minfo->entry = me;
-
-		g_hash_table_insert (symfile->method_hash, method, minfo);
-	}
 
 	return TRUE;
 }
@@ -239,11 +205,51 @@ _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo *jit, guint32 il_offs
 	return -1;
 }
 
-MonoDebugMethodInfo *
-mono_debug_find_method (MonoSymbolFile *symfile, MonoMethod *method)
+static int
+compare_method (const void *key, const void *object)
 {
+	guint32 token = GPOINTER_TO_UINT (key);
+	MonoSymbolFileMethodIndexEntry *me = (MonoSymbolFileMethodIndexEntry*)object;
+
+	return token - me->token;
+}
+
+MonoDebugMethodInfo *
+mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
+{
+	MonoSymbolFileMethodEntry *me;
+	MonoSymbolFileMethodIndexEntry *first_ie, *ie;
+	MonoDebugMethodInfo *minfo;
+	MonoSymbolFile *symfile = handle->symfile;
+
 	if (!symfile->method_hash)
 		return NULL;
-	else
-		return g_hash_table_lookup (symfile->method_hash, method);
+
+	if (handle->image != method->klass->image)
+		return NULL;
+
+	first_ie = (MonoSymbolFileMethodIndexEntry *)
+		(symfile->raw_contents + symfile->offset_table->method_table_offset);
+
+	ie = bsearch (GUINT_TO_POINTER (method->token), first_ie,
+				   symfile->offset_table->method_count,
+				   sizeof (MonoSymbolFileMethodIndexEntry), compare_method);
+
+	if (!ie)
+		return NULL;
+
+	me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + ie->file_offset);
+
+	minfo = g_new0 (MonoDebugMethodInfo, 1);
+	minfo->index = (ie - first_ie) + 1;
+	minfo->method = method;
+	minfo->handle = handle;
+	minfo->num_il_offsets = me->num_line_numbers;
+	minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
+		(symfile->raw_contents + me->line_number_table_offset);
+	minfo->entry = me;
+
+	g_hash_table_insert (symfile->method_hash, method, minfo);
+
+	return minfo;
 }
