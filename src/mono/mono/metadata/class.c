@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
@@ -2258,37 +2259,6 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 	return NULL;
 }
 
-static MonoImage*
-load_file_for_image (MonoImage *image, int fileidx)
-{
-	char *base_dir, *name;
-	MonoImage *res;
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_FILE];
-	const char *fname;
-	guint32 fname_id;
-
-	if (fileidx < 1 || fileidx > t->rows)
-		return NULL;
-	fname_id = mono_metadata_decode_row_col (t, fileidx - 1, MONO_FILE_NAME);
-	fname = mono_metadata_string_heap (image, fname_id);
-	base_dir = g_path_get_dirname (image->name);
-	name = g_build_filename (base_dir, fname, NULL);
-	res = mono_image_open (name, NULL);
-	if (res) {
-		int i;
-		t = &res->tables [MONO_TABLE_MODULEREF];
-		//g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly);
-		res->assembly = image->assembly;
-		for (i = 0; i < t->rows; ++i) {
-			if (res->modules [i] && !res->modules [i]->assembly)
-				res->modules [i]->assembly = image->assembly;
-		}
-	}
-	g_free (name);
-	g_free (base_dir);
-	return res;
-}
-
 static MonoClass*
 return_nested_in (MonoClass *class, char *nested) {
 	MonoClass *found;
@@ -2354,7 +2324,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 			if (strcmp (name, ename) == 0 && strcmp (name_space, enspace) == 0) {
 				guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
 				if ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE) {
-					loaded_image = load_file_for_image (image, impl >> IMPLEMENTATION_BITS);
+					loaded_image = mono_assembly_load_module (image->assembly, impl >> IMPLEMENTATION_BITS);
 					if (!loaded_image)
 						return NULL;
 					class = mono_class_from_name (loaded_image, name_space, name);

@@ -1104,6 +1104,37 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 	return data;
 }
 
+MonoImage*
+mono_image_load_file_for_image (MonoImage *image, int fileidx)
+{
+	char *base_dir, *name;
+	MonoImage *res;
+	MonoTableInfo  *t = &image->tables [MONO_TABLE_FILE];
+	const char *fname;
+	guint32 fname_id;
+
+	if (fileidx < 1 || fileidx > t->rows)
+		return NULL;
+	fname_id = mono_metadata_decode_row_col (t, fileidx - 1, MONO_FILE_NAME);
+	fname = mono_metadata_string_heap (image, fname_id);
+	base_dir = g_path_get_dirname (image->name);
+	name = g_build_filename (base_dir, fname, NULL);
+	res = mono_image_open (name, NULL);
+	if (res) {
+		int i;
+		t = &res->tables [MONO_TABLE_MODULEREF];
+		//g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly);
+		res->assembly = image->assembly;
+		for (i = 0; i < t->rows; ++i) {
+			if (res->modules [i] && !res->modules [i]->assembly)
+				res->modules [i]->assembly = image->assembly;
+		}
+	}
+	g_free (name);
+	g_free (base_dir);
+	return res;
+}
+
 const char*
 mono_image_get_strong_name (MonoImage *image, guint32 *size)
 {

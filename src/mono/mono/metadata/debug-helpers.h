@@ -24,6 +24,8 @@ char* mono_disasm_code     (MonoDisHelper *dh, MonoMethod *method, const guchar 
 typedef struct MonoMethodDesc MonoMethodDesc;
 
 void            mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace);
+char*           mono_type_full_name (MonoType *type);
+
 char*           mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace);
 
 MonoMethodDesc* mono_method_desc_new (const char *name, gboolean include_namespace);

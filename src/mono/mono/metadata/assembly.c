@@ -652,6 +652,19 @@ mono_assembly_close (MonoAssembly *assembly)
 	g_free (assembly);
 }
 
+MonoImage*
+mono_assembly_load_module (MonoAssembly *assembly, guint32 idx)
+{
+	MonoImageOpenStatus status;
+	MonoImage *module;
+
+	module = mono_image_load_file_for_image (assembly->image, idx);
+	if (module)
+		mono_assembly_load_references (module, &status);
+
+	return module;
+}
+
 void
 mono_assembly_foreach (GFunc func, gpointer user_data)
 {

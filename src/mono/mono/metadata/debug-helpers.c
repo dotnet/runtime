@@ -109,6 +109,20 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 }
 
 char*
+mono_type_full_name (MonoType *type)
+{
+	GString *str;
+	char *res;
+
+	str = g_string_new ("");
+	mono_type_get_desc (str, type, TRUE);
+
+	res = g_strdup (str->str);
+	g_string_free (str, TRUE);
+	return res;
+}
+
+char*
 mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 {
 	int i;
@@ -471,7 +485,7 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 		if (method->wrapper_type != MONO_WRAPPER_NONE)
 			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
 		else
-			sprintf (wrapper, "");
+			strcpy (wrapper, "");
 		res = g_strdup_printf ("%s%s.%s:%s (%s)", wrapper, method->klass->name_space, 
 				       method->klass->name, method->name, tmpsig);
 		g_free (tmpsig);

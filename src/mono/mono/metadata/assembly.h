@@ -13,6 +13,7 @@ MonoAssembly *mono_assembly_open       (const char *filename,
 MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status);
+MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, guint32 idx);
 void          mono_assembly_close      (MonoAssembly *assembly);
 void          mono_assembly_setrootdir (const char *root_dir);
 void	      mono_assembly_foreach    (GFunc func, gpointer user_data);

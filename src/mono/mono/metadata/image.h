@@ -25,7 +25,7 @@ typedef struct {
 	GModule *aot_module;
 	MonoImage *image;
 	/* Load files here */
-	void *dynamic;
+	gboolean dynamic;
 } MonoAssembly;
 
 typedef struct {
@@ -165,6 +165,7 @@ int           mono_image_ensure_section_idx (MonoImage *image,
 
 guint32       mono_image_get_entry_point    (MonoImage *image);
 const char   *mono_image_get_resource       (MonoImage *image, guint32 offset, guint32 *size);
+MonoImage*    mono_image_load_file_for_image (MonoImage *image, int fileidx);
 
 /* This actually returns a MonoPEResourceDataEntry *, but declaring it
  * causes an include file loop.
