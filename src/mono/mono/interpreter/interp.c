@@ -3858,15 +3858,21 @@ array_constructed:
 			case CEE_UNUSED: ves_abort(); break;
 			case CEE_SIZEOF: {
 				guint32 token;
-				MonoType *type;
 				int align;
 				++ip;
 				token = read32 (ip);
 				ip += 4;
-				type = mono_type_create_from_typespec (image, token);
+				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
+					MonoType *type = mono_type_create_from_typespec (image, token);
+					sp->data.i = mono_type_size (type, &align);
+				} else {
+					MonoClass *szclass = mono_class_get (image, token);
+					mono_class_init (szclass);
+					if (!szclass->valuetype)
+						THROW_EX (mono_exception_from_name (mono_defaults.corlib, "System", "InvalidProgramException"), ip - 5);
+					sp->data.i = mono_class_value_size (szclass, &align);
+				}
 				sp->type = VAL_I32;
-				sp->data.i = mono_type_size (type, &align);
-				mono_metadata_free_type (type);
 				++sp;
 				break;
 			}
