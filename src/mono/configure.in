@@ -1102,10 +1102,12 @@ case "$host" in
 		LIBC="libc.so"
 		jit_wanted=true
 		;;
-#       alpha*-*-linux* | alpha*-*-osf*)
-#		TARGET=ALPHA;
-#		ACCESS_UNALIGNED="no"
-#	       ;;
+       alpha*-*-linux* | alpha*-*-osf*)
+		TARGET=ALPHA;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=no
+		arch_target=alpha;
+	       ;;
 #	ia64-*-linux* | ia64-*-hpux*)
 #		TARGET=IA64;
 #		arch_target=ia64;
@@ -1123,6 +1125,11 @@ case "$host" in
 		TARGET=HPPA;
 		arch_target=hppa; 
 		LIBC="libc.sl"
+		ACCESS_UNALIGNED="no"
+		;;
+	hppa*linux*)
+		TARGET=HPPA;
+		arch_target=hppa; 
 		ACCESS_UNALIGNED="no"
 		;;
 	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
