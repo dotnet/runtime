@@ -104,6 +104,9 @@ public class Tests {
 	[DllImport ("libtest.dll", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char_2 (char a1);
 
+	[DllImport ("test", EntryPoint="mono_test_marshal_char")]
+	public static extern int mono_test_marshal_char_3 (char a1);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
 
@@ -536,6 +539,14 @@ public class Tests {
 	static int test_0_trim_dll_from_name () {
 
 		mono_test_marshal_char_2 ('A');
+
+		return 0;
+	}
+
+	/* Check that the runtime adds lib to to the library name */
+	static int test_0_add_lib_to_name () {
+
+		mono_test_marshal_char_3 ('A');
 
 		return 0;
 	}
