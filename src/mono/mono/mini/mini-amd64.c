@@ -2595,6 +2595,15 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	/* Move return value to the target register */
 	/* FIXME: do this in the local reg allocator */
 	switch (ins->opcode) {
+	case CEE_CALL:
+	case OP_CALL_REG:
+	case OP_CALL_MEMBASE:
+	case OP_LCALL:
+	case OP_LCALL_REG:
+	case OP_LCALL_MEMBASE:
+		if (ins->dreg != AMD64_RAX)
+			amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, 8);
+		break;
 	case OP_FCALL:
 	case OP_FCALL_REG:
 	case OP_FCALL_MEMBASE:
@@ -4603,6 +4612,8 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 				amd64_mov_reg_membase (code, AMD64_R11, inst->inst_basereg, inst->inst_offset, 8);
 				amd64_mov_membase_reg (code, AMD64_RSP, (i * 8), AMD64_R11, 8);
 				break;
+			default:
+				g_assert_not_reached ();
 			}
 		}
 	}
