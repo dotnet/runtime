@@ -1181,35 +1181,35 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 
 	MonoInst *load;
 	int i, sel, spill;
 
-	DEBUG (g_print ("start regmask to assign R%d: 0x%08x (R%d <- R%d R%d)\n", reg, regmask, ins->dreg, ins->sreg1, ins->sreg2));
+	DEBUG (g_print ("\tstart regmask to assign R%d: 0x%08x (R%d <- R%d R%d)\n", reg, regmask, ins->dreg, ins->sreg1, ins->sreg2));
 	/* exclude the registers in the current instruction */
 	if (reg != ins->sreg1 && (reg_is_freeable (ins->sreg1) || (ins->sreg1 >= MONO_MAX_IREGS && cfg->rs->iassign [ins->sreg1] >= 0))) {
 		if (ins->sreg1 >= MONO_MAX_IREGS)
 			regmask &= ~ (1 << cfg->rs->iassign [ins->sreg1]);
 		else
 			regmask &= ~ (1 << ins->sreg1);
-		DEBUG (g_print ("excluding sreg1 %s\n", mono_arch_regname (ins->sreg1)));
+		DEBUG (g_print ("\t\texcluding sreg1 %s\n", mono_arch_regname (ins->sreg1)));
 	}
 	if (reg != ins->sreg2 && (reg_is_freeable (ins->sreg2) || (ins->sreg2 >= MONO_MAX_IREGS && cfg->rs->iassign [ins->sreg2] >= 0))) {
 		if (ins->sreg2 >= MONO_MAX_IREGS)
 			regmask &= ~ (1 << cfg->rs->iassign [ins->sreg2]);
 		else
 			regmask &= ~ (1 << ins->sreg2);
-		DEBUG (g_print ("excluding sreg2 %s %d\n", mono_arch_regname (ins->sreg2), ins->sreg2));
+		DEBUG (g_print ("\t\texcluding sreg2 %s %d\n", mono_arch_regname (ins->sreg2), ins->sreg2));
 	}
 	if (reg != ins->dreg && reg_is_freeable (ins->dreg)) {
 		regmask &= ~ (1 << ins->dreg);
-		DEBUG (g_print ("excluding dreg %s\n", mono_arch_regname (ins->dreg)));
+		DEBUG (g_print ("\t\texcluding dreg %s\n", mono_arch_regname (ins->dreg)));
 	}
 
-	DEBUG (g_print ("available regmask: 0x%08x\n", regmask));
+	DEBUG (g_print ("\t\tavailable regmask: 0x%08x\n", regmask));
 	g_assert (regmask); /* need at least a register we can free */
 	sel = -1;
 	/* we should track prev_use and spill the register that's farther */
 	for (i = 0; i < MONO_MAX_IREGS; ++i) {
 		if (regmask & (1 << i)) {
 			sel = i;
-			DEBUG (g_print ("selected register %s has assignment %d\n", mono_arch_regname (sel), cfg->rs->iassign [sel]));
+			DEBUG (g_print ("\t\tselected register %s has assignment %d\n", mono_arch_regname (sel), cfg->rs->iassign [sel]));
 			break;
 		}
 	}
@@ -1228,7 +1228,7 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 
 	}
 	load->next = ins->next;
 	ins->next = load;
-	DEBUG (g_print ("SPILLED LOAD (%d at 0x%08x(%%ebp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
+	DEBUG (g_print ("\tSPILLED LOAD (%d at 0x%08x(%%ebp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
 	i = mono_regstate_alloc_int (cfg->rs, 1 << sel);
 	g_assert (i == sel);
 	
@@ -1262,7 +1262,7 @@ create_spilled_store (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoIn
 		store->next = ins->next;
 		ins->next = store;
 	}
-	DEBUG (g_print ("SPILLED STORE (%d at 0x%08x(%%ebp)) R%d (from %s)\n", spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
+	DEBUG (g_print ("\tSPILLED STORE (%d at 0x%08x(%%ebp)) R%d (from %s)\n", spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
 	return store;
 }
 
@@ -1496,7 +1496,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					if (new_dest < 0)
 						new_dest = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
 					g_assert (new_dest >= 0);
-					DEBUG (g_print ("\tclob:s changing dreg from R%d to %s (val = %d)\n", ins->dreg, mono_arch_regname (new_dest), val));
+					DEBUG (g_print ("\tclob:s changing dreg R%d to %s from ECX\n", ins->dreg, mono_arch_regname (new_dest)));
+
+					rs->isymbolic [new_dest] = ins->dreg;
+					rs->iassign [ins->dreg] = new_dest;
 					clob_dreg = ins->dreg;
 					ins->dreg = new_dest;
 					create_copy_ins (cfg, X86_ECX, new_dest, ins);
@@ -1539,6 +1542,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				rs->isymbolic [X86_ECX] = ins->sreg2;
 				ins->sreg2 = X86_ECX;
 				rs->ifree_mask &= ~ (1 << X86_ECX);
+
+				if (clob_dreg != -1 && reg_is_freeable (ins->dreg) && clob_dreg >= 0 && reginfo [clob_dreg].born_in >= i) {
+					DEBUG (g_print ("\tfreeable moved reg %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), clob_dreg, reginfo [clob_dreg].born_in));
+					mono_regstate_free_int (rs, ins->dreg);
+				}
 			}
 		} else if (spec [MONO_INST_CLOB] == 'd') { /* division */
 			int dest_reg = X86_EAX;
@@ -1600,12 +1608,12 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		if (spec [MONO_INST_DEST] == 'l') {
 			if (!(rs->ifree_mask & (1 << X86_EAX))) {
-				DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [X86_EAX]));
+				DEBUG (g_print ("\t(long-low) forced spill of R%d\n", rs->isymbolic [X86_EAX]));
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [X86_EAX]);
 				mono_regstate_free_int (rs, X86_EAX);
 			}
 			if (!(rs->ifree_mask & (1 << X86_EDX))) {
-				DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [X86_EDX]));
+				DEBUG (g_print ("\t(long-high) forced spill of R%d\n", rs->isymbolic [X86_EDX]));
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [X86_EDX]);
 				mono_regstate_free_int (rs, X86_EDX);
 			}
@@ -1681,8 +1689,20 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 		else if (ins->dreg >= MONO_MAX_IREGS) {
+			int hreg;
 			val = rs->iassign [ins->dreg];
-			prev_dreg = ins->dreg;
+			if (spec [MONO_INST_DEST] == 'l') {
+				/* check special case when dreg have been moved from ecx (clob shift) */
+				if (spec [MONO_INST_CLOB] == 's' && clob_dreg != -1)
+					hreg = clob_dreg + 1;
+				else
+					hreg = ins->dreg + 1;
+
+				/* base prev_dreg on fixed hreg, handle clob case */
+				prev_dreg = hreg - 1;
+			} else
+				prev_dreg = ins->dreg;
+
 			if (val < 0) {
 				int spill = 0;
 				if (val < -1) {
@@ -1701,6 +1721,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->dreg = val;
 			/* handle cases where lreg needs to be eax:edx */
 			if (spec [MONO_INST_DEST] == 'l') {
+				/* check special case when dreg have been moved from ecx (clob shift) */
 				int hreg = prev_dreg + 1;
 				val = rs->iassign [hreg];
 				if (val < 0) {
