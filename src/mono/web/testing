@@ -29,3 +29,18 @@
 	JUnit Test Infected: Programmers Love Writing Tests</a>.
 
 
+** Getting Started
+
+	We welcome all contributions to the Class Libary Test Suite.
+
+	There is information to help you get started in CVS at
+	mcs/class/doc/NUnitGuidelines. Once you have written your test, please
+	post it to <a href="resources.html#mailing">mono-list</a>.
+
+	Someone will make sure to add the file or apply the patch as
+	appropriate. If you plan to be an on-going contributor and
+	would like to get cvs account, email <a href="mailto:miguel@ximian.com">miguel</a>.
+
+	Normally, after you send a couple of well-written new files
+	and/or patches to the list, you will be given cvs access.
+

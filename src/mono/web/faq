@@ -461,6 +461,26 @@ A: Yes, Java could target the CLI.  We have details on a <a
    Microsoft has an implemenation of the Java language called J# that
    can target the CIL execution engine. 
 
+Q: Is it possible to write a JVM byte code to CIL convertor?
+
+A: Yes, it is possible.  Here are a few starting point:
+
+	<ul>
+        	* A byte code representation is really a flattened forest of
+          	  trees.  Look at the Mono JIT engine to see how we compute
+          	  the basic blocks (this is used to figure out the "trees").
+
+          	  The forest is just an array of trees.
+
+          	  Indeed, run the JIT engine with -d (mono -d prog.exe) and
+          	  you will see how these trees look like.
+
+            	  You will have to do something similar for Java.
+
+        	* Each "forest of trees" has a meaning.  This meaning can now
+          	  be translated into the equivalent "meaning" in CLR-land.
+	</ul>
+
 <a name="extending"></a>
 ** Extending Mono
 

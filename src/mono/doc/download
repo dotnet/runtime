@@ -119,11 +119,22 @@ tar xzvf mono-XXX.tar.gz
 
 		* Configure, compile and install:
 
+	 	  For official releases, use:
+
 <pre>
 ./configure --prefix=//c/mono
 make
 make install
 </pre>
+
+		  For Snapshots, or CVS trees, use:
+
+<pre>
+./autogen.sh --prefix=//c/mono
+make
+make install
+</pre>
+
 
 		* Some people observed problems with autoconf 2.52. Installing 
 		  autoconf 2.13 helped in those cases (don't forget to do a
@@ -154,11 +165,22 @@ tar xzvf mono-XXX.tar.gz
 </pre>
 
 		* Configure, compile and install:
+
+		  For official releases:
 <pre>
 ./configure
 make
 make install
 </pre>
+
+		  For snapshots and CVS trees:
+
+<pre>
+./autogen.sh
+make
+make install
+</pre>
+
 	</ul>
 	
 
