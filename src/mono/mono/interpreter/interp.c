@@ -2099,7 +2099,11 @@ ves_exec_method (MonoInvocation *frame)
 			/*
 			 * First arg is the object.
 			 */
-			child_frame.obj = o;
+
+			if (child_frame.method->klass->valuetype) 
+				child_frame.obj = (char *)o + sizeof (MonoObject);
+			else
+				child_frame.obj = o;
 
 			if (csig->param_count) {
 				sp -= csig->param_count;
@@ -2131,8 +2135,12 @@ ves_exec_method (MonoInvocation *frame)
 			 * a constructor returns void, but we need to return the object we created
 			 */
 array_constructed:
-			sp->type = VAL_OBJ;
-			sp->data.p = o;
+
+			if (child_frame.method->klass->valuetype) 
+				sp->type = VAL_VALUET;
+			else
+				sp->type = VAL_OBJ;
+			sp->data.p = child_frame.obj;
 			sp->data.vt.klass = o->vtable->klass;
 			++sp;
 			BREAK;
@@ -3774,7 +3782,7 @@ main (int argc, char *argv [])
 	mono_network_cleanup ();
 	mono_thread_cleanup ();
 
-	mono_domain_unload (domain);
+	// mono_domain_unload (domain);
 
 #if DEBUG_INTERP
 	if (ocount) {
