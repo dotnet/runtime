@@ -16,9 +16,8 @@
 		  easy-to-port runtime engine.
 	</ul>
 
-	Currently both runtimes are missing garbage collection.  We
-	are planning on using the ORP GC engine and deploy it by
-	middle January.  
+	Currently we are using the Bohem conservative garbage
+	collector, but we working on incorporating the ORP GC engine. 
 
 * COM and XPCOM
 

@@ -11,6 +11,9 @@
 	for the first time on December 28 2001.  MCS became self hosting
 	on January 3rd, 2002. 
 
+	The Mono Runtime and the Mono execution engine were able to make
+	our compiler self hosting on March 12, 2002.
+
 	A test suite is maintained to track the progress of
 	the compiler and various programs are routinely compiled and
 	ran.
