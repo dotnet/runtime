@@ -32,10 +32,10 @@ mono_test_puts_static (char *s)
 	return 1;
 }
 
-typedef int (*SimpleDelegate) (int a, int b);
+typedef int (*SimpleDelegate3) (int a, int b);
 
 int
-mono_invoke_delegate (SimpleDelegate delegate)
+mono_invoke_delegate (SimpleDelegate3 delegate)
 {
 	int res;
 
@@ -47,3 +47,65 @@ mono_invoke_delegate (SimpleDelegate delegate)
 
 	return res;
 }
+
+int 
+mono_test_marshal_char (short a1)
+{
+	if (a1 = 'a')
+		return 0;
+	
+	return 1;
+}
+
+int 
+mono_test_marshal_array (int *a1)
+{
+	int i, sum = 0;
+
+	for (i = 0; i < 50; i++)
+		sum += a1 [i];
+	
+	return sum;
+}
+
+typedef struct {
+	int a;
+	int b;
+	int c;
+	char *d;
+} simplestruct;
+
+int 
+mono_test_marshal_struct (simplestruct ss)
+{
+	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST"))
+		return 0;
+
+	return 1;
+}
+
+
+typedef int (*SimpleDelegate) (int a);
+
+int
+mono_test_marshal_delegate (SimpleDelegate delegate)
+{
+	return delegate (2);
+}
+
+typedef int (*SimpleDelegate2) (simplestruct ss);
+
+int
+mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
+{
+	simplestruct ss;
+
+	ss.a = 0;
+	ss.b = 1;
+	ss.c = 0;
+	ss.d = "TEST";
+
+	return delegate (ss);
+}
+

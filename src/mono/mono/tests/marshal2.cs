@@ -23,6 +23,7 @@ public class Test {
 	
 	public unsafe static int Main () {
 		SimpleStruct ss = new SimpleStruct ();
+		SimpleStruct cp = new SimpleStruct ();
 		int size = Marshal.SizeOf (typeof (SimpleStruct));
 		
 		Console.WriteLine ("SimpleStruct:" + size);
@@ -67,6 +68,10 @@ public class Test {
 			return 1;
 		if (Marshal.ReadInt32 (p, 28) != 4)
 			return 1;
+
+		object o = cp;
+		Marshal.PtrToStructure (p, o);
+		cp = (SimpleStruct)o;
 		
 		return 0;
 	}

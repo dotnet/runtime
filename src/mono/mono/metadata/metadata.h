@@ -268,7 +268,8 @@ struct _MonoMethodSignature {
 	unsigned int  hasthis : 1;
 	unsigned int  explicit_this   : 1;
 	unsigned int  call_convention : 6;
-	unsigned int  ref_count : 24;
+	unsigned int  pinvoke   : 1;
+	unsigned int  ref_count : 23;
 	guint16       param_count;
 	guint16       sentinelpos;
 	MonoType     *ret;

@@ -159,7 +159,7 @@ void *
 debug_memcopy (void *dest, const void *src, size_t n);
 
 #ifdef DEBUG
-#define MEMCOPY debug_memcpy
+#define MEMCOPY debug_memcopy
 #define PRINT_REG(text,reg) REAL_PRINT_REG(text,reg)
 #else
 
@@ -4796,7 +4796,6 @@ stmt: ARG_OBJ (reg) {
 	int sa;
 	
 	mono_assert (size > 0);
-
 	sa = size + 3;
 	sa &= ~3;
 

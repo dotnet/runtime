@@ -41,6 +41,8 @@ TESTSRC=			\
 	static-constructor.cs	\
 	pinvoke.cs		\
 	pinvoke1.cs		\
+	pinvoke2.cs		\
+	pinvoke3.cs		\
 	box.cs			\
 	array.cs		\
 	enum.cs			\

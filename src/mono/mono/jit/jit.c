@@ -2141,7 +2141,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			for (k = nargs - 1; k >= 0; k--) {
 				MonoType *type = csig->params [k];
 				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);
-				size = mono_type_stack_size (type, &align);
+				if (csig->pinvoke && ISSTRUCT (type)) {
+					size = mono_class_native_size (type->data.klass);
+				} else {
+					size = mono_type_stack_size (type, &align);
+				}
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
 				args_size += size;
@@ -3615,8 +3619,7 @@ mono_jit_compile_method (MonoMethod *method)
 	mono_jit_stats.methods_compiled++;
 	
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
-		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
-			method->klass->name, method->name);
+		printf ("Start JIT compilation of %s\n", mono_method_full_name (method, TRUE));
 	}
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
@@ -3625,8 +3628,7 @@ mono_jit_compile_method (MonoMethod *method)
 			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
 				return NULL;
 
-			g_error ("Don't know how to exec runtime method %s.%s::%s", 
-				 method->klass->name_space, method->klass->name, method->name);
+			g_error ("Don't know how to exec runtime method %s", mono_method_full_name (method, TRUE));
 		}
 	} else {
 		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
@@ -3727,8 +3729,7 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
-		printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
-			method->klass->name, method->name, method, addr);
+		printf ("END JIT compilation of %s %p %p\n", mono_method_full_name (method, FALSE), method, addr);
 	}
 
 	g_hash_table_insert (jit_code_hash, method, addr);
