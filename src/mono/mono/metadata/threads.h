@@ -52,11 +52,11 @@ extern void mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
 
-extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this, MonoObject *start);
-extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this, HANDLE thread);
-extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this, HANDLE thread);
+extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start);
+extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this_obj, HANDLE thread);
+extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this_obj, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
-extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this, int ms, HANDLE thread);
+extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms, HANDLE thread);
 extern gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
@@ -69,7 +69,7 @@ extern gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE ha
 
 extern gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
 extern gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
-extern gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext);
+extern gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this_obj, HANDLE handle, gint32 ms, gboolean exitContext);
 
 extern gint32 ves_icall_System_Threading_Interlocked_Increment_Int(gint32 *location);
 extern gint64 ves_icall_System_Threading_Interlocked_Increment_Long(gint64 *location);
