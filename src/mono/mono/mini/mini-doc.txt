@@ -2,6 +2,7 @@
 	       A new JIT compiler for the Mono Project
 
 	   Miguel de Icaza (miguel@{ximian.com,gnome.org}),
+	   Paolo Molaro (lupus@{ximian.com,debian.org})
 
   
 * Abstract
@@ -619,6 +620,120 @@
        JIT. This simplifies the code because we can directly pass DAGs and
        don't need to convert them to trees.
 
+* Adding IL opcodes: an excercise (from a post by Paolo Molaro)
+
+	mini.c is the file that read the IL code stream and decides
+	how any single IL instruction is implemented
+	(mono_method_to_ir () func), so you always have to add an
+	entry to the big switch inside the function: there are plenty
+	of examples in that file.
+
+	An IL opcode can be implemented in a number of ways, depending
+	on what it does and how it needs to do it.
+	
+	Some opcodes are implemented using a helper function: one of
+	the simpler examples is the CEE_STELEM_REF implementation.
+
+	In this case the opcode implementation is written in a C
+	function.  You will need to register the function with the jit
+	before you can use it (mono_register_jit_call) and you need to
+	emit the call to the helper using the mono_emit_jit_icall()
+	function.  
+
+	This is the simpler way to add a new opcode and it doesn't
+	require any arch-specific change (though it's limited to what
+	you can do in C code and the performance may be limited by the
+	function call).
+	
+	Other opcodes can be implemented with one or more of the already
+	implemented low-level instructions. 
+
+	An example is the OP_STRLEN opcode which implements
+	String.Length using a simple load from memory.  In this case
+	you need to add a rule to the appropriate burg file,
+	describing what are the arguments of the opcode and what is,
+	if any, it's 'return' value.
+
+	The OP_STRLEN case is:
+	
+	reg: OP_STRLEN (reg) {  
+		MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, state->reg1, 
+			state->left->reg1, G_STRUCT_OFFSET (MonoString, length));
+	}
+
+	The above means: the OP_STRLEN takes a register as an argument
+	and returns its value in a register.  And the implementation
+	of this is included in the braces.
+	
+	The opcode returns a value in an integer register
+	(state->reg1) by performing a int32 load of the length field
+	of the MonoString represented by the input register
+	(state->left->reg1): before the burg rules are applied, the
+	internal representation is based on trees, so you get the
+	left/right pointers (state->left and state->right
+	respectively, the result is stored in state->reg1).
+
+	This instruction implementation doesn't require arch-specific
+	changes (it is using the MONO_EMIT_LOAD_MEMBASE_OP which is
+	available on all platforms), and usually the produced code is
+	fast.
+	
+	Next we have opcodes that must be implemented with new low-level
+	architecture specific instructions (either because of performance
+	considerations or because the functionality can't get implemented in
+	other ways).  
+
+	You also need a burg rule in this case, too. For example,
+	consider the OP_CHECK_THIS opcode (used to raise an exception
+	if the this pointer is null). The burg rule simply reads:
+	
+	stmt: OP_CHECK_THIS (reg) {
+		mono_bblock_add_inst (s->cbb, tree);
+	}
+	
+	Note that this opcode does not return a value (hence the
+	"stmt") and it takes a register as input.
+
+	mono_bblock_add_inst (s->cbb, tree) just adds the instruction
+	(the tree variable) to the current basic block (s->cbb). In
+	mini this is the place where the internal representation
+	switches from the tree format to the low-level format (the
+	list of simple instructions).
+
+	In this case the actual opcode implementation is delegated to
+	the arch-specific code.  A low-level opcode needs an entry in
+	the machine description (the *.md files in mini/). This entry
+	describes what kind of registers are used if any by the
+	instruction, as well as other details such as constraints or
+	other hints to the low-level engine which are architecture
+	specific.  
+
+	cpu-pentium.md, for example has the following entry:
+	
+	checkthis: src1:b len:3
+	
+	This means the instruction uses an integer register as a base
+	pointer (basically a load or store is done on it) and it takes
+	3 bytes of native code to implement it.
+
+	Now you just need to provide the low-level implementation for
+	the opcode in one of the mini-$arch.c files, in the
+	mono_arch_output_basic_block() function. There is a big switch
+	here too. The x86 implementation is:
+
+		case OP_CHECK_THIS:
+			/* ensure ins->sreg1 is not NULL */
+			x86_alu_membase_imm (code, X86_CMP, ins->sreg1, 0, 0);
+			break;
+	
+	If the $arch-codegen.h header file doesn't have the code to
+	emit the low-level native code, you'll need to write that as
+	well.  
+
+	Complex opcodes with register constraints may require other
+	changes to the local register allocator, but usually they are
+	not needed.
+		
 * Future
 
         Profile-based optimization is something that we are very
@@ -650,4 +765,4 @@
 	processors, and some of the framework exists today in our
 	register allocator and the instruction selector to cope with
 	this, but has not been finished.  The instruction selection
-	would happen at the same time as local register allocation. 
+	would happen at the same time as local register allocation. <
