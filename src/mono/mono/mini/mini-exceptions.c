@@ -196,7 +196,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
-	static void (*restore_context) (struct sigcontext *);
+	static void (*restore_context) (void *);
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
@@ -293,7 +293,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 		if (ji != (gpointer)-1) {
 			frame_count ++;
-			//printf ("M: %s %p %p %d.\n", mono_method_full_name (ji->method, TRUE), jit_tls->end_of_stack, ctx->ebp, count);
+			//printf ("M: %s %d %d.\n", mono_method_full_name (ji->method, TRUE), frame_count, test_only);
 
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				char *tmp, *strace;
@@ -336,6 +336,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			
 				for (i = 0; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
+					gboolean filtered = FALSE;
 
 					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
@@ -347,10 +348,11 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
 						}
 
+						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+							filtered = call_filter (ctx, ei->data.filter);
+
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) ||
-						    ((ei->flags == MONO_EXCEPTION_CLAUSE_FILTER &&
-						      call_filter (ctx, ei->data.filter)))) {
+						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {
 							if (test_only) {
 								if (mono_ex)
 									mono_ex->trace_ips = glist_to_array (trace_ips);

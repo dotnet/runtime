@@ -311,7 +311,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			g_free (tmpaddr);
 		}
 
-		/* FIXME: lmf */
+		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
+			/* remove any unused lmf */
+			*lmf = (*lmf)->previous_lmf;
+		}
 
 		/* Restore ip and sp from the saved register window */
 		window = (guint32*)ctx->sp;
