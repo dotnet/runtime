@@ -727,38 +727,69 @@ ves_icall_System_Object_GetHashCode (MonoObject *this)
 	return key & 0x7fffffff;
 }
 
-/*
- * A hash function for value types. I have no idea if this is a good hash 
- * function (its similar to g_str_hash).
- */
 static gint32
-ves_icall_System_ValueType_GetHashCode (MonoObject *this)
+ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fields)
 {
-	gint32 i, size;
-	const char *p;
-	guint h = 0;
+	int i;
+	MonoClass *klass;
+	MonoObject **values = NULL;
+	MonoObject *o;
+	int count = 0;
+	gint32 result = 0;
 
 	MONO_ARCH_SAVE_REGS;
 
-	MONO_CHECK_ARG_NULL (this);
+	klass = this->vtable->klass;
 
-	size = this->vtable->klass->instance_size - sizeof (MonoObject);
+	if (klass->field.count == 0)
+		return ves_icall_System_Object_GetHashCode (this);
 
-	p = (const char *)this + sizeof (MonoObject);
-
-	for (i = 0; i < size; i++) {
-		h = (h << 5) - h + *p;
-		p++;
+	/*
+	 * Compute the starting value of the hashcode for fields of primitive
+	 * types, and return the remaining fields in an array to the managed side.
+	 * This way, we can avoid costly reflection operations in managed code.
+	 */
+	for (i = 0; i < klass->field.count; ++i) {
+		MonoClassField *field = &klass->fields [i];
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		/* FIXME: Add more types */
+		switch (field->type->type) {
+		case MONO_TYPE_I4:
+			result ^= *(gint32*)((guint8*)this + field->offset);
+			break;
+		case MONO_TYPE_STRING: {
+			MonoString *s;
+			s = *(MonoString**)((guint8*)this + field->offset);
+			if (s != NULL)
+				result ^= ves_icall_System_String_GetHashCode (s);
+			break;
+		}
+		default:
+			if (!values)
+				values = alloca (klass->field.count * sizeof (MonoObject*));
+			o = mono_field_get_value_object (mono_object_domain (this), field, this);
+			values [count++] = o;
+		}
 	}
 
-	return h;
+	if (values) {
+		*fields = mono_array_new (mono_domain_get (), mono_defaults.object_class, count);
+		memcpy (mono_array_addr (*fields, MonoObject*, 0), values, count * sizeof (MonoObject*));
+	}
+	else
+		*fields = NULL;
+	return result;
 }
 
 static MonoBoolean
-ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that)
+ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray **fields)
 {
-	gint32 size;
-	const char *p, *s;
+	int i;
+	MonoClass *klass;
+	MonoObject **values = NULL;
+	MonoObject *o;
+	int count = 0;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -767,12 +798,61 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that)
 	if (this->vtable != that->vtable)
 		return FALSE;
 
-	size = this->vtable->klass->instance_size - sizeof (MonoObject);
+	klass = this->vtable->klass;
 
-	p = (const char *)this + sizeof (MonoObject);
-	s = (const char *)that + sizeof (MonoObject);
+	/*
+	 * Do the comparison for fields of primitive type and return a result if
+	 * possible. Otherwise, return the remaining fields in an array to the 
+     * managed side. This way, we can avoid costly reflection operations in 
+     * managed code.
+	 */
+	*fields = NULL;
+	for (i = 0; i < klass->field.count; ++i) {
+		MonoClassField *field = &klass->fields [i];
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		/* FIXME: Add more types */
+		switch (field->type->type) {
+		case MONO_TYPE_I4:
+			if (*(gint32*)((guint8*)this + field->offset) != *(gint32*)((guint8*)that + field->offset))
+				return FALSE;
+			break;
+		case MONO_TYPE_STRING: {
+			MonoString *s1, *s2;
+			guint32 s1len, s2len;
+			s1 = *(MonoString**)((guint8*)this + field->offset);
+			s2 = *(MonoString**)((guint8*)that + field->offset);
+			if (s1 == s2)
+				break;
+			if ((s1 == NULL) || (s2 == NULL))
+				return FALSE;
+			s1len = mono_string_length (s1);
+			s2len = mono_string_length (s2);
+			if (s1len != s2len)
+				return FALSE;
 
-	return memcmp (p, s, size)? FALSE: TRUE;
+			if (memcmp (mono_string_chars (s1), mono_string_chars (s2), s1len * sizeof (gunichar2)) != 0)
+				return FALSE;
+			break;
+		}
+		default:
+			if (!values)
+				values = alloca (klass->field.count * 2 * sizeof (MonoObject*));
+			o = mono_field_get_value_object (mono_object_domain (this), field, this);
+			values [count++] = o;
+			o = mono_field_get_value_object (mono_object_domain (this), field, that);
+			values [count++] = o;
+		}
+	}
+
+	if (values) {
+		*fields = mono_array_new (mono_domain_get (), mono_defaults.object_class, count);
+		memcpy (mono_array_addr (*fields, MonoObject*, 0), values, count * sizeof (MonoObject*));
+
+		return FALSE;
+	}
+	else
+		return TRUE;
 }
 
 static MonoReflectionType *
@@ -4163,7 +4243,7 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.ValueType
 	 */
-	"System.ValueType::GetHashCode", ves_icall_System_ValueType_GetHashCode,
+	"System.ValueType::InternalGetHashCode", ves_icall_System_ValueType_InternalGetHashCode,
 	"System.ValueType::InternalEquals", ves_icall_System_ValueType_Equals,
 
 	/*
