@@ -7108,6 +7108,7 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 		if (!strcmp (obj->vtable->klass->name, "PropertyBuilder")) {
 			MonoReflectionPropertyBuilder *pb = (MonoReflectionPropertyBuilder *) obj;
 
+			property->parent = klass;
 			property->attrs = pb->attrs;
 			property->name = mono_string_to_utf8 (pb->name);
 			if (pb->get_method)
