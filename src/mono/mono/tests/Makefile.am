@@ -3,9 +3,6 @@ TEST_PROG=../interpreter/mint
 JITTEST_PROG=../mini/mono
 RUNTIME_ARGS=--config tests-config --optimize=all
 
-# Some of the shell commands below require bash
-SHELL=bash
-
 #CSC=csc /unsafe
 CSC=mcs --unsafe -nowarn:0162
 
