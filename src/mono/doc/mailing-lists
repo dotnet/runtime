@@ -80,6 +80,16 @@
 	Used to discuss the Windows.Forms implementatation for Mono using Wine.
 	    </td>
 	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/gtk-sharp-list">gtk-sharp-list</a></b>
+	    </td>
+	    <td>
+	Used to discuss the Gtk bindings for Mono (<a href="http://gtk-sharp.sf.net">Gtk#</a>).
+	    </td>
+	  </tr>
+http://lists.ximian.com/mailman/listinfo/gtk-sharp-list
 	</table>
 
 	Other mailing lists of interest:
