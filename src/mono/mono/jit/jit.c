@@ -4134,8 +4134,6 @@ mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
 	lmf->ebp = -1;
 
 	jit_tls->lmf = lmf;
-
-	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED, (gpointer)tid, func);
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
