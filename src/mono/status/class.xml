@@ -830,8 +830,8 @@
     <class name="System.Collections.Stack">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
+        <test-suite>yes</test-suite>
+        <completion>100</completion>
         <maintainers>
             <maintainer>rooneg@electricjellyfish.net</maintainer>
         </maintainers>
@@ -1217,9 +1217,9 @@
   
     <class name="System.Uri">
         <last-activity>Jul-17-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>40</completion>
         <maintainers>
             <maintainer>rooneg@electricjellyfish.net</maintainer>
         </maintainers>
