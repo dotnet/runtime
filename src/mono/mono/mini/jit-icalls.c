@@ -175,7 +175,7 @@ mono_llmult_ovf (guint32 al, gint32 ah, guint32 bl, gint32 bh)
 	t1 += (gint64)(ah - al) * (gint64)(bl - bh);
 	t1 <<= 32;
 	/* check for overflow */
-	if (t1 > (0x7FFFFFFFFFFFFFFF - res))
+	if (t1 > (0x7FFFFFFFFFFFFFFFLL - res))
 		goto raise_exception;
 
 	res += t1;
