@@ -593,9 +593,10 @@ static guint32
 write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *old_ptr;
-	GPtrArray *methods = NULL, *static_methods = NULL;
+	GPtrArray *methods = NULL, *static_methods = NULL, *ctors = NULL;
 	int num_fields = 0, num_static_fields = 0, num_properties = 0, num_static_properties = 0;
 	int num_methods = 0, num_static_methods = 0, num_params = 0, num_static_params = 0, base_offset = 0;
+	int num_ctors = 0, num_ctor_params = 0;
 	guint32 size, data_size, offset;
 	GHashTable *method_slots = NULL;
 	int i;
@@ -633,15 +634,24 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	method_slots = g_hash_table_new (NULL, NULL);
 	methods = g_ptr_array_new ();
 	static_methods = g_ptr_array_new ();
+	ctors = g_ptr_array_new ();
 
 	for (i = 0; i < klass->method.count; i++) {
 		MonoMethod *method = klass->methods [i];
 
-		if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
-			continue;
-		if (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME)
+		if (!strcmp (method->name, ".cctor"))
 			continue;
 		if (!((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))
+			continue;
+
+		if (!strcmp (method->name, ".ctor")) {
+			++num_ctors;
+			num_ctor_params += method->signature->param_count;
+			g_ptr_array_add (ctors, method);
+			continue;
+		}
+
+		if (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME)
 			continue;
 		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
 			continue;
@@ -660,9 +670,10 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 
 	g_hash_table_destroy (method_slots);
 
-	size = 58 + sizeof (gpointer) + num_fields * 8 + num_static_fields * 8 + num_properties * (4 + 2 * sizeof (gpointer)) +
+	size = 66 + sizeof (gpointer) + num_fields * 8 + num_static_fields * 8 + num_properties * (4 + 2 * sizeof (gpointer)) +
 		num_static_properties * (4 + 2 * sizeof (gpointer)) + num_methods * (8 + sizeof (gpointer)) + num_params * 4 +
-		num_static_methods * (8 + sizeof (gpointer)) + num_static_params * 4;
+		num_static_methods * (8 + sizeof (gpointer)) + num_static_params * 4 + num_ctors * (8 + sizeof (gpointer)) +
+		num_ctor_params * 4;
 
 	data_size = size;
 
@@ -691,6 +702,9 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	WRITE_UINT32 (ptr, num_methods * (4 + 2 * sizeof (gpointer)) + num_params * sizeof (gpointer));
 	WRITE_UINT32 (ptr, num_static_methods);
 	WRITE_UINT32 (ptr, num_static_methods * (4 + 2 * sizeof (gpointer)) + num_static_params * sizeof (gpointer));
+	WRITE_UINT32 (ptr, num_ctors);
+	WRITE_UINT32 (ptr, num_ctors * (4 + 2 * sizeof (gpointer)) + num_ctor_params * sizeof (gpointer));
+
 	for (i = 0; i < klass->field.count; i++) {
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
@@ -760,6 +774,21 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 		for (j = 0; j < method->signature->param_count; j++)
 			WRITE_UINT32 (ptr, write_type (table, method->signature->params [j]));
 	}
+
+	g_ptr_array_free (static_methods, FALSE);
+
+	for (i = 0; i < ctors->len; i++) {
+		MonoMethod *ctor = g_ptr_array_index (ctors, i);
+		int j;
+
+		WRITE_POINTER (ptr, ctor);
+		WRITE_UINT32 (ptr, 0);
+		WRITE_UINT32 (ptr, ctor->signature->param_count);
+		for (j = 0; j < ctor->signature->param_count; j++)
+			WRITE_UINT32 (ptr, write_type (table, ctor->signature->params [j]));
+	}
+
+	g_ptr_array_free (ctors, FALSE);
 
 	if (klass->parent && (klass->parent != mono_defaults.object_class))
 		WRITE_UINT32 (ptr, write_class (table, klass->parent));
@@ -1110,7 +1139,13 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	if (method->klass->valuetype && (obj != NULL))
 		obj = mono_value_box (mono_domain_get (), method->klass, obj);
 
-	retval = mono_runtime_invoke (method, obj, params, exc);
+	if (!strcmp (method->name, ".ctor")) {
+		retval = obj = mono_object_new (mono_domain_get (), method->klass);
+
+		mono_runtime_invoke (method, obj, params, exc);
+	} else
+		retval = mono_runtime_invoke (method, obj, params, exc);
+
 	if (*exc == NULL)
 		return retval;
 

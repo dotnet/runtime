@@ -75,7 +75,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				37
+#define MONO_DEBUGGER_VERSION				38
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427
 
 extern MonoDebugFormat mono_debug_format;
