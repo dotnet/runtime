@@ -5,6 +5,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/mono-endian.h>
 
 struct _MonoDebugHandlePriv
 {
@@ -428,7 +429,7 @@ mono_debug_get_domain_data (MonoDebugHandle *handle, MonoDomain *domain)
 
 	data = g_new0 (MonoDebugDomainData, 1);
 	data->domain_id = domain->domain_id;
-	data->jit = g_new0 (MonoDebugMethodJitInfo *, handle->symfile->offset_table->method_count + 1);
+	data->jit = g_new0 (MonoDebugMethodJitInfo *, read32(&(handle->symfile->offset_table->_method_count)) + 1);
 
 	data->_priv = g_new0 (MonoDebugDomainDataPriv, 1);
 	data->_priv->next = handle->_priv->domain_table;

@@ -21,49 +21,49 @@ typedef struct MonoDebugLineNumberEntry		MonoDebugLineNumberEntry;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
-	guint32 total_file_size;
-	guint32 data_section_offset;
-	guint32 data_section_size;
-	guint32 source_count;
-	guint32 source_table_offset;
-	guint32 source_table_size;
-	guint32 method_count;
-	guint32 method_table_offset;
-	guint32 method_table_size;
-	guint32 type_count;
+	guint32 _total_file_size;
+	guint32 _data_section_offset;
+	guint32 _data_section_size;
+	guint32 _source_count;
+	guint32 _source_table_offset;
+	guint32 _source_table_size;
+	guint32 _method_count;
+	guint32 _method_table_offset;
+	guint32 _method_table_size;
+	guint32 _type_count;
 };
 
 struct MonoSymbolFileMethodEntry {
-	guint32 source_index;
-	guint32 token;
-	guint32 start_row;
-	guint32 end_row;
-	guint32 class_type_index;
-	guint32 num_parameters;
-	guint32 num_locals;
-	guint32 num_line_numbers;
-	guint32 name_offset;
-	guint32 type_index_table_offset;
-	guint32 local_variable_table_offset;
-	guint32 line_number_table_offset;
-	guint32 num_lexical_blocks;
-	guint32 lexical_block_table_offset;
-	guint32 namespace_idx;
-	guint32 local_names_ambiguous;
+	guint32 _source_index;
+	guint32 _token;
+	guint32 _start_row;
+	guint32 _end_row;
+	guint32 _class_type_index;
+	guint32 _num_parameters;
+	guint32 _num_locals;
+	guint32 _num_line_numbers;
+	guint32 _name_offset;
+	guint32 _type_index_table_offset;
+	guint32 _local_variable_table_offset;
+	guint32 _line_number_table_offset;
+	guint32 _num_lexical_blocks;
+	guint32 _lexical_block_table_offset;
+	guint32 _namespace_idx;
+	guint32 _local_names_ambiguous;
 };
 
 struct MonoSymbolFileSourceEntry {
-	guint32 index;
-	guint32 num_methods;
-	guint32 num_namespaces;
-	guint32 name_offset;
-	guint32 method_offset;
-	guint32 nstable_offset;
+	guint32 _index;
+	guint32 _num_methods;
+	guint32 _num_namespaces;
+	guint32 _name_offset;
+	guint32 _method_offset;
+	guint32 _nstable_offset;
 };
 
 struct MonoSymbolFileMethodIndexEntry {
-	guint32 file_offset;
-	guint32 token;
+	guint32 _file_offset;
+	guint32 _token;
 };
 
 struct MonoSymbolFileMethodAddress {
@@ -83,13 +83,13 @@ struct MonoSymbolFileMethodAddress {
 };
 
 struct MonoSymbolFileLexicalBlockEntry {
-	guint32 start_offset;
-	guint32 end_offset;
+	guint32 _start_offset;
+	guint32 _end_offset;
 };
 
 struct MonoSymbolFileLineNumberEntry {
-	guint32 row;
-	guint32 offset;
+	guint32 _row;
+	guint32 _offset;
 };
 
 struct MonoDebugMethodInfo {

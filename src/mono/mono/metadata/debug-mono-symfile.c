@@ -12,6 +12,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-mono-symfile.h>
+#include <mono/metadata/mono-endian.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -52,14 +53,14 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	if (!ptr)
 		return FALSE;
 
-	magic = *((guint64 *) ptr);
+	magic = read64(ptr);
 	ptr += sizeof(guint64);
 	if (magic != MONO_SYMBOL_FILE_MAGIC) {
 		g_warning ("Symbol file %s is not a mono symbol file", handle->image_file);
 		return FALSE;
 	}
 
-	version = *((guint32 *) ptr);
+	version = read32(ptr);
 	ptr += sizeof(guint32);
 	if (version != MONO_SYMBOL_FILE_VERSION) {
 		g_warning ("Symbol file %s has incorrect version "
@@ -153,34 +154,34 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	if (!minfo)
 		return NULL;
 
-	if (minfo->entry->source_index) {
-		int offset = symfile->offset_table->source_table_offset +
-			(minfo->entry->source_index - 1) * sizeof (MonoSymbolFileSourceEntry);
+	if (read32(&(minfo->entry->_source_index))) {
+		int offset = read32(&(symfile->offset_table->_source_table_offset)) +
+			(read32(&(minfo->entry->_source_index)) - 1) * sizeof (MonoSymbolFileSourceEntry);
 		MonoSymbolFileSourceEntry *se = (MonoSymbolFileSourceEntry *) (symfile->raw_contents + offset);
 
-		source_file = read_string (symfile->raw_contents + se->name_offset);
+		source_file = read_string (symfile->raw_contents + read32(&(se->_name_offset)));
 	}
 
-	ptr = symfile->raw_contents + minfo->entry->line_number_table_offset;
+	ptr = symfile->raw_contents + read32(&(minfo->entry->_line_number_table_offset));
 
 	lne = (MonoSymbolFileLineNumberEntry *) ptr;
 
-	for (i = 0; i < minfo->entry->num_line_numbers; i++, lne++) {
-		if (lne->offset < offset)
+	for (i = 0; i < read32(&(minfo->entry->_num_line_numbers)); i++, lne++) {
+		if (read32(&(lne->_offset)) < offset)
 			continue;
 
 		if (line_number) {
-			*line_number = lne->row;
+			*line_number = read32(&(lne->_row));
 			if (source_file)
 				return source_file;
 			else
 				return NULL;
 		} else if (source_file) {
-			gchar *retval = g_strdup_printf ("%s:%d", source_file, lne->row);
+			gchar *retval = g_strdup_printf ("%s:%d", source_file, read32(&(lne->_row)));
 			g_free (source_file);
 			return retval;
 		} else
-			return g_strdup_printf ("%d", lne->row);
+			return g_strdup_printf ("%d", read32(&(lne->_row)));
 	}
 
 	return NULL;
@@ -211,7 +212,7 @@ compare_method (const void *key, const void *object)
 	guint32 token = GPOINTER_TO_UINT (key);
 	MonoSymbolFileMethodIndexEntry *me = (MonoSymbolFileMethodIndexEntry*)object;
 
-	return token - me->token;
+	return token - read32(&(me->_token));
 }
 
 MonoDebugMethodInfo *
@@ -229,24 +230,24 @@ mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
 		return NULL;
 
 	first_ie = (MonoSymbolFileMethodIndexEntry *)
-		(symfile->raw_contents + symfile->offset_table->method_table_offset);
+		(symfile->raw_contents + read32(&(symfile->offset_table->_method_table_offset)));
 
 	ie = bsearch (GUINT_TO_POINTER (method->token), first_ie,
-				   symfile->offset_table->method_count,
+				   read32(&(symfile->offset_table->_method_count)),
 				   sizeof (MonoSymbolFileMethodIndexEntry), compare_method);
 
 	if (!ie)
 		return NULL;
 
-	me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + ie->file_offset);
+	me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + read32(&(ie->_file_offset)));
 
 	minfo = g_new0 (MonoDebugMethodInfo, 1);
 	minfo->index = (ie - first_ie) + 1;
 	minfo->method = method;
 	minfo->handle = handle;
-	minfo->num_il_offsets = me->num_line_numbers;
+	minfo->num_il_offsets = read32(&(me->_num_line_numbers));
 	minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
-		(symfile->raw_contents + me->line_number_table_offset);
+		(symfile->raw_contents + read32(&(me->_line_number_table_offset)));
 	minfo->entry = me;
 
 	g_hash_table_insert (symfile->method_hash, method, minfo);

@@ -8,6 +8,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/mono-endian.h>
 
 #define SYMFILE_TABLE_CHUNK_SIZE	16
 #define RANGE_TABLE_CHUNK_SIZE		256
@@ -367,7 +368,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 
 	size = sizeof (MonoSymbolFileMethodAddress);
 
-	num_variables = minfo->entry->num_parameters + minfo->entry->num_locals;
+	num_variables = read32(&(minfo->entry->_num_parameters)) + read32(&(minfo->entry->_num_locals));
 	has_this = jit->this_var != NULL;
 
 	variable_size = (num_variables + has_this) * sizeof (MonoDebugVarInfo);
@@ -384,7 +385,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 		size += line_size;
 	}
 
-	block_size = minfo->entry->num_lexical_blocks * sizeof (MonoSymbolFileLexicalBlockEntry);
+	block_size = read32(&(minfo->entry->_num_lexical_blocks)) * sizeof (MonoSymbolFileLexicalBlockEntry);
 	block_offset = size;
 	size += block_size;
 
@@ -392,12 +393,12 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 	ptr = (guint8 *) address;
 
 	block = (MonoSymbolFileLexicalBlockEntry *)
-		(symfile->symfile->raw_contents + minfo->entry->lexical_block_table_offset);
+		(symfile->symfile->raw_contents + read32(&(minfo->entry->_lexical_block_table_offset)));
 	block_table = (MonoDebugLexicalBlockEntry *) (ptr + block_offset);
 
-	for (i = 0; i < minfo->entry->num_lexical_blocks; i++, block++) {
-		block_table [i].start_address = _mono_debug_address_from_il_offset (jit, block->start_offset);
-		block_table [i].end_address = _mono_debug_address_from_il_offset (jit, block->end_offset);
+	for (i = 0; i < read32(&(minfo->entry->_num_lexical_blocks)); i++, block++) {
+		block_table [i].start_address = _mono_debug_address_from_il_offset (jit, read32(&(block->_start_offset)));
+		block_table [i].end_address = _mono_debug_address_from_il_offset (jit, read32(&(block->_end_offset)));
 	}
 
 	address->size = size;
@@ -435,17 +436,17 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 	type_table = (guint32 *) (ptr + type_offset);
 
 	type_index_table = (guint32 *)
-		(symfile->symfile->raw_contents + minfo->entry->type_index_table_offset);
+		(symfile->symfile->raw_contents + read32(&(minfo->entry->_type_index_table_offset)));
 
 	if (jit->this_var)
 		*var_table++ = *jit->this_var;
 	*type_table++ = write_type (mono_debugger_symbol_table, &minfo->method->klass->this_arg);
 
-	if (jit->num_params != minfo->entry->num_parameters) {
+	if (jit->num_params != read32(&(minfo->entry->_num_parameters))) {
 		g_warning (G_STRLOC ": Method %s.%s has %d parameters, but symbol file claims it has %d.",
 			   minfo->method->klass->name, minfo->method->name, jit->num_params,
-			   minfo->entry->num_parameters);
-		var_table += minfo->entry->num_parameters;
+			   read32(&(minfo->entry->_num_parameters)));
+		var_table += read32(&(minfo->entry->_num_parameters));
 	} else {
 		for (i = 0; i < jit->num_params; i++) {
 			*var_table++ = jit->params [i];
@@ -453,14 +454,14 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 		}
 	}
 
-	if (jit->num_locals < minfo->entry->num_locals) {
+	if (jit->num_locals < read32(&(minfo->entry->_num_locals))) {
 		g_warning (G_STRLOC ": Method %s.%s has %d locals, but symbol file claims it has %d.",
 			   minfo->method->klass->name, minfo->method->name, jit->num_locals,
-			   minfo->entry->num_locals);
-		var_table += minfo->entry->num_locals;
+			   read32(&(minfo->entry->_num_locals)));
+		var_table += read32(&(minfo->entry->_num_locals));
 	} else {
-		g_assert ((header != NULL) || (minfo->entry->num_locals == 0));
-		for (i = 0; i < minfo->entry->num_locals; i++) {
+		g_assert ((header != NULL) || (minfo->entry->_num_locals == 0));
+		for (i = 0; i < read32(&(minfo->entry->_num_locals)); i++) {
 			*var_table++ = jit->locals [i];
 			*type_table++ = write_type (mono_debugger_symbol_table, header->locals [i]);
 		}
