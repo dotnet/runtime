@@ -149,8 +149,6 @@ typedef void* MonoCompileArch;
 # define SC_ESI esi
 #endif
 
-#ifdef MONO_ARCH_USE_SIGACTION
-
 typedef struct {
 	guint32 eax;
 	guint32 ebx;
@@ -162,12 +160,6 @@ typedef struct {
 	guint32 edi;
 	guint32 eip;
 } MonoContext;
-
-#else
-
-typedef struct sigcontext MonoContext;
-
-#endif
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (long)(ip); } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->ebp = (long)(bp); } while (0); 

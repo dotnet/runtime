@@ -558,8 +558,18 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = ctx->uc_mcontext.gregs [REG_ESI];
 	mctx->edi = ctx->uc_mcontext.gregs [REG_EDI];
 	mctx->eip = ctx->uc_mcontext.gregs [REG_EIP];
-#else
-	memcpy (mctx, sigctx, sizeof (MonoContext));
+#else	
+	struct sigcontext *ctx = (struct sigcontext *)sigctx;
+
+	mctx->eax = ctx->SC_EAX;
+	mctx->ebx = ctx->SC_EBX;
+	mctx->ecx = ctx->SC_ECX;
+	mctx->edx = ctx->SC_EDX;
+	mctx->ebp = ctx->SC_EBP;
+	mctx->esp = ctx->SC_ESP;
+	mctx->esi = ctx->SC_ESI;
+	mctx->edi = ctx->SC_EDI;
+	mctx->eip = ctx->SC_EIP;
 #endif
 }
 
@@ -579,7 +589,17 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	ctx->uc_mcontext.gregs [REG_EDI] = mctx->edi;
 	ctx->uc_mcontext.gregs [REG_EIP] = mctx->eip;
 #else
-	memcpy (sigctx, mctx, sizeof (MonoContext));
+	struct sigcontext *ctx = (struct sigcontext *)sigctx;
+
+	ctx->SC_EAX = mctx->eax;
+	ctx->SC_EBX = mctx->ebx;
+	ctx->SC_ECX = mctx->ecx;
+	ctx->SC_EDX = mctx->edx;
+	ctx->SC_EBP = mctx->ebp;
+	ctx->SC_ESP = mctx->esp;
+	ctx->SC_ESI = mctx->esi;
+	ctx->SC_EDI = mctx->edi;
+	ctx->SC_EIP = mctx->eip;
 #endif
 }	
 
