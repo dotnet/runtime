@@ -85,7 +85,6 @@ ldc.i4:
 ldc.i8:
 ldc.r4:
 ldc.r8:
-unused99:
 dup:
 pop:
 jmp: len:32
@@ -168,8 +167,6 @@ newobj:
 castclass:
 isinst:
 conv.r.un:
-unused58:
-unused1:
 unbox:
 throw: src1:i len:6
 ldfld:
@@ -212,19 +209,6 @@ stelem.i8:
 stelem.r4:
 stelem.r8:
 stelem.ref:
-unused5:
-unused6:
-unused7:
-unused8:
-unused9:
-unused10:
-unused11:
-unused12:
-unused13:
-unused14:
-unused15:
-unused16:
-unused17:
 conv.ovf.i1:
 conv.ovf.u1:
 conv.ovf.i2:
@@ -233,27 +217,9 @@ conv.ovf.i4:
 conv.ovf.u4:
 conv.ovf.i8:
 conv.ovf.u8:
-unused50:
-unused18:
-unused19:
-unused20:
-unused21:
-unused22:
-unused23:
 refanyval:
 ckfinite: dest:f src1:f len:22
-unused24:
-unused25:
 mkrefany:
-unused59:
-unused60:
-unused61:
-unused62:
-unused63:
-unused64:
-unused65:
-unused66:
-unused67:
 ldtoken:
 conv.u2: dest:i src1:i len:3
 conv.u1: dest:i src1:i len:3
@@ -272,29 +238,6 @@ leave:
 leave.s:
 stind.i:
 conv.u: dest:i src1:i len:3
-unused26:
-unused27:
-unused28:
-unused29:
-unused30:
-unused31:
-unused32:
-unused33:
-unused34:
-unused35:
-unused36:
-unused37:
-unused38:
-unused39:
-unused40:
-unused41:
-unused42:
-unused43:
-unused44:
-unused45:
-unused46:
-unused47:
-unused48:
 prefix7:
 prefix6:
 prefix5:
@@ -311,7 +254,6 @@ clt: dest:i len:6
 clt.un: dest:i len:6
 ldftn:
 ldvirtftn:
-unused56:
 ldarg:
 ldarga:
 starg:
@@ -319,25 +261,16 @@ ldloc:
 ldloca:
 stloc:
 localloc: dest:i src1:i len:32
-unused57:
 endfilter:
 unaligned.:
 volatile.:
 tail.:
 initobj:
-unused68:
 cpblk:
 initblk:
-unused69:
 rethrow:
-unused:
 sizeof:
 refanytype:
-unused52:
-unused53:
-unused54:
-unused55:
-unused70:
 illegal:
 endmac:
 mono_func1:

@@ -241,9 +241,11 @@ enum {
 	MONO_INST_TAILCALL   = 4,
 	MONO_INST_VOLATILE   = 4,
 	MONO_INST_BRLABEL    = 4,
+	MONO_INST_NOTYPECHECK    = 4,
 	MONO_INST_UNALIGNED  = 8,
 	/* the address of the variable has been taken */
-	MONO_INST_INDIRECT   = 16
+	MONO_INST_INDIRECT   = 16,
+	MONO_INST_NORANGECHECK   = 16
 };
 
 #define inst_c0 data.op[0].const_val
