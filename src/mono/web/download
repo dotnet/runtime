@@ -1,10 +1,21 @@
 * Software Availability
 
 	The Virtual Execution System is available in package `mono'.
-	Currently this contains a metadata library and the
-	disassembler.  Please refer to our <a
-	href="runtime.html">Runtime</a> description for more details
-	on this part of the project.
+	Please refer to our <a href="runtime.html">Runtime</a>
+	description for more details on this part of the project.
+
+	Optional packages are `libgdiplus' (if you want to do
+	graphics), `winelib' (if you want to run the alpha winforms
+	support).  The package `mcs' contains the C# source code to
+	the compilers and class libraries.
+
+	To run ASP.NET applications you need xsp and if you want to
+	optionally integrate with Apache, get mod_mono.   
+
+	Online API documentation for Mono is available in the `monodoc' package. 
+
+	Gtk-sharp is package to build GUI applications with the Gtk toolkit.
+
 
 	The software is also available on the `Mono' channel in <a href="http://www.ximian.com/products/redcarpet/">Red Carpet</a>.
 
