@@ -1,3 +1,11 @@
+2004-12-03  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (dist-hook): Ensure we use the 'default' profile.
+	* mono/Makefile.am (HANDLES): New.  Disable 'handles' dir on Win32.
+	(SUBDIRS): Use it.  Move 'cil' before 'metadata'.
+	* runtime/Makefile.am (install-exec): Pass
+	RUNTIME_HAS_CONSISTENT_GACDIR to the mcs/ build.
+
 2004-12-01  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
 
 	* configure.in : Add a flag for systems which pass parameters in

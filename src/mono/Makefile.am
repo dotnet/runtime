@@ -12,7 +12,7 @@ EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 # Distribute the 'mcs' tree too
 dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
-	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
+	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) PROFILE=default distdir=$$d dist-recursive
 
 pkgconfigdir = $(libdir)/pkgconfig
 if JIT_SUPPORTED
