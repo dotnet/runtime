@@ -2214,23 +2214,27 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 			str = mono_string_to_utf8 (name);
 		
-			for (i = 0; i < k->field.count; i++) {
-				if (!strcmp (k->fields [i].name, str)) {
-					MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
-					if (field_klass->valuetype)
-						result = mono_value_box (domain, field_klass,
-									 (char *)this + k->fields [i].offset);
-					else 
-						result = *((gpointer *)((char *)this + k->fields [i].offset));
-				
-					g_assert (result);
-					out_args = mono_array_new (domain, mono_defaults.object_class, 1);
-					*outArgs = out_args;
-					mono_array_set (out_args, gpointer, 0, result);
-					g_free (str);
-					return NULL;
+			do {
+				for (i = 0; i < k->field.count; i++) {
+					if (!strcmp (k->fields [i].name, str)) {
+						MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
+						if (field_klass->valuetype)
+							result = mono_value_box (domain, field_klass,
+										 (char *)this + k->fields [i].offset);
+						else 
+							result = *((gpointer *)((char *)this + k->fields [i].offset));
+					
+						g_assert (result);
+						out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+						*outArgs = out_args;
+						mono_array_set (out_args, gpointer, 0, result);
+						g_free (str);
+						return NULL;
+					}
 				}
-			}
+				k = k->parent;
+			} 
+			while (k != NULL);
 
 			g_free (str);
 			g_assert_not_reached ();
@@ -2243,25 +2247,29 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 			str = mono_string_to_utf8 (name);
 		
-			for (i = 0; i < k->field.count; i++) {
-				if (!strcmp (k->fields [i].name, str)) {
-					MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
-					MonoObject *val = mono_array_get (params, gpointer, 2);
-
-					if (field_klass->valuetype) {
-						size = mono_type_size (k->fields [i].type, &align);
-						memcpy ((char *)this + k->fields [i].offset, 
-							((char *)val) + sizeof (MonoObject), size);
-					} else 
-						*(MonoObject**)((char *)this + k->fields [i].offset) = val;
-				
-					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
-					*outArgs = out_args;
-
-					g_free (str);
-					return NULL;
+			do {
+				for (i = 0; i < k->field.count; i++) {
+					if (!strcmp (k->fields [i].name, str)) {
+						MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
+						MonoObject *val = mono_array_get (params, gpointer, 2);
+	
+						if (field_klass->valuetype) {
+							size = mono_type_size (k->fields [i].type, &align);
+							memcpy ((char *)this + k->fields [i].offset, 
+								((char *)val) + sizeof (MonoObject), size);
+						} else 
+							*(MonoObject**)((char *)this + k->fields [i].offset) = val;
+					
+						out_args = mono_array_new (domain, mono_defaults.object_class, 0);
+						*outArgs = out_args;
+	
+						g_free (str);
+						return NULL;
+					}
 				}
-			}
+				k = k->parent;
+			} 
+			while (k != NULL);
 
 			g_free (str);
 			g_assert_not_reached ();
