@@ -43,6 +43,8 @@
 
 #include "jit-icalls.c"
 
+#define MONO_IS_COND_BRANCH(op) ((op >= CEE_BEQ && op <= CEE_BLT_UN) || (op >= OP_LBEQ && op <= OP_LBLT_UN) || (op >= OP_FBEQ && op <= OP_FBLT_UN))
+
 #define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
 gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
@@ -5779,7 +5781,7 @@ optimize_branches (MonoCompile *cfg) {
 				bbn = bb->out_bb [0];
 
 				/* conditional branches where true and false targets are the same can be also replaced with CEE_BR */
-				if (bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
+				if (bb->last_ins && MONO_IS_COND_BRANCH (bb->last_ins->opcode)) {
 					bb->last_ins->opcode = CEE_BR;
 					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
 					changed = TRUE;
@@ -5858,7 +5860,7 @@ optimize_branches (MonoCompile *cfg) {
 					}
 				}
 			} else if (bb->out_count == 2) {
-				if (bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
+				if (bb->last_ins && MONO_IS_COND_BRANCH (bb->last_ins->opcode)) {
 					bbn = bb->last_ins->inst_true_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
@@ -6019,6 +6021,14 @@ mini_select_instructions (MonoCompile *cfg)
 		CEE_BNE_UN, CEE_BLT, CEE_BLE, CEE_BGT, CEE_BGE,
 		CEE_BEQ, CEE_BLT_UN, CEE_BLE_UN, CEE_BGT_UN, CEE_BGE_UN
 	};
+	static int reverse_fmap [] = {
+		OP_FBNE_UN, OP_FBLT, OP_FBLE, OP_FBGT, OP_FBGE,
+		OP_FBEQ, OP_FBLT_UN, OP_FBLE_UN, OP_FBGT_UN, OP_FBGE_UN
+	};
+	static int reverse_lmap [] = {
+		OP_LBNE_UN, OP_LBLT, OP_LBLE, OP_LBGT, OP_LBGE,
+		OP_LBEQ, OP_LBLT_UN, OP_LBLE_UN, OP_LBGT_UN, OP_LBGE_UN
+	};
 
 	MonoBasicBlock *bb;
 	
@@ -6026,14 +6036,21 @@ mini_select_instructions (MonoCompile *cfg)
 	cfg->rs = mono_regstate_new ();
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN &&
+		if (bb->last_ins && MONO_IS_COND_BRANCH (bb->last_ins->opcode) &&
 		    bb->next_bb != bb->last_ins->inst_false_bb) {
 
 			if (bb->next_bb ==  bb->last_ins->inst_true_bb) {
 				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
 				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
 				bb->last_ins->inst_false_bb = tmp;
-				bb->last_ins->opcode = reverse_map [bb->last_ins->opcode - CEE_BEQ];
+				
+				if (bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
+					bb->last_ins->opcode = reverse_map [bb->last_ins->opcode - CEE_BEQ];
+				} else if (bb->last_ins->opcode >= OP_FBEQ && bb->last_ins->opcode <= OP_FBLT_UN) {
+					bb->last_ins->opcode = reverse_fmap [bb->last_ins->opcode - OP_FBEQ];
+				} else if (bb->last_ins->opcode >= OP_LBEQ && bb->last_ins->opcode <= OP_LBLT_UN) {
+					bb->last_ins->opcode = reverse_lmap [bb->last_ins->opcode - OP_LBEQ];
+				}
 			} else {			
 				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 				inst->opcode = CEE_BR;
