@@ -909,14 +909,12 @@ mono_mb_emit_icall (MonoMethodBuilder *mb, gpointer func)
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, func));
 }
 
-void
-mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char *msg)
+static void
+mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
 {
-	/* fixme: we need a better way to throw exception,
-	 * supporting several exception types and messages */
 	MonoMethod *ctor = NULL;
 
-	MonoClass *mme = mono_class_from_name (mono_defaults.corlib, "System", exc_name);
+	MonoClass *mme = mono_class_from_name (mono_defaults.corlib, exc_nspace, exc_name);
 	mono_class_init (mme);
 	ctor = mono_class_get_method_from_name (mme, ".ctor", 0);
 	g_assert (ctor);
@@ -929,6 +927,12 @@ mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char 
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 	}
 	mono_mb_emit_byte (mb, CEE_THROW);
+}
+
+void
+mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char *msg)
+{
+	mono_mb_emit_exception_full (mb, "System", exc_name, msg);
 }
 
 void
@@ -5745,6 +5749,25 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static int
+emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t, 
+				  MonoMarshalSpec *spec, int conv_arg, 
+				  MonoType **conv_arg_type, MarshalAction action)
+{
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		if (MONO_TYPE_ISSTRUCT (t->data.type)) {
+			char *msg = g_strdup_printf ("Can not marshal 'parameter #%d': Pointers can not reference marshaled structures. Use byref instead.", argnum + 1);
+			mono_mb_emit_exception_full (m->mb, "System.Runtime.InteropServices", "MarshalDirectiveException", msg);
+		}
+		break;
+	default:
+		break;
+	}
+
+	return conv_arg;
+}
+
+static int
 emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
 			  MonoMarshalSpec *spec, int conv_arg, 
 			  MonoType **conv_arg_type, MarshalAction action)
@@ -5771,6 +5794,8 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_array (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_BOOLEAN:
 		return emit_marshal_boolean (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	case MONO_TYPE_PTR:
+		return emit_marshal_ptr (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	}
 
 	return conv_arg;
