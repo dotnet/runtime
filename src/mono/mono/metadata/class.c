@@ -106,6 +106,7 @@ class_compute_field_layout (MonoClass *class)
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	int i;
+	guint32 rva;
 
 	/*
 	 * Fetch all the field information.
@@ -125,9 +126,10 @@ class_compute_field_layout (MonoClass *class)
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
-			mono_metadata_field_info (m, idx, NULL, &class->fields [i].data, NULL);
-			if (!class->fields [i].data)
+			mono_metadata_field_info (m, idx, NULL, &rva, NULL);
+			if (!rva)
 				g_warning ("field %s in %s should have RVA data, but hasn't", class->fields [i].name, class->name);
+			class->fields [i].data = mono_cli_rva_map (class->image->image_info, rva);
 		}
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC)) {
 			class->enum_basetype = class->fields [i].type;
@@ -358,6 +360,7 @@ mono_class_init (MonoClass *class)
 	static MonoMethod *default_finalize = NULL;
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
+	guint32 packing_size = 0;
 
 	g_assert (class);
 
@@ -382,6 +385,10 @@ mono_class_init (MonoClass *class)
 		cur_slot = class->parent->vtable_size;
 	} else
 		class->min_align = 1;
+
+	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size))
+		class->instance_size += sizeof (MonoObject);
+	/* use packing_size in field layout */
 
 	/*
 	 * Computes the size used by the fields, and their locations

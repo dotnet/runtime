@@ -2296,7 +2296,7 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
  * @index: the index in the field table representing the field
  * @offset: a pointer to an integer where to store the offset that 
  * may have been specified for the field in a FieldLayout table
- * @rva: a pointer to the address of the field data in the image that
+ * @rva: a pointer to the RVA of the field data in the image that
  * may have been defined in a FieldRVA table
  * @marshal_info: a pointer to the marshal signature that may have been 
  * defined for the field in a FieldMarshal table.
@@ -2307,7 +2307,7 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
  * in the data.
  */
 void
-mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, const char **rva, const char **marshal_info)
+mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, const char **marshal_info)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;
@@ -2335,9 +2335,9 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, const
 			/*
 			 * LAMESPEC: There is no signature, no nothing, just the raw data.
 			 */
-			*rva = mono_cli_rva_map (meta->image_info, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_RVA_RVA));
+			*rva = mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_RVA_RVA);
 		} else {
-			*rva = NULL;
+			*rva = 0;
 		}
 	}
 

@@ -127,7 +127,7 @@ guint32     mono_metadata_packing_from_typedef    (MonoImage *meta, guint32 tabl
 void        mono_metadata_field_info (MonoImage *meta, 
 				      guint32       table_index,
 				      guint32      *offset,
-				      const char  **rva,
+				      guint32      *rva,
 				      const char  **marshal_info);
 
 guint32     mono_metadata_get_constant_index (MonoImage *meta, guint32 token);
