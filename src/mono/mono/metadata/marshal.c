@@ -219,7 +219,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	method = delegate->method_info->method;
 	invoke = mono_class_get_method_from_name (klass, "Invoke", mono_method_signature (method)->param_count);
 
-	mspecs = g_new (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
+	mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
 	mono_method_get_marshal_info (invoke, mspecs);
 
 	wrapper = mono_marshal_get_managed_wrapper (method, delegate->target, mspecs);
@@ -278,8 +278,31 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 
 	d = g_hash_table_lookup (delegate_hash_table, ftn);
 	LeaveCriticalSection (&marshal_mutex);
-	if (d == NULL)
-		mono_raise_exception (mono_get_exception_argument (NULL, "Additional information: Function pointer was not created by a delegate."));
+	if (d == NULL) {
+		/* This is a native function, so construct a delegate for it */
+		MonoMethodSignature *sig;
+		MonoMethod *wrapper;
+		MonoMarshalSpec **mspecs;
+		MonoMethod *invoke = mono_get_delegate_invoke (klass);
+		int i;
+
+		mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
+		mono_method_get_marshal_info (invoke, mspecs);
+		sig = mono_metadata_signature_dup (mono_method_signature (invoke));
+		sig->hasthis = 0;
+
+		wrapper = mono_marshal_get_native_func_wrapper (sig, mspecs, ftn);
+
+		for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
+			if (mspecs [i])
+				mono_metadata_free_marshal_spec (mspecs [i]);
+		g_free (mspecs);
+		g_free (sig);
+
+		d = (MonoDelegate*)mono_object_new (mono_domain_get (), klass);
+		mono_delegate_ctor ((MonoObject*)d, NULL, mono_compile_method (wrapper));
+	}
+
 	return d;
 }
 
@@ -287,19 +310,19 @@ void
 mono_delegate_free_ftnptr (MonoDelegate *delegate)
 {
 	MonoJitInfo *ji;
-	void *ptr, *ptr2;
+	void *ptr;
 
 	delegate_hash_table_remove (delegate);
-	ptr2 = delegate->delegate_trampoline;
 
 	ptr = InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
-	ji = mono_jit_info_table_find (mono_domain_get (), ptr);
-	g_assert (ji);
 
 	if (!delegate->target) {
 		/* The wrapper method is shared between delegates -> no need to free it */
 		return;
 	}
+
+	ji = mono_jit_info_table_find (mono_domain_get (), ptr);
+	g_assert (ji);
 
 	mono_runtime_free_method (mono_object_domain (delegate), ji->method);
 }
@@ -5730,101 +5753,25 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 /**
- * mono_marshal_get_native_wrapper:
- * @method: The MonoMethod to wrap.
+ * mono_marshal_emit_native_wrapper:
+ * @sig: The signature of the native function
+ * @piinfo: Marshalling information
+ * @mspecs: Marshalling information
+ * @func: the native function to call
  *
- * generates IL code for the pinvoke wrapper (the generated method
- * calls the unmanaged code in piinfo->addr)
+ * generates IL code for the pinvoke wrapper, the generated code calls @func.
  */
-MonoMethod *
-mono_marshal_get_native_wrapper (MonoMethod *method)
+static void
+mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
 {
 	EmitMarshalContext m;
-	MonoMethodSignature *sig, *csig;
-	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
-	MonoMethodBuilder *mb;
-	MonoMarshalSpec **mspecs;
-	MonoMethod *res;
-	GHashTable *cache;
+	MonoMethodSignature *csig;
 	MonoClass *klass;
-	gboolean pinvoke = FALSE;
 	int i, argnum, *tmp_locals;
 	int type;
-	const char *exc_class = "MissingMethodException";
-	const char *exc_arg = NULL;
-
-	g_assert (method != NULL);
-	g_assert (mono_method_signature (method)->pinvoke);
-
-	cache = method->klass->image->native_wrapper_cache;
-	if ((res = mono_marshal_find_in_cache (cache, method)))
-		return res;
-
-	sig = mono_method_signature (method);
-
-	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		pinvoke = TRUE;
-
-	if (!piinfo->addr) {
-		if (pinvoke)
-			mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
-		else
-			piinfo->addr = mono_lookup_internal_call (method);
-	}
-
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
-
-	mb->method->save_lmf = 1;
-	
-	if (!piinfo->addr) {
-		mono_mb_emit_exception (mb, exc_class, exc_arg);
-		csig = mono_metadata_signature_dup (sig);
-		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache (cache, method,
-										mb, csig, csig->param_count + 16);
-		mono_mb_free (mb);
-		return res;
-	}
 
 	m.mb = mb;
 	m.piinfo = piinfo;
-
-	/* internal calls: we simply push all arguments and call the method (no conversions) */
-	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
-
-		/* hack - string constructors returns a value */
-		if (method->string_ctor) {
-			csig = mono_metadata_signature_dup (sig);
-			csig->ret = &mono_defaults.string_class->byval_arg;
-		} else
-			csig = sig;
-
-		if (sig->hasthis)
-			mono_mb_emit_byte (mb, CEE_LDARG_0);
-
-		for (i = 0; i < sig->param_count; i++)
-			mono_mb_emit_ldarg (mb, i + sig->hasthis);
-
-		g_assert (piinfo->addr);
-		mono_mb_emit_native_call (mb, csig, piinfo->addr);
-		emit_thread_interrupt_checkpoint (mb);
-		mono_mb_emit_byte (mb, CEE_RET);
-
-		csig = mono_metadata_signature_dup (csig);
-		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache (cache, method,
-										mb, csig, csig->param_count + 16);
-		mono_mb_free (mb);
-		return res;
-	}
-
-	g_assert (pinvoke);
-
-	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
-	mono_method_get_marshal_info (method, mspecs);
-
-	/* pinvoke: we need to convert the arguments if necessary */
 
 	/* we copy the signature, so that we can set pinvoke to 0 */
 	csig = mono_metadata_signature_dup (sig);
@@ -5932,7 +5879,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	}			
 
 	/* call the native method */
-	mono_mb_emit_native_call (mb, csig, piinfo->addr);
+	mono_mb_emit_native_call (mb, csig, func);
 
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
@@ -6046,6 +5993,98 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		mono_mb_emit_byte (mb, CEE_LDLOC_3);
 
 	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+/**
+ * mono_marshal_get_native_wrapper:
+ * @method: The MonoMethod to wrap.
+ *
+ * generates IL code for the pinvoke wrapper (the generated method
+ * calls the unmanaged code in piinfo->addr)
+ */
+MonoMethod *
+mono_marshal_get_native_wrapper (MonoMethod *method)
+{
+	MonoMethodSignature *sig, *csig;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
+	MonoMethodBuilder *mb;
+	MonoMarshalSpec **mspecs;
+	MonoMethod *res;
+	GHashTable *cache;
+	gboolean pinvoke = FALSE;
+	int i;
+	const char *exc_class = "MissingMethodException";
+	const char *exc_arg = NULL;
+
+	g_assert (method != NULL);
+	g_assert (mono_method_signature (method)->pinvoke);
+
+	cache = method->klass->image->native_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, method)))
+		return res;
+
+	sig = mono_method_signature (method);
+
+	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		pinvoke = TRUE;
+
+	if (!piinfo->addr) {
+		if (pinvoke)
+			mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
+		else
+			piinfo->addr = mono_lookup_internal_call (method);
+	}
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+
+	mb->method->save_lmf = 1;
+	
+	if (!piinfo->addr) {
+		mono_mb_emit_exception (mb, exc_class, exc_arg);
+		csig = mono_metadata_signature_dup (sig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache (cache, method,
+										mb, csig, csig->param_count + 16);
+		mono_mb_free (mb);
+		return res;
+	}
+
+	/* internal calls: we simply push all arguments and call the method (no conversions) */
+	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
+
+		/* hack - string constructors returns a value */
+		if (method->string_ctor) {
+			csig = mono_metadata_signature_dup (sig);
+			csig->ret = &mono_defaults.string_class->byval_arg;
+		} else
+			csig = sig;
+
+		if (sig->hasthis)
+			mono_mb_emit_byte (mb, CEE_LDARG_0);
+
+		for (i = 0; i < sig->param_count; i++)
+			mono_mb_emit_ldarg (mb, i + sig->hasthis);
+
+		g_assert (piinfo->addr);
+		mono_mb_emit_native_call (mb, csig, piinfo->addr);
+		emit_thread_interrupt_checkpoint (mb);
+		mono_mb_emit_byte (mb, CEE_RET);
+
+		csig = mono_metadata_signature_dup (csig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache (cache, method,
+										mb, csig, csig->param_count + 16);
+		mono_mb_free (mb);
+		return res;
+	}
+
+	g_assert (pinvoke);
+
+	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
+	mono_method_get_marshal_info (method, mspecs);
+
+	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, piinfo->addr);
 
 	csig = mono_metadata_signature_dup (sig);
 	csig->pinvoke = 0;
@@ -6054,8 +6093,51 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	mono_mb_free (mb);
 
 	for (i = sig->param_count; i >= 0; i--)
-		g_free (mspecs [i]);
+		mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
+
+	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */ 
+
+	return res;
+}
+
+/**
+ * mono_marshal_get_native_func_wrapper:
+ * @sig: The signature of the function
+ * @func: The native function to wrap
+ *
+ *   Returns a wrapper method around native functions, similar to the pinvoke
+ * wrapper.
+ */
+MonoMethod *
+mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, MonoMarshalSpec **mspecs, gpointer func)
+{
+	MonoMethodSignature *csig;
+	MonoMethodPInvoke piinfo;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	char *name;
+
+	cache = mono_defaults.corlib->native_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, func)))
+		return res;
+
+
+	name = g_strdup_printf ("wrapper_native_%p", func);
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	mb->method->save_lmf = 1;
+
+	/* FIXME: Collect piinfo */
+	memset (&piinfo, 0, sizeof (piinfo));
+
+	mono_marshal_emit_native_wrapper (mb, sig, &piinfo, mspecs, func);
+
+	csig = mono_metadata_signature_dup (sig);
+	csig->pinvoke = 0;
+	res = mono_mb_create_and_cache (cache, func,
+									mb, csig, csig->param_count + 16);
+	mono_mb_free (mb);
 
 	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */ 
 
