@@ -1,5 +1,8 @@
 2004-08-17  Zoltan Varga  <vargaz@freemail.hu>
 
+	* mono/os/gc_wrapper.h: Only use thread local alloc if using the included libgc, since the
+	stock one has broken headers.
+
 	* configure.in (PLATFORM_WIN32): Make the included libgc the default on windows.
 
 2004-08-17  Dick Porter  <dick@ximian.com>

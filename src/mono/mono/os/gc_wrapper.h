@@ -15,7 +15,7 @@
 	 * it if it is the included one.
 	 */
 	
-#	if defined(HAVE_KW_THREAD) || defined(USE_INCLUDED_LIBGC)  
+#	if defined(HAVE_KW_THREAD) && defined(USE_INCLUDED_LIBGC)  
 #		define GC_REDIRECT_TO_LOCAL
 #	endif
 
