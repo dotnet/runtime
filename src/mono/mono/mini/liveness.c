@@ -75,6 +75,13 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 		int idx = inst->inst_i0->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 		g_assert (idx < max_vars);
+		if (bb->region != -1) {
+			/*
+			 * Variables used in exception regions can't be allocated to 
+			 * registers.
+			 */
+			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+		}
 		update_live_range (cfg, idx, bb->dfn, inst_num); 
 		if (!mono_bitset_test (bb->kill_set, idx))
 			mono_bitset_set (bb->gen_set, idx);
@@ -90,6 +97,50 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 		vi->spill_costs += 1 + (bb->nesting * 2);
 	}
 } 
+
+static void
+update_volatile (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int inst_num)
+{
+	int arity = mono_burg_arity [inst->opcode];
+	int max_vars = cfg->num_varinfo;
+
+	if (arity)
+		update_volatile (cfg, bb, inst->inst_i0, inst_num);
+
+	if (arity > 1)
+		update_volatile (cfg, bb, inst->inst_i1, inst_num);
+
+	if (inst->ssa_op == MONO_SSA_LOAD) {
+		int idx = inst->inst_i0->inst_c0;
+		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+		g_assert (idx < max_vars);
+		if (bb->region != -1) {
+			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+		}
+	}
+} 
+
+static void
+handle_exception_clauses (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+
+	/*
+	 * Variables in exception handler register cannot be allocated to registers
+	 * so make them volatile. See bug #42136.
+	 */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *inst;
+		int tree_num;
+
+		if (bb->region == -1)
+			continue;
+
+		for (tree_num = 0, inst = bb->code; inst; inst = inst->next, tree_num++) {
+			update_volatile (cfg, bb, inst, tree_num);
+		}
+	}
+}
 
 /* generic liveness analysis code. CFG specific parts are 
  * in update_gen_kill_set()
@@ -185,6 +236,8 @@ mono_analyze_liveness (MonoCompile *cfg)
 				update_live_range (cfg, j, bb->dfn, 0xffff);
 		} 
 	} 
+
+	handle_exception_clauses (cfg);
 
 #ifdef DEBUG_LIVENESS
 	for (i = cfg->num_bblocks - 1; i >= 0; i--) {
