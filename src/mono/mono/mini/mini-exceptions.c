@@ -205,7 +205,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	MonoContext initial_ctx;
 	int frame_count = 0;
 	gboolean gc_disabled = FALSE;
-	MonoString *initial_stack_trace;
+	MonoString *initial_stack_trace = NULL;
+	GString *trace_str = NULL;
 	
 	/*
 	 * This function might execute on an alternate signal stack, and Boehm GC
@@ -294,8 +295,11 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 		gboolean need_trace = FALSE;
 		guint32 free_stack;
 
-		if (test_only && (frame_count < 1000))
+		if (test_only && (frame_count < 1000)) {
 			need_trace = TRUE;
+			if (!trace_str)
+				trace_str = g_string_new ("");
+		}
 
 		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
 					      need_trace ? &trace : NULL, &lmf, NULL, NULL);
@@ -309,27 +313,16 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 			//printf ("M: %s %d %d.\n", mono_method_full_name (ji->method, TRUE), frame_count, test_only);
 
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
-				char *tmp, *strace;
-
 				/* 
 				 * Avoid overwriting the stack trace if the exception is
 				 * rethrown. Also avoid giant stack traces during a stack
 				 * overflow.
 				 */
 				if (!initial_stack_trace && (frame_count < 1000)) {
-					trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
+					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
-					if (!mono_ex->stack_trace)
-						strace = g_strdup ("");
-					else
-						strace = mono_string_to_utf8 (mono_ex->stack_trace);
-
-					tmp = g_strdup_printf ("%s%s\n", strace, trace);
-					g_free (strace);
-
-					mono_ex->stack_trace = mono_string_new (domain, tmp);
-
-					g_free (tmp);
+					g_string_append (trace_str, trace);
+					g_string_append_c (trace_str, '\n');
 				}
 			}
 
@@ -359,6 +352,9 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							/* store the exception object int cfg->excvar */
 							g_assert (ji->exvar_offset);
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
+							if (!initial_stack_trace && trace_str) {
+								mono_ex->stack_trace = mono_string_new (domain, trace_str->str);
+							}
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
@@ -367,13 +363,17 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {
 							if (test_only) {
-								if (mono_ex)
+								if (mono_ex) {
+									trace_ips = g_list_reverse (trace_ips);
 									mono_ex->trace_ips = glist_to_array (trace_ips);
+								}
 								g_list_free (trace_ips);
 								g_free (trace);
 
 								if (gc_disabled)
 									mono_gc_enable ();
+								if (trace_str)
+									g_string_free (trace_str, TRUE);
 								return TRUE;
 							}
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
@@ -384,6 +384,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 							if (gc_disabled)
 								mono_gc_enable ();
+							if (trace_str)
+								g_string_free (trace_str, TRUE);
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
@@ -422,9 +424,13 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 					jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
-				if (mono_ex)
+				if (mono_ex) {
+					trace_ips = g_list_reverse (trace_ips);
 					mono_ex->trace_ips = glist_to_array (trace_ips);
+				}
 				g_list_free (trace_ips);
+				if (trace_str)
+					g_string_free (trace_str, TRUE);
 				return FALSE;
 			}
 		}

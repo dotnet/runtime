@@ -500,6 +500,10 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 	MONO_CONTEXT_SET_BP (&ctx, sp);
 	MONO_CONTEXT_SET_IP (&ctx, ip);
 	
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		MonoException *mono_ex = (MonoException*)exc;
+		mono_ex->stack_trace = NULL;
+	}
 	mono_arch_handle_exception (&ctx, exc, FALSE);
 	setcontext(&ctx);
 
@@ -1048,7 +1052,7 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				char *tmp, *strace;
 
-				trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
+				trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
 				if (!mono_ex->stack_trace)
 					strace = g_strdup ("");
@@ -1079,8 +1083,10 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 						    ((ei->flags == MONO_EXCEPTION_CLAUSE_FILTER &&
 						      call_filter (ctx, ei->data.filter, obj)))) {
 							if (test_only) {
-								if (mono_ex)
+								if (mono_ex) {
+									trace_ips = g_list_reverse (trace_ips);
 									mono_ex->trace_ips = glist_to_array (trace_ips);
+								}
 								g_list_free (trace_ips);
 								g_free (trace);
 								return TRUE;
@@ -1123,8 +1129,10 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
-				if (mono_ex)
+				if (mono_ex) {
+					trace_ips = g_list_reverse (trace_ips);
 					mono_ex->trace_ips = glist_to_array (trace_ips);
+				}
 				g_list_free (trace_ips);
 				return FALSE;
 			}

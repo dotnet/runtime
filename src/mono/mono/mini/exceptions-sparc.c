@@ -165,6 +165,10 @@ throw_exception (MonoObject *ex, gpointer sp, gpointer ip)
 	ctx.ip = ip;
 	ctx.fp = (gpointer*)(MONO_SPARC_WINDOW_ADDR (sp) [sparc_i6 - 16]);
 
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		MonoException *mono_ex = (MonoException*)exc;
+		mono_ex->stack_trace = NULL;
+	}
 	mono_handle_exception (&ctx, ex, ip, FALSE);
 	restore_context (&ctx);
 

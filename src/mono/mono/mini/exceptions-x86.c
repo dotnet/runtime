@@ -248,6 +248,10 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.SC_ECX = ecx;
 	ctx.SC_EAX = eax;
 	
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		MonoException *mono_ex = (MonoException*)exc;
+		mono_ex->stack_trace = NULL;
+	}
 	mono_handle_exception (&ctx, exc, eip + 1, FALSE);
 	restore_context (&ctx);
 

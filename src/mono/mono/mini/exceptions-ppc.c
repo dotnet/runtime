@@ -315,6 +315,10 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	memcpy (&ctx.regs, int_regs, sizeof (gulong) * MONO_SAVED_GREGS);
 	memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS);
 
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		MonoException *mono_ex = (MonoException*)exc;
+		mono_ex->stack_trace = NULL;
+	}
 	arch_handle_exception (&ctx, exc, FALSE);
 	restore_context (&ctx);
 
@@ -837,7 +841,9 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
 	MonoException *mono_ex;
-	MonoString *initial_stack_trace;
+	MonoString *initial_stack_trace = NULL;
+	GString *trace_str = NULL;
+	int frame_count = 0;
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -878,34 +884,30 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	while (1) {
 		MonoContext new_ctx;
 		char *trace = NULL;
+		gboolean need_trace = FALSE;
 		
+		if (test_only && (frame_count < 1000)) {
+			need_trace = TRUE;
+			if (!trace_str)
+				trace_str = g_string_new ("");
+		}
 		setup_context (&new_ctx);
 		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-					      test_only ? &trace : NULL, &lmf, NULL, NULL);
+					      need_trace ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
 		}
 
 		if (ji != (gpointer)-1) {
+			frame_count ++;
 			
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
-				char *tmp, *strace;
+				if (!initial_stack_trace && (frame_count < 1000)) {
+					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
-				if (!initial_stack_trace) {
-					trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
-
-					if (!mono_ex->stack_trace)
-						strace = g_strdup ("");
-					else
-						strace = mono_string_to_utf8 (mono_ex->stack_trace);
-			
-					tmp = g_strdup_printf ("%s%s\n", strace, trace);
-					g_free (strace);
-
-					mono_ex->stack_trace = mono_string_new (domain, tmp);
-
-					g_free (tmp);
+					g_string_append (trace_str, trace);
+					g_string_append_c (trace_str, '\n');
 				}
 			}
 
@@ -920,25 +922,41 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
+
+						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
+							/* store the exception object int cfg->excvar */
+							g_assert (ji->exvar_offset);
+							/* need to use the frame pointer (ppc_r31), not r1 (regs start from register r13): methods with clauses always have r31 */
+							*((gpointer *)((char *)(ctx->regs [ppc_r31-13]) + ji->exvar_offset)) = obj;
+							if (!initial_stack_trace && trace_str) {
+								mono_ex->stack_trace = mono_string_new (domain, trace_str->str);
+							}
+						}
+
+						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+							filtered = call_filter (ctx, ei->data.filter);
+
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) ||
-						    ((ei->flags == MONO_EXCEPTION_CLAUSE_FILTER &&
-						      call_filter (ctx, ei->data.filter, obj)))) {
+						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {
 							if (test_only) {
-								if (mono_ex)
+								if (mono_ex) {
+									trace_ips = g_list_reverse (trace_ips);
 									mono_ex->trace_ips = glist_to_array (trace_ips);
+								}
 								g_list_free (trace_ips);
 								g_free (trace);
+								if (trace_str)
+									g_string_free (trace_str, TRUE);
 								return TRUE;
 							}
 							if (mono_jit_trace_calls != NULL)
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							/*printf ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							/* need to use the frame pointer (ppc_r31), not r1 (regs start from register r13): methods with clauses always have r31 */
-							*((gpointer *)((char *)(ctx->regs [ppc_r31-13]) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;
 							g_free (trace);
+							if (trace_str)
+								g_string_free (trace_str, TRUE);
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
@@ -965,9 +983,13 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
-				if (mono_ex)
+				if (mono_ex) {
+					trace_ips = g_list_reverse (trace_ips);
 					mono_ex->trace_ips = glist_to_array (trace_ips);
+				}
 				g_list_free (trace_ips);
+				if (trace_str)
+					g_string_free (trace_str, TRUE);
 				return FALSE;
 			}
 		}

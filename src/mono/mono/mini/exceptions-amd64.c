@@ -284,6 +284,10 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 	ctx.r14 = r14;
 	ctx.r15 = r15;
 
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		MonoException *mono_ex = (MonoException*)exc;
+		mono_ex->stack_trace = NULL;
+	}
 	mono_handle_exception (&ctx, exc, (gpointer)(rip + 1), FALSE);
 	restore_context (&ctx);
 
