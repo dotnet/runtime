@@ -48,49 +48,4 @@ typedef enum {
 	OtherNotAssigned        = 29,
 } MonoUnicodeCategory;
 
-double 
-ves_icall_System_Char_GetNumericValue    (gunichar2 c);
-
-MonoUnicodeCategory 
-ves_icall_System_Char_GetUnicodeCategory (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsControl          (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsDigit            (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsLetter           (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsLower            (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsUpper            (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsNumber           (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsPunctuation      (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsSeparator        (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsSurrogate        (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsSymbol           (gunichar2 c);
-
-gboolean 
-ves_icall_System_Char_IsWhiteSpace       (gunichar2 c);
-
-gunichar2
-ves_icall_System_Char_ToLower            (gunichar2 c);
-
-gunichar2
-ves_icall_System_Char_ToUpper            (gunichar2 c);
-
 #endif
