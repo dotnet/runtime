@@ -17,7 +17,7 @@ public class foo  {
 
 		// Don't run forever
 		if(final_count++>10) {
-			Environment.Exit(42);
+			Environment.Exit(0);
 		}
 
 		Console.WriteLine("finalizer thread ID: {0}", (string)Thread.GetData(dataslot));
@@ -29,13 +29,15 @@ public class foo  {
 		}
 	} 
 
-	public static void Main() { 
+	public static int Main() { 
 		ArrayList list = new ArrayList (); 
 		Thread.SetData(dataslot, "ID is wibble");
+		Environment.ExitCode = 2;
 		while(true) { 
 			foo instance = new foo(); 
 			list.Add (new WeakReference(instance)); 
-		} 
+		}
+		return 1;
 	} 
 } 
 

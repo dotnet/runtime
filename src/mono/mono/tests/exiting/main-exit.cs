@@ -3,12 +3,14 @@ using System;
 using System.Threading;
 
 public class foo {
-	public static void Main() {
+	public static int Main() {
+		Environment.ExitCode = 2;
 		Thread thr=new Thread(new ThreadStart(foo.thread));
 		thr.Start();
 		Thread.Sleep(1200);
 		Console.WriteLine("Main thread exiting");
-		Environment.Exit(42);
+		Environment.Exit(0);
+		return 1;
 	}
 
 	public static void thread() {

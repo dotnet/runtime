@@ -12,10 +12,11 @@ class foo {
 	static void async_callback (IAsyncResult ar)
 	{
 		Console.WriteLine ("Async callback " + ar.AsyncState);
-		Environment.Exit(42);
+		Environment.Exit(0);
 	}
 	
-	public static void Main () {
+	public static int Main () {
+		Environment.ExitCode = 2;
 		foo_delegate d = new foo_delegate (function);
 		AsyncCallback ac = new AsyncCallback (async_callback);
 		IAsyncResult ar1 = d.BeginInvoke (ac, "foo");
@@ -25,5 +26,6 @@ class foo {
 
 		Thread.Sleep(1000);
 		Console.WriteLine("Main returns");
+		return 1;
 	}
 }
