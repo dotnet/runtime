@@ -210,6 +210,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 /*static CRITICAL_SECTION handle_section;*/
 static guint32 next_handle = 0;
 static gpointer *gc_handles = NULL;
+static guint8 *gc_handle_types = NULL;
 static guint32 array_size = 0;
 
 /*
@@ -219,6 +220,13 @@ static guint32 array_size = 0;
  * 2 -> weak
  */
 
+typedef enum {
+	HANDLE_WEAK,
+	HANDLE_WEAK_TRACK,
+	HANDLE_NORMAL,
+	HANDLE_PINNED
+} HandleType;
+
 /*
  * FIXME: make thread safe and reuse the array entries.
  */
@@ -226,24 +234,22 @@ MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
 {
 	MonoObject *obj;
+	gint32 type;
 
 	if (gc_handles) {
+		type = handle & 0x3;
+		g_assert (type == gc_handle_types [handle >> 2]);
 		obj = gc_handles [handle >> 2];
 		if (!obj)
 			return NULL;
-		if ((handle & 0x3) > 1)
+
+		if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK))
 			return REVEAL_POINTER (obj);
+		else
 		return obj;
 	}
 	return NULL;
 }
-
-typedef enum {
-	HANDLE_WEAK,
-	HANDLE_WEAK_TRACK,
-	HANDLE_NORMAL,
-	HANDLE_PINNED
-} HandleType;
 
 guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
@@ -254,15 +260,18 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 	if (idx >= array_size) {
 #if HAVE_BOEHM_GC
 		gpointer *new_array;
+		guint8 *new_type_array;
 		if (!array_size)
 			array_size = 16;
 		new_array = GC_malloc (sizeof (gpointer) * (array_size * 2));
+		new_type_array = GC_malloc (sizeof (guint8) * (array_size * 2));
 		if (gc_handles) {
 			int i;
 			memcpy (new_array, gc_handles, sizeof (gpointer) * array_size);
+			memcpy (new_type_array, gc_handle_types, sizeof (guint8) * array_size);
 			/* need to re-register links for weak refs. test if GC_realloc needs the same */
 			for (i = 0; i < array_size; ++i) {
-				if (((gulong)new_array [i]) & 0x1) { /* all and only disguised pointers have it set */
+				if ((gc_handle_types[i] == HANDLE_WEAK) || (gc_handle_types[i] == HANDLE_WEAK_TRACK)) { /* all and only disguised pointers have it set */
 					if (gc_handles [i] != (gpointer)-1)
 						GC_unregister_disappearing_link (&(gc_handles [i]));
 					if (new_array [i] != (gpointer)-1)
@@ -272,21 +281,22 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		}
 		array_size *= 2;
 		gc_handles = new_array;
+		gc_handle_types = new_type_array;
 #else
 		g_error ("No GCHandle support built-in");
 #endif
 	}
-	h = idx << 2;
 
 	/* resuse the type from the old target */
 	if (type == -1)
 		type =  handle & 0x3;
+	h = (idx << 2) | type;
 	switch (type) {
 	case HANDLE_WEAK:
 	case HANDLE_WEAK_TRACK:
-		h |= 2;
 		val = (gpointer)HIDE_POINTER (val);
 		gc_handles [idx] = val;
+		gc_handle_types [idx] = type;
 #if HAVE_BOEHM_GC
 		if (gc_handles [idx] != (gpointer)-1)
 			GC_general_register_disappearing_link (&(gc_handles [idx]), obj);
@@ -295,8 +305,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 #endif
 		break;
 	default:
-		h |= type;
 		gc_handles [idx] = val;
+		gc_handle_types [idx] = type;
 		break;
 	}
 	return h;
@@ -306,9 +316,11 @@ void
 ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
 	int idx = handle >> 2;
+	int type = handle & 0x3;
 
 #ifdef HAVE_BOEHM_GC
-	if ((handle & 0x3) > 1) {
+	g_assert (type == gc_handle_types [idx]);
+	if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK)) {
 		if (gc_handles [idx] != (gpointer)-1)
 			GC_unregister_disappearing_link (&(gc_handles [idx]));
 	}
@@ -317,16 +329,19 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 #endif
 
 	gc_handles [idx] = (gpointer)-1;
+	gc_handle_types [idx] = (guint8)-1;
 }
 
 gpointer
 ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	MonoObject *obj;
+	int type = handle & 0x3;
 
 	if (gc_handles) {
 		obj = gc_handles [handle >> 2];
-		if ((handle & 0x3) > 1) {
+		g_assert (gc_handle_types [handle >> 2] == type);
+		if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK)) {
 			obj = REVEAL_POINTER (obj);
 			if (obj == (MonoObject *) -1)
 				return NULL;

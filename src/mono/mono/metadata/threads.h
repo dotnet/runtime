@@ -21,6 +21,8 @@ extern void mono_thread_cleanup(void);
 MonoThread *mono_thread_current (void);
 
 MonoThread *mono_thread_create (MonoDomain *domain, gpointer func);
+MonoThread *mono_thread_create_arg (MonoDomain *domain, gpointer func, void *arg);
+MonoThread *mono_thread_attach (MonoDomain *domain);
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this, HANDLE thread);

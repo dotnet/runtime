@@ -61,6 +61,9 @@ static guint32 current_object_key;
 /* function called at thread start */
 static MonoThreadStartCB mono_thread_start_cb = NULL;
 
+/* function called at thread attach */
+static MonoThreadStartCB mono_thread_attach_cb = NULL;
+
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
 static guint32 slothash_key;
 
@@ -187,7 +190,7 @@ static guint32 start_wrapper(void *data)
 }
 
 MonoThread *
-mono_thread_create (MonoDomain *domain, gpointer func)
+mono_thread_create_arg (MonoDomain *domain, gpointer func, void *arg)
 {
 	MonoThread *thread;
 	HANDLE thread_handle;
@@ -201,7 +204,7 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 	start_info->func = func;
 	start_info->obj = thread;
 	start_info->domain = domain;
-	/* start_info->this needs to be set? */
+	start_info->this = arg;
 		
 	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info, 0, &tid);
 #ifdef THREAD_DEBUG
@@ -217,6 +220,58 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 
 	return thread;
 }
+
+static void
+mono_attached_thread_cleanup (MonoObject *obj)
+{
+}
+
+MonoThread *
+mono_thread_attach (MonoDomain *domain)
+{
+	MonoThread *thread;
+	HANDLE thread_handle;
+	struct StartInfo *start_info;
+	guint32 tid;
+
+	thread = (MonoThread *)mono_object_new (domain,
+						mono_defaults.thread_class);
+
+/*	start_info=g_new0 (struct StartInfo, 1);
+	start_info->func = NULL;
+	start_info->obj = thread;
+	start_info->domain = domain;
+	start_info->this = NULL;
+*/
+	start_info = NULL;
+//	thread_handle = AttachThread (NULL, 0, start_wrapper, start_info, 0, &tid);
+	thread_handle = GetCurrentThread ();
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
+		  tid, thread_handle);
+#endif
+	g_assert (thread_handle);
+
+	thread->handle=thread_handle;
+	thread->tid=tid;
+
+	handle_store(thread);
+
+	TlsSetValue (current_object_key, thread);
+	mono_domain_set (domain);
+	thread->tid=GetCurrentThreadId ();
+	if (mono_thread_attach_cb)
+	  mono_thread_attach_cb (-1);
+	return thread;
+}
+
+
+MonoThread *
+mono_thread_create (MonoDomain *domain, gpointer func)
+{
+  return mono_thread_create_arg (domain, func, NULL);
+}
+
 
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 							 MonoObject *start)
@@ -995,7 +1050,7 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	}
 }
 
-void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
+void mono_thread_init_with_attach (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadStartCB attach_cb)
 {
 	/* Build a System.Threading.Thread object instance to return
 	 * for the main line's Thread.CurrentThread property.
@@ -1033,6 +1088,7 @@ void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 	TlsSetValue(current_object_key, main_thread);
 
 	mono_thread_start_cb = start_cb;
+	mono_thread_attach_cb = attach_cb;
 
 	slothash_key=TlsAlloc();
 
@@ -1042,6 +1098,11 @@ void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 	 * anything up.
 	 */
 	GetCurrentProcess ();
+}
+
+void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
+{
+  mono_thread_init_with_attach (domain, start_cb, NULL);
 }
 
 #ifdef THREAD_DEBUG

@@ -4043,6 +4043,30 @@ mono_thread_start_cb (gpointer stack_start)
 	jit_tls->end_of_stack = stack_start;
 }
 
+void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
+
+static void
+mono_thread_abort_dummy (MonoObject *obj)
+{
+  if (mono_thread_attach_aborted_cb)
+    mono_thread_attach_aborted_cb (obj);
+  else
+    mono_thread_abort (obj);
+}
+
+static void
+mono_thread_attach_cb (gpointer stack_start)
+{
+	MonoJitTlsData *jit_tls;
+
+	jit_tls = g_new0 (MonoJitTlsData, 1);
+
+	TlsSetValue (mono_jit_tls_id, jit_tls);
+
+	jit_tls->abort_func = mono_thread_abort_dummy;
+	jit_tls->end_of_stack = stack_start;
+}
+
 static CRITICAL_SECTION ms;
 
 static void
@@ -4128,7 +4152,7 @@ mono_jit_init (const char *file) {
 	mono_install_stack_walk (mono_jit_walk_stack);
 
 	domain = mono_init (file);
-	mono_runtime_init (domain, mono_thread_start_cb);
+	mono_runtime_init_with_attach (domain, mono_thread_start_cb, mono_thread_attach_cb);
 
 	return domain;
 }

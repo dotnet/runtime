@@ -48,6 +48,8 @@
 
 extern int mono_exc_esp_offset;
 
+extern void (*mono_thread_attach_aborted_cb ) (MonoObject *obj);
+
 typedef struct _MBTree MBTree;
 
 typedef enum {
