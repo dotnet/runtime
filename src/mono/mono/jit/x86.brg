@@ -4815,6 +4815,9 @@ mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh) {
 	Note, for the product of two 64 bit numbers to fit into a 64
 	result, ah and/or bh must be 0.  This will save us from doing
 	the AhBh term at all.
+
+	Also note that we refactor so that we don't overflow 64 bits intermediate 
+	results. So we use [(Ah-Al)(Bl-Bh)+AlBl]R+AlBl
 	*/
 
 	gint64 res, t1;
@@ -4854,35 +4857,17 @@ mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh) {
 	if (ah && bh)
 		goto raise_exception;
 
-	/* do the AlBl(R+1) term first */
+	/* do the AlBl term first */
 	t1 = (gint64)al * (gint64)bl;
 
 	res = t1;
-	t1 <<= 32;
 
-	/* see if we have enough room to accumulate, and make sure
-	   we leave enough room for the sign bit. */
+	/* now do the [(Ah-Al)(Bl-Bh)+AlBl]R term */
+	t1 += (gint64)(ah - al) * (gint64)(bl - bh);
+	t1 <<= 32;
+	/* check for overflow */
 	if (t1 > (0x7FFFFFFFFFFFFFFF - res))
 		goto raise_exception;
-	res += t1;
-
-	/* now do the (Ah-Al)(Bl-Bh)R term */
-	t1 = (gint64)(ah - al) * (gint64)(bl - bh);
-
-	if (t1 < 0) {
-		/* need to use absolute value and substract instead of
-		   adding a negative value because we need to bit
-		   shift here */
-		t1 = -t1;
-		res -= t1 << 32;
-	} 
-	else {
-		t1 <<= 32;
-		/* check for overflow */
-		if (t1 > (0x7FFFFFFFFFFFFFFF - res))
-			goto raise_exception;
-		res += t1;
-	}
 
 	*exc = NULL;
 	if (sign < 0)
