@@ -10,6 +10,8 @@ INCLUDES = \
 libwapiincludedir = $(includedir)/mono/io-layer
 
 OTHER_H = \
+	atomic.h	\
+	context.h	\
 	critical-sections.h	\
 	error.h		\
 	events.h	\
@@ -21,13 +23,20 @@ OTHER_H = \
 	semaphores.h	\
 	sockets.h	\
 	status.h	\
+	system.h	\
 	threads.h	\
+	timefuncs.h	\
+	types.h		\
 	uglify.h	\
 	wait.h		\
 	wapi.h		\
 	#
 
 OTHER_SRC = \
+	atomic.c		\
+	atomic.h		\
+	context.c		\
+	context.h		\
 	critical-sections.c	\
 	critical-sections.h	\
 	error.c			\
@@ -52,10 +61,15 @@ OTHER_SRC = \
 	sockets.c		\
 	sockets.h		\
 	status.h		\
+	system.c		\
+	system.h		\
 	threads.c		\
 	threads.h		\
+	timefuncs.c		\
+	timefuncs.h		\
 	timed-thread.c		\
 	timed-thread.h		\
+	types.h			\
 	uglify.h		\
 	unicode.c		\
 	unicode.h		\

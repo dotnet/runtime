@@ -723,7 +723,15 @@ void mono_thread_init(MonoDomain *domain)
 	 * object? In theory, I guess the whole program should act as
 	 * though exit() were called :-)
 	 */
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": Starting to build main Thread object");
+#endif
 	main_thread = mono_object_new (domain, thread_class);
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": Finished to building main Thread object");
+#endif
 
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&monitor_mutex);
@@ -759,6 +767,9 @@ void mono_thread_cleanup(void)
 	 */
 #ifdef THREAD_DEBUG
 	g_message("There are %d threads to join", threads->len);
+	for(i=0; i<threads->len; i++) {
+		g_message("Waiting for: %p", g_ptr_array_index(threads, i));
+	}
 #endif
 
 	for(i=0; i<threads->len; i+=MAXIMUM_WAIT_OBJECTS) {

@@ -643,3 +643,13 @@ again:
 		goto again;
 	}
 }
+
+/* FIXME: implement alertable */
+void SleepEx(guint32 ms, gboolean alertable)
+{
+	if(alertable==TRUE) {
+		g_warning(G_GNUC_PRETTY_FUNCTION ": alertable not implemented");
+	}
+	
+	Sleep(ms);
+}

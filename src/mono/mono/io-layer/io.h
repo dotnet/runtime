@@ -141,7 +141,7 @@ extern WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 			      guint32 sharemode,
 			      WapiSecurityAttributes *security,
 			      guint32 createmode,
-			      guint32 attrs, WapiHandle *template);
+			      guint32 attrs, WapiHandle *tmplate);
 extern gboolean DeleteFile(const guchar *name);
 extern WapiHandle *GetStdHandle(WapiStdHandle stdhandle);
 extern gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,

@@ -44,7 +44,7 @@ pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *timeout)
 	
 	/* This is just to avoid a completely busy wait */
 	sleepytime.tv_sec = 0;
-	sleepytime.tv_nsec = 10000;	/* 10ms */
+	sleepytime.tv_nsec = 10000000;	/* 10ms */
 	
 	while ((retcode = pthread_mutex_trylock (mutex)) == EBUSY) {
 		gettimeofday (&timenow, NULL);
