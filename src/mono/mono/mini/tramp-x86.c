@@ -222,6 +222,7 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	else
 		if (code [0] == 0x90)
 			/* Already changed by another thread */
+			;
 		else {
 			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
