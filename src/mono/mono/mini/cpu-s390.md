@@ -61,6 +61,9 @@ and_imm: dest:i src1:i len:16
 aot_const: dest:i len:8
 arg:
 arglist:
+atomic_add_i4: src1:b src2:i dest:i len:16
+atomic_exchange_i4: src1:b src2:i dest:i len:14
+atomic_add_new_i4: src1:b src2:i dest:i len:20
 beq.s:
 beq: len:8
 bge.s:
@@ -449,7 +452,7 @@ ret:
 retarg:
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4 clob:r
-s390_tls_get: dest:i len:44
+tls_get: dest:i len:44
 sbb: dest:i src1:i src2:i len:6
 sbb_imm: dest:i src1:i len:14
 setfreg: dest:f src1:f len:4 clob:r

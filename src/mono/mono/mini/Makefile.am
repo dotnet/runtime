@@ -128,11 +128,12 @@ ppc_sources = \
 sparc_sources = \
 	mini-sparc.c		\
 	mini-sparc.h		\
-    mini-exceptions.c	\
+    	mini-exceptions.c	\
 	exceptions-sparc.c	\
 	tramp-sparc.c
 
 s390_sources = \
+	mini-exceptions.c	\
 	mini-s390.c		\
 	mini-s390.h		\
 	exceptions-s390.c	\

@@ -366,7 +366,7 @@ InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {
 	gint32 ret;
 	
-	__asm__ __volatile__ ("\tLA\t1,%1\n"
+	__asm__ __volatile__ ("\tLA\t1,%0\n"
 			      "0:\tL\t%1,%0\n"
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"

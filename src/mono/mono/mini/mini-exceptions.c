@@ -594,7 +594,11 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;
 
+#ifdef __s390__
+					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
+#else
 					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+#endif
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
 

@@ -20,21 +20,6 @@
 /*                 D e f i n e s                                    */
 /*------------------------------------------------------------------*/
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) 					\
-	do {								\
-		(ctx)->uc_mcontext.gregs[14] = (unsigned long)ip;	\
-		(ctx)->uc_mcontext.psw.addr = (unsigned long)ip;	\
-	} while (0); 
-
-#define MONO_CONTEXT_SET_BP(ctx,bp) 					\
-	do {		 						\
-		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
-		(ctx)->uc_stack.ss_sp	     = (unsigned long)bp;	\
-	} while (0); 
-
-#define MONO_CONTEXT_GET_IP(ctx) context_get_ip ((ctx))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->uc_mcontext.gregs[15]))
-
 #define S390_CALLFILTER_INTREGS   	S390_MINIMAL_STACK_SIZE
 #define S390_CALLFILTER_FLTREGS		S390_CALLFILTER_INTREGS+(16*sizeof(gulong))
 #define S390_CALLFILTER_ACCREGS		S390_CALLFILTER_FLTREGS+(16*sizeof(gdouble))
@@ -74,20 +59,6 @@
 /*========================= End of Includes ========================*/
 
 /*------------------------------------------------------------------*/
-/*                 T y p e d e f s                                  */
-/*------------------------------------------------------------------*/
-
-typedef struct
-{
-  void *prev;
-  void *unused[5];
-  void *regs[8];
-  void *return_address;
-} MonoS390StackFrame;
-
-/*========================= End of Typedefs ========================*/
-
-/*------------------------------------------------------------------*/
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
@@ -102,26 +73,6 @@ gboolean mono_arch_handle_exception (void     *ctx,
 /*------------------------------------------------------------------*/
 
 /*====================== End of Global Variables ===================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- context_get_ip                                    */
-/*                                                                  */
-/* Function	- Extract the current instruction address from the  */
-/*		  context.                     		 	    */
-/*		                               		 	    */
-/*------------------------------------------------------------------*/
-
-static inline gpointer 
-context_get_ip (MonoContext *ctx) 
-{
-	gpointer ip;
-
-	ip = (gpointer) ((gint32) (ctx->uc_mcontext.psw.addr) & 0x7fffffff);
-	return ip;
-}
-
-/*========================= End of Function ========================*/
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
@@ -142,7 +93,7 @@ mono_arch_has_unwind_info (gconstpointer addr)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- arch_get_call_filter                              */
+/* Name		- mono_arch_get_call_filter                         */
 /*                                                                  */
 /* Function	- Return a pointer to a method which calls an       */
 /*                exception filter. We also use this function to    */
@@ -151,8 +102,8 @@ mono_arch_has_unwind_info (gconstpointer addr)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static gpointer
-arch_get_call_filter (void)
+gpointer
+mono_arch_get_call_filter (void)
 {
 	static guint8 start [512];
 	static int inited = 0;
@@ -209,7 +160,8 @@ arch_get_call_filter (void)
 	/*------------------------------------------------------*/
 	/* Load all registers with values from the context	*/
 	/*------------------------------------------------------*/
-	s390_lm   (code, s390_r3, s390_r12, s390_r13, G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs[3]));
+	s390_lm   (code, s390_r3, s390_r12, s390_r13, 
+		   G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs[3]));
 	pos = G_STRUCT_OFFSET(MonoContext, uc_mcontext.fpregs.fprs[0]);
 	for (i = 0; i < 16; ++i) {
 		s390_ld  (code, i, 0, s390_r13, pos);
@@ -462,35 +414,6 @@ mono_arch_get_throw_exception_by_name (void)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- glist_to_array                                    */
-/*                                                                  */
-/* Function	- Convert a list to a mono array.                   */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-static MonoArray *
-glist_to_array (GList *list) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	int len, i;
-
-	if (!list)
-		return NULL;
-
-	len = g_list_length (list);
-	res = mono_array_new (domain, mono_defaults.int_class, len);
-
-	for (i = 0; list; list = list->next, i++)
-		mono_array_set (res, gpointer, i, list->data);
-
-	return res;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_find_jit_info                           */
 /*                                                                  */
 /* Function	- This function is used to gather informatoin from  */
@@ -537,7 +460,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		*new_ctx = *ctx;
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
+		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
 			*lmf = (*lmf)->previous_lmf;
 		}
@@ -571,7 +494,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			g_free (source_location);
 			g_free (tmpaddr);
 		}
-		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_BP (ctx);
+		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
 		sframe = (MonoS390StackFrame *) sframe->prev;
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
@@ -613,177 +536,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- ves_icall_get_trace                               */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-MonoArray *
-ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	MonoArray *ta = exc->trace_ips;
-	int i, len;
-	
-	if (ta == NULL) {
-		return mono_array_new (domain, mono_defaults.stack_frame_class, 0);
-	}
-
-	len = mono_array_length (ta);
-
-	res = mono_array_new (domain, mono_defaults.stack_frame_class, 
-			      len > skip ? len - skip : 0);
-
-	for (i = skip; i < len; i++) {
-		MonoJitInfo *ji;
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
-		gpointer ip = mono_array_get (ta, gpointer, i);
-
-		ji = mono_jit_info_table_find (domain, ip);
-		if (ji == NULL) {
-			mono_array_set (res, gpointer, i, sf);
-			continue;
-		}
-
-		sf->method = mono_method_get_object (domain, ji->method, NULL);
-		sf->native_offset = (char *)ip - (char *)ji->code_start;
-
-		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
-
-		if (need_file_info) {
-			gchar *filename;
-			
-			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
-
-			sf->filename = filename? mono_string_new (domain, filename): NULL;
-			sf->column = 0;
-
-			g_free (filename);
-		}
-
-		mono_array_set (res, gpointer, i, sf);
-	}
-
-	return res;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_jit_walk_stack                               */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji, rji;
-	gint native_offset, il_offset;
-	gboolean managed;
-	MonoContext ctx, new_ctx;
-
-	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
-
-	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
-		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, 
-					      &ctx, &new_ctx, NULL, &lmf, 
-					      &native_offset, &managed);
-		g_assert (ji);
-
-		if (ji == (gpointer)-1)
-			return;
-
-		il_offset = do_il_offset ? mono_debug_il_offset_from_address (ji->method, native_offset, domain): -1;
-
-		if (func (ji->method, native_offset, il_offset, managed, user_data))
-			return;
-		
-		ctx = new_ctx;
-	}
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- ves_icall_get_frame_info                          */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-MonoBoolean
-ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
-			  MonoReflectionMethod **method, 
-			  gint32 *iloffset, gint32 *native_offset,
-			  MonoString **file, gint32 *line, gint32 *column)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji, rji;
-	MonoContext ctx, new_ctx;
-
-	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));
-
-	skip++;
-
-	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, 
-					      &ctx, &new_ctx, NULL, &lmf, 
-					      native_offset, NULL);
-
-		ctx = new_ctx;
-		
-		if (!ji || ji == (gpointer)-1 || 
-		    MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
-			return FALSE;
-
-		/*---------------------------------------------------*/
-		/* skip all wrappers ??				     */
-		/*---------------------------------------------------*/
-		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
-			continue;
-
-		skip--;
-
-	} while (skip >= 0);
-
-	*method = mono_method_get_object (domain, ji->method, NULL);
-	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset, domain);
-
-	if (need_file_info) {
-		gchar *filename;
-
-		filename = mono_debug_source_location_from_address (ji->method, *native_offset, line, domain);
-
-		*file = filename? mono_string_new (domain, filename): NULL;
-		*column = 0;
-
-		g_free (filename);
-	}
-
-	return TRUE;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_handle_exception                        */
 /*                                                                  */
 /* Function	- Handle an exception raised by the JIT code.	    */
@@ -798,180 +550,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 gboolean
 mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 {
-	MonoContext	*ctx = uc;
-	MonoDomain	*domain = mono_domain_get ();
-	MonoJitInfo	*ji, rji;
-	static int	(*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
-	MonoJitTlsData 	*jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF		*lmf = jit_tls->lmf;		
-	GList		*trace_ips = NULL;
-	GString		*traceStr  = NULL;
-	MonoException 	*mono_ex;
-	MonoString	*initialStackTrace = NULL;
-	int		frameCount = 0;
-
-	g_assert (ctx != NULL);
-	memset(&rji, 0, sizeof(rji));
-	if (!obj) {
-		MonoException *ex = mono_get_exception_null_reference ();
-		ex->message = mono_string_new (domain, 
-		        "Object reference not set to an instance of an object");
-		obj = (MonoObject *)ex;
-	} 
-
-	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-		mono_ex = (MonoException*)obj;
-		initialStackTrace = mono_ex->stack_trace;
-	} else {
-		mono_ex = NULL;
-	}
-
-
-	if (!call_filter)
-		call_filter = arch_get_call_filter ();
-
-	g_assert (jit_tls->end_of_stack);
-	g_assert (jit_tls->abort_func);
-
-	if (!test_only) {
-		MonoContext ctx_cp = *ctx;
-		if (mono_jit_trace_calls != NULL)
-			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
-		if (!mono_arch_handle_exception (&ctx_cp, obj, TRUE)) {
-			if (mono_break_on_exc)
-				G_BREAKPOINT ();
-			mono_unhandled_exception (obj);
-		}
-	}
-
-	memset (&rji, 0, sizeof(rji));
-
-	while (1) {
-		MonoContext new_ctx;
-		char *trace = NULL;
-		gboolean needTrace = FALSE;
-
-		if (test_only && (frameCount < 1000)) {
-			needTrace = TRUE;
-			if (!traceStr)
-				traceStr = g_string_new ("");
-		}	
-		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-					      test_only ? &trace : NULL, &lmf, NULL, NULL);
-		if (!ji) {
-			g_warning ("Exception inside function without unwind info");
-			g_assert_not_reached ();
-		}
-
-		if (ji != (gpointer)-1) {
-			frameCount++;
-
-			if ((test_only) && 
-			    (ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) && 
-			    (mono_ex)) {
-			    	if (!initialStackTrace && (frameCount < 1000)) {
-					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
-					g_string_append   (traceStr, trace);
-					g_string_append_c (traceStr, '\n');
-				}
-			}		
-			
-			if (ji->num_clauses) {
-				int i;
-				
-				g_assert (ji->clauses);
-			
-				for (i = 0; i < ji->num_clauses; i++) {
-					MonoJitExceptionInfo *ei = &ji->clauses [i];
-					gboolean filtered = FALSE;
-
-
-					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
-					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
-						/* catch block */
-						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) ||
-						    (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
-							g_assert (ji->exvar_offset);
-							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
-							if (!initialStackTrace &&
-							    traceStr) {
-								mono_ex->stack_trace =  mono_string_new (domain, traceStr->str);
-							}
-						}
-
-						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) 
-						      filtered = call_filter (ctx, ei->data.filter, obj);
-
-						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) &&
-						    (mono_object_isinst (obj, ei->data.catch_class)) || 
-						    (filtered)) {
-							if (test_only) {
-								if (mono_ex) {
-									trace_ips = g_list_reverse (trace_ips);
-									mono_ex->trace_ips = glist_to_array (trace_ips);
-								}
-								g_list_free (trace_ips);
-								g_free (trace);
-								if (traceStr)
-									g_string_free (traceStr, TRUE);
-
-								return TRUE;
-							}
-
-							if (mono_jit_trace_calls != NULL)
-								g_print ("EXCEPTION: catch found at clause %d of %s - caught at %p with sp %p\n", 
-									 i, mono_method_full_name (ji->method, TRUE),
-									 ei->handler_start,
-									 MONO_CONTEXT_GET_BP(ctx));
-							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							jit_tls->lmf = lmf;
-							g_free (trace);
-							if (traceStr)
-								g_string_free (traceStr, TRUE);
-							return FALSE;
-						}
-
-						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
-						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
-						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
-							if (mono_jit_trace_calls != NULL)
-								g_print ("EXCEPTION: finally clause %d of %s handled at: %p using sp: %p\n", 
-								i, mono_method_full_name (ji->method, TRUE),
-								ei->handler_start,
-								MONO_CONTEXT_GET_BP(ctx));
-							call_filter (ctx, ei->handler_start, NULL);
-						}
-						
-					}
-				}
-			}
-		}
-
-		g_free (trace);
-			
-		*ctx = new_ctx;
-
-		if ((ji == (gpointer)-1) || 
-		    (MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack)) {
-			if (!test_only) {
-				jit_tls->lmf = lmf;
-				jit_tls->abort_func (obj);
-				g_assert_not_reached ();
-			} else {
-				if (mono_ex) {
-					trace_ips = g_list_reverse (trace_ips);
-					mono_ex->trace_ips = glist_to_array (trace_ips);
-				}
-				g_list_free (trace_ips);
-				if (traceStr)
-					g_string_free (traceStr, TRUE);
-				return FALSE;
-			}
-		}
-	}
-
-	g_assert_not_reached ();
+	return mono_handle_exception (uc, obj, mono_arch_ip_from_context(uc), test_only);
 }
 
 /*========================= End of Function ========================*/
@@ -990,6 +569,24 @@ gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
 	return context_get_ip (sigctx);
+}
+
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_restore_context                     */
+/*                                                                  */
+/* Function	- Return the address of the routine that will rest- */
+/*                ore the context.                                  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_restore_context ()
+{
+	return setcontext;
 }
 
 
@@ -1053,6 +650,7 @@ mono_arch_is_int_overflow (void *uc, void *info)
 		default:
 			arithExc = TRUE;
 	}
+	ctx->uc_mcontext.psw.addr = code;
 	return (arithExc);
 }
 

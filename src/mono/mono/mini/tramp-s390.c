@@ -113,24 +113,20 @@ get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	int this_pos = s390_r2;
 
 	start = addr;
-	if ((method->klass->valuetype)) {
-//	if ((method->klass->valuetype) && 
-//	    (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-		if ((!method->signature->ret->byref) && 
-		    (MONO_TYPE_ISSTRUCT (method->signature->ret)))
-			this_pos = s390_r3;
-	    
-		start = code = g_malloc (28);
+	if ((!method->signature->ret->byref) && 
+	    (MONO_TYPE_ISSTRUCT (method->signature->ret)))
+		this_pos = s390_r3;
+    
+	start = code = g_malloc (28);
 
-		s390_basr (code, s390_r13, 0);
-		s390_j	  (code, 4);
-		s390_word (code, addr);
-		s390_l    (code, s390_r1, 0, s390_r13, 4);
-		s390_ahi  (code, this_pos, sizeof(MonoObject));
-		s390_br   (code, s390_r1);
+	s390_basr (code, s390_r13, 0);
+	s390_j	  (code, 4);
+	s390_word (code, addr);
+	s390_l    (code, s390_r1, 0, s390_r13, 4);
+	s390_ahi  (code, this_pos, sizeof(MonoObject));
+	s390_br   (code, s390_r1);
 
-		g_assert ((code - start) <= 28);
-	}
+	g_assert ((code - start) <= 28);
 
 	return start;
 }
@@ -184,37 +180,43 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 		fname  = mono_method_full_name (method, TRUE);
 		codeJi = mono_jit_info_table_find (mono_domain_get(), code);
 		addrJi = mono_jit_info_table_find (mono_domain_get(), addr);
+		if (mono_method_same_domain (codeJi, addrJi)) {
 
-		opcode = *((unsigned short *) (code - 6));
-		switch (opcode) {
-			case 0x5810 :
-				/* This is a bras r14,r1 instruction */
-				code    -= 4;
-				reg      = *code >> 4;
-				displace = *((short *)code) & 0x0fff;
-				if (reg > 5) 
-					base = *((int *) (sp + S390_REG_SAVE_OFFSET+
-							       sizeof(int)*(reg-6)));
-				else
- 					base = *((int *) (sp + CREATE_GR_OFFSET+
-							       sizeof(int)*(reg-2)));
-				addr = get_unbox_trampoline(method, addr);
-				if (mono_method_same_domain (codeJi, addrJi)) {
+			opcode = *((unsigned short *) (code - 6));
+			switch (opcode) {
+				case 0x5810 :
+					/* This is a bras r14,r1 instruction */
+					code    -= 4;
+					reg      = *code >> 4;
+					displace = *((short *)code) & 0x0fff;
+					if (reg > 5) 
+						base = *((int *) (sp + S390_REG_SAVE_OFFSET+
+								       sizeof(int)*(reg-6)));
+					else
+						base = *((int *) (sp + CREATE_GR_OFFSET+
+								       sizeof(int)*(reg-2)));
+
+					if ((method->klass->valuetype) && 
+					    (!mono_aot_is_got_entry(code, base))) 
+						addr = get_unbox_trampoline(method, addr);
+
 					code = base + displace;
-					s390_patch(code, addr);
-				}
-				break;
-			case 0xc0e5 :
-				/* This is the 'brasl' instruction */
-				code    -= 4;
-				displace = ((gint32) addr - (gint32) (code - 2)) / 2;
-				if (mono_method_same_domain (codeJi, addrJi)) {
-					s390_patch (code, displace);
-					mono_arch_flush_icache (code, 4);
-				}
-				break;
-			default :
-				g_error("Unable to patch instruction prior to %p",code);
+					if (mono_domain_owns_vtable_slot(mono_domain_get(), 
+									 code))
+						s390_patch(code, addr);
+					break;
+				case 0xc0e5 :
+					/* This is the 'brasl' instruction */
+					code    -= 4;
+					displace = ((gint32) addr - (gint32) (code - 2)) / 2;
+					if (mono_method_same_domain (codeJi, addrJi)) {
+						s390_patch (code, displace);
+						mono_arch_flush_icache (code, 4);
+					}
+					break;
+				default :
+					g_error("Unable to patch instruction prior to %p",code);
+			}
 		}
 	}
 
@@ -551,12 +553,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	static guint8 *vc = NULL;
 	gint32 displace;
 
-	if (method->info)
-		return (method->info);
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return (mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method)));
-
 	vc = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	/* This is the method-specific part of the trampoline. Its purpose is
@@ -579,9 +575,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	/* Sanity check */
 	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
 	
-	method->info = code;
-	mono_jit_stats.method_trampolines++;
-
 	return code;
 }
 
