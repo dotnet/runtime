@@ -1067,7 +1067,7 @@ get_fieldref_signature (MonoImage *m, int idx)
         mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
                         idx - 1, cols, MONO_MEMBERREF_SIZE);
 
-        sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
+        sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE]);
         full_sig = g_strdup_printf ("%s %s::%s", sig,
                         get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS]),
                         mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));
