@@ -93,7 +93,6 @@ gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
 gboolean mono_trace_coverage = FALSE;
 gboolean mono_jit_profile = FALSE;
-MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 
 CRITICAL_SECTION *metadata_section = NULL;
 

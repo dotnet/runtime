@@ -18,7 +18,7 @@ struct _MonoDebugDomainDataPriv
 	MonoDebugDomainData *next;
 };
 
-MonoDebugFormat mono_debug_format;
+MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 
 static gboolean in_the_mono_debugger = FALSE;
 static gboolean mono_debug_initialized = FALSE;
