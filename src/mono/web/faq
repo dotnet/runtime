@@ -1,71 +1,298 @@
 ** Basics
 
-Q: What does Mono stand for?
-A: Mono stands for `Monkey' in spanish, you can also think of it as
-   monocromatic as that is what my text editor looks like. 
+Q: Is Mono a .NET implementation?
+   
+A: No.  .NET is a company-wide initiative at Microsoft that encompasses
+   many different areas.  Some components of this initiative have been
+   announced and some others are in the works. 
 
-Q: .NET is evil, it will give Microsoft too much control over every desktop?
-Q: If you implement .NET, wont I depend on Microsoft Passport to run my software?
-Q: Isn't .NET something else?
+Q: What is Mono exactly?
+   
+A: Mono is a project to implement various technologies developed by
+   Microsoft that have now been submitted to the ECMA for
+   standarization.  
 
-A: You are a bit confused.  It is easy to be confused, as Microsoft
-   has been naming anything they have produced recently with `.NET'.
-
-
-Q: So what are you doing with .NET?
-
-A: We are implementing the .NET Framework: a new development platform
-   specified by Microsoft.  It contains a number of components:
+   It contains a number of components:
 
 	* A Common Language Runtime (CLR) system that contains a class loader,
 	  Just-in-time compiler, and a garbage collection aware
 	  runtime.
 
-	* A .NET-compatible class library.
+	* A class library. 
 
 	* A compiler for the C# language, in the future we might work
-	  on other compilers that target .NET.
+	  on other compilers that target the Common Language Runtime. 
 
    The CLR and the Common Type System (CTS) enables applications and
    libraries to be written in a collection of different languages that
    target the byte code 
 
-  multiple languages to share the same code
-   (through the CLS specification
+Q: Where can I find the specification for these technologies?
+   
+A: You can find the work-in-progress documentation from the T3G ECMA
+   group here:
+ 
+   <a href="http://www.dotnetexperts.com">http://www.dotnetexperts.com</a>
 
-** Passport
+Q: Will you implement the .NET Framework SDK class libraries?
+   
+A: Yes, we will be implementing the APIs of the .NET Framework SDK
+   class libraries. 
 
-Q: Passport
-A: ....
+Q: What does Mono stand for?
+   
+A: Mono stands for `Monkey' in spanish, you can also think of it as
+   monocromatic as that is what my text editor looks like. 
 
-Q: But there is a  System.Web.Security.PassportIdentity class, that must mean
-   that it will depend on it.
+   We like monkeys.
+
+Q: When will you ship it?
+
+A: We do not know when the code will be shipped.  The more
+   contributions we get to the project, the sooner it will ship.
+
+Q: How can I contribute?
+
+A: Check the <a href="contributing.html">contributing</a> section. 
+
+Q: You guys should innovate instead of copying.
+
+A: We are working towards giving free software developers better tools
+   to create better products.  We have decided that we can spend our
+   limited resources towards implementing an existing specification
+   than designing and implementing our own.
+
+   Designing and implementing our own is possible, but it makes little
+   sense to roll our own just because a specification comes from a
+   proprietary vendor.  
 
 ** Ximian
 
 Q: Why is Ximian working on .NET?
-A: 
+   
+A: We are interested in providing the best tools for programmers to
+   develop applications for Free Operating Systems.  
 
-Q: How does this help the Ximian business?
-A: ...
+   Please read the project <a href="rationale.html">rationale's background</a>
+
+Q: Will Ximian be able to take on a project of this size?  
+
+A: Ximian will not be able to taken on the whole project on its own.
+   Mono will be a free software/open source community project, that is
+   the only way we can hope to implement something of this size. 
+
+Q: What pieces will Ximian be working on?
+
+A: We will devote most of our resources to work on the pieces which
+   are on the critical path to release a development and execution
+   environment.  
+
+   The idea is to get Mono to a state of usability that would allow
+   third parties to actually be able to use it for something,
+   until then, we expect few contributions to the project.
+
+   On the other hand, if you have Windows you could start contributing
+   now to the class libraries.
+
+** Mono and .NET
+
+Q: If applications use Mono, does that mean that I have to pay a service fee?
+   
+A: No.  Mono is not related to Microsoft's initiative of
+   software-as-a-service.  Please read questions 1 and 2. 
+
+Q: If you implement .NET, wont I depend on Microsoft Passport to run my software?
+
+A: No, the virtual machine, 
+
+Q: Isn't .NET something else?
+
+A: You are a bit confused.  It is easy to be confused, as Microsoft
+   has been naming anything they have produced recently with `.NET'.
+
+Q: But .NET does not exist, it is vaporware. 
+   
+A: Mono is not .NET.  Please refer to questions 1 and 2. 
+
+Q: Will Mono enable thin computing?
+
+A: Please refer to questions 1 and 2. 
+
+** Passport
+
+Q: Is this a free implementation of Passport?
+   
+A: No.  Passport is part of Microsoft's Hailstorm initiative.  Mono
+   is just a runtime, a compiler and a set of class libraries. 
+
+Q: But there is a  System.Web.Security.PassportIdentity class, that must mean
+   that my software will depend on it.
+   
+A: No.  That just means that applications might use that API to
+   contact a Passport site.  
+
+   As long as your application does not use Passport, you will not
+   need passport.  
+
+   Furthermore, we can envision our implementation of such a class to
+   be a set of dummy functions, or have a different implementation
+   than contacting passport.com
+
+   It is too early to We do not know at this time whether the Passport
+   protocol is documented and whether we will be able to talk to
+   passport.com 
+
+** GNOME
+
+Q: How is this related to GNOME?
+   
+A: In a number of ways:
+
+	* To implement some of the functionality, we will use existing
+	  components that have been developed for GNOME (Gtk+, Libart,
+	  Gnome-DB and maybe others).
+
+	* This project was born out of the need of providing improved
+	  tools for the GNOME community. 
+
+Q: Does the GNOME Foundation or the GNOME team have adopted Mono?
+
+A: Mono has not been adopted by anyone at this point, as it is a
+   nacent project, but we hope that the tools that we will provide
+   will be adopted by free software programmers. 
+
+Q: Should GNOME programmer switch over to Mono?
+
+A: No pieces of Mono will be ready within the next six months, and a
+   complete implementation is probably one year away.  
+
+   We encourage GNOME developers to continue using the existing tools,
+   libraries and components.  Improvements made to GNOME will have an
+   impact on Mono, as they would be the "backend" for various
+   classes. 
+
+Q: Will Mono include compatibility with Bonobo components?
+   
+A: Yes, we will provide a set of classes for implementing and using
+   Bonobo components from within Mono. 
+
+** Mono and the Web
+
+Q: Is Mono a way of running Java applets?
+
+A: No.
 
 ** Web Services
 
 Q: Is Mono just a new way of writing Web Services?
-A: 
+   
+A: No.  Please refer to the questions 1 and 2. 
 
-Q: Will this implement Web Services?
-A: 
+Q: If this implements the SDK classes, will I be able to write and
+   execute Web services with this?
+   
+A: Yes, you will.
+
+   When the project is finished, you will be able to use the same
+   technologies that are available through the .NET-FrameworkSDK on
+   Windows to write Web Services.
+
+Q: What about Soup?
+
+A: Soup is a library for GNOME applications to create SOAP server and
+   SOAP clients.
+
+Q: I want to use CORBA. 
+
+A: The CLI contains enough information about a class, that exposing it
+   to other RPC systems (like CORBA) is really simple, and does not
+   even require support from an object.  
+
+   We will be implementing CORBA interoperation as an extension to the
+   Mono classes for the purpose of integrating with Bonobo, just like
+   Microsoft provides COM interoperation classes and support
+   mechanisms. 
+
+Q: Can I serialize my objects to other things other than XML?
+
+A: You would have to implement your serializer.  Hopefully someone
+   will contribute a different serializer. 
 
 ** Development Tools 
 
 Q: Will you have new development tools?
-A: 
+
+A: Hopefully Free Software enthusiasts will contribute tools to
+   improve the developer environment.  These tools could be developed
+   initially using Microsoft implementation of the CLI and then
+   executed later with Mono.
+
+** Mono and Java
+   
+Q: What about using Java?  After all there are many languages that
+   target the Java VM.
+   
+A: You can get very good tools for doing Java development on free
+   systems right now.  <a href="http://www.redhat.com">Red Hat</a> has
+   contributed a <a href="http://gcc.gnu.org">GCC</a> <a
+   href="http://gcc.gnu.org/java">frontend for Java</a> that can take
+   Java sources or Java byte codes and generate native executables; <a
+   href="http://www.transvirtual.com">Transvirtual</a> has implemented
+   <a href="http://www.kaffe.org">Kaffe</a> a JIT engine for Java;
+   Intel also has a Java VM called <a
+   href="http://www.intel.com/research/mrl/orp">ORP</a>.
+
+   The JVM is not designed to be a general purpose virtual machine, it
+   is optimized for the Java language.  The Common Intermediate
+   Language (CIL) on the other hand is designed to be a target for a
+   wide variety of programming languages, and has a set of rules
+   designed to be optimal for JITers.
+
+Q: What kind of rules make the Common Intermediate Language useful for
+   JITers?
+
+A: The main rule is that the stack in the CLI is not a general purpose
+   stack.   You are not allowed to use it for other purposes than
+   computing values and passing arguments to functions or return
+   values.  
+
+   At any given call or return instruction, the types on the stack
+   have to be the same independently of the flow of execution of your
+   code. 
 
 ** Reusing existing Code
 
 Q: Will you guys reuse XXX?
-A:
+   
+A: We want to get Mono in the hands of programmers soon.  If it makes
+   sense to use a GPL/LGPL-compatible technology in Mono, we will
+   likely use it. 
 
 Q: What about Intel's research JIT framework, ORP?
-A: 
+   
+A: At this time, we are investigating whether we can use elements of
+   ORP for Mono. 
+
+** Ximian and Microsoft
+
+Q: Didn't Miguel de Icaza say that `Unix Sucks'?
+   
+A: Yes, he did, as a catch phrase in his opening remark on the Ottawa
+   Linux Symposium.  His talk focused on various ways to improve Unix.
+
+   There is a paper describing some ways to improve Unix at:
+
+	<a href="http://primates.ximian.com/~miguel/bongo-bong.html">
+        http://primates.ximian.com/~miguel/bongo-bong.html</a>
+
+Q: Didn't Ximian's Miguel work for Microsoft?
+
+A: No, he did not.  Nat Friedman (Ximian's co-founder) did work as an
+   intern for Microsoft.
+
+Q: Did Nat and Miguel meet at Microsoft?
+
+A: They met online on the Linux IRC network;  They met in person for
+   the first time in 1997.
+
+

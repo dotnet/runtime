@@ -5,12 +5,9 @@
   	methodology that makes it easier to build correct code. Every
   	method in every class should have a set of tests to verify
   	they work correctly. Mono also needs a testing framework to
-  	make it easy to write and run lots of tests. <a
-  	href="http://www.junit.org/">JUnit</a>
-	and its spinoffs (collectively, <a
-  	href="http://www.xprogramming.com/software.htm">XUnit</a>)
-	are a well designed framework for building unit
-  	tests. Implementing JUnit in Mono is a first priority.
+  	make it easy to write and run lots of tests. 
+
+	Try <a href="http://nunit.sourceforge.net">NUnit</a>
 
 	Why do unit testing? It becomes simple to run automated tests
 	for the whole library. Unit tests are a safety net - you can

@@ -54,7 +54,7 @@ The Mono Project
 	From all the above, the one I am interested in is the new .NET
 	development platform. 
 
-* The .NET development platform.
+* The Common Language Infrastructure platform. 
 
 	Microsoft has created a new development platform.  The
 	highlights of this new development platform are:
@@ -74,24 +74,27 @@ The Mono Project
 		  that can interoperate with other programming
 		  languages (The Common Language Specification: CLS)
 
-	The .NET development platform is similar to the goals we had
-  	in GNOME of giving language independence to programmers.  Any
-  	API that is written using a CLS provider language can be used
-  	by any language that is a CLS consumer.   Compilers generate
-  	code in a format called Common Intermediate Language (CIL)
-  	which is an intermediate representation of a compiled program
-  	and is easy to compile to native code or compiled using
-  	Just-in-Time (JIT) engines.  The restrictions placed by the
-  	runtime on the CIL byte codes ensures that it is possible to
-  	do a good job at optimizing the code in a JIT compiler. 
+	The Common Language Infrastructure platform is similar to the
+  	goals we had in GNOME of giving language independence to
+  	programmers.  It is more mature, documented, larger in scope,
+  	and has a consistent design.
+
+	Any API that is written using a CLS provider language can be
+  	used by any language that is a CLS consumer.  Compilers
+  	generate code in a format called Common Intermediate Language
+  	(CIL) which is an intermediate representation of a compiled
+  	program and is easy to compile to native code or compiled
+  	using Just-in-Time (JIT) engines.  The restrictions placed by
+  	the runtime on the CIL byte codes ensures that it is possible
+  	to do a good job at optimizing the code in a JIT compiler.
 
 	There is not really a lot of innovation in this platform: we
 	have seen all of these concepts before, and we are all
 	familiar with how these things work.
 
-	What makes the .NET development platform interesting is that
-	it is a good mix of technologies that have been nicely
-	integrated.   
+	What makes the Common Language Infrastructure development
+  	platform interesting is that it is a good mix of technologies
+  	that have been nicely integrated.
 
 	The .NET development platform is essentially a new foundation
 	for program development that gives Microsoft a room to grow
@@ -107,10 +110,10 @@ The Mono Project
 	You can get a copy of the specifications submitted to ECMA
 	from: <a href="http://www.dotnetexperts.com/ecma">http://www.dotnetexperts.com/ecma</a>
 
-* Mono: Open Source .NET implementation. 
+* Mono: an Open Source Common Language Infrastructure implementation. 
 
 	Ximian has begun work on Mono, a project that aims to bring
-  	the .NET development platform to free systems.  
+  	the Common Language Infrastructure platform to free systems.  
 
 	When the GNU project was launched, they picked the best
   	operating system that was available out there, and they
@@ -128,8 +131,6 @@ The Mono Project
 	There are various pieces that will make up Mono:
 
 		* A C# compiler.
-
-		* A .NET executable tools.
 
 		* The Virtual Execution System: that will have the
   		  Just-in-Time compiler, garbage collector, loader,
@@ -154,7 +155,7 @@ The Mono Project
 	and productivity applications.
 
 	The GNOME infrastructural components can be used to quickly
-	implement various pieces of the .NET API without reinventing
+	implement various pieces of the class libraries without reinventing
 	the wheel, and since all those components are licensed under
 	the terms of the GNU LGPL it is a perfect fit.  
 
