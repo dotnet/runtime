@@ -451,7 +451,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		else {
 			offset = -1;
 			/* restore caller saved registers */
-			for (i = AMD64_NREG - 1; i > 0; --i)
+			for (i = 0; i < AMD64_NREG; i ++)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && (ji->used_regs & (1 << i))) {
 					guint64 reg = *((guint64 *)ctx->SC_EBP + offset);
 					offset --;
