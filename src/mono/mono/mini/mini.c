@@ -5806,12 +5806,11 @@ mono_thread_abort (MonoObject *obj)
 	ExitThread (-1);
 }
 
-static void
+static void*
 setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
-	MonoThread *thread;
 
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
@@ -5824,16 +5823,17 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	lmf->ebp = -1;
 
 	jit_tls->lmf = jit_tls->first_lmf = lmf;
-
-	thread = mono_thread_current ();
-	if (thread)
-		thread->jit_data = jit_tls;
+	return jit_tls;
 }
 
 static void
 mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
 {
-	setup_jit_tls_data (stack_start, mono_thread_abort);
+	MonoThread *thread;
+	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
+	thread = mono_thread_current ();
+	if (thread)
+		thread->jit_data = jit_tls;
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -5850,7 +5850,11 @@ mono_thread_abort_dummy (MonoObject *obj)
 static void
 mono_thread_attach_cb (guint32 tid, gpointer stack_start)
 {
-	setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
+	MonoThread *thread;
+	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
+	thread = mono_thread_current ();
+	if (thread)
+		thread->jit_data = jit_tls;
 }
 
 static void
@@ -7230,7 +7234,7 @@ mini_init (const char *filename)
 	InitializeCriticalSection (metadata_section);
 
 	mono_jit_tls_id = TlsAlloc ();
-	mono_thread_start_cb (GetCurrentThreadId (), (gpointer)-1, NULL);
+	setup_jit_tls_data ((gpointer)-1, NULL);
 
 	mono_burg_init ();
 
