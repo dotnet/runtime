@@ -6110,7 +6110,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		for (i = 0; i < invoke_sig->ret->num_mods; ++i) {
 			MonoClass *cmod_class = mono_class_get (delegate_klass->image, invoke_sig->ret->modifiers [i].token);
 			g_assert (cmod_class);
-			printf ("B: %s\n", cmod_class->name);
 			if ((cmod_class->image == mono_defaults.corlib) && !strcmp (cmod_class->name_space, "System.Runtime.CompilerServices")) {
 				if (!strcmp (cmod_class->name, "CallConvCdecl"))
 					csig->call_convention = MONO_CALL_C;
