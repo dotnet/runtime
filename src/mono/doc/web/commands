@@ -31,6 +31,7 @@
 1,Java,java.html,java.src
 1,Windows.Forms,winforms.html,winforms.src
 0,Resources,resources.html,resources.src
+1,Beginning,mono-beginning.html,mono-beginning.src
 1,Mailing Lists,mailing-lists.html,mailing-lists.src
 1,Ideas,ideas.html,ideas.src
 1,Passport,passport.html,passport.src
