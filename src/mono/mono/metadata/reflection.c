@@ -99,6 +99,7 @@ const unsigned char table_sizes [64] = {
 
 static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type);
 static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method);
+static guint32 mono_image_get_sighelper_token (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper);
 static guint32 encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo);
 
 static void
@@ -1532,6 +1533,81 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 	return token;
 }
 
+static guint32
+mono_reflection_encode_sighelper (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper)
+{
+	char *buf;
+	char *p;
+	guint32 nargs;
+	guint32 size;
+	guint32 i, idx;
+	char blob_size [6];
+	char *b = blob_size;
+
+	/* FIXME: */
+	g_assert (helper->type == 2);
+
+	if (helper->arguments)
+		nargs = mono_array_length (helper->arguments);
+	else
+		nargs = 0;
+
+	size = 10 + (nargs * 10);
+	
+	p = buf = g_malloc (size);
+
+	/* Encode calling convention */
+	/* Change Any to Standard */
+	if ((helper->call_conv & 0x03) == 0x03)
+		helper->call_conv = 0x01;
+	/* explicit_this implies has_this */
+	if (helper->call_conv & 0x40)
+		helper->call_conv &= 0x20;
+
+	if (helper->call_conv == 0) /* Unmanaged */
+		*p = helper->unmanaged_call_conv - 1;
+	else {
+		/* Managed */
+		*p = helper->call_conv & 0x60; /* has_this + explicit_this */
+		if (helper->call_conv & 0x02) /* varargs */
+			*p += 0x05;
+	}
+
+	p++;
+	mono_metadata_encode_value (nargs, p, &p);
+	encode_reflection_type (assembly, helper->return_type, p, &p);
+	for (i = 0; i < nargs; ++i) {
+		MonoReflectionType *pt = mono_array_get (helper->arguments, MonoReflectionType*, i);
+		encode_reflection_type (assembly, pt, p, &p);
+	}
+	/* store length */
+	g_assert (p - buf < size);
+	mono_metadata_encode_value (p-buf, b, &b);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
+	g_free (buf);
+
+	return idx;
+}
+	
+static guint32 
+mono_image_get_sighelper_token (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper)
+{
+	guint32 idx;
+	MonoDynamicTable *table;
+	guint32 *values;
+
+	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
+	idx = table->next_idx ++;
+	table->rows ++;
+	alloc_table (table, table->rows);
+	values = table->values + idx * MONO_STAND_ALONE_SIGNATURE_SIZE;
+
+	values [MONO_STAND_ALONE_SIGNATURE] =
+		mono_reflection_encode_sighelper (assembly, helper);
+
+	return idx;
+}
+
 static int
 reflection_cc_to_file (int call_conv) {
 	switch (call_conv & 0x3) {
@@ -2506,8 +2582,12 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 		MonoReflectionArrayMethod *m = (MonoReflectionArrayMethod *)obj;
 		token = mono_image_get_array_token (assembly, m);
 	}
+	else if (strcmp (klass->name, "SignatureHelper") == 0) {
+		MonoReflectionSigHelper *s = (MonoReflectionSigHelper*)obj;
+		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s);
+	}
 	else
-		g_print ("requested token for %s\n", klass->name);
+		g_error ("requested token for %s\n", klass->name);
 
 	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token),
 							  obj);
@@ -5099,6 +5179,38 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 			result = tb->type.type->data.klass;
 			g_assert (result);
 		}
+	}
+	else if (strcmp (obj->vtable->klass->name, "SignatureHelper") == 0) {
+		MonoReflectionSigHelper *helper = (MonoReflectionSigHelper*)obj;
+		MonoMethodSignature *sig;
+		int nargs, i;
+
+		if (helper->arguments)
+			nargs = mono_array_length (helper->arguments);
+		else
+			nargs = 0;
+
+		sig = mono_metadata_signature_alloc (image, nargs);
+		sig->explicit_this = helper->call_conv & 64;
+		sig->hasthis = helper->call_conv & 32;
+
+		if (helper->call_conv == 0) /* unmanaged */
+			sig->call_convention = helper->unmanaged_call_conv - 1;
+		else
+			if (helper->call_conv & 0x02)
+				sig->call_convention = MONO_CALL_VARARG;
+		else
+			sig->call_convention = MONO_CALL_DEFAULT;
+
+		sig->param_count = nargs;
+		/* TODO: Copy type ? */
+		sig->ret = helper->return_type->type;
+		for (i = 0; i < nargs; ++i) {
+			MonoReflectionType *rt = mono_array_get (helper->arguments, MonoReflectionType*, i);
+			sig->params [i] = rt->type;
+		}
+
+		result = sig;
 	}
 	else {
 		g_print (obj->vtable->klass->name);

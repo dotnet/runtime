@@ -429,6 +429,9 @@ typedef struct {
 	MonoReflectionModuleBuilder *module;
 	MonoArray *arguments;
 	guint32 type;
+	MonoReflectionType *return_type;
+	guint32 call_conv;
+	guint32 unmanaged_call_conv;
 } MonoReflectionSigHelper;
 
 
