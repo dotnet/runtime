@@ -951,6 +951,7 @@ handle_enum:
  */
 typedef struct {
 	MonoBasicBlock *bb;
+	void *ip;
 	guint16 b0_cond;
 	guint16 b1_cond;
 } MonoOvfJump;
@@ -971,6 +972,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 			ovfj->bb = ins->inst_true_bb;	\
+			ovfj->ip = NULL;	\
 			ovfj->b0_cond = branch_b0_table [cond];	\
 			ovfj->b1_cond = branch_b1_table [cond];	\
 		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB_OVF, ovfj); \
@@ -982,12 +984,28 @@ if (ins->flags & MONO_INST_BRLABEL) { \
         } \
 }
 
-/* emit an exception if condition is fail */
-#define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)            \
+/* emit an exception if condition is fail
+ *
+ * We assign the extra code used to throw the implicit exceptions
+ * to cfg->bb_exit as far as the big branch handling is concerned
+ */
+#define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name)            \
         do {                                                        \
-		mono_add_patch_info (cfg, code - cfg->native_code,   \
+		int br_disp = cfg->bb_exit->max_offset - offset;	\
+		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
+			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
+			ovfj->bb = NULL;	\
+			ovfj->ip = code;	\
+			ovfj->b0_cond = branch_b0_table [cond];	\
+			ovfj->b1_cond = branch_b1_table [cond];	\
+		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_OVF, ovfj); \
+			ppc_b (code, 0);	\
+			cfg->bb_exit->max_offset += 24;	\
+		} else {	\
+			mono_add_patch_info (cfg, code - cfg->native_code,   \
 				    MONO_PATCH_INFO_EXC, exc_name);  \
-	        x86_branch32 (code, cond, 0, signed);               \
+			ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], 0);	\
+		}	\
 	} while (0); 
 
 static void
@@ -2302,13 +2320,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_rlwinm (code, ins->dreg, ins->sreg1, 0, 16, 31);
 			break;
 		case OP_COMPARE:
-			if (ins->next && ((ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN) || (ins->next->opcode == OP_CLT_UN || ins->next->opcode == OP_CGT_UN)))
+			if (ins->next && 
+					((ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN) ||
+					(ins->next->opcode >= OP_COND_EXC_NE_UN && ins->next->opcode <= OP_COND_EXC_LT_UN) ||
+					(ins->next->opcode == OP_CLT_UN || ins->next->opcode == OP_CGT_UN)))
 				ppc_cmpl (code, 0, 0, ins->sreg1, ins->sreg2);
 			else
 				ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COMPARE_IMM:
-			if (ins->next && ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN) {
+			if (ins->next && 
+					((ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN) ||
+					(ins->next->opcode >= OP_COND_EXC_NE_UN && ins->next->opcode <= OP_COND_EXC_LT_UN) ||
+					(ins->next->opcode == OP_CLT_UN || ins->next->opcode == OP_CGT_UN))) {
 				if (ppc_is_uimm16 (ins->inst_imm)) {
 					ppc_cmpli (code, 0, 0, ins->sreg1, (ins->inst_imm & 0xffff));
 				} else {
@@ -2485,14 +2509,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mullw (code, ins->dreg, ins->sreg1, ppc_r11);
 			break;
 		case CEE_MUL_OVF:
-			ppc_mullw (code, ins->dreg, ins->sreg1, ins->sreg2);
-			//g_assert_not_reached ();
-			//x86_imul_reg_reg (code, ins->sreg1, ins->sreg2);
-			//EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
+			ppc_mullwo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mcrxr (code, 0);
+			EMIT_COND_SYSTEM_EXCEPTION (CEE_BGT - CEE_BEQ, ins->inst_p1);
 			break;
 		case CEE_MUL_OVF_UN:
+			/* we first multiply to get the high word and compare to 0
+			 * to set the flags, then the result is discarded and then 
+			 * we multiply to get the lower * bits result
+			 */
+			ppc_mulhwu (code, ppc_r0, ins->sreg1, ins->sreg2);
+			ppc_cmpi (code, 0, 0, ppc_r0, 0);
+			EMIT_COND_SYSTEM_EXCEPTION (CEE_BNE_UN - CEE_BEQ, ins->inst_p1);
 			ppc_mullw (code, ins->dreg, ins->sreg1, ins->sreg2);
-			//FIXME: g_assert_not_reached ();
 			break;
 		case OP_ICONST:
 		case OP_SETREGIMM:
@@ -2684,12 +2713,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_GE_UN:
 		case OP_COND_EXC_LE:
 		case OP_COND_EXC_LE_UN:
-		case OP_COND_EXC_OV:
-		case OP_COND_EXC_NO:
+			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_EQ, ins->inst_p1);
+			break;
 		case OP_COND_EXC_C:
+			/* move XER [0-3] (SO, OV, CA) into CR 
+			 * this translates to LT, GT, EQ.
+			 * FIXME: test for all the conditions occourring
+			 */
+			ppc_mcrxr (code, 0);
+			EMIT_COND_SYSTEM_EXCEPTION (CEE_BEQ - CEE_BEQ, ins->inst_p1);
+			break;
+		case OP_COND_EXC_OV:
+			ppc_mcrxr (code, 0);
+			EMIT_COND_SYSTEM_EXCEPTION (CEE_BGT - CEE_BEQ, ins->inst_p1);
+			break;
 		case OP_COND_EXC_NC:
-			//EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], 
-			//			    (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
+		case OP_COND_EXC_NO:
+			g_assert_not_reached ();
 			break;
 		case CEE_BEQ:
 		case CEE_BNE_UN:
@@ -3064,6 +3104,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			continue;
 		}
 		case MONO_PATCH_INFO_BB_OVF:
+		case MONO_PATCH_INFO_EXC_OVF:
 			/* everything is dealt with at epilog output time */
 			continue;
 		default:
@@ -3092,12 +3133,14 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
      
 	/* 
 	 * make sure we have enough space for exceptions
-	 * 16 is the size of two push_imm instructions and a call
+	 * 24 is the simulated call to throw_exception_by_name
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			max_epilog_size += 16;
+			max_epilog_size += 24;
 		else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
+			max_epilog_size += 12;
+		else if (patch_info->type == MONO_PATCH_INFO_EXC_OVF)
 			max_epilog_size += 12;
 	}
 
@@ -3389,15 +3432,34 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			ppc_patch (code - 4, ip);
 			break;
 		}
-		case MONO_PATCH_INFO_EXC:
-			/*x86_patch (patch_info->ip.i + cfg->native_code, code);
-			x86_push_imm (code, patch_info->data.target);
-			x86_push_imm (code, patch_info->ip.i + cfg->native_code);
+		case MONO_PATCH_INFO_EXC_OVF: {
+			MonoOvfJump *ovfj = patch_info->data.target;
+			unsigned char *ip = patch_info->ip.i + cfg->native_code;
+			/* patch the initial jump */
+			ppc_patch (ip, code);
+			ppc_bc (code, ovfj->b0_cond, ovfj->b1_cond, 2);
+			ppc_b (code, 0);
+			ppc_patch (code - 4, ip + 4); /* jump back after the initiali branch */
+			/* jump back to the true target */
+			ppc_b (code, 0);
+			ip = (char*)ovfj->ip + 4;
+			ppc_patch (code - 4, ip);
+			break;
+		}
+		case MONO_PATCH_INFO_EXC: {
+			unsigned char *ip = patch_info->ip.i + cfg->native_code;
+			ppc_patch (ip, code);
+			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
+			ppc_load (code, ppc_r3, patch_info->data.target);
+			/* simulate a call from ip */
+			ppc_load (code, ppc_r0, ip + 4);
+			ppc_mtlr (code, ppc_r0);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
-			x86_jump_code (code, 0);*/
+			ppc_b (code, 0);
 			break;
+		}
 		default:
 			/* do nothing */
 			break;
