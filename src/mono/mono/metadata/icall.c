@@ -2955,8 +2955,16 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
  * Magic number to convert a time which is relative to
  * Jan 1, 1970 into a value which is relative to Jan 1, 0001.
  */
-#define	EPOCH_ADJUST	((gint64)62135596800L)
+#define	EPOCH_ADJUST	((guint64)62135596800L)
 
+/*
+ * Magic number to convert FILETIME base Jan 1, 1601 to DateTime - base Jan, 1, 0001
+ */
+#define FILETIME_ADJUST ((guint64)504911232000000000LL)
+
+/*
+ * This returns Now in UTC
+ */
 static gint64
 ves_icall_System_DateTime_GetNow (void)
 {
@@ -2966,7 +2974,7 @@ ves_icall_System_DateTime_GetNow (void)
 	
 	GetLocalTime (&st);
 	SystemTimeToFileTime (&st, &ft);
-	return (gint64)504911232000000000L + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
+	return (gint64) FILETIME_ADJUST + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
 #else
 	/* FIXME: put this in io-layer and call it GetLocalTime */
 	struct timeval tv;
@@ -2983,6 +2991,58 @@ ves_icall_System_DateTime_GetNow (void)
 #endif
 }
 
+#ifdef PLATFORM_WIN32
+/* convert a SYSTEMTIME which is of the form "last thursday in october" to a real date */
+static void
+convert_to_absolute_date(SYSTEMTIME *date)
+{
+#define IS_LEAP(y) ((y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0))
+	static int days_in_month[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	static int leap_days_in_month[] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	/* from the calendar FAQ */
+	int a = (14 - date->wMonth) / 12;
+	int y = date->wYear - a;
+	int m = date->wMonth + 12 * a - 2;
+	int d = (1 + y + y/4 - y/100 + y/400 + (31*m)/12) % 7;
+
+	/* d is now the day of the week for the first of the month (0 == Sunday) */
+
+	int day_of_week = date->wDayOfWeek;
+
+	/* set day_in_month to the first day in the month which falls on day_of_week */    
+	int day_in_month = 1 + (day_of_week - d);
+	if (day_in_month <= 0)
+		day_in_month += 7;
+
+	/* wDay is 1 for first weekday in month, 2 for 2nd ... 5 means last - so work that out allowing for days in the month */
+	date->wDay = day_in_month + (date->wDay - 1) * 7;
+	if (date->wDay > (IS_LEAP(date->wYear) ? leap_days_in_month[date->wMonth - 1] : days_in_month[date->wMonth - 1]))
+		date->wDay -= 7;
+}
+#endif
+
+#ifndef PLATFORM_WIN32
+/*
+ * Return's the offset from GMT of a local time.
+ * 
+ *  tm is a local time
+ *  t  is the same local time as seconds.
+ */
+static int 
+gmt_offset(struct tm *tm, time_t t)
+{
+#if defined (HAVE_TM_GMTOFF)
+	return tm->tm_gmtoff;
+#else
+	struct tm g;
+	time_t t2;
+	g = *gmtime(&t);
+	g.tm_isdst = tm->tm_isdst;
+	t2 = mktime(&g);
+	return (int)difftime(t, t2);
+#endif
+}
+#endif
 /*
  * This is heavily based on zdump.c from glibc 2.2.
  *
@@ -3039,15 +3099,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	start.tm_year = year-1900;
 
 	t = mktime (&start);
-#if defined (HAVE_TIMEZONE)
-#define gmt_offset(x) (-1 * (((timezone / 60 / 60) - daylight) * 100))
-#elif defined (HAVE_TM_GMTOFF)
-#define gmt_offset(x) x.tm_gmtoff
-#else
-#error Neither HAVE_TIMEZONE nor HAVE_TM_GMTOFF defined. Rerun autoheader, autoconf, etc.
-#endif
-	
-	gmtoff = gmt_offset (start);
+	gmtoff = gmt_offset (&start, t);
 
 	/* For each day of the year, calculate the tm_gmtoff. */
 	for (day = 0; day < 365; day++) {
@@ -3056,7 +3108,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 		tt = *localtime (&t);
 
 		/* Daylight saving starts or ends here. */
-		if (gmt_offset (tt) != gmtoff) {
+		if (gmt_offset (&tt, t) != gmtoff) {
 			struct tm tt1;
 			time_t t1;
 
@@ -3065,13 +3117,13 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 			do {
 				t1 -= 3600;
 				tt1 = *localtime (&t1);
-			} while (gmt_offset (tt1) != gmtoff);
+			} while (gmt_offset (&tt1, t1) != gmtoff);
 
 			/* Try to find the exact minute when daylight saving starts/ends. */
 			do {
 				t1 += 60;
 				tt1 = *localtime (&t1);
-			} while (gmt_offset (tt1) == gmtoff);
+			} while (gmt_offset (&tt1, t1) == gmtoff);
 			
 			strftime (tzone, sizeof (tzone), "%Z", &tt);
 			
@@ -3088,12 +3140,10 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 			/* This is only set once when we enter daylight saving. */
 			mono_array_set ((*data), gint64, 2, (gint64)gmtoff * 10000000L);
-			mono_array_set ((*data), gint64, 3, (gint64)(gmt_offset (tt) - gmtoff) * 10000000L);
+			mono_array_set ((*data), gint64, 3, (gint64)(gmt_offset (&tt, t) - gmtoff) * 10000000L);
 
-			gmtoff = gmt_offset (tt);
+			gmtoff = gmt_offset (&tt, t);
 		}
-
-		gmtoff = gmt_offset (tt);
 	}
 
 	if (!is_daylight) {
@@ -3113,7 +3163,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	FILETIME ft;
 	int i;
 	int err, tz_id;
-	
+
 	tz_id = GetTimeZoneInformation (&tz_info);
 	if (tz_id == TIME_ZONE_ID_INVALID)
 		return 0;
@@ -3141,21 +3191,21 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 		return 1;
 	}
 
-	if (tz_id == TIME_ZONE_ID_UNKNOWN) {
-		/* No daylight saving in this time zone */
-		return 1;
+	/* even if the timezone has no daylight savings it may have Bias (e.g. GMT+13 it seems) */
+	if (tz_id != TIME_ZONE_ID_UNKNOWN) {
+		tz_info.StandardDate.wYear = year;
+		convert_to_absolute_date(&tz_info.StandardDate);
+		err = SystemTimeToFileTime (&tz_info.StandardDate, &ft);
+		g_assert(err);
+		mono_array_set ((*data), gint64, 1, FILETIME_ADJUST + (((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime));
+		tz_info.DaylightDate.wYear = year;
+		convert_to_absolute_date(&tz_info.DaylightDate);
+		err = SystemTimeToFileTime (&tz_info.DaylightDate, &ft);
+		g_assert(err);
+		mono_array_set ((*data), gint64, 0, FILETIME_ADJUST + (((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime));
 	}
-
-	tz_info.StandardDate.wYear = year;
-	err = SystemTimeToFileTime (&tz_info.StandardDate, &ft);
-	g_assert (err);
-	mono_array_set ((*data), gint64, 1, ((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime);
-	tz_info.DaylightDate.wYear = year;
-	err = SystemTimeToFileTime (&tz_info.DaylightDate, &ft);
-	g_assert (err);
-	mono_array_set ((*data), gint64, 0, ((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime);
-	mono_array_set ((*data), gint64, 3, tz_info.Bias + tz_info.StandardBias);
-	mono_array_set ((*data), gint64, 2, tz_info.Bias + tz_info.DaylightBias);
+	mono_array_set ((*data), gint64, 2, (tz_info.Bias + tz_info.StandardBias) * -600000000LL);
+	mono_array_set ((*data), gint64, 3, (tz_info.DaylightBias - tz_info.StandardBias) * -600000000LL);
 
 	return 1;
 #endif
