@@ -227,7 +227,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			for (i = 0; i < klass->method.count; ++i) {
 				MonoMethod *m = klass->methods [i];
 				if (!strcmp (mname, m->name)) {
-					if (mono_metadata_signature_equal (image, sig, mimage, m->signature)) {
+					if (mono_metadata_signature_equal (sig, m->signature)) {
 						mono_metadata_free_method_signature (sig);
 						return m;
 					}

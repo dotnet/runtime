@@ -159,14 +159,15 @@ struct _MonoType {
 };
 
 struct _MonoMethodSignature {
-	char          hasthis;
-	char          explicit_this;
-	char          call_convention;
+	unsigned int  hasthis : 1;
+	unsigned int  explicit_this   : 1;
+	unsigned int  call_convention : 6;
+	unsigned int  ref_count : 24;
 	guint16       param_count;
 	guint16       sentinelpos;
 	MonoType     *ret;
-	MonoType    **params;
 	guint32       params_size;
+	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef struct {
@@ -177,9 +178,9 @@ typedef struct {
 	/* if num_locals != 0, then the following apply: */
 	unsigned int init_locals : 1;
 	guint16      num_locals;
-	MonoType   **locals;
 	guint32      locals_size;
 	MonoExceptionClause *clauses;
+	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;
 
 typedef enum {
@@ -220,6 +221,7 @@ MonoType      *mono_metadata_parse_field_type  (MonoMetadata      *m,
 void           mono_metadata_free_type         (MonoType        *type);
 int            mono_type_size                  (MonoType        *type, 
 						int             *alignment);
+gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
 
 MonoMethodSignature  *mono_metadata_parse_method_signature (MonoMetadata            *m,
                                                             int                    def,
@@ -227,9 +229,7 @@ MonoMethodSignature  *mono_metadata_parse_method_signature (MonoMetadata        
                                                             const char           **rptr);
 void                  mono_metadata_free_method_signature  (MonoMethodSignature   *method);
 
-gboolean          mono_metadata_signature_equal (MonoMetadata *m1, 
-						 MonoMethodSignature *sig1, 
-						 MonoMetadata *m2, 
+gboolean          mono_metadata_signature_equal (MonoMethodSignature *sig1, 
 						 MonoMethodSignature *sig2);
 
 MonoMethodHeader *mono_metadata_parse_mh (MonoMetadata *m, const char *ptr);

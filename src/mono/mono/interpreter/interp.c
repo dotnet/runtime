@@ -210,18 +210,16 @@ get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 	MonoMethod *m;
 	MonoObject *obj;
 	MonoClass *klass;
-	MonoImage *mimage;
 	int i;
 	
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_METHOD:
 	case MONO_TABLE_MEMBERREF:
 		m = mono_get_method (image, token, NULL);
-		mimage = m->klass->image;
 		obj = args [-(m->signature->param_count + 1)].data.p;
-		for (klass = obj->klass; klass; klass = klass->parent) {
+		for (klass = obj->klass; klass != m->klass; klass = klass->parent) {
 			for (i = 0; i < klass->method.count; ++i) {
-				if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (mimage, m->signature, klass->image, klass->methods [i]->signature))
+				if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature))
 					return klass->methods [i];
 			}
 		}
@@ -592,6 +590,7 @@ dump_stack (stackval *stack, stackval *sp)
 }
 
 #define DEBUG_INTERP 1
+#if DEBUG_INTERP
 
 static void
 output_indent (void)

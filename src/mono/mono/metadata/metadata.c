@@ -1126,16 +1126,23 @@ mono_metadata_parse_type (MonoMetadata *m, MonoParseTypeMode mode, short opt_att
 MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr, const char **rptr)
 {
-	MonoMethodSignature *method = g_new0(MonoMethodSignature, 1);
+	MonoMethodSignature *method;
 	int i, align, offset = 0;
+	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 
 	if (*ptr & 0x20)
-		method->hasthis = 1;
+		hasthis = 1;
 	if (*ptr & 0x40)
-		method->explicit_this = 1;
-	method->call_convention = *ptr & 0x0F;
+		explicit_this = 1;
+	call_convention = *ptr & 0x0F;
 	ptr++;
-	method->param_count = mono_metadata_decode_value (ptr, &ptr);
+	param_count = mono_metadata_decode_value (ptr, &ptr);
+
+	method = g_malloc0 (sizeof (MonoMethodSignature) + (param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	method->param_count = param_count;
+	method->hasthis = hasthis;
+	method->explicit_this = explicit_this;
+	method->call_convention = call_convention;
 	method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, 0, ptr, &ptr);
 
 	if (method->hasthis)
@@ -1143,7 +1150,6 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 	if (method->param_count) {
 		int size;
 		
-		method->params = g_new0 (MonoType*, method->param_count);
 		method->sentinelpos = -1;
 		
 		for (i = 0; i < method->param_count; ++i) {
@@ -1163,6 +1169,9 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 
 	if (rptr)
 		*rptr = ptr;
+	/*
+	 * Add signature to a cache and increase ref count...
+	 */
 	return method;
 }
 
@@ -1174,7 +1183,6 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
 	for (i = 0; i < method->param_count; ++i)
 		mono_metadata_free_type (method->params [i]);
 
-	g_free (method->params);
 	g_free (method);
 }
 
@@ -1393,22 +1401,23 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 	unsigned char flags = *(unsigned char *) ptr;
 	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 	guint16 fat_flags;
-	guint32 local_var_sig_tok;
+	guint32 local_var_sig_tok, max_stack, code_size, init_locals;
+	const unsigned char *code;
 	int hsize;
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
 
-	mh = g_new0 (MonoMethodHeader, 1);
 	switch (format){
 	case METHOD_HEADER_TINY_FORMAT:
+		mh = g_new0 (MonoMethodHeader, 1);
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
 		mh->code_size = flags >> 2;
 		mh->code = ptr;
-		break;
-		
+		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
+		mh = g_new0 (MonoMethodHeader, 1);
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -1419,25 +1428,24 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		//
 		mh->code_size = flags >> 2;
 		mh->code = ptr;
-		break;
-		
+		return mh;
 	case METHOD_HEADER_FAT_FORMAT:
 		fat_flags = read16 (ptr);
 		ptr += 2;
 		hsize = (fat_flags >> 12) & 0xf;
-		mh->max_stack = *(guint16 *) ptr;
+		max_stack = *(guint16 *) ptr;
 		ptr += 2;
-		mh->code_size = *(guint32 *) ptr;
+		code_size = *(guint32 *) ptr;
 		ptr += 4;
 		local_var_sig_tok = *(guint32 *) ptr;
 		ptr += 4;
 
 		if (fat_flags & METHOD_HEADER_INIT_LOCALS)
-			mh->init_locals = 1;
+			init_locals = 1;
 		else
-			mh->init_locals = 0;
+			init_locals = 0;
 
-		mh->code = ptr;
+		code = ptr;
 
 		if (!(fat_flags & METHOD_HEADER_MORE_SECTS))
 			break;
@@ -1445,13 +1453,11 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		/*
 		 * There are more sections
 		 */
-		ptr = mh->code + mh->code_size;
+		ptr = code + code_size;
 		
-		parse_section_data (mh, (const unsigned char*)ptr);
 		break;
 		
 	default:
-		g_free (mh);
 		return NULL;
 	}
 		       
@@ -1469,10 +1475,8 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 			g_warning ("wrong signature for locals blob");
 		ptr++;
 		len = mono_metadata_decode_value (ptr, &ptr);
+		mh = g_malloc0 (sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 		mh->num_locals = len;
-		if (!mh->num_locals)
-			return mh;
-		mh->locals = g_new (MonoType*, len);
 		for (i = 0; i < len; ++i) {
 			int val;
 			int align;
@@ -1483,7 +1487,14 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 			offset += val;
 		}
 		mh->locals_size = offset;
+	} else {
+		mh = g_new0 (MonoMethodHeader, 1);
 	}
+	mh->code = code;
+	mh->code_size = code_size;
+	mh->max_stack = max_stack;
+	mh->init_locals = init_locals;
+	parse_section_data (mh, (const unsigned char*)ptr);
 	return mh;
 }
 
@@ -1493,7 +1504,6 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
 	int i;
 	for (i = 0; i < mh->num_locals; ++i)
 		mono_metadata_free_type (mh->locals[i]);
-	g_free (mh->locals);
 	g_free (mh->clauses);
 	g_free (mh);
 }
@@ -1754,8 +1764,8 @@ mono_type_size (MonoType *t, gint *align)
 	return 0;
 }
 
-static gboolean
-mono_metadata_type_equal (MonoMetadata *m1, MonoType *t1, MonoMetadata *m2, MonoType *t2)
+gboolean
+mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
 	if (t1->type != t2->type ||
 	    t1->byref != t2->byref)
@@ -1793,8 +1803,7 @@ mono_metadata_type_equal (MonoMetadata *m1, MonoType *t1, MonoMetadata *m2, Mono
 }
 
 gboolean
-mono_metadata_signature_equal (MonoMetadata *m1, MonoMethodSignature *sig1, 
-			       MonoMetadata *m2, MonoMethodSignature *sig2)
+mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
 	int i;
 
@@ -1809,7 +1818,7 @@ mono_metadata_signature_equal (MonoMetadata *m1, MonoMethodSignature *sig1,
 		if (p1->attrs != p2->attrs)
 			return FALSE;
 		
-		if (!mono_metadata_type_equal (m1, p1, m2, p2))
+		if (!mono_metadata_type_equal (p1, p2))
 			return FALSE;
 	}
 
