@@ -170,7 +170,7 @@
 			<maintainer>lupus@ximian.com</maintainer>
 		</maintainers>
 	</class>
-	<class name="System.Collections.HashCodeProvider">
+	<class name="System.Collections.IHashCodeProvider">
 		<last-activity>Jul-15-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
