@@ -1522,7 +1522,6 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	token <<= RESOLTION_SCOPE_BITS;
 	token |= RESOLTION_SCOPE_ASSEMBLYREF;
 	g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
-	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), image);
 	return token;
 }
 
@@ -1597,7 +1596,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	if (klass->image == assembly->assembly.image) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 		token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
-		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
+		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass->reflection_info);
 		return token;
 	}
 
@@ -1620,7 +1619,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	token = TYPEDEFORREF_TYPEREF | (table->next_idx << TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
-	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass->reflection_info);
 	return token;
 }
 
@@ -5529,6 +5528,29 @@ typebuilder_setup_fields (MonoClass *klass)
 	mono_class_layout_fields (klass);
 }
 
+static void
+typebuilder_setup_properties (MonoClass *klass)
+{
+	MonoReflectionTypeBuilder *tb = klass->reflection_info;
+	MonoReflectionPropertyBuilder *pb;
+	int i;
+
+	klass->property.count = tb->properties ? mono_array_length (tb->properties) : 0;
+	klass->property.first = 0;
+	klass->property.last = klass->property.count;
+
+	klass->properties = g_new0 (MonoProperty, klass->property.count);
+	for (i = 0; i < klass->property.count; ++i) {
+		pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
+		klass->properties [i].attrs = pb->attrs;
+		klass->properties [i].name = mono_string_to_utf8 (pb->name);
+		if (pb->get_method)
+			klass->properties [i].get = pb->get_method->mhandle;
+		if (pb->set_method)
+			klass->properties [i].set = pb->set_method->mhandle;
+	}
+}
+
 MonoReflectionType*
 mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
@@ -5574,7 +5596,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	/* FIXME: handle packing_size and instance_size */
 	typebuilder_setup_fields (klass);
 
-	/* FIXME: properties */
+	typebuilder_setup_properties (klass);
 
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	/* with enums res == tb: need to fix that. */
