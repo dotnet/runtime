@@ -23,12 +23,13 @@ char *
 get_typedef (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEDEF_SIZE];
+	const char *ns;
 
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, MONO_TYPEDEF_SIZE);
 
+	ns = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
 	return g_strdup_printf (
-		"%s.%s",
-		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]),
+		"%s%s%s", ns, *ns?".":"",
 		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]));
 }
 
@@ -211,7 +212,7 @@ get_typeref (MonoImage *m, int idx)
 	switch (table){
 	case RESOLTION_SCOPE_MODULE: /* Module */
 		x = get_module (m, rs_idx);
-		ret = g_strdup_printf ("[%s] %s.%s", x, s, t);
+		ret = g_strdup_printf ("[%s] %s%s%s", x, s, *s?".":"", t);
 		g_free (x);
 		break;
 
@@ -224,12 +225,14 @@ get_typeref (MonoImage *m, int idx)
 		 * me like it is 2 (tokens are prefixed with 0x23)
 		 */
 		x = get_assemblyref (m, rs_idx);
-		ret = g_strdup_printf ("[%s]%s.%s", x, s, t);
+		ret = g_strdup_printf ("[%s]%s%s%s", x, s, *s?".":"", t);
 		g_free (x);
 		break;
 		
 	case RESOLTION_SCOPE_TYPEREF: /* TypeRef */
-		ret =  g_strdup_printf ("TODO:TypeRef-TypeRef: TYPEREF! (%s.%s)", s, t);
+		x = get_typeref (m, rs_idx);
+		ret =  g_strdup_printf ("%s/%s", x, t);
+		g_free (x);
 		break;
 		
 	default:
@@ -989,7 +992,7 @@ get_method (MonoImage *m, guint32 token)
 
 	mh = mono_get_method (m, token, NULL);
 	if (mh)
-		name = g_strdup_printf ("%s.%s::%s", mh->klass->name_space, 
+		name = g_strdup_printf ("%s%s%s::%s", mh->klass->name_space, *(mh->klass->name_space)?".":"",
 				mh->klass->name, mh->name); 
 	else
 		name = NULL;
