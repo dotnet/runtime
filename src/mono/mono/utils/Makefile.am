@@ -7,6 +7,7 @@ libmonoutils_la_SOURCES = \
 	mono-md5.c	\
 	mono-sha1.c	\
 	mono-logger.c	\
+	mono-codeman.c	\
 	monobitset.c	\
 	mono-math.c  \
 	strtod.h	\
@@ -19,6 +20,7 @@ libmonoutilsincludedir = $(includedir)/mono/utils
 
 libmonoutilsinclude_HEADERS = \
 	monobitset.h	\
+	mono-codeman.h	\
 	mono-digest.h	\
 	mono-logger.h	\
 	mono-hash.h		\
