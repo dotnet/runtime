@@ -948,7 +948,7 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		break;
 
 	default:
-		g_message (G_STRLOC ": %s.%s - %p - %d", klass->name_space, klass->name, klass, type->type);
+		/* g_message (G_STRLOC ": %s.%s - %p - %d", klass->name_space, klass->name, klass, type->type); */
 		*ptr++ = MONO_DEBUGGER_TYPE_KIND_UNKNOWN;
 		WRITE_UINT32 (ptr, klass->instance_size);
 		WRITE_UINT32 (ptr, write_class (table, klass));
