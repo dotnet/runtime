@@ -2379,30 +2379,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FADD:
-			//ppc_fadd (code, ins->dreg, ins->sreg1, ins->sreg2);
+		  sparc_fadds( code, ins->sreg1, ins->sreg2, ins->dreg); 
 			break;
 		case OP_FSUB:
-			//ppc_fsub (code, ins->dreg, ins->sreg1, ins->sreg2);
+		  sparc_fsubs( code, ins->sreg1, ins->sreg2, ins->dreg );
 			break;		
 		case OP_FMUL:
-			//ppc_fmul (code, ins->dreg, ins->sreg1, ins->sreg2);
+		  sparc_fmuls( code, ins->sreg1, ins->sreg2, ins->dreg );
 			break;		
 		case OP_FDIV:
-			//ppc_fdiv (code, ins->dreg, ins->sreg1, ins->sreg2);
+		  sparc_fdivs( code, ins->sreg1, ins->sreg2, ins->dreg );
 			break;		
 		case OP_FNEG:
-			//ppc_fneg (code, ins->dreg, ins->sreg1);
+		  sparc_fnegs( code, ins->sreg1, ins->sreg2, ins->dreg );
 			break;		
 		case OP_FREM:
 			g_assert_not_reached ();
 			break;
 		case OP_FCOMPARE:
-			g_assert_not_reached ();
+			sparc_fcmps( code, ins->sreg1, ins->sreg2 );
 			/* this overwrites EAX */
 			//EMIT_FPCOMPARE(code);
 			break;
 		case OP_FCEQ:
-			g_assert_not_reached ();
+			g_assert_not_reached();
 			/*if (ins->dreg != X86_EAX) 
 				x86_push_reg (code, X86_EAX);
 
