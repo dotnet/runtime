@@ -12,9 +12,12 @@
 .class private auto ansi someTest
        extends [mscorlib]System.Object {
 
-  .method public static void  go() cil managed {
+  .method public static int32 Main() cil managed {
     .entrypoint
+    .locals (int32 res)
 
+	ldc.i4 3
+	stloc res
 //TEST 1 - infinite
 
 .try {
@@ -30,6 +33,10 @@ catch [mscorlib]System.ArithmeticException {
 	pop
 	ldstr "PASS"
 	call void [mscorlib]System.Console::WriteLine(string)
+	ldloc res
+	ldc.i4 1
+	sub
+	stloc res
 	leave test2
 }
 catch [mscorlib]System.Exception {
@@ -54,6 +61,10 @@ test2: nop
 catch [mscorlib]System.ArithmeticException {
 	ldstr "PASS"
 	call void [mscorlib]System.Console::WriteLine(string)
+	ldloc res
+	ldc.i4 1
+	sub
+	stloc res
 	leave test3
 }
 catch [mscorlib]System.Exception {
@@ -72,6 +83,10 @@ test3: nop
 	bne.un FAIL
 	ldstr "PASS"
 	call void [mscorlib]System.Console::WriteLine(string)
+	ldloc res
+	ldc.i4 1
+	sub
+	stloc res
 	leave end
 				
 FAIL:	ldstr "FAIL"
@@ -84,7 +99,9 @@ catch [mscorlib]System.Exception {
 	leave end
 }
 
-end:	ret
+end:	
+	ldloc res
+	ret
   }
 
 
