@@ -39,18 +39,6 @@
 #include "codegen.h"
 #include "debug.h"
 
-/*
- * Pull the list of opcodes
- */
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	a = i,
-
-enum {
-#include "mono/cil/opcode.def"
-	LAST = 0xff
-};
-#undef OPDEF
-
 #define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.kind=k; vi.offset=o; vi.size=s; } while (0)
 
 #define MAKE_CJUMP(name)                                                      \
@@ -60,7 +48,8 @@ case CEE_##name##_S: {                                                        \
 	int near_jump = *ip == CEE_##name##_S;                                \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
+        t1 = mono_ctree_new (mp, MB_TERM_COMPARE, sp [0], sp [1]);            \
+	t1 = mono_ctree_new (mp, MB_TERM_CBRANCH, t1, NULL);                  \
 	if (near_jump)                                                        \
 		target = cli_addr + 2 + (signed char) *ip;                    \
 	else                                                                  \
@@ -70,7 +59,8 @@ case CEE_##name##_S: {                                                        \
 	tbb = &cfg->bblocks [bcinfo [target].block_id];                       \
 	create_outstack (cfg, bb, stack, sp - stack);                         \
 	mark_reached (cfg, tbb, bb->outstack, bb->outdepth);                  \
-	t1->data.p = tbb;                                                     \
+	t1->data.bi.target = tbb;                                             \
+	t1->data.bi.cond = CEE_##name;                                        \
 	ADD_TREE (t1, cli_addr);                                              \
 	ip += near_jump ? 1: 4;		                                      \
 	break;                                                                \
@@ -89,7 +79,9 @@ case CEE_##name: {                                                            \
 case CEE_##cname: {                                                           \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = mono_ctree_new (mp, MB_TERM_##cname, sp [0], sp [1]);            \
+	t1 = mono_ctree_new (mp, MB_TERM_COMPARE, sp [0], sp [1]);            \
+	t1 = mono_ctree_new (mp, MB_TERM_CSET, t1, NULL);                     \
+        t1->data.i = CEE_##cname;                                             \
 	PUSH_TREE (t1, VAL_I32);                                              \
 	break;                                                                \
 }

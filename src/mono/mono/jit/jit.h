@@ -26,6 +26,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/opcodes.h>
 
 #include "regset.h"
 
@@ -141,6 +142,11 @@ typedef struct {
 	MonoClass *klass;
 	MonoClassField *field;
 } MonoJitFieldInfo;
+
+typedef struct {
+	MonoBBlock *target;
+	guint32 cond;
+} MonoJitBranchInfo;
 
 typedef struct {
 	gulong methods_compiled;
