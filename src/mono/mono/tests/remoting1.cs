@@ -110,10 +110,10 @@ class Test {
 			return 1;
 		
 		if (!RemotingServices.IsTransparentProxy (o))
-			return 1;
+			return 2;
 
 		if (o.GetType () != myobj.GetType ())
-			return 1;
+			return 3;
 
 		MyStruct myres = o.Add (2, out res, 3);
 
@@ -121,16 +121,16 @@ class Test {
 				   myres.b + " " + myres.c +  " " + res);
 
 		if (myres.a != 2)
-			return 1;
+			return 4;
 		
 		if (myres.b != 3)
-			return 1;
+			return 5;
 		
 		if (myres.c != 5)
-			return 1;
+			return 6;
 
 		if (res != 5)
-			return 1;
+			return 7;
 
 		R1 o2 = new R1 ();
 		
@@ -140,7 +140,7 @@ class Test {
 
 		Console.WriteLine ("Result: " + lres);
 		if (lres != 5)
-			return 1;
+			return 8;
 		
 		lres = test_call (o);
 
@@ -148,7 +148,7 @@ class Test {
 		
 		Console.WriteLine ("test_field: " + o.test_field);
 		if (o.test_field != 2)
-			return 1;
+			return 9;
 
 		RemoteDelegate1 d1 = new RemoteDelegate1 (o.Add);
 		MyStruct myres2 = d1 (2, out res, 3);
@@ -157,16 +157,16 @@ class Test {
 				   myres2.b + " " + myres2.c +  " " + res);
 
 		if (myres2.a != 2)
-			return 1;
+			return 10;
 		
 		if (myres2.b != 3)
-			return 1;
+			return 11;
 		
 		if (myres2.c != 5)
-			return 1;
+			return 12;
 
 		if (res != 5)
-			return 1;
+			return 13;
 
 		RemoteDelegate2 d2 = new RemoteDelegate2 (o.nonvirtual_Add);
 		d2 (6, 7);

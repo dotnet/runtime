@@ -13,6 +13,7 @@ TESTSRC=			\
 	char-isnumber.cs	\
 	create-instance.cs	\
 	field-layout.cs		\
+	pack-layout.cs		\
 	hash-table.cs		\
 	test-ops.cs		\
 	obj.cs			\
