@@ -24,13 +24,17 @@
 #undef MONO_EMIT_BOUNDS_CHECK_IMM
 
 #define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
-		MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_reg); \
-		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+		if (! (state->tree->flags & MONO_INST_NORANGECHECK)) { \
+			MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_reg); \
+			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+		} \
 	} while (0)
 
 #define MONO_EMIT_BOUNDS_CHECK_IMM(cfg, array_reg, array_type, array_length_field, index_imm) do { \
-		MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_imm); \
-		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+		if (! (state->tree->flags & MONO_INST_NORANGECHECK)) { \
+			MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM (cfg, array_reg, G_STRUCT_OFFSET (array_type, array_length_field), index_imm); \
+			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+		} \
 	} while (0)
 
 
