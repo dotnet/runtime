@@ -243,6 +243,11 @@ stmt: OP_SETRET (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_SETRET (i8con) {
+	MONO_EMIT_NEW_ICONST (s, X86_EAX, state->left->tree->inst_ls_word);
+	MONO_EMIT_NEW_ICONST (s, X86_EDX, state->left->tree->inst_ms_word);
+}
+
 stmt: OP_OUTARG (reg) {
 	tree->opcode = OP_X86_PUSH;
 	tree->sreg1 = state->left->reg1;
@@ -282,6 +287,18 @@ stmt: OP_OUTARG (CEE_LDIND_I8 (base)) {
 stmt: OP_OUTARG (OP_ICONST) {
 	tree->opcode = OP_X86_PUSH_IMM;
 	tree->inst_imm = state->left->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (i8con) {
+	MonoInst *ins;
+	ins = mono_mempool_alloc0 (s->mempool, sizeof (MonoInst));
+	ins->opcode = OP_X86_PUSH_IMM;
+	ins->inst_imm = state->left->tree->inst_ms_word;
+	mono_bblock_add_inst (s->cbb, ins);
+
+	tree->opcode = OP_X86_PUSH_IMM;
+	tree->inst_imm = state->left->tree->inst_ls_word;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
