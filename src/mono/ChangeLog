@@ -1,3 +1,7 @@
+2004-05-27  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Pass CC to libgc configure.
+
 2004-05-27  Gert Driesen (drieseng@users.sourceforge.net)
 
 	* monowiz.win32.nsi: normalized line-endings to unix (LF)

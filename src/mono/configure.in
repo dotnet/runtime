@@ -317,7 +317,7 @@ esac
 
 
 # tell libgc/configure about what we want
-ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads"
+ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads CC=$CC"
 
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)
