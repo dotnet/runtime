@@ -736,6 +736,8 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 		g_free (name);
 	} else { /* a constructor */
 		values [MONO_METHOD_NAME] = string_heap_insert (&assembly->sheap, mb->attrs & METHOD_ATTRIBUTE_STATIC? ".cctor": ".ctor");
+		// MS.NET adds this automatically
+		mb->attrs |= METHOD_ATTRIBUTE_RT_SPECIAL_NAME;
 	}
 	values [MONO_METHOD_FLAGS] = mb->attrs;
 	values [MONO_METHOD_IMPLFLAGS] = mb->iattrs;
@@ -4924,7 +4926,7 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 	rmb.ilgen = mb->ilgen;
 	rmb.parameters = mb->parameters;
 	rmb.pinfo = mb->pinfo;
-	rmb.attrs = mb->attrs;
+	rmb.attrs = mb->attrs | METHOD_ATTRIBUTE_RT_SPECIAL_NAME;
 	rmb.iattrs = mb->iattrs;
 	rmb.call_conv = mb->call_conv;
 	rmb.type = mb->type;
@@ -5079,7 +5081,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	/*
 	 * Fields to set in klass:
 	 * the various flags: delegate/unicode/contextbound etc.
-	 * nested_in
 	 * nested_classes
 	 * properties
 	 * events
@@ -5102,6 +5103,12 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		klass->instance_size = sizeof (MonoObject);
 		klass->min_align = 1;
 	}
+
+	if (tb->nesting_type) {
+		g_assert (tb->nesting_type->type);
+		klass->nested_in = mono_class_from_mono_type (tb->nesting_type->type);
+	}
+
 	/* FIXME: handle packing_size and instance_size */
 	typebuilder_setup_fields (klass);
 
