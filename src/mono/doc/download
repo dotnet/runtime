@@ -19,9 +19,13 @@
 	we make the first tarball release.
 
 	<ul>
-		* <a href="archive/jay.cs.tar.gz">archive/jay.cs.tar.gz</a>
-		* <a href="archive/mcs-08-Jul-2001.tar.gz">mcs-08-Jul-2001.tar.gz</a>
-		* <a href="archive/mono-08-Jul-2001.tar.gz">mono-08-Jul-2001.tar.gz</a>
+		<b>June 8th, 2001</b>
+
+		<ul>
+		* <a href="archive/jay.cs.tar.gz">archive/jay.cs.tar.gz</a>: Sources.
+		* <a href="archive/mcs-08-Jul-2001.tar.gz">mcs-08-Jul-2001.tar.gz</a>: CVS Snapshot
+		* <a href="archive/mono-08-Jul-2001.tar.gz">mono-08-Jul-2001.tar.gz</a>: CVS Snapshot
+		</ul>
 	</ul>
 
 ** CVS
