@@ -64,6 +64,12 @@ class Tests {
 		return (int)f;
 	}
 
+	static int test_5_conv_r8 () {
+		int i = 5;
+		double f = (double)i;
+		return (int)f;
+	}
+
 	static int test_5_add () {
 		double a = 2.0;
 		double b = 3.0;		

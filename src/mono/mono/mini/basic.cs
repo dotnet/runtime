@@ -178,6 +178,11 @@ class Tests {
 		return b % 8;
 	}
 
+	static int test_4_rem_big_imm () {
+		int b = 10004;
+		return b % 10000;
+	}
+
 	static int test_9_mul () {
 		int b = 3;
 		int a = 3;

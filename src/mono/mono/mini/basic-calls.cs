@@ -138,6 +138,20 @@ class Tests {
 		return pass_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
 	}
 
+	static int pass_byref_ints_longs (ref int a, ref long b, ref long c, ref long d, ref long e, ref int f, ref long g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int pass_takeaddr_ints_longs (int a, long b, long c, long d, long e, int f, long g) {
+		return pass_byref_ints_longs (ref a, ref b, ref c, ref d, ref e, ref f, ref g);
+	}
+
+	// Test that arguments are moved to the stack from incoming registers
+	// when the argument must reside in the stack because its address is taken
+	static int test_1_sparc_takeaddr_argument_passing () {
+		return pass_takeaddr_ints_longs (1, 2, System.Int64.MaxValue, System.Int64.MinValue, System.Int64.MaxValue, 0, System.Int64.MinValue);
+	}
+
 	static bool isnan (float f) {
 		return (f != f);
 	}

@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 /*
  * Regression tests for the mono JIT.
@@ -30,11 +31,26 @@ struct Simple {
 	public long d;
 }
 
+struct Small {
+	public byte b1;
+	public byte b2;
+}
+
 class Sample {
 	public int a;
 	public Sample (int v) {
 		a = v;
 	}
+}
+
+[StructLayout ( LayoutKind.Explicit )]
+struct StructWithBigOffsets {
+		[ FieldOffset(10000) ] public byte b;
+		[ FieldOffset(11000) ] public short s;
+		[ FieldOffset(12000) ] public uint i;
+		[ FieldOffset(13000) ] public long l;
+		[ FieldOffset(14000) ] public float f;
+		[ FieldOffset(15000) ] public double d;
 }
 
 enum SampleEnum {
@@ -169,6 +185,43 @@ class Tests {
 		return 5;
 	}
 
+	// Test alignment of small structs
+
+	static Small get_small (byte v) {
+		Small r = new Small ();
+	
+		r.b1 = v;
+		r.b2 = (byte)(v + 1);
+
+		return r;
+	}
+
+	static Small return_small (Small s) {
+		return s;
+	}
+
+	static int receive_small (int a, Small v, int b) {
+		if (v.b1 != 1)
+			return 1;
+		if (v.b2 != 2)
+			return 2;
+		return 0;
+	}
+
+	static int test_5_pass_small_struct () {
+		Small v = get_small (1);
+		if (receive_small (7, v, 9) != 0)
+			return 0;
+		if (receive_small (7, get_small (1), 9) != 0)
+			return 1;
+		v = return_small (v);
+		if (v.b1 != 1)
+			return 2;
+		if (v.b2 != 2)
+			return 3;
+		return 5;
+	}
+
 	struct AStruct {
 		public int i;
 
@@ -186,6 +239,31 @@ class Tests {
 		AStruct s = new AStruct (44);
 		object o = s;
 		return o.GetHashCode ();
+	}
+
+	// Test fields with big offsets
+	static int test_1_fields_with_big_offsets () {
+		StructWithBigOffsets s = new StructWithBigOffsets ();
+		StructWithBigOffsets s2 = new StructWithBigOffsets ();
+
+		s.b = 0xde;
+		s.s = 0x12de;
+		s.i = 0xdeadbeef;
+		s.l = 0xcafebabe;
+		s.f = 3.14F;
+		s.d = 3.14;
+
+		s2.b = s.b;
+		s2.s = s.s;
+		s2.i = s.i;
+		s2.l = s.l;
+		s2.f = s.f;
+		s2.d = s.d;
+
+		if ((s2.b != 0xde) || (s2.s != 0x12de) || (s2.i != 0xdeadbeef) || (s2.l != 0xcafebabe) || (s2.f != 3.14F) || (s2.d != 3.14))
+			return 0;
+		else
+			return 1;
 	}
 
 	class TestRegA {
