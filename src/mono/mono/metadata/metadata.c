@@ -1304,7 +1304,7 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 	guint32 sig;
 	const char *ptr;
 
-	if (image->assembly->dynamic)
+	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, token);
 
 	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);

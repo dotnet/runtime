@@ -2232,7 +2232,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 {
 	MonoClass *class;
 
-	if (image->assembly->dynamic)
+	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, type_token);
 
 	switch (type_token & 0xff000000){
@@ -2530,7 +2530,7 @@ mono_array_element_size (MonoClass *ac)
 gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 {
-	if (image->assembly->dynamic) {
+	if (image->dynamic) {
 		gpointer obj = mono_lookup_dynamic_token (image, token);
 
 		switch (token & 0xff000000) {

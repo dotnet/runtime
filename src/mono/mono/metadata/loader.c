@@ -141,7 +141,7 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 	const char *ptr;
 	guint32 idx = mono_metadata_token_index (token);
 
-	if (image->assembly->dynamic) {
+	if (image->dynamic) {
 		MonoClassField *result = mono_lookup_dynamic_token (image, token);
 		*retklass = result->parent;
 		return result;
@@ -201,7 +201,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 	guint32 type;
 	MonoClassField *field;
 
-	if (image->assembly->dynamic) {
+	if (image->dynamic) {
 		MonoClassField *result = mono_lookup_dynamic_token (image, token);
 		*retklass = result->parent;
 		return result;
@@ -342,7 +342,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 	if (method->klass->generic_inst)
 		return method->signature;
 
-	if (image->assembly->dynamic)
+	if (image->dynamic)
 		/* FIXME: This might be incorrect for vararg methods */
 		return method->signature;
 
@@ -692,7 +692,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 	int size, i;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
-	if (image->assembly->dynamic)
+	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, token);
 
 	if (table != MONO_TABLE_METHOD) {
@@ -846,7 +846,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (klass->wastypebuilder || klass->generic_inst) /* copy the names later */
 		return;
 
-	if (klass->image->assembly->dynamic) {
+	if (klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
 			mono_g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
@@ -891,7 +891,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	for (i = 0; i < method->signature->param_count + 1; ++i)
 		mspecs [i] = NULL;
 
-	if (method->klass->image->assembly->dynamic) {
+	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
 			mono_g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
@@ -946,7 +946,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
-	if (method->klass->image->assembly->dynamic) {
+	if (method->klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
 			mono_g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);

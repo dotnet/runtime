@@ -4491,6 +4491,7 @@ static gconstpointer icall_map [] = {
 	 * AssemblyBuilder
 	 */
 	"System.Reflection.Emit.AssemblyBuilder::basic_init", mono_image_basic_init,
+	"System.Reflection.Emit.AssemblyBuilder::InternalAddModule", mono_image_load_module,
 
 	/*
 	 * Reflection stuff.

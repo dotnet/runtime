@@ -342,6 +342,7 @@ typedef struct {
 	guint32 pekind;
 	MonoBoolean delay_sign;
 	guint32 access;
+	MonoArray *loaded_modules;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
@@ -567,6 +568,7 @@ MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
 
 void          mono_image_create_pefile (MonoReflectionModuleBuilder *module);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
+MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj);
 void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);

@@ -83,7 +83,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 	exc = NULL;
 	found = FALSE;
 	klass = vtable->klass;
-	
+
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
@@ -2122,7 +2122,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (image->assembly->dynamic)
+	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx);
 	else
 		sig = str = mono_metadata_user_string (image, idx);

@@ -197,7 +197,7 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	return TRUE;
 }
 
-static void
+void
 mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 {
 	MonoTableInfo *t;

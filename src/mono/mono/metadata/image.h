@@ -143,6 +143,9 @@ struct _MonoImage {
 	 * metadata engine
 	 */
 	void *user_info;
+
+	/* Whenever this is a dynamically emitted module */
+	gboolean dynamic;
 };
 
 typedef enum {
