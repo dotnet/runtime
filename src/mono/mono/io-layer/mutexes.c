@@ -23,9 +23,8 @@
 #undef DEBUG
 
 /* This is used to serialise mutex creation when names are given
- * (FIXME: make it process-shared)
  */
-static mono_mutex_t named_mutex_mutex = MONO_MUTEX_INITIALIZER;
+static mono_mutex_t named_mutex_mutex;
 
 static void mutex_close_shared (gpointer handle);
 static void mutex_signal(gpointer handle);
@@ -44,6 +43,23 @@ static mono_once_t mutex_ops_once=MONO_ONCE_INIT;
 
 static void mutex_ops_init (void)
 {
+	int thr_ret;
+#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
+	pthread_mutexattr_t mutex_shared_attr;
+
+	thr_ret = mono_mutexattr_init (&mutex_shared_attr);
+	g_assert (thr_ret == 0);
+
+	thr_ret = mono_mutexattr_setpshared (&mutex_shared_attr,
+					     PTHREAD_PROCESS_SHARED);
+	g_assert (thr_ret == 0);
+
+	thr_ret = mono_mutex_init (&named_mutex_mutex, &mutex_shared_attr);
+	g_assert (thr_ret == 0);
+#else
+	thr_ret = mono_mutex_init (&named_mutex_mutex, NULL);
+#endif
+
 	_wapi_handle_register_capabilities (WAPI_HANDLE_MUTEX,
 					    WAPI_HANDLE_CAP_WAIT |
 					    WAPI_HANDLE_CAP_SIGNAL |
