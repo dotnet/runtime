@@ -431,12 +431,13 @@ static volatile gboolean finished=FALSE;
 
 static void finalize_notify (void)
 {
+	gboolean pending = GC_should_invoke_finalizers ();
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": prodding finalizer");
 #endif
 
 	SetEvent (finalizer_event);
-	if (finished) {
+	if (finished && pending) {
 		/* Finishing the finalizer thread, so wait a little bit... */
 		/* MS seems to wait for about 2 seconds */
 		ResetEvent (pending_done_event);
