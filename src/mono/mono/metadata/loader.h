@@ -3,6 +3,7 @@
 
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
+#include <mono/io-layer/io-layer.h>
 
 typedef enum {
 	MONO_WRAPPER_NONE,
