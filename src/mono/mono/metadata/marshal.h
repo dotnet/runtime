@@ -150,6 +150,9 @@ mono_marshal_alloc (gpointer size);
 void 
 mono_marshal_free (gpointer ptr);
 
+void
+mono_marshal_free_array (gpointer *ptr, int size);
+
 void * 
 mono_marshal_realloc (gpointer ptr, gpointer size);
 

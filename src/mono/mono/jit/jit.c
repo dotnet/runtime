@@ -3189,6 +3189,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				case MONO_MARSHAL_CONV_DEL_FTN:
 					t1->data.p = mono_delegate_to_ftnptr;
 					break;
+				case MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY:
+					t1->data.p = mono_marshal_string_array;
+					break;
 				default:
 					g_assert_not_reached ();
 				}
@@ -3207,6 +3210,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				switch (conv) {
 				case MONO_MARSHAL_CONV_LPSTR_SB:
 					t1->data.p = mono_string_utf8_to_builder;
+					break;
+				case MONO_MARSHAL_FREE_ARRAY:
+					t1->data.p = mono_marshal_free_array;
 					break;
 				default:
 					g_assert_not_reached ();

@@ -2039,15 +2039,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			if (t->byref)
 				continue;
 
+			klass = mono_class_from_mono_type (t);
+
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_ARRAY_LPARRAY);
+			if (klass->element_class == mono_defaults.string_class) 
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY);
+			else
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_ARRAY_LPARRAY);
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
 		}
@@ -2142,7 +2145,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* return the result */
 
-	/* we need to convert byref arguments back */
+	/* we need to convert byref arguments back and free string arrays */
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		
@@ -2190,6 +2193,23 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			emit_struct_conv (mb, klass, TRUE);
 			
 			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+			break;
+		case MONO_TYPE_SZARRAY:
+			if (t->byref)
+				continue;
+ 
+			klass = mono_class_from_mono_type (t);
+			
+			if (klass->element_class == mono_defaults.string_class) {
+				g_assert (tmp_locals [i]);
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, CEE_LDLEN);				
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_PROC2);
+				mono_mb_emit_byte (mb, MONO_MARSHAL_FREE_ARRAY);
+			}
+
 			break;
 		}
 	}
@@ -2409,12 +2429,21 @@ mono_marshal_free (gpointer ptr) {
 	g_free (ptr);
 }
 
-void*
+void
+mono_marshal_free_array (gpointer *ptr, int size) {
+	int i;
+
+	for (i = 0; i < size; i++)
+		if (ptr [i])
+			g_free (ptr [i]);
+}
+
+void *
 mono_marshal_realloc (gpointer ptr, gpointer size) {
 	return g_try_realloc (ptr, (gulong)size);
 }
 
-void*
+void *
 mono_marshal_string_array (MonoArray *array)
 {
 	char **result;
@@ -2425,11 +2454,14 @@ mono_marshal_string_array (MonoArray *array)
 
 	len = mono_array_length (array);
 
-	result = g_malloc (sizeof (char*) * len);
+	result = g_malloc (sizeof (char *) * (len + 1));
 	for (i = 0; i < len; ++i) {
-		MonoString *s = (MonoString*)mono_array_get (array, gpointer, i);
+		MonoString *s = (MonoString *)mono_array_get (array, gpointer, i);
 		result [i] = s ? mono_string_to_utf8 (s): NULL;
 	}
+	/* null terminate the array */
+	result [i] = NULL;
+
 	return result;
 }
 
