@@ -27,7 +27,7 @@
 	Stay up to date on the Mono team's development using the 
 	<a href="http://lists.ximian.com/mailman/listinfo/mono-cvs-list">
 	mono-cvs-list</a> mailing list.  The CVS source code can also
-	be browsed <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/mcs/mcs/cfold.cs?cvsroot=Mono">here</a>
+	be browsed <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?cvsroot=Mono#dirlist">here</a>
 
 <a name=apr-24">
 	<b>Mono 0.11</b>
