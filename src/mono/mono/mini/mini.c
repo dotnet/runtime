@@ -3386,13 +3386,32 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (strcmp (cmethod->name, "Set") == 0) { /* array Set */ 
 					if (sp [fsig->param_count]->type == STACK_OBJ) {
 						MonoInst *iargs [2];
+						MonoInst *array, *to_store, *store;
 
 						handle_loaded_temps (cfg, bblock, stack_start, sp);
 						
-						iargs [0] = sp [0];
-						iargs [1] = sp [fsig->param_count];
-			
-						mono_emit_jit_icall (cfg, bblock, helper_stelem_ref_check, iargs, ip);						
+						array = mono_compile_create_var (cfg, type_from_stack_type (sp [0]), OP_LOCAL);
+						NEW_TEMPSTORE (cfg, store, array->inst_c0, sp [0]);
+						store->cil_code = ip;
+						MONO_ADD_INS (bblock, store);
+						NEW_TEMPLOAD (cfg, iargs [0], array->inst_c0);
+
+						to_store = mono_compile_create_var (cfg, type_from_stack_type (sp [fsig->param_count]), OP_LOCAL);
+						NEW_TEMPSTORE (cfg, store, to_store->inst_c0, sp [fsig->param_count]);
+						store->cil_code = ip;
+						MONO_ADD_INS (bblock, store);
+						NEW_TEMPLOAD (cfg, iargs [1], to_store->inst_c0);
+
+						/*
+						 * We first save the args for the call so that the args are copied to the stack
+						 * and a new instruction tree for them is created. If we don't do this,
+						 * the same MonoInst is added to two different trees and this is not 
+						 * allowed by burg.
+						 */
+						mono_emit_jit_icall (cfg, bblock, helper_stelem_ref_check, iargs, ip);
+
+						NEW_TEMPLOAD (cfg, sp [0], array->inst_c0);
+						NEW_TEMPLOAD (cfg, sp [fsig->param_count], to_store->inst_c0);
 					}
 
 					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, TRUE);
