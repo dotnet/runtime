@@ -126,6 +126,28 @@ is_valid_blob (MonoImage *image, guint32 index, int notnull)
 	return 1;
 }
 
+static const char*
+is_valid_string (MonoImage *image, guint32 index, int notnull)
+{
+	const char *p, *send, *res;
+	
+	if (index >= image->heap_strings.size)
+		return NULL;
+	res = p = mono_metadata_string_heap (image, index);
+	send = mono_metadata_string_heap (image, image->heap_strings.size - 1);
+	if (notnull && !*p)
+		return 0;
+	/* 
+	 * FIXME: should check it's a valid utf8 string, too.
+	 */
+	while (p <= send) {
+		if (!*p)
+			return res;
+		++p;
+	}
+	return *p? NULL: res;
+}
+
 static int
 is_valid_cls_ident (const char *p)
 {
@@ -143,6 +165,14 @@ is_valid_cls_ident (const char *p)
 		++p;
 	}
 	return 1;
+}
+
+static int
+is_valid_filename (const char *p)
+{
+	if (!*p)
+		return 0;
+	return strpbrk (p, "\\//:")? 0: 1;
 }
 
 static GSList*
@@ -172,19 +202,16 @@ verify_assembly_table (MonoImage *image, GSList *list, int level)
 		if (!is_valid_blob (image, cols [MONO_ASSEMBLY_PUBLIC_KEY], FALSE))
 			ADD_ERROR (list, g_strdup ("Assembly public key is an invalid index"));
 		
-		if (cols [MONO_ASSEMBLY_NAME] >= image->heap_strings.size) {
-			ADD_ERROR (list, g_strdup ("Assembly name is an invalid index"));
+		if (!(p = is_valid_string (image, cols [MONO_ASSEMBLY_NAME], TRUE))) {
+			ADD_ERROR (list, g_strdup ("Assembly name is invalid"));
 		} else {
-			p = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
-			if (!*p || strpbrk (p, ":\\/."))
+			if (strpbrk (p, ":\\/."))
 				ADD_ERROR (list, g_strdup_printf ("Assembly name `%s' contains invalid chars", p));
 		}
 
-		if (cols [MONO_ASSEMBLY_CULTURE] >= image->heap_strings.size) {
+		if (!(p = is_valid_string (image, cols [MONO_ASSEMBLY_CULTURE], FALSE))) {
 			ADD_ERROR (list, g_strdup ("Assembly culture is an invalid index"));
 		} else {
-			p = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
-			
 			if (!is_valid_culture (p))
 				ADD_ERROR (list, g_strdup_printf ("Assembly culture `%s' is invalid", p));
 		}
@@ -209,11 +236,9 @@ verify_assemblyref_table (MonoImage *image, GSList *list, int level)
 			if (!is_valid_blob (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], FALSE))
 				ADD_ERROR (list, g_strdup_printf ("AssemblyRef public key in row %d is an invalid index", i + 1));
 		
-			if (cols [MONO_ASSEMBLYREF_CULTURE] >= image->heap_strings.size) {
-				ADD_ERROR (list, g_strdup_printf ("AssemblyRef culture in row %d is an invalid index", i + 1));
+			if (!(p = is_valid_string (image, cols [MONO_ASSEMBLYREF_CULTURE], FALSE))) {
+				ADD_ERROR (list, g_strdup_printf ("AssemblyRef culture in row %d is invalid", i + 1));
 			} else {
-				p = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
-			
 				if (!is_valid_culture (p))
 					ADD_ERROR (list, g_strdup_printf ("AssemblyRef culture `%s' in row %d is invalid", p, i + 1));
 			}
@@ -236,7 +261,6 @@ verify_class_layout_table (MonoImage *image, GSList *list, int level)
 	MonoTableInfo *t = &image->tables [MONO_TABLE_CLASSLAYOUT];
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_CLASS_LAYOUT_SIZE];
-	const char *p;
 	guint32 value, i;
 	
 	if (level & MONO_VERIFY_ERROR) {
@@ -289,7 +313,6 @@ verify_constant_table (MonoImage *image, GSList *list, int level)
 {
 	MonoTableInfo *t = &image->tables [MONO_TABLE_CONSTANT];
 	guint32 cols [MONO_CONSTANT_SIZE];
-	const char *p;
 	guint32 value, i;
 	GHashTable *dups = g_hash_table_new (g_direct_hash, g_direct_equal);
 	
@@ -360,8 +383,7 @@ verify_event_map_table (MonoImage *image, GSList *list, int level)
 {
 	MonoTableInfo *t = &image->tables [MONO_TABLE_EVENTMAP];
 	guint32 cols [MONO_EVENT_MAP_SIZE];
-	const char *p;
-	guint32 value, i, last_event;
+	guint32 i, last_event;
 	GHashTable *dups = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	last_event = 0;
@@ -395,7 +417,7 @@ verify_event_table (MonoImage *image, GSList *list, int level)
 	MonoTableInfo *t = &image->tables [MONO_TABLE_EVENT];
 	guint32 cols [MONO_EVENT_SIZE];
 	const char *p;
-	guint32 value, i, last_event;
+	guint32 value, i;
 	
 	for (i = 0; i < t->rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_EVENT_SIZE);
@@ -404,12 +426,11 @@ verify_event_table (MonoImage *image, GSList *list, int level)
 			if (level & MONO_VERIFY_ERROR)
 				ADD_ERROR (list, g_strdup_printf ("Flags 0x%04x invalid in Event row %d", cols [MONO_EVENT_FLAGS], i + 1));
 		}
-		if (cols [MONO_EVENT_NAME] > image->heap_strings.size || !cols [MONO_EVENT_NAME]) {
+		if (!(p = is_valid_string (image, cols [MONO_EVENT_NAME], TRUE))) {
 			if (level & MONO_VERIFY_ERROR)
 				ADD_ERROR (list, g_strdup_printf ("Invalid name in Event row %d", i + 1));
 		} else {
 			if (level & MONO_VERIFY_CLS) {
-				p = mono_metadata_string_heap (image, cols [MONO_EVENT_NAME]);
 				if (!is_valid_cls_ident (p))
 					ADD_WARN (list, MONO_VERIFY_CLS, g_strdup_printf ("Invalid CLS name '%s` in Event row %d", p, i + 1));
 			}
@@ -445,6 +466,178 @@ verify_event_table (MonoImage *image, GSList *list, int level)
 	return list;
 }
 
+static GSList*
+verify_field_table (MonoImage *image, GSList *list, int level)
+{
+	MonoTableInfo *t = &image->tables [MONO_TABLE_FIELD];
+	guint32 cols [MONO_FIELD_SIZE];
+	const char *p;
+	guint32 i, flags;
+	
+	for (i = 0; i < t->rows; ++i) {
+		mono_metadata_decode_row (t, i, cols, MONO_FIELD_SIZE);
+		/*
+		 * Check this field has only one owner and that the owner is not 
+		 * an interface (done in verify_typedef_table() )
+		 */
+		flags = cols [MONO_FIELD_FLAGS];
+		switch (flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) {
+		case FIELD_ATTRIBUTE_COMPILER_CONTROLLED:
+		case FIELD_ATTRIBUTE_PRIVATE:
+		case FIELD_ATTRIBUTE_FAM_AND_ASSEM:
+		case FIELD_ATTRIBUTE_ASSEMBLY:
+		case FIELD_ATTRIBUTE_FAMILY:
+		case FIELD_ATTRIBUTE_FAM_OR_ASSEM:
+		case FIELD_ATTRIBUTE_PUBLIC:
+			break;
+		default:
+			if (level & MONO_VERIFY_ERROR)
+				ADD_ERROR (list, g_strdup_printf ("Invalid access mask in Field row %d", i + 1));
+			break;
+		}
+		if (level & MONO_VERIFY_ERROR) {
+			if ((flags & FIELD_ATTRIBUTE_LITERAL) && (flags & FIELD_ATTRIBUTE_INIT_ONLY))
+				ADD_ERROR (list, g_strdup_printf ("Literal and InitOnly cannot be both set in Field row %d", i + 1));
+			if ((flags & FIELD_ATTRIBUTE_LITERAL) && !(flags & FIELD_ATTRIBUTE_STATIC))
+				ADD_ERROR (list, g_strdup_printf ("Literal needs also Static set in Field row %d", i + 1));
+			if ((flags & FIELD_ATTRIBUTE_RT_SPECIAL_NAME) && !(flags & FIELD_ATTRIBUTE_SPECIAL_NAME))
+				ADD_ERROR (list, g_strdup_printf ("RTSpecialName needs also SpecialName set in Field row %d", i + 1));
+			/*
+			 * FIXME: check there is only ono owner in the respective table.
+			 * if (flags & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
+			 * if (flags & FIELD_ATTRIBUTE_HAS_DEFAULT)
+			 * if (flags & FIELD_ATTRIBUTE_HAS_FIELD_RVA)
+			 */
+		}
+		if (!(p = is_valid_string (image, cols [MONO_FIELD_NAME], TRUE))) {
+			if (level & MONO_VERIFY_ERROR)
+				ADD_ERROR (list, g_strdup_printf ("Invalid name in Field row %d", i + 1));
+		} else {
+			if (level & MONO_VERIFY_CLS) {
+				if (!is_valid_cls_ident (p))
+					ADD_WARN (list, MONO_VERIFY_CLS, g_strdup_printf ("Invalid CLS name '%s` in Field row %d", p, i + 1));
+			}
+		}
+		/*
+		 * check signature.
+		 * if owner is module needs to be static, access mask needs to be compilercontrolled,
+		 * public or private (not allowed in cls mode).
+		 * if owner is an enum ...
+		 */
+		
+		
+	}
+	return list;
+}
+
+static GSList*
+verify_file_table (MonoImage *image, GSList *list, int level)
+{
+	MonoTableInfo *t = &image->tables [MONO_TABLE_FILE];
+	guint32 cols [MONO_FILE_SIZE];
+	const char *p;
+	guint32 i;
+	GHashTable *dups = g_hash_table_new (g_str_hash, g_str_equal);
+	
+	for (i = 0; i < t->rows; ++i) {
+		mono_metadata_decode_row (t, i, cols, MONO_FILE_SIZE);
+		if (level & MONO_VERIFY_ERROR) {
+			if (cols [MONO_FILE_FLAGS] != FILE_CONTAINS_METADATA && cols [MONO_FILE_FLAGS] != FILE_CONTAINS_NO_METADATA)
+				ADD_ERROR (list, g_strdup_printf ("Invalid flags in File row %d", i + 1));
+			if (!is_valid_blob (image, cols [MONO_FILE_HASH_VALUE], TRUE))
+				ADD_ERROR (list, g_strdup_printf ("File hash value in row %d is invalid or not null and empty", i + 1));
+		}
+		if (!(p = is_valid_string (image, cols [MONO_FILE_NAME], TRUE))) {
+			if (level & MONO_VERIFY_ERROR)
+				ADD_ERROR (list, g_strdup_printf ("Invalid name in File row %d", i + 1));
+		} else {
+			if (level & MONO_VERIFY_ERROR) {
+				if (!is_valid_filename (p))
+					ADD_ERROR (list, g_strdup_printf ("Invalid name '%s` in File row %d", p, i + 1));
+				else if (g_hash_table_lookup (dups, p)) {
+					ADD_ERROR (list, g_strdup_printf ("Duplicate name '%s` in File row %d", p, i + 1));
+				}
+				g_hash_table_insert (dups, (gpointer)p, (gpointer)p);
+			}
+		}
+		/*
+		 * FIXME: I don't understand what this means:
+		 * If this module contains a row in the Assembly table (that is, if this module "holds the manifest") 
+		 * then there shall not be any row in the File table for this module - i.e., no self-reference  [ERROR]
+		 */
+
+	}
+	if (level & MONO_VERIFY_WARNING) {
+		if (!t->rows && image->tables [MONO_TABLE_EXPORTEDTYPE].rows)
+			ADD_WARN (list, MONO_VERIFY_WARNING, g_strdup ("ExportedType table should be empty if File table is empty"));
+	}
+	g_hash_table_destroy (dups);
+	return list;
+}
+
+static GSList*
+verify_moduleref_table (MonoImage *image, GSList *list, int level)
+{
+	MonoTableInfo *t = &image->tables [MONO_TABLE_MODULEREF];
+	MonoTableInfo *tfile = &image->tables [MONO_TABLE_FILE];
+	guint32 cols [MONO_MODULEREF_SIZE];
+	const char *p, *pf;
+	guint32 found, i, j, value;
+	GHashTable *dups = g_hash_table_new (g_str_hash, g_str_equal);
+	
+	for (i = 0; i < t->rows; ++i) {
+		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
+		if (!(p = is_valid_string (image, cols [MONO_MODULEREF_NAME], TRUE))) {
+			if (level & MONO_VERIFY_ERROR)
+				ADD_ERROR (list, g_strdup_printf ("Invalid name in ModuleRef row %d", i + 1));
+		} else {
+			if (level & MONO_VERIFY_ERROR) {
+				if (!is_valid_filename (p))
+					ADD_ERROR (list, g_strdup_printf ("Invalid name '%s` in ModuleRef row %d", p, i + 1));
+				else if (g_hash_table_lookup (dups, p)) {
+					ADD_WARN (list, MONO_VERIFY_WARNING, g_strdup_printf ("Duplicate name '%s` in ModuleRef row %d", p, i + 1));
+					g_hash_table_insert (dups, (gpointer)p, (gpointer)p);
+					found = 0;
+					for (j = 0; j < tfile->rows; ++j) {
+						value = mono_metadata_decode_row_col (tfile, j, MONO_FILE_NAME);
+						if ((pf = is_valid_string (image, value, TRUE)))
+							if (strcmp (p, pf) == 0) {
+								found = 1;
+								break;
+							}
+					}
+					if (!found)
+						ADD_ERROR (list, g_strdup_printf ("Name '%s` in ModuleRef row %d doesn't have a match in File table", p, i + 1));
+				}
+			}
+		}
+	}
+	g_hash_table_destroy (dups);
+	return list;
+}
+
+static GSList*
+verify_standalonesig_table (MonoImage *image, GSList *list, int level)
+{
+	MonoTableInfo *t = &image->tables [MONO_TABLE_STANDALONESIG];
+	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
+	const char *p;
+	guint32 i;
+
+	for (i = 0; i < t->rows; ++i) {
+		mono_metadata_decode_row (t, i, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
+		if (level & MONO_VERIFY_ERROR) {
+			if (!is_valid_blob (image, cols [MONO_STAND_ALONE_SIGNATURE], TRUE)) {
+				ADD_ERROR (list, g_strdup_printf ("Signature is invalid in StandAloneSig row %d", i + 1));
+			} else {
+				p = mono_metadata_blob_heap (image, cols [MONO_STAND_ALONE_SIGNATURE]);
+				/* FIXME: check it's a valid locals or method sig.*/
+			}
+		}
+	}
+	return list;
+}
+
 GSList*
 mono_image_verify_tables (MonoImage *image, int level)
 {
@@ -465,6 +658,10 @@ mono_image_verify_tables (MonoImage *image, int level)
 	 */
 	error_list = verify_event_map_table (image, error_list, level);
 	error_list = verify_event_table (image, error_list, level);
+	error_list = verify_field_table (image, error_list, level);
+	error_list = verify_file_table (image, error_list, level);
+	error_list = verify_moduleref_table (image, error_list, level);
+	error_list = verify_standalonesig_table (image, error_list, level);
 
 	return g_slist_reverse (error_list);
 }
@@ -535,20 +732,111 @@ valid_shiftops [TYPE_MAX] [TYPE_MAX] = {
 		vinfo->status = MONO_VERIFY_ERROR;	\
 		vinfo->message = (msg);	\
 		(list) = g_slist_prepend ((list), vinfo);	\
+		G_BREAKPOINT ();	\
 		goto invalid_cil;	\
 	} while (0)
 
-#define CHECK_STACK_UNDEFLOW(num)	\
+#define CHECK_STACK_UNDERFLOW(num)	\
 	do {	\
 		if (cur_stack < (num))	\
-			ADD_INVALID (list, g_strdup_printf ("Stack underflow at 0x%04x", ip - header->code));	\
+			ADD_INVALID (list, g_strdup_printf ("Stack underflow at 0x%04x", ip_offset));	\
 	} while (0)
 
 #define CHECK_STACK_OVERFLOW()	\
 	do {	\
 		if (cur_stack >= max_stack)	\
-			ADD_INVALID (list, g_strdup_printf ("Maxstack exceeded at 0x%04x", ip - header->code));	\
+			ADD_INVALID (list, g_strdup_printf ("Maxstack exceeded at 0x%04x", ip_offset));	\
 	} while (0)
+
+enum {
+	PREFIX_UNALIGNED = 1,
+	PREFIX_VOLATILE  = 2,
+	PREFIX_TAIL      = 4,
+	PREFIX_ADDR_MASK = 3,
+	PREFIX_FUNC_MASK = 4
+};
+
+enum {
+	CODE_SEEN = 1
+};
+
+typedef struct {
+	MonoClass *klass;
+	int type;
+} ILStackDesc;
+
+typedef struct {
+	ILStackDesc *stack;
+	guint16 stack_count;
+	guint16 flags;
+} ILCodeDesc;
+
+static int
+in_any_block (MonoMethodHeader *header, guint offset)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (MONO_OFFSET_IN_CLAUSE (clause, offset))
+			return 1;
+		if (MONO_OFFSET_IN_HANDLER (clause, offset))
+			return 1;
+		/* need to check filter ... */
+	}
+	return 0;
+}
+
+static int
+in_same_block (MonoMethodHeader *header, guint offset, guint target)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (MONO_OFFSET_IN_CLAUSE (clause, offset) && !MONO_OFFSET_IN_CLAUSE (clause, target))
+			return 0;
+		if (MONO_OFFSET_IN_HANDLER (clause, offset) && !MONO_OFFSET_IN_HANDLER (clause, target))
+			return 0;
+		/* need to check filter ... */
+	}
+	return 1;
+}
+
+/*
+ * A leave can't escape a finally block 
+ */
+static int
+is_correct_leave (MonoMethodHeader *header, guint offset, guint target)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY && MONO_OFFSET_IN_HANDLER (clause, offset) && !MONO_OFFSET_IN_HANDLER (clause, target))
+			return 0;
+		/* need to check filter ... */
+	}
+	return 1;
+}
+
+static int
+can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
+{
+	if (!b->flags & CODE_SEEN) {
+		b->flags |= CODE_SEEN;
+		b->stack_count = a->stack_count;
+		/* merge types */
+		return 1;
+	}
+	if (a->stack_count != b->stack_count)
+		return 0;
+	/* merge types */
+	return 1;
+}
 
 /*
  * FIXME: need to distinguish between valid and verifiable.
@@ -559,14 +847,18 @@ GSList*
 mono_method_verify (MonoMethod *method, int level)
 {
 	MonoMethodHeader *header;
-	MonoMethodSignature *signature;
+	MonoMethodSignature *signature, *csig;
+	MonoMethod *cmethod;
+	MonoImage *image;
 	register const unsigned char *ip;
 	register const unsigned char *end;
 	const unsigned char *target; /* branch target */
-	int max_args, max_stack, cur_stack, i, n;
-	guint32 token;
+	int max_args, max_stack, cur_stack, i, n, need_merge, start;
+	guint32 token, ip_offset;
 	char *local_state = NULL;
 	GSList *list = NULL;
+	guint prefix = 0;
+	ILCodeDesc *code;
 
 	signature = method->signature;
 	header = ((MonoMethodNormal *)method)->header;
@@ -574,14 +866,39 @@ mono_method_verify (MonoMethod *method, int level)
 	end = ip + header->code_size;
 	max_args = method->signature->param_count + method->signature->hasthis;
 	max_stack = header->max_stack;
-	cur_stack = 0;
+	need_merge = cur_stack = 0;
+	start = 1;
+	image = method->klass->image;
+	code = g_new0 (ILCodeDesc, header->code_size);
 
 	if (header->num_locals) {
 		local_state = g_new (char, header->num_locals);
 		memset (local_state, header->init_locals, header->num_locals);
 	}
+	g_print ("Method %s.%s::%s\n", method->klass->name_space, method->klass->name, method->name);
 
 	while (ip < end) {
+		ip_offset = ip - header->code;
+		g_print ("IL_%04x: %02x\n", ip_offset, *ip);
+		if (start || !(code [ip_offset].flags & CODE_SEEN)) {
+			if (start) {
+				code [ip_offset].stack_count = 0;
+				start = 0;
+			} else {
+				code [ip_offset].stack_count = cur_stack;
+			}
+			code [ip_offset].flags |= CODE_SEEN;
+		} else {
+			/* stack merge */
+			if (code [ip_offset].stack_count != cur_stack)
+				ADD_INVALID (list, g_strdup_printf ("Cannot merge stack states at 0x%04x", ip_offset));
+		}
+		if (need_merge) {
+			if (!can_merge_stack (&code [ip_offset], &code [target - header->code]))
+				ADD_INVALID (list, g_strdup_printf ("Cannot merge stack states at 0x%04x", ip_offset));
+			need_merge = 0;
+		}
+
 		switch (*ip) {
 		case CEE_NOP:
 		case CEE_BREAK: 
@@ -592,7 +909,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDARG_2:
 		case CEE_LDARG_3:
 			if (*ip - CEE_LDARG_0 >= max_args)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", *ip - CEE_LDARG_0, ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", *ip - CEE_LDARG_0, ip_offset));
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
 			++ip;
@@ -602,9 +919,9 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDLOC_2:
 		case CEE_LDLOC_3:
 			if (*ip - CEE_LDLOC_0 >= header->num_locals)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", *ip - CEE_LDLOC_0, ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", *ip - CEE_LDLOC_0, ip_offset));
 			if (!local_state [*ip - CEE_LDLOC_0])
-				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", *ip - CEE_LDLOC_0, ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", *ip - CEE_LDLOC_0, ip_offset));
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
 			++ip;
@@ -614,43 +931,43 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_STLOC_2:
 		case CEE_STLOC_3:
 			if (*ip - CEE_STLOC_0 >= header->num_locals)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", *ip - CEE_STLOC_0, ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", *ip - CEE_STLOC_0, ip_offset));
 			local_state [*ip - CEE_STLOC_0] = 1;
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			++ip;
 			break;
 		case CEE_LDARG_S:
 		case CEE_LDARGA_S:
 			if (ip [1] >= max_args)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", ip [1], ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", ip [1], ip_offset));
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
 			ip += 2;
 			break;
 		case CEE_STARG_S:
 			if (ip [1] >= max_args)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", ip [1], ip - header->code));
-			CHECK_STACK_UNDEFLOW (1);
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", ip [1], ip_offset));
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			ip += 2;
 			break;
 		case CEE_LDLOC_S:
 		case CEE_LDLOCA_S:
 			if (ip [1] >= header->num_locals)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", ip [1], ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", ip [1], ip_offset));
 			/* no need to check if the var is initialized if the address is taken */
 			if (*ip == CEE_LDLOC_S && !local_state [ip [1]])
-				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", ip [1], ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", ip [1], ip_offset));
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
 			ip += 2;
 			break;
 		case CEE_STLOC_S:
 			if (ip [1] >= header->num_locals)
-				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", ip [1], ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", ip [1], ip_offset));
 			local_state [ip [1]] = 1;
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			ip += 2;
 			break;
@@ -700,24 +1017,43 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 		case CEE_UNUSED99: ++ip; break; /* warn/error instead? */
 		case CEE_DUP:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
 			++ip;
 			break;
 		case CEE_POP:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			++ip;
 			break;
 		case CEE_JMP:
-			++ip;
-			break;
-		case CEE_CALL:
+			if (cur_stack)
+				ADD_INVALID (list, g_strdup_printf ("Eval stack must be empty in jmp at 0x%04x", ip_offset));
 			token = read32 (ip + 1);
+			if (in_any_block (header, ip_offset))
+				ADD_INVALID (list, g_strdup_printf ("jmp cannot escape exception blocks at 0x%04x", ip_offset));
 			/*
 			 * FIXME: check signature, retval, arguments etc.
 			 */
+			ip += 5;
+			break;
+		case CEE_CALL:
+		case CEE_CALLVIRT:
+			token = read32 (ip + 1);
+			/*
+			 * FIXME: we could just load the signature ...
+			 */
+			cmethod = mono_get_method (image, token, NULL);
+			if (!cmethod)
+				ADD_INVALID (list, g_strdup_printf ("Method 0x%08x not found at 0x%04x", token, ip_offset));
+			csig = cmethod->signature;
+			CHECK_STACK_UNDERFLOW (csig->param_count + csig->hasthis);
+			cur_stack -= csig->param_count + csig->hasthis;
+			if (csig->ret->type != MONO_TYPE_VOID) {
+				CHECK_STACK_OVERFLOW ();
+				++cur_stack;
+			}
 			ip += 5;
 			break;
 		case CEE_CALLI:
@@ -730,29 +1066,37 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_RET:
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				if (cur_stack != 1)
-					ADD_INVALID (list, g_strdup_printf ("Stack not empty after ret at 0x%04x", ip - header->code));
+					ADD_INVALID (list, g_strdup_printf ("Stack not empty after ret at 0x%04x", ip_offset));
 				--cur_stack;
 			} else {
 				if (cur_stack)
-					ADD_INVALID (list, g_strdup_printf ("Stack not empty after ret at 0x%04x", ip - header->code));
+					ADD_INVALID (list, g_strdup_printf ("Stack not empty after ret at 0x%04x", ip_offset));
 				cur_stack = 0;
 			}
+			if (in_any_block (header, ip_offset))
+				ADD_INVALID (list, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ip_offset));
 			++ip;
 			break;
 		case CEE_BR_S:
 			target = ip + (signed char)ip [1] + 2;
 			if (target >= end || target < header->code)
-				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!in_same_block (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
 			ip += 2;
+			start = 1;
 			break;
 		case CEE_BRFALSE_S:
 		case CEE_BRTRUE_S:
 			target = ip + (signed char)ip [1] + 2;
 			if (target >= end || target < header->code)
-				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
-			CHECK_STACK_UNDEFLOW (1);
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!in_same_block (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			ip += 2;
+			need_merge = 1;
 			break;
 		case CEE_BEQ_S:
 		case CEE_BGE_S:
@@ -766,25 +1110,34 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BLT_UN_S:
 			target = ip + (signed char)ip [1] + 2;
 			if (target >= end || target < header->code)
-				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
-			CHECK_STACK_UNDEFLOW (2);
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!in_same_block (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
+			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
 			ip += 2;
+			need_merge = 1;
 			break;
 		case CEE_BR:
 			target = ip + (gint32)read32 (ip + 1) + 5;
 			if (target >= end || target < header->code)
-				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!in_same_block (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
 			ip += 5;
+			start = 1;
 			break;
 		case CEE_BRFALSE:
 		case CEE_BRTRUE:
 			target = ip + (gint32)read32 (ip + 1) + 5;
 			if (target >= end || target < header->code)
-				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
-			CHECK_STACK_UNDEFLOW (1);
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!in_same_block (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			ip += 5;
+			need_merge = 1;
 			break;
 		case CEE_BEQ:
 		case CEE_BGE:
@@ -798,19 +1151,22 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BLT_UN:
 			target = ip + (gint32)read32 (ip + 1) + 5;
 			if (target >= end || target < header->code)
-				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
-			CHECK_STACK_UNDEFLOW (2);
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!in_same_block (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
+			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
 			ip += 5;
+			need_merge = 1;
 			break;
 		case CEE_SWITCH:
 			n = read32 (ip + 1);
 			target = ip + sizeof (guint32) * n;
-			/* FIXME: check that ip is in range */
+			/* FIXME: check that ip is in range (and within the same exception block) */
 			for (i = 0; i < n; ++i)
 				if (target + (gint32) read32 (ip + 5 + i * sizeof (gint32)) >= end || target + (gint32) read32 (ip + 5 + i * sizeof (gint32)) < header->code)
-					ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip - header->code));
-			CHECK_STACK_UNDEFLOW (1);
+					ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			ip += 5 + sizeof (guint32) * n;
 			break;
@@ -825,8 +1181,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDIND_R4:
 		case CEE_LDIND_R8:
 		case CEE_LDIND_REF:
-			CHECK_STACK_OVERFLOW ();
-			++cur_stack;
+			CHECK_STACK_UNDERFLOW (1);
 			++ip;
 			break;
 		case CEE_STIND_REF:
@@ -836,8 +1191,8 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_STIND_I8:
 		case CEE_STIND_R4:
 		case CEE_STIND_R8:
-			CHECK_STACK_UNDEFLOW (1);
-			--cur_stack;
+			CHECK_STACK_UNDERFLOW (2);
+			cur_stack -= 2;
 			++ip;
 			break;
 		case CEE_ADD:
@@ -853,7 +1208,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_SHL:
 		case CEE_SHR:
 		case CEE_SHR_UN:
-			CHECK_STACK_UNDEFLOW (2);
+			CHECK_STACK_UNDERFLOW (2);
 			--cur_stack;
 			++ip;
 			break;
@@ -867,25 +1222,18 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_CONV_R8:
 		case CEE_CONV_U4:
 		case CEE_CONV_U8:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			++ip;
-			break;
-		case CEE_CALLVIRT:
-			token = read32 (ip + 1);
-			/*
-			 * FIXME: check signature, retval, arguments etc.
-			 */
-			ip += 5;
 			break;
 		case CEE_CPOBJ:
 			token = read32 (ip + 1);
-			CHECK_STACK_UNDEFLOW (2);
+			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
 			ip += 5;
 			break;
 		case CEE_LDOBJ:
 			token = read32 (ip + 1);
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			ip += 5;
 			break;
 		case CEE_LDSTR:
@@ -897,18 +1245,26 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_NEWOBJ:
 			token = read32 (ip + 1);
 			/*
-			 * FIXME: check signature, retval, arguments etc.
+			 * FIXME: we could just load the signature ...
 			 */
+			cmethod = mono_get_method (image, token, NULL);
+			if (!cmethod)
+				ADD_INVALID (list, g_strdup_printf ("Constructor 0x%08x not found at 0x%04x", token, ip_offset));
+			csig = cmethod->signature;
+			CHECK_STACK_UNDERFLOW (csig->param_count);
+			cur_stack -= csig->param_count;
+			CHECK_STACK_OVERFLOW ();
+			++cur_stack;
 			ip += 5;
 			break;
 		case CEE_CASTCLASS:
 		case CEE_ISINST:
 			token = read32 (ip + 1);
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			ip += 5;
 			break;
 		case CEE_CONV_R_UN:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			++ip;
 			break;
 		case CEE_UNUSED58:
@@ -917,26 +1273,26 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 		case CEE_UNBOX:
 			token = read32 (ip + 1);
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			ip += 5;
 			break;
 		case CEE_THROW:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			++ip;
 			break;
 		case CEE_LDFLD:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
 		case CEE_LDFLDA:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
 		case CEE_STFLD:
-			CHECK_STACK_UNDEFLOW (2);
+			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
 			token = read32 (ip + 1);
 			ip += 5;
@@ -944,21 +1300,23 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDSFLD:
 			CHECK_STACK_OVERFLOW ();
 			token = read32 (ip + 1);
+			++cur_stack;
 			ip += 5;
 			break;
 		case CEE_LDSFLDA:
 			CHECK_STACK_OVERFLOW ();
 			token = read32 (ip + 1);
+			++cur_stack;
 			ip += 5;
 			break;
 		case CEE_STSFLD:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
 		case CEE_STOBJ:
-			CHECK_STACK_UNDEFLOW (2);
+			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
 			token = read32 (ip + 1);
 			ip += 5;
@@ -973,25 +1331,25 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_CONV_OVF_U8_UN:
 		case CEE_CONV_OVF_I_UN:
 		case CEE_CONV_OVF_U_UN:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			++ip;
 			break;
 		case CEE_BOX:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
 		case CEE_NEWARR:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
 		case CEE_LDLEN:
-			CHECK_STACK_UNDEFLOW (1);
+			CHECK_STACK_UNDERFLOW (1);
 			++ip;
 			break;
 		case CEE_LDELEMA:
-			CHECK_STACK_UNDEFLOW (2);
+			CHECK_STACK_UNDERFLOW (2);
 			--cur_stack;
 			token = read32 (ip + 1);
 			ip += 5;
@@ -1007,7 +1365,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDELEM_R4:
 		case CEE_LDELEM_R8:
 		case CEE_LDELEM_REF:
-			CHECK_STACK_UNDEFLOW (2);
+			CHECK_STACK_UNDERFLOW (2);
 			--cur_stack;
 			++ip;
 			break;
@@ -1019,7 +1377,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_STELEM_R4:
 		case CEE_STELEM_R8:
 		case CEE_STELEM_REF:
-			CHECK_STACK_UNDEFLOW (3);
+			CHECK_STACK_UNDERFLOW (3);
 			cur_stack -= 3;
 			++ip;
 			break;
@@ -1041,14 +1399,17 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_UNUSED17:
 			++ip; /* warn, error ? */
 			break;
-		case CEE_CONV_OVF_I1: break;
-		case CEE_CONV_OVF_U1: break;
-		case CEE_CONV_OVF_I2: break;
-		case CEE_CONV_OVF_U2: break;
-		case CEE_CONV_OVF_I4: break;
-		case CEE_CONV_OVF_U4: break;
-		case CEE_CONV_OVF_I8: break;
-		case CEE_CONV_OVF_U8: break;
+		case CEE_CONV_OVF_I1:
+		case CEE_CONV_OVF_U1:
+		case CEE_CONV_OVF_I2:
+		case CEE_CONV_OVF_U2:
+		case CEE_CONV_OVF_I4:
+		case CEE_CONV_OVF_U4:
+		case CEE_CONV_OVF_I8:
+		case CEE_CONV_OVF_U8:
+			CHECK_STACK_UNDERFLOW (1);
+			++ip;
+			break;
 		case CEE_UNUSED50:
 		case CEE_UNUSED18:
 		case CEE_UNUSED19:
@@ -1058,13 +1419,23 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_UNUSED23:
 			++ip; /* warn, error ? */
 			break;
-		case CEE_REFANYVAL: break;
-		case CEE_CKFINITE: break;
+		case CEE_REFANYVAL:
+			CHECK_STACK_UNDERFLOW (1);
+			++ip;
+			break;
+		case CEE_CKFINITE:
+			CHECK_STACK_UNDERFLOW (1);
+			++ip;
+			break;
 		case CEE_UNUSED24:
 		case CEE_UNUSED25:
 			++ip; /* warn, error ? */
 			break;
-		case CEE_MKREFANY: break;
+		case CEE_MKREFANY:
+			CHECK_STACK_UNDERFLOW (1);
+			token = read32 (ip + 1);
+			ip += 5;
+			break;
 		case CEE_UNUSED59:
 		case CEE_UNUSED60:
 		case CEE_UNUSED61:
@@ -1076,84 +1447,201 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_UNUSED67:
 			++ip; /* warn, error ? */
 			break;
-		case CEE_LDTOKEN: break;
-		case CEE_CONV_U2: break;
-		case CEE_CONV_U1: break;
-		case CEE_CONV_I: break;
-		case CEE_CONV_OVF_I: break;
-		case CEE_CONV_OVF_U: break;
-		case CEE_ADD_OVF: break;
-		case CEE_ADD_OVF_UN: break;
-		case CEE_MUL_OVF: break;
-		case CEE_MUL_OVF_UN: break;
-		case CEE_SUB_OVF: break;
-		case CEE_SUB_OVF_UN: break;
-		case CEE_ENDFINALLY: break;
-		case CEE_LEAVE: break;
-		case CEE_LEAVE_S: break;
-		case CEE_STIND_I: break;
-		case CEE_CONV_U: break;
-		case CEE_UNUSED26: break;
-		case CEE_UNUSED27: break;
-		case CEE_UNUSED28: break;
-		case CEE_UNUSED29: break;
-		case CEE_UNUSED30: break;
-		case CEE_UNUSED31: break;
-		case CEE_UNUSED32: break;
-		case CEE_UNUSED33: break;
-		case CEE_UNUSED34: break;
-		case CEE_UNUSED35: break;
-		case CEE_UNUSED36: break;
-		case CEE_UNUSED37: break;
-		case CEE_UNUSED38: break;
-		case CEE_UNUSED39: break;
-		case CEE_UNUSED40: break;
-		case CEE_UNUSED41: break;
-		case CEE_UNUSED42: break;
-		case CEE_UNUSED43: break;
-		case CEE_UNUSED44: break;
-		case CEE_UNUSED45: break;
-		case CEE_UNUSED46: break;
-		case CEE_UNUSED47: break;
-		case CEE_UNUSED48: break;
-		case CEE_PREFIX7: break;
-		case CEE_PREFIX6: break;
-		case CEE_PREFIX5: break;
-		case CEE_PREFIX4: break;
-		case CEE_PREFIX3: break;
-		case CEE_PREFIX2: break;
-		case CEE_PREFIXREF: break;
+		case CEE_LDTOKEN:
+			CHECK_STACK_OVERFLOW ();
+			token = read32 (ip + 1);
+			++cur_stack;
+			ip += 5;
+			break;
+		case CEE_CONV_U2:
+		case CEE_CONV_U1:
+		case CEE_CONV_I:
+		case CEE_CONV_OVF_I:
+		case CEE_CONV_OVF_U:
+			CHECK_STACK_UNDERFLOW (1);
+			++ip;
+			break;
+		case CEE_ADD_OVF:
+		case CEE_ADD_OVF_UN:
+		case CEE_MUL_OVF:
+		case CEE_MUL_OVF_UN:
+		case CEE_SUB_OVF:
+		case CEE_SUB_OVF_UN:
+			CHECK_STACK_UNDERFLOW (2);
+			--cur_stack;
+			++ip;
+			break;
+		case CEE_ENDFINALLY:
+			++ip;
+			start = 1;
+			break;
+		case CEE_LEAVE:
+			target = ip + (gint32)read32(ip + 1) + 5;
+			if (target >= end || target < header->code)
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!is_correct_leave (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ip_offset));
+			ip += 5;
+			start = 1;
+			break;
+		case CEE_LEAVE_S:
+			target = ip + (signed char)ip [1] + 2;
+			if (target >= end || target < header->code)
+				ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
+			if (!is_correct_leave (header, ip_offset, target - header->code))
+				ADD_INVALID (list, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ip_offset));
+			ip += 2;
+			start = 1;
+			break;
+		case CEE_STIND_I:
+			CHECK_STACK_UNDERFLOW (2);
+			cur_stack -= 2;
+			++ip;
+			break;
+		case CEE_CONV_U:
+			CHECK_STACK_UNDERFLOW (1);
+			++ip;
+			break;
+		case CEE_UNUSED26:
+		case CEE_UNUSED27:
+		case CEE_UNUSED28:
+		case CEE_UNUSED29:
+		case CEE_UNUSED30:
+		case CEE_UNUSED31:
+		case CEE_UNUSED32:
+		case CEE_UNUSED33:
+		case CEE_UNUSED34:
+		case CEE_UNUSED35:
+		case CEE_UNUSED36:
+		case CEE_UNUSED37:
+		case CEE_UNUSED38:
+		case CEE_UNUSED39:
+		case CEE_UNUSED40:
+		case CEE_UNUSED41:
+		case CEE_UNUSED42:
+		case CEE_UNUSED43:
+		case CEE_UNUSED44:
+		case CEE_UNUSED45:
+		case CEE_UNUSED46:
+		case CEE_UNUSED47:
+		case CEE_UNUSED48:
+			++ip;
+			break;
+		case CEE_PREFIX7:
+		case CEE_PREFIX6:
+		case CEE_PREFIX5:
+		case CEE_PREFIX4:
+		case CEE_PREFIX3:
+		case CEE_PREFIX2:
+		case CEE_PREFIXREF:
+			++ip;
+			break;
 		case CEE_PREFIX1:
 			++ip;
 			switch (*ip) {
-			case CEE_ARGLIST: break;
-			case CEE_CEQ: break;
-			case CEE_CGT: break;
-			case CEE_CGT_UN: break;
-			case CEE_CLT: break;
-			case CEE_CLT_UN: break;
-			case CEE_LDFTN: break;
-			case CEE_LDVIRTFTN: break;
-			case CEE_UNUSED56: break;
-			case CEE_LDARG: break;
-			case CEE_LDARGA: break;
-			case CEE_STARG: break;
-			case CEE_LDLOC: break;
-			case CEE_LDLOCA: break;
-			case CEE_STLOC: break;
-			case CEE_LOCALLOC: break;
-			case CEE_UNUSED57: break;
-			case CEE_ENDFILTER: break;
-			case CEE_UNALIGNED_: break;
-			case CEE_VOLATILE_: break;
-			case CEE_TAIL_: break;
-			case CEE_INITOBJ:
-				CHECK_STACK_UNDEFLOW (1);
+			case CEE_ARGLIST:
+				CHECK_STACK_OVERFLOW ();
+				++ip;
+				break;
+			case CEE_CEQ:
+			case CEE_CGT:
+			case CEE_CGT_UN:
+			case CEE_CLT:
+			case CEE_CLT_UN:
+				CHECK_STACK_UNDERFLOW (2);
+				--cur_stack;
+				++ip;
+				break;
+			case CEE_LDFTN:
+				CHECK_STACK_OVERFLOW ();
 				token = read32 (ip + 1);
 				ip += 5;
-			case CEE_UNUSED68: break;
-			case CEE_CPBLK: break;
-			case CEE_INITBLK: break;
+				break;
+			case CEE_LDVIRTFTN:
+				CHECK_STACK_UNDERFLOW (1);
+				token = read32 (ip + 1);
+				ip += 5;
+				break;
+			case CEE_UNUSED56:
+				++ip;
+				break;
+			case CEE_LDARG:
+			case CEE_LDARGA:
+				if (read16 (ip + 1) >= max_args)
+					ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", read16 (ip + 1), ip_offset));
+				CHECK_STACK_OVERFLOW ();
+				++cur_stack;
+				ip += 3;
+				break;
+			case CEE_STARG:
+				if (read16 (ip + 1) >= max_args)
+					ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", read16(ip + 1), ip_offset));
+				CHECK_STACK_UNDERFLOW (1);
+				--cur_stack;
+				ip += 3;
+				break;
+			case CEE_LDLOC:
+			case CEE_LDLOCA:
+				if (read16 (ip + 1) >= header->num_locals)
+					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", read16 (ip + 1), ip_offset));
+				/* no need to check if the var is initialized if the address is taken */
+				if (*ip == CEE_LDLOC && !local_state [read16 (ip + 1)])
+					ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", read16 (ip + 1), ip_offset));
+				CHECK_STACK_OVERFLOW ();
+				++cur_stack;
+				ip += 3;
+				break;
+			case CEE_STLOC:
+				if (read16 (ip + 1) >= header->num_locals)
+					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", read16 (ip + 1), ip_offset));
+				local_state [read16 (ip + 1)] = 1;
+				CHECK_STACK_UNDERFLOW (1);
+				--cur_stack;
+				ip += 3;
+				break;
+			case CEE_LOCALLOC:
+				if (cur_stack != 1)
+					ADD_INVALID (list, g_strdup_printf ("Stack must have only size item in localloc at 0x%04x", ip_offset));
+				++ip;
+				break;
+			case CEE_UNUSED57:
+				++ip;
+				break;
+			case CEE_ENDFILTER:
+				if (cur_stack != 1)
+					ADD_INVALID (list, g_strdup_printf ("Stack must have only filter result in endfilter at 0x%04x", ip_offset));
+				++ip;
+				break;
+			case CEE_UNALIGNED_:
+				prefix |= PREFIX_UNALIGNED;
+				++ip;
+				break;
+			case CEE_VOLATILE_:
+				prefix |= PREFIX_VOLATILE;
+				++ip;
+				break;
+			case CEE_TAIL_:
+				prefix |= PREFIX_TAIL;
+				++ip;
+				if (ip < end && (*ip != CEE_CALL && *ip != CEE_CALLI && *ip != CEE_CALLVIRT))
+					ADD_INVALID (list, g_strdup_printf ("tail prefix must be used only with call opcodes at 0x%04x", ip_offset));
+				break;
+			case CEE_INITOBJ:
+				CHECK_STACK_UNDERFLOW (1);
+				token = read32 (ip + 1);
+				ip += 5;
+				break;
+			case CEE_UNUSED68:
+				++ip;
+				break;
+			case CEE_CPBLK:
+				CHECK_STACK_UNDERFLOW (3);
+				ip++;
+				break;
+			case CEE_INITBLK:
+				CHECK_STACK_UNDERFLOW (3);
+				ip++;
+				break;
 			case CEE_UNUSED69:
 				++ip;
 				break;
@@ -1164,11 +1652,14 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 			case CEE_SIZEOF:
-				token = read32 (ip + 1);
 				CHECK_STACK_OVERFLOW ();
+				token = read32 (ip + 1);
 				ip += 5;
 				break;
-			case CEE_REFANYTYPE: break;
+			case CEE_REFANYTYPE:
+				CHECK_STACK_UNDERFLOW (1);
+				++ip;
+				break;
 			case CEE_UNUSED52:
 			case CEE_UNUSED53:
 			case CEE_UNUSED54:
@@ -1185,5 +1676,6 @@ mono_method_verify (MonoMethod *method, int level)
 invalid_cil:
 
 	g_free (local_state);
+	g_free (code);
 	return list;
 }

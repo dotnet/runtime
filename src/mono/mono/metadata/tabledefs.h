@@ -33,6 +33,15 @@ enum {
 };
 
 /*
+ * 22.1.6 Flags for FileAttributes
+ */
+
+enum {
+	FILE_CONTAINS_METADATA      = 0,
+	FILE_CONTAINS_NO_METADATA   = 1
+};
+
+/*
  * Field Attributes (21.1.5).
  */
 
