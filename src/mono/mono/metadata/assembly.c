@@ -439,8 +439,6 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	}
 #endif
 	image = mono_image_open (filename, status);
-	if (image != NULL && strcmp (image->assembly_name, "System.Windows.Forms") == 0)
-		mono_loader_wine_init ();
 	
 	return image;
 }

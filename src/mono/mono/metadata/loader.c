@@ -515,6 +515,8 @@ mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const c
 	mono_loader_unlock ();
 }
 
+static int wine_test_needed = 1;
+
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
 {
@@ -553,6 +555,14 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	mono_dllmap_lookup (orig_scope, import, &new_scope, &import);
 
+	/*
+	 * If we are P/Invoking a library from System.Windows.Forms, load Wine
+	 */
+	if (wine_test_needed && strcmp (image->assembly_name, "System.Windows.Forms") == 0){
+		mono_loader_wine_init ();
+		wine_test_needed = 0;
+	}
+	
 	/*
 	 * Try loading the module using a variety of names
 	 */
