@@ -344,5 +344,24 @@ mono_delegate_ctor          (MonoObject *this, MonoObject *target, gpointer addr
 gpointer 
 mono_compile_method        (MonoMethod *method);
 
+/* accessors for fields and properties */
+void
+mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value);
+
+void
+mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value);
+
+void
+mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value);
+
+void
+mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value);
+
+void
+mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
+
+MonoObject*
+mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
+
 #endif
 

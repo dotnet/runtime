@@ -359,6 +359,144 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
+static void
+set_value (MonoType *type, void *dest, void *value) {
+	int t;
+	if (type->byref) {
+		gpointer *p = (gpointer*)dest;
+		*p = value;
+		return;
+	}
+handle_enum:
+	t = type->type;
+	switch (t) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1: {
+		guint8 *p = (guint8*)dest;
+		*p = *(guint8*)value;
+		return;
+	}
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR: {
+		guint16 *p = (guint16*)dest;
+		*p = *(guint16*)value;
+		return;
+	}
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4: {
+		gint32 *p = (gint32*)dest;
+		*p = *(gint32*)value;
+		return;
+	}
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8: {
+		gint64 *p = (gint64*)dest;
+		*p = *(gint64*)value;
+		return;
+	}
+	case MONO_TYPE_R4: {
+		float *p = (float*)dest;
+		*p = *(float*)value;
+		return;
+	}
+	case MONO_TYPE_R8: {
+		double *p = (double*)dest;
+		*p = *(double*)value;
+		return;
+	}
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR: {
+		gpointer *p = (gpointer*)dest;
+		*p = value;
+		return;
+	}
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			t = type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			int size;
+			size = mono_class_value_size (type->data.klass, NULL);
+			memcpy (dest, value, size);
+		}
+		return;
+	default:
+		g_warning ("got type %x", type->type);
+		g_assert_not_reached ();
+	}
+}
+
+void
+mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
+{
+	void *dest;
+
+	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
+
+	dest = (char*)obj + field->offset;
+	set_value (field->type, dest, value);
+}
+
+void
+mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
+{
+	void *dest;
+
+	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+
+	dest = (char*)vt->data + field->offset;
+	set_value (field->type, dest, value);
+}
+
+void
+mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
+{
+	void *src;
+
+	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
+
+	src = (char*)obj + field->offset;
+	set_value (field->type, value, src);
+}
+
+void
+mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
+{
+	void *src;
+
+	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+
+	src = (char*)vt->data + field->offset;
+	set_value (field->type, value, src);
+}
+
+void
+mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc)
+{
+	default_mono_runtime_invoke (prop->set, obj, params, exc);
+}
+
+MonoObject*
+mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc)
+{
+	return default_mono_runtime_invoke (prop->get, obj, params, exc);
+}
+
+
 MonoMethod *
 mono_get_delegate_invoke (MonoClass *klass)
 {
