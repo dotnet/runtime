@@ -1313,9 +1313,9 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, Mono
 	rmb->refs = NULL;
 
 	if (mb->dll) {
-		rmb->charset = rmb->charset & 0xf;
-		rmb->lasterr = rmb->charset & 0x40;
-		rmb->native_cc = rmb->native_cc;
+		rmb->charset = mb->charset & 0xf;
+		rmb->lasterr = mb->charset & 0x40;
+		rmb->native_cc = mb->native_cc;
 		rmb->dllentry = mb->dllentry;
 		rmb->dll = mb->dll;
 	}
@@ -5351,7 +5351,6 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	 */
 	const char *cname;
 	MonoClass *klass;
-	MonoMethod *original = method;
 	MonoReflectionMethod *ret;
 
 	if (method->is_inflated) {
@@ -7616,6 +7615,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		method_aux->dll = g_strdup (mono_string_to_utf8 (rmb->dll));
 		
 		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 1) | rmb->lasterr;
+		printf ("B: %d %d\n", ((MonoMethodPInvoke*)m)->piflags, rmb->charset);
 
 		if (klass->image->dynamic)
 			g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
