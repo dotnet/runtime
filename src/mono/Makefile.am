@@ -148,7 +148,7 @@ mcs-do-full-build:
 mcs-do-clean-profiles:
 	cd $(mcs_topdir) && $(MAKE) clean-profiles
 
-mcs-do-run-test-profiles: tmpinst-dir $(tmpinst)/bin/mbas $(tmpinst)/bin/ilasm
+mcs-do-run-test-profiles: tmpinst-dir $(tmpinst)/bin/mbas $(tmpinst)/bin/ilasm $(tmpinst)/bin/pedump
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) run-test-profiles
@@ -203,6 +203,10 @@ $(tmpinst)/bin/mono: $(srcdir)/Makefile.am
 	chmod +x $@
 
 endif
+
+$(tmpinst)/bin/pedump: $(srcdir)/Makefile.am
+	(b=`pwd`; echo '#! /bin/sh'; echo 'exec "'"$$b/libtool"'" --mode=execute "'"$$b/mono/metadata/pedump"'" "$$@"') > $@
+	chmod +x $@
 
 $(tmpinst)/bin/mcs: $(srcdir)/Makefile.am
 	(t=`cd $(tmpinst) && pwd`; echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$t/lib/mcs.exe"'" "$$@"') > $@

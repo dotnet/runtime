@@ -1,3 +1,8 @@
+2004-09-28  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am ($(tmpinst)/bin/pedump): New.
+	(mcs-do-run-test-profiles): Depend on it.
+
 2004-09-27  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (mono-do-testjit): New target, unused for now.  Runs
