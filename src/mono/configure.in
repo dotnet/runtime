@@ -1,7 +1,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono,0.30.99)
+AM_INIT_AUTOMAKE(mono,0.30.99.3)
 AM_MAINTAINER_MODE
 
 dnl
@@ -979,6 +979,7 @@ web/Makefile
 docs/Makefile
 data/Makefile
 samples/Makefile
+support/Makefile
 data/config
 mono.spec
 ])
