@@ -1801,20 +1801,8 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 static GenericParameterAttributes
 ves_icall_Type_GetGenericParameterAttributes (MonoReflectionType *type)
 {
-	MonoGenericParam *gparam;
-
 	MONO_ARCH_SAVE_REGS;
-
-	if (type->type->byref)
-		return 0;
-
-	gparam = type->type->data.generic_param;
-	if (gparam->flags == 0x18)
-		return GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT;
-	else if (gparam->flags == 0x04)
-		return GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT;
-	else
-		return GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT;
+	return type->type->data.generic_param->flags;
 }
 
 static MonoBoolean
