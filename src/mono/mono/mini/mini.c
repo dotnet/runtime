@@ -1609,7 +1609,7 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 /* see bug#58863, but removing this code causes regressions in gtk-sharp build 
  * (SEGV running Method::Initialize() in gapi_codegen.exe) 
  */
-#if defined(__ppc__) || defined(__powerpc__)
+#if 1
 				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
 				 * stack slot and if they are of the same type. */
 				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
