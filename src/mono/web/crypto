@@ -27,14 +27,14 @@
 		* RNGCryptoServiceProvider is currently only working on Linux.
 		  The current implementation reside in Mono's runtime and use 
 		  the <code>/dev/[u]random</code> device (which do not exists 
-		  under Windows). A Windows alternative is in the work (see 
-		  Mono.Security.Win32 assembly section).
+		  under Windows). A Windows specific alternative is available 
+		  using the Mono.Security.Win32 assembly.
 
 		* Keypair persistance for RSA and DSA. This persistance must
 		  somehow be linked with X509 certificate stores (in planning).
 
 		* <code>PasswordDeriveBytes.CryptDeriveKey</code> is included 
-		  in the BCL to provide compatibility with existing Windows 
+		  in MS BCL to provide compatibility with existing Windows 
 		  applications. The main problem is that the key derivation 
 		  algorithm can be different for every CSP (Crypto Service 
 		  Provider). However for compatibility we should provide an
@@ -54,6 +54,9 @@
 		  classes named <code>*CryptoServiceProvider</code>, with the 
 		  exception of <code>RNGCryptoServiceProvider</code> (which 
 		  resides in the runtime).
+		* Look at assembly Mono.Security.Win32 if you require more
+		  compatiblity with the Microsoft implementation (like accessing
+		  a particuliar keypair container in a CSP).
 	</ul>
 
 
@@ -62,17 +65,17 @@
 **** Status
 	<ul>
 		* X.509 certificates are parsed using 100% managed code 
-		  (using an internal ASN.1 class). 
+		  (using the Mono.Security.ASN1 class). 
 
 		* Software Publisher Certificates (SPC) used by Authenticode
 		  (tm) to sign assemblies are supported (extraction from PE 
 		  files) but <b>not</b> validated.
 
-		* Tests are generated from a set of existing certificates
+		* Unit tests are generated from a set of existing certificates
 		  (about a dozen) each having different properties. Another
 		  set of certificates (more than 300) are used for a more 
-		  complete test (but isn't part of the test suite for size
-		  and time consideration).
+		  complete test (but isn't part of the standard test suite for 
+		  size and time consideration).
 	</ul>
 
 **** TODO
@@ -89,18 +92,20 @@
 
 **** Notes
 	<ul>
-		* <b>There's no validation of the certificates</b> done in this
-		  class (this isn't a restriction of Mono!). This means that
-		  certificate signatures and validity dates are <b>never</b>
-		  checked (except when used for Authenticode, i.e. 
+		* Except for their structure <b>there are no validation of the
+		  certificates</b> done by this class (this is by design and 
+		  isn't a restriction of Mono!). This means that certificate 
+		  signatures and validity dates are <b>never</b> checked 
+		  (except when used for Authenticode, i.e. 
 		  <code>CreateFromSignedFile</code>).
 
 		* The newer X509Certificate class included in Microsoft's Web 
 		  Service Enhancement (WSE) is a little better (as it includes 
 		  CryptoAPI's validation) when <code>IsCurrent</code> is called.
+		  See assembly <b>Microsoft.Web.Services</b> for more details.
 
 		* Microsoft implementation of <code>X509Certificate</code> is 
-		  done by using CryptoAPI (unmanaged). From the exceptions 
+		  done by using CryptoAPI (unmanaged code). From the exceptions 
 		  thrown Authenticode(tm) support is done via COM.
 	</ul>
 
@@ -115,13 +120,10 @@
 
 **** Status
 	<ul>
-		* All classes are present but some (Transforms) are only 
+		* All classes are present but some (most Transforms) are only 
 		  stubbed.
 
 		* Most classes have their unit tests.
-
-		* This assembly is present in CVS but only available when 
-		  building using NAnt (i.e. makefile are missing).
 	</ul>
 
 **** TODO
@@ -132,8 +134,30 @@
 		  signing (not because the transforms works). In the short
 		  term <code>libxml2</code> could be used to provide C14N, but 
 		  in the long term a fully managed class would be much better.
+	</ul>
 
-		* Makefile for building under non-Windows operating systems.
+<hr>
+** Assembly: Mono.Security
+
+	This assembly provides the missing pieces to .NET security. On Windows
+	CryptoAPI is often used to provide much needed functionalities (like
+	some cryptographic algorithms, code signing, X.509 certificates).
+
+*** Namespace: Mono.Security
+*** Namespace: Mono.Security.Authenticode
+*** Namespace: Mono.Security.Cryptography
+*** Namespace: Mono.Security.X509
+*** Namespace: Mono.Security.X509.Extensions
+
+**** Status
+	<ul>
+		* Work has been under way for quite some time - and should 
+		  start hitting CVS soon.
+
+		* A big part of this assembly is also included inside Mono's
+		  corlib. The class are duplicated in this assembly so the 
+		  functionalities can be used with a dependency on Mono's 
+		  corlib (which depends on Mono's runtime).
 	</ul>
 
 <hr>
@@ -152,7 +176,9 @@
 
 **** Status
 	<ul>
-		* A RNGCryptoServiceProvider built on top of CryptoAPI.
+		* A RNGCryptoServiceProvider built on top of CryptoAPI. This
+		  allows Windows users to get around the limitation of the 
+		  runtime RNG (which requires <code>/dev/[u]random/</code>).
 
 		* Wrapper classes for unmanaged versions of hash algorithms:
 		  MD2, MD4, MD5 and SHA1 are supported. <b>note</b>: some 
@@ -179,30 +205,34 @@
 	Development Kit (WSDK) in it's beta days, is an add-on the .NET
 	framework that implements WS-Security (and other WS-* specifications).
 	It also includes improved support for XML Signature (replacing and/or
-	extending <code>System.Security.Cryptography.Xml</code>) and X509
-	certificates.
+	extending <code>System.Security.Cryptography.Xml</code>) and X.509
+	certificates classes.
 
-	Note: WSE is distributed as an add-on because the WS-Security 
-	specification isn't yet completed by 
-	<a href="http://www.oasis-open.org/committees/wss/">OASIS</a>.
+	Note: WSE is distributed as an add-on because some specifications,
+ 	like WS-Security, aren't yet completed by 
+	<a href="http://www.oasis-open.org/committees/wss/">OASIS</a> or
+	other committees.
 
-	<b>There are some licensing issues to consider before stating to 
+	<b>[*] There are some licensing issues to consider before stating to 
 	implement WS-Security. All contributors must sign an agreement with 
 	Microsoft before commiting anything related to WS-Security into CVS.
 	</b>
 
 *** Namespace: Microsoft.Web.Services.Security
+*** Namespace: Microsoft.Web.Services.Timestamp
 
 **** Status
 	<ul>
-		* Nothing (yet) commited in CVS.
+		* Nothing (yet) commited in CVS <b>[*]</b>.
 	</ul>
 
 *** Namespace: Microsoft.Web.Services.Security.X509
 
 **** Status
 	<ul>
-		* Nothing (yet) commited in CVS.
+		* Nothing (yet) commited in CVS. However the classes in this 
+		  namespace are outside WS-Security scope. So development 
+		  could be done without signing any agreements.
 	</ul>
 
 **** TODO
@@ -213,21 +243,7 @@
 	</ul>
 
 <hr>
-** Other stuff
-
-	There are other, not so visible, uses of cryptography both inside and
-	outside the class library - such as:
-
-	<ul>
-		* SSL/TLS for secure communication (investigation under way).
-	
-		* Assembly signing (and verification) using StrongNames.
-	
-		* Assembly signing (and verification) using Authenticode(tm).
-	</ul>
-
-
-*** Tools
+** Tools
 
 	There are many tools in the .NET framework that indirectly interacts 
 	with some cryptographic classes. Mono will eventually need these tools.
@@ -267,6 +283,14 @@
 	Note that many of the tools requires the class library and/or the
 	runtime to be ready for them.
 
+<hr>
+** Other stuff
+
+	<ul>
+		* SSL/TLS for secure communication (a prototype is under way).
+	</ul>
+
+
 <hr>	
 ** How to Help
 
@@ -274,9 +298,9 @@
 
 	Add missing unit tests to classes or methods.
 
-	Write some documentation on the cryptographic classes for MonkeyGuide
-	(as I'm not a good writer, at least in English, but you must be a good
-	reader if you got to this part).
+	Write some documentation on the cryptographic classes for the 
+	<a href="http://go-mono.com/tutorial/html/en/index.html">Mono 
+	Handbook</a> as I'm not a good writer (at least in English).
 
 	Optimization can also be done on algorithms as crypto is never fast 
 	enough. Just be sure to test every optimization (using the unit test)
@@ -287,4 +311,4 @@
 	informations about the status of the cryptographic classes.
 
 <hr>
-Last reviewed: February 5, 2003 (post mono 0.19)
+Last reviewed: March 4, 2003 (post mono 0.21)
