@@ -7177,7 +7177,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_IID:
 		mono_class_init (patch_info->data.klass);
-		target = GINT_TO_POINTER (patch_info->data.klass->interface_id);
+		target = GINT_TO_POINTER ((int)patch_info->data.klass->interface_id);
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable (domain, patch_info->data.klass);
