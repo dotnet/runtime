@@ -61,7 +61,7 @@
 following:
 	<ul>
 		<li>You can get a Windows Installer at:
-          <a href="http://www.dropline.net/jade/download.html">here</a> </li>
+	          <a href="http://www.dropline.net/gtk/download.php">here</a> </li>
 		<li>or get the separate binary and dev/lib packages at
            at <a href="http://www.gimp.org/~tml/gimp/win32/downloads.html">here</a> </li>
         <li>or binary package from Dev-C++ site <a href="http://www.bloodshed.net/dev/packages/gtk.html">here</a> </li>
