@@ -36,30 +36,56 @@ fun..ng:		     // called from inside the module.
 
 	ret zero, (ra), 1    // return.
 
-// assuming that the procedure is in a0.
-#define emit_prologue( p )  \
-	alpha_ldah( p, alpha_gp, alpha_pv, 0 );	     \
-	alpha_lda( p, alpha_sp, alpha_sp, -32 );   \
-	alpha_lda( p, alpha_gp, alpha_gp, 0 );	    \
-	alpha_stq( p, alpha_ra, alpha_sp, 0 );	    \
-	alpha_stq( p, alpha_fp, alpha_sp, 8 );	    \
-	alpha_mov( p, alpha_sp, alpha_fp )
+// min SIZE = 48
+// our call must look like this.
 
-#define emit_move_a0_to_pv( p ) \
-	alpha_mov( p, alpha_a0, alpha_pv )
+call_func:
+	ldgp gp, 0(pv)
+call_func..ng:
+	.prologue
+        lda sp, -SIZE(sp)  // grow stack SIZE bytes.
+        stq ra, SIZE-48(sp)   // store ra
+	stq fp, SIZE-40(sp)   // store fp (frame pointer)        
+	stq a0, SIZE-32(sp)   // store args. a0 = func
+	stq a1, SIZE-24(sp)   // a1 = retval
+	stq a2, SIZE-16(sp)   // a2 = this
+        stq a3, SIZE-8(sp)    // a3 = args
+	mov sp, fp            // set frame pointer
+	mov pv, a0            // func
+	
+	.calling_arg_this	
+	mov a1, a2
+	
+	.calling_arg_6plus	
+	ldq t0, POS(a3)
+	stq t0, 0(sp)        
+	ldq t1, POS(a3)
+	stq t1, 8(sp)        
+	... SIZE-56 ...
 
-#define emit_call( p ) \
-	alpha_jsr( p, alpha_ra, alpha_pv, 0 );    \
-	alpha_ldah( p, alpha_gp, alpha_ra, 0 );	  \
-	alpha_lda( p, alpha_gp, alpha_gp, 0 );	  \
+	mov zero,a1
+        mov zero,a2
+        mov zero,a3
+        mov zero,a4
+        mov zero,a5
+	
+	.do_call
+	jsr ra, (pv)    // call func
+	ldgp gp, 0(ra)  // restore gp.
+	mov v0, t1      // move return value into t1
+	
+	.do_store_retval
+	ldq t0, SIZE-24(fp) // load retval into t2
+	stl t1, 0(t0)       // store value.
 
-#define emit_epilogue( p ) \
-	alpha_mov( p, alpha_fp, alpha_sp ); \
-	alpha_ldq( p, alpha_ra, alpha_sp, 0 ); \
-	alpha_ldq( p, alpha_fp, alpha_sp, 8 ); \
-	alpha_lda( p, alpha_sp, alpha_sp, 32 ); \
-	alpha_ret( p, alpha_ra )
-
+	.finished	
+        mov fp,sp
+        ldq ra,SIZE-48(sp)
+        ldq fp,SIZE-40(sp)
+        lda sp,SIZE(sp)
+        ret zero,(ra),1
+			
+	
 */
 /*****************************************************/
 
@@ -76,179 +102,253 @@ fun..ng:		     // called from inside the module.
 #include "mono/metadata/debug-helpers.h"
 
 #define AXP_GENERAL_REGS     6
-#define AXP_MIN_STACK_SIZE   32
-
-#define PROLOG_INS	     6
-#define CALL_INS             3
-#define EPILOG_INS	     5
+#define AXP_MIN_STACK_SIZE   24
+#define ARG_SIZE   sizeof(stackval)
+#define ARG_LOC(x) (x * sizeof( stackval ) )
 
 /*****************************************************/
-
-typedef struct {
-	guint i_regs;
-	guint f_regs;
-	guint stack_size;
-	guint code_size;
-} size_data;	
-
-
-static char*
-sig_to_name (MonoMethodSignature *sig, const char *prefix)
-{
-    /* from sparc.c.  this should be global */
-
-        int i;
-        char *result;
-        GString *res = g_string_new ("");
-
-        if (prefix) {
-                g_string_append (res, prefix);
-                g_string_append_c (res, '_');
-        }
-
-        mono_type_get_desc (res, sig->ret, TRUE);
-
-        for (i = 0; i < sig->param_count; ++i) {
-                g_string_append_c (res, '_');
-                mono_type_get_desc (res, sig->params [i], TRUE);
-        }
-        result = res->str;
-        g_string_free (res, FALSE);
-        return result;
-}
-
-
-static void inline
-add_general ( size_data *sz, gboolean simple)
-{
-    // we don't really know yet, so just put something in here.
-    if ( sz->i_regs >= AXP_GENERAL_REGS) 
-    {
-	sz->stack_size += 8;
-    }
-
-    // ...and it probably doesn't matter if our code size is a
-    // little large...
-
-    sz->code_size += 12;
-    sz->i_regs ++;
-}
-
-static void
-calculate_sizes (MonoMethodSignature *sig, 
-		 size_data *sz, 
-		 gboolean string_ctor)
-{
-	guint i, size;
-	guint32 simpletype, align;
-
-	sz->i_regs     = 0;
-	sz->f_regs     = 0;
-	sz->stack_size = AXP_MIN_STACK_SIZE;
-	sz->code_size  = 4 * (PROLOG_INS + CALL_INS + EPILOG_INS);
-
-	if (sig->hasthis) {
-		add_general (&gr, sz, TRUE);
-	}
-
-	for (i = 0; i < sig->param_count; ++i) {
-		switch (sig->ret->type) {
-		case MONO_TYPE_VOID:
-			break;
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_I8:
-			add_general (&gr, sz, TRUE);
-			break;
-		case MONO_TYPE_VALUETYPE:
-		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
-		}
-	}
-
-	/* align stack size to 8 */
-	sz->stack_size = (sz->stack_size + 8) & ~8;
-	sz->local_size = (sz->local_size + 8) & ~8;
-}
 
 /*								    */
 /* 		  void func (void (*callme)(), void *retval, 	    */
 /*			     void *this_obj, stackval *arguments);  */
 static inline guint8 *
-emit_prolog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
+emit_prolog (guint8 *p, const gint SIZE, int hasthis )
 {
-	guint stack_size;
+	// 9 instructions.
+	alpha_ldah( p, alpha_gp, alpha_pv, 0 );  
+	alpha_lda( p, alpha_sp, alpha_sp, -SIZE ); // grow stack down SIZE
+	alpha_lda( p, alpha_gp, alpha_gp, 0 );     // ldgp gp, 0(pv)
+	
+	/* TODO: we really don't need to store everything.
+	   alpha_a1: We have to store this in order to return the retval.
+	   
+	   alpha_a0: func pointer can be moved directly to alpha_pv
+	   alpha_a3: don't need args after we are finished.
+	   alpha_a2: will be moved into alpha_a0... if hasthis is true.
+	*/
+	/* store parameters on stack.*/
+	alpha_stq( p, alpha_ra, alpha_sp, SIZE-24 ); // ra
+	alpha_stq( p, alpha_fp, alpha_sp, SIZE-16 ); // fp
+	alpha_stq( p, alpha_a1, alpha_sp, SIZE-8 );  // retval
+	
+	/* set the frame pointer */
+	alpha_mov1( p, alpha_sp, alpha_fp );
+       
+	/* move the args into t0, pv */
+	alpha_mov1( p, alpha_a0, alpha_pv );
+	alpha_mov1( p, alpha_a3, alpha_t0 );
 
-	stack_size = sz->stack_size;
-
-	/* function prolog */
-	alpha_ldah( p, alpha_gp, alpha_pv, 0 );	     
-	alpha_lda( p, alpha_sp, alpha_sp, -stack_size );   
-	alpha_lda( p, alpha_gp, alpha_gp, 0  );
-
-	/* save ra, fp */
-	alpha_stq( p, alpha_ra, alpha_sp, 0  );
-	alpha_stq( p, alpha_fp, alpha_sp, 8  );
-
-	/* store the return parameter */
-	alpha_stq( p, alpha_a0, alpha_sp, 16 );	
-	alpha_stq( p, alpha_a1, alpha_sp, 24 );	
-
-	/* load fp into sp */
-	alpha_mov( p, alpha_sp, alpha_fp )
-
+	// Move the this pointer into a0.	
+	if( hasthis )
+	    alpha_mov1( p, alpha_a2, alpha_a0 );
 	return p;
 }
 
 static inline guint8 *
-emit_epilog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
+emit_call( guint8 *p , const gint SIZE )
 {
-        alpha_mov( p, alpha_fp, alpha_sp ); 
+	// 3 instructions
+	/* call func */
+	alpha_jsr( p, alpha_ra, alpha_pv, 0 );     // jsr ra, 0(pv)
 
-	/* restore fp, ra, sp */
-	alpha_ldq( p, alpha_ra, alpha_sp, 0 ); 
-	alpha_ldq( p, alpha_fp, alpha_sp, 8 ); 
-	alpha_lda( p, alpha_sp, alpha_sp, 32 ); 
+	/* reload the gp */
+	alpha_ldah( p, alpha_gp, alpha_ra, 0 );  
+	alpha_lda( p, alpha_gp, alpha_gp, 0 );     // ldgp gp, 0(ra)
 	
-	/* return */
-	alpha_ret( p, alpha_ra );
+	return p;
 }
 
 static inline guint8 *
-emit_call( guint8 *p, MonoMethodSignature *sig, size_data *sz )
+emit_store_return_default(guint8 *p, const gint SIZE )
 {
-	/* move a0 into pv, ready to call */
-	alpha_mov( p, alpha_a0, alpha_pv );
+	// 2 instructions.
 	
-	/* call arg */
-	alpha_jsr( p, alpha_ra, alpha_pv, 0 );
-
-	/* reload the gp */
-	alpha_ldah( p, alpha_gp, alpha_ra, 0 );	  
-	alpha_lda( p, alpha_gp, alpha_gp, 0 );	  
+	/* TODO: This probably do different stuff based on the value.  
+	   you know, like stq/l/w. and s/f.
+	*/
+	alpha_ldq( p, alpha_t0, alpha_fp, SIZE-8 );  // load void * retval
+	alpha_stq( p, alpha_v0, alpha_t0, 0 );       // store the result to *retval.
+	return p;
 }
 
+
+static inline guint8 *
+emit_epilog (guint8 *p, const gint SIZE )
+{       
+	// 5 instructions.
+	alpha_mov1( p, alpha_fp, alpha_sp );
+
+	/* restore fp, ra, sp */
+	alpha_ldq( p, alpha_ra, alpha_sp, SIZE-24 ); 
+	alpha_ldq( p, alpha_fp, alpha_sp, SIZE-16 ); 
+	alpha_lda( p, alpha_sp, alpha_sp, SIZE ); 
+	
+	/* return */
+	alpha_ret( p, alpha_ra, 1 );
+	return p;
+}
+
+static void calculate_size(MonoMethodSignature *sig, int * INSTRUCTIONS, int * STACK )
+{
+	int alpharegs;
+	
+	alpharegs = AXP_GENERAL_REGS - (sig->hasthis?1:0);
+
+	*STACK        = AXP_MIN_STACK_SIZE;
+	*INSTRUCTIONS = 20;  // Base: 20 instructions.
+	
+	if( sig->param_count - alpharegs > 0 )
+	{
+		*STACK += ARG_SIZE * (sig->param_count - alpharegs );
+		// plus 3 (potential) for each stack parameter. 
+		*INSTRUCTIONS += ( sig->param_count - alpharegs ) * 3;
+		// plus 2 (potential) for each register parameter. 
+		*INSTRUCTIONS += ( alpharegs * 2 );
+	}
+	else
+	{
+		// plus 2 (potential) for each register parameter. 
+		*INSTRUCTIONS += ( sig->param_count * 2 );
+	}
+}
 
 MonoPIFunc
 mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
-	g_error ("Unsupported arch");
-	return NULL;
+	unsigned char *p;
+	unsigned char *buffer;
+	MonoType* param;
+
+	int i, pos;
+	int alpharegs;
+	int hasthis;
+	int STACK_SIZE;
+	int BUFFER_SIZE;
+	int simple_type;
+	int regbase;
+	
+	// Set up basic stuff.  like has this.	
+	hasthis = !!sig->hasthis;
+	alpharegs = AXP_GENERAL_REGS - hasthis;
+	regbase  = hasthis?alpha_a1:alpha_a0 ;
+	
+	// Make a ballpark estimate for now.
+	calculate_size( sig, &BUFFER_SIZE, &STACK_SIZE );
+	
+	// convert to the correct number of bytes.
+	BUFFER_SIZE = BUFFER_SIZE * 4;
+
+	
+	// allocate.	
+	buffer = p = malloc(BUFFER_SIZE);
+	memset( buffer, 0, BUFFER_SIZE );
+	pos = 0;
+	
+	// Ok, start creating this thing.
+	p = emit_prolog( p, STACK_SIZE, hasthis );
+
+	// copy everything into the correct register/stack space
+	for (i = sig->param_count; --i >= 0; ) 
+	{
+		param = sig->params [i];
+		
+		if( param->byref )
+		{
+			if( i > alpharegs )
+			{
+				// load into temp register, then store on the stack 
+				alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC( i ));
+				alpha_stl( p, alpha_t1, alpha_sp, pos );
+				pos += 8;
+				
+				if( pos > 128 )
+					g_error( "Too large." );
+			}
+			else
+			{
+				// load into register
+				alpha_ldq( p, regbase + i, alpha_t0, ARG_LOC( i ) );
+			}
+		}
+		else
+		{
+			simple_type = param->type;
+			if( simple_type == MONO_TYPE_VALUETYPE )
+			{
+                        	if (sig->ret->data.klass->enumtype)
+                                	simple_type = sig->ret->data.klass->enum_basetype->type;
+                        }
+			
+			switch (simple_type) 
+			{
+			case MONO_TYPE_VOID:
+				break;
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_I8:
+				// 8 bytes
+				if( i > alpharegs )
+				{
+					// load into temp register, then store on the stack
+					alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC( i ) );
+					alpha_stq( p, alpha_t1, alpha_sp, pos );
+					pos += 8;
+				}
+				else
+				{
+					// load into register
+					alpha_ldq( p, regbase + i, alpha_t0, ARG_LOC(i) );
+				}
+				break;
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+				/*
+				// floating point... Maybe this does the correct thing.
+				if( i > alpharegs )
+				{
+					alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC( i ) );
+					alpha_cpys( p, alpha_ft1, alpha_ft1, alpha_ft2 );
+					alpha_stt( p, alpha_ft2, alpha_sp, pos );
+					pos += 8;
+				}
+				else
+				{
+					alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC(i) );
+					alpha_cpys( p, alpha_ft1, alpha_ft1, alpha_fa0 + i + hasthis );
+				}
+				break;
+				*/
+			case MONO_TYPE_VALUETYPE:
+				g_error ("Not implemented: ValueType as parameter to delegate." );
+				break;
+			default:
+				g_error( "Not implemented." );
+				break;	
+			}
+		}
+	}
+	
+	// Now call the function and store the return parameter.
+	p = emit_call( p, STACK_SIZE );
+	p = emit_store_return_default( p, STACK_SIZE );
+	p = emit_epilog( p, STACK_SIZE );
+
+	if( p > buffer + BUFFER_SIZE )
+		g_error( "Buffer overflow." );
+	
+	return (MonoPIFunc)buffer;
 }
 
 void *
@@ -257,4 +357,3 @@ mono_create_method_pointer (MonoMethod *method)
 	g_error ("Unsupported arch");
 	return NULL;
 }
-
