@@ -32,6 +32,41 @@
 static gboolean setup_finished;
 static gboolean atexit_called;
 static gchar *teardown_str;
+
+#ifdef PLATFORM_WIN32
+MonoBoolean
+ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return (GetFileType (handle) == FILE_TYPE_CHAR);
+}
+
+MonoBoolean
+ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean want_echo)
+{
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break)
+{
+	return FALSE;
+}
+
+gint32
+ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
+{
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown)
+{
+	return FALSE;
+}
+
+#else
 static struct termios initial_attr;
 
 MonoBoolean
@@ -39,19 +74,12 @@ ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
-	return (GetFileType (handle) == FILE_TYPE_CHAR);
-#else
 	return isatty (GPOINTER_TO_INT (handle));
-#endif
 }
 
 static MonoBoolean
 set_property (gint property, gboolean value)
 {
-#ifdef PLATFORM_WIN32
-	return FALSE;
-#else
 	struct termios attr;
 	gboolean callset = FALSE;
 	gboolean check;
@@ -77,7 +105,6 @@ set_property (gint property, gboolean value)
 		return FALSE;
 
 	return TRUE;
-#endif
 }
 
 MonoBoolean
@@ -95,9 +122,6 @@ ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break)
 gint32
 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
 {
-#ifdef PLATFORM_WIN32
-	return FALSE;
-#else
 	fd_set rfds;
 	struct timeval tv;
 	struct timeval *tvptr;
@@ -128,14 +152,11 @@ ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
 	}
 
 	return (ret > 0) ? ret : 0;
-#endif
 }
 
 static void
 tty_teardown (void)
 {
-#ifdef PLATFORM_WIN32
-#else
 	MONO_ARCH_SAVE_REGS;
 
 	if (!setup_finished)
@@ -150,15 +171,11 @@ tty_teardown (void)
 	tcflush (STDIN_FILENO, TCIFLUSH);
 	tcsetattr (STDIN_FILENO, TCSANOW, &initial_attr);
 	setup_finished = FALSE;
-#endif
 }
 
 MonoBoolean
 ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown)
 {
-#ifdef PLATFORM_WIN32
-	return FALSE;
-#else
 	struct termios attr;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -182,6 +199,6 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown)
 	}
 
 	return TRUE;
-#endif
 }
+#endif
 
