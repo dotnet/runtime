@@ -477,11 +477,13 @@ mini_usage (void)
 		"    --breakonex            Inserts a breakpoint on exceptions\n"
 		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
 		"    --debug                Enable debugging support\n"
+	    "    --stats                Print statistics about the JIT operations\n"
 		"\n"
 		"Development:\n"
 		"    --statfile FILE        Sets the stat file to FILE\n"
 		"    --aot                  Compiles the assembly to native code\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
+		"    --with-valgrind        Disable features which prevent mono from running under valgrind\n"
 		"    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
 	
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
@@ -579,6 +581,8 @@ mono_main (int argc, char* argv[]) {
 			action = DO_DRAW;
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
+		} else if (strcmp (argv [i], "--with-valgrind") == 0) {
+			mono_with_valgrind = TRUE;
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;

@@ -93,6 +93,7 @@ guint32 mono_jit_tls_id = -1;
 gboolean mono_jit_trace_calls = FALSE;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
+gboolean mono_with_valgrind = FALSE;
 
 static int mini_verbose = 0;
 
@@ -1796,7 +1797,6 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 {
 	MonoCallInst *call;
 	MonoInst *arg;
-	int i;
 
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual));
 	
@@ -1892,7 +1892,7 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 {
 	MonoInst *ins, *temp = NULL, *store, *load;
 	MonoInst *last_arg = NULL;
-	int i, nargs;
+	int nargs;
 	MonoCallInst *call;
 
 	/*g_print ("emulating: ");
@@ -6457,7 +6457,7 @@ mono_codegen (MonoCompile *cfg)
 	cfg->prolog_end = cfg->code_len;
 
 	mono_debug_open_method (cfg);
-	     
+
 	/* emit code all basic blocks */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		bb->native_offset = cfg->code_len;
@@ -7070,7 +7070,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoMethod *invoke;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
 	invoke = mono_marshal_get_runtime_invoke (method);
-	runtime_invoke = mono_jit_compile_method (invoke);      
+	runtime_invoke = mono_jit_compile_method (invoke);
 	return runtime_invoke (obj, params, exc);
 }
 
@@ -7184,7 +7184,9 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
+	if (!mono_with_valgrind)
+		/* valgrind 20030725 and earlier aborts on this call so we skip it */
+		g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
 
 #if 1
 	/* catch SIGSEGV */
