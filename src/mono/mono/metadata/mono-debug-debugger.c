@@ -1105,7 +1105,7 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	MonoObject *retval;
 	gchar *message;
 
-	if (method->klass->valuetype)
+	if (method->klass->valuetype && (obj != NULL))
 		obj = mono_value_box (mono_domain_get (), method->klass, obj);
 
 	retval = mono_runtime_invoke (method, obj, params, exc);
