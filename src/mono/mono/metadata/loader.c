@@ -199,12 +199,21 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 {
 	MonoClass *k;
 	guint32 type;
+	MonoClassField *field;
 
 	if (image->assembly->dynamic) {
 		MonoClassField *result = mono_lookup_dynamic_token (image, token);
 		*retklass = result->parent;
 		return result;
 	}
+
+	mono_loader_lock ();
+	if ((field = g_hash_table_lookup (image->field_cache, GUINT_TO_POINTER (token)))) {
+		*retklass = field->parent;
+		mono_loader_unlock ();
+		return field;
+	}
+	mono_loader_unlock ();
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
 		return mono_field_from_memberref (image, token, retklass);
@@ -218,7 +227,12 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 		return NULL;
 	if (retklass)
 		*retklass = k;
-	return mono_class_get_field (k, token);
+	field = mono_class_get_field (k, token);
+
+	mono_loader_lock ();
+	g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
+	mono_loader_unlock ();
+	return field;
 }
 
 static gboolean

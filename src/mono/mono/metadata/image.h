@@ -98,6 +98,10 @@ struct _MonoImage {
 	 */
 	GHashTable *method_cache;
 	GHashTable *class_cache;
+	/*
+	 * Indexed by fielddef and memberref tokens
+	 */
+	GHashTable *field_cache;
 
 	/* indexed by a generic type instantiation */
 	GHashTable *generics_cache;

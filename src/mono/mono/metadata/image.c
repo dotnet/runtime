@@ -515,6 +515,7 @@ mono_image_init (MonoImage *image)
 {
 	image->method_cache = g_hash_table_new (NULL, NULL);
 	image->class_cache = g_hash_table_new (NULL, NULL);
+	image->field_cache = g_hash_table_new (NULL, NULL);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	image->array_cache = g_hash_table_new (NULL, NULL);
 
@@ -898,6 +899,7 @@ mono_image_close (MonoImage *image)
 
 	g_hash_table_destroy (image->method_cache);
 	g_hash_table_destroy (image->class_cache);
+	g_hash_table_destroy (image->field_cache);
 	g_hash_table_destroy (image->array_cache);
 	g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
 	g_hash_table_destroy (image->name_cache);

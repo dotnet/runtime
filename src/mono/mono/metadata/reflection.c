@@ -4040,7 +4040,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
 
 	res->fqname    = mono_string_new (domain, image->name);
-	res->name      = mono_string_new (domain, image->name);
+	res->name      = mono_string_new (domain, g_path_get_basename (image->name));
 	res->scopename = mono_string_new (domain, image->module_name);
 
 	CACHE_OBJECT (image, res, NULL);
