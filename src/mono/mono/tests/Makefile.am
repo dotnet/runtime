@@ -141,6 +141,7 @@ TEST_CS_SRC=			\
 	array-invoke.cs		\
 	decimal.cs		\
 	decimal-array.cs	\
+	marshal.cs		\
 	marshal1.cs		\
 	marshal2.cs		\
 	marshal3.cs		\
