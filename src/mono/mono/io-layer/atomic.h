@@ -76,6 +76,9 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
  *
  * That url is no longer valid, but it's still in the google cache at the
  * moment: http://www.google.com/search?q=cache:http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
+ *
+ * For the time being, http://msdn.microsoft.com/msdnmag/issues/0700/Win32/
+ * might work.  Bet it will change soon enough though.
  */
 static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {
