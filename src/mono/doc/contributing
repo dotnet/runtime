@@ -10,7 +10,7 @@
 		  href="tools.html">the tools</a>, the <a
 		  href="testing.html">testing framework</a>
 
-		* <b>Writers:</b> You can help us with writing <a
+		* <b>Writers:</b> You can help us bywriting <a
 		  href="documentation.html">documentation</a>.
 	</ul>
 
@@ -27,7 +27,9 @@
 
 	You can get it <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
 
-	Alternatively you can use the compilation service that was setup
+	Alternatively you can use the <a
+	href="#compile-service">compilation service</a> that was setup by
+	Derek.
 
 ** Bug reporting
 
@@ -51,6 +53,7 @@
 		  packaged up in the official `distribution'
 	</ul>
 
+<a name="compile-service">
 * C# Compilation Service
 
 	If you are working on a class for the Mono project, but do not
@@ -68,9 +71,20 @@
 	him nice email at <a
 	href="mailto:derek@Draper.Com">derek@draper.com</a>
 
-* Books on C#
+* Books on C# and DotNet.
 
-	
+	<ul>
+	* Dotnet Books (a href="http://www.dotnetbooks.com">http://www.dotnetbooks.com</a>)
+
+	* Dotnet Resources (a href="http://www.dotnetexperts.com/resources/">
+	  http://www.dotnetexperts.com/resources</a>)
+
+	* O'Really C# Essentials (<a href="http://www.oreilly.com/catalog/csharpess/">
+	  http://www.oreally.com/catalog/csharpess</a>)
+
+	* O'Really .NET Essentials (<a href="http://www.oreilly.com/catalog/dotnetfrmess/">
+	  http://www.oreally.com/catalog/dotnetfrmess</a>)
+
 * Special note
 
 	If you have looked at Microsoft's implementation of .NET or
