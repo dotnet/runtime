@@ -3508,7 +3508,8 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	if (method->klass == NULL || (klass = method->klass->parent) == NULL)
 		return m;
 
-	if (klass->vtable_size > method->slot) {
+	while (result == NULL && klass != NULL && (klass->vtable_size > method->slot))
+	{
 		result = klass->vtable [method->slot];
 		if (result == NULL) {
 			/* It is an abstract method */
@@ -3520,6 +3521,7 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 				}
 			}
 		}
+		klass = klass->parent;
 	}
 
 	if (result == NULL)

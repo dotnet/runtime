@@ -666,6 +666,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 	} else {
 		res = vtable [method->slot];
 	}
+
 	g_assert (res);
 
 	if (is_proxy)
@@ -2058,7 +2059,6 @@ mono_message_init (MonoDomain *domain,
 	}
 
 	g_free (names);
-	
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 
 		if (sig->params [i]->byref) {
@@ -2068,12 +2068,11 @@ mono_message_init (MonoDomain *domain,
 				j++;
 			}
 			arg_type = 2;
-			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_IN)
+			if (!(sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT))
 				arg_type |= 1;
 		} else {
 			arg_type = 1;
 		}
-
 		mono_array_set (this->arg_types, guint8, i, arg_type);
 	}
 }
@@ -2321,16 +2320,13 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 {
 	MonoMethodSignature *sig = method->signature;
 	int i, j, type, size;
-	
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		MonoType *pt = sig->params [i];
-
-		size = mono_type_stack_size (pt, NULL);
 
 		if (pt->byref) {
 			char *arg = mono_array_get (out_args, gpointer, j);
 			type = pt->type;
-			
+
 			switch (type) {
 			case MONO_TYPE_VOID:
 				g_assert_not_reached ();
@@ -2348,6 +2344,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE: {
+				size = mono_class_value_size (((MonoObject*)arg)->vtable->klass, NULL);
 				memcpy (*((gpointer *)params [i]), arg + sizeof (MonoObject), size); 
 				break;
 			}
@@ -2427,6 +2424,8 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
+	if (exc) mono_raise_exception ((MonoException *)exc);
+
 	*res = mono_array_get (out_args, MonoObject *, 0);
 
 	if (field_class->valuetype) {
@@ -2484,6 +2483,8 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+
+	if (exc) mono_raise_exception ((MonoException *)exc);
 
 	res = mono_array_get (out_args, MonoObject *, 0);
 
@@ -2551,6 +2552,8 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	mono_array_set (msg->args, gpointer, 2, arg);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+
+	if (exc) mono_raise_exception ((MonoException *)exc);
 }
 
 void
@@ -2596,5 +2599,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	mono_array_set (msg->args, gpointer, 2, arg);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+
+	if (exc) mono_raise_exception ((MonoException *)exc);
 }
 
