@@ -1,3 +1,7 @@
+2004-07-29  Lluis Sanchez Gual  <lluis@novell.com>
+
+	* Makefile.am: Copy machine.config in the correct _tmpinst subdirectory.
+
 2004-07-28  Lluis Sanchez Gual  <lluis@novell.com>
 
 	* configure.in: Added data/net_1_1 and data/net_2_0 to the build.

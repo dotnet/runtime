@@ -156,10 +156,10 @@ populate-runtime-subdir:
 	rm -rf $(tmpinst)/prefix
 
 tmpinst-dir: 
-	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono
+	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono/1.0
 	$(MAKE) tmpinst-dir-contents
 
-tmpinst-dir-contents: $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/machine.config
+tmpinst-dir-contents: $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/1.0/machine.config
 
 if PLATFORM_WIN32
 
@@ -190,9 +190,9 @@ $(tmpinst)/bin/mcs: $(srcdir)/Makefile.am
 	(t=`cd $(tmpinst) && pwd`; echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$t/lib/mcs.exe"'" "$$@"') > $@
 	chmod +x $@
 
-$(tmpinst)/etc/mono/machine.config: $(srcdir)/data/machine.config
+$(tmpinst)/etc/mono/1.0/machine.config: $(srcdir)/data/net_1_1/machine.config
 	rm -f $@
-	srcdir=`cd $(srcdir) && pwd`; cd $(tmpinst)/etc/mono && $(LN_S) $$srcdir/data/machine.config machine.config
+	srcdir=`cd $(srcdir) && pwd`; cd $(tmpinst)/etc/mono/1.0 && $(LN_S) $$srcdir/data/net_1_1/machine.config machine.config
 
 # Obsolete target -- don't use.
 .PHONY: fullbuild
