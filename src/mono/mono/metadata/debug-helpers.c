@@ -29,6 +29,8 @@ static const char *wrapper_type_names [] = {
 	"xdomain-dispatch",
 	"ldfld",
 	"stfld",
+	"ldfld-remote",
+	"stfld-remote",
 	"synchronized",
 	"dynamic-method",
 	"isinst",

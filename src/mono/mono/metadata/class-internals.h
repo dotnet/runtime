@@ -17,6 +17,9 @@ typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
 typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
 
+/*
+ * remember to update wrapper_type_names if you change something here
+ */
 typedef enum {
 	MONO_WRAPPER_NONE,
 	MONO_WRAPPER_DELEGATE_INVOKE,
