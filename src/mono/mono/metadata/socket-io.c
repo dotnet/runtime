@@ -1146,13 +1146,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			ret=setsockopt(sock, system_level, system_name,
 				       &linger, valsize);
 			break;
-#ifdef HAVE_IP_ADD_MEMBERSHIP
 		case SocketOptionName_AddMembership:
-#endif
-#ifdef HAVE_IP_DROP_MEMBERSHIP
 		case SocketOptionName_DropMembership:
-#endif
-#if defined (HAVE_IP_ADD_MEMBERSHIP) || defined (HAVE_IP_DROP_MEMBERSHIP)
 		{
 #ifdef HAVE_STRUCT_IP_MREQN
 			struct ip_mreqn mreq;
@@ -1180,7 +1175,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 					  &mreq, sizeof (mreq));
 			break;
 		}
-#endif /* HAVE_IP_[ADD,DROP]_MEMBERSHIP */
 		default:
 			/* Throw an exception */
 			mono_raise_exception(get_socket_exception(WSAEINVAL));
