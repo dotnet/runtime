@@ -21,7 +21,7 @@
 #endif
 #endif
 
-#define DEBUG(x) x
+#define DEBUG(x)
 
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
@@ -509,7 +509,7 @@ mono_create_method_pointer (MonoMethod *method)
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
 	guint8 *p, *code_buffer;
-	guint i, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param;
+	guint i, align, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param;
 	guint32 simpletype;
 
 	code_size = 1024;
@@ -581,50 +581,16 @@ mono_create_method_pointer (MonoMethod *method)
 			} \
 			ppc_lis  (p, ppc_r3, (guint32) sig->params [i] >> 16); \
 			ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos); \
-			stackval_arg_pos ++; \
+		/* fixme: alignment */ \
+		if (sig->pinvoke) \
+			stackval_arg_pos += mono_type_native_stack_size (sig->params [i], &align); \
+		else \
+			stackval_arg_pos += mono_type_stack_size (sig->params [i], &align); \
 			ppc_ori  (p, ppc_r3, ppc_r3, (guint32) sig->params [i] & 0xffff); \
 \
 			CALL_STACKVAL_FROM_DATA
 
-		if (sig->params [i]->byref) {
-			CALL_SIZE_4;
-			continue;
-		}
-		simpletype = sig->params [i]->type;
-	enum_calc_size:
-		switch (simpletype) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-			CALL_SIZE_4;
-			break;
-		case MONO_TYPE_VALUETYPE:
-			NOT_IMPLEMENTED ("value type");
-			break;
-		case MONO_TYPE_I8:
-			NOT_IMPLEMENTED ("i8");
-			break;
-		case MONO_TYPE_R4:
-			NOT_IMPLEMENTED ("r4");
-			break;
-		case MONO_TYPE_R8:
-			NOT_IMPLEMENTED ("r8");
-			break;
-		default:
-			g_error ("Can't delegate 0x%x type", sig->params [i]->type);
-		}
+		CALL_SIZE_4;
 	}
 
 	/* return value storage */
@@ -645,6 +611,7 @@ mono_create_method_pointer (MonoMethod *method)
 		DEBUG (printf ("ret by ref\n"));
 		ppc_lwz (p, ppc_r3, stackval_arg_pos, ppc_r31);
 	} else {
+	enum_retvalue:
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
 			break;
@@ -675,6 +642,13 @@ mono_create_method_pointer (MonoMethod *method)
 			break;
 		case MONO_TYPE_R8:
 			ppc_lfd (p, ppc_f1, stackval_arg_pos, ppc_r31);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->ret->data.klass->enumtype) {
+				simpletype = sig->ret->data.klass->enum_basetype->type;
+				goto enum_retvalue;
+			}
+			NOT_IMPLEMENTED ("value type as ret val from delegate");
 			break;
 		default:
 			g_error ("Type 0x%x not handled yet in thunk creation", sig->ret->type);
