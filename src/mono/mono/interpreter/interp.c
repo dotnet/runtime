@@ -4352,7 +4352,8 @@ array_constructed:
 				else if (sp->type == VAL_I64)
 					result = (guint64)sp [0].data.l > (guint64)sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE)
-					result = isnan (sp [0].data.f) || isnan (sp [1].data.f);
+					result = isnan (sp [0].data.f) || isnan (sp [1].data.f) ||
+						sp[0].data.f > sp[1].data.f;
 				else
 					result = (mono_u)sp [0].data.nati > (mono_u)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
@@ -4393,7 +4394,8 @@ array_constructed:
 				else if (sp->type == VAL_I64)
 					result = (guint64)sp [0].data.l < (guint64)sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE)
-					result = isnan (sp [0].data.f) || isnan (sp [1].data.f);
+					result = isnan (sp [0].data.f) || isnan (sp [1].data.f) ||
+						sp[0].data.f < sp[1].data.f;
 				else
 					result = (mono_u)sp [0].data.nati < (mono_u)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
@@ -4810,7 +4812,7 @@ ves_exec_method (MonoInvocation *frame)
 			longjmp (*context->current_env, 1);
 		}
 		else
-			mono_unhandled_exception (frame->ex);
+			mono_unhandled_exception ((MonoObject*)frame->ex);
 	}
 	if (context->base_frame == frame)
 		TlsSetValue (thread_context_id, NULL);
