@@ -762,9 +762,16 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image = g_new0 (MonoImage, 1);
 	image->ref_count = 1;
 	image->f = filed;
-	image->name = g_strdup (fname);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
+
+	if (g_path_is_absolute (fname))
+		image->name = g_strdup (fname);
+	else {
+		gchar *path = g_get_current_dir ();
+		image->name = g_build_filename (path, fname, NULL);
+		g_free (path);
+	}
 
 	return do_mono_image_load (image, status);
 }
