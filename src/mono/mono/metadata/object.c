@@ -15,13 +15,6 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-#include <sys/mman.h>
-#include <limits.h>    /* for PAGESIZE */
-#ifndef PAGESIZE
-#define PAGESIZE 4096
-#endif
-#endif
 
 static void
 default_runtime_object_init (MonoObject *o)
@@ -406,7 +399,24 @@ mono_string_intern (MonoString *str)
 	p = ins;
 	mono_metadata_encode_value (bloblen + 2 * str->length, p, &p);
 	bloblen = (p - ins) + 2 * str->length;
+	/*
+	 * ins is stored in the hash table as a key and needs to have the same
+	 * representation as in the metadata: we swap the character bytes on big
+	 * endian boxes.
+	 */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	{
+		int i;
+		char *p2 = mono_array_addr (str->c_str, char, 0);
+		for (i = 0; i < str->length; ++i) {
+			*p++ = p2 [1];
+			*p++ = p2 [0];
+			p2 += 2;
+		}
+	}
+#else
 	memcpy (p, str->c_str->vector, str->length * 2);
+#endif
 	ldstr_table = ((MonoObject *)str)->vtable->domain->ldstr_table;
 	if ((res = g_hash_table_lookup (ldstr_table, ins))) {
 		g_free (ins);
@@ -429,36 +439,19 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
 	if ((o = g_hash_table_lookup (domain->ldstr_table, sig)))
 		return o;
 	
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-#define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
-	{
-		gint i;
-		guint16 *s;
-		/* FIXME: we need to find better way for swapping strings, i.e. swap all string after image load */
-		static GHashTable *converted_strings = NULL;
-
-		if (!converted_strings)
-			converted_strings = g_hash_table_new (g_str_hash, g_str_equal);
-
-		if (converted_strings && !g_hash_table_lookup (converted_strings, str)) {
-			/* FIXME: it will be better to just add WRITE and after get it to previous state */
-			mprotect ((void *) ((int) str & ~(PAGESIZE - 1)), len2 + ((int) str & (PAGESIZE - 1)),
-				  PROT_READ | PROT_WRITE | PROT_EXEC);
-			len2 >>= 1;
-			/* printf ("swap %p\n", str); */
-			for (i = 0, s = (guint16 *) str; i < len2; i++, s++) {
-				*s = ((*s & 0xff) << 8) | (*s >> 8);
-			}
-			g_hash_table_insert (converted_strings, (gpointer) str, (gpointer) str);
-		} else
-			len2 >>= 1;
-	}
-#undef SWAP16
-#else
-		len2 >>= 1;
-#endif
+	len2 >>= 1;
 
 	o = mono_string_new_utf16 (domain, (guint16*)str, len2);
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	{
+		int i;
+		guint16 *p2 = (guint16*)mono_array_addr (o->c_str, guint16, 0);
+		for (i = 0; i < len2; ++i) {
+			*p2 = GUINT16_FROM_LE (*p2);
+			++p2;
+		}
+	}
+#endif
 	g_hash_table_insert (domain->ldstr_table, (gpointer)sig, o);
 
 	return o;
