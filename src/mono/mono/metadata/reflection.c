@@ -4564,6 +4564,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	guint32 *rva, value;
 	guint16 *data16;
 	guchar *p;
+	guint32 dummy;
 	static const unsigned char msheader[] = {
 		0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,  0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
 		0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4875,7 +4876,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	
 	/* check that the file is properly padded */
 	
-	if (!WriteFile (file, pefile->data, pefile->index , NULL, NULL))
+	if (!WriteFile (file, pefile->data, pefile->index , &dummy, NULL))
 		g_error ("WriteFile returned %d\n", GetLastError ());
 	
 	mono_dynamic_stream_reset (pefile);
