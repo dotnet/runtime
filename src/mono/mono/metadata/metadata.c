@@ -1244,6 +1244,18 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 	return mono_metadata_parse_method_signature (image, FALSE, ptr, NULL); 
 }
 
+MonoMethodSignature*
+mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
+{
+	MonoMethodSignature *sig;
+
+	/* later we want to allocate signatures with mempools */
+	sig = g_malloc0 (sizeof (MonoMethodSignature) + (nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	sig->param_count = nparams;
+
+	return sig;
+}
+
 /*
  * mono_metadata_parse_method_signature:
  * @m: metadata context
@@ -1289,8 +1301,7 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 				pattrs [cols [MONO_PARAM_SEQUENCE] - 1] = cols [MONO_PARAM_FLAGS];
 		}
 	}
-	method = g_malloc0 (sizeof (MonoMethodSignature) + (param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
-	method->param_count = param_count;
+	method = mono_metadata_signature_alloc (m, param_count);
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
 	method->call_convention = call_convention;
