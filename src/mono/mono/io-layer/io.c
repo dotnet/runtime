@@ -2316,7 +2316,8 @@ guint32 SetFilePointer(gpointer fd_handle, gint32 movedistance,
  */
 WapiFileType GetFileType(gpointer fd_handle)
 {
-	WapiHandleType type=_wapi_handle_type (fd_handle);
+	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+	WapiHandleType type=_wapi_handle_type (handle);
 	
 	if(io_ops[type].getfiletype==NULL) {
 		return(FILE_TYPE_UNKNOWN);
