@@ -233,6 +233,7 @@ typedef struct {
 	MonoObject  obj;
 	HANDLE      handle;
 	MonoObject *culture_info;
+	MonoObject *ui_culture_info;
 	MonoBoolean threadpool_thread;
 	guint32     state;
 	MonoException *abort_exc;

@@ -4277,30 +4277,21 @@ static gconstpointer icall_map [] = {
 	"System.String::.ctor(char[])", ves_icall_System_String_ctor_chara,
 	"System.String::.ctor(char[],int,int)", ves_icall_System_String_ctor_chara_int_int,
 	"System.String::.ctor(char,int)", ves_icall_System_String_ctor_char_int,
-	"System.String::InternalEquals", ves_icall_System_String_InternalEquals,
 	"System.String::InternalJoin", ves_icall_System_String_InternalJoin,
 	"System.String::InternalInsert", ves_icall_System_String_InternalInsert,
 	"System.String::InternalReplace(char,char)", ves_icall_System_String_InternalReplace_Char,
-	"System.String::InternalReplace(string,string)", ves_icall_System_String_InternalReplace_Str,
 	"System.String::InternalRemove", ves_icall_System_String_InternalRemove,
 	"System.String::InternalCopyTo", ves_icall_System_String_InternalCopyTo,
 	"System.String::InternalSplit", ves_icall_System_String_InternalSplit,
 	"System.String::InternalTrim", ves_icall_System_String_InternalTrim,
-	"System.String::InternalIndexOf(char,int,int)", ves_icall_System_String_InternalIndexOf_Char,
-	"System.String::InternalIndexOf(string,int,int)", ves_icall_System_String_InternalIndexOf_Str,
 	"System.String::InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny,
-	"System.String::InternalLastIndexOf(char,int,int)", ves_icall_System_String_InternalLastIndexOf_Char,
-	"System.String::InternalLastIndexOf(string,int,int)", ves_icall_System_String_InternalLastIndexOf_Str,
 	"System.String::InternalLastIndexOfAny", ves_icall_System_String_InternalLastIndexOfAny,
 	"System.String::InternalPad", ves_icall_System_String_InternalPad,
-	"System.String::InternalToLower", ves_icall_System_String_InternalToLower,
-	"System.String::InternalToUpper", ves_icall_System_String_InternalToUpper,
 	"System.String::InternalAllocateStr", ves_icall_System_String_InternalAllocateStr,
 	"System.String::InternalStrcpy(string,int,string)", ves_icall_System_String_InternalStrcpy_Str,
 	"System.String::InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN,
 	"System.String::InternalIntern", ves_icall_System_String_InternalIntern,
 	"System.String::InternalIsInterned", ves_icall_System_String_InternalIsInterned,
-	"System.String::InternalCompare(string,int,string,int,int,int)", ves_icall_System_String_InternalCompareStr_N,
 	"System.String::GetHashCode", ves_icall_System_String_GetHashCode,
 	"System.String::get_Chars", ves_icall_System_String_get_Chars,
 
@@ -4827,6 +4818,7 @@ static gconstpointer icall_map [] = {
 	"System.Threading.Interlocked::Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int,
 	"System.Threading.Interlocked::Exchange(object&,object)", ves_icall_System_Threading_Interlocked_Exchange_Object,
 	"System.Threading.Interlocked::Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single,
+	"System.Threading.Thread::current_lcid()", ves_icall_System_Threading_Thread_current_lcid,
 
 	/*
 	 * System.Diagnostics.Process
@@ -4905,10 +4897,26 @@ static gconstpointer icall_map [] = {
 	"System.Globalization.CompareInfo::internal_compare(string,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare,
 	"System.Globalization.CompareInfo::free_internal_collator()", ves_icall_System_Globalization_CompareInfo_free_internal_collator,
 	"System.Globalization.CompareInfo::assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey,
+	"System.Globalization.CompareInfo::internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index,
+	"System.String::InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp,
+	"System.String::InternalToLower(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToLower_Comp,
+	"System.String::InternalToUpper(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToUpper_Comp,
 
 	/*
 	 * add other internal calls here
 	 */
+
+	/* These will be deleted after the next release */
+	"System.String::InternalEquals", ves_icall_System_String_InternalEquals,
+	"System.String::InternalIndexOf(char,int,int)", ves_icall_System_String_InternalIndexOf_Char,
+	"System.String::InternalIndexOf(string,int,int)", ves_icall_System_String_InternalIndexOf_Str,
+	"System.String::InternalLastIndexOf(char,int,int)", ves_icall_System_String_InternalLastIndexOf_Char,
+	"System.String::InternalLastIndexOf(string,int,int)", ves_icall_System_String_InternalLastIndexOf_Str,
+	"System.String::InternalCompare(string,int,string,int,int,int)", ves_icall_System_String_InternalCompareStr_N,
+	"System.String::InternalReplace(string,string)", ves_icall_System_String_InternalReplace_Str,
+	"System.String::InternalToLower()", ves_icall_System_String_InternalToLower,
+	"System.String::InternalToUpper()", ves_icall_System_String_InternalToUpper,
+
 	NULL, NULL
 };
 

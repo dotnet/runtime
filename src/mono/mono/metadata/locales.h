@@ -31,5 +31,10 @@ extern void ves_icall_System_Globalization_CultureInfo_construct_compareinfo (Mo
 extern int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *this, MonoString *str1, MonoString *str2, gint32 options);
 extern void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoObject *this);
 extern void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this, MonoObject *key, MonoString *source, gint32 options);
+extern int ves_icall_System_Globalization_CompareInfo_internal_index (MonoObject *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first);
+extern int ves_icall_System_Threading_Thread_current_lcid (void);
+extern MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, MonoString *old, MonoString *new, MonoObject *comp);
+extern MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, MonoObject *cult);
+extern MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, MonoObject *cult);
 
 #endif /* _MONO_METADATA_FILEIO_H_ */
