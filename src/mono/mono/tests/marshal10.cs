@@ -90,12 +90,11 @@ public class time_t_CustomMarshaler : ICustomMarshaler {
 		DateTime dt = (DateTime) obj;
 		int size = Marshal.SizeOf (typeof (int)) + GetNativeDataSize ();
 		IntPtr ptr = Marshal.AllocCoTaskMem (size);
-		IntPtr time_t_ptr = new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof(int)));
 		int secs = ((int)dt.Subtract (local_epoch).TotalSeconds) + utc_offset;
 		if (GetNativeDataSize () == 4)
-			Marshal.WriteInt32 (time_t_ptr, secs);
+			Marshal.WriteInt32 (ptr, secs);
 		else if (GetNativeDataSize () == 8)
-			Marshal.WriteInt64 (time_t_ptr, secs);
+			Marshal.WriteInt64 (ptr, secs);
 		else
 			throw new Exception ("Unexpected native size for time_t.");
 
@@ -104,7 +103,7 @@ public class time_t_CustomMarshaler : ICustomMarshaler {
 
 	public void CleanUpNativeData (IntPtr data)
 	{
-		Marshal.FreeCoTaskMem (data);
+		Marshal.FreeHGlobal (data);
 	}
 
 	public object MarshalNativeToManaged (IntPtr data)

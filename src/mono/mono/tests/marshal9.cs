@@ -24,8 +24,11 @@ public class MyMarshal: ICustomMarshaler
 	public void CleanUpNativeData (IntPtr pNativeData)
 	{
 		Console.WriteLine("CleanUpNativeData called");
-		if (pNativeData != IntPtr.Zero)
-			Marshal.FreeHGlobal (pNativeData);
+		if (pNativeData != IntPtr.Zero) {
+			IntPtr realPtr = new IntPtr (pNativeData.ToInt64 () - Marshal.SizeOf (typeof (int)));
+
+			Marshal.FreeHGlobal (realPtr);
+		}
 	}
 
 
@@ -48,7 +51,7 @@ public class MyMarshal: ICustomMarshaler
 			ptr = Marshal.AllocHGlobal (8);
 			Marshal.WriteInt32 (ptr, 0);
 			Marshal.WriteInt32 (new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof(int))), number);
-			return ptr;
+			return new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof (int)));
 		} catch {
 			return IntPtr.Zero;
 		}
