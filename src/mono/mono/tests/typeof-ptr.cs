@@ -8,13 +8,19 @@ class T {
 		ParameterInfo[] args = typeof (T).GetMethod ("meth").GetParameters ();
 		if (args[0].ParameterType == args[1].ParameterType)
 			return 1;
-		
-		if (typeof(int) == typeof (int*))
-			return 2;
+
+		unsafe { 
+			if (typeof(int) == typeof (int*))
+				return 2;
+		}
 		if (args[0].ParameterType != typeof(int))
 			return 3;
-		if (args[1].ParameterType != typeof(int*))
-			return 4;
+
+		unsafe { 
+			if (args[1].ParameterType != typeof(int*))
+				return 4;
+		}
+
 		return 0;
 	}
 }
