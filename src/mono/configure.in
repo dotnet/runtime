@@ -74,7 +74,6 @@ AC_CHECK_LIB(pthread, pthread_create, [
 			], [
 				AC_MSG_RESULT(no)
 				dnl Add other variants here
-				#AC_MSG_ERROR(Need pthread_mutex_timedlock)
 				AC_MSG_WARN(Working around pthread_mutex_timedlock)
 			])
 		])

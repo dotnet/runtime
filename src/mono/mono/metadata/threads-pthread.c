@@ -59,6 +59,41 @@ typedef struct
 static pthread_mutex_t data_slots_mutex;
 static GHashTable *data_slots=NULL;
 
+#ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+/*
+ * This stuff should go in a separate support code library if it gets any
+ * bigger.
+ */
+
+/*
+ * Implementation of timed mutex locking also from the P1003.1d/D14
+ * (July 1999) draft spec, figure B-4.
+ */
+static int pthread_mutex_timedlock(pthread_mutex_t *mutex,
+				   const struct timespec *timeout)
+{
+	struct timeval timenow;
+	struct timespec sleepytime;
+
+	/* This is just to avoid a completely busy wait */
+	sleepytime.tv_sec=0;
+	sleepytime.tv_nsec=10000;	/* 10ms */
+	
+	while(pthread_mutex_trylock(mutex)==EBUSY) {
+		gettimeofday(&timenow, NULL);
+		
+		if(timenow.tv_sec >= timeout->tv_sec &&
+		   timenow.tv_usec >= (timeout->tv_nsec * 1000)) {
+			return(ETIMEDOUT);
+		}
+		
+		nanosleep(&sleepytime, NULL);
+	}
+	
+	return(0);
+}
+#endif /* !HAVE_PTHREAD_MUTEX_TIMEDLOCK */
+
 static void timed_thread_init()
 {
 	pthread_key_create(&timed_thread_key, NULL);
@@ -656,11 +691,6 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 		return(TRUE);
 	}
 
-#ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
-	/* Nasty temporary kludge to work around older pthreads */
-#warning("Limiting Try_Enter(timeout) because of missing pthread_mutex_timedlock()");
-	ms=0;
-#endif
 	if(ms==0) {
 		ret=pthread_mutex_trylock(&obj->synchronisation.mutex);
 		if(ret==0) {
@@ -675,7 +705,6 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 			return(FALSE);
 		}
 	} else {
-#ifdef HAVE_PTHREAD_MUTEX_TIMEDLOCK
 		struct timespec timeout;
 		struct timeval now;
 		div_t divvy;
@@ -699,7 +728,6 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 #endif
 			return(FALSE);
 		}
-#endif /* HAVE_PTHREAD_MUTEX_TIMEDLOCK */
 	}
 }
 
