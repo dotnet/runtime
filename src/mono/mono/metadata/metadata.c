@@ -11,6 +11,7 @@
 #include <config.h>
 #include <stdio.h> 
 #include <stdlib.h>
+#include <string.h>
 #include <glib.h>
 #include "metadata.h"
 #include "tabledefs.h"
@@ -1202,6 +1203,7 @@ MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
 {
 	MonoType *type, *cached;
+	MonoType stype;
 	gboolean byref = FALSE;
 	gboolean pinned = FALSE;
 	const char *tmp_ptr;
@@ -1245,11 +1247,10 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
 	}
-	else
-		/*
-		 * Later we can avoid doing this allocation.
-		 */
-		type = g_new0 (MonoType, 1);
+	else {
+		type = &stype;
+		memset (type, 0, sizeof (MonoType));
+	}
 
 	/* Parse pinned, byref and custom modifiers */
 	found = TRUE;
@@ -1285,9 +1286,11 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 
 	/* No need to use locking since nobody is modifying the hash table */
 	if (mode != MONO_PARSE_PARAM && !type->num_mods && (cached = g_hash_table_lookup (type_cache, type))) {
-		mono_metadata_free_type (type);
+		/* No need to free the contents of stype */
 		return cached;
 	} else {
+		if (type == &stype)
+			type = g_memdup (&stype, sizeof (MonoType));
 		return type;
 	}
 }
