@@ -1,3 +1,16 @@
+2001-11-09  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Try and get large file support, but it's not fatal
+	if it's not there (the io-layer just ignores the high word in that
+	case.)
+
+	Check for windows builds, and only bother to look for pthreads and
+	large files if we're not building for cygwin or native win32.  Not
+	having pthread support on Posix systems is now a fatal error.
+
+	* autogen.sh: Fix ACLOCAL_FLAGS - it wasn't being passed to
+	aclocal
+
 2001-10-15  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/Makefile.am: removed JITTESTS, simply run all tests for

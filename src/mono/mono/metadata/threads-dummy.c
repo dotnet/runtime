@@ -114,7 +114,7 @@ void mono_thread_init(void)
 	 * object? In theory, I guess the whole program should act as
 	 * though exit() were called :-)
 	 */
-	main_thread=mono_new_object(thread_class);
+	main_thread=mono_object_new(thread_class);
 }
 
 

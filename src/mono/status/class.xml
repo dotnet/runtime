@@ -2185,6 +2185,15 @@
             <maintainer>miguel@ximian.com</maintainer>
         </maintainers>
     </class>
+    <class name="System.LocalDataStoreSlot">
+        <last-activity>Sep-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
     <class name="System.Web.HttpCacheability">
         <last-activity>Aug-9-2001</last-activity>
         <implementation>yes</implementation>

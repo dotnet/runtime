@@ -35,19 +35,101 @@ GMODULE_LIBS=`glib-config --libs gmodule`
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-dnl *****************************
-dnl *** Checks for libpthread ***
-dnl *****************************
-AC_CHECK_LIB(pthread, pthread_create, [
-		THREAD_LIBS=-lpthread
+dnl ****************************************
+dnl *** Check if we're building on win32 ***
+dnl ****************************************
+AC_MSG_CHECKING([if building for some Win32 platform])
+case "$host" in
+	*-*-mingw*|*-*-cygwin*)
+		platform_win32=yes
+		AC_DEFINE(PLATFORM_WIN32)
+		;;
+	*)
+		platform_win32=no
+		;;
+esac
+AC_MSG_RESULT($platform_win32)
+AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
+
+if test x$platform_win32 = xyes; then
+	AC_MSG_CHECKING([if building for native Win32])
+	case "$host" in
+		*-*-mingw*)
+			platform_win32_native=yes
+			AC_DEFINE(PLATFORM_WIN32_NATIVE)
+			;;
+		*)
+			platform_win32_native=no
+			;;
+	esac
+	AC_MSG_RESULT($platform_win32_native)
+	AM_CONDITIONAL(PLATFORM_WIN32_NATIVE,
+		       test x$platform_win32_native = xyes)
+fi
+
+
+if test x$platform_win32 = xno; then
+	dnl ******************************************************************
+	dnl *** Check for large file support                               ***
+	dnl *** (If we were using autoconf 2.50 we'd use AC_SYS_LARGEFILE) ***
+	dnl ******************************************************************
+	
+	# Check that off_t can represent 2**63 - 1 correctly, working around
+	# potential compiler bugs.  Defines LARGE_FILE_SUPPORT, adds $1 to
+	# CFLAGS and sets $large_offt to yes if the test succeeds
+	large_offt=no
+	AC_DEFUN(LARGE_FILES, [
+		large_CPPFLAGS=$CPPFLAGS
+		CPPFLAGS="$CPPFLAGS $1"
+		AC_TRY_RUN([
+			#include <sys/types.h>
+
+			#define BIG_OFF_T (((off_t)1<<62)-1+((off_t)1<<62))
+
+			int main(void) {
+				int big_off_t=((BIG_OFF_T%2147483629==721) &&
+					       (BIG_OFF_T%2147483647==1));
+				if(big_off_t) {
+					exit(0);
+				} else {
+					exit(1);
+				}
+			}
+		], [
+			AC_MSG_RESULT(ok)
+			AC_DEFINE(HAVE_LARGE_FILE_SUPPORT)
+			CFLAGS="$CFLAGS $1"
+			large_offt=yes
+			break
+		], [
+			AC_MSG_RESULT(no)
+		])
+		CPPFLAGS=$large_CPPFLAGS
+	])
+
+	AC_MSG_CHECKING(if off_t is 64 bits wide)
+	LARGE_FILES("")
+	if test $large_offt = no; then
+		AC_MSG_CHECKING(if _FILE_OFFSET_BITS=64 gives 64 bit off_t)
+		LARGE_FILES("-D_FILE_OFFSET_BITS=64")
+	fi
+	if test $large_offt = no; then
+		AC_MSG_WARN([No 64 bit file size support available])
+	fi
+
+
+	dnl *****************************
+	dnl *** Checks for libpthread ***
+	dnl *****************************
+	AC_SEARCH_LIBS(pthread_create, pthread, [
 		AM_CONDITIONAL(THREADS_PTHREAD, true)
 		AC_DEFINE(HAVE_PTHREAD)
 
 		# Need pthread_mutex_timedlock
 		pthread_CFLAGS=""
 		orig_CPPFLAGS=$CPPFLAGS
-		# This is a gcc-specific error, but we already set gcc-specific
-		# options in CFLAGS :)
+		# This is a gcc-specific error, but we already set
+		# gcc-specific options in CFLAGS
 		CPPFLAGS="$CPPFLAGS -Werror-implicit-function-declaration"
 		AC_MSG_CHECKING(for pthread_mutex_timedlock)
 		AC_TRY_COMPILE([ #include <pthread.h>], [
@@ -80,15 +162,10 @@ AC_CHECK_LIB(pthread, pthread_create, [
 		CPPFLAGS=$orig_CPPFLAGS
 		CFLAGS="$CFLAGS $pthread_CFLAGS"
 	], [
-		AC_MSG_RESULT([Cannot find libpthread])
-		# Check for other thread systems here, set THREAD_LIBS to
-		# whatever is needed, and define
-		# AM_CONDITIONAL(THREADS_foo, true), and add it to the
-		# section in mono/metadata/Makefile.am, AC_DEFINE(HAVE_foo),
-		# add that to acconfig.h, add the section for that in
-		# mono/metadata/threads.h
+		AC_MSG_ERROR([libpthread is required on non-win32 hosts])
 	])
-AC_SUBST(THREAD_LIBS)
+fi
+
 
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
@@ -137,6 +214,7 @@ mono/tests/Makefile
 mono/wrapper/Makefile
 mono/monoburg/Makefile
 mono/jit/Makefile
+mono/io-layer/Makefile
 runtime/Makefile
 doc/Makefile
 ])

@@ -67,6 +67,6 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
-pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) $(THREAD_LIBS)
+pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS)
 
 

@@ -86,8 +86,8 @@ if grep "^AM_PROG_LIBTOOL" configure.in >/dev/null; then
   fi
 fi
 
-echo "Running aclocal $aclocalinclude ..."
-aclocal $aclocalinclude || {
+echo "Running aclocal $ACLOCAL_FLAGS ..."
+aclocal $ACLOCAL_FLAGS || {
   echo
   echo "**Error**: aclocal failed. This may mean that you have not"
   echo "installed all of the packages you need, or you may need to"
