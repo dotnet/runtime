@@ -51,7 +51,7 @@
 	<ul>
 		* <a href="http://www.atoker.com/mono">Debian Linux</a>
 		* <a href="http://mono.baselabs.org/index.php/software">Red Hat Linux</a>
-		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a>
+		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> (works without cygwin!)
 	</ul>
 
 <a name="snapshots">
