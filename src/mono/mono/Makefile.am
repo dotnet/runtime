@@ -1,1 +1,1 @@
-SUBDIRS = metadata dis
+SUBDIRS = metadata cil dis 

@@ -373,7 +373,7 @@ dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end
 	guint32 param_cols [3];
 	int i;
 
-	if (end > t->rows + 1){
+	if (end > t->rows){
 		fprintf (output, "ERROR index out of range in methods");
 		exit (1);
 	}
@@ -445,7 +445,7 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	
 	expand (t, n, cols, CSIZE (cols));
 
-	if (t->rows < n+1){
+	if (t->rows > n){
 		expand (t, n + 1, cols_next, CSIZE (cols_next));
 		next_is_valid = 1;
 	} else
@@ -473,16 +473,16 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	else
 		last = m->tables [META_TABLE_FIELD].rows;
 			
-	if (cols [4] != cols_next [4])
+	if (cols [4] != cols_next [4] && cols_next [4] != 0)
 		dis_field_list (m, cols [4] - 1, last);
 	fprintf (output, "\n");
 
 	if (next_is_valid)
-		last = cols [5] - 1;
+		last = cols_next [5] - 1;
 	else
 		last = m->tables [META_TABLE_METHOD].rows;
 	
-	if (cols [4] != cols_next [5])
+	if (cols [4] != cols_next [5] && cols_next [5] != 0)
 		dis_method_list (m, ii, cols [5] - 1, last);
 
 	fprintf (output, "  }\n}\n\n");
@@ -500,7 +500,7 @@ dis_types (metadata_t *m, cli_image_info_t *ii)
 	metadata_tableinfo_t *t = &m->tables [META_TABLE_TYPEDEF];
 	int i;
 
-	for (i = 0; i < t->rows; i++)
+	for (i = 1; i < t->rows; i++)
 		dis_type (m, ii, i);
 }
 

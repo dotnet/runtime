@@ -692,48 +692,37 @@ parse_exception_handler (const char *ptr, gboolean is_fat)
 	return eh;
 }
 
+/** 
+ * @mh: The Method header
+ * @ptr: Points to the beginning of the Section Data (25.3)
+ */
 static void
 parse_section_data (MonoMetaMethodHeader *mh, const char *ptr)
 {
-#if 0
-	*************
-        adsf
-	asdf
-	asdf
-	sadf
-	asfd
-	sdf
-	adsf
-	asf
-	
 	while ((*ptr) &  METHOD_HEADER_SECTION_MORE_SECTS){
-	/* align on 32-bit boundary */
-	/* FIXME: not 64-bit clean code */
-	ptr = dword_align (ptr); 
-	
-	sect_data_flags = *ptr;
-	ptr++;
-	
-	if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS){
-		g_error ("Can not deal with more sections");
-	}
-	
-	if (sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT){
-		sect_data_len = 
-	} else {
-		sect_data_len = ptr [0];
+		/* align on 32-bit boundary */
+		/* FIXME: not 64-bit clean code */
+		ptr = dword_align (ptr); 
+		
+		sect_data_flags = *ptr;
 		ptr++;
+		
+		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS){
+			g_error ("Can not deal with more sections");
+		}
+		
+		if (sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT){
+			sect_data_len = 
+				} else {
+					sect_data_len = ptr [0];
+					ptr++;
+				}
+		
+		if (!(sect_data_flags & METHOD_HEADER_SECTION_EHTABLE))
+			return mh;
+		
+		ptr = dword_align (ptr);
 	}
-	
-	if (!(sect_data_flags & METHOD_HEADER_SECTION_EHTABLE))
-		return mh;
-	
-	ptr = dword_align (ptr);
-	
-	/*
-	 * Now ptr points to the EH table header
-	 */
-#endif
 }
 
 MonoMetaMethodHeader *
