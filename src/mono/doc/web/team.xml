@@ -426,4 +426,25 @@
       <task>nunit-gtk (NUnit2 Gtk# frontend)</task>
     </tasks>
   </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Rafael</first-name>
+      <last-name>Teixeira</last-name>
+    </name>
+    <e-mail>rafaelteixeirabr@hotmail.com</e-mail>
+    <image>none.png</image>
+    <location>São Paulo</location>
+    <organization>WEBforAll.</organization>
+    <description>Mono/MonoQLE hacker</description>
+    <tasks>
+      <task>MonoBASIC (mbas)</task>
+      <task>Mono.GetOptions</task>
+      <task>System.Messaging</task>
+      <task>System.ServiceProcess</task>
+      <task>System.Configuration.Install</task>
+      <task>System.DirectoryServices</task>
+    </tasks>
+  </contributor>
+
 </contributors>
