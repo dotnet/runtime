@@ -9,6 +9,11 @@
 #define GROUP_SIZE 5
 #define NUM_OPT_CALS 5
 
+#define NUM_SHORT_DATE_PATTERNS 14
+#define NUM_LONG_DATE_PATTERNS 8
+#define NUM_SHORT_TIME_PATTERNS 5
+#define NUM_LONG_TIME_PATTERNS 6
+
 typedef struct {
 	const gchar *full_date_time_pattern;
 	const gchar *long_date_pattern;
@@ -31,6 +36,11 @@ typedef struct {
 
 	const gchar *date_separator;
 	const gchar *time_separator;	
+
+	const gchar *short_date_patterns [NUM_SHORT_DATE_PATTERNS];
+	const gchar *long_date_patterns [NUM_LONG_DATE_PATTERNS];
+	const gchar *short_time_patterns [NUM_SHORT_TIME_PATTERNS];
+	const gchar *long_time_patterns [NUM_LONG_TIME_PATTERNS];
 } DateTimeFormatEntry;
 
 typedef struct {

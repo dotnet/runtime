@@ -25,7 +25,7 @@
 
 #include <locale.h>
 
-#undef DEBUG
+//#undef DEBUG
 
 static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 					     gint32 options);
@@ -150,6 +150,14 @@ ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultur
 	datetime->ShortTimePattern = mono_string_new (domain, dfe->short_time_pattern);
 	datetime->TimeSeparator = mono_string_new (domain, dfe->time_separator);
 	datetime->YearMonthPattern = mono_string_new (domain, dfe->year_month_pattern);
+	datetime->ShortDatePatterns = create_names_array (dfe->short_date_patterns,
+			NUM_SHORT_DATE_PATTERNS);
+	datetime->LongDatePatterns = create_names_array (dfe->long_date_patterns,
+			NUM_LONG_DATE_PATTERNS);
+	datetime->ShortTimePatterns = create_names_array (dfe->short_time_patterns,
+			NUM_SHORT_TIME_PATTERNS);
+	datetime->LongTimePatterns = create_names_array (dfe->long_time_patterns,
+			NUM_LONG_TIME_PATTERNS);
 
 }
 
@@ -1095,7 +1103,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", this->lcid);
 #endif
-	
+
 	if(coll==NULL || this->lcid==0x007F ||
 	   options & CompareOptions_Ordinal) {
 #ifdef DEBUG
@@ -1120,13 +1128,15 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 	
 	ec=U_ZERO_ERROR;
 	
+	set_collator_options (coll, options);
+
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
-	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * identical (eg "Žß" and "ss", "æ" and "ae" or "ä" etc.)  Note
 	 * that this means that the search string and the original
 	 * text might have differing lengths.
 	 */
-	ucol_setAttribute (coll, UCOL_STRENGTH, UCOL_PRIMARY, &ec);
+//	ucol_setAttribute (coll, UCOL_STRENGTH, UCOL_PRIMARY, &ec);
 
 	/* Still notice case differences though (normally a tertiary
 	 * difference)
@@ -1136,7 +1146,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 	/* Don't ignore some codepoints */
 	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
 			   &ec);
-			
+	
 	search=usearch_openFromCollator (mono_string_chars (value), -1, usrcstr, -1, coll, NULL,
 					 &ec);
 	if(U_SUCCESS (ec)) {
@@ -1221,7 +1231,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 	
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
-	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * identical (eg "Žß" and "ss", "æ" and "ae" or "ä" etc.)  Note
 	 * that this means that the search string and the original
 	 * text might have differing lengths.
 	 */
@@ -1314,7 +1324,7 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
-	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * identical (eg "Žß" and "ss", "æ" and "ae" or "ä" etc.)  Note
 	 * that this means that the search string and the original
 	 * text might have differing lengths.
 	 */

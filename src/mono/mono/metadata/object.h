@@ -286,6 +286,10 @@ typedef struct {
 	MonoArray *DayNames;
 	MonoArray *MonthNames;
 	MonoArray *AbbreviatedMonthNames;
+	MonoArray *ShortDatePatterns;
+	MonoArray *LongDatePatterns;
+	MonoArray *ShortTimePatterns;
+	MonoArray *LongTimePatterns;
 } MonoDateTimeFormatInfo;
 
 typedef struct 
