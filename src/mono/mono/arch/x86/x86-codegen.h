@@ -528,6 +528,13 @@ typedef union {
 			x86_imm_emit32 ((inst), (imm));	\
 		}	\
 	} while (0)
+	
+#define x86_alu_membase8_imm(inst,opc,basereg,disp,imm) 	\
+	do {	\
+		*(inst)++ = (unsigned char)0x80;	\
+		x86_membase_emit ((inst), (opc), (basereg), (disp));	\
+		x86_imm_emit8 ((inst), (imm)); \
+	} while (0)
 
 #define x86_alu_mem_reg(inst,opc,mem,reg)	\
 	do {	\
