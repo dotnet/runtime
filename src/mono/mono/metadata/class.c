@@ -1905,7 +1905,6 @@ MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
 	MonoGenericClass *gclass;
-	MonoGenericClass *cached;
 
 	if (is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
@@ -1918,13 +1917,14 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 	gclass->container_class = container->klass;
 	gclass->inst = get_shared_inst (container);
 
-#if 0
-	cached = mono_metadata_lookup_generic_class (gclass);
-	if (cached) {
-		g_free (gclass);
-		return cached;
+	if (!is_dynamic) {
+		MonoGenericClass *cached = mono_metadata_lookup_generic_class (gclass);
+
+		if (cached) {
+			g_free (gclass);
+			return cached;
+		}
 	}
-#endif
 
 	gclass->klass = container->klass;
 
