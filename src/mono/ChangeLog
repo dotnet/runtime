@@ -1,3 +1,15 @@
+2004-11-24  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (AUTOMAKE_OPTIONS): Set to 'cygnus'. 
+	Prevent a redundant 'make all' pass during 'make check'.
+	(build_profiles): Rename from install_profiles.
+	(check_profiles): New.
+	(TEST_SUPPORT_FILES): Don't include 'gmcs' if we're not building
+	the .NET2.0 profile.
+	(all-local,check-local): Use them.
+	(install,install-exec,install-data): Override automake rules to
+	prevent a redundant 'make all' pass.
+	
 2004-11-23  Chris Toshok  <toshok@ximian.com>
 
 	* Makefile.am (bootstrap): echo -> @echo.
