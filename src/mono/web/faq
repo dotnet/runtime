@@ -533,12 +533,12 @@ fi
 
 Q: What architectures does Mono support?
 
-A: Mono today ships with a Just-in-Time compiler for x86-based
-   systems.  It is tested regularly on Linux, FreeBSD and Windows
-   (with the XP/NT core).
+A: Mono today ships with a Just-in-Time compiler for x86, PowerPC and
+   SPARC-based systems.  It is tested regularly on Linux, FreeBSD and
+   Windows (with the XP/NT core).
 
    There is also an interpreter, which is slower that runs on the
-   s390, SPARC and PowerPC architectures.
+   s390, SPARC, HPPA, StrongARM and PowerPC architectures.
 
 Q: Can Mono run on Windows 9x, or ME editions?
 
@@ -925,12 +925,11 @@ A: To upgrade your class libraries and compiler, see the
    3.- Then checkout or update your mcs CVS copy. Then follow 
    the steps described in mcs/INSTALL.txt.
 
-Q: Will it be possible to use the CLI features without using byte codes
-   or the JIT?
+Q: Will it be possible to use the CLI features without using byte codes or the JIT?
 
 A: Yes. The CLI engine will be made available as a shared library.
    The garbage collection engine, the threading abstraction, the
-   object system, the dynamic type code system and the JIT will be
+   object system, the dynamic type code system and the JIT are
    available for C developers to integrate with their applications if
    they wish to do so. 
 
@@ -1377,10 +1376,19 @@ A: We can not predict the future, but a conservative estimate is that
    many new features, and layers suitable for optimization.  It is
    relatively easy to add new optimizations to Mono. 
 
-   The CIL has some advantages over the Java byte code:  it is really
-   an intermediate representation and there are a number of
-   restrictions on how you can emit CIL code that simplify creating
-   better JIT engines.
+   The CIL has some advantages over the Java byte code: The existance
+   of structs in addition to classes helps a lot the performance and
+   minimizes the memory footprint of applications.
+
+   Generics in the CLI world are first-class citizens, they are not
+   just a strong-typing addition to the language.  The generic
+   specifications are embedded into the instruction stream, the JIT
+   uses this information to JIT a unique instances of a method that is
+   optimized for the type arguments.
+
+   The CIL is really an intermediate representation and there are a
+   number of restrictions on how you can emit CIL code that simplify
+   creating better JIT engines.
 
    For example, on the CIL, the stack is not really an abstraction
    available for the code generator to use at will.  Rather, it is a

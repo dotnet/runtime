@@ -22,7 +22,7 @@
 	    <td>
 	      Linux/x86<br>
 	      Solaris/SPARC<br>
-	      PowerPC: missing exceptions (MacOS and Linux)
+	      PowerPC: MacOS and Linux.
 	    </td>
 	  </tr>
 	  <tr>
@@ -154,6 +154,19 @@
 </p>
 <br>
 <br>
+
+@item Mar 31st, 2004: Gtk# 0.18 and MonoDoc 0.13 released
+
+	New versions of Gtk# and MonoDoc have been released.
+
+	Gtk# is available from <a
+	href="http://gtk-sharp.sf.net">Gtk# home page</a> and MonoDoc 0.13
+	is available from our <a href="download.html">download</a>
+	page.
+
+	Gtk# now features [ConnectBefore] attribute for hooking up
+	signals; An automake/autoconf setup; the System.Drawing
+	dependency has been dropped and many more docs.
 
 @item Mar 18th, 2004: Mono 0.31 has been released
 

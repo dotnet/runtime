@@ -246,16 +246,7 @@ Happy hacking!
 	for example Streams for socketpairs. 
 
 	<ul>
-		<li>Complete the bindings for all POSIX calls.
-
-		<li>Design a glue layer, because the various low-level
-		structures and values differ from operating system to
-		operating system, so we must do the translation from
-		our own set of definitions to the OS definitions.
-
-		The details are availble on bug <a
-	href="http://bugzilla.ximian.com/show_bug.cgi?id=51849">51849</a>
-	for details.
+		<li>Complete the bindings for all POSIX calls in Mono.Posix.
 	</ul>
 
 		<td>Medium

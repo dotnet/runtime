@@ -29,12 +29,12 @@
 	          </td>
 		  <td>
 	 	    <ul>
-	 	      <li><a href="archive/mcs-0.31.tar.gz">Mono Class Libraries and C# Compiler 0.30.2</a>
-	              <li><a href="archive/mono-0.31.tar.gz">Mono Runtime 0.30.2</a>
+	 	      <li><a href="archive/mcs-0.31.tar.gz">Mono Class Libraries and C# Compiler 0.31</a>
+	              <li><a href="archive/mono-0.31.tar.gz">Mono Runtime 0.31</a>
  		      <li><a href="archive/libgdiplus-0.2.tar.gz">libgdiplus 0.2</a>
  		      <li><a href="archive/winelib-0.1.tar.gz">winelib 0.1</a>
 		      <p>
- 		      <li><a href="archive/monodoc-0.11.tar.gz">MonoDoc 0.11</a>
+		      <li><a href="archive/monodoc-0.13.tar.gz">MonoDoc 0.13</a>
  		      <li><a href="archive/xsp-0.9.tar.gz">XSP web server 0.9</a>
  		      <li><a href="archive/mod_mono-0.7.tar.gz">Apache Mono module 0.7</a>
 	            </ul>
@@ -77,11 +77,7 @@
                     <img src="images/windows-36.gif"><b>Windows installer</b>
 		  </td>
 		  <td>
- 		    No Windows Installer for 0.31 exist yet, you can download 
-		    version 0.30.0 for now:
-
-		    <a href="archive/0.30/windows/mono-0.30-win32-2.exe">Mono Setup</a>
-		    <a href="archive/0.30/windows/mono-0.30-gtksharp-0.15-win32-1.exe">Gtk# Setup</a>
+		    <a href="archive/0.31/windows/mono-0.31-win32-1.exe">Mono Setup</a>
 		  </td>
 		</tr>
              </table>
