@@ -1,4 +1,11 @@
 
+#ifndef __MONO_METADATA_H__
+#define __MONO_METADATA_H__
+
+#include <glib.h>
+
+#include "eltype.h"
+
 typedef struct {
 	guint32  sh_offset;
 	guint32  sh_size;
@@ -174,6 +181,15 @@ const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);
 const char    *mono_metadata_blob_heap    (metadata_t *meta, guint32 index);
 const char    *mono_metadata_user_string  (metadata_t *meta, guint32 index);
 
+const char  *mono_metadata_decode_value     (const char            *ptr,
+                                             guint32               *len);
+const char  *mono_metadata_decode_blob_size (const char            *xptr,
+                                             int                   *size);
+void         mono_metadata_decode_row       (metadata_tableinfo_t  *t,
+                                             int                    idx,
+                                             guint32               *res,
+                                             int                    res_size);
+
 typedef enum {
 	MONO_META_EXCEPTION_CLAUSE_NONE,
 	MONO_META_EXCEPTION_CLAUSE_FILTER,
@@ -181,12 +197,80 @@ typedef enum {
 	MONO_META_EXCEPTION_CLAUSE_FAULT
 } MonoMetaExceptionEnum;
 
+typedef enum {
+	MONO_CALL_DEFAULT,
+	MONO_CALL_C,
+	MONO_CALL_STDCALL,
+	MONO_CALL_THISCALL,
+	MONO_CALL_FASTCALL,
+	MONO_CALL_VARARG
+} MonoCallConvention;
 
 typedef struct {
 	MonoMetaExceptionEnum kind;
 	int n_clauses;
 	void **clauses;
 } MonoMetaExceptionHandler;
+
+typedef struct _MonoType MonoType;
+typedef struct _MonoArray MonoArray;
+typedef struct _MonoMethodSignature MonoMethodSignature;
+
+typedef struct {
+	guchar mod;
+	guint32 token;
+} MonoCustomMod;
+
+typedef struct {
+	MonoType *type;
+	int num_modifiers;
+	MonoCustomMod modifiers[1]; /* this may grow */
+} MonoModifiedType;
+
+struct _MonoArray {
+	MonoType *type;
+	int rank;
+	int numsizes;
+	int numlobounds;
+	int *sizes;
+	int *lobounds;
+};
+
+struct _MonoType {
+	guchar type; /* ElementTypeEnum */
+	guchar custom_mod; /* for PTR and SZARRAY: use data.mtype instead of data.type */
+	guchar byref; /* when included in a MonoRetType */
+	guchar constraint; /* valid when included in a local var signature */
+	union {
+		guint32 token; /* for VALUETYPE and CLASS */
+		MonoType *type;
+		MonoModifiedType *mtype;
+		MonoArray *array; /* for ARRAY */
+		MonoMethodSignature *method;
+	} data;
+};
+
+typedef struct {
+	/* maybe use a union here: saves 4 bytes */
+	MonoType *type; /* NULL for VOID */
+	short param_attrs; /* 22.1.11 */
+	char typedbyref;
+	int num_modifiers;
+	MonoCustomMod modifiers[1]; /* this may grow */
+} MonoRetType;
+
+/* MonoRetType is used also for params */
+typedef MonoRetType MonoParam;
+
+struct _MonoMethodSignature {
+	char hasthis;
+	char explicit_this;
+	char call_convention;
+	int param_count;
+	int sentinelpos;
+	MonoRetType *ret;
+	MonoParam **params;
+};
 
 typedef struct {
 	guint32     code_size;
@@ -199,6 +283,33 @@ typedef struct {
 
 	GList      *exception_handler_list;
 } MonoMetaMethodHeader;
+
+guint32     mono_metadata_parse_typedef_or_ref (metadata_t      *m,
+                                                const char      *ptr,
+                                                const char     **rptr);
+int         mono_metadata_parse_custom_mod     (metadata_t      *m,
+                                                MonoCustomMod   *dest,
+                                                const char      *ptr,
+                                                const char     **rptr);
+MonoArray  *mono_metadata_parse_array          (metadata_t      *m,
+                                                const char      *ptr,
+                                                const char     **rptr);
+void        mono_metadata_free_array           (MonoArray       *array);
+MonoParam  *mono_metadata_parse_param          (metadata_t      *m,
+                                                int              rettype,
+                                                const char      *ptr,
+                                                const char     **rptr);
+void        mono_metadata_free_param           (MonoParam       *param);
+MonoType   *mono_metadata_parse_type           (metadata_t      *m,
+                                                const char      *ptr,
+                                                const char     **rptr);
+void        mono_metadata_free_type            (MonoType        *type);
+
+MonoMethodSignature  *mono_metadata_parse_method_signature (metadata_t            *m,
+                                                            int                    def,
+                                                            const char            *ptr,
+                                                            const char           **rptr);
+void                  mono_metadata_free_method_signature  (MonoMethodSignature   *method);
 
 MonoMetaMethodHeader *mono_metadata_parse_mh (const char *ptr);
 void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
@@ -227,3 +338,5 @@ void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
 enum {
 	TOKEN_TABLE_XXX = 0
 } MonoMetadataTableCodes;
+
+#endif /* __MONO_METADATA_H__ */

@@ -1,3 +1,7 @@
+
+#ifndef __MONO_CIL_COFF_H__
+#define __MONO_CIL_COFF_H__
+
 #include <mono/metadata/metadata.h>
 
 /* A metadata token */
@@ -154,6 +158,18 @@ typedef struct {
 	metadata_t        cli_metadata;
 } cli_image_info_t;
 
+typedef struct {
+	MonoMetaMethodHeader *header;
+	MonoMethodSignature  *signature;
+	guint32 name; /* index in string heap */
+	/* add flags, info from param table  ... */
+} MonoMethod;
+
 guint32       cli_rva_image_map (cli_image_info_t *iinfo, guint32 rva);
 char         *cli_rva_map       (cli_image_info_t *iinfo, guint32 rva);
 
+MonoMethod   *mono_get_method   (cli_image_info_t *iinfo, guint32 token);
+void          mono_free_method  (MonoMethod *method);
+
+
+#endif /* __MONO_CIL_COFF_H__ */

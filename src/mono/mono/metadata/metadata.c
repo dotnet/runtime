@@ -13,6 +13,7 @@
 #include "metadata.h"
 #include "methodheader.h"
 #include "endian.h"
+#include "cil-coff.h"
 
 /*
  * Encoding of the "description" argument:
@@ -515,7 +516,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 */
 		case MONO_MT_CAT_IDX:
 			/* String is a heap, if it is wide, we know the size */
-			/* See above, nope.
+			/* See above, nope. 
 			if (meta->idx_string_wide){
 				field_size = 4;
 				break;
@@ -685,6 +686,7 @@ char *
 mono_metadata_locate (metadata_t *meta, int table, int idx)
 {
 	/* idx == 0 refers always to NULL */
+	g_return_val_if_fail (idx > 0 && idx <= meta->tables [table].rows, "");
 	   
 	return meta->tables [table].base + (meta->tables [table].row_size * (idx - 1));
 }
@@ -782,6 +784,395 @@ parse_exception_handler (const char *ptr, gboolean is_fat)
 	return eh;
 }
 
+/* cut and paste from expand: remove that one later */
+void
+mono_metadata_decode_row (metadata_tableinfo_t *t, int idx, guint32 *res, int res_size)
+{
+	guint32 bitfield = t->size_bitfield;
+	int i, count = meta_table_count (bitfield);
+	char *data = t->base + idx * t->row_size;
+	
+	g_assert (res_size == count);
+	
+	for (i = 0; i < count; i++){
+		int n = meta_table_size (bitfield, i);
+
+		switch (n){
+		case 1:
+			res [i] = *data; break;
+		case 2:
+			res [i] = read16 (data); break;
+			
+		case 4:
+			res [i] = read32 (data); break;
+			
+		default:
+			g_assert_not_reached ();
+		}
+		data += n;
+	}
+}
+
+const char *
+mono_metadata_decode_blob_size (const char *xptr, int *size)
+{
+	const unsigned char *ptr = xptr;
+	
+	if ((*ptr & 0x80) == 0){
+		*size = ptr [0] & 0x7f;
+		ptr++;
+	} else if ((*ptr & 0x40) == 0){
+		*size = ((ptr [0] & 0x3f) << 8) + ptr [1];
+		ptr += 2;
+	} else {
+		*size = ((ptr [0] & 0x1f) << 24) +
+			(ptr [1] << 16) +
+			(ptr [2] << 8) +
+			ptr [3];
+		ptr += 4;
+	}
+
+	return (char *) ptr;
+}
+
+/* cut and paste from get_encode_val */
+const char *
+mono_metadata_decode_value (const char *_ptr, guint32 *len)
+{
+	const unsigned char *ptr = (unsigned char *) _ptr;
+	unsigned char b = *ptr;
+	
+	if ((b & 0x80) == 0){
+		*len = b;
+		return ptr+1;
+	} else if ((b & 0x40) == 0){
+		*len = ((b & 0x3f) << 8 | ptr [1]);
+		return ptr + 2;
+	}
+	*len = ((b & 0x1f) << 24) |
+		(ptr [1] << 16) |
+		(ptr [2] << 8) |
+		ptr [3];
+	
+	return ptr + 4;
+}
+
+guint32
+mono_metadata_parse_typedef_or_ref (metadata_t *m, const char *ptr, const char **rptr)
+{
+	guint32 token;
+	guint table;
+	ptr = mono_metadata_decode_value (ptr, &token);
+	switch (table & 0x03) {
+	case 0: table = META_TABLE_TYPEDEF; break;
+	case 1: table = META_TABLE_TYPEREF; break;
+	case 2: table = META_TABLE_TYPESPEC; break;
+	default: g_error ("Unhandled encoding for typedef-or-ref coded index");
+	}
+	if (rptr)
+		*rptr = ptr;
+	return (token >> 2) | table << 24;
+}
+
+int
+mono_metadata_parse_custom_mod (metadata_t *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
+{
+	MonoCustomMod local;
+	if ((*ptr == ELEMENT_TYPE_CMOD_OPT) ||
+	    (*ptr == ELEMENT_TYPE_CMOD_REQD)) {
+		if (!dest)
+			dest = &local;
+		dest->mod = *ptr++;
+		dest->token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+MonoArray *
+mono_metadata_parse_array (metadata_t *m, const char *ptr, const char **rptr)
+{
+	int i;
+	MonoArray *array = g_new0(MonoArray, 1);
+	
+	array->type = mono_metadata_parse_type (m, ptr, &ptr);
+	ptr = mono_metadata_decode_value (ptr, &array->rank);
+
+	ptr = mono_metadata_decode_value (ptr, &array->numsizes);
+	if (array->numsizes)
+		array->sizes = g_new0(int, array->numsizes);
+	for (i = 0; i < array->numsizes; ++i)
+		ptr = mono_metadata_decode_value (ptr, &(array->sizes[i]));
+
+	ptr = mono_metadata_decode_value (ptr, &array->numlobounds);
+	if (array->numlobounds)
+		array->lobounds = g_new0(int, array->numlobounds);
+	for (i = 0; i < array->numlobounds; ++i)
+		ptr = mono_metadata_decode_value (ptr, &(array->lobounds[i]));
+
+	if (rptr)
+		*rptr = ptr;
+	return array;
+}
+
+void
+mono_metadata_free_array (MonoArray *array)
+{
+	mono_metadata_free_type (array->type);
+	g_free (array->sizes);
+	g_free (array->lobounds);
+	g_free (array);
+}
+
+MonoParam *
+mono_metadata_parse_param (metadata_t *m, int rettype, const char *ptr, const char **rptr)
+{
+	const char *tmp_ptr = ptr;
+	MonoParam *param;
+	int count = 0;
+	int byref = 0;
+
+	/* count the modifiers */
+	while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
+		count++;
+	param = g_malloc0(sizeof(MonoParam)+(count-1)*sizeof(MonoCustomMod));
+	param->num_modifiers = count;
+	/* save them this time */
+	count = 0;
+	while (mono_metadata_parse_custom_mod (m, &(param->modifiers[count]), ptr, &ptr))
+		count++;
+	switch (*ptr) {
+	case ELEMENT_TYPE_TYPEDBYREF: 
+		param->typedbyref = 1; 
+		ptr++; 
+		break;
+	case ELEMENT_TYPE_VOID: 
+		if (!rettype)
+			g_error ("void not allowed in param");
+		ptr++;
+		break;
+	case ELEMENT_TYPE_BYREF: 
+		byref = 1; 
+		ptr++;
+		/* follow through */
+	default:
+		param->type = mono_metadata_parse_type (m, ptr, &ptr);
+		param->type->byref = byref;
+		break;
+	}
+	if (rptr)
+		*rptr = ptr;
+	return param;
+}
+
+void
+mono_metadata_free_param (MonoParam *param)
+{
+	if (param->type)
+		mono_metadata_free_type (param->type);
+	g_free (param);
+}
+
+MonoMethodSignature *
+mono_metadata_parse_method_signature (metadata_t *m, int def, const char *ptr, const char **rptr)
+{
+	MonoMethodSignature *method = g_new0(MonoMethodSignature, 1);
+	int i;
+
+	if (*ptr & 0x20)
+		method->hasthis = 1;
+	if (*ptr & 0x40)
+		method->explicit_this = 1;
+	method->call_convention = *ptr & 0x0F;
+	ptr++;
+	ptr = mono_metadata_decode_value (ptr, &method->param_count);
+	method->ret = mono_metadata_parse_param (m, 1, ptr, &ptr);
+
+	method->params = g_new0(MonoParam*, method->param_count);
+	method->sentinelpos = -1;
+	for (i = 0; i < method->param_count; ++i) {
+		if (*ptr == ELEMENT_TYPE_SENTINEL) {
+			if (method->call_convention != MONO_CALL_VARARG || def)
+					g_error ("found sentinel for methoddef or no vararg method");
+			method->sentinelpos = i;
+			ptr++;
+		}
+		method->params[i] = mono_metadata_parse_param (m, 0, ptr, &ptr);
+	}
+	
+	if (rptr)
+		*rptr = ptr;
+	return method;
+}
+
+void
+mono_metadata_free_method_signature (MonoMethodSignature *method)
+{
+	int i;
+	mono_metadata_free_param (method->ret);
+	for (i = 0; i < method->param_count; ++i)
+		mono_metadata_free_param (method->params[i]);
+
+	g_free (method->params);
+	g_free (method);
+}
+
+/* II 22.2.12 */
+MonoType *
+mono_metadata_parse_type (metadata_t *m, const char *ptr, const char **rptr)
+{
+	/* should probably be allocated in a memchunk */
+	MonoType *type = g_new0(MonoType, 1);
+	int val;
+	
+	ptr = mono_metadata_decode_value (ptr, &val);
+	type->type = val;
+	
+	switch (type->type){
+	case ELEMENT_TYPE_BOOLEAN:
+	case ELEMENT_TYPE_CHAR:
+	case ELEMENT_TYPE_I1:
+	case ELEMENT_TYPE_U1:
+	case ELEMENT_TYPE_I2:
+	case ELEMENT_TYPE_U2:
+	case ELEMENT_TYPE_I4:
+	case ELEMENT_TYPE_U4:
+	case ELEMENT_TYPE_I8:
+	case ELEMENT_TYPE_U8:
+	case ELEMENT_TYPE_R4:
+	case ELEMENT_TYPE_R8:
+	case ELEMENT_TYPE_I:
+	case ELEMENT_TYPE_U:
+	case ELEMENT_TYPE_STRING:
+	case ELEMENT_TYPE_OBJECT:
+		break;
+	case ELEMENT_TYPE_VALUETYPE:
+	case ELEMENT_TYPE_CLASS:
+		type->data.token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
+		break;
+	case ELEMENT_TYPE_SZARRAY:
+	case ELEMENT_TYPE_PTR:
+		if (mono_metadata_parse_custom_mod (m, NULL, ptr, NULL)) {
+			const char *tmp_ptr = ptr;
+			MonoModifiedType *mtype;
+			int count = 0;
+
+			type->custom_mod = 1;
+			/* count the modifiers */
+			while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
+				count++;
+			type->data.mtype = mtype = g_malloc0(sizeof(MonoModifiedType)+(count-1)*sizeof(MonoCustomMod));
+			mtype->num_modifiers = count;
+			count = 0;
+			/* save them this time */
+			while (mono_metadata_parse_custom_mod (m, &(mtype->modifiers[count]), ptr, &ptr))
+				count++;
+			/* FIXME: mono_metadata_decode_value ... */
+			if (*ptr == ELEMENT_TYPE_VOID) {
+				mtype->type = NULL;
+				ptr++;
+			} else {
+				mtype->type = mono_metadata_parse_type (m, ptr, &ptr);
+			}
+		} else {
+			/* FIXME: mono_metadata_decode_value ... */
+			if (*ptr == ELEMENT_TYPE_VOID) {
+				type->data.type = NULL;
+				ptr++;
+			} else {
+				type->data.type = mono_metadata_parse_type (m, ptr, &ptr);
+			}
+		}
+		break;
+	case ELEMENT_TYPE_FNPTR:
+		type->data.method = mono_metadata_parse_method_signature (m, 0, ptr, &ptr);
+		break;
+	case ELEMENT_TYPE_ARRAY:
+		type->data.array = mono_metadata_parse_array (m, ptr, &ptr);
+		break;
+	default:
+		g_error ("type 0x%02x not handled in mono_metadata_parse_type", type->type);
+	}
+	
+	if (rptr)
+		*rptr = ptr;
+	return type;
+}
+
+void
+mono_metadata_free_type (MonoType *type)
+{
+	switch (type->type){
+	case ELEMENT_TYPE_SZARRAY:
+	case ELEMENT_TYPE_PTR:
+		if (!type->custom_mod)
+			mono_metadata_free_type (type->data.type);
+		else {
+			mono_metadata_free_type (type->data.mtype->type);
+			g_free (type->data.mtype);
+		}
+		break;
+	case ELEMENT_TYPE_FNPTR:
+		mono_metadata_free_method_signature (type->data.method);
+		break;
+	case ELEMENT_TYPE_ARRAY:
+		mono_metadata_free_array (type->data.array);
+		break;
+	}
+	g_free (type);
+}
+
+MonoMethod *
+mono_get_method (cli_image_info_t *iinfo, guint32 token)
+{
+	MonoMethod *result = g_new0 (MonoMethod, 1);
+	int table = mono_metadata_token_table (token);
+	int index = mono_metadata_token_index (token);
+	metadata_tableinfo_t *tables = iinfo->cli_metadata.tables;
+	const char *loc;
+	const char *sig = NULL;
+	int size;
+	guint32 cols[6];
+
+	/*
+	 * We need a context with cli_image_info_t for this module and the assemblies
+	 * loaded later to support method refs...
+	 */
+	if (table != META_TABLE_METHOD) {
+		g_assert (table == META_TABLE_MEMBERREF);
+		g_print ("method token -> 0x%08x\n", token);
+		mono_metadata_decode_row (&tables [table], index, cols, 3);
+		g_assert ((cols [0] & 0x07) != 3);
+		table = META_TABLE_METHOD;
+		index = cols [0] >> 3;
+		sig = mono_metadata_blob_heap (&iinfo->cli_metadata, cols [2]);
+		method->name = cols [1];
+		g_print ("decode methodref: %s\n", mono_metadata_string_heap (&iinfo->cli_metadata, cols [1]));
+	}
+	
+	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
+	method->name = cols [3];
+	g_print ("decode method: %s\n", mono_metadata_string_heap (&iinfo->cli_metadata, cols [3]));
+	/* if this is a methodref from another module/assembly, this fails */
+	loc = cli_rva_map (iinfo, cols [0]);
+	g_assert (loc);
+	result->header = mono_metadata_parse_mh (loc);
+	if (!sig) /* already taken from the methodref */
+		sig = mono_metadata_blob_heap (&iinfo->cli_metadata, cols [4]);
+	sig = mono_metadata_decode_blob_size (sig, &size);
+	result->signature = mono_metadata_parse_method_signature (&iinfo->cli_metadata, 0, sig, NULL);
+
+	return result;
+}
+
+void
+mono_free_method  (MonoMethod *method)
+{
+	mono_metadata_free_method_signature (method->signature);
+	mono_metadata_free_mh (method->header);
+	g_free (method);
+}
+
 /** 
  * @mh: The Method header
  * @ptr: Points to the beginning of the Section Data (25.3)
@@ -827,7 +1218,6 @@ mono_metadata_parse_mh (const char *ptr)
 	int hsize;
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
-	g_return_val_if_fail (mh != NULL, NULL);
 
 	mh = g_new0 (MonoMetaMethodHeader, 1);
 	switch (format){
@@ -877,6 +1267,7 @@ mono_metadata_parse_mh (const char *ptr)
 		break;
 		
 	default:
+		g_free (mh);
 		return NULL;
 	}
 		       
