@@ -121,6 +121,7 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 	MonoDebuggerSymbolFile *info;
 
 	g_assert (mono_debugger_initialized);
+	mono_debugger_lock ();
 
 	info = g_hash_table_lookup (images, handle->image);
 	if (info)
@@ -132,6 +133,7 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 	info->image_file = handle->image_file;
 
 	g_hash_table_insert (images, handle->image, info);
+	mono_debugger_unlock ();
 
 	return info;
 }
@@ -1119,4 +1121,30 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	}
 
 	return retval;
+}
+
+guint32
+mono_debugger_lookup_type (const gchar *type_name)
+{
+	int i;
+
+	mono_debugger_lock ();
+
+	for (i = 0; i < mono_debugger_symbol_table->num_symbol_files; i++) {
+		MonoDebuggerSymbolFile *symfile = mono_debugger_symbol_table->symbol_files [i];
+		MonoType *type;
+		guint32 offset;
+
+		type = mono_reflection_type_from_name (type_name, symfile->image);
+		if (!type)
+			continue;
+
+		offset = write_type (mono_debugger_symbol_table, type);
+
+		mono_debugger_unlock ();
+		return offset;
+	}
+
+	mono_debugger_unlock ();
+	return 0;
 }
