@@ -547,9 +547,17 @@ reduce_path (const gchar *dirname)
 	for (tmp = list; tmp; tmp = tmp->next) {
 		gchar *data = (gchar *) tmp->data;
 
-		if (data && *data)
-			g_string_append_printf (result, "%c%s", G_DIR_SEPARATOR,
-								(char *) tmp->data);
+		if (data && *data) {
+#ifdef PLATFORM_WIN32
+			if (result->len == 0)
+				g_string_append_printf (result, "%s\\", data);
+			else if (result->str [result->len - 1] == '\\')
+				g_string_append_printf (result, "%s", data);
+			else
+#endif
+				g_string_append_printf (result, "%c%s",
+							G_DIR_SEPARATOR, data);
+		}
 	}
 	
 	res = result->str;
