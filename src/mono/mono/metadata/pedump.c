@@ -404,6 +404,12 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	mono_metadata_init ();
+        mono_raw_buffer_init ();
+        mono_images_init ();
+        mono_assemblies_init ();
+        mono_loader_init ();
+ 
 	image = mono_image_open (file, NULL);
 	if (!image){
 		fprintf (stderr, "Can not open image %s\n", file);
