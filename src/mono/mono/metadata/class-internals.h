@@ -10,7 +10,7 @@
 
 extern gboolean mono_print_vtable;
 
-typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gpointer user_data);
+typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 
 typedef struct _MonoMethodNormal MonoMethodNormal;
 typedef struct _MonoMethodWrapper MonoMethodWrapper;

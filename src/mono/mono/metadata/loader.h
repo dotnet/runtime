@@ -71,5 +71,9 @@ mono_method_get_last_managed  (void);
 void
 mono_stack_walk         (MonoStackWalk func, gpointer user_data);
 
+/* Use this if the IL offset is not needed: it's faster */
+void
+mono_stack_walk_no_il   (MonoStackWalk func, gpointer user_data);
+
 #endif
 

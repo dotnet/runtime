@@ -1145,7 +1145,7 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 }
 
 static void
-default_stack_walk (MonoStackWalk func, gpointer user_data) {
+default_stack_walk (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
 	g_error ("stack walk not installed");
 }
 
@@ -1154,7 +1154,13 @@ static MonoStackWalkImpl stack_walk = default_stack_walk;
 void
 mono_stack_walk (MonoStackWalk func, gpointer user_data)
 {
-	stack_walk (func, user_data);
+	stack_walk (func, FALSE, user_data);
+}
+
+void
+mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
+{
+	stack_walk (func, TRUE, user_data);
 }
 
 void
@@ -1177,7 +1183,7 @@ MonoMethod*
 mono_method_get_last_managed (void)
 {
 	MonoMethod *m = NULL;
-	stack_walk (last_managed, &m);
+	stack_walk (last_managed, FALSE, &m);
 	return m;
 }
 
