@@ -3223,7 +3223,7 @@ main (int argc, char *argv [])
 	if (argc < 2)
 		usage ();
 
-	for (i = 1; argv [i][0] == '-'; i++){
+	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
 			tracing = 1;
 		if (strcmp (argv [i], "--opcode-count") == 0)
@@ -3235,6 +3235,9 @@ main (int argc, char *argv [])
 	}
 	
 	file = argv [i];
+
+	if (!file)
+		usage ();
 
 	mono_init ();
 	mono_init_icall ();
