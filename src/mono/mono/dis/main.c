@@ -291,11 +291,15 @@ dis_locals (metadata_t *m, guint32 token)
 {
 	metadata_tableinfo_t *t = &m->tables [META_TABLE_STANDALONESIG];
 	const char *ptr;
-	int len, i;
+	guint32 cols[1];
+	int len=0, i, bsize;
 
-	/*fprintf(stderr, "rows: %d\n", t->rows);*/
-	expand (t, token&0xffffff, &len, 1);
-	ptr = mono_metadata_blob_heap (m, len);
+	expand (t, (token&0xffffff)-1, cols, CSIZE(cols));
+	ptr = mono_metadata_blob_heap (m, cols[0]);
+	ptr = get_blob_encoded_size (ptr, &bsize);
+	if (*ptr != 0x07)
+			g_warning("wrong signature for locals blob");
+	ptr++;
 	ptr = get_encoded_value (ptr, &len);
 	fprintf(output, "\t.locals ( // %d\n", len);
 	for (i=0; i < len; ++i) {
@@ -313,7 +317,7 @@ dis_locals (metadata_t *m, guint32 token)
 			p = ptr;
 		}
 		ptr = get_type(m, p, &desc);
-		fprintf(output, "\t\t%s\tlocal%d\n", desc, i);
+		fprintf(output, "\t\t%s\tV_%d\n", desc, i);
 		g_free(desc);
 	}
 	fprintf(output, "\t)\n");
@@ -403,7 +407,7 @@ free_method_signature (MethodSignature *ms)
 }
 
 /**
- * dis_field_list:
+ * dis_method_list:
  * @m: metadata context
  * @start: starting index into the Method Table.
  * @end: ending index into Method table.
@@ -493,7 +497,7 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	
 	expand (t, n, cols, CSIZE (cols));
 
-	if (t->rows > n){
+	if (t->rows > n+1){
 		expand (t, n + 1, cols_next, CSIZE (cols_next));
 		next_is_valid = 1;
 	} else
@@ -516,13 +520,17 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	 * The value in the table is always valid, we know we have fields
 	 * if the value stored is different than the next record.
 	 */
+
 	if (next_is_valid)
 		last = cols_next [4] - 1;
 	else
 		last = m->tables [META_TABLE_FIELD].rows;
 			
-	if (cols [4] != cols_next [4] && cols_next [4] != 0)
+	/*if (cols [4] != cols_next [4] && cols_next [4] != 0)
+		dis_field_list (m, cols [4] - 1, last);*/
+	if (cols[4] && cols[4] <= m->tables [META_TABLE_FIELD].rows)
 		dis_field_list (m, cols [4] - 1, last);
+	/*fprintf (output, "cols[4] -> %d   cols_next[4] -> %d   last -> %d  rows -> %d\n", cols[4], cols_next[4], last, m->tables [META_TABLE_FIELD].rows);*/
 	fprintf (output, "\n");
 
 	if (next_is_valid)
@@ -530,8 +538,11 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	else
 		last = m->tables [META_TABLE_METHOD].rows;
 	
-	if (cols [4] != cols_next [5] && cols_next [5] != 0)
-		dis_method_list (m, ii, cols [5] - 1, last);
+	/*if (cols [4] != cols_next [5] && cols_next [5] != 0)
+		dis_method_list (m, ii, cols [5] - 1, last);*/
+	/*fprintf (output, "method(%d): cols[5] -> %d   cols_next[5] -> %d   last -> %d  rows -> %d\n", next_is_valid, cols[5], cols_next[5], last, m->tables [META_TABLE_METHOD].rows);*/
+	if (cols [5] < m->tables [META_TABLE_METHOD].rows)
+		dis_method_list (m, ii, cols [5]-1, last);
 
 	fprintf (output, "  }\n}\n\n");
 }
@@ -570,6 +581,7 @@ struct {
 	{ "--event",       META_TABLE_EVENT,       dump_table_event },
 	{ "--file",        META_TABLE_FILE,        dump_table_file },
 	{ "--moduleref",   META_TABLE_MODULEREF,   dump_table_moduleref },
+	{ "--method",      META_TABLE_METHOD,      dump_table_method },
 	{ NULL, -1 }
 };
 

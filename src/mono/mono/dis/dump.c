@@ -139,12 +139,18 @@ dump_table_field (metadata_t *m)
 	
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [3];
+		char *sig, *flags;
 
 		expand (t, i, cols, CSIZE (cols));
-		fprintf (output, "%d: 0x%02x %s\n",
+		sig = get_field_signature (m, cols [2]);
+		flags = field_flags (cols [0]);
+		fprintf (output, "%d: %s %s: %s\n",
 			 i,
-			 cols [0], 
-			 mono_metadata_string_heap (m, cols [1]));
+			 sig,
+			 mono_metadata_string_heap (m, cols [1]),
+			 flags);
+		g_free (sig);
+		g_free (flags);
 	}
 	fprintf (output, "\n");
 }
@@ -247,6 +253,7 @@ dump_table_property (metadata_t *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [3];
 		char *type;
+		int bsize;
 		
 		expand (t, i, cols, CSIZE (cols));
 		flags [0] = 0;
@@ -258,11 +265,11 @@ dump_table_property (metadata_t *m)
 			strcat (flags, "hasdefault ");
 
 		ptr = mono_metadata_blob_heap (m, cols [2]);
-		/*
-		 * The data in the blob doesn't follow the specs:
-		 * there are 3 nibbles first (we skip also the 0x8 signature).
-		 */
-		ptr+=2;
+		ptr = get_blob_encoded_size (ptr, &bsize);
+		/* ECMA claims 0x08 ... */
+		if (*ptr != 0x28 && *ptr != 0x08)
+				g_warning("incorrect signature in propert blob: 0x%x", *ptr);
+		ptr++;
 		ptr = get_encoded_value (ptr, &pcount);
 		ptr = get_type (m, ptr, &type);
 		fprintf (output, "%d: %s %s (",
@@ -334,6 +341,25 @@ dump_table_moduleref (metadata_t *m)
 		expand (t, i, cols, CSIZE (cols));
 
 		name = mono_metadata_string_heap (m, cols[0]);
+		fprintf (output, "%d: %s\n", i, name);
+	}
+	
+}
+
+void
+dump_table_method (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_METHOD];
+	int i;
+	fprintf (output, "Method Table (0..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [6];
+		const char *name;
+		
+		expand (t, i, cols, CSIZE (cols));
+
+		name = mono_metadata_string_heap (m, cols[3]);
 		fprintf (output, "%d: %s\n", i, name);
 	}
 	

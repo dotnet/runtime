@@ -228,7 +228,7 @@ dissasemble_cil (metadata_t *m, const unsigned char *start, int size)
 		case ShortInlineVar: {
 			signed char x = *ptr;
 
-			fprintf (output, "Varidx-%d", (int) x);
+			fprintf (output, "V_%d", (int) x);
 			ptr++;
 			break;
 		}

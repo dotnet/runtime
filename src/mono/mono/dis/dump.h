@@ -8,6 +8,7 @@ void dump_table_property     (metadata_t *m);
 void dump_table_event        (metadata_t *m);
 void dump_table_file         (metadata_t *m);
 void dump_table_moduleref    (metadata_t *m);
+void dump_table_method       (metadata_t *m);
 void dump_table_field        (metadata_t *m);
 void dump_table_memberref    (metadata_t *m);
 void dump_table_param        (metadata_t *m);
