@@ -189,10 +189,16 @@ mono_get_exception_array_type_mismatch ()
 }
 
 MonoException *
-mono_get_exception_type_load ()
+mono_get_exception_type_load (MonoString *type_name)
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
-					 "TypeLoadException");
+	MonoTypeLoadException *exc;
+	
+	exc = (MonoTypeLoadException *) mono_exception_from_name (mono_defaults.corlib,
+					"System",
+					"TypeLoadException");
+
+	exc->type_name = type_name;
+	return (MonoException *) exc;
 }
 
 MonoException *

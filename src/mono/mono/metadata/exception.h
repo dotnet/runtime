@@ -59,7 +59,7 @@ MonoException *
 mono_get_exception_array_type_mismatch (void);
 
 MonoException *
-mono_get_exception_type_load           (void);
+mono_get_exception_type_load           (MonoString *type_name);
 
 MonoException *
 mono_get_exception_missing_method      (void);
