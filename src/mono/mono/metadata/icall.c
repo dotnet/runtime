@@ -5808,10 +5808,10 @@ static const IcallEntry gchandle_icalls [] = {
 
 static const IcallEntry marshal_icalls [] = {
 	{"AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem},
-	{"AllocHGlobal", mono_marshal_alloc},
+	{"AllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal},
 	{"DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure},
 	{"FreeCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem},
-	{"FreeHGlobal", mono_marshal_free},
+	{"FreeHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal},
 	{"GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error},
 	{"OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf},
 	{"Prelink", ves_icall_System_Runtime_InteropServices_Marshal_Prelink},

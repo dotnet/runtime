@@ -218,7 +218,7 @@ mono_marshal_get_stelemref (void);
 /* marshaling internal calls */
 
 void * 
-mono_marshal_alloc (gpointer size);
+mono_marshal_alloc (gulong size);
 
 void 
 mono_marshal_free (gpointer ptr);
@@ -314,6 +314,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size);
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
+
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
 
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);

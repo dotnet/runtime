@@ -95,6 +95,8 @@ static guint32 last_error_tls_id;
 static void mono_struct_delete_old (MonoClass *klass, char *ptr);
 void * mono_marshal_string_to_utf16 (MonoString *s);
 
+static gpointer mono_string_to_lpstr (MonoString *string_obj);
+
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
@@ -120,6 +122,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_from_utf16, "mono_string_from_utf16", "obj ptr", FALSE);
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
 		register_icall (mono_string_to_utf8, "mono_string_to_utf8", "ptr obj", FALSE);
+		register_icall (mono_string_to_lpstr, "mono_string_to_lpstr", "ptr obj", FALSE);
 		register_icall (mono_string_to_bstr, "mono_string_to_bstr", "ptr obj", FALSE);
 		register_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", "ptr object", FALSE);
 		register_icall (mono_string_builder_to_utf8, "mono_string_builder_to_utf8", "ptr object", FALSE);
@@ -130,6 +133,8 @@ mono_marshal_init (void)
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32", FALSE);
 		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int32", FALSE);
+		register_icall (mono_marshal_alloc, "mono_marshal_alloc", "ptr int32", FALSE);
+		register_icall (mono_marshal_free, "mono_marshal_free", "void ptr", FALSE);
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr int32", FALSE);
@@ -287,7 +292,7 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	if (!sb)
 		return NULL;
 
-	res = g_malloc0 (mono_stringbuilder_capacity (sb) + 1);
+	res = mono_marshal_alloc (mono_stringbuilder_capacity (sb) + 1);
 
 	tmp = g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, res, &error);
 	if (error) {
@@ -310,6 +315,39 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 
 	return mono_string_chars (sb->str);
 }
+
+static gpointer
+mono_string_to_lpstr (MonoString *s)
+{
+#ifdef PLATFORM_WIN32
+	char *as, *tmp;
+	glong len;
+	GError *error = NULL;
+
+	if (s == NULL)
+		return NULL;
+
+	if (!s->length) {
+		as = CoTaskMemAlloc (1);
+		as [0] = '\0';
+		return as;
+	}
+
+	tmp = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &len, &error);
+	if (error) {
+		g_warning (error->message);
+		g_error_free (error);
+		return NULL;
+	}
+	else {
+		as = CoTaskMemAlloc (len + 1);
+		memcpy (as, tmp, len + 1);
+		return as;
+	}
+#else
+	return mono_string_to_utf8 (string_obj);
+#endif
+}	
 
 gpointer
 mono_string_to_ansibstr (MonoString *string_obj)
@@ -867,7 +905,7 @@ conv_to_icall (MonoMarshalConv conv)
 		return mono_string_new_wrapper;
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
-		return mono_string_to_utf8;
+		return mono_string_to_lpstr;
 	case MONO_MARSHAL_CONV_STR_BSTR:
 		return mono_string_to_bstr;
 	case MONO_MARSHAL_CONV_STR_TBSTR:
@@ -3804,7 +3842,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		} else {
 			if (mono_marshal_need_free (t, m->piinfo, spec)) {
 				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_icall (mb, g_free);
+				mono_mb_emit_icall (mb, mono_marshal_free);
 			}
 		}
 		break;
@@ -3961,7 +3999,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			if (need_free) {
 				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_icall (mb, g_free);
+				mono_mb_emit_icall (mb, mono_marshal_free);
 			}
 			break;
 		}
@@ -4309,7 +4347,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_ldloc (mb, src_ptr);
 					mono_mb_emit_byte (mb, CEE_LDIND_I);
 
-					mono_mb_emit_icall (mb, g_free);
+					mono_mb_emit_icall (mb, mono_marshal_free);
 				}
 			}
 			else if (eklass == mono_defaults.string_class) {
@@ -4318,7 +4356,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_ldloc (mb, src_ptr);
 					mono_mb_emit_byte (mb, CEE_LDIND_I);
 
-					mono_mb_emit_icall (mb, g_free);
+					mono_mb_emit_icall (mb, mono_marshal_free);
 				}
 			}
 			else {
@@ -4398,6 +4436,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			default:
 				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+				local_type = &mono_defaults.int32_class->byval_arg;
 				break;
 			}
 		}
@@ -5216,7 +5255,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
-	int i, pos, this_local, ret_local;
+	int i, pos, this_local, ret_local = 0;
 
 	g_assert (method);
 
@@ -5460,31 +5499,29 @@ mono_marshal_get_stelemref ()
 	return ret;
 }
 
-/* FIXME: on win32 we should probably use GlobalAlloc(). */
-void*
-mono_marshal_alloc (gpointer size) 
+static void*
+mono_marshal_alloc (gulong size)
 {
 	gpointer res;
 
-	MONO_ARCH_SAVE_REGS;
-
-	if ((gulong)size == 0)
-		/* This returns a valid pointer for size 0 on MS.NET */
-		size = (gpointer)4;
-
+#ifdef PLATFORM_WIN32
+	res = CoTaskMemAlloc (size);
+#else
 	res = g_try_malloc ((gulong)size);
 	if (!res)
 		mono_gc_out_of_memory ((gulong)size);
-
+#endif
 	return res;
 }
 
-void
-mono_marshal_free (gpointer ptr) 
+static void
+mono_marshal_free (gpointer ptr)
 {
-	MONO_ARCH_SAVE_REGS;
-
+#ifdef PLATFORM_WIN32
+	CoTaskMemFree (ptr);
+#else
 	g_free (ptr);
+#endif
 }
 
 void
@@ -5954,7 +5991,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		case MONO_MARSHAL_CONV_STR_BSTR:
 		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		case MONO_MARSHAL_CONV_STR_TBSTR:
-			g_free (*(gpointer *)cpos);
+			mono_marshal_free (*(gpointer *)cpos);
 			break;
 		default:
 			continue;
@@ -5977,22 +6014,56 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	mono_struct_delete_old (klass, (char *)src);
 }
 
+
+/* FIXME: on win32 we should probably use GlobalAlloc(). */
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
+{
+	gpointer res;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if ((gulong)size == 0)
+		/* This returns a valid pointer for size 0 on MS.NET */
+		size = (gpointer)4;
+
+	res = g_try_malloc ((gulong)size);
+	if (!res)
+		mono_gc_out_of_memory ((gulong)size);
+
+	return res;
+}
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	g_free (ptr);
+}
+
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 {
-	/* FIXME: Call AllocCoTaskMem under windows */
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef PLATFORM_WIN32
+	return CoTaskMemAlloc (size);
+#else
 	return g_try_malloc ((gulong)size);
+#endif
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 {
-	/* FIXME: Call FreeCoTaskMem under windows */
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef PLATFORM_WIN32
+	CoTaskMemFree (ptr);
+#else
 	g_free (ptr);
+#endif
 }
 
 void*
@@ -6317,7 +6388,7 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding)
 			return mono_string_to_utf16 ((MonoString*)o);
 			break;
 		case MONO_NATIVE_LPSTR:
-			return mono_string_to_utf8 ((MonoString*)o);
+			return mono_string_to_lpstr ((MonoString*)o);
 			break;
 		default:
 			g_warning ("marshaling conversion %d not implemented", string_encoding);
@@ -6340,7 +6411,7 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding)
 			klass->blittable || klass->enumtype)
 			return mono_object_unbox (o);
 
-		res = g_malloc0 (mono_class_native_size (klass, NULL));
+		res = mono_marshal_alloc (mono_class_native_size (klass, NULL));
 
 		method = mono_marshal_get_struct_to_ptr (o->vtable->klass);
 
@@ -6373,10 +6444,8 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 	case MONO_TYPE_STRING:
 		switch (string_encoding) {
 		case MONO_NATIVE_LPWSTR:
-			g_free (ptr);
-			break;
 		case MONO_NATIVE_LPSTR:
-			g_free (ptr);
+			mono_marshal_free (ptr);
 			break;
 		default:
 			g_warning ("marshaling conversion %d not implemented", string_encoding);
@@ -6393,7 +6462,7 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 
 		mono_struct_delete_old (klass, ptr);
 
-		g_free (ptr);
+		mono_marshal_free (ptr);
 		break;
 	}
 	default:
