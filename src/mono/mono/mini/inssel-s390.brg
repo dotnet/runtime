@@ -189,7 +189,8 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int i, tmpr;
 	if (size < 0) { 
 		size = -size;
-		mini_emit_memcpy (s, s->frame_reg, tree->sreg1,
+printf("OP_OUTARG_VT (CEE_LDOBJ (base)) src: %d\n",vt->inst_basereg);
+		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm,
 				  vt->inst_basereg, soffset, size, 0);
 		if (start_reg != STK_BASE) {
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
@@ -205,6 +206,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 				soffset += sizeof (gpointer);
 			}
 		} else {
+printf("OP_OUTARG_VT (CEELDOBJ (base)) src: %d\n",vt->inst_basereg);
 			mini_emit_memcpy (s, s->frame_reg, tree->inst_imm, 
 				 	  vt->inst_basereg, soffset, size, 0);
 		}	
@@ -242,8 +244,13 @@ stmt: OP_OUTARG_VT (reg) {
 			soffset += sizeof(gpointer);
 		}
 	} else {
-		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm, tree->sreg1, 
-				  soffset, size, 0);
+		int tmpr;
+		tmpr = mono_regstate_next_int (s->rs);
+//		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+//					s->stack_offset);
+printf("OP_OUTARG_VT (reg) size: %d\n",size);
+		mini_emit_memcpy (s, s->frame_reg, soffset, tmpr, 
+				  tree->sreg1, size, 0);
 	}
 }
 

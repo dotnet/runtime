@@ -8111,7 +8111,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #ifdef __sparc
 #define GET_CONTEXT \
     void *ctx = context;
-#elif defined(__ppc__) || defined (__powerpc__)
+#elif defined(__ppc__) || defined (__powerpc__) || defined (__s390__)
 #define GET_CONTEXT \
     void *ctx = context;
 #else

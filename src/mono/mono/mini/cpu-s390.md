@@ -163,7 +163,7 @@ ldstr:
 newobj:
 castclass:
 isinst:
-conv.r.un: dest:f src1:i len:28
+conv.r.un: dest:f src1:i len:30
 unbox:
 throw: src1:i len:8
 ldfld:
@@ -324,17 +324,17 @@ reg:
 regoffset:
 label:
 store_membase_imm: dest:b len:32
-store_membase_reg: dest:b src1:i len:8
+store_membase_reg: dest:b src1:i len:18
 storei1_membase_imm: dest:b len:32
-storei1_membase_reg: dest:b src1:i len:8
+storei1_membase_reg: dest:b src1:i len:18
 storei2_membase_imm: dest:b len:32
-storei2_membase_reg: dest:b src1:i len:8
+storei2_membase_reg: dest:b src1:i len:18
 storei4_membase_imm: dest:b len:32
-storei4_membase_reg: dest:b src1:i len:8
+storei4_membase_reg: dest:b src1:i len:18
 storei8_membase_imm: dest:b 
 storei8_membase_reg: dest:b src1:i 
 storer4_membase_reg: dest:b src1:f len:20
-storer8_membase_reg: dest:b src1:f len:8
+storer8_membase_reg: dest:b src1:f len:20
 load_membase: dest:i src1:b len:18
 loadi1_membase: dest:i src1:b len:40
 loadu1_membase: dest:i src1:b len:26

@@ -191,9 +191,9 @@ typedef struct {
 } CallInfo;
 
 typedef struct {
-	gint32	gr[5];
-	gdouble fp[3];
-} RegParm;
+	gint32	gr[5];		/* R2-R6			    */
+	gdouble fp[3];		/* F0-F2			    */
+} __attribute__ ((packed)) RegParm;
 
 /*========================= End of Typedefs ========================*/
 
@@ -1192,7 +1192,7 @@ enum_retvalue:
 				cinfo->args[nParm].reg	   = STK_BASE;
 				cinfo->args[nParm].regtype = RegTypeBase;
 				sz->code_size  += 4;
-				sz->stack_size += 8;
+				sz->stack_size += 4;
 			}
 			nParm++;
 			break;
@@ -1248,7 +1248,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoInst *inst;
 	CallInfo *cinfo;
 	size_data sz;
-	int iParm, iVar, offset, size, align, curinst, stackOffset;
+	int iParm, iVar, offset, size, align, curinst;
 	int frame_reg = STK_BASE;
 	int sArg, eArg;
 
@@ -1271,12 +1271,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 	
 	cinfo   = calculate_sizes (sig, &sz, sig->pinvoke);
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (m)) 
-		stackOffset = S390_ALIGN((S390_TRACE_STACK_SIZE + 8), 
-					 S390_STACK_ALIGNMENT);
-	else	
-		stackOffset = 0;
-
 	if (cinfo->struct_ret) {
 		m->ret->opcode = OP_REGVAR;
 		m->ret->inst_c0 = s390_r2;
@@ -1291,20 +1285,15 @@ mono_arch_allocate_vars (MonoCompile *m)
 			break;
 		}
 	}
-	/* local vars are at a positive offset from the stack pointer 
-	 * 
-	 * also note that if the function uses alloca, we use s390_r11
-	 * to point at the local variables.
-	 */
-	offset = S390_MINIMAL_STACK_SIZE; /* linkage area */
 
-	/* add parameter area size for called functions */
-	offset += m->param_area;
-	offset  = S390_ALIGN(offset, S390_STACK_ALIGNMENT);
-
-	/* FIXME: check how to handle this stuff... reserve space to save LMF and caller saved registers */
-	if (m->method->save_lmf)
-		offset += sizeof (MonoLMF);
+	/*--------------------------------------------------------------*/
+	/* local vars are at a positive offset from the stack pointer 	*/
+	/* 								*/
+	/* also note that if the function uses alloca, we use s390_r11	*/
+	/* to point at the local variables.				*/
+	/* add parameter area size for called functions 		*/
+	/*--------------------------------------------------------------*/
+	offset = (m->param_area + S390_MINIMAL_STACK_SIZE);
 
 	if (cinfo->struct_ret) {
 		inst 		   = m->ret;
@@ -1387,7 +1376,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 							      : 0);
 					inst->inst_offset  = cinfo->args[iParm].offset + 
 							     size;
-					inst->unused       = stackOffset;
+//					inst->unused       = stackOffset;
+					inst->unused       = 0;
 					size		   = sizeof(long);
 				} 
 			}
@@ -1396,9 +1386,22 @@ mono_arch_allocate_vars (MonoCompile *m)
 		curinst++;
 	}
 
-	/* align the offset */
-	offset 		= S390_ALIGN(offset, S390_STACK_ALIGNMENT);
-	m->stack_offset = offset;
+	/*------------------------------------------------------*/
+	/* Allow space for the trace method stack area if needed*/
+	/*------------------------------------------------------*/
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (m)) 
+		offset += S390_TRACE_STACK_SIZE;
+
+	/*------------------------------------------------------*/
+	/* Reserve space to save LMF and caller saved registers */
+	/*------------------------------------------------------*/
+	if (m->method->save_lmf)
+		offset += sizeof (MonoLMF);
+
+	/*------------------------------------------------------*/
+	/* align the offset 					*/
+	/*------------------------------------------------------*/
+	m->stack_offset	= S390_ALIGN(offset, S390_STACK_ALIGNMENT);
 
 }
 
@@ -1424,7 +1427,7 @@ MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
-	int i, n;
+	int i, n, lParamArea;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	size_data sz;
@@ -1480,8 +1483,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					arg->unused = -ainfo->vtsize;
 				else
 					arg->unused = ainfo->size;
-				arg->inst_imm = ainfo->offset;
-				arg->sreg1    = ainfo->offparm;
+				arg->inst_imm     = ainfo->offset;
+				arg->sreg1        = ainfo->offparm;
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->opcode = OP_OUTARG;
 				arg->unused = ainfo->reg | (ainfo->size << 8);
@@ -1517,7 +1520,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	}
 	call->stack_usage = cinfo->stack_usage;
 
-	cfg->param_area   = MAX (cfg->param_area, cinfo->stack_usage);
+	lParamArea        = cinfo->stack_usage - S390_MINIMAL_STACK_SIZE;
+	cfg->param_area   = MAX (cfg->param_area, lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
 	/*----------------------------------------------------------*/ 
 	/* should set more info in call, such as the stack space    */
@@ -1563,8 +1567,13 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 			     gboolean enable_arguments)
 {
 	guchar *code = p;
-	int parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
-	int fpOffset   = parmOffset + (5*sizeof(gint32));
+	int 	parmOffset, 
+	    	fpOffset;
+
+	parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
+	if (cfg->method->save_lmf)
+		parmOffset -= sizeof(MonoLMF);
+	fpOffset   = parmOffset + (5*sizeof(gint32));
 
 	s390_stm  (code, s390_r2, s390_r6, STK_BASE, parmOffset);
 	s390_std  (code, s390_f0, 0, STK_BASE, fpOffset);
@@ -1602,10 +1611,15 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 void*
 mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
-	guchar *code = p;
-	int save_mode = SAVE_NONE;
+	guchar 	   *code = p;
+	int   	   save_mode = SAVE_NONE,
+		   saveOffset;
 	MonoMethod *method = cfg->method;
-	int rtype = method->signature->ret->type;
+	int        rtype = method->signature->ret->type;
+
+	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
+	if (method->save_lmf)
+		saveOffset -= sizeof(MonoLMF);
 
 handle_enum:
 	switch (rtype) {
@@ -1638,28 +1652,28 @@ handle_enum:
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		s390_stm (code, s390_r2, s390_r3, cfg->frame_reg, cfg->stack_usage - 8);
+		s390_stm (code, s390_r2, s390_r3, cfg->frame_reg, saveOffset);
 		if (enable_arguments) {
 			s390_lr (code, s390_r4, s390_r3);
 			s390_lr (code, s390_r3, s390_r2);
 		}
 		break;
 	case SAVE_ONE:
-		s390_st (code, s390_r2, 0, cfg->frame_reg, cfg->stack_usage - 4);
+		s390_st (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		if (enable_arguments) {
 			s390_lr (code, s390_r3, s390_r2);
 		}
 		break;
 	case SAVE_FP:
-		s390_std (code, s390_f0, 0, cfg->frame_reg, cfg->stack_usage - 8);
+		s390_std (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		if (enable_arguments) {
 			/* FIXME: what reg?  */
 			s390_ldr (code, s390_f2, s390_f0);
-			s390_lm  (code, s390_r3, s390_r4, cfg->frame_reg, cfg->stack_usage - 8);
+			s390_lm  (code, s390_r3, s390_r4, cfg->frame_reg, saveOffset);
 		}
 		break;
 	case SAVE_STRUCT:
-		s390_st (code, s390_r2, 0, cfg->frame_reg, cfg->stack_usage - 4);
+		s390_st (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		if (enable_arguments) {
 			s390_l (code, s390_r3, 0, cfg->frame_reg, 
 				S390_MINIMAL_STACK_SIZE+cfg->param_area);
@@ -1680,16 +1694,16 @@ handle_enum:
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		s390_lm  (code, s390_r2, s390_r3, cfg->frame_reg, cfg->stack_usage - 8);
+		s390_lm  (code, s390_r2, s390_r3, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_ONE:
-		s390_l   (code, s390_r2, 0, cfg->frame_reg, cfg->stack_usage - 4);
+		s390_l   (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_FP:
-		s390_ld  (code, s390_f0, 0, cfg->frame_reg, cfg->stack_usage - 8);
+		s390_ld  (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_STRUCT:
-		s390_l   (code, s390_r2, 0, cfg->frame_reg, cfg->stack_usage - 4);
+		s390_l   (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_NONE:
 	default:
@@ -2507,9 +2521,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else if (spec [MONO_INST_CLOB] == 'c') {
 			MonoCallInst *cinst = (MonoCallInst*)ins;
 			DEBUG (g_print ("excluding regs 0x%x from cur_iregs (0x%x)\n", cinst->used_iregs, cur_iregs));
+			DEBUG (g_print ("excluding fpregs 0x%x from cur_fregs (0x%x)\n", cinst->used_fregs, cur_fregs));
 			cur_iregs &= ~cinst->used_iregs;
 			cur_fregs &= ~cinst->used_fregs;
 			DEBUG (g_print ("available cur_iregs: 0x%x\n", cur_iregs));
+			DEBUG (g_print ("available cur_fregs: 0x%x\n", cur_fregs));
 			/* registers used by the calling convention are excluded from 
 			 * allocation: they will be selectively enabled when they are 
 			 * assigned by the special SETREG opcodes.
@@ -2518,6 +2534,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		dest_mask = src1_mask = src2_mask = cur_iregs;
 		/* update for use with FP regs... */
 		if (spec [MONO_INST_DEST] == 'f') {
+			dest_mask = cur_fregs;
 			if (ins->dreg >= MONO_MAX_FREGS) {
 				val = rs->fassign [ins->dreg];
 				prev_dreg = ins->dreg;
@@ -2620,11 +2637,19 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else {
 			prev_dreg = -1;
 		}
-		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
+		if (spec [MONO_INST_DEST] == 'f' && 
+		    freg_is_freeable (ins->dreg) && 
+		    prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i)) {
 			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
-			mono_regstate_free_int (rs, ins->dreg);
+			mono_regstate_free_float (rs, ins->dreg);
+		} else if (spec [MONO_INST_DEST] != 'f' && 
+			   reg_is_freeable (ins->dreg) && 
+			   prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
+			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
+			 mono_regstate_free_int (rs, ins->dreg);
 		}
 		if (spec [MONO_INST_SRC1] == 'f') {
+			src1_mask = cur_fregs;
 			if (ins->sreg1 >= MONO_MAX_FREGS) {
 				val = rs->fassign [ins->sreg1];
 				prev_sreg1 = ins->sreg1;
@@ -2658,28 +2683,13 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (val < -1) {
 					/* the register gets spilled after this inst */
 					spill = -val -1;
+printf("val: %d spill: %d ins->sreg1: %d\n",val,spill,ins->sreg1);
 				}
-				if (0 && ins->opcode == OP_MOVE) {
-					/* 
-					 * small optimization: the dest register is already allocated
-					 * but the src one is not: we can simply assign the same register
-					 * here and peephole will get rid of the instruction later.
-					 * This optimization may interfere with the clobbering handling:
-					 * it removes a mov operation that will be added again to handle clobbering.
-					 * There are also some other issues that should with make testjit.
-					 */
-					mono_regstate_alloc_int (rs, 1 << ins->dreg);
-					val = rs->iassign [ins->sreg1] = ins->dreg;
-					//g_assert (val >= 0);
-					DEBUG (g_print ("\tfast assigned sreg1 %s to R%d\n", mono_arch_regname (val), ins->sreg1));
-				} else {
-					//g_assert (val == -1); /* source cannot be spilled */
-					val = mono_regstate_alloc_int (rs, src1_mask);
-					if (val < 0)
-						val = get_register_spilling (cfg, tmp, ins, src1_mask, ins->sreg1);
-					rs->iassign [ins->sreg1] = val;
-					DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", mono_arch_regname (val), ins->sreg1));
-				}
+				val = mono_regstate_alloc_int (rs, src1_mask);
+				if (val < 0)
+					val = get_register_spilling (cfg, tmp, ins, src1_mask, ins->sreg1);
+				rs->iassign [ins->sreg1] = val;
+				DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", mono_arch_regname (val), ins->sreg1));
 				if (spill) {
 					MonoInst *store = create_spilled_store (cfg, spill, val, prev_sreg1, NULL);
 					insert_before_ins (ins, tmp, store);
@@ -2713,6 +2723,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (spec [MONO_INST_SRC2] == 'f') {
+			src2_mask = cur_fregs;
 			if (ins->sreg2 >= MONO_MAX_FREGS) {
 				val = rs->fassign [ins->sreg2];
 				prev_sreg2 = ins->sreg2;
@@ -3516,9 +3527,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_FCONV_TO_R4:
-			if (ins->dreg != ins->sreg1) {
-				s390_ledbr (code, ins->dreg, ins->sreg1);
-			}
+			s390_ledbr (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_JMP:
 			g_assert_not_reached ();
@@ -3593,8 +3602,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_br  (code, s390_r14);
 			break;
 		case CEE_ENDFINALLY:
-//			s390_l   (code, STK_BASE, 0, STK_BASE, 0);
-//			s390_lm  (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 			s390_l   (code, s390_r14, 0, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 			s390_br  (code, s390_r14);
 			break;
@@ -3813,15 +3820,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCONV_TO_OVF_I: {
 			/* Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000 */
 			short int *o[5];
-			s390_ltr  (code, ins->sreg1, ins->sreg1);
-			s390_jnl  (code, 0); CODEPTR(code, o[0]);
 			s390_ltr  (code, ins->sreg2, ins->sreg2);
+			s390_jnl  (code, 0); CODEPTR(code, o[0]);
+			s390_ltr  (code, ins->sreg1, ins->sreg1);
 			s390_jnl  (code, 0); CODEPTR(code, o[1]);
 			s390_lhi  (code, s390_r13, -1);
-			s390_cr   (code, ins->sreg2, s390_r13);
+			s390_cr   (code, ins->sreg1, s390_r13);
 			s390_jnz  (code, 0); CODEPTR(code, o[2]);
-			if (ins->dreg != ins->sreg1)
-				s390_lr   (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg2)
+				s390_lr   (code, ins->dreg, ins->sreg2);
 			s390_j	  (code, 0); CODEPTR(code, o[3]);
 			PTRSLOT(code, o[0]);
 			s390_jz   (code, 0); CODEPTR(code, o[4]);
@@ -4229,27 +4236,33 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	alloc_size = cfg->stack_offset;
-	if (tracing)
-		alloc_size += S390_TRACE_STACK_SIZE;
-	pos = 0;
+//	if (tracing)
+//		alloc_size += S390_TRACE_STACK_SIZE;
+//	pos = 0;
 	/* reserve room to save return value */
-	if (tracing)
-		pos += 8;
+//	if (tracing)
+//		pos += 8;
 
-	alloc_size += pos;
+//	alloc_size += pos;
 
-	if (method->save_lmf) 
-		alloc_size += sizeof(MonoLMF);
+//	if (method->save_lmf) 
+//		alloc_size += sizeof(MonoLMF);
 
-	alloc_size = S390_ALIGN(alloc_size, S390_STACK_ALIGNMENT);
+//	alloc_size = S390_ALIGN(alloc_size, S390_STACK_ALIGNMENT);
 
 	cfg->stack_usage = alloc_size;
-	g_assert (s390_is_imm16 (-alloc_size));
-	if (alloc_size) {
-		s390_lr   (code, s390_r11, STK_BASE);
+	s390_lr   (code, s390_r11, STK_BASE);
+	if (s390_is_imm16 (-alloc_size)) {
 		s390_ahi  (code, STK_BASE, -alloc_size);
-		s390_st   (code, s390_r11, 0, STK_BASE, 0);
+	} else { 
+		int stackSize = alloc_size;
+		while (stackSize > 32767) {
+			s390_ahi  (code, STK_BASE, -32767);
+			stackSize -= 32767;
+		}
+		s390_ahi  (code, STK_BASE, -stackSize);
 	}
+	s390_st   (code, s390_r11, 0, STK_BASE, 0);
 
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
 		s390_lr (code, s390_r11, STK_BASE);
@@ -4396,9 +4409,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* we build the MonoLMF structure on the stack - see mini-s390.h */
 		/*---------------------------------------------------------------*/
-		lmfOffset = S390_MINIMAL_STACK_SIZE + cfg->param_area;
-		if (tracing)
-			lmfOffset += S390_TRACE_STACK_SIZE;
+		lmfOffset = alloc_size - sizeof(MonoLMF);
 
 		s390_lr    (code, s390_r13, cfg->frame_reg);
 		s390_ahi   (code, s390_r13, lmfOffset);
@@ -4431,12 +4442,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		s390_word  (code, method);
 		s390_l	   (code, s390_r1, 0, s390_r1, 4);
 		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, method));
-		s390_st	   (code, cfg->frame_reg, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
 
 		/*---------------------------------------------------------------*/
 		/* save the current IP						 */
 		/*---------------------------------------------------------------*/
-		s390_larl  (code, s390_r1, 0);
+		s390_lr    (code, s390_r1, cfg->frame_reg);
+		s390_ahi   (code, s390_r1, alloc_size);
+		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
+		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
+		s390_la    (code, s390_r1, 0, s390_r1, 0);
 		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));
 
 		/*---------------------------------------------------------------*/
@@ -4479,15 +4493,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	code = cfg->native_code + cfg->code_len;
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) 
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
+		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
 		tracing = 1;
+	}
 	
 	if (method->save_lmf) {
 		s390_lr  (code, s390_r13, cfg->frame_reg);
 
-		lmfOffset = S390_MINIMAL_STACK_SIZE + cfg->param_area;
-		if (tracing)
-			lmfOffset += S390_TRACE_STACK_SIZE;
+		lmfOffset = cfg->stack_usage -  sizeof(MonoLMF);
 
 		/*-------------------------------------------------*/
 		/* r13 = my lmf					   */

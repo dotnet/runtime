@@ -18,77 +18,8 @@
 #define PROLOG_INS 	24	/* Size of emitted prolog	    */
 #define CALL_INS   	4	/* Size of emitted call 	    */
 #define EPILOG_INS 	18	/* Size of emitted epilog	    */
-#define MIN_STACK_SIZE 	96	/* Basic size of S/390 stack frame  */
-#define FLOAT_REGS 	2	/* No. float registers for parms    */
-#define GENERAL_REGS 	5	/* No. general registers for parms  */
-
-#define ARG_BASE s390_r10	/* Register for addressing arguments*/
-#define STK_BASE s390_r15	/* Register for addressing stack    */
-#define STKARG \
-	(i*(sizeof(stackval)))	/* Displacement of ith argument     */
-
-#define MINV_POS  	96 	/* MonoInvocation stack offset      */
-#define STACK_POS 	(MINV_POS - sizeof (stackval) * sig->param_count)
-#define OBJ_POS   	8
-#define TYPE_OFFSET 	(G_STRUCT_OFFSET (stackval, type))
 
 #define DEBUG(x)
-
-#define MIN_CACHE_LINE 256
-
-/*------------------------------------------------------------------*/
-/* Sequence to add an int/long long to parameters to stack_from_data*/
-/*------------------------------------------------------------------*/
-#define ADD_ISTACK_PARM(r, i) \
-	if (reg_param < GENERAL_REGS-(r)) { \
-		s390_la (p, s390_r4, STK_BASE, \
-		         local_start + (reg_param - this_flag) * sizeof(long)); \
-		reg_param += (i); \
-	} else { \
-		s390_la (p, s390_r4, STK_BASE, \
-			 sz.stack_size + 96 + stack_param * sizeof(long)); \
-		stack_param += (i); \
-	}
-
-/*------------------------------------------------------------------*/
-/* Sequence to add a float/double to parameters to stack_from_data  */
-/*------------------------------------------------------------------*/
-#define ADD_RSTACK_PARM(i) \
-	if (fpr_param < FLOAT_REGS) { \
-		s390_la (p, s390_r4, STK_BASE, \
-		         float_pos + (fpr_param * sizeof(float) * (i))); \
-		fpr_param++; \
-	} else { \
-		stack_param += (stack_param % (i)); \
-		s390_la (p, s390_r4, STK_BASE, \
-		         sz.stack_size + 96 + stack_param * sizeof(float) * (i)); \
-		stack_param += (i); \
-	}
-
-/*------------------------------------------------------------------*/
-/* Sequence to add a structure ptr to parameters to stack_from_data */
-/*------------------------------------------------------------------*/
-#define ADD_TSTACK_PARM \
-	if (reg_param < GENERAL_REGS) { \
-		s390_l (p, s390_r4, STK_BASE, \
-			local_start + (reg_param - this_flag) * sizeof(long)); \
-		reg_param++; \
-	} else { \
-		s390_l (p, s390_r4, STK_BASE, \
-			sz.stack_size + 96 + stack_param * sizeof(long)); \
-		stack_param++; \
-	}
-
-#define ADD_PSTACK_PARM(r, i) \
-	if (reg_param < GENERAL_REGS-(r)) { \
-		s390_la (p, s390_r4, STK_BASE, \
-			 local_start + (reg_param - this_flag) * sizeof(long)); \
-		reg_param += (i); \
-	} else { \
-		s390_l (p, s390_r4, STK_BASE, \
-			sz.stack_size + 96 + stack_param * sizeof(long)); \
-		stack_param++; \
-	}
 
 /*========================= End of Defines =========================*/
 
@@ -185,7 +116,7 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	fr             = 0;
 	gr             = 2;
 	sz->retStruct  = 0;
-	sz->stack_size = MIN_STACK_SIZE;
+	sz->stack_size = S390_MINIMAL_STACK_SIZE;
 	sz->code_size  = (PROLOG_INS + CALL_INS + EPILOG_INS);
 	sz->local_size = 0;
 
@@ -385,10 +316,10 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 
 	/* function prolog */
 	s390_stm (p, s390_r6, STK_BASE, STK_BASE, 24);
-	s390_l	 (p, s390_r7, STK_BASE, 96);
+	s390_l	 (p, s390_r7, 0, STK_BASE, MINV_POS);
 	s390_lr  (p, s390_r11, STK_BASE);
 	s390_ahi (p, STK_BASE, -stack_size);
-	s390_st	 (p, s390_r11, STK_BASE, 0);
+	s390_st	 (p, s390_r11, 0, STK_BASE, 0);
 
 	/*-----------------------------------------*/
 	/* Save:				   */
@@ -436,7 +367,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 		gr    = 0;
 	fr            = 0;
 	act_strs      = 0;
-	stack_par_pos = MIN_STACK_SIZE;
+	stack_par_pos = S390_MINIMAL_STACK_SIZE;
 	local_pos     = sz->stack_size;
 
 	if (sig->hasthis) {
@@ -449,11 +380,11 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 		DEBUG(printf("par: %d type: %d ref: %d\n",i,sig->params[i]->type,sig->params[i]->byref));
 		if (sig->params [i]->byref) {
 			if (gr < GENERAL_REGS) {
-				s390_l  (p, s390_r2 + gr, ARG_BASE, STKARG);
+				s390_l  (p, s390_r2 + gr, 0, ARG_BASE, STKARG);
 				gr ++;
 			} else {
-				s390_l  (p, s390_r0, ARG_BASE, STKARG);
-				s390_st (p, s390_r0, STK_BASE, stack_par_pos);
+				s390_l  (p, s390_r0, 0, ARG_BASE, STKARG);
+				s390_st (p, s390_r0, 0, STK_BASE, stack_par_pos);
 				stack_par_pos += sizeof(long);
 			}
 			continue;
@@ -477,11 +408,11 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_SZARRAY:
 			if (gr < GENERAL_REGS) {
-				s390_l  (p, s390_r2 + gr, ARG_BASE, STKARG);
+				s390_l  (p, s390_r2 + gr, 0, ARG_BASE, STKARG);
 				gr ++;
 			} else {
-				s390_l  (p, s390_r0, ARG_BASE, STKARG);
-				s390_st (p, s390_r0, STK_BASE, stack_par_pos);
+				s390_l  (p, s390_r0, 0, ARG_BASE, STKARG);
+				s390_st (p, s390_r0, 0, STK_BASE, stack_par_pos);
 			        stack_par_pos += sizeof(long);
 			}
 			break;
@@ -501,24 +432,24 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 				case 2:
 				case 4:
 					if (gr < GENERAL_REGS) {
-						s390_l  (p, s390_r2 + gr, ARG_BASE, STKARG);
-						s390_l  (p, s390_r2 + gr, s390_r2 + gr, 0);
+						s390_l  (p, s390_r2 + gr, 0,ARG_BASE, STKARG);
+						s390_l  (p, s390_r2 + gr, 0, s390_r2 + gr, 0);
 						gr++;
 					} else {
 						stack_par_pos += (stack_par_pos % align);
-						s390_l  (p, s390_r10, ARG_BASE, STKARG);
-						s390_l  (p, s390_r10, s390_r10, 0);
-						s390_st (p, s390_r10, STK_BASE, stack_par_pos);
+						s390_l  (p, s390_r10, 0,ARG_BASE, STKARG);
+						s390_l  (p, s390_r10, 0, s390_r10, 0);
+						s390_st (p, s390_r10, 0, STK_BASE, stack_par_pos);
 						stack_par_pos += sizeof(long);
 					}
 					break;
 				case 8:
 					if (gr < GENERAL_REGS-1) {
-						s390_l  (p, s390_r2 + gr, ARG_BASE, STKARG);
+						s390_l  (p, s390_r2 + gr, 0, ARG_BASE, STKARG);
 						s390_lm (p, s390_r2 + gr, s390_r3 + gr, s390_r2 + gr, 0);
 					} else {
 						stack_par_pos += (stack_par_pos % align);
-						s390_l   (p, s390_r10, ARG_BASE, STKARG);
+						s390_l   (p, s390_r10, 0, ARG_BASE, STKARG);
 						s390_mvc (p, sizeof(long long), STK_BASE, stack_par_pos, s390_r10, 0);
 						stack_par_pos += sizeof(long long);
 					}
@@ -526,29 +457,29 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 				default:
 					if (size <= 256) {
 						local_pos += (local_pos % align);
-						s390_l   (p, s390_r13, ARG_BASE, STKARG);
+						s390_l   (p, s390_r13, 0, ARG_BASE, STKARG);
 						s390_mvc (p, size, STK_BASE, local_pos, s390_r13, 0);
-						s390_la	 (p, s390_r13, STK_BASE, local_pos);
+						s390_la	 (p, s390_r13, 0, STK_BASE, local_pos);
 						local_pos += size;
 					} else {
 						local_pos += (local_pos % align);
 						s390_bras (p, s390_r13, 4);
 						s390_word (p, size);
-						s390_l    (p, s390_r1, s390_r13, 0);
-						s390_l    (p, s390_r0, ARG_BASE, STKARG);
+						s390_l    (p, s390_r1, 0, s390_r13, 0);
+						s390_l    (p, s390_r0, 0, ARG_BASE, STKARG);
 						s390_lr	  (p, s390_r14, s390_r12);
-						s390_la   (p, s390_r12, STK_BASE, local_pos);
+						s390_la   (p, s390_r12, 0, STK_BASE, local_pos);
 						s390_lr   (p, s390_r13, s390_r1);
 						s390_mvcl (p, s390_r12, s390_r0);
 						s390_lr	  (p, s390_r12, s390_r14);
-						s390_la	  (p, s390_r13, STK_BASE, local_pos);
+						s390_la	  (p, s390_r13, 0, STK_BASE, local_pos);
 						local_pos += size;
 					}
 					if (gr < GENERAL_REGS) {
 						s390_lr (p, s390_r2 + gr, s390_r13);
 						gr++;
 					} else {
-						s390_st (p, s390_r13, STK_BASE, stack_par_pos);
+						s390_st (p, s390_r13, 0, STK_BASE, stack_par_pos);
 						stack_par_pos += sizeof(long);
 					}
 			}
@@ -566,7 +497,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 			break;
 		case MONO_TYPE_R4:
 			if (fr < FLOAT_REGS) {
-				s390_le  (p, s390_r0 + fr, ARG_BASE, STKARG);
+				s390_le  (p, s390_r0 + fr, 0, ARG_BASE, STKARG);
 				fr++;
 			} else {
 				s390_mvc  (p, sizeof(float), STK_BASE, stack_par_pos, ARG_BASE, STKARG);
@@ -575,7 +506,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 			break;
 		case MONO_TYPE_R8:
 			if (fr < FLOAT_REGS) {
-				s390_ld  (p, s390_r0 + fr, ARG_BASE, STKARG);
+				s390_ld  (p, s390_r0 + fr, 0, ARG_BASE, STKARG);
 				fr++;
 			} else {
 				*(guint32 *) p += 7;
@@ -594,7 +525,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 	/* then point the result area for the called routine        */
 	/*----------------------------------------------------------*/
 	if (sz->retStruct) {
-		s390_l  (p, s390_r2, s390_r8, 0);
+		s390_l  (p, s390_r2, 0, s390_r8, 0);
 	}
 
 	return p;
@@ -652,7 +583,7 @@ emit_call_and_store_retval (guint8 *p, MonoMethodSignature *sig,
 
 	/* get return value */
 	if (sig->ret->byref || string_ctor) {
-		s390_st (p, s390_r2, s390_r8, 0);
+		s390_st (p, s390_r2, 0, s390_r8, 0);
 	} else {
 		simpletype = sig->ret->type;
 enum_retvalue:
@@ -660,12 +591,12 @@ enum_retvalue:
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			s390_stc (p, s390_r2, s390_r8, 0);
+			s390_stc (p, s390_r2, 0, s390_r8, 0);
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
-			s390_sth (p, s390_r2, s390_r8, 0);
+			s390_sth (p, s390_r2, 0, s390_r8, 0);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
@@ -676,13 +607,13 @@ enum_retvalue:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_STRING:
-			s390_st (p, s390_r2, s390_r8, 0);
+			s390_st (p, s390_r2, 0, s390_r8, 0);
 			break;
 		case MONO_TYPE_R4:
-			s390_ste (p, s390_f0, s390_r8, 0);
+			s390_ste (p, s390_f0, 0, s390_r8, 0);
 			break;
 		case MONO_TYPE_R8:
-			s390_std (p, s390_f0, s390_r8, 0);
+			s390_std (p, s390_f0, 0, s390_r8, 0);
 			break;
 		case MONO_TYPE_I8:
 			s390_stm (p, s390_r2, s390_r3, s390_r8, 0);
@@ -701,13 +632,13 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 			case 0:
 				break;
 			case 1:
-				s390_stc (p, s390_r2, s390_r8, 0);
+				s390_stc (p, s390_r2, 0, s390_r8, 0);
 				break;
 			case 2:
-				s390_sth (p, s390_r2, s390_r8, 0);
+				s390_sth (p, s390_r2, 0, s390_r8, 0);
 				break;
 			case 4:
-				s390_st (p, s390_r2, s390_r8, 0);
+				s390_st (p, s390_r2, 0, s390_r8, 0);
 				break;
 			case 8:
 				s390_stm (p, s390_r2, s390_r3, s390_r8, 0);
@@ -745,8 +676,8 @@ static inline guint8 *
 emit_epilog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 {
 	/* function epilog */
-	s390_l   (p, STK_BASE, STK_BASE, 0);
-	s390_l   (p, s390_r4, STK_BASE, 56);
+	s390_l   (p, STK_BASE, 0, STK_BASE, 0);
+	s390_l   (p, s390_r4, 0, STK_BASE, 56);
 	s390_lm  (p, s390_r6, STK_BASE, STK_BASE, 24);
 	s390_br  (p, s390_r4);
 
@@ -819,8 +750,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 /*	allocate a MonoInvocation structure (inv) on the stack	    */
 /*      allocate an array of stackval on the stack with length =    */
 /*          method->signature->param_count + 1 [call it stack_args] */
-/*	set inv->ex, inv->ex_handler,inv->parent to                 */
-/*	    NULL						    */
+/*	set inv->ex, inv->ex_handler, inv->parent to NULL	    */
 /*	set inv->method to method				    */
 /*	if method is an instance method, set inv->obj to the 	    */
 /*	    'this' argument (the first argument) else set to NULL   */
@@ -878,11 +808,11 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* prolog 					     	    */
 	/*----------------------------------------------------------*/ 
 	s390_stm (p, s390_r6, STK_BASE, STK_BASE, 24);
-	s390_l   (p, s390_r7, STK_BASE, 96);
+	s390_l   (p, s390_r7, 0, STK_BASE, MINV_POS);
 	s390_lr  (p, s390_r0, STK_BASE);
-	s390_ahi (p, STK_BASE, -(sz.stack_size+96));
-	s390_st  (p, s390_r0, STK_BASE, 0);
-	s390_la	 (p, s390_r8, STK_BASE, 4);
+	s390_ahi (p, STK_BASE, -(sz.stack_size+MINV_POS));
+	s390_st  (p, s390_r0, 0, STK_BASE, 0);
+	s390_la	 (p, s390_r8, 0, STK_BASE, 4);
 	s390_lr  (p, s390_r10, s390_r8);
 	s390_lhi (p, s390_r9, sz.stack_size+92);
 	s390_lhi (p, s390_r11, 0);
@@ -892,19 +822,19 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* Let's fill MonoInvocation - first zero some fields 	    */
 	/*----------------------------------------------------------*/ 
 	s390_lhi (p, s390_r0, 0);
-	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)));
-	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)));
-	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)));
+	s390_st  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)));
+	s390_st  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)));
+	s390_st  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)));
 	s390_lhi (p, s390_r0, 1);
-	s390_st	 (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, invoke_trap)));
+	s390_st	 (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, invoke_trap)));
 
 	/*----------------------------------------------------------*/ 
 	/* set method pointer 					    */
 	/*----------------------------------------------------------*/ 
 	s390_bras (p, s390_r13, 4);
 	s390_word (p, method);
-	s390_l	  (p, s390_r0, s390_r13, 0);
-	s390_st   (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)));
+	s390_l	  (p, s390_r0, 0, s390_r13, 0);
+	s390_st   (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)));
 
 	local_start = local_pos = MINV_POS + 
 		      sizeof (MonoInvocation) + (sig->param_count + 1) * sizeof (stackval);
@@ -938,21 +868,22 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	}
 
 	if (this_flag) {
-		s390_st  (p, s390_r2 + reg_save, STK_BASE, 
+		s390_st  (p, s390_r2 + reg_save, 0, STK_BASE, 
 			  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)));
 		reg_param++;
 	} else {
-		s390_st (p, s390_r2 + reg_save, STK_BASE, local_pos);
+		s390_st (p, s390_r2 + reg_save, 0, STK_BASE, local_pos);
 		local_pos += sizeof(int);
-		s390_st (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)));
+		s390_st (p, s390_r0, 0, STK_BASE, 
+			 (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)));
 	}
 
 	s390_stm (p, s390_r3 + reg_param, s390_r6, STK_BASE, local_pos);
 	local_pos += 4 * sizeof(long);
 	float_pos  = local_pos;
-	s390_std (p, s390_f0, STK_BASE, local_pos);
+	s390_std (p, s390_f0, 0, STK_BASE, local_pos);
 	local_pos += sizeof(double);
-	s390_std (p, s390_f2, STK_BASE, local_pos);
+	s390_std (p, s390_f2, 0, STK_BASE, local_pos);
 	local_pos += sizeof(double);
 
 	/*----------------------------------------------------------*/ 
@@ -987,8 +918,8 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* set MonoInvocation::stack_args			    */
 	/*----------------------------------------------------------*/ 
 	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
-	s390_la  (p, s390_r0, STK_BASE, stackval_arg_pos);
-	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)));
+	s390_la  (p, s390_r0, 0, STK_BASE, stackval_arg_pos);
+	s390_st  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)));
 
 	/*----------------------------------------------------------*/ 
 	/* add stackval arguments 				    */	
@@ -1038,12 +969,12 @@ mono_arch_create_method_pointer (MonoMethod *method)
 		}
 				
 		if (vtbuf [i] >= 0) {
-			s390_la	 (p, s390_r3, STK_BASE, vt_cur);
-			s390_st  (p, s390_r3, STK_BASE, stackval_arg_pos);
-			s390_la	 (p, s390_r3, STK_BASE, stackval_arg_pos);
+			s390_la	 (p, s390_r3, 0, STK_BASE, vt_cur);
+			s390_st  (p, s390_r3, 0, STK_BASE, stackval_arg_pos);
+			s390_la	 (p, s390_r3, 0, STK_BASE, stackval_arg_pos);
 			vt_cur += vtbuf [i];
 		} else {
-			s390_la  (p, s390_r3, STK_BASE, stackval_arg_pos);
+			s390_la  (p, s390_r3, 0, STK_BASE, stackval_arg_pos);
 		}
 
 		/*--------------------------------------*/
@@ -1054,12 +985,12 @@ mono_arch_create_method_pointer (MonoMethod *method)
 		s390_word (p, sig->params [i]);
 		s390_word (p, sig->pinvoke);
 		s390_word (p, stackval_from_data);
-		s390_l	  (p, s390_r2, s390_r13, 0);
+		s390_l	  (p, s390_r2, 0, s390_r13, 0);
 
-		s390_l	  (p, s390_r5, s390_r13, 4);
+		s390_l	  (p, s390_r5, 0, s390_r13, 4);
 
-		s390_l	  (p, s390_r9, s390_r13, 8);
-		s390_basr (p, s390_r14, s390_r9);
+		s390_l	  (p, s390_r1, 0, s390_r13, 8);
+		s390_basr (p, s390_r14, s390_r1);
 
 		stackval_arg_pos += sizeof(stackval);
 
@@ -1076,13 +1007,13 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/*----------------------------------------------------------*/ 
 	/* Set return area pointer. 				    */
 	/*----------------------------------------------------------*/ 
-	s390_la (p, s390_r10, STK_BASE, stackval_arg_pos);
-	s390_st (p, s390_r10, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
+	s390_la (p, s390_r10, 0, STK_BASE, stackval_arg_pos);
+	s390_st (p, s390_r10, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
 	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref) {
 		MonoClass *klass  = sig->ret->data.klass;
 		if (!klass->enumtype) {
-			s390_la (p, s390_r9, s390_r10, sizeof(stackval));
-			s390_st (p, s390_r9, STK_BASE, stackval_arg_pos);
+			s390_la (p, s390_r9, 0, s390_r10, sizeof(stackval));
+			s390_st (p, s390_r9, 0,STK_BASE, stackval_arg_pos);
 			stackval_arg_pos += sizeof(stackval);
 		}
 	}
@@ -1092,9 +1023,9 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/*----------------------------------------------------------*/ 
 	s390_bras (p, s390_r13, 4);
 	s390_word (p, ves_exec_method);
-	s390_l	  (p, s390_r9, s390_r13, 0);
-	s390_la	  (p, s390_r2, STK_BASE, MINV_POS);
-	s390_basr (p, s390_r14, s390_r9);
+	s390_l	  (p, s390_r1, 0, s390_r13, 0);
+	s390_la	  (p, s390_r2, 0, STK_BASE, MINV_POS);
+	s390_basr (p, s390_r14, s390_r1);
 
 	/*----------------------------------------------------------*/ 
 	/* move retval from stackval to proper place (r3/r4/...)    */
@@ -1102,7 +1033,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	DEBUG(printf("retType: %d byRef: %d\n",sig->ret->type,sig->ret->byref));
 	if (sig->ret->byref) {
 		DEBUG (printf ("ret by ref\n"));
-		s390_st (p, s390_r2, s390_r10, 0);
+		s390_st (p, s390_r2, 0, s390_r10, 0);
 	} else {
 	enum_retvalue:
 DEBUG(printf("Returns: %d\n",sig->ret->type));
@@ -1112,11 +1043,11 @@ DEBUG(printf("Returns: %d\n",sig->ret->type));
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
 			s390_lhi (p, s390_r2, 0);
-			s390_ic  (p, s390_r2, s390_r10, 0);
+			s390_ic  (p, s390_r2, 0, s390_r10, 0);
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-			s390_lh (p, s390_r2, s390_r10, 0);
+			s390_lh (p, s390_r2, 0,s390_r10, 0);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
@@ -1125,20 +1056,18 @@ DEBUG(printf("Returns: %d\n",sig->ret->type));
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_CLASS:
-			s390_l (p, s390_r2, s390_r10, 0);
+			s390_l (p, s390_r2, 0, s390_r10, 0);
 			break;
 		case MONO_TYPE_I8:
 			s390_lm (p, s390_r2, s390_r3, s390_r10, 0);
 			break;
 		case MONO_TYPE_R4:
-			s390_le (p, s390_f0, s390_r10, 0);
+			s390_le (p, s390_f0, 0, s390_r10, 0);
 			break;
 		case MONO_TYPE_R8:
-			s390_ld (p, s390_f0, s390_r10, 0);
+			s390_ld (p, s390_f0, 0, s390_r10, 0);
 			break;
 		case MONO_TYPE_VALUETYPE:
-DEBUG(printf("Returning Structure %d\n",sig->pinvoke));
-DEBUG(printf("Size: %d (%d)\n",retSize,align));
 			if (sig->ret->data.klass->enumtype) {
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
@@ -1151,9 +1080,8 @@ DEBUG(printf("Size: %d (%d)\n",retSize,align));
 			s390_word (p, sig->ret);
 			s390_word (p, sig->pinvoke);
 			s390_word (p, stackval_to_data);
-			s390_l	  (p, s390_r2, s390_r13, 0);
-			s390_l 	  (p, s390_r3, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
-DEBUG(printf("====> %08X\n",p));
+			s390_l	  (p, s390_r2, 0, s390_r13, 0);
+			s390_l 	  (p, s390_r3, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
 			if (sz.retStruct) {	
 				/*------------------------------------------*/
 				/* Get stackval_to_data to set result area  */
@@ -1163,23 +1091,23 @@ DEBUG(printf("====> %08X\n",p));
 				/*------------------------------------------*/
 				/* Give stackval_to_data a temp result area */
 				/*------------------------------------------*/ 
-				s390_la (p, s390_r4, STK_BASE, stackval_arg_pos);
+				s390_la (p, s390_r4, 0, STK_BASE, stackval_arg_pos);
 			}
-			s390_l	  (p, s390_r5, s390_r13, 4);
-			s390_l    (p, s390_r9, s390_r13, 8);
-			s390_basr (p, s390_r14, s390_r9);
+			s390_l	  (p, s390_r5, 0,s390_r13, 4);
+			s390_l    (p, s390_r1, 0, s390_r13, 8);
+			s390_basr (p, s390_r14, s390_r1);
 			switch (retSize) {
 				case 0:
 					break;
 				case 1:
 					s390_lhi (p, s390_r2, 0);
-					s390_ic  (p, s390_r2, s390_r10, 0);
+					s390_ic  (p, s390_r2, 0, s390_r10, 0);
 					break;
 				case 2:
-					s390_lh (p, s390_r2, s390_r10, 0);
+					s390_lh (p, s390_r2, 0, s390_r10, 0);
 					break;
 				case 4:
-					s390_l (p, s390_r2, s390_r10, 0);
+					s390_l (p, s390_r2, 0, s390_r10, 0);
 					break;
 				case 8:
 					s390_lm (p, s390_r2, s390_r3, s390_r10, 0);
@@ -1200,9 +1128,9 @@ DEBUG(printf("====> %08X\n",p));
 	/*----------------------------------------------------------*/ 
 	/* epilog 						    */
 	/*----------------------------------------------------------*/ 
-	s390_l   (p, STK_BASE, STK_BASE, 0);
-	s390_l   (p, s390_r4, STK_BASE, 56);
-	s390_lm  (p, s390_r6, STK_BASE, STK_BASE, 24);
+	s390_l   (p, STK_BASE, 0, STK_BASE, 0);
+	s390_l   (p, s390_r4, 0, STK_BASE, S390_RET_ADDR_OFFSET);
+	s390_lm  (p, s390_r6, STK_BASE, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br  (p, s390_r4);
 
 	DEBUG (printf ("emited code size: %d\n", p - code_buffer));

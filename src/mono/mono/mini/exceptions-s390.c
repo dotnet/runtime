@@ -78,11 +78,20 @@
 /*                 T y p e d e f s                                  */
 /*------------------------------------------------------------------*/
 
-struct stack_frame
+typedef struct
 {
-  void *next;
+  void *prev;
+  void *unused[5];
+  void *reg6;
+  void *reg7;
+  void *reg8;
+  void *reg9;
+  void *reg10;
+  void *reg11;
+  void *reg12;
+  void *reg13;
   void *return_address;
-};
+} MonoS390StackFrame;
 
 #ifdef MONO_USE_EXC_TABLES
 
@@ -117,7 +126,7 @@ typedef struct frame_state * (*framesf) (void *, struct frame_state *);
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
-gboolean mono_arch_handle_exception (MonoContext *ctx,
+gboolean mono_arch_handle_exception (void     *ctx,
 				     gpointer obj, 
 				     gboolean test_only);
 
@@ -667,7 +676,7 @@ glist_to_array (GList *list)
 
 MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-			 MonoJitInfo *res, MonoContext *ctx, 
+			 MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, 
 			 int *native_offset, gboolean *managed)
 {
@@ -675,8 +684,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	unsigned long *ptr;
 	char *p;
+	MonoS390StackFrame *sframe;
 
-	ji = mono_jit_info_table_find (domain, ip);
+	if (prev_ji && 
+	    (ip > prev_ji->code_start && 
+	    ((guint8 *) ip < ((guint8 *) prev_ji->code_start) + prev_ji->code_size)))
+		ji = prev_ji;
+	else
+		ji = mono_jit_info_table_find (domain, ip);
 
 	if (trace)
 		*trace = NULL;
@@ -728,28 +743,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			g_free (source_location);
 			g_free (tmpaddr);
 		}
-#if 0				
-		offset = -1;
-		/* restore caller saved registers */
-		if (ji->used_regs & X86_EBX_MASK) {
-			new_ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
-			offset--;
-		}
-		if (ji->used_regs & X86_EDI_MASK) {
-			new_ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
-			offset--;
-		}
-		if (ji->used_regs & X86_ESI_MASK) {
-			new_ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
-		}
-
-		new_ctx->SC_ESP = ctx->SC_EBP;
-		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
-		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
-#endif
-		MONO_CONTEXT_SET_BP (new_ctx, MONO_CONTEXT_GET_BP (ctx));
-		MONO_CONTEXT_SET_IP (new_ctx, MONO_CONTEXT_GET_IP (ctx));
+		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_BP (ctx);
+		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
+		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
 		*res = *ji;
 		return res;
 #ifdef MONO_USE_EXC_TABLES
@@ -774,18 +770,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			res->method = (*lmf)->method;
 		}
 
-#if 0
-		new_ctx->SC_ESI = (*lmf)->esi;
-		new_ctx->SC_EDI = (*lmf)->edi;
-		new_ctx->SC_EBX = (*lmf)->ebx;
-		new_ctx->SC_EBP = (*lmf)->ebp;
-		new_ctx->SC_EIP = (*lmf)->eip;
-		/* the lmf is always stored on the stack, so the following
-		 * expression points to a stack location which can be used as ESP */
-		new_ctx->SC_ESP = (unsigned long)&((*lmf)->eip);
-#endif
-		MONO_CONTEXT_SET_BP (new_ctx, MONO_CONTEXT_GET_BP (ctx));
-		MONO_CONTEXT_SET_IP (new_ctx, MONO_CONTEXT_GET_IP (ctx));
+/*
+		MONO_CONTEXT_SET_BP (ctx, (*lmf)->ebp);
+		MONO_CONTEXT_SET_IP (ctx, (*lmf)->eip);
+*/
+		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
+		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		*lmf = (*lmf)->previous_lmf;
 
 		return res;
@@ -872,7 +862,9 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, 
+					      &ctx, &new_ctx, NULL, &lmf, 
+					      &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
@@ -915,7 +907,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, 
+					      &ctx, &new_ctx, NULL, &lmf, 
+					      native_offset, NULL);
 
 		ctx = new_ctx;
 		
@@ -965,17 +959,19 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 {
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji, rji;
-	static int (*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;		
-	GList *trace_ips = NULL;
-	MonoException *mono_ex;
+	MonoContext	*ctx = uc;
+	MonoDomain	*domain = mono_domain_get ();
+	MonoJitInfo	*ji, rji;
+	static int	(*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
+	MonoJitTlsData 	*jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF		*lmf = jit_tls->lmf;		
+	GList		*trace_ips = NULL;
+	MonoException 	*mono_ex;
 
 	g_assert (ctx != NULL);
+	memset(&rji, 0, sizeof(rji));
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
 		ex->message = mono_string_new (domain, 
@@ -1012,7 +1008,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		MonoContext new_ctx;
 		char *trace = NULL;
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, ctx, &new_ctx, 
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
@@ -1034,6 +1030,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 				tmp = g_strdup_printf ("%s%s\n", strace, trace);
 				g_free (strace);
 
+printf("%s\n",tmp);
 				mono_ex->stack_trace = mono_string_new (domain, tmp);
 
 				g_free (tmp);
