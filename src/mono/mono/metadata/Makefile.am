@@ -10,7 +10,7 @@ confdir = `cygpath -m "${sysconfdir}"`
 AM_CFLAGS = -O
 PLATFORM_LIB = ../os/libmonoos.la
 else
-assembliesdir = $(prefix)/lib
+assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
 endif
 
