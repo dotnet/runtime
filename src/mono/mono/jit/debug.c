@@ -437,12 +437,11 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	minfo->method_info.code_size = cfg->code_size;
 	minfo->method_number = method_number;
 	minfo->method_info.method = method;
-	minfo->method_info.num_params = method->signature->param_count;
+	minfo->method_info.num_params = method->signature->param_count + method->signature->hasthis;
 	minfo->method_info.param_offsets = g_new0 (guint32, minfo->method_info.num_params + 1);
 
 	for (i = 0; i < minfo->method_info.num_params; i++) {
-		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index +
-			method->signature->hasthis;
+		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index;
 
 		minfo->method_info.param_offsets [i] = ptr [i].offset;
 	}
