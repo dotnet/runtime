@@ -32,7 +32,7 @@ get_typedef (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *ns;
-	char *tstring, *result, *ename;
+	char *tstring, *result;
         guint32 token;
         
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -51,11 +51,9 @@ get_typedef (MonoImage *m, int idx)
                         "%s%s%s/%s%s", ns, *ns?".":"", outer,
                         mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
 			tstring ? tstring : "");
-		ename = get_escaped_name (result);
-		g_free (result);
 		g_free (outer);
 		g_free (tstring);
-		return ename;
+		return result;
         }
         
 	
@@ -63,11 +61,9 @@ get_typedef (MonoImage *m, int idx)
 		"%s%s%s%s", ns, *ns?".":"",
 		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
 		tstring ? tstring : "");
-	ename = get_escaped_name (result);
-	g_free (result);
 	g_free (tstring);
 
-	return ename;
+	return result;
 }
 
 char *
@@ -704,7 +700,7 @@ dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method)
 }
 
 char *
-dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
+dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype" : "class" ;
@@ -755,7 +751,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 	}
 
 
-	result = g_strdup_printf ("%s %s%s%s", otype, assemblyref?assemblyref:"",
+	result = g_strdup_printf ("%s %s%s%s", prefix ? otype : "", assemblyref?assemblyref:"",
 				  esname, generic?generic:"");
 	
 	g_free (generic);
@@ -769,7 +765,7 @@ static char *
 dis_stringify_object (MonoImage *m, MonoType *type)
 {
 	MonoClass *c = mono_class_from_mono_type (type);
-	return dis_stringify_object_with_class (m, c);
+	return dis_stringify_object_with_class (m, c, TRUE);
 }
 
 char*
@@ -905,7 +901,7 @@ get_type (MonoImage *m, const char *ptr, char **result)
 	case MONO_TYPE_CLASS: {
 		guint32 token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		MonoClass *klass = mono_class_get (m, token);
-		char *temp = dis_stringify_object_with_class (m, klass);
+		char *temp = dis_stringify_object_with_class (m, klass, TRUE);
 
 		if (show_tokens) {
 			*result = g_strdup_printf ("%s/*%08x*/", temp, token);
@@ -1131,6 +1127,7 @@ get_escaped_name (const char *name)
 	for (s = name; *s; s++) {
 		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' || *s == '?' || *s == '.' || *s == 0)
 			continue;
+
 		return g_strdup_printf ("'%s'", name);
 	}
 	
@@ -1391,7 +1388,7 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token)
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_method (MonoImage *m, guint32 token)
+get_method_core (MonoImage *m, guint32 token, gboolean fullsig)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
@@ -1403,7 +1400,7 @@ get_method (MonoImage *m, guint32 token)
 	mh = mono_get_method (m, token, NULL);
 	if (mh) {
 		esname = get_escaped_name (mh->name);
-		sig = dis_stringify_object_with_class (m, mh->klass);
+		sig = dis_stringify_object_with_class (m, mh->klass, TRUE);
 		if (show_tokens)
 			name = g_strdup_printf ("%s/*%08x*/::%s", sig, token, esname);
 		else
@@ -1444,12 +1441,25 @@ get_method (MonoImage *m, guint32 token)
 		g_assert_not_reached ();
 	}
 
+	if (fullsig)
+		g_free (name);
+	else {
+		g_free (sig);
+		return name;
+	}
+	
 	if (show_tokens) {
 		char *retval = g_strdup_printf ("%s /* %08x */", sig, token);
 		g_free (sig);
 		return retval;
 	} else
 		return sig;
+}
+
+char *
+get_method (MonoImage *m, guint32 token)
+{
+	return get_method_core (m, token, TRUE);
 }
 
 /**
@@ -1470,7 +1480,7 @@ get_methoddef (MonoImage *m, guint32 idx)
 
 	mh = mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
 	if (mh) {
-		sig = dis_stringify_object_with_class (m, mh->klass);
+		sig = dis_stringify_object_with_class (m, mh->klass, TRUE);
 		name = g_strdup_printf ("%s::%s", sig, mh->name);
 		g_free (sig);
 	} else
@@ -2380,7 +2390,7 @@ get_method_override (MonoImage *m, guint32 token)
 		decl = method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]);
 
 		if (token == impl)
-			return get_method (m, decl);
+			return get_method_core (m, decl, FALSE);
 	}
 
 	return NULL;

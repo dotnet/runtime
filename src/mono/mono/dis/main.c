@@ -610,7 +610,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva)
 
 	override = get_method_override (m, token);
 	if (override) {
-		fprintf (output, "\t.override method %s\n", override);
+		fprintf (output, "\t.override %s\n", override);
 		g_free (override);
 	}
 
@@ -831,6 +831,25 @@ dis_property_methods (MonoImage *m, guint32 prop)
 	}
 }
 
+static struct {
+	const char *original, *new;
+} keywords [] = {
+	{ "error", "'error'" },
+	{ NULL, NULL }
+};
+
+static const char *
+quote_keyword (const char *ptr)
+{
+	int i;
+
+	for (i = 0; keywords [i].original != NULL; i++){
+		if (strcmp (keywords [i].original, ptr) == 0)
+			return keywords [i].new;
+	}
+	return ptr;
+}
+	
 static char*
 dis_property_signature (MonoImage *m, guint32 prop_idx)
 {
@@ -861,7 +880,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx)
 		g_string_append (res, "specialname ");
 	if (prop_flags & 0x0400)
 		g_string_append (res, "rtspecialname ");
-	g_string_sprintfa (res, "%s %s (", blurb, name);
+	g_string_sprintfa (res, "%s %s (", blurb, quote_keyword (name));
 	g_free (blurb);
 	mono_metadata_free_type (type);
 	for (i = 0; i < pcount; i++) {
