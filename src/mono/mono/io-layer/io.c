@@ -2508,21 +2508,13 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	g_free (utf8_pattern);
 	g_free (entry_part);
 	
-	if (result <= 0) {
-		if (result == 0) {
-			SetLastError (ERROR_FILE_NOT_FOUND);
-		} else {
+	if (result < 0) {
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": scandir error: %s", g_strerror (errno));
+		g_message (G_GNUC_PRETTY_FUNCTION ": scandir error: %s", g_strerror (errno));
 #endif
-
-			SetLastError (ERROR_INVALID_PARAMETER);
-		}
-		
+		SetLastError (ERROR_INVALID_PARAMETER);
 		g_free (dir_part);
-
 		unref = TRUE;
-		
 		goto cleanup;
 	}
 	
@@ -2548,6 +2540,7 @@ cleanup:
 	    !FindNextFile (handle, find_data)) {
 		FindClose (handle);
 		SetLastError (ERROR_NO_MORE_FILES);
+		find_ret = INVALID_HANDLE_VALUE;
 	}
 
 	/* Must not call _wapi_handle_unref() with the handle already
