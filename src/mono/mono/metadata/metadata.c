@@ -1706,8 +1706,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	gclass->inst = mono_metadata_parse_generic_inst (m, generic_context, count, ptr, &ptr);
 
-	mono_class_create_generic_2 (gclass);
-
 	if (rptr)
 		*rptr = ptr;
 

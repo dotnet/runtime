@@ -7987,7 +7987,6 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	}
 
 	mono_class_create_generic (gclass);
-	mono_class_create_generic_2 (gclass);
 
 	mono_loader_unlock ();
 

@@ -40,6 +40,7 @@ MonoStats mono_stats;
 gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
+static void mono_class_create_generic_2 (MonoGenericClass *gclass);
 
 void (*mono_debugger_start_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
@@ -292,7 +293,6 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 	}
 
 	mono_class_create_generic (ngclass);
-	mono_class_create_generic_2 (ngclass);
 
 	return ngclass;
 }
@@ -936,6 +936,7 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res)
 		if (*res == NULL)
 			*res = g_ptr_array_new ();
 		g_ptr_array_add (*res, ic);
+		mono_class_init (ic);
 
 		collect_implemented_interfaces_aux (ic, res);
 	}
@@ -1041,6 +1042,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 	
 	if (class->parent) {
+		mono_class_init (class->parent);
 		max_vtsize += class->parent->vtable_size;
 		cur_slot = class->parent->vtable_size;
 	}
@@ -1434,6 +1436,11 @@ mono_class_init (MonoClass *class)
 
 		mono_stats.generic_class_count++;
 
+		class->method = gklass->method;
+		class->field = gklass->field;
+
+		mono_class_create_generic_2 (gclass);
+
 		mono_class_init (gklass);
 
 		if (MONO_CLASS_IS_INTERFACE (class))
@@ -1777,6 +1784,9 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		return;
 	}
 
+	if (parent && parent->generic_class)
+		mono_class_create_generic_2 (parent->generic_class);
+
 	if (!MONO_CLASS_IS_INTERFACE (class)) {
 		class->parent = parent;
 
@@ -2079,21 +2089,15 @@ mono_class_create_generic (MonoGenericClass *gclass)
 	}
 }
 
-void
+static void
 mono_class_create_generic_2 (MonoGenericClass *gclass)
 {
 	MonoClass *klass, *gklass;
 	GList *list;
 	int i;
 
-	if (gclass->is_dynamic)
-		return;
-
 	klass = gclass->klass;
 	gklass = gclass->container_class;
-
-	klass->method = gklass->method;
-	klass->field = gklass->field;
 
 	klass->interface_count = gklass->interface_count;
 	klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
@@ -2115,7 +2119,8 @@ mono_class_create_generic_2 (MonoGenericClass *gclass)
 		klass->parent = mono_class_from_mono_type (inflated);
 	}
 
-	mono_class_setup_parent (klass, klass->parent);
+	if (klass->parent)
+		mono_class_setup_parent (klass, klass->parent);
 }
 
 MonoClass *
