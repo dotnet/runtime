@@ -499,7 +499,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 
 		/* Pop EBP and the return address */
-		new_ctx->esp = ctx->SC_EBP + (2 * sizeof (gpointer));
+		new_ctx->esp = ctx->ebp + (2 * sizeof (gpointer));
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->eip = *((int *)ctx->ebp + 1) - 1;
 		new_ctx->ebp = *((int *)ctx->ebp);
