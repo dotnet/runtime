@@ -31,6 +31,8 @@ extern int __imp_GC_finalize_on_demand;
 
 static int finalize_slot = -1;
 
+static gboolean gc_disabled = FALSE;
+
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
 #if HAVE_BOEHM_GC
@@ -533,8 +535,10 @@ void mono_gc_init (void)
 
 #ifdef ENABLE_FINALIZER_THREAD
 
-	if (getenv ("GC_DONT_GC"))
+	if (getenv ("GC_DONT_GC")) {
+		gc_disabled = TRUE;
 		return;
+	}
 	
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
@@ -564,7 +568,8 @@ void mono_gc_cleanup (void)
 
 #ifdef ENABLE_FINALIZER_THREAD
 	finished = TRUE;
-	finalize_notify ();
+	if (!gc_disabled)
+		finalize_notify ();
 #endif
 }
 
