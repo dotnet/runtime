@@ -169,7 +169,7 @@ mono_parse_graph_options (const char* p)
 }
 
 int
-mini_parse_default_optimizations (const char* p)
+mono_parse_default_optimizations (const char* p)
 {
 	guint32 opt;
 

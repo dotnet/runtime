@@ -574,7 +574,7 @@ MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);
 
 /* helper methods */
-int       mini_parse_default_optimizations  (const char* p);
+int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);
 void      mono_constant_fold                (MonoCompile *cfg);
 void      mono_constant_fold_inst           (MonoInst *inst, gpointer data);
