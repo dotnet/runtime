@@ -1,3 +1,15 @@
+2004-05-07  Raja R Harinath  <rharinath@novell.com>
+
+	Goodbye 'fullbuild', hello 'bootstrap'.
+	* Makefile.am (bootstrap): New target for building from CVS.  New
+	improved version of 'fullbuild' -- does not install any files.
+	(fullbuild): Obsolete target.  Bootstraps and installs tree.
+	(mcs-tree-safe-build,xinstall-runtime,mcs-rest,remove-binaries):
+	Removed.
+	(stage1,stage1-mcs,stage1-mono,stage2,stage3)
+	(tmpinst-dir,tmpinst-runtime): New targets used to implement a
+	two-stage bootstrap.
+
 2004-05-05  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: scandir check is no longer needed.

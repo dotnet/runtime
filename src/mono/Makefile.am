@@ -5,8 +5,6 @@ SUBDIRS = @libgc_dir@ mono @ikvm_jni_dir@ docs runtime scripts man data samples 
 # Keep in sync with SUBDIRS
 DIST_SUBDIRS = libgc mono ikvm-jni docs runtime scripts man data samples support web
 
-# EXTRA_SUBDIRS = libgc
-
 EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -25,31 +23,82 @@ DISTCLEANFILES= mono.pc mint.pc
 
 mcs_topdir=$(top_srcdir)/../mcs
 
-.PHONY: fullbuild remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest
+.PHONY: tmpinst-dir tmpinst-runtime bootstrap stage1 stage2 stage3 stage1-mono stage1-mcs
 
-fullbuild: mcs-rest
+if USE_JIT
+mono_runtime = mono/mini/mono
+else
+mono_runtime = mono/interpreter/mint
+endif
+
+bootstrap: stage3
+	rm -f $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
 	$(MAKE)
-	$(MAKE) install
 
-mcs-tree-safe-build: remove-binaries
+# Build stripped down versions of 'mcs', 'mscorlib.dll' and 'System.dll' with installed 'mcs'
+## remove System.Xml.dll since it's a soft-dependency of System.dll
+stage1-mcs: 
+	rm -f $(mcs_topdir)/mcs/mcs.exe $(mcs_topdir)/class/lib/default/mscorlib.dll
+	rm -f $(mcs_topdir)/class/lib/default/System.dll $(mcs_topdir)/class/lib/default/System.Xml.dll
 	cd $(mcs_topdir)/jay && $(MAKE)
-	cd $(mcs_topdir)/mcs && $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs PROFILE=default
-	cd $(mcs_topdir)/class/corlib && $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs PROFILE=default
-	cp $(mcs_topdir)/class/lib/default/mscorlib.dll $(top_srcdir)/runtime/net_1_1
-	cp $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime
+	cd $(mcs_topdir)/mcs && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
+	cd $(mcs_topdir)/class/corlib && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
+	cd $(mcs_topdir)/class/System && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB" MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 
-xinstall-runtime: mcs-tree-safe-build $(CONFIG_HEADER)
-	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) && $(MAKE) install ; fi
-	cd mono && $(MAKE) && $(MAKE) install
-	cd runtime && $(MAKE) dist_monobins_DATA=mcs.exe install-dist_monobinsDATA
-	cd runtime/net_1_1 && $(MAKE) install-dist_corlibDATA
+# Build enough of 'mono' to run the stage1 mcs.exe
+stage1-mono: $(CONFIG_HEADER)
+	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) ; fi
+	cd mono && $(MAKE)
 
-mcs-rest: xinstall-runtime
+# (takes advantage of 'make -j': independent subtasks are separate dependencies)
+stage1: stage1-mcs stage1-mono tmpinst-dir
+	$(MAKE) tmpinst-runtime
+
+# Use stage1 'mcs', 'mscorlib.dll' and 'System.dll' to build fuller versions
+# FIXME: Mono.CSharp.Debugger is built only on Linux in the MCS tree.
+#        At least the SymbolWriter stuff seems portable enough.  So either
+#	 fix the MCS tree, or fix it here
+stage2: stage1
+	set -e ; \
+	tmpinst=`cd _tmpinst && pwd` ; mcs_topdir=`cd $(mcs_topdir) && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH; export PATH ; \
+	cd $$mcs_topdir/mcs && $(MAKE) PROFILE=default ; \
+	cd $$mcs_topdir/class/corlib && $(MAKE) PROFILE=default ; \
+	cd $$mcs_topdir/class/System && $(MAKE) PROFILE=default ; \
+	cd $$mcs_topdir/class/Mono.CSharp.Debugger && $(MAKE) PROFILE=default
+	$(MAKE) tmpinst-runtime
+
+# Use stage2 binaries to build the whole tree
+stage3: stage2
+	tmpinst=`cd _tmpinst && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE)
+	-rm -fr _tmpinst
 
-remove-binaries:
-	rm -f $(mcs_topdir)/class/lib/default/mscorlib.dll $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
+tmpinst-dir:
+	set -e ; \
+	rootme=`pwd`; tmpinst=$$rootme/_tmpinst ; \
+	mkdir -p $$tmpinst $$tmpinst/bin $$tmpinst/lib ; \
+	echo '#! /bin/sh' > $$tmpinst/bin/mono ; \
+	echo ": \$${MONO_PATH=$$tmpinst/lib} ; export MONO_PATH" >> $$tmpinst/bin/mono ; \
+	echo "exec $$rootme/libtool --mode=execute $$rootme/$(mono_runtime) \$$@" >> $$tmpinst/bin/mono ; \
+	echo '#! /bin/sh' > $$tmpinst/bin/mcs ; \
+	echo "exec $$tmpinst/bin/mono $$tmpinst/lib/mcs.exe \$$@" >> $$tmpinst/bin/mcs ; \
+	chmod +x $$tmpinst/bin/mono $$tmpinst/bin/mcs
 
+tmpinst-runtime:
+	tmpinst=`cd _tmpinst && pwd` && \
+	mv -f $(mcs_topdir)/mcs/mcs.exe $$tmpinst/lib && \
+	mv -f $(mcs_topdir)/class/lib/default/mscorlib.dll $(mcs_topdir)/class/lib/default/System.dll $$tmpinst/lib && \
+	if test -f $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll; then \
+	  mv -f $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll $$tmpinst/lib ; else : ; fi
+
+# Obsolete target -- don't use.
+.PHONY: fullbuild
+fullbuild: bootstrap
+	$(MAKE) install
+	echo "*** 'fullbuild' is an obsolete target. Use 'make bootstrap && make install'."
+	exit 1
 
 win32getdeps:
 	wget http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip
