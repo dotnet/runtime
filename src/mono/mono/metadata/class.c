@@ -76,7 +76,7 @@ mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
 		 * detected a reference to mscorlib, we simply return a reference to a dummy 
 		 * until we have a better solution.
 		 */
-		/* fprintf(stderr, "Sending dummy where %s.%s expected\n", mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]), mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]));  */
+		fprintf(stderr, "Sending dummy where %s.%s expected\n", mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]), mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME])); 
 		
 		res = mono_class_from_name (image, "System", "MonoDummy");
 		/* prevent method loading */
