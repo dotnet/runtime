@@ -3044,12 +3044,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get (image, token);
+
 			mono_class_init (klass);
 			n = mono_class_value_size (klass, NULL);
 			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
 			iargs [1] = *sp;
 			NEW_ICONST (cfg, iargs [2], n);
+			iargs [2]->cil_code = ip;
+
 			mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
 			NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
 			++sp;
