@@ -1787,7 +1787,9 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 		gmtoff = tt.tm_gmtoff;
 	}
+	return 1;
 #endif
+	/* FIXME: This is a reminder to implement this icall on windows */
 	return 0;
 }
 
