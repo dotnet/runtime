@@ -660,6 +660,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	/* add the vararg cookie before the non-implicit args */
 	if (call->signature->call_convention == MONO_CALL_VARARG) {
 		MonoInst *sig_arg;
+		/* FIXME: Add support for signature tokens to AOT */
+		cfg->disable_aot = TRUE;
 		MONO_INST_NEW (cfg, arg, OP_OUTARG);
 		MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
 		sig_arg->inst_p0 = call->signature;
