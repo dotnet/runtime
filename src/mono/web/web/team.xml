@@ -16,6 +16,43 @@
 
     <name>
 
+      <first-name>Alejandro</first-name>
+
+      <last-name>Sánchez Acosta</last-name>
+
+    </name>
+
+    <e-mail>asanchez@gnu.org</e-mail>
+
+    <image>none.png</image>
+
+    <location>Madrid, Spain</location>
+
+    <organization>Mono Hispano</organization>
+
+    <description>Mono contributor.</description>
+
+    <tasks>
+
+      <task>Documentation.</task>
+
+      <task>Gtk# stuff.</task>
+
+      <task>Class Libraries.</task>
+
+      <task>Mcs tests samples.</task>
+
+      <task>MONO Hispano Manager.</task>
+
+    </tasks>
+
+  </contributor>
+
+
+  <contributor>
+
+    <name>
+
       <first-name>Tim</first-name>
 
       <last-name>Haynes</last-name>
