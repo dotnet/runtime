@@ -274,6 +274,14 @@ class Tests {
 		return (int)(-a);
 	}	
 
+	static int test_0_neg_large () {
+		long min = -9223372036854775808;
+		unchecked {
+			ulong ul = (ulong)min;
+			return (min == -(long)ul) ? 0 : 1;
+		}
+	}	
+
 	static int test_0_shl () {
 		long a = 9;
 		int b = 1;
