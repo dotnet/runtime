@@ -1437,4 +1437,31 @@
     </tasks>
 
   </contributor>
+  <contributor>
+
+    <name>
+
+      <first-name>Peter</first-name>
+
+      <last-name>Williams</last-name>
+
+    </name>
+
+    <e-mail>peter@newton.cx</e-mail>
+
+    <image>none.png</image>
+
+    <location>Cambridge, MA</location>
+
+    <organization></organization>
+
+    <description>Makefile Magician</description>
+
+    <tasks>
+
+      <task>MCS build system </task>
+
+    </tasks>
+
+  </contributor>
 </contributors>
