@@ -164,7 +164,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
-%term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
+%term ADD ADD_OVF SUB MUL MUL_OVF MUL_OVF_UN DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT CGT
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8
@@ -644,9 +644,7 @@ reg: CONV_OVF_I1 (reg) {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 127);
 	EMIT_COND_EXCEPTION (X86_CC_LE, get_exception_overflow ());	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -128);
-	// fixme: check that branch distance
-	g_assert_not_reached ();
-	x86_branch8 (s->code, X86_CC_LT, -19, TRUE);
+	EMIT_COND_EXCEPTION (X86_CC_GT, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -722,6 +720,19 @@ reg: MUL (reg, reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
 
+reg: MUL_OVF (reg, reg) {
+	x86_imul_reg_reg (s->code, tree->left->reg1, tree->right->reg1);
+	EMIT_COND_EXCEPTION (X86_CC_NO, get_exception_overflow ());	
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: MUL_OVF_UN (reg, reg) {
+	//fixme: implement me
+	g_assert_not_reached ();
+}
+
 reg: DIV (reg, reg) {
 	g_assert (tree->right->reg1 != X86_EAX);
 
@@ -789,6 +800,14 @@ reg: ADD (reg, CONST_I4) "MB_USE_OPT1(0)" {
 
 reg: ADD (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: ADD_OVF (reg, reg) {
+	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
+	EMIT_COND_EXCEPTION (X86_CC_NO, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);

@@ -1166,6 +1166,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_DUP:
 		case CEE_POP:
 		case CEE_ADD:
+		case CEE_ADD_OVF:
 		case CEE_SUB:
 		case CEE_AND:
 		case CEE_OR:
@@ -1174,6 +1175,8 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_SHR:
 		case CEE_SHR_UN:
 		case CEE_MUL:
+		case CEE_MUL_OVF:
+		case CEE_MUL_OVF_UN:
 		case CEE_DIV:
 		case CEE_DIV_UN:
 		case CEE_REM:
@@ -2495,6 +2498,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 
 		MAKE_BI_ALU (ADD)
+		MAKE_BI_ALU (ADD_OVF)
 		MAKE_BI_ALU (SUB)
 		MAKE_BI_ALU (AND)
 		MAKE_BI_ALU (OR)
@@ -2503,6 +2507,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_BI_ALU (SHR)
 		MAKE_BI_ALU (SHR_UN)
 		MAKE_SPILLED_BI_ALU (MUL)
+		MAKE_SPILLED_BI_ALU (MUL_OVF)
+		MAKE_SPILLED_BI_ALU (MUL_OVF_UN)
 		MAKE_SPILLED_BI_ALU (DIV)
 		MAKE_SPILLED_BI_ALU (DIV_UN)
 		MAKE_SPILLED_BI_ALU (REM)
