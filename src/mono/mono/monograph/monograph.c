@@ -514,14 +514,20 @@ print_method (MonoMethod *method, int depth) {
 	const MonoOpcode *opcode;
 	MonoMethodHeader *header;
 	GHashTable *hash;
+	static GHashTable *visited = NULL;
 	const unsigned char *ip;
 	int i;
 
 	if (depth++ > max_depth)
 		return;
-	if (method->info) /* avoid recursion */
+	
+	if (! visited)
+		visited = g_hash_table_new (NULL, NULL);
+	
+	if (g_hash_table_lookup (visited, method))
 		return;
-	method->info = method;
+	
+	g_hash_table_insert (visited, method, method);
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return;
