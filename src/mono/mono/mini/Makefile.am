@@ -45,6 +45,7 @@ export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
+PLATFORM_LIB = ../os/libmonoos.la
 endif
 
 # hack for automake to have the same source file in a library and a bin
@@ -84,6 +85,7 @@ endif
 
 mono_LDADD = \
 	$(MONO_LIB)			\
+	$(PLATFORM_LIB)		\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS) -lm	\
 	$(ICU_LIBS)
@@ -99,6 +101,7 @@ genmdesc_SOURCES = \
 # Don't link this against libmonoruntime to speed up rebuilds
 genmdesc_LDADD = \
 	$(monodir)/mono/utils/libmonoutils.la $(monodir)/mono/metadata/opcodes.lo -lm	\
+	$(PLATFORM_LIB)		\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS)
 
