@@ -387,3 +387,11 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 
 	return TRUE;
 }
+
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	return (gpointer)ctx->uc_mcontext.gregs [REG_PC];
+}
+

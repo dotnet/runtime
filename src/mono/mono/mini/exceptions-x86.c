@@ -766,3 +766,11 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
 	return mono_handle_exception (sigctx, obj, test_only);
 }
+
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+	struct sigcontext *ctx = sigctx;
+	return (gpointer)ctx->SC_EIP;
+}
+

@@ -1070,6 +1070,14 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);
 	return result;
 }
+
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+	struct ucontext *uc = sigctx;
+	return (gpointer)uc->uc_mcontext->ss.srr0;
+}
+
 #else
 /* Linux */
 gboolean
@@ -1094,6 +1102,14 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);
 	return result;
 }
+
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+	struct ucontext *uc = sigctx;
+	return (gpointer)uc->uc_mcontext.uc_regs->gregs [PT_NIP];
+}
+
 #endif
 
 /**

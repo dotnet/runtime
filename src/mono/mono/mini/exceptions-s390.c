@@ -1101,3 +1101,10 @@ printf("%s\n",tmp);
 }
 
 /*========================= End of Function ========================*/
+
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+	return context_get_ip (sigctx);
+}
+
