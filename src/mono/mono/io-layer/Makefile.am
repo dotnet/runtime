@@ -106,12 +106,15 @@ WINDOWS_SRC = \
 	io-layer.h		\
 	io-layer-dummy.c
 
+HPPA_SRC = \
+	hppa_atomic.s
+
 if PLATFORM_WIN32
 libwapi_la_SOURCES = $(WINDOWS_SRC)
 libwapiinclude_HEADERS = $(WINDOWS_H)
 else
 if HPPA
-libwapi_la_SOURCES = $(OTHER_SRC) hppa_atomic.s
+libwapi_la_SOURCES = $(OTHER_SRC) $(HPPA_SRC)
 # to enable pick up of config.h
 libwapi_la_CCASFLAGS = -I$(top_builddir)
 else
@@ -122,6 +125,7 @@ endif
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\
+        $(HPPA_SRC) \
 	$(OTHER_SRC)
 
 
