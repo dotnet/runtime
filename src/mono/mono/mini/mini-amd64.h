@@ -184,6 +184,12 @@ typedef struct {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
+/*
+ * some icalls like mono_array_new_va needs to be called using a different 
+ * calling convention.
+ */
+#define MONO_ARCH_VARARG_ICALLS 1
+
 #ifndef PLATFORM_WIN32
 #ifdef HAVE_WORKING_SIGALTSTACK
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK

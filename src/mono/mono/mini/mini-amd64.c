@@ -193,7 +193,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	if (sig->hasthis)
 		add_general (&gr, &stack_size, cinfo->args + 0);
 
-	if ((sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
 		gr = PARAM_REGS;
 		fr = FLOAT_PARAM_REGS;
 		
@@ -204,7 +204,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 
-		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos - sig->hasthis)) {
+		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos - sig->hasthis)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
 			/* 
 			 * Prevent implicit arguments + the sig cookie from being passed 
@@ -290,7 +290,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		}
 	}
 
-	if ((sig->call_convention == MONO_CALL_VARARG) && (sig->sentinelpos == sig->param_count)) {
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n > 0) && (sig->sentinelpos == sig->param_count)) {
 		gr = PARAM_REGS;
 		fr = FLOAT_PARAM_REGS;
 		
@@ -650,7 +650,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		//g_print ("allocating local %d to [%s - %d]\n", i, mono_arch_regname (inst->inst_basereg), - inst->inst_offset);
 	}
 
-	if (sig->call_convention == MONO_CALL_VARARG) {
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG)) {
 		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
 		m->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
@@ -751,7 +751,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			/* the argument will be attached to the call instruction */
 			in = call->args [i];
 		} else {
-			if ((sig->call_convention == MONO_CALL_VARARG) && (i - sig->hasthis == sig->sentinelpos)) {
+			if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i - sig->hasthis == sig->sentinelpos)) {
 				/* Emit the signature cookie just before the implicit arguments */
 				MonoInst *sig_arg;
 				/* FIXME: Add support for signature tokens to AOT */
@@ -3081,9 +3081,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CALL:
 			call = (MonoCallInst*)ins;
 			/*
-			 * FIXME: The AMD64 ABI forces callers to know about varargs.
+			 * The AMD64 ABI forces callers to know about varargs.
 			 */
-			amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke))
+				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 
 			code = emit_load_arguments (cfg, call, code);
 
@@ -3112,15 +3113,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_arguments (cfg, call, code);
 
 			/*
-			 * FIXME: The AMD64 ABI forces callers to know about varargs.
+			 * The AMD64 ABI forces callers to know about varargs.
 			 */
-			if (ins->sreg1 == AMD64_RAX) {
-				amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke)) {
+				if (ins->sreg1 == AMD64_RAX) {
+					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+					ins->sreg1 = AMD64_R11;
+				}
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-				amd64_call_reg (code, AMD64_R11);
 			}
-			else
-				amd64_call_reg (code, ins->sreg1);
+			amd64_call_reg (code, ins->sreg1);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
@@ -3904,6 +3906,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
 
 	/* Stack alignment check */
+#if 0
 	{
 		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RSP, 8);
 		amd64_alu_reg_imm (code, X86_AND, AMD64_RAX, 0xf);
@@ -3911,6 +3914,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		x86_branch8 (code, X86_CC_EQ, 2, FALSE);
 		amd64_breakpoint (code);
 	}
+#endif
 
 	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 	pos = 0;

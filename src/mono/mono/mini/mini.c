@@ -2140,6 +2140,10 @@ mono_get_element_address_signature (int arity)
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
 	res->pinvoke = 1;
+#ifdef MONO_ARCH_VARARG_ICALLS
+	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
+	res->call_convention = MONO_CALL_VARARG;
+#endif
 	res->params [0] = &mono_defaults.array_class->byval_arg; 
 	
 	for (i = 1; i <= arity; i++)
@@ -2172,6 +2176,10 @@ mono_get_array_new_va_signature (int arity)
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
 	res->pinvoke = 1;
+#ifdef MONO_ARCH_VARARG_ICALLS
+	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
+	res->call_convention = MONO_CALL_VARARG;
+#endif
 
 	res->params [0] = &mono_defaults.int_class->byval_arg;	
 	for (i = 0; i < arity; i++)
