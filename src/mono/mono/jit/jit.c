@@ -1535,9 +1535,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		//printf ("START\n");
 		for (i = 0; i < cfg->block_count; i++) {
 			bb = &cfg->bblocks [i];
-
-			printf ("BBS %d %05x %05x %d %d %d\n", i, bb->cli_addr, bb->cli_addr + bb->length, 
-				bb->reached, bb->finished, superblock_end);
+			
+			//printf ("BBS %d %05x %05x %d %d %d\n", i, bb->cli_addr, bb->cli_addr + bb->length, bb->reached, bb->finished, superblock_end);
 			
 			if (!bb->reached && !superblock_end) {
 				MonoBBlock *sbb = &cfg->bblocks [i - 1];
