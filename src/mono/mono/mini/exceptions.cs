@@ -2080,6 +2080,15 @@ class Tests {
 				ThrowClass.rethrow2 ();
 			}
 			catch (Exception ex) {
+				// Check that each catch clause has its own exception variable
+				// If not, the throw below will overwrite the exception used
+				// by the rethrow
+				try {
+					throw new DivideByZeroException ();
+				}
+				catch (Exception foo) {
+				}
+
 				throw;
 			}
 		}
