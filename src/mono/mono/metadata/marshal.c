@@ -50,7 +50,7 @@ indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)
 
 static MonoDisHelper marshal_dh = {
 	"\n",
-	NULL,
+	"IL_%04x: ",
 	"IL_%04x",
 	indenter, 
 	NULL,
@@ -337,6 +337,15 @@ mono_mb_emit_byte (MonoMethodBuilder *mb, guint8 op)
 	}
 
 	mb->code [mb->pos++] = op;
+}
+
+void
+mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset)
+{
+        mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+        mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+        mono_mb_emit_icon (mb, offset);
+        mono_mb_emit_byte (mb, CEE_ADD);
 }
 
 void
@@ -1310,7 +1319,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
-	int pos [3];
+	int pos0, pos1;
 	char *name;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
@@ -1332,99 +1341,80 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 
 	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_INVOKE;
 
-	/* allocate local 0 (object) prev */
+	/* allocate local 0 (object) */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-	/* allocate local 1 (object) target */
-	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-	/* allocate local 2 (pointer) mptr */
-	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-
-	/* allocate local 3 to store the return value */
-	if (sig->ret->type != MONO_TYPE_VOID)
-		mono_mb_add_local (mb, sig->ret);
 
 	g_assert (sig->hasthis);
+	
+	/*
+	 * if (prev != null)
+         *	prev.Invoke( args .. );
+	 * return this.<target>( args .. );
+         */
 
-	/* prev = addr of delegate */
+	/* get this->prev */
 	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
+	mono_mb_emit_byte (mb, CEE_LDIND_I );
 	mono_mb_emit_stloc (mb, 0);
 
-	/* loop */
-	pos [0] = mb->pos;
-	/* target = delegate->target */
+	/* if prev != null */
 	mono_mb_emit_ldloc (mb, 0);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoDelegate, target));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, 1);
+	mono_mb_emit_byte (mb, CEE_BRFALSE);
 
-	/* mptr = delegate->method_ptr */
-	mono_mb_emit_ldloc (mb, 0);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, 2);
-
-	/* target == null ? */
-	mono_mb_emit_ldloc (mb, 1);
-	mono_mb_emit_byte (mb, CEE_BRTRUE); 
-	pos [1] = mb->pos;
+	pos0 = mb->pos;
 	mono_mb_emit_i4 (mb, 0);
 
-	/* emit static method call */
-
+	/* then recurse */
+	mono_mb_emit_ldloc (mb, 0);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
-
-	mono_mb_emit_ldloc (mb, 2);
-	mono_mb_emit_byte (mb, CEE_CALLI);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, static_sig));
-
+	mono_mb_emit_managed_call (mb, method, method->signature);
 	if (sig->ret->type != MONO_TYPE_VOID)
-		mono_mb_emit_stloc (mb, 3);
+		mono_mb_emit_byte (mb, CEE_POP);
 
-	mono_mb_emit_byte (mb, CEE_BR);
-	pos [2] = mb->pos;
+	/* continued or prev == null */
+	mono_mb_patch_addr (mb, pos0, mb->pos - (pos0 + 4));
+
+	/* get this->target */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, target));
+	mono_mb_emit_byte (mb, CEE_LDIND_I );
+	mono_mb_emit_stloc (mb, 0);
+
+	/* if target != null */
+	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_byte (mb, CEE_BRFALSE);
+	pos0 = mb->pos;
 	mono_mb_emit_i4 (mb, 0);
-   
-	/* target != null, emit non static method call */
-
-	mono_mb_patch_addr (mb, pos [1], mb->pos - (pos [1] + 4));
-	mono_mb_emit_ldloc (mb, 1);
-
-	for (i = 0; i < sig->param_count; i++)
-		mono_mb_emit_ldarg (mb, i + 1);
 	
-	mono_mb_emit_ldloc (mb, 2);
+	/* then call this->method_ptr nonstatic */
+	mono_mb_emit_ldloc (mb, 0); 
+	for (i = 0; i < sig->param_count; ++i)
+		mono_mb_emit_ldarg (mb, i + 1);
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+	mono_mb_emit_byte (mb, CEE_LDIND_I );
 	mono_mb_emit_byte (mb, CEE_CALLI);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, sig));
 
-	if (sig->ret->type != MONO_TYPE_VOID)
-		mono_mb_emit_stloc (mb, 3);
+	mono_mb_emit_byte (mb, CEE_BR);
+	pos1 = mb->pos;
+	mono_mb_emit_i4 (mb, 0);
 
-	mono_mb_patch_addr (mb, pos [2], mb->pos - (pos [2] + 4));
+	/* else [target == null] call this->method_ptr static */
+	mono_mb_patch_addr (mb, pos0, mb->pos - (pos0 + 4));
 
-	/* prev = delegate->prev */
-	mono_mb_emit_ldloc (mb, 0);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, 0);
+	for (i = 0; i < sig->param_count; ++i)
+		mono_mb_emit_ldarg (mb, i + 1);
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+	mono_mb_emit_byte (mb, CEE_LDIND_I );
+	mono_mb_emit_byte (mb, CEE_CALLI);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, static_sig));
 
-	/* if prev != null goto loop */
-	mono_mb_emit_ldloc (mb, 0);
-	mono_mb_emit_byte (mb, CEE_BRTRUE);
-	mono_mb_emit_i4 (mb, pos [0] - (mb->pos + 4));
-
-	if (sig->ret->type != MONO_TYPE_VOID)
-		mono_mb_emit_ldloc (mb, 3);
-
+	/* return */
+	mono_mb_patch_addr (mb, pos1, mb->pos - (pos1 + 4));
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_method (mb, sig, sig->param_count + 16);

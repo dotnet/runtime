@@ -105,6 +105,9 @@ void
 mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint8 local, gint8 incr);
 
 void
+mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset);
+
+void
 mono_mb_emit_byte (MonoMethodBuilder *mb, guint8 op);
 
 void
