@@ -17,6 +17,7 @@
 #include "metadata/appdomain.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threadpool.h"
+#include <string.h>
 
 //#define DEBUG_RUNTIME_CODE
 

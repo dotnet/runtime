@@ -62,6 +62,9 @@ MonoException *
 mono_get_exception_argument_out_of_range (const guchar *arg);
 
 MonoException *
-mono_get_exception_io                  (const guchar *msg);
+mono_get_exception_io                    (const guchar *msg);
+
+MonoException *
+mono_get_exception_file_not_found        (MonoString *fname);
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

@@ -321,8 +321,10 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 	
 	g_free (name);
 
-	if (!ass)
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System.IO", "FileNotFoundException"));
+	if (!ass){
+		MonoException *exc = mono_get_exception_file_not_found (fname);
+		mono_raise_exception (exc);
+	}
 
 	return mono_assembly_get_object (domain, ass);
 }

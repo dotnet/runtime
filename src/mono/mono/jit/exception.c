@@ -431,6 +431,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 				g_free (fname);
 				g_free (source_location);
 				g_free (strace);
+				g_free (tmpaddr);
 
 				((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
 
