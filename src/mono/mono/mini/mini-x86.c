@@ -538,7 +538,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	header = ((MonoMethodNormal *)m->method)->header;
 
 	sig = m->method->signature;
-	
+
 	offset = 8;
 	curinst = 0;
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
@@ -3185,7 +3185,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		/* save method info */
 		x86_push_imm (code, method);
-	
+
 		/* get the address of lmf for the current thread */
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");
@@ -3264,7 +3264,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig = method->signature;
 	int pos;
+	guint32 stack_to_pop;
 	guint8 *code;
 
 	code = cfg->native_code + cfg->code_len;
@@ -3323,9 +3325,20 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	x86_leave (code);
-	/* FIXME: add another check to support stdcall convention here */
+
+	if (sig->call_convention == MONO_CALL_STDCALL) {
+	  MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+
+	  stack_to_pop = arch_get_argument_info (sig, sig->param_count, arg_info);
+	}
+	else
 	if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
-		x86_ret_imm (code, 4);
+	  stack_to_pop = 4;
+	else
+	  stack_to_pop = 0;
+
+	if (stack_to_pop)
+		x86_ret_imm (code, stack_to_pop);
 	else
 		x86_ret (code);
 
