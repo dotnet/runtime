@@ -32,7 +32,7 @@
 1,HOWTO,mono-contribution-howto.html,mono-contribution-howto.src
 0,Plans,plans.html,plans.src
 1,ADO.NET,ado-net.html,ado-net.src
-2,PostgreSQL,postgresql.html,postgres.src
+2,PostgreSQL,postgresql.html,postgresql.src
 2,SqlClient,tds-providers.html,tds-providers.src
 1,ASP.NET,asp-net.html,asp-net.src
 1,Java,java.html,java.src

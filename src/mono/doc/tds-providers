@@ -14,19 +14,19 @@
 		* The TdsClient ADO.NET provider will be Mono's first provider 
 		  written completely in C# without any dependencies except 
 		  the usual suspects: corlib.dll, System.dll, and System.Xml.dll.
+	</ul>
 
+* New ADO.NET Providers
 
-* NEW ADO.NET PROVIDERS
+<p>There will be three ADO.NET providers that will use TDS.	
 
-	<ul>
-		* <p>There will be three ADO.NET providers that will use TDS.	
-
-		  <p>1. Mono.Data.SybaseClient namepace and assembly will 
+		<ol>
+		  <li><p>Mono.Data.SybaseClient namepace and assembly will 
 		  hold the ADO.NET provider for Sybase SQL Server database.  
 		  This provider will default to using TDS version 5.0 which 
 		  can only be used with  Sybase.
 
-		  <p>2. System.Data.SqlClient namespace and System.Data assembly 
+		  <li><p>System.Data.SqlClient namespace and System.Data assembly 
 		  will hold the ADO.NET provider
           for Microsoft SQL Server 7.0/2000 databases.  This is to be 
           compatible with Microsoft .NET
@@ -36,24 +36,22 @@
           which we will need to support as well, but it is used for 
           Microsoft SQL Server 2000 databases.
 
-		  <p>3. Mono.Data.TdsClient namespace and assembly is not 
+		  <li><p>Mono.Data.TdsClient namespace and assembly is not 
 		  meant to be an ADO.NET provider in Mono, but a means to 
 		  provide generic unit tests for the TDS functionality shared by the SqlClient 
 		  and SybaseClient providers.  This provider will default to 
 		  using TDS version 4.2 which can be used by older Sybase and 
 		  Microsoft SQL Server databases.
-		 
-	<ul>
+		 </ol>
 
-* BUILDING THE NEW PROVIDERS
+* Building The New Providers
 
-	<ul>
-		* All three providers will use common internal code 
+ <p> All three providers will use common internal code 
 		at Mono.Data.TdsClient.Internal.  Any classes in 
 		Mono.Data.TdsClient.Internal will have the internal 
 		keyword and will be built with the assembly of that provider.
-
-		* <p>1. SqlClient will build its assembly System.Data using files 
+		<ol>
+		<li><p>SqlClient will build its assembly System.Data using files 
 		  from System.Data, System.Data.SqlClient, System.Data.SqlTypes, 
 		  System.Data.Common, and Mono.Data.TdsClient.Internal.  
 		 
@@ -73,7 +71,7 @@
    -r corlib.dll -r System.dll -r System.Xml.dll
 </pre>
 
-		* <p>2. SybaseClient will build its assembly Mono.Data.SybaseClient using 
+		<li><p>SybaseClient will build its assembly Mono.Data.SybaseClient using 
 		  files from Mono.Data.SybaseClient and Mono.Data.TdsClient.Internal.  
 		  SybaseClient will reference
           the usual suspects plus System.Data.dll  SybaseClient will 
@@ -89,7 +87,7 @@
     -r corlib.dll -r System.dll -r System.Xml.dll -r System.Data.dll
 </pre>
     
-		* <p>3. TdsClient will build its assembly Mono.Data.TdsClient 
+		<li><p>TdsClient will build its assembly Mono.Data.TdsClient 
 		  using files from Mono.Data.TdsClient
           and Mono.Data.TdsClient.Internal.  TdsClient will reference the 
           usual suspects plus System.Data.dll  TdsClient is a wrapper 
@@ -108,32 +106,33 @@ mcs -target:library -out:Mono.Data.TdsClient.dll \
     Mono.Data.TdsClient.Internal\*.cs \
     -r corlib.dll -r System.dll -r System.Xml.dll -r System.Data.dll
 </pre>
+		</ol>
     
 * Classes in Mono.Data.TdsClient.Internal will:
 
 	<ul>
-
-		* use the internal keyword to prevent exposing these classes
+	<li>use the internal keyword to prevent exposing these classes
           to the System.Data.dll assembly.
           
-        * implement the ADO.NET interfaces just like any other ADO.NET provider, such as,
+    <li> implement the ADO.NET interfaces just like any other ADO.NET provider, such as,
           IDbConnection, IDbCommand, IDataReader, IDataRecord, IDataAdapter, etc...
           
-        * be sealed just like other providers
+    <li> be sealed just like other providers
         
-        * provide features to be directly used by the SqlClient and SybaseClient 
+    <li> provide features to be directly used by the SqlClient and SybaseClient 
           providers, such
           as, setting the default TDS version: SqlClient to 7.0 and SybaseClient 
           to 5.0 and TdsClient to 4.2.
           
-        * be written completely in C# or IL assembly language (if need be).
+    <li> be written completely in C# or IL assembly language (if need be).
         
-        * implement the TDS protocol version 4.2, 5.0, 7.0, and 8.0. This 
+    <li> implement the TDS protocol version 4.2, 5.0, 7.0, and 8.0. This 
           is where most of the
           work will take place.
           
-        * be an internal ADO.NET provider to the public ADO.NET providers:
+    <li> be an internal ADO.NET provider to the public ADO.NET providers:
           System.Data.SqlClient, Mono.Data.SybaseClient, and Mono.Data.TdsClient.
+	</ul>
 
 * Implementation Details of the TDS Protocol
 
@@ -143,11 +142,12 @@ mcs -target:library -out:Mono.Data.TdsClient.dll \
 		* will reside in Mono.Data.TdsClient.Internal  
 		
 		* will use FreeTDS and jTDS as rerferences.
+	</ul>
 
 * More Information
 
 	<ul>
-		* <a href="http://www.freetds.org/">FreeTDS</a is C API that implements
+		* <a href="http://www.freetds.org/">FreeTDS</a> is C API that implements
 		the TDS protocol.  Has libraries for tds, ctlib, and dblib.  It builds
 		and runs on Windows, Linux, and other platforms.  FreeTDS provides
 		data access to Microsoft SQL Server and Sybase databases. 
@@ -156,12 +156,11 @@ mcs -target:library -out:Mono.Data.TdsClient.dll \
 		for Microsoft SQL Server and Sybase databases.
 		
 		* <a href="http://www.freetds.org/tds.html">TDS Protocol</a>
+	</ul>
 
 * Contribute
 
-	<ul>
-
-		* Anybody willing to help?  If so, reply to this email or 
+	<p>Anybody willing to help?  If so, 
 		contact any of the people working on the ADO.NET support 
 		in Mono: Rodrigo Moya, Tim Coleman, Daniel Morgan, Brian Ritchie, 
 		Vladimir Vukicevic, Ville Palo, Franklin Wise, and others.

@@ -1,13 +1,11 @@
-* Status of the PostgreSQL ADO.NET Provider
+* PostgreSQL Provider
 
-	<p> Still exists in System.Data.SqlClient and needs to be moved to Mono.Data.PostgreSQL.
-
-	<p>What follows below is Status information for the PostgreSQL ADO.NET provider.
+	<p>Exists in Mono.Data.PostgreSql now.
 		
 	<p>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
-	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
+	DELETE SQL commands using the ExecuteNonQuery method in PgSqlCommand.  
 	
-	<p>We can execute multiple queries and do a NextResult() in SqlDataReader()
+	<p>We can execute multiple queries and do a NextResult() in PgSqlDataReader()
 	to get the next result set.  
 	
 	<p>We are also able to do simple aggregate functions, 
@@ -15,76 +13,101 @@
 	in a simple SELECT SQL query using the ExecuteScalar() now.  
 	
 	<p>We are also able to retrieve data with a simple SELECT SQL query 
-	using ExecuteReader() which returns a SqlDataReader.  We are able to
+	using ExecuteReader() which returns a PgSqlDataReader.  We are able to
 	use GetSchemaTable() to get the meta data about the table columns.  
 	We are able	to Read() to get each row from the result set.  
 	
 	<p>Here is a sample of code that is based on PostgresTest.cs and
 	TestSqlDataReader.cs tests:
+	
 <pre>
  
  static void SelectData (IDbConnection cnc) {
 	
-	IDbCommand selectCommand = cnc.CreateCommand();
-	IDataReader reader;
+   IDbCommand selectCommand = cnc.CreateCommand();
+   IDataReader reader;
 
-	selectCommand.CommandType = CommandType.Text;
-	selectCommand.CommandText = 
-		"select * from pg_user;" + 
-		"select * from pg_tables;" + 
-		"select * from pg_database";
+   selectCommand.CommandType = CommandType.Text;
+   selectCommand.CommandText = 
+     "select * from pg_user;" + 
+	 "select * from pg_tables;" + 
+     "select * from pg_database";
 
-	reader = selectCommand.ExecuteReader ();
+   reader = selectCommand.ExecuteReader ();
 
-	do {
-		// get the DataTable that holds
-		// the schema
-		DataTable dt = rdr.GetSchemaTable();
+   do {
+	// get the DataTable that holds
+	// the schema
+	DataTable dt = rdr.GetSchemaTable();
 
-		if(rdr.RecordsAffected != -1) {
-			// Results for 
-			// SQL INSERT, UPDATE, DELETE Commands 
-			// have RecordsAffected >= 0
-			Console.WriteLine("Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: " + rdr.RecordsAffected);
-		}
-		else if (dt == null)
-				Console.WriteLine("Result is from a SQL Command not (INSERT,UPDATE,DELETE).   Records Affected: " + rdr.RecordsAffected);
-		else {
-			// Results for
-			// SQL not INSERT, UPDATE, nor DELETE
-			// have RecordsAffected = -1
-			Console.WriteLine("Result is from a SQL SELECT Query.  Records Affected: " + rdr.RecordsAffected);
+	if(rdr.RecordsAffected != -1) {
+		// Results for 
+		// SQL INSERT, UPDATE, DELETE Commands 
+		// have RecordsAffected >= 0
+		Console.WriteLine("Result is from 
+			a SQL Command 
+	         (INSERT,UPDATE,DELETE).  
+			Records Affected: " + 
+				rdr.RecordsAffected);
+	}
+	else if (dt == null)
+		Console.WriteLine("Result is from 
+		      a SQL Command 
+		      not (INSERT,UPDATE,DELETE).   
+		      Records Affected: " + 
+				   rdr.RecordsAffected);
+	else {
+		// Results for
+		// SQL not INSERT, UPDATE, nor DELETE
+		// have RecordsAffected = -1
+		Console.WriteLine("Result is from a 
+	           SQL SELECT Query.  
+	           Records Affected: " + 
+		         rdr.RecordsAffected);
 		
-			// Results for a SQL Command (CREATE TABLE, SET, etc)
-			// will have a null reference returned from GetSchemaTable()
-			// 
-			// Results for a SQL SELECT Query
-			// will have a DataTable returned from GetSchemaTable()
+		// Results for a SQL Command 
+		     (CREATE TABLE, SET, etc)
+		// will have a null reference returned 
+           from GetSchemaTable()
+		// 
+		// Results for a SQL SELECT Query
+		// will have a DataTable returned 
+		     from GetSchemaTable()
 
-			results++;
-			Console.WriteLine("Result Set " + results + "...");
+		results++;
+		Console.WriteLine("Result Set " + 
+		         results + "...");
                         			
-			// number of columns in the table
-			Console.WriteLine("   Total Columns: " +
-				dt.Columns.Count);
+		// number of columns in the table
+		Console.WriteLine("   Total Columns: " +
+			dt.Columns.Count);
 
-			// display the schema
-			foreach (DataRow schemaRow in dt.Rows) {
-				foreach (DataColumn schemaCol in dt.Columns)
-					Console.WriteLine(schemaCol.ColumnName + 
-						" = " + 
-						schemaRow[schemaCol]);
+		// display the schema
+		foreach (DataRow schemaRow 
+			in dt.Rows) {
+			foreach (DataColumn schemaCol 
+				in dt.Columns)
+				Console.WriteLine(
+				    schemaCol.ColumnName + 
+					" = " + 
+					schemaRow[schemaCol]);
 				Console.WriteLine();
 			}
 
 			int nRows = 0;
-			string output, metadataValue, dataValue;
+			string output, 
+				metadataValue, 
+				dataValue;
 			// Read and display the rows
-			Console.WriteLine("Gonna do a Read() now...");
+			Console.WriteLine("Gonna do a 
+				Read() now...");
 			while(rdr.Read()) {
-				Console.WriteLine("   Row " + nRows + ": ");
+				Console.WriteLine("   Row " + 
+					nRows + ": ");
 					
-				for(c = 0; c < rdr.FieldCount; c++) {
+				for(c = 0; 
+					c < rdr.FieldCount; 
+					c++) {
 					// column meta data 
 					DataRow dr = dt.Rows[c];
 					metadataValue = 
@@ -100,17 +123,21 @@
 							": " + 
 							rdr.GetValue(c);
 				
-					// display column meta data and data
-					output = metadataValue + dataValue;					
+					// display column meta 
+					// data and data
+					output = metadataValue + 
+							dataValue;					
 					Console.WriteLine(output);
 				}
 				nRows++;
 			}
-			Console.WriteLine("   Total Rows: " + 
+			Console.WriteLine(
+				"   Total Rows: " + 
 				nRows);
 		}	
 	} while(rdr.NextResult());
-	Console.WriteLine("Total Result sets: " + results);
+	Console.WriteLine("Total Result sets: " + 
+		results);
 			
 	rdr.Close();
  }
@@ -125,10 +152,11 @@
 	need thorough testing.
 	
 	<p>Rows that are returned which contain columns that are NULL are handled now. 
-	The SqlDataReader method IsDBNull() needs to be called to determine 
+	The PgSqlDataReader method IsDBNull() needs to be called to determine 
 	if a field IS NULL before trying to read data from that field.
 	
-	<p>Calling PostgreSQL stored procedures works.  It does not work perfectly.  It may not
+	<p>Calling PostgreSQL stored procedures works.  It does not work perfectly.  
+	It may not
 	even work to specification - yet.  If you want to test it yourself, look at
 	TestSqlDataReader.cs or PostgresTest.cs in
 	mcs/class/System.Data/Test.  
@@ -138,13 +166,13 @@
 	procedure returns a string containing the PostgreSQL server version.  Notice
 	the CommandType is StoredProcedure and the method ExecuteScalar() is called.
 	
-	<p>ExecuteScalar() is a lightweight method in class SqlCommand that only returns
+	<p>ExecuteScalar() is a lightweight method in class PgSqlCommand that only returns
 	one row and one column as one object - even if there is more than row or column.
 	
 <pre>
- static string GetDatabaseServerVersion (SqlConnection cnc) 
+ static string GetDatabaseServerVersion (PgSqlConnection cnc) 
  {			 
-	SqlCommand cmd = cnc.CreateCommand ();
+	PgSqlCommand cmd = cnc.CreateCommand ();
 	string data;
 
 	cmd.CommandType = CommandType.StoredProcedure;
@@ -156,7 +184,7 @@
  }
 </pre>
 			
-	<p>We have the beginnings of Parameters support PostgreSQL.  Only
+	* <p>We have the beginnings of Parameters support PostgreSQL.  Only
 	Input Parameters are currently supported.  Output, Input/Output,
 	and Return parameters still need to be done.
 	
@@ -164,19 +192,19 @@
 	infrastructure is starting to come together.
 	
 	<p>A lot of Exceptions need to be thrown for various exceptions.  However,
-	SqlException, SqlErrorCollection, and SqlError have been partially
+	PgSqlException, PgSqlErrorCollection, and PgSqlError have been partially
 	implemented.
 	
 	<p>Tim Coleman and Rodrigo Moya got the beginnings of the
-	SqlDataAdapter/DataSet/DataTable/DataRow to work.  Currently, 
-	the SqlDataAdapter can Fill() relational data into a DataTable in a DataSet.
+	PgSqlDataAdapter/DataSet/DataTable/DataRow to work.  Currently, 
+	the PgSqlDataAdapter can Fill() relational data into a DataTable in a DataSet.
 	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.
 	Below, I show a snippets from the test:
 	
 <pre>
  string connectionString;
  string sqlQuery;
- SqlDataAdapter adapter;
+ PgSqlDataAdapter adapter;
  DataSet dataSet = null;
 
  connectionString =
@@ -186,7 +214,7 @@
 						
  sqlQuery = "select * from pg_tables";
 
- adapter = new SqlDataAdapter (sqlQuery, 
+ adapter = new PgSqlDataAdapter (sqlQuery, 
 			connectionString);
  				
  dataSet = new DataSet ();
@@ -199,14 +227,14 @@
  }
 </pre>	
 
-* Testing the PostgreSQL ADO.NET Provider
+* Testing the PostgreSQL Provider
 
-	<p>In order to test System.Data.SqlClient, you will need to have
+	<ul>
+		* <p>In order to test Mono.Data.PostgreSqlClient, you will need to have
 	access to a remote PostgreSQL DBMS, or you will have to install 
-	one locally.  PostgreSQL is the DBMS used for the initial 
-	implementation of System.Data.SqlClient.
+	one locally.  PostgreSQL was first ADO.NET provider created in Mono.
 		
-	<p>Why?  Because it is free software, has a client 
+	<p>Why use PostgreSQL?  Because it is free software, has a client 
 	library that is easy to use, PostgreSQL is easy to install on
 	Unix and Windows (using the Cygwin install program), not difficult to setup after
 	installation, and it runs under: Linux, 
@@ -225,6 +253,7 @@
 <pre>
 "host=localhost;dbname=test;user=postgres"
 </pre>
+</ul>
 		
 	<p>Installation instructions for PostgreSQL DBMS:
 
@@ -406,7 +435,7 @@ create user postgres with password 'fun2db';
 	<p>
 	<ul>
 		<li><b>dbname</b> database, ie., test</li>
-		<li><b>host</b> hostname of the PostgreSQL DBMS Server to connect to, ie., localhost</li>
+		<li><b>host</b> hostname of the PostgreSQL DBMS Server, ie., localhost</li>
 		<li><b>user</b> username, ie., someuser</li>
 		<li><b>password</b> password, ie., mypass1234</li>
 	</ul>
@@ -429,7 +458,19 @@ PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
     
     <p>
 <pre>
-mcs PostgresTest.cs -r System.Data.dll
+ mcs PostgresTest.cs \
+    -r System.Data.dll \
+    -r Mono.Data.PostgreSqlClient.dll
+</pre>
+
+	<p>If there are compile errors, such as, can not convert IDbConnection
+	to PgSqlConnection, then you need to run mcs like:
+
+<pre>
+ mono f:/cygwin/home/DanielMorgan/mono/install/bin/mcs.exe \
+    PostgresTest.cs \
+    -r System.Data.dll \
+    -r Mono.Data.PostgreSqlClient.dll
 </pre>
     
     <p>
@@ -448,66 +489,66 @@ mono PostgresTest.exe
     
     <p>Below, I show how the output from PostgresTest.  I have omitted a lot
     of the meta data for the columns except two columns.  The classes
-    used were from System.Data.SqlClient and were used to connect to a
+    used were from Mono.Data.PostgreSqlClient and were used to connect to a
     PostgreSQL database and retrieve data.
 
 <p>
 <pre>   
 
-danmorg@DANPC ~/mono/mcs/class/System.Data/Test
-$ mcs PostgresTest.cs -r System.Data.dll
+ danmorg@DANPC ~/mono/mcs/class/System.Data/Test
+ $ mcs PostgresTest.cs -r System.Data.dll
 
-danmorg@DANPC ~/mono/mcs/class/System.Data/Test
-$ mono PostgresTest.exe
+ danmorg@DANPC ~/mono/mcs/class/System.Data/Test
+ $ mono PostgresTest.exe
         Postgres provider specific tests...
 
                 Drop table:
-Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  table "mono
-_postgres_test" does not exist
+ Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  
+ table "mono_postgres_test" does not exist
  <Stack Trace>
 
                 Create table with all supported types:
-OK
+ OK
                 Insert values for all known types:
-OK
+ OK
                 Update values:
-OK
+ OK
                 Insert values for all known types:
-OK
-Aggregate: count(*)
-Agg Result: 2
-Aggregate: min(text_value)
-Agg Result: This is a text
-Aggregate: max(int4_value)
-Agg Result: 1048000
-Aggregate: sum(int4_value)
-Agg Result: 1048003
+ OK
+ Aggregate: count(*)
+ Agg Result: 2
+ Aggregate: min(text_value)
+ Agg Result: This is a text
+ Aggregate: max(int4_value)
+ Agg Result: 1048000
+ Aggregate: sum(int4_value)
+ Agg Result: 1048003
                 Select values from the database:
-Result is from a SELECT SQL Query.  Records Affected: -1
-Result Set 1...
+ Result is from a SELECT SQL Query.  Records Affected: -1
+ Result Set 1...
    Total Columns: 28
-ColumnName = boolean_value
-ColumnOrdinal = 1
-ColumnSize = 1
-NumericPrecision = 0
-NumericScale = 0
-IsUnique = False
-IsKey =
-BaseCatalogName =
-BaseColumnName = boolean_value
-BaseSchemaName =
-BaseTableName =
-DataType = System.Boolean
-AllowDBNull = False
-ProviderType = 16
-IsAliased = False
-IsExpression = False
-IsIdentity = False
-IsAutoIncrement = False
-IsRowVersion = False
-IsHidden = False
-IsLong = False
-IsReadOnly = False
+ ColumnName = boolean_value
+ ColumnOrdinal = 1
+ ColumnSize = 1
+ NumericPrecision = 0
+ NumericScale = 0
+ IsUnique = False
+ IsKey =
+ BaseCatalogName =
+ BaseColumnName = boolean_value
+ BaseSchemaName =
+ BaseTableName =
+ DataType = System.Boolean
+ AllowDBNull = False
+ ProviderType = 16
+ IsAliased = False
+ IsExpression = False
+ IsIdentity = False
+ IsAutoIncrement = False
+ IsRowVersion = False
+ IsHidden = False
+ IsLong = False
+ IsReadOnly = False
 
  ...
 
@@ -595,17 +636,21 @@ IsReadOnly = False
     Col 27: null_timestamp_value is NULL
    Total Rows Retrieved: 2
  Total Result sets: 1
-                Call ExecuteReader with a SQL Command. (Not INSERT,UPDATE,DELETE
+                Call ExecuteReader with a SQL Command. 
+                (Not INSERT,UPDATE,DELETE
  ).
- Result is from a SQL Command not (INSERT,UPDATE,DELETE).   Records Affected: -1
+ Result is from a SQL Command not (INSERT,UPDATE,DELETE).  
+                        Records Affected: -1
  Total Result sets: 0
-                Call ExecuteReader with a SQL Command. (Is INSERT,UPDATE,DELETE)
+                Call ExecuteReader with a SQL Command. 
+                        (Is INSERT,UPDATE,DELETE)
  .
  Result is from a SQL Command (INSERT,UPDATE,DELETE).  Records Affected: 1
  Total Result sets: 0
                 Calling stored procedure version()
  Result: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.95.3-5
- Database Server Version: PostgreSQL 7.2.1 on i686-pc-cygwin, compiled by GCC 2.9
+ Database Server Version: PostgreSQL 7.2.1 on i686-pc-cygwin, 
+              compiled by GCC 2.9
  5.3-5
  Clean up...
                 Drop table...

@@ -1,3 +1,26 @@
+2002-10-18  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ado-net
+	* doc/postgresql
+	* doc/tds-providers: cleaned up the web pages
+	
+	* doc/web/commands: postgresql.html page was mistyped
+
+2002-10-18  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ado-net: updated status of
+	the ADO.NET functionality and providers
+	and added link to tds-providers.html
+
+	* doc/tds-providers: added file to
+	describe the design	and status of 
+	the SqlClient, SybaseClient, and TdsClient
+	ADO.NET providers.
+
+	* doc/web/makefile
+	* doc/web/command: added new web page 
+	tds-providers.html to build of 	www.go-mono.com web site
+	
 2002-10-17  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/web/makefile

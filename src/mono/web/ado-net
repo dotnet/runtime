@@ -50,7 +50,7 @@
 	<b>Step 2:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a> Provider:
 
 	<ul>
-		* <p><b>System.Data.SqlClient</b> will become a
+		* <p>System.Data.SqlClient will become a
 		  provider for Microsoft SQL Server, both on Windows and
 		  Linux, to be compatible with applications written
 		  for the Microsoft .NET Development Framework.
@@ -105,35 +105,38 @@
 
 	<b>Step 4:</b> Other ADO.NET providers:
 
-	<ul>
-		* <p>The idea in Microsoft .NET System.Data is to have
+	<p>The idea in Microsoft .NET System.Data is to have
 		  a managed provider for each supported DBMS.
 		  
-		  <p>System.Data.SqlClient for Microsoft SQL Server.  See the
+		  <ul>
+		  
+		  <li><p>System.Data.SqlClient for Microsoft SQL Server.  See the
 		  Mono.Data.TdsClient provider.
 		  
-		  <p>Mono.Data.TdsClient for older Microsoft SQL Server
+		  <li><p>Mono.Data.TdsClient for older Microsoft SQL Server
 		  and Sybase databases.  This has been started by Tim Coleman
 		  and will provide the functionality for System.Data.SqlClient
 		  and Mono.Data.SybaseClient.
 		  
-		  <p>Mono.Data.SybaseClient for Sybase SQL Server.  See the
+		  <li><p>Mono.Data.SybaseClient for Sybase SQL Server.  See the
 		  Mono.Data.TdsClient provider.
 		  	  
-		  <p>Mono.Data.PostgreSqlClient for PostgreSQL.  Started by
+		  <li><p>Mono.Data.PostgreSqlClient for PostgreSQL.  Started by
 		  Rodrigo Moya, Daniel Morgan, and Tim Coleman.  This provider 
 		  uses the PostgreSQL C API (libpq.so on Linux and pq.dll on
 		  Windows).
           
-          <p>Mono.Data.MySql for MySQL client/server database.  Started by
+          <li><p>Mono.Data.MySql for MySQL client/server database.  Started by
           Daniel Morgan using C# Bindings to MySQL from Brad Meril.  
           This provider uses the MySQL C API (libmysqlclient.so on
           Linux and libmySQL.dll on Windows).
           
-          <p>Mono.Data.SqliteClient for the SQL Lite database.  Started by
+          <li><p>Mono.Data.SqliteClient for the SQL Lite database.  Started by
           Vladimir Vukicevic.  This provider uses 
           <a href"http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a> database engine.
           It is used in mPhoto.
+          
+          </ul>
           
           <p>See Current Status for more information on these providers.
           
@@ -169,24 +172,25 @@
           gda# is the C# bindings to libgda which is a generic data access
           library that has providers for many databases.
           
-		* <p><b>ADO.NET Configuration command-line and GUI tools</b>.  These tools have
+		* <p><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
+		  These tools have
 		  not been started.  They could become a part of SQL# though.  The
 		  configuration tool can be used to set up DSNs for the ODBC and OLE-DB
-		  providers.  The tools would be written in C# and run on Mono.
+		  providers and configurations for 
+		  their underlying libraries (unixODBC and libgda). The configuration
+		  tool could set database client library configurations too, such as,
+		  freetds.conf for Microsoft SQL Server and Sybase, 
+		  The tools would be written in C# and run on Mono.
 		
 	</ul>
 	
 * Current Status
 	
-	<p>The<b>PostgreSQL</p> provider as Mono.Data.PostgreSqlClient can connect, 
+	<p>The <b>PostgreSQL</b> provider in Mono.Data.PostgreSqlClient can connect, 
 	execute commands, retrieve data via a Data Reader, read data in a DataTable 
 	in a DataSet via a Data Adapter, get a DataTable holding schema data,
 	and use input parameters in its SQL, and SQL errors and exceptions for PostgreSQL
-	are working. 
-	
-	<p>The <b>PostgreSQL</b> provider
-	has been moved from System.Data.SqlClient to Mono.Data.PostgreSqlClient
-	so System.Data.SqlClient can be used for the Microsoft SQL Server provider.
+	are working.
 		
 	<p><b>System.Data.OleDb</b> is working with libgda (an OLE-DB/ADO data access for Unix).  
 	The C-Sharp bindings to libgda currently work - meaning they can compile, run, and you can connect to a
@@ -307,7 +311,8 @@
  <pre>
  // Get an instance of the multiplexor from machine.config file
  // Can be overriden in the application config file	
- object o = ConnectionSettings.GetConfig ("mono.data/multiplexor");
+ object o = ConnectionSettings.GetConfig 
+               ("mono.data/multiplexor");
  if (o == null)
 	--- error
     
@@ -315,50 +320,59 @@
     
  // may be a string [] argument can help passing arguments
  IDbConnection cnc = mp.CreateConnection (providerName);
-    
- and in the machine.config file:
+</pre>    
 
-  <configuration>
-   <configSections>
-    <section name="mono.data"
-      type="Mono.Data.MultiplexorSectionHandler,Mono.Data" />
+ 	<p>and in the machine.config file:
+
+<pre>
+  &lt;configuration&gt;
+   &lt;configSections&gt;
+    &lt;section name="mono.data"
+      type="Mono.Data.MultiplexorSectionHandler,Mono.Data"/&gt;
     ....
-   </configSections>
+   &lt;/configSections>
    ...
-   <sectionGroup name="mono.data">
-     <multiplexor>
-       <add provider="PostgreSQL" type="Mono.Data.PostgreSQLClient,Mono.Data"
-          validate="false" parameters="USER=xxx;HOST=127.0.0.1;DBNAME=xxx" />
-     </multiplexor>
-   </sectionGroup>
-  </configuration>
-
- validate="false" tells MultiplexorSectionHandler not to load the Type
- until an instance is required. You can add more attributes or whatever
- inside <multiplexor> as long as MultiplexorSectionHandler parses it.
-
-    public class MultiplexorSectionHandler :
-    IConfigurationSectionHandler
-    {
-        public object Create (object parent, object configContext,
-        XmlNode section)
-        {
-            Multiplexor mp;
-        // Here you get the ChildNodes and set up a Multiplexor
-        // instance that will hold the information needed to create 
-        // instances of each provider. Only one instance will be 
-        // created by the config system.
-            return mp;
-        }
-    }
-
- This way, if our providers works with MS, the user can test them in both
- MS and mono by just adding a few lines to machine.config (i still have
- to upload a default machine.config file for mono). And this is the .NET
- way of doing it (of course, if you prefer, you can use the other config
- file. I just wanted to make people aware of this feature that now works
- on mono).
+   &lt;sectionGroup name="mono.data"&gt;
+     &lt;multiplexor&gt;
+       &lt;add provider="PostgreSQL" 
+          type="Mono.Data.PostgreSQLClient,Mono.Data"
+          validate="false" 
+          parameters="USER=xxx;HOST=127.0.0.1;DBNAME=xxx"/&gt;
+     &lt;/multiplexor&gt;
+   &lt;/sectionGroup&gt;
+  &lt;/configuration&gt;
 </pre>
+
+	<p>validate="false" tells MultiplexorSectionHandler not to load the Type
+	until an instance is required. You can add more attributes or whatever
+	inside <multiplexor> as long as MultiplexorSectionHandler parses it.
+
+<pre>
+public class MultiplexorSectionHandler :
+IConfigurationSectionHandler
+{
+    public object Create (object parent, 
+      object configContext,
+      XmlNode section)
+    {
+       Multiplexor mp;
+       // Here you get the ChildNodes and 
+       // set up a Multiplexor
+       // instance that will hold the information 
+       // needed to create 
+       // instances of each provider. Only one 
+       // instance will be 
+       // created by the config system.
+            return mp;
+    }
+ }
+</pre>
+	<p>This way, if our providers works with MS, the user can test them in both
+	MS and mono by just adding a few lines to machine.config (i still have
+	to upload a default machine.config file for mono). And this is the .NET
+	way of doing it (of course, if you prefer, you can use the other config
+	file. I just wanted to make people aware of this feature that now works
+	on mono).
 	
 	<p><b>Building System.Data</b>
 	
@@ -375,7 +389,8 @@
 		* compile System.Data.dll:
 <pre>
  cd mcs/class/System.Data<br>
- mcs --target library -o System.Data.dll @list
+ mcs --target library -o \
+    System.Data.dll @list
 </pre>
 	</ul>
 
@@ -391,15 +406,14 @@
 <pre>
  cd mcs/class/System.Data
  ../../nant/NAnt.exe
-</pref>
+</pre>
 			
 		* This will automatically copy the System.Data.dll to Test.
 		  If you need to do a clean for the System.Data.dll assembly,<br><br>
 
 <pre>
  cd mcs/class/System.Data
- ../../nant/NAnt.exe clean
- 
+ ../../nant/NAnt.exe clean 
 </pre>
 	</ul>
 
