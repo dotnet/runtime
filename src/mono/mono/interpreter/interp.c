@@ -93,35 +93,33 @@ ves_real_abort (int line, MonoMethod *mh,
 static void
 init_class (MonoClass *klass)
 {
-	guint32 cols [MONO_METHOD_SIZE];
-	MonoMetadata *m;
-	MonoTableInfo *t;
-	int i;
+	MonoMethod *method;
 	MonoInvocation call;
+	int i;
 
 	if (klass->inited)
 		return;
-	if (klass->parent)
+	if (klass->parent && !klass->parent->inited)
 		init_class (klass->parent);
 	
-	m = klass->image;
-	t = &m->tables [MONO_TABLE_METHOD];
+	klass->inited = 1;
+	/*
+	 * No need to call the class constructor.
+	 */
+	if (!(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT))
+		return;
 
-	for (i = klass->method.first; i < klass->method.last; ++i) {
-		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
-		
-		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0) {
-			INIT_FRAME (&call, NULL, NULL, NULL, NULL,
-					mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1), klass));
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && (strcmp (".cctor", method->name) == 0)) {
+			INIT_FRAME (&call, NULL, NULL, NULL, NULL, method);
 	
 			ves_exec_method (&call);
 			mono_free_method (call.method);
-			klass->inited = 1;
 			return;
 		}
 	}
 	/* No class constructor found */
-	klass->inited = 1;
 }
 
 /*
@@ -650,6 +648,9 @@ ves_exec_method (MonoInvocation *frame)
 	unsigned char volatile_address = 0;
 	GOTO_LABEL_VARS;
 
+	if (!frame->method->klass->inited)
+		init_class (frame->method->klass);
+
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		ICallMethod icall = frame->method->addr;
 		icall (frame);
@@ -958,13 +959,22 @@ ves_exec_method (MonoInvocation *frame)
 
 			DEBUG_LEAVE ();
 			return;
-		CASE (CEE_BR_S)
-			++ip;
-			ip += (signed char) *ip;
-			++ip;
+		CASE (CEE_BR_S) /* Fall through */
+		CASE (CEE_BR)
+			if (*ip == CEE_BR) {
+				++ip;
+				ip += (gint32) read32(ip);
+				ip += 4;
+			} else {
+				++ip;
+				ip += (signed char) *ip;
+				++ip;
+			}
 			BREAK;
+		CASE (CEE_BRFALSE) /* Fall through */
 		CASE (CEE_BRFALSE_S) {
 			int result;
+			int near_jump = *ip == CEE_BRFALSE_S;
 			++ip;
 			--sp;
 			switch (sp->type) {
@@ -973,13 +983,19 @@ ves_exec_method (MonoInvocation *frame)
 			case VAL_DOUBLE: result = sp->data.f ? 0: 1; break;
 			default: result = sp->data.p == NULL; break;
 			}
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BRTRUE) /* Fall through */
 		CASE (CEE_BRTRUE_S) {
 			int result;
+			int near_jump = *ip == CEE_BRTRUE_S;
 			++ip;
 			--sp;
 			switch (sp->type) {
@@ -988,13 +1004,19 @@ ves_exec_method (MonoInvocation *frame)
 			case VAL_DOUBLE: result = sp->data.f ? 1 : 0; break;
 			default: result = sp->data.p != NULL; break;
 			}
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BEQ) /* Fall through */
 		CASE (CEE_BEQ_S) {
 			int result;
+			int near_jump = *ip == CEE_BEQ_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1005,13 +1027,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp [0].data.f == sp [1].data.f;
 			else
 				result = GET_NATI (sp [0]) == GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BGE) /* Fall through */
 		CASE (CEE_BGE_S) {
 			int result;
+			int near_jump = *ip == CEE_BGE_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1022,13 +1050,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp [0].data.f >= sp [1].data.f;
 			else
 				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BGT) /* Fall through */
 		CASE (CEE_BGT_S) {
 			int result;
+			int near_jump = *ip == CEE_BGT_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1039,13 +1073,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp [0].data.f > sp [1].data.f;
 			else
 				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BLT) /* Fall through */
 		CASE (CEE_BLT_S) {
 			int result;
+			int near_jump = *ip == CEE_BLT_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1056,13 +1096,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp[0].data.f < sp[1].data.f;
 			else
 				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BLE) /* fall through */
 		CASE (CEE_BLE_S) {
 			int result;
+			int near_jump = *ip == CEE_BLE_S;
 			++ip;
 			sp -= 2;
 
@@ -1080,13 +1126,19 @@ ves_exec_method (MonoInvocation *frame)
 				 */
 				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
 			}
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BNE_UN) /* Fall through */
 		CASE (CEE_BNE_UN_S) {
 			int result;
+			int near_jump = *ip == CEE_BNE_UN_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1098,13 +1150,19 @@ ves_exec_method (MonoInvocation *frame)
 					(sp [0].data.f != sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) != GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BGE_UN) /* Fall through */
 		CASE (CEE_BGE_UN_S) {
 			int result;
+			int near_jump = *ip == CEE_BGE_UN_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1115,13 +1173,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = !isless (sp [0].data.f,sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BGT_UN) /* Fall through */
 		CASE (CEE_BGT_UN_S) {
 			int result;
+			int near_jump = *ip == CEE_BGT_UN_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1132,13 +1196,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = isgreater (sp [0].data.f, sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BLE_UN) /* Fall through */
 		CASE (CEE_BLE_UN_S) {
 			int result;
+			int near_jump = *ip == CEE_BLE_UN_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1149,13 +1219,19 @@ ves_exec_method (MonoInvocation *frame)
 				result = islessequal (sp [0].data.f, sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
+		CASE (CEE_BLT_UN) /* Fall through */
 		CASE (CEE_BLT_UN_S) {
 			int result;
+			int near_jump = *ip == CEE_BLT_UN_S;
 			++ip;
 			sp -= 2;
 			if (sp->type == VAL_I32)
@@ -1167,24 +1243,15 @@ ves_exec_method (MonoInvocation *frame)
 					(sp [0].data.f < sp [1].data.f);
 			else
 				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
-			if (result)
-				ip += (signed char)*ip;
-			++ip;
+			if (result) {
+				if (near_jump)
+					ip += (signed char)*ip;
+				else
+					ip += (gint32) read32 (ip);
+			}
+			ip += near_jump ? 1: 4;
 			BREAK;
 		}
-		CASE (CEE_BR) ves_abort(); BREAK;
-		CASE (CEE_BRFALSE) ves_abort(); BREAK;
-		CASE (CEE_BRTRUE) ves_abort(); BREAK;
-		CASE (CEE_BEQ) ves_abort(); BREAK;
-		CASE (CEE_BGE) ves_abort(); BREAK;
-		CASE (CEE_BGT) ves_abort(); BREAK;
-		CASE (CEE_BLE) ves_abort(); BREAK;
-		CASE (CEE_BLT) ves_abort(); BREAK;
-		CASE (CEE_BNE_UN) ves_abort(); BREAK;
-		CASE (CEE_BGE_UN) ves_abort(); BREAK;
-		CASE (CEE_BGT_UN) ves_abort(); BREAK;
-		CASE (CEE_BLE_UN) ves_abort(); BREAK;
-		CASE (CEE_BLT_UN) ves_abort(); BREAK;
 		CASE (CEE_SWITCH) {
 			guint32 n;
 			const unsigned char *st;
@@ -1273,6 +1340,11 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp -= 2;
 			*(gint32*)sp->data.p = sp[1].data.i;
+			BREAK;
+		CASE (CEE_STIND_I)
+			++ip;
+			sp -= 2;
+			*(gint64*)sp->data.p = sp[1].data.l;
 			BREAK;
 		CASE (CEE_STIND_I8)
 			++ip;
@@ -1634,10 +1706,12 @@ ves_exec_method (MonoInvocation *frame)
 			--sp;
 			THROW_EX (sp->data.p, ip);
 			BREAK;
+		CASE (CEE_LDFLDA) /* Fall through */
 		CASE (CEE_LDFLD) {
 			MonoObject *obj;
 			MonoClassField *field;
 			guint32 token;
+			int load_addr = *ip == CEE_LDFLDA;
 
 			++ip;
 			token = read32 (ip);
@@ -1647,10 +1721,14 @@ ves_exec_method (MonoInvocation *frame)
 			obj = sp [-1].data.p;
 			field = mono_class_get_field (obj->klass, token);
 			g_assert (field);
-			stackval_from_data (field->type->type, &sp [-1], (char*)obj + field->offset);
+			if (load_addr) {
+				sp->type = VAL_TP;
+				sp->data.p = (char*)obj + field->offset;
+			} else {
+				stackval_from_data (field->type->type, &sp [-1], (char*)obj + field->offset);
+			}
 			BREAK;
 		}
-		CASE (CEE_LDFLDA) ves_abort(); BREAK;
 		CASE (CEE_STFLD) {
 			MonoObject *obj;
 			MonoClassField *field;
@@ -1669,10 +1747,12 @@ ves_exec_method (MonoInvocation *frame)
 			stackval_to_data (field->type->type, &sp [1], (char*)obj + field->offset);
 			BREAK;
 		}
-		CASE (CEE_LDSFLD) {
+		CASE (CEE_LDSFLD) /* Fall through */
+		CASE (CEE_LDSFLDA) {
 			MonoClass *klass;
 			MonoClassField *field;
 			guint32 token;
+			int load_addr = *ip == CEE_LDSFLDA;
 
 			++ip;
 			token = read32 (ip);
@@ -1681,13 +1761,19 @@ ves_exec_method (MonoInvocation *frame)
 			/* need to handle fieldrefs */
 			klass = mono_class_get (image, 
 				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+			if (!klass->inited)
+				init_class (klass);
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			stackval_from_data (field->type->type, sp, (char*)klass + field->offset);
+			if (load_addr) {
+				sp->type = VAL_TP;
+				sp->data.p = (char*)klass + field->offset;
+			} else {
+				stackval_from_data (field->type->type, sp, (char*)klass + field->offset);
+			}
 			++sp;
 			BREAK;
 		}
-		CASE (CEE_LDSFLDA) ves_abort(); BREAK;
 		CASE (CEE_STSFLD) {
 			MonoClass *klass;
 			MonoClassField *field;
@@ -1701,6 +1787,8 @@ ves_exec_method (MonoInvocation *frame)
 			/* need to handle fieldrefs */
 			klass = mono_class_get (image, 
 				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+			if (!klass->inited)
+				init_class (klass);
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			stackval_to_data (field->type->type, sp, (char*)klass + field->offset);
@@ -1772,6 +1860,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDELEM_U2) /* fall through */
 		CASE (CEE_LDELEM_I4) /* fall through */
 		CASE (CEE_LDELEM_U4) /* fall through */
+		CASE (CEE_LDELEM_I8)  /* fall through */
 		CASE (CEE_LDELEM_I)  /* fall through */
 		CASE (CEE_LDELEM_R4) /* fall through */
 		CASE (CEE_LDELEM_R8) /* fall through */
@@ -1817,6 +1906,10 @@ ves_exec_method (MonoInvocation *frame)
 				sp [0].data.i = ((guint32 *)o->vector)[sp [1].data.i]; 
 				sp [0].type = VAL_I32;
 				break;
+			case CEE_LDELEM_I8:
+				sp [0].data.l = ((gint64 *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_I64;
+				break;
 			case CEE_LDELEM_R4:
 				sp [0].data.f = ((float *)o->vector)[sp [1].data.i]; 
 				sp [0].type = VAL_DOUBLE;
@@ -1838,11 +1931,11 @@ ves_exec_method (MonoInvocation *frame)
 
 			BREAK;
 		}
-		CASE (CEE_LDELEM_I8) ves_abort(); BREAK;
 		CASE (CEE_STELEM_I)  /* fall through */
 		CASE (CEE_STELEM_I1) /* fall through */ 
 		CASE (CEE_STELEM_I2) /* fall through */
 		CASE (CEE_STELEM_I4) /* fall through */
+		CASE (CEE_STELEM_I8) /* fall through */
 		CASE (CEE_STELEM_R4) /* fall through */
 		CASE (CEE_STELEM_R8) /* fall through */
 		CASE (CEE_STELEM_REF) {
@@ -1878,6 +1971,10 @@ ves_exec_method (MonoInvocation *frame)
 				((gint32 *)o->vector)[sp [1].data.i] = 
 					sp [2].data.i;
 				break;
+			case CEE_STELEM_I8:
+				((gint64 *)o->vector)[sp [1].data.i] = 
+					sp [2].data.l;
+				break;
 			case CEE_STELEM_R4:
 				((float *)o->vector)[sp [1].data.i] = 
 					sp [2].data.f;
@@ -1905,7 +2002,6 @@ ves_exec_method (MonoInvocation *frame)
 
 			BREAK;
 		}
-		CASE (CEE_STELEM_I8)  ves_abort(); BREAK;
 		CASE (CEE_UNUSED2) 
 		CASE (CEE_UNUSED3) 
 		CASE (CEE_UNUSED4) 
@@ -1979,11 +2075,17 @@ ves_exec_method (MonoInvocation *frame)
 			 */
 			ip = endfinally_ip;
 			BREAK;
-		CASE (CEE_LEAVE) ves_abort(); BREAK;
+		CASE (CEE_LEAVE) /* Fall through */
 		CASE (CEE_LEAVE_S)
-			++ip;
-			ip += (signed char) *ip;
-			++ip;
+			if (*ip == CEE_LEAVE_S) {
+				++ip;
+				ip += (signed char) *ip;
+				++ip;
+			} else {
+				++ip;
+				ip += (gint32) read32 (ip);
+				ip += 4;
+			}
 			/*
 			 * We may be either inside a try block or inside an handler.
 			 * In the first case there was no exception and we go on
@@ -2000,7 +2102,6 @@ ves_exec_method (MonoInvocation *frame)
 				goto handle_finally;
 			}
 			BREAK;
-		CASE (CEE_STIND_I) ves_abort(); BREAK;
 		CASE (CEE_UNUSED26) 
 		CASE (CEE_UNUSED27) 
 		CASE (CEE_UNUSED28) 
