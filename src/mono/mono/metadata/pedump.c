@@ -258,7 +258,7 @@ dsh (const char *label, MonoImage *meta, MonoStreamHeader *sh)
 {
 	printf ("%s: 0x%08x - 0x%08x [%d == 0x%08x]\n",
 		label,
-		sh->data - meta->raw_metadata, sh->data + sh->size - meta->raw_metadata,
+		(int)(sh->data - meta->raw_metadata), (int)(sh->data + sh->size - meta->raw_metadata),
 		sh->size, sh->size);
 }
 

@@ -224,7 +224,6 @@ static guint32 start_wrapper(void *data)
 	guint32 tid;
 	MonoThread *thread=start_info->obj;
 	MonoObject *start_delegate = start_info->delegate;
-	MonoObject *start_obj = start_info->start_arg;
 	
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper",
@@ -475,7 +474,6 @@ mono_thread_exit ()
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 							 MonoObject *start)
 {
-	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)start;
 	guint32 (*start_func)(void *);
 	struct StartInfo *start_info;
 	MonoMethod *im;

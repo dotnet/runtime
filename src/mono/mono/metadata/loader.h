@@ -20,6 +20,9 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 void               
 mono_free_method           (MonoMethod *method);
 
+MonoMethodSignature*
+mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context);
+
 MonoMethodSignature* 
 mono_method_get_signature  (MonoMethod *method, MonoImage *image, guint32 token);
 

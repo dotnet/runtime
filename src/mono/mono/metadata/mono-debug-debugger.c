@@ -937,7 +937,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	*ptr++ = MONO_DEBUGGER_TYPE_KIND_CLASS_INFO;
 
 	if (klass->valuetype)
-		base_offset = - sizeof (MonoObject);
+		base_offset = - (int)(sizeof (MonoObject));
 
 	WRITE_UINT32 (ptr, klass->instance_size + base_offset);
 	*ptr++ = klass->valuetype;
@@ -1113,7 +1113,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 		WRITE_UINT32 (ptr, write_class (table, klass->interfaces [i]));
 
 	if (ptr - old_ptr != data_size) {
-		g_warning (G_STRLOC ": %d,%d,%d", ptr - old_ptr, data_size, sizeof (gpointer));
+		g_warning (G_STRLOC ": %d,%d,%d", (int)(ptr - old_ptr), data_size, (int)sizeof (gpointer));
 		if (klass)
 			g_warning (G_STRLOC ": %s.%s", klass->name_space, klass->name);
 		g_assert_not_reached ();

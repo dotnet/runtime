@@ -910,9 +910,9 @@ mono_get_unique_iid (MonoClass *class)
 	if (g_hash_table_lookup_extended (iid_hash, str, NULL, &value)) {
 		mono_loader_unlock ();
 		g_free (str);
-		return (guint)value;
+		return GPOINTER_TO_INT (value);
 	} else {
-		g_hash_table_insert (iid_hash, str, (gpointer)iid);
+		g_hash_table_insert (iid_hash, str, GINT_TO_POINTER (iid));
 		++iid;
 	}
 
@@ -2745,7 +2745,11 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericCon
 		
 	case MONO_TOKEN_TYPE_SPEC:
 		return g_strdup_printf ("Typespec 0x%08x", type_token);
+	default:
+		g_assert_not_reached ();
 	}
+
+	return NULL;
 }
 
 /**

@@ -6738,9 +6738,9 @@ void
 mono_marshal_set_last_error (void)
 {
 #ifdef WIN32
-	TlsSetValue (last_error_tls_id, (gpointer)GetLastError ());
+	TlsSetValue (last_error_tls_id, GINT_TO_POINTER (GetLastError ()));
 #else
-	TlsSetValue (last_error_tls_id, (gpointer)errno);
+	TlsSetValue (last_error_tls_id, GINT_TO_POINTER (errno));
 #endif
 }
 
@@ -6981,7 +6981,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return ((guint32)TlsGetValue (last_error_tls_id));
+	return (GPOINTER_TO_INT (TlsGetValue (last_error_tls_id)));
 }
 
 guint32 

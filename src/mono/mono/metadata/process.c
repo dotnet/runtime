@@ -748,7 +748,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 		shell_args = "-c %s";
 #endif
 		if (spath != NULL) {
-			gint dummy;
+			gsize dummy;
 			gchar *quoted;
 
 			shell_path = mono_unicode_from_external (spath, &dummy);

@@ -1254,7 +1254,7 @@ mono_method_signature (MonoMethod *m)
 	int idx;
 	int size;
 	MonoImage* img;
-	gpointer sig;
+	const char *sig;
 	
 	if (m->signature)
 		return m->signature;

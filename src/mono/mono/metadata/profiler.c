@@ -730,7 +730,7 @@ output_profile (GList *funcs)
 		m = method_get_name (p->method);
 		printf ("########################\n");
 		printf ("% 8.3f ", (double) (p->total * 1000));
-		printf ("%7llu ", p->count);
+		printf ("%7llu ", (unsigned long long)p->count);
 		printf ("% 8.3f ", (double) (p->total * 1000)/(double)p->count);
 		printf ("  %s\n", m);
 
@@ -738,7 +738,7 @@ output_profile (GList *funcs)
 		/* callers */
 		output_callers (p);
 	}
-	printf ("Total number of calls: %lld\n", total_calls);
+	printf ("Total number of calls: %lld\n", (long long)total_calls);
 }
 
 typedef struct {

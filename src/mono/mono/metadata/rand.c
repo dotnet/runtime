@@ -198,13 +198,13 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (M
 	}
 
 	/* if required exception will be thrown in managed code */
-	return ((file < 0) ? NULL : (gpointer) file);
+	return ((file < 0) ? NULL : GINT_TO_POINTER (file));
 }
 
 gpointer 
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry)
 {
-	gint file = (gint) handle;
+	gint file = GPOINTER_TO_INT (handle);
 	guint32 len = mono_array_length (arry);
 	guchar *buf = mono_array_addr (arry, guchar, 0);
 
@@ -242,7 +242,7 @@ void
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle) 
 {
 	if (!egd)
-		close ((gint) handle);
+		close (GPOINTER_TO_INT (handle));
 }
 
 #endif /* OS definition */

@@ -277,7 +277,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 		OpenProcessToken (GetCurrentProcess (), TOKEN_QUERY, &token);
 	}
 #else
-	token = (gpointer) geteuid ();
+	token = GINT_TO_POINTER (geteuid ());
 #endif
 	return token;
 }
@@ -302,7 +302,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 		g_free (tu);
 	}
 #else 
-	gchar *uname = GetTokenName ((uid_t) token);
+	gchar *uname = GetTokenName ((uid_t) GPOINTER_TO_INT (token));
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -374,7 +374,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 #endif
 
 	if (result) {
-		token = (gpointer) p->pw_uid;
+		token = GINT_TO_POINTER (p->pw_uid);
 	}
 
 #ifdef HAVE_GETPWNAM_R
@@ -520,16 +520,16 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 	fbufsize = (size_t) 1024;
 #endif
 	fbuf = g_malloc0 (fbufsize);
-	retval = getgrgid_r ((gid_t) group, &grp, fbuf, fbufsize, &g);
+	retval = getgrgid_r ((gid_t) GPOINTER_TO_INT (group), &grp, fbuf, fbufsize, &g);
 	result = ((retval == 0) && (g == &grp));
 #else
 	/* default to non thread-safe but posix compliant function */
-	g = getgrgid ((gid_t) group);
+	g = getgrgid ((gid_t) GPOINTER_TO_INT (group));
 	result = (g != NULL);
 #endif
 
 	if (result) {
-		result = IsMemberOf ((uid_t) user, g);
+		result = IsMemberOf ((uid_t) GPOINTER_TO_INT (user), g);
 	}
 
 #ifdef HAVE_GETGRGID_R
@@ -581,7 +581,7 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 #endif
 
 		if (result) {
-			result = IsMemberOf ((uid_t) user, g);
+			result = IsMemberOf ((uid_t) GPOINTER_TO_INT (user), g);
 		}
 
 #ifdef HAVE_GETGRNAM_R
