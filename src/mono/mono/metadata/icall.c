@@ -473,8 +473,13 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	s2 = mono_class_value_size (obj->vtable->klass, NULL);
 
 	res = mono_object_new (domain, enumc);
-	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject), MIN (s1, s2));
 
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject), MIN (s1, s2));
+#else
+	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject) + (s2 > s1 ? s2 - s1 : 0),
+		MIN (s1, s2));
+#endif
 	return res;
 }
 
