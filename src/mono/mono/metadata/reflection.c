@@ -6785,22 +6785,32 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	return mono_custom_attrs_from_index (image, idx);
 }
 
+gboolean
+mono_custom_attrs_has_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
+{
+	int i;
+	MonoClass *klass;
+	for (i = 0; i < ainfo->num_attrs; ++i) {
+		klass = ainfo->attrs [i].ctor->klass;
+		if (mono_class_has_parent (klass, attr_klass))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /*
- * mono_reflection_get_custom_attrs:
+ * mono_reflection_get_custom_attrs_info:
  * @obj: a reflection object handle
  *
- * Return an array with all the custom attributes defined of the
- * reflection handle @obj. The objects are fully build.
+ * Return the custom attribute info for attributes defined for the
+ * reflection handle @obj. The objects.
  */
-MonoArray*
-mono_reflection_get_custom_attrs (MonoObject *obj)
+MonoCustomAttrInfo*
+mono_reflection_get_custom_attrs_info (MonoObject *obj)
 {
 	MonoClass *klass;
-	MonoArray *result;
 	MonoCustomAttrInfo *cinfo = NULL;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	klass = obj->vtable->klass;
 	if (klass == mono_defaults.monotype_class) {
 		MonoReflectionType *rtype = (MonoReflectionType*)obj;
@@ -6844,11 +6854,29 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
 
+	return cinfo;
+}
+
+/*
+ * mono_reflection_get_custom_attrs:
+ * @obj: a reflection object handle
+ *
+ * Return an array with all the custom attributes defined of the
+ * reflection handle @obj. The objects are fully build.
+ */
+MonoArray*
+mono_reflection_get_custom_attrs (MonoObject *obj)
+{
+	MonoArray *result;
+	MonoCustomAttrInfo *cinfo;
+
+	cinfo = mono_reflection_get_custom_attrs_info (obj);
 	if (cinfo) {
 		result = mono_custom_attrs_construct (cinfo);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
+		MonoClass *klass;
 		klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
 		result = mono_array_new (mono_domain_get (), klass, 0);
 	}

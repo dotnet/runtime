@@ -65,6 +65,7 @@ MonoObject* mono_get_dbnull_object (MonoDomain *domain);
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
+MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
 MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
 MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, guint32 idx);
 MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
@@ -74,6 +75,7 @@ MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoPrope
 MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
 MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
 MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, guint32 param);
+gboolean            mono_custom_attrs_has_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
 void                mono_custom_attrs_free          (MonoCustomAttrInfo *ainfo);
 
 
