@@ -62,9 +62,24 @@ static int main_sock;
 /* Set to TRUE by the SIGCHLD signal handler */
 static volatile gboolean check_processes=FALSE;
 
+/* The file_share_hash is used to emulate the windows file sharing mode */
+typedef struct _share_key
+{
+	dev_t device;
+	ino_t inode;
+} ShareKey;
+
+typedef struct _share_data
+{
+	guint32 sharemode;
+	guint32 access;
+} ShareData;
+
+static GHashTable *file_share_hash = NULL;
+
 static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 			     gpointer data);
-
+static void check_sharing (dev_t device, ino_t inode);
 
 /* Deletes the shared memory segment.  If we're exiting on error,
  * clients will get EPIPEs.
@@ -194,10 +209,27 @@ static void sigchld_handler (int unused)
 	check_processes=TRUE;
 }
 
+static guint sharedata_hash (gconstpointer key)
+{
+	ShareKey *sharekey = (ShareKey *)key;
+	
+	return(g_int_hash (&(sharekey->inode)));
+}
+
+static gboolean sharedata_equal (gconstpointer a, gconstpointer b)
+{
+	ShareKey *share_a = (ShareKey *)a;
+	ShareKey *share_b = (ShareKey *)b;
+	
+	return(share_a->device == share_b->device &&
+	       share_a->inode == share_b->inode);
+}
+
 /*
  * startup:
  *
- * Bind signals and attach to shared memory
+ * Bind signals, attach to shared memory and set up any internal data
+ * structures needed.
  */
 static void startup (void)
 {
@@ -235,6 +267,10 @@ static void startup (void)
 		  "mono-handle-daemon-%d-%d-%ld", getuid (), getpid (),
 		  time (NULL));
 #endif
+
+	file_share_hash = g_hash_table_new_full (sharedata_hash,
+						 sharedata_equal, g_free,
+						 g_free);
 }
 
 
@@ -310,6 +346,10 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
 	}
 	
 	if(_wapi_shared_data[segment]->handles[idx].ref==0) {
+		gboolean was_file;
+		dev_t device = 0;
+		ino_t inode = 0;
+		
 		if (channel_data->open_handles[handle]!=0) {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": per-process open_handles mismatch, set to %d, should be 0", 
 					channel_data->open_handles[handle]);
@@ -319,6 +359,30 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
 		g_message (G_GNUC_PRETTY_FUNCTION ": Destroying handle 0x%x",
 			   handle);
 #endif
+
+		/* if this was a file handle, save the device and
+		 * inode numbers so we can scan the share info data
+		 * later to see if the last handle to a file has been
+		 * closed, and delete the data if so.
+		 */
+		was_file = (_wapi_shared_data[segment]->handles[idx].type == WAPI_HANDLE_FILE);
+		if (was_file) {
+			struct _WapiHandle_file *file_handle;
+			gboolean ok;
+			
+			ok = _wapi_lookup_handle (GUINT_TO_POINTER (handle),
+						  WAPI_HANDLE_FILE,
+						  (gpointer *)&file_handle,
+						  NULL);
+			if (ok == FALSE) {
+				g_warning (G_GNUC_PRETTY_FUNCTION
+					   ": error looking up file handle %x",
+					   handle);
+			} else {
+				device = file_handle->device;
+				inode = file_handle->inode;
+			}
+		}
 		
 		_wapi_handle_ops_close_shared (GUINT_TO_POINTER (handle));
 		
@@ -329,6 +393,10 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
 
 		memset (&_wapi_shared_data[segment]->handles[idx].u, '\0', sizeof(_wapi_shared_data[segment]->handles[idx].u));
 		_wapi_shared_data[segment]->handles[idx].type=WAPI_HANDLE_UNUSED;
+
+		if (was_file) {
+			check_sharing (device, inode);
+		}
 	}
 
 	if(channel_data == daemon_channel_data) {
@@ -463,6 +531,104 @@ static void rem_fd(GIOChannel *channel, ChannelData *channel_data)
 		 * cleanup and exit
 		 */
 		maybe_exit ();
+	}
+}
+
+static void sharemode_set (dev_t device, ino_t inode, guint32 sharemode,
+			   guint32 access)
+{
+	ShareKey *sharekey;
+	ShareData *sharedata;
+	
+	sharekey = g_new (ShareKey, 1);
+	sharekey->device = device;
+	sharekey->inode = inode;
+
+	sharedata = g_new (ShareData, 1);
+	sharedata->sharemode = sharemode;
+	sharedata->access = access;
+	
+	/* Setting share mode to include all access bits is really
+	 * removing the share info
+	 */
+	if (sharemode == (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE)) {
+		g_hash_table_remove (file_share_hash, sharekey);
+	} else {
+		g_hash_table_insert (file_share_hash, sharekey, sharedata);
+	}
+}
+
+static gboolean sharemode_get (dev_t device, ino_t inode, guint32 *sharemode,
+			       guint32 *access)
+{
+	ShareKey sharekey;
+	ShareData *sharedata;
+	
+	sharekey.device = device;
+	sharekey.inode = inode;
+	
+	sharedata = (ShareData *)g_hash_table_lookup (file_share_hash,
+						       &sharekey);
+	if (sharedata == NULL) {
+		return(FALSE);
+	}
+	
+	*sharemode = sharedata->sharemode;
+	*access = sharedata->access;
+	
+	return(TRUE);
+}
+
+static gboolean share_compare (gpointer handle, gpointer user_data)
+{
+	struct _WapiHandle_file *file_handle;
+	gboolean ok;
+	ShareKey *sharekey = (ShareKey *)user_data;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				  (gpointer *)&file_handle, NULL);
+	if (ok == FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
+	
+	if (file_handle->device == sharekey->device &&
+	    file_handle->inode == sharekey->inode) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": found one, handle %p",
+			   handle);
+#endif
+		return(TRUE);
+	} else {
+		return(FALSE);
+	}
+}
+
+static void check_sharing (dev_t device, ino_t inode)
+{
+	ShareKey sharekey;
+	gpointer file_handle;
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Checking if anything has (dev 0x%llx, inode %lld) still open", device, inode);
+#endif
+
+	sharekey.device = device;
+	sharekey.inode = inode;
+	
+	file_handle = _wapi_search_handle (WAPI_HANDLE_FILE, share_compare,
+					   &sharekey, NULL, NULL);
+
+	if (file_handle == NULL) {
+		/* Delete this share info, as the last handle to it
+		 * has been closed
+		 */
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Deleting share data for (dev 0x%llx inode %lld)", device, inode);
+#endif
+		
+		g_hash_table_remove (file_share_hash, &sharekey);
 	}
 }
 
@@ -1090,6 +1256,73 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 }
 
 /*
+ * process_set_share:
+ * @channel: The client making the request
+ * @channel_data: The channel data
+ * @set_share: Set share data passed from the client
+ *
+ * Sets file share info
+ */
+static void process_set_share (GIOChannel *channel, ChannelData *channel_data,
+			       WapiHandleRequest_SetShare set_share)
+{
+	WapiHandleResponse resp = {0};
+
+	resp.type = WapiHandleResponseType_SetShare;
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Setting share for file (dev:0x%llx, ino:%lld) mode 0x%x access 0x%x", set_share.device, set_share.inode, set_share.sharemode, set_share.access);
+#endif
+	
+	sharemode_set (set_share.device, set_share.inode, set_share.sharemode,
+		       set_share.access);
+	
+	send_reply (channel, &resp);
+}
+
+/*
+ * process_get_or_set_share:
+ * @channel: The client making the request
+ * @channel_data: The channel data
+ * @get_share: GetOrSetShare data passed from the client
+ *
+ * Gets a file share status, and sets the status if it doesn't already
+ * exist
+ */
+static void process_get_or_set_share (GIOChannel *channel,
+				      ChannelData *channel_data,
+				      WapiHandleRequest_GetOrSetShare get_share)
+{
+	WapiHandleResponse resp = {0};
+	
+	resp.type = WapiHandleResponseType_GetOrSetShare;
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Getting share status for file (dev:0x%llx, ino:%lld)",
+		   get_share.device, get_share.inode);
+#endif
+
+	resp.u.get_or_set_share.exists = sharemode_get (get_share.device, get_share.inode, &resp.u.get_or_set_share.sharemode, &resp.u.get_or_set_share.access);
+	
+	if (resp.u.get_or_set_share.exists) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Share mode: 0x%x",
+			   resp.u.get_or_set_share.sharemode);
+#endif
+	} else {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": file share info not already known, setting");
+#endif
+		sharemode_set (get_share.device, get_share.inode,
+			       get_share.new_sharemode, get_share.new_access);
+	}
+	
+	send_reply (channel, &resp);
+}
+
+/*
  * read_message:
  * @channel: The client to read the request from
  * @open_handles: An array of handles referenced by this client
@@ -1149,6 +1382,13 @@ static gboolean read_message (GIOChannel *channel, ChannelData *channel_data)
 		break;
 	case WapiHandleRequestType_ProcessKill:
 		process_process_kill (channel, req.u.process_kill);
+		break;
+	case WapiHandleRequestType_SetShare:
+		process_set_share (channel, channel_data, req.u.set_share);
+		break;
+	case WapiHandleRequestType_GetOrSetShare:
+		process_get_or_set_share (channel, channel_data,
+					  req.u.get_or_set_share);
 		break;
 	case WapiHandleRequestType_Error:
 		/* fall through */

@@ -30,6 +30,8 @@ struct _WapiHandle_file
 	guint32 fileaccess;
 	guint32 sharemode;
 	guint32 attrs;
+	dev_t device;
+	ino_t inode;
 };
 
 /* The boolean is for distinguishing between a zeroed struct being not

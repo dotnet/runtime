@@ -20,7 +20,9 @@ typedef enum {
 	WapiHandleRequestType_Scratch,
 	WapiHandleRequestType_ScratchFree,
 	WapiHandleRequestType_ProcessFork,
-	WapiHandleRequestType_ProcessKill
+	WapiHandleRequestType_ProcessKill,
+	WapiHandleRequestType_GetOrSetShare,
+	WapiHandleRequestType_SetShare
 } WapiHandleRequestType;
 
 typedef struct 
@@ -67,6 +69,22 @@ typedef struct {
 
 typedef struct 
 {
+	dev_t device;
+	ino_t inode;
+	guint32 new_sharemode;
+	guint32 new_access;
+} WapiHandleRequest_GetOrSetShare;
+
+typedef struct
+{
+	dev_t device;
+	ino_t inode;
+	guint32 sharemode;
+	guint32 access;
+} WapiHandleRequest_SetShare;
+
+typedef struct 
+{
 	WapiHandleRequestType type;
 	union 
 	{
@@ -77,6 +95,8 @@ typedef struct
 		WapiHandleRequest_ScratchFree scratch_free;
 		WapiHandleRequest_ProcessFork process_fork;
 		WapiHandleRequest_ProcessKill process_kill;
+		WapiHandleRequest_GetOrSetShare get_or_set_share;
+		WapiHandleRequest_SetShare set_share;
 	} u;
 } WapiHandleRequest;
 
@@ -88,7 +108,9 @@ typedef enum {
 	WapiHandleResponseType_Scratch,
 	WapiHandleResponseType_ScratchFree,
 	WapiHandleResponseType_ProcessFork,
-	WapiHandleResponseType_ProcessKill
+	WapiHandleResponseType_ProcessKill,
+	WapiHandleResponseType_GetOrSetShare,
+	WapiHandleResponseType_SetShare
 } WapiHandleResponseType;
 
 typedef struct 
@@ -139,6 +161,18 @@ typedef struct
 
 typedef struct
 {
+	gboolean exists;
+	guint32 sharemode;
+	guint32 access;
+} WapiHandleResponse_GetOrSetShare;
+
+typedef struct
+{
+	guint32 dummy;
+} WapiHandleResponse_SetShare;
+
+typedef struct
+{
 	WapiHandleResponseType type;
 	union
 	{
@@ -150,6 +184,8 @@ typedef struct
 		WapiHandleResponse_ScratchFree scratch_free;
 		WapiHandleResponse_ProcessFork process_fork;
 		WapiHandleResponse_ProcessKill process_kill;
+		WapiHandleResponse_GetOrSetShare get_or_set_share;
+		WapiHandleResponse_SetShare set_share;
 	} u;
 } WapiHandleResponse;
 

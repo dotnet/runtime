@@ -1656,3 +1656,66 @@ _wapi_handle_process_kill (pid_t process, guint32 signo, gint *errnum)
 	return (result == 0);
 }
 
+gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
+					guint32 new_sharemode,
+					guint32 new_access,
+					guint32 *old_sharemode,
+					guint32 *old_access)
+{
+	WapiHandleRequest req = {0};
+	WapiHandleResponse resp = {0};
+	
+	if(shared != TRUE) {
+		/* No daemon means we don't know if a file is sharable.
+		 * We're running in our own little world if this is
+		 * the case, so there's no point in pretending that
+		 * the file isn't sharable.
+		 */
+		return(FALSE);
+	}
+	
+	req.type = WapiHandleRequestType_GetOrSetShare;
+	req.u.get_or_set_share.device = device;
+	req.u.get_or_set_share.inode = inode;
+	req.u.get_or_set_share.new_sharemode = new_sharemode;
+	req.u.get_or_set_share.new_access = new_access;
+	
+	_wapi_daemon_request_response (daemon_sock, &req, &resp);
+	if (resp.type != WapiHandleResponseType_GetOrSetShare) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": bogus daemon response, type %d", resp.type);
+		g_assert_not_reached ();
+	}
+	
+	*old_sharemode = resp.u.get_or_set_share.sharemode;
+	*old_access = resp.u.get_or_set_share.access;
+
+	return(resp.u.get_or_set_share.exists);
+}
+
+void _wapi_handle_set_share (dev_t device, ino_t inode, guint32 sharemode,
+			     guint32 access)
+{
+	WapiHandleRequest req = {0};
+	WapiHandleResponse resp = {0};
+	
+	if(shared != TRUE) {
+		/* No daemon, so there's no one else to tell about
+		 * file sharing.
+		 */
+		return;
+	}
+
+	req.type = WapiHandleRequestType_SetShare;
+	req.u.set_share.device = device;
+	req.u.set_share.inode = inode;
+	req.u.set_share.sharemode = sharemode;
+	req.u.set_share.access = access;
+	
+	_wapi_daemon_request_response (daemon_sock, &req, &resp);
+	if (resp.type != WapiHandleResponseType_SetShare) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": bogus daemon response, type %d", resp.type);
+		g_assert_not_reached ();
+	}
+}

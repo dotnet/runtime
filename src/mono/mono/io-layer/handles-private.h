@@ -85,6 +85,13 @@ extern gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env,
 
 extern gboolean _wapi_handle_process_kill (pid_t pid, guint32 signo,
 					   gint *err);
+extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
+					       guint32 new_sharemode,
+					       guint32 new_access,
+					       guint32 *old_sharemode,
+					       guint32 *old_access);
+extern void _wapi_handle_set_share (dev_t device, ino_t inode,
+				    guint32 sharemode, guint32 access);
 
 static inline struct _WapiHandleShared_list *_wapi_handle_get_shared_segment (guint32 segment)
 {

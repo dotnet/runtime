@@ -37,6 +37,7 @@
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/timefuncs-private.h>
+#include <mono/io-layer/thread-private.h>
 #include <mono/utils/strenc.h>
 
 #undef DEBUG
@@ -1494,12 +1495,15 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	int flags=convert_flags(fileaccess, createmode);
 	mode_t perms=convert_perms(sharemode);
 	gchar *filename;
-	int ret;
+	int fd, ret;
 	int thr_ret;
 	gpointer cf_ret = INVALID_HANDLE_VALUE;
+	struct stat statbuf;
+	gboolean file_already_shared;
+	guint32 file_existing_share, file_existing_access;
 	
 	mono_once (&io_ops_once, io_ops_init);
-	
+
 	if(name==NULL) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
@@ -1518,7 +1522,11 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 	
-	ret=open(filename, flags, perms);
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Opening %s with share 0x%x and access 0x%x", filename, sharemode, fileaccess);
+#endif
+	
+	fd = open(filename, flags, perms);
     
 	/* If we were trying to open a directory with write permissions
 	 * (e.g. O_WRONLY or O_RDWR), this call will fail with
@@ -1528,13 +1536,13 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	 * (e.g. utime()). Hence, if we failed with the EISDIR error, try
 	 * to open the directory again without write permission.
 	 */
-	if (ret == -1 && errno == EISDIR)
+	if (fd == -1 && errno == EISDIR)
 	{
 		/* Try again but don't try to make it writable */
-		ret=open(filename, flags  & ~(O_RDWR|O_WRONLY), perms);
+		fd = open(filename, flags  & ~(O_RDWR|O_WRONLY), perms);
 	}
 	
-	if(ret==-1) {
+	if (fd == -1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file %s: %s",
 			  filename, strerror(errno));
@@ -1545,12 +1553,75 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
+	ret = fstat (fd, &statbuf);
+	if (ret == -1) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": fstat error of file %s: %s", filename, strerror (errno));
+#endif
+		_wapi_set_last_error_from_errno ();
+		g_free (filename);
+		close (fd);
+		
+		return(INVALID_HANDLE_VALUE);
+	}
+
+	file_already_shared = _wapi_handle_get_or_set_share (statbuf.st_dev, statbuf.st_ino, sharemode, fileaccess, &file_existing_share, &file_existing_access);
+	
+	if (file_already_shared) {
+		if (file_existing_share == 0) {
+			/* Quick and easy, no possibility to share */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": Share mode prevents open: requested access: 0x%x, file has sharing = NONE", fileaccess);
+#endif
+			SetLastError (ERROR_SHARING_VIOLATION);
+			g_free (filename);
+			close (fd);
+		
+			return(INVALID_HANDLE_VALUE);
+		}
+
+		if (((file_existing_share == FILE_SHARE_READ) &&
+		     (fileaccess != GENERIC_READ)) ||
+		    ((file_existing_share == FILE_SHARE_WRITE) &&
+		     (fileaccess != GENERIC_WRITE))) {
+			/* New access mode doesn't match up */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": Share mode prevents open: requested access: 0x%x, file has sharing: 0x%x", fileaccess, file_existing_share);
+#endif
+			SetLastError (ERROR_SHARING_VIOLATION);
+			g_free (filename);
+			close (fd);
+		
+			return(INVALID_HANDLE_VALUE);
+		}
+
+		if (((file_existing_access & GENERIC_READ) &&
+		     !(sharemode & FILE_SHARE_READ)) ||
+		    ((file_existing_access & GENERIC_WRITE) &&
+		     !(sharemode & FILE_SHARE_WRITE))) {
+			/* New share mode doesn't match up */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": Access mode prevents open: requested share: 0x%x, file has access: 0x%x", sharemode, file_existing_access);
+#endif
+			SetLastError (ERROR_SHARING_VIOLATION);
+			g_free (filename);
+			close (fd);
+		
+			return(INVALID_HANDLE_VALUE);
+		}
+	} else {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": New file!");
+#endif
+	}
+	
 	handle=_wapi_handle_new (WAPI_HANDLE_FILE);
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating file handle");
 		g_free (filename);
-
+		close (fd);
+		
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -1565,11 +1636,12 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		close (fd);
 		goto cleanup;
 	}
 	cf_ret = handle;
 
-	file_private_handle->fd=ret;
+	file_private_handle->fd=fd;
 	file_private_handle->assigned=TRUE;
 	file_private_handle->async = ((attrs & FILE_FLAG_OVERLAPPED) != 0);
 	file_handle->filename=_wapi_handle_scratch_store (filename,
@@ -1582,6 +1654,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	file_handle->fileaccess=fileaccess;
 	file_handle->sharemode=sharemode;
 	file_handle->attrs=attrs;
+	file_handle->device = statbuf.st_dev;
+	file_handle->inode = statbuf.st_ino;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -1873,7 +1947,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	do {
 		flags=fcntl(fd, F_GETFL);
 	}
-	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	while (flags==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
 	if(flags==-1) {
 		/* Invalid fd.  Not really much point checking for EBADF
