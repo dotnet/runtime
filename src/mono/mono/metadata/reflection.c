@@ -4758,6 +4758,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	}
 	if (type->type == MONO_TYPE_GENERICINST) {
 		res = (MonoReflectionType *)mono_generic_inst_get_object (domain, type);
+		mono_g_hash_table_insert (domain->type_hash, type, res);
 		mono_domain_unlock (domain);
 		return res;
 	}
@@ -6796,7 +6797,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericInst *ginst;
 	MonoType *geninst, *parent = NULL;
-	int i;
+	int icount, i;
 
 	klass = mono_class_from_mono_type (type);
 	if (!klass->gen_params && !klass->generic_inst)
@@ -6873,25 +6874,23 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 
 	if (pklass && pklass->generic_inst)
 		parent = mono_reflection_bind_generic_parameters (parent, types);
-	else if (!pklass) {
-		int icount;
 
-		pklass = mono_defaults.object_class;
-
+	if (tb)
+		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
+	else
 		icount = klass->interface_count;
-		ginst->ifaces = g_new0 (MonoType *, icount);
+	ginst->ifaces = g_new0 (MonoType *, icount);
 
-		for (i = 0; i < icount; i++) {
-			MonoType *itype;
+	for (i = 0; i < icount; i++) {
+		MonoType *itype;
 
-			if (tb)
-				itype = mono_array_get (tb->interfaces, MonoReflectionType *, i)->type;
-			else
-				itype = &klass->interfaces [i]->byval_arg;
-			ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, types);
-			if (!ginst->ifaces [i])
-				ginst->ifaces [i] = itype;
-		}
+		if (tb)
+			itype = mono_array_get (tb->interfaces, MonoReflectionType *, i)->type;
+		else
+			itype = &klass->interfaces [i]->byval_arg;
+		ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, types);
+		if (!ginst->ifaces [i])
+			ginst->ifaces [i] = itype;
 	}
 
 	ginst->parent = parent;
