@@ -1232,14 +1232,14 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
  * The sig param is an index to an already built signature.
  */
 static guint32
-mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoClass *klass, const char *name, guint32 sig)
+mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoType *type, const char *name, guint32 sig)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, pclass;
 	guint32 parent;
 
-	parent = mono_image_typedef_or_ref (assembly, &klass->byval_arg);
+	parent = mono_image_typedef_or_ref (assembly, type);
 	switch (parent & TYPEDEFORREF_MASK) {
 	case TYPEDEFORREF_TYPEREF:
 		pclass = MEMBERREF_PARENT_TYPEREF;
@@ -1275,7 +1275,7 @@ mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *metho
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
 	if (token)
 		return token;
-	token = mono_image_get_memberref_token (assembly, method->klass, 
+	token = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
 		method->name,  method_encode_signature (assembly, method->signature));
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
 	return token;
@@ -1289,10 +1289,59 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, field));
 	if (token)
 		return token;
-	token = mono_image_get_memberref_token (assembly, klass, 
+	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, 
 		field->name,  fieldref_encode_signature (assembly, field));
 	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
+}
+
+typedef struct {
+	MonoType *parent;
+	MonoMethodSignature *sig;
+	char *name;
+	guint32 token;
+} ArrayMethod;
+
+static guint32
+mono_image_get_array_token (MonoDynamicAssembly *assembly, MonoReflectionArrayMethod *m)
+{
+	guint32 nparams, i;
+	GList *tmp;
+	char *name;
+	MonoMethodSignature *sig;
+	ArrayMethod *am;
+	
+	name = mono_string_to_utf8 (m->name);
+	nparams = mono_array_length (m->parameters);
+	sig = g_malloc0 (sizeof (MonoMethodSignature) + sizeof (MonoType*) * nparams);
+	sig->hasthis = 1;
+	sig->call_convention = m->call_conv;
+	sig->param_count = nparams;
+	sig->ret = m->ret? m->ret->type: &mono_defaults.void_class->byval_arg;
+	for (i = 0; i < nparams; ++i) {
+		MonoReflectionType *t = mono_array_get (m->parameters, gpointer, i);
+		sig->params [i] = t->type;
+	}
+
+	for (tmp = assembly->array_methods; tmp; tmp = tmp->next) {
+		am = tmp->data;
+		if (strcmp (name, am->name) == 0 && 
+				mono_metadata_type_equal (am->parent, m->parent->type) &&
+				mono_metadata_signature_equal (am->sig, sig)) {
+			g_free (name);
+			g_free (sig);
+			return am->token;
+		}
+	}
+	am = g_new0 (ArrayMethod, 1);
+	am->name = name;
+	am->sig = sig;
+	am->parent = m->parent->type;
+	am->token = mono_image_get_memberref_token (assembly, am->parent,
+		name,  method_encode_signature (assembly, sig));
+	assembly->array_methods = g_list_prepend (assembly->array_methods, am);
+	m->table_idx = am->token & 0xffffff;
+	return am->token;
 }
 
 /*
@@ -1932,6 +1981,11 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 		MonoReflectionField *f = (MonoReflectionField *)obj;
 		token = mono_image_get_fieldref_token (assembly, f->field, f->klass);
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
+		return token;
+	}
+	if (strcmp (klass->name, "MonoArrayMethod") == 0) {
+		MonoReflectionArrayMethod *m = (MonoReflectionArrayMethod *)obj;
+		token = mono_image_get_array_token (assembly, m);
 		return token;
 	}
 	g_print ("requested token for %s\n", klass->name);

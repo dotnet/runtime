@@ -217,6 +217,17 @@ typedef struct {
 	MonoBoolean init_locals;
 } MonoReflectionMethodBuilder;
 
+typedef struct {
+	MonoObject object;
+	MonoMethod *mhandle;
+	MonoReflectionType *parent;
+	MonoReflectionType *ret;
+	MonoArray *parameters;
+	MonoString *name;
+	guint32 table_idx;
+	guint32 call_conv;
+} MonoReflectionArrayMethod;
+
 enum {
 	MONO_SECTION_TEXT,
 	MONO_SECTION_RSRC,
@@ -243,6 +254,7 @@ typedef struct {
 	} sections [MONO_SECTION_MAX];
 	GHashTable *typeref;
 	GHashTable *handleref;
+	GList *array_methods;
 	MonoGHashTable *token_fixups;
 	MonoDynamicStream pefile;
 	MonoDynamicStream sheap;
