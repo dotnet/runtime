@@ -13,12 +13,15 @@
 	ASP.NET works either embedded into
 	our XSP server test server or the mod_mono Apache module.
 
-	We are now working bug fixing and adding missing features
+	We are now working on bug fixing and adding missing features
 	after making the whole pipeline compatible with MS.
 
-	Tim started work on the Web Services.  Lluis is in charge of
-	it now and web services are now supported. He also added a web
-	service sample to the XSP server set of tests.
+	Tim started work on the Web Services. After that, Lluis is in
+	charge and has been working hard on them as part of our
+	<a href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=sourcegear">SourceGear</a> contract.
+	
+	Web services are now supported and there are some samples in the
+	XSP set of tests.
 
 ** Hosting
 
@@ -60,20 +63,23 @@
 <a name="mod_mono">
 * mod_mono
 
-	This Apache module available at <a
-	href="http://www.apacheworld.org/modmono/">ApacheWorld.org</a>
-	hosts the Mono runtime and the Mono's ASP.NET runtime, and
-	allows apache to server asp.net web pages.
+	This Apache module is available from our <a
+	href="download.html">download page</a>. The <a href="anoncvs.html">
+	cvs</a> module name is mod_mono. It works with both 1.3 and 2.0
+	versions of the <a href="http://httpd.apache.org">apache server</a>.
+
+	It allows apache to serve ASP.NET pages.
 
 	Work is underway to improve it.
 
 ** Controls
 
 	A lot of work has been put in the various classes that
-	implement the controls (UI.HtmlControls and UI.WebControls),
-	but they have been coded mostly in the dark, and without being
+	implement the controls (UI.HtmlControls and UI.WebControls).
+	They have been coded mostly in the dark, and without being
 	able to test them in real life: Gaurav and Leen worked very
-	hard on this namespace.
+	hard on this namespace. After that, we keep fixing bugs on
+	them.
 
 	We can now render all HtmlControls and all WebControls.
 
