@@ -75,16 +75,6 @@ run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
-	/* delegates that have a native function pointer allocated are
-	 * registerd for finalization, but they don't have a Finalize
-	 * method, because in most cases it's not needed and it's just a waste.
-	 */
-	if (o->vtable->klass->delegate) {
-		MonoDelegate* del = (MonoDelegate*)o;
-		if (del->delegate_trampoline)
-			mono_delegate_free_ftnptr ((MonoDelegate*)o);
-		return;
-	}
 	if (o->vtable->klass == mono_get_thread_class ())
 		if (mono_gc_is_finalizer_thread ((MonoThread*)o))
 			/* Avoid finalizing ourselves */
@@ -95,6 +85,17 @@ run_finalize (void *obj, void *data)
 
 	/* Use _internal here, since this thread can enter a doomed appdomain */
 	mono_domain_set_internal (mono_object_domain (o));		
+
+	/* delegates that have a native function pointer allocated are
+	 * registered for finalization, but they don't have a Finalize
+	 * method, because in most cases it's not needed and it's just a waste.
+	 */
+	if (o->vtable->klass->delegate) {
+		MonoDelegate* del = (MonoDelegate*)o;
+		if (del->delegate_trampoline)
+			mono_delegate_free_ftnptr ((MonoDelegate*)o);
+		return;
+	}
 
 	mono_runtime_invoke (mono_class_get_finalizer (o->vtable->klass), o, NULL, &exc);
 
