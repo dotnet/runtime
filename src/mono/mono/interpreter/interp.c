@@ -1276,7 +1276,11 @@ static int opcode_counts[512];
 #if USE_COMPUTED_GOTO
 #define MINT_IN_SWITCH(op) COUNT_OP(op); goto *in_labels[op];
 #define MINT_IN_CASE(x) LAB_ ## x:
+#if DEBUG_INTERP
+#define MINT_IN_BREAK if (tracing > 1) goto main_loop; else { COUNT_OP(*ip); goto *in_labels[*ip]; }
+#else
 #define MINT_IN_BREAK { COUNT_OP(*ip); goto *in_labels[*ip]; }
+#endif
 #define MINT_IN_DEFAULT mint_default:
 #else
 #define MINT_IN_SWITCH(op) switch (op)
