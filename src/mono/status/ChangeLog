@@ -1,3 +1,24 @@
+2002-07-13  Jonathan Pryor <jonpryor@vt.edu>
+	* class.xml: Added entries for the following classes from System.Diagnostics:
+		- CounterCreationData.cs: Implemented
+		- CounterCreationDataCollection.cs: Implemented
+		- CounterSample.cs: Stubbed Out
+		- CounterSampleCalculator.cs: Stubbed Out
+		- InstanceData.cs: Implemented
+		- InstanceDataCollection.cs: Implemented
+		- InstanceDataCollectionCollection.cs: Implemented
+		- MonitoringDescriptionAttribute.cs: Implemented
+		- PerformanceCounter.cs: Stubbed Out
+		- PerformanceCounterCategory.cs: Stubbed Out
+		- PerformanceCounterInstaller.cs: Stubbed Out
+		- PerformanceCounterManager.cs: Stubbed Out
+		- PerformanceCounterPermission.cs: Stubbed Out
+		- PerformanceCounterPermissionAccess.cs: Implemented
+		- PerformanceCounterPermissionAttribute.cs: Stubbed Out
+		- PerformanceCounterPermissionEntry.cs: Stubbed Out
+		- PerformanceCounterPermissionEntryCollection.cs: Implemented
+		- PerformanceCounterType.cs: Implemented
+
 2002-06-09  Jonathan Pryor <jonpryor@vt.edu>
 	* class.xml: Added entries for the following classes from System.Diagnostics:
 		-	EntryWrittenEventArgs

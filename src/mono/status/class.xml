@@ -849,6 +849,42 @@
 			<maintainer>ndrochak@gol.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Diagnostics.CounterCreationData">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.CounterCreationDataCollection">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.CounterSample">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>80</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.CounterSampleCalculator">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Diagnostics.Debug">
 		<last-activity>March-08-2002</last-activity>
 		<implementation>yes</implementation>
@@ -1013,6 +1049,132 @@
 	</class>
 	<class name="System.Diagnostics.ICollectData">
 		<last-activity>Jun-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.InstanceData">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.InstanceDataCollection">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.InstanceDataCollectionCollection">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.MonitoringDescriptionAttribute">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounter">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>25</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterCategory">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterInstaller">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterManager">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterPermission">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterPermissionAccess">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterPermissionAttribute">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterPermissionEntry">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterPermissionEntryCollection">
+		<last-activity>Jul-13-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.PerformanceCounterType">
+		<last-activity>Jul-13-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
 		<completion>100</completion>
