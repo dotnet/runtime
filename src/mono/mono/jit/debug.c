@@ -21,6 +21,20 @@ static void release_symbol_file_table (void);
 static MonoDebugHandle *mono_debug_handles = NULL;
 static MonoDebugHandle *mono_default_debug_handle = NULL;
 
+/*
+ * This is a global data symbol which is read by the debugger.
+ */
+MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
+	MONO_SYMBOL_FILE_MAGIC,
+	MONO_SYMBOL_FILE_VERSION,
+	sizeof (MonoDebuggerInfo),
+	&mono_generic_trampoline_code,
+	&mono_debugger_symbol_file_table_generation,
+	&mono_debugger_symbol_file_table,
+	&mono_debugger_update_symbol_file_table,
+	&mono_compile_method
+};
+
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
 {

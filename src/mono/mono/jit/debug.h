@@ -107,4 +107,20 @@ extern guint32 mono_debugger_symbol_file_table_generation;
  */
 extern guint8 *mono_debugger_symbol_file_table;
 
+/*
+ * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
+ * contains pointers to global variables and functions which must be accessed
+ * by the debugger.
+ */
+typedef struct {
+	guint64 magic;
+	guint32 version;
+	guint32 total_size;
+	guint8 **trampoline_code;
+	guint32 *symbol_file_generation;
+	guint8 **symbol_file_table;
+	int (*update_symbol_file_table) (void);
+	gpointer (*compile_method) (MonoMethod *method);
+} MonoDebuggerInfo;
+
 #endif /* __MONO_JIT_DEBUG_H__ */
