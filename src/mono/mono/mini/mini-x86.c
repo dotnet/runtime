@@ -3524,3 +3524,34 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	}
 }
 
+
+gint
+mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (cmethod->klass == mono_defaults.math_class) {
+		if (strcmp (cmethod->name, "Sin") == 0)
+			return OP_SIN;
+		else if (strcmp (cmethod->name, "Cos") == 0)
+			return OP_COS;
+		else if (strcmp (cmethod->name, "Tan") == 0)
+			return OP_TAN;
+		else if (strcmp (cmethod->name, "Atan") == 0)
+			return OP_ATAN;
+		else if (strcmp (cmethod->name, "Sqrt") == 0)
+			return OP_SQRT;
+		else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8)
+			return OP_ABS;
+#if 0
+		/* OP_FREM is not IEEE compatible */
+		else if (strcmp (cmethod->name, "IEEERemainder") == 0)
+			return OP_FREM;
+#endif
+		else
+			return -1;
+	} else {
+		return -1;
+	}
+	return -1;
+}
+
+

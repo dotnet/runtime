@@ -2271,6 +2271,17 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	return addr;
 }
 
+static MonoJitICallInfo **emul_opcode_map = NULL;
+
+static inline MonoJitICallInfo *
+mono_find_jit_opcode_emulation (int opcode)
+{
+	if  (emul_opcode_map)
+		return emul_opcode_map [opcode];
+	else
+		return NULL;
+}
+
 static MonoInst*
 mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -2281,26 +2292,6 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (cmethod->name [0] != 'g' || strcmp (cmethod->name, "get_Chars"))
 			return NULL;
 		op = OP_GETCHR;
-	} else if (cmethod->klass == mono_defaults.math_class) {
-		if (strcmp (cmethod->name, "Sin") == 0)
-			op = OP_SIN;
-		else if (strcmp (cmethod->name, "Cos") == 0)
-			op = OP_COS;
-		else if (strcmp (cmethod->name, "Tan") == 0)
-			op = OP_TAN;
-		else if (strcmp (cmethod->name, "Atan") == 0)
-			op = OP_ATAN;
-		else if (strcmp (cmethod->name, "Sqrt") == 0)
-			op = OP_SQRT;
-		else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8)
-			op = OP_ABS;
-#if 0
-		/* OP_FREM is not IEEE compatible */
-		else if (strcmp (cmethod->name, "IEEERemainder") == 0)
-			op = OP_FREM;
-#endif
-		else
-			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {
 		if (strcmp (cmethod->name, "get_Rank") == 0)
 			op = OP_ARRAY_RANK;
@@ -2309,7 +2300,9 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		else
 			return NULL;
 	} else {
-		return NULL;
+		op = mono_arch_get_opcode_for_method (cfg, cmethod, fsig, args);
+		if (op < 0)
+			return NULL;
 	}
 	pc = fsig->param_count + fsig->hasthis;
 	MONO_INST_NEW (cfg, ins, op);
@@ -3556,6 +3549,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_SHR_UN:
 			CHECK_STACK (2);
 			ADD_BINOP (*ip);
+			if (mono_find_jit_opcode_emulation (ins->opcode)) {
+				MonoInst *store, *temp, *load;
+				--sp;
+				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+				store->cil_code = ins->cil_code;
+				MONO_ADD_INS (bblock, store);
+				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
+				load->cil_code = ins->cil_code;
+				*sp++ = load;
+				/*g_print ("found emulation for %d\n", ins->opcode);*/
+			}
 			ip++;
 			break;
 		case CEE_NEG:
@@ -6032,17 +6037,6 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 		res = NULL;
 	LeaveCriticalSection (&class_init_hash_mutex);
 	return res;
-}
-
-static MonoJitICallInfo **emul_opcode_map = NULL;
-
-static inline MonoJitICallInfo *
-mono_find_jit_opcode_emulation (int opcode)
-{
-	if  (emul_opcode_map)
-		return emul_opcode_map [opcode];
-	else
-		return NULL;
 }
 
 void
