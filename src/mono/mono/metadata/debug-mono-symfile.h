@@ -56,6 +56,7 @@ struct MonoSymbolFileMethodEntry {
 	guint32 num_lexical_blocks;
 	guint32 lexical_block_table_offset;
 	guint32 namespace_idx;
+	guint32 local_names_ambiguous;
 };
 
 struct MonoSymbolFileSourceEntry {
@@ -239,7 +240,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		34
+#define MONO_SYMBOL_FILE_VERSION		35
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 #define MONO_SYMBOL_FILE_DYNAMIC_VERSION	26
