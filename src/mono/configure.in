@@ -516,7 +516,7 @@ i*86-*-*) TARGET=X86; arch_target=x86; JIT_SUPPORTED=yes;;
 sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
-macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | powerpc-*-sysv* | powerpc-*-darwin*) TARGET=POWERPC; arch_target=ppc;;
+macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | powerpc-*-sysv* | powerpc-*-darwin*) TARGET=POWERPC; arch_target=ppc; JIT_SUPPORTED=yes;;
 arm-*-linux-* | armv4l-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
 s390-*-linux*) TARGET=S390; arch_target=s390; ACCESS_UNALIGNED="no";;
 esac
