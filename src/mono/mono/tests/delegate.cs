@@ -1,8 +1,14 @@
 using System;
+using System.Runtime.InteropServices;
+
 namespace Bah {
 class Test {
+	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
+	public static extern int puts (string name);
+
 	delegate void SimpleDelegate ();
 	delegate string NotSimpleDelegate (int a);
+	delegate int AnotherDelegate (string s);
 	
 	public int data;
 	
@@ -39,6 +45,20 @@ class Test {
 
 		if (d.Method.Name != "F")
 			return 1;
+
+		if (d3.Method == null)
+			return 1;
+		
+		object [] args = {3};
+		d3.DynamicInvoke (args);
+
+		AnotherDelegate d4 = new AnotherDelegate (puts);
+		if (d4.Method == null)
+			return 1;
+
+		Console.WriteLine (d4.Method);
+		Console.WriteLine (d4.Method.Name);
+		Console.WriteLine (d4.Method.DeclaringType);
 		
 		return 0;
 	}

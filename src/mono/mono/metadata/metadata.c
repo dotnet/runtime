@@ -1887,6 +1887,9 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 
+		if (!t->data.klass->size_inited)
+			mono_class_init (t->data.klass);
+
 		if (t->data.klass->enumtype) {
 			return mono_type_size (t->data.klass->enum_basetype, align);
 		} else {

@@ -150,31 +150,82 @@ class_compute_field_layout (MonoClass *class)
 			G_BREAKPOINT ();
 	}
 	/*
-	 * Compute field layout and total size.
+	 * Compute field layout and total size (not considering static fields)
 	 */
-	switch (layout){
+	switch (layout) {
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
 		for (i = 0; i < top; i++){
 			int size, align;
 			
+			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+
 			size = mono_type_size (class->fields [i].type, &align);
-			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
-				class->fields [i].offset = class->class_size;
-				class->fields [i].offset += align - 1;
-				class->fields [i].offset &= ~(align - 1);
-				class->class_size = class->fields [i].offset + size;
-			} else {
-				class->min_align = MAX (align, class->min_align);
-				class->fields [i].offset = class->instance_size;
-				class->fields [i].offset += align - 1;
-				class->fields [i].offset &= ~(align - 1);
-				class->instance_size = class->fields [i].offset + size;
-			}
+
+			class->min_align = MAX (align, class->min_align);
+			class->fields [i].offset = class->instance_size;
+			class->fields [i].offset += align - 1;
+			class->fields [i].offset &= ~(align - 1);
+			class->instance_size = class->fields [i].offset + size;
 		}
+       
 		if (class->instance_size & (class->min_align - 1)) {
 			class->instance_size += class->min_align - 1;
 			class->instance_size &= ~(class->min_align - 1);
+		}
+		break;
+	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
+		for (i = 0; i < top; i++) {
+			int size, align;
+			int idx = class->field.first + i;
+
+			/*
+			 * There must be info about all the fields in a type if it
+			 * uses explicit layout.
+			 */
+
+			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+
+			size = mono_type_size (class->fields [i].type, &align);
+			
+			mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
+			if (class->fields [i].offset == (guint32)-1)
+				g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, class->fields [i].name);
+			/*
+			 * The offset is from the start of the object: this works for both
+			 * classes and valuetypes.
+			 */
+			class->fields [i].offset += sizeof (MonoObject);
+			/*
+			 * Calc max size.
+			 */
+			size += class->fields [i].offset;
+			class->instance_size = MAX (class->instance_size, size);
+		}
+		break;
+	}
+
+	class->size_inited = 1;
+
+	/*
+	 * Compute static field layout and size
+	 */
+	switch (layout) {
+	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
+	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
+		for (i = 0; i < top; i++){
+			int size, align;
+			
+			if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+				continue;
+			
+			size = mono_type_size (class->fields [i].type, &align);
+			class->fields [i].offset = class->class_size;
+			class->fields [i].offset += align - 1;
+			class->fields [i].offset &= ~(align - 1);
+			class->class_size = class->fields [i].offset + size;
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
@@ -187,27 +238,15 @@ class_compute_field_layout (MonoClass *class)
 			 * uses explicit layout.
 			 */
 
+			
+			if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+				continue;
+
 			size = mono_type_size (class->fields [i].type, &align);
-			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
-				class->fields [i].offset = class->class_size;
-				class->fields [i].offset += align - 1;
-				class->fields [i].offset &= ~(align - 1);
-				class->class_size = class->fields [i].offset + size;
-			} else {
-				mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
-				if (class->fields [i].offset == (guint32)-1)
-						g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, class->fields [i].name);
-				/*
-				 * The offset is from the start of the object: this works for both
-				 * classes and valuetypes.
-				 */
-				class->fields [i].offset += sizeof (MonoObject);
-				/*
-				 * Calc max size.
-				 */
-				size += class->fields [i].offset;
-				class->instance_size = MAX (class->instance_size, size);
-			}
+			class->fields [i].offset = class->class_size;
+			class->fields [i].offset += align - 1;
+			class->fields [i].offset &= ~(align - 1);
+			class->class_size = class->fields [i].offset + size;
 		}
 		break;
 	}
@@ -333,7 +372,13 @@ mono_class_init (MonoClass *class)
 
 	if (class->inited)
 		return;
-	class->inited = 1;
+
+	if (class->init_pending) {
+		/* this indicates a cyclic dependency */
+		g_error ("pending init %s.%s\n", class->name_space, class->name);
+	}
+
+	class->init_pending = 1;
 
 	if (class->parent) {
 		if (!class->parent->inited)
@@ -348,7 +393,7 @@ mono_class_init (MonoClass *class)
 	/*
 	 * Computes the size used by the fields, and their locations
 	 */
-	if (class->field.count > 0){
+	if (!class->size_inited && class->field.count > 0){
 		class->fields = g_new0 (MonoClassField, class->field.count);
 		class_compute_field_layout (class);
 	}
@@ -362,6 +407,8 @@ mono_class_init (MonoClass *class)
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		for (i = 0; i < class->method.count; ++i)
 			class->methods [i]->slot = i;
+		class->init_pending = 0;
+		class->inited = 1;
 		return;
 	}
 
@@ -625,6 +672,9 @@ mono_class_init (MonoClass *class)
 			}
 		}
 	}
+
+	class->inited = 1;
+	class->init_pending = 0;
 
 #define GHC_SLOT 2
 
@@ -1023,8 +1073,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	//class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count);
 
-	if (class->enumtype)
-		mono_class_init (class);
+	if (class->enumtype) {
+		class->fields = g_new0 (MonoClassField, class->field.count);
+		class_compute_field_layout (class);
+	} 
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
@@ -1234,7 +1286,7 @@ gint32
 mono_class_instance_size (MonoClass *klass)
 {
 	
-	if (!klass->inited)
+	if (!klass->size_inited)
 		mono_class_init (klass);
 
 	return klass->instance_size;

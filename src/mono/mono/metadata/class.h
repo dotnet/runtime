@@ -39,6 +39,8 @@ struct _MonoClass {
 
 	guint dummy           : 1; /* temorary hack */
 	guint inited          : 1;
+	guint init_pending    : 1;
+	guint size_inited     : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
