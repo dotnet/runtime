@@ -263,7 +263,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 			/* need to re-register links for weak refs. test if GC_realloc needs the same */
 			for (i = 0; i < array_size; ++i) {
 				if (((gulong)new_array [i]) & 0x1) { /* all and only disguised pointers have it set */
-					GC_unregister_disappearing_link (&(gc_handles [i]));
+					if (gc_handles [i] != (gpointer)-1)
+						GC_unregister_disappearing_link (&(gc_handles [i]));
 					if (new_array [i] != (gpointer)-1)
 						GC_general_register_disappearing_link (&(new_array [i]), REVEAL_POINTER (new_array [i]));
 				}
@@ -287,7 +288,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		val = (gpointer)HIDE_POINTER (val);
 		gc_handles [idx] = val;
 #if HAVE_BOEHM_GC
-		GC_general_register_disappearing_link (&(gc_handles [idx]), obj);
+		if (gc_handles [idx] != (gpointer)-1)
+			GC_general_register_disappearing_link (&(gc_handles [idx]), obj);
 #else
 		g_error ("No weakref support");
 #endif
@@ -306,8 +308,10 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 	int idx = handle >> 2;
 
 #ifdef HAVE_BOEHM_GC
-	if ((handle & 0x3) > 1)
-		GC_unregister_disappearing_link (&(gc_handles [idx]));
+	if ((handle & 0x3) > 1) {
+		if (gc_handles [idx] != (gpointer)-1)
+			GC_unregister_disappearing_link (&(gc_handles [idx]));
+	}
 #else
 	g_error ("No GCHandle support");
 #endif
