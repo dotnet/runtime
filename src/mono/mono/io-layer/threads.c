@@ -30,6 +30,10 @@
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mono-spinlock.h>
 
+#if HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
+
 #undef DEBUG
 #undef TLS_DEBUG
 
@@ -262,8 +266,17 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	g_assert (thr_ret == 0);
 	
 	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
-	if (stacksize == 0)
-		stacksize = (SIZEOF_VOID_P / 2) * 1024 *1024;
+	if (stacksize == 0){
+#if HAVE_VALGRIND_MEMCHECK_H
+		if (RUNNING_ON_VALGRIND)
+			stacksize = 1 << 20;
+		else
+			stacksize = (SIZEOF_VOID_P / 2) * 1024 * 1024;
+#else
+		stacksize = (SIZEOF_VOID_P / 2) * 1024 * 1024;
+#endif
+		
+	}
 
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
 	thr_ret = pthread_attr_setstacksize(&attr, stacksize);
