@@ -1,3 +1,10 @@
+2004-11-05  Zoltan Varga  <vargaz@freemail.hu>
+
+	* runtime/net_2_0/Makefile.am (install-data-local): 
+	* runtime/net_1_1/Makefile.am (install-data-local): Applied patch
+	from Götz Waschk (waschk@informatik.uni-rostock.de). Make this work 
+	with DESTDIR.
+
 2004-11-05  Jonathan Pryor <jonpryor@vt.edu>
 
 	* support/.cvsignore: Ignore generated files.
