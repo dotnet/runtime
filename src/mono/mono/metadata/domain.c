@@ -22,6 +22,8 @@
 
 static guint32 appdomain_thread_id = 0;
 
+static gint32 appdomain_id_counter = 0;
+
 MonoDomain *mono_root_domain = NULL;
 
 static MonoJitInfoTable *
@@ -182,6 +184,7 @@ mono_domain_create (void)
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
+	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
 	return domain;

@@ -311,10 +311,10 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	Sleep(ms);
 }
 
-MonoAppDomain *ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(void) 
+gint32
+ves_icall_System_Threading_Thread_GetDomainID (void) 
 {
-	/* return the current app */
-	return mono_domain_get()->domain;
+	return mono_domain_get()->domain_id;
 }
 
 MonoThread *

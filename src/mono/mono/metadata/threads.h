@@ -26,8 +26,8 @@ extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
-extern MonoAppDomain * ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(void);
 extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this, int ms, HANDLE thread);
+extern gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj, int ms);

@@ -79,6 +79,8 @@ struct _MonoDomain {
 	/* hashtables for Reflection handles */
 	MonoGHashTable     *type_hash;
 	MonoGHashTable     *refobject_hash;
+	/* Needed by Thread:GetDomainID() */
+	gint32             domain_id;
 };
 
 /* This is a copy of System.AppDomain */
