@@ -311,7 +311,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	start_info->obj = thread;
 	start_info->domain = domain;
 	start_info->this = arg;
-		
+	
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
@@ -1241,6 +1241,7 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 
 	for(i=0; i<wait->num; i++) {
 		guint32 tid=wait->threads[i]->tid;
+		CloseHandle (wait->handles[i]);
 		
 		if(mono_g_hash_table_lookup (threads, GUINT_TO_POINTER(tid))!=NULL) {
 			/* This thread must have been killed, because
@@ -1268,6 +1269,7 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 	struct wait_data *wait=(struct wait_data *)user;
 
 	if(wait->num<MAXIMUM_WAIT_OBJECTS) {
+		HANDLE handle;
 		MonoThread *thread=(MonoThread *)value;
 
 		/* Ignore background threads, we abort them later */
@@ -1280,7 +1282,11 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		if (thread == mono_thread_current ())
 			return;
 
-		wait->handles[wait->num]=thread->handle;
+		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+		if (handle == NULL)
+			return;
+		
+		wait->handles[wait->num]=handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;
 	} else {
@@ -1296,10 +1302,15 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	struct wait_data *wait=(struct wait_data *)user;
 	guint32 self = GetCurrentThreadId ();
 	MonoThread *thread = (MonoThread *) value;
+	HANDLE handle;
 
 	/* The finalizer thread is not a background thread */
 	if (thread->tid != self && thread->state & ThreadState_Background) {
 	
+		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+		if (handle == NULL)
+			return FALSE;
+		
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;

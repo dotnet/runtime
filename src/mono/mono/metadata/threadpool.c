@@ -253,11 +253,19 @@ async_invoke_thread (gpointer data)
 	
 		if (!data) {
 			guint32 wr;
-			wr = WaitForSingleObjectEx (job_added, 500, TRUE);
-			mono_thread_interruption_checkpoint ();
-
-			if (wr != WAIT_TIMEOUT)
-				data = dequeue_job ();
+			int timeout = 500;
+			guint32 start_time = GetTickCount ();
+			
+			do {
+				wr = WaitForSingleObjectEx (job_added, (guint32)timeout, TRUE);
+				mono_thread_interruption_checkpoint ();
+			
+				timeout -= GetTickCount () - start_time;
+			
+				if (wr != WAIT_TIMEOUT)
+					data = dequeue_job ();
+			}
+			while (!data && timeout > 0);
 		}
 		
 		if (!data) {
