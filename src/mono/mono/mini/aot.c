@@ -83,20 +83,22 @@ typedef struct MonoAotModule {
 	guint32 *method_info_offsets;
 } MonoAotModule;
 
+typedef struct MonoAotOptions {
+	char *outfile;
+	gboolean save_temps;
+	gboolean write_symbols;
+} MonoAotOptions;
+
 typedef struct MonoAotCompile {
 	FILE *fp;
-	GHashTable *ref_hash;
 	GHashTable *icall_hash;
 	GPtrArray *icall_table;
 	GHashTable *image_hash;
 	GPtrArray *image_table;
 	guint32 got_offset;
 	guint32 *method_got_offsets;
+	MonoAotOptions aot_opts;
 } MonoAotCompile;
-
-typedef struct MonoAotOptions {
-	char *outfile;
-} MonoAotOptions;
 
 static GHashTable *aot_modules;
 
@@ -1044,9 +1046,9 @@ emit_global (FILE *fp, const char *name, gboolean func)
 {
 #if defined(__ppc__) && defined(__MACH__)
     // mach-o always uses a '_' prefix.
-	fprintf (fp, ".globl _%s\n", name);
+	fprintf (fp, "\t.globl _%s\n", name);
 #else
-	fprintf (fp, ".globl %s\n", name);
+	fprintf (fp, "\t.globl %s\n", name);
 #endif
 
 	emit_symbol_type (fp, name, func);
@@ -1252,6 +1254,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_alignment(tmpfp, func_alignment);
 	emit_label(tmpfp, mname);
+	if (acfg->aot_opts.write_symbols)
+		emit_global (tmpfp, mname, TRUE);
 
 	if (cfg->verbose_level > 0)
 		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), mname);
@@ -1636,8 +1640,11 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 
 		if (str_begins_with (arg, "outfile=")) {
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
-		}
-		else {
+		} else if (str_begins_with (arg, "save-temps")) {
+			opts->save_temps = TRUE;
+		} else if (str_begins_with (arg, "write-symbols")) {
+			opts->write_symbols = TRUE;
+		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
 		}
@@ -1655,29 +1662,24 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	int i;
 	guint8 *symbol;
 	int ccount = 0, mcount = 0, lmfcount = 0, abscount = 0, wrappercount = 0, ocount = 0;
-	GHashTable *ref_hash;
 	MonoAotCompile *acfg;
 	MonoCompile **cfgs;
-	MonoAotOptions aot_opts;
 	char *outfile_name, *tmp_outfile_name;
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
-	mono_aot_parse_options (aot_options, &aot_opts);
-
-	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
-	tmpfp = fdopen (i, "w+");
-	g_assert (tmpfp);
-
-	ref_hash = g_hash_table_new (NULL, NULL);
-
 	acfg = g_new0 (MonoAotCompile, 1);
-	acfg->fp = tmpfp;
-	acfg->ref_hash = ref_hash;
 	acfg->icall_hash = g_hash_table_new (NULL, NULL);
 	acfg->icall_table = g_ptr_array_new ();
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
+
+	mono_aot_parse_options (aot_options, &acfg->aot_opts);
+
+	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
+	tmpfp = fdopen (i, "w+");
+	acfg->fp = tmpfp;
+	g_assert (tmpfp);
 
 	emit_string_symbol (tmpfp, "mono_assembly_guid" , image->guid);
 
@@ -1977,8 +1979,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	g_free (com);
 
-	if (aot_opts.outfile)
-		outfile_name = g_strdup_printf ("%s", aot_opts.outfile);
+	if (acfg->aot_opts.outfile)
+		outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 	else
 		outfile_name = g_strdup_printf ("%s%s", image->name, SHARED_EXT);
 
@@ -2018,8 +2020,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, mcount ? (wrappercount*100)/mcount : 100);
 	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, mcount ? (lmfcount*100)/mcount : 100);
 	printf ("%d methods have other problems (%d%%)\n", ocount, mcount ? (ocount*100)/mcount : 100);
-	//printf ("Retained input file.\n");
-	unlink (tmpfname);
+	if (acfg->aot_opts.save_temps)
+		printf ("Retained input file.\n");
+	else
+		unlink (tmpfname);
 
 	return 0;
 }
