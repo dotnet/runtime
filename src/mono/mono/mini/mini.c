@@ -1904,6 +1904,7 @@ mono_method_check_inlining (MonoMethod *method)
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->klass->marshalbyref) ||
 	    !header || header->num_clauses ||
