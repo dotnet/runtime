@@ -21,6 +21,7 @@
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/domain-internals.h"
+#include "mono/metadata/gc-internal.h"
 #include <mono/os/gc_wrapper.h>
 #include <string.h>
 #include <errno.h>
@@ -5190,9 +5191,15 @@ mono_marshal_get_stelemref ()
 void*
 mono_marshal_alloc (gpointer size) 
 {
+	gpointer res;
+
 	MONO_ARCH_SAVE_REGS;
 
-	return g_try_malloc ((gulong)size);
+	res = g_try_malloc ((gulong)size);
+	if (!res)
+		mono_gc_out_of_memory ((gulong)size);
+
+	return res;
 }
 
 void
