@@ -11,6 +11,8 @@
 #include <glib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
@@ -296,6 +298,20 @@ ves_icall_System_PAL_GetCurrentDirectory (MonoObject *object)
 	return res;
 }
 
+static gint64
+ves_icall_System_DateTime_GetNow ()
+{
+	struct timeval tv;
+
+	// fixme: it seems that .Net has another base time than Unix??
+	if (gettimeofday (&tv, NULL) == 0) {
+		return (gint64)tv.tv_sec * 1000000000 + tv.tv_usec*10;
+	}
+
+	
+	return 0;
+}
+
 static gpointer icall_map [] = {
 	/*
 	 * System.Array
@@ -401,6 +417,7 @@ static gpointer icall_map [] = {
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
+	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	/*
 	 * add other internal calls here
 	 */

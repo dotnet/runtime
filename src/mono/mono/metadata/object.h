@@ -62,6 +62,9 @@ extern MonoRuntimeObjectInit mono_runtime_object_init;
 
 #define mono_string_chars(s) ((gushort*)(s)->c_str->vector)
 
+void *
+mono_object_allocate        (size_t size);
+
 MonoObject *
 mono_object_new             (MonoClass *klass);
 

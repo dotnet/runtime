@@ -52,6 +52,7 @@ typedef struct {
 } MonoBBlock;
 
 typedef struct {
+	unsigned          has_vtarg:1;
 	MonoMethod       *method;
 	MonoBytecodeInfo *bcinfo;
 	MonoBBlock       *bblocks;

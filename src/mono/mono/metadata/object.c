@@ -44,7 +44,7 @@ mono_install_runtime_object_init (MonoRuntimeObjectInit func)
  *
  * Returns: an allocated object of size @size, or NULL on failure.
  */
-static void *
+void *
 mono_object_allocate (size_t size)
 {
 	void *o = calloc (1, size);

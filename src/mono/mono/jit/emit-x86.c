@@ -37,11 +37,13 @@ enter_method (MonoMethod *method, gpointer ebp)
 
 	if (method->signature->ret->type == MONO_TYPE_VALUETYPE) {
 		int size, align;
+		
+		g_assert (!method->signature->ret->byref);
 
-		if ((size = mono_type_size (method->signature->ret, &align)) > 4 || size == 3) {
-			printf ("VALUERET:%p, ", *((gpointer *)ebp));
-			ebp += sizeof (gpointer);
-		}
+		size = mono_type_size (method->signature->ret, &align);
+
+		printf ("VALUERET:%p, ", *((gpointer *)ebp));
+		ebp += sizeof (gpointer);
 	}
 
 	if (method->signature->hasthis) {
@@ -50,11 +52,13 @@ enter_method (MonoMethod *method, gpointer ebp)
 		} else {
 			o = *((MonoObject **)ebp);
 			class = o->klass;
+
 			if (class == mono_defaults.string_class) {
 				printf ("this:%p[STRING:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
 
-			} else 
+			} else {
 				printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
+			}
 		}
 		ebp += sizeof (gpointer);
 	}
@@ -194,7 +198,7 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 {
 	x86_push_reg (cfg->code, X86_EBP);
 	x86_mov_reg_reg (cfg->code, X86_EBP, X86_ESP, 4);
-	
+
 	if (cfg->locals_size)
 		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, cfg->locals_size);
 
@@ -744,9 +748,8 @@ arch_compile_method (MonoMethod *method)
 			method->addr = g_malloc (32);
 
 			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
-				int size, align;
-				if ((size = mono_type_size (csig->ret, &align)) > 4 || size == 3)
-					this_pos = 8;
+				g_assert (!csig->ret->byref);
+				this_pos = 8;
 			}
 
 			for (i = 0; i < 2; i ++) {
@@ -797,7 +800,7 @@ arch_compile_method (MonoMethod *method)
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
 		// fixme: remove limitation to 8192 bytes
-		ji->code_size = 8192;
+		ji->code_size = 8192*2;
 		method->addr = cfg->start = cfg->code = g_malloc (ji->code_size);
 		
 		if (match_debug_method (method))

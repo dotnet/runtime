@@ -157,8 +157,9 @@ x86_pop_reg (s->code, X86_EAX);
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8
+%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ NEWSTRUCT CPOBJ POP INITOBJ
+%term ISINST CASTCLASS UNBOX
 %term CONV_OVF_U4 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U8
-%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ CPOBJ POP INITOBJ VTYPE ISINST CASTCLASS
 %term EXCEPTION THROW RETHROW HANDLER 
 %term LDLEN
 
@@ -526,13 +527,12 @@ reg: LDIND_U4 (addr) {
 	PRINT_REG ("LDIND_U4", tree->reg1);
 }
 
-locaddr: ADDR_L 10 {
-	tree->data.i = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
-}
-
 reg: ADDR_L 5 {
 	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;  
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
+
+	PRINT_REG ("ADDR_L",  tree->reg1);
+
 }
 
 
@@ -803,7 +803,7 @@ reg: NEWOBJ {
 	x86_push_reg (s->code, X86_ECX);
 	x86_push_reg (s->code, X86_EDX);
 
-	x86_push_imm (s->code, tree->data.p);
+	x86_push_imm (s->code, tree->data.klass);
 	x86_call_code (s->code, mono_object_new);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
 
@@ -813,6 +813,37 @@ reg: NEWOBJ {
 		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
+}
+
+reg: NEWSTRUCT {
+	MonoClass *klass = tree->data.klass;
+
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	g_assert (klass->valuetype);
+	g_assert (klass->inited);
+
+	x86_push_imm (s->code, (klass->instance_size - sizeof (MonoObject)));
+	x86_call_code (s->code, mono_object_allocate);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
+}
+
+reg: UNBOX (reg) {
+	// fixme: add type check
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, sizeof (MonoObject));
 }
 
 reg: CASTCLASS (reg) {
@@ -989,41 +1020,6 @@ stmt: INITOBJ (reg) {
 stmt: NOP
 
 stmt: POP (reg)
-
-stmt: STIND_I4 (reg, CONST_I4) "MB_USE_OPT1(0)" {
-	x86_mov_membase_imm (s->code, tree->left->reg1, 0,
-			     tree->right->data.i, 4);
-}
-
-stmt: STIND_I4 (reg, reg) {
-	x86_mov_membase_reg (s->code, tree->left->reg1, 0,
-			     tree->right->reg1, 4);
-}
-
-stmt: STIND_I4 (locaddr, CONST_I4) "MB_USE_OPT1(0)" {
-	x86_mov_membase_imm (s->code, X86_EBP, tree->left->data.i,
-			     tree->right->data.i, 4);
-}
-
-stmt: STIND_I1 (locaddr, reg) {
-	x86_mov_membase_reg (s->code, X86_EBP, tree->left->data.i,
-			     tree->right->reg1, 1);
-}
-
-stmt: STIND_I2 (locaddr, reg) {
-	x86_mov_membase_reg (s->code, X86_EBP, tree->left->data.i,
-			     tree->right->reg1, 2);
-}
-
-stmt: STIND_I4 (locaddr, reg) {
-	x86_mov_membase_reg (s->code, X86_EBP, tree->left->data.i,
-			     tree->right->reg1, 4);
-}
-
-stmt: STIND_I4 (ADDR_G, reg) {
-	x86_mov_mem_reg (s->code, tree->left->data.p,
-			 tree->right->reg1, 4);
-}
 
 stmt: BR {
 	gint32 addr = tree->data.bb->addr - tree->addr - 5;
@@ -1253,6 +1249,7 @@ stmt: RET {
 
 stmt: ARG_I4 (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
+	PRINT_REG ("ARG_I4",  tree->left->reg1);
 }
 
 # fixme: we must free the allocated strings somewhere
@@ -1281,7 +1278,9 @@ stmt: ARG_I4 (CONST_I4) "MB_USE_OPT1(0)" {
 	x86_push_imm (s->code, tree->left->data.i);
 }
 
-this: reg
+this: reg {
+	PRINT_REG ("THIS", tree->reg1);
+}
 
 this: NOP
 
@@ -1420,15 +1419,15 @@ stmt: CALL_VOID (this, LDIND_I4 (ADDR_G)) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_call_mem (s->code, tree->right->left->data.p);
@@ -1445,16 +1444,17 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
 
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
-	}
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_mov_reg_membase (s->code, lreg, lreg, 
@@ -1474,15 +1474,15 @@ stmt: CALL_VOID (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
+	if (tree->left->op != MB_TERM_NOP) {
+		g_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+	}
+
 	if (ci->vtype_num) {
 		int offset = g_array_index (s->varinfo, MonoVarInfo, ci->vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
-	}
-
-	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
-		x86_push_reg (s->code, lreg);
 	}
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
@@ -1520,8 +1520,8 @@ reg: CONV_I4 (lreg) {
 stmt: POP (lreg)
 
 lreg: CONST_I8 1 {
-	x86_mov_reg_imm (s->code, tree->reg1, tree->data.i);
-	x86_mov_reg_imm (s->code, tree->reg2, *(gint32 *)(&tree->data.p + 4));
+	x86_mov_reg_imm (s->code, tree->reg1, *((gint32 *)&tree->data.p));
+	x86_mov_reg_imm (s->code, tree->reg2, *((gint32 *)&tree->data.p + 1));
 }
 
 lreg: CONV_I8 (CONST_I4) {
@@ -1577,12 +1577,6 @@ lreg: CONV_OVF_U8 (reg) {
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
 }
 
-stmt: STIND_I8 (locaddr, lreg) {
-	x86_mov_membase_reg (s->code, X86_EBP, tree->left->data.i,
-			     tree->right->reg1, 4);
-	x86_mov_membase_reg (s->code, X86_EBP, tree->left->data.i + 4,
-			     tree->right->reg2, 4);
-}
 stmt: STIND_I8 (addr, lreg) {
        
 	switch (tree->left->data.ainfo.amode) {
@@ -1615,16 +1609,13 @@ stmt: STIND_I8 (addr, lreg) {
 				      tree->right->reg2, 4);
 		break;		
 	}
+
 }
 
-lreg: LDIND_I8 (locaddr) {
-	x86_mov_reg_membase (s->code, tree->reg1, X86_EBP,
-			     tree->left->data.i, 4);
-	x86_mov_reg_membase (s->code, tree->reg2, X86_EBP,
-			     tree->left->data.i + 4, 4);
-}
-
+# an addr can use two address register (base and index register). The must take care 
+# that we do not override them (thus the use of x86_lea)
 lreg: LDIND_I8 (addr) {
+
 	switch (tree->left->data.ainfo.amode) {
 
 	case AMImmediate:
@@ -1633,26 +1624,27 @@ lreg: LDIND_I8 (addr) {
 		break;
 
 	case AMBase:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, 4);
-		x86_mov_reg_membase (s->code, tree->reg2, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset + 4, 4);
+		x86_lea_membase (s->code, tree->reg2, tree->left->data.ainfo.basereg,
+				 tree->left->data.ainfo.offset);
+		x86_mov_reg_membase (s->code, tree->reg1, tree->reg2, 0, 4);
+		x86_mov_reg_membase (s->code, tree->reg2, tree->reg2, 4, 4);
 		break;		
 	case AMIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
-		x86_mov_reg_memindex (s->code, tree->reg2, X86_NOBASEREG, tree->left->data.ainfo.offset + 4,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
+		x86_lea_memindex (s->code, tree->reg2, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift);
+		x86_mov_reg_membase (s->code, tree->reg1, tree->reg2, 0, 4);
+		x86_mov_reg_membase (s->code, tree->reg2, tree->reg2, 4, 4);
 		break;		
 	case AMBaseIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 4);
-		x86_mov_reg_memindex (s->code, tree->reg2, tree->left->data.ainfo.basereg, 
-				      tree->left->data.ainfo.offset + 4, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 4);
+		x86_lea_memindex (s->code, tree->reg2, tree->left->data.ainfo.basereg, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_mov_reg_membase (s->code, tree->reg1, tree->reg2, 0, 4);
+		x86_mov_reg_membase (s->code, tree->reg2, tree->reg2, 4, 4);
 		break;		
 	}
+	PRINT_REG ("LDIND_I8_0", tree->reg1);
+	PRINT_REG ("LDIND_I8_1", tree->reg2);
 }
 
 lreg: ADD (lreg, lreg) {
@@ -1665,6 +1657,10 @@ lreg: ADD (lreg, lreg) {
 }
 
 lreg: SUB (lreg, lreg) {
+	PRINT_REG ("LSUB0",  tree->left->reg1);
+	PRINT_REG ("LSUB1",  tree->left->reg2);
+	PRINT_REG ("LSUB2",  tree->right->reg1);
+	PRINT_REG ("LSUB3",  tree->right->reg2);
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	if (tree->reg2 != tree->left->reg2)
@@ -2323,47 +2319,14 @@ stmt: RETV (freg) {
 
 # support for value types
 
-vtype: VTYPE
-
-vtype: LDIND_OBJ (reg) {
-	int treg = X86_EAX;
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
-	int size = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).size;
-
-	if (tree->left->reg1 == X86_EAX)
-		treg = X86_ECX;
-
+stmt: STIND_OBJ (reg, LDIND_OBJ (reg)) {
 	x86_push_reg (s->code, X86_EAX);
 	x86_push_reg (s->code, X86_EDX);
 	x86_push_reg (s->code, X86_ECX);
 
-	x86_push_imm (s->code, size);
-	x86_push_reg (s->code, tree->left->reg1);
-	x86_lea_membase (s->code, treg, X86_EBP, offset);
-	x86_push_reg (s->code, treg);
-	x86_call_code (s->code, MEMCOPY);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
-
-	x86_pop_reg (s->code, X86_ECX);
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_EAX);
-}
-
-stmt: STIND_OBJ (reg, vtype) {
-	int treg = X86_EAX;
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->right->data.i).offset;
-	int size = g_array_index (s->varinfo, MonoVarInfo, tree->right->data.i).size;
-
-	if (tree->left->reg1 == X86_EAX)
-		treg = X86_ECX;
-
-	x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_EDX);
-	x86_push_reg (s->code, X86_ECX);
-
-	x86_push_imm (s->code, size);
-	x86_lea_membase (s->code, treg, X86_EBP, offset);
-	x86_push_reg (s->code, treg);
+	g_assert (tree->data.i > 0);
+	x86_push_imm (s->code, tree->data.i);
+	x86_push_reg (s->code, tree->right->left->reg1);
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_call_code (s->code, MEMCOPY);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
@@ -2373,9 +2336,28 @@ stmt: STIND_OBJ (reg, vtype) {
 	x86_pop_reg (s->code, X86_EAX);
 }
 
-stmt: ARG_OBJ (vtype) {
-	int treg = X86_EAX;
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).offset;
+stmt: STIND_OBJ (reg, reg) {
+	x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_EDX);
+	x86_push_reg (s->code, X86_ECX);
+
+	g_assert (tree->data.i > 0);
+	x86_push_imm (s->code, tree->data.i);
+	x86_push_reg (s->code, tree->right->reg1);
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_call_code (s->code, MEMCOPY);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+
+	x86_pop_reg (s->code, X86_ECX);
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_EAX);
+}
+
+stmt: ARG_OBJ (CONST_I4) {
+	x86_push_imm (s->code, tree->left->data.i);	
+}
+
+stmt: ARG_OBJ (LDIND_OBJ (reg)) {
 	int size = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).size;
 	int sa;
 	
@@ -2390,12 +2372,9 @@ stmt: ARG_OBJ (vtype) {
 	x86_push_reg (s->code, X86_ECX);
 
 	x86_push_imm (s->code, size);
-
-	x86_lea_membase (s->code, treg, X86_EBP, offset);
-	x86_push_reg (s->code, treg);
-
-	x86_lea_membase (s->code, treg, X86_ESP, 5*4);
-	x86_push_reg (s->code, treg);
+	x86_push_reg (s->code, tree->left->left->reg1);
+	x86_lea_membase (s->code, X86_EAX, X86_ESP, 5*4);
+	x86_push_reg (s->code, X86_EAX);
 
 	x86_call_code (s->code, MEMCOPY);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
@@ -2405,14 +2384,11 @@ stmt: ARG_OBJ (vtype) {
 	x86_pop_reg (s->code, X86_EAX);
 }
 
-stmt: RETV (vtype) {
-	int treg = X86_EAX;
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).offset;
+stmt: RETV (LDIND_OBJ (reg)) {
 	int size = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).size;
 
 	x86_push_imm (s->code, size);
-	x86_lea_membase (s->code, treg, X86_EBP, offset);
-	x86_push_reg (s->code, treg);
+	x86_push_reg (s->code, tree->left->left->reg1);
 	x86_push_membase (s->code, X86_EBP, 8);
 
 	x86_call_code (s->code, MEMCOPY);
