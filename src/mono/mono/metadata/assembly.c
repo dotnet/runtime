@@ -378,7 +378,7 @@ mono_assembly_addref (MonoAssembly *assembly)
 static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
-	MonoRuntimeInfo *current_runtime;
+	const MonoRuntimeInfo *current_runtime;
 	int pos, first, last;
 
 	if (aname->name == NULL) return aname;
@@ -392,7 +392,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		pos = first + (last - first) / 2;
 		res = strcmp (aname->name, framework_assemblies[pos].assembly_name);
 		if (res == 0) {
-			AssemblyVersionSet* vset;
+			const AssemblyVersionSet* vset;
 			int index = framework_assemblies[pos].version_set_index;
 			g_assert (index < G_N_ELEMENTS (current_runtime->version_sets));
 			vset = &current_runtime->version_sets [index];
