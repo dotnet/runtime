@@ -1258,12 +1258,66 @@ enum {
 	BFLAGS_OptionalParamBinding = 0x40000
 };
 
+static MonoFieldInfo *
+ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bflags)
+{
+	MonoDomain *domain; 
+	MonoClass *startklass, *klass;
+	int i, match;
+	MonoClassField *field;
+	char *utf8_name;
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+
+	if (!name)
+		return NULL;
+
+handle_parent:	
+	for (i = 0; i < klass->field.count; ++i) {
+		match = 0;
+		field = &klass->fields [i];
+		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		match = 0;
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+			if (bflags & BFLAGS_Static)
+				match++;
+		} else {
+			if (bflags & BFLAGS_Instance)
+				match++;
+		}
+
+		if (!match)
+			continue;
+		
+		utf8_name = mono_string_to_utf8 (name);
+
+		if (strcmp (field->name, utf8_name)) {
+			g_free (utf8_name);
+			continue;
+		}
+		g_free (utf8_name);
+		
+		return mono_field_get_object (domain, klass, field);
+	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+
+	return NULL;
+}
+
 static MonoArray*
 ves_icall_Type_GetFields (MonoReflectionType *type, guint32 bflags)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	static MonoClass *System_Reflection_FieldInfo;
 	MonoClass *startklass, *klass;
 	MonoArray *res;
 	MonoObject *member;
@@ -1303,10 +1357,7 @@ handle_parent:
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 	len = g_slist_length (l);
-	if (!System_Reflection_FieldInfo)
-		System_Reflection_FieldInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "FieldInfo");
-	res = mono_array_new (domain, System_Reflection_FieldInfo, len);
+	res = mono_array_new (domain, mono_defaults.field_info_class, len);
 	i = 0;
 	tmp = g_slist_reverse (l);
 	for (; tmp; tmp = tmp->next, ++i)
@@ -2477,6 +2528,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 	"System.MonoType::GetElementType", ves_icall_MonoType_GetElementType,
 	"System.MonoType::get_type_info", ves_icall_get_type_info,
+	"System.MonoType::GetField", ves_icall_Type_GetField,
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,
 	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
 	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
