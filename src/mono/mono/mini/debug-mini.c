@@ -12,6 +12,9 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
+/*
+ * This method is only called when running in the Mono Debugger.
+ */
 gpointer
 mono_debugger_create_notification_function (gpointer *notification_address)
 {

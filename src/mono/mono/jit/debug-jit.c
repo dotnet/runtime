@@ -4,6 +4,9 @@
 #include <mono/jit/debug-jit.h>
 #include "codegen.h"
 
+/*
+ * This method is only called when running in the Mono Debugger.
+ */
 gpointer
 mono_debugger_create_notification_function (gpointer *notification_address)
 {
