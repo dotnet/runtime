@@ -132,13 +132,18 @@ int
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 {
 	simplestruct ss;
+	int res;
 
 	ss.a = 0;
 	ss.b = 1;
 	ss.c = 0;
 	ss.d = "TEST";
 
-	return delegate (ss);
+	printf ("Calling delegate from unmanaged code\n");
+	res = delegate (ss);
+	printf ("GOT %d\n", res);
+
+	return res;
 }
 
 int 

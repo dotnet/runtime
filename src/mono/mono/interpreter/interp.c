@@ -140,7 +140,6 @@ db_match_method (gpointer data, gpointer user_data)
 	if (break_on_method) tracing=2;	\
 	break_on_method = 0;	\
 	if (tracing) {	\
-		MonoClass *klass = frame->method->klass;	\
 		char *mn, *args = dump_stack (frame->stack_args, frame->stack_args+signature->param_count);	\
 		debug_indent_level++;	\
 		output_indent ();	\
@@ -161,7 +160,6 @@ db_match_method (gpointer data, gpointer user_data)
 
 #define DEBUG_LEAVE()	\
 	if (tracing) {	\
-		MonoClass *klass = frame->method->klass;	\
 		char *mn, *args;	\
 		if (signature->ret->type != MONO_TYPE_VOID)	\
 			args = dump_stack (frame->retval, frame->retval + 1);	\
@@ -307,7 +305,7 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 }
 
 void inline
-stackval_from_data (MonoType *type, stackval *result, char *data)
+stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
 		switch (type->type) {
@@ -385,19 +383,17 @@ stackval_from_data (MonoType *type, stackval *result, char *data)
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return stackval_from_data (type->data.klass->enum_basetype, result, data);
+			return stackval_from_data (type->data.klass->enum_basetype, result, data, pinvoke);
 		} else {
+			int size;
 			result->type = VAL_VALUET;
 			result->data.vt.klass = type->data.klass;
-#if 0
-			{
-				int i, size = mono_class_value_size (type->data.klass, NULL);
-				for (i = 0; i < size; i++)
-					printf ("VT %s %d %02x\n", type->data.klass->name, i, ((guint8 *)data) [i]);
-				memcpy (result->data.vt.vt, data, size);
-			}
-#endif
-			memcpy (result->data.vt.vt, data, mono_class_value_size (type->data.klass, NULL));
+			
+			if (pinvoke)
+				size = mono_class_native_size (type->data.klass, NULL);
+			else
+				size = mono_class_value_size (type->data.klass, NULL);
+			memcpy (result->data.vt.vt, data, size);
 		}
 		return;
 	default:
@@ -407,7 +403,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data)
 }
 
 static void inline
-stackval_to_data (MonoType *type, stackval *val, char *data)
+stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
 		gpointer *p = (gpointer*)data;
@@ -475,9 +471,15 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return stackval_to_data (type->data.klass->enum_basetype, val, data);
+			return stackval_to_data (type->data.klass->enum_basetype, val, data, pinvoke);
 		} else {
-			memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
+			int size;
+
+			if (pinvoke)
+				size = mono_class_native_size (type->data.klass, NULL);
+			else
+				size = mono_class_value_size (type->data.klass, NULL);
+			memcpy (data, val->data.vt.vt, size);
 		}
 		return;
 	default:
@@ -544,7 +546,7 @@ ves_array_set (MonoInvocation *frame)
 	ea = mono_array_addr_with_size (ao, esize, pos);
 
 	mt = frame->method->signature->params [ac->rank];
-	stackval_to_data (mt, &sp [ac->rank], ea);
+	stackval_to_data (mt, &sp [ac->rank], ea, FALSE);
 }
 
 static void 
@@ -576,7 +578,7 @@ ves_array_get (MonoInvocation *frame)
 	ea = mono_array_addr_with_size (ao, esize, pos);
 
 	mt = frame->method->signature->ret;
-	stackval_from_data (mt, frame->retval, ea);
+	stackval_from_data (mt, frame->retval, ea, FALSE);
 }
 
 static void
@@ -675,9 +677,9 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 
 	if (string_ctor) {
 		stackval_from_data (&mono_defaults.string_class->byval_arg, 
-				    frame->retval, (char*)&frame->retval->data.p);
+				    frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
  	} else
-		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p);
+		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
 
 	TlsSetValue (frame_thread_id, frame->args);
 }
@@ -922,7 +924,10 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 		offset += sizeof (gpointer);
 	}
 	for (i = 0; i < signature->param_count; ++i) {
-		size = mono_type_size (signature->params [i], &align);
+		if (signature->pinvoke)
+			size = mono_type_native_stack_size (signature->params [i], &align);
+		else
+			size = mono_type_stack_size (signature->params [i], &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
 		offsets [2 + hasthis + header->num_locals + i] = offset;
@@ -1061,11 +1066,13 @@ struct _vtallocation {
 /*
  * we don't use vtallocation->next, yet
  */
-#define vt_alloc(vtype,sp)	\
+#define vt_alloc(vtype,sp,native)	\
 	if ((vtype)->type == MONO_TYPE_VALUETYPE && !(vtype)->data.klass->enumtype) {	\
 		if (!(vtype)->byref) {	\
 			guint32 align;	\
-			guint32 size = mono_class_value_size ((vtype)->data.klass, &align);	\
+			guint32 size; \
+                        if (native) size = mono_class_native_size ((vtype)->data.klass, &align);	\
+                        else size = mono_class_value_size ((vtype)->data.klass, &align);	\
 			if (!vtalloc || vtalloc->size <= size) {	\
 				vtalloc = alloca (sizeof (vtallocation) + size);	\
 				vtalloc->size = size;	\
@@ -1234,7 +1241,7 @@ handle_enum:
 		return NULL;
 	if (isobject || method->string_ctor)
 		return result.data.p;
-	stackval_to_data (sig->ret, &result, ret);
+	stackval_to_data (sig->ret, &result, ret, sig->pinvoke);
 	return retval;
 }
 
@@ -1352,7 +1359,7 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		for (i = 0; i < signature->param_count; ++i) {
 			args_pointers [i + has_this] = frame->args + offsets [2 + header->num_locals + has_this + i];
-			stackval_to_data (signature->params [i], frame->stack_args + i, args_pointers [i + has_this]);
+			stackval_to_data (signature->params [i], frame->stack_args + i, args_pointers [i + has_this], signature->pinvoke);
 		}
 	}
 
@@ -1405,8 +1412,8 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDARG_3) {
 			int n = (*ip)-CEE_LDARG_0;
 			++ip;
-			vt_alloc (ARG_TYPE (signature, n), sp);
-			stackval_from_data (ARG_TYPE (signature, n), sp, ARG_POS (n));
+			vt_alloc (ARG_TYPE (signature, n), sp, signature->pinvoke);
+			stackval_from_data (ARG_TYPE (signature, n), sp, ARG_POS (n), signature->pinvoke);
 			++sp;
 			BREAK;
 		}
@@ -1422,8 +1429,8 @@ ves_exec_method (MonoInvocation *frame)
 				++sp;
 				BREAK;
 			} else {
-				vt_alloc (LOCAL_TYPE (header, n), sp);
-				stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
+				vt_alloc (LOCAL_TYPE (header, n), sp, FALSE);
+				stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n), FALSE);
 			}
 			++sp;
 			BREAK;
@@ -1440,15 +1447,15 @@ ves_exec_method (MonoInvocation *frame)
 				*p = sp->data.i;
 				BREAK;
 			} else {
-				stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
+				stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n), FALSE);
 				vt_free (sp);
 				BREAK;
 			}
 		}
 		CASE (CEE_LDARG_S)
 			++ip;
-			vt_alloc (ARG_TYPE (signature, *ip), sp);
-			stackval_from_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip));
+			vt_alloc (ARG_TYPE (signature, *ip), sp, signature->pinvoke);
+			stackval_from_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip), signature->pinvoke);
 			++sp;
 			++ip;
 			BREAK;
@@ -1474,14 +1481,14 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_STARG_S)
 			++ip;
 			--sp;
-			stackval_to_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip));
+			stackval_to_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip), signature->pinvoke);
 			vt_free (sp);
 			++ip;
 			BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
-			vt_alloc (LOCAL_TYPE (header, *ip), sp);
-			stackval_from_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip));
+			vt_alloc (LOCAL_TYPE (header, *ip), sp, FALSE);
+			stackval_from_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip), FALSE);
 			++ip;
 			++sp;
 			BREAK;
@@ -1507,7 +1514,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
-			stackval_to_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip));
+			stackval_to_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip), FALSE);
 			vt_free (sp);
 			++ip;
 			BREAK;
@@ -1580,8 +1587,8 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_DUP) 
 			if (sp [-1].type == VAL_VALUET) {
 				MonoClass *c = sp [-1].data.vt.klass;
-				vt_alloc (&c->byval_arg, sp);
-				stackval_from_data (&c->byval_arg, sp, sp [-1].data.vt.vt);
+				vt_alloc (&c->byval_arg, sp, FALSE);
+				stackval_from_data (&c->byval_arg, sp, sp [-1].data.vt.vt, FALSE);
 			} else {
 				*sp = sp [-1]; 
 			}
@@ -1667,7 +1674,7 @@ ves_exec_method (MonoInvocation *frame)
 				child_frame.obj = NULL;
 			}
 			if (csignature->ret->type != MONO_TYPE_VOID) {
-				vt_alloc (csignature->ret, &retval);
+				vt_alloc (csignature->ret, &retval, csignature->pinvoke);
 				child_frame.retval = &retval;
 			} else {
 				child_frame.retval = NULL;
@@ -1744,7 +1751,7 @@ ves_exec_method (MonoInvocation *frame)
 				--sp;
 				if (sp->type == VAL_VALUET) {
 					/* the caller has already allocated the memory */
-					stackval_from_data (signature->ret, frame->retval, sp->data.vt.vt);
+					stackval_from_data (signature->ret, frame->retval, sp->data.vt.vt, signature->pinvoke);
 					vt_free (sp);
 				} else {
 					*frame->retval = *sp;
@@ -2581,8 +2588,8 @@ ves_exec_method (MonoInvocation *frame)
 				c = mono_class_get (image, token);
 
 			addr = sp [-1].data.vt.vt;
-			vt_alloc (&c->byval_arg, &sp [-1]);
-			stackval_from_data (&c->byval_arg, &sp [-1], addr);
+			vt_alloc (&c->byval_arg, &sp [-1], FALSE);
+			stackval_from_data (&c->byval_arg, &sp [-1], addr, FALSE);
 			BREAK;
 		}
 		CASE (CEE_LDSTR) {
@@ -2639,7 +2646,7 @@ ves_exec_method (MonoInvocation *frame)
 			 */
 			if (newobj_class->valuetype) {
 				void *zero;
-				vt_alloc (&newobj_class->byval_arg, &valuetype_this);
+				vt_alloc (&newobj_class->byval_arg, &valuetype_this, csig->pinvoke);
 				if (!newobj_class->enumtype && (newobj_class->byval_arg.type == MONO_TYPE_VALUETYPE)) {
 					zero = valuetype_this.data.vt.vt;
 					child_frame.obj = valuetype_this.data.vt.vt;
@@ -2648,7 +2655,7 @@ ves_exec_method (MonoInvocation *frame)
 					zero = &valuetype_this;
 					child_frame.obj = &valuetype_this;
 				}
-				stackval_from_data (&newobj_class->byval_arg, &valuetype_this, zero);
+				stackval_from_data (&newobj_class->byval_arg, &valuetype_this, zero, csig->pinvoke);
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
 					o = mono_object_new (domain, newobj_class);
@@ -2846,8 +2853,8 @@ array_constructed:
 				sp [-1].data.p = (char*)obj + offset;
 				sp [-1].data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
-				vt_alloc (field->type, &sp [-1]);
-				stackval_from_data (field->type, &sp [-1], (char*)obj + offset);
+				vt_alloc (field->type, &sp [-1], FALSE);
+				stackval_from_data (field->type, &sp [-1], (char*)obj + offset, FALSE);
 				
 			}
 			BREAK;
@@ -2884,7 +2891,7 @@ array_constructed:
 				offset = field->offset - sizeof (MonoObject);
 			}
 
-			stackval_to_data (field->type, &sp [1], (char*)obj + offset);
+			stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
 			vt_free (&sp [1]);
 			BREAK;
 		}
@@ -2919,8 +2926,8 @@ array_constructed:
 				sp->data.p = addr;
 				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
-				vt_alloc (field->type, sp);
-				stackval_from_data (field->type, sp, addr);
+				vt_alloc (field->type, sp, FALSE);
+				stackval_from_data (field->type, sp, addr, FALSE);
 			}
 			++sp;
 			BREAK;
@@ -2950,7 +2957,7 @@ array_constructed:
 			vt = mono_class_vtable (domain, klass);
 			addr = (char*)(vt->data) + field->offset;
 
-			stackval_to_data (field->type, sp, addr);
+			stackval_to_data (field->type, sp, addr, FALSE);
 			vt_free (sp);
 			BREAK;
 		}
@@ -3110,7 +3117,7 @@ array_constructed:
 			if (class->byval_arg.type == MONO_TYPE_VALUETYPE && !class->enumtype) 
 				sp [-1].data.p = mono_value_box (domain, class, sp [-1].data.p);
 			else {
-				stackval_to_data (&class->byval_arg, &sp [-1], (char*)&sp [-1]);
+				stackval_to_data (&class->byval_arg, &sp [-1], (char*)&sp [-1], FALSE);
 				sp [-1].data.p = mono_value_box (domain, class, &sp [-1]);
 			}
 			/* need to vt_free (sp); */
@@ -3469,8 +3476,8 @@ array_constructed:
 			++ip;
 			handle = mono_ldtoken (image, read32 (ip), &handle_class);
 			ip += 4;
-			vt_alloc (&handle_class->byval_arg, sp);
-			stackval_from_data (&handle_class->byval_arg, sp, (char*)&handle);
+			vt_alloc (&handle_class->byval_arg, sp, FALSE);
+			stackval_from_data (&handle_class->byval_arg, sp, (char*)&handle, FALSE);
 			++sp;
 			BREAK;
 		}
@@ -3694,7 +3701,7 @@ array_constructed:
 					mono_string_utf8_to_builder (sp [0].data.p, sp [1].data.p);
 					break;
 				case MONO_MARSHAL_FREE_ARRAY:
-					mono_marshal_free_array (sp [0].data.p, sp [1].data.p);
+					mono_marshal_free_array (sp [0].data.p, sp [1].data.i);
 					break;
 				default:
 					g_assert_not_reached ();
@@ -3711,10 +3718,10 @@ array_constructed:
 
 				switch (conv) {
 				case MONO_MARSHAL_CONV_STR_BYVALSTR:
-					mono_string_to_byvalstr (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+					mono_string_to_byvalstr (sp [0].data.p, sp [1].data.p, sp [2].data.i);
 					break;
 				case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-					mono_string_to_byvalwstr (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+					mono_string_to_byvalwstr (sp [0].data.p, sp [1].data.p, sp [2].data.i);
 					break;
 				default:
 					g_assert_not_reached ();
@@ -3948,8 +3955,8 @@ array_constructed:
 				++ip;
 				arg_pos = read16 (ip);
 				ip += 2;
-				vt_alloc (ARG_TYPE (signature, arg_pos), sp);
-				stackval_from_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos));
+				vt_alloc (ARG_TYPE (signature, arg_pos), sp, signature->pinvoke);
+				stackval_from_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos), signature->pinvoke);
 				++sp;
 				break;
 			}
@@ -3980,7 +3987,7 @@ array_constructed:
 				arg_pos = read16 (ip);
 				ip += 2;
 				--sp;
-				stackval_to_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos));
+				stackval_to_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos), signature->pinvoke);
 				vt_free (sp);
 				break;
 			}
@@ -3989,8 +3996,8 @@ array_constructed:
 				++ip;
 				loc_pos = read16 (ip);
 				ip += 2;
-				vt_alloc (LOCAL_TYPE (header, loc_pos), sp);
-				stackval_from_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos));
+				vt_alloc (LOCAL_TYPE (header, loc_pos), sp, FALSE);
+				stackval_from_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos), FALSE);
 				++sp;
 				break;
 			}
@@ -4021,7 +4028,7 @@ array_constructed:
 				loc_pos = read16 (ip);
 				ip += 2;
 				--sp;
-				stackval_to_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos));
+				stackval_to_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos), FALSE);
 				vt_free (sp);
 				break;
 			}

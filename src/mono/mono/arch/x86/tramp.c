@@ -338,7 +338,8 @@ mono_create_method_pointer (MonoMethod *method)
 	unsigned char *p, *code_buffer;
 	gint32 local_size;
 	gint32 stackval_pos, arg_pos = 8;
-	int i, align;
+	int i, size, align, cpos;
+	int vtbuf [sig->param_count];
 
 	/*
 	 * If it is a static P/Invoke method, we can just return the pointer
@@ -359,7 +360,32 @@ mono_create_method_pointer (MonoMethod *method)
 	code_buffer = p = alloca (512); /* FIXME: check for overflows... */
 
 	local_size = sizeof (MonoInvocation) + sizeof (stackval) * (sig->param_count + 1);
+
+	local_size += 7;
+	local_size &= ~7;
+
 	stackval_pos = -local_size;
+
+	cpos = 0;
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *type = sig->params [i];
+		vtbuf [i] = -1;
+		if (type->type == MONO_TYPE_VALUETYPE) {
+			MonoClass *klass = type->data.klass;
+			if (klass->enumtype)
+				continue;
+			size = mono_class_native_size (klass, &align);
+			cpos += align - 1;
+			cpos &= ~(align - 1);
+			vtbuf [i] = cpos;
+			cpos += size;
+		}	
+	}
+
+	cpos += 7;
+	cpos &= ~7;
+
+	local_size += cpos;
 
 	/*
 	 * Standard function prolog.
@@ -401,16 +427,24 @@ mono_create_method_pointer (MonoMethod *method)
 	x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
 	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)), X86_EAX, 4);
 	for (i = 0; i < sig->param_count; ++i) {
+		if (vtbuf [i] >= 0) {
+			x86_lea_membase (p, X86_EAX, X86_EBP, - local_size + vtbuf [i]);
+			x86_mov_membase_reg (p, X86_EBP, stackval_pos, X86_EAX, 4);
+		}
 		x86_mov_reg_imm (p, X86_ECX, stackval_from_data);
 		x86_lea_membase (p, X86_EDX, X86_EBP, arg_pos);
 		x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
+		x86_push_imm (p, sig->pinvoke);
 		x86_push_reg (p, X86_EDX);
 		x86_push_reg (p, X86_EAX);
 		x86_push_imm (p, sig->params [i]);
 		x86_call_reg (p, X86_ECX);
-		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 12);
+		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 16);
 		stackval_pos += sizeof (stackval);
-		arg_pos += mono_type_stack_size (sig->params [i], &align);
+		if (sig->pinvoke)
+			arg_pos += mono_type_native_stack_size (sig->params [i], &align);
+		else
+			arg_pos += mono_type_stack_size (sig->params [i], &align);
 	}
 
 	/*

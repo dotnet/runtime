@@ -65,7 +65,7 @@ struct _MonoInvocation {
 
 void mono_init_icall (void);
 
-void inline stackval_from_data (MonoType *type, stackval *result, char *data);
+void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
 void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*MonoFunc) (void);

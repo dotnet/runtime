@@ -14,6 +14,10 @@ public class Test {
 	public static int delegate_test (SimpleStruct ss)
 	{
 		Console.WriteLine ("delegate called");
+		Console.WriteLine ("A: " + ss.a);
+		Console.WriteLine ("B: " + ss.b);
+		Console.WriteLine ("C: " + ss.c);
+		Console.WriteLine ("D: " + ss.d);
 		
 		if (!ss.a && ss.b && !ss.c && ss.d == "TEST")
 			return 0;
