@@ -13,6 +13,7 @@
 <a href="#gcc">Mono and GCC</a><br>
 <a href="#performance">Performance</a><br>
 <a href="#licensing">Licensing</a><br>
+<a href="#patents">Patents</a><br>
 <a href="#etc">Miscellaneous Questions</a><br>
 
 
@@ -637,8 +638,34 @@ A: We will have to evaluate the licenses for compatibility first,
    but as a general rule, we will accept the code under the same
    terms of the "container" module. 
 
-<a name="etc"></a>
-** Miscellaneous Questions
+<a name="patents></a>
+** Patents
+
+Q: Could patents be used to completely disable Mono (either submarine
+   patents filed now, or changes made by Microsoft specifically to
+   create patent problems)?
+
+A: No.  First, its basic functional capabilities have pre-existed too
+   long to be held up by patents.  The basic components of Mono are
+   technologically equivalent to Sun's Java technology, which has been
+   around for years.  Mono will also implement multi-language and
+   multi-architecture support, but there are previous technologies
+   such as UCSD p-code and ANDF that also support multiple languages
+   using a common intermediate language.  The libraries are similar
+   to other language's libraries, so again, they're too similar to
+   be patentable in large measure.
+
+   However, if Microsoft does patent some technology, then our plan is
+   to either (1) work around it, (2) chop out patented pieces, (3) 
+   find prior art that would render the patent useless.
+ 
+   Not providing a patented capability would weaken the
+   interoperability, but it would still provide the free software /
+   open source software community with good development tools, which
+   is the primary reason for developing Mono.  
+
+<a name="etc"></a> **
+Miscellaneous Questions
 
 Q: You say that the CLI allows multiple languages to execute on the
    same environment.  Isn't this the purpose of CORBA?
