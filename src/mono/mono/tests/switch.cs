@@ -10,6 +10,20 @@ public class Switch {
 		}
 		return 100;
 	}
+
+	const string long_str =
+	"{http://schemas.xmlsoap.org/ws/2003/03/business-process/}partnerLinks";
+
+	// bug #54473
+	public static int test_string (string s) {
+		switch (s) {
+		case "{http://schemas.xmlsoap.org/ws/2003/03/business-process/}partnerLinks":
+			return 1;
+		default:
+			return 0;
+		}
+	}
+
 	public static int Main () {
 		if (test(0) != 1)
 			return 1;
@@ -19,6 +33,8 @@ public class Switch {
 			return 3;
 		if (test(3) != 0xff)
 			return 4;
+		if (test_string (long_str) != 1)
+			return 5;
 		return 0;
 	}
 }
