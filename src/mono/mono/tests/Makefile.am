@@ -131,6 +131,8 @@ TEST_CS_SRC=			\
 	decimal.cs		\
 	marshal1.cs		\
 	marshal2.cs		\
+	marshal3.cs		\
+	marshal4.cs		\
 	thread.cs		\
 	thread5.cs		\
 	thread6.cs

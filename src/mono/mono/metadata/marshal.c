@@ -662,6 +662,7 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		break;
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
+	case MONO_MARSHAL_CONV_DEL_FTN:
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);

@@ -2886,6 +2886,10 @@ handle_enum:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}
 		}
+		if (type->data.klass->parent == mono_defaults.multicastdelegate_class) {
+			*conv = MONO_MARSHAL_CONV_DEL_FTN;
+			return MONO_NATIVE_FUNC;
+		}
 		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
 		return MONO_NATIVE_STRUCT;
 	}
