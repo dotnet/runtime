@@ -7,7 +7,7 @@ lib_LIBRARIES = libmetadata.a
 #
 assembliesdir = $(libdir)
 
-INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	\
+INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
 	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		
 
 libmetadata_a_SOURCES = \
@@ -76,6 +76,6 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
-pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) ../io-layer/libwapi.a
+pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) ../io-layer/libwapi.a -lm
 
 

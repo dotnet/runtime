@@ -3,8 +3,8 @@
 #include <math.h>
 #include <mono/metadata/sysmath.h>
 
-static const gdouble NAN = 0.0 / 0.0;
-static const gdouble INF = 1.0 / 0.0;
+static const gdouble MONO_NAN = 0.0 / 0.0;
+static const gdouble MONO_INF = 1.0 / 0.0;
 
 gdouble 
 ves_icall_System_Math_Sin (gdouble x)
@@ -46,7 +46,7 @@ gdouble
 ves_icall_System_Math_Acos (gdouble x)
 {
 	if (x < -1 || x > 1)
-		return NAN;
+		return MONO_NAN;
 
 	return acos (x);
 }
@@ -55,7 +55,7 @@ gdouble
 ves_icall_System_Math_Asin (gdouble x)
 {
 	if (x < -1 || x > 1)
-		return NAN;
+		return MONO_NAN;
 
 	return acos (x);
 }
@@ -82,9 +82,9 @@ gdouble
 ves_icall_System_Math_Log (gdouble x)
 {
 	if (x == 0)
-		return -INF;
+		return -MONO_INF;
 	else if (x < 0)
-		return NAN;
+		return MONO_NAN;
 
 	return log (x);
 }
@@ -93,9 +93,9 @@ gdouble
 ves_icall_System_Math_Log10 (gdouble x)
 {
 	if (x == 0)
-		return -INF;
+		return -MONO_INF;
 	else if (x < 0)
-		return NAN;
+		return MONO_NAN;
 
 	return log10 (x);
 }
