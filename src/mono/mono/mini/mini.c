@@ -6497,7 +6497,7 @@ mono_codegen (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = g_new (gpointer, patch_info->table_size);
+			gpointer *table = mono_mempool_alloc (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->table_size; i++) {
 				table [i] = (gpointer)patch_info->data.table [i]->native_offset;
