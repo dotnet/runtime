@@ -90,8 +90,14 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 #define DIS_CMD "objdump -d"
 #endif
 #endif
+#if defined(sparc)
+#define AS_CMD "as -xarch=v9"
+#else
+#define AS_CMD "as"
+#endif
+
 	o_file = g_strdup_printf ("%s/test.o", tmp);    
-	cmd = g_strdup_printf ("as %s -o %s", as_file, o_file);
+	cmd = g_strdup_printf (AS_CMD " %s -o %s", as_file, o_file);
 	system (cmd); 
 	g_free (cmd);
 	if (!objdump_args)
