@@ -537,9 +537,8 @@ ves_icall_System_ValueType_GetHashCode (MonoObject *this)
 static MonoBoolean
 ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that)
 {
-	gint32 i, size;
+	gint32 size;
 	const char *p, *s;
-	guint h;
 
 	MONO_CHECK_ARG_NULL (that);
 
@@ -1924,6 +1923,11 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
 	
 	return mono_string_new (mono_domain_get (), value);
 }
+
+/*
+ * There is no standard way to get at environ.
+ */
+extern char **environ;
 
 static MonoArray *
 ves_icall_System_Environment_GetEnvironmentVariableNames (void)

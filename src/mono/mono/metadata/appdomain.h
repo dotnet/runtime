@@ -17,7 +17,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 #include <mono/utils/mono-hash.h>
-#include <mono/io-layer/critical-sections.h>
+#include <mono/io-layer/io-layer.h>
 
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
