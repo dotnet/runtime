@@ -5700,6 +5700,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 				ip += 2;
 				break;
+			case CEE_MONO_CLASSCONST:
+				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
+				token = read32 (ip + 2);
+				NEW_CLASSCONST (cfg, ins, mono_method_get_wrapper_data (method, token));
+				ins->cil_code = ip;
+				*sp++ = ins;
+				ip += 6;
+				inline_costs += 10 * num_calls++;
+				break;
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;
@@ -8304,7 +8314,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		regs = mono_arch_get_global_int_regs (cfg);
 		g_assert (regs);
 		cfg->got_var->opcode = OP_REGVAR;
-		cfg->got_var->dreg = regs->data;
+		cfg->got_var->dreg = GPOINTER_TO_INT (regs->data);
 		cfg->used_int_regs |= 1LL << cfg->got_var->dreg;
 		
 		g_list_free (regs);
