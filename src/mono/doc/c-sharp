@@ -6,23 +6,6 @@
 	you can use).  It is routinely used to compile Mono, roughly
 	half a million lines of C# code.
 
-* Pending tasks
-
-	There are a few known bugs in the Mono C# compiler, but
-	they are very very few at this point,
-	you can also browse the MCS <a href="http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FMCS&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&newqueryname=&order=Reuse+same+sort+as+last+time&form_name=query">bugs</a> from Bugzilla.
-
-	A test suite is maintained to track the progress of
-	the compiler and various programs are routinely compiled and
-	ran.
-
-** Slides
-
-	Slides for the Mono C# Compiler presentation at .NET ONE are
-	available <a
-	href="http://primates.ximian.com/~miguel/slides-europe-nov-2002/Mono_C_Sharp_Overview_1007.sxi">here</a>
-	in StarOffice format.
-
 ** Obtaining MCS
 
 	The Mono C# compiler is part of the `mcs' module in the Mono CVS
@@ -108,6 +91,21 @@
 	able to use this generic CIL optimizer in their projects
 	reducing their time to develop a production compiler. 
 
+* Open bugs
+
+	See the <a href="bugs.html">bugs page</a> for more information.
+
+	A test suite is maintained to track the progress of
+	the compiler and various programs are routinely compiled and
+	ran.
+
+* Slides
+
+	Slides for the Mono C# Compiler presentation at .NET ONE are
+	available <a
+	href="http://primates.ximian.com/~miguel/slides-europe-nov-2002/Mono_C_Sharp_Overview_1007.sxi">here</a>
+	in StarOffice format.
+
 ** History
 
 	MCS was able to parse itself on April 2001, MCS compiled itself
@@ -118,6 +116,27 @@
 	our compiler self hosting on March 12, 2002.
 
 ** Questions and Answers
+
+Q: Does the Mono C# compiler support C# 2.0?
+
+A: At this point the Mono C# compiler supports some of the features of
+   C# 2.0, but the support has not been completed.   To enable 2.0 features
+   you must use the -2 flag to the compiler.
+
+Q: What features are available as of Feb 2004?
+
+A: Iterators have been implemented as well as method group implicit
+   conversion to delegates on the main compiler branch.
+
+   We have a branch of the compiler in the module `mcs/gmcs' which is
+   where we are developing the Generics support for the compiler.  Plenty
+   of tests work (see mcs/tests/gen-*.cs for a list of tests), but work
+   remains to be done.
+
+Q: Will the C# 2.0 features be part of the Mono 1.0 release?
+
+A: Only a few, the generic compiler will not be part of the 1.0
+   stable release, but a beta preview will be distributed.
 
 Q: Why not write a C# front-end for GCC?
 

@@ -101,7 +101,6 @@
  	</table>
 
 
-<h2>Mono: Free C# and .NET on Linux and Windows</h2>
 <p>
 	The Mono project is an open source effort sponsored by 	<a
 	href="http://novell.com">Novell</a> to create a free
@@ -145,7 +144,14 @@
 </p>
 <br>
 <br>
-<h2>Mono Project Notes</h2>
+<h2>Mono Project Log</h2>
+
+@item Feb 13, 2004: Mono 0.30.1 released
+
+	We have released a small bug-fix release of Mono, the release
+	notes are available <a
+	href="archive/mono-0.30.1.html">here</a> and you can download
+	it from our <a href="download.html">download</a> page.
 
 @item Feb 13, 2004: Mono Performance Optimization
 
