@@ -4214,6 +4214,69 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 }
 
 /*
+ * mono_marshal_get_ldfld_remote_wrapper:
+ * @klass: The return type
+ *
+ * This method generates a wrapper for calling mono_load_remote_field_new with
+ * the appropriate return type.
+ */
+MonoMethod *
+mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
+{
+	MonoMethodSignature *sig, *csig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	static GHashTable *ldfld_hash = NULL; 
+	char *name;
+
+	EnterCriticalSection (&marshal_mutex);
+	if (!ldfld_hash) 
+		ldfld_hash = g_hash_table_new (NULL, NULL);
+	res = g_hash_table_lookup (ldfld_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
+		return res;
+
+	/* 
+	 * This wrapper is similar to an icall wrapper but all the wrappers
+	 * call the same C function, but with a different signature.
+	 */
+	name = g_strdup_printf ("__mono_load_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD_REMOTE);
+	g_free (name);
+
+	mb->method->save_lmf = 1;
+
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->ret = &klass->this_arg;
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->ret = &klass->this_arg;
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
+	emit_thread_interrupt_checkpoint (mb);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+       
+	res = mono_mb_create_and_cache (ldfld_hash, klass,
+										 mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+	
+	return res;
+}
+
+/*
  * mono_marshal_get_ldfld_wrapper:
  * @type: the type of the field
  *
@@ -4224,7 +4287,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 MonoMethod *
 mono_marshal_get_ldfld_wrapper (MonoType *type)
 {
-	MonoMethodSignature *sig, *csig;
+	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoClass *klass;
@@ -4267,8 +4330,6 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD);
 	g_free (name);
 
-	mb->method->save_lmf = 1;
-
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
@@ -4283,6 +4344,9 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
 
+	mono_mb_emit_managed_call (mb, mono_marshal_get_ldfld_remote_wrapper (klass), NULL);
+
+	/*
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
@@ -4292,6 +4356,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 
 	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
 	emit_thread_interrupt_checkpoint (mb);
+	*/
 
 	if (klass->valuetype) {
 		mono_mb_emit_byte (mb, CEE_UNBOX);
@@ -4371,6 +4436,73 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 }
 
 /*
+ * mono_marshal_get_stfld_remote_wrapper:
+ * klass: The type of the field
+ *
+ *  This function generates a wrapper for calling mono_store_remote_field_new
+ * with the appropriate signature.
+ */
+MonoMethod *
+mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
+{
+	MonoMethodSignature *sig, *csig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	static GHashTable *stfld_hash = NULL; 
+	char *name;
+
+	EnterCriticalSection (&marshal_mutex);
+	if (!stfld_hash) 
+		stfld_hash = g_hash_table_new (NULL, NULL);
+	res = g_hash_table_lookup (stfld_hash, klass);
+	LeaveCriticalSection (&marshal_mutex);
+	if (res)
+		return res;
+
+	name = g_strdup_printf ("__mono_store_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD);
+	g_free (name);
+
+	mb->method->save_lmf = 1;
+
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->params [3] = &klass->byval_arg;
+	sig->ret = &mono_defaults.void_class->byval_arg;
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
+	mono_mb_emit_ldarg (mb, 3);
+
+	if (klass->valuetype) {
+		mono_mb_emit_byte (mb, CEE_BOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
+	}
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->params [3] = &klass->byval_arg;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, mono_store_remote_field_new);
+	emit_thread_interrupt_checkpoint (mb);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+       
+	res = mono_mb_create_and_cache (stfld_hash, klass,
+									mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+	
+	return res;
+}
+
+/*
  * mono_marshal_get_stfld_wrapper:
  * @type: the type of the field
  *
@@ -4381,7 +4513,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 MonoMethod *
 mono_marshal_get_stfld_wrapper (MonoType *type)
 {
-	MonoMethodSignature *sig, *csig;
+	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoClass *klass;
@@ -4424,8 +4556,6 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD);
 	g_free (name);
 
-	mb->method->save_lmf = 1;
-
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 5);
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
@@ -4442,21 +4572,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 4);
 
-	if (klass->valuetype) {
-		mono_mb_emit_byte (mb, CEE_BOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
-	}
-
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
-	csig->params [0] = &mono_defaults.object_class->byval_arg;
-	csig->params [1] = &mono_defaults.int_class->byval_arg;
-	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->params [3] = &klass->this_arg;
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	csig->pinvoke = 1;
-
-	mono_mb_emit_native_call (mb, csig, mono_store_remote_field_new);
-	emit_thread_interrupt_checkpoint (mb);
+	mono_mb_emit_managed_call (mb, mono_marshal_get_stfld_remote_wrapper (klass), NULL);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
