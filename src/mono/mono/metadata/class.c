@@ -248,7 +248,6 @@ class_compute_field_layout (MonoClass *class)
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 		for (i = 0; i < top; i++){
 			int size, align;
-			int idx = class->field.first + i;
 
 			/*
 			 * There must be info about all the fields in a type if it
@@ -541,11 +540,13 @@ mono_class_init (MonoClass *class)
 
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = ic->methods [l];						
-				char *qname;
+				char *qname, *fqname;
+				
+				qname = g_strconcat (ic->name, ".", im->name, NULL); 
 				if (ic->name_space && ic->name_space [0])
-					qname = g_strconcat (ic->name_space, ".", ic->name, ".", im->name, NULL);
+					fqname = g_strconcat (ic->name_space, ".", ic->name, ".", im->name, NULL);
 				else
-					qname = g_strconcat (ic->name, ".", im->name, NULL); 
+					fqname = NULL;
 
 				for (j = 0; j < class->method.count; ++j) {
 					MonoMethod *cm = class->methods [j];
@@ -553,7 +554,7 @@ mono_class_init (MonoClass *class)
 					if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 						continue;
 					
-					if (!strcmp (cm->name, qname) &&
+					if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
 					    mono_metadata_signature_equal (cm->signature, im->signature)) {
 						g_assert (io + l <= class->vtable_size);
 						vtable [io + l] = cm;
@@ -561,6 +562,7 @@ mono_class_init (MonoClass *class)
 					}
 				}
 				g_free (qname);
+				g_free (fqname);
 			}
 
 			
@@ -725,7 +727,7 @@ mono_class_init (MonoClass *class)
 #if HAVE_BOEHM_GC
 static void
 vtable_finalizer (void *obj, void *data) {
-	g_print ("%s finalized\n", (char*)data);
+	g_print ("%s finalized (%p)\n", (char*)data, obj);
 }
 #endif
 
@@ -747,7 +749,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	guint32 cols [MONO_CONSTANT_SIZE];
 	const char *p;
 	char *t;
-	int i;
+	int i, len;
 
 	g_assert (class);
 
@@ -762,7 +764,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		mono_class_init (class);
 		
 #if HAVE_BOEHM_GC
-	vt = GC_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+	vt = GC_debug_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer), class->name, 1);
 	GC_register_finalizer (vt, vtable_finalizer, "vtable", NULL, NULL);
 #else
 	vt = g_malloc0 (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
@@ -772,14 +774,14 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 	if (class->class_size) {
 #if HAVE_BOEHM_GC
-		vt->data = GC_malloc (class->class_size + 8);
-		GC_register_finalizer (vt->data, vtable_finalizer, "vtabledata", NULL, NULL);
+		vt->data = GC_debug_malloc (class->class_size + 8, class->name, 2);
+		GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);
 #else
 		vt->data = g_malloc0 (class->class_size + 8);
 #endif
 		/* align: fixme not 64 bit clean */
 		if (((guint32)vt->data) & 0x7)
-			vt->data += 8 - (((guint32)vt->data) & 0x7);
+			vt->data = (char*)vt->data + 8 - (((guint32)vt->data) & 0x7);
 	}
 
 	for (i = class->field.first; i < class->field.last; ++i) {
@@ -795,7 +797,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, cols, MONO_CONSTANT_SIZE);
 		p = mono_metadata_blob_heap (class->image, cols [MONO_CONSTANT_VALUE]);
-		mono_metadata_decode_blob_size (p, &p);
+		len = mono_metadata_decode_blob_size (p, &p);
 		t = (char*)vt->data + field->offset;
 		/* should we check that the type matches? */
 		switch (cols [MONO_CONSTANT_TYPE]) {
@@ -834,7 +836,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			break;
 		}
 		case MONO_TYPE_STRING: {
-			g_warning ("we don't handle strings in constant table");
+			gpointer *val = (gpointer*)t;
+			*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);
 			break;
 		}
 		case MONO_TYPE_CLASS:
@@ -1036,12 +1039,12 @@ mono_class_setup_mono_type (MonoClass *class)
 void
 mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 {
-	gboolean system;
+	gboolean system_namespace;
 
-	system = !strcmp (class->name_space, "System");
+	system_namespace = !strcmp (class->name_space, "System");
 
 	/* if root of the hierarchy */
-	if (system && !strcmp (class->name, "Object")) {
+	if (system_namespace && !strcmp (class->name, "Object")) {
 		class->parent = NULL;
 		class->instance_size = sizeof (MonoObject);
 		return;
@@ -1055,7 +1058,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		class->contextbound  = parent->contextbound;
 		class->delegate  = parent->delegate;
 		
-		if (system) {
+		if (system_namespace) {
 			if (*class->name == 'M' && !strcmp (class->name, "MarshalByRefObject"))
 				class->marshalbyref = 1;
 
