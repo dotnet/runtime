@@ -1116,3 +1116,19 @@ dump_table_parconstraint (MonoImage *m)
 	}
 }
 
+void
+dump_stream_blob (MonoImage *m)
+{
+	int i;
+
+	fprintf (output, "Blob heap contents\n");
+
+	for (i = 0; i < m->heap_blob.size; i++) {
+		fprintf (output, "%x ", m->heap_blob.data [i]);
+		if (i > 0 && (i % 25) == 0)
+			fprintf (output, "\n");
+	}
+
+	fprintf (output, "\n");
+}
+

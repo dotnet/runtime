@@ -1148,6 +1148,7 @@ struct {
 	{ "--typeref",     MONO_TABLE_TYPEREF,     	dump_table_typeref },
 	{ "--typespec",    MONO_TABLE_TYPESPEC,     	dump_table_typespec },
 	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
+	{ "--blob",	   NULL,			dump_stream_blob },
 	{ NULL, -1 }
 };
 
