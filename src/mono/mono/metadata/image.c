@@ -290,6 +290,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			image->heap_guid.data = image->raw_metadata + read32 (ptr);
 			image->heap_guid.size = read32 (ptr + 4);
 			ptr += 8 + 6;
+		} else if (strncmp (ptr + 8, "#-", 3) == 0) {
+			g_print ("Assembly '%s' has the non-standard metadata heap #-.\nRecompile it correctly (without the /incremental switch or in Release mode).", image->name);
+			return FALSE;
 		} else {
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr) + 1;
