@@ -1,3 +1,7 @@
+2001-07-09  Alex Graveley  <alex@ximian.com>
+
+	* doc/makefile (all-docs): Fix typo.
+
 2001-05-30  Miguel de Icaza  <miguel@ximian.com>
 
 	* NEWS: 

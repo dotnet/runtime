@@ -3,4 +3,4 @@ SOURCES=rationale roadmap c-sharp tools class-library \
 	resources status
 
 all-docs: $(SOURCES)
-	cat $(SOUCES) > all-docs
+	cat $(SOURCES) > all-docs
