@@ -141,6 +141,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	guint32 opts = 0;
 
 	/* no ppc-specific optimizations yet */
+	//*exclude_mask = 0;
 	*exclude_mask = MONO_OPT_INLINE|MONO_OPT_LINEARS;
 	return opts;
 }
@@ -1773,8 +1774,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				prev_dreg = -1;
 			}
-			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
-				DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
+			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
+				DEBUG (g_print ("\tfreeable float %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfof [prev_dreg].born_in));
 				mono_regstate_free_float (rs, ins->dreg);
 			}
 		} else if (ins->dreg >= MONO_MAX_IREGS) {
@@ -1850,10 +1851,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			prev_dreg = -1;
 		}
 		if (spec [MONO_INST_DEST] == 'f' && freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i)) {
-			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfof [prev_dreg].born_in));
+			DEBUG (g_print ("\tfreeable float %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfof [prev_dreg].born_in));
 			mono_regstate_free_float (rs, ins->dreg);
 		} else if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
-			DEBUG (g_print ("\tfreeable float %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
+			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 			mono_regstate_free_int (rs, ins->dreg);
 		}
 		if (spec [MONO_INST_SRC1] == 'f') {
@@ -2738,7 +2739,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 0, 27);
 			ppc_lwz (code, ppc_r0, 0, ppc_sp);
 			ppc_neg (code, ppc_r11, ppc_r11);
-			ppc_stwux (code, ppc_r0, ppc_r11, ppc_sp);
+			ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
 			ppc_addi (code, ins->dreg, ppc_sp, PPC_STACK_PARAM_OFFSET + cfg->param_area);
 			break;
 		}
