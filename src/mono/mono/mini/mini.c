@@ -2815,6 +2815,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	else if (generic_container)
 		generic_context = generic_container->context;
 
+	g_assert (!method->signature->generic_param_count || (generic_context && generic_context->gmethod));
+
 	if (cfg->method == method) {
 		real_offset = 0;
 		bbhash = cfg->bb_hash;
