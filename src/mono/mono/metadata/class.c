@@ -1538,6 +1538,8 @@ mono_class_init (MonoClass *class)
 		mono_class_create_generic_2 (gclass);
 
 		mono_class_init (gklass);
+		mono_class_setup_methods (gklass);
+		mono_class_setup_properties (gklass);
 
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
