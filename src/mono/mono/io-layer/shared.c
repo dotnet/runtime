@@ -357,14 +357,16 @@ map_again:
 		
 		struct timespec sleepytime;
 			
+		/* Something must have gone wrong, so delete the
+		 * shared segments and try again.
+		 */
+		_wapi_shm_destroy ();
+		
 		munmap (*data, data_size);
 		munmap (*scratch, scratch_size);
 		
 		if(closing_tries++ == 5) {
-			/* Something must have gone wrong, so bail
-			 * out.  This will let the calling code delete
-			 * the shared segments and try again.
-			 */
+			/* Still can't get going, so bail out */
 			g_warning ("The handle daemon is stuck closing");
 			return(FALSE);
 		}
@@ -441,9 +443,10 @@ map_again:
 		/* Daemon didnt get going */
 		struct timespec sleepytime;
 			
-		if(data_created==TRUE) {
-			_wapi_shm_destroy ();
-		}
+		/* Something must have gone wrong, so delete the
+		 * shared segments and try again.
+		 */
+		_wapi_shm_destroy ();
 
 		/* Daemon didn't get going, give it a few ms and try
 		 * again.
@@ -453,10 +456,7 @@ map_again:
 		munmap (*scratch, scratch_size);
 		
 		if(closing_tries++ == 5) {
-			/* Something must have gone wrong, so bail
-			 * out.  This will let the calling code delete
-			 * the shared segments and try again.
-			 */
+			/* Still can't get going, so bail out */
 			g_warning ("The handle daemon didnt start up properly");
 			return(FALSE);
 		}
