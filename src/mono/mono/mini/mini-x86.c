@@ -3362,6 +3362,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_mov_reg_reg (code, ins->dreg, ins->sreg2, 4);
 			break;
 		}
+		case OP_ATOMIC_ADD_NEW_I4: {
+			int sreg2 = ins->sreg2;
+			/* hack: limit in regalloc, dest != sreg2 */
+			if (ins->dreg == sreg2) {
+				/* select one temp reg */
+				if (sreg2 == X86_EBX && ins->inst_basereg != X86_EDI)
+					sreg2 = X86_EDI;
+				else if (ins->inst_basereg != X86_EBX) 
+					sreg2 = X86_EBX;
+				else
+					sreg2 = X86_ESI;
+
+				x86_push_reg (code, sreg2);
+				x86_mov_reg_reg (code, sreg2, ins->sreg2, 4);
+			}
+
+			x86_prefix (code, X86_LOCK_PREFIX);
+			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
+			if (sreg2 != ins->dreg)
+				x86_mov_reg_reg (code, ins->dreg, ins->sreg2, 4);
+
+			x86_alu_reg_reg (code, X86_ADD, ins->dreg, sreg2);
+			if (sreg2 != ins->sreg2)
+				x86_pop_reg (code, sreg2);
+
+			break;
+		}
 		case OP_ATOMIC_EXCHANGE_I4: {
 			guchar *br[2];
 			int sreg2 = ins->sreg2;
@@ -4053,14 +4080,14 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i1 = args [1];
 		}
 #endif
-	}/* else if(cmethod->klass->image == mono_defaults.corlib &&
+	} else if(cmethod->klass->image == mono_defaults.corlib &&
 			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
 			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
 
 		if (strcmp (cmethod->name, "Increment") == 0 && fsig->params [0]->type == MONO_TYPE_I4) {
 			MonoInst *ins_iconst;
 
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_I4);
+			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_NEW_I4);
 			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 			ins_iconst->inst_c0 = 1;
 
@@ -4069,7 +4096,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 		} else if (strcmp (cmethod->name, "Decrement") == 0 && fsig->params [0]->type == MONO_TYPE_I4) {
 			MonoInst *ins_iconst;
 
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_I4);
+			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_NEW_I4);
 			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 			ins_iconst->inst_c0 = -1;
 
@@ -4086,7 +4113,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
 		}
-	}*/
+	}
 
 	return ins;
 }

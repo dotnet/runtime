@@ -403,13 +403,21 @@ MINI_OP(OP_RESTORE_LMF, "restore_lmf")
 MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr")
 MINI_OP(OP_DUMMY_USE, "dummy_use")
 
-/* atomic specific */
+/* Atomic specific
+
+	Note, OP_ATOMIC_ADD_IMM_NEW_I4 and
+	OP_ATOMIC_ADD_NEW_I4 returns the new
+	value compared to OP_ATOMIC_ADD_I4 that
+	returns the old value.
+
+	OP_ATOMIC_ADD_NEW_I4 is used by
+	Interlocked::Increment and Interlocked:Decrement
+	and atomic_add_i4 by Interlocked::Add
+*/
 MINI_OP(OP_ATOMIC_ADD_I4, "atomic_add_i4")
+MINI_OP(OP_ATOMIC_ADD_NEW_I4, "atomic_add_new_i4")
 MINI_OP(OP_ATOMIC_ADD_IMM_I4, "atomic_add_imm_i4")
-/* Note, OP_ATOMIC_ADD_IMM_PREV_I4 is used by Interlocked::Add and 
-	returns the value before add compared to OP_ATOMIC_ADD_IMM_I4
-	that returns the value after inc/dec */
-MINI_OP(OP_ATOMIC_ADD_IMM_PREV_I4, "atomic_add_imm_prev_i4")
+MINI_OP(OP_ATOMIC_ADD_IMM_NEW_I4, "atomic_add_imm_new_i4")
 MINI_OP(OP_ATOMIC_EXCHANGE_I4, "atomic_exchange_i4")
 
 /* x86 specific */
