@@ -73,6 +73,7 @@ static void *timed_thread_start_routine(gpointer args)
 	
 	pthread_once(&timed_thread_once, timed_thread_init);
 	pthread_setspecific(timed_thread_key, (void *)thread);
+	pthread_detach(thread->id);
 	_wapi_timed_thread_exit(thread->start_routine(thread->arg));
 }
 
@@ -107,7 +108,6 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 		return(result);
 	}
 	
-	pthread_detach(thread->id);
 	return(0);
 }
 
