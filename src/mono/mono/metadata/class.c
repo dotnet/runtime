@@ -1523,9 +1523,27 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 {
 	int i;
 
-	for (i = 0; i < klass->field.count; ++i) {
-		if (strcmp (name, klass->fields [i].name) == 0)
-			return &klass->fields [i];
+	while (klass) {
+		for (i = 0; i < klass->field.count; ++i) {
+			if (strcmp (name, klass->fields [i].name) == 0)
+				return &klass->fields [i];
+		}
+		klass = klass->parent;
+	}
+	return NULL;
+}
+
+MonoProperty*
+mono_class_get_property_from_name (MonoClass *klass, const char *name)
+{
+	int i;
+
+	while (klass) {
+		for (i = 0; i < klass->property.count; ++i) {
+			if (strcmp (name, klass->properties [i].name) == 0)
+				return &klass->properties [i];
+		}
+		klass = klass->parent;
 	}
 	return NULL;
 }

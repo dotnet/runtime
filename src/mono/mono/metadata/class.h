@@ -217,6 +217,9 @@ mono_class_get_field       (MonoClass *klass, guint32 field_token);
 MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name);
 
+MonoProperty*
+mono_class_get_property_from_name (MonoClass *klass, const char *name);
+
 gint32
 mono_array_element_size    (MonoClass *ac);
 
