@@ -3531,7 +3531,7 @@ ves_icall_GetCurrentMethod (void)
 }
 
 static MonoReflectionMethod*
-ves_icall_System_Reflection_MethodBase_GetMethodFromHandle (MonoMethod *method)
+ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternal (MonoMethod *method)
 {
 	return mono_method_get_object (mono_domain_get (), method, NULL);
 }
@@ -5403,7 +5403,7 @@ static const IcallEntry assembly_icalls [] = {
 
 static const IcallEntry methodbase_icalls [] = {
 	{"GetCurrentMethod", ves_icall_GetCurrentMethod},
-	{"GetMethodFromHandle", ves_icall_System_Reflection_MethodBase_GetMethodFromHandle}
+	{"GetMethodFromHandleInternal", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternal}
 };
 
 static const IcallEntry module_icalls [] = {
@@ -6172,7 +6172,7 @@ mono_create_icall_signature (const char *sigstr)
 
 	g_strfreev (parts);
 
-	g_hash_table_insert (mono_defaults.corlib->helper_signatures, sigstr, res);
+	g_hash_table_insert (mono_defaults.corlib->helper_signatures, (gpointer)sigstr, res);
 
 	mono_loader_unlock ();
 
