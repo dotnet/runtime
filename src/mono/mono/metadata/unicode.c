@@ -98,7 +98,10 @@ ves_icall_System_Char_IsUpper (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsNumber (gunichar2 c)
 {
-	return g_unichar_isxdigit (c);
+	GUnicodeType t = g_unichar_type (c);
+	return t == G_UNICODE_DECIMAL_NUMBER ||
+		t == G_UNICODE_LETTER_NUMBER ||
+		t == G_UNICODE_OTHER_NUMBER;
 }
 
 gboolean 
