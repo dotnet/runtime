@@ -2048,14 +2048,18 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 }
 
 static MonoReflectionMethod *
-ves_icall_MethodBase_GetGenericMethodDefinition (MonoReflectionMethod *method)
+ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 {
 	MonoMethodInflated *imethod;
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!method->method->signature->is_inflated)
+	if (!method->method->signature->is_inflated) {
+		if (method->method->signature->generic_param_count)
+			return method;
+
 		return NULL;
+	}
 
 	imethod = (MonoMethodInflated *) method->method;
 	if (imethod->context->gmethod && imethod->context->gmethod->reflection_info)
@@ -2066,16 +2070,21 @@ ves_icall_MethodBase_GetGenericMethodDefinition (MonoReflectionMethod *method)
 }
 
 static gboolean
-ves_icall_MethodBase_get_HasGenericParameters (MonoReflectionMethod *method)
+ves_icall_MonoMethod_get_HasGenericParameters (MonoReflectionMethod *method)
 {
 	MONO_ARCH_SAVE_REGS;
-	return method->method->signature->is_inflated;
+
+	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return FALSE;
+
+	return method->method->signature->is_inflated ||
+		method->method->signature->generic_param_count != 0;
 }
 
 static gboolean
-ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
+ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
 {
-	MonoMethodNormal *mn;
 	MONO_ARCH_SAVE_REGS;
 
 	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
@@ -2086,7 +2095,7 @@ ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 }
 
 static MonoArray*
-ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
+ves_icall_MonoMethod_GetGenericParameters (MonoReflectionMethod *method)
 {
 	MonoMethodNormal *mn;
 	MonoArray *res;
@@ -4590,6 +4599,9 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	if (method->klass == NULL || (klass = method->klass->parent) == NULL)
 		return m;
 
+	if (klass->generic_inst)
+		klass = mono_class_from_mono_type (klass->generic_inst->generic_type);
+
 	while (result == NULL && klass != NULL && (klass->vtable_size > method->slot))
 	{
 		result = klass->vtable [method->slot];
@@ -5091,14 +5103,7 @@ static const IcallEntry assembly_icalls [] = {
 };
 
 static const IcallEntry methodbase_icalls [] = {
-	{"GetCurrentMethod", ves_icall_GetCurrentMethod},
-  	{"GetGenericMethodDefinition_impl", ves_icall_MethodBase_GetGenericMethodDefinition},
-	{"get_HasGenericParameters", ves_icall_MethodBase_get_HasGenericParameters}
-};
-
-static const IcallEntry methodinfo_icalls [] = {
-	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters},
-	{"get_IsGenericMethodDefinition", ves_icall_MethodInfo_get_IsGenericMethodDefinition}
+	{"GetCurrentMethod", ves_icall_GetCurrentMethod}
 };
 
 static const IcallEntry module_icalls [] = {
@@ -5139,8 +5144,12 @@ static const IcallEntry monogenericparam_icalls [] = {
 };
 
 static const IcallEntry monomethod_icalls [] = {
-	{"GetGenericArguments", ves_icall_MonoMethod_GetGenericArguments},
+	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters},
+  	{"GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition},
+	{"GetGenericParameters", ves_icall_MonoMethod_GetGenericParameters},
 	{"InternalInvoke", ves_icall_InternalInvoke},
+	{"get_HasGenericParameters", ves_icall_MonoMethod_get_HasGenericParameters},
+	{"get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition},
 	{"get_base_definition", ves_icall_MonoMethod_get_base_definition}
 };
 
@@ -5207,6 +5216,7 @@ static const IcallEntry dynamicmethod_icalls [] = {
 };
 
 static const IcallEntry methodbuilder_icalls [] = {
+	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters},
 	{"define_generic_parameter", ves_icall_MethodBuilder_define_generic_parameter}
 };
 
@@ -5533,7 +5543,6 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.Emit.TypeBuilder", typebuilder_icalls, G_N_ELEMENTS (typebuilder_icalls)},
 	{"System.Reflection.FieldInfo", fieldinfo_icalls, G_N_ELEMENTS (fieldinfo_icalls)},
 	{"System.Reflection.MethodBase", methodbase_icalls, G_N_ELEMENTS (methodbase_icalls)},
-	{"System.Reflection.MethodInfo", methodinfo_icalls, G_N_ELEMENTS (methodinfo_icalls)},
 	{"System.Reflection.Module", module_icalls, G_N_ELEMENTS (module_icalls)},
 	{"System.Reflection.MonoCMethod", monocmethod_icalls, G_N_ELEMENTS (monocmethod_icalls)},
 	{"System.Reflection.MonoEventInfo", monoeventinfo_icalls, G_N_ELEMENTS (monoeventinfo_icalls)},
