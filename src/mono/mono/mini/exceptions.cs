@@ -1793,5 +1793,43 @@ class Tests {
 		
 		return 0;
 	}
+
+	class Broken {
+		static int i;
+
+		static Broken () {
+			throw new Exception ("Ugh!");
+		}
+	
+		public static int DoSomething () {
+			return i;
+		}
+	}
+
+	static int test_0_exception_in_cctor () {
+		try {
+			Broken.DoSomething ();
+		}
+		catch (TypeInitializationException) {
+			return 0;
+		}
+		return 1;
+	}
+
+	static int test_5_regalloc () {
+		int i = 0;
+
+		try {
+			for (i = 0; i < 10; ++i) {
+				if (i == 5)
+					throw new Exception ();
+			}
+		}
+		catch (Exception ex) {
+			return i;
+		}
+
+		return i;
+	}
 }
 
