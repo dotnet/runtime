@@ -532,6 +532,8 @@ mono_main (int argc, char* argv[]) {
 	int mini_verbose = 0;
 
 	setlocale (LC_ALL, "");
+	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 	
 	opt = parse_optimizations (NULL);
 
@@ -606,6 +608,10 @@ mono_main (int argc, char* argv[]) {
 		return 1;
 	}
 
+	if (mono_compile_aot || action == DO_EXEC) {
+		g_set_prgname (argv[i]);
+	}
+
 	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i]);
 
@@ -666,7 +672,6 @@ mono_main (int argc, char* argv[]) {
 		mono_debug_init_2 (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
-		g_set_prgname (aname);
 		mono_config_parse (config_file);
 		//mono_set_rootdir ();
 
