@@ -52,8 +52,12 @@ if AMD64
 # Link libmono into mono statically on platforms where it is possible
 # This leads to higher performance, especially with TLS
 MONO_LIB=.libs/libmono.a
+else 
+if X86
+MONO_LIB=.libs/libmono.a
 else
 MONO_LIB=libmono.la
+endif
 endif
 
 mono_LDADD = \
