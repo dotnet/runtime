@@ -1238,11 +1238,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	system (com);
 	g_free (com);*/
 
-	printf ("Compiled %d out of %d methods (%d%%)\n", ccount, mcount, (ccount*100)/mcount);
-	printf ("%d methods contain absolute addresses (%d%%)\n", abscount, (abscount*100)/mcount);
-	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, (wrappercount*100)/mcount);
-	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, (lmfcount*100)/mcount);
-	printf ("%d methods have other problems (%d%%)\n", ocount, (ocount*100)/mcount);
+	printf ("Compiled %d out of %d methods (%d%%)\n", ccount, mcount, mcount ? (ccount*100)/mcount : 100);
+	printf ("%d methods contain absolute addresses (%d%%)\n", abscount, mcount ? (abscount*100)/mcount : 100);
+	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, mcount ? (wrappercount*100)/mcount : 100);
+	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, mcount ? (lmfcount*100)/mcount : 100);
+	printf ("%d methods have other problems (%d%%)\n", ocount, mcount ? (ocount*100)/mcount : 100);
 	unlink (tmpfname);
 
 	return 0;
