@@ -45,6 +45,7 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 
 static MonoString *string_invariant_tolower (MonoString *this);
 static MonoString *string_invariant_toupper (MonoString *this);
+static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 
 static int
 culture_lcid_locator (const void *a, const void *b)
