@@ -119,8 +119,12 @@ const unsigned char table_sizes [64] = {
 #define REALLOC_ATOMIC(ptr, size) g_realloc ((ptr), (size))
 #endif
 
+static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
+static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
 static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method);
+static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb);
+static guint32 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *cb);
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper);
 static void    mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly);
 static guint32 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo);
@@ -872,15 +876,9 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 	*mb->table_idx = table->next_idx ++;
 	mono_g_hash_table_insert (assembly->method_to_table_idx, mb->mhandle, GUINT_TO_POINTER ((*mb->table_idx)));
 	values = table->values + *mb->table_idx * MONO_METHOD_SIZE;
-	if (mb->name) {
-		name = mono_string_to_utf8 (mb->name);
-		values [MONO_METHOD_NAME] = string_heap_insert (&assembly->sheap, name);
-		g_free (name);
-	} else { /* a constructor */
-		values [MONO_METHOD_NAME] = string_heap_insert (&assembly->sheap, mb->attrs & METHOD_ATTRIBUTE_STATIC? ".cctor": ".ctor");
-		// MS.NET adds this automatically
-		mb->attrs |= METHOD_ATTRIBUTE_RT_SPECIAL_NAME;
-	}
+	name = mono_string_to_utf8 (mb->name);
+	values [MONO_METHOD_NAME] = string_heap_insert (&assembly->sheap, name);
+	g_free (name);
 	values [MONO_METHOD_FLAGS] = mb->attrs;
 	values [MONO_METHOD_IMPLFLAGS] = mb->iattrs;
 	values [MONO_METHOD_SIGNATURE] = method_builder_encode_signature (assembly, mb);
@@ -931,6 +929,48 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 }
 
 static void
+reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
+											   MonoReflectionMethodBuilder *mb)
+{
+	rmb->ilgen = mb->ilgen;
+	rmb->rtype = mb->rtype;
+	rmb->parameters = mb->parameters;
+	rmb->generic_params = mb->generic_params;
+	rmb->pinfo = mb->pinfo;
+	rmb->attrs = mb->attrs;
+	rmb->iattrs = mb->iattrs;
+	rmb->call_conv = mb->call_conv;
+	rmb->code = mb->code;
+	rmb->type = mb->type;
+	rmb->name = mb->name;
+	rmb->table_idx = &mb->table_idx;
+	rmb->init_locals = mb->init_locals;
+	rmb->mhandle = mb->mhandle;
+}
+
+static void
+reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb,
+											 MonoReflectionCtorBuilder *mb)
+{
+	const char *name = mb->attrs & METHOD_ATTRIBUTE_STATIC ? ".cctor": ".ctor";
+
+	rmb->ilgen = mb->ilgen;
+	rmb->rtype = mono_type_get_object (mono_domain_get (), &mono_defaults.void_class->byval_arg);
+	rmb->parameters = mb->parameters;
+	rmb->generic_params = NULL;
+	rmb->pinfo = mb->pinfo;
+	rmb->attrs = mb->attrs;
+	rmb->iattrs = mb->iattrs;
+	rmb->call_conv = mb->call_conv;
+	rmb->code = NULL;
+	rmb->type = mb->type;
+	rmb->name = mono_string_new (mono_domain_get (), name);
+	rmb->table_idx = &mb->table_idx;
+	rmb->init_locals = mb->init_locals;
+	rmb->mhandle = mb->mhandle;
+}
+
+static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly)
 {
 	MonoDynamicTable *table;
@@ -939,20 +979,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 	ReflectionMethodBuilder rmb;
 	int i;
 
-	rmb.ilgen = mb->ilgen;
-	rmb.rtype = mb->rtype;
-	rmb.parameters = mb->parameters;
-	rmb.generic_params = mb->generic_params;
-	rmb.pinfo = mb->pinfo;
-	rmb.attrs = mb->attrs;
-	rmb.iattrs = mb->iattrs;
-	rmb.call_conv = mb->call_conv;
-	rmb.code = mb->code;
-	rmb.type = mb->type;
-	rmb.name = mb->name;
-	rmb.table_idx = &mb->table_idx;
-	rmb.init_locals = mb->init_locals;
-	rmb.mhandle = mb->mhandle;
+	reflection_methodbuilder_from_method_builder (&rmb, mb);
 
 	mono_image_basic_method (&rmb, assembly);
 
@@ -1025,23 +1052,9 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 {
 	ReflectionMethodBuilder rmb;
 
-	rmb.ilgen = mb->ilgen;
-	rmb.rtype = mono_type_get_object (domain, &mono_defaults.void_class->byval_arg);
-	rmb.parameters = mb->parameters;
-	rmb.generic_params = NULL;
-	rmb.pinfo = mb->pinfo;
-	rmb.attrs = mb->attrs;
-	rmb.iattrs = mb->iattrs;
-	rmb.call_conv = mb->call_conv;
-	rmb.code = NULL;
-	rmb.type = mb->type;
-	rmb.name = NULL;
-	rmb.table_idx = &mb->table_idx;
-	rmb.init_locals = mb->init_locals;
-	rmb.mhandle = mb->mhandle;
+	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
 	mono_image_basic_method (&rmb, assembly);
-
 }
 
 static guint32
@@ -1848,6 +1861,45 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method)
 	token = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
 		method->name,  method_encode_signature (assembly, method->signature));
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	return token;
+}
+
+static guint32
+mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
+{
+	guint32 token;
+	ReflectionMethodBuilder rmb;
+	
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, mb));
+	if (token)
+		return token;
+
+	reflection_methodbuilder_from_method_builder (&rmb, mb);
+
+	
+	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
+											mono_string_to_utf8 (rmb.name),
+											method_builder_encode_signature (assembly, &rmb));
+	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
+	return token;
+}
+
+static guint32
+mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *mb)
+{
+	guint32 token;
+	ReflectionMethodBuilder rmb;
+	
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, mb));
+	if (token)
+		return token;
+
+	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
+
+	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
+											mono_string_to_utf8 (rmb.name),
+											method_builder_encode_signature (assembly, &rmb));
+	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -3143,8 +3195,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 		if (((MonoReflectionTypeBuilder*)mb->type)->module->dynamic_image == assembly)
 			token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 		else
-			// FIXME: modules
-			g_assert_not_reached ();
+			token = mono_image_get_methodbuilder_token (assembly, mb);
 		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
 	}
 	else if (strcmp (klass->name, "ConstructorBuilder") == 0) {
@@ -3153,8 +3204,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 		if (((MonoReflectionTypeBuilder*)mb->type)->module->dynamic_image == assembly)
 			token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 		else
-			// FIXME: modules
-			g_assert_not_reached ();
+			token = mono_image_get_ctorbuilder_token (assembly, mb);
 		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
 	}
 	else if (strcmp (klass->name, "FieldBuilder") == 0) {
@@ -5849,25 +5899,11 @@ static MonoMethod*
 ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 {
 	ReflectionMethodBuilder rmb;
-	const char *name;
 	MonoMethodSignature *sig;
-
-	name = mb->attrs & METHOD_ATTRIBUTE_STATIC ? ".cctor": ".ctor";
 
 	sig = ctor_builder_to_signature (mb);
 
-	rmb.ilgen = mb->ilgen;
-	rmb.parameters = mb->parameters;
-	rmb.generic_params = NULL;
-	rmb.pinfo = mb->pinfo;
-	rmb.attrs = mb->attrs | METHOD_ATTRIBUTE_RT_SPECIAL_NAME;
-	rmb.iattrs = mb->iattrs;
-	rmb.call_conv = mb->call_conv;
-	rmb.type = mb->type;
-	rmb.name = mono_string_new (mono_domain_get (), name);
-	rmb.table_idx = &mb->table_idx;
-	rmb.init_locals = mb->init_locals;
-	rmb.code = NULL;
+	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
@@ -5888,18 +5924,7 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 
 	sig = method_builder_to_signature (mb);
 
-	rmb.ilgen = mb->ilgen;
-	rmb.parameters = mb->parameters;
-	rmb.generic_params = mb->generic_params;
-	rmb.pinfo = mb->pinfo;
-	rmb.attrs = mb->attrs;
-	rmb.iattrs = mb->iattrs;
-	rmb.call_conv = mb->call_conv;
-	rmb.type = mb->type;
-	rmb.name = mb->name;
-	rmb.table_idx = &mb->table_idx;
-	rmb.init_locals = mb->init_locals;
-	rmb.code = mb->code;
+	reflection_methodbuilder_from_method_builder (&rmb, mb);
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
