@@ -2098,6 +2098,30 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	return names;
 }
 
+int ves_icall_System_Environment_get_TickCount (void);
+
+/*
+ * Returns the number of milliseconds elapsed since the system started.
+ */
+static gint32
+ves_icall_System_Environment_get_TickCount ()
+{
+#if defined (PLATFORM_WIN32)
+	return GetTickCount();
+#else
+	struct timeval tv;
+	struct timezone tz;
+	gint32 res;
+
+	res = (gint32) gettimeofday (&tv, &tz);
+
+	if (res != -1)
+		res = (gint32) ((tv.tv_sec & 0xFFFFF) * 1000 + (tv.tv_usec / 1000));
+	return res;
+#endif
+}
+
+
 static void
 ves_icall_System_Environment_Exit (int result)
 {
@@ -2508,6 +2532,7 @@ static gconstpointer icall_map [] = {
 	"System.Environment::GetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable,
 	"System.Environment::GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames,
 	"System.Environment::GetCommandLineArgs", mono_runtime_get_main_args,
+	"System.Environment::get_TickCount", ves_icall_System_Environment_get_TickCount,
 	"System.Environment::Exit", ves_icall_System_Environment_Exit,
 
 	/*
