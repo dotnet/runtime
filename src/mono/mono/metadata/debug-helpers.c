@@ -14,6 +14,22 @@ struct MonoMethodDesc {
 	gboolean include_namespace;
 };
 
+static void
+append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
+{
+	if (!class) {
+		g_string_append (res, "Unknown");
+		return;
+	}
+	if (class->nested_in) {
+		append_class_name (res, class->nested_in, include_namespace);
+		g_string_append_c (res, '/');
+	}
+	if (include_namespace && *(class->name_space))
+		g_string_sprintfa (res, "%s.", class->name_space);
+	g_string_sprintfa (res, "%s", class->name);
+}
+
 void
 mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 	switch (type->type) {
@@ -58,25 +74,17 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 		g_string_append_c (res, '*');
 		break;
 	case MONO_TYPE_ARRAY:
-		mono_type_get_desc (res, type->data.array->type, include_namespace);
+		append_class_name (res, type->data.array->eklass, include_namespace);
 		g_string_sprintfa (res, "[%d]", type->data.array->rank);
 		break;
 	case MONO_TYPE_SZARRAY:
-		mono_type_get_desc (res, type->data.type, include_namespace);
+		mono_type_get_desc (res, &type->data.klass->byval_arg, include_namespace);
 		g_string_append (res, "[]");
 		break;
 	case MONO_TYPE_CLASS:
-	case MONO_TYPE_VALUETYPE: {
-		MonoClass *class = type->data.klass;
-		if (!class) {
-			g_string_append (res, "Unknown");
-			break;
-		}
-		if (include_namespace && *(class->name_space))
-			g_string_sprintfa (res, "%s.", class->name_space);
-		g_string_sprintfa (res, "%s", class->name);
+	case MONO_TYPE_VALUETYPE:
+		append_class_name (res, type->data.klass, include_namespace);
 		break;
-	}
 	default:
 		break;
 	}

@@ -241,7 +241,7 @@ MonoMethod**
 mono_class_get_overrides   (MonoImage *image, guint32 type_token, gint32 *num_overrides);
 
 MonoClass *
-mono_array_class_get       (MonoType *element_type, guint32 rank);
+mono_array_class_get       (MonoClass *element_class, guint32 rank);
 
 MonoClass *
 mono_ptr_class_get         (MonoType *type);

@@ -264,7 +264,7 @@ typedef struct {
 } MonoCustomMod;
 
 struct _MonoArrayType {
-	MonoType *type;
+	MonoClass *eklass;
 	int rank;
 	int numsizes;
 	int numlobounds;
@@ -284,7 +284,7 @@ struct _MonoGenericInst {
 struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
-		MonoType *type;   /* for PTR and SZARRAY */
+		MonoType *type;   /* for PTR */
 		MonoArrayType *array; /* for ARRAY */
 		MonoMethodSignature *method;
 		int type_param;

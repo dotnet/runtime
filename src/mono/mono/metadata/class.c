@@ -1452,13 +1452,13 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_defaults.typed_reference_class;
 	case MONO_TYPE_ARRAY:
-		return mono_array_class_get (type->data.array->type, type->data.array->rank);
+		return mono_array_class_get (type->data.array->eklass, type->data.array->rank);
 	case MONO_TYPE_PTR:
 		return mono_ptr_class_get (type->data.type);
 	case MONO_TYPE_FNPTR:
 		return mono_fnptr_class_get (type->data.method);
 	case MONO_TYPE_SZARRAY:
-		return mono_array_class_get (type->data.type, 1);
+		return mono_array_class_get (type->data.klass, 1);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
@@ -1497,10 +1497,10 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:
-		class = mono_array_class_get (type->data.array->type, type->data.array->rank);
+		class = mono_array_class_get (type->data.array->eklass, type->data.array->rank);
 		break;
 	case MONO_TYPE_SZARRAY:
-		class = mono_array_class_get (type->data.type, 1);
+		class = mono_array_class_get (type->data.klass, 1);
 		break;
 	case MONO_TYPE_PTR:
 		class = mono_class_from_mono_type (type->data.type);
@@ -1518,16 +1518,15 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 /**
  * mono_array_class_get:
- * @element_type: element type 
+ * @element_class: element class 
  * @rank: the dimension of the array class
  *
  * Returns: a class object describing the array with element type @element_type and 
  * dimension @rank. 
  */
 MonoClass *
-mono_array_class_get (MonoType *element_type, guint32 rank)
+mono_array_class_get (MonoClass *eclass, guint32 rank)
 {
-	MonoClass *eclass;
 	MonoImage *image;
 	MonoClass *class;
 	MonoClass *parent = NULL;
@@ -1535,7 +1534,6 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	int nsize;
 	char *name;
 
-	eclass = mono_class_from_mono_type (element_type);
 	g_assert (rank <= 255);
 
 	parent = mono_defaults.array_class;
@@ -1545,7 +1543,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 
 	image = eclass->image;
 
-	if ((rootlist = list = g_hash_table_lookup (image->array_cache, &eclass->byval_arg))) {
+	if ((rootlist = list = g_hash_table_lookup (image->array_cache, eclass))) {
 		for (; list; list = list->next) {
 			class = list->data;
 			if (class->rank == rank)
@@ -1590,19 +1588,19 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 		MonoArrayType *at = g_new0 (MonoArrayType, 1);
 		class->byval_arg.type = MONO_TYPE_ARRAY;
 		class->byval_arg.data.array = at;
-		at->type = &eclass->byval_arg;
+		at->eklass = eclass;
 		at->rank = rank;
 		/* FIXME: complete.... */
 	} else {
 		/* FIXME: this is not correct. the lbound could be >0 */
 		class->byval_arg.type = MONO_TYPE_SZARRAY;
-		class->byval_arg.data.type = &eclass->byval_arg;
+		class->byval_arg.data.klass = eclass;
 	}
 	class->this_arg = class->byval_arg;
 	class->this_arg.byref = 1;
 
 	list = g_slist_append (rootlist, class);
-	g_hash_table_insert (image->array_cache, &class->element_class->byval_arg, list);
+	g_hash_table_insert (image->array_cache, eclass, list);
 	return class;
 }
 

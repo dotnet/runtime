@@ -469,8 +469,7 @@ mono_image_init (MonoImage *image)
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, 
-					       (GCompareFunc)mono_metadata_type_equal);
+	image->array_cache = g_hash_table_new (NULL, NULL);
 
 	image->delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 

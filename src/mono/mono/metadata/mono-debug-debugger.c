@@ -594,7 +594,7 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
-		*((guint32 *) ptr) = write_type (table, type->data.type);
+		*((guint32 *) ptr) = write_type (table, &type->data.klass->byval_arg);
 		ptr += sizeof(guint32);
 		break;
 	}
@@ -618,7 +618,7 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		*ptr++ = sizeof (bounds.lower_bound);
 		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.length);
-		*((guint32 *) ptr) = write_type (table, type->data.array->type);
+		*((guint32 *) ptr) = write_type (table, &type->data.array->eklass->byval_arg);
 		ptr += sizeof(guint32);
 		break;
 	}

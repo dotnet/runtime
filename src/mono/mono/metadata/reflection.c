@@ -335,9 +335,12 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (type->type, p, &p);
 		break;
 	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, type->data.type, p, &p);
+		break;
+	case MONO_TYPE_SZARRAY:
+		mono_metadata_encode_value (type->type, p, &p);
+		encode_type (assembly, &type->data.klass->byval_arg, p, &p);
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
@@ -356,7 +359,7 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 #endif
 	case MONO_TYPE_ARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
-		encode_type (assembly, type->data.array->type, p, &p);
+		encode_type (assembly, &type->data.array->eklass->byval_arg, p, &p);
 		mono_metadata_encode_value (type->data.array->rank, p, &p);
 		mono_metadata_encode_value (0, p, &p); /* FIXME: set to 0 for now */
 		mono_metadata_encode_value (0, p, &p);
@@ -3504,25 +3507,14 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
 		return t1->data.klass == t2->data.klass;
 	case MONO_TYPE_PTR:
-		return mymono_metadata_type_equal (t1->data.type, t2->data.type);
-	case MONO_TYPE_SZARRAY:
-retry_sz:
-		if (t1->data.type->type != t2->data.type->type)
-			return FALSE;
-		if (t1->data.type->type == MONO_TYPE_CLASS || t1->data.type->type == MONO_TYPE_VALUETYPE)
-			return t1->data.type->data.klass == t2->data.type->data.klass;
-		if (t1->data.type->type == MONO_TYPE_SZARRAY) {
-			t1 = t1->data.type;
-			t2 = t2->data.type;
-			goto retry_sz;
-		}
 		return mymono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
-		return mymono_metadata_type_equal (t1->data.array->type, t2->data.array->type);
+		return t1->data.array->eklass == t2->data.array->eklass;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
@@ -3542,10 +3534,10 @@ mymono_metadata_type_hash (MonoType *t1)
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
 		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
 		return ((hash << 5) - hash) ^ mymono_metadata_type_hash (t1->data.type);
 	}
 	return hash;
@@ -3977,7 +3969,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
 	case MONO_TYPE_ARRAY: {
 		int i, rank = type->data.array->rank;
 
-		mono_type_get_name_recurse (type->data.array->type, str);
+		mono_type_get_name_recurse (&type->data.array->eklass->byval_arg, str);
 		g_string_append_c (str, '[');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
@@ -3985,7 +3977,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
 		break;
 	}
 	case MONO_TYPE_SZARRAY:
-		mono_type_get_name_recurse (type->data.type, str);
+		mono_type_get_name_recurse (&type->data.klass->byval_arg, str);
 		g_string_append (str, "[]");
 		break;
 	case MONO_TYPE_PTR:
@@ -4073,7 +4065,7 @@ mono_reflection_get_type_internal (MonoImage* image, MonoTypeNameParse *info, gb
 		} else if (modval == -1) {
 			klass = mono_ptr_class_get (&klass->byval_arg);
 		} else { /* array rank */
-			klass = mono_array_class_get (&klass->byval_arg, modval);
+			klass = mono_array_class_get (klass, modval);
 		}
 		mono_class_init (klass);
 	}
@@ -4289,15 +4281,16 @@ handle_type:
 	case MONO_TYPE_SZARRAY:
 	{
 		MonoArray *arr;
-		guint32 i, alen;
+		guint32 i, alen, basetype;
 		alen = read32 (p);
 		p += 4;
 		if (alen == 0xffffffff) {
 			*end = p;
 			return NULL;
 		}
-		arr = mono_array_new (mono_domain_get(), mono_class_from_mono_type (t->data.type), alen);
-		switch (t->data.type->type)
+		arr = mono_array_new (mono_domain_get(), t->data.klass, alen);
+		basetype = t->data.klass->byval_arg.type;
+		switch (basetype)
 		{
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
@@ -4978,7 +4971,7 @@ handle_type:
 		*p++ = (len >> 24) & 0xff;
 		*retp = p;
 		*retbuffer = buffer;
-		eclass = mono_class_from_mono_type (type)->element_class;
+		eclass = type->data.klass;
 		for (i = 0; i < len; ++i) {
 			encode_cattr_value (buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i));
 		}

@@ -1487,7 +1487,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
 
 	MONO_ARCH_SAVE_REGS;
 
-	ac = mono_array_class_get (&eclass->byval_arg, 1);
+	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac != NULL);
 
 	return mono_array_new_specific (mono_class_vtable (domain, ac), n);

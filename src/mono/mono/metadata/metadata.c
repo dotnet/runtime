@@ -1056,8 +1056,10 @@ mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
 	int i;
 	MonoArrayType *array = g_new0 (MonoArrayType, 1);
+	MonoType *etype;
 	
-	array->type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	etype = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	array->eklass = mono_class_from_mono_type (etype);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
 	array->numsizes = mono_metadata_decode_value (ptr, &ptr);
@@ -1086,7 +1088,6 @@ mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 void
 mono_metadata_free_array (MonoArrayType *array)
 {
-	mono_metadata_free_type (array->type);
 	g_free (array->sizes);
 	g_free (array->lobounds);
 	g_free (array);
@@ -1464,7 +1465,11 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, cons
 		type->data.klass = mono_class_get (m, token);
 		break;
 	}
-	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_SZARRAY: {
+		MonoType *etype = mono_metadata_parse_type (m, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
+		type->data.klass = mono_class_from_mono_type (etype);
+		break;
+	}
 	case MONO_TYPE_PTR:
 		type->data.type = mono_metadata_parse_type (m, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		break;
@@ -1504,7 +1509,6 @@ mono_metadata_free_type (MonoType *type)
 	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
 		return;
 	switch (type->type){
-	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
 		mono_metadata_free_type (type->data.type);
 		break;
@@ -2297,16 +2301,13 @@ mono_metadata_type_hash (MonoType *t1)
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
 		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
-	case MONO_TYPE_SZARRAY:
-		if (t1->data.type->type == MONO_TYPE_OBJECT)
-			return ((hash << 5) - hash);
-		return ((hash << 5) - hash) ^ (gint32)(t1->data.type->data.klass);
 	case MONO_TYPE_ARRAY:
-		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.array->type);
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	}
 	return hash;
 }
@@ -2348,25 +2349,14 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
 		return t1->data.klass == t2->data.klass;
 	case MONO_TYPE_PTR:
-		return mono_metadata_type_equal (t1->data.type, t2->data.type);
-	case MONO_TYPE_SZARRAY:
-retry_sz:
-		if (t1->data.type->type != t2->data.type->type)
-			return FALSE;
-		if (t1->data.type->type == MONO_TYPE_CLASS || t1->data.type->type == MONO_TYPE_VALUETYPE)
-			return t1->data.type->data.klass == t2->data.type->data.klass;
-		if (t1->data.type->type == MONO_TYPE_SZARRAY) {
-			t1 = t1->data.type;
-			t2 = t2->data.type;
-			goto retry_sz;
-		}
 		return mono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
-		return mono_metadata_type_equal (t1->data.array->type, t2->data.array->type);
+		return t1->data.array->eklass == t2->data.array->eklass;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;

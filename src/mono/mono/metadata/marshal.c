@@ -577,7 +577,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eclass = mono_class_from_mono_type (type->data.type);
+			eclass = type->data.klass;
 		} else {
 			g_assert_not_reached ();
 		}
@@ -747,7 +747,7 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eclass = mono_class_from_mono_type (type->data.type);
+			eclass = type->data.klass;
 		} else {
 			g_assert_not_reached ();
 		}

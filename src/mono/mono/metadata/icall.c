@@ -464,7 +464,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 		if (mono_array_get (lengths, gint32, i) < 0)
 			mono_raise_exception (mono_get_exception_argument_out_of_range (NULL));
 
-	aklass = mono_array_class_get (type->type, mono_array_length (lengths));
+	aklass = mono_array_class_get (mono_class_from_mono_type (type->type), mono_array_length (lengths));
 
 	sizes = alloca (aklass->rank * sizeof(guint32) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
@@ -2785,7 +2785,7 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 				return NULL;
 			}
 			p++;
-			klass = mono_array_class_get (&klass->byval_arg, rank);
+			klass = mono_array_class_get (klass, rank);
 			mono_class_init (klass);
 			break;
 		default:
@@ -4177,7 +4177,7 @@ static gconstpointer icall_map [] = {
 	"System.Diagnostics.Process::GetPid_internal()", ves_icall_System_Diagnostics_Process_GetPid_internal,
 	"System.Diagnostics.Process::Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal,
 	"System.Diagnostics.Process::GetModules_internal()", ves_icall_System_Diagnostics_Process_GetModules_internal,
-	"System.Diagnostics.Process::Start_internal(string,string,intptr,intptr,intptr,ProcInfo&)", ves_icall_System_Diagnostics_Process_Start_internal,
+	"System.Diagnostics.Process::Start_internal(string,string,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_Start_internal,
 	"System.Diagnostics.Process::WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal,
 	"System.Diagnostics.Process::ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitTime_internal,
 	"System.Diagnostics.Process::StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal,
