@@ -1,3 +1,7 @@
+2004-04-05  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Check for pthread_getattr_np and pthread_attr_get_np.
+
 2004-04-02  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* config.h.in: added HAVE_GETPWUID_R
