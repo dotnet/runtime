@@ -791,7 +791,7 @@
 
     <class name="System.Collections.Stack">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -985,6 +985,7 @@
         <completion>?</completion>
         <maintainers>
             <maintainer>jbarn@httcb.net</maintainer>
+            <maintainer>josh@narf.com</maintainer>
         </maintainers>
     </class>
     <class name="System.Collections.Specialized.ListDictionary">
@@ -994,6 +995,7 @@
         <completion>?</completion>
         <maintainers>
             <maintainer>jbarn@httcb.net</maintainer>
+            <maintainer>josh@narf.com</maintainer>
         </maintainers>
     </class>
     <class name="System.Collections.Specialized.StringCollection">
@@ -1073,6 +1075,16 @@
         </maintainers>
     </class>
   
+    <class name="System.Collections.BitArray">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dmenest@yahoo.com</maintainer>
+        </maintainers>
+    </class>
+
 
 </classes>
 
