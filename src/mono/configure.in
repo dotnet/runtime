@@ -1034,7 +1034,7 @@ AC_TRY_COMPILE([#include <sys/socket.h>], [
 ], [
 	# Yes, we have it...
 	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_ARRAY_ELEM_INIT)
+	AC_DEFINE(HAVE_ARRAY_ELEM_INIT,1,[Supports C99 array initialization])
 ], [
 	# We'll have to use signals
 	AC_MSG_RESULT(no)
