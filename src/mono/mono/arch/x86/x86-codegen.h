@@ -1,6 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
+   Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.1 2001/08/08 13:32:23 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.2 2001/08/08 16:48:32 miguel Exp $
 */
 
 #ifndef X86_H
