@@ -2110,6 +2110,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 				if (!l) {
 
+					/* make sure runtime_init is called */
+					mono_class_vtable (cfg->domain, cm->klass);
+
 					mono_jit_stats.inlined_methods++;
 				
 					if (cm->signature->hasthis)
@@ -2225,7 +2228,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 						       (cm->klass->marshalbyref || shared_to_unshared_call))) {
 				
 					mono_class_init (cm->klass);
-					
+
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 						t2 = mono_ctree_new_leaf (mp, MB_TERM_INTF_ADDR);
 					else 
@@ -3944,6 +3947,9 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 
 	g_hash_table_insert (jit_code_hash, method, addr);
+
+	/* make sure runtime_init is called */
+	mono_class_vtable (target_domain, method->klass);
 
 	return addr;
 }

@@ -54,7 +54,7 @@ mono_runtime_object_init (MonoObject *this)
 }
 
 /*
- * runtime_class_init:
+ * mono_runtime_class_init:
  * @klass: klass that needs to be initialized
  *
  * This routine calls the class constructor for @class.
