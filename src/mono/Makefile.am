@@ -44,6 +44,7 @@ stage1-mcs:
 	cd $(mcs_topdir)/mcs && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 	cd $(mcs_topdir)/class/corlib && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 	cd $(mcs_topdir)/class/System && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB" MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
+	cd $(mcs_topdir)/class/System.XML && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB" MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 
 # Build enough of 'mono' to run the stage1 mcs.exe
 stage1-mono: $(CONFIG_HEADER)
@@ -81,7 +82,7 @@ tmpinst-dir:
 	mkdir -p $$tmpinst $$tmpinst/bin $$tmpinst/lib ; \
 	echo '#! /bin/sh' > $$tmpinst/bin/mono ; \
 	echo 'if test -z "$$MONO_PATH" ; then MONO_PATH="'"$$tmpinst/lib"'"' >> $$tmpinst/bin/mono ; \
-	echo 'else MONO_PATH=$${MONO_PATH}:"'"$$tmpinst/lib"'" ; fi' >> $$tmpinst/bin/mono ; \
+	echo 'else MONO_PATH="'"$$tmpinst/lib"'":$${MONO_PATH} ; fi' >> $$tmpinst/bin/mono ; \
 	echo 'export MONO_PATH' >> $$tmpinst/bin/mono ; \
 	echo 'exec "'"$$rootme/libtool"'" --mode=execute "'"$$rootme/$(mono_runtime)"'" "$$@"' >> $$tmpinst/bin/mono ; \
 	echo '#! /bin/sh' > $$tmpinst/bin/mcs ; \
