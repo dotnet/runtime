@@ -449,7 +449,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 
 	g_assert (dest_idx + length <= mono_array_length (dest));
 	g_assert (source_idx + length <= mono_array_length (source));
-	memcpy (dest_addr, source_addr, element_size * length);
+	memmove (dest_addr, source_addr, element_size * length);
 }
 
 static void

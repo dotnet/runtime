@@ -54,12 +54,14 @@ static char *
 default_assembly_name_resolver (const char *base_dir, const char *name)
 {
 	char *file, *path;
-	
+
 	if ((strcmp (name, "mscorlib") == 0) ||
 			(strcmp (name, "mscorlib.dll") == 0) ||
 			(strcmp (name, "corlib.dll") == 0) ||
 			(strcmp (name, "corlib") == 0))
+	{
 		return g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
+	}
 
 	/* Full name already supplied */
 	path = g_strdup (name);
