@@ -3098,3 +3098,19 @@ mono_class_get_overrides (MonoImage *image, guint32 type_token, gint32 *num_over
 	return result;
 }
 
+/**
+ * mono_guid_to_string:
+ *
+ * Converts a 16 byte Microsoft GUID to the standard string representation.
+ */
+char *
+mono_guid_to_string (const guint8 *guid)
+{
+	return g_strdup_printf ("%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+				guid[3], guid[2], guid[1], guid[0],
+				guid[5], guid[4],
+				guid[7], guid[6],
+				guid[8], guid[9],
+				guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]);
+}
+

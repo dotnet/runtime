@@ -390,4 +390,6 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 
 guint32 mono_metadata_token_from_dor (guint32 dor_index);
 
+char *mono_guid_to_string (const guint8 *guid);
+
 #endif /* __MONO_METADATA_H__ */

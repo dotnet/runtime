@@ -334,8 +334,20 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	aot_name = g_strdup_printf ("%s.so", filename);
 	ass->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
 	g_free (aot_name);
-	/* fixme: we need to check if we have the right version here */
 
+	if (ass->aot_module) {
+		char *guid, *saved_guid = NULL;
+		g_module_symbol (ass->aot_module, "mono_assembly_guid", &saved_guid);
+
+		guid = mono_guid_to_string (image->heap_guid.data);
+
+		if (!saved_guid || strcmp (guid, saved_guid)) {
+			g_module_close (ass->aot_module);
+			ass->aot_module = NULL;
+		}
+
+		g_free (guid);
+	}
 
 	t = &image->tables [MONO_TABLE_ASSEMBLY];
 	if (t->rows) {
