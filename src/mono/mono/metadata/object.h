@@ -326,6 +326,7 @@ typedef struct
 typedef struct {
 	MonoObject obj;
 	gint32 lcid;
+	MonoString *icu_name;
 	gpointer ICU_collator;
 } MonoCompareInfo;
 
