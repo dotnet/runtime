@@ -1239,7 +1239,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
 		vtable = mono_class_vtable (domain, field->klass);
-		if (!vtable->initialized)
+		if (!vtable->initialized && !(cf->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			mono_runtime_class_init (vtable);
 	}
 	
