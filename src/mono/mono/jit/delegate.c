@@ -27,18 +27,19 @@
  * - worker threads should be domain specific
  */
 
+static int workers = 0;
+
 typedef struct {
 	MonoMethodMessage *msg;
 	HANDLE            wait_semaphore;
 	MonoMethod        *cb_method;
 	MonoDelegate      *cb_target;
-	int                inside_cb;
 	MonoObject        *state;
 	MonoObject        *res;
 	MonoArray         *out_args;
 } ASyncCall;
 
-static guint32 async_invoke_thread (void);
+static void async_invoke_thread (void);
 
 static GList *async_call_queue = NULL;
 static CRITICAL_SECTION delegate_section;
@@ -83,15 +84,14 @@ mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
 }
 
 static void
-mono_async_invoke (MonoAsyncResult *ares, gboolean cb_only)
+mono_async_invoke (MonoAsyncResult *ares)
 {
 	ASyncCall *ac = (ASyncCall *)ares->data;
 
-	if (!cb_only)
-		ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
-					       &ac->msg->exc, &ac->out_args);
-
-	ac->inside_cb = 1;
+	ac->msg->exc = NULL;
+	ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
+				       &ac->msg->exc, &ac->out_args);
+       
 	ares->completed = 1;
 		
 	/* notify listeners */
@@ -99,8 +99,11 @@ mono_async_invoke (MonoAsyncResult *ares, gboolean cb_only)
 
 	/* call async callback if cb_method != null*/
 	if (ac->cb_method) {
+		MonoObject *exc = NULL;
 		void *pa = &ares;
-		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, NULL);
+		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
+		if (!ac->msg->exc)
+			ac->msg->exc = exc;
 	}
 }
 
@@ -153,11 +156,19 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
 	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
 	ares->async_delegate = delegate;
 
+
 	EnterCriticalSection (&delegate_section);	
 	async_call_queue = g_list_append (async_call_queue, ares); 
+	ReleaseSemaphore (delegate_semaphore, 1, NULL);
+
+	if (workers == 0) {
+		MonoObject *thread;
+		workers++;
+		thread = mono_thread_create (domain, async_invoke_thread);
+		g_assert (thread != NULL);
+	}
 	LeaveCriticalSection (&delegate_section);
 
-	ReleaseSemaphore (delegate_semaphore, 1, NULL);
 
 	return ares;
 }
@@ -182,7 +193,7 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 	ac = (ASyncCall *)ares->data;
 
 	/* check if we call EndInvoke twice */
-	if (!ares->data) {
+	if (ares->endinvoke_called) {
 		MonoException *e;
 		e = mono_exception_from_name (mono_defaults.corlib, "System", 
 					      "InvalidOperationException");
@@ -194,7 +205,7 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 	EnterCriticalSection (&delegate_section);	
 	if ((l = g_list_find (async_call_queue, ares))) {
 		async_call_queue = g_list_remove_link (async_call_queue, l);
-		mono_async_invoke (ares, FALSE);
+		mono_async_invoke (ares);
 	}		
 	LeaveCriticalSection (&delegate_section);
 	
@@ -333,62 +344,28 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 }
 
 static void
-async_invoke_abort (MonoObject *obj)
-{
-	MonoDomain *domain = obj->vtable->domain;
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoAsyncResult *ares = jit_tls->async_result;
-	ASyncCall *ac = (ASyncCall *)ares->data;
-
-	ares->completed = 1;
-
-	if (!ac->msg->exc)
-		ac->msg->exc = obj;
-
-	/* we need to call the callback if not already called */
-	if (!ac->inside_cb) {
-		ac->inside_cb = 1;
-		mono_async_invoke (ares, TRUE);
-	}
-
-	/* signal that we finished processing */
-	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
-
-	/* start a new worker */
-	mono_thread_create (domain, async_invoke_thread);
-	/* exit current one */
-	ExitThread (0);
-}
-
-static guint32
 async_invoke_thread ()
 {
 	MonoDomain *domain;
-	static int workers = 1;
-	static HANDLE first_worker = NULL;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
       
-	if (!first_worker) {
-		first_worker = GetCurrentThread ();
-		g_assert (first_worker);
-	}
-
-	jit_tls->abort_func = async_invoke_abort;
-
 	for (;;) {
 		MonoAsyncResult *ar;
 		gboolean new_worker = FALSE;
 
 		if (WaitForSingleObject (delegate_semaphore, 3000) == WAIT_TIMEOUT) {
-			if (GetCurrentThread () != first_worker)
-				ExitThread (0);
+			EnterCriticalSection (&delegate_section);
+			workers--;
+			LeaveCriticalSection (&delegate_section);
+			ExitThread (0);
 		}
 		
 		ar = NULL;
 		EnterCriticalSection (&delegate_section);
 		
 		if (async_call_queue) {
-			if ((g_list_length (async_call_queue) > 1) && (workers < mono_worker_threads)) {
+			if ((g_list_length (async_call_queue) > 1) && 
+			    (workers < mono_worker_threads)) {
 				new_worker = TRUE;
 				workers++;
 			}
@@ -400,8 +377,12 @@ async_invoke_thread ()
 
 		LeaveCriticalSection (&delegate_section);
 
-		if (stop_worker)
+		if (stop_worker) {
+			EnterCriticalSection (&delegate_section);
+			workers--;
+			LeaveCriticalSection (&delegate_section);
 			ExitThread (0);
+		}
 
 		if (!ar)
 			continue;
@@ -416,23 +397,20 @@ async_invoke_thread ()
 
 		jit_tls->async_result = ar;
 
-		mono_async_invoke (ar, FALSE);
+		mono_async_invoke (ar);
 	}
 
-	return 0;
+	g_assert_not_reached ();
 }
 
 void
 mono_delegate_init ()
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoObject *thread;
 
 	delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&delegate_section);
-	thread = mono_thread_create (domain, async_invoke_thread);
-	g_assert (thread != NULL);
 }
 
 void
