@@ -10,14 +10,19 @@ namespace Test {
 		static extern string getenv(string name);
 
 		static int Main() {
-			string name = "mono_test";
-			string value = "val";
+			try {
+				string name = "mono_test";
+				string value = "val";
 
-			setenv (name, value, 1);
-			string ret = getenv (name);
+				setenv (name, value, 1);
+				string ret = getenv (name);
 
-			if (ret != value)
-				return 1;
+				if (ret != value)
+					return 1;
+			}
+			catch (EntryPointNotFoundException) {
+				/* setenv is not available on some platforms */
+			}
 			return 0;
 		}
 	}
