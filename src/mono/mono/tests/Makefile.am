@@ -34,6 +34,7 @@ TESTSRC=			\
 	enum2.cs		\
 	property.cs		\
 	enumcast.cs		\
+	setenv.cs		\
 	vtype.cs		\
 	isvaluetype.cs		\
 	iface6.cs		\
