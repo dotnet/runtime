@@ -2514,6 +2514,7 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi,
 	"System.Runtime.InteropServices.Marshal::StringToHGlobalAuto", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi,
 	"System.Runtime.InteropServices.Marshal::StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni,
+	"System.Runtime.InteropServices.Marshal::DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure,
 
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,

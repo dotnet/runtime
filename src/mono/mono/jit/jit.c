@@ -362,7 +362,7 @@ ctree_create_store (MonoFlowGraph *cfg, MonoType *type, MBTree *addr,
 
 	t = mono_ctree_new (mp, stind, addr, s);
 
-	if (ISSTRUCT (type))
+	if (MONO_TYPE_ISSTRUCT (type))
 		t->data.i = mono_class_value_size (type->data.klass, NULL);
 	
 	return t;
@@ -974,7 +974,7 @@ check_inlining (MonoMethod *method)
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->klass->marshalbyref) ||
-	    ISSTRUCT (signature->ret))
+	    MONO_TYPE_ISSTRUCT (signature->ret))
 		goto fail;;
        
 	if (!(header = ((MonoMethodNormal *)method)->header) ||
@@ -1362,7 +1362,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 	}
 
-	if (ISSTRUCT (signature->ret)) {
+	if (MONO_TYPE_ISSTRUCT (signature->ret)) {
 		int size, align;
 
 		cfg->has_vtarg = 1;
@@ -2155,7 +2155,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 
-			if (ISSTRUCT (csig->ret)) {
+			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
 				size = mono_type_size (csig->ret, &align);
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
 				/* we push a pointer to the vtype as argument */
@@ -2361,7 +2361,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t1->data.i = LOCAL_POS (n);
-			if (!ISSTRUCT (LOCAL_TYPE (n))) 
+			if (!MONO_TYPE_ISSTRUCT (LOCAL_TYPE (n))) 
 				t1 = ctree_create_load (cfg, LOCAL_TYPE (n), t1, &svt, FALSE);
 
 			PUSH_TREE (t1, svt);
@@ -2372,7 +2372,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t1->data.i = LOCAL_POS (*ip);
-			if (!ISSTRUCT (LOCAL_TYPE (*ip))) 
+			if (!MONO_TYPE_ISSTRUCT (LOCAL_TYPE (*ip))) 
 				t1 = ctree_create_load (cfg, LOCAL_TYPE (*ip), t1, &svt, FALSE);
 			++ip;
 
@@ -2774,7 +2774,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (ret->type != MONO_TYPE_VOID) {
 				--sp;
-				if (ISSTRUCT (ret)) {
+				if (MONO_TYPE_ISSTRUCT (ret)) {
 					int align;
 					t1 = mono_ctree_new (mp, MB_TERM_RET_OBJ, *sp, NULL);
 					t1->data.i = mono_class_value_size (ret->data.klass, &align);
@@ -2823,7 +2823,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else {
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = ARG_POS (n);
-				if (!ISSTRUCT (ARG_TYPE (n))) 
+				if (!MONO_TYPE_ISSTRUCT (ARG_TYPE (n))) 
 					t1 = ctree_create_load (cfg, ARG_TYPE (n), t1, &svt, TRUE);
 			
 				PUSH_TREE (t1, svt);
@@ -2840,7 +2840,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else {
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = ARG_POS (*ip);
-				if (!ISSTRUCT (ARG_TYPE (*ip))) 
+				if (!MONO_TYPE_ISSTRUCT (ARG_TYPE (*ip))) 
 					t1 = ctree_create_load (cfg, ARG_TYPE (*ip), t1, &svt, TRUE);
 				PUSH_TREE (t1, svt);
 			}
@@ -3215,7 +3215,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = LOCAL_POS (n);
-				if (!ISSTRUCT (LOCAL_TYPE (n))) 
+				if (!MONO_TYPE_ISSTRUCT (LOCAL_TYPE (n))) 
 					t1 = ctree_create_load (cfg, LOCAL_TYPE (n), t1, &svt, FALSE);
 				ip += 2;
 
@@ -3341,7 +3341,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = ARG_POS (n);
-				if (!ISSTRUCT (ARG_TYPE (n))) 
+				if (!MONO_TYPE_ISSTRUCT (ARG_TYPE (n))) 
 					t1 = ctree_create_load (cfg, ARG_TYPE (n), t1, &svt, TRUE);
 				PUSH_TREE (t1, svt);
 				break;

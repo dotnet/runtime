@@ -2193,8 +2193,7 @@ mono_get_param_info (MonoMethodSignature *sig, int param_num, int *size, int *al
 	else
 		type = sig->params [param_num];
 	
-	if (sig->pinvoke && !type->byref && type->type == MONO_TYPE_VALUETYPE && 
-	    !type->data.klass->enumtype) {
+	if (sig->pinvoke && MONO_TYPE_ISSTRUCT (type)) {
 		*size = mono_class_native_size (type->data.klass);
 	} else {
 		*size = mono_type_stack_size (type, align);

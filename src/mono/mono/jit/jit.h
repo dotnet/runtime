@@ -43,8 +43,6 @@
 #define MB_TERM_REMOTE_STIND_REF MB_TERM_REMOTE_STIND_I4
 #endif
 
-#define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
-
 #define VARINFO(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num))
 
 #define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.vartype=k; vi.offset=o; vi.size=s; } while (0)

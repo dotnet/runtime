@@ -469,6 +469,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 			esize = sizeof (gpointer);
 
 		/* create a new array */
+		/* fixme: this only works for SZARRAYS */
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
 		mono_mb_emit_icon (mb, msize / esize);
 		mono_mb_emit_byte (mb, CEE_NEWARR);	
@@ -535,8 +536,6 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoMarshalConv conv, int usize, in
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR:
-	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
 		/* free space if free == true */
 		mono_mb_emit_byte (mb, CEE_LDLOC_2);
 		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
@@ -546,6 +545,16 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoMarshalConv conv, int usize, in
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_FREE);
 
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+		mono_mb_emit_byte (mb, conv);
+		mono_mb_emit_byte (mb, CEE_STIND_I);	
+		break;
+	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
+	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -627,7 +636,8 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 		g_assert (msize > 0 && usize > 0);
 
 		switch (conv) {
-		case MONO_MARSHAL_CONV_NONE:
+		case MONO_MARSHAL_CONV_NONE: {
+			int t;
 
 			if (ftype->byref || ftype->type == MONO_TYPE_I ||
 			    ftype->type == MONO_TYPE_U) {
@@ -638,7 +648,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				break;
 			}
 
-			switch (ftype->type) {
+			t = ftype->type;
+		handle_enum:
+			switch (t) {
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
 				mono_mb_emit_byte (mb, CEE_LDLOC_1);
@@ -681,27 +693,31 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				mono_mb_emit_byte (mb, CEE_STIND_R8);
 				break;
 			case MONO_TYPE_VALUETYPE:
+				if (ftype->data.klass->enumtype) {
+					t = ftype->data.klass->enum_basetype->type;
+					goto handle_enum;
+				}
 				emit_struct_conv (mb, ftype->data.klass, to_object);
 				continue;
 			default:
 				g_error ("marshalling type %02x not implemented", ftype->type);
 			}
 			break;
-
+		}
 		default:
 			if (to_object) 
 				emit_ptr_to_str_conv (mb, ftype, conv, usize, msize);
 			else
 				emit_str_to_ptr_conv (mb, conv, usize, msize);	
 		}
-
+		
 		if (to_object) {
 			mono_mb_emit_add_to_local (mb, 0, usize);
 			mono_mb_emit_add_to_local (mb, 1, msize);
 		} else {
 			mono_mb_emit_add_to_local (mb, 0, msize);
 			mono_mb_emit_add_to_local (mb, 1, usize);
-		}		
+		}				
 	}
 }
 
@@ -950,17 +966,17 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
 		mono_mb_emit_byte (mb, CEE_LDIND_I2);
 		break;
-#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
-#endif
+	case MONO_TYPE_U:
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		break;
 	case MONO_TYPE_I4:
 		mono_mb_emit_byte (mb, CEE_UNBOX);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		break;
-#if SIZEOF_VOID_P == 4
-	case MONO_TYPE_U:
-#endif
 	case MONO_TYPE_U4:
 		mono_mb_emit_byte (mb, CEE_UNBOX);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
@@ -1407,6 +1423,7 @@ handle_enum:
 				type = t->data.klass->enum_basetype->type;
 				goto handle_enum;
 			}
+			/* fixme: impl. value types */
 			g_assert_not_reached ();
 			break;
 		default:
@@ -1424,7 +1441,12 @@ handle_enum:
 		mono_mb_emit_managed_call (mb, method, strsig);		
 	} else 
 		mono_mb_emit_managed_call (mb, method, NULL);
-	
+
+	if (sig->ret->byref) {
+		/* fixme: */
+		g_assert_not_reached ();
+	}
+
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
 		if (!method->string_ctor)
@@ -1573,6 +1595,11 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		MonoType *t = sig->params [i];
 
 		tmp_locals [i] = 0;
+		
+		if (t->byref) {
+			/* fixme: */
+			g_assert_not_reached ();
+		}
 
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:
@@ -2011,7 +2038,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 		stoptr = mono_find_method_by_name (mono_defaults.marshal_class, "StructureToPtr", 3);
 	g_assert (stoptr);
 
-	mb = mono_mb_new (stoptr->klass, stoptr->name);
+	mb = mono_mb_new (klass, stoptr->name);
 
 	/* allocate local 0 (pointer) src_ptr */
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -2062,17 +2089,12 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 		ptostr = mono_find_method_by_name (mono_defaults.marshal_class, "PtrToStructure", 2);
 	g_assert (ptostr);
 
-	mb = mono_mb_new (ptostr->klass, ptostr->name);
+	mb = mono_mb_new (klass, ptostr->name);
 
 	/* allocate local 0 (pointer) src_ptr */
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	/* allocate local 1 (pointer) dst_ptr */
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	/* allocate local 2 (boolean) delete_old */
-	mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-
-	mono_mb_emit_byte (mb, CEE_LDNULL);
-	mono_mb_emit_byte (mb, CEE_STLOC_2);
 
 	/* initialize src_ptr to point to the start of object data */
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
@@ -2392,3 +2414,60 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 {
 	return g_memdup (mono_string_chars (string), mono_string_length (string)*2);
 }
+
+static void
+mono_struct_delete_old (MonoClass *klass, char *ptr)
+{
+	MonoMarshalType *info;
+	int i;
+
+	info = mono_marshal_load_type_info (klass);
+
+	for (i = 0; i < info->num_fields; i++) {
+		MonoMarshalNative ntype;
+		MonoMarshalConv conv;
+		MonoType *ftype = info->fields [i].field->type;
+		char *cpos;
+
+		if (ftype->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+
+		ntype = mono_type_to_unmanaged (ftype, info->fields [i].mspec, TRUE, 
+						klass->unicode, &conv);
+			
+		cpos = ptr + info->fields [i].offset;
+
+		switch (conv) {
+		case MONO_MARSHAL_CONV_NONE:
+			if (MONO_TYPE_ISSTRUCT (ftype)) {
+				mono_struct_delete_old (ftype->data.klass, cpos);
+				continue;
+			}
+			break;
+		case MONO_MARSHAL_CONV_STR_LPWSTR:
+		case MONO_MARSHAL_CONV_STR_LPSTR:
+		case MONO_MARSHAL_CONV_STR_LPTSTR:
+		case MONO_MARSHAL_CONV_STR_BSTR:
+		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+		case MONO_MARSHAL_CONV_STR_TBSTR:
+			g_free (*(gpointer *)cpos);
+			break;
+		default:
+			continue;
+		}
+	}
+}
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionType *type)
+{
+	MonoClass *klass;
+
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (type);
+
+	klass = mono_class_from_mono_type (type->type);
+
+	mono_struct_delete_old (klass, (char *)src);
+}
+

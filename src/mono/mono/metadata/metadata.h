@@ -14,6 +14,8 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
+#define MONO_TYPE_ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
+
 typedef struct _MonoClass MonoClass;
 typedef struct _MonoDomain MonoDomain;
 

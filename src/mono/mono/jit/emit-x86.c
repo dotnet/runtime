@@ -123,7 +123,7 @@ enter_method (MonoMethod *method, char *ebp)
 
 	ebp += 8;
 
-	if (ISSTRUCT (method->signature->ret)) {
+	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
 		int size, align;
 		
 		g_assert (!method->signature->ret->byref);
