@@ -116,8 +116,11 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 			/* Patch trampoline in case the calling code can't be patched */
 			/* FIXME: Make this thread safe */
+#if 0
+			/* FIXME:  This causes nunit-console to fail */
 			amd64_mov_reg_imm (tramp, AMD64_R11, addr);
 			amd64_jump_reg (tramp, AMD64_R11);
+#endif
 		}
 	}
 

@@ -2782,7 +2782,7 @@ amd64_pop_reg (code, AMD64_RAX);
 
 /* benchmark and set based on cpu */
 #define LOOP_ALIGNMENT 8
-#define bb_is_loop_start(bb) ((bb)->nesting && ((bb)->in_count == 1))
+#define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
 
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
