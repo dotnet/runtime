@@ -255,7 +255,7 @@ enum_calc_size:
 	for (i = sig->param_count; --i >= 0;) {
 		param = sig->params [i];
 		if (param->byref) {
-			if (i < aregs) {
+			if (i < aregs && reg_alloc[i] > 0) {
 				ARM_LDR_IMM(p, ARMREG_A1 + i, REG_ARGP, i*ARG_SIZE);
 			} else {
 				stack_offs -= sizeof(armword_t);
