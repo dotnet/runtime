@@ -45,8 +45,6 @@ extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 void
 mono_debug_init (MonoDomain *domain, MonoDebugFormat format)
 {
-	MonoAssembly **ass;
-
 	g_assert (!mono_debug_initialized);
 
 	mono_debug_initialized = TRUE;
@@ -356,6 +354,7 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	    !minfo->handle->symfile->offset_table) {
 		mono_loader_unlock ();
 		return NULL;
+	}
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);
 	if (!domain_data->jit [minfo->index]) {
