@@ -1,3 +1,9 @@
+2005-02-15  Raja R Harinath  <rharinath@novell.com>
+
+	* scripts/Makefile.am ($(bin_SCRIPTS)): Depend on Makefile, so
+	that it picks up any changes in $prefix.
+	($(bin2_SCRIPTS)): Likewise.
+
 2005-02-13  Zoltan Varga  <vargaz@freemail.hu>
 
 	* scripts/dtd2xsd: Remove generated file from SVN.
