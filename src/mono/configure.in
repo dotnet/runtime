@@ -145,6 +145,9 @@ AM_PROG_LIBTOOL
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h)
 
+# for mono/mini/tramp-x86.c
+AC_CHECK_HEADERS(valgrind/memcheck.h)
+
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
