@@ -344,7 +344,7 @@ mono_install_get_config_dir (void)
 #ifndef PLATFORM_WIN32
     mono_cfg_dir = MONO_CFG_DIR;
 #else
-    mono_cfg_dir = g_strdup (MONO_CFG_DIR);
+    mono_cfg_dir = g_build_path (mono_assembly_getrootdir (), "etc", NULL);
     for (i = strlen (mono_cfg_dir) - 1; i >= 0; i--) {
         if (mono_cfg_dir [i] == '/')
             ((char*) mono_cfg_dir) [i] = '\\';
