@@ -19,7 +19,7 @@ namespace Mono.StatusReporter {
 		static int Main (string[] args) {
 			XslTransform xslt = new XslTransform ();
 			xslt.Load ("ByNamespace.xsl");
-			StreamWriter sw = new StreamWriter ("bn/index");
+			//StreamWriter sw = new StreamWriter ("bn/index");
 
 			XPathDocument doc = new XPathDocument ("class.xml");
 
@@ -35,7 +35,7 @@ namespace Mono.StatusReporter {
 			}
 
 			foreach (string str in nsList) {
-				sw.WriteLine ("<li><a href=\"" + str + ".html\">" + str + "</a>");
+				//sw.WriteLine ("<li><a href=\"" + str + ".html\">" + str + "</a>");
 
 				XmlWriter writer = new XmlTextWriter ("bn/" + str, null);
 
@@ -47,7 +47,7 @@ namespace Mono.StatusReporter {
 				writer.Close ();
 			}
 
-			sw.Close ();
+			//sw.Close ();
 
 			return 0;
 		}

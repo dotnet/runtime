@@ -47,13 +47,13 @@
             </table>
 	     </td>
         <td bgcolor="black" width="1"><img src="images/pixel.gif" width="1"></td>
-        <td bgcolor="white">
+        <td bgcolor="white" align="left" width="80%" valign="top">
             <table cellpadding="16">
               <tr><td>
                 #CONTENT#
 	           </td></tr>
             </table>
-	      </td>
+	</td>
         <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
         <td width="100"><img src="images/pixel.gif"></td>
     </tr>

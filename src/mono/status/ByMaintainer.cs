@@ -18,7 +18,7 @@ namespace Mono.StatusReporter {
 		static int Main (string[] args) {
 			XslTransform xslt = new XslTransform ();
 			xslt.Load ("ByMaintainer.xsl");
-			StreamWriter sw = new StreamWriter ("bm/index");
+			//StreamWriter sw = new StreamWriter ("bm/index");
 
 			XPathDocument doc = new XPathDocument ("class.xml");
 
@@ -31,7 +31,7 @@ namespace Mono.StatusReporter {
 				string email = node.Attributes.GetNamedItem("email").Value;
 				string name = node.Attributes.GetNamedItem("name").Value;
 
-				sw.WriteLine ("<li><a href=\"" + email + ".html\">" + email + "</a>");
+				//sw.WriteLine ("<li><a href=\"" + email + ".html\">" + email + "</a>");
 
 				XmlWriter writer = new XmlTextWriter ("bm/" + email, null);
 
@@ -44,7 +44,7 @@ namespace Mono.StatusReporter {
 				writer.Close ();
 			}
 
-			sw.Close ();
+			//sw.Close ();
 
 			return 0;
 		}
