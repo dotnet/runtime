@@ -24,7 +24,16 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS -DWIN32_THREADS"
 		libdl=
 		;;
-	*-*-*bsd*)
+	*-*-*netbsd*)
+		platform_win32=no
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT"
+		libmono_cflags="-D_REENTRANT"
+		LDFLAGS="$LDFLAGS -pthread"
+		libmono_ldflags="-pthread"
+		AC_DEFINE(NEED_LINK_UNLINK)
+		libdl=
+		;;
+	*-*-*freebsd*|*-*-*openbsd*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
 		libmono_cflags="-D_THREAD_SAFE"

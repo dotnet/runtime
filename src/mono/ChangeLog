@@ -1,3 +1,7 @@
+2003-05-19  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Netbsd build fix by marc@informatik.uni-bremen.de.
+
 2003-05-10  Martin Willemoes Hansen <mwh@sysrq.dk>
 
 	* scripts/Makefile.am: Added monoresgen secutil sqlsharp
