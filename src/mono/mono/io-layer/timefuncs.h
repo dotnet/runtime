@@ -20,7 +20,8 @@ typedef struct
 	guint32 dwHighDateTime;
 } WapiFileTime;
 
-gboolean QueryPerformanceCounter(WapiLargeInteger *count);
-gboolean QueryPerformanceFrequency(WapiLargeInteger *freq);
+extern gboolean QueryPerformanceCounter(WapiLargeInteger *count);
+extern gboolean QueryPerformanceFrequency(WapiLargeInteger *freq);
+extern guint32 GetTickCount (void);
 
 #endif /* _WAPI_TIME_H_ */

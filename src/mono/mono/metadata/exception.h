@@ -85,4 +85,7 @@ mono_get_exception_file_not_found        (MonoString *fname);
 MonoException *
 mono_get_exception_type_initialization (const gchar *type_name, MonoException *inner);
 
+MonoException *
+mono_get_exception_synchronization_lock (const guchar *msg);
+
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

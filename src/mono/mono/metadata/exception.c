@@ -339,3 +339,18 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	return (MonoException *) exc;
 }
 
+MonoException *
+mono_get_exception_synchronization_lock (const guchar *msg)
+{
+	MonoException *ex;
+	MonoDomain *domain;
+	
+	ex=(MonoException *)mono_exception_from_name (mono_defaults.corlib, "System.Threading", "SynchronizationLockException");
+	domain=((MonoObject *)ex)->vtable->domain;
+	
+	if(msg) {
+		ex->message=mono_string_new (domain, msg);
+	}
+	
+	return(ex);
+}

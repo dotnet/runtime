@@ -26,6 +26,8 @@ libmonoruntime_la_SOURCES = \
 	gc-internal.h	\
 	marshal.c	\
 	marshal.h	\
+	monitor.c	\
+	monitor.h	\
 	threads.c	\
 	threadpool.c	\
 	file-io.c	\
@@ -78,7 +80,8 @@ libmonoruntimeinclude_HEADERS = \
 	threadpool.h	\
 	threads-types.h	\
 	threads.h	\
-	environment.h
+	environment.h	\
+	monitor.h
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
