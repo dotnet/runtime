@@ -35,6 +35,7 @@ typedef GArray MonoJitInfoTable;
 
 typedef struct {
 	guint32  flags;
+	gint32   exvar_offset;
 	gpointer try_start;
 	gpointer try_end;
 	gpointer handler_start;
@@ -50,7 +51,6 @@ struct _MonoJitInfo {
 	int         code_size;
 	guint32     used_regs;
 	unsigned    num_clauses;
-	signed      exvar_offset;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
 	gboolean    cas_inited:1;
