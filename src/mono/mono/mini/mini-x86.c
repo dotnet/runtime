@@ -755,7 +755,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 } while (0); 
 
 /* FIXME: Add more instructions */
-#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM))
+#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI4_MEMBASE_REG))
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
