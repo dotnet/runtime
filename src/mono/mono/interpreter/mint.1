@@ -10,7 +10,8 @@ mint \- Mono ECMA-CLI interpreter.
 .SH SYNOPSIS
 .PP
 .B mint
-[\-\-help] [\-\-opcode\-count] [\-\-trace]
+[\-\-help] [\-\-opcode\-count] [\-\-trace] [\-\-traceops] [\-\-profile]
+[\-\-config filename] [\-\-debug method]
 program.exe [arguments...]
 .SH DESCRIPTION
 The \fImint\fP program is an interpreter for ECMA CLI byte codes.  It
@@ -25,6 +26,11 @@ The following Generic options are supported:
 .TP
 .I "--help", "-h"
 Displays usage instructions.
+.TP
+.I "--config filename"
+Load the specified configuration file instead of the default one(s).
+The default files are /etc/mono/config and ~/.mono/config or the file
+specified in the MONO_CONFIG environment variable, if set.
 .TP
 .I "--trace"
 Traces execution showing when methods are entered and left.

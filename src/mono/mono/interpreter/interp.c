@@ -54,6 +54,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
+#include <mono/metadata/mono-config.h>
 #include <mono/os/util.h>
 
 /*#include <mono/cli/types.h>*/
@@ -4085,6 +4086,7 @@ usage (void)
 		 "   --traceops\n"
 		 "\n"
 		 "Runtime:\n"
+		 "   --config filename  load the specified config file instead of the default\n"
 		 "   --workers n        maximum number of worker threads\n"
 		);
 	exit (1);
@@ -4120,7 +4122,7 @@ main (int argc, char *argv [])
 	MonoDomain *domain;
 	MonoAssembly *assembly;
 	int retval = 0, i, ocount = 0;
-	char *file, *error;
+	char *file, *error, *config_file = NULL;
 
 	if (argc < 2)
 		usage ();
@@ -4140,6 +4142,8 @@ main (int argc, char *argv [])
 			mono_profiler_install_simple ();
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
+		if (strcmp (argv [i], "--config") == 0)
+			config_file = argv [++i];
 		if (strcmp (argv [i], "--workers") == 0) {
 			mono_worker_threads = atoi (argv [++i]);
 			if (mono_worker_threads < 1)
@@ -4163,6 +4167,7 @@ main (int argc, char *argv [])
 		usage ();
 
 	mono_set_rootdir (argv [0]);
+	mono_config_parse (config_file);
 	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
