@@ -176,7 +176,6 @@ void
 mono_debug_write_stabs (MonoDebugHandle *debug)
 {
 	gchar *source_file;
-	char *buf;
 	int i;
 
 	if (!(debug->f = fopen (debug->filename, "w"))) {
@@ -207,8 +206,12 @@ mono_debug_write_stabs (MonoDebugHandle *debug)
 	fclose (debug->f);
 	debug->f = NULL;
 
-	/* yes, it's completely unsafe */
-	buf = g_strdup_printf ("as %s -o %s", debug->filename, debug->objfile);
-	system (buf);
-	g_free (buf);
+	if (!(debug->flags & MONO_DEBUG_FLAGS_DONT_ASSEMBLE)) {
+		char *buf;
+
+		/* yes, it's completely unsafe */
+		buf = g_strdup_printf ("as %s -o %s", debug->filename, debug->objfile);
+		system (buf);
+		g_free (buf);
+	}
 }

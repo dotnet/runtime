@@ -14,6 +14,20 @@ typedef struct {
 
 typedef struct _AssemblyDebugInfo AssemblyDebugInfo;
 
+typedef enum {
+	MONO_DEBUG_FLAGS_NONE			= 0,
+	// Don't run the assembler.
+	MONO_DEBUG_FLAGS_DONT_ASSEMBLE		= (1 << 1),
+	// Install the generated *.il files in the assembly dir.
+	MONO_DEBUG_FLAGS_INSTALL_IL_FILES	= (1 << 2),
+	// Don't update the *.il files.
+	MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES	= (1 << 3),
+	// Don't create any new *.il files.
+	MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES	= (1 << 4),
+	// Don't fallback to normal dwarf2.
+	MONO_DEBUG_FLAGS_DONT_FALLBACK		= (1 << 5)
+} MonoDebugFlags;
+
 typedef struct {
 	MonoDebugMethodInfo method_info;
 	gchar *name;
@@ -29,6 +43,7 @@ struct _AssemblyDebugInfo {
 	MonoDebugFormat format;
 	MonoDebugHandle *handle;
 	char *name;
+	char *ilfile;
 	char *filename;
 	char *objfile;
 	int source_file;
@@ -43,6 +58,7 @@ struct _AssemblyDebugInfo {
 struct _MonoDebugHandle {
 	MonoDebugHandle *next;
 	MonoDebugFormat format;
+	MonoDebugFlags flags;
 	char *name;
 	char *filename;
 	char *objfile;

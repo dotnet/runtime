@@ -1132,8 +1132,6 @@ write_method_func (gpointer key, gpointer value, gpointer user_data)
 void
 mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 {
-	char *buf;
-
 	if (!(debug->f = fopen (debug->filename, "w"))) {
 		g_warning ("Can't create dwarf file `%s': %s", debug->filename, g_strerror (errno)); 
 		return;
@@ -1368,8 +1366,12 @@ mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 	fclose (debug->f);
 	debug->f = NULL;
 
-	/* yes, it's completely unsafe */
-	buf = g_strdup_printf ("as %s -o %s", debug->filename, debug->objfile);
-	system (buf);
-	g_free (buf);
+	if (!(debug->flags & MONO_DEBUG_FLAGS_DONT_ASSEMBLE)) {
+		char *buf;
+
+		/* yes, it's completely unsafe */
+		buf = g_strdup_printf ("as %s -o %s", debug->filename, debug->objfile);
+		system (buf);
+		g_free (buf);
+	}
 }

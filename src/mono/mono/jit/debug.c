@@ -23,10 +23,17 @@ free_method_info (DebugMethodInfo *minfo)
 	g_free (minfo);
 }
 
+static void
+debug_arg_warning (const char *message)
+{
+	g_warning ("Error while processing --debug-args arguments: %s", message);
+}
+
 MonoDebugHandle*
 mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args)
 {
 	MonoDebugHandle *debug;
+	const char **ptr;
 	
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (assembly->image->name);
@@ -39,17 +46,67 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 						NULL, (GDestroyNotify) free_method_info);
 	debug->source_files = g_ptr_array_new ();
 
+	for (ptr = args; ptr && *ptr; ptr++) {
+		const char *arg = *ptr;
+		gchar *message;
+
+		switch (debug->format) {
+		case MONO_DEBUG_FORMAT_STABS:
+		case MONO_DEBUG_FORMAT_DWARF2:
+			if (!strncmp (arg, "filename=", 9)) {
+				if (debug->filename)
+					debug_arg_warning ("The `filename' argument can be given only once.");
+				debug->filename = g_strdup (arg + 9);
+				continue;
+			} else if (!strncmp (arg, "objfile=", 8)) {
+				if (debug->objfile)
+					debug_arg_warning ("The `objfile' argument can be given only once.");
+				debug->objfile = g_strdup (arg + 8);
+				continue;
+			} else if (!strcmp (arg, "dont_assemble")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
+				continue;
+			} else if (!strcmp (arg, "install_il_files")) {
+				debug->flags |= MONO_DEBUG_FLAGS_INSTALL_IL_FILES;
+				continue;
+			} else if (!strcmp (arg, "dont_update_il_files")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES;
+				continue;
+			} else if (!strcmp (arg, "dont_create_il_files")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
+				continue;
+			}
+			break;
+		case MONO_DEBUG_FORMAT_DWARF2_PLUS:
+			if (!strcmp (arg, "dont_fallback")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_FALLBACK;
+				continue;
+			}
+			break;
+		default:
+			break;
+		}
+
+		message = g_strdup_printf ("Unknown argument `%s'.", arg);
+		debug_arg_warning (message);
+		g_free (message);
+	}
+
 	switch (debug->format) {
 	case MONO_DEBUG_FORMAT_STABS:
-		debug->filename = g_strdup_printf ("%s-stabs.s", g_basename (debug->name));
-		debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
+		if (!debug->filename)
+			debug->filename = g_strdup_printf ("%s-stabs.s", g_basename (debug->name));
+		if (!debug->objfile)
+			debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2:
-		debug->filename = g_strdup_printf ("%s-dwarf.s", g_basename (debug->name));
-		debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
+		if (!debug->filename)
+			debug->filename = g_strdup_printf ("%s-dwarf.s", g_basename (debug->name));
+		if (!debug->objfile)
+			debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
-		if (!mono_default_debug_handle)
+		if (!mono_default_debug_handle && !(debug->flags & MONO_DEBUG_FLAGS_DONT_FALLBACK))
 			mono_debug_open (assembly, MONO_DEBUG_FORMAT_DWARF2, NULL);
 		break;
 	default:
@@ -59,7 +116,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	debug->next = mono_debug_handles;
 	mono_debug_handles = debug;
 
-	if (!mono_default_debug_handle) {
+	if (!mono_default_debug_handle && (format != MONO_DEBUG_FORMAT_DWARF2_PLUS)) {
 		mono_default_debug_handle = debug;
 		mono_debug_add_image (debug, assembly->image);
 	}
@@ -73,42 +130,49 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	FILE *f;
 	char buf [1024];
 	int i, mnum;
-	char *name = g_strdup_printf ("%s.il", info->name);
-	char *command = g_strdup_printf ("monodis --output=%s.il %s", info->name, info->image->name);
-	struct stat stata, statb;
 	int offset = -1;
 
-	if (stat (info->image->name, &stata)) {
-		g_warning ("cannot access assembly file (%s): %s", info->image->name, g_strerror (errno));
-		g_free (command);
-		g_free (name);
-		return;
-	}
+	if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES)) {
+		char *command = g_strdup_printf ("monodis --output=%s %s",
+						 info->ilfile, info->image->name);
+		struct stat stata, statb;
+		int need_update = FALSE;
 
-	/* If the stat() failed or the file is older. */
-	if (stat (name, &statb) || (statb.st_mtime < stata.st_mtime)) {
-		g_print ("Recreating %s from %s.\n", name, info->image->name);
-		if (system (command)) {
-			g_warning ("cannot create IL assembly file (%s): %s", command, g_strerror (errno));
+		if (stat (info->image->name, &stata)) {
+			g_warning ("cannot access assembly file (%s): %s",
+				   info->image->name, g_strerror (errno));
 			g_free (command);
-			g_free (name);
 			return;
+		}
+
+		/* If the stat() failed or the file is older. */
+		if (stat (info->ilfile, &statb)) {
+			/* Don't create any new *.il files if the user told us not to do so. */
+			if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES))
+				need_update = TRUE;
+		} else if (statb.st_mtime < stata.st_mtime)
+			need_update = TRUE;
+
+		if (need_update) {
+			g_print ("Recreating %s from %s.\n", info->ilfile, info->image->name);
+			if (system (command)) {
+				g_warning ("cannot create IL assembly file (%s): %s",
+					   command, g_strerror (errno));
+				g_free (command);
+				return;
+			}
 		}
 	}
 
 	/* use an env var with directories for searching. */
-	if (!(f = fopen (name, "r"))) {
-		g_warning ("cannot open IL assembly file %s", name);
-		g_free (command);
-		g_free (name);
+	if (!(f = fopen (info->ilfile, "r"))) {
+		g_warning ("cannot open IL assembly file %s", info->ilfile);
 		return;
 	}
 
 	info->total_lines = 100;
 	info->moffsets = g_malloc (info->total_lines * sizeof (int));
 
-	g_free (name);
-	g_free (command);
 	i = 0;
 	while (fgets (buf, sizeof (buf), f)) {
 		int pos = i;
@@ -299,6 +363,15 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	info->mlines = g_new0 (int, info->nmethods);
 
 	switch (info->format) {
+	case MONO_DEBUG_FORMAT_STABS:
+	case MONO_DEBUG_FORMAT_DWARF2:
+		if (debug->flags & MONO_DEBUG_FLAGS_INSTALL_IL_FILES) {
+			gchar *dirname = g_path_get_dirname (image->name);
+			info->ilfile = g_strdup_printf ("%s/%s.il", dirname, info->name);
+			g_free (dirname);
+		} else
+			info->ilfile = g_strdup_printf ("%s.il", info->name);
+		break;
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		info->filename = g_strdup_printf ("%s-debug.s", info->name);
 		info->objfile = g_strdup_printf ("%s-debug.o", info->name);
@@ -369,6 +442,7 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 	g_free (info->mlines);
 	g_free (info->moffsets);
 	g_free (info->name);
+	g_free (info->ilfile);
 	g_free (info->filename);
 	g_free (info->objfile);
 	g_free (info);
