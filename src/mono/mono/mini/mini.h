@@ -679,6 +679,7 @@ guint     mono_type_to_ldind                (MonoType *t);
 guint     mono_type_to_stind                (MonoType *t);
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target);
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
+gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors);
 MonoLMF** mono_get_lmf_addr                 (void);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end);
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);

@@ -22,6 +22,11 @@
 #include "inssel.h"
 #include "cpu-pentium.h"
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+/* valgrind chokes on __thread */
+#undef HAVE_KW_THREAD
+#endif
+
 static gint lmf_tls_offset = -1;
 
 #ifdef PLATFORM_WIN32
@@ -2983,135 +2988,49 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target = NULL;
+		const unsigned char *target;
+
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_BB:
-			target = patch_info->data.bb->native_offset + code;
-			break;
-		case MONO_PATCH_INFO_ABS:
-			target = patch_info->data.target;
-			break;
-		case MONO_PATCH_INFO_LABEL:
-			target = patch_info->data.inst->inst_c0 + code;
-			break;
 		case MONO_PATCH_INFO_IP:
-			*((gpointer *)(ip)) = ip;
+			*((gpointer *)(ip)) = target;
 			continue;
 		case MONO_PATCH_INFO_METHOD_REL:
-			*((gpointer *)(ip)) = code + patch_info->data.offset;
+			*((gpointer *)(ip)) = target;
 			continue;
-		case MONO_PATCH_INFO_INTERNAL_METHOD: {
-			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-			if (!mi) {
-				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
-				g_assert_not_reached ();
-			}
-			target = mono_icall_get_wrapper (mi);
-			break;
-		}
-		case MONO_PATCH_INFO_METHOD_JUMP: {
-			GSList *list;
-
-			/* get the trampoline to the method from the domain */
-			target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
-			if (!domain->jump_target_hash)
-				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
-			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
-			list = g_slist_prepend (list, ip);
-			g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
-			break;
-		}
-		case MONO_PATCH_INFO_METHOD:
-			if (patch_info->data.method == method) {
-				target = code;
-			} else
-				/* get the trampoline to the method from the domain */
-				target = mono_arch_create_jit_trampoline (patch_info->data.method);
-			break;
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
-			int i;
-
-			*((gconstpointer *)(ip + 2)) = jump_table;
-
-			for (i = 0; i < patch_info->table_size; i++) {
-				jump_table [i] = code + (int)patch_info->data.table [i];
-			}
+			*((gconstpointer *)(ip + 2)) = target;
 			/* we put into the table the absolute address, no need for x86_patch in this case */
 			continue;
 		}
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IMAGE:
-		case MONO_PATCH_INFO_FIELD:
-			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
-			continue;
 		case MONO_PATCH_INFO_IID:
-			mono_class_init (patch_info->data.klass);
-			*((guint32 *)(ip + 1)) = patch_info->data.klass->interface_id;
+			*((guint32 *)(ip + 1)) = target;
 			continue;			
-		case MONO_PATCH_INFO_VTABLE:
-			*((gconstpointer *)(ip + 1)) = mono_class_vtable (domain, patch_info->data.klass);
-			continue;
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			guint8 *code = ip;
 			/* Might already been changed to a nop */
 			x86_call_imm (code, 0);
-			target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
 			break;
-		}
-		case MONO_PATCH_INFO_SFLDA: {
-			MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
-			if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))
-				/* Done by the generated code */
-				;
-			else {
-				if (run_cctors)
-					mono_runtime_class_init (vtable);
-			}
-			*((gconstpointer *)(ip + 1)) = 
-				(char*)vtable->data + patch_info->data.field->offset;
-			continue;
 		}
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
-			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
+			*((gconstpointer *)(ip + 2)) = target;
 			continue;
+		case MONO_PATCH_INFO_METHODCONST:
+		case MONO_PATCH_INFO_CLASS:
+		case MONO_PATCH_INFO_IMAGE:
+		case MONO_PATCH_INFO_FIELD:
+		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_SFLDA:
 		case MONO_PATCH_INFO_EXC_NAME:
-			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
-			continue;
 		case MONO_PATCH_INFO_LDSTR:
-			*((gconstpointer *)(ip + 1)) = 
-				mono_ldstr (domain, patch_info->data.token->image, 
-							mono_metadata_token_index (patch_info->data.token->token));
+		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+		case MONO_PATCH_INFO_LDTOKEN:
+			*((gconstpointer *)(ip + 1)) = target;
 			continue;
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
-			gpointer handle;
-			MonoClass *handle_class;
-
-			handle = mono_ldtoken (patch_info->data.token->image, 
-								   patch_info->data.token->token, &handle_class);
-			mono_class_init (handle_class);
-			mono_class_init (mono_class_from_mono_type (handle));
-
-			*((gconstpointer *)(ip + 1)) = 
-				mono_type_get_object (domain, handle);
-			continue;
-		}
-		case MONO_PATCH_INFO_LDTOKEN: {
-			gpointer handle;
-			MonoClass *handle_class;
-
-			handle = mono_ldtoken (patch_info->data.token->image,
-								   patch_info->data.token->token, &handle_class);
-			mono_class_init (handle_class);
-
-			*((gconstpointer *)(ip + 1)) = handle;
-			continue;
-		}
 		default:
-			g_assert_not_reached ();
+			break;
 		}
 		x86_patch (ip, target);
 	}
