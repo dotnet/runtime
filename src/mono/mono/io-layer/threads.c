@@ -15,7 +15,7 @@
 
 #include "pthread-compat.h"
 
-#define DEBUG
+#undef DEBUG
 
 typedef enum {
 	THREAD_STATE_START,

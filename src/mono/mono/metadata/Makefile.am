@@ -10,23 +10,6 @@ assembliesdir = $(libdir)
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	\
 	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		
 
-
-if THREADS_PTHREAD
-THREAD_SOURCE = \
-	threads-pthread.c	\
-	threads-pthread.h	\
-	threads-pthread-types.c	\
-	threads-pthread-types.h	\
-	#
-else
-THREAD_SOURCE = \
-	threads-dummy.h		\
-	threads-dummy.c		\
-	threads-dummy-types.c	\
-	threads-dummy-types.h	\
-	#
-endif
-
 libmetadata_a_SOURCES = \
 	assembly.c	\
 	image.c		\
@@ -41,9 +24,9 @@ libmetadata_a_SOURCES = \
 	icall.c		\
 	decimal.c	\
 	decimal.h	\
+	threads.c	\
 	threads.h	\
 	threads-types.h	\
-	$(THREAD_SOURCE)	\
 	#
 
 libmetadataincludedir = $(includedir)/mono/metadata
@@ -67,6 +50,6 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
-pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS)
+pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) ../io-layer/libwapi.a
 
 

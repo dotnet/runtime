@@ -4,7 +4,7 @@
 
 #include "mono/io-layer/wapi.h"
 
-#define DEBUG
+#undef DEBUG
 
 /* A critical section is really just like a lightweight mutex. It
  * can't be waited for, and doesn't have a handle.

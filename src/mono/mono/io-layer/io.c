@@ -11,7 +11,7 @@
 #include "unicode.h"
 #include "wapi-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 /* Currently used for both FILE and CONSOLE handle types.  This may
  * have to change in future.

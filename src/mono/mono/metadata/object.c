@@ -63,8 +63,6 @@ mono_object_new (MonoClass *klass)
 	o = mono_object_allocate (klass->instance_size);
 	o->klass = klass;
 
-	mono_threads_synchronisation_init(&o->synchronisation);
-
 	return o;
 }
 
@@ -138,7 +136,6 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
 	if (!o)
 		G_BREAKPOINT ();
 	o->klass = array_class;
-	mono_threads_synchronisation_init (&o->synchronisation);
 
 	array = (MonoArray*)o;
 

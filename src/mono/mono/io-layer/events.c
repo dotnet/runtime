@@ -9,7 +9,7 @@
 #include "handles-private.h"
 #include "misc-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 /* event_wait() uses the event-private condition to signal that the
  * event has been set

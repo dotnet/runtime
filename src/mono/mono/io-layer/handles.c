@@ -6,7 +6,7 @@
 #include "wapi-private.h"
 #include "handles-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 guint32 _wapi_handle_count_signalled(WaitQueueItem *item, WapiHandleType type)
 {

@@ -12,7 +12,7 @@
 #include "misc-private.h"
 #include "handles-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 /* emulate sem_t, so that we can prod the internal state more easily */
 struct _WapiHandle_sem

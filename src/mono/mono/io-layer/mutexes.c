@@ -9,7 +9,7 @@
 #include "misc-private.h"
 #include "handles-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 struct _WapiHandle_mutex
 {

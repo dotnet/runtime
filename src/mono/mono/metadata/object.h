@@ -6,7 +6,7 @@
 
 typedef struct {
 	MonoClass *klass;
-	MonoThreadsSync synchronisation;
+	MonoThreadsSync *synchronisation;
 } MonoObject;
 
 typedef struct {

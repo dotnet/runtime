@@ -8,7 +8,7 @@
 #include "handles-private.h"
 #include "wapi-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 static pthread_once_t wait_once=PTHREAD_ONCE_INIT;
 

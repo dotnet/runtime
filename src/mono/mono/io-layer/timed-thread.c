@@ -4,7 +4,7 @@
 
 #include "timed-thread.h"
 
-#define DEBUG
+#undef DEBUG
 
 /*
  * Implementation of timed thread joining from the P1003.1d/D14 (July 1999)

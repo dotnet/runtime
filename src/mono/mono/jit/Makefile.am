@@ -18,6 +18,7 @@ mono_SOURCES =			\
 
 mono_LDADD =				\
 	../metadata/libmetadata.a	\
+	../io-layer/libwapi.a		\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
