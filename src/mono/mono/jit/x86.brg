@@ -1079,6 +1079,27 @@ reg: CONV_OVF_I4 (reg) {
 	PRINT_REG ("CONV_OVF_I4", tree->left->reg1);
 }
 
+reg: CONV_OVF_I4 (freg) {
+	x86_push_reg (s->code, X86_EAX);
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+	x86_fnstcw_membase(s->code, X86_ESP, 0);
+	x86_mov_reg_membase (s->code, tree->left->reg1, X86_ESP, 0, 2);
+	x86_alu_reg_imm (s->code, X86_OR, tree->left->reg1, 0xc00);
+	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->left->reg1, 2);
+	x86_fldcw_membase (s->code, X86_ESP, 2);
+	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+	x86_fstsw(s->code); // stores flags in ax
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x80000000);
+
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
+
+	x86_pop_reg (s->code, tree->reg1);
+	x86_fldcw_membase (s->code, X86_ESP, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	x86_pop_reg (s->code, X86_EAX);
+}
+
 reg: CONV_OVF_U4 (reg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
@@ -1093,6 +1114,30 @@ reg: CONV_OVF_I4_UN (reg) {
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: CONV_OVF_U4 (freg) {
+	x86_push_reg (s->code, X86_EAX);
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+	x86_fnstcw_membase(s->code, X86_ESP, 0);
+	x86_mov_reg_membase (s->code, tree->left->reg1, X86_ESP, 0, 2);
+	x86_alu_reg_imm (s->code, X86_OR, tree->left->reg1, 0xc00);
+	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->left->reg1, 2);
+	x86_fldcw_membase (s->code, X86_ESP, 2);
+	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
+	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
+	x86_fstsw(s->code); // stores flags in ax
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x80000000);
+
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
+
+	x86_pop_reg (s->code, tree->reg1);
+	x86_fldcw_membase (s->code, X86_ESP, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	x86_pop_reg (s->code, X86_EAX);
+
+	x86_test_reg_imm (s->code, tree->reg1, 0x8000000);
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 }
 
 reg: CONV_OVF_I1 (reg) {
