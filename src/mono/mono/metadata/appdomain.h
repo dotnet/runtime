@@ -55,7 +55,7 @@ typedef struct {
 	int         code_size;
 	guint32     used_regs;
 	unsigned    num_clauses;
-	unsigned    exvar_offset;
+	signed      exvar_offset;
 	MonoJitExceptionInfo *clauses;
 } MonoJitInfo;
 

@@ -89,6 +89,12 @@ mono_test_return_vtype ()
 	return res;
 }
 
+void
+mono_test_delegate_struct ()
+{
+	printf ("TEST\n");
+}
+
 typedef simplestruct (*ReturnVTypeDelegate) (simplestruct ss);
 
 simplestruct
