@@ -406,6 +406,9 @@ mono_create_method_pointer (MonoMethod *method)
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
 			break;
+		case MONO_TYPE_BOOLEAN:
+			x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 1);
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:

@@ -59,7 +59,7 @@ struct _MonoInvocation {
 	stackval       *stack;
 	/* exception info */
 	const unsigned char  *ip;
-	MonoObject     *ex;
+	MonoException     *ex;
 	MonoExceptionClause *ex_handler;
 };
 

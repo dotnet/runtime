@@ -143,13 +143,18 @@ ves_icall_app_get_cur_domain ()
 }
 
 static MonoReflectionType *
-my_mono_new_object (MonoClass *klass, gpointer data)
+my_mono_new_mono_type (MonoType *type)
 {
-	MonoReflectionType *res = (MonoReflectionType *)mono_object_new (klass);
+	MonoReflectionType *res = (MonoReflectionType *)mono_object_new (mono_defaults.monotype_class);
 
-	res->type = (MonoType *)data;
-
+	res->type = type;
 	return res;
+}
+
+static void
+mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
+{
+	mtype->type = &obj->klass->byval_arg;
 }
 
 static gint32
@@ -182,9 +187,9 @@ ves_icall_type_from_name (MonoObject *name)
 }
 
 static MonoReflectionType*
-ves_icall_type_from_handle (gpointer handle)
+ves_icall_type_from_handle (MonoType *handle)
 {
-	return my_mono_new_object (mono_defaults.monotype_class, handle);
+	return my_mono_new_mono_type (handle);
 }
 
 static gpointer
@@ -242,13 +247,14 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	g_strfreev (parts);
 
 	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
+	g_free (name);
+	g_free (namespace);
+	if (!klass)
+		return NULL;
 	if (!klass->metadata_inited)
 		mono_class_metadata_init (klass);
 
-	g_free (name);
-	g_free (namespace);
-
-	return my_mono_new_object (mono_defaults.monotype_class, &klass->byval_arg);
+	return my_mono_new_mono_type (&klass->byval_arg);
 }
 
 static MonoString *
@@ -256,18 +262,25 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 {
 	/* FIXME : real rules are more complicated (internal classes,
 	  reference types, array types, etc. */
-
-
 	MonoString *res;
 	gchar *fullname;
 	MonoClass *klass;
+	char *append = NULL;
 
-	klass = object->type->data.klass;
+	switch (object->type->type) {
+	case MONO_TYPE_SZARRAY:
+		klass = object->type->data.type->data.klass;
+		append = "[]";
+		break;
+	default:
+		klass = object->type->data.klass;
+		break;
+	}
 
 	fullname = g_strconcat (klass->name_space, ".",
 	                           klass->name, ",",
-	                           klass->image->assembly_name);
-  res = mono_string_new (fullname);
+	                           klass->image->assembly_name, append, NULL);
+	res = mono_string_new (fullname);
 	g_free (fullname);
 
 	return res;
@@ -385,7 +398,11 @@ static gpointer icall_map [] = {
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
 
+	/*
+	 * System.MonoType.
+	 */
 	"System.MonoType::assQualifiedName", ves_icall_System_MonoType_assQualifiedName,
+	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
 	/*

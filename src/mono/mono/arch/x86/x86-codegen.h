@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.15 2001/11/09 13:40:43 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.16 2001/11/14 15:18:55 lupus Exp $
 */
 
 #ifndef X86_H
@@ -844,6 +844,16 @@ typedef union {
 		if ((is_half)) op += 0x01;	\
 		*(inst)++ = op;	\
 		x86_membase_emit ((inst), (dreg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_widen_memindex(inst,dreg,basereg,disp,indexreg,shift,is_signed,is_half)	\
+	do {	\
+		unsigned char op = 0xb6;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		if ((is_signed)) op += 0x08;	\
+		if ((is_half)) op += 0x01;	\
+		*(inst)++ = op;	\
+		x86_memindex_emit ((inst), (dreg), (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
 #define x86_cdq(inst)  do { *(inst)++ = (unsigned char)0x99; } while (0)

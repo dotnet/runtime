@@ -595,7 +595,7 @@ ves_runtime_method (MonoInvocation *frame)
 	if (!target_offset) {
 		MonoClassField *field;
 
-		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "target");
+		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "m_target");
 		target_offset = field->offset;
 		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "method_ptr");
 		method_offset = field->offset;
@@ -652,6 +652,20 @@ dump_stack (stackval *stack, stackval *sp)
 		default: printf ("[%p] ", s->data.p); break;
 		}
 		++s;
+	}
+}
+
+static void
+dump_frame (MonoInvocation *inv)
+{
+	int i;
+	for (i = 0; inv; inv = inv->parent, ++i) {
+		MonoClass *k = inv->method->klass;
+		MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
+		g_print ("#%d: 0x%05x in %s.%s::%s (", i, inv->ip - hd->code, 
+						k->name_space, k->name, inv->method->name);
+		dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
+		g_print (")\n");
 	}
 }
 
@@ -718,7 +732,7 @@ db_match_method (gpointer data, gpointer user_data)
 #define THROW_EX(exception,ex_ip)	\
 		do {\
 			frame->ip = (ex_ip);		\
-			frame->ex = (exception);	\
+			frame->ex = (MonoException*)(exception);	\
 			goto handle_exception;	\
 		} while (0)
 
@@ -792,7 +806,7 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (!frame->method->addr) {
-			frame->ex = get_exception_missing_method ();
+			frame->ex = (MonoException*)get_exception_missing_method ();
 			DEBUG_LEAVE ();
 			return;
 		}
@@ -808,7 +822,7 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		if (!frame->method->addr) {
-			frame->ex = get_exception_missing_method ();
+			frame->ex = (MonoException*)get_exception_missing_method ();
 			DEBUG_LEAVE ();
 			return;
 		}
@@ -2116,10 +2130,9 @@ array_constructed:
 				oclass = o->klass;
 
 				if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
-					if ((c->interface_id < oclass->interface_count) &&
+					if ((c->interface_id <= oclass->max_interface_id) &&
 					    oclass->interface_offsets [c->interface_id])
 						found = TRUE;
-					g_error ("fixme: dont know if this works");
 				} else {
 					if ((oclass->baseval - c->baseval) <= c->diffval) {
 						sp [-1].data.vt.klass = c;
@@ -2169,8 +2182,11 @@ array_constructed:
 			c = mono_class_get (image, token);
 			
 			o = sp [-1].data.p;
+			if (!o)
+				THROW_EX (get_exception_null_reference(), ip - 1);
 
-			g_assert (o->klass->type_token == c->type_token);
+			if (o->klass->type_token != c->type_token)
+				THROW_EX (get_exception_invalid_cast (), ip - 1);
 
 			sp [-1].type = VAL_MP;
 			sp [-1].data.p = (char *)o + sizeof (MonoObject);
@@ -3156,6 +3172,8 @@ array_constructed:
 		MonoInvocation *inv;
 		MonoMethodHeader *hd;
 		MonoExceptionClause *clause;
+		char *message;
+		MonoObject *ex_obj;
 		
 		for (inv = frame; inv; inv = inv->parent) {
 			hd = ((MonoMethodNormal*)inv->method)->header;
@@ -3164,7 +3182,7 @@ array_constructed:
 				clause = &hd->clauses [i];
 				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
-							if (mono_object_isinst (frame->ex, mono_class_get (inv->method->klass->image, clause->token_or_filter))) {
+							if (mono_object_isinst ((MonoObject*)frame->ex, mono_class_get (inv->method->klass->image, clause->token_or_filter))) {
 								/* 
 								 * OK, we found an handler, now we need to execute the finally
 								 * and fault blocks before branching to the handler code.
@@ -3189,15 +3207,12 @@ array_constructed:
 		/*
 		 * If we get here, no handler was found: print a stack trace.
 		 */
-		g_print ("Unhandled exception %s.%s.\n", frame->ex->klass->name_space, frame->ex->klass->name);
-		for (inv = frame, i = 0; inv; inv = inv->parent, ++i) {
-			MonoClass *k = inv->method->klass;
-			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
-			g_print ("#%d: 0x%05x in %s.%s::%s (", i, inv->ip - hd->code, 
-							k->name_space, k->name, inv->method->name);
-			dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
-			g_print (")\n");
-		}
+		ex_obj = (MonoObject*)frame->ex;
+		message = frame->ex->message? mono_string_to_utf8 (frame->ex->message): NULL;
+		g_print ("Unhandled exception %s.%s %s.\n", ex_obj->klass->name_space, ex_obj->klass->name,
+				message?message:"");
+		g_free (message);
+		dump_frame (frame);
 		exit (1);
 	}
 	handle_finally:
@@ -3334,7 +3349,7 @@ typedef struct {
 
 static FieldDesc 
 typebuilder_fields[] = {
-	{"name", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, name)},
+	{"tname", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, name)},
 	{"nspace", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, nspace)},
 	{"parent", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, parent)},
 	{"interfaces", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, interfaces)},

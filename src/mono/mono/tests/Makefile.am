@@ -8,9 +8,13 @@ BENCHSRC=fib.cs random.cs nested-loops.cs
 
 TESTSRC=			\
 	array-init.cs		\
+	arraylist.cs		\
 	field-layout.cs		\
+	hash-table.cs		\
 	test-ops.cs		\
 	obj.cs			\
+	string.cs		\
+	stringbuilder.cs	\
 	switch.cs		\
 	outparm.cs		\
 	delegate.cs		\

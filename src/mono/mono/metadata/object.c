@@ -101,6 +101,7 @@ mono_object_clone (MonoObject *obj)
 	
 	size = obj->klass->instance_size;
 	o = mono_object_allocate (size);
+	/* FIXME: handle arrays... */
 	
 	memcpy (o, obj, size);
 
@@ -134,6 +135,8 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
 	 * they need to be kept in sync.
 	 */
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	if (!o)
+		G_BREAKPOINT ();
 	o->klass = array_class;
 	mono_threads_synchronisation_init (&o->synchronisation);
 

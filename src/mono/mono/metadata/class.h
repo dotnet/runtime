@@ -34,6 +34,7 @@ struct _MonoClass {
 	const char *name_space;
 	
 	guint       interface_id; /* unique inderface id (for interfaces) */
+	guint       max_interface_id;
 	gpointer   *interface_offsets;
 	guint       interface_count;
 	MonoClass **interfaces;

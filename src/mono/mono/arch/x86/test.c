@@ -126,6 +126,7 @@ int main() {
 
 	x86_lea_mem (p, X86_EDX, mem_addr);
 	/* test widen */
+	x86_widen_memindex (p, X86_EDX, X86_ECX, 0, X86_EBX, 2, 1, 0);
 	
 	x86_cdq (p);
 	x86_wait (p);

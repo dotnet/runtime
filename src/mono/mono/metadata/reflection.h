@@ -67,6 +67,12 @@ typedef struct {
 	MonoArray *code;
 	MonoReflectionILGen *ilgen;
 	MonoObject *type;
+	MonoArray *pinfo;
+	MonoString *dll;
+	MonoString *dllentry;
+	guint32 charset;
+	guint32 native_cc;
+	guint32 call_conv;
 } MonoReflectionMethodBuilder;
 
 typedef struct {
@@ -120,19 +126,6 @@ typedef struct {
 } MonoReflectionPropertyBuilder;
 
 typedef struct {
-	MonoReflectionType type;
-	MonoString *name;
-	MonoString *nspace;
-	MonoReflectionType *parent;
-	MonoArray *interfaces;
-	MonoArray *methods;
-	MonoArray *properties;
-	MonoArray *fields;
-	guint32 attrs;
-	guint32 table_idx;
-} MonoReflectionTypeBuilder;
-
-typedef struct {
 	MonoObject	obj;
 	MonoImage  *image;
 	MonoObject *assembly;
@@ -146,6 +139,20 @@ typedef struct {
 	MonoArray *types;
 	guint32    table_idx;
 } MonoReflectionModuleBuilder;
+
+typedef struct {
+	MonoReflectionType type;
+	MonoString *name;
+	MonoString *nspace;
+	MonoReflectionType *parent;
+	MonoArray *interfaces;
+	MonoArray *methods;
+	MonoArray *properties;
+	MonoArray *fields;
+	guint32 attrs;
+	guint32 table_idx;
+	MonoReflectionModuleBuilder *module;
+} MonoReflectionTypeBuilder;
 
 int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
 

@@ -224,7 +224,8 @@ mono_class_metadata_init (MonoClass *class)
 				max_iid = ic->interface_id;
 		}
 	}
-
+	
+	class->max_interface_id = max_iid;
 	/* compute vtable offset for interfaces */
 	class->interface_offsets = g_malloc (sizeof (gpointer) * (max_iid + 1));
 
@@ -291,6 +292,8 @@ mono_class_metadata_init (MonoClass *class)
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = ic->methods [l];						
 				MonoClass *k1;
+
+				g_assert (io <= class->vtable_size);
 
 				if (tmp_vtable [io + l] || vtable [io + l])
 					continue;

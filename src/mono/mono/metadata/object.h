@@ -27,6 +27,12 @@ typedef struct {
 	gint32 length;
 } MonoString;
 
+typedef struct {
+	MonoObject object;
+	MonoObject *inner_ex;
+	MonoString *message;
+} MonoException;
+
 #define mono_array_length(array) ((array)->bounds->length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
 #define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )

@@ -194,12 +194,12 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionMethodBuil
 	char *b = blob_size;
 	
 	p = buf = g_malloc (size);
-	*p = 0;
+	/* LAMESPEC: all the call conv spec is foobared */
+	*p = mb->call_conv & 0x60; /* has-this, explicit-this */
+	if (mb->call_conv & 2)
+		*p |= 0x5; /* vararg */
 	if (!(mb->attrs & METHOD_ATTRIBUTE_STATIC))
 		*p |= 0x20; /* hasthis */
-	/* 
-	 * FIXME: set also call convention and explict_this if needed.
-	 */
 	p++;
 	mono_metadata_encode_value (nparams, p, &p);
 	encode_type (mb->rtype->type, p, &p);
@@ -315,6 +315,25 @@ fat_header:
 	return assembly->text_rva + idx + CLI_H_SIZE;
 }
 
+static guint32
+find_index_in_table (MonoDynamicAssembly *assembly, int table_idx, int col, guint32 index)
+{
+	int i;
+	MonoDynamicTable *table;
+	guint32 *values;
+	
+	table = &assembly->tables [table_idx];
+
+	g_assert (col < table->columns);
+
+	values = table->values + table->columns;
+	for (i = 1; i <= table->rows; ++i) {
+		if (values [col] == index)
+			return i;
+	}
+	return 0;
+}
+
 static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly *assembly)
 {
@@ -333,6 +352,29 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 	values [MONO_METHOD_SIGNATURE] = method_encode_signature (assembly, mb);
 	values [MONO_METHOD_PARAMLIST] = 0; /* FIXME: add support later */
 	values [MONO_METHOD_RVA] = method_encode_code (assembly, mb);
+
+	if (mb->dll) { /* It's a P/Invoke method */
+		guint32 moduleref;
+		table = &assembly->tables [MONO_TABLE_IMPLMAP];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_IMPLMAP_SIZE;
+		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | mb->charset;
+		values [MONO_IMPLMAP_MEMBER] = (mb->table_idx << 1) | 1; /* memberforwarded: method */
+		name = mono_string_to_utf8 (mb->dllentry);
+		values [MONO_IMPLMAP_NAME] = string_heap_insert (&assembly->sheap, name);
+		g_free (name);
+		name = mono_string_to_utf8 (mb->dll);
+		moduleref = string_heap_insert (&assembly->sheap, name);
+		g_free (name);
+		if (!(values [MONO_IMPLMAP_SCOPE] = find_index_in_table (assembly, MONO_TABLE_MODULEREF, MONO_MODULEREF_NAME, moduleref))) {
+			table = &assembly->tables [MONO_TABLE_MODULEREF];
+			table->rows ++;
+			alloc_table (table, table->rows);
+			table->values [table->rows * MONO_MODULEREF_SIZE + MONO_MODULEREF_NAME] = moduleref;
+			values [MONO_IMPLMAP_SCOPE] = table->rows;
+		}
+	}
 }
 
 static guint32
@@ -372,6 +414,15 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 	g_free (name);
 	values [MONO_FIELD_FLAGS] = fb->attrs;
 	values [MONO_FIELD_SIGNATURE] = field_encode_signature (assembly, fb);
+
+	if (fb->offset != -1) {
+		table = &assembly->tables [MONO_TABLE_FIELDLAYOUT];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_FIELD_LAYOUT_SIZE;
+		values [MONO_FIELD_LAYOUT_FIELD] = fb->table_idx;
+		values [MONO_FIELD_LAYOUT_OFFSET] = fb->offset;
+	}
 }
 
 static guint32
@@ -457,18 +508,20 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 }
 
 static guint32
-mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoClass *klass)
+mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token;
+	MonoClass *klass;
 
 	if (!assembly->typeref)
 		assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, klass));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
+	klass = type->data.klass;
 	if (klass->image != mono_defaults.corlib)
 		g_error ("multiple assemblyref not yet supported");
 
@@ -479,7 +532,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoClass *klass)
 	values [MONO_TYPEREF_NAME] = string_heap_insert (&assembly->sheap, klass->name);
 	values [MONO_TYPEREF_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
 	token = 1 | (table->next_idx << 2); /* typeref */
-	g_hash_table_insert (assembly->typeref, klass, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
 }
@@ -496,8 +549,7 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 	tb->table_idx = table->next_idx ++;
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
 	values [MONO_TYPEDEF_FLAGS] = tb->attrs;
-	/* FIXME: use tb->base later */
-	values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, mono_defaults.object_class);
+	values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
 	n = mono_string_to_utf8 (tb->name);
 	values [MONO_TYPEDEF_NAME] = string_heap_insert (&assembly->sheap, n);
 	g_free (n);
