@@ -55,20 +55,20 @@
 
 	<ul>
 
-		* On compilation of stack-based languages:
+		* On compilation of stack-based languages:<br>
 		<a href="http://www.complang.tuwien.ac.at/projects/rafts.html">
 		http://www.complang.tuwien.ac.at/projects/rafts.html</a>
 
-		* A paper on fast JIT compilation of a stack-based language:
+		* A paper on fast JIT compilation of a stack-based language:<br>
 		  <a href="http://www.research.microsoft.com/~cwfraser/pldi99codegen.pdf">
 		  http://www.research.microsoft.com/~cwfraser/pldi99codegen.pdf</a>
 
 		* Vmgen generates much of the code for efficient virtual machine (VM)
-		  interpreters from simple descriptions of the VM instructions:
+		  interpreters from simple descriptions of the VM instructions:<br>
 		  <a href="http://www.complang.tuwien.ac.at/anton/vmgen/">
 		  http://www.complang.tuwien.ac.at/anton/vmgen</a>
 
-		* Garbage collection list and FAQ:
+		* Garbage collection list and FAQ:<br>
 		  <a href="http://www.iecc.com/gclist/">http://www.iecc.com/gclist/</a>
 	</ul>
 

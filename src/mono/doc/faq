@@ -126,6 +126,21 @@ Q: Why does Ximian even care?
 
 A: 
 
+** Licensing
+
+Q: What license is Mono on?
+
+A: The C# Compiler is released under the terms of the GPL.  The
+   class libraries are under the LGPL.  The runtime libraries are
+   under the LGPL. 
+
+Q: Will you accept code under the XXX License?
+
+A: If the XXX License is compatible with the license we use in that
+   specific piece of code, then yes.  If you want to use the BSD license, make
+   sure you use the BSD license without the advertisement clause (The
+   `Ousterhout License').
+
 ** Mono and .NET
 
 Q: If applications use Mono, does that mean that I have to pay a service fee?
