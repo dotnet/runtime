@@ -442,7 +442,7 @@ sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
 powerpc-*-linux* | powerpc-*-sysv*) TARGET=POWERPC; arch_target=ppc;;
-arm-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
+arm-*-linux-* | armv4l-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
 esac
 
 if test ${TARGET} = unknown; then
