@@ -94,6 +94,32 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Nov 1st, 2002: TDS, Crypto, Gtk#, bug fixes.
+
+	Tim's SqlClient is <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003161.html">now
+	capable</a> of communicating with the Microsoft SQL server
+	using the TDS protocol.  A screenshot showing a sample client
+	running with <a href="http://gtk-sharp.sf.net">Gtk#</a> on
+	Windows is shown <a
+	href="images/SqlSharpGtkSceenshot3.png">here</a>
+
+	Sebastien has made all symetric ciphers functional on all
+	supported modes; All the classes in Security.Cryptography are
+	ready and the X590 certificates are now in too.  Jackson has
+	been working on the Security classes.
+
+	Many bug fixes all over the place: class libraries (Dick,
+	Piers, Ville, Zoltan, Gonzalo, Dan, Atsushi, Nick, Phillip),
+	compiler, runtime engine.  A big thank goes for everyone who
+	has been providing bug reports for us to track down.
+
+	Gaurav has been working on multiple WebControls.  Gonzalo migrated
+	the ASP.NET engine to use POST for interaction.
+
+	In the Gtk# land saw the integration of gda, gnome-db and GStreamer
+	bindings.
+
 @item Oct 24th, 2002: S390 support, XSP/ASP.NET, Win32 contributors, TDS.
 
 	Today Neal Ferguson's support for the IBM S390 was checked
