@@ -77,7 +77,7 @@ static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
-static guint32 mono_aot_verbose = 1;
+static guint32 mono_aot_verbose = 0;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
@@ -641,7 +641,7 @@ emit_section_change (FILE *fp, const char *section_name, int subsection_index)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (fp, ".section \"%s\"\n", section_name);
 #else
-	fprintf (fp, "%s %s\n", section_name, subsection_index);
+	fprintf (fp, "%s %d\n", section_name, subsection_index);
 #endif
 }
 
@@ -807,7 +807,11 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	mname = g_strdup_printf ("m_%x", mono_metadata_token_index (method->token));
 	fprintf (tmpfp, "\t.align %d\n", func_alignment);
 	fprintf (tmpfp, ".globl %s\n", mname);
+#if defined(sparc)
 	fprintf (tmpfp, "\t.type %s,#function\n", mname);
+#else
+	fprintf (tmpfp, "\t.type %s,@function\n", mname);
+#endif
 	fprintf (tmpfp, "%s:\n", mname);
 
 	for (i = 0; i < cfg->code_len; i++) 
@@ -1286,7 +1290,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	com = g_strdup_printf ("as %s -o %s.o", tmpfname, tmpfname);
 	printf ("Executing the native assembler: %s\n", com);
-	system (com);
+	if (system (com) != 0) {
+		g_free (com);
+		return 1;
+	}
+
 	g_free (com);
 #if defined(sparc)
 	com = g_strdup_printf ("ld -shared -G -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
@@ -1294,7 +1302,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	com = g_strdup_printf ("ld -shared -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
 #endif
 	printf ("Executing the native linker: %s\n", com);
-	system (com);
+	if (system (com) != 0) {
+		g_free (com);
+		return 1;
+	}
+
 	g_free (com);
 	com = g_strdup_printf ("%s.o", tmpfname);
 	unlink (com);
