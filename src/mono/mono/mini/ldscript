@@ -1,6 +1,10 @@
 VER_1 {
       global: 
               mono_*;
+              GC_push_all_stack;
+              GC_start_blocking;
+              GC_end_blocking;
+              gc_thread_vtable;
       local:
               *;
 };
