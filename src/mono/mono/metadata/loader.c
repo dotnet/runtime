@@ -29,6 +29,8 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/class.h>
 
+static gboolean dummy_icall = TRUE;
+
 MonoDefaults mono_defaults;
 
 static char *dll_map[] = {
@@ -53,7 +55,7 @@ mono_map_dll (const char *name)
 }
 
 void
-mono_init ()
+mono_init (void)
 {
 	static gboolean initialized = FALSE;
 	MonoAssembly *ass;
@@ -150,16 +152,28 @@ static GHashTable *icall_hash = NULL;
 void
 mono_add_internal_call (const char *name, gpointer method)
 {
-	if (!icall_hash)
+	if (!icall_hash) {
+		dummy_icall = FALSE;
 		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
-	
+	}
+
 	g_hash_table_insert (icall_hash, g_strdup (name), method);
+}
+
+static void
+ves_icall_dummy ()
+{
+	g_warning ("the mono runtime is not initialized");
+	g_assert_not_reached ();
 }
 
 gpointer
 mono_lookup_internal_call (const char *name)
 {
 	gpointer res;
+
+	if (dummy_icall)
+		return ves_icall_dummy;
 
 	if (!icall_hash) {
 		g_warning ("icall_hash not initialized");
@@ -172,6 +186,98 @@ mono_lookup_internal_call (const char *name)
 	}
 
 	return res;
+}
+
+static ffi_type *
+ves_map_ffi_type (MonoType *type)
+{
+	ffi_type *rettype;
+
+	switch (type->type) {
+	case MONO_TYPE_I1:
+		rettype = &ffi_type_sint8;
+		break;
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U1:
+		rettype = &ffi_type_uint8;
+		break;
+	case MONO_TYPE_I2:
+		rettype = &ffi_type_sint16;
+		break;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		rettype = &ffi_type_uint16;
+		break;
+	case MONO_TYPE_I4:
+		rettype = &ffi_type_sint32;
+		break;
+	case MONO_TYPE_U4:
+		rettype = &ffi_type_sint32;
+		break;
+	case MONO_TYPE_I:
+		rettype = &ffi_type_sint;
+		break;
+	case MONO_TYPE_U:
+		rettype = &ffi_type_sint;
+		break;
+	case MONO_TYPE_I8:
+		rettype = &ffi_type_sint64;
+		break;
+	case MONO_TYPE_PTR:
+		rettype = &ffi_type_pointer;
+		break;
+	case MONO_TYPE_R4:
+		rettype = &ffi_type_float;
+		break;
+	case MONO_TYPE_R8:
+		rettype = &ffi_type_double;
+		break;
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_STRING:
+		rettype = &ffi_type_pointer;
+		break;
+	case MONO_TYPE_VOID:
+		rettype = &ffi_type_void;
+		break;
+	default:
+		g_warning ("not implemented 0x%02x", type->type);
+		g_assert_not_reached ();
+	}
+
+	return rettype;
+}
+
+static void
+prepare_pinvoke_info (MonoMethodPInvoke *piinfo)
+{
+	MonoMethod *mh = &piinfo->method;
+	int hasthis = mh->signature->hasthis;
+	ffi_type **args, *rettype;
+	int i, acount;
+
+	mh->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
+
+	piinfo->cif = g_new (ffi_cif , 1);
+
+	acount = mh->signature->param_count;
+
+	args = g_new (ffi_type *, acount + hasthis);
+
+	if (hasthis)
+		args [0] = &ffi_type_pointer;
+
+	for (i = 0; i < acount; i++)
+		args[i + hasthis] = ves_map_ffi_type (mh->signature->params [i]);
+
+	rettype = ves_map_ffi_type (mh->signature->ret);
+	
+	if (!ffi_prep_cif (piinfo->cif, FFI_DEFAULT_ABI, acount + hasthis, rettype, 
+			   args) == FFI_OK) {
+		g_warning ("prepare pinvoke failed");
+ 		g_assert_not_reached ();
+	}
 }
 
 static MonoMethod *
@@ -260,21 +366,23 @@ method_from_memberref (MonoImage *image, guint32 index)
 		if (type->type != MONO_TYPE_ARRAY)
 			g_assert_not_reached ();		
 
-		result = (MonoMethod *)g_new0 (MonoMethod, 1);
+		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
 		result->klass = mono_defaults.array_class;
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		result->signature = sig;
-		
+		result->name = mname;
+
 		if (!strcmp (mname, ".ctor")) { 
 			g_assert (sig->hasthis);
 			if (type->data.array->rank == sig->param_count) {
 				result->addr = mono_lookup_internal_call ("__array_ctor");
-				return result;
 			} else if ((type->data.array->rank * 2) == sig->param_count) {
 				result->addr = mono_lookup_internal_call ("__array_bound_ctor");
-				return result;			
 			} else 
 				g_assert_not_reached ();
+
+			prepare_pinvoke_info ((MonoMethodPInvoke *)result);
+			return result;						
 		}
 
 		if (!strcmp (mname, "Set")) {
@@ -303,64 +411,6 @@ method_from_memberref (MonoImage *image, guint32 index)
 	return NULL;
 }
 
-static ffi_type *
-ves_map_ffi_type (MonoType *type)
-{
-	ffi_type *rettype;
-
-	switch (type->type) {
-	case MONO_TYPE_I1:
-		rettype = &ffi_type_sint8;
-		break;
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U1:
-		rettype = &ffi_type_uint8;
-		break;
-	case MONO_TYPE_I2:
-		rettype = &ffi_type_sint16;
-		break;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		rettype = &ffi_type_uint16;
-		break;
-	case MONO_TYPE_I4:
-		rettype = &ffi_type_sint32;
-		break;
-	case MONO_TYPE_U4:
-		rettype = &ffi_type_sint32;
-		break;
-	case MONO_TYPE_I:
-		rettype = &ffi_type_sint;
-		break;
-	case MONO_TYPE_U:
-		rettype = &ffi_type_sint;
-		break;
-	case MONO_TYPE_I8:
-		rettype = &ffi_type_sint64;
-		break;
-	case MONO_TYPE_PTR:
-		rettype = &ffi_type_pointer;
-		break;
-	case MONO_TYPE_R4:
-		rettype = &ffi_type_float;
-		break;
-	case MONO_TYPE_R8:
-		rettype = &ffi_type_double;
-		break;
-	case MONO_TYPE_STRING:
-		rettype = &ffi_type_pointer;
-		break;
-	case MONO_TYPE_VOID:
-		rettype = &ffi_type_void;
-		break;
-	default:
-		g_warning ("not implemented 0x%02x", type->type);
-		g_assert_not_reached ();
-	}
-
-	return rettype;
-}
-
 static void
 fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 {
@@ -374,8 +424,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 	const char *scope = NULL;
 	char *full_name;
 	GModule *gmodule;
-	ffi_type **args, *rettype;
-	int i, acount;
+	int i;
 
 	for (i = 0; i < im->rows; i++) {
 			
@@ -392,6 +441,8 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 		}
 	}
 
+	piinfo->piflags = im_cols [0];
+
 	g_assert (import && scope);
 
 	scope = mono_map_dll (scope);
@@ -402,27 +453,11 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 		g_error ("Failed to load library %s (%s)", full_name, scope);
 	g_free (full_name);
 
-	piinfo->cif = g_new (ffi_cif , 1);
-	piinfo->piflags = im_cols [0];
-
 	g_module_symbol (gmodule, import, &mh->addr); 
 
 	g_assert (mh->addr);
 
-	acount = mh->signature->param_count;
-
-	args = g_new (ffi_type *, acount);
-
-	for (i = 0; i < acount; i++)
-		args[i] = ves_map_ffi_type (mh->signature->params [i]);
-
-	rettype = ves_map_ffi_type (mh->signature->ret);
-	
-	if (!ffi_prep_cif (piinfo->cif, FFI_DEFAULT_ABI, acount, rettype, 
-			   args) == FFI_OK) {
-		g_warning ("prepare pinvoke failed");
- 		g_assert_not_reached ();
-	}
+	prepare_pinvoke_info (piinfo);
 }
 
 MonoMethod *
@@ -447,41 +482,12 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
 
-	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_TYPEDEF];
-		MonoAssembly *corlib;
-		guint32 tdef;
-		guint32 tdcols [MONO_TYPEDEF_SIZE];
-
-		tdef = mono_metadata_typedef_from_method (image, index - 1) - 1;
-
-		mono_metadata_decode_row (t, tdef, tdcols, MONO_TYPEDEF_SIZE);
-
-		name = g_strconcat (mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAMESPACE]), ".",
-				    mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAME]), "::", 
-				    mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]), NULL);
-
-		corlib = mono_assembly_open (CORLIB_NAME, NULL, NULL);
-
-		/* all internal calls must be inside corlib */
-		g_assert (corlib->image == image);
-
-		result = (MonoMethod *)g_new0 (MonoMethod, 1);
-
-		result->addr = mono_lookup_internal_call (name);
-
-		g_free (name);
-
-		g_assert (result->addr != NULL);
-
-	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-
+	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
-	} else {
-
+	else 
 		result = (MonoMethod *)g_new0 (MonoMethodNormal, 1);
-	}
-
+	
 	result->klass = klass;
 	result->flags = cols [2];
 	result->iflags = cols [1];
@@ -497,10 +503,30 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 	}
 
-	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
-				   index - 1);
-	} else if (!(result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		MonoTableInfo *t = &image->tables [MONO_TABLE_TYPEDEF];
+		guint32 tdef;
+		guint32 tdcols [MONO_TYPEDEF_SIZE];
+
+		tdef = mono_metadata_typedef_from_method (image, index - 1) - 1;
+
+		mono_metadata_decode_row (t, tdef, tdcols, MONO_TYPEDEF_SIZE);
+
+		name = g_strconcat (mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAMESPACE]), ".",
+				    mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAME]), "::", 
+				    mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]), NULL);
+
+		result->addr = mono_lookup_internal_call (name);
+
+		g_free (name);
+
+		g_assert (result->addr != NULL);
+
+		prepare_pinvoke_info ((MonoMethodPInvoke *)result);
+
+	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index - 1);
+	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
 

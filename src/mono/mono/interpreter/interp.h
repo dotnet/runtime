@@ -55,5 +55,5 @@ struct _MonoInvocation {
 	MonoExceptionClause *ex_handler;
 };
 
-void mono_init_icall ();
+void mono_init_icall (void);
 

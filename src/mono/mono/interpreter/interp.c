@@ -487,6 +487,70 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	}
 }
 
+static void 
+ves_array_set (MonoInvocation *frame)
+{
+	stackval *sp = frame->stack_args;
+	MonoObject *o;
+	MonoArrayObject *ao;
+	MonoArrayClass *ac;
+	gint32 i, t, pos, esize;
+	gpointer ea;
+	MonoType *mt;
+
+	o = frame->obj;
+	ao = (MonoArrayObject *)o;
+	ac = (MonoArrayClass *)o->klass;
+
+	g_assert (ac->rank >= 1);
+
+	pos = sp [0].data.i - ao->bounds [0].lower_bound;
+	for (i = 1; i < ac->rank; i++) {
+		if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
+		    ao->bounds [i].length) {
+			g_warning ("wrong array index");
+			g_assert_not_reached ();
+		}
+		pos = pos*ao->bounds [i].length + sp [i].data.i - 
+			ao->bounds [i].lower_bound;
+	}
+
+	esize = mono_array_element_size (ac);
+	ea = ao->vector + (pos * esize);
+
+	mt = frame->method->signature->params [ac->rank];
+	stackval_to_data (mt, &sp [ac->rank], ea);
+}
+
+static void 
+ves_array_get (MonoInvocation *frame)
+{
+	stackval *sp = frame->stack_args;
+	MonoObject *o;
+	MonoArrayObject *ao;
+	MonoArrayClass *ac;
+	gint32 i, pos, esize;
+	gpointer ea;
+	MonoType *mt;
+
+	o = frame->obj;
+	ao = (MonoArrayObject *)o;
+	ac = (MonoArrayClass *)o->klass;
+
+	g_assert (ac->rank >= 1);
+
+	pos = sp [0].data.i - ao->bounds [0].lower_bound;
+	for (i = 1; i < ac->rank; i++)
+		pos = pos*ao->bounds [i].length + sp [i].data.i - 
+			ao->bounds [i].lower_bound;
+
+	esize = mono_array_element_size (ac);
+	ea = ao->vector + (pos * esize);
+
+	mt = frame->method->signature->ret;
+	stackval_from_data (mt, frame->retval, ea);
+}
+
 static char *
 mono_get_ansi_string (MonoObject *o)
 {
@@ -520,6 +584,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 {
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)frame->method;
 	MonoMethodSignature *sig = frame->method->signature;
+	int hasthis = sig->hasthis;
 	gpointer *values;
 	float *tmp_float;
 	char **tmp_string;
@@ -530,11 +595,15 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	acount = sig->param_count;
 
-	values = alloca (sizeof (gpointer) * acount);
+	values = alloca (sizeof (gpointer) * (acount + hasthis));
+
+	if (hasthis)
+		values[0] = &frame->obj;
 
 	/* fixme: only works on little endian machines */
 
 	for (i = 0; i < acount; i++) {
+		int ind = i + hasthis;
 
 		switch (sig->params [i]->type) {
 
@@ -549,18 +618,18 @@ ves_pinvoke_method (MonoInvocation *frame)
 		case MONO_TYPE_I: /* FIXME: not 64 bit clean */
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-			values[i] = &sp [i].data.i;
+			values[ind] = &sp [i].data.i;
 			break;
 		case MONO_TYPE_R4:
 			tmp_float = alloca (sizeof (float));
 			*tmp_float = sp [i].data.f;
-			values[i] = tmp_float;
+			values[ind] = tmp_float;
 			break;
 		case MONO_TYPE_R8:
-			values[i] = &sp [i].data.f;
+			values[ind] = &sp [i].data.f;
 			break;
 		case MONO_TYPE_I8:
-			values[i] = &sp [i].data.l;
+			values[ind] = &sp [i].data.l;
 			break;
 		case MONO_TYPE_STRING:
 			g_assert (sp [i].type == VAL_OBJ);
@@ -569,15 +638,20 @@ ves_pinvoke_method (MonoInvocation *frame)
 				tmp_string = alloca (sizeof (char *));
 				*tmp_string = mono_get_ansi_string (sp [i].data.p);
 				l = g_slist_prepend (l, *tmp_string);
-				values[i] = tmp_string;				
+				values[ind] = tmp_string;				
 			} else {
 				/* 
 				 * fixme: may we pass the object - I assume 
 				 * that is wrong ?? 
 				 */
-				values[i] = &sp [i].data.p;
+				values[ind] = &sp [i].data.p;
 			}
 			
+			break;
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_SZARRAY:
+			values[ind] = &sp [i].data.p;		
 			break;
  		default:
 			g_warning ("not implemented %x", 
@@ -599,6 +673,8 @@ ves_pinvoke_method (MonoInvocation *frame)
 	}
 
 	g_slist_free (l);
+
+	printf ("PINVOKE %s %08x %d %p\n", frame->method->name, sig->ret->type, sig->hasthis, frame->obj);
 
 	if (sig->ret->type != MONO_TYPE_VOID)
 		stackval_from_data (sig->ret, frame->retval, res);
@@ -743,8 +819,13 @@ ves_exec_method (MonoInvocation *frame)
 	DEBUG_ENTER ();
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		ICallMethod icall = frame->method->addr;
-		icall (frame);
+		if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+			printf ("TEST\n");
+			ves_pinvoke_method (frame);
+		} else {
+			ICallMethod icall = frame->method->addr;
+			icall (frame);
+		}
 		DEBUG_LEAVE ();
 		return;
 	} 
@@ -2850,6 +2931,9 @@ main (int argc, char *argv [])
 
 	mono_init ();
 	mono_init_icall ();
+
+	mono_add_internal_call ("__array_Set", ves_array_set);
+	mono_add_internal_call ("__array_Get", ves_array_get);
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){

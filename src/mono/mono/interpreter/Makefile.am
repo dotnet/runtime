@@ -6,11 +6,10 @@ INCLUDES = 				\
 
 bin_PROGRAMS = mint
 
-mint_SOURCES =	\
+mint_SOURCES =		\
 	hacks.h		\
 	interp.h	\
-	interp.c	\
-	icall.c
+	interp.c	
 
 mint_LDADD =				\
 	../metadata/libmetadata.a	\

@@ -20,7 +20,8 @@ libmetadata_a_SOURCES = \
 	rawbuffer.c	\
 	loader.c	\
 	class.c		\
-	object.c	
+	object.c	\
+	icall.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
