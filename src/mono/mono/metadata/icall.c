@@ -565,10 +565,18 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 	return mono_object_clone (this);
 }
 
+/*
+ * Return hashcode based on object address. This function will need to be
+ * smarter in the presence of a moving garbage collector, which will cache
+ * the address hash before relocating the object.
+ *
+ * Wang's address-based hash function:
+ *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
+ */
 static gint32
 ves_icall_System_Object_GetHashCode (MonoObject *this)
 {
-	return *((gint32 *)this - 1);
+	return (GPOINTER_TO_INT (this) >> 3) * 2654435761;
 }
 
 /*

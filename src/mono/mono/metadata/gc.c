@@ -55,8 +55,7 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 {
 #if HAVE_BOEHM_GC
 	guint offset = 0;
-	if (!mono_object_class (obj)->ghcimpl)
-		offset += 4;
+
 	g_assert (GC_base (obj) == (char*)obj - offset);
 	GC_register_finalizer ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #endif

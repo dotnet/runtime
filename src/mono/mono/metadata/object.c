@@ -495,19 +495,9 @@ mono_object_new_specific (MonoVTable *vtable)
 {
 	MonoObject *o;
 
-	mono_stats.new_object_count++;		/* thread safe? */
+	mono_stats.new_object_count++;
 
-	/* if the returned pointer is not the same as the address returned by GC_malloc(), 
-	 * we need to change also metadata/gc.c to take into account the new offset.
-	 */
-	if (vtable->klass->ghcimpl)
-		o = mono_object_allocate (vtable->klass->instance_size);
-	else {
-		guint32 *t;
-		t = mono_object_allocate (vtable->klass->instance_size + 4);
-		*t = ++uoid;
-		o = (MonoObject *)(++t);
-	}
+	o = mono_object_allocate (vtable->klass->instance_size);
 	o->vtable = vtable;
 	if (vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
