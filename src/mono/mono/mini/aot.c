@@ -595,7 +595,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 		g_ptr_array_free (patches, TRUE);
 
-		info += 4;
 		buf_len = *(guint32*)info;
 		info += 4;
 		mono_debug_add_aot_method (domain, method, code, info, buf_len);
