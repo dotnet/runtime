@@ -38,6 +38,8 @@
 		border-bottom: 2px solid #dddddd;
 	}
 
+	pre { font-size: 12px; }
+
 	.shell { 
 	border-style: solid; background: #000000; color: #bbbbbb;
 	#777777; border-width:
