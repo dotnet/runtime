@@ -5,6 +5,7 @@ SOURCES=	\
 	../anoncvs		\
 	../contributing  	\
 	../class-status		\
+	../classlib-doc		\
 	../contact		\
 	../c-sharp		\
 	../ccvs			\

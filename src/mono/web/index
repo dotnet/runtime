@@ -23,6 +23,15 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Jan 3, 2001
+
+	Mono C# compiler becomes self-sufficient.  We can now continue
+	development of the compiler with itself.  
+
+	Work on the class libraries is still underway for having a full
+	self hosting system.  We hope to achieve our goal of self-hosting
+	on Linux before the end of the month.
+
 ** Dec 28, 2001
 
 	After a lot of work, the C# compiler can compile itself.
