@@ -12,6 +12,7 @@ case "$host" in
 		AC_DEFINE(PLATFORM_WIN32)
 		CC="gcc -mno-cygwin"
 		HOST_CC="gcc"
+		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS"
 		libdl=
 		;;
 	*-*-*bsd*)
@@ -22,12 +23,12 @@ case "$host" in
 		;;
 	*-*-linux*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE -D_REENTRANT"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT"
 		libdl="-ldl"
 		;;
 	*-*-solaris*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -D_REENTRANT"
+		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])

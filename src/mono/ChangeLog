@@ -1,3 +1,9 @@
+
+Wed Sep 4 18:09:58 CEST 2002 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: add some needed defines to fix support of
+	threads in the GC.
+
 2002-09-19  Mark Crichton  <crichton@gimp.org>
 
 	* configure.in: Added checks for Solaris to use X/Open functionality.
