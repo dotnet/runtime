@@ -1,3 +1,7 @@
+2004-06-11  Jackson Harper  <jackson@ximian.com>
+
+	* man/mono.1: Add documentation for MONO_GAC_PREFIX.
+	
 2004-06-11  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (populate-runtime-subdir): New target.  Does a
