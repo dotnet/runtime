@@ -230,18 +230,20 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 
 	/* We can't put off locating the executable any longer :-( */
 	if(cmd!=NULL) {
+		gchar *unquoted;
 		if(g_ascii_isalpha (cmd[0]) && (cmd[1]==':')) {
 			/* Strip off the drive letter.  I can't
 			 * believe that CP/M holdover is still
 			 * visible...
 			 */
-			memmove (cmd, cmd+2, strlen (cmd)-2);
+			g_memmove (cmd, cmd+2, strlen (cmd)-2);
 			cmd[strlen (cmd)-2]='\0';
 		}
 
-		if(cmd[0]=='/') {
+		unquoted = g_shell_unquote (cmd, NULL);
+		if(unquoted[0]=='/') {
 			/* Assume full path given */
-			prog=g_strdup (cmd);
+			prog=g_strdup (unquoted);
 
 			/* Executable existing ? */
 			if(access (prog, X_OK)!=0) {
@@ -249,6 +251,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				g_message (G_GNUC_PRETTY_FUNCTION ": Couldn't find executable %s", prog);
 #endif
 				g_free (prog);
+				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto cleanup;
 			}
@@ -258,13 +261,15 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			 */
 			char *curdir=g_get_current_dir ();
 
-			prog=g_strdup_printf ("%s/%s", curdir, cmd);
+			prog=g_strdup_printf ("%s/%s", curdir, unquoted);
+			g_free (unquoted);
 			g_free (curdir);
 		}
 
 		args_after_prog=args;
 	} else {
 		gchar *token=NULL;
+		char quote;
 		
 		/* Dig out the first token from args, taking quotation
 		 * marks into account
@@ -282,8 +287,9 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		/* Assume the opening quote will always be the first
 		 * character
 		 */
-		if(args[0]=='\"') {
-			for(i=1; args[i]!='\0' && args[i]!='\"'; i++);
+		if(args[0]=='\"' || args [0] == '\'') {
+			quote = args [0];
+			for(i=1; args[i]!='\0' && args[i]!=quote; i++);
 			if(g_ascii_isspace (args[i+1])) {
 				/* We found the first token */
 				token=g_strndup (args+1, i-1);
@@ -337,7 +343,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			 * believe that CP/M holdover is still
 			 * visible...
 			 */
-			memmove (token, token+2, strlen (token)-2);
+			g_memmove (token, token+2, strlen (token)-2);
 			token[strlen (token)-2]='\0';
 		}
 
@@ -394,10 +400,14 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		   args_after_prog);
 #endif
 	
-	if(args_after_prog!=NULL) {
-		full_prog=g_strconcat (prog, " ", args_after_prog, NULL);
+	if(args_after_prog!=NULL && *args_after_prog) {
+		gchar *qprog;
+
+		qprog = g_shell_quote (prog);
+		full_prog=g_strconcat (qprog, " ", args_after_prog, NULL);
+		g_free (qprog);
 	} else {
-		full_prog=g_strdup (prog);
+		full_prog=g_shell_quote (prog);
 	}
 	
 	stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog));

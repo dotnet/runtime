@@ -733,19 +733,43 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 	mono_image_close (image);
 }
 
+static gchar *
+quote_path (const gchar *path)
+{
+	gchar *res = g_shell_quote (path);
+#ifdef PLATFORM_WIN32
+	{
+	gchar *q = res;
+	while (*q) {
+		if (*q == '\'')
+			*q = '\"';
+		q++;
+	}
+	}
+#endif
+	return res;
+}
+
 static gboolean
 complete_path (const gunichar2 *appname, gunichar2 **completed)
 {
 	gchar *utf8app;
 	gchar *found;
+	gchar *quoted8;
 
 	utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
 	if (g_path_is_absolute (utf8app)) {
+		quoted8 = quote_path (utf8app);
+		*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
+		g_free (quoted8);
 		g_free (utf8app);
-		return FALSE;
+		return TRUE;
 	}
 
 	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
+		quoted8 = quote_path (utf8app);
+		*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
+		g_free (quoted8);
 		g_free (utf8app);
 		return FALSE;
 	}
@@ -757,7 +781,9 @@ complete_path (const gunichar2 *appname, gunichar2 **completed)
 		return FALSE;
 	}
 
-	*completed = g_utf8_to_utf16 (found, -1, NULL, NULL, NULL);
+	quoted8 = quote_path (found);
+	*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
+	g_free (quoted8);
 	g_free (found);
 	g_free (utf8app);
 	return TRUE;
