@@ -124,13 +124,14 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 				g_free (klass);
 			}
 		}
+		fprintf (output, "\t%sIL_%04x: ", indent, (int) (ptr - start));
 		if (*ptr == 0xfe){
 			ptr++;
 			entry = &opcodes [*ptr + 256];
 		} else 
 			entry = &opcodes [*ptr];
 
-		fprintf (output, "\t%sIL_%04x: %s ", indent, (int) (ptr - start), entry->name);
+		fprintf (output, "%s ", entry->name);
 		ptr++;
 		switch (entry->argument){
 		case InlineBrTarget: {
