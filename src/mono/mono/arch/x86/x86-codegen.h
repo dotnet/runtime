@@ -242,6 +242,10 @@ typedef union {
 /*
  * useful building blocks
  */
+#define x86_modrm_mod(modrm) ((modrm) >> 6)
+#define x86_modrm_reg(modrm) (((modrm) >> 3) & 0x7)
+#define x86_modrm_rm(modrm) ((modrm) & 0x7)
+
 #define x86_address_byte(inst,m,o,r) do { *(inst)++ = ((((m)&0x03)<<6)|(((o)&0x07)<<3)|(((r)&0x07))); } while (0)
 #define x86_imm_emit32(inst,imm)     \
 	do {	\
