@@ -2465,6 +2465,10 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				g_assert(klass->valuetype);
 				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
 				break;
+			case CEE_MONO_SAVE_LMF:
+			case CEE_MONO_RESTORE_LMF:
+				++td.ip;
+				break;
 			default:
 				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td.ip, td.ip-header->code);
 			}
