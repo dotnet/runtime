@@ -268,15 +268,17 @@ static void file_close_private (gpointer handle)
 		return;
 	}
 	
+	if (file_private_handle->fd_mapped.assigned) {
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": closing file handle %p with fd %d",
-		  handle, file_private_handle->fd);
+		g_message(G_GNUC_PRETTY_FUNCTION ": closing file handle %p with fd %d",
+			  handle, file_private_handle->fd_mapped.fd);
 #endif
 	
-	/* Blank out the mapping, to make catching errors easier */
-	_wapi_handle_fd_offset_store (file_private_handle->fd, NULL);
+		/* Blank out the mapping, to make catching errors easier */
+		_wapi_handle_fd_offset_store (file_private_handle->fd_mapped.fd, NULL);
 	
-	close(file_private_handle->fd);
+		close(file_private_handle->fd_mapped.fd);
+	}
 }
 
 static WapiFileType file_getfiletype(void)
@@ -334,6 +336,11 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(bytesread!=NULL) {
 		*bytesread=0;
@@ -342,7 +349,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -351,7 +358,8 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 
 	if (file_private_handle->async == FALSE) {
 		do {
-			ret=read(file_private_handle->fd, buffer, numbytes);
+			ret=read(file_private_handle->fd_mapped.fd, buffer,
+				 numbytes);
 		}
 		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 			
@@ -361,7 +369,8 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
 				  ": read of handle %p fd %d error: %s", handle,
-				  file_private_handle->fd, strerror(err));
+				  file_private_handle->fd_mapped.fd,
+				  strerror(err));
 #endif
 			SetLastError (_wapi_get_win32_file_error (err));
 			return(FALSE);
@@ -384,7 +393,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	}
 
 	{
-	int fd = file_private_handle->fd;
+	int fd = file_private_handle->fd_mapped.fd;
 	struct aiocb *aio;
 	int result;
 	notifier_data_t *ndata;
@@ -451,6 +460,11 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -459,7 +473,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -473,35 +487,37 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		 * because we only do advisory locking on POSIX
 		 * systems
 		 */
-		current_pos = lseek (file_private_handle->fd, (off_t)0,
-				     SEEK_CUR);
+		current_pos = lseek (file_private_handle->fd_mapped.fd,
+				     (off_t)0, SEEK_CUR);
 		if (current_pos == -1) {
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d lseek failed: %s", handle, file_private_handle->fd, strerror (errno));
+			g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d lseek failed: %s", handle, file_private_handle->fd_mapped.fd, strerror (errno));
 #endif
 			_wapi_set_last_error_from_errno ();
 			return(FALSE);
 		}
 		
-		if (_wapi_lock_file_region (file_private_handle->fd,
+		if (_wapi_lock_file_region (file_private_handle->fd_mapped.fd,
 					    current_pos, numbytes) == FALSE) {
 			/* The error has already been set */
 			return(FALSE);
 		}
 		
 		do {
-			ret=write(file_private_handle->fd, buffer, numbytes);
+			ret=write(file_private_handle->fd_mapped.fd, buffer,
+				  numbytes);
 		}
 		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-		_wapi_unlock_file_region (file_private_handle->fd, current_pos,
-					  numbytes);
+		_wapi_unlock_file_region (file_private_handle->fd_mapped.fd,
+					  current_pos, numbytes);
 
 		if(ret==-1) {
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
 				  ": write of handle %p fd %d error: %s", handle,
-				  file_private_handle->fd, strerror(errno));
+				  file_private_handle->fd_mapped.fd,
+				  strerror(errno));
 #endif
 
 			_wapi_set_last_error_from_errno ();
@@ -523,7 +539,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	}
 
 	{
-	int fd = file_private_handle->fd;
+	int fd = file_private_handle->fd_mapped.fd;
 	struct aiocb *aio;
 	int result;
 	notifier_data_t *ndata;
@@ -589,22 +605,27 @@ static gboolean file_flush(gpointer handle)
 		return(FALSE);
 	}
 
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 
-	ret=fsync(file_private_handle->fd);
+	ret=fsync(file_private_handle->fd_mapped.fd);
 	if (ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": fsync of handle %p fd %d error: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -633,12 +654,17 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(INVALID_SET_FILE_POINTER);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -688,20 +714,21 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 #ifdef HAVE_LARGE_FILE_SUPPORT
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": moving handle %p fd %d by %lld bytes from %d", handle,
-		  file_private_handle->fd, offset, whence);
+		  file_private_handle->fd_mapped.fd, offset, whence);
 #else
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": moving handle %p fd %d by %ld bytes from %d", handle,
-		  file_private_handle->fd, offset, whence);
+		  file_private_handle->fd_mapped.fd, offset, whence);
 #endif
 #endif
 
-	newpos=lseek(file_private_handle->fd, offset, whence);
+	newpos=lseek(file_private_handle->fd_mapped.fd, offset, whence);
 	if(newpos==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": lseek on handle %p fd %d returned error %s",
-			  handle, file_private_handle->fd, strerror(errno));
+			  handle, file_private_handle->fd_mapped.fd,
+			  strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -732,7 +759,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": move of handle %p fd %d returning %d/%d", handle,
-		  file_private_handle->fd, ret,
+		  file_private_handle->fd_mapped.fd, ret,
 		  highmovedistance==NULL?0:*highmovedistance);
 #endif
 
@@ -757,11 +784,16 @@ static gboolean file_setendoffile(gpointer handle)
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -774,12 +806,12 @@ static gboolean file_setendoffile(gpointer handle)
 	 * than the length, truncate the file.
 	 */
 	
-	ret=fstat(file_private_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd_mapped.fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -787,12 +819,12 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 	size=statbuf.st_size;
 
-	pos=lseek(file_private_handle->fd, (off_t)0, SEEK_CUR);
+	pos=lseek(file_private_handle->fd_mapped.fd, (off_t)0, SEEK_CUR);
 	if(pos==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d lseek failed: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -802,7 +834,7 @@ static gboolean file_setendoffile(gpointer handle)
 	if(pos>size) {
 		/* extend */
 		do {
-			ret=write(file_private_handle->fd, "", 1);
+			ret=write(file_private_handle->fd_mapped.fd, "", 1);
 		}
 		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
@@ -810,7 +842,7 @@ static gboolean file_setendoffile(gpointer handle)
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
 				  ": handle %p fd %d extend write failed: %s",
-				  handle, file_private_handle->fd,
+				  handle, file_private_handle->fd_mapped.fd,
 				  strerror(errno));
 #endif
 
@@ -823,7 +855,7 @@ static gboolean file_setendoffile(gpointer handle)
 	 * byte to the end of the file
 	 */
 	do {
-		ret=ftruncate(file_private_handle->fd, pos);
+		ret=ftruncate(file_private_handle->fd_mapped.fd, pos);
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 			
@@ -831,7 +863,7 @@ static gboolean file_setendoffile(gpointer handle)
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d ftruncate failed: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 		
 		_wapi_set_last_error_from_errno ();
@@ -859,24 +891,29 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(INVALID_FILE_SIZE);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(INVALID_FILE_SIZE);
 	}
 
-	ret=fstat(file_private_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd_mapped.fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -924,23 +961,28 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
-	ret=fstat(file_private_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd_mapped.fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -1018,11 +1060,16 @@ static gboolean file_setfiletime(gpointer handle,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -1033,7 +1080,7 @@ static gboolean file_setfiletime(gpointer handle,
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d unknown filename", handle,
-			  file_private_handle->fd);
+			  file_private_handle->fd_mapped.fd);
 #endif
 
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -1043,12 +1090,12 @@ static gboolean file_setfiletime(gpointer handle,
 	/* Get the current times, so we can put the same times back in
 	 * the event that one of the FileTime structs is NULL
 	 */
-	ret=fstat(file_private_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd_mapped.fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			  file_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
@@ -1108,7 +1155,8 @@ static gboolean file_setfiletime(gpointer handle,
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p [%s] fd %d utime failed: %s", handle,
-			  name, file_private_handle->fd, strerror(errno));
+			  name, file_private_handle->fd_mapped.fd,
+			  strerror(errno));
 
 #endif
 		g_free (name);
@@ -1163,16 +1211,18 @@ static void console_close_private (gpointer handle)
 		return;
 	}
 	
+	if (console_private_handle->fd_mapped.assigned == TRUE) {
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": closing console handle %p with fd %d", handle,
-		  console_private_handle->fd);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": closing console handle %p with fd %d", handle,
+			  console_private_handle->fd_mapped.fd);
 #endif
 	
-	/* Blank out the mapping, to make catching errors easier */
-	_wapi_handle_fd_offset_store (console_private_handle->fd, NULL);
+		/* Blank out the mapping, to make catching errors easier */
+		_wapi_handle_fd_offset_store (console_private_handle->fd_mapped.fd, NULL);
 	
-	close(console_private_handle->fd);
+		close(console_private_handle->fd_mapped.fd);
+	}
 }
 
 static WapiFileType console_getfiletype(void)
@@ -1198,6 +1248,11 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (console_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(bytesread!=NULL) {
 		*bytesread=0;
@@ -1206,7 +1261,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	if(!(console_handle->fileaccess&GENERIC_READ) &&
 	   !(console_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, console_private_handle->fd_mapped.fd, console_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -1214,7 +1269,8 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	}
 	
 	do {
-		ret=read(console_private_handle->fd, buffer, numbytes);
+		ret=read(console_private_handle->fd_mapped.fd, buffer,
+			 numbytes);
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
@@ -1222,7 +1278,8 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": read of handle %p fd %d error: %s", handle,
-			  console_private_handle->fd, strerror(errno));
+			  console_private_handle->fd_mapped.fd,
+			  strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -1254,6 +1311,11 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (console_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -1262,7 +1324,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	if(!(console_handle->fileaccess&GENERIC_WRITE) &&
 	   !(console_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, console_private_handle->fd_mapped.fd, console_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -1270,7 +1332,8 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	}
 	
 	do {
-		ret=write(console_private_handle->fd, buffer, numbytes);
+		ret=write(console_private_handle->fd_mapped.fd, buffer,
+			  numbytes);
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
@@ -1278,7 +1341,8 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
-			  console_private_handle->fd, strerror(errno));
+			  console_private_handle->fd_mapped.fd,
+			  strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -1333,16 +1397,18 @@ static void pipe_close_private (gpointer handle)
 		return;
 	}
 	
+	if (pipe_private_handle->fd_mapped.fd == TRUE) {
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": closing pipe handle %p with fd %d", handle,
-		  pipe_private_handle->fd);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": closing pipe handle %p with fd %d", handle,
+			  pipe_private_handle->fd_mapped.fd);
 #endif
 	
-	/* Blank out the mapping, to make catching errors easier */
-	_wapi_handle_fd_offset_store (pipe_private_handle->fd, NULL);
+		/* Blank out the mapping, to make catching errors easier */
+		_wapi_handle_fd_offset_store (pipe_private_handle->fd_mapped.fd, NULL);
 	
-	close(pipe_private_handle->fd);
+		close(pipe_private_handle->fd_mapped.fd);
+	}
 }
 
 static WapiFileType pipe_getfiletype(void)
@@ -1368,7 +1434,12 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
-	
+
+	if (pipe_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+
 	if(bytesread!=NULL) {
 		*bytesread=0;
 	}
@@ -1376,7 +1447,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	if(!(pipe_handle->fileaccess&GENERIC_READ) &&
 	   !(pipe_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, pipe_private_handle->fd, pipe_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, pipe_private_handle->fd_mapped.fd, pipe_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -1386,11 +1457,11 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": reading up to %d bytes from pipe %p (fd %d)", numbytes,
-		   handle, pipe_private_handle->fd);
+		   handle, pipe_private_handle->fd_mapped.fd);
 #endif
 
 	do {
-		ret=read(pipe_private_handle->fd, buffer, numbytes);
+		ret=read(pipe_private_handle->fd_mapped.fd, buffer, numbytes);
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 		
@@ -1398,7 +1469,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": read of handle %p fd %d error: %s", handle,
-			  pipe_private_handle->fd, strerror(errno));
+			  pipe_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -1434,6 +1505,11 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	if (pipe_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -1442,7 +1518,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	if(!(pipe_handle->fileaccess&GENERIC_WRITE) &&
 	   !(pipe_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, pipe_private_handle->fd, pipe_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, pipe_private_handle->fd_mapped.fd, pipe_handle->fileaccess);
 #endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
@@ -1452,11 +1528,11 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": writing up to %d bytes to pipe %p (fd %d)", numbytes,
-		   handle, pipe_private_handle->fd);
+		   handle, pipe_private_handle->fd_mapped.fd);
 #endif
 
 	do {
-		ret=write(pipe_private_handle->fd, buffer, numbytes);
+		ret=write(pipe_private_handle->fd_mapped.fd, buffer, numbytes);
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
@@ -1464,7 +1540,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
-			  pipe_private_handle->fd, strerror(errno));
+			  pipe_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -1773,8 +1849,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	_wapi_handle_fd_offset_store (fd, handle);
 	cf_ret = GINT_TO_POINTER (fd);
 
-	file_private_handle->fd=fd;
-	file_private_handle->assigned=TRUE;
+	file_private_handle->fd_mapped.fd=fd;
+	file_private_handle->fd_mapped.assigned=TRUE;
 	file_private_handle->async = ((attrs & FILE_FLAG_OVERLAPPED) != 0);
 	file_handle->filename=_wapi_handle_scratch_store (filename,
 							  strlen (filename));
@@ -1792,7 +1868,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": returning handle %p with fd %d", handle,
-		  file_private_handle->fd);
+		  file_private_handle->fd_mapped.fd);
 #endif
 
 cleanup:
@@ -2164,8 +2240,8 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	_wapi_handle_fd_offset_store (fd, handle);
 	ret = GINT_TO_POINTER (fd);
 	
-	file_private_handle->fd=fd;
-	file_private_handle->assigned=TRUE;
+	file_private_handle->fd_mapped.fd=fd;
+	file_private_handle->fd_mapped.assigned=TRUE;
 	file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
 	/* some default security attributes might be needed */
 	file_handle->security_attributes=0;
@@ -2175,7 +2251,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": returning handle %p with fd %d",
-		  handle, file_private_handle->fd);
+		  handle, file_private_handle->fd_mapped.fd);
 #endif
 
 cleanup:
@@ -3695,14 +3771,19 @@ int _wapi_file_handle_to_fd (gpointer fd_handle)
 		}
 	}
 	
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(-1);
+	}
+	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %d",
-		   file_private_handle->fd);
+		   file_private_handle->fd_mapped.fd);
 #endif
 	
-	g_assert (file_private_handle->fd == GPOINTER_TO_INT (fd_handle));
+	g_assert (file_private_handle->fd_mapped.fd == GPOINTER_TO_INT (fd_handle));
 	
-	return(file_private_handle->fd);
+	return(file_private_handle->fd_mapped.fd);
 }
 
 gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
@@ -3814,15 +3895,15 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	}
 	cp_ret = TRUE;
 	
-	pipe_read_private_handle->fd=filedes[0];
-	pipe_read_private_handle->assigned=TRUE;
+	pipe_read_private_handle->fd_mapped.fd=filedes[0];
+	pipe_read_private_handle->fd_mapped.assigned=TRUE;
 	pipe_read_handle->fileaccess=GENERIC_READ;
 	
 	_wapi_handle_fd_offset_store (filedes[0], read_handle);
 	*readpipe=GINT_TO_POINTER (filedes[0]);
 
-	pipe_write_private_handle->fd=filedes[1];
-	pipe_write_private_handle->assigned=TRUE;
+	pipe_write_private_handle->fd_mapped.fd=filedes[1];
+	pipe_write_private_handle->fd_mapped.assigned=TRUE;
 	pipe_write_handle->fileaccess=GENERIC_WRITE;
 	
 	_wapi_handle_fd_offset_store (filedes[1], write_handle);
@@ -4114,11 +4195,16 @@ gboolean LockFile (gpointer fd_handle, guint32 offset_low, guint32 offset_high,
 		return(FALSE);
 	}
 
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+
 	if (!(file_handle->fileaccess & GENERIC_READ) &&
 	    !(file_handle->fileaccess & GENERIC_WRITE) &&
 	    !(file_handle->fileaccess & GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -4131,7 +4217,7 @@ gboolean LockFile (gpointer fd_handle, guint32 offset_low, guint32 offset_high,
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": Locking handle %p fd %d, offset %lld, length %lld",
-		   handle, file_private_handle->fd, offset, length);
+		   handle, file_private_handle->fd_mapped.fd, offset, length);
 #endif
 #else
 	offset = offset_low;
@@ -4140,12 +4226,12 @@ gboolean LockFile (gpointer fd_handle, guint32 offset_low, guint32 offset_high,
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": Locking handle %p fd %d, offset %ld, length %ld",
-		   handle, file_private_handle->fd, offset, length);
+		   handle, file_private_handle->fd_mapped.fd, offset, length);
 #endif
 #endif
 
-	return(_wapi_lock_file_region (file_private_handle->fd, offset,
-				       length));
+	return(_wapi_lock_file_region (file_private_handle->fd_mapped.fd,
+				       offset, length));
 }
 
 gboolean UnlockFile (gpointer fd_handle, guint32 offset_low,
@@ -4173,11 +4259,16 @@ gboolean UnlockFile (gpointer fd_handle, guint32 offset_low,
 		return(FALSE);
 	}
 
+	if (file_private_handle->fd_mapped.assigned == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
 	if (!(file_handle->fileaccess & GENERIC_READ) &&
 	    !(file_handle->fileaccess & GENERIC_WRITE) &&
 	    !(file_handle->fileaccess & GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd_mapped.fd, file_handle->fileaccess);
 #endif
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -4190,7 +4281,7 @@ gboolean UnlockFile (gpointer fd_handle, guint32 offset_low,
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": Unlocking handle %p fd %d, offset %lld, length %lld",
-		   handle, file_private_handle->fd, offset, length);
+		   handle, file_private_handle->fd_mapped.fd, offset, length);
 #endif
 #else
 	offset = offset_low;
@@ -4199,10 +4290,10 @@ gboolean UnlockFile (gpointer fd_handle, guint32 offset_low,
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": Unlocking handle %p fd %d, offset %ld, length %ld",
-		   handle, file_private_handle->fd, offset, length);
+		   handle, file_private_handle->fd_mapped.fd, offset, length);
 #endif
 #endif
 
-	return(_wapi_unlock_file_region (file_private_handle->fd, offset,
-					 length));
+	return(_wapi_unlock_file_region (file_private_handle->fd_mapped.fd,
+					 offset, length));
 }
