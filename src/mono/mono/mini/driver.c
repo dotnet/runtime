@@ -581,7 +581,7 @@ mini_main (int argc, char* argv[]) {
 	}
 
 	mini_set_defaults (mini_verbose, opt);
-	domain = mini_init (argv [0]);
+	domain = mini_init (argv [i]);
 
 	switch (action) {
 	case DO_REGRESSION:
