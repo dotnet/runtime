@@ -361,22 +361,29 @@ static void
 emit_tree_match (char *st, Tree *t)
 {
 	char *tn;
+	int not_first = strcmp (st, "p->");
 
-	if (predefined_terms)
-		output ("\t\t\t%sop == %s /* %s */", st, t->op->name, t->op->name);
-	else
-		output ("\t\t\t%sop == %d /* %s */", st, t->op->number, t->op->name);
-	
+	/* we can omit this check at the top level */
+	if (not_first) {
+		if (predefined_terms)
+			output ("\t\t\t%sop == %s /* %s */", st, t->op->name, t->op->name);
+		else
+			output ("\t\t\t%sop == %d /* %s */", st, t->op->number, t->op->name);
+	}
+
 	if (t->left && t->left->op) {
 		tn = g_strconcat (st, "left->", NULL);
-		output (" &&\n");
+		if (not_first)
+			output (" &&\n");
+		not_first = 1;
 		emit_tree_match (tn, t->left);
 		g_free (tn);
 	}
 
 	if (t->right && t->right->op) {
 		tn = g_strconcat (st, "right->", NULL);
-		output (" &&\n");
+		if (not_first)
+			output (" &&\n");
 		emit_tree_match (tn, t->right);
 		g_free (tn);
 	}
