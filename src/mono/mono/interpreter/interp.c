@@ -3493,6 +3493,7 @@ array_constructed:
 			}
 			goto handle_finally;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ICALL_V_V) 
 		MINT_IN_CASE(MINT_ICALL_P_V) 
 		MINT_IN_CASE(MINT_ICALL_P_P)
 		MINT_IN_CASE(MINT_ICALL_PP_V)
