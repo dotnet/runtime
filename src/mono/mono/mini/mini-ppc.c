@@ -77,7 +77,7 @@ emit_memcpy (guint32 *code, int size, int dreg, int doffset, int sreg, int soffs
  * Returns the size of the activation frame.
  */
 int
-arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
 	int size, align, pad;
