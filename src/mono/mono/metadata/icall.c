@@ -2202,7 +2202,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
-	delegate = mono_object_new (target->vtable->domain, delegate_class);
+	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 
 	func = mono_compile_method (info->method);
 
