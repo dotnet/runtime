@@ -470,14 +470,21 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	if (sig->hasthis)
 		add_general (&gr, &stack_size, cinfo->args + 0, FALSE);
 
+	if ((sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
+		gr = PARAM_REGS;
+
+		/* Emit the signature cookie just before the implicit arguments */
+		add_general (&gr, &stack_size, &cinfo->sig_cookie, FALSE);
+	}
+
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			gr = PARAM_REGS;
+
 			/* Emit the signature cookie just before the implicit arguments */
 			add_general (&gr, &stack_size, &cinfo->sig_cookie, FALSE);
-			/* Prevent implicit arguments from being passed in registers */
-			gr = PARAM_REGS;
 		}
 
 		DEBUG(printf("param %d: ", i));
@@ -557,6 +564,13 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		default:
 			g_assert_not_reached ();
 		}
+	}
+
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n > 0) && (sig->sentinelpos == sig->param_count)) {
+		gr = PARAM_REGS;
+
+		/* Emit the signature cookie just before the implicit arguments */
+		add_general (&gr, &stack_size, &cinfo->sig_cookie, FALSE);
 	}
 
 	/* return value */
@@ -982,30 +996,42 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
+
+		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			/* Emit the signature cookie just before the first implicit argument */
+			MonoInst *sig_arg;
+			MonoMethodSignature *tmp_sig;
+
+			/*
+			 * mono_ArgIterator_Setup assumes the signature cookie is 
+			 * passed first and all the arguments which were before it are
+			 * passed on the stack after the signature. So compensate by 
+			 * passing a different signature.
+			 */
+			tmp_sig = mono_metadata_signature_dup (call->signature);
+			tmp_sig->param_count -= call->signature->sentinelpos;
+			tmp_sig->sentinelpos = 0;
+			memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+			/* FIXME: Add support for signature tokens to AOT */
+			cfg->disable_aot = TRUE;
+			/* We allways pass the signature on the stack for simplicity */
+			MONO_INST_NEW (cfg, arg, OP_SPARC_OUTARG_MEM);
+			arg->inst_basereg = sparc_sp;
+			arg->inst_imm = ARGS_OFFSET + cinfo->sig_cookie.offset;
+			MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+			sig_arg->inst_p0 = tmp_sig;
+			arg->inst_left = sig_arg;
+			arg->type = STACK_PTR;
+			/* prepend, so they get reversed */
+			arg->next = call->out_args;
+			call->out_args = arg;
+		}
+
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instruction */
 			in = call->args [i];
 		} else {
-			if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-				/* FIXME: Test varargs with 0 implicit args */
-				/* FIXME: Test interaction with hasthis */
-				/* Emit the signature cookie just before the first implicit argument */
-				MonoInst *sig_arg;
-				/* FIXME: Add support for signature tokens to AOT */
-				cfg->disable_aot = TRUE;
-				/* We allways pass the signature on the stack for simplicity */
-				MONO_INST_NEW (cfg, arg, OP_SPARC_OUTARG_MEM);
-				arg->inst_basereg = sparc_sp;
-				arg->inst_imm = ARGS_OFFSET + cinfo->sig_cookie.offset;
-				MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
-				sig_arg->inst_p0 = call->signature;
-				arg->inst_left = sig_arg;
-				arg->type = STACK_PTR;
-				/* prepend, so they get reversed */
-				arg->next = call->out_args;
-				call->out_args = arg;
-			}
-
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			in = call->args [i];
 			arg->cil_code = in->cil_code;
