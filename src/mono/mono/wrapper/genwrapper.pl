@@ -226,6 +226,7 @@ map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "ESTALE",
 	   "int", "%d", "EDQUOT",
 	   "int", "%d", "ENOMEDIUM",
+	   "int", "%d", "ENOTDIR",
 	   );
 
 sub init {
