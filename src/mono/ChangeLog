@@ -1,3 +1,8 @@
+2002-07-12  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h:
+	* configure.in: Check the size of sockaddr_un.sun_path
+
 2002-06-23  Miguel de Icaza  <miguel@ximian.com>
 
 	* man/Makefile.am (man_MANS): Added new man page

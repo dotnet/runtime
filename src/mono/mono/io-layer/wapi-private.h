@@ -22,7 +22,7 @@
  *
  * If this ever reaches 255, we have problems :-(
  */
-#define _WAPI_HANDLE_VERSION 4
+#define _WAPI_HANDLE_VERSION 5
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -101,10 +101,7 @@ struct _WapiHandleShared
  */
 struct _WapiHandleShared_list
 {
-	/* UNIX_PATH_MAX doesnt seem to be defined in any accessible
-	 * header file
-	 */
-	guchar daemon[108];
+	guchar daemon[MONO_SIZEOF_SUNPATH];
 	_wapi_daemon_status daemon_running;
 	
 #ifdef _POSIX_THREAD_PROCESS_SHARED

@@ -877,7 +877,8 @@ void _wapi_daemon_main(void)
 	main_sock=socket(PF_UNIX, SOCK_STREAM, 0);
 
 	main_socket_address.sun_family=AF_UNIX;
-	memcpy(main_socket_address.sun_path, _wapi_shared_data->daemon, sizeof (main_socket_address.sun_path));
+	memcpy(main_socket_address.sun_path, _wapi_shared_data->daemon,
+	       MONO_SIZEOF_SUNPATH);
 
 	ret=bind(main_sock, (struct sockaddr *)&main_socket_address,
 		 sizeof(struct sockaddr_un));

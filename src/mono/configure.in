@@ -265,6 +265,29 @@ if test x$platform_win32 = xno; then
 
 	AC_CHECK_FUNCS(inet_pton inet_aton)
 
+	dnl ***********************************************
+	dnl *** Checks for size of sockaddr_un.sun_path ***
+	dnl ***********************************************
+	# AC_CHECK_SIZEOF can't cope with struct members :-(
+	AC_MSG_CHECKING(size of sockaddr_un.sun_path)
+	AC_CACHE_VAL(cv_mono_sizeof_sunpath,
+		[AC_TRY_RUN([
+			#include <stdio.h>
+			#include <sys/un.h>
+
+			int main(void) {
+				struct sockaddr_un sock_un;
+				FILE *f=fopen("conftestval", "w");
+				if(!f) exit(1);
+				fprintf(f, "%d\n", sizeof(sock_un.sun_path));
+				exit(0);
+			}
+		], cv_mono_sizeof_sunpath=`cat conftestval`,
+		   cv_mono_sizeof_sunpath=0,
+		   cv_mono_sizeof_sunpath=0)])dnl
+	AC_MSG_RESULT($cv_mono_sizeof_sunpath)
+	AC_DEFINE_UNQUOTED(MONO_SIZEOF_SUNPATH, $cv_mono_sizeof_sunpath)
+
 	dnl *****************************
 	dnl *** Checks for libpthread ***
 	dnl *****************************
