@@ -417,18 +417,22 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
  * This function returns the optimizations supported on this cpu.
  */
 guint32
-mono_arch_cpu_optimizazions (void)
+mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	int eax, ebx, ecx, edx;
 	guint32 opts = 0;
 
+	*exclude_mask = 0;
 	/* Feature Flags function, flags returned in EDX. */
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 15)) {
 			opts |= MONO_OPT_CMOV;
 			if (edx & 1)
 				opts |= MONO_OPT_FCMOV;
-		}
+			else
+				*exclude_mask |= MONO_OPT_FCMOV;
+		} else
+			*exclude_mask |= MONO_OPT_CMOV;
 	}
 	return opts;
 }

@@ -78,11 +78,13 @@ parse_optimizations (const char* p)
 {
 	/* the default value */
 	guint32 opt = MONO_OPT_PEEPHOLE | MONO_OPT_CFOLD /* | MONO_OPT_CONSPROP | MONO_OPT_INLINE*/ | MONO_OPT_BRANCH | /* | MONO_OPT_SAHRED |*/ MONO_OPT_LINEARS;
+	guint32 exclude = 0;
 	const char *n;
 	int i, invert, len;
 
 	/* call out to cpu detection code here that sets the defaults ... */
-	opt |= mono_arch_cpu_optimizazions ();
+	opt |= mono_arch_cpu_optimizazions (&exclude);
+	opt &= ~exclude;
 	if (!p)
 		return opt;
 
@@ -121,7 +123,7 @@ parse_optimizations (const char* p)
 				if (invert)
 					opt = 0;
 				else
-					opt = ~(MONO_OPT_SAHRED);
+					opt = ~(MONO_OPT_SAHRED | exclude);
 				p += 3;
 				if (*p == ',')
 					p++;

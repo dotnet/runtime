@@ -615,7 +615,7 @@ MonoCoverageInfo *mono_allocate_coverage_info (MonoMethod *method, int size);
 MonoCoverageInfo *mono_get_coverage_info      (MonoMethod *method);
 
 /* methods that must be provided by the arch-specific port */
-guint32   mono_arch_cpu_optimizazions           (void);
+guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask);
 void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack, int *code);
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
 void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
