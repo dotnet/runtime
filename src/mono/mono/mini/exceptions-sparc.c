@@ -151,7 +151,7 @@ mono_arch_get_call_filter (void)
 }
 
 static void
-throw_exception (MonoObject *ex, gpointer sp, gpointer ip)
+throw_exception (MonoObject *exc, gpointer sp, gpointer ip)
 {
 	MonoContext ctx;
 	static void (*restore_context) (MonoContext *);
@@ -169,7 +169,7 @@ throw_exception (MonoObject *ex, gpointer sp, gpointer ip)
 		MonoException *mono_ex = (MonoException*)exc;
 		mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, ex, ip, FALSE);
+	mono_handle_exception (&ctx, exc, ip, FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
