@@ -1,3 +1,8 @@
+2001-07-17  Sean MacIsaac  <macisaac@ximian.com>
+
+	* ByNamespace.xsl: removed bug for improper handling of namespace.
+	eg System.Collections.Blah was showing up in System list.
+
 2001-07-16  Sean MacIsaac  <macisaac@ximian.com>
 
 	* ByNamespace.xsl: Needed by ByNamespace.cs.

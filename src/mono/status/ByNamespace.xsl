@@ -2,6 +2,8 @@
 
 <xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
 
+<xsl:output method="html" indent="yes"/>
+
 <xsl:param name="ns"/>
 
 <xsl:template match="/">
@@ -21,7 +23,7 @@
 </xsl:template>
 
 <xsl:template match="class">
-  <xsl:if test="starts-with(@name, $ns)">
+  <xsl:if test="starts-with(@name, $ns) and not(contains(substring-after(@name, concat($ns, '.')), '.'))">
     <tr>
       <td><xsl:value-of select="@name"/></td>
       <td><xsl:value-of select="maintainers/maintainer[1]"/></td>
