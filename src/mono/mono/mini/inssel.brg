@@ -1637,13 +1637,22 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	MonoMethod *method = ((MonoCallInst*)tree)->method;
 	int vtable_reg, slot_reg, this_reg;
 	MBState *state = st;
+	gboolean enable_for_aot = TRUE;
 
 	this_reg = state->left->reg1;
 	mono_arch_emit_this_vret_args (cfg, (MonoCallInst*)tree, this_reg, state->left->tree->type, novirtop == OP_VCALL? state->right->reg1: -1);
 
-	if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
-	    ((method->flags & METHOD_ATTRIBUTE_FINAL) && 
-	     method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) {
+#ifdef MONO_ARCH_NEED_GOT_VAR
+	/* Can't create a got var at this point */
+	enable_for_aot = cfg->got_var != NULL;
+#else
+	enable_for_aot = TRUE;
+#endif
+
+	if ((!cfg->compile_aot || enable_for_aot) && 
+		(!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
+	     ((method->flags & METHOD_ATTRIBUTE_FINAL) && 
+	     method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK))) {
 		/* 
 		 * the method is not virtual, we just need to ensure this is not null
 		 * and then we can call the method directly.

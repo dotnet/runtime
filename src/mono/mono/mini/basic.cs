@@ -636,6 +636,31 @@ class Tests {
 		return 1;
 	}
 
+	static int test_0_switch_constprop () {
+		int n = -1;
+
+		switch (n) {
+		case 0: return 2;
+		case 1: return 3;
+		case 2: return 3;			
+		default:
+			return 0;
+		}
+		return 3;
+	}
+
+	static int test_0_switch_constprop2 () {
+		int n = 3;
+
+		switch (n) {
+		case 0: return 2;
+		case 1: return 3;
+		case 2: return 3;			
+		default:
+			return 0;
+		}
+		return 3;
+	}
 
 	static int test_0_while_loop_1 () {
 
