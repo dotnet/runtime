@@ -5863,6 +5863,7 @@ handle_type:
 				}
 				break;
 			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_STRING:
 				for (i = 0; i < alen; i++) {
 					MonoObject *item = load_cattr_value (image, &t->data.klass->byval_arg, p, &p);
