@@ -820,13 +820,13 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
 			tmp++;
 			value += 15;
-			if (*value && strcmp (value, "null")) {
+			if (*value && strncmp (value, "null", 4)) {
 				gchar *t = g_strdup (value);
 				g_strchug (t);
 				aname->public_tok_value = g_strdup (g_strchomp (value));
 				g_free (t);
-				continue;
 			}
+			continue;
 		}
 
 		g_strfreev (parts);
