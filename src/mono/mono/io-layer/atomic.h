@@ -36,35 +36,38 @@ static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest
 
 static inline gint32 InterlockedIncrement(volatile gint32 *val)
 {
-	__asm__ __volatile__ ("lock; incl %0"
-			      : "=m" (*val)
-			      : "0" (*val));
+	gint32 tmp;
+	
+	__asm__ __volatile__ ("lock; xaddl %0, %1"
+			      : "=r" (tmp), "=m" (*val)
+			      : "0" (1), "1" (*val));
 
-	/* Potential race condition here if *val gets incremented again between
-	 * the asm and the return.
-	 */
-	return(*val);
+	return(tmp+1);
 }
 
 static inline gint32 InterlockedDecrement(volatile gint32 *val)
 {
-	__asm__ __volatile__ ("lock; decl %0"
-			      : "=m" (*val)
-			      : "0" (*val));
+	gint32 tmp;
+	
+	__asm__ __volatile__ ("lock; xaddl %0, %1"
+			      : "=r" (tmp), "=m" (*val)
+			      : "0" (-1), "1" (*val));
 
-	/* Potential race condition here if *val gets decremented again between
-	 * the asm and the return.
-	 */
-	return(*val);
+	return(tmp-1);
 }
 
+/*
+ * See
+ * http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
+ * for the reasons for using cmpxchg and a loop here.
+ */
 static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new)
 {
 	gint32 ret;
 	
-	__asm__ __volatile__ ("lock; xchgl %0, %1"
-			      : "=r" (ret), "=m" (*val)
-			      : "0" (new), "1" (*val));
+	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
+			      : "=m" (*val), "=a" (ret)
+			      : "r" (new), "0" (*val), "a" (*val));
 
 	return(ret);
 }
@@ -74,9 +77,9 @@ static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
 {
 	gpointer ret;
 	
-	__asm__ __volatile__ ("lock; xchgl %0, %1"
-			      : "=r" (ret), "=m" (*val)
-			      : "0" (new), "1" (*val));
+	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
+			      : "=m" (*val), "=a" (ret)
+			      : "r" (new), "0" (*val), "a" (*val));
 
 	return(ret);
 }
