@@ -34,7 +34,7 @@
 	  </tr>
 	  <tr>
 	    <td>
-	      <b><a href="c-sharp.html">Compiler</a></b>
+	      <b><a href="c-sharp.html">C# Compiler</a></b>
 	    </td>
 	    <td>
 	      Self hosting on Linux and Windows.
@@ -93,7 +93,12 @@
 	environment, fixing bugs, adding missing features and allowing
 	us to run the compiler on Linux.
 
-	Remember to post your bug reports
+	Remember to post your bug reports.
+
+	The nice class status on the right is brought to you by
+	endless hacking hours from Piers and Nick.  These status
+	report pages have been helping us track down various mistakes
+	in our classes (very useful, check it out for yourself)
 
 ** Mar 12, 2002
 
