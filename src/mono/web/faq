@@ -66,7 +66,7 @@ A: Mono contains a number of components useful for building new
    Windows has compilers that target the virtual machine from <a
    href="http://msdn.microsoft.com/net/thirdparty/default.asp#lang">a
    number of languages:</a> Managed C++, Java Script, Eiffel,
-   Component Pascal, APL, Cobol, Oberon, Perl, Python, Scheme,
+   Component Pascal, APL, Cobol, Perl, Python, Scheme,
    Smalltalk, Standard ML, Haskell, Mercury and Oberon.
 
    The CLR and the Common Type System (CTS) enables applications and
@@ -119,13 +119,13 @@ A: Different parts of Mono will achieve usability at different stages,
    which contains everything needed to develop applications with the base
    class libraries.  This should be available at some point during 2002.
 
-   Other higher level class libraries (ASP.NET, ADO.NET, Windows.Forms) will
+   Other higher level class libraries (ASP.NET, ADO.NET) will
    be released when they become stable. 
 
 Q: What major components will you include in Mono?
 
 A: Hopefully everything that Microsoft ships on their Framework
-   (ADO.NET, ASP.NET, Windows.Forms), and
+   (ADO.NET, ASP.NET), and
    we encourage third party developers to create reusable components that
    work on both Mono and Windows.
 
@@ -242,6 +242,15 @@ Q: But will I be able to build GNOME applications?
 
 A: Yes, we will enable people to write GNOME applications using Mono.
 
+Q: Do you have C# bindings for GNOME?.
+
+A: Yes, we currently bind libgnome, libgnomecanvas, and libgnomeui --
+   although I dare say I have no idea how functional the bindings are
+   outside of what I tested in the sample app. I imagine other libraries 
+   under the GNOME framework will be added on an as-needed (and as-requested) 
+   basis...although a truly good bonobo binding will have to wait on the CORBA 
+   remoting support which has been started recently.
+
 <a name="gui"></a>
 ** GUI applications
 
@@ -277,6 +286,17 @@ Q: How can I compile my HelloWorld.cs which uses Gtk#?.
 A: Try: mcs --unsafe -o HelloWorld.exe -r glib-sharp -r pango-sharp -r
         atk-sharp -r gdk-sharp -r gtk-sharp -r gdk-imaging-sharp
         HelloWorld.cs
+
+Q: Is there any way how to connect DataAdapter to some GTK# controls?
+
+A: There is a sample file called `DbClient' in gtk-sharp/samples that you
+   might to look at.  It is a sample program in Gtk# that adds/updates/deletes 
+   information on a Postgress database. When we have the new table/tree widgets, 
+   I am sure someone would write an adapter for System.Data (in Gtk2 the 
+   tree/list widgets are written using a view/model, so you only need to write 
+   a model that maps to the database). You can have a look at 
+   gtk-sharp/sample/DbClient, where there is a GTK# application that uses 
+   System.Data. It does not use DataAdapter, but DataReader though.
 
 <a name="winforms"></a>
 ** Mono and WinForms
@@ -416,6 +436,25 @@ Q: Will Mono allow me to run Microsoft Office on Linux?
 A: No, it will not.  Microsoft Office is a Windows application.  To
    learn more about running Windows applications on Intel Unix systems
    refer to <a href="http://www.winehq.com">the Wine Project</a>.
+
+Q: Will I be able to compile a Microsoft VB.NET application and execute 
+   the resultant MSIL file under MONO on Linux without converting to C# 
+   and recompiling?
+
+A: Once we have a complete VisualBasic runtime, yes.
+
+Q: Can mono run the WebMatrix ?
+
+A: No. That requires winforms (we don't have).
+
+Q: Does mono have something like Passport ? (ie PassportIdentity class,somewhere
+   in System.Web ?) . Will mono have a server side Passport/Similar framework
+   for XSP as well as client classes ?
+
+A: Not yet, but the client side API for authentication is not the problem. 
+   We will likely have a lot of other authentication APIs, like the Liberty
+   Aliance APIs. The problem is people on the web provider end that might use 
+   this for authentication.
 
 <a name="pnpproject"></a>
 ** Mono and Portable.NET
@@ -598,6 +637,72 @@ Q: Is there any way I can install a known working copy of mono in /usr,
 
 A: Yes. Just use two installation prefixes.
 
+Q: How should I write tests or a tests suite?
+
+A: If you do a test suite for C#, you might want to keep it 
+   independent of the Mono C# compiler, so that other compiler 
+   implementations can later use it.  
+
+Q: Is the current stage the implementation of mono_create_trampoline
+   function?  Hence the sparc-codegen.h is reasonably complete? Is 
+   mono/arch/x86/* the best reference material for this stuff?
+
+A: sparc-codegen.h is basically complete. We may want to add some
+   convenience macros along the way, but it has all the stuff you need.
+   And yes, or, the ppc/ dir, since the ppc call convention is more similar 
+   to the sparc one than the x86 one. The current issues with the sparc 
+   code are. roughly:
+     1) it needs to handle overflowing the out registers (the additional
+     arguments need to be put on the stack)
+     2) it needs to flush the icache where the generated code is stored
+     3) it needs to implement mono_create_method_pointer to get delegates
+        working
+     4) it needs a couple of updates (mono_method_pointer_get is no longer
+     needed, for example)
+
+Q: Would it be too terrible to have another corlib signed as mscorlib? 
+
+A: We rename corlib to mscorlib also when saving the PE files, in fact, 
+   the runtime can execute program created by mono just fine.  
+
+Q: How do I build corlib under Linux?
+
+A: You can build your own (see the web site on how to get the mcs 
+   project from cvs), but in order to build them using mcs you need a 
+   set of working class libraries. After building the runtime (using
+   mono-build.sh) get them from the nightly build and put them (and
+   mcs.exe) in your mono/install/lib directory. Then you should be able 
+   to do: cd mcs, then: make -f makefile.gnu, then: cp mcs/mcs.exe 
+   class/lib/*.dll ../install/lib Also, you should know that you can 
+   either get your dose of DLLs from MonoCharge, or from 
+   http://primates.ximian.com/~miguel/runtime. MonoCharge is updated 
+   automatically, while the later is only updated when Miguel is around 
+   Once you have the DLLs, you can use `make -f makefile.gnu' as described
+   before to self-host.
+
+Q: Is there a relatively straightforward way to repeat the steps taken 
+   by Paolo to get Mono completely self-hosted on linux?
+
+A: To build the compiler and class libraries in Linux, run:
+   <ul><li>make -f makefile.gnu. To install them, run: </li>
+       <li>make -f makefile.gnu install</li>
+       <li>You can also specify a prefix:</li>
+       <li>make -f makefile.gnu install prefix=/opt</li>
+   </ul>
+   If you want to produce and distribute a monocharge tarball, run:
+   make -f makefile.gnu dist
+
+Q: Is it possible to build a C# file to some sort of intermediate format which 
+   can linked into a final module, like the traditional .c -> .o -> .so path? 
+   
+A: You could do: mcs /target:module file1.cs, mcs /target:module file2.cs, 
+   mcs /target:exe file1.dll file2.dll /out:mybin.exe
+
+Q: Is there any plans for implementing remoting in the near future?, When will 
+   work in System.Runtime.Remoting.dll start?
+
+A: The remoting infrastructure is in place. Some of the channels and 
+   formatters are not.
 
 <a name="asp">
 ** Mono and ASP.NET
@@ -611,6 +716,17 @@ A: Yes. The development of the support for ASP.NET comes in various stages,
    Running the sample with our classes with the .NET runtime. 5. Running 
    our sample code with our classes with our runtime. This is the process 
    we are following. Currently Gonzalo has reached point 5.
+
+Q: Do I need install cygwin to work on ASP.NET in mono or Linux is enough since 
+   it is self host right now.
+
+A: Linux is enough.
+
+Q: Any plan to make ASP.NET in mono works with Apache in linux?.
+
+A: Yes, we have plans to do so, but we need to wait for Patrik's patches to
+   HttpRuntime. Once that is there, writing a mod_mono should be trivial 
+   (look at mono/samples/embed for a sample embedded application).
 
 <a name="java">
 ** Mono and Java
@@ -674,6 +790,12 @@ A: No. It is quite far from the philosophy of the project. The idea of Mono
    An other point is, that there are no people, who use OpenSource-JVMs. They 
    all prefer Suns original. But for Unix there don't exist a .NET-Framework. 
    So it is possible, that in the future Mono is the standard .NET for unixes.
+
+Q: Do you plan to implement a Javascript compiler?
+
+A: Yes. Eto Demerzal has started a Rhino port to C#.
+   After this is completed, we will begin developing
+   the Javascript compiler.
 
 <a name="extending"></a>
 ** Extending Mono
@@ -773,6 +895,17 @@ Q: If I were about to start a Mono port to IA-64,would the same lburg code
 
 A: The lburg approach can be use for any processor architecture. But you might
    think in another better approach.
+
+Q: Do you plan to port Rhino to C#?.
+
+A: Eto Demerzal has started a Rhino port to C#.
+
+Q: Has anyone succeeded in building a Mac version of the C# environment. 
+   If so can you explain how?  
+
+A: You could try to check with the Darwin people, or the Fink people.
+   Mono/C# is self hosting on Linux/PPC which is the hard part, so it
+   should be relatively simple to get it to work on macos
 
 <a name="reuse"></a>
 ** Reusing Existing Code
@@ -989,3 +1122,20 @@ Q: Does mcs support the same command line options as the MS C#
 
 A: The Mono C# compiler on CVS now supports the same command line
    arguments as the Microsoft C# compiler does.
+
+Q: I am thinking about making a VS.NET solution and include as 
+   projects both the library and the System.Xml.dll project 
+   file: is that the best way (sure at the beginning, when the 
+   compiler was not self hosting, you made something similar...)?
+
+A: Jason and Krall did check in VS.NET files that you can use 
+   to compile our System.XML and even to run the System.XML tests 
+   (which is way cool, and way simple).
+
+Q: How about getting searchable archives on lists.ximian.com? 
+
+A: You mean like http://www.go-mono.com/mailing-lists.html?
+
+
+
+
