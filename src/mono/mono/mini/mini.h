@@ -261,7 +261,7 @@ struct MonoCallInst {
 	regmask_t used_iregs;
 	regmask_t used_fregs;
 #ifdef __x86_64__
-	MonoInst **out_reg_args;
+	GSList *out_reg_args;
 #endif
 };
 

@@ -53,7 +53,6 @@ static gint lmf_tls_offset = -1;
  * FIXME: 
  * - Use xmm registers instead of the x87 stack
  * - Allocate arguments to global registers
- * - Align end of argument area to 16 bytes
  * - implement emulated opcodes
  * - (all archs) do not store trampoline addresses in method->info since they
  *   are domain specific.   
@@ -102,12 +101,18 @@ typedef enum {
 	ArgInFloatSSEReg,
 	ArgInDoubleSSEReg,
 	ArgOnStack,
+	ArgValuetypeInReg,
+	ArgNone /* only in pair_storage */
 } ArgStorage;
 
 typedef struct {
 	gint16 offset;
 	gint8  reg;
 	ArgStorage storage;
+
+	/* Only if storage == ArgValuetypeInReg */
+	ArgStorage pair_storage [2];
+	gint8 pair_regs [2];
 } ArgInfo;
 
 typedef struct {
@@ -123,9 +128,18 @@ typedef struct {
 
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
+#define NEW_ICONST(cfg,dest,val) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_ICONST;	\
+		(dest)->inst_c0 = (val);	\
+		(dest)->type = STACK_I4;	\
+	} while (0)
+
 #define PARAM_REGS 6
 
 static AMD64_Reg_No param_regs [] = { AMD64_RDI, AMD64_RSI, AMD64_RDX, AMD64_RCX, AMD64_R8, AMD64_R9 };
+
+static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
 
 static void inline
 add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
@@ -165,6 +179,185 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
     }
 }
 
+typedef enum ArgumentClass {
+	ARG_CLASS_NO_CLASS,
+	ARG_CLASS_MEMORY,
+	ARG_CLASS_INTEGER,
+	ARG_CLASS_SSE
+} ArgumentClass;
+
+static void
+add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+			   gboolean is_return,
+			   guint32 *gr, guint32 *fr, guint32 *stack_size)
+{
+	guint32 size, quad, nquads, i;
+	ArgumentClass args [2];
+	MonoMarshalType *info;
+
+	if (sig->pinvoke) 
+		size = mono_type_native_stack_size (&type->data.klass->byval_arg, NULL);
+	else 
+		size = mono_type_stack_size (&type->data.klass->byval_arg, NULL);
+
+	if (!sig->pinvoke || (size > 16)) {
+		/* Allways pass in memory */
+		ainfo->offset = *stack_size;
+		*stack_size += ALIGN_TO (size, 8);
+		ainfo->storage = ArgOnStack;
+
+		return;
+	}
+
+	if ((size % 8) != 0)
+		NOT_IMPLEMENTED;
+
+	if (size > 8)
+		nquads = 2;
+	else
+		nquads = 1;
+
+	/*
+	 * Implement the algorithm from section 3.2.3 of the X86_64 ABI.
+	 * The X87 and SSEUP stuff is left out since there are no such types in
+	 * the CLR.
+	 */
+	info = mono_marshal_load_type_info (type->data.klass);
+	g_assert (info);
+	if (info->native_size > 16) {
+		ainfo->offset = *stack_size;
+		*stack_size += ALIGN_TO (info->native_size, 8);
+		ainfo->storage = ArgOnStack;
+
+		return;
+	}
+
+	for (quad = 0; quad < nquads; ++quad) {
+		int size, align;
+		ArgumentClass class1, class2;
+		
+		class1 = ARG_CLASS_NO_CLASS;
+		for (i = 0; i < info->num_fields; ++i) {
+			size = mono_marshal_type_size (info->fields [i].field->type, 
+										   info->fields [i].mspec, 
+										   &align, TRUE, type->data.klass->unicode);
+			if ((info->fields [i].offset < 8) && (info->fields [i].offset + size) > 8) {
+				/* Unaligned field */
+				NOT_IMPLEMENTED;
+			}
+
+			/* Skip fields in other quad */
+			if ((quad == 0) && (info->fields [i].offset >= 8))
+				continue;
+			if ((quad == 1) && (info->fields [i].offset < 8))
+				continue;
+
+			switch (info->fields [i].field->type->type) {
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_FNPTR:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+				class2 = ARG_CLASS_INTEGER;
+				break;
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+				class2 = ARG_CLASS_SSE;
+				break;
+
+			case MONO_TYPE_TYPEDBYREF:
+				g_assert_not_reached ();
+
+			case MONO_TYPE_VALUETYPE:
+				if (sig->params [i]->data.klass->enumtype)
+					class2 = ARG_CLASS_INTEGER;
+				else
+					NOT_IMPLEMENTED;
+			}
+
+			/* Merge */
+			if (class1 == class2)
+				;
+			else if (class1 == ARG_CLASS_NO_CLASS)
+				class1 = class2;
+			else if ((class1 == ARG_CLASS_MEMORY) || (class2 == ARG_CLASS_MEMORY))
+				class1 = ARG_CLASS_MEMORY;
+			else if ((class1 == ARG_CLASS_INTEGER) || (class2 == ARG_CLASS_INTEGER))
+				class1 = ARG_CLASS_INTEGER;
+			else
+				class1 = ARG_CLASS_SSE;
+		}
+		g_assert (class1 != ARG_CLASS_NO_CLASS);
+		args [quad] = class1;
+	}
+
+	/* Post merger cleanup */
+	if ((args [0] == ARG_CLASS_MEMORY) || (args [1] == ARG_CLASS_MEMORY))
+		args [0] = args [1] = ARG_CLASS_MEMORY;
+
+	/* Allocate registers */
+	{
+		int orig_gr = *gr;
+		int orig_fr = *fr;
+
+		ainfo->storage = ArgValuetypeInReg;
+		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+		for (quad = 0; quad < nquads; ++quad) {
+			switch (args [quad]) {
+			case ARG_CLASS_INTEGER:
+				if (*gr >= PARAM_REGS)
+					args [quad] = ARG_CLASS_MEMORY;
+				else {
+					ainfo->pair_storage [quad] = ArgInIReg;
+					if (is_return)
+						ainfo->pair_regs [quad] = return_regs [*gr];
+					else
+						ainfo->pair_regs [quad] = param_regs [*gr];
+					(*gr) ++;
+				}
+				break;
+			case ARG_CLASS_SSE:
+				if (*fr >= FLOAT_PARAM_REGS)
+					args [quad] = ARG_CLASS_MEMORY;
+				else {
+					ainfo->pair_storage [quad] = ArgInDoubleSSEReg;
+					ainfo->pair_regs [quad] = *fr;
+					(*fr) ++;
+				}
+				break;
+			case ARG_CLASS_MEMORY:
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+
+		if ((args [0] == ARG_CLASS_MEMORY) || (args [1] == ARG_CLASS_MEMORY)) {
+			/* Revert possible register assignments */
+			*gr = orig_gr;
+			*fr = orig_fr;
+
+			ainfo->offset = *stack_size;
+			*stack_size += ALIGN_TO (info->native_size, 8);
+			ainfo->storage = ArgOnStack;
+		}
+	}
+}
+
 /*
  * get_call_info:
  *
@@ -185,8 +378,67 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	gr = 0;
 	fr = 0;
 
-	if (((sig->ret->type == MONO_TYPE_VALUETYPE) && !sig->ret->data.klass->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
-		add_general (&gr, &stack_size, &cinfo->ret);
+	/* return value */
+	{
+		simpletype = sig->ret->type;
+enum_retvalue:
+		switch (simpletype) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_STRING:
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = AMD64_RAX;
+			break;
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = AMD64_RAX;
+			break;
+		case MONO_TYPE_R4:
+			cinfo->ret.storage = ArgInFloatSSEReg;
+			cinfo->ret.reg = AMD64_XMM0;
+			break;
+		case MONO_TYPE_R8:
+			cinfo->ret.storage = ArgInDoubleSSEReg;
+			cinfo->ret.reg = AMD64_XMM0;
+			break;
+		case MONO_TYPE_VALUETYPE: {
+			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
+
+			if (sig->ret->data.klass->enumtype) {
+				simpletype = sig->ret->data.klass->enum_basetype->type;
+				goto enum_retvalue;
+			}
+
+			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			if (cinfo->ret.storage == ArgOnStack)
+				/* The caller passes the address where the value is stored */
+				add_general (&gr, &stack_size, &cinfo->ret);
+			break;
+		}
+		case MONO_TYPE_TYPEDBYREF:
+			/* Same as a valuetype with size 24 */
+			add_general (&gr, &stack_size, &cinfo->ret);
+			;
+			break;
+		case MONO_TYPE_VOID:
+			break;
+		default:
+			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+		}
 	}
 
 	/* this */
@@ -248,30 +500,14 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_ARRAY:
 			add_general (&gr, &stack_size, ainfo);
 			break;
-		case MONO_TYPE_VALUETYPE: {
-			int size;
-
+		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
 
-			if (sig->pinvoke) 
-				size = mono_type_native_stack_size (&sig->params [i]->data.klass->byval_arg, NULL);
-			else 
-				size = mono_type_stack_size (&sig->params [i]->data.klass->byval_arg, NULL);
-
-			if (sig->pinvoke) {
-				/* Should be passed in registers */
-				if (size <= 16)
-					NOT_IMPLEMENTED;
-			}
-
-			ainfo->offset = stack_size;
-			stack_size += size;
-			ainfo->storage = ArgOnStack;
+			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
-		}
 		case MONO_TYPE_TYPEDBYREF:
 			stack_size += sizeof (MonoTypedRef);
 			ainfo->storage = ArgOnStack;
@@ -297,66 +533,6 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		
 		/* Emit the signature cookie just before the implicit arguments */
 		add_general (&gr, &stack_size, &cinfo->sig_cookie);
-	}
-
-	/* return value */
-	{
-		simpletype = sig->ret->type;
-enum_retvalue:
-		switch (simpletype) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_STRING:
-			cinfo->ret.storage = ArgInIReg;
-			cinfo->ret.reg = AMD64_RAX;
-			break;
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-			cinfo->ret.storage = ArgInIReg;
-			cinfo->ret.reg = AMD64_RAX;
-			break;
-		case MONO_TYPE_R4:
-			cinfo->ret.storage = ArgInFloatSSEReg;
-			cinfo->ret.reg = AMD64_XMM0;
-			break;
-		case MONO_TYPE_R8:
-			cinfo->ret.storage = ArgInDoubleSSEReg;
-			cinfo->ret.reg = AMD64_XMM0;
-			break;
-		case MONO_TYPE_VALUETYPE:
-			if (sig->ret->data.klass->enumtype) {
-				simpletype = sig->ret->data.klass->enum_basetype->type;
-				goto enum_retvalue;
-			}
-			if (sig->pinvoke)
-			    NOT_IMPLEMENTED;
-			else
-			    /* Already done */
-			    ;
-			break;
-		case MONO_TYPE_TYPEDBYREF:
-			/* Same as a valuetype with size 24 */
-			/* Already done */
-			;
-			break;
-		case MONO_TYPE_VOID:
-			break;
-		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
-		}
 	}
 
 	if (stack_size & 0x8) {
@@ -715,6 +891,38 @@ mono_arch_allocate_vars (MonoCompile *m)
 	g_free (cinfo);
 }
 
+static void
+add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage storage, int reg)
+{
+	switch (storage) {
+	case ArgInIReg:
+		/*
+		 * Since the registers used to pass parameters are volatile,
+		 * and they are used in local reg allocation, we store the
+		 * arguments to local variables and load them into the
+		 * registers when emitting the call opcode.
+		 * FIXME: Optimize this.
+		 */
+		arg->opcode = OP_OUTARG_REG;
+		arg->inst_right = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		arg->unused = reg;
+		call->used_iregs |= 1 << reg;
+		call->out_reg_args = g_slist_append (call->out_reg_args, arg);
+		break;
+	case ArgInFloatSSEReg:
+		/* FIXME: These are volatile as well */
+		arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
+		arg->unused = reg;
+		break;
+	case ArgInDoubleSSEReg:
+		arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
+		arg->unused = reg;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
  * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
  */
@@ -740,8 +948,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	n = sig->param_count + sig->hasthis;
 
 	cinfo = get_call_info (sig, sig->pinvoke);
-
-	call->out_reg_args = mono_mempool_alloc0 (cfg->mempool, n * sizeof (MonoInst*));
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
@@ -805,38 +1011,84 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
 				else
 					size = mono_type_stack_size (&in->klass->byval_arg, &align);
+				if (ainfo->storage == ArgValuetypeInReg) {
+					if (ainfo->pair_storage [1] == ArgNone) {
+						MonoInst *load;
 
-				if (sig->pinvoke && (size <= 16))
-					NOT_IMPLEMENTED;
+						/* Simpler case */
 
-				arg->opcode = OP_OUTARG_VT;
-				arg->klass = in->klass;
-				arg->unused = sig->pinvoke;
-				arg->inst_imm = size; 
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_left = in;
+
+						arg->inst_left = load;
+						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [0], ainfo->pair_regs [0]);
+					}
+					else {
+						/* Trees can't be shared so make a copy */
+						MonoInst *vtaddr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+						MonoInst *load, *load2, *offset_ins;
+
+						/* Reg1 */
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
+
+						NEW_ICONST (cfg, offset_ins, 0);
+						MONO_INST_NEW (cfg, load2, CEE_ADD);
+						load2->inst_left = load;
+						load2->inst_right = offset_ins;
+
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_left = load2;
+
+						arg->inst_left = load;
+						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [0], ainfo->pair_regs [0]);
+
+						/* Reg2 */
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
+
+						NEW_ICONST (cfg, offset_ins, 8);
+						MONO_INST_NEW (cfg, load2, CEE_ADD);
+						load2->inst_left = load;
+						load2->inst_right = offset_ins;
+
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_left = load2;
+
+						MONO_INST_NEW (cfg, arg, OP_OUTARG);
+						arg->cil_code = in->cil_code;
+						arg->inst_left = load;
+						arg->type = in->type;
+						/* prepend, so they get reversed */
+						arg->next = call->out_args;
+						call->out_args = arg;
+
+						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [1], ainfo->pair_regs [1]);
+
+						/* Prepend a copy inst */
+						MONO_INST_NEW (cfg, arg, CEE_STIND_I);
+						arg->cil_code = in->cil_code;
+						arg->inst_left = vtaddr;
+						arg->inst_right = in;
+						arg->type = in->type;
+						/* prepend, so they get reversed */
+						arg->next = call->out_args;
+						call->out_args = arg;
+					}
+				}
+				else {
+					arg->opcode = OP_OUTARG_VT;
+					arg->klass = in->klass;
+					arg->unused = sig->pinvoke;
+					arg->inst_imm = size;
+				}
 			}
 			else {
 				switch (ainfo->storage) {
 				case ArgInIReg:
-					/*
-					 * Since the registers used to pass parameters are volatile,
-					 * and they are used in local reg allocation, we store the
-					 * arguments to local variables and load them into the
-					 * registers when emitting the call opcode.
-					 * FIXME: Optimize this.
-					 */
-					arg->opcode = OP_OUTARG_REG;
-					arg->inst_right = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-					arg->unused = ainfo->reg;
-					call->used_iregs |= 1 << ainfo->reg;
-					call->out_reg_args [i] = arg;
-					break;
 				case ArgInFloatSSEReg:
-					arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
-					arg->unused = ainfo->reg;
-					break;
 				case ArgInDoubleSSEReg:
-					arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
-					arg->unused = ainfo->reg;
+					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg);
 					break;
 				case ArgOnStack:
 					arg->opcode = OP_OUTARG;
@@ -2336,7 +2588,8 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 static guint8*
 emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
-	guint32 offset;
+	CallInfo *cinfo;
+	guint32 offset, quad;
 
 	/* Move return value to the target register */
 	/* FIXME: do this in the local reg allocator */
@@ -2353,6 +2606,28 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 		else {
 			amd64_movsd_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
 			amd64_fld_membase (code, AMD64_RBP, offset, TRUE);
+		}
+		break;
+	case OP_VCALL:
+	case OP_VCALL_REG:
+	case OP_VCALL_MEMBASE:
+		cinfo = get_call_info (((MonoCallInst*)ins)->signature, FALSE);
+		if (cinfo->ret.storage == ArgValuetypeInReg) {
+			/* Pop the destination address from the stack */
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
+			amd64_pop_reg (code, AMD64_RCX);
+			
+			for (quad = 0; quad < 2; quad ++) {
+				switch (cinfo->ret.pair_storage [quad]) {
+				case ArgInIReg:
+					amd64_mov_membase_reg (code, AMD64_RCX, (quad * 8), cinfo->ret.pair_regs [quad], 8);
+					break;
+				case ArgNone:
+					break;
+				default:
+					NOT_IMPLEMENTED;
+				}
+			}
 		}
 		break;
 	}
@@ -2427,17 +2702,16 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 static guint8*
 emit_load_arguments (MonoCompile *cfg, MonoCallInst *call, guint8 *code)
 {
-	int i, n;
-	MonoMethodSignature *sig;
+	GSList *list;
 
-	sig = call->signature;
-	n = sig->param_count + sig->hasthis;
-
-	for (i = 0; i < n; ++i) {
-		if (call->out_reg_args [i]) {
-			MonoInst *arg = call->out_reg_args [i];
+	list = call->out_reg_args;
+	if (list) {
+		while (list) {
+			MonoInst *arg = (MonoInst*)(list->data);
 			amd64_mov_reg_membase (code, arg->unused, AMD64_RBP, arg->inst_right->inst_offset, 8);
+			list = g_slist_next (list);
 		}
+		g_slist_free (call->out_reg_args);
 	}
 
 	return code;
@@ -4662,12 +4936,31 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	/* FIXME: RDI and RSI might get clobbered */
 
 	if (vt_reg != -1) {
+		CallInfo * cinfo = get_call_info (inst->signature, FALSE);
 		MonoInst *vtarg;
-		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
-		vtarg->sreg1 = vt_reg;
-		vtarg->dreg = out_reg;
-		out_reg = param_regs [1];
-		mono_bblock_add_inst (cfg->cbb, vtarg);
+
+		if (cinfo->ret.storage == ArgValuetypeInReg) {
+			/*
+			 * The valuetype is in RAX:RDX after the call, need to be copied to
+			 * the stack. Push the address here, so the call instruction can
+			 * access it.
+			 */
+			MONO_INST_NEW (cfg, vtarg, OP_X86_PUSH);
+			vtarg->sreg1 = vt_reg;
+			mono_bblock_add_inst (cfg->cbb, vtarg);
+
+			/* Align stack */
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+		}
+		else {
+			MONO_INST_NEW (cfg, vtarg, OP_SETREG);
+			vtarg->sreg1 = vt_reg;
+			vtarg->dreg = out_reg;
+			out_reg = param_regs [1];
+			mono_bblock_add_inst (cfg->cbb, vtarg);
+		}
+
+		g_free (cinfo);
 	}
 
 	/* add the this argument */
@@ -4680,7 +4973,6 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		mono_bblock_add_inst (cfg->cbb, this);
 	}
 }
-
 
 gint
 mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
