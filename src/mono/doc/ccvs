@@ -265,6 +265,9 @@
 * Using SVN
 	
 	This is a small tutorial for using SVN (subversion).
+	For a more complete tutorial on subversion, look at
+	<a href="http://svnbook.red-bean.com/">the svn book</a>
+	or <a href="http://subversion.tigris.org">the svn homepage</a>
 
 ** Generating a key
 
