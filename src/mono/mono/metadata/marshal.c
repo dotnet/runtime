@@ -1978,15 +1978,37 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	MonoClass *klass;
 	static GHashTable *ldfld_hash = NULL; 
 	char *name;
-	int i, t, pos0, pos1;
+	int t, pos0, pos1;
 
 	if (!ldfld_hash) 
 		ldfld_hash = g_hash_table_new (NULL, NULL);
 
-	if (res = g_hash_table_lookup (ldfld_hash, type))
-		return res;
 
-	klass = mono_class_from_mono_type (type);
+	t = type->type;
+
+	if (!type->byref) {
+		if (type->type == MONO_TYPE_SZARRAY) {
+			klass = mono_defaults.array_class;
+		} else if (type->type == MONO_TYPE_VALUETYPE) {
+			klass = type->data.klass;
+			if (klass->enumtype) {
+				t = klass->enum_basetype->type;
+				klass = mono_class_from_mono_type (klass->enum_basetype);
+			}
+		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
+			   t == MONO_TYPE_CLASS) { 
+			klass = mono_defaults.object_class;
+		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
+			klass = mono_defaults.int_class;
+		} else {
+			klass = mono_class_from_mono_type (type);			
+		}
+	} else {
+		klass = mono_defaults.int_class;
+	}
+
+	if ((res = g_hash_table_lookup (ldfld_hash, klass)))
+		return res;
 
 	name = g_strdup_printf ("__ldfld_wrapper_%s.%s", klass->name_space, klass->name); 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD);
@@ -2052,8 +2074,6 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	if (klass->valuetype)
 		mono_mb_patch_addr (mb, pos1, mb->pos - (pos1 + 4));
 
-	t = type->type;
- handle_enum:
 	switch (t) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -2091,10 +2111,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (klass->enumtype) {
-			t = klass->enum_basetype->type;
-			goto handle_enum;
-		}
+		g_assert (!klass->enumtype);
 		mono_mb_emit_byte (mb, CEE_LDOBJ);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 		break;
@@ -2108,7 +2125,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
-	g_hash_table_insert (ldfld_hash, type, res);
+	g_hash_table_insert (ldfld_hash, klass, res);
 
 	return res;
 }
@@ -2122,15 +2139,36 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	MonoClass *klass;
 	static GHashTable *stfld_hash = NULL; 
 	char *name;
-	int i, t, pos;
+	int t, pos;
 
 	if (!stfld_hash) 
 		stfld_hash = g_hash_table_new (NULL, NULL);
 
-	if (res = g_hash_table_lookup (stfld_hash, type))
-		return res;
+	t = type->type;
 
-	klass = mono_class_from_mono_type (type);
+	if (!type->byref) {
+		if (type->type == MONO_TYPE_SZARRAY) {
+			klass = mono_defaults.array_class;
+		} else if (type->type == MONO_TYPE_VALUETYPE) {
+			klass = type->data.klass;
+			if (klass->enumtype) {
+				t = klass->enum_basetype->type;
+				klass = mono_class_from_mono_type (klass->enum_basetype);
+			}
+		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
+			   t == MONO_TYPE_CLASS) { 
+			klass = mono_defaults.object_class;
+		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
+			klass = mono_defaults.int_class;
+		} else {
+			klass = mono_class_from_mono_type (type);			
+		}
+	} else {
+		klass = mono_defaults.int_class;
+	}
+
+	if ((res = g_hash_table_lookup (stfld_hash, klass)))
+		return res;
 
 	name = g_strdup_printf ("__stfld_wrapper_%s.%s", klass->name_space, klass->name); 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD);
@@ -2193,8 +2231,6 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_ldarg (mb, 4);
 
-	t = type->type;
- handle_enum:
 	switch (t) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -2232,10 +2268,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (klass->enumtype) {
-			t = klass->enum_basetype->type;
-			goto handle_enum;
-		}
+		g_assert (!klass->enumtype);
 		mono_mb_emit_byte (mb, CEE_STOBJ);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 		break;
@@ -2249,7 +2282,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
-	g_hash_table_insert (stfld_hash, type, res);
+	g_hash_table_insert (stfld_hash, klass, res);
 
 	return res;
 }
@@ -2345,8 +2378,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 
-		MonoMethodSignature *call_sig;
-
 		/* hack - string constructors returns a value */
 		if (method->string_ctor) {
 			csig = g_memdup (sig, sigsize);
@@ -2375,7 +2406,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	g_assert (pinvoke);
 
-	mspecs = g_new (MonoMarshalSpec, sig->param_count + 1);
+	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
 	/* pinvoke: we need to convert the arguments if necessary */
