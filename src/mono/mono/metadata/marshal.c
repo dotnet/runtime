@@ -1405,13 +1405,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 		mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
 		break;
-	case MONO_TYPE_CHAR:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_TYPEDBYREF:
-	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
+		/* fixme: we need conversions here */
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_TYPEDBYREF:
+	case MONO_TYPE_FNPTR:
 	default:
 		g_warning ("return type 0x%02x unknown", sig->ret->type);	
 		g_assert_not_reached ();
