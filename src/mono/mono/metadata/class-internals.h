@@ -57,7 +57,6 @@ struct _MonoMethod {
 	guint32 token;
 	MonoClass *klass;
 	MonoMethodSignature *signature;
-	gpointer info; /* runtime info */
 	/* name is useful mostly for debugging */
 	const char *name;
 	/* this is used by the inlining algorithm */

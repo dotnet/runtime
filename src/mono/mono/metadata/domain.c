@@ -262,6 +262,7 @@ mono_domain_create (void)
 	domain->class_init_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	domain->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
@@ -820,6 +821,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->jump_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
+	g_hash_table_destroy (domain->jit_trampoline_hash);
+	domain->jit_trampoline_hash = NULL;
 	if (domain->special_static_fields) {
 		g_hash_table_destroy (domain->special_static_fields);
 		domain->special_static_fields = NULL;

@@ -303,10 +303,8 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 		comp_time = elapsed = 0.0;
 
 		/* fixme: ugly hack - delete all previously compiled methods */
-		for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
-			method->info = NULL;
-		}
+		g_hash_table_destroy (mono_domain_get ()->jit_trampoline_hash);
+		mono_domain_get ()->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 		g_timer_start (timer);
 		if (mini_stats_fd)

@@ -6796,16 +6796,20 @@ mono_create_jit_trampoline (MonoMethod *method)
 	MonoDomain *domain = mono_domain_get ();
 	gpointer tramp;
 
-	/* Trampoline are domain specific, so cache only the one used in the root domain */
-	if ((domain == mono_get_root_domain ()) && method->info)
-		return method->info;
+	mono_domain_lock (domain);
+	tramp = g_hash_table_lookup (domain->jit_trampoline_hash, method);
+	mono_domain_unlock (domain);
+	if (tramp)
+		return tramp;
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
 	tramp = mono_arch_create_jit_trampoline (method);
-	if (domain == mono_get_root_domain ())
-		method->info = tramp;
+	
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain->jit_trampoline_hash, method, tramp);
+	mono_domain_unlock (domain);
 
 	mono_jit_stats.method_trampolines++;
 
