@@ -421,6 +421,7 @@
       <task>System.Diagnostics Trace/Debug/Listeners, Config File Support</task>
     </tasks>
   </contributor>
+
   <contributor>
     <name>
       <first-name>Ben</first-name>
@@ -434,6 +435,24 @@
     <tasks>
       <task>Mono.Math.BigInteger</task>
       <task>Other random stuff.</task>
+    </tasks>
+  </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Gonzalo</first-name>
+      <last-name>Paniagua Javier</last-name>
+    </name>
+    <e-mail>gonzalo@ximian.com</e-mail>
+    <image>none.png</image>
+    <location>Spain</location>
+    <organization>Ximian.</organization>
+    <description>Mono hacker</description>
+    <tasks>
+      <task>System.Web core classes (ASP.NET)</task>
+      <task>Core class libraries</task>
+      <task>Gtk#</task>
+      <task>nunit-gtk (NUnit2 Gtk# frontend)</task>
     </tasks>
   </contributor>
 </contributors>
