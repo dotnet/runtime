@@ -340,8 +340,6 @@ typedef int (STDCALL *OutVTypeDelegate) (int a, simplestruct *ss, int b);
 int
 mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate func)
 {
-	int res;
-
 	/* Check that the input pointer is ignored */
 	ss->d = (gpointer)0x12345678;
 
@@ -638,7 +636,7 @@ mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 }
 
 typedef int (STDCALL *return_int_fnt) (int i);
-typedef int (STDCALL *SimpleDelegate9) (return_int_fnt *d);
+typedef int (STDCALL *SimpleDelegate9) (return_int_fnt d);
 
 int
 mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
@@ -646,7 +644,7 @@ mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
 	return delegate (ftn);
 }
 
-int
+static int
 return_self (int i)
 {
 	return i;
@@ -677,14 +675,13 @@ mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
 
 typedef int (STDCALL *return_int_delegate) (int i);
 
-typedef return_int_delegate (STDCALL *ReturnDelegateDelegate) ();
+typedef return_int_delegate (STDCALL *ReturnDelegateDelegate) (void);
 
 int
 mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
 {
 	return (d ()) (55);
 }
-
 
 int 
 mono_test_marshal_stringbuilder (char *s, int n)
