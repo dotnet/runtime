@@ -1428,7 +1428,9 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, Mono
 	UErrorCode ec;
 	char *icu_loc;
 	int32_t len;
-	
+
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": [%s]",
 		   mono_string_to_utf8 (this));
@@ -1488,7 +1490,9 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, Mono
 	UErrorCode ec;
 	char *icu_loc;
 	int32_t len;
-	
+
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": [%s]",
 		   mono_string_to_utf8 (this));
