@@ -2313,7 +2313,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 	if (token)
 		return token;
 	g_assert (f->field->parent);
-	type = f->field->generic_type ? f->field->generic_type : f->field->type;
+	type = f->field->generic_info ? f->field->generic_info->generic_type : f->field->type;
 	token = mono_image_get_memberref_token (assembly, &f->klass->byval_arg, 
 		f->field->name,  fieldref_encode_signature (assembly, type));
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
@@ -3397,7 +3397,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
-				g_assert (f->generic_type);
+				g_assert (f->generic_info);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
 				continue;
@@ -3986,7 +3986,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 	}
 	else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField *)obj;
-		if ((f->klass->image == &assembly->image) && !f->field->generic_type) {
+		if ((f->klass->image == &assembly->image) && !f->field->generic_info) {
 			static guint32 field_table_idx = 0xffffff;
 			field_table_idx --;
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
@@ -7437,6 +7437,7 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 	for (i = 0; i < dginst->count_fields; i++) {
 		MonoObject *obj = mono_array_get (fields, gpointer, i);
 		MonoClassField *field;
+		MonoInflatedField *ifield;
 
 		if (!strcmp (obj->vtable->klass->name, "FieldBuilder"))
 			field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
@@ -7447,8 +7448,12 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 			g_assert_not_reached ();
 		}
 
+		ifield = g_new0 (MonoInflatedField, 1);
+		ifield->generic_type = field->type;
+		ifield->reflection_info = obj;
+
 		dginst->fields [i] = *field;
-		dginst->fields [i].generic_type = field->type;
+		dginst->fields [i].generic_info = ifield;
 		dginst->fields [i].type = mono_class_inflate_generic_type (field->type, ginst->context);
 	}
 

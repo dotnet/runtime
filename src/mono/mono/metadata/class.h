@@ -17,6 +17,11 @@ typedef struct {
 	gpointer value;
 } MonoConstant;
 
+typedef struct {
+	MonoType *generic_type;
+	gpointer reflection_info;
+} MonoInflatedField;
+
 /*
  * MonoClassField is just a runtime representation of the metadata for
  * field, it doesn't contain the data directly.  Static fields are
@@ -31,7 +36,7 @@ typedef struct {
 	 * "original" type, ie. the MONO_TYPE_VAR or MONO_TYPE_GENERICINST
 	 * it was instantiated from.
 	 */
-	MonoType        *generic_type;
+	MonoInflatedField  *generic_info;
 
 	/*
 	 * Offset where this field is stored; if it is an instance

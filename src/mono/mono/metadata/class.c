@@ -1328,8 +1328,11 @@ mono_class_init (MonoClass *class)
 		class->fields = g_new0 (MonoClassField, class->field.count);
 
 		for (i = 0; i < class->field.count; i++) {
+			MonoInflatedField *ifield = g_new0 (MonoInflatedField, 1);
+			ifield->generic_type = gklass->fields [i].type;
+
 			class->fields [i] = gklass->fields [i];
-			class->fields [i].generic_type = gklass->fields [i].type;
+			class->fields [i].generic_info = ifield;
 			class->fields [i].parent = class;
 			class->fields [i].type = mono_class_inflate_generic_type (
 				class->fields [i].type, ginst->context);

@@ -908,7 +908,8 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_image_create_method_token (mb->dynamic_image, method, opt_param_types);
+	return mono_image_create_method_token (
+		mb->dynamic_image, (MonoObject *) method, opt_param_types);
 }
 
 static gint32
@@ -1367,6 +1368,17 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	} else {
 		mono_field_set_value (obj, cf, v);
 	}
+}
+
+static MonoReflectionField*
+ves_icall_MonoField_Mono_GetGenericFieldDefinition (MonoReflectionField *field)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (field->field->generic_info && field->field->generic_info->reflection_info)
+		return field->field->generic_info->reflection_info;
+
+	return field;
 }
 
 /* From MonoProperty.cs */
@@ -5339,6 +5351,7 @@ static const IcallEntry monoeventinfo_icalls [] = {
 static const IcallEntry monofield_icalls [] = {
 	{"GetParentType", ves_icall_MonoField_GetParentType},
 	{"GetValueInternal", ves_icall_MonoField_GetValueInternal},
+	{"Mono_GetGenericFieldDefinition", ves_icall_MonoField_Mono_GetGenericFieldDefinition},
 	{"SetValueInternal", ves_icall_FieldInfo_SetValueInternal}
 };
 
