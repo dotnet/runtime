@@ -642,7 +642,7 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
 }
 
-#define DEBUG_INTERP 1
+#define DEBUG_INTERP 0
 #if DEBUG_INTERP
 #define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
 static char *opcode_names[] = {
