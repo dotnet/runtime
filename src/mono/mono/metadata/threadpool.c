@@ -36,7 +36,7 @@ static HANDLE job_added;
 
 typedef struct {
 	MonoMethodMessage *msg;
-	HANDLE             wait_semaphore;
+	HANDLE             wait_event;
 	MonoMethod        *cb_method;
 	MonoDelegate      *cb_target;
 	MonoObject        *state;
@@ -70,7 +70,12 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 
 	/* notify listeners */
-	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
+	mono_monitor_try_enter (ares, INFINITE);
+	if (ares->handle != NULL) {
+		ac->wait_event = ((MonoWaitHandle *) ares->handle)->handle;
+		SetEvent (ac->wait_event);
+	}
+	mono_monitor_exit (ares);
 
 	mono_g_hash_table_remove (ares_htable, ares);
 }
@@ -87,10 +92,10 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 #ifdef HAVE_BOEHM_GC
 	ac = GC_MALLOC (sizeof (ASyncCall));
 #else
-	/* We'll leak the semaphore... */
+	/* We'll leak the event if creaated... */
 	ac = g_new0 (ASyncCall, 1);
 #endif
-	ac->wait_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);	
+	ac->wait_event = NULL;
 	ac->msg = msg;
 	ac->state = state;
 
@@ -99,7 +104,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		ac->cb_target = async_callback;
 	}
 
-	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
+	ares = mono_async_result_new (domain, NULL, ac->state, ac);
 	ares->async_delegate = target;
 
 	if (!ares_htable) {
@@ -133,9 +138,11 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	*out_args = NULL;
 
 	/* check if already finished */
+	mono_monitor_try_enter (ares, INFINITE);
 	if (ares->endinvoke_called) {
 		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
 					      "InvalidOperationException");
+		mono_monitor_exit (ares);
 		return NULL;
 	}
 
@@ -145,8 +152,16 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	g_assert (ac != NULL);
 
 	/* wait until we are really finished */
-	if (!ares->completed)
-		WaitForSingleObject (ac->wait_semaphore, INFINITE);
+	if (!ares->completed) {
+		if (ares->handle == NULL) {
+			ac->wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+			ares->handle = mono_wait_handle_new (mono_object_domain (ares), ac->wait_event);
+		}
+		mono_monitor_exit (ares);
+		WaitForSingleObject (ac->wait_event, INFINITE);
+	} else {
+		mono_monitor_exit (ares);
+	}
 
 	*exc = ac->msg->exc;
 	*out_args = ac->out_args;

@@ -2308,7 +2308,9 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 
 	res->data = data;
 	res->async_state = state;
-	res->handle = (MonoObject *)mono_wait_handle_new (domain, handle);
+	if (handle != NULL)
+		res->handle = (MonoObject *) mono_wait_handle_new (domain, handle);
+
 	res->sync_completed = FALSE;
 	res->completed = FALSE;
 
