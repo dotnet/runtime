@@ -28,8 +28,18 @@ Displays usage instructions.
 .TP
 .I "--trace"
 Displays opcodes and stack state as the interpreter executes the image
+.TP
 .I "--opcode-count"
 Displays the number of opcodes executed.
+.TP
+.I "--dieonex"
+Aborts execution upon hitting an exception.
+.TP
+.I "--debug method"
+Debugs the method whose name is `method'
+.TP
+.I "--opcode-count"
+Displays the number of opcodes executed
 .PP
 If no flags are specified the program dumps the content of the image
 in a format that can be used to rountrip the code. 
