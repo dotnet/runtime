@@ -36,6 +36,14 @@
 #include <mono/io-layer/io-layer.h>
 #include "decimal.h"
 
+static MonoString *
+mono_double_ToStringImpl (double value)
+{
+	/* FIXME: Handle formats, etc. */
+	const gchar *retVal;
+	retVal = g_strdup_printf ("%f", value);
+	return mono_string_new (mono_domain_get (), retVal);
+}
 
 static MonoObject *
 ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
@@ -2044,6 +2052,11 @@ static gconstpointer icall_map [] = {
 	 * System.AppDomainSetup
 	 */
 	"System.AppDomainSetup::InitAppDomainSetup", ves_icall_System_AppDomainSetup_InitAppDomainSetup,
+
+	/*
+	 * System.Double
+	 */
+	"System.Double::ToStringImpl", mono_double_ToStringImpl,
 
 	/*
 	 * System.Decimal
