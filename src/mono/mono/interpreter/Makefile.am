@@ -15,5 +15,4 @@ mint_LDADD =				\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
-	../../libffi/libffi.a
 	-lm

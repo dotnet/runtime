@@ -21,7 +21,6 @@ monodis_SOURCES =	\
 monodis_LDADD = 			\
 	../metadata/libmetadata.a 	\
 	libmonodis.a			\
-	../../libffi/libffi.a		\
 	$(GMODULE_LIBS) 		\
 	$(GLIB_LIBS) 
 
