@@ -220,7 +220,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
 		MonoType *nt;
-		if ((eclass->byval_arg.type == MONO_TYPE_MVAR) && gmethod) {
+		if ((eclass->byval_arg.type == MONO_TYPE_MVAR) && gmethod && gmethod->mtype_argv) {
 			nclass = mono_class_from_mono_type (gmethod->mtype_argv [eclass->byval_arg.data.generic_param->num]);
 		} else if ((eclass->byval_arg.type == MONO_TYPE_VAR) && ginst) {
 			nclass = mono_class_from_mono_type (ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
