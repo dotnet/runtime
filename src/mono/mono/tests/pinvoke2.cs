@@ -66,6 +66,15 @@ public class Tests {
 	public class EmptyClass {
 	}
 
+	[DllImport ("libnot-found", EntryPoint="not_found")]
+	public static extern int mono_library_not_found ();
+
+	[DllImport ("libtest", EntryPoint="not_found")]
+	public static extern int mono_entry_point_not_found ();
+
+	[DllImport ("libtest.dll", EntryPoint="mono_test_marshal_char")]
+	public static extern int mono_test_marshal_char_2 (char a1);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
 
@@ -337,5 +346,37 @@ public class Tests {
 			return 0;
 		else
 			return 1;
+	}
+
+	static int test_0_library_not_found () {
+
+		try {
+			mono_entry_point_not_found ();
+			return 1;
+		}
+		catch (EntryPointNotFoundException) {
+		}
+
+		return 0;
+	}
+
+	static int test_0_entry_point_not_found () {
+
+		try {
+			mono_library_not_found ();
+			return 1;
+		}
+		catch (DllNotFoundException) {
+		}
+
+		return 0;
+	}
+
+	/* Check that the runtime trims .dll from the library name */
+	static int test_0_trim_dll_from_name () {
+
+		mono_test_marshal_char_2 ('A');
+
+		return 0;
 	}
 }

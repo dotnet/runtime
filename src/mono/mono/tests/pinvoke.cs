@@ -23,8 +23,12 @@ public class Test {
 								double f, double g, double h, double i, double j);
 
 	public static int Main () {
-		puts ("A simple Test for PInvoke");
-		
+		try {
+			puts ("A simple Test for PInvoke");
+		}
+		catch (DllNotFoundException) {
+		}
+
 		if (Math.Cos (Math.PI) != -1)
 			return 1;
 		if (Math.Acos (1) != 0)
