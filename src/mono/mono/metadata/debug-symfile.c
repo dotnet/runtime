@@ -1,3 +1,4 @@
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include <mono/metadata/metadata.h>
@@ -17,6 +18,8 @@
 #define MRT_il_offset			0x02
 #define MRT_method_start_address	0x03
 #define MRT_method_end_address		0x04
+#define MRT_local_variable		0x05
+#define MRT_method_parameter		0x06
 
 #define MRS_debug_info			0x01
 #define MRS_debug_abbrev		0x02
@@ -300,6 +303,66 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				   minfo->code_start + address);
 
 			* (void **) base_ptr = minfo->code_start + address;
+
+			break;
+		}
+		case MRT_local_variable: {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			guint32 original = *((guint32 *) tmp_ptr)++;
+			MonoDebugMethodInfo *minfo;
+			gint32 address;
+
+			minfo = method_info_func (symfile, token, user_data);
+
+			if (!minfo) {
+				* (void **) base_ptr = 0;
+				continue;
+			}
+
+			if (original > minfo->num_locals) {
+				g_warning ("Symbol file %s contains relocation entry for non-existing "
+					   "local variable %d, but method %s only has %d local variables.",
+					   symfile->file_name, original, minfo->method->name,
+					   minfo->num_locals);
+				continue;
+			}
+
+			address = minfo->local_offsets [original];
+
+			g_message ("Relocating local variable %d (%s) to stack offset %d",
+				   original, minfo->method->name, address);
+
+			* (gint32 *) base_ptr = address;
+
+			break;
+		}
+		case MRT_method_parameter: {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			guint32 original = *((guint32 *) tmp_ptr)++;
+			MonoDebugMethodInfo *minfo;
+			gint32 address;
+
+			minfo = method_info_func (symfile, token, user_data);
+
+			if (!minfo) {
+				* (void **) base_ptr = 0;
+				continue;
+			}
+
+			if (original > minfo->num_params) {
+				g_warning ("Symbol file %s contains relocation entry for non-existing "
+					   "parameter %d, but method %s only has %d parameters.",
+					   symfile->file_name, original, minfo->method->name,
+					   minfo->num_params);
+				continue;
+			}
+
+			address = minfo->param_offsets [original];
+
+			g_message ("Relocating parameter %d (%s) to stack offset %d",
+				   original, minfo->method->name, address);
+
+			* (gint32 *) base_ptr = address;
 
 			break;
 		}
