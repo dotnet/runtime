@@ -16,6 +16,13 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/daemon-messages.h>
 
+/* 
+ * Since this is not portable, it's probably better to just ignore sigpipe.
+ */
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 /* Send request on fd, wait for response (called by applications, not
  * the daemon)
 */
