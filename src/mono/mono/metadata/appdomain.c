@@ -1142,7 +1142,17 @@ mono_domain_unload (MonoDomain *domain)
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
+	/*
+	 * If we create a non-suspended thread, the runtime will hang.
+	 * See:
+	 * http://bugzilla.ximian.com/show_bug.cgi?id=27663
+	 */ 
+#if 0
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
+#else
+        thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
+	ResumeThread (thread_handle);
+#endif
 	ret = WaitForSingleObject (thread_handle, INFINITE);
 
 	if (thread_data.failure_reason) {
