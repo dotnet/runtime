@@ -1347,6 +1347,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
+			ins->opcode = OP_MOVE;
 			/* 
 			 * OP_MOVE reg, reg 
 			 */
@@ -2264,7 +2265,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 	guint32 *endthunks = (guint32*)(code + bsize);
 	guint32 load [2];
 	guchar *templ;
-	int i;
+	int i, count = 0;
 	
 	templ = (guchar*)load;
 	ppc_lis (templ, ppc_r0, (guint32)(pdata->target) >> 16);
@@ -2276,6 +2277,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 			//g_print ("looking for target: %p at %p (%08x-%08x)\n", pdata->target, thunks, thunks [0], thunks [1]);
 			if ((thunks [0] == load [0]) && (thunks [1] == load [1])) {
 				ppc_patch (pdata->code, (guchar*)thunks);
+				mono_arch_flush_icache (pdata->code, 4);
 				pdata->found = 1;
 				return 1;
 			} else if ((thunks [0] == 0) && (thunks [1] == 0)) {
@@ -2285,14 +2287,18 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 				ppc_ori (code, ppc_r0, ppc_r0, (guint32)(pdata->target) & 0xffff);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+				mono_arch_flush_icache ((guchar*)thunks, 16);
 				
 				ppc_patch (pdata->code, (guchar*)thunks);
+				mono_arch_flush_icache (pdata->code, 4);
 				pdata->found = 1;
 				return 1;
 			}
 			/* skip 16 bytes, the size of the thunk */
 			thunks += 4;
+			count++;
 		}
+		g_print ("failed thunk lookup at %p (%d entries)\n", data, count);
 	}
 	return 0;
 }
@@ -2330,25 +2336,30 @@ ppc_patch (guchar *code, guchar *target)
 		// absolute address
 		if (ins & 2) {
 			gint diff = (gint)target;
-			ovf = diff & 0xfc000000;
-			if ((diff & 3) || (ovf != 0 && ovf != 0xfc000000)) {
+			if ((diff < -33554432) || (diff > 33554431)) {
 				handle_thunk (TRUE, code, target);
 				return;
 			}
 			ins = prim << 26 | (ins & 3);
-			diff &= ~3;
-			diff &= ~(63 << 26);
+			diff &= ~0xfc000003;
 			ins |= diff;
 		} else {
 			gint diff = target - code;
-			ovf = diff & 0xfc000000;
-			if ((diff & 3) || (ovf != 0 && ovf != 0xfc000000)) {
+			if ((gint)target >= -33554432 && (gint)target <= 33554431) {
+				/* we change it into an absolute reference */
+				ins = prim << 26 | (ins & 3) | 2;
+				diff = (gint)target;
+				diff &= ~0xfc000003;
+				ins |= diff;
+				*(guint32*)code = ins;
+				return;
+			}
+			if ((diff < -33554432) || (diff > 33554431)) {
 				handle_thunk (FALSE, code, target);
 				return;
 			}
 			ins = prim << 26 | (ins & 3);
-			diff &= ~3;
-			diff &= ~(63 << 26);
+			diff &= ~0xfc000003;
 			ins |= diff;
 		}
 		*(guint32*)code = ins;
@@ -2506,7 +2517,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_rlwinm (code, ins->dreg, ins->sreg1, 0, 16, 31);
 			break;
 		case OP_COMPARE:
-			if (ins->next && (ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN))
+			if (ins->next && ((ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN) || (ins->next->opcode == OP_CLT_UN || ins->next->opcode == OP_CGT_UN)))
 				ppc_cmpl (code, 0, 0, ins->sreg1, ins->sreg2);
 			else
 				ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
