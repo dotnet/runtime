@@ -2048,6 +2048,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
+#else
+			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
+			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+				/* fixme: compute this value */
+				gboolean shared_to_unshared_call = FALSE;
+				/* we call all marshalbyref methods and Object.GetType 
+				   through the vtable */
+				if (!(shared_to_unshared_call ||
+				      cm->klass->marshalbyref ||
+				      ((cm->klass == mono_defaults.object_class) && 
+				       !strcmp (cm->name, "GetType"))))
+					virtual = 0;
+			}
 #endif;
 
 			csig = cm->signature;
