@@ -1886,6 +1886,7 @@ mono_method_check_inlining (MonoMethod *method)
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->klass->marshalbyref) ||
 	    !header || header->num_clauses ||
@@ -3907,9 +3908,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = read32 (ip + 2);
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
-				else
+				else {
 					cmethod = mono_get_method (image, n, NULL);
-				
+
+					/*
+					 * We can't do this in mono_ldftn, since it is used in
+					 * the synchronized wrapper, leading to an infinite loop.
+					 */
+					if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+						cmethod = mono_marshal_get_synchronized_wrapper (cmethod);
+				}
+
 				mono_class_init (cmethod->klass);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 

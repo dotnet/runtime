@@ -11,7 +11,7 @@
 #include <math.h>
 
 static void*
-mono_ldftn (MonoMethod *method) 
+mono_ldftn (MonoMethod *method)
 {
 	gpointer addr;
 
@@ -28,8 +28,11 @@ static void*
 mono_ldvirtfn (MonoObject *obj, MonoMethod *method) 
 {
 	MONO_ARCH_SAVE_REGS;
-	
+
 	method = mono_object_get_virtual_method (obj, method);
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		method = mono_marshal_get_synchronized_wrapper (method);
+
 	return mono_ldftn (method);
 }
 

@@ -291,6 +291,9 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 		return method->info;
 	}
 
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
+
 	if(!vc) {
 		/* Now we'll create in 'buf' the PowerPC trampoline code. This
 		 is the trampoline code common to all methods  */
