@@ -1,3 +1,7 @@
+2004-11-25  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (check-local): Use $(mkinstalldirs).
+
 2004-11-24  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (AUTOMAKE_OPTIONS): Set to 'cygnus'. 
