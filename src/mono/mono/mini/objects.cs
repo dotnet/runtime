@@ -428,5 +428,13 @@ class Tests {
 			return 0;
 		return 1;
 	}
+
+	static int test_2_intptr_stobj () {
+		System.IntPtr [] arr = { new System.IntPtr () };
+
+		if (arr [0] != (System.IntPtr)0)
+			return 1;
+		return 2;
+	}
 }
 

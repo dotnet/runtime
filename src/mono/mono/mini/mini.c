@@ -3844,7 +3844,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				klass = mono_class_get (image, token);
 			mono_class_init (klass);
-			handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE);
+			n = mono_type_to_stind (&klass->byval_arg);
+			if (n == CEE_STOBJ) {
+				handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE);
+			} else {
+				/* FIXME: should check item at sp [1] is compatible with the type of the store. */
+				MonoInst *store;
+				MONO_INST_NEW (cfg, store, n);
+				store->cil_code = ip;
+				store->inst_left = sp [0];
+				store->inst_right = sp [1];
+				store->flags |= ins_flag;
+				MONO_ADD_INS (bblock, store);
+			}
+			ins_flag = 0;
 			ip += 5;
 			inline_costs += 1;
 			break;
