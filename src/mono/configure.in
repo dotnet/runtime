@@ -33,5 +33,4 @@ mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
 mono/interpreter/Makefile
-doc/Makefile
 ])

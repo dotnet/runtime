@@ -1,5 +1,11 @@
 2001-07-15  Joe Shaw  <joe@ximian.com>
 
+	* configure.in: Don't create doc/Makefile as there's nothing there
+	to make.
+
+	* Makefile.am: Don't build the doc directory because there's no
+	Makefile.am there.
+
 	* autogen.sh: Call aclocal with the $ACLOCAL_FLAGS env var.
 
 2001-07-15  Miguel de Icaza  <miguel@ximian.com>

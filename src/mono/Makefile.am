@@ -1,1 +1,1 @@
-SUBDIRS = mono doc
+SUBDIRS = mono
