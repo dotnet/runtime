@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Security.Policy;
 using System.Threading;
 using System.Runtime.Serialization;
@@ -33,6 +34,7 @@ class Container {
 		public c1 () {
 			e1.a = 3;
 			e1.s1 = "SS";
+			sa [0].a = 5;
 		}
 		public int a = 1;
 		public int b = 2;
@@ -45,13 +47,13 @@ class Container {
 	static int Main ()
 	{
 		AppDomainSetup setup = new AppDomainSetup ();
-		setup.ApplicationBase = ".";
-
+		setup.ApplicationBase = Directory.GetCurrentDirectory ();
 		Console.WriteLine (AppDomain.CurrentDomain.FriendlyName);
 			
 		AppDomain newDomain = AppDomain.CreateDomain ("NewDomain", new Evidence (), setup);
 
 		c1 a1 = new c1 ();
+
 		
 		newDomain.SetData ("TEST", a1);
 		c1 r1 = (c1)newDomain.GetData ("TEST");
@@ -70,11 +72,12 @@ class Container {
 		if (r1.e1.s1 != "SS")
 			return 4;
 		
-		if (r1.sa [0].s1 != "(null)")
+		if (r1.sa [0].a != 5)
 			return 5;
-		
-		if (r1.sa [0].a != 0)
+
+		if (r1.sa [0].s1 != "(null)")
 			return 6;
+		
 
 		return 0;
 	}
