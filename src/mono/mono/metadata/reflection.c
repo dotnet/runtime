@@ -596,7 +596,8 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type,
 			type |= CUSTOM_ATTR_TYPE_MEMBERREF;
 			break;
 		default:
-			g_error ("got wrong token in custom attr");
+			g_warning ("got wrong token in custom attr");
+			goto next;
 		}
 		values [MONO_CUSTOM_ATTR_TYPE] = type;
 		p = blob_size;
@@ -606,6 +607,7 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type,
 			mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 		values += MONO_CUSTOM_ATTR_SIZE;
 		++table->next_idx;
+next:
 	}
 }
 
@@ -1258,10 +1260,11 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	guint32 token, scope, enclosing;
 	MonoClass *klass;
 
+#define COMPILE_CORLIB 0
 #if COMPILE_CORLIB
 	/* nasty hack, need to find the proper solution */
 	if (type->type == MONO_TYPE_OBJECT)
-		return 0x08;
+		return TYPEDEFORREF_TYPEDEF | (2 << TYPEDEFORREF_BITS);
 #endif
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
@@ -1323,7 +1326,8 @@ mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoType *type, c
 	case TYPEDEFORREF_TYPEDEF:
 		/* should never get here */
 	default:
-		g_error ("unknow typeref or def token");
+		g_warning ("unknown typeref or def token 0x%08x for %s", parent, name);
+		return 0;
 	}
 	/* extract the index */
 	parent >>= TYPEDEFORREF_BITS;
