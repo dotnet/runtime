@@ -484,6 +484,15 @@ class Tests {
 		
 		return 0;
 	}
+
+	static int test_0_ceq_complex () {
+                long l = 1, ll = 2;
+
+                if (l < 0 != ll < 0)
+                        return 1;
+
+                return 0;
+	}
 	
 	static int test_0_clt () {
 		long a = 2;
