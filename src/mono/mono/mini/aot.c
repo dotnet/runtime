@@ -144,7 +144,11 @@ create_cache_structure (void)
 	tmp = g_build_filename (home, ".mono", NULL);
 	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
+#ifdef PLATFORM_WIN32
+		err = mkdir (tmp);
+#else
 		err = mkdir (tmp, 0777);
+#endif
 		if (err) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed: %s", g_strerror (errno));
 			g_free (tmp);
@@ -155,7 +159,11 @@ create_cache_structure (void)
 	tmp = g_build_filename (home, ".mono", "aot-cache", NULL);
 	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
+#ifdef PLATFORM_WIN32
+		err = mkdir (tmp);
+#else
 		err = mkdir (tmp, 0777);
+#endif
 		if (err) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed: %s", g_strerror (errno));
 			g_free (tmp);
