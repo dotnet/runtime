@@ -249,6 +249,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	MONO_ARCH_SAVE_REGS;
 }
 
+static CRITICAL_SECTION allocator_section;
 static CRITICAL_SECTION handle_section;
 static guint32 next_handle = 0;
 static gpointer *gc_handles = NULL;
@@ -463,11 +464,45 @@ static guint32 finalizer_thread (gpointer unused)
  */
 #define ENABLE_FINALIZER_THREAD
 
+#ifdef WITH_INCLUDED_LIBGC
+/* from threads.c */
+extern void mono_gc_stop_world (void);
+extern void mono_gc_start_world (void);
+extern void mono_gc_push_all_stacks (void);
+
+static void mono_gc_lock (void)
+{
+	EnterCriticalSection (&allocator_section);
+}
+
+static void mono_gc_unlock (void)
+{
+	LeaveCriticalSection (&allocator_section);
+}
+
+static GCThreadFunctions mono_gc_thread_vtable = {
+	NULL,
+
+	mono_gc_lock,
+	mono_gc_unlock,
+
+	mono_gc_stop_world,
+	NULL,
+	mono_gc_push_all_stacks,
+	mono_gc_start_world
+};
+#endif /* WITH_INCLUDED_LIBGC */
+
 void mono_gc_init (void)
 {
 	HANDLE gc_thread;
 
 	InitializeCriticalSection (&handle_section);
+	InitializeCriticalSection (&allocator_section);
+
+#ifdef WITH_INCLUDED_LIBGC
+	gc_thread_vtable = &mono_gc_thread_vtable;
+#endif
 
 #ifdef ENABLE_FINALIZER_THREAD
 

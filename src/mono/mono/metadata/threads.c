@@ -1027,3 +1027,105 @@ void mono_thread_abort_all_other_threads (void)
 	
 	LeaveCriticalSection (&threads_mutex);
 }
+
+#ifdef WITH_INCLUDED_LIBGC
+
+static void gc_stop_world (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread=(MonoThread *)value;
+	guint32 self=GPOINTER_TO_UINT (user);
+
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid);
+	
+	if(thread->tid==self)
+		return;
+
+	SuspendThread (thread->handle);
+}
+
+void mono_gc_stop_world (void)
+{
+	guint32 self=GetCurrentThreadId ();
+
+#ifdef LIBGC_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads);
+#endif
+
+	EnterCriticalSection (&threads_mutex);
+
+	if (threads != NULL)
+		mono_g_hash_table_foreach (threads, gc_stop_world, GUINT_TO_POINTER (self));
+	
+	LeaveCriticalSection (&threads_mutex);
+}
+
+static void gc_start_world (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread=(MonoThread *)value;
+	guint32 self=GPOINTER_TO_UINT (user);
+	
+#ifdef LIBGC_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid);
+#endif
+	
+	if(thread->tid==self)
+		return;
+
+	ResumeThread (thread->handle);
+}
+
+void mono_gc_start_world (void)
+{
+	guint32 self=GetCurrentThreadId ();
+
+#ifdef LIBGC_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads);
+#endif
+
+	EnterCriticalSection (&threads_mutex);
+
+	if (threads != NULL)
+		mono_g_hash_table_foreach (threads, gc_start_world, GUINT_TO_POINTER (self));
+	
+	LeaveCriticalSection (&threads_mutex);
+}
+
+static void gc_push_all_stacks (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread=(MonoThread *)value;
+	guint32 *selfp=(guint32 *)user, self = *selfp;
+
+#ifdef LIBGC_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d - %p", self, thread->tid, thread->stack_ptr);
+#endif
+	
+	if(thread->tid==self) {
+#ifdef LIBGC_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": %p - %p", selfp, thread->stack_ptr);
+#endif
+		GC_push_all_stack (selfp, thread->stack_ptr);
+		return;
+	}
+
+#ifdef PLATFORM_WIN32
+	GC_win32_push_thread_stack (thread->handle, thread->stack_ptr);
+#endif
+}
+
+void mono_gc_push_all_stacks (void)
+{
+	guint32 self=GetCurrentThreadId ();
+
+#ifdef LIBGC_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %p", self, threads);
+#endif
+
+	EnterCriticalSection (&threads_mutex);
+
+	if (threads != NULL)
+		mono_g_hash_table_foreach (threads, gc_push_all_stacks, &self);
+	
+	LeaveCriticalSection (&threads_mutex);
+}
+
+#endif /* WITH_INCLUDED_LIBGC */
