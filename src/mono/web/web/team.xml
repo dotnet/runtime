@@ -738,13 +738,13 @@
 
     </name>
 
-    <e-mail>lluis@ideary.com</e-mail>
+    <e-mail>lluis@ximian.com</e-mail>
 
     <image>lluis.png</image>
 
     <location>Barcelona, Spain</location>
 
-    <organization>Unemployed</organization>
+    <organization>Novell / Ximian</organization>
 
     <description>Mono Hacker</description>
 
@@ -752,7 +752,9 @@
 
       <task>Remoting</task>
 
-      <task>Binary serialization</task>
+      <task>Serialization</task>
+
+      <task>Web Services</task>
 
     </tasks>
 
