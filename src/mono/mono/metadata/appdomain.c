@@ -23,6 +23,77 @@
 
 static guint32 appdomain_thread_id = 0;
 
+static MonoJitInfoTable *
+mono_jit_info_table_new ()
+{
+	return g_array_new (FALSE, FALSE, sizeof (gpointer));
+}
+
+static void
+mono_jit_info_table_free (MonoJitInfoTable *table)
+{
+	g_array_free (table, TRUE);
+}
+
+static int
+mono_jit_info_table_index (MonoJitInfoTable *table, gpointer addr)
+{
+	int left = 0, right = table->len;
+
+	while (left < right) {
+		int pos = (left + right) / 2;
+		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
+		gpointer start = ji->code_start;
+		gpointer end = start + ji->code_size;
+
+		if (addr < start)
+			right = pos;
+		else if (addr >= end) 
+			left = pos + 1;
+		else
+			return pos;
+	}
+
+	return left;
+}
+
+MonoJitInfo *
+mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
+{
+	MonoJitInfoTable *table = domain->jit_info_table;
+	int left = 0, right = table->len;
+
+	while (left < right) {
+		int pos = (left + right) / 2;
+		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
+		gpointer start = ji->code_start;
+		gpointer end = start + ji->code_size;
+
+		if (addr < start)
+			right = pos;
+		else if (addr >= end) 
+			left = pos + 1;
+		else
+			return ji;
+	}
+
+	/* maybe irt is shared code, so we also search in the root domain */
+	if (domain != mono_root_domain)
+		return mono_jit_info_table_find (domain, addr);
+
+	return NULL;
+}
+
+void
+mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
+{
+	MonoJitInfoTable *table = domain->jit_info_table;
+	gpointer start = ji->code_start;
+	int pos = mono_jit_info_table_index (table, start);
+
+	g_array_insert_val (table, pos, ji);
+}
+
 static int
 ldstr_hash (const char* str)
 {
@@ -70,7 +141,7 @@ mono_create_domain ()
 	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
-
+	domain->jit_info_table = mono_jit_info_table_new ();
 	return domain;
 }
 
@@ -113,10 +184,14 @@ mono_init (const char *filename)
 			g_print ("The assembly corlib.dll was not found or could not be loaded.\n");
 			g_print ("It should have been installed in the `%s' directory.\n", MONO_ASSEMBLIES);
 			break;
-
 		case MONO_IMAGE_IMAGE_INVALID:
-			g_print ("The file %s/corlib.dll is an invalid CIL image", MONO_ASSEMBLIES);
+			g_print ("The file %s/corlib.dll is an invalid CIL image\n", MONO_ASSEMBLIES);
 			break;
+		case MONO_IMAGE_MISSING_ASSEMBLYREF:
+			g_print ("Minning assembly reference in %s/corlib.dll\n", MONO_ASSEMBLIES);
+			break;
+		case MONO_IMAGE_OK:
+			/* to suppress compiler warning */
 		}
 		
 		exit (1);
@@ -563,6 +638,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	g_hash_table_destroy (domain->class_vtable_hash);
 	g_hash_table_destroy (domain->jit_code_hash);
 	g_hash_table_destroy (domain->ldstr_table);
+	mono_jit_info_table_free (domain->jit_info_table);
 	mono_mempool_destroy (domain->mp);
 	
 	// fixme: anything else required ? */
@@ -614,3 +690,4 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	return res;
 }
+

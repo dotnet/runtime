@@ -892,7 +892,7 @@ mono_delegate_ctor (MonoDelegate *this, MonoObject *target,
 
 	class = this->object.vtable->klass;
 
-	if ((ji = mono_jit_info_table_find (mono_jit_info_table, addr))) {
+	if ((ji = mono_jit_info_table_find (domain, addr))) {
 		this->method_info = mono_method_get_object (domain, ji->method);
 	}
 	
@@ -912,7 +912,7 @@ mono_delegate_ctor (MonoDelegate *this, MonoObject *target,
 gpointer
 arch_compile_method (MonoMethod *method)
 {
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *ji;
 	MonoMemPool *mp;
 	guint8 *addr;
@@ -927,9 +927,11 @@ arch_compile_method (MonoMethod *method)
 	}
 
 	if (mono_jit_share_code)
-		jit_code_hash = mono_root_domain->jit_code_hash;
-	else
-		jit_code_hash = domain->jit_code_hash;
+		target_domain = mono_root_domain;
+	else 
+		target_domain = domain;
+
+	jit_code_hash = target_domain->jit_code_hash;
 
 	if ((addr = g_hash_table_lookup (jit_code_hash, method))) {
 		mono_jit_stats.methods_lookups++;
@@ -1081,7 +1083,7 @@ arch_compile_method (MonoMethod *method)
 
 		gulong code_size_ratio;
 
-		ji = g_new0 (MonoJitInfo, 1);
+		ji = mono_mempool_alloc0 (target_domain->mp, sizeof (MonoJitInfo));
 		
 		cfg = mono_cfg_new (method, mp);
 
@@ -1159,7 +1161,6 @@ arch_compile_method (MonoMethod *method)
 		ji->used_regs = cfg->rs->used_mask;
 		ji->method = method;
 		ji->code_start = addr;
-		mono_jit_info_table_add (mono_jit_info_table, ji);
 
 		mono_jit_stats.native_code_size += ji->code_size;
 
@@ -1167,7 +1168,8 @@ arch_compile_method (MonoMethod *method)
 			int i, start_block, end_block;
 
 			ji->num_clauses = header->num_clauses;
-			ji->clauses = g_new0 (MonoJitExceptionInfo, header->num_clauses);
+			ji->clauses = mono_mempool_alloc0 (target_domain->mp, 
+			        sizeof (MonoJitExceptionInfo) * header->num_clauses);
 
 			for (i = 0; i < header->num_clauses; i++) {
 				MonoExceptionClause *ec = &header->clauses [i];
@@ -1192,6 +1194,8 @@ arch_compile_method (MonoMethod *method)
 			}
 		}
 		
+		mono_jit_info_table_add (target_domain, ji);
+
 		mono_regset_free (cfg->rs);
 
 		mono_cfg_free (cfg);
@@ -1318,7 +1322,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	g_assert (ctx != NULL);
 	g_assert (obj != NULL);
 
-	ji = mono_jit_info_table_find (mono_jit_info_table, ip);
+	ji = mono_jit_info_table_find (domain, ip);
 
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
@@ -1995,13 +1999,13 @@ enum_marshal:
 
 	/* we store a dummy jit info (code size 4), so that mono_delegate_ctor
 	 * is able to find a method info for icalls and pinvoke methods */
-	ji = g_new0 (MonoJitInfo, 1);
+	ji = mono_mempool_alloc0 (mono_root_domain->mp, sizeof (MonoJitInfo));
 	ji->method = method;
 	ji->code_start = start;
 	ji->code_size = 4;
 	ji->used_regs = 0;
 	ji->num_clauses = 0;
-	mono_jit_info_table_add (mono_jit_info_table, ji);
+	mono_jit_info_table_add (mono_root_domain, ji);
 
 	g_assert ((code - start) < 512);
 

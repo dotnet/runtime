@@ -118,23 +118,6 @@ typedef struct {
 } MethodCallInfo;
 
 typedef struct {
-	guint32  flags;
-	gpointer try_start;
-	gpointer try_end;
-	gpointer handler_start;
-	guint32  token_or_filter;
-} MonoJitExceptionInfo;
-
-typedef struct {
-	MonoMethod *method;
-	gpointer code_start;
-	int      code_size;
-	guint32  used_regs;
-	unsigned num_clauses;
-	MonoJitExceptionInfo *clauses;
-} MonoJitInfo;
-
-typedef struct {
 	gulong methods_compiled;
 	gulong methods_lookups;
 	gulong method_trampolines;
@@ -151,30 +134,15 @@ typedef struct {
 	gboolean enabled;
 } MonoJitStats;
 
-typedef GArray MonoJitInfoTable;
-
 extern MonoJitStats mono_jit_stats;
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
 extern gboolean mono_jit_trace_calls;
 extern gboolean mono_jit_share_code;
-extern MonoJitInfoTable *mono_jit_info_table;
 extern gpointer mono_end_of_stack;
 extern guint32  lmf_thread_id;
 
 extern CRITICAL_SECTION *metadata_section;
-
-MonoJitInfoTable *
-mono_jit_info_table_new    (void);
-
-int
-mono_jit_info_table_index  (MonoJitInfoTable *table, gpointer addr);
-
-void
-mono_jit_info_table_add    (MonoJitInfoTable *table, MonoJitInfo *ji);
-
-MonoJitInfo *
-mono_jit_info_table_find   (MonoJitInfoTable *table, gpointer addr);
 
 void
 arch_handle_exception      (struct sigcontext *ctx, gpointer obj);

@@ -33,18 +33,38 @@ typedef struct {
 	MonoBoolean publisher_policy;
 } MonoAppDomainSetup;
 
+typedef GArray MonoJitInfoTable;
+
+typedef struct {
+	guint32  flags;
+	gpointer try_start;
+	gpointer try_end;
+	gpointer handler_start;
+	guint32  token_or_filter;
+} MonoJitExceptionInfo;
+
+typedef struct {
+	MonoMethod *method;
+	gpointer    code_start;
+	int         code_size;
+	guint32     used_regs;
+	unsigned    num_clauses;
+	MonoJitExceptionInfo *clauses;
+} MonoJitInfo;
+
 typedef struct _MonoAppDomain MonoAppDomain;
 
 struct _MonoDomain {
-	MonoAppDomain *domain;
-	MonoMemPool   *mp;
-	GHashTable    *env;
-	GHashTable    *assemblies;
+	MonoAppDomain      *domain;
+	MonoMemPool        *mp;
+	GHashTable         *env;
+	GHashTable         *assemblies;
 	MonoAppDomainSetup *setup;
-	MonoString    *friendly_name;
-	GHashTable    *ldstr_table;
-	GHashTable    *class_vtable_hash;
-	GHashTable    *jit_code_hash;
+	MonoString         *friendly_name;
+	GHashTable         *ldstr_table;
+	GHashTable         *class_vtable_hash;
+	GHashTable         *jit_code_hash;
+	MonoJitInfoTable   *jit_info_table;
 };
 
 /* This is a copy of System.AppDomain */
@@ -56,19 +76,25 @@ struct _MonoAppDomain {
 extern MonoDomain *mono_root_domain;
 
 MonoDomain *
-mono_init (const char *filename);
+mono_init                  (const char *filename);
 
 inline MonoDomain *
-mono_domain_get (void);
+mono_domain_get            (void);
 
 inline void
-mono_domain_set (MonoDomain *domain);
+mono_domain_set            (MonoDomain *domain);
 
 MonoAssembly *
-mono_domain_assembly_open (MonoDomain *domain, char *name);
+mono_domain_assembly_open  (MonoDomain *domain, char *name);
 
 void
-mono_domain_unload (MonoDomain *domain, gboolean force);
+mono_domain_unload         (MonoDomain *domain, gboolean force);
+
+void
+mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
+
+MonoJitInfo *
+mono_jit_info_table_find   (MonoDomain *domain, gpointer addr);
 
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup);

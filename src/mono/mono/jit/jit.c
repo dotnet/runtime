@@ -202,8 +202,6 @@ GList *mono_debug_methods = NULL;
 
 gpointer mono_end_of_stack = NULL;
 
-MonoJitInfoTable *mono_jit_info_table = NULL;
-
 /* last managed frame (used by pinvoke) */ 
 guint32 lmf_thread_id = 0;
 
@@ -227,66 +225,6 @@ mono_alloc_static0 (int size)
 } 
 
 typedef void (*MonoCCtor) (void);
-
-MonoJitInfoTable *
-mono_jit_info_table_new ()
-{
-	return g_array_new (FALSE, FALSE, sizeof (gpointer));
-}
-
-int
-mono_jit_info_table_index (MonoJitInfoTable *table, gpointer addr)
-{
-	int left = 0, right = table->len;
-
-	while (left < right) {
-		int pos = (left + right) / 2;
-		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
-		gpointer start = ji->code_start;
-		gpointer end = start + ji->code_size;
-
-		if (addr < start)
-			right = pos;
-		else if (addr >= end) 
-			left = pos + 1;
-		else
-			return pos;
-	}
-
-	return left;
-}
-
-MonoJitInfo *
-mono_jit_info_table_find (MonoJitInfoTable *table, gpointer addr)
-{
-	int left = 0, right = table->len;
-
-	while (left < right) {
-		int pos = (left + right) / 2;
-		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
-		gpointer start = ji->code_start;
-		gpointer end = start + ji->code_size;
-
-		if (addr < start)
-			right = pos;
-		else if (addr >= end) 
-			left = pos + 1;
-		else
-			return ji;
-	}
-
-	return NULL;
-}
-
-void
-mono_jit_info_table_add (MonoJitInfoTable *table, MonoJitInfo *ji)
-{
-	gpointer start = ji->code_start;
-	int pos = mono_jit_info_table_index (table, start);
-
-	//printf ("TESTADD %d %p\n", pos, ji->code_start);
-	g_array_insert_val (table, pos, ji);
-}
 
 /**
  * runtime_class_init:
@@ -3404,8 +3342,6 @@ main (int argc, char *argv [])
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
-
-	mono_jit_info_table = mono_jit_info_table_new ();
 
 	lmf_thread_id = TlsAlloc ();
 	TlsSetValue (lmf_thread_id, NULL);
