@@ -95,13 +95,7 @@ mono_aot_get_method (MonoMethod *method)
 		return NULL;
 	}
 
-	{
-		static int count = 0;
-
-		count ++;
-		if (getenv ("COUNT") && (count > atoi (getenv ("COUNT"))))
-			return NULL;
-	}
+	//printf ("FOUND AOT compiled code for %s %p %p\n", mono_method_full_name (method, TRUE), code, info);
 
 	code_len = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
@@ -109,8 +103,6 @@ mono_aot_get_method (MonoMethod *method)
 	info++;
 	used_strings = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
-
-//	printf ("FOUND AOT compiled code for %s (%s) %p-%p %p\n", mono_method_full_name (method, TRUE), method_label, code, code + code_len, info);
 
 	for (i = 0; i < used_strings; i++) {
 		guint token =  GPOINTER_TO_UINT (*((gpointer **)info));
@@ -558,7 +550,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 		fprintf (tmpfp, "\t.long %d\n", g_list_length (cfg->ldstr_list));
 		for (l = cfg->ldstr_list; l; l = l->next) {
-			fprintf (tmpfp, "\t.long 0x%08x\n", (long)l->data);
+			fprintf (tmpfp, "\t.long 0x%08lx\n", (long)l->data);
 		}
 
 		if (j) {
@@ -627,7 +619,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, (wrappercount*100)/mcount);
 	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, (lmfcount*100)/mcount);
 	printf ("%d methods have other problems (%d%%)\n", ocount, (ocount*100)/mcount);
-//	unlink (tmpfname);
+	unlink (tmpfname);
 
 	return 0;
 }
