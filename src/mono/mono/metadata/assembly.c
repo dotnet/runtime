@@ -851,7 +851,7 @@ static MonoAssembly*
 mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status)
 {
 	MonoAssembly *result = NULL;
-	gchar *name, *version, *fullpath, *subpath;
+	gchar *name, *version, *culture, *fullpath, *subpath;
 	gint32 len;
 	gchar **paths;
 
@@ -867,14 +867,21 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 		name = g_strdup (aname->name);
 	}
 
+	if (aname->culture) {
+		culture = g_strdup (aname->culture);
+		g_strdown (culture);
+	} else {
+		culture = g_strdup ("");
+	}
+
 	version = g_strdup_printf ("%d.%d.%d.%d_%s_%s", aname->major,
 			aname->minor, aname->build, aname->revision,
-			aname->culture == NULL ? "" : aname->culture,
-			aname->public_tok_value);
+			culture, aname->public_tok_value);
 	
 	subpath = g_build_path (G_DIR_SEPARATOR_S, name, version, filename, NULL);
 	g_free (name);
 	g_free (version);
+	g_free (culture);
 
 	if (extra_gac_paths) {
 		paths = extra_gac_paths;
