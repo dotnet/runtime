@@ -2216,6 +2216,49 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 	}
 }
 
+static MonoInst *
+handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass)
+{
+	MonoInst *iargs [2];
+	MonoInst *dest, *vtoffset, *add, *vstore;
+	int temp;
+
+	/* much like NEWOBJ */
+	if (cfg->opt & MONO_OPT_SHARED) {
+		NEW_DOMAINCONST (cfg, iargs [0]);
+		NEW_CLASSCONST (cfg, iargs [1], klass);
+
+		temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
+	} else {
+		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+		NEW_VTABLECONST (cfg, iargs [0], vtable);
+		if (klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
+			temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+		else
+			temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
+	}
+	NEW_TEMPLOAD (cfg, dest, temp);
+	NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
+	MONO_INST_NEW (cfg, add, CEE_ADD);
+	add->inst_left = dest;
+	add->inst_right = vtoffset;
+	add->cil_code = ip;
+	add->klass = klass;
+	MONO_INST_NEW (cfg, vstore, CEE_STIND_I);
+	vstore->opcode = mono_type_to_stind (&klass->byval_arg);
+	vstore->cil_code = ip;
+	vstore->inst_left = add;
+	vstore->inst_right = val;
+
+	if (vstore->opcode == CEE_STOBJ) {
+		handle_stobj (cfg, bblock, add, val, ip, klass, FALSE, FALSE);
+	} else
+		MONO_ADD_INS (bblock, vstore);
+
+	NEW_TEMPLOAD (cfg, dest, temp);
+	return dest;
+}
+
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
 
 static gboolean
@@ -2612,6 +2655,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoImage *image;
 	guint32 token, ins_flag;
 	MonoClass *klass;
+	MonoClass *constrained_call = NULL;
 	unsigned char *ip, *end, *target, *err_pos;
 	static double r8_0 = 0.0;
 	MonoMethodSignature *sig;
@@ -3137,6 +3181,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
+				} else if (constrained_call) {
+					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context);
 				} else {
 					cmethod = mono_get_method_full (image, token, NULL, generic_context);
 				}
@@ -3178,6 +3224,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			//g_assert (!virtual || fsig->hasthis);
 
 			sp -= n;
+
+			if (constrained_call) {
+				/*
+				 * We have the `constrained.' prefix opcode.
+				 */
+				if (constrained_call->valuetype && !cmethod->klass->valuetype) {
+					/*
+					 * The type parameter is instantiated as a valuetype,
+					 * but that type doesn't override the method we're
+					 * calling, so we need to box `this'.
+					 */
+					sp [0] = handle_box (cfg, bblock, sp [0], ip, constrained_call);
+				} else if (!constrained_call->valuetype) {
+					MonoInst *ins;
+
+					/*
+					 * The type parameter is instantiated as a reference
+					 * type.  We have a managed pointer on the stack, so
+					 * we need to dereference it here.
+					 */
+
+					MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
+					ins->cil_code = ip;
+					ins->inst_i0 = sp [0];
+					ins->type = STACK_OBJ;
+					sp [0] = ins;
+				} else if (cmethod->klass->valuetype)
+					virtual = 0;
+				constrained_call = NULL;
+			}
 
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
 				goto unverified;
@@ -4522,40 +4598,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
-			/* much like NEWOBJ */
-			if (cfg->opt & MONO_OPT_SHARED) {
-				NEW_DOMAINCONST (cfg, iargs [0]);
-				NEW_CLASSCONST (cfg, iargs [1], klass);
-
-				temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
-			} else {
-				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-				NEW_VTABLECONST (cfg, iargs [0], vtable);
-				if (klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
-					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
-				else
-					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
-			}
-			NEW_TEMPLOAD (cfg, load, temp);
-			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
-			MONO_INST_NEW (cfg, add, CEE_ADD);
-			add->inst_left = load;
-			add->inst_right = vtoffset;
-			add->cil_code = ip;
-			add->klass = klass;
-			MONO_INST_NEW (cfg, vstore, CEE_STIND_I);
-			vstore->opcode = mono_type_to_stind (&klass->byval_arg);
-			vstore->cil_code = ip;
-			vstore->inst_left = add;
-			vstore->inst_right = val;
-
-			if (vstore->opcode == CEE_STOBJ) {
-				handle_stobj (cfg, bblock, add, val, ip, klass, FALSE, FALSE);
-			} else
-				MONO_ADD_INS (bblock, vstore);
-
-			NEW_TEMPLOAD (cfg, load, temp);
-			*sp++ = load;
+			*sp++ = handle_box (cfg, bblock, *sp, ip, klass);
 			ip += 5;
 			inline_costs += 1;
 			break;
@@ -5509,6 +5552,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* FIXME: implement */
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
+				constrained_call = mono_class_get_full (image, token, generic_context);
 				ip += 6;
 				break;
 			case CEE_CPBLK:
