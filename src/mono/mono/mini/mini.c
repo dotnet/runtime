@@ -93,7 +93,6 @@ guint32 mono_jit_tls_id = -1;
 gboolean mono_jit_trace_calls = FALSE;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
-gboolean mono_with_valgrind = FALSE;
 
 static int mini_verbose = 0;
 
@@ -7184,7 +7183,7 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-	if (!mono_with_valgrind)
+	if (!getenv ("MONO_VALGRIND"))
 		/* valgrind 20030725 and earlier aborts on this call so we skip it */
 		g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
 
