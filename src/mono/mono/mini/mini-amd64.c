@@ -4680,6 +4680,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		}
 
 		switch (patch_info->type) {
+		case MONO_PATCH_INFO_NONE:
+			continue;
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			/* Might already been changed to a nop */
 			guint8* ip2 = ip;
@@ -4931,8 +4933,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
-	int pos, i;
+	int pos, nthrows, i;
 	guint8 *code;
+	MonoClass *exc_classes [16];
+	guint8 *exc_throw_start [16], *exc_throw_end [16];
 
 	code = cfg->native_code + cfg->code_len;
 
@@ -4996,28 +5000,60 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	amd64_ret (code);
 
 	/* add code to raise exceptions */
+	nthrows = 0;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
-			guint64 offset;
+			MonoClass *exc_class;
+			guint8 *buf, *buf2;
+			guint32 throw_ip;
 
 			amd64_patch (patch_info->ip.i + cfg->native_code, code);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
-			if (mono_compile_aot)
-				amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RIP, 0, 8);
-			else
-				amd64_set_reg_template (code, AMD64_RDI);
-			/* 7 is the length of the lea */
-			offset = (((guint64)code + 7) - (guint64)cfg->native_code) - (guint64)patch_info->ip.i;
-			amd64_lea_membase (code, AMD64_RSI, AMD64_RIP, - offset);
-			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-			patch_info->data.name = "mono_arch_throw_exception_by_name";
-			patch_info->ip.i = code - cfg->native_code;
-			if (mono_compile_aot)
-				amd64_mov_reg_membase (code, GP_SCRATCH_REG, AMD64_RIP, 0, 8);
-			else
-				amd64_set_reg_template (code, GP_SCRATCH_REG);
-			amd64_call_reg (code, GP_SCRATCH_REG);
+
+			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+			g_assert (exc_class);
+			throw_ip = patch_info->ip.i;
+
+			//x86_breakpoint (code);
+			/* Find a throw sequence for the same exception class */
+			for (i = 0; i < nthrows; ++i)
+				if (exc_classes [i] == exc_class)
+					break;
+			if (i < nthrows) {
+				amd64_mov_reg_imm (code, AMD64_RSI, (exc_throw_end [i] - cfg->native_code) - throw_ip);
+				x86_jump_code (code, exc_throw_start [i]);
+				patch_info->type = MONO_PATCH_INFO_NONE;
+			}
+			else {
+				buf = code;
+				amd64_mov_reg_imm_size (code, AMD64_RSI, 0xf0f0f0f0, 4);
+				buf2 = code;
+
+				if (nthrows < 16) {
+					exc_classes [nthrows] = exc_class;
+					exc_throw_start [nthrows] = code;
+				}
+
+				amd64_mov_reg_imm (code, AMD64_RDI, exc_class->type_token);
+				patch_info->data.name = "mono_arch_throw_corlib_exception";
+				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+				patch_info->ip.i = code - cfg->native_code;
+
+				if (mono_compile_aot)
+					amd64_mov_reg_membase (code, GP_SCRATCH_REG, AMD64_RIP, 0, 8);
+				else
+					amd64_set_reg_template (code, GP_SCRATCH_REG);
+				amd64_call_reg (code, GP_SCRATCH_REG);
+
+				amd64_mov_reg_imm (buf, AMD64_RSI, (code - cfg->native_code) - throw_ip);
+				while (buf < buf2)
+					x86_nop (buf);
+
+				if (nthrows < 16) {
+					exc_throw_end [nthrows] = code;
+					nthrows ++;
+				}
+			}
 			break;
 		}
 		default:

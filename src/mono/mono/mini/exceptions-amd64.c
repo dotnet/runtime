@@ -427,6 +427,64 @@ mono_arch_get_throw_exception_by_name (void)
 	return start;
 }
 
+/**
+ * mono_arch_get_throw_corlib_exception:
+ *
+ * Returns a function pointer which can be used to raise 
+ * corlib exceptions. The returned function has the following 
+ * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * Here, offset is the offset which needs to be substracted from the caller IP 
+ * to get the IP of the throw. Passing the offset has the advantage that it 
+ * needs no relocations in the caller.
+ */
+gpointer 
+mono_arch_get_throw_corlib_exception (void)
+{
+	static guint8* start;
+	static gboolean inited = FALSE;
+	guint8 *code;
+	guint64 throw_ex;
+
+	if (inited)
+		return start;
+
+	EnterCriticalSection (&code_manager_mutex);
+	start = code = mono_code_manager_reserve (code_manager, 64);
+	LeaveCriticalSection (&code_manager_mutex);
+
+	/* Push throw_ip */
+	amd64_push_reg (code, AMD64_RSI);
+
+	/* Call exception_from_token */
+	amd64_mov_reg_reg (code, AMD64_RSI, AMD64_RDI, 8);
+	amd64_mov_reg_imm (code, AMD64_RDI, mono_defaults.exception_class->image);
+	amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
+	amd64_call_reg (code, AMD64_R11);
+
+	/* Compute throw_ip */
+	amd64_pop_reg (code, AMD64_RSI);
+	/* return addr */
+	amd64_pop_reg (code, AMD64_RDX);
+	amd64_alu_reg_reg (code, X86_SUB, AMD64_RDX, AMD64_RSI);
+
+	/* Put the throw_ip at the top of the misaligned stack */
+	amd64_push_reg (code, AMD64_RDX);
+
+	throw_ex = (guint64)mono_arch_get_throw_exception ();
+
+	/* Call throw_exception */
+	amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RAX, 8);
+	amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
+	/* The original IP is on the stack */
+	amd64_jump_reg (code, AMD64_R11);
+
+	g_assert ((code - start) < 64);
+
+	inited = TRUE;
+
+	return start;
+}
+
 /* mono_arch_find_jit_info:
  *
  * This function is used to gather information from @ctx. It return the 
