@@ -2665,6 +2665,8 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 
 	if (!name)
 		mono_raise_exception (mono_get_exception_argument_null ("name"));
+	if (type->type->byref)
+		return NULL;
 
 	compare_func = (bflags & BFLAGS_IgnoreCase) ? g_strcasecmp : strcmp;
 
@@ -2727,6 +2729,8 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref)
+		return mono_array_new (domain, mono_defaults.method_info_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
@@ -2790,6 +2794,8 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref)
+		return mono_array_new (domain, mono_defaults.method_info_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 	len = 0;
@@ -2875,6 +2881,8 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref)
+		return mono_array_new (domain, mono_defaults.method_info_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
@@ -2941,7 +2949,13 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (!System_Reflection_PropertyInfo)
+		System_Reflection_PropertyInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
+
 	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref)
+		return mono_array_new (domain, System_Reflection_PropertyInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
@@ -3006,9 +3020,6 @@ handle_parent:
 		goto handle_parent;
 
 	g_free (propname);
-	if (!System_Reflection_PropertyInfo)
-		System_Reflection_PropertyInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
 	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 	i = 0;
 
@@ -3034,6 +3045,8 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 	MONO_ARCH_SAVE_REGS;
 
 	event_name = mono_string_to_utf8 (name);
+	if (type->type->byref)
+		return NULL;
 	klass = startklass = mono_class_from_mono_type (type->type);
 	domain = mono_object_domain (type);
 
@@ -3087,7 +3100,13 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (!System_Reflection_EventInfo)
+		System_Reflection_EventInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "EventInfo");
+
 	domain = mono_object_domain (type);
+	if (type->type->byref)
+		return mono_array_new (domain, System_Reflection_EventInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 handle_parent:	
@@ -3135,9 +3154,6 @@ handle_parent:
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 	len = g_slist_length (l);
-	if (!System_Reflection_EventInfo)
-		System_Reflection_EventInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "EventInfo");
 	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 	i = 0;
 
@@ -3161,6 +3177,8 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref)
+		return NULL;
 	klass = startklass = mono_class_from_mono_type (type->type);
 	str = mono_string_to_utf8 (name);
 
@@ -3203,6 +3221,8 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref)
+		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 	for (tmpn = klass->nested_classes; tmpn; tmpn = tmpn->next) {
