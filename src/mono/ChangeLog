@@ -1,3 +1,7 @@
+2001-12-17  Aaron Weber  <aaron@ximian.com>
+
+	* doc/faq (Q): Question-by-question, line-by-line revision.
+
 2001-12-17  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/time.cs: new test
