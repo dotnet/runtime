@@ -1149,8 +1149,10 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
 			char  *tmp;
 
-			if (!strcmp (strace, "TODO: implement stack traces"))
+			if (!strcmp (strace, "TODO: implement stack traces")){
+				g_free (strace);
 				strace = g_strdup ("");
+			}
 
 			tmp = g_strdup_printf ("%sin %s.%s:%s ()\n", strace, m->klass->name_space,  
 					       m->klass->name, m->name);
