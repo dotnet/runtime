@@ -2400,15 +2400,19 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					switch (info->sig->param_count) {
 					case 1:
 						if (MONO_TYPE_IS_VOID (info->sig->ret))
-							ADD_CODE (&td,MINT_MONO_PROC1);
+							ADD_CODE (&td,MINT_ICALL_P_V);
 						else
-							ADD_CODE (&td,MINT_MONO_CONV1);
+							ADD_CODE (&td,MINT_ICALL_P_P);
 						break;
 					case 2:
-						ADD_CODE (&td,MINT_MONO_CONV2);
+						if (MONO_TYPE_IS_VOID (info->sig->ret))
+							ADD_CODE (&td,MINT_ICALL_PP_V);
+						else
+							ADD_CODE (&td,MINT_ICALL_PP_P);
 						break;
 					case 3:
-						ADD_CODE (&td,MINT_MONO_CONV3);
+						g_assert (MONO_TYPE_IS_VOID (info->sig->ret));
+						ADD_CODE (&td,MINT_ICALL_PPP_V);
 						break;
 					default:
 						g_assert_not_reached ();

@@ -493,10 +493,11 @@ OPDEF(MINT_GETCHR, "getchr", 1, MintOpNoArgs)
 OPDEF(MINT_STRLEN, "strlen", 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_RANK, "array_rank", 1, MintOpNoArgs)
 
-OPDEF(MINT_MONO_PROC1, "mono_proc1", 2, MintOpClassToken) /* not really */
-OPDEF(MINT_MONO_CONV1, "mono_conv1", 2, MintOpClassToken)
-OPDEF(MINT_MONO_CONV2, "mono_conv2", 2, MintOpClassToken)
-OPDEF(MINT_MONO_CONV3, "mono_conv3", 2, MintOpClassToken)
+OPDEF(MINT_ICALL_P_V, "mono_icall_p_v", 2, MintOpClassToken) /* not really */
+OPDEF(MINT_ICALL_P_P, "mono_icall_p_p", 2, MintOpClassToken)
+OPDEF(MINT_ICALL_PP_V, "mono_icall_pp_v", 2, MintOpClassToken)
+OPDEF(MINT_ICALL_PP_P, "mono_icall_pp_p", 2, MintOpClassToken)
+OPDEF(MINT_ICALL_PPP_V, "mono_icall_ppp_v", 2, MintOpClassToken)
 OPDEF(MINT_MONO_LDPTR, "mono_ldptr", 2, MintOpClassToken) 
 OPDEF(MINT_MONO_NEWOBJ, "mono_newobj", 2, MintOpClassToken)
 OPDEF(MINT_MONO_RETOBJ, "mono_retobj", 1, MintOpNoArgs)

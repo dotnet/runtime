@@ -3390,31 +3390,39 @@ array_constructed:
 			}
 			goto handle_finally;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_PROC1) {
-		    void (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_ICALL_P_V) {
+			void (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
 
 			func (sp [-1].data.p);
 			sp --;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_CONV1) {
-		    gpointer (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_ICALL_P_P) {
+			gpointer (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
 
 			sp [-1].data.p = func (sp [-1].data.p);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_CONV2) {
-		    void (*func)(gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_ICALL_PP_V) {
+			void (*func)(gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
 			sp -= 2;
 
 			func (sp [0].data.p, sp [1].data.p);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_CONV3) {
-		    void (*func)(gpointer,gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_ICALL_PP_P) {
+			gpointer (*func)(gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+			ip += 2;
+			--sp;
+
+			sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p);
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ICALL_PPP_V) {
+			void (*func)(gpointer,gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
 			sp -= 3;
 
