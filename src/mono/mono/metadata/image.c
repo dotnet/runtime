@@ -918,7 +918,7 @@ free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
 }
 
 /**
- * mono_image_close:
+ * mono_image_addref:
  * @image: The image file we wish to add a reference to
  *
  *  Increases the reference count of an image.
