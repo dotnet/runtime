@@ -2972,48 +2972,54 @@ static unsigned char*
 mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 {
 	int sreg = tree->sreg1;
-#ifdef PLATFORM_WIN32
-	guint8* br[5];
+	int need_touch = FALSE;
 
-	NOT_IMPLEMENTED;
-
-	/*
-	 * Under Windows:
-	 * If requested stack size is larger than one page,
-	 * perform stack-touch operation
-	 */
-	/*
-	 * Generate stack probe code.
-	 * Under Windows, it is necessary to allocate one page at a time,
-	 * "touching" stack after each successful sub-allocation. This is
-	 * because of the way stack growth is implemented - there is a
-	 * guard page before the lowest stack page that is currently commited.
-	 * Stack normally grows sequentially so OS traps access to the
-	 * guard page and commits more pages when needed.
-	 */
-	amd64_test_reg_imm (code, sreg, ~0xFFF);
-	br[0] = code; x86_branch8 (code, X86_CC_Z, 0, FALSE);
-
-	br[2] = code; /* loop */
-	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
-	amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
-	amd64_alu_reg_imm (code, X86_SUB, sreg, 0x1000);
-	amd64_alu_reg_imm (code, X86_CMP, sreg, 0x1000);
-	br[3] = code; x86_branch8 (code, X86_CC_AE, 0, FALSE);
-	amd64_patch (br[3], br[2]);
-	amd64_test_reg_reg (code, sreg, sreg);
-	br[4] = code; x86_branch8 (code, X86_CC_Z, 0, FALSE);
-	amd64_alu_reg_reg (code, X86_SUB, AMD64_RSP, sreg);
-
-	br[1] = code; x86_jump8 (code, 0);
-
-	amd64_patch (br[0], code);
-	amd64_alu_reg_reg (code, X86_SUB, AMD64_RSP, sreg);
-	amd64_patch (br[1], code);
-	amd64_patch (br[4], code);
-#else /* PLATFORM_WIN32 */
-	amd64_alu_reg_reg (code, X86_SUB, AMD64_RSP, tree->sreg1);
+#if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+	if (!tree->flags & MONO_INST_INIT)
+		need_touch = TRUE;
 #endif
+
+	if (need_touch) {
+		guint8* br[5];
+
+		/*
+		 * Under Windows:
+		 * If requested stack size is larger than one page,
+		 * perform stack-touch operation
+		 */
+		/*
+		 * Generate stack probe code.
+		 * Under Windows, it is necessary to allocate one page at a time,
+		 * "touching" stack after each successful sub-allocation. This is
+		 * because of the way stack growth is implemented - there is a
+		 * guard page before the lowest stack page that is currently commited.
+		 * Stack normally grows sequentially so OS traps access to the
+		 * guard page and commits more pages when needed.
+		 */
+		amd64_test_reg_imm (code, sreg, ~0xFFF);
+		br[0] = code; x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+		br[2] = code; /* loop */
+		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
+		amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
+		amd64_alu_reg_imm (code, X86_SUB, sreg, 0x1000);
+		amd64_alu_reg_imm (code, X86_CMP, sreg, 0x1000);
+		br[3] = code; x86_branch8 (code, X86_CC_AE, 0, FALSE);
+		amd64_patch (br[3], br[2]);
+		amd64_test_reg_reg (code, sreg, sreg);
+		br[4] = code; x86_branch8 (code, X86_CC_Z, 0, FALSE);
+		amd64_alu_reg_reg (code, X86_SUB, AMD64_RSP, sreg);
+
+		br[1] = code; x86_jump8 (code, 0);
+
+		amd64_patch (br[0], code);
+		amd64_alu_reg_reg (code, X86_SUB, AMD64_RSP, sreg);
+		amd64_patch (br[1], code);
+		amd64_patch (br[4], code);
+	}
+	else
+		amd64_alu_reg_reg (code, X86_SUB, AMD64_RSP, tree->sreg1);
+
 	if (tree->flags & MONO_INST_INIT) {
 		int offset = 0;
 		if (tree->dreg != AMD64_RAX && sreg != AMD64_RAX) {
@@ -5016,7 +5022,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
-#ifdef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
