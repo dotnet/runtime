@@ -427,6 +427,12 @@ MINI_OP(OP_ATOMIC_ADD_IMM_I4, "atomic_add_imm_i4")
 MINI_OP(OP_ATOMIC_ADD_IMM_NEW_I4, "atomic_add_imm_new_i4")
 MINI_OP(OP_ATOMIC_EXCHANGE_I4, "atomic_exchange_i4")
 
+MINI_OP(OP_ATOMIC_ADD_I8, "atomic_add_i8")
+MINI_OP(OP_ATOMIC_ADD_NEW_I8, "atomic_add_new_i8")
+MINI_OP(OP_ATOMIC_ADD_IMM_I8, "atomic_add_imm_i8")
+MINI_OP(OP_ATOMIC_ADD_IMM_NEW_I8, "atomic_add_imm_new_i8")
+MINI_OP(OP_ATOMIC_EXCHANGE_I8, "atomic_exchange_i8")
+
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")
 MINI_OP(OP_X86_COMPARE_MEMBASE_REG,"x86_compare_membase_reg")

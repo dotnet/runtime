@@ -4655,6 +4655,44 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_mem (code, ins->dreg, ins->inst_offset, 8);
 			break;
 		}
+		case OP_ATOMIC_ADD_I4:
+		case OP_ATOMIC_ADD_I8: {
+			int dreg = ins->dreg;
+			guint32 size = (ins->opcode == OP_ATOMIC_ADD_I4) ? 4 : 8;
+
+			if (dreg == ins->inst_basereg)
+				dreg = AMD64_R11;
+			
+			if (dreg != ins->sreg2)
+				amd64_mov_reg_reg (code, ins->dreg, ins->sreg2, size);
+
+			x86_prefix (code, X86_LOCK_PREFIX);
+			amd64_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, size);
+
+			if (dreg != ins->dreg)
+				amd64_mov_reg_reg (code, ins->dreg, dreg, size);
+
+			break;
+		}
+		case OP_ATOMIC_ADD_NEW_I4:
+		case OP_ATOMIC_ADD_NEW_I8: {
+			int dreg = ins->dreg;
+			guint32 size = (ins->opcode == OP_ATOMIC_ADD_NEW_I4) ? 4 : 8;
+
+			if ((dreg == ins->sreg2) || (dreg == ins->inst_basereg))
+				dreg = AMD64_R11;
+
+			amd64_mov_reg_reg (code, dreg, ins->sreg2, size);
+			amd64_prefix (code, X86_LOCK_PREFIX);
+			amd64_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, size);
+			/* dreg contains the old value, add with sreg2 value */
+			amd64_alu_reg_reg_size (code, X86_ADD, dreg, ins->sreg2, size);
+			
+			if (ins->dreg != dreg)
+				amd64_mov_reg_reg (code, ins->dreg, dreg, size);
+
+			break;
+		}
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
@@ -5746,6 +5784,61 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i1 = args [1];
 		}
 #endif
+	} else if(cmethod->klass->image == mono_defaults.corlib &&
+			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
+			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
+
+		if (strcmp (cmethod->name, "Increment") == 0) {
+			MonoInst *ins_iconst;
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+			MONO_INST_NEW (cfg, ins, opcode);
+			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
+			ins_iconst->inst_c0 = 1;
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = ins_iconst;
+		} else if (strcmp (cmethod->name, "Decrement") == 0) {
+			MonoInst *ins_iconst;
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+			MONO_INST_NEW (cfg, ins, opcode);
+			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
+			ins_iconst->inst_c0 = -1;
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = ins_iconst;
+		} else if (strcmp (cmethod->name, "Add") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_I8;
+			else
+				g_assert_not_reached ();
+			
+			MONO_INST_NEW (cfg, ins, opcode);
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
+		} else if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
+			/* 64 bit reads are already atomic */
+			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
+			ins->inst_i0 = args [0];
+		}
 	}
 
 	return ins;

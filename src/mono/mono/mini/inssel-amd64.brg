@@ -769,4 +769,19 @@ reg: OP_LSHR_UN (reg, OP_ICONST) "0" {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
+reg: OP_ATOMIC_ADD_NEW_I4 (base, reg),
+reg: OP_ATOMIC_ADD_NEW_I8 (base, reg),
+reg: OP_ATOMIC_ADD_I4 (base, reg),
+reg: OP_ATOMIC_ADD_I8 (base, reg),
+reg: OP_ATOMIC_EXCHANGE_I4 (base, reg),
+reg: OP_ATOMIC_EXCHANGE_I8 (base, reg) {
+	tree->opcode = tree->opcode;
+	tree->dreg = state->reg1;
+	tree->sreg2 = state->right->reg1;
+	tree->inst_basereg = state->left->tree->inst_basereg; 
+	tree->inst_offset = state->left->tree->inst_offset; 
+    
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 %%
