@@ -399,7 +399,14 @@ MINI_OP(OP_CCASTCLASS, "ccastclass")
 MINI_OP(OP_SAVE_LMF, "save_lmf")
 MINI_OP(OP_RESTORE_LMF, "restore_lmf")
 
-
+/* atomic specific */
+MINI_OP(OP_ATOMIC_ADD_I4, "atomic_add_i4")
+MINI_OP(OP_ATOMIC_ADD_IMM_I4, "atomic_add_imm_i4")
+/* Note, OP_ATOMIC_ADD_IMM_PREV_I4 is used by Interlocked::Add and 
+	returns the value before add compared to OP_ATOMIC_ADD_IMM_I4
+	that returns the value after inc/dec */
+MINI_OP(OP_ATOMIC_ADD_IMM_PREV_I4, "atomic_add_imm_prev_i4")
+MINI_OP(OP_ATOMIC_EXCHANGE_I4, "atomic_exchange_i4")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")

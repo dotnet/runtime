@@ -565,3 +565,7 @@ op_bigmul_un: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:i len:3
 sext_i2: dest:i src1:i len:3
 x86_tls_get: dest:i len:20
+atomic_add_i4: src1:b src2:i dest:i len:16
+atomic_exchange_i4: src1:b src2:i dest:i len:14
+atomic_add_imm_i4: src1:b dest:i len:15
+atomic_add_imm_prev_i4: src1:b dest:i len:10
