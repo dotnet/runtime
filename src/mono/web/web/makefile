@@ -9,7 +9,6 @@ OBJECTS=	\
 	deploy/contributing.html		\
 	deploy/class-status.html		\
 	deploy/class-status-corlib.html		\
-	deploy/class-status-System.html		\
 	deploy/class-status-System.Xml.html	\
 	deploy/class-status-System.Data.html	\
 	deploy/class-status-System.Web.html	\
@@ -29,8 +28,10 @@ OBJECTS=	\
 	deploy/jit-debug-sample2.html		\
 	deploy/mailing-lists.html		\
 	deploy/monodoc-xml.html			\
+	deploy/java.html			\
 	deploy/papers.html			\
 	deploy/passport.html			\
+	deploy/plans.html			\
 	deploy/porting.html			\
 	deploy/rationale.html			\
 	deploy/resources.html			\
@@ -40,6 +41,8 @@ OBJECTS=	\
 	deploy/testing.html			\
 	deploy/tools.html			\
 	deploy/winforms.html
+
+# deploy/class-status-System.html		\
 
 NON_HTML_SOURCES=	\
 	../mono-build.sh	\

@@ -104,6 +104,11 @@
 	set your CVSROOT environment variable before running the script to
 	select a particular cvs server.
 
+** Mono Regression Test Suite
+
+	You can get binaries for the Mono Regression Test Suite <a
+	href="archive/mono-tests.tar.gz">here</a>
+	
 <a name="install">
 ** Building the software manually
 

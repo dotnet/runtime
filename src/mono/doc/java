@@ -1,0 +1,39 @@
+* Java
+
+	It would be interesting to support the Java language as part
+	of the Mono project.  
+
+	You have to think of Java as various pieces: Java the
+	language and Java the virtual machine.  
+
+	It is possible to compile Java to .NET, as shown by the
+	Microsoft J# compiler.   We could then allow the migration of
+	Java applications to the Mono runtime. 
+
+** The translator.
+
+	It would be interesting to write a semantic translator that
+	converts java byte codes into CIL opcodes.  This is possible
+	because the Java byte codes are a subset of the CIL ones.
+
+	A semantic tree needs to be constructed (very much in the
+	spirit of what is done in mono_analize_stack in
+	<tt>mono/mono/jit/jit.c</tt>.  Once such a semantic tree is
+	constructed, we could generate the equivalent Java code.
+
+	This has a number of interesting side effects: people can
+	continue to use their existing Java compilers to compile their
+	code, and a simple tool that converts their .class files into
+	a .NET assembly can be used.
+
+** Libraries
+
+	We could translate the GNU Classpath libraries with the above
+	tools to provide the Java runtime required to host into the
+	Mono runtime.  Some special treatment would be required for
+	core data types like integers, arrays and strings, and of
+	course reuse where possible existing classes from .NET to make
+	them compatible.
+
+
+

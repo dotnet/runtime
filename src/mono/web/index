@@ -72,14 +72,23 @@
   </tr>
 </table>
 
-** Apr, 6, 2002
+** Apr 11, 2002
+
+	Gtk# 0.1 "ButtonHook" has been <a
+	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2002-April/000048.html">released</a>
+
+	Binaries for the Mono Regression Test Suite are <a
+	href="archive/mono-tests.tar.gz">available</a> for
+	people porting the Mono Runtime to new platforms.
+
+** Apr 6, 2002
 
 	<a href="http://www.dotnetremoting.cc/book/AdvancedDotNetRemoting.asp">
 	Advanced .NET Remoting</a> from Ingo Rammer is now available. Ingo
 	helped us to implement the proxy support and the book is a valuable
 	resource for anyone interested in remoting.
 
-** Apr, 5, 2002
+** Apr 5, 2002
 
 	Transparent proxy support has been finished, congrats to
 	Dietmar.  Our JIT engine on CVS contains the implementation.

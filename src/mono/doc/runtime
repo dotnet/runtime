@@ -59,7 +59,7 @@
 	layout the code to support non-IA32 architectures.  Our work
 	will be focused on getting a IA32 version running first.  
 
-	The JIT engine should work on Linux and Win32, although you
+	The JIT engine works on Linux and Win32, although you
 	will need to install the CygWin32 development tools to get a
 	Unix-like compilation environment (mostly we use GNU make in 
 	a few of the makefiles).
@@ -164,3 +164,16 @@
 
 	Initially we used libffi, but it was fairly slow, so we have
 	reused parts of the JIT work to create efficient PInvoke trampolines. 
+
+** Remoting
+
+	Mono has support for remoting and proxy objects, just like
+	.NET does.  The runtime provides these facilities.
+
+** Porting
+
+	If you are interested in porting the Mono runtime to other
+	platforms, you might find the pre-compiled <a
+	href="archive/mono-tests.tar.gz">Mono regression test
+	suite</a> useful to debug your implementation.
+
