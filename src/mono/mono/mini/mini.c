@@ -405,7 +405,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->opcode = OP_LDADDR;	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
-                (cfg)->disable_ssa = TRUE; \
+        if (!MONO_TYPE_ISSTRUCT (header->locals [(num)])) \
+           (cfg)->disable_ssa = TRUE; \
 	} while (0)
 
 #define NEW_RETLOADA(cfg,dest) do {	\
@@ -448,7 +449,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->opcode = OP_LDADDR;	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
-                (cfg)->disable_ssa = TRUE; \
+        if (!MONO_TYPE_ISSTRUCT (cfg->varinfo [(num)]->inst_vtype)) \
+           (cfg)->disable_ssa = TRUE; \
 	} while (0)
 
 
@@ -4650,7 +4652,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			MONO_ADD_INS (bblock, ins);
 			inline_costs += 1;
-			cfg->disable_ssa = TRUE;
 			break;
 		}
 		case CEE_STELEM: {
@@ -4691,7 +4692,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			ip += 5;
 			inline_costs += 1;
-			cfg->disable_ssa = TRUE;
 			break;
 		}
 		case CEE_STELEM_REF: {
@@ -4720,7 +4720,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			++ip;
 			inline_costs += 1;
-			cfg->disable_ssa = TRUE;
 			break;
 		}
 		case CEE_CKFINITE: {

@@ -104,7 +104,7 @@ replace_usage (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **
 		} else {
 			new_var = cfg->varinfo [idx];
 
-			if (new_var->opcode != OP_ARG) {
+			if ((new_var->opcode != OP_ARG) && (new_var->opcode != OP_LOCAL)) {
 				/* uninitialized variable ? */
 				g_warning ("using uninitialized variables %d in BB%d (%s)", idx, bb->block_num,
 					   mono_method_full_name (cfg->method, TRUE));
@@ -188,7 +188,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoIn
 	MonoInst *inst, *new_var;
 	int i, j, idx;
 	GList *tmp;
-	MonoInst *new_stack [max_vars];
+	MonoInst **new_stack;
 
 #ifdef DEBUG_SSA
 	printf ("RENAME VARS BB%d %s\n", bb->block_num, mono_method_full_name (cfg->method, TRUE));
@@ -245,9 +245,13 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoIn
 		}
 	}
 
-	for (tmp = bb->dominated; tmp; tmp = tmp->next) {
-		memcpy (new_stack, stack, sizeof (MonoInst *) * max_vars); 
-		mono_ssa_rename_vars (cfg, max_vars, (MonoBasicBlock *)tmp->data, new_stack);
+	if (bb->dominated) {
+		new_stack = g_new (MonoInst*, max_vars);
+		for (tmp = bb->dominated; tmp; tmp = tmp->next) {
+			memcpy (new_stack, stack, sizeof (MonoInst *) * max_vars); 
+			mono_ssa_rename_vars (cfg, max_vars, (MonoBasicBlock *)tmp->data, new_stack);
+		}
+		g_free (new_stack);
 	}
 }
 
