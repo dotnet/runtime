@@ -5599,6 +5599,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = ins;
 				ip += 6;
 				inline_costs += 10 * num_calls++;
+				/* Can't embed random pointers into AOT code */
+				cfg->disable_aot = 1;
 				break;
 			case CEE_MONO_VTADDR:
 				CHECK_STACK (1);
