@@ -36,8 +36,6 @@ OBJECTS=									\
 	deploy/index.html							\
 	deploy/java.html							\
 	deploy/jit-debug.html							\
-	deploy/jit-debug-sample.html						\
-	deploy/jit-debug-sample2.html						\
 	deploy/languages.html							\
 	deploy/mailing-lists.html						\
 	deploy/mbas.html							\
