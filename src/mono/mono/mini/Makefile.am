@@ -22,6 +22,9 @@ INCLUDES = \
 
 if PLATFORM_WIN32
 export HOST_CC
+# The mingw math.h has "extern inline" functions that dont appear in libs, so
+# optimisation is required to actually inline them
+AM_CFLAGS = -O
 endif
 
 # hack for automake to have the same source file in a library and a bin
