@@ -4,6 +4,17 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 
+typedef enum {
+	MONO_WRAPPER_NONE,
+	MONO_WRAPPER_DELEGATE_INVOKE,
+	MONO_WRAPPER_DELEGATE_BEGIN_INVOKE,
+	MONO_WRAPPER_DELEGATE_END_INVOKE,
+	MONO_WRAPPER_RUNTIME_INVOKE,
+	MONO_WRAPPER_NATIVE_TO_MANAGED,
+	MONO_WRAPPER_MANAGED_TO_NATIVE,
+	MONO_WRAPPER_UNKNOWN
+} MonoWrapperType;
+
 typedef struct {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
@@ -18,7 +29,7 @@ typedef struct {
 	/* this is used by the inlining algorithm */
 	unsigned int inline_info:1;
 	unsigned int uses_this:1;
-	unsigned int is_wrapper:1;
+	MonoWrapperType wrapper_type:4;
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	gint16 inline_count;

@@ -499,7 +499,7 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 {
 	GList *l;
 	g_assert (method != NULL);
-	g_assert (method->is_wrapper == 1);
+	g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 
 	if (!(l = g_list_nth (((MonoMethodWrapper *)method)->data, id - 1)))
 		g_assert_not_reached ();

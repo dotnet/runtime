@@ -967,7 +967,7 @@ check_inlining (MonoMethod *method)
 
 	method->inline_info = 1;
 	
-	if (method->is_wrapper)
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		goto fail;
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
@@ -1497,7 +1497,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			token = read32 (ip);
 			ip += 4;
 			
-			if (method->is_wrapper)
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				c = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				c = mono_class_get (image, token);
@@ -1531,7 +1531,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip += 4;
 			sp--;
 
-			if (method->is_wrapper)
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				class = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else 
 				class = mono_class_get (image, token);
@@ -2039,7 +2039,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if (calli) {
 				ftn = *(--sp);
 				
-				if (method->is_wrapper) 
+				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					csig = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
 				else
 					csig = mono_metadata_parse_signature (image, token);
@@ -3271,7 +3271,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				token = read32 (ip);
 				ip += 4;
 
-				if (method->is_wrapper)
+				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cm = mono_method_get_wrapper_data (method, token);
 				else 
 					cm = mono_get_method (image, token, NULL);

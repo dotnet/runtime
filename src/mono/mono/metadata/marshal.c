@@ -179,7 +179,7 @@ mono_mb_new (MonoClass *klass, const char *name)
 	m->name = g_strdup (name);
 	m->inline_info = 1;
 	m->inline_count = -1;
-	m->is_wrapper = 1;
+	m->wrapper_type = MONO_WRAPPER_UNKNOWN;
 
 	mb->code_size = 256;
 	mb->code = g_malloc (mb->code_size);
@@ -643,6 +643,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	}
 
 	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_BEGIN_INVOKE;
 
 	/* allocate local 0 (pointer) *params[] */
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -742,6 +743,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	static_sig->hasthis = 0;
 
 	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_INVOKE;
 
 	/* allocate local 0 (object) prev */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -886,6 +888,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
 
 	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_RUNTIME_INVOKE;
 
 	/* allocate local 0 (object) tmp */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -1105,6 +1108,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	sig = method->signature;
 
 	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_NATIVE_TO_MANAGED;
 
 	/* we copy the signature, so that we can modify it */
 	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
@@ -1207,6 +1211,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		pinvoke = TRUE;
 
 	mb = mono_mb_new (method->klass, method->name);
+	mb->method->wrapper_type = MONO_WRAPPER_MANAGED_TO_NATIVE;
 
 	mb->method->save_lmf = 1;
 

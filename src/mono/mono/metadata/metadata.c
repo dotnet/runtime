@@ -2292,6 +2292,7 @@ mono_signature_hash (MonoMethodSignature *sig)
 	guint i, res = sig->ret->type;
 
 	for (i = 0; i < sig->param_count; i++) { 
+		res = res << 7;
 		res += sig->params[i]->type;
 	}
 

@@ -229,8 +229,9 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 				
 					if (ei->try_start <= ip && ip <= (ei->try_end)) { 
 						/* catch block */
-						if (ei->flags == 0 && (m->is_wrapper || 
-							mono_object_isinst (obj, mono_class_get (m->klass->image, ei->token_or_filter)))) {
+						if (ei->flags == 0 && 
+						    (m->wrapper_type != MONO_WRAPPER_NONE || 
+						     mono_object_isinst (obj, mono_class_get (m->klass->image, ei->token_or_filter)))) {
 							((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 							g_list_free (trace_ips);
 							return TRUE;
@@ -463,8 +464,9 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 					if (ei->try_start <= ip && ip <= (ei->try_end)) { 
 						/* catch block */
-						if (ei->flags == 0 && (m->is_wrapper || 
-							mono_object_isinst (obj, mono_class_get (m->klass->image, ei->token_or_filter)))) {
+						if (ei->flags == 0 && 
+						    (m->wrapper_type != MONO_WRAPPER_NONE || 
+						     mono_object_isinst (obj, mono_class_get (m->klass->image, ei->token_or_filter)))) {
 					
 							ctx->SC_EIP = (unsigned long)ei->handler_start;
 							ctx->SC_ECX = (unsigned long)obj;
