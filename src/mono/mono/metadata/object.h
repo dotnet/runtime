@@ -78,6 +78,9 @@ mono_object_new_fast	    (MonoVTable *vtable);
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
+void*
+mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean *pass_size_in_words);
+
 MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
 

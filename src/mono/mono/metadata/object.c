@@ -35,7 +35,7 @@
 #include <mono/utils/strenc.h>
 
 /*
- * Enable experimental typed allocation using the GC_gcj_malloc function.
+ * Enable typed allocation using the GC_gcj_malloc function.
  */
 #ifdef HAVE_GC_GCJ_MALLOC
 #define CREATION_SPEEDUP 1
@@ -331,6 +331,11 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		gcj_inited = TRUE;
 
 		GC_init_gcj_malloc (5, NULL);
+
+#ifdef GC_REDIRECT_TO_LOCAL
+		mono_register_jit_icall (GC_local_gcj_fast_malloc, "GC_local_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
+#endif
+		mono_register_jit_icall (GC_gcj_fast_malloc, "GC_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 	}
 
 	if (!class->inited)
@@ -1625,17 +1630,6 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 }
 
-static void
-out_of_memory (size_t size)
-{
-	/* 
-	 * we could allocate at program startup some memory that we could release 
-	 * back to the system at this point if we're really low on memory (ie, size is
-	 * lower than the memory we set apart)
-	 */
-	mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
-}
-
 /**
  * mono_object_allocate:
  * @size: number of bytes to allocate
@@ -1653,11 +1647,11 @@ mono_object_allocate (size_t size)
 	void *o = GC_MALLOC (size);
 #else
 	void *o = calloc (1, size);
+	if (!o)
+		return mono_gc_out_of_memory (size);
 #endif
 	mono_stats.new_object_count++;
 
-	if (!o)
-		out_of_memory (size);
 	return o;
 }
 
@@ -1669,8 +1663,6 @@ mono_object_allocate_spec (size_t size, void *gcdescr)
 	void *o = GC_GCJ_MALLOC (size, gcdescr);
 	mono_stats.new_object_count++;
 
-	if (!o)
-		out_of_memory (size);
 	return o;
 }
 #endif
@@ -1738,27 +1730,6 @@ mono_object_new_specific (MonoVTable *vtable)
 }
 
 MonoObject *
-mono_object_new_fast (MonoVTable *vtable)
-{
-	MonoObject *o;
-	MONO_ARCH_SAVE_REGS;
-
-#if CREATION_SPEEDUP
-	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = mono_object_allocate_spec (vtable->klass->instance_size, vtable);
-	} else {
-/*		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
-		o = mono_object_allocate (vtable->klass->instance_size);
-		o->vtable = vtable;
-	}
-#else
-	o = mono_object_allocate (vtable->klass->instance_size);
-	o->vtable = vtable;
-#endif
-	return o;
-}
-
-MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
 {
 	MonoObject *o;
@@ -1780,6 +1751,32 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 	
 	mono_profiler_allocation (o, vtable->klass);
 	return o;
+}
+
+/*
+ * Return the allocation function appropriate for the given class.
+ */
+
+void*
+mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean *pass_size_in_words)
+{
+	*pass_size_in_words = FALSE;
+
+	if (vtable->klass->has_finalize || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+		return mono_object_new_specific;
+
+#if CREATION_SPEEDUP
+	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		*pass_size_in_words = TRUE;
+#ifdef GC_REDIRECT_TO_LOCAL
+		return GC_local_gcj_fast_malloc;
+#else
+		return GC_gcj_fast_malloc;
+#endif
+	}
+#endif
+
+	return mono_object_new_specific;
 }
 
 /**
@@ -1913,7 +1910,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 		for (i = 0; i < array_class->rank; ++i) {
 			bounds [i].length = lengths [i];
 			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i]))
-				out_of_memory (MYGUINT32_MAX);
+				mono_gc_out_of_memory (MYGUINT32_MAX);
 			len *= lengths [i];
 		}
 
@@ -1923,10 +1920,10 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	}
 
 	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
-		out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MYGUINT32_MAX);
 	byte_len *= len;
 	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
-		out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MYGUINT32_MAX);
 	byte_len += sizeof (MonoArray);
 	/* 
 	 * Following three lines almost taken from mono_object_new ():
@@ -1995,10 +1992,10 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 
 	elem_size = mono_array_element_size (vtable->klass);
 	if (CHECK_MUL_OVERFLOW_UN (n, elem_size))
-		out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MYGUINT32_MAX);
 	byte_len = n * elem_size;
 	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
-		out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MYGUINT32_MAX);
 	byte_len += sizeof (MonoArray);
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
@@ -2057,7 +2054,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 
 	/* overflow ? can't fit it, can't allocate it! */
 	if (len > size)
-		out_of_memory (-1);
+		mono_gc_out_of_memory (-1);
 
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 

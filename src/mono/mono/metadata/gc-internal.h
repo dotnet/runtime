@@ -30,6 +30,7 @@ extern void mono_gc_cleanup (void);
 extern void mono_gc_enable (void);
 extern void mono_gc_disable (void);
 extern gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
+extern gpointer mono_gc_out_of_memory (size_t size);
 
 #endif /* __MONO_METADATA_GC_H__ */
 

@@ -365,6 +365,7 @@ typedef struct {
 	gulong inflated_method_count;
 	gulong inflated_type_count;
 	gulong generics_metadata_size;
+	gboolean enabled;
 } MonoStats;
 
 extern MonoStats mono_stats;
