@@ -164,10 +164,10 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 
 	switch (tree->opcode) {
 	case OP_ICONST:
-		fprintf (fp, "[%d]", tree->inst_c0);
+		fprintf (fp, "[%ld]", (long)tree->inst_c0);
 		break;
 	case OP_I8CONST:
-		fprintf (fp, "[%lld]", tree->inst_l);
+		fprintf (fp, "[%lld]", (long long)tree->inst_l);
 		break;
 	case OP_R8CONST:
 		fprintf (fp, "[%f]", *(double*)tree->inst_p0);
@@ -177,10 +177,10 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 		break;
 	case OP_ARG:
 	case OP_LOCAL:
-		fprintf (fp, "[%d]", tree->inst_c0);
+		fprintf (fp, "[%d]", (int)tree->inst_c0);
 		break;
 	case OP_REGOFFSET:
-		fprintf (fp, "[0x%x(%s)]", tree->inst_offset, mono_arch_regname (tree->inst_basereg));
+		fprintf (fp, "[0x%x(%s)]", (int)tree->inst_offset, mono_arch_regname (tree->inst_basereg));
 		break;
 	case OP_REGVAR:
 		fprintf (fp, "[%s]", mono_arch_regname (tree->dreg));
@@ -210,7 +210,7 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 	}
 	case OP_PHI: {
 		int i;
-		fprintf (fp, "[%d\\ (", tree->inst_c0);
+		fprintf (fp, "[%d\\ (", (int)tree->inst_c0);
 		for (i = 0; i < tree->inst_phi_args [0]; i++) {
 			if (i)
 				fprintf (fp, ",\\ ");

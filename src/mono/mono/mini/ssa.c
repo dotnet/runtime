@@ -954,7 +954,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 				*bblist = g_list_prepend (*bblist, tb);
 			}
 		} else if (r1 == 2) {
-			for (i = (int)inst->klass; i >= 0; i--) {
+			for (i = GPOINTER_TO_INT (inst->klass); i >= 0; i--) {
 				MonoBasicBlock *tb = inst->inst_many_bb [i];
 				if (!(tb->flags &  BB_REACHABLE)) {
 					tb->flags |= BB_REACHABLE;
