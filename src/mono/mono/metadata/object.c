@@ -563,7 +563,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	byte_len = mono_array_element_size (array_class);
 	len = 1;
 
-	if (array_class->this_arg.type == MONO_TYPE_SZARRAY) {
+	if (array_class->rank == 1 && lower_bounds [0] == 0) {
 		bounds = NULL;
 		len = lengths [0];
 	} else {

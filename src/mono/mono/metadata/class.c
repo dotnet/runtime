@@ -1168,6 +1168,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 		at->rank = rank;
 		/* FIXME: complete.... */
 	} else {
+		/* FIXME: this is not correct. the lbound could be >0 */
 		class->byval_arg.type = MONO_TYPE_SZARRAY;
 		class->byval_arg.data.type = &eclass->byval_arg;
 	}
