@@ -1999,18 +1999,23 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
 	MonoVTable *vtable;
+	size_t size = (sizeof (MonoString) + ((len + 1) * 2));
+
+	/* overflow ? can't fit it, can't allocate it! */
+	if (len > size)
+		out_of_memory (-1);
 
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR)
-		s = mono_object_allocate_spec (sizeof (MonoString) + ((len + 1) * 2), vtable);
+		s = mono_object_allocate_spec (size, vtable);
 	else {
-		s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
+		s = (MonoString*)mono_object_allocate (size);
 		s->object.vtable = vtable;
 	}
 #else
-	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
+	s = (MonoString*)mono_object_allocate (size);
 	s->object.vtable = vtable;
 #endif
 
