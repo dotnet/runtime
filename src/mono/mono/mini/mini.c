@@ -2438,9 +2438,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		bbhash = g_hash_table_new (g_direct_hash, NULL);
 	}
 
-	if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-		if (mono_profiler_get_coverage_level () == MONO_COVERAGE_INSTRUCTION)
-			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
+	if (cfg->prof_options & MONO_PROFILE_INS_COVERAGE)
+		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 
 	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
@@ -6129,8 +6128,7 @@ mono_codegen (MonoCompile *cfg)
 	}
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-		if (mono_profiler_get_coverage_level () == MONO_COVERAGE_BASIC_BLOCK)
-			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, cfg->num_bblocks);
+		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, cfg->num_bblocks);
 
 	code = mono_arch_emit_prolog (cfg);
 
