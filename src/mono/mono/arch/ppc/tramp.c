@@ -22,7 +22,7 @@
 #endif
 #endif
 
-#define DEBUG(x) x
+#define DEBUG(x)
 
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
@@ -585,7 +585,8 @@ mono_create_method_pointer (MonoMethod *method)
 	MonoJitInfo *ji;
 	guint8 *p, *code_buffer;
 	guint i, align = 0, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param,
-		this_flag;
+		this_flag, cpos, vt_cur;
+	gint *vtbuf;
 	guint32 simpletype;
 
 	/*
@@ -646,13 +647,38 @@ mono_create_method_pointer (MonoMethod *method)
 
 	this_flag = (sig->hasthis ? 1 : 0);
 	if (sig->param_count) {
-		gint save_count = MAX (3, MIN (8, sig->param_count - 1));
+		gint save_count = MIN (8, sig->param_count - 1);
 		for (i = reg_param; i < save_count; i ++) {
 			ppc_stw (p, ppc_r4 + i, local_pos, ppc_r31);
 			local_pos += 4;
 			DEBUG (printf ("save r%d\n", 4 + i));
 		}
 	}
+
+	/* prepare space for valuetypes */
+	vt_cur = local_pos;
+	vtbuf = alloca (sizeof(int)*sig->param_count);
+	cpos = 0;
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *type = sig->params [i];
+		vtbuf [i] = -1;
+		if (type->type == MONO_TYPE_VALUETYPE) {
+			MonoClass *klass = type->data.klass;
+			gint size;
+
+			if (klass->enumtype)
+				continue;
+			size = mono_class_native_size (klass, &align);
+			cpos += align - 1;
+			cpos &= ~(align - 1);
+			vtbuf [i] = cpos;
+			cpos += size;
+		}	
+	}
+	cpos += 3;
+	cpos &= ~3;
+
+	local_pos += cpos;
 
 	/* set MonoInvocation::stack_args */
 	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
@@ -661,9 +687,6 @@ mono_create_method_pointer (MonoMethod *method)
 
 	/* add stackval arguments */
 	for (i = 0; i < sig->param_count; ++i) {
-		/* if (vtbuf [i] >= 0) {
-			NOT_IMPLEMENTED ("vtbuf");
-			} */
 		if (reg_param < 8) {
 			ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - this_flag)*4);
 			reg_param ++;
@@ -672,8 +695,16 @@ mono_create_method_pointer (MonoMethod *method)
 			stack_param ++;
 		}
 		ppc_lis  (p, ppc_r3, (guint32) sig->params [i] >> 16);
-		ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos);
 
+		if (vtbuf [i] >= 0) {
+			ppc_addi (p, ppc_r4, ppc_r31, vt_cur);
+			ppc_stw  (p, ppc_r4, stackval_arg_pos, ppc_r31);
+			ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos);
+			ppc_lwz  (p, ppc_r5, 0, ppc_r5);
+			vt_cur += vtbuf [i];
+		} else {
+			ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos);
+		}
 		ppc_ori  (p, ppc_r3, ppc_r3, (guint32) sig->params [i] & 0xffff);
 		ppc_lis  (p, ppc_r0, (guint32) stackval_from_data >> 16);
 		ppc_li   (p, ppc_r6, sig->pinvoke);
