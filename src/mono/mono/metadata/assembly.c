@@ -799,8 +799,13 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	memset (&aname, 0, sizeof (MonoAssemblyName));
 	aname.name = name;
 
-	res = mono_assembly_loaded (&aname);
+	res = invoke_assembly_preload_hook (&aname, assemblies_path);
+	if (res) {
+		res->in_gac = FALSE;
+		return res;
+	}
 
+	res = mono_assembly_loaded (&aname);
 	if (res)
 		return res;
 
@@ -906,8 +911,15 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	char *fullpath, *filename;
 
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
+	if (result) {
+		result->in_gac = FALSE;
+		return result;
+	}
+
+	result = mono_assembly_loaded (aname);
 	if (result)
 		return result;
+
 	/* g_print ("loading %s\n", aname->name); */
 	/* special case corlib */
 	if (strcmp (aname->name, "mscorlib") == 0) {
@@ -924,11 +936,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 		corlib = load_in_path ("mscorlib.dll", default_path, status);
 		return corlib;
 	}
-	result = search_loaded (aname);
 
-	if (result)
-		return result;
-	/* g_print ("%s not found in cache\n", aname->name); */
 	if (strstr (aname->name, ".dll"))
 		filename = g_strdup (aname->name);
 	else
@@ -950,16 +958,8 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 			return result;
 		}
 	}
-	if (assemblies_path) {
-		result = load_in_path (filename, (const char**)assemblies_path, status);
-		if (result) {
-			result->in_gac = FALSE;
-			g_free (filename);
-			return result;
-		}
-	}
+
 	result = load_in_path (filename, default_path, status);
-	
 	if (result)
 		result->in_gac = FALSE;
 	g_free (filename);
