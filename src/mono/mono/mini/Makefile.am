@@ -19,6 +19,10 @@ INCLUDES = \
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
+if PLATFORM_WIN32
+export HOST_CC
+endif
+
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
@@ -95,7 +99,7 @@ libmonoinclude_HEADERS = \
 TestDriver.dll: TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library TestDriver.cs
 
-cpu-pentium.h: cpu-pentium.md genmdesc
+cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium
 
 BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-x86.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
