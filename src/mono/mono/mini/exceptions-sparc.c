@@ -26,12 +26,6 @@
 #include "mini.h"
 #include "mini-sparc.h"
 
-typedef struct MonoContext {
-	guint32 ip;
-	guint32 *sp;
-	guint32 *fp;
-} MonoContext;
-
 gboolean  mono_sparc_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (long)(eip); } while (0); 
@@ -267,7 +261,7 @@ mono_arch_get_throw_exception_by_name (void)
  * the @lmf if necessary. @native_offset return the IP offset from the 
  * start of the function or -1 if that info is not available.
  */
-static MonoJitInfo *
+MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 			 gboolean *managed)
@@ -674,9 +668,10 @@ mono_sparc_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 }
 
 gboolean
-mono_arch_handle_exception (ucontext_t *ctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
 	MonoContext mctx;
+	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	/*
 	 * Access to the machine state using the ucontext_t parameter is somewhat

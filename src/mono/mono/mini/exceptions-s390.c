@@ -78,8 +78,6 @@
 /*                 T y p e d e f s                                  */
 /*------------------------------------------------------------------*/
 
-typedef struct ucontext MonoContext;
-
 struct stack_frame
 {
   void *next;
@@ -667,7 +665,7 @@ glist_to_array (GList *list)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static MonoJitInfo *
+MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 			 MonoJitInfo *res, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, 

@@ -2,6 +2,7 @@
 #define __MONO_MINI_PPC_H__
 
 #include <mono/arch/ppc/ppc-codegen.h>
+#include <glib.h>
 
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
@@ -23,6 +24,19 @@ struct MonoLMF {
 	gulong     iregs [19]; /* 13..31 */
 	gdouble    fregs [20]; /* 14..31 */
 };
+
+/* we define our own structure and we'll copy the data
+ * from sigcontext/ucontext/mach when we need it.
+ * This also makes us save stack space and time when copying
+ * We might also want to add an additional field to propagate
+ * the original context from the signal handler.
+ */
+typedef struct {
+	gulong sc_ir;          // pc 
+	gulong sc_sp;          // r1
+	gulong regs [19];
+	double fregs [20];
+} MonoContext;
 
 typedef struct MonoCompileArch {
 } MonoCompileArch;

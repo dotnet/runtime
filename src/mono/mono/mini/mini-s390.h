@@ -2,6 +2,7 @@
 #define __MONO_MINI_S390_H__
 
 #include <mono/arch/s390/s390-codegen.h>
+#include <signal.h>
 
 #define MONO_MAX_IREGS 16
 #define MONO_MAX_FREGS 16
@@ -19,6 +20,8 @@ struct MonoLMF {
 	gulong      ebp;
 	gulong      eip;
 };
+
+typedef struct ucontext MonoContext;
 
 typedef struct MonoCompileArch {
 } MonoCompileArch;

@@ -25,19 +25,6 @@
 #include "mini.h"
 #include "mini-ppc.h"
 
-/* we define our own structure and we'll copy the data
- * from sigcontext/ucontext/mach when we need it.
- * This also makes us save stack space and time when copying
- * We might also want to add an additional field to propagate
- * the original context from the signal handler.
- */
-typedef struct {
-	gulong sc_ir;          // pc 
-	gulong sc_sp;          // r1
-	gulong regs [19];
-	double fregs [20];
-} MonoContext;
-
 static gboolean arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
 
 /*
@@ -747,7 +734,7 @@ glist_to_array (GList *list)
  * the @lmf if necessary. @native_offset return the IP offset from the 
  * start of the function or -1 if that info is not available.
  */
-static MonoJitInfo *
+MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 			 gboolean *managed)

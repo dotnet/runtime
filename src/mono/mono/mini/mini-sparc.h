@@ -24,6 +24,12 @@ struct MonoLMF {
 	guint32     ebp;
 };
 
+typedef struct MonoContext {
+	guint32 ip;
+	guint32 *sp;
+	guint32 *fp;
+} MonoContext;
+
 typedef struct MonoCompileArch {
 	guint32 lmf_offset;
 	guint32 localloc_offset;
