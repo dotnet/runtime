@@ -229,7 +229,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		}
 
 		ctx->SC_ESP = ctx->SC_EBP;
-		ctx->SC_EIP = *((int *)ctx->SC_EBP + 1);
+		ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 5;
 		ctx->SC_EBP = *((int *)ctx->SC_EBP);
 		
 		if (ctx->SC_EBP < (unsigned)mono_end_of_stack)
@@ -295,6 +295,9 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		 unsigned long eip,  unsigned long esp)
 {
 	struct sigcontext ctx;
+
+	/* adjust eip so that it point to the call instruction */
+	eip -= 5;
 
 	ctx.SC_ESP = esp;
 	ctx.SC_EIP = eip;
