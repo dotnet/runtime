@@ -1596,13 +1596,7 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
-#if 1
-				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
-				 * stack slot and if they are of the same type. */
-				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
-#else
 				bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
-#endif
 			}
 		}
 	}
