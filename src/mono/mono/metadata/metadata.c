@@ -2027,6 +2027,10 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 		return mono_metadata_type_equal (t1->data.type, t2->data.type);
+	case MONO_TYPE_ARRAY:
+		if (t1->data.array->rank != t2->data.array->rank)
+			return FALSE;
+		return mono_metadata_type_equal (t1->data.array->type, t2->data.array->type);
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;

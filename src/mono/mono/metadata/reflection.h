@@ -338,12 +338,11 @@ typedef struct {
 	char *name_space;
 	char *name;
 	char *assembly;
-	int rank; /* we may need more info than this */
-	int isbyref;
-	int ispointer;
+	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
 } MonoTypeNameParse;
 
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
+MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
 
 int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);

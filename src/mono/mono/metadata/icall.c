@@ -592,7 +592,7 @@ static MonoReflectionType*
 ves_icall_type_from_name (MonoString *name)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass;
+	MonoType *type;
 	MonoImage *image;
 	MonoTypeNameParse info;
 	gchar *str;
@@ -601,6 +601,7 @@ ves_icall_type_from_name (MonoString *name)
 	/*g_print ("requested type %s\n", str);*/
 	if (!mono_reflection_parse_type (str, &info)) {
 		g_free (str);
+		g_list_free (info.modifiers);
 		return NULL;
 	}
 
@@ -609,40 +610,19 @@ ves_icall_type_from_name (MonoString *name)
 		/* do we need to load if it's not already loaded? */
 		if (!image) {
 			g_free (str);
+			g_list_free (info.modifiers);
 			return NULL;
 		}
 	} else
 		image = mono_defaults.corlib;
-	if (info.nest_name) {
-		klass = mono_class_from_name (image, info.nest_name_space, info.nest_name);
-		if (klass) {
-			GList *nested;
-			mono_class_init (klass);
-			nested = klass->nested_classes;
-			while (nested) {
-				klass = nested->data;
-				if (strcmp (klass->name, info.nest_name) == 0 &&
-						strcmp (klass->name_space, info.nest_name_space) == 0)
-					break;
-				klass = NULL;
-			}
-		}
-	} else {
-		klass = mono_class_from_name (image, info.name_space, info.name);
-	}
+
+	type = mono_reflection_get_type (image, &info, FALSE);
 	g_free (str);
-	if (!klass)
+	g_list_free (info.modifiers);
+	if (!type)
 		return NULL;
-	mono_class_init (klass);
-	if (info.rank) {
-		klass = mono_array_class_get (&klass->byval_arg, info.rank);
-		mono_class_init (klass);
-	}
-	
-	if (info.isbyref || info.ispointer) /* hack */
-		return mono_type_get_object (domain, &klass->this_arg);
-	else
-		return mono_type_get_object (domain, &klass->byval_arg);
+	/*g_print ("got it\n");*/
+	return mono_type_get_object (domain, type);
 }
 
 static MonoReflectionType*
@@ -841,7 +821,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	info->attrs = class->flags;
 	info->rank = class->rank;
 	info->assembly = NULL; /* FIXME */
-	if (class->enumtype)
+	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
 		info->etype = mono_type_get_object (domain, class->enum_basetype);
 	else if (class->element_class)
 		info->etype = mono_type_get_object (domain, &class->element_class->byval_arg);
@@ -1426,78 +1406,34 @@ static guint32 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Erro
 }
 
 static MonoReflectionType*
-ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type, MonoBoolean throwOnError, MonoBoolean ignoreCase)
+ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	/* FIXME : use ignoreCase */
-	gchar *name, *namespace, *str;
-	char *byref, *isarray, *ispointer, *isa2;
-	guint rank, recarray = 0;
-	MonoClass *klass;
+	gchar *str;
+	MonoType *type;
+	MonoTypeNameParse info;
 
-	str = namespace = mono_string_to_utf8 (type);
+	str = mono_string_to_utf8 (name);
 	/*g_print ("requested type %s in %s\n", str, assembly->assembly->name);*/
-
-	name = strrchr (str, '.');
-	byref = strrchr (str, '&');
-	ispointer = strrchr (str, '*');
-	if (byref)
-		*byref = 0;
-	if (ispointer)
-		*ispointer = 0;
-	isarray = strrchr (str, '[');
-	if (isarray) {
-		rank = 1;
-		*isarray = 0;
-		while (*isarray) {
-			if (*isarray == ',')
-				rank++;
-			if (*isarray == ']')
-				break;
-			++isarray;
-		}
+	if (!mono_reflection_parse_type (str, &info)) {
+		g_free (str);
+		g_list_free (info.modifiers);
+		if (throwOnError) /* uhm: this is a parse error, though... */
+			mono_raise_exception (mono_get_exception_type_load ());
+		return NULL;
 	}
 
-	isa2 = strrchr (str, '[');
-	if (isa2 && *isa2 == '[') {
-		/* g_print ("recarray for: type name search: %s.%s\n", namespace, name); */
-		recarray = 1;
-		*isa2 = 0;
-	}
-
-	if (name) {
-		*name = 0;
-		++name;
-	} else {
-		namespace = "";
-		name = str;
-	}
-
-	/*g_print ("type name search: %s.%s\n", namespace, name);*/
-	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
+	type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
 	g_free (str);
-	if (!klass) {
+	g_list_free (info.modifiers);
+	if (!type) {
 		if (throwOnError)
 			mono_raise_exception (mono_get_exception_type_load ());
 		return NULL;
 	}
-	if (!klass->inited)
-		mono_class_init (klass);
+	/*g_print ("got it\n");*/
+	return mono_type_get_object (domain, type);
 
-	if (isarray) {
-		klass = mono_array_class_get (&klass->byval_arg, rank);
-		mono_class_init (klass);
-		if (recarray) {
-			klass = mono_array_class_get (&klass->byval_arg, rank);
-			mono_class_init (klass);
-		}
-		/*g_print ("got array class %s [%d] (0x%x)\n", klass->element_class->name, klass->rank, klass->this_arg.type);*/
-	}
-
-	if (byref || ispointer)
-		return mono_type_get_object (domain, &klass->this_arg);
-	else
-		return mono_type_get_object (domain, &klass->byval_arg);
 }
 
 static MonoString *
@@ -1563,16 +1499,54 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 }
 
 static MonoReflectionType*
-ves_icall_ModuleBuilder_create_modified_type (MonoReflectionType *tb, gint32 arrayrank, MonoBoolean isbyref)
+ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, MonoString *smodifiers)
 {
 	MonoClass *klass;
+	int isbyref = 0, rank;
+	char *str = mono_string_to_utf8 (smodifiers);
+	char *p;
 
-	if (arrayrank)
-		klass = mono_array_class_get (tb->type, arrayrank);
-	else
-		klass = mono_class_from_mono_type (tb->type);
-
-	return mono_type_get_object (mono_domain_get (), isbyref? &klass->this_arg: &klass->byval_arg);
+	klass = mono_class_from_mono_type (tb->type.type);
+	p = str;
+	/* logic taken from mono_reflection_parse_type(): keep in sync */
+	while (*p) {
+		switch (*p) {
+		case '&':
+			if (isbyref) /* only one level allowed by the spec */
+				return NULL;
+			isbyref = 1;
+			p++;
+			return mono_type_get_object (mono_domain_get (), &klass->this_arg);
+			break;
+		case '*':
+			klass = mono_ptr_class_get (&klass->byval_arg);
+			mono_class_init (klass);
+			p++;
+			break;
+		case '[':
+			rank = 1;
+			p++;
+			while (*p) {
+				if (*p == ']')
+					break;
+				if (*p == ',')
+					rank++;
+				else if (*p != '*') /* '*' means unknown lower bound */
+					return NULL;
+				++p;
+			}
+			if (*p != ']')
+				return NULL;
+			p++;
+			klass = mono_array_class_get (&klass->byval_arg, rank);
+			mono_class_init (klass);
+			break;
+		default:
+			break;
+		}
+	}
+	g_free (str);
+	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
 }
 
 static MonoString *

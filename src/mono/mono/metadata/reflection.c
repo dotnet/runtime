@@ -216,6 +216,13 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (type->type, p, &p);
 		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, type), p, &p);
 		break;
+	case MONO_TYPE_ARRAY:
+		mono_metadata_encode_value (type->type, p, &p);
+		encode_type (assembly, type->data.array->type, p, &p);
+		mono_metadata_encode_value (type->data.array->rank, p, &p);
+		mono_metadata_encode_value (0, p, &p); /* FIXME: set to 0 for now */
+		mono_metadata_encode_value (0, p, &p);
+		break;
 	default:
 		g_error ("need to encode type %x", type->type);
 	}
@@ -1904,6 +1911,10 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 		return mymono_metadata_type_equal (t1->data.type, t2->data.type);
+	case MONO_TYPE_ARRAY:
+		if (t1->data.array->rank != t2->data.array->rank)
+			return FALSE;
+		return mymono_metadata_type_equal (t1->data.array->type, t2->data.array->type);
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
@@ -2072,12 +2083,13 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 
 	char *start, *p, *w, *last_point;
 	int in_modifiers = 0;
+	int isbyref = 0, rank;
 
 	start = p = w = name;
 
 	info->name = info->name_space = info->assembly = NULL;
 	info->nest_name = info->nest_name_space = NULL;
-	info->rank = info->isbyref = info->ispointer = 0;
+	info->modifiers = NULL;
 
 	last_point = NULL;
 
@@ -2125,29 +2137,34 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		info->name_space = "";
 		info->name = start;
 	}
-	/* FIXME: we don't mainatin an order for byref, pointer and array... */
 	while (*p) {
 		switch (*p) {
 		case '&':
-			info->isbyref = 1;
+			if (isbyref) /* only one level allowed by the spec */
+				return 0;
+			isbyref = 1;
+			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (0));
 			*p++ = 0;
 			break;
 		case '*':
-			info->ispointer = 1;
+			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-1));
 			*p++ = 0;
 			break;
 		case '[':
-			info->rank = 1;
+			rank = 1;
 			*p++ = 0;
 			while (*p) {
-				if (*p == ',')
-					info->rank++;
 				if (*p == ']')
 					break;
+				if (*p == ',')
+					rank++;
+				else if (*p != '*') /* '*' means unknown lower bound */
+					return 0;
 				++p;
 			}
 			if (*p++ != ']')
 				return 0;
+			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (rank));
 			break;
 		case ',':
 			*p++ = 0;
@@ -2173,6 +2190,57 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		return 0;
 	/* add other consistency checks */
 	return 1;
+}
+
+MonoType*
+mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
+{
+	MonoClass *klass;
+	GList *mod;
+	int modval;
+	
+	if (ignorecase) {
+		g_warning ("Ignore case not yet supported in GetType()");
+		return NULL;
+	}
+
+	if (!image)
+		image = mono_defaults.corlib;
+
+	if (info->nest_name) {
+		klass = mono_class_from_name (image, info->nest_name_space, info->nest_name);
+		if (klass) {
+			GList *nested;
+			mono_class_init (klass);
+			nested = klass->nested_classes;
+			klass = NULL;
+			while (nested) {
+				klass = nested->data;
+				if (strcmp (klass->name, info->nest_name) == 0 &&
+						strcmp (klass->name_space, info->nest_name_space) == 0)
+					break;
+				klass = NULL;
+				nested = nested->next;
+			}
+		}
+	} else {
+		klass = mono_class_from_name (image, info->name_space, info->name);
+	}
+	if (!klass)
+		return NULL;
+	mono_class_init (klass);
+	for (mod = info->modifiers; mod; mod = mod->next) {
+		modval = GPOINTER_TO_UINT (mod->data);
+		if (!modval) { /* byref: must be last modifier */
+			return &klass->this_arg;
+		} else if (modval == -1) {
+			klass = mono_ptr_class_get (&klass->byval_arg);
+		} else { /* array rank */
+			klass = mono_array_class_get (&klass->byval_arg, modval);
+		}
+		mono_class_init (klass);
+	}
+	return &klass->byval_arg;
 }
 
 static MonoObject*

@@ -1095,8 +1095,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
-static MonoClass *
-mono_create_ptr_class (MonoType *type)
+MonoClass *
+mono_ptr_class_get (MonoType *type)
 {
 	MonoClass *result;
 	MonoClass *el_class;
@@ -1172,7 +1172,7 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_ARRAY:
 		return mono_array_class_get (type->data.array->type, type->data.array->rank);
 	case MONO_TYPE_PTR:
-		return mono_create_ptr_class (type->data.type);
+		return mono_ptr_class_get (type->data.type);
 	case MONO_TYPE_SZARRAY:
 		return mono_array_class_get (type->data.type, 1);
 	case MONO_TYPE_CLASS:
