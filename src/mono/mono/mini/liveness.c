@@ -68,7 +68,7 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 	if (arity > 1)
 		update_gen_kill_set (cfg, bb, inst->inst_i1, inst_num);
 
-	if (inst->ssa_op == MONO_SSA_LOAD) {
+	if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE)) {
 		int idx = inst->inst_i0->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 		g_assert (idx < max_vars);
@@ -107,7 +107,7 @@ update_volatile (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int inst_
 	if (arity > 1)
 		update_volatile (cfg, bb, inst->inst_i1, inst_num);
 
-	if (inst->ssa_op == MONO_SSA_LOAD) {
+	if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE)) {
 		int idx = inst->inst_i0->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 		g_assert (idx < max_vars);

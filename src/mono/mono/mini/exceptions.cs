@@ -1825,9 +1825,35 @@ class Tests {
 					throw new Exception ();
 			}
 		}
-		catch (Exception ex) {
-			return i;
+		catch (Exception) {
+			if (i != 5)
+				return i;
 		}
+
+		// Check that variables written in catch clauses are volatile
+		int j = 0;
+		try {
+			throw new Exception ();
+		}
+		catch (Exception) {
+			j = 5;
+		}
+		if (j != 5)
+			return 6;
+
+		int k = 0;
+		try {
+			try {
+				throw new Exception ();
+			}
+			finally {
+				k = 5;
+			}
+		}
+		catch (Exception) {
+		}
+		if (k != 5)
+			return 7;
 
 		return i;
 	}
