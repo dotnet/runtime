@@ -2373,11 +2373,37 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		class = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 		mono_class_init (class);
 		if (handle_class)
-				*handle_class = mono_defaults.fieldhandle_class;
+			*handle_class = mono_defaults.fieldhandle_class;
 		return mono_class_get_field (class, token);
 	}
-	case MONO_TOKEN_METHOD_DEF:
-	case MONO_TOKEN_MEMBER_REF:
+	case MONO_TOKEN_METHOD_DEF: {
+		MonoMethod *meth;
+		meth = mono_get_method (image, token, NULL);
+		if (handle_class)
+			*handle_class = mono_defaults.methodhandle_class;
+		return meth;
+	}
+	case MONO_TOKEN_MEMBER_REF: {
+		guint32 cols [MONO_MEMBERREF_SIZE];
+		const char *sig;
+		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
+		sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+		mono_metadata_decode_blob_size (sig, &sig);
+		if (*sig == 0x6) { /* it's a field */
+			MonoClass *klass;
+			MonoClassField *field;
+			field = mono_field_from_token (image, token, &klass);
+			if (handle_class)
+				*handle_class = mono_defaults.fieldhandle_class;
+			return field;
+		} else {
+			MonoMethod *meth;
+			meth = mono_get_method (image, token, NULL);
+			if (handle_class)
+				*handle_class = mono_defaults.methodhandle_class;
+			return meth;
+		}
+	}
 	default:
 		g_warning ("Unknown token 0x%08x in ldtoken", token);
 		break;
