@@ -1430,7 +1430,6 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
 					*outArgs = out_args;
 
-					g_assert (result);
 					g_free (str);
 					return NULL;
 				}
