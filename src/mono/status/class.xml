@@ -2829,49 +2829,67 @@
 			<maintainer>joe@ximian.com</maintainer>
 		</maintainers>
 	</class>
-	<class name="System.Text.ASCIIEncoding">
-		<last-activity>Jul-15-2001</last-activity>
+	<class name="System.Text.Encoder">
+		<last-activity>Jan-05-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>macisaac@ximian.com</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Text.Decoder">
+		<last-activity>Jan-05-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>dietmar@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Text.ASCIIEncoding">
+		<last-activity>Jan-05-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Text.Encoding">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Jan-05-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>macisaac@ximian.com</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Text.UnicodeEncoding">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Jan-05-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>macisaac@ximian.com</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Text.UTF7Encoding">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Jan-05-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>macisaac@ximian.com</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Text.UTF8Encoding">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Jan-05-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>10</completion>
+		<completion>99</completion>
 		<maintainers>
-			<maintainer>macisaac@ximian.com</maintainer>
+			<maintainer>dietmar@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Threading.ApartmentState">
