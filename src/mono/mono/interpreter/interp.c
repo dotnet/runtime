@@ -4106,7 +4106,14 @@ array_constructed:
 				memset (sp->data.vt.vt, 0, mono_class_value_size (sp->data.vt.klass, NULL));
 				break;
 			}
-			case CEE_UNUSED68: ves_abort(); break;
+			case CEE_CONSTRAINED_: {
+				guint32 token;
+				/* FIXME: implement */
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				break;
+			}
 			case CEE_CPBLK:
 				sp -= 3;
 				if (!sp [0].data.p || !sp [1].data.p)
@@ -4123,7 +4130,10 @@ array_constructed:
 				/* FIXME: value and size may be int64... */
 				memset (sp [0].data.p, sp [1].data.i, sp [2].data.i);
 				break;
-			case CEE_UNUSED69: ves_abort(); break;
+			case CEE_NO_:
+				/* FIXME: implement */
+				ip += 2;
+				break;
 			case CEE_RETHROW:
 				/* 
 				 * need to clarify what this should actually do:
@@ -4161,11 +4171,6 @@ array_constructed:
 				break;
 			}
 			case CEE_REFANYTYPE: ves_abort(); break;
-			case CEE_UNUSED52: 
-			case CEE_UNUSED53: 
-			case CEE_UNUSED54: 
-			case CEE_UNUSED55: 
-			case CEE_UNUSED70: 
 			default:
 				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-header->code);
 			}
