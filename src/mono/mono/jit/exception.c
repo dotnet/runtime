@@ -846,7 +846,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		ji = mono_arch_find_jit_info (domain, jit_tls, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
-			g_warning ("Exception insinde function without unwind info");
+			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
 		}
 
