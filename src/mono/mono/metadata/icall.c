@@ -2837,6 +2837,8 @@ handle_parent:
 		method = event->add;
 		if (!method)
 			method = event->remove;
+		if (!method)
+			method = event->raise;
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
