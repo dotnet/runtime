@@ -593,8 +593,8 @@ ves_runtime_method (MonoInvocation *frame)
 			func = method->addr;
 			/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
 			func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
-#endif
 			stackval_from_data (frame->method->signature->ret, frame->retval, (char*)&frame->retval->data.p);
+#endif
 			delegate = delegate->prev;
 		}
 		return;
