@@ -799,6 +799,36 @@ get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyNam
 }
 
 MonoReflectionAssembly *
+ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad, 
+											MonoArray *raw_assembly,
+											MonoArray *raw_symbol_store, MonoObject *evidence)
+{
+  MonoAssembly *ass;
+  MonoDomain *domain = ad->data;
+  MonoImageOpenStatus status;
+  guint32 raw_assembly_len = mono_array_length (raw_assembly);
+  MonoImage *image = mono_image_open_from_data (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, 0, NULL);
+
+  if (raw_symbol_store)
+    mono_get_exception_not_implemented ();
+  
+  if (!image) {
+	  mono_raise_exception (mono_get_exception_bad_image_format (""));
+	  return NULL;
+  }
+
+  ass = mono_assembly_load_from (image, "", &status);
+
+  if (!ass) {
+	  mono_image_close (image);
+	  mono_raise_exception (mono_get_exception_bad_image_format (""));
+	  return NULL; 
+  }
+
+  return mono_assembly_get_object (domain, ass); 
+}
+
+MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssemblyName *assRef, MonoObject *evidence)
 {
 	MonoDomain *domain = ad->data; 

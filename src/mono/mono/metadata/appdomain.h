@@ -210,6 +210,12 @@ MonoObject *
 ves_icall_System_AppDomain_GetData                 (MonoAppDomain *ad, 
 						    MonoString    *name);
 
+MonoReflectionAssembly *
+ves_icall_System_AppDomain_LoadAssemblyRaw         (MonoAppDomain *ad,
+    						    MonoArray *raw_assembly, 
+						    MonoArray *raw_symbol_store,
+						    MonoObject *evidence);
+
 void
 ves_icall_System_AppDomain_SetData                 (MonoAppDomain *ad, 
 						    MonoString    *name, 
