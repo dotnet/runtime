@@ -182,10 +182,50 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 	return mono_class_get_field (k, token);
 }
 
+static gboolean
+mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	int i;
+
+	if (sig1->hasthis != sig2->hasthis ||
+	    sig1->sentinelpos != sig2->sentinelpos)
+		return FALSE;
+
+	for (i = 0; i < sig1->sentinelpos; i++) { 
+		MonoType *p1 = sig1->params[i];
+		MonoType *p2 = sig2->params[i];
+		
+		//if (p1->attrs != p2->attrs)
+		//	return FALSE;
+		
+		if (!mono_metadata_type_equal (p1, p2))
+			return FALSE;
+	}
+
+	if (!mono_metadata_type_equal (sig1->ret, sig2->ret))
+		return FALSE;
+	return TRUE;
+}
+
 static MonoMethod *
 find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 {
 	int i;
+	
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		while (klass) {
+			/* mostly dumb search for now */
+			for (i = 0; i < klass->method.count; ++i) {
+				MonoMethod *m = klass->methods [i];
+				if (!strcmp (name, m->name)) {
+					if (mono_metadata_signature_vararg_match (sig, m->signature))
+						return m;
+				}
+			}
+			klass = klass->parent;
+		}
+		return NULL;
+	}
 	while (klass) {
 		/* mostly dumb search for now */
 		for (i = 0; i < klass->method.count; ++i) {

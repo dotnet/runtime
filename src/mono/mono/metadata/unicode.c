@@ -15,7 +15,7 @@
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/exception.h>
 
-static MonoUnicodeCategory catmap[] = {
+static const MonoUnicodeCategory catmap[] = {
 	/* G_UNICODE_CONTROL = */              Control,
 	/* G_UNICODE_FORMAT = */               Format,
 	/* G_UNICODE_UNASSIGNED = */           OtherNotAssigned,

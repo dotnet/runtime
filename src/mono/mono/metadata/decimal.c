@@ -90,7 +90,7 @@
 
 #define DECIMAL_LOG_NEGINF -1000
 
-static guint32 constantsDecadeInt32Factors[DECIMAL_MAX_INTFACTORS+1] = {
+static const guint32 constantsDecadeInt32Factors[DECIMAL_MAX_INTFACTORS+1] = {
     LIT_GUINT32(1), LIT_GUINT32(10), LIT_GUINT32(100), LIT_GUINT32(1000), 
     LIT_GUINT32(10000), LIT_GUINT32(100000), LIT_GUINT32(1000000), 
     LIT_GUINT32(10000000), LIT_GUINT32(100000000), LIT_GUINT32(1000000000)
@@ -101,7 +101,7 @@ typedef struct {
     guint64 hi;
 } dec128_repr;
 
-static dec128_repr dec128decadeFactors[DECIMAL_MAX_SCALE+1] = {
+static const dec128_repr dec128decadeFactors[DECIMAL_MAX_SCALE+1] = {
     LIT_DEC128( 0, 0, 1u), /* == 1 */
     LIT_DEC128( 0, 0, 10u), /* == 10 */
     LIT_DEC128( 0, 0, 100u), /* == 100 */
