@@ -4,6 +4,30 @@ public class TestJit {
 		return a+b;
 	}
 
+	public static int test_shift ()
+	{
+		long a = 9;
+		int b = 1;
+
+		if ((a >> b) != 4)
+			return 1;
+		
+		if ((a >> 63) != 0)
+			return 1;
+
+		if ((a << 1) != 18)
+			return 1;
+
+		if ((a << b) != 18)
+			return 1;
+
+		a = -9;
+		if ((a >> b) != -5)
+			return 1;
+
+		return 0;
+	}
+
 	public static int test_alu ()
 	{
 		long a = 9, b = 6;
@@ -67,6 +91,9 @@ public class TestJit {
 	public static int Main() {
 		int num = 1;
 
+		if (test_shift () != 0)
+			return num;
+		num++;
 		if (test_call (3, 5) != 8)
 			return num;
 		num++;

@@ -1861,6 +1861,13 @@ lreg: CONST_I8 1 {
 	x86_mov_reg_imm (s->code, tree->reg2, *((gint32 *)&tree->data.p + 1));
 }
 
+reg: CONV_I1 (lreg) {
+	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, 0xff);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
 lreg: CONV_I8 (CONST_I4) {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 
@@ -1989,6 +1996,92 @@ lreg: LDIND_I8 (addr) {
 	}
 	PRINT_REG ("LDIND_I8_0", tree->reg1);
 	PRINT_REG ("LDIND_I8_1", tree->reg2);
+}
+
+lreg: SHR (lreg, CONST_I4) {
+	if (tree->right->data.i < 32) {
+		x86_shrd_reg_imm (s->code, tree->left->reg1, tree->left->reg2, tree->right->data.i);
+		x86_shift_reg_imm (s->code, X86_SAR, tree->left->reg2, tree->right->data.i);
+		if (tree->reg1 != tree->left->reg1)
+			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+		if (tree->reg2 != tree->left->reg2)
+			x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+	} else if (tree->right->data.i < 64) {
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+		x86_shift_reg_imm (s->code, X86_SAR, tree->reg2, 31);
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg2, 4);
+		x86_shift_reg_imm (s->code, X86_SAR, tree->reg1, (tree->right->data.i - 32));
+	} /* else unspecified result */
+
+}
+
+lreg: SHR (lreg, reg) {
+	guint8 *start = s->code;
+	gint32 o1, o2, i;
+
+	tree->is_jump = TRUE;
+
+	if (tree->right->reg1 != X86_ECX)
+		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_shrd_reg (s->code, tree->left->reg1, tree->left->reg2);
+		x86_shift_reg (s->code, X86_SAR, tree->left->reg2);
+		x86_test_reg_imm (s->code, X86_ECX, 32);
+		o1 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_EQ, o2 - o1, FALSE);
+		x86_mov_reg_reg (s->code, tree->left->reg1, tree->left->reg2, 4);
+		x86_shift_reg_imm (s->code, X86_SAR, tree->reg2, 31);		
+		o2 = s->code - s->start;
+	}
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+}
+
+lreg: SHL (lreg, CONST_I4) {
+	if (tree->right->data.i < 32) {
+		x86_shld_reg_imm (s->code, tree->left->reg2, tree->left->reg1, tree->right->data.i);
+		x86_shift_reg_imm (s->code, X86_SHL, tree->left->reg1, tree->right->data.i);
+		if (tree->reg1 != tree->left->reg1)
+			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+		if (tree->reg2 != tree->left->reg2)
+			x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+	} else if (tree->right->data.i < 64) {
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg1, 4);
+		x86_shift_reg_imm (s->code, X86_SHL, tree->reg2, (tree->right->data.i - 32));
+		x86_alu_reg_reg (s->code, X86_XOR, tree->reg1, tree->reg1);	
+	} /* else unspecified result */
+}
+
+lreg: SHL (lreg, reg) {
+	guint8 *start = s->code;
+	gint32 o1, o2, i;
+
+	tree->is_jump = TRUE;
+
+	if (tree->right->reg1 != X86_ECX)
+		x86_mov_reg_reg (s->code, X86_ECX, tree->right->reg1, 4);
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_shld_reg (s->code, tree->left->reg2, tree->left->reg1);
+		x86_shift_reg (s->code, X86_SHL, tree->left->reg1);
+		x86_test_reg_imm (s->code, X86_ECX, 32);
+		o1 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_EQ, o2 - o1, FALSE);
+		x86_mov_reg_reg (s->code, tree->left->reg2, tree->left->reg1, 4);
+		x86_alu_reg_reg (s->code, X86_XOR, tree->left->reg1, tree->left->reg1);	
+		o2 = s->code - s->start;
+	}
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
 }
 
 lreg: ADD (lreg, lreg) {
@@ -2327,6 +2420,29 @@ reg: CEQ (lreg, lreg) {
 		o2 = s->code - s->start;		
 		x86_set_reg (s->code, X86_CC_EQ, tree->reg1, FALSE);
 		x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+	}
+}
+
+reg: CLT (lreg, lreg) {
+	guint8 *start = s->code;
+	gint32 o1, o2, o3, o4, o5, i;
+
+	tree->is_jump = TRUE;
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_alu_reg_reg (s->code, X86_XOR, tree->reg1, tree->reg1);		
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+		o1 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_GT, o5 - o1, TRUE);
+		o2 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_NE, o4 - o2, TRUE);
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+		o3 = 2 + s->code - s->start;
+		x86_branch8 (s->code, X86_CC_LE, o4 - o3, FALSE);
+		o5 = s->code - s->start;
+		x86_mov_reg_imm (s->code, tree->reg1, 1);
+		o4 = s->code - s->start;
 	}
 }
 

@@ -370,6 +370,9 @@ ves_icall_iconv_get_bytes (gpointer converter, MonoArray *chars, gint32 charInde
 	guchar *src, *dest;
 	int len, max_len;
 
+	if (!charCount)
+		return 0;
+
 	g_assert (cd);
 	g_assert (chars);
 	g_assert (bytes);

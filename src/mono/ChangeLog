@@ -1,3 +1,6 @@
+2002-02-01  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/jit-long.cs: added some SHL/SHR tests
 
 Fri Feb 1 15:32:36 CET 2002 Paolo Molaro <lupus@ximian.com>
 

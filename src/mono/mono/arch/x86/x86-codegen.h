@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.20 2002/01/14 07:00:24 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.21 2002/02/01 12:04:33 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -565,6 +565,36 @@ typedef union {
 /*
  * Multi op shift missing.
  */
+
+#define x86_shrd_reg(inst,dreg,reg)                     \
+        do {                                            \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0xad;	\
+		x86_reg_emit ((inst), (reg), (dreg));	\
+	} while (0)
+
+#define x86_shrd_reg_imm(inst,dreg,reg,shamt)           \
+        do {                                            \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0xac;	\
+		x86_reg_emit ((inst), (reg), (dreg));	\
+		x86_imm_emit8 ((inst), (shamt));	\
+	} while (0)
+
+#define x86_shld_reg(inst,dreg,reg)                     \
+        do {                                            \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0xa5;	\
+		x86_reg_emit ((inst), (reg), (dreg));	\
+	} while (0)
+
+#define x86_shld_reg_imm(inst,dreg,reg,shamt)           \
+        do {                                            \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0xa4;	\
+		x86_reg_emit ((inst), (reg), (dreg));	\
+		x86_imm_emit8 ((inst), (shamt));	\
+	} while (0)
 
 /*
  * EDX:EAX = EAX * rm
