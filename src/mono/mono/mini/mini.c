@@ -7973,7 +7973,7 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO | SA_STACK;
 #else
-	sa.sa_sighandler = sigsegv_signal_handler;
+	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 #endif
