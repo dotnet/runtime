@@ -186,6 +186,10 @@ case "x$gc" in
 		;;
 esac
 
+if test "x$gc" = xboehm; then
+	AC_CHECK_FUNCS(GC_gcj_malloc)
+fi
+
 if test x$platform_win32 = xno; then
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
