@@ -326,6 +326,16 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		nt->data.klass = mono_class_from_mono_type (inflated);
 		return nt;
 	}
+	case MONO_TYPE_ARRAY: {
+		MonoClass *eclass = type->data.array->eklass;
+		MonoType *nt, *inflated = inflate_generic_type (&eclass->byval_arg, context);
+		if (!inflated)
+			return NULL;
+		nt = dup_type (type, type);
+		nt->data.array = g_memdup (nt->data.array, sizeof (MonoArrayType));
+		nt->data.array->eklass = mono_class_from_mono_type (inflated);
+		return nt;
+	}
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *ngclass = inflate_generic_class (type->data.generic_class, context);
 		MonoType *nt = dup_type (type, type);
