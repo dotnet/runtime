@@ -154,6 +154,7 @@ typedef struct {
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
+#define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
 
 #define mono_array_length(array) ((array)->max_length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )

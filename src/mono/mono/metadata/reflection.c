@@ -213,7 +213,6 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (type->type, p, &p);
 		break;
 	case MONO_TYPE_PTR:
-		g_print ("encode pointer\n");
 	case MONO_TYPE_SZARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, type->data.type, p, &p);
@@ -1053,6 +1052,47 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 }
 
 static guint32
+create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 token;
+	char sig [128];
+	char *p = sig;
+	char blob_size [6];
+	char *b = blob_size;
+
+	switch (type->type) {
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		encode_type (assembly, type, p, &p);
+		break;
+	default:
+		return 0;
+	}
+	
+	g_assert (p-sig < 128);
+	mono_metadata_encode_value (p-sig, b, &b);
+	token = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, sig, p-sig);
+
+	table = &assembly->tables [MONO_TABLE_TYPESPEC];
+	alloc_table (table, table->rows + 1);
+	values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
+	values [MONO_TYPESPEC_SIGNATURE] = token;
+
+	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
+	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
+	table->next_idx ++;
+	return token;
+}
+
+/*
+ * Despite the name, we handle also TypeSpec (with the above helper).
+ */
+static guint32
 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 {
 	MonoDynamicTable *table;
@@ -1061,6 +1101,9 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	MonoClass *klass;
 
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
+	if (token)
+		return token;
+	token = create_typespec (assembly, type);
 	if (token)
 		return token;
 	klass = mono_class_from_mono_type (type);

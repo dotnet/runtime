@@ -726,6 +726,12 @@ ves_icall_get_attributes (MonoReflectionType *type)
 	return klass->flags;
 }
 
+static MonoString*
+ves_icall_MonoMethod_get_Name (MonoReflectionMethod *method)
+{
+	return mono_string_new (mono_object_domain (method), method->method->name);
+}
+
 static void
 ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
@@ -2126,6 +2132,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
+	"System.Reflection.MonoMethod::get_Name", ves_icall_MonoMethod_get_Name,
 	"System.Reflection.MonoCMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
