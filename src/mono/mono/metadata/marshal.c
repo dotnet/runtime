@@ -82,7 +82,12 @@ static CRITICAL_SECTION marshal_mutex;
 void
 mono_marshal_init (void)
 {
-	InitializeCriticalSection (&marshal_mutex);
+	static gboolean module_initialized = FALSE;
+
+	if (!module_initialized) {
+		module_initialized = TRUE;
+		InitializeCriticalSection (&marshal_mutex);
+	}
 }
 
 gpointer
