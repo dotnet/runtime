@@ -24,6 +24,7 @@
 #include <mono/metadata/marshal.h>
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/marshal.h"
+#include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>
 
 /* 
@@ -823,6 +824,7 @@ mono_object_new_specific (MonoVTable *vtable)
 	if (vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
 	
+	mono_profiler_allocation (o, vtable->klass);
 	return o;
 }
 
@@ -859,6 +861,7 @@ mono_object_clone (MonoObject *obj)
 
 	size = obj->vtable->klass->instance_size;
 	o = mono_object_allocate (size);
+	mono_profiler_allocation (o, obj->vtable->klass);
 
 	memcpy (o, obj, size);
 
@@ -969,6 +972,8 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	array->bounds = bounds;
 	array->max_length = len;
 
+	mono_profiler_allocation (o, array_class);
+
 	return array;
 }
 
@@ -1025,6 +1030,7 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	ao = (MonoArray *)o;
 	ao->bounds = NULL;
 	ao->max_length = n;
+	mono_profiler_allocation (o, vtable->klass);
 
 	return ao;
 }
@@ -1073,6 +1079,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 
 	s->object.vtable = mono_class_vtable (domain, mono_defaults.string_class);
 	s->length = len;
+	mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
 
 	return s;
 }
@@ -1169,6 +1176,7 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	size = mono_class_instance_size (class);
 	res = mono_object_allocate (size);
 	res->vtable = mono_class_vtable (domain, class);
+	mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);
 

@@ -73,6 +73,7 @@ void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfile
 void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc leave);
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
+void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
 
 void mono_profiler_install_simple (void);
 

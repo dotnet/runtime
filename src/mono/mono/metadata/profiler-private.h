@@ -21,6 +21,7 @@ void mono_profiler_method_jit      (MonoMethod *method);
 void mono_profiler_method_end_jit  (MonoMethod *method, int result);
 
 void mono_profiler_code_transition (MonoMethod *method, int result);
+void mono_profiler_allocation      (MonoObject *obj, MonoClass *klass);
 void mono_profiler_thread_start    (guint32 tid);
 void mono_profiler_thread_end      (guint32 tid);
 

@@ -28,6 +28,7 @@ static MonoProfileClassFunc   class_end_unload;
 static MonoProfileMethodFunc   jit_start;
 static MonoProfileMethodResult jit_end;
 static MonoProfileMethodResult man_unman_transition;
+static MonoProfileAllocFunc    allocation_cb;
 static MonoProfileMethodFunc   method_enter;
 static MonoProfileMethodFunc   method_leave;
 
@@ -85,6 +86,12 @@ void
 mono_profiler_install_transition (MonoProfileMethodResult callback)
 {
 	man_unman_transition = callback;
+}
+
+void 
+mono_profiler_install_allocation (MonoProfileAllocFunc callback)
+{
+	allocation_cb = callback;
 }
 
 void 
@@ -161,6 +168,13 @@ mono_profiler_code_transition (MonoMethod *method, int result)
 {
 	if ((mono_profiler_events & MONO_PROFILE_TRANSITIONS) && man_unman_transition)
 		man_unman_transition (current_profiler, method, result);
+}
+
+void 
+mono_profiler_allocation (MonoObject *obj, MonoClass *klass)
+{
+	if ((mono_profiler_events & MONO_PROFILE_ALLOCATIONS) && allocation_cb)
+		allocation_cb (current_profiler, obj, klass);
 }
 
 void
@@ -432,12 +446,16 @@ timeval_elapsed (MonoGLibTimer *t)
 #define MONO_TIMER_ELAPSED(t) timeval_elapsed (&(t))
 #endif
 
+typedef struct _AllocInfo AllocInfo;
+
 struct _MonoProfiler {
 	GHashTable *methods;
-	GHashTable *newobjs;
 	MONO_TIMER_TYPE jit_timer;
 	double      jit_time;
 	int         methods_jitted;
+	GSList     *callers;
+	/* allocations unassigned to an IL method */
+	AllocInfo  *alloc_info;
 };
 
 typedef struct {
@@ -447,6 +465,7 @@ typedef struct {
 	} u;
 	guint64 count;
 	double total;
+	AllocInfo *alloc_info;
 } MethodProfile;
 
 typedef struct _MethodCallProfile MethodCallProfile;
@@ -455,6 +474,13 @@ struct _MethodCallProfile {
 	MethodCallProfile *next;
 	MONO_TIMER_TYPE timer;
 	MonoMethod *method;
+};
+
+struct _AllocInfo {
+	AllocInfo *next;
+	MonoClass *klass;
+	guint count;
+	guint mem;
 };
 
 static gint
@@ -499,7 +525,7 @@ output_profile (GList *funcs)
 }
 
 typedef struct {
-	MonoClass *klass;
+	MethodProfile *mp;
 	guint count;
 } NewobjProfile;
 
@@ -510,11 +536,17 @@ compare_newobj_profile (NewobjProfile *profa, NewobjProfile *profb)
 }
 
 static void
-build_newobj_profile (MonoClass *class, gpointer count, GList **funcs)
+build_newobj_profile (MonoClass *class, MethodProfile *mprof, GList **funcs)
 {
 	NewobjProfile *prof = g_new (NewobjProfile, 1);
-	prof->klass = class;
-	prof->count = GPOINTER_TO_UINT (count);
+	AllocInfo *tmp;
+	guint count = 0;
+	
+	prof->mp = mprof;
+	/* we use the total amount of memory to sort */
+	for (tmp = mprof->alloc_info; tmp; tmp = tmp->next)
+		count += tmp->mem;
+	prof->count = count;
 	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_newobj_profile);
 }
 
@@ -523,25 +555,45 @@ output_newobj_profile (GList *proflist)
 {
 	GList *tmp;
 	NewobjProfile *p;
+	MethodProfile *mp;
+	AllocInfo *ainfo;
 	MonoClass *klass;
 	const char* isarray;
 	char buf [256];
+	char *m;
+	guint total = 0;
+
+	g_print ("\nAllocation profiler\n");
 
 	if (proflist)
-		g_print ("\n%-52s %9s\n", "Objects created:", "count");
+		g_print ("%-52s %9s\n", "Method:", "Total memory");
 	for (tmp = proflist; tmp; tmp = tmp->next) {
 		p = tmp->data;
-		klass = p->klass;
-		if (klass->rank) {
-			isarray = "[]";
-			klass = klass->element_class;
-		} else {
-			isarray = "";
+		total += p->count;
+		if (p->count < 50000)
+			continue;
+		mp = p->mp;
+		m = mono_method_full_name (mp->u.method, TRUE);
+		/* + 3 because of the ugly leading "00 " */
+		g_print ("%-52s %9d KB\n", m + 3, p->count / 1024);
+		g_free (m);
+		/* sort them? */
+		for (ainfo = mp->alloc_info; ainfo; ainfo = ainfo->next) {
+			if (ainfo->mem < 50000)
+				continue;
+			klass = ainfo->klass;
+			if (klass->rank) {
+				isarray = "[]";
+				klass = klass->element_class;
+			} else {
+				isarray = "";
+			}
+			g_snprintf (buf, sizeof (buf), "%s.%s%s",
+				klass->name_space, klass->name, isarray);
+			g_print ("  %-50s %9d %8d KB\n", buf, ainfo->count, ainfo->mem / 1024);
 		}
-		g_snprintf (buf, sizeof (buf), "%s.%s%s",
-			klass->name_space, klass->name, isarray);
-		g_print ("%-52s %9d\n", buf, p->count);
 	}
+	g_print ("Total memory allocated: %d KB\n", total / 1024);
 }
 
 static void
@@ -555,6 +607,7 @@ simple_method_enter (MonoProfiler *prof, MonoMethod *method)
 	}
 	profile_info->count++;
 	MONO_TIMER_START (profile_info->u.timer);
+	prof->callers = g_slist_prepend (prof->callers, method);
 }
 
 static void
@@ -566,6 +619,40 @@ simple_method_leave (MonoProfiler *prof, MonoMethod *method)
 
 	MONO_TIMER_STOP (profile_info->u.timer);
 	profile_info->total += MONO_TIMER_ELAPSED (profile_info->u.timer);
+	prof->callers = g_slist_remove (prof->callers, method);
+}
+
+static void
+simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
+{
+	MethodProfile *profile_info;
+	AllocInfo *tmp;
+
+	if (prof->callers) {
+		if (!(profile_info = g_hash_table_lookup (prof->methods, prof->callers->data)))
+			g_assert_not_reached ();
+	} else {
+		return; /* fine for now */
+	}
+
+	for (tmp = profile_info->alloc_info; tmp; tmp = tmp->next) {
+		if (tmp->klass == klass)
+			break;
+	}
+	if (!tmp) {
+		tmp = g_new0 (AllocInfo, 1);
+		tmp->klass = klass;
+		tmp->next = profile_info->alloc_info;
+		profile_info->alloc_info = tmp;
+	}
+	tmp->count++;
+	if (klass == mono_defaults.string_class) {
+		tmp->mem += sizeof (MonoString) + 2 * mono_string_length ((MonoString*)obj) + 2;
+	} else if (klass->parent == mono_defaults.array_class) {
+		tmp->mem += sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length ((MonoArray*)obj);
+	} else {
+		tmp->mem += mono_class_instance_size (klass);
+	}
 }
 
 static void
@@ -593,7 +680,7 @@ simple_shutdown (MonoProfiler *prof)
 	g_list_free (profile);
 	profile = NULL;
 		
-	g_hash_table_foreach (prof->newobjs, (GHFunc)build_newobj_profile, &profile);
+	g_hash_table_foreach (prof->methods, (GHFunc)build_newobj_profile, &profile);
 	output_newobj_profile (profile);
 	g_list_free (profile);
 }
@@ -606,13 +693,13 @@ mono_profiler_install_simple (void)
 	MONO_TIMER_STARTUP;
 
 	prof->methods = g_hash_table_new (g_direct_hash, g_direct_equal);
-	prof->newobjs = g_hash_table_new (g_direct_hash, g_direct_equal);
 	MONO_TIMER_INIT (prof->jit_timer);
 
 	mono_profiler_install (prof, simple_shutdown);
 	/* later do also object creation */
 	mono_profiler_install_enter_leave (simple_method_enter, simple_method_leave);
 	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
-	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION);
+	mono_profiler_install_allocation (simple_allocation);
+	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_ALLOCATIONS);
 }
 
