@@ -229,7 +229,7 @@ typedef union {
 		case 2: case 4: case 8: *(inst)++ = (unsigned char)0x89; break;	\
 		default: assert (0);	\
 		}	\
-		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
 
@@ -269,7 +269,7 @@ typedef union {
 		case 2: case 4: case 8: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
-		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
 #define amd64_movzx_reg_membase(inst,reg,basereg,disp,size)	\
@@ -281,14 +281,14 @@ typedef union {
 		case 4: case 8: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
-		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
 #define amd64_movsxd_reg_membase(inst,reg,basereg,disp) \
     do {     \
        amd64_emit_rex(inst,8,(reg),0,(basereg)); \
        *(inst)++ = (unsigned char)0x63; \
-       x86_membase_emit ((inst), (reg), (basereg), (disp)); \
+       x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp)); \
     } while (0)
 
 #define amd64_movsxd_reg_reg(inst,dreg,reg) \
@@ -319,6 +319,8 @@ typedef union {
 
 #define amd64_set_reg_template(inst,reg) amd64_mov_reg_imm_size ((inst),(reg), 0, 8)
 
+#define amd64_set_template(inst,reg) amd64_set_reg_template((inst),(reg))
+
 #define amd64_mov_membase_imm(inst,basereg,disp,imm,size)	\
 	do {	\
 		if ((size) == 2) \
@@ -326,15 +328,15 @@ typedef union {
 		amd64_emit_rex(inst, (size), 0, 0, (basereg)); \
 		if ((size) == 1) {	\
 			*(inst)++ = (unsigned char)0xc6;	\
-			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_membase_emit ((inst), 0, (basereg) & 0x7, (disp));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
 			*(inst)++ = (unsigned char)0xc7;	\
-			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_membase_emit ((inst), 0, (basereg) & 0x7, (disp));	\
 			x86_imm_emit16 ((inst), (imm));	\
 		} else {	\
 			*(inst)++ = (unsigned char)0xc7;	\
-			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_membase_emit ((inst), 0, (basereg) & 0x7, (disp));	\
 			x86_imm_emit32 ((inst), (imm));	\
 		}	\
 	} while (0)
@@ -343,7 +345,7 @@ typedef union {
 	do {	\
 		amd64_emit_rex(inst, 8, (reg), 0, (basereg)); \
 		*(inst)++ = (unsigned char)0x8d;	\
-		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
 /* Instruction are implicitly 64-bits so don't generate REX for just the size. */
@@ -463,7 +465,8 @@ typedef union {
         x86_reg_emit ((inst),1,(reg) & 0x7); \
     } while (0)
 
-#define amd64_padding_size(inst,size) x86_padding((inst),(size))
+#define amd64_padding_size(inst,size) \
+    do { if (size == 1) x86_padding ((inst),(size)); else { amd64_emit_rex ((inst),8,0,0,0); x86_padding((inst),(size) - 1); } } while (0)
     
 /* Generated from x86-codegen.h */
 
