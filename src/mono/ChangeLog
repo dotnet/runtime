@@ -1,3 +1,7 @@
+2004-04-14  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (mcs-tree-safe-build): Fix typo.
+
 2004-04-13  Sebastien Pouliot  <sebastien@ximian.com>
 
 	* configure.in: Added rules to check for getgrgid_r, getgrnam_r,

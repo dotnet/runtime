@@ -33,7 +33,7 @@ fullbuild: mcs-rest
 mcs-tree-safe-build: remove-binaries
 	cd $(mcs_topdir)/jay; $(MAKE)
 	cd $(mcs_topdir)/mcs; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
-	cd $(mcs_topdir)/class/corlib; $(MAKE) MCS=mcs BOOTqSTRAP_MCS=mcs
+	cd $(mcs_topdir)/class/corlib; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
 	cp $(mcs_topdir)/class/lib/mscorlib.dll $(top_srcdir)/runtime
 	cp $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime
 
