@@ -104,10 +104,11 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 }
 
 static MonoType*
-dup_type (MonoType* t)
+dup_type (MonoType* t, const MonoType *original)
 {
 	MonoType *r = g_new0 (MonoType, 1);
 	*r = *t;
+	r->attrs = original->attrs;
 	return r;
 }
 
@@ -205,12 +206,14 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
 		if (gmethod && gmethod->mtype_argv)
-			return dup_type (gmethod->mtype_argv [type->data.generic_param->num]);
+			return dup_type (gmethod->mtype_argv [type->data.generic_param->num],
+					 type);
 		else
 			return type;
 	case MONO_TYPE_VAR:
 		if (ginst)
-			return dup_type (ginst->type_argv [type->data.generic_param->num]);
+			return dup_type (ginst->type_argv [type->data.generic_param->num],
+					 type);
 		else
 			return type;
 	case MONO_TYPE_SZARRAY: {
@@ -224,7 +227,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 		} else {
 			return type;
 		}
-		nt = dup_type (type);
+		nt = dup_type (type, type);
 		nt->data.klass = nclass;
 		return nt;
 	}
@@ -263,7 +266,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 
 		mono_class_create_generic (nginst);
 
-		nt = dup_type (type);
+		nt = dup_type (type, type);
 		nt->data.generic_inst = nginst;
 		g_hash_table_insert (oginst->klass->image->generic_inst_cache, nginst, nt);
 		mono_loader_unlock ();
