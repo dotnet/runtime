@@ -15,6 +15,7 @@ typedef struct {
 	int              offset;
 	const char      *name;
 	const char      *data;
+	MonoClass       *parent;
 } MonoClassField;
 
 typedef struct {

@@ -1640,19 +1640,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			++ip;
 			token = read32 (ip);
 			ip += 4;
-			
-			/* need to handle fieldrefs */
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				field = mono_field_from_memberref (image, token, &klass);
-				mono_class_init (klass);
-			} else {
-				klass = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				mono_class_init (klass);
-				field = mono_class_get_field (klass, token);
-			}
 
-			g_assert (field);
+			/* need to handle fieldrefs */
+			field = mono_field_from_token (image, token, &klass);
+			g_assert (field);			
 
 			if (cfg->share_code) {
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -1687,15 +1678,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			sp--;
 
 			/* need to handle fieldrefs */
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				field = mono_field_from_memberref (image, token, &klass);
-				mono_class_init (klass);
-			} else {
-				klass = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				mono_class_init (klass);
-				field = mono_class_get_field (klass, token);
-			}
+			field = mono_field_from_token (image, token, &klass);
 			g_assert (field);
 			
 			if (klass->marshalbyref) {
@@ -1732,16 +1715,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			--sp;
 
 			/* need to handle fieldrefs */
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				field = mono_field_from_memberref (image, token, &klass);
-				mono_class_init (klass);
-			} else {
-				klass = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				mono_class_init (klass);
-				field = mono_class_get_field (klass, token);
-
-			}
+			field = mono_field_from_token (image, token, &klass);
 			g_assert (field);
 
 			if (cfg->share_code) {
@@ -1770,15 +1744,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			sp -= 2;
 
 			/* need to handle fieldrefs */
-			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
-				field = mono_field_from_memberref (image, token, &klass);
-				mono_class_init (klass);
-			} else {
-				klass = mono_class_get (image, 
-					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				mono_class_init (klass);
-				field = mono_class_get_field (klass, token);
-			}
+			field = mono_field_from_token (image, token, &klass);
 			g_assert (field);
 
 			if (klass->marshalbyref) {
@@ -1901,7 +1867,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				class = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				class = mono_class_get (image, token);
-				
+
 			if (cfg->share_code) {
 				t1 = mono_ctree_new (mp, MB_TERM_NEWARR, *sp, NULL);
 				t1->data.p = class;
@@ -3841,6 +3807,7 @@ mono_jit_compile_method (MonoMethod *method)
 
 	if ((addr = g_hash_table_lookup (jit_code_hash, method))) {
 		mono_jit_stats.methods_lookups++;
+
 		return addr;
 	}
 

@@ -263,6 +263,7 @@ typedef struct {
 	} sections [MONO_SECTION_MAX];
 	GHashTable *typeref;
 	GHashTable *handleref;
+	GHashTable *tokens;
 	GList *array_methods;
 	MonoGHashTable *token_fixups;
 	char *strong_name;
@@ -315,6 +316,7 @@ typedef struct {
 	MonoArray *rva_data;
 	MonoArray *cattrs;
 	MonoReflectionMarshal *marshal_info;
+	MonoClassField *handle;
 } MonoReflectionFieldBuilder;
 
 typedef struct {

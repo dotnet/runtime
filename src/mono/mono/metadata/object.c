@@ -1324,8 +1324,17 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	const char *str, *sig;
 	MonoString *o;
 	size_t len2;
-		
-	sig = str = mono_metadata_user_string (image, idx);
+
+	if (image->assembly->dynamic) {
+		MonoDynamicAssembly *assembly = image->assembly->dynamic;
+
+		o = g_hash_table_lookup (assembly->tokens, 
+								 GUINT_TO_POINTER (MONO_TOKEN_STRING | idx));
+		g_assert (o);
+		return o;
+	}
+	else
+		sig = str = mono_metadata_user_string (image, idx);
 
 	mono_domain_lock (domain);
 	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig))) {

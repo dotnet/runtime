@@ -24,6 +24,7 @@ typedef struct {
 	MonoImage *image;
 	MonoImage **modules;
 	/* Load files here */
+	void *dynamic;
 } MonoAssembly;
 
 typedef struct {
