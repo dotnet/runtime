@@ -340,6 +340,15 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 	return class;
 }
 
+/**
+ * mono_array_class_get:
+ * @image: context where the image is created
+ * @etype: element type token
+ * @rank: the dimension of the array class
+ *
+ * Returns: a class object describing the array with element type @etype and 
+ * dimension @rank. 
+ */
 MonoClass *
 mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 {
@@ -469,6 +478,12 @@ mono_class_get (MonoImage *image, guint32 type_token)
 	return class;
 }
 
+/**
+ * mono_array_element_size:
+ * @ac: pointer to a #MonoArrayClass
+ *
+ * Returns: the size of single array element.
+ */
 gint32
 mono_array_element_size (MonoArrayClass *ac)
 {

@@ -120,6 +120,13 @@ mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
 	return o;
 }
 
+/**
+ * mono_new_utf16_string:
+ * @text: a pointer to an utf16 string
+ * @len: the length of the string
+ *
+ * Returns: A newly created string object which contains @text.
+ */
 MonoObject *
 mono_new_utf16_string (const char *text, gint32 len)
 {
@@ -140,6 +147,12 @@ mono_new_utf16_string (const char *text, gint32 len)
 	return s;
 }
 
+/**
+ * mono_new_string:
+ * @text: a pointer to an utf8 string
+ *
+ * Returns: A newly created string object which contains @text.
+ */
 MonoObject *
 mono_new_string (const char *text)
 {
@@ -162,8 +175,15 @@ mono_new_string (const char *text)
 	return o;
 }
 
+/**
+ * mono_value_box:
+ * @class: the class of the value
+ * @value: a pointer to the unboxed data
+ *
+ * Returns: A newly created object which contains @value.
+ */
 MonoObject *
-mono_value_box (MonoClass *class, gpointer val)
+mono_value_box (MonoClass *class, gpointer value)
 {
 	MonoObject *res;
 	int size;
@@ -175,11 +195,18 @@ mono_value_box (MonoClass *class, gpointer val)
 
 	size = res->klass->instance_size - sizeof (MonoObject);
 
-	memcpy ((char *)res + sizeof (MonoObject), val, size);
+	memcpy ((char *)res + sizeof (MonoObject), value, size);
 
 	return res;
 }
 
+/**
+ * mono_object_isinst:
+ * @obj: an object
+ * @klass: a pointer to a class 
+ *
+ * Returns: #TRUE if @obj is derived from @klass
+ */
 gboolean
 mono_object_isinst (MonoObject *obj, MonoClass *klass)
 {
