@@ -1048,9 +1048,22 @@ reg: CEE_ISINST (reg) {
 				mini_emit_isninst_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			}
 		} else {
-			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-			/* the object_is_null target simply copies the input register to the output */
-			mini_emit_isninst_cast (s, klass_reg, klass, false_label, object_is_null);
+			if (!s->compile_aot && !(s->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
+				/* the remoting code is broken, access the class for now */
+				if (0) {
+					MonoVTable *vt = mono_class_vtable (s->domain, klass);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, vtable_reg, vt);
+				} else {
+					MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, klass);
+				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, object_is_null);
+			} else {
+				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+				/* the object_is_null target simply copies the input register to the output */
+				mini_emit_isninst_cast (s, klass_reg, klass, false_label, object_is_null);
+			}
 		}
 	}
 
@@ -1194,15 +1207,15 @@ reg: CEE_CASTCLASS (reg) {
 		int klass_reg = mono_regstate_next_int (s->rs);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 
 		if (klass->rank) {
 			int rank_reg = mono_regstate_next_int (s->rs);
 			int eclass_reg = mono_regstate_next_int (s->rs);
 
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 			MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
+			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
 			if (klass->cast_class == mono_defaults.object_class) {
 				int parent_reg = mono_regstate_next_int (s->rs);
@@ -1262,7 +1275,20 @@ reg: CEE_CASTCLASS (reg) {
 				MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 			}
 		} else {
-			mini_emit_castclass (s, klass_reg, klass);
+			if (!s->compile_aot && !(s->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
+				/* the remoting code is broken, access the class for now */
+				if (0) {
+					MonoVTable *vt = mono_class_vtable (s->domain, klass);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, vtable_reg, vt);
+				} else {
+					MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, klass);
+				}
+				MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
+			} else {
+				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+				mini_emit_castclass (s, klass_reg, klass);
+			}
 		}
 	}
 
