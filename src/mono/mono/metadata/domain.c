@@ -242,6 +242,7 @@ mono_init (const char *filename)
 	mono_raw_buffer_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
+	mono_loader_init ();
 
 	// FIXME: When should we release this memory?
 	appdomains_list = mono_g_hash_table_new (g_direct_hash, g_direct_equal);

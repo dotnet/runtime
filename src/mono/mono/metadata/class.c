@@ -60,7 +60,6 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	const char *name, *nspace;
 	MonoClass *res;
 	MonoAssembly **references;
-	MonoImageOpenStatus status;
 
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
@@ -92,10 +91,6 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		break;
 	}
 
-	mono_image_load_references (image, &status);
-	if (status != MONO_IMAGE_OK)
-		return NULL;
-		
 	references = image->references;
 	if (!references ||  !references [idx-1]) {
 		/* 
@@ -465,6 +460,12 @@ mono_class_layout_fields (MonoClass *class)
 				}
 #endif
 
+				if ((top == 1) && (class->instance_size == sizeof (MonoObject)) &&
+					(strcmp (class->fields [i].name, "$PRIVATE$") == 0)) {
+					/* This field is a hack inserted by MCS to empty structures */
+					continue;
+				}
+
 				size = mono_type_size (class->fields [i].type, &align);
 			
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
@@ -618,12 +619,15 @@ mono_get_unique_iid (MonoClass *class)
 	
 	g_assert (class->flags & TYPE_ATTRIBUTE_INTERFACE);
 
+	mono_loader_lock ();
+
 	if (!iid_hash)
 		iid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 
 	str = g_strdup_printf ("%s|%s.%s\n", class->image->name, class->name_space, class->name);
 
 	if (g_hash_table_lookup_extended (iid_hash, str, NULL, &value)) {
+		mono_loader_unlock ();
 		g_free (str);
 		return (guint)value;
 	} else {
@@ -631,11 +635,13 @@ mono_get_unique_iid (MonoClass *class)
 		++iid;
 	}
 
+	mono_loader_unlock ();
+
 	return iid - 1;
 }
 
 static void
-collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray *res)
+collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res)
 {
 	int i;
 	MonoClass *ic;
@@ -643,18 +649,20 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray *res)
 	for (i = 0; i < klass->interface_count; i++) {
 		ic = klass->interfaces [i];
 
-		g_ptr_array_add (res, ic);
+		if (*res == NULL)
+			*res = g_ptr_array_new ();
+		g_ptr_array_add (*res, ic);
 
 		collect_implemented_interfaces_aux (ic, res);
 	}
 }
 
-static GPtrArray*
+static inline GPtrArray*
 collect_implemented_interfaces (MonoClass *klass)
 {
-	GPtrArray *res = g_ptr_array_new ();
+	GPtrArray *res = NULL;
 
-	collect_implemented_interfaces_aux (klass, res);
+	collect_implemented_interfaces_aux (klass, &res);
 	return res;
 }
 
@@ -691,27 +699,31 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		class->interface_offsets [i] = -1;
 
 	ifaces = collect_implemented_interfaces (class);
-	for (i = 0; i < ifaces->len; ++i) {
-		ic = g_ptr_array_index (ifaces, i);
-		class->interface_offsets [ic->interface_id] = cur_slot;
-		cur_slot += ic->method.count;
+	if (ifaces) {
+		for (i = 0; i < ifaces->len; ++i) {
+			ic = g_ptr_array_index (ifaces, i);
+			class->interface_offsets [ic->interface_id] = cur_slot;
+			cur_slot += ic->method.count;
+		}
+		g_ptr_array_free (ifaces, TRUE);
 	}
-	g_ptr_array_free (ifaces, TRUE);
 
 	for (k = class->parent; k ; k = k->parent) {
 		ifaces = collect_implemented_interfaces (k);
-		for (i = 0; i < ifaces->len; ++i) {
-			ic = g_ptr_array_index (ifaces, i);
+		if (ifaces) {
+			for (i = 0; i < ifaces->len; ++i) {
+				ic = g_ptr_array_index (ifaces, i);
 
-			if (class->interface_offsets [ic->interface_id] == -1) {
-				int io = k->interface_offsets [ic->interface_id];
+				if (class->interface_offsets [ic->interface_id] == -1) {
+					int io = k->interface_offsets [ic->interface_id];
 
-				g_assert (io >= 0);
+					g_assert (io >= 0);
 
-				class->interface_offsets [ic->interface_id] = io;
+					class->interface_offsets [ic->interface_id] = io;
+				}
 			}
+			g_ptr_array_free (ifaces, TRUE);
 		}
-		g_ptr_array_free (ifaces, TRUE);
 	}
 
 	return cur_slot;
@@ -724,7 +736,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	MonoMethod **vtable;
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 	GPtrArray *ifaces;
-	MonoGHashTable *override_map;
+	MonoGHashTable *override_map = NULL;
 
 	/* setup_vtable() must be called only once on the type */
 	if (class->interface_offsets) {
@@ -733,11 +745,13 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 
 	ifaces = collect_implemented_interfaces (class);
-	for (i = 0; i < ifaces->len; i++) {
-		MonoClass *ic = g_ptr_array_index (ifaces, i);
-		max_vtsize += ic->method.count;
+	if (ifaces) {
+		for (i = 0; i < ifaces->len; i++) {
+			MonoClass *ic = g_ptr_array_index (ifaces, i);
+			max_vtsize += ic->method.count;
+		}
+		g_ptr_array_free (ifaces, TRUE);
 	}
-	g_ptr_array_free (ifaces, TRUE);
 	
 	if (class->parent) {
 		max_vtsize += class->parent->vtable_size;
@@ -757,8 +771,6 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	if (class->parent && class->parent->vtable_size)
 		memcpy (vtable, class->parent->vtable,  sizeof (gpointer) * class->parent->vtable_size);
 
-	override_map = mono_g_hash_table_new (NULL, NULL);
-
 	/* override interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
@@ -768,13 +780,19 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
+			if (!override_map)
+				override_map = mono_g_hash_table_new (NULL, NULL);
+
 			mono_g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
 		}
 	}
 
 	for (k = class; k ; k = k->parent) {
+		int nifaces = 0;
 		ifaces = collect_implemented_interfaces (k);
-		for (i = 0; i < ifaces->len; i++) {
+		if (ifaces)
+			nifaces = ifaces->len;
+		for (i = 0; i < nifaces; i++) {
 			int j, l, io;
 
 			ic = g_ptr_array_index (ifaces, i);
@@ -915,7 +933,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 				}
 			}
 		}
-		g_ptr_array_free (ifaces, TRUE);
+		if (ifaces)
+			g_ptr_array_free (ifaces, TRUE);
 	} 
 
 	for (i = 0; i < class->method.count; ++i) {
@@ -935,6 +954,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					    mono_metadata_signature_equal (cm->signature, m1->signature)) {
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
+						if (!override_map)
+							override_map = mono_g_hash_table_new (NULL, NULL);
 						mono_g_hash_table_insert (override_map, m1, cm);
 						break;
 					}
@@ -960,6 +981,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = overrides [i*2 + 1];
  			overrides [i * 2 + 1]->slot = decl->slot;
+			if (!override_map)
+				override_map = mono_g_hash_table_new (NULL, NULL);
 			mono_g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
 		}
 	}
@@ -968,13 +991,16 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	 * If a method occupies more than one place in the vtable, and it is
 	 * overriden, then change the other occurances too.
 	 */
-	for (i = 0; i < max_vtsize; ++i)
-		if (vtable [i]) {
-			MonoMethod *cm = mono_g_hash_table_lookup (override_map, vtable [i]);
-			if (cm)
-				vtable [i] = cm;
-		}
-	mono_g_hash_table_destroy (override_map);
+	if (override_map) {
+		for (i = 0; i < max_vtsize; ++i)
+			if (vtable [i]) {
+				MonoMethod *cm = mono_g_hash_table_lookup (override_map, vtable [i]);
+				if (cm)
+					vtable [i] = cm;
+			}
+
+		mono_g_hash_table_destroy (override_map);
+	}
        
 	class->vtable_size = cur_slot;
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
@@ -1051,6 +1077,15 @@ mono_class_init (MonoClass *class)
 		return;
 
 	/*g_print ("Init class %s\n", class->name);*/
+
+	/* We do everything inside the lock to prevent races */
+	mono_loader_lock ();
+
+	if (class->inited) {
+		mono_loader_unlock ();
+		/* Somebody might have gotten in before us */
+		return;
+	}
 
 	if (class->init_pending) {
 		/* this indicates a cyclic dependency */
@@ -1145,6 +1180,7 @@ mono_class_init (MonoClass *class)
 		 * we have to setup them for interfaces, too.
 		 */
 		setup_interface_offsets (class, 0);
+		mono_loader_unlock ();
 		return;
 	}
 
@@ -1205,6 +1241,8 @@ mono_class_init (MonoClass *class)
 		if (class->vtable [finalize_slot] != default_finalize)
 			class->has_finalize = 1;
 	}
+
+	mono_loader_unlock ();
 
 	if (mono_debugger_class_init_func)
 		mono_debugger_class_init_func (class);
@@ -1424,8 +1462,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint icount = 0; 
 	MonoClass **interfaces;
 
-	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token)))) 
+	mono_loader_lock ();
+
+	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token)))) {
+		mono_loader_unlock ();
 		return class;
+	}
 
 	g_assert (mono_metadata_token_table (type_token) == MONO_TABLE_TYPEDEF);
 	
@@ -1508,6 +1550,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->gen_params = mono_metadata_load_generic_params (image, class->type_token, &icount);
 	class->num_gen_params = icount;
 
+	mono_loader_unlock ();
+
 	return class;
 }
 
@@ -1543,9 +1587,13 @@ mono_class_from_generic (MonoType *gtype)
 	MonoClass *class;
 	MonoImage *image;
 
+	mono_loader_lock ();
+
 	image = gklass->image;
-	if ((class = g_hash_table_lookup (image->generics_cache, gtype))) 
+	if ((class = g_hash_table_lookup (image->generics_cache, gtype))) {
+		mono_loader_unlock ();
 		return class;
+	}
 
 	mono_class_init (gklass);
 
@@ -1569,6 +1617,8 @@ mono_class_from_generic (MonoType *gtype)
 
 	g_hash_table_insert (image->generics_cache, gtype, class);
 
+	mono_loader_unlock ();
+
 	return class;
 }
 
@@ -1579,14 +1629,18 @@ mono_class_from_gen_param (MonoImage *image, gboolean mvar, int type_num, MonoGe
 	int key;
 	static GHashTable *cache = NULL;
 
+	mono_loader_lock ();
+
 	if (!cache)
 		cache = g_hash_table_new (NULL, NULL);
 
 	key = mvar? 1: 0;
 	key |= type_num << 1;
 
-	if ((result = g_hash_table_lookup (cache, GINT_TO_POINTER (key))))
+	if ((result = g_hash_table_lookup (cache, GINT_TO_POINTER (key)))) {
+		mono_loader_unlock ();
 		return result;
+	}
 	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL;
@@ -1602,6 +1656,8 @@ mono_class_from_gen_param (MonoImage *image, gboolean mvar, int type_num, MonoGe
 	result->this_arg.byref = TRUE;
 
 	g_hash_table_insert (cache, GINT_TO_POINTER (key), result);
+
+	mono_loader_unlock ();
 	return result;
 }
 
@@ -1612,11 +1668,15 @@ mono_ptr_class_get (MonoType *type)
 	MonoClass *el_class;
 	static GHashTable *ptr_hash = NULL;
 
+	mono_loader_lock ();
+
 	if (!ptr_hash)
 		ptr_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
 	el_class = mono_class_from_mono_type (type);
-	if ((result = g_hash_table_lookup (ptr_hash, el_class)))
+	if ((result = g_hash_table_lookup (ptr_hash, el_class))) {
+		mono_loader_unlock ();
 		return result;
+	}
 	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL; /* no parent for PTR types */
@@ -1638,6 +1698,8 @@ mono_ptr_class_get (MonoType *type)
 
 	g_hash_table_insert (ptr_hash, el_class, result);
 
+	mono_loader_unlock ();
+
 	return result;
 }
 
@@ -1647,11 +1709,15 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	MonoClass *result;
 	static GHashTable *ptr_hash = NULL;
 
+	mono_loader_lock ();
+
 	if (!ptr_hash)
 		ptr_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
 	
-	if ((result = g_hash_table_lookup (ptr_hash, sig)))
+	if ((result = g_hash_table_lookup (ptr_hash, sig))) {
+		mono_loader_unlock ();
 		return result;
+	}
 	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL; /* no parent for PTR types */
@@ -1672,6 +1738,8 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	mono_class_setup_supertypes (result);
 
 	g_hash_table_insert (ptr_hash, sig, result);
+
+	mono_loader_unlock ();
 
 	return result;
 }
@@ -1797,11 +1865,15 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 
 	image = eclass->image;
 
+	mono_loader_lock ();
+
 	if ((rootlist = list = g_hash_table_lookup (image->array_cache, eclass))) {
 		for (; list; list = list->next) {
 			class = list->data;
-			if (class->rank == rank)
+			if (class->rank == rank) {
+				mono_loader_unlock ();
 				return class;
+			}
 		}
 	}
 
@@ -1867,6 +1939,9 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 
 	list = g_slist_append (rootlist, class);
 	g_hash_table_insert (image->array_cache, eclass, list);
+
+	mono_loader_unlock ();
+
 	return class;
 }
 
@@ -1878,8 +1953,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
  */
 gint32
 mono_class_instance_size (MonoClass *klass)
-{
-	
+{	
 	if (!klass->size_inited)
 		mono_class_init (klass);
 
@@ -1894,8 +1968,7 @@ mono_class_instance_size (MonoClass *klass)
  */
 gint32
 mono_class_min_align (MonoClass *klass)
-{
-	
+{	
 	if (!klass->size_inited)
 		mono_class_init (klass);
 
@@ -1937,8 +2010,7 @@ mono_class_value_size      (MonoClass *klass, guint32 *align)
  */
 gint32
 mono_class_data_size (MonoClass *klass)
-{
-	
+{	
 	if (!klass->inited)
 		mono_class_init (klass);
 
@@ -2100,7 +2172,6 @@ load_file_for_image (MonoImage *image, int fileidx)
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
-		mono_image_load_references (image, NULL);
 	}
 	g_free (name);
 	g_free (base_dir);
@@ -2133,7 +2204,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 {
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
-	guint32 token;
+	guint32 token = 0;
 	MonoClass *class;
 	char *nested;
 	char buf [1024];
@@ -2149,9 +2220,16 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		name = buf;
 	}
 
+	mono_loader_lock ();
+
 	nspace_table = g_hash_table_lookup (image->name_cache, name_space);
+
+	if (nspace_table)
+		token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
+
+	mono_loader_unlock ();
 	
-	if (!nspace_table || !(token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name)))) {
+	if (!token) {
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
 		guint32 cols [MONO_EXP_TYPE_SIZE];
 		int i;
@@ -2431,3 +2509,6 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token)
 {
 	return lookup_dynamic (image, token);
 }
+
+
+

@@ -225,6 +225,9 @@ typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 
 typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token);
 
+void
+mono_classes_init (void);
+
 MonoClass *
 mono_class_get             (MonoImage *image, guint32 type_token);
 

@@ -113,8 +113,20 @@ typedef struct {
 
 extern MonoDefaults mono_defaults;
 
+/*
+ * This lock protects the hash tables inside MonoImage used by the metadata 
+ * loading functions in class.c and loader.c.
+ */
+extern CRITICAL_SECTION loader_mutex;
+
+#define mono_loader_lock() EnterCriticalSection (&loader_mutex);
+#define mono_loader_unlock() LeaveCriticalSection (&loader_mutex);
+
 typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
 typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gpointer user_data);
+
+void
+mono_loader_init           (void);
 
 void 
 mono_init_icall            (void);

@@ -37,17 +37,29 @@ static gboolean dummy_icall = TRUE;
 
 MonoDefaults mono_defaults;
 
+CRITICAL_SECTION loader_mutex;
+
 static GHashTable *icall_hash = NULL;
+
+void
+mono_loader_init ()
+{
+	InitializeCriticalSection (&loader_mutex);
+}
 
 void
 mono_add_internal_call (const char *name, gconstpointer method)
 {
+	mono_loader_lock ();
+
 	if (!icall_hash) {
 		dummy_icall = FALSE;
 		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
 	}
 
 	g_hash_table_insert (icall_hash, g_strdup (name), (gpointer) method);
+
+	mono_loader_unlock ();
 }
 
 static void
@@ -76,6 +88,8 @@ mono_lookup_internal_call (MonoMethod *method)
 		g_assert_not_reached ();
 	}
 
+	mono_loader_lock ();
+
 	if (*method->klass->name_space)
 		name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, NULL);
 	else
@@ -101,11 +115,15 @@ mono_lookup_internal_call (MonoMethod *method)
 			g_free (name);
 			g_free (tmpsig);
 
+			mono_loader_unlock ();
+
 			return NULL;
 		}
 
 		g_free(tmpsig);
 	}
+
+	mono_loader_unlock ();
 
 	g_free (name);
 
@@ -448,9 +466,14 @@ mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const 
 
 	if (!dll_map)
 		return 0;
+
+	mono_loader_lock ();
+
 	map = g_hash_table_lookup (dll_map, dll);
-	if (!map)
+	if (!map) {
+		mono_loader_unlock ();
 		return 0;
+	}
 	*rdll = map->target? map->target: dll;
 		
 	for (tmp = map->next; tmp; tmp = tmp->next) {
@@ -458,16 +481,20 @@ mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const 
 			*rfunc = tmp->name;
 			if (tmp->dll)
 				*rdll = tmp->dll;
+			mono_loader_unlock ();
 			return 1;
 		}
 	}
 	*rfunc = func;
+	mono_loader_unlock ();
 	return 1;
 }
 
 void
 mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const char *tfunc) {
 	MonoDllMap *map, *entry;
+
+	mono_loader_lock ();
 
 	if (!dll_map)
 		dll_map = g_hash_table_new (g_str_hash, g_str_equal);
@@ -490,6 +517,8 @@ mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const c
 		entry->next = map->next;
 		map->next = entry;
 	}
+
+	mono_loader_unlock ();
 }
 
 gpointer
@@ -581,8 +610,8 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	return method->addr;
 }
 
-MonoMethod *
-mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
+static MonoMethod *
+mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 {
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
@@ -591,9 +620,6 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	const char *loc, *sig = NULL;
 	int size;
 	guint32 cols [MONO_TYPEDEF_SIZE];
-
-	if ((result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
-			return result;
 
 	if (image->assembly->dynamic)
 		return mono_lookup_dynamic_token (image, token);
@@ -613,7 +639,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
 		result = method_from_memberref (image, idx);
-		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+
 		return result;
 	}
 
@@ -691,7 +717,28 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		}
 	}
 
+	return result;
+}
+
+MonoMethod *
+mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
+{
+	MonoMethod *result;
+
+	/* We do everything inside the lock to prevent creation races */
+
+	mono_loader_lock ();
+
+	if ((result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token)))) {
+		mono_loader_unlock ();
+		return result;
+	}
+
+	result = mono_get_method_from_token (image, token, klass);
+
 	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+
+	mono_loader_unlock ();
 
 	return result;
 }
