@@ -302,7 +302,7 @@ MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);
 
 MonoClass*
-mono_class_from_generic    (MonoType *gtype, gboolean inflate_methods);
+mono_class_from_generic    (MonoGenericInst *ginst);
 
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst);

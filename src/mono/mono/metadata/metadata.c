@@ -1437,7 +1437,7 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 	type->data.generic_inst = generic_inst;
 
 	generic_inst->klass = klass = g_new0 (MonoClass, 1);
-	
+
 	generic_inst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	generic_inst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
 	generic_inst->type_argv = g_new0 (MonoType*, count);
@@ -1456,7 +1456,7 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 	klass->image = m;
 	klass->flags = gklass->flags;
 
-	klass->generic_inst = type;
+	klass->generic_inst = generic_inst;
 
 	klass->cast_class = klass->element_class = klass;
 
@@ -1464,7 +1464,7 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 		generic_inst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 	generic_inst->init_pending = FALSE;
-	
+
 	if (rptr)
 		*rptr = ptr;
 }
@@ -2312,7 +2312,8 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, align);
 	case MONO_TYPE_GENERICINST: {
-		MonoClass *iclass = mono_class_from_mono_type (t);
+		MonoGenericInst *ginst = t->data.generic_inst;
+		MonoClass *iclass = mono_class_from_mono_type (ginst->generic_type);
 		return mono_type_size (&iclass->byval_arg, align);
 	}
 	case MONO_TYPE_VAR:

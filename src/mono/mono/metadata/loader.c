@@ -297,8 +297,13 @@ find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 		klass = klass->parent;
 	}
 	if (sclass->generic_inst) {
-		MonoClass *gclass = mono_class_from_mono_type (sclass->generic_inst->generic_type);
-		MonoMethod *res = find_method (gclass, name, sig);
+		MonoClass *gclass;
+		MonoMethod *res;
+
+		gclass = mono_class_from_mono_type (sclass->generic_inst->generic_type);
+		mono_class_init (gclass);
+
+		res = find_method (gclass, name, sig);
 		if (!res)
 			return NULL;
 		for (i = 0; i < res->klass->method.count; ++i) {

@@ -1670,7 +1670,7 @@ get_instantiation_name (const char *name, MonoGenericInst *ginst)
 static void
 mono_class_initialize_generic (MonoGenericInst *ginst, gboolean inflate_methods)
 {
-	MonoClass *klass, *gklass;
+	MonoClass *klass, *gklass, *pklass;
 
 	if (ginst->initialized || ginst->init_pending)
 		return;
@@ -1681,7 +1681,12 @@ mono_class_initialize_generic (MonoGenericInst *ginst, gboolean inflate_methods)
 	klass = ginst->klass;
 	klass->name = get_instantiation_name (gklass->name, ginst);
 
-	mono_class_setup_parent (klass, gklass->parent);
+	if (ginst->parent)
+		pklass = mono_class_from_mono_type (ginst->parent);
+	else
+		pklass = gklass->parent;
+
+	mono_class_setup_parent (klass, pklass);
 	mono_class_setup_mono_type (klass);
 
 	if (inflate_methods) {
@@ -1694,16 +1699,13 @@ mono_class_initialize_generic (MonoGenericInst *ginst, gboolean inflate_methods)
 			klass->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
 	}
 
-	g_hash_table_insert (klass->image->generics_cache, ginst->generic_type, klass);
 	ginst->initialized = TRUE;
 }
 
 MonoClass*
-mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
+mono_class_from_generic (MonoGenericInst *ginst)
 {
-	MonoGenericInst *ginst = gtype->data.generic_inst;
-	MonoClass *class, *gklass;
-	MonoImage *image;
+	MonoClass *class, *gklass, *pklass;
 
 	if (ginst->klass) {
 		mono_class_initialize_generic (ginst, TRUE);
@@ -1715,42 +1717,15 @@ mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 	gklass = mono_class_from_mono_type (ginst->generic_type);
 	mono_class_init (gklass);
 
-	image = gklass->image;
-	if ((class = g_hash_table_lookup (image->generics_cache, gtype))) {
-		mono_loader_unlock ();
-		return class;
-	}
-
-	class = g_malloc0 (sizeof (MonoClass));
+	class = ginst->klass = g_malloc0 (sizeof (MonoClass));
 	class->name_space = gklass->name_space;
 	class->name = get_instantiation_name (gklass->name, ginst);
-	class->image = image;
+	class->image = gklass->image;
 	class->flags = gklass->flags;
 
 	class->generic_inst = ginst;
 
 	class->cast_class = class->element_class = class;
-
-	if (inflate_methods) {
-		MonoClass *pklass = NULL;
-		int i;
-
-		if (ginst->parent)
-			pklass = mono_class_from_mono_type (ginst->parent);
-		else
-			pklass = gklass->parent;
-
-		mono_class_setup_parent (class, pklass);
-		mono_class_setup_mono_type (class);
-
-		class->field = gklass->field;
-		class->method = gklass->method;
-		class->methods = g_new0 (MonoMethod *, class->method.count);
-		for (i = 0; i < class->method.count; i++)
-			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
-	}
-
-	g_hash_table_insert (image->generics_cache, gtype, class);
 
 	mono_loader_unlock ();
 
@@ -1962,7 +1937,7 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
 	case MONO_TYPE_GENERICINST:
-		return mono_class_from_generic (type, TRUE);
+		return mono_class_from_generic (type->data.generic_inst);
 	case MONO_TYPE_VAR:
 		return my_mono_class_from_generic_parameter (type->data.generic_param, FALSE);
 	case MONO_TYPE_MVAR:
@@ -1998,7 +1973,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		class = mono_class_from_mono_type (type->data.type);
 		break;
 	case MONO_TYPE_GENERICINST:
-		class = mono_class_from_generic (type, TRUE);
+		class = mono_class_from_generic (type->data.generic_inst);
 		break;
 	default:
 		/* it seems any type can be stored in TypeSpec as well */

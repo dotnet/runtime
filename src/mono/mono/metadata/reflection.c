@@ -411,6 +411,8 @@ encode_generic_inst (MonoDynamicImage *assembly, MonoGenericInst *ginst, char *p
 	mono_metadata_encode_value (ginst->type_argc, p, &p);
 	for (i = 0; i < ginst->type_argc; ++i)
 		encode_type (assembly, ginst->type_argv [i], p, &p);
+
+	*endbuf = p;
 }
 
 static void
@@ -6935,6 +6937,8 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 		ginst->generic_type = kginst->generic_type;
 	}
 
+	mono_class_from_generic (ginst);
+
 	return geninst;
 }
 
@@ -7034,7 +7038,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	ginst->type_argv = type_ginst->type_argv;
 	ginst->is_open = type_ginst->is_open;
 
-	ginst->klass = mono_class_from_generic (ginst->generic_type, FALSE);
+	ginst->klass = type_ginst->klass;
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
