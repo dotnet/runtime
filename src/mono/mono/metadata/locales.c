@@ -304,35 +304,18 @@ get_current_locale_name (void)
 
 	/* Note that we scan the *uncorrected* ID. */
 	if ((p = strrchr (locale, '@')) != NULL) {
+
+		/**
+		 * In Mono we dont handle the '@' modifier because we do
+		 * not have any cultures that use it. We just trim it
+		 * off of the end of the name.
+		 */
+
 		if (corrected == NULL) {
 			corrected = malloc (strlen (locale));
 			strncpy (corrected, locale, p - locale);
 			corrected [p - locale] = 0;
 		}
-		p++;
-		
-		/* Take care of any special cases here.. */
-		if (!strcmp (p, "nynorsk"))
-			p = "NY";			 
-
-		if (strchr (corrected, '_') == NULL)
-			strcat (corrected, "__"); /* aa@b -> aa__b */
-		else
-			strcat (corrected, "_"); /* aa_CC@b -> aa_CC_b */
-
-		if ((q = strchr (p, '.')) != NULL) {
-			/* How big will the resulting string be? */
-			len = strlen (corrected) + (q - p);
-			strncat (corrected, p, q - p);
-			corrected [len] = 0;
-		} else {
-			/* Anything following the @ sign */
-			strcat (corrected, p);
-		}
-
-		/* Should there be a map from 'no@nynorsk' -> no_NO_NY here?	
-		 * How about 'russian' -> 'ru'? 
-		 */
 	}
 
 	if (corrected == NULL)
