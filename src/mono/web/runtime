@@ -65,7 +65,7 @@
 	Unix-like compilation environment (mostly we use GNU make in 
 	a few of the makefiles).
 
-** JIT Engine (<b>updated, Dec 18th, 2001</b>)
+** JIT Engine (<b>updated, March 26th, 2002</b>)
 
 	The JIT engine uses a code-generator generator approach for
 	compilation.  Given the properties of CIL byte codes, we can
@@ -88,7 +88,21 @@
 
 	</ul>
 
+** Future plans
+
+	We are evaluating the future directions for the JIT engine:
+	both from our needs (optimizations like inlining, better register allocation,
+	instruction scheduling, and porting to other CPUs).
+
+	We have not yet decided how we will evolve the JIT engine.  We
+	might just upgrade our current architecture, and provide optimizations as
+	an extra layer.
+
 ** Garbage Collection
+
+	Currently we are using the Boehm conservative GC.  Although our plans 
+	are to move to the Intel ORP GC engine, our plans on a next generation
+	dual-JIT engine have to be taken into account.
 
 	We will be using the Intel ORP GC engine as it provides a precise
 	garbage collector engine, similar to what is available on the

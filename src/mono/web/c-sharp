@@ -23,10 +23,9 @@
 
 ** Running MCS
 
-	MCS is written in C# and uses heavily the .NET APIs.  At this point
-	MCS only runs on Windows with the .NET Framework SDK installed.  Work
-	is progressing rapidly in our JIT engine and our class libraries to
-	allow MCS to be ran in non-Windows systems. 
+	MCS is written in C# and uses heavily the .NET APIs.  MCS runs
+	on Linux (with the Mono runtime) and Windows (with the .NET
+	framework runtime)
 
 ** Reporting Bugs in MCS
 
