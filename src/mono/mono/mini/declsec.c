@@ -211,7 +211,7 @@ mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod
 		secman = mono_security_manager_get_methods ();
 		if (secman && cinfo) {
 			/* look for AllowPartiallyTrustedCallersAttribute */
-			result = mono_custom_attrs_has_attr (cinfo, secman->aptc);
+			result = mono_custom_attrs_has_attr (cinfo, secman->allowpartiallytrustedcallers);
 		}
 		MONO_SECMAN_FLAG_SET_VALUE (assembly->aptc, result);
 	}

@@ -3166,7 +3166,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	int num_calls = 0, inline_costs = 0;
 	int breakpoint_id = 0;
 	guint real_offset, num_args;
-	MonoBoolean security;
+	MonoBoolean security, pinvoke;
+	MonoSecurityManager* secman = NULL;
 	MonoDeclSecurityActions actions;
 
 	image = method->klass->image;
@@ -3295,7 +3296,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	security = mono_use_security_manager && mono_method_has_declsec (method);
+	if (mono_use_security_manager)
+		secman = mono_security_manager_get_methods ();
+
+	security = (secman && mono_method_has_declsec (method));
 	/* at this point having security doesn't mean we have any code to generate */
 	if (security && (cfg->method == method)) {
 		/* Only Demand, NonCasDemand and DemandChoice requires code generation.
@@ -3303,8 +3307,32 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * have nothing to generate */
 		security = mono_declsec_get_demands (method, &actions);
 	}
+
+	/* we must Demand SecurityPermission.Unmanaged before P/Invoking */
+	pinvoke = (secman && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE));
+	if (pinvoke) {
+		MonoMethod *wrapped = mono_marshal_method_from_wrapper (method);
+		if (wrapped && (wrapped->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+			MonoCustomAttrInfo* custom = mono_custom_attrs_from_method (wrapped);
+
+			/* unless the method or it's class has the [SuppressUnmanagedCodeSecurity] attribute */
+			if (custom && mono_custom_attrs_has_attr (custom, secman->suppressunmanagedcodesecurity)) {
+				pinvoke = FALSE;
+			}
+
+			if (pinvoke) {
+				custom = mono_custom_attrs_from_class (wrapped->klass);
+				if (custom && mono_custom_attrs_has_attr (custom, secman->suppressunmanagedcodesecurity)) {
+					pinvoke = FALSE;
+				}
+			}
+		} else {
+			/* not a P/Invoke after all */
+			pinvoke = FALSE;
+		}
+	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || mono_compile_aot || security) {
+	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || mono_compile_aot || security || pinvoke) {
 		/* we use a separate basic block for the initialization code */
 		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
@@ -3321,7 +3349,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* at this point we know, if security is TRUE, that some code needs to be generated */
 	if (security && (cfg->method == method)) {
 		MonoInst *args [2];
-		MonoSecurityManager* secman = mono_security_manager_get_methods ();
 
 		mono_jit_stats.cas_demand_generation++;
 
@@ -3347,6 +3374,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Calls static void SecurityManager.InternalDemandChoice (byte* permissions, int size); */
 			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandchoice, mono_method_signature (secman->demandchoice), args, ip, NULL);
 		}
+	}
+
+	/* we must Demand SecurityPermission.Unmanaged before p/invoking */
+	if (pinvoke) {
+		mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandunmanaged, mono_method_signature (secman->demandunmanaged), NULL, ip, NULL);
 	}
 
 	if (get_basic_blocks (cfg, bbhash, header, real_offset, ip, end, &err_pos)) {
