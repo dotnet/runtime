@@ -327,7 +327,7 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for the IKVM JNI interface library                  ***
 	dnl ******************************************************************
 	AC_ARG_WITH(ikvm-jni, [  --with-ikvm-jni=yes,no  build the IKVM JNI interface library],[with_ikvm_jni=$withval],[with_ikvm_jni=yes])
-	AC_ARG_WITH(jdk, [  --with-jdk=DIRECTORY  use JDK from DIRECTORY],[with_jdk_dir=$withval],[with_jdk_dir=])
+	AC_ARG_WITH(jdk, [  --with-jdk=DIRECTORY    Use JDK from DIRECTORY],[with_jdk_dir=$withval],[with_jdk_dir=])
 
 	ikvm_jni_dir=
 	if test x$with_ikvm_jni = xyes; then
@@ -1048,7 +1048,7 @@ case "$host" in
 		;;
 esac
 
-AC_ARG_WITH(jit, [  --with-jit=yes,no    If you want to build scripts that default to the JIT],[
+AC_ARG_WITH(jit, [  --with-jit=yes,no       If you want to build scripts that default to the JIT],[
 	jit_wanted=true
 ])
 
