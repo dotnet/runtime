@@ -90,6 +90,8 @@ extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object
 extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand);
 extern void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state);
 extern void ves_icall_System_Threading_Thread_ResetAbort (void);
+extern void ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads, int *completionPortThreads);
+extern void ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads, int *completionPortThreads);
 
 
 #endif /* _MONO_METADATA_THREADS_H_ */

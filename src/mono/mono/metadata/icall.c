@@ -3838,6 +3838,8 @@ static gconstpointer icall_map [] = {
 	"System.Threading.NativeEventCalls::SetEvent_internal",    ves_icall_System_Threading_Events_SetEvent_internal,
 	"System.Threading.NativeEventCalls::ResetEvent_internal",  ves_icall_System_Threading_Events_ResetEvent_internal,
 	"System.Threading.NativeEventCalls::CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal,
+	"System.Threading.ThreadPool::GetAvailableThreads", ves_icall_System_Threading_ThreadPool_GetAvailableThreads,
+	"System.Threading.ThreadPool::GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads,
 
 	/*
 	 * System.Threading.WaitHandle

@@ -17,6 +17,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/environment.h>
@@ -315,6 +316,26 @@ mono_thread_attach (MonoDomain *domain)
 	}
 
 	return(thread);
+}
+
+void
+ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads, int *completionPortThreads)
+{
+
+	MONO_ARCH_SAVE_REGS;
+
+	*workerThreads = mono_max_worker_threads - mono_worker_threads;
+	*completionPortThreads = 0;
+}
+
+void
+ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads, int *completionPortThreads)
+{
+
+	MONO_ARCH_SAVE_REGS;
+
+	*workerThreads = mono_max_worker_threads;
+	*completionPortThreads = 0;
 }
 
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,

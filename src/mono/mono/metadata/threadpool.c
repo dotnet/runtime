@@ -19,15 +19,13 @@
 
 #include "threadpool.h"
 
-/* FIXME:
- * - worker threads need to be initialized correctly.
- * - worker threads should be domain specific
- */
-
 /* maximum number of worker threads */
-int mono_worker_threads = 1;
+int mono_max_worker_threads = 25; /* fixme: should be 25 per available CPU */
+/* current number of worker threads */
+int mono_worker_threads = 0;
 
-static int workers = 0;
+/* we use this to store a reference to the AsyncResult to avoid GC */
+static MonoGHashTable *ares_htable = NULL;
 
 typedef struct {
 	MonoMethodMessage *msg;
@@ -65,6 +63,10 @@ mono_async_invoke (MonoAsyncResult *ares)
 		if (!ac->msg->exc)
 			ac->msg->exc = exc;
 	}
+
+	g_hash_table_remove (ares_htable, ares);
+	/* it work as long as we do not release the wait handle */
+	// g_hash_table_insert (ares_htable, ares->handle, ares->handle);
 }
 
 MonoAsyncResult *
@@ -90,15 +92,20 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		ac->cb_target = async_callback;
 	}
 
+	if (!ares_htable)
+		ares_htable = mono_g_hash_table_new (NULL, NULL);
+
 	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
 	ares->async_delegate = target;
+
+	mono_g_hash_table_insert (ares_htable, ares, ares);
 
 	EnterCriticalSection (&mono_delegate_section);	
 	async_call_queue = g_list_append (async_call_queue, ares); 
 	ReleaseSemaphore (mono_delegate_semaphore, 1, NULL);
 
-	if (workers == 0) {
-		workers++;
+	if (mono_worker_threads == 0) {
+		mono_worker_threads++;
 		mono_thread_create (domain, async_invoke_thread, NULL);
 	}
 	LeaveCriticalSection (&mono_delegate_section);
@@ -131,15 +138,20 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 
 	if ((l = g_list_find (async_call_queue, ares))) {
 		async_call_queue = g_list_remove_link (async_call_queue, l);
-		mono_async_invoke (ares);
-	}		
+	}	
+	
 	LeaveCriticalSection (&mono_delegate_section);
+
+	if (l)
+		mono_async_invoke (ares);
+		
 	
 	/* wait until we are really finished */
 	WaitForSingleObject (ac->wait_semaphore, INFINITE);
 
 	*exc = ac->msg->exc;
 	*out_args = ac->out_args;
+
 
 	return ac->res;
 }
@@ -155,7 +167,7 @@ async_invoke_thread ()
 
 		if (WaitForSingleObject (mono_delegate_semaphore, 500) == WAIT_TIMEOUT) {
 			EnterCriticalSection (&mono_delegate_section);
-			workers--;
+			mono_worker_threads--;
 			LeaveCriticalSection (&mono_delegate_section);
 			ExitThread (0);
 		}
@@ -165,14 +177,13 @@ async_invoke_thread ()
 		
 		if (async_call_queue) {
 			if ((g_list_length (async_call_queue) > 1) && 
-			    (workers < mono_worker_threads)) {
+			    (mono_worker_threads < mono_max_worker_threads)) {
 				new_worker = TRUE;
-				workers++;
+				mono_worker_threads++;
 			}
 
 			ar = (MonoAsyncResult *)async_call_queue->data;
 			async_call_queue = g_list_remove_link (async_call_queue, async_call_queue); 
-
 		}
 
 		LeaveCriticalSection (&mono_delegate_section);

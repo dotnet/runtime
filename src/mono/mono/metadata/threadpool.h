@@ -4,6 +4,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
 
+extern int mono_max_worker_threads;
 extern int mono_worker_threads;
 
 MonoAsyncResult *

@@ -4522,9 +4522,9 @@ main (int argc, char *argv [])
 		if (strcmp (argv [i], "--config") == 0)
 			config_file = argv [++i];
 		if (strcmp (argv [i], "--workers") == 0) {
-			mono_worker_threads = atoi (argv [++i]);
-			if (mono_worker_threads < 1)
-				mono_worker_threads = 1;
+			mono_max_worker_threads = atoi (argv [++i]);
+			if (mono_max_worker_threads < 1)
+				mono_max_worker_threads = 1;
 		}
 		if (strcmp (argv [i], "--help") == 0)
 			usage ();
