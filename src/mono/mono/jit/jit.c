@@ -2049,6 +2049,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int calli = *ip == CEE_CALLI;
 			gboolean array_set = FALSE;
 			gboolean array_get = FALSE;
+			gboolean array_address = FALSE;
 			/* fixme: compute this value */
 			gboolean shared_to_unshared_call = FALSE;
 			int nargs, vtype_num = 0;
@@ -2163,8 +2164,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					if (!strcmp (cm->name, "Set")) { 
 						array_set = TRUE;
 						nargs--;
-					} else if (!strcmp (cm->name, "Get")) 
+					} else if (!strcmp (cm->name, "Get")) {
 						array_get = TRUE;
+					} else if (!strcmp (cm->name, "Address")) {
+						array_address = TRUE;
+					}
 				}
 			}
 
@@ -2222,7 +2226,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ADD_TREE (t1, cli_addr);
 				t1 = ctree_create_dup (mp, t1);
 				PUSH_TREE (t1, t1->svt);
-
 			} else if (array_set) {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -2234,8 +2237,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.call_info.pad = arg_info [0].pad;
 
 				t1 = ctree_create_store (cfg, csig->params [nargs], t1, arg_sp [nargs], FALSE);
-				ADD_TREE (t1, cli_addr);
-			
+				ADD_TREE (t1, cli_addr);			
 			} else {
 
 				if (calli) {
@@ -2254,8 +2256,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					t2->data.m = cm;
 
 				} else {
-					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-					t2->data.p = arch_create_jit_trampoline (cm);
+					if (array_address) {
+						t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+						t2->data.p = ves_array_element_address;
+					} else {
+						t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+						t2->data.p = arch_create_jit_trampoline (cm);
+					}
 				}
 
 				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
