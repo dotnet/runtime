@@ -250,6 +250,9 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (!method->token)
 		return NULL;
 
+	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
+		return NULL;
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
