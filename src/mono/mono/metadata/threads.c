@@ -19,6 +19,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/monitor.h>
 #include <mono/io-layer/io-layer.h>
 
 #include <mono/os/gc_wrapper.h>
@@ -120,10 +121,14 @@ static void handle_remove(guint32 tid)
 	 */
 }
 
-static void thread_cleanup (guint32 tid)
+static void thread_cleanup (MonoThread *thread)
 {
-	mono_profiler_thread_end (tid);
-	handle_remove (tid);
+	mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
+	thread->state |= ThreadState_Stopped;
+	mono_monitor_exit ((MonoObject *)thread);
+	
+	mono_profiler_thread_end (thread->tid);
+	handle_remove (thread->tid);
 }
 
 static guint32 start_wrapper(void *data)
@@ -189,7 +194,7 @@ static guint32 start_wrapper(void *data)
 		  GetCurrentThreadId ());
 #endif
 	
-	thread_cleanup (tid);
+	thread_cleanup (thread);
 	
 	return(0);
 }
@@ -924,7 +929,7 @@ static void wait_for_tids (struct wait_data *wait)
 			g_message (G_GNUC_PRETTY_FUNCTION
 				   ": cleaning up after thread %d", tid);
 #endif
-			thread_cleanup (tid);
+			thread_cleanup (wait->threads[i]);
 		}
 	}
 }
