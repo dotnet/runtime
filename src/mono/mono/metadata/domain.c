@@ -265,13 +265,16 @@ mono_init (const char *filename)
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO:
 			g_print ("The assembly mscorlib.dll was not found or could not be loaded.\n");
-			g_print ("It should have been installed in the `%s' directory.\n", MONO_ASSEMBLIES);
+			g_print ("It should have been installed in the `%s' directory.\n",
+				 mono_assembly_getrootdir ());
 			break;
 		case MONO_IMAGE_IMAGE_INVALID:
-			g_print ("The file %s/mscorlib.dll is an invalid CIL image\n", MONO_ASSEMBLIES);
+			g_print ("The file %s/mscorlib.dll is an invalid CIL image\n",
+				 mono_assembly_getrootdir ());
 			break;
 		case MONO_IMAGE_MISSING_ASSEMBLYREF:
-			g_print ("Minning assembly reference in %s/mscorlib.dll\n", MONO_ASSEMBLIES);
+			g_print ("Missing assembly reference in %s/mscorlib.dll\n",
+				 mono_assembly_getrootdir ());
 			break;
 		case MONO_IMAGE_OK:
 			/* to suppress compiler warning */

@@ -12,7 +12,8 @@ MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname,
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status);
 MonoAssembly* mono_assembly_load_from  (MonoImage *image, const char *fname,
-										MonoImageOpenStatus *status);
+					MonoImageOpenStatus *status);
+
 MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status);
 
 MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
@@ -20,6 +21,7 @@ void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStat
 MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, guint32 idx);
 void          mono_assembly_close      (MonoAssembly *assembly);
 void          mono_assembly_setrootdir (const char *root_dir);
+G_CONST_RETURN gchar *mono_assembly_getrootdir (void);
 void	      mono_assembly_foreach    (GFunc func, gpointer user_data);
 void          mono_assembly_set_main   (MonoAssembly *assembly);
 MonoAssembly *mono_assembly_get_main   (void);

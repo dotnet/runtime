@@ -31,6 +31,10 @@ else
 bundle_srcs =
 endif
 
+if PLATFORM_WIN32
+libmonoruntime_la_LIBADD = ../os/libmonoos.la
+endif
+
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
 	object.c	\

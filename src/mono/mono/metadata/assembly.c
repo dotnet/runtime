@@ -28,6 +28,9 @@
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
+#ifdef PLATFORM_WIN32
+#include <mono/os/util.h>
+#endif
 
 /* the default search path is just MONO_ASSEMBLIES */
 static const char*
@@ -51,22 +54,6 @@ static CRITICAL_SECTION assemblies_mutex;
 static GHashTable *assemblies_loading;
 
 static gboolean allow_user_gac = FALSE;
-
-#ifdef PLATFORM_WIN32
-
-static void
-init_default_path (void)
-{
-	int i;
-
-	default_path [0] = g_strdup (MONO_ASSEMBLIES);
-	for (i = strlen (MONO_ASSEMBLIES) - 1; i >= 0; i--) {
-		if (default_path [0][i] == '/')
-			((char*) default_path [0])[i] = '\\';
-	}
-}
-#endif
-
 
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
@@ -92,10 +79,20 @@ check_env (void) {
 	path = getenv ("MONO_PATH");
 	if (!path)
 		return;
+
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
 	assemblies_path = splitted;
+	if (g_getenv ("MONO_DEBUG") == NULL)
+		return;
+
+	while (*splitted) {
+		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
+			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *splitted);
+
+		splitted++;
+	}
 }
 
 static gboolean
@@ -199,6 +196,12 @@ mono_assembly_setrootdir (const char *root_dir)
 	default_path [0] = g_strdup (root_dir);
 }
 
+G_CONST_RETURN gchar *
+mono_assembly_getrootdir (void)
+{
+	return default_path [0];
+}
+
 /**
  * mono_assemblies_init:
  *
@@ -208,7 +211,7 @@ void
 mono_assemblies_init (void)
 {
 #ifdef PLATFORM_WIN32
-	init_default_path ();
+	mono_set_rootdir ();
 #endif
 
 	check_env ();
@@ -783,7 +786,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 
 	fullname = g_strdup_printf ("%s.dll", name);
 
-	gacpath = g_build_path (G_DIR_SEPARATOR_S, MONO_ASSEMBLIES, "mono", "gac", name, NULL);
+	gacpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac", name, NULL);
 	res = probe_for_partial_name (gacpath, fullname, status);
 	g_free (gacpath);
 
@@ -829,7 +832,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 			aname->culture == NULL ? "" : aname->culture,
 			aname->public_tok_value);
 	
-	fullpath = g_build_path (G_DIR_SEPARATOR_S, MONO_ASSEMBLIES, "mono", "gac",
+	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac",
 			name, version, filename, NULL);
 	result = mono_assembly_open (fullpath, status);
 

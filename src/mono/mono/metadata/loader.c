@@ -636,7 +636,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	}
 
 	if (!gmodule) {
-		if (getenv ("MONO_DEBUG")) {
+		if (g_getenv ("MONO_DEBUG")) {
 			gchar *error = g_strdup (g_module_error ());
 			g_message ("Error loading '%s': %s\n", orig_scope, error);
 			g_free (error);

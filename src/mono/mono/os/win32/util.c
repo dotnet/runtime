@@ -38,10 +38,12 @@ DWORD ceGetModuleFileNameA(HMODULE hModule, char* lpFilename, DWORD nSize)
 void
 mono_set_rootdir (void)
 {
-	char moddir[MAXPATHLEN], *bindir, *installdir, *root;
+	gunichar2 moddir [MAXPATHLEN];
+	gchar *bindir, *installdir, *root, *utf8name;
 
 	GetModuleFileName (NULL, moddir, sizeof(moddir));
-	bindir = g_path_get_dirname (moddir);
+	utf8name = g_utf16_to_utf8 (moddir, -1, NULL, NULL, NULL);
+	bindir = g_path_get_dirname (utf8name);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
@@ -49,6 +51,7 @@ mono_set_rootdir (void)
 	g_free (root);
 	g_free (installdir);
 	g_free (bindir);
+	g_free (utf8name);
 }
 
  
