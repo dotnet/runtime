@@ -113,6 +113,25 @@ typedef enum {
 } S390FloatRegister;
 
 typedef enum {
+	s390_a0 = 0,
+	s390_a1,
+	s390_a2,
+	s390_a3,
+	s390_a4,
+	s390_a5,
+	s390_a6,
+	s390_a7,
+	s390_a8,
+	s390_a9,
+	s390_a10,
+	s390_a11,
+	s390_a12,
+	s390_a13,
+	s390_a14,
+	s390_a15,
+} S390AccRegister;
+
+typedef enum {
 	s390_fpc = 256,
 } S390SpecialRegister;
 
@@ -215,7 +234,9 @@ typedef enum {
 #define s390_mvc(c, l, b1, d1, b2, d2)	do {s390_emit32 (c, (210 << 24 | ((((l)-1)  << 16) & 0x00ff0000) | \
 							(b1) << 12 | ((d1) & 0xfff))); 		  \
 					    s390_emit16 (c, ((b2) << 12 | ((d2) & 0xfff)));} while (0)
-#define s390_mvcl(c, r1, r2)		s390_emit16 (c, (14 << 8 | (r1) << 4 | (r2)))
+#define s390_mvcle(c, r1, r3, d2, b2)	s390_emit32 (c, (168 << 24 | (r1) << 20 |	\
+						     (r3) << 16 | (b2) << 12 | 		\
+						     ((d2) & 0xfff)))
 #define s390_break(c)			s390_emit16 (c, 0)
 #define s390_nill(c, r1, v)		s390_emit32 (c, (165 << 24 | (r1) << 20 | 7 << 16 | ((v) & 0xffff)))
 #define s390_nilh(c, r1, v)		s390_emit32 (c, (165 << 24 | (r1) << 20 | 6 << 16 | ((v) & 0xffff)))
@@ -224,6 +245,7 @@ typedef enum {
 #define s390_clr(c, r1, r2)		s390_emit16 (c, (21 << 8 | (r1) << 4 | (r2)))
 #define s390_c(c, r, x, b, d)		s390_emit32 (c, (89 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
 #define s390_cl(c, r, x, b, d)		s390_emit32 (c, (85 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
+#define s390_chi(c, r, i)		s390_emit32 (c, (167 << 24 | (r) << 20 | 15 << 16 | ((i) & 0xffff)))
 #define s390_j(c,d)			s390_brc(c, S390_CC_UN, d)
 #define s390_je(c, d)			s390_brc(c, S390_CC_EQ, d)
 #define s390_jeo(c, d)			s390_brc(c, S390_CC_ZR|S390_CC_OV, d)
@@ -278,7 +300,11 @@ typedef enum {
 #define s390_ldebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 4 << 16 | ((r1) << 4) | (r2)))
 #define s390_lnebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 1 << 16 | ((r1) << 4) | (r2)))
 #define s390_ledbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 68 << 16 | ((r1) << 4) | (r2)))
-#define s390_cfdbr(c, r1, m, f2)	s390_emit32 (c, (179 << 24 | 153 << 16 | (m) << 8 | (r1) << 4 | (f2)))
+#define s390_ldeb(c, r, x, b, d)	do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
+					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
+					    s390_emit16 (c, (4)); 			\
+					} while (0)
+#define s390_cfdbr(c, r1, m, f2)	s390_emit32 (c, (179 << 24 | 153 << 16 | (m) << 12 | (r1) << 4 | (f2)))
 #define s390_cdfbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 149 << 16 | (r1) << 4 | (r2)))
 #define s390_cefbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 148 << 16 | (r1) << 4 | (r2)))
 #define s390_cdbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 25 << 16 | (r1) << 4 | (r2)))
