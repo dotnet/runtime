@@ -181,6 +181,11 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	compiled method */
 	
 	start = o;
+#if 1
+	/* FIXME: make the patching thread safe */
+	ppc_ba (o, 0);
+	ppc_patch (o - 4, addr);
+#else
 	ppc_stwu (o, ppc_r1, -16, ppc_r1);
 	ppc_mflr (o, ppc_r0);
 	ppc_stw  (o, ppc_r31, 12, ppc_r1);
@@ -198,7 +203,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	ppc_lwz  (o, ppc_r31, -4, ppc_r11);
 	ppc_mr   (o, ppc_r1, ppc_r11);
 	ppc_blr  (o);
-	
+#endif	
 	mono_arch_flush_icache (start, o - start);
 	g_assert(o - start < METHOD_TRAMPOLINE_SIZE);
 	
@@ -430,7 +435,16 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Non-standard function epilogue. Instead of doing a proper
 		return, we just call the compiled code, so
 		that, when it finishes, the method returns here. */
-		
+	
+#if 1
+		/* Restore stack pointer, r31, LR and jump to the code */
+		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
+		ppc_lwz  (buf, ppc_r31, -4, ppc_r1);
+		ppc_lwz  (buf, ppc_r11, 4, ppc_r1);
+		ppc_mtlr (buf, ppc_r11);
+		ppc_mtctr (buf, ppc_r0);
+		ppc_bcctr (buf, 20, 0);
+#else
 		ppc_mtlr (buf, ppc_r0);
 		ppc_blrl (buf);
 		
@@ -441,6 +455,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_lwz  (buf, ppc_r0, 4, ppc_r1);
 		ppc_mtlr (buf, ppc_r0);
 		ppc_blr  (buf);	
+#endif
 		
 		/* Flush instruction cache, since we've generated code */
 		mono_arch_flush_icache (code, buf - code);
@@ -504,7 +519,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
 	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
-	
+
 	/* Save r11. There's nothing magic in the '44', its just an arbitrary
 	position - see above */
 	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);

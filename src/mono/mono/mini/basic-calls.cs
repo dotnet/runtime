@@ -94,5 +94,13 @@ class Tests {
 	static int test_5_pass_longs () {
 		return pass_many_types (1, 2, -5, 7);
 	}
+
+	static int overflow_registers (int a, int b, int c, int d, int e, int f, int g, int h, int i, int j) {
+		return a+b+c+d+e+f+g+h+i+j;
+	}
+
+	static int test_55_pass_even_more () {
+		return overflow_registers (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+	}
 }
 
