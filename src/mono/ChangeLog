@@ -1,3 +1,8 @@
+2004-04-05  Jackson Harper  <jackson@ximian.com>
+
+	* man/ilasm.1: Show /output instead of /out as the switch for
+	specifying output file names.
+
 2004-04-05  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Check for pthread_getattr_np and pthread_attr_get_np.
