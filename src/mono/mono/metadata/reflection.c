@@ -207,11 +207,15 @@ mono_blob_entry_hash (const char* str)
 	guint len, h;
 	const char *end;
 	len = mono_metadata_decode_blob_size (str, &str);
-	end = str + len;
-	h = *str;
-	for (str += 1; str < end; str++)
-		h = (h << 5) - h + *str;
-	return h;
+	if (len > 0) {
+		end = str + len;
+		h = *str;
+		for (str += 1; str < end; str++)
+			h = (h << 5) - h + *str;
+		return h;
+	}
+	else
+		return 0;
 }
 
 static gboolean
@@ -480,7 +484,7 @@ method_encode_clauses (MonoDynamicAssembly *assembly,
 	clauses = g_new0 (MonoExceptionClause, num_clauses);
 
 	clause_index = 0;
-	for (i = 0; i < mono_array_length (ilgen->ex_handlers); ++i) {
+	for (i = mono_array_length (ilgen->ex_handlers) - 1; i >= 0; --i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		finally_start = ex_info->start + ex_info->len;
 		g_assert (ex_info->handlers);
@@ -4878,6 +4882,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		klass->name = old_n;
 	}
 	mono_class_setup_mono_type (klass);
+
+	mono_class_setup_supertypes (klass);
 
 	/*
 	 * FIXME: handle interfaces.

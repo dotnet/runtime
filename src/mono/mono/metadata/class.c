@@ -492,11 +492,36 @@ mono_get_unique_iid (MonoClass *class)
 	return iid - 1;
 }
 
+static void
+collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray *res)
+{
+	int i;
+	MonoClass *ic;
+	
+	for (i = 0; i < klass->interface_count; i++) {
+		ic = klass->interfaces [i];
+
+		g_ptr_array_add (res, ic);
+
+		collect_implemented_interfaces_aux (ic, res);
+	}
+}
+
+static GPtrArray*
+collect_implemented_interfaces (MonoClass *klass)
+{
+	GPtrArray *res = g_ptr_array_new ();
+
+	collect_implemented_interfaces_aux (klass, res);
+	return res;
+}
+
 static int
 setup_interface_offsets (MonoClass *class, int cur_slot)
 {
 	MonoClass *k, *ic;
 	int i, max_iid;
+	GPtrArray *ifaces;
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
@@ -523,15 +548,19 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	for (i = 0; i <= max_iid; i++)
 		class->interface_offsets [i] = -1;
 
-	for (i = 0; i < class->interface_count; i++) {
-		ic = class->interfaces [i];
+	ifaces = collect_implemented_interfaces (class);
+	for (i = 0; i < ifaces->len; ++i) {
+		ic = g_ptr_array_index (ifaces, i);
 		class->interface_offsets [ic->interface_id] = cur_slot;
 		cur_slot += ic->method.count;
 	}
+	g_ptr_array_free (ifaces, FALSE);
 
 	for (k = class->parent; k ; k = k->parent) {
-		for (i = 0; i < k->interface_count; i++) {
-			ic = k->interfaces [i]; 
+		ifaces = collect_implemented_interfaces (k);
+		for (i = 0; i < ifaces->len; ++i) {
+			ic = g_ptr_array_index (ifaces, i);
+
 			if (class->interface_offsets [ic->interface_id] == -1) {
 				int io = k->interface_offsets [ic->interface_id];
 
@@ -540,6 +569,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 				class->interface_offsets [ic->interface_id] = io;
 			}
 		}
+		g_ptr_array_free (ifaces, FALSE);
 	}
 	return cur_slot;
 }
@@ -549,7 +579,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 {
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
-	int i, ms, max_vtsize = 0, max_iid, cur_slot = 0;
+	int i, max_vtsize = 0, max_iid, cur_slot = 0;
+	GPtrArray *ifaces;
 
 	/* setup_vtable() must be called only once on the type */
 	if (class->interface_offsets) {
@@ -557,8 +588,12 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		return;
 	}
 
-	for (i = 0; i < class->interface_count; i++) 
-		max_vtsize += class->interfaces [i]->method.count;
+	ifaces = collect_implemented_interfaces (class);
+	for (i = 0; i < ifaces->len; i++) {
+		MonoClass *ic = g_ptr_array_index (ifaces, i);
+		max_vtsize += ic->method.count;
+	}
+	g_ptr_array_free (ifaces, FALSE);
 	
 	if (class->parent) {
 		max_vtsize += class->parent->vtable_size;
@@ -590,13 +625,13 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 
 	for (k = class; k ; k = k->parent) {
-		class->idepth++;
-		for (i = 0; i < k->interface_count; i++) {
+		ifaces = collect_implemented_interfaces (k);
+		for (i = 0; i < ifaces->len; i++) {
 			int j, l, io;
 
-			ic = k->interfaces [i];
+			ic = g_ptr_array_index (ifaces, i);
 			io = k->interface_offsets [ic->interface_id];
-			
+
 			g_assert (io >= 0);
 			g_assert (io <= max_vtsize);
 
@@ -728,6 +763,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 				}
 			}
 		}
+		g_ptr_array_free (ifaces, FALSE);
 	} 
 
 	for (i = 0; i < class->method.count; ++i) {
@@ -778,16 +814,6 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
 	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
 
-	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
-	class->supertypes = g_new0 (MonoClass *, ms);
-
-	if (class->parent) {
-		for (i = class->idepth, k = class; k ; k = k->parent)
-			class->supertypes [--i] = k;
-	} else {
-		class->supertypes [0] = class;
-	}
-	
 	if (mono_print_vtable) {
 		int icount = 0;
 
@@ -831,7 +857,6 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			}
 		}
 	}
-
 }
 
 /**
@@ -896,6 +921,8 @@ mono_class_init (MonoClass *class)
 
 		i = mono_metadata_nesting_typedef (class->image, class->type_token, i + 1);
 	}
+
+	mono_class_setup_supertypes (class);
 
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		for (i = 0; i < class->method.count; ++i)
@@ -1159,6 +1186,28 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 	}
 
 }
+
+void
+mono_class_setup_supertypes (MonoClass *class)
+{
+	MonoClass *k;
+	int ms, i;
+
+	class->idepth = 0;
+	for (k = class; k ; k = k->parent) {
+		class->idepth++;
+	}
+
+	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
+	class->supertypes = g_new0 (MonoClass *, ms);
+
+	if (class->parent) {
+		for (i = class->idepth, k = class; k ; k = k->parent)
+			class->supertypes [--i] = k;
+	} else {
+		class->supertypes [0] = class;
+	}
+}	
 
 /**
  * @image: context where the image is created
@@ -1492,7 +1541,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 		class->cast_class = eclass;
 
 	class->element_class = eclass;
-	
+
 	if (rank > 1) {
 		MonoArrayType *at = g_new0 (MonoArrayType, 1);
 		class->byval_arg.type = MONO_TYPE_ARRAY;

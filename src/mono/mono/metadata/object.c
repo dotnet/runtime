@@ -301,13 +301,10 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	        sizeof (gpointer) * (class->max_interface_id + 1));
 
 	/* initialize interface offsets */
-	for (k = class; k ; k = k->parent) {
-		for (i = 0; i < k->interface_count; i++) {
-			int slot;
-			MonoClass *ic = k->interfaces [i];
-			slot = class->interface_offsets [ic->interface_id];
-			vt->interface_offsets [ic->interface_id] = &vt->vtable [slot];
-		}
+	for (i = 0; i <= class->max_interface_id; ++i) {
+		int slot = class->interface_offsets [i];
+		if (slot >= 0)
+			vt->interface_offsets [i] = &(vt->vtable [slot]);
 	}
 
 	/* 
