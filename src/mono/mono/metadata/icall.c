@@ -4588,6 +4588,7 @@ static gconstpointer icall_map [] = {
 	"System.Environment::get_Platform", ves_icall_System_Environment_get_Platform,
 	"System.Environment::get_ExitCode", mono_environment_exitcode_get,
 	"System.Environment::set_ExitCode", mono_environment_exitcode_set,
+	"System.Environment::GetMachineConfigPath",	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path,
 
 	/*
 	 * System.Runtime.Remoting
