@@ -19,6 +19,11 @@
 	are planning on using the ORP GC engine and deploy it by
 	middle January.  
 
+* COM and XPCOM
+
+	We plan on adding support for XPCOM on Unix and COM on Microsoft
+	Windows later in our development process.
+
 ** Executing MSIL/CIL images
 
 	The code will load an executable and map the references to

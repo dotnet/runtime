@@ -653,3 +653,8 @@ A: The key difference between CORBA (and COM) and the CLI is that the
    space.  This means much less copying and no need for reference
    counting.
 
+Q: Will you support COM?
+
+A: The runtime will support XPCOM on Unix systems and COM on Windows.
+   Most of the code for dynamic trampolines exists already.
+

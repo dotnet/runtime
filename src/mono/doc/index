@@ -25,6 +25,13 @@
 
 ** Jan 4, 2002
 
+	Dietmar landed the Unicode support patch.  Class libraries and
+	runtimes are now fully Unicode aware.  The details are <a href=
+	"http://lists.ximian.com/archives/public/mono-list/2002-January/002409.html">
+	here</a>
+
+** Jan 4, 2002
+
 	Mike Kestner posted an update on Gtk# <a
 	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2002-January/000021.html"><i>New
 	year, new direction</i></a>.
