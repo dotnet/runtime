@@ -97,7 +97,7 @@ public class Test {
 	
 
 	public static int Main () {
-	       	       
+
 		if (atest () != 0)
 			return 1;
 		

@@ -37,7 +37,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 	if (method->signature->hasthis) {
 		o = *((MonoObject **)ebp);
 		class = o->klass;
-		printf ("%p[%s.%s], ", o, class->name_space, class->name);
+		printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
 		ebp += sizeof (gpointer);
 	}
 
@@ -431,8 +431,11 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		break;
 	}
 
+	//printf ("RALLOC START %d %p %d\n",  tree->op, rs->free_mask, goal);
+
 	for (i = 0; nts [i]; i++)
-		tree_allocate_regs (kids [i], nts [i], rs);
+		if (kids [i] != tree) /* don't allocate regs for chain rules */
+			tree_allocate_regs (kids [i], nts [i], rs);
 
 	for (i = 0; nts [i]; i++) {
 		if (kids [i] != tree) { /* we do not free register for chain rules */
@@ -448,7 +451,6 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			g_warning ("register allocation failed %d 0x%08x 0x%08x\n",  tree->reg1, rs->free_mask, tree->exclude_mask);
 			g_assert_not_reached ();
 		}
-
 		break;
 
 	case MB_NTERM_lreg:
@@ -464,15 +466,17 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	case MB_NTERM_freg:
 		/* fixme: allocate floating point registers */
 		break;
-
-		/*
+      
 	case MB_NTERM_addr:
 		if (tree->op == MB_TERM_ADD) {
 			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
 			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
 		}
+		if (tree->op == MB_TERM_CALL_I4) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+		}
 		break;
-		*/
+		
 	case MB_NTERM_base:
 		if (tree->op == MB_TERM_ADD) {
 			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
@@ -490,6 +494,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		/* do nothing */
 	}
 
+	//printf ("RALLOC END %d %p\n",  tree->op, rs->free_mask);
 	tree->emit = mono_burg_func [ern];
 }
 
@@ -507,6 +512,7 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 			//printf ("AREGSTART %d:%d %p\n", i, j, cfg->rs->free_mask);
 			tree_allocate_regs (t1, 1, cfg->rs);
 			//printf ("AREGENDT %d:%d %p\n", i, j, cfg->rs->free_mask);
+			g_assert (cfg->rs->free_mask == 0xffffffff);
 		}
 	}
 }
@@ -610,7 +616,6 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
 	//g_assert (!method->addr);
-
 	printf ("Start JIT compilation %p %p\n", method, method->addr);
 	printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
 		method->klass->name, method->name);

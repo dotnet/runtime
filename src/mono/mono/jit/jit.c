@@ -10,6 +10,7 @@
 #include <config.h>
 #include <glib.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include <mono/metadata/assembly.h>
@@ -91,8 +92,13 @@ case CEE_##name: {                                                            \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
-	t1->data.i = s;                                                       \
+        t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);                      \
+        t1->data.i = s;                                                       \
+        t1 = mono_ctree_new (mp, MB_TERM_MUL, sp [1], t1);                    \
+        t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);                      \
+        t2->data.i = G_STRUCT_OFFSET (MonoArray, vector);                     \
+        t2 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t2);                    \
+	t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);                        \
 	t1 = mono_ctree_new (mp, op, t1, NULL);                               \
 	PUSH_TREE (t1, svt);                                                  \
 	break;                                                                \
@@ -106,13 +112,31 @@ case CEE_##name: {                                                            \
 	ADD_TREE (t1);                                                        \
 	break;                                                                \
 }
-	
+
+/*	
 #define MAKE_STELEM(name, op, s)                                              \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 3;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
 	t1->data.i = s;                                                       \
+	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
+	ADD_TREE (t1);                                                        \
+	break;                                                                \
+}
+*/
+
+#define MAKE_STELEM(name, op, s)                                              \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 3;                                                              \
+        t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);                      \
+        t1->data.i = s;                                                       \
+        t1 = mono_ctree_new (mp, MB_TERM_MUL, sp [1], t1);                    \
+        t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);                      \
+        t2->data.i = G_STRUCT_OFFSET (MonoArray, vector);                     \
+        t2 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t2);                    \
+	t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);                        \
 	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
 	ADD_TREE (t1);                                                        \
 	break;                                                                \
@@ -141,6 +165,24 @@ mono_alloc_static0 (int size)
 {
 	return g_malloc0 (size);
 } 
+
+static int
+map_store_svt_type (int svt)
+{
+	switch (svt) {
+	case VAL_I32:
+	case VAL_POINTER:
+		return MB_TERM_STIND_I4;
+	case VAL_I64:
+		return MB_TERM_STIND_I8;
+	case VAL_DOUBLE:
+		return MB_TERM_STIND_R8;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return 0;
+}
 
 /**
  * map_stind_type:
@@ -172,6 +214,7 @@ map_stind_type (MonoType *type)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
 		return MB_TERM_STIND_I4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
@@ -244,6 +287,7 @@ map_ldind_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
 		*svt = VAL_POINTER;
 		return MB_TERM_LDIND_U4;
 	case MONO_TYPE_I8:
@@ -525,6 +569,7 @@ ctree_dup_address (MonoMemPool *mp, MBTree *s)
 		t->svt = VAL_POINTER;
 		return t;
 	default:
+		g_warning ("unknown tree opcode %d", s->op);
 		g_assert_not_reached ();
 	}
 
@@ -542,38 +587,38 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 	case MB_TERM_STIND_I1:
 	case MB_TERM_LDIND_I1:
 		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
+		t->svt = VAL_I32;
 		break;
 	case MB_TERM_STIND_I2:
 	case MB_TERM_LDIND_I2:
 		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
+		t->svt = VAL_I32;
 		break;
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
 		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
+		t->svt = VAL_I32;
 		break;
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
 		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I64;
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
+		t->svt = VAL_I64;
 		break;
 	case MB_TERM_STIND_R4:
 	case MB_TERM_LDIND_R4:
 		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_DOUBLE;
 		t = mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
+		t->svt = VAL_DOUBLE;
 		break;
 	case MB_TERM_STIND_R8:
 	case MB_TERM_LDIND_R8:
 		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_DOUBLE;
 		t = mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
+		t->svt = VAL_DOUBLE;
 		break;
 	default: {
 			g_assert (s->svt != VAL_UNKNOWN);
@@ -589,20 +634,8 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 			t = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t->data.i = vnum;
 		       
-			switch (s->svt) {
-			case VAL_I32:
-			case VAL_POINTER:
-				t = mono_ctree_new (mp, MB_TERM_STIND_I4, t, s);
-				break;
-			case VAL_I64:
-				t = mono_ctree_new (mp, MB_TERM_STIND_I8, t, s);
-				break;
-			case VAL_DOUBLE:
-				t = mono_ctree_new (mp, MB_TERM_STIND_R8, t, s);
-				break;
-			default:
-				g_assert_not_reached ();
-			}
+			t = mono_ctree_new (mp, map_store_svt_type (s->svt), t, s);
+			t->svt = s->svt;
 		}
 	}
 
@@ -1055,6 +1088,70 @@ mono_copy_stack (MBTree **sp, int depth, MonoMemPool *mp)
 	return NULL;
 }
 
+/**
+ * ves_array_element_address:
+ * @this: a pointer to the array object
+ *
+ * Returns: the address of an array element.
+ */
+static gpointer 
+ves_array_element_address (MonoArray *this, ...)
+{
+	MonoClass *class;
+	va_list ap;
+	int i, ind, esize;
+	gpointer ea;
+
+	g_assert (this != NULL);
+
+	va_start(ap, this);
+
+	class = this->obj.klass;
+
+	ind = va_arg(ap, int) - this->bounds [0].lower_bound;
+	for (i = 1; i < class->rank; i++) {
+		ind = ind*this->bounds [i].length + va_arg(ap, int) -
+			this->bounds [i].lower_bound;;
+	}
+
+	esize = mono_array_element_size (class);
+	ea = (gpointer*)((char*)this->vector + (ind * esize));
+
+	va_end(ap);
+
+	return ea;
+}
+
+static MonoArray *
+mono_array_new_va (MonoMethod *cm, ...)
+{
+	va_list ap;
+	guint32 *lengths;
+	guint32 *lower_bounds;
+	int pcount = cm->signature->param_count;
+	int rank = cm->klass->rank;
+	int i, d;
+
+	va_start (ap, cm);
+
+	lengths = alloca (sizeof (guint32) * pcount);
+	for (i = 0; i < pcount; ++i)
+		lengths [i] = d = va_arg(ap, int);
+
+	if (rank == pcount) {
+		/* Only lengths provided. */
+		lower_bounds = NULL;
+	} else {
+		g_assert (pcount == (rank * 2));
+		/* lower bounds are first. */
+		lower_bounds = lengths;
+		lengths += rank;
+	}
+	va_end(ap);
+
+	return mono_array_new_full (cm->klass, lengths, lower_bounds);
+}
+
 #define ADD_TREE(t)     do { g_ptr_array_add (forest, (t)); } while (0)
 #define PUSH_TREE(t,k)  do { *sp = t; sp++; t->svt = k; } while (0)
 
@@ -1089,7 +1186,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	MonoMethodSignature *signature;
 	MonoImage *image;
 	MonoValueType svt;
-	MBTree **sp, **stack, *t1, *t2;
+	MBTree **sp, **stack, **arg_sp, *t1, *t2;
 	register const unsigned char *ip, *end;
 	GPtrArray *forest;
 	int i, j, depth, repeat_count;
@@ -1498,16 +1595,104 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			break;
 		}
-		case CEE_NEWOBJ:
+		case CEE_NEWOBJ: {
+			MonoMethodSignature *csig;
+			MonoMethod *cm;
+			MBTree *this = NULL;
+			guint32 token;
+			int i, align, size, args_size = 0;
+			int newarr = FALSE;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+
+			cm = mono_get_method (image, token, NULL);
+			g_assert (cm);
+			g_assert (!strcmp (cm->name, ".ctor"));
+			
+			csig = cm->signature;
+			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
+			g_assert (csig->hasthis);
+			
+			arg_sp = sp -= csig->param_count;
+
+			if (cm->klass->parent == mono_defaults.array_class) {
+
+				newarr = TRUE;
+				this = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				this->data.p = cm;
+
+			} else {
+				
+				this = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
+				this->data.p = cm->klass;
+				this->svt = VAL_POINTER;
+
+				t1 = mono_store_tree (cfg, -1, this, &this);
+				ADD_TREE (t1);
+
+			}
+
+			for (i = csig->param_count - 1; i >= 0; i--) {
+				t1 = mono_ctree_new (mp, MB_TERM_ARG, arg_sp [i], NULL);	
+				ADD_TREE (t1);
+				size = mono_type_size (cm->signature->params [i], &align);
+				args_size += (size + 3) & ~3;
+			}
+
+			t1 = mono_ctree_new (mp, MB_TERM_ARG, this, NULL);	
+			ADD_TREE (t1);
+			args_size += sizeof (gpointer);
+
+			if (newarr) {
+
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t2->data.p = mono_array_new_va;
+
+				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t2, NULL);
+				t1->data.i = args_size;
+				t1->svt = VAL_I32;
+
+			} else {
+				
+				if (!cm->addr)
+					cm->addr = arch_create_simple_jit_trampoline (cm);
+
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
+				t2 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t2, NULL);
+			}
+
+			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
+			t1->data.i = args_size;
+			t1->svt = svt;
+
+			if (newarr) {
+				
+				t1 = mono_store_tree (cfg, -1, t1, &t2);
+				ADD_TREE (t1);
+				PUSH_TREE (t2, t2->svt);
+
+			} else {
+
+				ADD_TREE (t1);			
+				t1 = ctree_create_dup (mp, this);		
+				PUSH_TREE (t1, t1->svt);
+			}
+			break;
+		}
 		case CEE_CALL: 
 		case CEE_CALLVIRT: {
 			MonoMethodSignature *csig;
 			MonoMethod *cm;
-			MBTree *nobj, *this = NULL;
+			MBTree *this = NULL;
 			guint32 token;
-			int i, nargs, align, size, args_size = 0;
+			int i, align, size, args_size = 0;
 			int virtual = *ip == CEE_CALLVIRT;
-			int newobj = *ip == CEE_NEWOBJ;
+			gboolean array_set = FALSE;
+			gboolean array_get = FALSE;
+			int nargs;
 
 			++ip;
 			token = read32 (ip);
@@ -1520,109 +1705,112 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
 
-			// fixme: virtual does not work
-			//virtual = 0;
-
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
+			g_assert (!virtual || csig->hasthis);
 
-			if (newobj) {
-				int n;
-
-				for (i = 0; i < csig->param_count; i++)
-					sp [-i] = sp [-i - 1];
-				
-				n = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), 
-						       MONO_TEMPVAR, VAL_UNKNOWN);
-				
-				nobj = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
-				nobj->data.p = cm->klass;
-				nobj->svt = VAL_POINTER;
-
-				nobj = ctree_create_store (mp, MB_TERM_ADDR_L, nobj, 
-							   &cm->klass->this_arg, (gpointer)n);
-				ADD_TREE (nobj);
-				sp [-i] =  ctree_create_dup (mp, nobj);
-				sp++;
-			} 
-			
 			nargs = csig->param_count;
-			if (csig->hasthis || virtual || newobj) {
-				nargs++;
-				sp = sp - nargs;
-				this =  *sp;
-			} else {
-				sp = sp - nargs;
+			arg_sp = sp -= nargs;
+			
+			if ((cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+			    (cm->klass->parent == mono_defaults.array_class)) {
+				if (!strcmp (cm->name, "Set")) { 
+					array_set = TRUE;
+					nargs--;
+				} else if (!strcmp (cm->name, "Get")) 
+					array_get = TRUE;
 			}
 
-			//printf ("MINFO %s.%s::%s %d %d\n", cm->klass->name_space, 
-			//cm->klass->name, cm->name, cm->flags & METHOD_ATTRIBUTE_VIRTUAL, virtual);
- 
-			if (virtual) {
-				t2 = ctree_create_dup (mp, this);
-			       
-				if (!cm->klass->metadata_inited)
-					mono_class_metadata_init (cm->klass);
-
-				if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-					t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t2, NULL);
-				else 
-					t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t2, NULL);
-	 
-				t2->data.m = cm;
-			} else {
-				if (!cm->addr)
-					cm->addr = arch_create_simple_jit_trampoline (cm);
-
-				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-
+			for (i = nargs - 1; i >= 0; i--) {
+				t1 = mono_ctree_new (mp, MB_TERM_ARG, arg_sp [i], NULL);	
+				ADD_TREE (t1);
+				size = mono_type_size (cm->signature->params [i], &align);
+				args_size += (size + 3) & ~3;
 			}
 
-			if (nargs) {
-
-#ifdef ARCH_ARGS_RIGHT_TO_LEFT
-				for (i = nargs - 1; i >= 0; i--) {
-#else
-				for (i = 0; i < nargs; i++) {
-#endif
-					t1 = mono_ctree_new (mp, MB_TERM_ARG, sp [i], NULL);	
-					ADD_TREE (t1);
-
-					if (!i && this)
-						size = mono_type_size (&cm->klass->this_arg, &align);
-					else
-						size = mono_type_size (cm->signature->params [i - (this != NULL)], &align);
-
-					// fixme: does this really work ?
-					args_size += (size + 3) & ~3;
-				}
+			if (csig->hasthis) {
+				this = *(--sp);
+				t1 = mono_ctree_new (mp, MB_TERM_ARG, this, NULL);	
+				ADD_TREE (t1);
+				args_size += sizeof (gpointer);
 			}
 
-			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
-			t1->data.i = args_size;
-			t1->svt = svt;
-
-			if (csig->ret->type != MONO_TYPE_VOID) {
-				int n;
-
-				size = mono_type_size (csig->ret, &align);
-				n = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
+			if (array_get) {
+				int size, align, vnum;
 				
-				t2 = ctree_create_store (mp, MB_TERM_ADDR_L, t1, csig->ret, (gpointer)n);
-				ADD_TREE (t2);
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t2->data.p = ves_array_element_address;
 
-				t1 = ctree_create_dup (mp, t2);
-				PUSH_TREE (t1, svt);
+				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t2, NULL);
+				t1->data.i = args_size;
+
+				t1 = mono_ctree_new (mp, map_ldind_type (csig->ret, &svt), t1, NULL);
+				t1->svt = svt;		
+
+				mono_get_val_sizes (t1->svt, &size, &align);
+				vnum = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, svt);
+
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t2->data.i = vnum;
+				t1 = mono_ctree_new (mp, map_store_svt_type (svt), t2, t1);
+				t1->svt = svt;
+
+				ADD_TREE (t1);
+				t1 = ctree_create_dup (mp, t1);
+				PUSH_TREE (t1, t1->svt);
+
+			} else if (array_set) {
+
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t2->data.p = ves_array_element_address;
+
+				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t2, NULL);
+				t1->data.i = args_size;
+
+				t1 = mono_ctree_new (mp, map_stind_type (csig->params [nargs]), t1, arg_sp [nargs]);
+				ADD_TREE (t1);
+			
 			} else {
-				if (newobj) {
-					ADD_TREE (t1);			
-					t1 = ctree_create_dup (mp, nobj);		
-					PUSH_TREE (t1, t1->svt);
+
+				if (virtual) {
+				
+					t2 = ctree_create_dup (mp, this);
+			       
+					if (!cm->klass->metadata_inited)
+						mono_class_metadata_init (cm->klass);
+
+					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+						t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t2, NULL);
+					else 
+						t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t2, NULL);
+	 
+					t2->data.m = cm;
+
 				} else {
-					ADD_TREE (t1);
+				
+					if (!cm->addr)
+						cm->addr = arch_create_simple_jit_trampoline (cm);
+				
+					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+					t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
+					t2 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t2, NULL);
 				}
+
+				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
+				t1->data.i = args_size;
+				t1->svt = svt;
+
+				if (csig->ret->type != MONO_TYPE_VOID) {
+
+					t1 = mono_store_tree (cfg, -1, t1, &t2);
+					ADD_TREE (t1);
+					PUSH_TREE (t2, t2->svt);
+					
+				} else
+					ADD_TREE (t1);
+   
 			}
+
 			break;
 		}
 		case CEE_ISINST:
@@ -2092,7 +2280,21 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 	} while (repeat);
 
-		//printf ("FINISHED\n");
+	//printf ("FINISHED\n");
+}
+
+/* this function is never called */
+static void 
+ves_array_set (MonoArray *this, ...)
+{
+	g_assert_not_reached ();
+}
+
+/* this function is never called */
+static void 
+ves_array_get (MonoArray *this, ...)
+{
+	g_assert_not_reached ();
 }
 	
 /**
@@ -2212,6 +2414,8 @@ main (int argc, char *argv [])
 
 	mono_init ();
 	mono_init_icall ();
+	mono_add_internal_call ("__array_Set", ves_array_set);
+	mono_add_internal_call ("__array_Get", ves_array_get);
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){

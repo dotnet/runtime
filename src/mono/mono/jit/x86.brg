@@ -26,8 +26,6 @@
 #define MBCOST_DATA  MonoFlowGraph
 #define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
 
-#define ARCH_ARGS_RIGHT_TO_LEFT
-
 typedef enum {
 	AMImmediate       = 0,  // ptr
 	AMBase            = 1,  // V[REG]  
@@ -121,7 +119,7 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 %term CEQ
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_R8
 %term INTF_ADDR VFUNC_ADDR NOP BOX NEWARR NEWOBJ POP 
-%term LDLEN LDELEMA
+%term LDLEN
 
 #
 # we start at stmt
@@ -246,6 +244,29 @@ stmt: STIND_I4 (addr, reg) {
 }
 
 reg: LDIND_I4 (addr) {
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
+		break;
+
+	case AMBase:
+		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				     tree->left->data.ainfo.offset, 4);
+		break;		
+	case AMIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
+		break;		
+	case AMBaseIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				      tree->left->data.ainfo.shift, 4);
+		break;		
+	}
+}
+
+reg: LDIND_U4 (addr) {
 	switch (tree->left->data.ainfo.amode) {
 
 	case AMImmediate:
@@ -493,8 +514,23 @@ reg: SHR_UN (reg, reg) {
 }
 
 reg: BOX (reg) {
-	// fixme: implement me
-	//g_assert_not_reached ();
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_reg (s->code, tree->left->reg1); //save it to memory
+	x86_push_reg (s->code, X86_ESP); // push address to saved value
+	x86_push_imm (s->code, tree->data.p);
+	x86_call_code (s->code, mono_value_box);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
 }
 
 # array support
@@ -505,12 +541,11 @@ reg: LDLEN (reg) {
 			     G_STRUCT_OFFSET (MonoArrayBounds, length), 4);
 }
 
-reg: LDELEMA (reg, reg) {
-	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1, 
-			     G_STRUCT_OFFSET (MonoArray, vector), 4);
-	x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->data.i);
-	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
-}
+#reg: LDELEMA (reg, reg) {
+#	x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->data.i);
+#	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
+#	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, G_STRUCT_OFFSET (MonoArray, vector));
+#}
 
 reg: NEWARR (reg) {
 	if (tree->reg1 != X86_EAX)
@@ -526,7 +561,7 @@ reg: NEWARR (reg) {
 	x86_pop_reg (s->code, X86_EDX);
 	x86_pop_reg (s->code, X86_ECX);
 	if (tree->reg1 != X86_EAX) {
-		x86_mov_reg_reg (s->code, X86_EAX, tree->reg1, 4);
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
 }
@@ -544,7 +579,7 @@ reg: NEWOBJ {
 	x86_pop_reg (s->code, X86_EDX);
 	x86_pop_reg (s->code, X86_ECX);
 	if (tree->reg1 != X86_EAX) {
-		x86_mov_reg_reg (s->code, X86_EAX, tree->reg1, 4);
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
 }
@@ -828,12 +863,22 @@ stmt: ARG (CONST_I4) "MB_USE_OPT1(0)" {
 
 stmt: ARG (LDIND_OBJ (reg)) {
       // fixme:
-      //g_assert_not_reached ();
+      g_assert_not_reached ();
 }
 
-reg: CALL_I4 (ADDR_G) {
+reg: CALL_I4 (CONST_I4) {
 	
-	x86_call_mem (s->code, tree->left->data.p);
+	x86_call_code (s->code, tree->left->data.p);
+
+	if (tree->data.i)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
+	
+	g_assert (tree->reg1 == X86_EAX);
+}
+
+reg: CALL_I4 (LDIND_I4 (ADDR_G)) {
+	
+	x86_call_mem (s->code, tree->left->left->data.p);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -869,8 +914,8 @@ reg: CALL_I4 (VFUNC_ADDR (reg)) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
-stmt: CALL_I4 (ADDR_G) {
-	x86_call_mem (s->code, tree->left->data.p);
+stmt: CALL_I4 (LDIND_I4 (ADDR_G)) {
+	x86_call_mem (s->code, tree->left->left->data.p);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -895,13 +940,6 @@ stmt: CALL_I4 (VFUNC_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
 	x86_call_virtual (s->code, reg1, 
                 G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
-
-	if (tree->data.i)
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
-}
-
-stmt: CALL_I4 (ADDR_G) {
-	x86_call_mem (s->code, tree->left->data.p);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -1155,19 +1193,9 @@ lreg: REM_UN (lreg, lreg) {
 		x86_pop_reg (s->code, X86_ECX);
 }
 
-lreg: CALL_I8 (addr) {
-
-	switch (tree->left->data.ainfo.amode) {
-	case AMImmediate:
-		x86_call_mem (s->code, tree->left->data.ainfo.offset);
-		break;
-	case AMBase:
-		x86_call_membase (s->code, tree->left->data.ainfo.basereg, 
-				  tree->left->data.ainfo.offset);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
+lreg: CALL_I8 (LDIND_I4 (ADDR_G)) {
+	
+	x86_call_mem (s->code, tree->left->left->data.p);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -1416,11 +1444,26 @@ freg: CONV_R8 (reg) {
 }
 
 freg: CONST_R4 {
-	x86_fld (s->code, tree->data.p, FALSE);
+	float f = *(float *)tree->data.p;
+
+	if (f == 0.0)
+		x86_fldz (s->code);
+	else if (f == 1.0)
+		x86_fld1(s->code);
+	else
+		x86_fld (s->code, tree->data.p, FALSE);
 }
 
 freg: CONST_R8 {
-	x86_fld (s->code, tree->data.p, TRUE);
+	double d = *(double *)tree->data.p;
+	printf ("TEST %f\n", d);
+
+	if (d == 0.0)
+		x86_fldz (s->code);
+	else if (d == 1.0)
+		x86_fld1(s->code);
+	else
+		x86_fld (s->code, tree->data.p, TRUE);
 }
 
 freg: LDIND_R4 (locaddr) {
@@ -1493,7 +1536,18 @@ stmt: BNE_UN (freg, freg) {
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x4000);
 	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, TRUE);
+	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+}
+
+stmt: BLT (freg, freg) {
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	offset = 6 + s->code - s->start;
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
 }
 
 stmt: BLT_UN (freg, freg) {
@@ -1503,9 +1557,8 @@ stmt: BLT_UN (freg, freg) {
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
-	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
 	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
 }
 
 stmt: BGE_UN (freg, freg) {
@@ -1515,9 +1568,8 @@ stmt: BGE_UN (freg, freg) {
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
-	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
 	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, TRUE);
+	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
 }
 
 stmt: BGT_UN (freg, freg) {
@@ -1527,8 +1579,9 @@ stmt: BGT_UN (freg, freg) {
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
 	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
 }
 
 stmt: BLE_UN (freg, freg) {
@@ -1539,22 +1592,12 @@ stmt: BLE_UN (freg, freg) {
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, TRUE);
+	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
 }
 
-freg: CALL_R8 (addr) {
-
-	switch (tree->left->data.ainfo.amode) {
-	case AMImmediate:
-		x86_call_mem (s->code, tree->left->data.ainfo.offset);
-		break;
-	case AMBase:
-		x86_call_membase (s->code, tree->left->data.ainfo.basereg, 
-				  tree->left->data.ainfo.offset);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
+freg: CALL_R8 (LDIND_I4 (ADDR_G)) {
+	
+	x86_call_mem (s->code, tree->left->left->data.p);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
