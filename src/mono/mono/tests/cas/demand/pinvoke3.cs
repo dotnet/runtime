@@ -13,17 +13,17 @@ public class Program {
 	[DllImport ("kernel32.dll", SetLastError=true)]
 	public static extern uint GetTickCount ();
 
-	static bool RunningOnMono ()
+	static bool RunningOnWindows ()
 	{
-		bool mono = (Type.GetType ("Mono.Math.BigInteger") != null); 
-		Console.WriteLine ("Running on {0} runtime...", mono ? "Mono" : "Microsoft");
-		return mono;
+		bool win = ((int) Environment.OSVersion.Platform != 128);
+		Console.WriteLine ("Running on {0}...", Environment.OSVersion);
+		return win;
 	}
 
 	static int Test ()
 	{
 		try {
-			uint u = (RunningOnMono ()) ? getuid () : GetTickCount ();
+			uint u = (RunningOnWindows () ? GetTickCount () : getuid ());
 			Console.WriteLine ("*1* P/Invoke: {0}", u);
 			return 1;
 		}
