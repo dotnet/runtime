@@ -4125,10 +4125,12 @@ handle_type:
 	case MONO_TYPE_SZARRAY:
 	{
 		MonoArray *arr;
-		guint32 i,alen;
-		alen=read32(p);
-		p+=4;
-		arr=mono_array_new(mono_domain_get(),mono_class_from_mono_type(t->data.type),alen);
+		guint32 i, alen;
+		alen = read32 (p);
+		p += 4;
+		if (alen == 0xffffffff)
+			alen = 0;
+		arr = mono_array_new (mono_domain_get(), mono_class_from_mono_type (t->data.type), alen);
 		switch (t->data.type->type)
 		{
 			case MONO_TYPE_U1:
@@ -4170,20 +4172,11 @@ handle_type:
 					p+=8;
 				}
 				break;
+			case MONO_TYPE_CLASS:
 			case MONO_TYPE_STRING:
-				for (i=0;i<alen;i++)
-				{
-					if (*p==(char)0xff)
-					{
-						mono_array_set(arr,gpointer,i,NULL);
-						p++;
-					}
-					else
-					{
-						slen=mono_metadata_decode_value(p,&p);
-						mono_array_set(arr,gpointer,i,mono_string_new_len(mono_domain_get(),p,slen));
-						p+=slen;
-					}
+				for (i = 0; i < alen; i++) {
+					MonoObject *item = load_cattr_value (image, t->data.type, p, &p);
+					mono_array_set (arr, gpointer, i, item);
 				}
 				break;
 			default:
@@ -4787,6 +4780,27 @@ handle_type:
 		g_free (str);
 		break;
 	}
+	case MONO_TYPE_SZARRAY: {
+		int len, i;
+		MonoClass *eclass;
+
+		if (!arg) {
+			*p++ = 0xff; *p++ = 0xff; *p++ = 0xff; *p++ = 0xff;
+			break;
+		}
+		len = mono_array_length ((MonoArray*)arg);
+		*p++ = len & 0xff;
+		*p++ = (len >> 8) & 0xff;
+		*p++ = (len >> 16) & 0xff;
+		*p++ = (len >> 24) & 0xff;
+		*retp = p;
+		*retbuffer = buffer;
+		eclass = mono_object_class (arg)->element_class;
+		for (i = 0; i < len; ++i) {
+			encode_cattr_value (buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i));
+		}
+		break;
+	}
 	/* it may be a boxed value or a Type */
 	case MONO_TYPE_OBJECT: {
 		MonoClass *klass = mono_object_class (arg);
@@ -4867,32 +4881,8 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	*p++ = 1;
 	*p++ = 0;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params[i]->type==MONO_TYPE_SZARRAY)
-		{
-			guint32 alen=mono_array_length(ctorArgs) - i;
-			guint32 j;
-			if ((p-buffer) + 10 >= buflen) {
-				char *newbuf;
-				buflen *= 2;
-				newbuf = g_realloc (buffer, buflen);
-				p = newbuf + (p-buffer);
-				buffer = newbuf;
-			}
-			*p++=alen&0xff;
-			*p++=(alen>>8)&0xff;
-			*p++=(alen>>16)&0xff;
-			*p++=(alen>>24)&0xff;
-			for (j=0;j<alen;j++)
-			{
-				arg=(MonoObject*)mono_array_get(ctorArgs,gpointer,i+j);
-				encode_cattr_value(buffer,p,&buffer,&p,&buflen,sig->params[i]->data.type,arg);
-			}
-		}
-		else
-		{
-			arg = (MonoObject*)mono_array_get (ctorArgs, gpointer, i);
-			encode_cattr_value (buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
-		}
+		arg = mono_array_get (ctorArgs, MonoObject*, i);
+		encode_cattr_value (buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
 	}
 	i = 0;
 	if (properties)
