@@ -2798,7 +2798,8 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	gpointer iter;
 	MonoObject *member;
 	int i, len, match;
-	GHashTable *method_slots = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	guint32 method_slots_default [8];
+	guint32 *method_slots;
 	gchar *mname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 		
@@ -2815,11 +2816,17 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
 	}
 
+	if (klass->vtable_size >= sizeof (method_slots_default) * 8) {
+		method_slots = g_new0 (guint32, klass->vtable_size / 32 + 1);
+	} else {
+		method_slots = method_slots_default;
+		memset (method_slots, 0, sizeof (method_slots_default));
+	}
 handle_parent:
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
-		if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
+		if (method->name [0] == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
 			continue;
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
@@ -2850,9 +2857,9 @@ handle_parent:
 		
 		match = 0;
 		if (method->slot != -1) {
-			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
+			if (method_slots [method->slot >> 5] & (1 << (method->slot & 0x1f)))
 				continue;
-			g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
+			method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
 		}
 		
 		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
@@ -2872,7 +2879,8 @@ handle_parent:
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
-	g_hash_table_destroy (method_slots);
+	if (method_slots != method_slots_default)
+		g_free (method_slots);
 	return res;
 }
 
@@ -2953,7 +2961,8 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	int i, match;
 	int len = 0;
 	guint32 flags;
-	GHashTable *method_slots = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	guint32 method_slots_default [8];
+	guint32 *method_slots;
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
@@ -2973,6 +2982,12 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
 	}
 
+	if (klass->vtable_size >= sizeof (method_slots_default) * 8) {
+		method_slots = g_new0 (guint32, klass->vtable_size / 32 + 1);
+	} else {
+		method_slots = method_slots_default;
+		memset (method_slots, 0, sizeof (method_slots_default));
+	}
 handle_parent:
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
@@ -3014,14 +3029,14 @@ handle_parent:
 		}
 		
 		if (prop->get && prop->get->slot != -1) {
-			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (prop->get->slot)))
+			if (method_slots [prop->get->slot >> 5] & (1 << (prop->get->slot & 0x1f)))
 				continue;
-			g_hash_table_insert (method_slots, GUINT_TO_POINTER (prop->get->slot), prop);
+			method_slots [prop->get->slot >> 5] |= 1 << (prop->get->slot & 0x1f);
 		}
 		if (prop->set && prop->set->slot != -1) {
-			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (prop->set->slot)))
+			if (method_slots [prop->set->slot >> 5] & (1 << (prop->set->slot & 0x1f)))
 				continue;
-			g_hash_table_insert (method_slots, GUINT_TO_POINTER (prop->set->slot), prop);
+			method_slots [prop->set->slot >> 5] |= 1 << (prop->set->slot & 0x1f);
 		}
 
 		l = g_slist_prepend (l, mono_property_get_object (domain, startklass, prop));
@@ -3039,7 +3054,8 @@ handle_parent:
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
-	g_hash_table_destroy (method_slots);
+	if (method_slots != method_slots_default)
+		g_free (method_slots);
 	return res;
 }
 
