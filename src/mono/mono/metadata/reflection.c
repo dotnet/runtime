@@ -747,6 +747,15 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 	g_hash_table_insert (dynamic_custom_attrs, obj, ainfo);
 }
 
+void
+mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
+{
+	/* they are cached, so we don't free them */
+	if (dynamic_custom_attrs && g_hash_table_lookup (dynamic_custom_attrs, ainfo))
+		return;
+	g_free (ainfo);
+}
+
 /*
  * idx is the table index of the object
  * type is one of CUSTOM_ATTR_*

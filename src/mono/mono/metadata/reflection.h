@@ -486,6 +486,7 @@ MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoPrope
 MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
 MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
 MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, guint32 param);
+void                mono_custom_attrs_free          (MonoCustomAttrInfo *ainfo);
 
 void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
 
