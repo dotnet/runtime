@@ -184,6 +184,18 @@ class Tests {
 		return 4;
 	}
 
+	public static int test_0_rounding () {
+		long ticks = 631502475130080000L;
+		long ticksperday = 864000000000L;
+
+		double days = (double) ticks / ticksperday;
+
+		if ((int)days != 730905)
+			return 1;
+
+		return 0;
+	}
+
 	/* FIXME: This only works on little-endian machines */
 	/*
 	static unsafe int test_2_negative_zero () {
