@@ -1132,8 +1132,15 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 		mono_g_hash_table_destroy (override_map);
 	}
-       
-	class->vtable_size = cur_slot;
+
+	if (class->generic_inst) {
+		MonoClass *gklass = mono_class_from_mono_type (class->generic_inst->generic_type);
+
+		mono_class_init (gklass);
+		class->vtable_size = gklass->vtable_size;
+	} else       
+		class->vtable_size = cur_slot;
+
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
 	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
 
