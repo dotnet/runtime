@@ -762,19 +762,23 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 	}
 }
 
-static void
+static GString*
 dis_genericparam (MonoImage *m, guint32 typedef_row)
 {
         MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
+        MonoTableInfo *ct = &m->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
+        GString* cnst_block = NULL;
 	guint32 cols [MONO_GENERICPARAM_SIZE];
-	int i, own_tok, table, idx, found_count;
+        guint32 ccols [MONO_GENPARCONSTRAINT_SIZE];
+	int i, own_tok, table, idx, found_count, cnst_start, cnst_ind;
+
         
-        found_count = 0;
+        found_count = cnst_start = 0;
 	for (i = 1; i <= t->rows; i++) {
-		mono_metadata_decode_row (t, i - 1, cols, MONO_GENERICPARAM_SIZE);
+		mono_metadata_decode_row (t, i-1, cols, MONO_GENERICPARAM_SIZE);
                 own_tok = cols [MONO_GENERICPARAM_OWNER];
-                table = own_tok & 0x03;
-                idx = own_tok >> 2;
+                table = own_tok & 0x01;
+                idx = own_tok >> 1;
                 
                 if (table != 0 || idx != typedef_row)
                         continue;
@@ -784,11 +788,27 @@ dis_genericparam (MonoImage *m, guint32 typedef_row)
                 else
                         fprintf (output, ", %s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
 
+                for (cnst_ind = cnst_start; cnst_ind <= ct->rows; cnst_ind++) {
+                        char *sig;
+                        mono_metadata_decode_row (ct, cnst_ind, ccols, MONO_GENPARCONSTRAINT_SIZE);
+                        if (ccols [MONO_GENPARCONSTRAINT_GENERICPAR] != i)
+                                continue;
+                        if (cnst_block == NULL)
+                                cnst_block = g_string_new ("");
+                        sig = get_typedef_or_ref (m, ccols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
+                        g_string_append_printf (cnst_block, "    .constraint !%d is %s\n",
+                                        cols [MONO_GENERICPARAM_NUMBER], sig);
+                        g_free (sig);
+                        cnst_start = cnst_ind;
+                }
+                
                 found_count++;
 	}
 
         if (found_count)
                 fprintf (output, ">");
+
+        return cnst_block;
 }
 
 /**
@@ -802,6 +822,7 @@ static void
 dis_type (MonoImage *m, int n)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
+        GString *cnst_block;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	const char *name, *nspace;
@@ -824,7 +845,7 @@ dis_type (MonoImage *m, int n)
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
 		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
-                dis_genericparam (m, n + 1);
+                cnst_block = dis_genericparam (m, n+1);
                 fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
 			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
@@ -836,6 +857,10 @@ dis_type (MonoImage *m, int n)
 	
 	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");
+        if (cnst_block) {
+                fprintf (output, "%s", cnst_block->str);
+                g_string_free (cnst_block, TRUE);
+        }
 	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
 
 	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {

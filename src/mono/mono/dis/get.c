@@ -295,6 +295,36 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 	return s;
 }
 
+char *
+get_type_or_methdef (MonoImage *m, guint32 dor_token)
+{
+	char *temp = NULL, *s;
+	int table, idx;
+
+	table = dor_token & 0x01;
+	idx = dor_token >> 1;
+	
+	switch (table){
+	case 0: /* TypeDef */
+		temp = get_typedef (m, idx);
+		s = g_strdup_printf ("%s", temp);
+		break;
+                	
+	case 1: /* MethodDef */
+		temp = get_method (m, idx);
+		s = g_strdup_printf ("%s", temp);
+		break;
+	default:
+		g_error ("Unhandled encoding for type-or-method-def coded index 0x%08x", table);
+
+	}
+	
+	if (temp)
+		g_free (temp);
+
+	return s;
+}
+
 /** 
  * get_encoded_typedef_or_ref:
  * @m: metadata context 

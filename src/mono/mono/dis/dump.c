@@ -1000,17 +1000,19 @@ dump_table_genericpar (MonoImage *m)
 	MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	int i;
-	
-	fprintf (output, "GenericParameters (1..%d)\n", t->rows);
 
+	fprintf (output, "GenericParameters (1..%d)\n", t->rows);
+        
 	for (i = 1; i <= t->rows; i++) {
+                char *sig;
 		mono_metadata_decode_row (t, i - 1, cols, MONO_GENERICPARAM_SIZE);
 
-		fprintf (output, "%d: %d, flags=%d, owner=0x%x %s\n", i,
+                sig = get_type_or_methdef (m, cols [MONO_GENERICPARAM_OWNER]);
+		fprintf (output, "%d: %d, flags=%d, owner=%s %s\n", i,
 			 cols [MONO_GENERICPARAM_NUMBER],
-			 cols [MONO_GENERICPARAM_FLAGS],
-			 cols [MONO_GENERICPARAM_OWNER],
+			 cols [MONO_GENERICPARAM_FLAGS], sig,
 			 mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+                g_free (sig);
 	}
 }
 
@@ -1047,11 +1049,13 @@ dump_table_parconstraint (MonoImage *m)
 	fprintf (output, "Generic Param Constraint (1..%d)\n", t->rows);
 
 	for (i = 1; i <= t->rows; i++) {
+                char *sig;
 		mono_metadata_decode_row (t, i - 1, cols, MONO_GENPARCONSTRAINT_SIZE);
-		
-		fprintf (output, "%d: gen-par=%d, Constraint=0x%x\n", i,
-			 cols [MONO_GENPARCONSTRAINT_GENERICPAR],
-			 cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
+
+                sig = get_typedef_or_ref (m, cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
+		fprintf (output, "%d: gen-par=%d, Constraint=%s\n", i,
+			 cols [MONO_GENPARCONSTRAINT_GENERICPAR], sig);
+                g_free (sig);
 	}
 }
 
