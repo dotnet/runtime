@@ -261,7 +261,8 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst)
 		MonoMethodNormal *nmethod = g_new0 (MonoMethodNormal, 1);
 		*nmethod = *(MonoMethodNormal*)method;
 		result = (MonoMethod*)nmethod;
-		nmethod->header = inflate_generic_header (((MonoMethodNormal*)method)->header, ginst);
+		if (nmethod->header)
+			nmethod->header = inflate_generic_header (nmethod->header, ginst);
 	}
 	if (ginst->klass)
 		result->klass = ginst->klass;

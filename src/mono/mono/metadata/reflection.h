@@ -429,6 +429,7 @@ typedef struct {
 	MonoReflectionMethod *declaring;
 	MonoReflectionGenericInst *declaring_type;
 	MonoReflectionGenericInst *reflected_type;
+	MonoGenericInst *ginst;
 } MonoReflectionInflatedMethod;
 
 typedef struct {
