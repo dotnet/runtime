@@ -207,6 +207,9 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 
 	*status = MONO_IMAGE_OK;
 
+	if (image->references)
+		return;
+
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
 	image->references = g_new0 (MonoAssembly *, t->rows + 1);

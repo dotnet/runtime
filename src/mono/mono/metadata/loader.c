@@ -216,18 +216,19 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 	mono_loader_unlock ();
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
-		return mono_field_from_memberref (image, token, retklass);
-
-	type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
-	if (!type)
-		return NULL;
-	k = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
-	mono_class_init (k);
-	if (!k)
-		return NULL;
-	if (retklass)
-		*retklass = k;
-	field = mono_class_get_field (k, token);
+		field = mono_field_from_memberref (image, token, retklass);
+	else {
+		type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
+		if (!type)
+			return NULL;
+		k = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+		mono_class_init (k);
+		if (!k)
+			return NULL;
+		if (retklass)
+			*retklass = k;
+		field = mono_class_get_field (k, token);
+	}
 
 	mono_loader_lock ();
 	g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);

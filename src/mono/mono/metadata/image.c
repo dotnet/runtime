@@ -492,6 +492,29 @@ load_class_names (MonoImage *image)
 		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
 	}
 
+	/* Load type names from EXPORTEDTYPES table */
+	{
+		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
+		guint32 cols [MONO_EXP_TYPE_SIZE];
+		int i;
+
+		for (i = 0; i < t->rows; ++i) {
+			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
+			name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
+			nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
+
+			nspace_index = cols [MONO_EXP_TYPE_NAMESPACE];
+			nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
+			if (!nspace_table) {
+				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+				g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
+				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
+									 nspace_table);
+			}
+			g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
+		}
+	}
+
 	g_hash_table_destroy (name_cache2);
 }
 
@@ -896,6 +919,7 @@ mono_image_close (MonoImage *image)
 		g_free (image->raw_data);
 
 	g_free (image->name);
+	g_free (image->files);
 
 	g_hash_table_destroy (image->method_cache);
 	g_hash_table_destroy (image->class_cache);
@@ -929,7 +953,7 @@ mono_image_close (MonoImage *image)
 			g_free (ii->cli_sections);
 		g_free (image->image_info);
 	}
-	
+
 	g_free (image);
 }
 
@@ -1118,6 +1142,13 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 
 	if (fileidx < 1 || fileidx > t->rows)
 		return NULL;
+
+	if (image->files && image->files [fileidx - 1])
+		return image->files [fileidx - 1];
+
+	if (!image->files)
+		image->files = g_new0 (MonoImage*, t->rows);
+
 	fname_id = mono_metadata_decode_row_col (t, fileidx - 1, MONO_FILE_NAME);
 	fname = mono_metadata_string_heap (image, fname_id);
 	base_dir = g_path_get_dirname (image->name);
@@ -1132,6 +1163,8 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
+
+		image->files [fileidx - 1] = res;
 	}
 	g_free (name);
 	g_free (base_dir);

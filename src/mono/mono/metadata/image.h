@@ -88,6 +88,8 @@ struct _MonoImage {
 
 	MonoImage **modules;
 
+	MonoImage **files;
+
 	/*
 	 * The Assembly this image was loaded from.
 	 */

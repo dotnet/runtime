@@ -2333,35 +2333,31 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 
 	mono_loader_unlock ();
-	
-	if (!token) {
+
+	if (!token)
+		return NULL;
+
+	if (mono_metadata_token_table (token) == MONO_TABLE_EXPORTEDTYPE) {
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
 		guint32 cols [MONO_EXP_TYPE_SIZE];
-		int i;
+		guint32 idx, impl;
 
-		for (i = 0; i < t->rows; ++i) {
-			const char *ename, *enspace;
-			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
-			ename = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
-			enspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
+		idx = mono_metadata_token_index (token);
 
-			if (strcmp (name, ename) == 0 && strcmp (name_space, enspace) == 0) {
-				guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
-				if ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE) {
-					loaded_image = mono_assembly_load_module (image->assembly, impl >> IMPLEMENTATION_BITS);
-					if (!loaded_image)
-						return NULL;
-					class = mono_class_from_name (loaded_image, name_space, name);
-					if (nested)
-						return return_nested_in (class, nested);
-					return class;
-				} else {
-					g_error ("not yet implemented");
-				}
-			}
+		mono_metadata_decode_row (t, idx - 1, cols, MONO_EXP_TYPE_SIZE);
+
+		impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
+		if ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE) {
+			loaded_image = mono_assembly_load_module (image->assembly, impl >> IMPLEMENTATION_BITS);
+			if (!loaded_image)
+				return NULL;
+			class = mono_class_from_name (loaded_image, name_space, name);
+			if (nested)
+				return return_nested_in (class, nested);
+			return class;
+		} else {
+			g_error ("not yet implemented");
 		}
-		/*g_warning ("token not found for %s.%s in image %s", name_space, name, image->name);*/
-		return NULL;
 	}
 
 	token = MONO_TOKEN_TYPE_DEF | token;
