@@ -597,7 +597,7 @@ ves_icall_System_ValueType_GetHashCode (MonoObject *this)
 {
 	gint32 i, size;
 	const char *p;
-	guint h;
+	guint h = 0;
 
 	MONO_CHECK_ARG_NULL (this);
 
