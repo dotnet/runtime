@@ -30,7 +30,7 @@
 	To update your sources every day, you use this command:
 
 <pre>
-	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+	export CVSROOT=:pserver:anonymous@anoncvs.go-mono.com:/mono
 	cvs -z3 update -dP mcs mono gtk-sharp
 </pre>
 
