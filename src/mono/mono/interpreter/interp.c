@@ -1571,24 +1571,6 @@ mono_create_method_pointer (MonoMethod *method)
 	return addr;
 }
 
-static MonoMethod *
-get_native_wrapper(MonoMethod *method, ThreadContext *context)
-{
-	jmp_buf env;
-	jmp_buf *old_env;
-	MonoMethod *wrapper;
-	old_env = context->current_env;
-	if (setjmp(env) != 0) {
-		context->current_env = old_env;
-		context->search_for_handler = 1;
-		return NULL;
-	}
-	context->current_env = &env;
-	wrapper = mono_marshal_get_native_wrapper (method);
-	context->current_env = old_env;
-	return wrapper;
-}
-
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -1627,7 +1609,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	context->current_frame = frame;
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		frame->method = get_native_wrapper (frame->method, context);
+		frame->method = mono_marshal_get_native_wrapper (frame->method);
 		if (frame->method == NULL)
 			goto exit_frame;
 	}
