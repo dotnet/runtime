@@ -7318,7 +7318,7 @@ mini_init (const char *filename)
 	g_thread_init (NULL);
 
 	mono_jit_tls_id = TlsAlloc ();
-	setup_jit_tls_data ((gpointer)-1, NULL);
+	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
 
 	mono_burg_init ();
 
