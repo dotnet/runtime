@@ -4052,8 +4052,6 @@ sigusr1_signal_handler (int _dummy)
 	
 	thread = mono_thread_current ();
 
-	g_message (G_STRLOC ": %d - %p", getpid (), thread);
-        
 	g_assert (thread->abort_exc);
 
 	arch_handle_exception (ctx, thread->abort_exc, FALSE);
@@ -4083,8 +4081,6 @@ mono_thread_abort (MonoObject *obj)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	
 	g_free (jit_tls);
-
-	g_message (G_STRLOC ": %d", getpid ());
 
 	ExitThread (-1);
 }
