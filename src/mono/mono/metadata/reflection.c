@@ -9,6 +9,7 @@
  *
  */
 #include <config.h>
+#include "mono/utils/mono-digest.h"
 #include "mono/metadata/reflection.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
@@ -2017,6 +2018,49 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 	}
 }
 
+static void
+assembly_add_resource (MonoDynamicAssembly *assembly, MonoReflectionResource *rsrc)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	char blob_size [6];
+	guchar hash [20];
+	char *b = blob_size;
+	char *name, *sname;
+	guint32 idx;
+
+	/* FIXME: later add support (also in mcs) to embed resurces */
+	g_assert (rsrc->filename);
+	name = mono_string_to_utf8 (rsrc->filename);
+	sname = g_path_get_basename (name);
+	
+	table = &assembly->tables [MONO_TABLE_FILE];
+	table->rows++;
+	alloc_table (table, table->rows);
+	values = table->values + table->next_idx * MONO_FILE_SIZE;
+	values [MONO_FILE_FLAGS] = 1; /* nometadata */
+	values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, sname);
+	g_free (sname);
+
+	mono_sha1_get_digest_from_file (name, hash);
+	mono_metadata_encode_value (20, b, &b);
+	values [MONO_FILE_HASH_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, hash, 20);
+	g_free (name);
+	idx = table->next_idx++;
+
+	table = &assembly->tables [MONO_TABLE_MANIFESTRESOURCE];
+	table->rows++;
+	alloc_table (table, table->rows);
+	values = table->values + table->next_idx * MONO_MANIFEST_SIZE;
+	values [MONO_MANIFEST_OFFSET] = 0;
+	values [MONO_MANIFEST_FLAGS] = rsrc->attrs;
+	name = mono_string_to_utf8 (rsrc->name);
+	values [MONO_MANIFEST_NAME] = string_heap_insert (&assembly->sheap, name);
+	g_free (name);
+	values [MONO_MANIFEST_IMPLEMENTATION] = IMPLEMENTATION_FILE | (idx << IMPLEMENTATION_BITS);
+}
+
 /*
  * mono_image_build_metadata() will fill the info in all the needed metadata tables
  * for the AssemblyBuilder @assemblyb: it iterates over the assembly modules
@@ -2093,6 +2137,12 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 		len = mono_array_length (assemblyb->modules);
 		for (i = 0; i < len; ++i)
 			module_add_cattrs (assembly, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i));
+	}
+
+	if (assemblyb->resources) {
+		len = mono_array_length (assemblyb->resources);
+		for (i = 0; i < len; ++i)
+			assembly_add_resource (assembly, (MonoReflectionResource*)mono_array_addr (assemblyb->resources, MonoReflectionResource, i));
 	}
 	
 	/* fixup tokens */

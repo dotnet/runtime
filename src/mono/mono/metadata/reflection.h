@@ -275,6 +275,13 @@ typedef struct {
 } MonoDynamicAssembly;
 
 typedef struct {
+	MonoArray *data;
+	MonoString *name;
+	MonoString *filename;
+	guint32 attrs;
+} MonoReflectionResource;
+
+typedef struct {
 	MonoReflectionAssembly assembly;
 	MonoDynamicAssembly *dynamic_assembly;
 	MonoReflectionMethodBuilder *entry_point;
@@ -282,6 +289,7 @@ typedef struct {
 	MonoString *name;
 	MonoString *dir;
 	MonoArray *cattrs;
+	MonoArray *resources;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {

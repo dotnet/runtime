@@ -2175,6 +2175,7 @@ assemblybuilder_fields[] = {
 	{"entry_point", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, entry_point)},
 	{"modules", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, modules)},
 	{"name", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, name)},
+	{"resources", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, resources)},
 	{NULL, 0}
 };
 
