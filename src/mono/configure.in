@@ -9,7 +9,9 @@ AM_MAINTAINER_MODE
 # compiling code that will embed Mono
 #
 libmono_cflags=""
+libmono_ldflags=""
 AC_SUBST(libmono_cflags)
+AC_SUBST(libmono_ldflags)
 
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
@@ -27,6 +29,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
+		libmono_ldflags="-pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
@@ -35,6 +38,7 @@ case "$host" in
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -DMONO_USE_EXC_TABLES -D_GNU_SOURCE -D_REENTRANT -fexceptions"
 		libmono_cflags="-DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT"
+		libmono_ldflags="-lpthread"
 		libdl="-ldl"
 		;;
 	*-*-solaris*)
@@ -48,6 +52,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE"
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
+		libmono_ldflags="-pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
@@ -526,6 +531,7 @@ AC_SUBST(LIBC)
 AC_SUBST(arch_target)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
+AC_SUBST(LDFLAGS)
 
 AC_OUTPUT([
 Makefile
