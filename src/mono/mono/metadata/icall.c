@@ -2933,9 +2933,11 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 static MonoBoolean
 ves_icall_Type_IsArrayImpl (MonoReflectionType *t)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoType *type = t->type;
 	MonoBoolean res = !type->byref && (type->type == MONO_TYPE_ARRAY || type->type == MONO_TYPE_SZARRAY);
-	
+
 	return res;
 }
 
