@@ -41,7 +41,7 @@ struct MonoSymbolFileMethodEntry {
 	guint32 token;
 	guint32 start_row;
 	guint32 end_row;
-	guint32 this_type_index;
+	guint32 class_type_index;
 	guint32 num_parameters;
 	guint32 num_locals;
 	guint32 num_line_numbers;
@@ -69,6 +69,7 @@ struct MonoSymbolFileMethodAddress {
 	const guint8 *method_start_address;
 	const guint8 *method_end_address;
 	const guint8 *wrapper_address;
+	guint32 has_this;
 	guint32 variable_table_offset;
 	guint32 type_table_offset;
 	guint32 num_line_numbers;
@@ -216,10 +217,10 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		30
+#define MONO_SYMBOL_FILE_VERSION		31
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	23
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	24
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 extern MonoGlobalSymbolFile *mono_debugger_global_symbol_file;

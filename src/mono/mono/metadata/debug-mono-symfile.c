@@ -292,7 +292,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	MonoMethodHeader *header;
 	guint32 size, num_variables, variable_size, variable_offset;
 	guint32 type_size, type_offset, *type_index_table;
-	guint32 line_size, line_offset;
+	guint32 line_size, line_offset, has_this;
 	MonoDebugLineNumberEntry *line_table;
 	guint32 *type_table;
 	guint8 *ptr;
@@ -321,14 +321,13 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	size = sizeof (MonoSymbolFileMethodAddress);
 
 	num_variables = mep->entry->num_parameters + mep->entry->num_locals;
-	if (mep->entry->this_type_index)
-		num_variables++;
+	has_this = mep->minfo->jit->this_var != NULL;
 
-	variable_size = num_variables * sizeof (MonoDebugVarInfo);
+	variable_size = (num_variables + has_this) * sizeof (MonoDebugVarInfo);
 	variable_offset = size;
 	size += variable_size;
 
-	type_size = num_variables * sizeof (gpointer);
+	type_size = (num_variables + 1) * sizeof (gpointer);
 	type_offset = size;
 	size += type_size;
 
@@ -342,6 +341,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	ptr = (guint8 *) address;
 
 	address->size = size;
+	address->has_this = has_this;
 	address->start_address = mep->minfo->jit->code_start;
 	address->end_address = mep->minfo->jit->code_start + mep->minfo->jit->code_size;
 	address->method_start_address = address->start_address + mep->minfo->jit->prologue_end;
@@ -376,16 +376,9 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	type_index_table = (guint32 *)
 		(symfile->_priv->raw_contents + mep->entry->type_index_table_offset);
 
-	if (mep->entry->this_type_index) {
-		if (!mep->minfo->jit->this_var) {
-			g_warning (G_STRLOC ": Method %d (%s.%s) doesn't have `this'.",
-				   range->index, mep->method->klass->name, mep->method->name);
-			var_table++;
-		} else {
-			*var_table++ = *mep->minfo->jit->this_var;
-			*type_table++ = write_type (symfile->global, &method->klass->this_arg);
-		}
-	}
+	if (mep->minfo->jit->this_var)
+		*var_table++ = *mep->minfo->jit->this_var;
+	*type_table++ = write_type (symfile->global, &method->klass->this_arg);
 
 	if (mep->minfo->jit->num_params != mep->entry->num_parameters) {
 		g_warning (G_STRLOC ": Method %s.%s has %d parameters, but symbol file claims it has %d.",
