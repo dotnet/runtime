@@ -233,6 +233,10 @@ struct _MonoThread {
 	gpointer suspend_event;
 	gpointer resume_event;
 	MonoObject *synch_lock;
+	guint8* serialized_culture_info;
+	guint32 serialized_culture_info_len;
+	guint8* serialized_ui_culture_info;
+	guint32 serialized_ui_culture_info_len;
 };
 
 typedef struct {

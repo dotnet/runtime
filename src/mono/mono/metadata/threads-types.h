@@ -50,6 +50,10 @@ extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this
 extern gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
 extern MonoString* ves_icall_System_Threading_Thread_GetName_internal (MonoThread *this_obj);
 extern void ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoString *name);
+extern MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoThread *this_obj);
+extern MonoArray* ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoThread *this_obj);
+extern void ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this_obj, MonoObject *culture);
+void ves_icall_System_Threading_Thread_SetSerializedCurrentCulture (MonoThread *this_obj, MonoArray *arr);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
 extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name, MonoBoolean *created);

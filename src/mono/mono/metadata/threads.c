@@ -192,6 +192,9 @@ static void thread_cleanup (MonoThread *thread)
 
 	mono_thread_pop_appdomain_ref ();
 
+	if (thread->serialized_culture_info)
+		g_free (thread->serialized_culture_info);
+
 	if (mono_thread_cleanup)
 		mono_thread_cleanup (thread);
 }
@@ -615,6 +618,56 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoSt
 	}
 	else
 		this_obj->name = NULL;
+}
+
+MonoObject*
+ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoThread *this)
+{
+	MonoObject *res;
+
+	mono_monitor_enter (this->synch_lock);
+	if (this->culture_info && (this->culture_info->vtable->domain == mono_domain_get ()))
+		res = this->culture_info;
+	else
+		res = NULL;
+	mono_monitor_exit (this->synch_lock);
+
+	return res;
+}
+
+MonoArray*
+ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoThread *this)
+{
+	MonoArray *res;
+
+	mono_monitor_enter (this->synch_lock);
+	if (this->serialized_culture_info) {
+		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_culture_info_len);
+		memcpy (mono_array_addr (res, guint8, 0), this->serialized_culture_info, this->serialized_culture_info_len);
+	}
+	else
+		res = NULL;
+	mono_monitor_exit (this->synch_lock);
+
+	return res;
+}
+
+void
+ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, MonoObject *culture)
+{
+	this->culture_info = culture;
+}
+
+void
+ves_icall_System_Threading_Thread_SetSerializedCurrentCulture (MonoThread *this, MonoArray *arr)
+{
+	mono_monitor_enter (this->synch_lock);
+	if (this->serialized_culture_info)
+		g_free (this->serialized_culture_info);
+	this->serialized_culture_info = g_new0 (guint8, mono_array_length (arr));
+	this->serialized_culture_info_len = mono_array_length (arr);
+	memcpy (this->serialized_culture_info, mono_array_addr (arr, guint8, 0), mono_array_length (arr));
+	mono_monitor_exit (this->synch_lock);
 }
 
 /* the jit may read the compiled code of this function */
