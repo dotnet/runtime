@@ -5227,6 +5227,8 @@ static const IcallEntry dns_icalls [] = {
 
 static const IcallEntry socket_icalls [] = {
 	{"Accept_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Accept_internal},
+	{"AsyncReceiveInternal", ves_icall_System_Net_Sockets_Socket_AsyncReceive},
+	{"AsyncSendInternal", ves_icall_System_Net_Sockets_Socket_AsyncSend},
 	{"Available_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Available_internal},
 	{"Bind_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Bind_internal},
 	{"Blocking_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Blocking_internal},

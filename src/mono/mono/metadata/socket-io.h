@@ -133,6 +133,27 @@ typedef enum {
 	SocketOptionName_ChecksumCoverage=20
 } MonoSocketOptionName;
 
+typedef struct _MonoSocketAsyncResult {
+	MonoObject obj;
+	MonoObject *socket;
+	HANDLE handle;
+	MonoObject *state;
+	MonoDelegate *callback;
+	MonoWaitHandle *wait_handle;
+	MonoException *delayed_exc;
+	MonoObject *ep;
+	MonoArray *buffer;
+	gint offset;
+	gint size;
+	gint socket_flags;
+	MonoObject *acc_socket;
+	gint total;
+	MonoBoolean completed_synch;
+	MonoBoolean completed;
+	MonoDelegate *real_callback;
+	gint error;
+} MonoSocketAsyncResult;
+
 extern gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error);
 extern void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock, gint32 *error);
 extern gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void);
@@ -158,6 +179,9 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *h
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list);
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name);
 extern MonoBoolean ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode, gint timeout, gint32 *error);
+
+extern void ves_icall_System_Net_Sockets_Socket_AsyncReceive (MonoSocketAsyncResult *ares, gint *error);
+extern void ves_icall_System_Net_Sockets_Socket_AsyncSend (MonoSocketAsyncResult *ares, gint *error);
 
 extern void mono_network_init(void);
 extern void mono_network_cleanup(void);

@@ -318,7 +318,6 @@ overlapped_callback (guint32 error, guint32 numbytes, WapiOverlapped *overlapped
 {
 	MonoFSAsyncResult *ares;
 	MonoThread *thread;
-	gpointer ftn;
  
 	MONO_ARCH_SAVE_REGS;
 

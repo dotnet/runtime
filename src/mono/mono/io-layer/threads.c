@@ -909,10 +909,6 @@ BindIoCompletionCallback (gpointer handle,
 	if (type == WAPI_HANDLE_FILE || type == WAPI_HANDLE_PIPE)
 		return _wapi_io_add_callback (handle, callback, flags);
 
-	if (type == WAPI_HANDLE_SOCKET) {
-		/* FIXME: implement me */
-	}
-
 	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 }

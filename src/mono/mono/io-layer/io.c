@@ -362,6 +362,7 @@ async_notifier (union sigval sig)
 	}
 
 	ndata->callback (error, numbytes, ndata->overlapped);
+	g_free (ndata->aio);
 	g_free (ndata);
 }
 

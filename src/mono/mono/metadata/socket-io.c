@@ -20,6 +20,7 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/threads.h>
 
 #include <sys/time.h> 
 
@@ -566,8 +567,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	gint32 sock_family;
 	gint32 sock_proto;
 	gint32 sock_type;
-	int ret;
-	int true=1;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -625,12 +624,16 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	 * is true, so we don't need to do anything else here.  See
 	 * bug 53992.
 	 */
+	{
+	int ret, true = 1;
+	
 	ret = _wapi_setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof (true));
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
 		
 		closesocket(sock);
 		return(NULL);
+	}
 	}
 #endif
 	
@@ -668,7 +671,8 @@ gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(voi
 gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock,
 							      gint32 *error)
 {
-	int ret, amount;
+	int ret;
+	gulong amount;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -693,7 +697,7 @@ void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 
 	*error = 0;
 	
-	ret=ioctlsocket(sock, FIONBIO, &block);
+	ret = ioctlsocket (sock, FIONBIO, (gulong *) &block);
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
 	}
@@ -1023,6 +1027,8 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 	MONO_ARCH_SAVE_REGS;
 
 	do {
+		/* FIXME: in case of extra iteration (WSAEINTR), substract time
+		 * from the initial timeout */
 		*error = 0;
 		FD_ZERO (&fds);
 		_wapi_FD_SET (sock, &fds);
@@ -1522,6 +1528,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 	}
 }
 
+#if defined(HAVE_STRUCT_IP_MREQN) || defined(HAVE_STRUCT_IP_MREQ)
 static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 {
 	struct in_addr inaddr;
@@ -1538,6 +1545,7 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 	
 	return(inaddr);
 }
+#endif
 
 #ifdef AF_INET6
 static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
@@ -1761,7 +1769,7 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 					      MonoArray *input,
 					      MonoArray *output, gint32 *error)
 {
-	gint output_bytes = 0;
+	gulong output_bytes = 0;
 	gchar *i_buffer, *o_buffer;
 	gint i_len, o_len;
 	gint ret;
@@ -1797,7 +1805,7 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 		return(-1);
 	}
 
-	return output_bytes;
+	return (gint) output_bytes;
 }
 
 #ifndef AF_INET6
@@ -2278,6 +2286,91 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 }
 
 
+/* Async interface */
+#if defined(PLATFORM_WIN32) || !defined(HAVE_AIO_H)
+void
+ves_icall_System_Net_Sockets_Socket_AsyncReceive (MonoSocketAsyncResult *ares, gint *error)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	*error = ERROR_NOT_SUPPORTED;
+}
+
+void
+ves_icall_System_Net_Sockets_Socket_AsyncSend (MonoSocketAsyncResult *ares, gint *error)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	*error = ERROR_NOT_SUPPORTED;
+}
+#else
+static void
+wsa_overlapped_callback (guint32 error, guint32 numbytes, gpointer result)
+{
+	MonoSocketAsyncResult *ares = (MonoSocketAsyncResult *) result;
+	MonoThread *thread;
+ 
+	ares->completed = TRUE;
+	ares->error = error;
+	ares->total = numbytes;
+
+	if (ares->callback != NULL) {
+		gpointer p [1];
+
+		*p = ares;
+		thread = mono_thread_attach (mono_object_domain (ares));
+		mono_runtime_invoke (ares->callback->method_info->method, NULL, p, NULL);
+
+		mono_thread_detach (thread);
+	}
+
+	if (ares->wait_handle != NULL)
+		SetEvent (ares->wait_handle->handle);
+}
+
+void
+ves_icall_System_Net_Sockets_Socket_AsyncReceive (MonoSocketAsyncResult *ares, gint *error)
+{
+	gint32 bytesread;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (_wapi_socket_async_read (ares->handle,
+					mono_array_addr (ares->buffer, gchar, ares->offset),
+					ares->size,
+					&bytesread,
+					ares,
+					wsa_overlapped_callback) == FALSE) {
+		*error = WSAGetLastError ();
+	} else {
+		*error = 0;
+		ares->completed_synch = TRUE;
+		wsa_overlapped_callback (0, bytesread, ares);
+	}
+}
+
+void
+ves_icall_System_Net_Sockets_Socket_AsyncSend (MonoSocketAsyncResult *ares, gint *error)
+{
+	gint32 byteswritten;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (_wapi_socket_async_write (ares->handle,
+					mono_array_addr (ares->buffer, gchar, ares->offset),
+					ares->size,
+					&byteswritten,
+					ares,
+					wsa_overlapped_callback) == FALSE) {
+		*error = WSAGetLastError ();
+	} else {
+		*error = 0;
+		ares->completed_synch = TRUE;
+		wsa_overlapped_callback (0, byteswritten, ares);
+	}
+}
+#endif
+
 void mono_network_init(void)
 {
 	WSADATA wsadata;
@@ -2299,3 +2392,4 @@ void mono_network_cleanup(void)
 {
 	WSACleanup();
 }
+

@@ -842,7 +842,7 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 int
 WSAIoctl (guint32 handle, gint32 command,
 		gchar *input, gint i_len,
-		gchar *output, gint o_len, gint32 *written,
+		gchar *output, gint o_len, glong *written,
 		void *unused1, void *unused2)
 {
 	struct _WapiHandlePrivate_socket *socket_private_handle;
@@ -1038,4 +1038,116 @@ void _wapi_FD_SET(guint32 handle, fd_set *set)
 
 	FD_SET(socket_private_handle->fd, set);
 }
+
+#ifndef PLATFORM_WIN32
+#include <aio.h>
+
+typedef struct {
+	struct aiocb *aio;
+	gpointer ares;
+	SocketAsyncCB callback;
+} notifier_data_t;
+
+static void
+async_notifier (union sigval sig)
+{
+	notifier_data_t *ndata = sig.sival_ptr;
+	guint32 error;
+	guint32 numbytes;
+
+	error = aio_return (ndata->aio);
+	if (error < 0) {
+		error = _wapi_get_win32_error (error);
+		numbytes = 0;
+	} else {
+		numbytes = error;
+		error = 0;
+	}
+
+	ndata->callback (error, numbytes, ndata->ares);
+	g_free (ndata->aio);
+	g_free (ndata);
+}
+
+static gboolean
+do_aio_call (gboolean is_read, gpointer handle, gpointer buffer,
+		guint32 numbytes, guint32 *out_bytes,
+		gpointer ares,
+		SocketAsyncCB callback)
+{
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
+	int fd;
+	struct aiocb *aio;
+	int result;
+	notifier_data_t *ndata;
+	
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if (ok == FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", (guint) handle);
+		WSASetLastError (WSAENOTSOCK);
+		return FALSE;
+	}
+
+	fd = socket_private_handle->fd;
+
+	ndata = g_new0 (notifier_data_t, 1);
+	aio = g_new0 (struct aiocb, 1);
+	ndata->ares = ares;
+	ndata->aio = aio;
+	ndata->callback = callback;
+
+	aio->aio_fildes = fd;
+	aio->aio_lio_opcode = (is_read) ? LIO_READ : LIO_WRITE;
+	aio->aio_nbytes = numbytes;
+	aio->aio_offset = 0;
+	aio->aio_buf = buffer;
+	aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
+	aio->aio_sigevent.sigev_notify_function = async_notifier;
+	aio->aio_sigevent.sigev_value.sival_ptr = ndata;
+
+	if (is_read) {
+		result = aio_read (aio);
+	} else {
+		result = aio_write (aio);
+	}
+
+	if (result == -1) {
+		WSASetLastError (errno_to_WSA (errno, "do_aio_call"));
+		return FALSE;
+	}
+
+	result = aio_error (aio);
+	if (result == 0) {
+		numbytes = aio_return (aio);
+	} else {
+		WSASetLastError (errno_to_WSA (result, "do_aio_call"));
+		return FALSE;
+	}
+
+	if (out_bytes)
+		*out_bytes = numbytes;
+
+	return TRUE;
+}
+
+gboolean _wapi_socket_async_read (gpointer handle, gpointer buffer,
+				  guint32 numbytes,
+				  guint32 *bytesread, gpointer ares,
+				  SocketAsyncCB callback)
+{
+	return do_aio_call (TRUE, handle, buffer, numbytes, bytesread, ares, callback);
+}
+
+gboolean _wapi_socket_async_write (gpointer handle, gpointer buffer,
+				  guint32 numbytes,
+				  guint32 *byteswritten, gpointer ares,
+				  SocketAsyncCB callback)
+{
+	return do_aio_call (FALSE, handle, buffer, numbytes, byteswritten, ares, callback);
+}
+
+#endif /* !PLATFORM_WIN32 */
 
