@@ -17,17 +17,6 @@ echo "Building Mono and dependencies in $here, installing to $here/install"
 
 PATH=$here/install/bin:$here/install/lib:$PATH
 
-echo "Checking automake version"
-automake_required="1.6.2"
-automake_version=`automake --version | head -1 | awk '{print $4}' | tr -d '[a-zA-Z]' | sed 's/-.*$//g'`
-echo "Found automake version $automake_version"
-if expr $automake_version \< $automake_required > /dev/null; then
-	echo "Your automake is too old!  You need version $automake_required or newer."
-	exit -1
-else
-	echo "Automake version new enough."
-fi
-
 # Make sure cygwin's libiconv is installed, or libtool blows its tiny mind
 if [ ! -f /usr/lib/libiconv.la ]; then
     echo "You need to install the cygwin \"libiconv\" package!"
@@ -62,6 +51,17 @@ cvs checkout mono || exit -1
 if [ ! -z "${AUTO_STABLE}" -o -e /usr/autotool/stable ]; then
     export AUTO_STABLE=${AUTO_STABLE:-/usr/autotool/stable}
     export AUTO_DEVEL=${AUTO_STABLE}
+fi
+
+echo "Checking automake version"
+automake_required="1.6.2"
+automake_version=`automake --version | head -1 | awk '{print $4}' | tr -d '[a-zA-Z]' | sed 's/-.*$//g'`
+echo "Found automake version $automake_version"
+if expr $automake_version \< $automake_required > /dev/null; then
+	echo "Your automake is too old!  You need version $automake_required or newer."
+	exit -1
+else
+	echo "Automake version new enough."
 fi
 
 # Need to install pkgconfig and set ACLOCAL_FLAGS if there is not a
