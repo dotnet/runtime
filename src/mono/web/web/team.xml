@@ -1522,4 +1522,32 @@
     </tasks>
 
   </contributor>
+  
+  <contributor>
+
+    <name>
+
+      <first-name>Jordi</first-name>
+
+      <last-name>Mas i Hernàndez</last-name>
+
+    </name>
+
+    <e-mail>jmas@softcatala.org</e-mail>
+
+    <image>jordi.png</image>
+
+    <location>Barcelona, Spain</location>
+
+    <organization></organization>
+
+    <description>Developer</description>
+
+    <tasks>
+
+      <task>Windows.Forms implementation</task>
+
+    </tasks>
+
+  </contributor>
 </contributors>
