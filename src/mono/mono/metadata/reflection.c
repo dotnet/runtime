@@ -1259,6 +1259,38 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	mono_image_basic_method (&rmb, assembly);
 }
 
+static char*
+type_get_fully_qualified_name (MonoType *type) {
+	char *name, *result;
+	MonoClass *klass;
+	MonoAssembly *ta;
+
+	name = mono_type_get_name (type);
+	klass = my_mono_class_from_mono_type (type);
+	ta = klass->image->assembly;
+
+	/* missing public key */
+	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s",
+		name, ta->aname.name,
+		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
+		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral");
+	g_free (name);
+	return result;
+}
+
+static char*
+type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
+	MonoClass *klass;
+	MonoAssembly *ta;
+
+	klass = my_mono_class_from_mono_type (type);
+	ta = klass->image->assembly;
+	if (ta == ass || klass->image == mono_defaults.corlib)
+		return mono_type_get_name (type);
+
+	return type_get_fully_qualified_name (type);
+}
+
 static guint32
 fieldref_encode_signature (MonoDynamicImage *assembly, MonoType *type)
 {
@@ -1436,7 +1468,7 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 			mono_metadata_encode_value (0, p, &p);
 		}
 		if (minfo->marshaltyperef) {
-			str = type_get_qualified_name (minfo->marshaltyperef->type, assembly->image.assembly);
+			str = type_get_fully_qualified_name (minfo->marshaltyperef->type);
 			len = strlen (str);
 			mono_metadata_encode_value (len, p, &p);
 			if (p + len >= buf + bufsize) {
@@ -4280,8 +4312,16 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	cli_header->ch_size = GUINT32_FROM_LE (72);
 	cli_header->ch_runtime_major = GUINT16_FROM_LE (2);
 	cli_header->ch_flags = GUINT32_FROM_LE (CLI_FLAGS_ILONLY);
-	if (assemblyb->entry_point) 
-		cli_header->ch_entry_point = GUINT32_FROM_LE (assemblyb->entry_point->table_idx | MONO_TOKEN_METHOD_DEF);
+	if (assemblyb->entry_point) {
+		guint32 table_idx = 0;
+		if (!strcmp (assemblyb->entry_point->object.vtable->klass->name, "MethodBuilder")) {
+			MonoReflectionMethodBuilder *methodb = (MonoReflectionMethodBuilder*)assemblyb->entry_point;
+			table_idx = methodb->table_idx;
+		}
+		else
+			table_idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, assemblyb->entry_point->method));
+		cli_header->ch_entry_point = GUINT32_FROM_LE (table_idx | MONO_TOKEN_METHOD_DEF);
+	}			
 	else
 		cli_header->ch_entry_point = GUINT32_FROM_LE (0);
 	/* The embedded managed resources */
@@ -5964,27 +6004,6 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 	}
 }
 
-static char*
-type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
-	char *name, *result;
-	MonoClass *klass;
-	MonoAssembly *ta;
-
-	name = mono_type_get_name (type);
-	klass = my_mono_class_from_mono_type (type);
-	ta = klass->image->assembly;
-	if (ta == ass || klass->image == mono_defaults.corlib)
-		return name;
-
-	/* missing public key */
-	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s",
-		name, ta->aname.name,
-		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
-		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral");
-	g_free (name);
-	return result;
-}
-
 static void
 encode_cattr_value (char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg)
 {
@@ -6474,8 +6493,7 @@ mono_marshal_spec_from_builder (MonoAssembly *assembly,
 	case MONO_NATIVE_CUSTOM:
 		if (minfo->marshaltyperef)
 			res->data.custom_data.custom_name =
-				type_get_qualified_name (minfo->marshaltyperef->type, 
-										 assembly);
+				type_get_fully_qualified_name (minfo->marshaltyperef->type);
 		if (minfo->mcookie)
 			res->data.custom_data.cookie = mono_string_to_utf8 (minfo->mcookie);
 		break;
