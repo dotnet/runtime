@@ -154,6 +154,8 @@ typedef struct {
 	gulong max_code_size_ratio;
 	gulong biggest_method_size;
 	gulong allocated_code_size;
+	gulong inlineable_methods;
+	gulong inlined_methods;
 	MonoMethod *max_ratio_method;
 	MonoMethod *biggest_method;
 	gboolean enabled;
