@@ -1224,11 +1224,12 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 {
 	guint32 buf [2];
 	guint32 res;
+	guint32 *ptr;
 
 	buf [0] = 0;
 	buf [1] = 10;
 
-	guint32 *ptr = del (&buf);
+	ptr = del (&buf);
 
 	res = ptr [1];
 
