@@ -191,10 +191,25 @@ newobj (MonoImage *image, guint32 token)
 static MonoMethod*
 get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 {
+	MonoMethod *m;
+	MonoObject *obj;
+	MonoClass *klass;
+	MonoImage *mimage;
+	int i;
+	
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_METHOD:
 	case MONO_TABLE_MEMBERREF:
-		return mono_get_method (image, token, NULL);
+		m = mono_get_method (image, token, NULL);
+		mimage = m->klass->image;
+		obj = args [-(m->signature->param_count + 1)].data.p;
+		for (klass = obj->klass; klass; klass = klass->parent) {
+			for (i = 0; i < klass->method.count; ++i) {
+				if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (mimage, m->signature, klass->image, klass->methods [i]->signature))
+					return klass->methods [i];
+			}
+		}
+		return m;
 	}
 	g_error ("got virtual method: 0x%x\n", token);
 	return NULL;
@@ -335,6 +350,10 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->type = VAL_DOUBLE;
 		result->data.f = *(float*)data;
 		return;
+	case MONO_TYPE_I8:
+		result->type = VAL_I64;
+		result->data.l = *(gint64*)data;
+		return;
 	case MONO_TYPE_R8:
 		result->type = VAL_DOUBLE;
 		result->data.f = *(double*)data;
@@ -388,6 +407,9 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*(gint32*)data = val->data.i;
+		break;
+	case MONO_TYPE_I8:
+		*(gint64*)data = val->data.l;
 		break;
 	case MONO_TYPE_R4:
 		*(float*)data = val->data.f;
@@ -475,6 +497,9 @@ ves_pinvoke_method (MonoInvocation *frame)
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
+		case MONO_TYPE_I: /* FIXME: not 64 bit clean */
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
 			values[i] = &sp [i].data.i;
 			break;
 		case MONO_TYPE_R4:
@@ -484,6 +509,9 @@ ves_pinvoke_method (MonoInvocation *frame)
 			break;
 		case MONO_TYPE_R8:
 			values[i] = &sp [i].data.f;
+			break;
+		case MONO_TYPE_I8:
+			values[i] = &sp [i].data.l;
 			break;
 		case MONO_TYPE_STRING:
 			g_assert (sp [i].type == VAL_OBJ);
@@ -547,7 +575,7 @@ dump_stack (stackval *stack, stackval *sp)
 	}
 }
 
-#define DEBUG_INTERP 0
+#define DEBUG_INTERP 1
 #if DEBUG_INTERP
 #define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
 static char *opcode_names[] = {
@@ -667,22 +695,24 @@ ves_exec_method (MonoInvocation *frame)
 	if (!frame->method->klass->inited)
 		init_class (frame->method->klass);
 
+	DEBUG_ENTER ();
+
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		ICallMethod icall = frame->method->addr;
 		icall (frame);
+		DEBUG_LEAVE ();
 		return;
 	} 
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		ves_pinvoke_method (frame);
+		DEBUG_LEAVE ();
 		return;
 	} 
 		
 	header = ((MonoMethodNormal *)frame->method)->header;
 	signature = frame->method->signature;
 	image = frame->method->klass->image;
-
-	DEBUG_ENTER ();
 
 	/*
 	 * with alloca we get the expected huge performance gain
@@ -1636,6 +1666,7 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		}
 		CASE (CEE_CONV_U4) /* Fall through */
+		CASE (CEE_CONV_I) /* Fall through: FIXME: not 64 bit clean */
 		CASE (CEE_CONV_I4) {
 			++ip;
 			switch (sp [-1].type) {
@@ -1656,7 +1687,25 @@ ves_exec_method (MonoInvocation *frame)
 			sp [-1].type = VAL_I32;
 			BREAK;
 		}
-		CASE (CEE_CONV_I8) ves_abort(); BREAK;
+		CASE (CEE_CONV_I8)
+			++ip;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.l = (gint64)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.l = (gint64)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.l = (gint64)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I64;
+			BREAK;
 		CASE (CEE_CONV_R4) /* Fall through */
 		CASE (CEE_CONV_R8) {
 			++ip;
@@ -2029,7 +2078,31 @@ ves_exec_method (MonoInvocation *frame)
 
 			BREAK;
 		}
-		CASE (CEE_LDELEMA) ves_abort(); BREAK;
+		CASE (CEE_LDELEMA) {
+			MonoArrayObject *o;
+			guint32 esize, token;
+			
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			sp -= 2;
+
+			g_assert (sp [0].type == VAL_OBJ);
+			o = sp [0].data.p;
+
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
+			
+			g_assert (sp [1].data.i >= 0);
+			g_assert (sp [1].data.i < o->bounds [0].length);
+
+			/* check the array element corresponds to token */
+			esize = mono_array_element_size ((MonoArrayClass *)o->obj.klass);
+			
+			sp->type = VAL_MP;
+			sp->data.p = ((MonoArrayObject *)o)->vector + (sp [1].data.i * esize);
+			++sp;
+			BREAK;
+		}
 		CASE (CEE_LDELEM_I1) /* fall through */
 		CASE (CEE_LDELEM_U1) /* fall through */
 		CASE (CEE_LDELEM_I2) /* fall through */
@@ -2234,7 +2307,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDTOKEN)
 		CASE (CEE_CONV_U2) ves_abort(); BREAK;
 		CASE (CEE_CONV_U1) ves_abort(); BREAK;
-		CASE (CEE_CONV_I) ves_abort(); BREAK;
+		//CASE (CEE_CONV_I) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
