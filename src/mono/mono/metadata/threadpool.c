@@ -82,8 +82,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 
 	/* notify listeners */
-	if(!mono_monitor_enter ((MonoObject *) ares))
-		return;
+	mono_monitor_enter ((MonoObject *) ares);
 	
 	if (ares->handle != NULL) {
 		ac->wait_event = ((MonoWaitHandle *) ares->handle)->handle;
@@ -153,9 +152,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	*out_args = NULL;
 
 	/* check if already finished */
-	if (!mono_monitor_enter ((MonoObject *) ares)) {
-		return NULL;
-	}
+	mono_monitor_enter ((MonoObject *) ares);
 	
 	if (ares->endinvoke_called) {
 		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
