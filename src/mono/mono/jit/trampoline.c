@@ -16,7 +16,20 @@
 
 #include "jit.h"
 #include "codegen.h"
-
+/**
+ * mono_remoting_invoke:
+ * @real_proxy: pointer to a RealProxy object
+ * @msg: The MonoMethodMessage to execute
+ * @exc: used to store exceptions
+ * @out_args: used to store output arguments
+ *
+ * This is used to call RealProxy::Invoke(). RealProxy::Invoke() returns an
+ * IMessage interface and it is not trivial to extract results from there. So
+ * we call an helper method PrivateInvoke instead of calling
+ * RealProxy::Invoke() directly.
+ *
+ * Returns: the result object.
+ */
 MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
 		      MonoObject **exc, MonoArray **out_args)

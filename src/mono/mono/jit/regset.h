@@ -1,3 +1,10 @@
+/*
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
+ */
+
 #ifndef _MONO_JIT_REGSET_H_
 #define _MONO_JIT_REGSET_H_
 

@@ -49,6 +49,15 @@ static CRITICAL_SECTION delegate_section;
 static HANDLE delegate_semaphore = NULL;
 static int stop_worker = 0;
 
+/**
+ * mono_delegate_ctor:
+ * @this: pointer to an uninitialized delegate object
+ * @target: target object
+ * @addr: pointer to native code
+ *
+ * This is used to initialize a delegate. We also insert the method_info if
+ * we find the info with mono_jit_info_table_find().
+ */
 void
 mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
 {
