@@ -731,16 +731,10 @@ mono_main (int argc, char* argv[])
 		mono_config_parse (config_file);
 		//mono_set_rootdir ();
 
-		error = mono_verify_corlib ();
-		if (error) {
-			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-			exit (1);
-		}
-
 		error = mono_check_corlib_version ();
 		if (error) {
 			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-			fprintf (stderr, "Download a newer corlib at http://go-mono/daily.\n");
+			fprintf (stderr, "Download a newer corlib or a newer runtime at http://go-mono/daily.\n");
 			exit (1);
 		}
 
