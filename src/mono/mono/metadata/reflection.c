@@ -5566,6 +5566,9 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	MonoReflectionMethodBody *ret;
 	MonoMethodNormal *mn;
 	MonoMethodHeader *header;
+	guint32 method_rva, local_var_sig_token;
+    char *ptr;
+	unsigned char format, flags;
 	int i;
 
 	if (!System_Reflection_MethodBody)
@@ -5582,11 +5585,32 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 	mn = (MonoMethodNormal *)method;
 	header = mono_method_get_header (method);
+	
+	/* Obtain local vars signature token */
+	method_rva = mono_metadata_decode_row_col (&method->klass->image->tables [MONO_TABLE_METHOD], mono_metadata_token_index (method->token) - 1, MONO_METHOD_RVA);
+	ptr = mono_image_rva_map (method->klass->image, method_rva);
+	flags = *(const unsigned char *) ptr;
+	format = flags & METHOD_HEADER_FORMAT_MASK;
+	switch (format){
+	case METHOD_HEADER_TINY_FORMAT:
+	case METHOD_HEADER_TINY_FORMAT1:
+		local_var_sig_token = 0;
+		break;
+	case METHOD_HEADER_FAT_FORMAT:
+		ptr += 2;
+		ptr += 2;
+		ptr += 4;
+		local_var_sig_token = read32 (ptr);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
 
 	ret = (MonoReflectionMethodBody*)mono_object_new (domain, System_Reflection_MethodBody);
 	/* FIXME: Other fields */
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
+	ret->local_var_sig_token = local_var_sig_token;
 	ret->il = mono_array_new (domain, mono_defaults.byte_class, header->code_size);
 	memcpy (mono_array_addr (ret->il, guint8*, 0), header->code, header->code_size);
 	ret->locals = mono_array_new (domain, System_Reflection_LocalVariableInfo, header->num_locals);
@@ -5594,7 +5618,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new (domain, System_Reflection_LocalVariableInfo);
 		info->local_type = mono_type_get_object (domain, header->locals [i]);
 		info->is_pinned = header->locals [i]->pinned;
-		info->local_index = 0;
+		info->local_index = i;
 	}
 		
 	CACHE_OBJECT (method, ret, NULL);

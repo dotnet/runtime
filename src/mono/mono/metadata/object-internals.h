@@ -496,7 +496,7 @@ struct _MonoReflectionMethodBody {
 	MonoArray *locals;
 	MonoArray *il;
 	MonoBoolean init_locals;
-	guint32 sig_token;
+	guint32 local_var_sig_token;
 	guint32 max_stack;
 };
 
