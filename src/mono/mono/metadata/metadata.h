@@ -15,6 +15,7 @@
 #endif
 
 #define MONO_TYPE_ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
+#define MONO_TYPE_IS_VOID(t) ((t) && ((t)->type == MONO_TYPE_VOID) && !(t)->byref)
 
 typedef struct _MonoClass MonoClass;
 typedef struct _MonoDomain MonoDomain;
