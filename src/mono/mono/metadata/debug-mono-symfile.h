@@ -41,7 +41,6 @@ struct MonoSymbolFileMethodAddress {
 	guint32 is_valid;
 	guint64 start_address;
 	guint64 end_address;
-	guint64 trampoline_address;
 	guint32 line_addresses [MONO_ZERO_LEN_ARRAY];
 };
 

@@ -22,7 +22,6 @@ struct MonoSymbolFilePriv
 	GHashTable *method_table;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
-	FILE *f;
 };
 
 typedef struct
@@ -307,30 +306,18 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	MonoSymbolFileLineNumberEntry *lne;
 	int i;
 
-	if (!mep->minfo)
+	if (!mep->minfo) {
 		mep->minfo = g_hash_table_lookup (mydata->method_hash, mep->method);
+		if (!mep->minfo)
+			return;
+	}
 
 	address = (MonoSymbolFileMethodAddress *)
 		(mydata->symfile->address_table + mep->entry->address_table_offset);
 
 	address->is_valid = TRUE;
-	address->trampoline_address = GPOINTER_TO_UINT (mep->method->info);
-
-	if (!mep->minfo) {
-		address->start_address = address->end_address = 0;
-		fprintf (mydata->symfile->_priv->f, "%s.%s - %d - 0x%lx\n", mep->method->klass->name,
-			 mep->method->name, mep->method->wrapper_type,
-			 (long) address->trampoline_address);
-		return;
-	}
-
 	address->start_address = GPOINTER_TO_UINT (mep->minfo->code_start);
 	address->end_address = GPOINTER_TO_UINT (mep->minfo->code_start + mep->minfo->code_size);
-
-	fprintf (mydata->symfile->_priv->f, "%s.%s - %d - 0x%lx - 0x%lx - 0x%lx\n", mep->method->klass->name,
-		   mep->method->name, mep->method->wrapper_type,
-		   (long) address->start_address, (long) address->end_address,
-		   (long) address->trampoline_address);
 
 	lne = (MonoSymbolFileLineNumberEntry *)
 		(mydata->symfile->raw_contents + mep->entry->line_number_table_offset);
@@ -384,10 +371,7 @@ mono_debug_update_mono_symbol_file (MonoSymbolFile *symfile, GHashTable *method_
 		if (!symfile->address_table)
 			symfile->address_table = g_malloc0 (symfile->address_table_size);
 
-		symfile->_priv->f = fopen ("log", "at");
-		fprintf (symfile->_priv->f, "STARTING UPDATE\n");
 		g_hash_table_foreach (symfile->_priv->method_table, update_method_func, &mydata);
-		fclose (symfile->_priv->f);
 	}
 }
 
