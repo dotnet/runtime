@@ -40,6 +40,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/monitor.h>
 
 #include "mini.h"
 #include <string.h>
@@ -8201,7 +8202,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 
 	if (stopRequested) {
 		/* Don't throw the exception, just abort the thread */
-		mono_thread_abort (thread->abort_exc);
+		mono_thread_abort ((MonoObject *) thread->abort_exc);
 	}
 	else {
 		mono_arch_handle_exception (ctx, thread->abort_exc, FALSE);
