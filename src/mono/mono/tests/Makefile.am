@@ -193,10 +193,10 @@ TESTBS=$(BENCHSRC:.cs=.exe)
 EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC)
 
 %.exe: %.il
-	ilasm $< /OUTPUT=$@
+	ilasm -out:$@ $<
 
 %.exe: %.cs
-	$(CSC) $<
+	$(CSC) -out:$@ $<
 
 test:	testjit
 
@@ -205,7 +205,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS); do	\
-		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -220,7 +220,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_IL); do	\
-		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -232,7 +232,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS);	\
 	done
 
 testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
@@ -241,7 +241,7 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
-		if ./test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -259,11 +259,10 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL); do \
-		echo $$i; \
 		if [ $$i == thread5.exe ]; then \
 			continue; \
 		fi; \
-		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \

@@ -1,3 +1,9 @@
+
+Thu Jul 31 16:19:07 CEST 2003 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, etc.: portability fixes and support for
+	buidling outside the srcdir from Laurent Morichetti <l_m@pacbell.net>.
+
 2003-07-22  Duncan Mak  <duncan@ximian.com>
        
         * runtime/Makefile.am: Remove sqlsharp as we no longer distribute it.

@@ -72,6 +72,14 @@ case "$host" in
 		libdl="-ldl"
 		libgc_threads=pthreads
 		;;
+        *-*-hpux*)
+                platform_win32=no
+                CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
+		libmono_cflags="-D_REENTRANT"
+		libmono_ldflags="-lpthread"
+		libgc_threads=pthreads
+		AC_DEFINE(NEED_LINK_UNLINK)
+                ;;
 	*-*-solaris*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
@@ -146,7 +154,11 @@ AC_CHECK_HEADERS(wchar.h)
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
-CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings'
+WARN=''
+if test x"$GCC" = xyes; then
+        WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings'
+fi
+CFLAGS="-g $WARN"
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
@@ -464,6 +476,23 @@ if test x$platform_win32 = xno; then
 	AC_MSG_RESULT($cv_mono_sizeof_sunpath)
 	AC_DEFINE_UNQUOTED(MONO_SIZEOF_SUNPATH, $cv_mono_sizeof_sunpath)
 
+	dnl *************************************
+	dnl *** Checks for zero length arrays ***
+	dnl *************************************
+	AC_MSG_CHECKING(whether $CC supports zero length arrays)
+	AC_TRY_COMPILE([
+                struct s {
+                        int  length;
+                        char data [0];
+                };
+        ], [], [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE_UNQUOTED(MONO_ZERO_ARRAY_LENGTH, 0)
+	], [
+		AC_MSG_RESULT(no)
+		AC_DEFINE_UNQUOTED(MONO_ZERO_ARRAY_LENGTH, 1)
+	])
+
 	dnl *****************************
 	dnl *** Checks for libxnet    ***
 	dnl *****************************
@@ -621,16 +650,56 @@ TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
 JIT_SUPPORTED=no
+LIBC="libc.so.6"
 
 case "$host" in
-#mips-sgi-irix5.* | mips-sgi-irix6.*) TARGET=MIPS; ACCESS_UNALIGNED="no";;
-i*86-*-*) TARGET=X86; arch_target=x86; JIT_SUPPORTED=yes;;
-sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
-#alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
-#m68k-*-linux*) TARGET=M68K;;
-macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | powerpc-*-sysv* | powerpc-*-darwin*) TARGET=POWERPC; arch_target=ppc; JIT_SUPPORTED=yes;;
-arm-*-linux-* | armv4l-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
-s390-*-linux*) TARGET=S390; arch_target=s390; ACCESS_UNALIGNED="no";;
+#	mips-sgi-irix5.* | mips-sgi-irix6.*)
+#		TARGET=MIPS;
+#		ACCESS_UNALIGNED="no"
+#		;;
+	i*86-*-*)
+		TARGET=X86;
+		arch_target=x86;
+		JIT_SUPPORTED=yes
+		;;
+	sparc*-*-*)
+		TARGET=SPARC;
+		arch_target=sparc;
+		ACCESS_UNALIGNED="no"
+		;;
+#       alpha*-*-linux* | alpha*-*-osf*)
+#		TARGET=ALPHA;
+#		ACCESS_UNALIGNED="no"
+#	       ;;
+#	ia64-*-linux* | ia64-*-hpux*)
+#		TARGET=IA64;
+#		arch_target=ia64;
+#		JIT_SUPPORTED=no;
+#		ACCESS_UNALIGNED="no";
+#		case "$host_os" in
+#			linux*) LIBC="libc.so.6.1";;
+#			hpux*)  LIBC="libc.so.1";;
+#		esac
+#		;;
+#       m68k-*-linux*)
+#		TARGET=M68K
+#		;;
+	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
+        powerpc-*-sysv* | powerpc-*-darwin*)
+		TARGET=POWERPC;
+		arch_target=ppc;
+		JIT_SUPPORTED=yes
+		;;
+	arm-*-linux-* | armv4l-*-linux-*)
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		;;
+	s390-*-linux*)
+		TARGET=S390;
+		arch_target=s390;
+		ACCESS_UNALIGNED="no"
+		;;
 esac
 
 if test ${TARGET} = unknown; then
@@ -647,6 +716,7 @@ AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
 AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
 AM_CONDITIONAL(X86, test x$TARGET = xX86)
 AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
+AM_CONDITIONAL(IA64, test x$TARGET = xIA64)
 AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
@@ -654,7 +724,6 @@ AM_CONDITIONAL(S390, test x$TARGET = xS390)
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
 
-LIBC="libc.so.6"
 AC_SUBST(LIBC)
 
 AC_SUBST(arch_target)
@@ -682,6 +751,7 @@ mono/arch/arm/Makefile
 mono/arch/alpha/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
+mono/tests/tests-config
 mono/benchmark/Makefile
 mono/monoburg/Makefile
 mono/monograph/Makefile
@@ -695,6 +765,7 @@ man/Makefile
 doc/Makefile
 docs/Makefile
 data/Makefile
+data/config
 mono.spec
 ])
 

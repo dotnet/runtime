@@ -14,7 +14,7 @@ libmonoarch_arm_la_SOURCES = $(BUILT_SOURCES) \
 	arm-dis.h
 
 arm_dpimacros.h: dpiops.sh mov_macros.th dpi_macros.th cmp_macros.th
-	bash ./dpiops.sh
+	bash $(srcdir)/dpiops.sh
 
 CLEANFILES = $(BUILT_SOURCES)
 

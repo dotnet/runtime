@@ -119,7 +119,7 @@ struct _WapiHandleScratch
 	 * resize will go via mremap() or just realloc().
 	 */
 	gboolean is_shared;
-	guchar scratch_data[0];
+	guchar scratch_data[MONO_ZERO_ARRAY_LENGTH];
 };
 
 /*

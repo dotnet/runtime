@@ -10,12 +10,8 @@ libs=	\
 
 MCS=mcs
 RUNTIME=mono
-WARN=-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations \
-	-Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs \
-	-Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings
 
 INCLUDES = \
-	$(WARN) -fexceptions -DMONO_USE_EXC_TABLES	\
 	-I$(top_srcdir) 	\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
