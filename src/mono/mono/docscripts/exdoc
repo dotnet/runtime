@@ -48,8 +48,13 @@ EOF
 	for ($ai = 0; $ai < $#a; $ai++){
 	    $line = $a[$ai];
 
-	    ($api) = $line =~  /<h4><a name=\"api:(\w+)\">(\w+)<\/a><\/h4>/;
+	    ($api,$caption) = $line =~  /<h4><a name=\"api:(\w+)\">(\w+)<\/a><\/h4>/;
 	    if ($api ne ""){
+		$proto = $prototype{$api};
+		if ($proto eq ""){
+		    $proto = "Prototype: $api";
+		}
+
 print OUT<<EOF;
 <blockquote>
     <a name="api:$api"></a>
@@ -64,7 +69,7 @@ print OUT<<EOF;
                 <tr><td>
                         <table summary="" class="InnerSignatureTalbe" cellpadding="10" cellspacing="0" width="100%">
                         <tr bgcolor="#f2f2f2"><td>
-			<h4>Prototype: $api</h4>
+			<h4>$proto</h4>
                         </td></tr>
                         </table>
 	        </td></tr>
@@ -129,6 +134,13 @@ sub process_doc {
 		    $bodies{$func} = $body;
 		    $arguments{$func} = $args;
 		    $returns{$func} = $returns;
+		    $proto = "";
+		    while (<>){
+			$proto .= $_;
+			last if (/\{/);
+		    }
+		    $proto =~ s/{//;
+		    $prototype{$func} = $proto;
 		    return;
 		}
 		chop;

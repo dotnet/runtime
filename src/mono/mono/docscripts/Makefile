@@ -1,6 +1,6 @@
-all: build
+all: monoapi.tree
 
-build: extract
+monoapi.tree: toc.xml 
 	monodoc --assemble --out monoapi --hb toc.xml
 
 extract: convert.exe
@@ -8,3 +8,6 @@ extract: convert.exe
 
 convert.exe: convert.cs AgilityPack.dll
 	mcs convert.cs -r:AgilityPack.dll
+
+install:
+	cp monoapi.* `monodoc --get-sourcesdir`
