@@ -5183,7 +5183,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	assembly->name = p;
 	assembly->culture = "";
 	assembly->public_tok_value = NULL;
-	
+
 	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@'))
 		p++;
 	found_sep = 0;
@@ -5216,8 +5216,8 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			p = s;
 		} else if (*p == 'C' && g_ascii_strncasecmp (p, "Culture=", 8) == 0) {
 			p += 8;
-			if (strncmp (p, "neutral", 7) == 0) {
-				assembly->culture = "";
+			if (g_ascii_strncasecmp (p, "neutral", 7) == 0) {
+				assembly->culture = g_strdup ("");
 				p += 7;
 			} else {
 				assembly->culture = p;
@@ -5227,9 +5227,13 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			}
 		} else if (*p == 'P' && g_ascii_strncasecmp (p, "PublicKeyToken=", 15) == 0) {
 			p += 15;
-			assembly->public_tok_value = p;
-			while (*p && *p != ',') {
-				p++;
+			if (strncmp (p, "null", 4) == 0) {
+				p += 4;
+			} else {
+				assembly->public_tok_value = p;
+				while (*p && *p != ',') {
+					p++;
+				}
 			}
 		} else {
 			while (*p && *p != ',')
