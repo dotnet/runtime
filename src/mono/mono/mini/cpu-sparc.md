@@ -83,7 +83,7 @@ ldc.r4:
 ldc.r8:
 dup:
 pop:
-jmp: len:16
+jmp: len:32
 call: dest:i clob:c len:16
 calli:
 ret:
@@ -249,7 +249,7 @@ prefix3:
 prefix2:
 prefix1:
 prefixref:
-arglist:
+arglist: src1:i
 ceq: dest:i len:12
 cgt: dest:i len:12
 cgt.un: dest:i len:12
@@ -307,6 +307,7 @@ setreg: dest:i src1:i len:4 clob:r
 setregimm: dest:i len:8 clob:r
 setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
+oparglist: src1:i len:12
 voidcall: len:12 clob:c
 voidcall_reg: src1:i len:12 clob:c
 voidcall_membase: src1:b len:16 clob:c

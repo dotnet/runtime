@@ -229,6 +229,13 @@ reg: OP_OUTARG_VT (OP_ICONST) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, sparc_sp, tree->inst_c1);
 }
 
+# FIXME: Unify this with the previous rule
+reg: OP_OUTARG_VT (OP_REFANYTYPE (reg)) {
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, type));
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, sparc_sp, tree->inst_c1, state->reg1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, sparc_sp, tree->inst_c1);
+}	
+
 reg: OP_OUTARG_VT (base) {
 	int size = tree->unused;
 	mini_emit_memcpy (s, sparc_sp, tree->inst_c1, state->left->tree->inst_basereg, state->left->tree->inst_offset, size, 0);
@@ -396,6 +403,14 @@ stmt: CEE_STIND_I2 (OP_REGVAR, OP_ICONST) {
 	tree->dreg = state->left->tree->dreg;
 	tree->inst_c0 = state->right->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (reg, OP_ICONST)) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->left->tree->dreg, state->right->left->tree->dreg, state->right->right->tree->inst_c0);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_SUB (reg, OP_ICONST)) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->left->tree->dreg, state->right->left->tree->dreg, state->right->right->tree->inst_c0);
 }
 
 stmt: OP_SETRET (CEE_LDIND_REF(base)) {
