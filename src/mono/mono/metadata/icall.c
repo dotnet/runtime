@@ -4825,7 +4825,16 @@ mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 
 	iter->next_arg = 0;
 	/* FIXME: it's not documented what start is exactly... */
-	iter->args = start? start: argsp + sizeof (gpointer);
+	if (start) {
+		iter->args = start;
+	} else {
+		int i, align, arg_size;
+		iter->args = argsp + sizeof (gpointer);
+		for (i = 0; i < iter->sig->sentinelpos; ++i) {
+			arg_size = mono_type_stack_size (iter->sig->params [i], &align);
+			iter->args = (char*)iter->args + arg_size;
+		}
+	}
 	iter->num_args = iter->sig->param_count - iter->sig->sentinelpos;
 
 	/* g_print ("sig %p, param_count: %d, sent: %d\n", iter->sig, iter->sig->param_count, iter->sig->sentinelpos); */
