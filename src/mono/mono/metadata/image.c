@@ -24,6 +24,9 @@
 #include "tokentype.h"
 #include "metadata-internals.h"
 #include <mono/io-layer/io-layer.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -157,20 +160,10 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 	
 	writable = sect->st_flags & SECT_FLAGS_MEM_WRITE;
 
-	if (!image->f) {
-		if (sect->st_raw_data_ptr + sect->st_raw_data_size > image->raw_data_len)
-			return FALSE;
-		/* FIXME: we ignore the writable flag since we don't patch the binary */
-		iinfo->cli_sections [section] = image->raw_data + sect->st_raw_data_ptr;
-		return TRUE;
-	}
-	iinfo->cli_sections [section] = mono_raw_buffer_load (
-		fileno (image->f), writable,
-		sect->st_raw_data_ptr, sect->st_raw_data_size);
-
-	if (iinfo->cli_sections [section] == NULL)
+	if (sect->st_raw_data_ptr + sect->st_raw_data_size > image->raw_data_len)
 		return FALSE;
-
+	/* FIXME: we ignore the writable flag since we don't patch the binary */
+	iinfo->cli_sections [section] = image->raw_data + sect->st_raw_data_ptr;
 	return TRUE;
 }
 
@@ -212,15 +205,10 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo, guint32 offset)
 	for (i = 0; i < top; i++){
 		MonoSectionTable *t = &iinfo->cli_section_tables [i];
 
-		if (!image->f) {
-			if (offset + sizeof (MonoSectionTable) > image->raw_data_len)
-				return FALSE;
-			memcpy (t, image->raw_data + offset, sizeof (MonoSectionTable));
-			offset += sizeof (MonoSectionTable);
-		} else {
-			if (fread (t, sizeof (MonoSectionTable), 1, image->f) != 1)
-				return FALSE;
-		}
+		if (offset + sizeof (MonoSectionTable) > image->raw_data_len)
+			return FALSE;
+		memcpy (t, image->raw_data + offset, sizeof (MonoSectionTable));
+		offset += sizeof (MonoSectionTable);
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 		t->st_virtual_size = GUINT32_FROM_LE (t->st_virtual_size);
@@ -243,23 +231,14 @@ static gboolean
 load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	guint32 offset;
-	int n;
 	
 	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_header.datadir.pe_cli_header.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
 
-	if (!image->f) {
-		if (offset + sizeof (MonoCLIHeader) > image->raw_data_len)
-			return FALSE;
-		memcpy (&iinfo->cli_cli_header, image->raw_data + offset, sizeof (MonoCLIHeader));
-	} else {
-		if (fseek (image->f, offset, SEEK_SET) != 0)
-			return FALSE;
-	
-		if ((n = fread (&iinfo->cli_cli_header, sizeof (MonoCLIHeader), 1, image->f)) != 1)
-			return FALSE;
-	}
+	if (offset + sizeof (MonoCLIHeader) > image->raw_data_len)
+		return FALSE;
+	memcpy (&iinfo->cli_cli_header, image->raw_data + offset, sizeof (MonoCLIHeader));
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP32(x) (x) = GUINT32_FROM_LE ((x))
@@ -327,15 +306,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 	size = iinfo->cli_cli_header.ch_metadata.size;
 
-	if (!image->f) {
-		if (offset + size > image->raw_data_len)
-			return FALSE;
-		image->raw_metadata = image->raw_data + offset;
-	} else {
-		image->raw_metadata = mono_raw_buffer_load (fileno (image->f), FALSE, offset, size);
-		if (image->raw_metadata == NULL)
-			return FALSE;
-	}
+	if (offset + size > image->raw_data_len)
+		return FALSE;
+	image->raw_metadata = image->raw_data + offset;
 
 	ptr = image->raw_metadata;
 
@@ -624,7 +597,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 	MonoMSDOSHeader msdos;
-	int n;
 	guint32 offset = 0;
 
 	mono_image_init (image);
@@ -635,35 +607,21 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (status)
 		*status = MONO_IMAGE_IMAGE_INVALID;
 
-	if (!image->f) {
-		if (offset + sizeof (msdos) > image->raw_data_len)
-			goto invalid_image;
-		memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
-	} else {
-		if (fread (&msdos, sizeof (msdos), 1, image->f) != 1)
-			goto invalid_image;
-	}
+	if (offset + sizeof (msdos) > image->raw_data_len)
+		goto invalid_image;
+	memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
 	
 	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z'))
 		goto invalid_image;
 	
 	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
 
-	if (msdos.pe_offset != sizeof (msdos)) {
-		if (image->f)
-			fseek (image->f, msdos.pe_offset, SEEK_SET);
-	}
 	offset = msdos.pe_offset;
 
-	if (!image->f) {
-		if (offset + sizeof (MonoDotNetHeader) > image->raw_data_len)
-			goto invalid_image;
-		memcpy (header, image->raw_data + offset, sizeof (MonoDotNetHeader));
-		offset += sizeof (MonoDotNetHeader);
-	} else {
-		if ((n = fread (header, sizeof (MonoDotNetHeader), 1, image->f)) != 1)
-			goto invalid_image;
-	}
+	if (offset + sizeof (MonoDotNetHeader) > image->raw_data_len)
+		goto invalid_image;
+	memcpy (header, image->raw_data + offset, sizeof (MonoDotNetHeader));
+	offset += sizeof (MonoDotNetHeader);
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP32(x) (x) = GUINT32_FROM_LE ((x))
@@ -808,6 +766,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
 	FILE *filed;
+	struct stat stat_buf;
 
 	if ((filed = fopen (fname, "rb")) == NULL){
 		if (status)
@@ -815,9 +774,17 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 		return NULL;
 	}
 
+	if (fstat (fileno (filed), &stat_buf)) {
+		fclose (filed);
+		if (status)
+			*status = MONO_IMAGE_ERROR_ERRNO;
+		return NULL;
+	}
 	image = g_new0 (MonoImage, 1);
 	image->ref_count = 1;
-	image->f = filed;
+	image->file_descr = filed;
+	image->raw_data_len = stat_buf.st_size;
+	image->raw_data = mono_raw_buffer_load (fileno (filed), FALSE, 0, stat_buf.st_size);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->name = canonicalize_path (fname);
@@ -1035,11 +1002,11 @@ mono_image_close (MonoImage *image)
 		g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
 	LeaveCriticalSection (&images_mutex);
 
-	if (image->f) {
-		fclose (image->f);
-		image->f = NULL;
-		if (image->raw_metadata != NULL)
-			mono_raw_buffer_free (image->raw_metadata);
+	if (image->file_descr) {
+		fclose (image->file_descr);
+		image->file_descr = NULL;
+		if (image->raw_data != NULL)
+			mono_raw_buffer_free (image->raw_data);
 	}
 	
 	if (image->raw_data_allocated) {
@@ -1086,11 +1053,6 @@ mono_image_close (MonoImage *image)
 	if (image->image_info){
 		MonoCLIImageInfo *ii = image->image_info;
 
-		for (i = 0; i < ii->cli_section_count; i++){
-			if (!ii->cli_sections [i])
-				continue;
-			mono_raw_buffer_free (ii->cli_sections [i]);
-		}
 		if (ii->cli_section_tables)
 			g_free (ii->cli_section_tables);
 		if (ii->cli_sections)

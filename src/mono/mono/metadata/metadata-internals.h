@@ -42,8 +42,8 @@ struct _MonoTableInfo {
 
 struct _MonoImage {
 	int   ref_count;
-	FILE *f;
-	/* if f is NULL the image was loaded from raw data */
+	FILE *file_descr;
+	/* if file_descr is NULL the image was loaded from raw data */
 	char *raw_data;
 	guint32 raw_data_len;
 	guint8 raw_data_allocated;
