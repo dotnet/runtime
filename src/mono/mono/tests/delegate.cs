@@ -1,6 +1,20 @@
 using System;
 using System.Runtime.InteropServices;
 
+class A {
+	public static bool b_cctor_run = false;
+}
+
+class B {
+	static B () {
+		A.b_cctor_run = true;
+	}
+	public static void method () {
+	}
+}
+
+delegate void DoIt ();
+
 namespace Bah {
 class Test {
 	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
@@ -34,6 +48,11 @@ class Test {
 		data = 5;
 	}
 	static int Main () {
+		// Check that creation of delegates do not runs the class cctor
+		DoIt doit = new DoIt (B.method);
+		if (A.b_cctor_run)
+			return 1;
+
 		Test test = new Test ();
 		SimpleDelegate d = new SimpleDelegate (F);
 		SimpleDelegate d1 = new SimpleDelegate (test.VF);
