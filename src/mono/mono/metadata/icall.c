@@ -1711,7 +1711,10 @@ ves_icall_MonoType_get_Namespace (MonoReflectionType *type)
 	while (class->nested_in)
 		class = class->nested_in;
 
-	return mono_string_new (domain, class->name_space);
+	if (class->name_space [0] == '\0')
+		return NULL;
+	else
+		return mono_string_new (domain, class->name_space);
 }
 
 static gint32
