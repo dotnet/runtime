@@ -9043,6 +9043,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 		MonoMethod *nm;
 		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
 
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
+			g_error ("Method '%s' in assembly '%s' contains native code and mono can't run it. The assembly was probably created by Managed C++.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
+
 		if (!piinfo->addr) {
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 				piinfo->addr = mono_lookup_internal_call (method);
