@@ -658,13 +658,8 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *filename, MonoString *args, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
 	gboolean ret;
-	gunichar2 *utf16_filename;
-	gunichar2 *utf16_args;
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
-	
-	utf16_filename=mono_string_to_utf16 (filename);
-	utf16_args=mono_string_to_utf16 (args);
 	
 	startinfo.cb=sizeof(STARTUPINFO);
 	startinfo.dwFlags=STARTF_USESTDHANDLES;
@@ -672,10 +667,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *fil
 	startinfo.hStdOutput=stdout_handle;
 	startinfo.hStdError=stderr_handle;
 	
-	ret=CreateProcess (utf16_filename, utf16_args, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startinfo, &procinfo);
-
-	g_free (utf16_filename);
-	g_free (utf16_args);
+	ret=CreateProcess (mono_string_chars (filename), mono_string_chars (args), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startinfo, &procinfo);
 
 	if(ret==TRUE) {
 		process_info->process_handle=procinfo.hProcess;

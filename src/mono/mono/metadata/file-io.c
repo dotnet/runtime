@@ -188,39 +188,22 @@ ves_icall_System_IO_MonoIO_GetLastError ()
 gboolean 
 ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path)
 {
-	gunichar2 *utf16_path;
-	gboolean result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	result = CreateDirectory (utf16_path, NULL);
-	g_free (utf16_path);
-
-	return result;
+	return CreateDirectory (mono_string_chars (path), NULL);
 }
 
 gboolean 
 ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path)
 {
-	gunichar2 *utf16_path;
-	gboolean result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	result = RemoveDirectory (utf16_path);
-	g_free (utf16_path);
-
-	return result;
+	return RemoveDirectory (mono_string_chars (path));
 }
 
 HANDLE 
 ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat)
 {
-	gunichar2 *utf16_path;
 	WIN32_FIND_DATA data;
 	HANDLE result;
 
-	utf16_path = mono_string_to_utf16 (path);
-	result = FindFirstFile (utf16_path, &data);
-	g_free (utf16_path);
+	result = FindFirstFile (mono_string_chars (path), &data);
 
 	/* note: WIN32_FIND_DATA is an extension of WIN32_FILE_ATTRIBUTE_DATA */
 
@@ -277,98 +260,49 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory ()
 gboolean 
 ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path)
 {
-	gunichar2 *utf16_path;
-	gboolean result;
-	
-	utf16_path = mono_string_to_utf16 (path);
-	result = SetCurrentDirectory (utf16_path);
-	g_free (utf16_path);
-
-	return result;
+	return SetCurrentDirectory (mono_string_chars (path));
 }
 
 gboolean 
 ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest)
 {
-	gunichar2 *utf16_path, *utf16_dest;
-	gboolean result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	utf16_dest = mono_string_to_utf16 (dest);
-	result = MoveFile (utf16_path, utf16_dest);
-	g_free (utf16_path);
-	g_free (utf16_dest);
-
-	return result;
+	return MoveFile (mono_string_chars (path), mono_string_chars (dest));
 }
 
 gboolean 
 ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest, gboolean overwrite)
 {
-	gunichar2 *utf16_path, *utf16_dest;
-	gboolean result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	utf16_dest = mono_string_to_utf16 (dest);
-	result = CopyFile (utf16_path, utf16_dest, !overwrite);
-	g_free (utf16_path);
-	g_free (utf16_dest);
-
-	return result;
+	return CopyFile (mono_string_chars (path), mono_string_chars (dest), !overwrite);
 }
 
 gboolean 
 ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path)
 {
-	gunichar2 *utf16_path;
-	gboolean result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	result = DeleteFile (utf16_path);
-	g_free (utf16_path);
-
-	return result;
+	return DeleteFile (mono_string_chars (path));
 }
 
 gint32 
 ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path)
 {
-	gunichar2 *utf16_path;
-	gint32 result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	result = GetFileAttributes (utf16_path);
-	g_free (utf16_path);
-
-	return result;
+	return GetFileAttributes (mono_string_chars (path));
 }
 
 gboolean
 ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs)
 {
-	gunichar2 *utf16_path;
-	gboolean result;
-
-	utf16_path = mono_string_to_utf16 (path);
-	result = SetFileAttributes (utf16_path, attrs);
-	g_free (utf16_path);
-
-	return result;
+	return SetFileAttributes (mono_string_chars (path), attrs);
 }
 
 gboolean 
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat)
 {
-	gunichar2 *utf16_path;
 	gboolean result;
 	WIN32_FILE_ATTRIBUTE_DATA data;
 
-	utf16_path = mono_string_to_utf16 (path);
-	result = GetFileAttributesEx (utf16_path, GetFileExInfoStandard, &data);
-	g_free (utf16_path);
+	result = GetFileAttributesEx (mono_string_chars (path), GetFileExInfoStandard, &data);
 
 	if (result)
-		convert_win32_file_attribute_data (&data, utf16_path, stat);
+		convert_win32_file_attribute_data (&data, mono_string_chars (path), stat);
 
 	return result;
 }
@@ -376,15 +310,8 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat)
 HANDLE 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access_mode, gint32 share)
 {
-	gunichar2 *utf16_filename;
-	HANDLE result;
-
-	utf16_filename = mono_string_to_utf16 (filename);
-	result = CreateFile (utf16_filename, convert_access (access_mode), convert_share (share),
+	return CreateFile (mono_string_chars (filename), convert_access (access_mode), convert_share (share),
 			     NULL, convert_mode (mode), FILE_ATTRIBUTE_NORMAL, NULL);
-	g_free (utf16_filename);
-
-	return result;
 }
 
 gboolean 
