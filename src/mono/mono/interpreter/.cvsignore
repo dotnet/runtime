@@ -4,3 +4,5 @@ mint
 *.o
 .libs
 .deps
+interp.lo
+libmint.la

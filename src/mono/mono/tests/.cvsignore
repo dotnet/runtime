@@ -5,3 +5,6 @@ Makefile
 .libs
 libtest.la
 libtest.lo
+TestDriver.dll
+0
+stest.dat
