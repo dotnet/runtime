@@ -549,8 +549,14 @@ static void process_post_mortem (pid_t pid, int status)
 					    (gpointer *)&process_handle_data,
 					    NULL);
 	if(process_handle==0) {
+#ifdef DEBUG
+		/*
+		 * This may happen if we use Process.EnableRaisingEvents +
+		 * process.Exited event and the parent has finished.
+		 */
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": Couldn't find handle for process %d!", pid);
+#endif
 	} else {
 		/* Signal the handle.  Don't use
 		 * _wapi_handle_set_signal_state() unless we have
