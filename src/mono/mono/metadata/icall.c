@@ -963,11 +963,8 @@ handle_enum:
 					return TYPECODE_DECIMAL;
 				else if (strcmp (k->name, "DateTime") == 0)
 					return TYPECODE_DATETIME;
-				else if (strcmp (k->name, "DBNull") == 0)
-					return TYPECODE_DBNULL;
 			}
 		}
-		/* handle datetime, dbnull.. */
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_STRING:
 		return TYPECODE_STRING;
@@ -976,6 +973,13 @@ handle_enum:
 	case MONO_TYPE_OBJECT:
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_CLASS:
+		{
+			MonoClass *k =  type->type->data.klass;
+			if (strcmp (k->name_space, "System") == 0) {
+				if (strcmp (k->name, "DBNull") == 0)
+					return TYPECODE_DBNULL;
+			}
+		}
 		return TYPECODE_OBJECT;
 	default:
 		g_error ("type 0x%02x not handled in GetTypeCode()", t);
