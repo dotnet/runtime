@@ -1221,17 +1221,18 @@ ves_exec_method (MonoInvocation *frame)
 #if DEBUG_INTERP
 		opcode_count++;
 		if (tracing > 1) {
-			char *ins;
+			char *ins, *discode;
 			if (sp > frame->stack) {
-				output_indent ();
 				ins = dump_stack (frame->stack, sp);
-				g_print ("(%d) stack: %s\n", GetCurrentThreadId(), ins);
-				g_free (ins);
+			} else {
+				ins = g_strdup ("");
 			}
 			output_indent ();
-			ins = mono_disasm_code_one (NULL, frame->method, ip);
-			g_print ("(%d) %s", GetCurrentThreadId(), ins);
+			discode = mono_disasm_code_one (NULL, frame->method, ip);
+			discode [strlen (discode) - 1] = 0; /* no \n */
+			g_print ("(%d) %-29s %s\n", GetCurrentThreadId(), discode, ins);
 			g_free (ins);
+			g_free (discode);
 		}
 		if (il_ins_count > 0)
 			if (!(--il_ins_count))
@@ -2763,8 +2764,6 @@ array_constructed:
 				sp [-1].data.l = (guint64)sp [-1].data.f;
 				break;
 			case VAL_I64:
-				if (sp [-1].data.l < 0)
-					THROW_EX (mono_get_exception_overflow (), ip);
 				break;
 			case VAL_VALUET:
 				ves_abort();
@@ -2773,8 +2772,6 @@ array_constructed:
 				sp [-1].data.l = (guint64)sp [-1].data.i;
 				break;
 			default:
-				if ((gint64)sp [-1].data.nati < 0)
-					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.nati;
 				break;
 			}
@@ -3406,12 +3403,13 @@ array_constructed:
 				frame->ex = NULL;
 				frame->ex_handler = NULL;
 			}
-#endif
+#else
 			frame->ex = NULL;
 			frame->ex_handler = NULL;
 			endfinally_ip = ip;
 			goto handle_finally;
 			BREAK;
+#endif
 		CASE (CEE_UNUSED26) 
 		CASE (CEE_UNUSED27) 
 		CASE (CEE_UNUSED28) 
@@ -3773,6 +3771,10 @@ array_constructed:
 		char *message;
 		MonoObject *ex_obj;
 
+#if DEBUG_INTERP
+		if (tracing)
+			g_print ("* Handling exception '%s' at IL_%04x\n", mono_object_class (frame->ex)->name, frame->ip - header->code);
+#endif
 		if (die_on_exception)
 			goto die_on_ex;
 		
@@ -3793,6 +3795,10 @@ array_constructed:
 							 * and fault blocks before branching to the handler code.
 							 */
 							inv->ex_handler = clause;
+#if DEBUG_INTERP
+							if (tracing)
+								g_print ("* Found handler at '%s'\n", inv->method->name);
+#endif
 							/*
 							 * It seems that if the catch handler is found in the same method,
 							 * it gets executed before the finally handler.
@@ -3831,10 +3837,16 @@ die_on_ex:
 
 		for (i = 0; i < header->num_clauses; ++i) {
 			clause = &header->clauses [i];
-			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
+			if (clause == frame->ex_handler)
+				break;
+			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - header->code))) {
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					ip = header->code + clause->handler_offset;
 					finally_ips = g_slist_append (finally_ips, ip);
+#if DEBUG_INTERP
+					if (tracing)
+						g_print ("* Found finally at IL_%04x with exception: %s\n", clause->handler_offset, frame->ex? "yes": "no");
+#endif
 				}
 			}
 		}
@@ -3864,6 +3876,10 @@ die_on_ex:
 			clause = &header->clauses [i];
 			if (clause->flags == 3 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 				ip = header->code + clause->handler_offset;
+#if DEBUG_INTERP
+				if (tracing)
+					g_print ("* Executing handler at IL_%04x\n", clause->handler_offset);
+#endif
 				goto main_loop;
 			}
 		}
