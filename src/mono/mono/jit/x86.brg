@@ -484,12 +484,15 @@ reg: BOX (reg) {
 
 # array support
 reg: LDLEN (reg) {
-	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  G_STRUCT_OFFSET (MonoArray, bounds), 4);
-	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1,  G_STRUCT_OFFSET (MonoArrayBounds, length), 4);
+	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
+			     G_STRUCT_OFFSET (MonoArray, bounds), 4);
+	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1,  
+			     G_STRUCT_OFFSET (MonoArrayBounds, length), 4);
 }
 
 reg: LDELEMA (reg, reg) {
-	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, vector), 4);
+	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1, 
+			     G_STRUCT_OFFSET (MonoArray, vector), 4);
 	x86_imul_reg_reg_imm (s->code, tree->right->reg1, tree->right->reg1, tree->size);
 	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
 }
@@ -827,7 +830,8 @@ reg: CALL_I4 (INTF_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_mov_reg_membase (s->code, reg1, reg1, G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
+	x86_mov_reg_membase (s->code, reg1, reg1, 
+	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.i, 4);
 	x86_call_membase (s->code, reg1, tree->left->size);
 
@@ -841,7 +845,8 @@ reg: CALL_I4 (VFUNC_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_call_membase (s->code, reg1, G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
+	x86_call_membase (s->code, reg1, 
+	        G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
 
 	if (tree->size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
@@ -860,7 +865,8 @@ stmt: CALL_I4 (INTF_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_mov_reg_membase (s->code, reg1, reg1, G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
+	x86_mov_reg_membase (s->code, reg1, reg1, 
+                G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.i, 4);
 	x86_call_membase (s->code, reg1, tree->left->size);
 
@@ -872,7 +878,8 @@ stmt: CALL_I4 (VFUNC_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_call_membase (s->code, reg1, G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
+	x86_call_membase (s->code, reg1, 
+                G_STRUCT_OFFSET (MonoClass, vtable + tree->left->data.i));
 
 	if (tree->size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);

@@ -123,6 +123,9 @@ gboolean mono_jit_dump_asm = FALSE;
 /* Whether to dump the forest */
 gboolean mono_jit_dump_forest = FALSE;
 
+/* Whether to print function call traces */
+gboolean mono_jit_trace_calls = FALSE;
+
 /* 
  * We sometimes need static data, for example the forest generator need it to
  * store constants or class data.
@@ -1512,7 +1515,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				virtual = 0;
 
 			// fixme: virtual does not work
-			virtual = 0;
+			//virtual = 0;
 
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
@@ -2157,6 +2160,7 @@ usage (char *name)
 		 "-d            debug the jit, show disassembler output.\n"
 		 "--dump-asm    dumps the assembly code generated\n"
 		 "--dump-forest dumps the reconstructed forest\n"
+		 "--trace-calls printf function call trace\n"
 		 "--help        print this help message\n");
 	exit (1);
 }
@@ -2183,6 +2187,8 @@ main (int argc, char *argv [])
 			mono_jit_dump_asm = TRUE;
 		else if (strcmp (argv [i], "--dump-forest") == 0)
 			mono_jit_dump_forest = TRUE;
+		else if (strcmp (argv [i], "--trace-calls") == 0)
+			mono_jit_trace_calls = TRUE;
 		else
 			usage (argv [0]);
 	}

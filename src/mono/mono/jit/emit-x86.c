@@ -22,6 +22,21 @@
 #include "jit.h"
 #include "codegen.h"
 
+static void
+enter_method (MonoMethod *method)
+{
+	printf ("ENTER: %s.%s::%s\n", method->klass->name_space,
+		method->klass->name, method->name);
+}
+
+static void
+leave_method (MonoMethod *method)
+{
+	printf ("LEAVE: %s.%s::%s\n", method->klass->name_space,
+		method->klass->name, method->name);
+}
+
+
 /**
  * arch_emit_prologue:
  * @s: pointer to status information
@@ -45,6 +60,12 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 
 	if (mono_regset_reg_used (cfg->rs, X86_ESI))
 		x86_push_reg (cfg->code, X86_ESI);
+
+	if (mono_jit_trace_calls) {
+		x86_push_imm (cfg->code, cfg->method);
+		x86_call_code (cfg->code, enter_method);
+		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
+	}
 }
 
 /**
@@ -56,6 +77,16 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 static void
 arch_emit_epilogue (MonoFlowGraph *cfg)
 {
+	if (mono_jit_trace_calls) {
+		x86_push_reg (cfg->code, X86_EAX);
+		x86_push_reg (cfg->code, X86_EDX);
+		x86_push_imm (cfg->code, cfg->method);
+		x86_call_code (cfg->code, leave_method);
+		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
+		x86_pop_reg (cfg->code, X86_EDX);
+		x86_pop_reg (cfg->code, X86_EAX);
+	}
+
 	if (mono_regset_reg_used (cfg->rs, X86_EDI))
 		x86_pop_reg (cfg->code, X86_EDI);
 
@@ -159,12 +190,10 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->exclude_mask |= (1 << X86_ECX);
 			tree->left->exclude_mask |= (1 << X86_ECX);
 			break;
-		case MB_TERM_CALL_R8:
 		case MB_TERM_CALL_I4:
 			tree->reg1 = X86_EAX;
 			break;
 		case MB_TERM_CALL_I8:
-		//case MB_TERM_MUL:
 			tree->reg1 = X86_EAX;
 			tree->reg2 = X86_EDX;
 			break;

@@ -64,6 +64,7 @@ typedef struct {
 
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
+extern gboolean mono_jit_trace_calls;
 
 MonoFlowGraph *
 mono_cfg_new               (MonoMethod *method, MonoMemPool *mp);
