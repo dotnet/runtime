@@ -155,27 +155,37 @@ export PKG_CONFIG_PATH
 # /usr/local/include and /usr/local/lib to CPPFLAGS and LDFLAGS.  We could
 # skip this if it would add /usr/include and /usr/lib, but leaving it
 # shouldnt break anything.
-iconvdirs="/usr/include /usr/local/include"
-for i in $iconvdirs
-do
-	if [ -f $i/iconv.h ]; then
-		iconvh_dir=$i
-		break
-	fi
-done
+#
+# Actually, it does break stuff :-(  gcc 3.2 prints gratuitous warnings
+# and configure fails to find header files because of this cpp output.
 
-if [ -z "$iconvh_dir" ]; then
-    echo "Can't find iconv headers (looked in $iconvdirs)"
-    exit -1
+if [ ! -f /usr/include/iconv.h ]; then
+	iconvdirs="/usr/local/include"
+	for i in $iconvdirs
+	do
+		if [ -f $i/iconv.h ]; then
+			iconvh_dir=$i
+			break
+		fi
+	done
+
+	if [ -z "$iconvh_dir" ]; then
+	    echo "Can't find iconv headers (looked in $iconvdirs)"
+	    exit -1
+	fi
+
+	iconvlib_dir=`echo $iconvh_dir | sed -e 's/include/lib/'`
+
+	echo "Adding $iconvh_dir to CPPFLAGS"
+	echo "Adding $iconvlib_dir to LDFLAGS"
+
+	CPPFLAGS="$CPPFLAGS -I$here/install/include -I$iconvh_dir"
+	LDFLAGS="$LDFLAGS -L$here/install/lib -L$iconvlib_dir"
+else
+	CPPFLAGS="$CPPFLAGS -I$here/install/include"
+	LDFLAGS="$LDFLAGS -L$here/install/lib"
 fi
 
-iconvlib_dir=`echo $iconvh_dir | sed -e 's/include/lib/'`
-
-echo "Adding $iconvh_dir to CPPFLAGS"
-echo "Adding $iconvlib_dir to LDFLAGS"
-
-CPPFLAGS="$CPPFLAGS -I$here/install/include -I$iconvh_dir"
-LDFLAGS="$LDFLAGS -L$here/install/lib -L$iconvlib_dir"
 export CPPFLAGS
 export LDFLAGS
 
