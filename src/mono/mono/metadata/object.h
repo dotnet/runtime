@@ -471,6 +471,9 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value);
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value);
 
+MonoObject *
+mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObject *obj);
+
 void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 

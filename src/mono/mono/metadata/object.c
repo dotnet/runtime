@@ -840,6 +840,77 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
 	set_value (field->type, value, src, TRUE);
 }
 
+MonoObject *
+mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObject *obj)
+{	
+	MonoObject *o;
+	MonoClass *klass;
+	MonoVTable *vtable;
+	gchar *v;
+	gboolean is_static = FALSE;
+	gboolean is_ref = FALSE;
+
+	switch (field->type->type) {
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+		is_ref = TRUE;
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_VALUETYPE:
+		is_ref = field->type->byref;
+		break;
+	default:
+		g_error ("type 0x%x not handled in "
+			 "mono_field_get_value_object", field->type->type);
+		return NULL;
+	}
+
+	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		is_static = TRUE;
+		vtable = mono_class_vtable (domain, field->parent);
+		if (!vtable->initialized)
+			mono_runtime_class_init (vtable);
+	}
+	
+	if (is_ref) {
+		if (is_static) {
+			mono_field_static_get_value (vtable, field, &o);
+		} else {
+			mono_field_get_value (obj, field, &o);
+		}
+		return o;
+	}
+
+	/* boxed value type */
+	klass = mono_class_from_mono_type (field->type);
+	o = mono_object_new (domain, klass);
+	v = ((gchar *) o) + sizeof (MonoObject);
+	if (is_static) {
+		mono_field_static_get_value (vtable, field, v);
+	} else {
+		mono_field_get_value (obj, field, v);
+	}
+
+	return o;
+}
+
+
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
@@ -1209,7 +1280,7 @@ out_of_memory (size_t size)
 	 * back to the system at this point if we're really low on memory (ie, size is
 	 * lower than the memory we set apart)
 	 */
-	mono_raise_exception (mono_runtime_get_out_of_memory_ex ());
+	mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 }
 
 /**

@@ -109,6 +109,7 @@ struct _MonoDomain {
 	MonoMethod         *create_proxy_for_type_method;
 	MonoMethod         *private_invoke_method;
 	MonoAppContext     *default_context;
+	MonoException      *out_of_memory_ex;
 	GHashTable         *thread_static_fields;
 	GHashTable         *jump_target_hash;
 	MonoGHashTable     *class_init_trampoline_hash;
@@ -150,9 +151,6 @@ mono_runtime_install_cleanup (MonoDomainFunc func);
 
 void
 mono_runtime_quit (void);
-
-MonoException*
-mono_runtime_get_out_of_memory_ex (void);
 
 MonoDomain *
 mono_domain_create         (void);
