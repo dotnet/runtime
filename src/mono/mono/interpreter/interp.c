@@ -37,6 +37,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
@@ -3322,14 +3323,37 @@ array_constructed:
 	
 }
 
+static gint32
+runtime_exec_main (MonoMethod *method, MonoArray *args)
+{
+	stackval result;
+	stackval argv_array;
+	MonoInvocation call;
+	gint32 (*mfunc) (MonoArray*);
+
+	argv_array.type = VAL_OBJ;
+	argv_array.data.p = args;
+	argv_array.data.vt.klass = NULL;
+
+	if (args)
+		INIT_FRAME (&call, NULL, NULL, &argv_array, &result, method);
+	else 
+		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
+
+	ves_exec_method (&call);
+
+	return result.data.i;
+
+}
+
 static int 
 ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 {
+	MonoArray *args = NULL;
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
-	stackval result;
-	MonoInvocation call;
 	MonoMethod *method;
+	int i;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
@@ -3337,23 +3361,13 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 		g_error ("No entry point method found in %s", image->name);
 
 	if (method->signature->param_count) {
-		int i;
-		stackval argv_array;
-		MonoArray *arr = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
-		argv_array.type = VAL_OBJ;
-		argv_array.data.p = arr;
-		argv_array.data.vt.klass = NULL;
+		args = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
 		for (i=0; i < argc; ++i) {
-			mono_array_set (arr, gpointer, i, mono_string_new (argv [i]));
+			mono_array_set (args, gpointer, i, mono_string_new (argv [i]));
 		}
-		INIT_FRAME (&call, NULL, NULL, &argv_array, &result, method);
-	} else {
-		INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
 	}
 	
-	ves_exec_method (&call);
-
-	return result.data.i;
+	return mono_runtime_exec_main (method, args);
 }
 
 static void
@@ -3625,10 +3639,14 @@ main (int argc, char *argv [])
 
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
+	mono_install_runtime_exec_main (runtime_exec_main);
 
 	mono_install_handler (interp_ex_handler);
 
 	mono_init ();
+	mono_thread_init();
+	mono_appdomain_init (file);
+	mono_network_init();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){
@@ -3636,8 +3654,6 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
-	mono_thread_init();
-	mono_network_init();
 
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);

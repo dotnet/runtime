@@ -1857,7 +1857,7 @@ mono_type_size (MonoType *t, gint *align)
 		guint32 size;
 
 		if (t->data.klass->enumtype) {
-			return mono_type_stack_size (t->data.klass->enum_basetype, align);
+			return mono_type_size (t->data.klass->enum_basetype, align);
 		} else {
 			size = mono_class_value_size (t->data.klass, align);
 			return size;
@@ -1895,9 +1895,6 @@ mono_type_stack_size (MonoType *t, gint *align)
 	}
 
 	switch (t->type){
-	case MONO_TYPE_VOID:
-		*align = 1;
-		return 0;
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:

@@ -29,11 +29,18 @@ default_runtime_object_init (MonoObject *o)
 }
 
 MonoRuntimeObjectInit mono_runtime_object_init = default_runtime_object_init;
+MonoRuntimeExecMain   mono_runtime_exec_main = NULL;
 
 void
 mono_install_runtime_object_init (MonoRuntimeObjectInit func)
 {
 	mono_runtime_object_init = func? func: default_runtime_object_init;
+}
+
+void
+mono_install_runtime_exec_main (MonoRuntimeExecMain func)
+{
+	mono_runtime_exec_main = func;
 }
 
 /**

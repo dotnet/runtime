@@ -51,8 +51,11 @@ struct _MonoAppDomain {
 void
 mono_appdomain_init (char *friendly_name);
 
-MonoAppDomainData *
-mono_get_cur_domain ();
+inline MonoAppDomainData *
+mono_appdomain_get (void);
+
+inline void
+mono_appdomain_set (MonoAppDomainData *domain);
 
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup);
@@ -76,7 +79,7 @@ ves_icall_System_AppDomain_SetData                 (MonoAppDomain *ad,
 MonoAppDomainSetup *
 ves_icall_System_AppDomain_getSetup                (MonoAppDomain *ad);
 
-MonoAppDomainSetup *
+MonoString *
 ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomain *ad);
 
 MonoArray *
@@ -84,7 +87,16 @@ ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomain *ad);
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad, 
-						    MonoString    *assName, 
+						    MonoReflectionAssemblyName *assRef,
 						    MonoObject    *evidence);
+
+void
+ves_icall_System_AppDomain_Unload                  (MonoAppDomain *ad);
+
+gint32
+ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
+						    MonoString    *file, 
+						    MonoObject    *evidence,
+						    MonoArray     *args);
 
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */

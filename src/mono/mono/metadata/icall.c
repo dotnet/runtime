@@ -25,6 +25,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/unicode.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/io-layer/io-layer.h>
 #include "decimal.h"
 
@@ -179,56 +180,6 @@ static MonoObject *
 ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 {
 	return mono_object_clone (this);
-}
-
-static MonoObject *
-ves_icall_appdomain_get_cur_domain ()
-{
-	MonoClass *adclass;
-	MonoAppDomain *ad;
-	
-	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = (MonoAppDomain *) mono_object_new (adclass);
-	mono_runtime_object_init ((MonoObject *) ad);
-	return (MonoObject *) ad;
-}
-
-typedef struct {
-	MonoArray *res;
-	int idx;
-} add_assembly_helper_t;
-
-static void
-add_assembly (gpointer key, gpointer value, gpointer user_data)
-{
-	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
-
-	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (value));
-}
-
-//
-// This is not correct, because we return all the assemblies loaded, and not
-// those that come from the AppDomain, but its better than nothing.
-//
-static MonoArray *
-ves_icall_appdomain_get_default_assemblies ()
-{
-	static MonoClass *System_Reflection_Assembly;
-	GHashTable *assemblies = mono_get_assemblies ();
-	MonoArray *res;
-	add_assembly_helper_t ah;
-	
-	if (!System_Reflection_Assembly)
-		System_Reflection_Assembly = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "Assembly");
-
-	res = mono_array_new (System_Reflection_Assembly, g_hash_table_size (assemblies));
-
-	ah.res = res;
-	ah.idx = 0;
-	g_hash_table_foreach (assemblies, add_assembly, &ah);
-
-	return res;
 }
 
 static void
@@ -725,30 +676,6 @@ static guint32 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Erro
 	return(GetLastError());
 }
 
-
-static MonoReflectionAssembly*
-ves_icall_System_AppDomain_LoadFrom (MonoString *assName, MonoObject *evidence)
-{
-	/* FIXME : examine evidence? */
-	char *name = mono_string_to_utf8 (assName);
-	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssembly *ass;
-
-	if (strncmp (name, "file://", 7) == 0)
-		name += 7;
-	ass = mono_assembly_open (name, NULL, &status);
-
-	if (!ass)
-		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.IO", "FileNotFoundException"));
-
-	return mono_assembly_get_object (ass);
-}
-
-static void
-ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoObject *setup)
-{
-	// fixme: implement me
-}
 static MonoReflectionType*
 ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type) /* , char throwOnError, char ignoreCase) */
 {
@@ -905,9 +832,16 @@ static gpointer icall_map [] = {
 	/*
 	 * System.AppDomain
 	 */
-	"System.AppDomain::getCurDomain", ves_icall_appdomain_get_cur_domain,
-	"System.AppDomain::getDefaultAssemblies", ves_icall_appdomain_get_default_assemblies,
-	"System.AppDomain::LoadFrom", ves_icall_System_AppDomain_LoadFrom,
+	"System.AppDomain::createDomain", ves_icall_System_AppDomain_createDomain,
+	"System.AppDomain::getCurDomain", ves_icall_System_AppDomain_getCurDomain,
+	"System.AppDomain::GetData", ves_icall_System_AppDomain_GetData,
+	"System.AppDomain::SetData", ves_icall_System_AppDomain_SetData,
+	"System.AppDomain::getSetup", ves_icall_System_AppDomain_getSetup,
+	"System.AppDomain::getFriendlyName", ves_icall_System_AppDomain_getFriendlyName,
+	"System.AppDomain::GetAssemblies", ves_icall_System_AppDomain_GetAssemblies,
+	"System.AppDomain::LoadAssembly", ves_icall_System_AppDomain_LoadAssembly,
+	"System.AppDomain::Unload", ves_icall_System_AppDomain_Unload,
+	"System.AppDomain::ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly,
 
 	/*
 	 * System.AppDomainSetup

@@ -22,6 +22,9 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/socket-io.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/io-layer/io-layer.h>
 
@@ -3187,8 +3190,21 @@ mono_jit_assembly (MonoAssembly *assembly)
 
 }
 
-typedef int (*MonoMainIntVoid) ();
-typedef int (*MonoMainIntArgs) (MonoArray* args);
+static gint32
+jit_exec_main (MonoMethod *method, MonoArray *args)
+{
+	gint32 (*mfunc) (MonoArray*);
+	gint32 res;
+
+	mfunc = arch_compile_method (method);
+
+	res = mfunc (args);
+
+	if (method->signature->ret->type == MONO_TYPE_VOID)
+		res = 0;
+	
+	return res;
+}
 
 /**
  * mono_jit_exec:
@@ -3201,32 +3217,25 @@ typedef int (*MonoMainIntArgs) (MonoArray* args);
 static int 
 mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
 {
+	MonoArray *args = NULL;
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
-	MonoMainIntVoid mfunc;
-	int res = 0;
+	int stack;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
-	mfunc = arch_compile_method (method);
-	mono_end_of_stack = &res; /* a pointer to a local variable is always < BP */
+	mono_end_of_stack = &stack; /* a pointer to a local variable is always < BP */
 
 	if (method->signature->param_count) {
-		MonoArray *arr = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
 		int i;
+		args = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i)
-			mono_array_set (arr, gpointer, i, mono_string_new (argv [i]));
-		res = ((MonoMainIntArgs)mfunc) (arr);
-	} else {
-		res = mfunc ();
+			mono_array_set (args, gpointer, i, mono_string_new (argv [i]));
 	}
-
-	if (method->signature->ret->type == MONO_TYPE_VOID)
-		res = 0;
 	
-	return res;
+	return mono_runtime_exec_main (method, args);
 }
 
 static void
@@ -3371,9 +3380,13 @@ main (int argc, char *argv [])
 	mono_install_trampoline (arch_create_jit_trampoline);
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
+	mono_install_runtime_exec_main (jit_exec_main);
 	mono_install_handler (arch_get_throw_exception ());
-	mono_init ();
 
+	mono_init ();
+	mono_thread_init();
+	mono_appdomain_init (file);
+	mono_network_init();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){
@@ -3391,6 +3404,9 @@ main (int argc, char *argv [])
 		retval = mono_jit_exec (assembly, argc - i, argv + i);
 		printf ("RESULT: %d\n", retval);
 	}
+
+	mono_network_cleanup();
+	mono_thread_cleanup();
 
 	mono_assembly_close (assembly);
 

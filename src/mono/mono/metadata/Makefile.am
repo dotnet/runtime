@@ -35,7 +35,9 @@ libmetadata_a_SOURCES = \
 	exception.c	\
 	exception.h	\
 	unicode.c	\
-	unicode.h
+	unicode.h	\
+	appdomain.h	\
+	appdomain.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
@@ -55,7 +57,8 @@ libmetadatainclude_HEADERS = \
 	loader.h	\
 	class.h		\
 	object.h	\
-	exception.h
+	exception.h	\
+	appdomain.h
 
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)

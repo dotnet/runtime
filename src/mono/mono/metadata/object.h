@@ -4,6 +4,8 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/threads-types.h>
 
+typedef guchar MonoBoolean;
+
 typedef struct {
 	MonoClass *klass;
 	MonoThreadsSync *synchronisation;
@@ -46,17 +48,11 @@ typedef struct {
 	gpointer    method_ptr;
 } MonoDelegate;
 
-typedef struct {
-	MonoObject object;
-	MonoObject loaded_assemblies;
-	// fixme: add all other fields
-} MonoAppDomain;
-
-typedef guchar MonoBoolean;
-
-typedef void  (*MonoRuntimeObjectInit) (MonoObject *o);
+typedef void   (*MonoRuntimeObjectInit) (MonoObject *o);
+typedef gint32 (*MonoRuntimeExecMain)   (MonoMethod *method, MonoArray *args);
 
 extern MonoRuntimeObjectInit mono_runtime_object_init;
+extern MonoRuntimeExecMain mono_runtime_exec_main;
 
 #define mono_array_length(array) ((array)->bounds->length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )

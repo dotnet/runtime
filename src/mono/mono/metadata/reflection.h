@@ -262,6 +262,13 @@ typedef struct {
 } MonoReflectionTypeBuilder;
 
 typedef struct {
+	MonoObject  obj;
+	MonoString *name;
+	MonoString *codebase;
+	MonoObject *version;
+} MonoReflectionAssemblyName;
+
+typedef struct {
 	char *nest_name_space;
 	char *nest_name;
 	char *name_space;
