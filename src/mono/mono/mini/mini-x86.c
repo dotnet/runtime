@@ -206,6 +206,40 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	return opts;
 }
 
+/*
+ * Determine whenever the trap whose info is in SIGINFO is caused by
+ * integer overflow.
+ */
+gboolean
+mono_arch_is_int_overflow (void *sigctx)
+{
+	struct sigcontext *ctx = (struct sigcontext*)sigctx;
+	guint8* ip;
+
+	ip = (guint8*)ctx->SC_EIP;
+
+	if ((ip [0] == 0xf7) && (x86_modrm_mod (ip [1]) == 0x3) && (x86_modrm_reg (ip [1]) == 0x7)) {
+		gint32 reg;
+
+		/* idiv REG */
+		switch (x86_modrm_rm (ip [1])) {
+		case X86_ECX:
+			reg = ctx->SC_ECX;
+			break;
+		case X86_EBX:
+			reg = ctx->SC_EBX;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		if (reg == -1)
+			return TRUE;
+	}
+			
+	return FALSE;
+}
+
 static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)

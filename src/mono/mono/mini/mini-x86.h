@@ -154,6 +154,8 @@ typedef struct sigcontext MonoContext;
 #endif
 
 #define MONO_ARCH_BIGMUL_INTRINS 1
+#define MONO_ARCH_NEED_DIV_CHECK 1
+#define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
 #endif /* __MONO_MINI_X86_H__ */  
 
