@@ -27,6 +27,32 @@
 static gboolean
 string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr);
 
+static MonoString*
+empty_string (MonoDomain *domain)
+{
+	MonoVTable *vtable = mono_class_vtable (domain, mono_defaults.string_class);
+	MonoObject *o;
+	static MonoClassField *empty_field = NULL;
+
+	if (!empty_field) {
+		MonoClassField *field;
+		gpointer iter;
+
+		iter = NULL;
+		while ((field = mono_class_get_fields (mono_defaults.string_class, &iter))) {
+			if (!strcmp (field->name, "Empty"))
+				break;
+		}
+
+		g_assert (field);
+		empty_field = field;
+	}
+
+	mono_field_static_get_value (vtable, empty_field, &o);
+	g_assert (o);
+	return (MonoString*)o;
+}
+
 MonoString *
 ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
 {
@@ -86,10 +112,8 @@ ves_icall_System_String_ctor_charp_int_int (gpointer dummy, gunichar2 *value, gi
 	if ((sindex < 0) || (length < 0))
 		mono_raise_exception (mono_get_exception_argument_out_of_range ("Out of range"));
 	
-	if (length == 0) {	/* fixme: return String.Empty here */
-		g_warning ("string doesn't yet support empy strings in char* constructor");
-		g_assert_not_reached ();
-	}
+	if (length == 0)
+		return empty_string (domain);
 	
 	begin = (gunichar2 *) (value + sindex);
 
@@ -105,10 +129,8 @@ ves_icall_System_String_ctor_sbytep (gpointer dummy, gint8 *value)
 
 	domain = mono_domain_get ();
 
-	if (NULL == value) {	/* fixme: return String.Empty here */
-		g_warning ("string doesn't yet support empy strings in char* constructor");
-		g_assert_not_reached ();
-	}
+	if (NULL == value)
+		return empty_string (domain);
 
 	return mono_string_new (domain, (const char *) value);
 }
