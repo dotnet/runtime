@@ -16,7 +16,11 @@ endif
 
 bin_PROGRAMS = pedump
 
-noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
+#
+# libtool is not capable of creating static/shared versions of the same
+# convenience lib, so we have to do it ourselves
+#
+noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la libmetadata-static.la libmonoruntime-static.la
 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(ICU_CFLAGS) \
@@ -41,6 +45,9 @@ CLEANFILES = mono-bundle.stamp
 
 libmonoruntime_la_LIBADD = $(PLATFORM_LIB)
 libmetadata_la_LIBADD = $(bundle_obj) $(PLATFORM_LIB)
+
+libmonoruntime_static_la_LIBADD = $(libmonoruntime_la_LIBADD)
+libmetadata_static_la_LIBADD = $(libmetadata_la_LIBADD)
 
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
@@ -119,6 +126,12 @@ libmetadata_la_SOURCES = \
 	class-internals.h		\
 	mempool.c	\
 	debug-helpers.c
+
+libmetadata_static_la_SOURCES = $(libmetadata_la_SOURCES)
+libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
+
+libmetadata_static_la_LDFLAGS = -static
+libmonoruntime_static_la_LDFLAGS = -static
 
 libmetadataincludedir = $(includedir)/mono/metadata
 libmonoruntimeincludedir = $(includedir)/mono/metadata
