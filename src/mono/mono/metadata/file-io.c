@@ -252,7 +252,7 @@ ves_icall_System_IO_FileStream_FileOpen (MonoString *path, gint32 mode, gint32 a
 }
 
 void 
-ves_icall_System_IO_FileStream_FileClose (gpointer handle) {
+ves_icall_System_IO_FileStream_FileClose (HANDLE handle) {
 	if(handle == INVALID_HANDLE_VALUE) {
 		mono_raise_exception(mono_get_exception_io("Invalid handle"));
 	}
@@ -261,7 +261,7 @@ ves_icall_System_IO_FileStream_FileClose (gpointer handle) {
 }
 
 gint32 
-ves_icall_System_IO_FileStream_FileRead (gpointer handle, MonoArray *dest, gint32 dest_offset, gint32 count) {
+ves_icall_System_IO_FileStream_FileRead (HANDLE handle, MonoArray *dest, gint32 dest_offset, gint32 count) {
 	gboolean ret;
 	guint32 bytesread;
 	guchar *buf;
@@ -284,7 +284,7 @@ ves_icall_System_IO_FileStream_FileRead (gpointer handle, MonoArray *dest, gint3
 }
 
 gint32 
-ves_icall_System_IO_FileStream_FileWrite (gpointer handle, MonoArray *src, gint32 src_offset, gint32 count) {
+ves_icall_System_IO_FileStream_FileWrite (HANDLE handle, MonoArray *src, gint32 src_offset, gint32 count) {
 	gboolean ret;
 	guint32 byteswritten;
 	guchar *buf;
@@ -307,7 +307,7 @@ ves_icall_System_IO_FileStream_FileWrite (gpointer handle, MonoArray *src, gint3
 }
 
 gint64 
-ves_icall_System_IO_FileStream_FileSeek (gpointer handle, gint64 offset, gint32 origin) {
+ves_icall_System_IO_FileStream_FileSeek (HANDLE handle, gint64 offset, gint32 origin) {
 	gint64 ret;
 	gint32 offsetlo, offsethi, retlo;
 	
@@ -327,7 +327,7 @@ ves_icall_System_IO_FileStream_FileSeek (gpointer handle, gint64 offset, gint32 
 }
 
 gint64 
-ves_icall_System_IO_FileStream_FileGetLength (gpointer handle) {
+ves_icall_System_IO_FileStream_FileGetLength (HANDLE handle) {
 	gint32 length_lo, length_hi;
 
 	if (handle == INVALID_HANDLE_VALUE)
@@ -339,7 +339,7 @@ ves_icall_System_IO_FileStream_FileGetLength (gpointer handle) {
 }
 
 void 
-ves_icall_System_IO_FileStream_FileSetLength (gpointer handle, gint64 length) {
+ves_icall_System_IO_FileStream_FileSetLength (HANDLE handle, gint64 length) {
 	/* FIXME: Should this put the file pointer back to where it
 	 * was before we started setting the length? The spec doesnt
 	 * say, as usual
@@ -364,7 +364,7 @@ ves_icall_System_IO_FileStream_FileSetLength (gpointer handle, gint64 length) {
 }
 
 void 
-ves_icall_System_IO_FileStream_FileFlush (gpointer handle) {
+ves_icall_System_IO_FileStream_FileFlush (HANDLE handle) {
 	/* FIXME: implement FlushFileBuffers */
 }
 

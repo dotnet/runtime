@@ -46,7 +46,9 @@ libmetadata_a_SOURCES = \
 	debug-helpers.h	\
 	debug-helpers.c	\
 	rand.h		\
-	rand.c
+	rand.c		\
+	sysmath.h	\
+	sysmath.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 

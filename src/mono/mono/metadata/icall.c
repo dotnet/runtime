@@ -28,6 +28,7 @@
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/rand.h>
+#include <mono/metadata/sysmath.h>
 #include <mono/io-layer/io-layer.h>
 #include "decimal.h"
 
@@ -1992,6 +1993,25 @@ static gpointer icall_map [] = {
 	"System.IO.FileStream::FileGetLength", ves_icall_System_IO_FileStream_FileGetLength,
 	"System.IO.FileStream::FileSetLength", ves_icall_System_IO_FileStream_FileSetLength,
 	"System.IO.FileStream::FileFlush", ves_icall_System_IO_FileStream_FileFlush,
+
+	/*
+	 * System.Math
+	 */
+	"System.Math::Sin", ves_icall_System_Math_Sin,
+        "System.Math::Cos", ves_icall_System_Math_Cos,
+        "System.Math::Tan", ves_icall_System_Math_Tan,
+        "System.Math::Sinh", ves_icall_System_Math_Sinh,
+        "System.Math::Cosh", ves_icall_System_Math_Cosh,
+        "System.Math::Tanh", ves_icall_System_Math_Tanh,
+        "System.Math::Acos", ves_icall_System_Math_Acos,
+        "System.Math::Asin", ves_icall_System_Math_Asin,
+        "System.Math::Atan", ves_icall_System_Math_Atan,
+        "System.Math::Atan2", ves_icall_System_Math_Atan2,
+        "System.Math::Exp", ves_icall_System_Math_Exp,
+        "System.Math::Log", ves_icall_System_Math_Log,
+        "System.Math::Log10", ves_icall_System_Math_Log10,
+        "System.Math::Pow", ves_icall_System_Math_Pow,
+        "System.Math::Sqrt", ves_icall_System_Math_Sqrt,
 
 	/*
 	 * add other internal calls here

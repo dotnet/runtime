@@ -67,24 +67,24 @@ extern HANDLE
 ves_icall_System_IO_FileStream_FileOpen (MonoString *filename, gint32 mode, gint32 access, gint32 share);
 
 extern void 
-ves_icall_System_IO_FileStream_FileClose (gpointer handle);
+ves_icall_System_IO_FileStream_FileClose (HANDLE handle);
 
 extern gint32 
-ves_icall_System_IO_FileStream_FileRead (gpointer handle, MonoArray *dest, gint32 dest_offset, gint32 count);
+ves_icall_System_IO_FileStream_FileRead (HANDLE handle, MonoArray *dest, gint32 dest_offset, gint32 count);
 
 extern gint32 
-ves_icall_System_IO_FileStream_FileWrite (gpointer handle, MonoArray *src, gint32 src_offset, gint32 count);
+ves_icall_System_IO_FileStream_FileWrite (HANDLE handle, MonoArray *src, gint32 src_offset, gint32 count);
 
 extern gint64 
-ves_icall_System_IO_FileStream_FileSeek (gpointer handle, gint64 offset, gint32 origin);
+ves_icall_System_IO_FileStream_FileSeek (HANDLE handle, gint64 offset, gint32 origin);
 
 extern gint64 
-ves_icall_System_IO_FileStream_FileGetLength (gpointer handle);
+ves_icall_System_IO_FileStream_FileGetLength (HANDLE handle);
 
 extern void 
-ves_icall_System_IO_FileStream_FileSetLength (gpointer handle, gint64 length);
+ves_icall_System_IO_FileStream_FileSetLength (HANDLE handle, gint64 length);
 
 extern void 
-ves_icall_System_IO_FileStream_FileFlush (gpointer handle);
+ves_icall_System_IO_FileStream_FileFlush (HANDLE handle);
 
 #endif /* _MONO_METADATA_FILEIO_H_ */
