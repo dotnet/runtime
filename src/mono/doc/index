@@ -85,6 +85,11 @@
 	and <a
 	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)</b>
 
+@item Jul 20th, 2002
+
+	A spanish tutorial on using Mono is <a
+	href="http://www.es.gnome.org/documentacion/articulos/mono-linux/mono-linux/t1.html">here</a>
+
 @item Jul 19th, 2002
 
 	Dick's code for file handle redirection is complete and has
@@ -101,6 +106,12 @@
 	href="http://lists.ximian.com/archives/public/mono-list/2002-July/000916.html">here</a>.
 
 @item Jul 17th, 2002
+
+	The first documentary on Ximian's development team is now
+	available online, from young director <a
+	href="mailto:erik.pukinskis@uconn.edu">Erik Pukinskis</a>: <a
+	href="http://www.ximian.com/devzone/projects/codemonkey.html">"Code
+	Monkey At Work"</a>.
 
 	A Tutorial on getting Mono installed from sources is now <a
 	href="http://www.go-mono.com/mono-beginning/x70.html">online</b>
