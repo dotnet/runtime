@@ -1,3 +1,7 @@
+2003-08-16  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/checked.cs: Added mul.ovf tests.
+
 2003-08-15  Duncan Mak  <duncan@ximian.com>
 
 	* doc/mysql: Change references to ByteFX.Data.MySQLClient to the

@@ -93,8 +93,96 @@ namespace test {
 
 			if (ui != 100000)
 				return -6;
-			
-			
+
+			// Check mul.ovf
+			checked {
+				int l;
+				int m;
+
+				int[][] cases = new int [][] { 
+					new int [] {0, 0, 0},
+					new int [] {-5, 0, 0},
+					new int [] {3, -5, -15},
+					new int [] {3, 5, 15},
+					new int [] {-3, -5, 15},
+					new int [] {-3, 5, -15},
+					new int [] {-1, 32767, -32767},
+					new int [] {32767, -1, -32767}};
+
+
+				for (int j = 0; j < cases.Length; ++j)
+					if (cases [j][0] * cases [j][1] != cases [j][2])
+						return -7 - j;
+			}
+
+			checked {
+				int j;
+				int k;
+
+				j = k = 0;
+				if (j * k != 0)
+					return -7;
+
+				j = -5;
+				k = 0;
+				if (j * k != 0)
+					return -8;
+
+				j = 0;
+				k = -5;
+				if (j * k != 0)
+					return -9;
+
+				j = 3;
+				k = -5;
+				if (j * k != -15)
+					return -10;
+
+				j = 3;
+				k = 5;
+				if (j * k != 15)
+					return -11;
+
+				j = -3;
+				k = -5;
+				if (j * k != 15)
+					return -12;
+
+				j = -3;
+				k = 5;
+				if (j * k != -15)
+					return -13;
+
+				j = -1;
+				k = 32767;
+				if (j * k != -32767)
+					return -14;
+				
+				j = 32767;
+				k = -1;
+				if (j * k != -32767)
+					return -15;
+			}
+
+			checked {
+				long l;
+				long m;
+
+				long[][] cases = new long [][] { 
+					new long [] {0, 0, 0},
+					new long [] {-5, 0, 0},
+					new long [] {3, -5, -15},
+					new long [] {3, 5, 15},
+					new long [] {-3, -5, 15},
+					new long [] {-3, 5, -15},
+					new long [] {-1, 2147483647, -2147483647},
+					new long [] {2147483647, -1, -2147483647}};
+
+				for (int j = 0; j < cases.Length; ++j)
+					if (cases [j][0] * cases [j][1] != cases [j][2])
+						return -15 - j;
+			}
+				
 			Console.WriteLine("test-ok");
 
 			return 0;
