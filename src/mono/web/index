@@ -140,6 +140,22 @@
   </tr>
 </table>
 
+@item Oct 28th: Mono Get Together at the PDC
+
+	We will be getting together at the West Tower Lobby on Tuesday
+	28th at 6pm to talk about the Mono project. You have 24 hours to
+	notify all of your friends, open source buddies and free software
+	folks.
+
+	We will bring Mono t-shirts ;-)
+
+@item Oct 26th: Last Minute Mono BOF
+
+	The first in a series of undercover Mono BOFs at the PDC will take
+	place tonight at 7pm on the Academy meeting, in room 411. Come join us
+	to plot the evolution.
+
+
 @item Oct 25th: GTK# 0.11+ Windows Installer available
 
 	Johannes created a <a href="http://java.thn.htu.se/~toor/gtk-sharp/gtk-sharp-0.11-cvs.exe">Windows Installer for GTK# 0.11+</a> and works
@@ -156,8 +172,9 @@
 
 	Novell Forge offers mailing lists, cvs repository, bug
 	tracking and mailing list services and all the other services
-	you expect.  This infrastructure will come in handy for those
-	that did not get enough support from Mono CVS.
+	you expect.  Mono will continue to be hosted in our own CVS
+	repository, and using our <a href="anoncvs.html">anonymous CVS
+	servers</a>
 
 @item Oct 13th: SPARC V9, HPPA, Internationalization, GdiPlus
 
