@@ -194,7 +194,6 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		add_general (&gr, &stack_size, cinfo->args + 0);
 
 	if ((sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
-		/* In the callee */
 		gr = PARAM_REGS;
 		fr = FLOAT_PARAM_REGS;
 		
@@ -205,7 +204,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 
-		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos - sig->hasthis)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
 			/* 
 			 * Prevent implicit arguments + the sig cookie from being passed 
@@ -289,6 +288,14 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		default:
 			g_assert_not_reached ();
 		}
+	}
+
+	if ((sig->call_convention == MONO_CALL_VARARG) && (sig->sentinelpos == sig->param_count)) {
+		gr = PARAM_REGS;
+		fr = FLOAT_PARAM_REGS;
+		
+		/* Emit the signature cookie just before the implicit arguments */
+		add_general (&gr, &stack_size, &cinfo->sig_cookie);
 	}
 
 	/* return value */

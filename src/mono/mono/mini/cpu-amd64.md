@@ -253,7 +253,7 @@ outarg: src1:i len:2
 outarg_imm: len:6
 retarg:
 setret: dest:a src1:i len:3
-setlret: dest:l src1:i src2:i len:5
+setlret: dest:i src1:i src2:i len:5
 checkthis: src1:b len:5
 call: dest:a clob:c len:64
 ret: len:2
@@ -263,9 +263,9 @@ voidcall_membase: src1:b clob:c len:64
 fcall: dest:f len:64 clob:c
 fcall_reg: dest:f src1:i len:64 clob:c
 fcall_membase: dest:f src1:b len:64 clob:c
-lcall: dest:l len:64 clob:c
-lcall_reg: dest:l src1:i len:64 clob:c
-lcall_membase: dest:l src1:b len:64 clob:c
+lcall: dest:i len:64 clob:c
+lcall_reg: dest:i src1:i len:64 clob:c
+lcall_membase: dest:i src1:b len:64 clob:c
 vcall: len:64 clob:c
 vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
@@ -297,8 +297,8 @@ loadi1_membase: dest:i src1:b len:9
 loadu1_membase: dest:i src1:b len:9
 loadi2_membase: dest:i src1:b len:9
 loadu2_membase: dest:i src1:b len:9
-loadi4_membase: dest:i src1:b len:7
-loadu4_membase: dest:i src1:b len:7
+loadi4_membase: dest:i src1:b len:9
+loadu4_membase: dest:i src1:b len:9
 loadi8_membase: dest:i src1:b len:17
 loadr4_membase: dest:f src1:b len:7
 loadr8_membase: dest:f src1:b len:7
@@ -518,8 +518,8 @@ abs: dest:f src1:f len:3
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
 sqrt: dest:f src1:f len:3
-op_bigmul: len:3 dest:l src1:a src2:i
-op_bigmul_un: len:3 dest:l src1:a src2:i
+op_bigmul: len:3 dest:i src1:a src2:i
+op_bigmul_un: len:3 dest:i src1:a src2:i
 sext_i1: dest:i src1:i len:4
 sext_i2: dest:i src1:i len:4
 
