@@ -2265,20 +2265,209 @@
         </maintainers>
     </class>
 
-    <class name="System.Drawing.Drawing2D.MatrixOrder">
-        <last-activity>Aug-23-2001</last-activity>
-        <implementation>no</implementation>
+    <class name="System.Drawing.Drawing2D.Matrix">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>80</completion>
         <maintainers>
             <maintainer>sm@cg.tuwien.ac.at</maintainer>
         </maintainers>
     </class>
-    <class name="System.Drawing.Drawing2D.Matrix">
-        <last-activity>Aug-23-2001</last-activity>
-        <implementation>no</implementation>
+    <class name="System.Drawing.Drawing2D.CombineMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.CompositingMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.CompositingQuality">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.CoordinateSpace">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.DashCap">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.DashStyle">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.FillMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.FlushIntention">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.HatchStyle">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.InterpolationMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.LinearGradientMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.LineCap">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.LineJoin">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.MatrixOrder">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.PathPointType">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.PenAlignment">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.PenType">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.PixelOffsetMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.QualityMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.SmoothingMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.WarpMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>sm@cg.tuwien.ac.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Drawing2D.WrapMode">
+        <last-activity>Aug-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
         <maintainers>
             <maintainer>sm@cg.tuwien.ac.at</maintainer>
         </maintainers>
