@@ -26,7 +26,7 @@ static void marshal_free (void *ptr)
 #endif
 }
 
-unsigned short*
+STDCALL unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
 {
 	int i = 0;
@@ -53,12 +53,14 @@ typedef struct {
 	int c;
 } union_test_1_type;
 
-int mono_union_test_1 (union_test_1_type u1) {
+STDCALL int 
+mono_union_test_1 (union_test_1_type u1) {
 	// printf ("Got values %d %d %d\n", u1.b, u1.a, u1.c);
 	return u1.a + u1.b + u1.c;
 }
 
-int mono_return_int (int a) {
+STDCALL int 
+mono_return_int (int a) {
 	// printf ("Got value %d\n", a);
 	return a;
 }
@@ -68,12 +70,14 @@ struct ss
 	int i;
 };
 
-int mono_return_int_ss (struct ss a) {
+STDCALL int 
+mono_return_int_ss (struct ss a) {
 	// printf ("Got value %d\n", a.i);
 	return a.i;
 }
 
-struct ss mono_return_ss (struct ss a) {
+STDCALL struct ss 
+mono_return_ss (struct ss a) {
 	// printf ("Got value %d\n", a.i);
 	a.i++;
 	return a;
@@ -84,7 +88,8 @@ struct sc1
 	char c[1];
 };
 
-struct sc1 mono_return_sc1 (struct sc1 a) {
+STDCALL struct sc1 
+mono_return_sc1 (struct sc1 a) {
 	// printf ("Got value %d\n", a.c[0]);
 	a.c[0]++;
 	return a;
@@ -96,7 +101,8 @@ struct sc3
 	char c[3];
 };
 
-struct sc3 mono_return_sc3 (struct sc3 a) {
+STDCALL struct sc3 
+mono_return_sc3 (struct sc3 a) {
 	// printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2]);
 	a.c[0]++;
 	a.c[1] += 2;
@@ -109,7 +115,8 @@ struct sc5
 	char c[5];
 };
 
-struct sc5 mono_return_sc5 (struct sc5 a) {
+STDCALL struct sc5 
+mono_return_sc5 (struct sc5 a) {
 	// printf ("Got values %d %d %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
 	a.c[0]++;
 	a.c[1] += 2;
@@ -125,55 +132,59 @@ union su
 	int i2;
 };
 
-int mono_return_int_su (union su a) {
+STDCALL int 
+mono_return_int_su (union su a) {
 	// printf ("Got value %d\n", a.i1);
 	return a.i1;
 }
 
-int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
-				  int f, int g, int h, int i, int j);
-short mono_test_many_short_arguments (short a, short b, short c, short d, short e,
-				      short f, short g, short h, short i, short j);
-char mono_test_many_char_arguments (char a, char b, char c, char d, char e,
-				    char f, char g, char h, char i, char j);
+STDCALL int 
+mono_test_many_int_arguments (int a, int b, int c, int d, int e,
+							  int f, int g, int h, int i, int j);
+STDCALL short 
+mono_test_many_short_arguments (short a, short b, short c, short d, short e,
+								short f, short g, short h, short i, short j);
+STDCALL char 
+mono_test_many_char_arguments (char a, char b, char c, char d, char e,
+							   char f, char g, char h, char i, char j);
 
-int
+STDCALL int
 mono_test_many_int_arguments (int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-short
+STDCALL short
 mono_test_many_short_arguments (short a, short b, short c, short d, short e, short f, short g, short h, short i, short j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-char
+STDCALL char
 mono_test_many_byte_arguments (char a, char b, char c, char d, char e, char f, char g, char h, char i, char j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-float
+STDCALL float
 mono_test_many_float_arguments (float a, float b, float c, float d, float e, float f, float g, float h, float i, float j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-double
+STDCALL double
 mono_test_many_double_arguments (double a, double b, double c, double d, double e, double f, double g, double h, double i, double j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-double
+STDCALL double
 mono_test_split_double_arguments (double a, double b, float c, double d, double e)
 {
 	return a + b + c + d + e;
 }
 
-int
+STDCALL int
 mono_test_puts_static (char *s)
 {
 	// printf ("TEST %s\n", s);
@@ -182,7 +193,7 @@ mono_test_puts_static (char *s)
 
 typedef int (STDCALL *SimpleDelegate3) (int a, int b);
 
-int
+STDCALL int
 mono_invoke_delegate (SimpleDelegate3 delegate)
 {
 	int res;
@@ -196,7 +207,7 @@ mono_invoke_delegate (SimpleDelegate3 delegate)
 	return res;
 }
 
-int 
+STDCALL int 
 mono_test_marshal_char (short a1)
 {
 	if (a1 == 'a')
@@ -205,7 +216,7 @@ mono_test_marshal_char (short a1)
 	return 1;
 }
 
-void
+STDCALL void
 mono_test_marshal_char_array (gunichar2 *s)
 {
 	const char m[] = "abcdef";
@@ -220,13 +231,13 @@ mono_test_marshal_char_array (gunichar2 *s)
 	g_free (s2);
 }
 
-int
+STDCALL int
 mono_test_empty_pinvoke (int i)
 {
 	return i;
 }
 
-int 
+STDCALL int 
 mono_test_marshal_bool_byref (int a, int *b, int c)
 {
     int res = *b;
@@ -236,7 +247,7 @@ mono_test_marshal_bool_byref (int a, int *b, int c)
 	return res;
 }
 
-int 
+STDCALL int 
 mono_test_marshal_array (int *a1)
 {
 	int i, sum = 0;
@@ -247,7 +258,7 @@ mono_test_marshal_array (int *a1)
 	return sum;
 }
 
-int 
+STDCALL int 
 mono_test_marshal_inout_array (int *a1)
 {
 	int i, sum = 0;
@@ -260,7 +271,7 @@ mono_test_marshal_inout_array (int *a1)
 	return sum;
 }
 
-int 
+STDCALL int 
 mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
 {
 	int i, sum = 0;
@@ -280,7 +291,7 @@ typedef struct {
 	gunichar2 *d2;
 } simplestruct;
 
-simplestruct
+STDCALL simplestruct
 mono_test_return_vtype (int i)
 {
 	simplestruct res;
@@ -295,7 +306,7 @@ mono_test_return_vtype (int i)
 	return res;
 }
 
-void
+STDCALL void
 mono_test_delegate_struct (void)
 {
 	// printf ("TEST\n");
@@ -303,7 +314,7 @@ mono_test_delegate_struct (void)
 
 typedef char* (STDCALL *ReturnStringDelegate) (const char *s);
 
-char *
+STDCALL char *
 mono_test_return_string (ReturnStringDelegate func)
 {
 	char *res;
@@ -319,7 +330,7 @@ mono_test_return_string (ReturnStringDelegate func)
 
 typedef int (STDCALL *RefVTypeDelegate) (int a, simplestruct *ss, int b);
 
-int
+STDCALL int
 mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 {
 	if (a == 1 && b == 2 && ss->a == 0 && ss->b == 1 && ss->c == 0 &&
@@ -337,7 +348,7 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 
 typedef int (STDCALL *OutVTypeDelegate) (int a, simplestruct *ss, int b);
 
-int
+STDCALL int
 mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate func)
 {
 	/* Check that the input pointer is ignored */
@@ -356,13 +367,13 @@ typedef struct {
 	SimpleDelegate func, func2;
 } DelegateStruct;
 
-int 
+STDCALL int 
 mono_test_marshal_delegate_struct (DelegateStruct ds)
 {
 	return ds.func (ds.a) + ds.func2 (ds.a);
 }
 
-int 
+STDCALL int 
 mono_test_marshal_struct (simplestruct ss)
 {
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
@@ -383,7 +394,7 @@ typedef struct {
 	guint64 h;
 } simplestruct2;
 
-int
+STDCALL int
 mono_test_marshal_struct2 (simplestruct2 ss)
 {
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
@@ -395,7 +406,7 @@ mono_test_marshal_struct2 (simplestruct2 ss)
 }
 
 /* on HP some of the struct should be on the stack and not in registers */
-int
+STDCALL int
 mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 {
 	if (i != 10 || j != 11 || k != 12)
@@ -408,7 +419,7 @@ mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 	return 1;
 }
 
-int
+STDCALL int
 mono_test_marshal_struct_array (simplestruct2 *ss)
 {
 	if (! (ss[0].a == 0 && ss[0].b == 1 && ss[0].c == 0 &&
@@ -430,13 +441,13 @@ typedef struct long_align_struct {
 	gint64 c;
 } long_align_struct;
 
-int
+STDCALL int
 mono_test_marshal_long_align_struct_array (long_align_struct *ss)
 {
 	return ss[0].a + ss[0].b + ss[0].c + ss[1].a + ss[1].b + ss[1].c;
 }
 
-simplestruct2 *
+STDCALL simplestruct2 *
 mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 {
 	simplestruct2 *res;
@@ -457,7 +468,7 @@ mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 	return res;
 }
 
-int
+STDCALL int
 mono_test_marshal_byref_class (simplestruct2 **ssp)
 {
 	simplestruct2 *ss = *ssp;
@@ -486,7 +497,7 @@ get_sp (void)
 	return p;
 }
 
-int
+STDCALL int
 mono_test_marshal_delegate (SimpleDelegate delegate)
 {
 	void *sp1, *sp2;
@@ -501,7 +512,7 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	return delegate (2);
 }
 
-SimpleDelegate
+STDCALL SimpleDelegate
 mono_test_marshal_return_delegate (SimpleDelegate delegate)
 {
 	return delegate;
@@ -509,7 +520,7 @@ mono_test_marshal_return_delegate (SimpleDelegate delegate)
 
 typedef simplestruct (STDCALL *SimpleDelegate2) (simplestruct ss);
 
-gboolean
+static gboolean
 is_utf16_equals (gunichar2 *s1, const char *s2)
 {
 	char *s;
@@ -522,7 +533,7 @@ is_utf16_equals (gunichar2 *s1, const char *s2)
 	return res == 0;
 }
 
-int
+STDCALL int
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 {
 	simplestruct ss, res;
@@ -542,7 +553,7 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 
 typedef simplestruct* (STDCALL *SimpleDelegate4) (simplestruct *ss);
 
-int
+STDCALL int
 mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 {
 	simplestruct ss;
@@ -572,7 +583,7 @@ mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 
 typedef int (STDCALL *SimpleDelegate5) (simplestruct **ss);
 
-int
+STDCALL int
 mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 {
 	simplestruct ss;
@@ -596,7 +607,7 @@ mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 	return 0;
 }
 
-int
+STDCALL int
 mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 {
 	int res;
@@ -608,7 +619,7 @@ mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 
 typedef int (STDCALL *SimpleDelegate7) (simplestruct **ss);
 
-int
+STDCALL int
 mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 {
 	int res;
@@ -629,7 +640,7 @@ mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 
 typedef int (STDCALL *SimpleDelegate8) (gunichar2 *s);
 
-int
+STDCALL int
 mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 {
 	return delegate (s);
@@ -638,19 +649,19 @@ mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 typedef int (STDCALL *return_int_fnt) (int i);
 typedef int (STDCALL *SimpleDelegate9) (return_int_fnt d);
 
-int
+STDCALL int
 mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
 {
 	return delegate (ftn);
 }
 
-static int
+STDCALL static int
 return_self (int i)
 {
 	return i;
 }
 
-int
+STDCALL int
 mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 {
 	return delegate (return_self);
@@ -658,7 +669,7 @@ mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 
 typedef int (STDCALL *PrimitiveByrefDelegate) (int *i);
 
-int
+STDCALL int
 mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
 {
 	int i = 1;
@@ -677,13 +688,13 @@ typedef int (STDCALL *return_int_delegate) (int i);
 
 typedef return_int_delegate (STDCALL *ReturnDelegateDelegate) (void);
 
-int
+STDCALL int
 mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
 {
 	return (d ()) (55);
 }
 
-int 
+STDCALL int 
 mono_test_marshal_stringbuilder (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -694,7 +705,7 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
-int 
+STDCALL int 
 mono_test_marshal_stringbuilder_unicode (gunichar2 *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -719,13 +730,13 @@ typedef struct {
 #endif
 } EmptyStruct;
 
-int
+STDCALL int
 mono_test_marshal_empty_string_array (char **array)
 {
 	return (array == NULL) ? 0 : 1;
 }
 
-int
+STDCALL int
 mono_test_marshal_string_array (char **array)
 {
 	if (strcmp (array [0], "ABC"))
@@ -739,7 +750,7 @@ mono_test_marshal_string_array (char **array)
 	return 0;
 }
 
-int
+STDCALL int
 mono_test_marshal_byref_string_array (char ***array)
 {
 	if (*array == NULL)
@@ -755,7 +766,7 @@ mono_test_marshal_byref_string_array (char ***array)
 	return 1;
 }
 
-int
+STDCALL int
 mono_test_marshal_stringbuilder_array (char **array)
 {
 	if (strcmp (array [0], "ABC"))
@@ -769,7 +780,7 @@ mono_test_marshal_stringbuilder_array (char **array)
 	return 0;
 }
 
-int
+STDCALL int
 mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 {
 	GError *error = NULL;
@@ -801,7 +812,7 @@ mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 }
 
 /* this does not work on Redhat gcc 2.96 */
-int 
+STDCALL int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
 	// printf ("mono_test_empty_struct %d %d\n", a, b);
@@ -815,7 +826,7 @@ typedef struct {
        char a[100];
 } ByValStrStruct;
 
-ByValStrStruct *
+STDCALL ByValStrStruct *
 mono_test_byvalstr_gen (void)
 {
 	ByValStrStruct *ret;
@@ -827,7 +838,7 @@ mono_test_byvalstr_gen (void)
 	return ret;
 }
 
-int
+STDCALL int
 mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 {
 	int ret;
@@ -840,7 +851,7 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 	return (ret != 0);
 }
 
-int 
+STDCALL int 
 HexDump(char *data)
 {
 	int i, res = 0;
@@ -859,7 +870,7 @@ HexDump(char *data)
 	return res;
 }
 
-int 
+STDCALL int 
 HexDumpA(char *data)
 {
 	int i, res = 0;
@@ -878,7 +889,7 @@ HexDumpA(char *data)
 	return res + 100000;
 }
 
-int 
+STDCALL int 
 HexDump1W(char *data)
 {
 	int i, res = 0;
@@ -899,7 +910,7 @@ HexDump1W(char *data)
 
 typedef int (STDCALL *intcharFunc)(const char*);
 
-void 
+STDCALL void 
 callFunction (intcharFunc f)
 {
 	f ("ABC");
@@ -910,7 +921,7 @@ typedef struct {
         int i;
 } SimpleObj;
 
-int
+STDCALL int
 class_marshal_test0 (SimpleObj *obj1)
 {
 	// printf ("class_marshal_test0 %s %d\n", obj1->str, obj1->i);
@@ -923,7 +934,7 @@ class_marshal_test0 (SimpleObj *obj1)
 	return 0;
 }
 
-int
+STDCALL int
 class_marshal_test4 (SimpleObj *obj1)
 {
 	if (obj1)
@@ -932,7 +943,7 @@ class_marshal_test4 (SimpleObj *obj1)
 	return 0;
 }
 
-void
+STDCALL void
 class_marshal_test1 (SimpleObj **obj1)
 {
 	SimpleObj *res = malloc (sizeof (SimpleObj));
@@ -943,7 +954,7 @@ class_marshal_test1 (SimpleObj **obj1)
 	*obj1 = res;
 }
 
-int
+STDCALL int
 class_marshal_test2 (SimpleObj **obj1)
 {
 	// printf ("class_marshal_test2 %s %d\n", (*obj1)->str, (*obj1)->i);
@@ -956,7 +967,7 @@ class_marshal_test2 (SimpleObj **obj1)
 	return 0;
 }
 
-int
+STDCALL int
 string_marshal_test0 (char *str)
 {
 	if (strcmp (str, "TEST0"))
@@ -965,13 +976,13 @@ string_marshal_test0 (char *str)
 	return 0;
 }
 
-void
+STDCALL void
 string_marshal_test1 (const char **str)
 {
 	*str = "TEST1";
 }
 
-int
+STDCALL int
 string_marshal_test2 (char **str)
 {
 	// printf ("string_marshal_test2 %s\n", *str);
@@ -982,7 +993,7 @@ string_marshal_test2 (char **str)
 	return 0;
 }
 
-int
+STDCALL int
 string_marshal_test3 (char *str)
 {
 	if (str)
@@ -996,8 +1007,8 @@ typedef struct {
 	int b;
 } VectorList;
 
-
-VectorList* TestVectorList (VectorList *vl)
+STDCALL VectorList* 
+TestVectorList (VectorList *vl)
 {
 	VectorList *res;
 
@@ -1012,14 +1023,13 @@ VectorList* TestVectorList (VectorList *vl)
 	return res;
 }
 
-
 typedef struct _OSVERSIONINFO
 { 
 	int a; 
 	int b; 
 } OSVERSIONINFO; 
 
-int 
+STDCALL int 
 GetVersionEx (OSVERSIONINFO *osvi)
 {
 
@@ -1031,7 +1041,7 @@ GetVersionEx (OSVERSIONINFO *osvi)
 	return osvi->a + osvi->b;
 }
 
-int 
+STDCALL int 
 BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO *osvi)
 {
 
@@ -1048,7 +1058,7 @@ typedef struct {
 	double y;
 } point;
 
-int
+STDCALL int
 mono_test_marshal_point (point pt)
 {
 	// printf("point %g %g\n", pt.x, pt.y);
@@ -1063,7 +1073,7 @@ typedef struct {
 	double y;
 } mixed_point;
 
-int
+STDCALL int
 mono_test_marshal_mixed_point (mixed_point pt)
 {
 	// printf("mixed point %d %g\n", pt.x, pt.y);
@@ -1073,7 +1083,7 @@ mono_test_marshal_mixed_point (mixed_point pt)
 	return 1;
 }
 
-int
+STDCALL int
 mono_test_marshal_mixed_point_2 (mixed_point *pt)
 {
 	if (pt->x != 5 || pt->y != 6.75)
@@ -1085,7 +1095,7 @@ mono_test_marshal_mixed_point_2 (mixed_point *pt)
 	return 0;
 }
 
-int 
+STDCALL int 
 marshal_test_ref_bool(int i, char *b1, short *b2, int *b3)
 {
     int res = 1;
@@ -1111,7 +1121,7 @@ struct BoolStruct
     int b3;
 };
 
-int 
+STDCALL int 
 marshal_test_bool_struct(struct BoolStruct *s)
 {
     int res = 1;
@@ -1133,7 +1143,7 @@ marshal_test_bool_struct(struct BoolStruct *s)
 extern __declspec(dllimport) __stdcall void SetLastError(int x);
 #endif
 
-void
+STDCALL void
 mono_test_last_error (int err)
 {
 #ifdef WIN32
@@ -1143,7 +1153,7 @@ mono_test_last_error (int err)
 #endif
 }
 
-int
+STDCALL int
 mono_test_asany (void *ptr, int what)
 {
 	switch (what) {
@@ -1193,7 +1203,7 @@ typedef struct amd64_struct1 {
 	int l;
 } amd64_struct1;
 
-amd64_struct1
+STDCALL amd64_struct1
 mono_test_marshal_amd64_pass_return_struct1 (amd64_struct1 s)
 {
 	s.i ++;
@@ -1209,7 +1219,7 @@ typedef struct amd64_struct2 {
 	int j;
 } amd64_struct2;
 
-amd64_struct2
+STDCALL amd64_struct2
 mono_test_marshal_amd64_pass_return_struct2 (amd64_struct2 s)
 {
 	s.i ++;
@@ -1222,7 +1232,7 @@ typedef struct amd64_struct3 {
 	int i;
 } amd64_struct3;
 
-amd64_struct3
+STDCALL amd64_struct3
 mono_test_marshal_amd64_pass_return_struct3 (amd64_struct3 s)
 {
 	s.i ++;
@@ -1234,7 +1244,7 @@ typedef struct amd64_struct4 {
 	double d1, d2;
 } amd64_struct4;
 
-amd64_struct4
+STDCALL amd64_struct4
 mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 {
 	s.d1 ++;
@@ -1245,7 +1255,7 @@ mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 
 static guint32 custom_res [2];
 
-void*
+STDCALL void*
 mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 {
 	/* ptr will be freed by CleanupNative, so make a copy */
@@ -1257,7 +1267,7 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 
 typedef void *(STDCALL *PassReturnPtrDelegate) (void *ptr);
 
-int
+STDCALL int
 mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 {
 	guint32 buf [2];
@@ -1282,7 +1292,7 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 
 typedef int (STDCALL *ReturnEnumDelegate) (int e);
 
-int
+STDCALL int
 mono_test_marshal_return_enum_delegate (ReturnEnumDelegate func)
 {
 	return func (1);
@@ -1295,7 +1305,7 @@ typedef struct {
 	
 typedef BlittableStruct (STDCALL *SimpleDelegate10) (BlittableStruct ss);
 
-int
+STDCALL int
 mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 delegate)
 {
 	BlittableStruct ss, res;
