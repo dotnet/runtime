@@ -102,6 +102,20 @@
   </tr>
 </table>
 
+@item Feb 11th, 2003: Mono Weekly News
+
+	<a href="http://monoevo.sourceforge.net/mwn/index.html">Mono
+	Weekly News</a>: Includes a new interview, software
+	announcements and the PHP/Mono integration.
+
+@item Feb 5th, 2003: MonoDoc 0.1
+
+	A <a
+	href="http://www.go-mono.com/archive/monodoc-0.1.tar.gz">preliminary
+	release</a> of the Mono Documentation Browser is now availble.
+	Release <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-February/011935.html">notes</a>
+
 @item Jan, 22th, 2003: Mono wins award, OpenLink releases Virtuoso.
 
 	Mono won the `Best Open Source Project' award at the Linux
