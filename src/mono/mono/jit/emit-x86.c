@@ -29,6 +29,54 @@
 //#define DEBUG_REGALLOC
 //#define DEBUG_SPILLS
 
+/* 
+ * we may want a x86-specific header or we 
+ * can just declare it extern in x86.brg.
+ */
+int mono_x86_have_cmov = 0;
+
+static int 
+cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
+{
+	int have_cpuid = 0;
+	__asm__  __volatile__ (
+		"pushfl\n"
+		"popl %%eax\n"
+		"movl %%eax, %%edx\n"
+		"xorl $0x200000, %%eax\n"
+		"pushl %%eax\n"
+		"popfl\n"
+		"pushfl\n"
+		"popl %%eax\n"
+		"xorl %%edx, %%eax\n"
+		"andl $0x200000, %%eax\n"
+		"movl %%eax, %0"
+		: "=r" (have_cpuid)
+		:
+		: "%eax", "%edx"
+	);
+
+	if (have_cpuid) {
+		__asm__ __volatile__ ("cpuid"
+			: "=a" (*p_eax), "=b" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
+			: "a" (id));
+		return 1;
+	}
+	return 0;
+}
+
+void
+mono_cpu_detect (void) {
+	int eax, ebx, ecx, edx;
+
+	/* Feature Flags function, flags returned in EDX. */
+	if (cpuid(1, &eax, &ebx, &ecx, &edx)) {
+		if (edx & (1U << 15)) {
+			mono_x86_have_cmov = 1;
+		}
+	}
+}
+
 static void
 enter_method (MonoMethod *method, char *ebp)
 {

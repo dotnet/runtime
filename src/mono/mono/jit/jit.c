@@ -3560,6 +3560,7 @@ mono_jit_init (char *file) {
 #endif
 	MonoDomain *domain;
 
+	mono_cpu_detect ();
 
 #ifdef PLATFORM_WIN32
 	win32_seh_init();

@@ -264,6 +264,9 @@ mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *
 void
 mono_store_remote_field    (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
 
+void
+mono_cpu_detect            (void);
+
 MonoDomain * 
 mono_jit_init              (char *file);
 
