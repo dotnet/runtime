@@ -580,6 +580,11 @@ static const char *info = ""
 #else
 	"\tGC:            none\n"
 #endif /* HAVE_BOEHM_GC */
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+    "\tSIGSEGV      : altstack\n"
+#else
+    "\tSIGSEGV      : normal\n"
+#endif
 #ifdef HAVE_ICU
 	"\tGlobalization: ICU\n"
 #else
