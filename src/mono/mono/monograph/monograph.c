@@ -5,7 +5,6 @@
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/opcodes.h"
 #include "mono/metadata/tabledefs.h"
-#include "mono/metadata/cil-coff.h" /* MonoCLIImageInfo */
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/appdomain.h" /* mono_init */
 #include "mono/metadata/debug-helpers.h"
@@ -135,13 +134,48 @@ static int branch_waste = 0;
 static int var_waste = 0;
 static int int_waste = 0;
 static int nop_waste = 0;
+static int has_exceptions = 0;
+static int num_exceptions = 0;
+static int max_exceptions = 0;
+static int has_locals = 0;
+static int num_locals = 0;
+static int max_locals = 0;
+static int has_args = 0;
+static int num_args = 0;
+static int max_args = 0;
+static int has_maxstack = 0;
+static int num_maxstack = 0;
+static int max_maxstack = 0;
+static int has_code = 0;
+static int num_code = 0;
+static int max_code = 0;
+static int has_branch = 0;
+static int num_branch = 0;
+static int max_branch = 0;
+static int has_condbranch = 0;
+static int num_condbranch = 0;
+static int max_condbranch = 0;
+static int has_calls = 0;
+static int num_calls = 0;
+static int max_calls = 0;
+static int has_throw = 0;
+static int num_throw = 0;
+static int max_throw = 0;
+static int has_switch = 0;
+static int num_switch = 0;
+static int max_switch = 0;
+static int cast_sealed = 0;
+static int total_cast = 0;
+static int nonvirt_callvirt = 0;
+static int total_callvirt = 0;
 
 static void
-method_waste (MonoMethod *method) {
+method_stats (MonoMethod *method) {
 	const MonoOpcode *opcode;
 	MonoMethodHeader *header;
 	const unsigned char *ip;
 	int i, n;
+	int local_branch = 0, local_condbranch = 0, local_throw = 0, local_calls = 0;
 	gint64 l;
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
@@ -150,6 +184,35 @@ method_waste (MonoMethod *method) {
 		return;
 
 	header = ((MonoMethodNormal *)method)->header;
+	if (header->num_clauses)
+		has_exceptions++;
+	num_exceptions += header->num_clauses;
+	if (max_exceptions < header->num_clauses)
+		max_exceptions = header->num_clauses;
+	if (header->num_locals)
+		has_locals++;
+	num_locals += header->num_locals;
+	if (max_locals < header->num_locals)
+		max_locals = header->num_locals;
+
+	if (max_maxstack < header->max_stack)
+		max_maxstack = header->max_stack;
+	num_maxstack += header->max_stack;
+	if (header->max_stack != 8) /* just a guess */
+		has_maxstack++;
+
+	n = method->signature->hasthis + method->signature->param_count;
+	if (max_args < n)
+		max_args = n;
+	num_args += n;
+	if (n)
+		has_args++;
+
+	has_code++;
+	if (max_code < header->code_size)
+		max_code = header->code_size;
+	num_code += header->code_size;
+
 	ip = header->code;
 
 	while (ip < (header->code + header->code_size)) {
@@ -180,11 +243,22 @@ method_waste (MonoMethod *method) {
 			ip += 5;
 			break;
 		case MonoInlineType:
+			if (i == MONO_CEE_CASTCLASS || i == MONO_CEE_ISINST) {
+				guint32 token = read32 (ip + 1);
+				MonoClass *k = mono_class_get (method->klass->image, token);
+				if (k && k->flags & TYPE_ATTRIBUTE_SEALED)
+					cast_sealed++;
+				total_cast++;
+			}
+			ip += 5;
+			break;
 		case MonoInlineField:
 		case MonoInlineTok:
 		case MonoInlineString:
 		case MonoInlineSig:
 		case MonoShortInlineR:
+			ip += 5;
+			break;
 		case MonoInlineBrTarget:
 			n = read32 (ip + 1);
 			if (n < 128 && n >= -128) {
@@ -248,6 +322,10 @@ method_waste (MonoMethod *method) {
 			n = read32 (ip);
 			ip += 4;
 			ip += 4 * n;
+			num_switch += n;
+			has_switch++;
+			if (max_switch < n)
+				max_switch = n;
 			break;
 		}
 		case MonoInlineR:
@@ -266,29 +344,87 @@ method_waste (MonoMethod *method) {
 			ip += 9;
 			break;
 		case MonoInlineMethod:
+			if (i == MONO_CEE_CALLVIRT) {
+				MonoMethod *cm = mono_get_method (method->klass->image, read32 (ip + 1), NULL);
+				if (cm && !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
+					nonvirt_callvirt++;
+				total_callvirt++;
+			}
 			ip += 5;
 			break;
 		default:
 			g_assert_not_reached ();
 		}
+
+		switch (opcode->flow_type) {
+		case MONO_FLOW_BRANCH:
+			local_branch++;
+			break;
+		case MONO_FLOW_COND_BRANCH:
+			local_condbranch++;
+			break;
+		case MONO_FLOW_CALL:
+			local_calls++;
+			break;
+		case MONO_FLOW_ERROR:
+			local_throw++;
+			break;
+		}
 	}
+	
+	if (local_branch)
+		has_branch++;
+	if (max_branch < local_branch)
+		max_branch = local_branch;
+	num_branch += local_branch;
+
+	if (local_condbranch)
+		has_condbranch++;
+	if (max_condbranch < local_condbranch)
+		max_condbranch = local_condbranch;
+	num_condbranch += local_condbranch;
+
+	if (local_calls)
+		has_calls++;
+	if (max_calls < local_calls)
+		max_calls = local_calls;
+	num_calls += local_calls;
+
+	if (local_throw)
+		has_throw++;
+	if (max_throw < local_throw)
+		max_throw = local_throw;
+	num_throw += local_throw;
+
 	return;
 }
 
 static void
-waste (MonoImage *image, const char *name) {
-	int i, waste = 0;
+stats (MonoImage *image, const char *name) {
+	int i;
 	MonoMethod *method;
 	
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
-		method_waste (method);
+		method_stats (method);
 	}
 	g_print ("back branch waste: %d\n", back_branch_waste);
 	g_print ("branch waste: %d\n", branch_waste);
 	g_print ("var waste: %d\n", var_waste);
 	g_print ("int waste: %d\n", int_waste);
 	g_print ("nop waste: %d\n", nop_waste);
+	g_print ("has exceptions: %d/%d, total: %d, max: %d, mean: %f\n", has_exceptions, i, num_exceptions, max_exceptions, num_exceptions/(double)has_exceptions);
+	g_print ("has locals: %d/%d, total: %d, max: %d, mean: %f\n", has_locals, i, num_locals, max_locals, num_locals/(double)has_locals);
+	g_print ("has args: %d/%d, total: %d, max: %d, mean: %f\n", has_args, i, num_args, max_args, num_args/(double)has_args);
+	g_print ("has maxstack: %d/%d, total: %d, max: %d, mean: %f\n", has_maxstack, i, num_maxstack, max_maxstack, num_maxstack/(double)i);
+	g_print ("has code: %d/%d, total: %d, max: %d, mean: %f\n", has_code, i, num_code, max_code, num_code/(double)has_code);
+	g_print ("has branch: %d/%d, total: %d, max: %d, mean: %f\n", has_branch, i, num_branch, max_branch, num_branch/(double)has_branch);
+	g_print ("has condbranch: %d/%d, total: %d, max: %d, mean: %f\n", has_condbranch, i, num_condbranch, max_condbranch, num_condbranch/(double)has_condbranch);
+	g_print ("has switch: %d/%d, total: %d, max: %d, mean: %f\n", has_switch, i, num_switch, max_switch, num_switch/(double)has_switch);
+	g_print ("has calls: %d/%d, total: %d, max: %d, mean: %f\n", has_calls, i, num_calls, max_calls, num_calls/(double)has_calls);
+	g_print ("has throw: %d/%d, total: %d, max: %d, mean: %f\n", has_throw, i, num_throw, max_throw, num_throw/(double)has_throw);
+	g_print ("sealed type cast: %d/%d\n", cast_sealed, total_cast);
+	g_print ("non virtual callvirt: %d/%d\n", nonvirt_callvirt, total_callvirt);
 }
 
 static char *
@@ -430,7 +566,7 @@ method_graph (MonoImage *image, const char *name) {
 	MonoMethod *method = NULL;
 	
 	if (!name) {
-		guint32 token = ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
+		guint32 token = mono_image_get_entry_point (image);
 		if (!token || !(method = mono_get_method (image, token, NULL))) {
 			g_print ("Cannot find entry point in %s: specify an explict method name.\n", image->name);
 			exit (1);
@@ -719,7 +855,7 @@ print_method_cfg (MonoMethod *method) {
 			fprintf (output, "\tB%p -> B%p\n", bb, target);
 		}
 	}
-#if 0
+#if 1
 	for (i = 0; i < bblocks->len; ++i) {
 		bb = (MonoBasicBlock*)g_ptr_array_index (bblocks, i);
 		bb->dfn = 0;
@@ -741,7 +877,7 @@ method_cfg (MonoImage *image, const char *name) {
 	const static char *cfg_graph_properties = "\tnode [fontsize=8.0]\n\tedge [len=1.5,color=red]\n";
 	
 	if (!name) {
-		guint32 token = ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
+		guint32 token = mono_image_get_entry_point (image);
 		if (!token || !(method = mono_get_method (image, token, NULL))) {
 			g_print ("Cannot find entry point in %s: specify an explict method name.\n", image->name);
 			exit (1);
@@ -777,6 +913,7 @@ usage (void) {
 	printf ("Valid options are:\n");
 	printf ("\t-c|--call             output call graph instead of type hierarchy\n");
 	printf ("\t-C|--control-flow     output control flow of methodname\n");
+	printf ("\t--stats               output some statistics about the assembly\n");
 	printf ("\t-d|--depth num        max depth recursion (default: 6)\n");
 	printf ("\t-o|--output filename  write graph to file filename (default: stdout)\n");
 	printf ("\t-f|--fullname         include namespace in type and method names\n");
@@ -800,7 +937,7 @@ enum {
 	GRAPH_CALL,
 	GRAPH_INTERFACE,
 	GRAPH_CONTROL_FLOW,
-	GRAPH_WASTE
+	GRAPH_STATS
 };
 
 /*
@@ -839,8 +976,8 @@ main (int argc, char *argv[]) {
 			graphtype = GRAPH_CONTROL_FLOW;
 		} else if (strcmp (argv [i], "--interface") == 0 || strcmp (argv [i], "-i") == 0) {
 			graphtype = GRAPH_INTERFACE;
-		} else if (strcmp (argv [i], "--waste") == 0) {
-			graphtype = GRAPH_WASTE;
+		} else if (strcmp (argv [i], "--stats") == 0) {
+			graphtype = GRAPH_STATS;
 		} else if (strcmp (argv [i], "--fullname") == 0 || strcmp (argv [i], "-f") == 0) {
 			include_namespace = 1;
 		} else if (strcmp (argv [i], "--neato") == 0 || strcmp (argv [i], "-n") == 0) {
@@ -914,8 +1051,8 @@ main (int argc, char *argv[]) {
 	case GRAPH_CONTROL_FLOW:
 		method_cfg (assembly->image, cname);
 		break;
-	case GRAPH_WASTE:
-		waste (assembly->image, cname);
+	case GRAPH_STATS:
+		stats (assembly->image, cname);
 		break;
 	default:
 		g_error ("wrong graph type");
