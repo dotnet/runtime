@@ -3681,7 +3681,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		}
 	} 
 
-
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
@@ -3892,6 +3891,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		}
 	}
 
+	emit_thread_interrupt_checkpoint (mb);
+
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 
@@ -3954,7 +3955,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		}
 	}
 
-	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_managed_call (mb, method, NULL);
 
 	/* Ensure that we have marshalling info for the return */
