@@ -1,3 +1,7 @@
+2004-11-23  Chris Toshok  <toshok@ximian.com>
+
+	* Makefile.am (bootstrap): echo -> @echo.
+
 2004-11-23  Raja R Harinath  <rharinath@novell.com>
 
 	Simplify 'make all' build.

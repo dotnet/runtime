@@ -66,5 +66,5 @@ win32setup:
 	makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=$(SOURCE_INSTALL_DIR) /DBUILDNUM=$(BUILDNUM) monowiz.win32.nsi
 
 bootstrap: all
-	echo "*** 'make bootstrap' is obsolete.  Just run 'make' to perform a combined mono+mcs build"
+	@echo "*** 'make bootstrap' is obsolete.  Just run 'make' to perform a combined mono+mcs build"
 	exit 1
