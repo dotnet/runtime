@@ -11,9 +11,13 @@
 
 	The <a href="http://msdn.microsoft.com/net">Microsoft.NET site.</a>
 
-	The Microsoft .NET Framework 1.0 can be downloaded <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
+	The Microsoft .NET Framework 1.0 can be downloaded <a
+	href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
 
-	New methods that are not documented in 1.0, are documented <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dndotnet/html/framewrkaddend.asp">here</a>
+	New methods that are not documented in 1.0, are documented <a
+	href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dndotnet/html/framewrkaddend.asp">here</a>
+
+	The changes between .NET 1.0 and .NET 1.1 are available <a href="http://www.csharphelp.com/archives2/archive406.html">here</a>
 
 ** IRC
 
@@ -52,6 +56,14 @@
 	A nice overview paper on the <a
 	href="http://www.foundstone.com/pdf/dotnet-security-framework.pdf">.NET
 	security architecture</a>.
+
+** Development Tools
+
+	A tool to compare two assemblies:
+
+	<ul>
+		<li><a href="http://www.gotdotnet.com/userarea/keywordsrch.aspx?keyword=winchurn">http://www.gotdotnet.com/userarea/keywordsrch.aspx?keyword=winchurn</a>
+	</ul>
 
 ** Presentations
 

@@ -1,23 +1,21 @@
 * Gtk#
 
-** Gtk# in a nutshell
-
-  <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> (also refered as 
-  gtk-sharp) is a C# language binding for the 
-  <a href="http://www.gtk.org">Gtk+</a> toolkit. It is called to be the
-  'de facto' GUI toolkit for the <a href="http://www.go-mono.org">Mono
-  Project</a> and for the future <a href="http://www.gnome.org">GNOME</a>
-  apps based in Mono, as the Gtk+ is for most of the GNOME apps written in
-  C.  
+	<a href="http://gtk-sharp.sourceforge.net">Gtk#</a> (Gtk
+	sharp) is a set of C# language bindings for the
+	<a href="http://www.gtk.org">Gtk+</a> toolkit and other
+	libraries that are part of the <a
+	href="http://www.gnome.org">GNOME</a> platform . 
 
 ** API of Gtk#
 
-  The API is browsable 
-  <a href="http://primates.ximian.com/~tvgm/gtk-sharp-docs/">here</a>
+	The API is browsable 
+	<a
+	href="http://primates.ximian.com/~tvgm/gtk-sharp-docs/">here</a>
 
 ** Where to learn more.
 
-  Visit the <a href="http://gtk-sharp.sourceforge.net">Gtk# Project</a>.
-  The <a href="http://www.go-mono.org/faq">Mono FAQ</a> has some useful
-  information too.
+	Visit the official site for the <a
+	href="http://gtk-sharp.sourceforge.net">Gtk# Project</a>.
+	The <a href="http://www.go-mono.org/faq">Mono FAQ</a> has some useful
+	information too.
 
