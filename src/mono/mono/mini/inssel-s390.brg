@@ -585,8 +585,9 @@ base: OP_S390_STKARG "0" {
 	int tmpr;
 
 	tmpr = mono_regstate_next_int (s->rs);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
-				(s->stack_offset+state->tree->unused));
+//	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+//				(s->stack_offset+state->tree->unused));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 0);
 	tree->inst_offset  = state->tree->inst_offset;
 	tree->inst_basereg = tmpr;
 }
@@ -614,9 +615,11 @@ base: OP_LDADDR (OP_S390_ARGPTR) "0" {
 base: OP_LDADDR (OP_S390_STKARG) "0" {
 	int tmpr;
 
+printf("OP_LDADDR (OP_S390_STKARG)\n");
 	tmpr = mono_regstate_next_int (s->rs);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
-				 (s->stack_offset + state->left->tree->unused));
+//	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+//				 (s->stack_offset + state->left->tree->unused));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 0);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, tmpr, 
 				 state->left->tree->inst_offset);
 	tree->inst_offset  = 0;

@@ -63,7 +63,7 @@ mono_varlist_sort (MonoCompile *cfg, GList *list, int sort_type)
 	return NULL;
 }
 
-//#define DEBUG_LSCAN
+// #define DEBUG_LSCAN
 
 void
 mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask)
@@ -208,6 +208,11 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 	}
 
 	*used_mask |= used_regs;
+
+#ifdef DEBUG_LSCAN
+	if (cfg->verbose_level > 2)
+		printf ("EXIT: final used mask: %08x\n", *used_mask);
+#endif
 
 	g_list_free (regs);
 	g_list_free (active);

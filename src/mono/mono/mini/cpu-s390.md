@@ -446,7 +446,7 @@ rem_un_imm: dest:i src1:i src2:i len:24
 rename:
 ret:
 retarg:
-rethrow:
+rethrow: src1:i len:8
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4 clob:r
 sbb: dest:i src1:i src2:i len:6

@@ -169,6 +169,8 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 	int reg, base;
 	unsigned short opcode;
 	char *fname;
+	MonoJitInfo *codeJi, 
+		    *addrJi;
 
 	addr = mono_compile_method(method);
 	g_assert(addr);
@@ -179,7 +181,9 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 		/* The top bit needs to be ignored on S/390 */
 		(guint32) code &= 0x7fffffff;
 
-		fname = mono_method_full_name (method, TRUE);
+		fname  = mono_method_full_name (method, TRUE);
+		codeJi = mono_jit_info_table_find (mono_domain_get(), code);
+		addrJi = mono_jit_info_table_find (mono_domain_get(), addr);
 
 		opcode = *((unsigned short *) (code - 6));
 		switch (opcode) {
@@ -195,15 +199,19 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
  					base = *((int *) (sp + CREATE_GR_OFFSET+
 							       sizeof(int)*(reg-2)));
 				addr = get_unbox_trampoline(method, addr);
-				code = base + displace;
-				s390_patch(code, addr);
+				if (mono_method_same_domain (codeJi, addrJi)) {
+					code = base + displace;
+					s390_patch(code, addr);
+				}
 				break;
 			case 0xc0e5 :
 				/* This is the 'brasl' instruction */
 				code    -= 4;
 				displace = ((gint32) addr - (gint32) (code - 2)) / 2;
-				s390_patch (code, displace);
-				mono_arch_flush_icache (code, 4);
+				if (mono_method_same_domain (codeJi, addrJi)) {
+					s390_patch (code, displace);
+					mono_arch_flush_icache (code, 4);
+				}
 				break;
 			default :
 				g_error("Unable to patch instruction prior to %p",code);

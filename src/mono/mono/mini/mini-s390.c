@@ -98,18 +98,18 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
-#define reg_is_freeable(r) ((r) >= 3 && (r) <= 10)
+
+/*----------------------------------------*/
+/* use s390_r2-s390_r5 as temp registers  */
+/*----------------------------------------*/
+#define S390_CALLER_REGS  (0x10fc)
+#define reg_is_freeable(r) (S390_CALLER_REGS & 1 << (r))
+
+/*----------------------------------------*/
+/* use s390_f1/s390_f3-s390_f15 as temps  */
+/*----------------------------------------*/
+#define S390_CALLER_FREGS (0xfffa)
 #define freg_is_freeable(r) ((r) >= 1 && (r) <= 14)
-
-/*----------------------------------------*/
-/* use s390_r3-s390_r10 as temp registers */
-/*----------------------------------------*/
-#define S390_CALLER_REGS  (0x03f8)
-
-/*----------------------------------------*/
-/* use s390_f2-s390_f14 as temp registers */
-/*----------------------------------------*/
-#define S390_CALLER_FREGS (0x73f8)
 
 #define S390_TRACE_STACK_SIZE (5*sizeof(gint32)+3*sizeof(gdouble))
 
@@ -930,8 +930,11 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
 
-	/* no s390-specific optimizations yet */
+	/*----------------------------------------------------------*/
+	/* no s390-specific optimizations yet 			    */
+	/*----------------------------------------------------------*/
 	*exclude_mask = MONO_OPT_INLINE|MONO_OPT_LINEARS;
+//	*exclude_mask = MONO_OPT_INLINE;
 	return opts;
 }
 
@@ -1021,10 +1024,12 @@ GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
-	int i, top = 12;
+	int i, top = 13;
 
-	for (i = 3; i < top; ++i)
-		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+	for (i = 8; i < top; ++i) {
+		if (cfg->frame_reg != i)
+			regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+	}
 
 	return regs;
 }
@@ -1357,7 +1362,7 @@ enum_retvalue:
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_allocate_vars (MonoCompile *m)
+mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
@@ -1368,7 +1373,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int frame_reg = STK_BASE;
 	int sArg, eArg;
 
-	header  = mono_method_get_header (m->method);
+	header  = mono_method_get_header (cfg->method);
 
 	/*---------------------------------------------------------*/	 
 	/* We use the frame register also for any method that has  */ 
@@ -1380,29 +1385,29 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* before stack unwinding happens) when the filter code    */
 	/* would call any method.				   */
 	/*---------------------------------------------------------*/	 
-	if ((m->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
+	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		frame_reg = s390_r11;
 
-	m->frame_reg = frame_reg;
+	cfg->frame_reg = frame_reg;
 
 	if (frame_reg != STK_BASE) 
-		m->used_int_regs |= 1 << frame_reg;		
+		cfg->used_int_regs |= 1 << frame_reg;		
 
-	sig     = m->method->signature;
+	sig     = cfg->method->signature;
 	
 	cinfo   = calculate_sizes (sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
-		m->ret->opcode = OP_REGVAR;
-		m->ret->inst_c0 = s390_r2;
+		cfg->ret->opcode = OP_REGVAR;
+		cfg->ret->inst_c0 = s390_r2;
 	} else {
 		/* FIXME: handle long and FP values */
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
 			break;
 		default:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->dreg    = s390_r2;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->dreg   = s390_r2;
 			break;
 		}
 	}
@@ -1414,10 +1419,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* to point at the local variables.				*/
 	/* add parameter area size for called functions 		*/
 	/*--------------------------------------------------------------*/
-	offset = (m->param_area + S390_MINIMAL_STACK_SIZE);
+	offset = (cfg->param_area + S390_MINIMAL_STACK_SIZE);
 
 	if (cinfo->struct_ret) {
-		inst 		   = m->ret;
+		inst 		   = cfg->ret;
 		offset 		   = S390_ALIGN(offset, sizeof(gpointer));
 		inst->inst_offset  = offset;
 		inst->opcode 	   = OP_REGOFFSET;
@@ -1426,7 +1431,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	}
 
 	if (sig->hasthis) {
-		inst = m->varinfo [0];
+		inst = cfg->varinfo [0];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode 	   = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -1442,7 +1447,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	eArg = sig->param_count + sArg;
 
 	for (iParm = sArg; iParm < eArg; ++iParm) {
-		inst = m->varinfo [curinst];
+		inst = cfg->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			switch (cinfo->args[iParm].regtype) {
 				case RegTypeStructByAddr :
@@ -1485,10 +1490,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 		curinst++;
 	}
 
-	curinst = m->locals_start;
-	for (iVar = curinst; iVar < m->num_varinfo; ++iVar) {
-		inst = m->varinfo [iVar];
-		if (inst->opcode == OP_REGVAR)
+	curinst = cfg->locals_start;
+	for (iVar = curinst; iVar < cfg->num_varinfo; ++iVar) {
+		inst = cfg->varinfo [iVar];
+		if ((inst->flags & MONO_INST_IS_DEAD) || 
+		    (inst->opcode == OP_REGVAR))
 			continue;
 
 		/*--------------------------------------------------*/
@@ -1506,25 +1512,25 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst->opcode 	   = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
 		offset 		  += size;
-		//DEBUG (g_print("allocating local %d to %d\n", iVar, inst->inst_offset));
+		DEBUG (g_print("allocating local %d to %d\n", iVar, inst->inst_offset));
 	}
 
 	/*------------------------------------------------------*/
 	/* Allow space for the trace method stack area if needed*/
 	/*------------------------------------------------------*/
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (m)) 
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg)) 
 		offset += S390_TRACE_STACK_SIZE;
 
 	/*------------------------------------------------------*/
 	/* Reserve space to save LMF and caller saved registers */
 	/*------------------------------------------------------*/
-	if (m->method->save_lmf)
+	if (cfg->method->save_lmf)
 		offset += sizeof (MonoLMF);
 
 	/*------------------------------------------------------*/
 	/* align the offset 					*/
 	/*------------------------------------------------------*/
-	m->stack_offset	= S390_ALIGN(offset, S390_STACK_ALIGNMENT);
+	cfg->stack_offset = S390_ALIGN(offset, S390_STACK_ALIGNMENT);
 
 }
 
@@ -1568,7 +1574,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
 
 	if (cinfo->struct_ret)
-		call->used_iregs |= 1 << cinfo->struct_ret;
+		call->used_iregs |= 1 << cinfo->ret.reg;
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
@@ -2579,10 +2585,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		spec = ins_spec [ins->opcode];
 		DEBUG (print_ins (i, ins));
-		if (spec [MONO_INST_CLOB] == 'c') {
-			MonoCallInst * call = (MonoCallInst*)ins;
-			int j;
-		}
+//		if (spec [MONO_INST_CLOB] == 'c') {
+//			MonoCallInst * call = (MonoCallInst*)ins;
+//			int j;
+//		}
 		if (spec [MONO_INST_SRC1]) {
 			if (spec [MONO_INST_SRC1] == 'f')
 				reginfo1 = reginfof;
@@ -2615,7 +2621,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (reginfod [ins->dreg].born_in == 0 || reginfod [ins->dreg].born_in > i)
 				reginfod [ins->dreg].born_in = i;
 			if (spec [MONO_INST_DEST] == 'l') {
-				/* result in eax:edx, the virtual register is allocated sequentially */
+				/* result in R2/R3, the virtual register is allocated sequentially */
 				reginfod [ins->dreg + 1].prev_use = reginfod [ins->dreg + 1].last_use;
 				reginfod [ins->dreg + 1].last_use = i;
 				if (reginfod [ins->dreg + 1].born_in == 0 || reginfod [ins->dreg + 1].born_in > i)
@@ -2764,7 +2770,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						create_copy_ins (cfg, ins->dreg, s390_r3, ins);
 					}
 				}
-				if (reg_is_freeable (val) && hreg >= 0 && (reginfo [hreg].born_in >= i && !(cur_iregs & (1 << val)))) {
+				if (reg_is_freeable (val) && 
+				    hreg >= 0 && 
+                                    (reginfo [hreg].born_in >= i && 
+                                     !(cur_iregs & (1 << val)))) {
 					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
 					mono_regstate_free_int (rs, val);
 				}
@@ -2797,7 +2806,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						/* the register gets spilled after this inst */
 						spill = -val -1;
 					}
-					//g_assert (val == -1); /* source cannot be spilled */
 					val = mono_regstate_alloc_float (rs, src1_mask);
 					if (val < 0)
 						val = get_float_register_spilling (cfg, tmp, ins, src1_mask, ins->sreg1);
@@ -2922,16 +2930,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 		}
-		/*if (reg_is_freeable (ins->sreg1) && prev_sreg1 >= 0 && reginfo [prev_sreg1].born_in >= i) {
-			DEBUG (g_print ("freeable %s\n", mono_arch_regname (ins->sreg1)));
-			mono_regstate_free_int (rs, ins->sreg1);
-		}
-		if (reg_is_freeable (ins->sreg2) && prev_sreg2 >= 0 && reginfo [prev_sreg2].born_in >= i) {
-			DEBUG (g_print ("freeable %s\n", mono_arch_regname (ins->sreg2)));
-			mono_regstate_free_int (rs, ins->sreg2);
-		}*/
-		
-		//DEBUG (print_ins (i, ins));
 		tmp = tmp->next;
 	}
 }
@@ -3067,49 +3065,49 @@ guint8 cond;
 
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM: {
-			s390_lhi (code, s390_r14, ins->inst_imm);
+			s390_lhi (code, s390_r0, ins->inst_imm);
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_stc (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
+				s390_stc (code, s390_r0, 0, ins->inst_destbasereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_offset);
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_stc  (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
+				s390_stc  (code, s390_r0, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
 			break;
 		case OP_STOREI2_MEMBASE_IMM: {
-			s390_lhi (code, s390_r14, ins->inst_imm);
+			s390_lhi (code, s390_r0, ins->inst_imm);
 			if (s390_is_uimm12(ins->inst_offset)) {
-				s390_sth (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
+				s390_sth (code, s390_r0, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_offset);
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_sth  (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
+				s390_sth  (code, s390_r0, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
 			break;
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM: {
 			if (s390_is_imm16(ins->inst_imm)) {
-				s390_lhi  (code, s390_r14, ins->inst_imm);
+				s390_lhi  (code, s390_r0, ins->inst_imm);
 			} else {
 				s390_basr (code, s390_r13, 0);
 				s390_j	  (code, 4);
 				s390_word (code, ins->inst_imm);
-				s390_l	  (code, s390_r14, 0, s390_r13, 4);
+				s390_l	  (code, s390_r0, 0, s390_r13, 4);
 			}
 			if (s390_is_uimm12(ins->inst_offset)) {
-				s390_st  (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
+				s390_st  (code, s390_r0, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_offset);
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_st   (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
+				s390_st   (code, s390_r0, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
 			break;
@@ -3797,16 +3795,16 @@ guint8 cond;
 			break;
 		case OP_LMUL: {
 			s390_l    (code, s390_r0, 0, ins->sreg1, 4);
-			s390_lr   (code, s390_r14, s390_r0);
 			s390_srda (code, s390_r0, 0, 32);
 			s390_m	  (code, s390_r0, 0, ins->sreg2, 4);
-			s390_srl  (code, s390_r14, 0, 31);
-			s390_a    (code, s390_r14, 0, ins->sreg1, 0);
+			s390_l    (code, s390_r0, 0, ins->sreg1, 4);
+			s390_srl  (code, s390_r0, 0, 31);
+			s390_a    (code, s390_r0, 0, ins->sreg1, 0);
 			s390_l    (code, s390_r13, 0, ins->sreg2, 0);
 			s390_srl  (code, s390_r13, 0, 31);
 			s390_ms   (code, s390_r13, 0, ins->sreg1, 4);
-			s390_ar   (code, s390_r14, s390_r13);
-			s390_st   (code, s390_r14, 0, ins->dreg, 0);
+			s390_ar   (code, s390_r0, s390_r13);
+			s390_st   (code, s390_r0, 0, ins->dreg, 0);
 			s390_st   (code, s390_r1, 0, ins->dreg, 4);
 		}
 			break;	
@@ -3988,6 +3986,13 @@ guint8 cond;
 			s390_lr (code, s390_r2, ins->sreg1);
 			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
+			s390_brasl (code, s390_r14, 0);
+		}
+			break;
+		case CEE_RETHROW: {
+			s390_lr (code, s390_r2, ins->sreg1);
+			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_arch_rethrow_exception");
 			s390_brasl (code, s390_r14, 0);
 		}
 			break;
@@ -4443,6 +4448,7 @@ guint8 cond;
 						s390_word (code, ins->inst_offset);
 						s390_a    (code, s390_r0, 0, s390_r13, 4);
 					}
+					s390_lr	  (code, s390_r14, s390_r12);
 					s390_lr   (code, s390_r12, ins->sreg1);
 					if (s390_is_imm16 (ins->inst_imm)) {
 						s390_ahi  (code, s390_r12, ins->inst_imm);
@@ -4456,6 +4462,7 @@ guint8 cond;
 					s390_lr   (code, s390_r13, s390_r1);
 					s390_mvcle(code, s390_r0, s390_r12, 0, 0);
 					s390_jo   (code, -2);
+					s390_lr	  (code, s390_r12, s390_r14);
 				}
 			}
 		}
@@ -5245,9 +5252,13 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 	switch (tree->opcode) {
 		case OP_S390_LOADARG:
 		case OP_S390_ARGPTR:
-		case OP_S390_STKARG:
 			printf ("[0x%x(%s)]", tree->inst_offset, 
 				mono_arch_regname (tree->inst_basereg));
+			done = 1;
+			break;
+		case OP_S390_STKARG:
+			printf ("[0x%x(previous_frame)]", 
+				tree->inst_offset); 
 			done = 1;
 			break;
 		case OP_S390_MOVE:
@@ -5286,7 +5297,7 @@ guint32
 mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
 	/* FIXME: */
-	return 3;
+	return 2;
 }
 
 /*========================= End of Function ========================*/

@@ -42,7 +42,8 @@
 
 #define S390_THROWSTACK_ACCPRM		S390_MINIMAL_STACK_SIZE
 #define S390_THROWSTACK_FPCPRM		S390_THROWSTACK_ACCPRM+sizeof(gpointer)
-#define S390_THROWSTACK_INTREGS		S390_THROWSTACK_FPCPRM+sizeof(gulong)
+#define S390_THROWSTACK_RETHROW		S390_THROWSTACK_FPCPRM+sizeof(gulong)
+#define S390_THROWSTACK_INTREGS		S390_THROWSTACK_RETHROW+sizeof(gboolean)
 #define S390_THROWSTACK_FLTREGS		S390_THROWSTACK_INTREGS+(16*sizeof(gulong))
 #define S390_THROWSTACK_ACCREGS		S390_THROWSTACK_FLTREGS+(16*sizeof(gdouble))
 #define S390_THROWSTACK_SIZE		(S390_THROWSTACK_ACCREGS+(16*sizeof(gulong)))
@@ -258,7 +259,8 @@ arch_get_call_filter (void)
 
 static void
 throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp, 
-		 gulong *int_regs, gdouble *fp_regs, gulong *acc_regs, guint fpc)
+		 gulong *int_regs, gdouble *fp_regs, gulong *acc_regs, 
+		 guint fpc, gboolean rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -284,7 +286,8 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 	
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		mono_ex->stack_trace = NULL;
+		if (!rethrow)
+			mono_ex->stack_trace = NULL;
 	}
 	mono_arch_handle_exception (&ctx, exc, FALSE);
 	setcontext(&ctx);
@@ -296,7 +299,7 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- arch_get_throw_exception_generic                  */
+/* Name		- get_throw_exception_generic              	    */
 /*                                                                  */
 /* Function	- Return a function pointer which can be used to    */
 /*                raise exceptions. The returned function has the   */
@@ -307,7 +310,8 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 /*------------------------------------------------------------------*/
 
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
+get_throw_exception_generic (guint8 *start, int size, 
+			     int by_name, gboolean rethrow)
 {
 	guint8 *code;
 	int alloc_size, pos, i, offset;
@@ -367,6 +371,8 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 	s390_la   (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_ACCREGS);
 	s390_st	  (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_ACCPRM);
 	s390_stfpc(code, STK_BASE, S390_THROWSTACK_FPCPRM);
+	s390_lhi  (code, s390_r7, rethrow);
+	s390_st	  (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_RETHROW);
 	offset = (guint32) S390_RELATIVE(throw_exception, code);
 	s390_brasl(code, s390_r14, offset);
 	/* we should never reach this breakpoint */
@@ -391,12 +397,38 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [256];
+	static guint8 start [384];
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE);
+	get_throw_exception_generic (start, sizeof (start), FALSE, FALSE);
+	inited = 1;
+	return start;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- arch_get_rethrow_exception                        */
+/*                                                                  */
+/* Function	- Return a function pointer which can be used to    */
+/*                raise exceptions. The returned function has the   */
+/*                following signature:                              */
+/*                void (*func) (MonoException *exc);                */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer 
+mono_arch_get_rethrow_exception (void)
+{
+	static guint8 start [384];
+	static int inited = 0;
+
+	if (inited)
+		return start;
+	get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -417,12 +449,12 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [160];
+	static guint8 start [384];
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE);
+	get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
 	inited = 1;
 	return start;
 }	
