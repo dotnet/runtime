@@ -361,7 +361,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 
 	/* if no split chars found return the string */
 	if (splitsize == 0) {
-		retarr = mono_array_new(mono_domain_get(), mono_defaults.string_class, 1);
+		retarr = mono_array_new(mono_domain_get(), mono_get_string_class (), 1);
 		mono_array_set(retarr, MonoString *, 0, me);
 
 		return retarr;
@@ -370,7 +370,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	if (splitsize != count)
 		splitsize++;
 
-	retarr = mono_array_new(mono_domain_get(), mono_defaults.string_class, splitsize);
+	retarr = mono_array_new(mono_domain_get(), mono_get_string_class (), splitsize);
 	for (i = 0; i != srcsize && arrpos != count; i++) {
 		if (string_icall_is_in_array(separator, arrsize, src[i])) {
 			if (arrpos == count - 1)

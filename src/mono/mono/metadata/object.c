@@ -21,6 +21,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
+#include "mono/metadata/class-internals.h"
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/marshal.h>

@@ -402,7 +402,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 			int i=0;
 			int num = tg->GroupCount;
 
-			array = mono_array_new (domain, mono_defaults.string_class, num);
+			array = mono_array_new (domain, mono_get_string_class (), num);
 
 			for (i=0; i < num; i++) {
 				gint32 size = 0;
@@ -423,7 +423,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 #endif
 	if (!array) {
 		/* return empty array of string, i.e. string [0] */
-		array = mono_array_new (domain, mono_defaults.string_class, 0);
+		array = mono_array_new (domain, mono_get_string_class (), 0);
 	}
 	return array;
 }

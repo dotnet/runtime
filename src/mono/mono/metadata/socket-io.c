@@ -767,7 +767,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 	field=mono_class_get_field_from_name(sockaddr_class, "data");
 
 	/* Make sure there is space for the family and size bytes */
-	data=mono_array_new(domain, mono_defaults.byte_class, sa_size+2);
+	data=mono_array_new(domain, mono_get_byte_class (), sa_size+2);
 
 	/* The data buffer is laid out as follows:
 	 * byte 0 is the address family
@@ -791,7 +791,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		guint32 address=ntohl(sa_in->sin_addr.s_addr);
 		
 		if(sa_size<8) {
-			mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+			mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 		}
 		
 		mono_array_set(data, guint8, 2, (port>>8) & 0xff);
@@ -812,7 +812,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		guint16 port=ntohs(sa_in->sin6_port);
 
 		if(sa_size<28) {
-			mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+			mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 		}
 
 		mono_array_set(data, guint8, 2, (port>>8) & 0xff);
@@ -929,7 +929,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 	 */
 	len = mono_array_length (data);
 	if (len < 2) {
-		mono_raise_exception (mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception (mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 	}
 	
 	family = convert_family (mono_array_get (data, guint8, 0) + (mono_array_get (data, guint8, 1) << 8));
@@ -1411,14 +1411,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 
 static MonoObject* int_to_object (MonoDomain *domain, int val)
 {
-   	/* construct an Int32 object to hold val */
-   	MonoObject* obj = mono_object_new(domain, mono_defaults.int32_class);
-
-   	/* Locate and set the "m_value" field */
-   	MonoClassField *field = mono_class_get_field_from_name(mono_defaults.int32_class,
-   					     "m_value");
-   	*(gint32 *)(((char *)obj)+field->offset)=val;
-    return obj;
+	return mono_value_box (domain, mono_get_int32_class (), &val);
 }
 
 
@@ -1839,7 +1832,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 		i++;
 	}
 	
-	*h_aliases=mono_array_new(domain, mono_defaults.string_class, i);
+	*h_aliases=mono_array_new(domain, mono_get_string_class (), i);
 	i=0;
 	while(he->h_aliases[i]!=NULL) {
 		MonoString *alias;
@@ -1854,7 +1847,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 		i++;
 	}
 	
-	*h_addr_list=mono_array_new(domain, mono_defaults.string_class, i);
+	*h_addr_list=mono_array_new(domain, mono_get_string_class (), i);
 	i=0;
 	while(he->h_addr_list[i]!=NULL) {
 		MonoString *addr_string;
@@ -1911,7 +1904,7 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 			i++;
 		}
 
-		*h_aliases=mono_array_new (domain, mono_defaults.string_class,
+		*h_aliases=mono_array_new (domain, mono_get_string_class (),
 					   i);
 		i=0;
 		while(he1->h_aliases[i]!=NULL) {
@@ -1929,7 +1922,7 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 			i++;
 		}
 
-		*h_aliases=mono_array_new (domain, mono_defaults.string_class,
+		*h_aliases=mono_array_new (domain, mono_get_string_class (),
 					   i);
 		i=0;
 		while(he2->h_aliases[i]!=NULL) {
@@ -1966,7 +1959,7 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 	/*
 	 * Fills the array
 	 */
-	*h_addr_list=mono_array_new (domain, mono_defaults.string_class,
+	*h_addr_list=mono_array_new (domain, mono_get_string_class (),
 				     host_count);
 
 	host_index = 0;
@@ -2030,8 +2023,8 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 		count++;
 	}
 
-	*h_aliases=mono_array_new(domain, mono_defaults.string_class, 0);
-	*h_addr_list=mono_array_new(domain, mono_defaults.string_class, count);
+	*h_aliases=mono_array_new(domain, mono_get_string_class (), 0);
+	*h_addr_list=mono_array_new(domain, mono_get_string_class (), count);
 
 	for (ai=info, i=0; ai!=NULL; ai=ai->ai_next) {
 		MonoString *addr_string;

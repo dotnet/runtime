@@ -82,9 +82,9 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethodSignature *sig;
 		
-		if (strcmp (".ctor", klass->methods [i]->name))
+		if (strcmp (".ctor", mono_method_get_name (klass->methods [i])))
 			continue;
-		sig = klass->methods [i]->signature;
+		sig = mono_method_signature (klass->methods [i]);
 		if (sig->param_count != count)
 			continue;
 
@@ -132,77 +132,77 @@ mono_exception_from_name_msg (MonoImage *image, const char *name_space,
 MonoException *
 mono_get_exception_divide_by_zero ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "DivideByZeroException");
 }
 
 MonoException *
 mono_get_exception_security ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "SecurityException");
 }
 
 MonoException *
 mono_get_exception_thread_abort ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System.Threading",
+	return mono_exception_from_name (mono_get_corlib (), "System.Threading",
 					 "ThreadAbortException");
 }
 
 MonoException *
 mono_get_exception_arithmetic ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "ArithmeticException");
 }
 
 MonoException *
 mono_get_exception_overflow ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "OverflowException");
 }
 
 MonoException *
 mono_get_exception_null_reference ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "NullReferenceException");
 }
 
 MonoException *
 mono_get_exception_execution_engine (const guchar *msg)
 {
-	return mono_exception_from_name_msg (mono_defaults.corlib, "System",
+	return mono_exception_from_name_msg (mono_get_corlib (), "System",
 										 "ExecutionEngineException", msg);
 }
 
 MonoException *
 mono_get_exception_serialization (const guchar *msg)
 {
-	return mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Serialization",
+	return mono_exception_from_name_msg (mono_get_corlib (), "System.Runtime.Serialization",
 										 "SerializationException", msg);
 }
 
 MonoException *
 mono_get_exception_invalid_cast ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "InvalidCastException");
 }
 
 MonoException *
 mono_get_exception_index_out_of_range ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "IndexOutOfRangeException");
 }
 
 MonoException *
 mono_get_exception_array_type_mismatch ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "ArrayTypeMismatchException");
 }
 
@@ -211,7 +211,7 @@ mono_get_exception_type_load (MonoString *type_name)
 {
 	MonoTypeLoadException *exc;
 	
-	exc = (MonoTypeLoadException *) mono_exception_from_name (mono_defaults.corlib,
+	exc = (MonoTypeLoadException *) mono_exception_from_name (mono_get_corlib (),
 					"System",
 					"TypeLoadException");
 
@@ -225,7 +225,7 @@ mono_get_exception_not_implemented (const guchar *msg)
 	MonoException *ex;
 	MonoDomain *domain;
 	
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+	ex = mono_exception_from_name (mono_get_corlib (), "System",
 				       "NotImplementedException");
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -238,7 +238,7 @@ mono_get_exception_not_implemented (const guchar *msg)
 MonoException *
 mono_get_exception_missing_method ()
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "MissingMethodException");
 }
 
@@ -249,7 +249,7 @@ mono_get_exception_argument_null (const guchar *arg)
 	MonoDomain *domain;
 
 	ex = mono_exception_from_name ( 
-		mono_defaults.corlib, "System", "ArgumentNullException");
+		mono_get_corlib (), "System", "ArgumentNullException");
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -267,7 +267,7 @@ mono_get_exception_argument (const guchar *arg, const guchar *msg)
 	MonoDomain *domain;
 
 	ex = mono_exception_from_name_msg (
-		mono_defaults.corlib, "System", "ArgumentException", msg);
+		mono_get_corlib (), "System", "ArgumentException", msg);
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -285,7 +285,7 @@ mono_get_exception_argument_out_of_range (const guchar *arg)
 	MonoDomain *domain;
 
 	ex = mono_exception_from_name (
-		mono_defaults.corlib, "System", "ArgumentOutOfRangeException");
+		mono_get_corlib (), "System", "ArgumentOutOfRangeException");
 
 	domain = ((MonoObject *)ex)->vtable->domain;
 
@@ -300,21 +300,21 @@ MonoException *
 mono_get_exception_thread_state (const guchar *msg)
 {
 	return mono_exception_from_name_msg (
-		mono_defaults.corlib, "System.Threading", "ThreadStateException", msg);
+		mono_get_corlib (), "System.Threading", "ThreadStateException", msg);
 }
 
 MonoException *
 mono_get_exception_io (const guchar *msg)
 {
 	return mono_exception_from_name_msg ( 
-		mono_defaults.corlib, "System.IO", "IOException", msg);
+		mono_get_corlib (), "System.IO", "IOException", msg);
 }
 
 MonoException *
 mono_get_exception_file_not_found (MonoString *fname)
 {
 	return mono_exception_from_name_two_strings (
-		mono_defaults.corlib, "System.IO", "FileNotFoundException", fname, fname);
+		mono_get_corlib (), "System.IO", "FileNotFoundException", fname, fname);
 }
 
 MonoException *
@@ -326,7 +326,7 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	MonoMethod *method;
 	gint i;
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "TypeInitializationException");
+	klass = mono_class_from_name (mono_get_corlib (), "System", "TypeInitializationException");
 	g_assert (klass);
 
 	mono_class_init (klass);
@@ -334,7 +334,7 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	/* TypeInitializationException only has 1 ctor with 2 args */
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
-		if (!strcmp (".ctor", method->name) && method->signature->param_count == 2)
+		if (!strcmp (".ctor", mono_method_get_name (method)) && mono_method_signature (method)->param_count == 2)
 			break;
 		method = NULL;
 	}
@@ -353,29 +353,29 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 MonoException *
 mono_get_exception_synchronization_lock (const guchar *msg)
 {
-	return mono_exception_from_name_msg (mono_defaults.corlib, "System.Threading", "SynchronizationLockException", msg);
+	return mono_exception_from_name_msg (mono_get_corlib (), "System.Threading", "SynchronizationLockException", msg);
 }
 
 MonoException *
 mono_get_exception_cannot_unload_appdomain (const guchar *msg)
 {
-	return mono_exception_from_name_msg (mono_defaults.corlib, "System", "CannotUnloadAppDomainException", msg);
+	return mono_exception_from_name_msg (mono_get_corlib (), "System", "CannotUnloadAppDomainException", msg);
 }
 
 MonoException *
 mono_get_exception_appdomain_unloaded (void)
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System", "AppDomainUnloadedException");
+	return mono_exception_from_name (mono_get_corlib (), "System", "AppDomainUnloadedException");
 }
 
 MonoException *
 mono_get_exception_bad_image_format (const guchar *msg)
 {
-	return mono_exception_from_name_msg (mono_defaults.corlib, "System", "BadImageFormatException", msg);
+	return mono_exception_from_name_msg (mono_get_corlib (), "System", "BadImageFormatException", msg);
 }	
 
 MonoException *
 mono_get_exception_stack_overflow (void)
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System", "StackOverflowException");	
+	return mono_exception_from_name (mono_get_corlib (), "System", "StackOverflowException");	
 }

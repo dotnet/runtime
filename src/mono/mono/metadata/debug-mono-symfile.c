@@ -227,13 +227,13 @@ mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
 	if (!symfile->method_hash)
 		return NULL;
 
-	if (handle->image != method->klass->image)
+	if (handle->image != mono_method_get_class (method)->image)
 		return NULL;
 
 	first_ie = (MonoSymbolFileMethodIndexEntry *)
 		(symfile->raw_contents + read32(&(symfile->offset_table->_method_table_offset)));
 
-	ie = bsearch (GUINT_TO_POINTER (method->token), first_ie,
+	ie = bsearch (GUINT_TO_POINTER (mono_method_get_token (method)), first_ie,
 				   read32(&(symfile->offset_table->_method_count)),
 				   sizeof (MonoSymbolFileMethodIndexEntry), compare_method);
 

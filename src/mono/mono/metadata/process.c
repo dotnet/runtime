@@ -683,7 +683,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	mono_assembly_foreach (process_scan_modules, modules_list);
 
 	/* Build a MonoArray out of modules_list */
-	arr=mono_array_new (mono_domain_get (), mono_defaults.object_class,
+	arr=mono_array_new (mono_domain_get (), mono_get_object_class (),
 			    modules_list->len);
 	
 	for(i=0; i<modules_list->len; i++) {
@@ -1005,7 +1005,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 	}
 	
 	count=needed/sizeof(guint32);
-	procs=mono_array_new (mono_domain_get (), mono_defaults.int_class,
+	procs=mono_array_new (mono_domain_get (), mono_get_int32_class (),
 			      count);
 	for(i=0; i<count; i++) {
 		mono_array_set (procs, guint32, i, pids[i]);

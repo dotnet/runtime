@@ -30,13 +30,19 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/loader.h>
-#include <mono/metadata/class.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 
+static void mono_loader_wine_init   (void);
+
 MonoDefaults mono_defaults;
 
-CRITICAL_SECTION loader_mutex;
+/*
+ * This lock protects the hash tables inside MonoImage used by the metadata 
+ * loading functions in class.c and loader.c.
+ */
+static CRITICAL_SECTION loader_mutex;
 
 void
 mono_loader_init ()
@@ -1118,7 +1124,7 @@ mono_method_get_last_managed (void)
  * requirements: basically the SharedWineInit must be called before
  * any modules are dlopened or they will fail to work.
  */
-void
+static void
 mono_loader_wine_init ()
 {
 	GModule *module = g_module_open ("winelib.exe.so", G_MODULE_BIND_LAZY);
@@ -1138,4 +1144,49 @@ mono_loader_wine_init ()
 	return;
 }
 #endif
+
+void
+mono_loader_lock (void)
+{
+	EnterCriticalSection (&loader_mutex);
+}
+
+void
+mono_loader_unlock (void)
+{
+	LeaveCriticalSection (&loader_mutex);
+}
+
+MonoMethodSignature* 
+mono_method_signature (MonoMethod *method)
+{
+	return method->signature;
+}
+
+const char*
+mono_method_get_name (MonoMethod *method)
+{
+	return method->name;
+}
+
+MonoClass*
+mono_method_get_class (MonoMethod *method)
+{
+	return method->klass;
+}
+
+guint32
+mono_method_get_token (MonoMethod *method)
+{
+	return method->token;
+}
+
+guint32
+mono_method_get_flags (MonoMethod *method, guint32 *iflags)
+{
+	if (iflags)
+		*iflags = method->iflags;
+	return method->flags;
+}
+
 

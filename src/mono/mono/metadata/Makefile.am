@@ -116,6 +116,7 @@ libmetadata_la_SOURCES = \
 	rawbuffer.h	\
 	loader.c	\
 	class.c		\
+	class-internals.h		\
 	mempool.c	\
 	debug-helpers.c
 

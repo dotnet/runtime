@@ -18,6 +18,7 @@
 #include "cil-coff.h"
 #include "tokentype.h"
 #include "metadata-internals.h"
+#include "class-internals.h"
 #include "private.h"
 #include "class.h"
 

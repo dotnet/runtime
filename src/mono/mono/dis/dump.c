@@ -913,7 +913,7 @@ dump_table_customattr (MonoImage *m)
 		}
 		method = get_method (m, mtoken);
 		meth = mono_get_method (m, mtoken, NULL);
-		params = custom_attr_params (m, meth->signature, mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
+		params = custom_attr_params (m, mono_method_signature (meth), mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
 		fprintf (output, "%d: %s: %s [%s]\n", i, desc, method, params);
 		g_free (desc);
 		g_free (method);

@@ -3,6 +3,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-endian.h>
@@ -63,7 +64,7 @@ mono_debug_init (MonoDomain *domain, MonoDebugFormat format)
 	mono_debugger_class_init_func = mono_debug_add_type;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
-	mono_debug_open_image (mono_defaults.corlib);
+	mono_debug_open_image (mono_get_corlib ());
 	/*
 	 * FIXME: Ugh: what is this code supposed to do? corlib has no references.
 	for (ass = mono_defaults.corlib->references; ass && *ass; ass++)
@@ -83,7 +84,7 @@ mono_debug_init_2 (MonoAssembly *assembly)
 
 	mono_debug_open_image (mono_assembly_get_image (assembly));
 
-	handle = _mono_debug_get_image (mono_defaults.corlib);
+	handle = _mono_debug_get_image (mono_get_corlib ());
 	g_assert (handle);
 }
 
@@ -126,7 +127,7 @@ mono_debug_open_image (MonoImage *image)
 	handle->symfile = mono_debug_open_mono_symbol_file (handle, in_the_mono_debugger);
 	if (in_the_mono_debugger) {
 		handle->_priv->debugger_info = mono_debugger_add_symbol_file (handle);
-		if (image == mono_defaults.corlib)
+		if (image == mono_get_corlib ())
 			mono_debugger_add_builtin_types (handle->_priv->debugger_info);
 	}
 
@@ -211,13 +212,15 @@ _mono_debug_lookup_method (MonoMethod *method)
 void
 mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method, MonoDomain *domain)
 {
-	MonoClass *klass = method->klass;
+	MonoClass *klass = mono_method_get_class (method);
 	MonoDebugHandle *handle;
 	MonoDebugMethodInfo *minfo;
 	MonoDebugMethodJitInfo *jit;
 	MonoDebugDomainData *domain_data;
+	guint32 iflags;
 
-	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+	mono_method_get_flags (method, &iflags);
+	if (!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return;
 
 	mono_class_init (klass);

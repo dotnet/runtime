@@ -79,7 +79,7 @@ create_group_sizes_array (const gint *gs, gint ml)
 	}
 	
 	ret = mono_array_new (mono_domain_get (),
-			mono_defaults.int32_class, len);
+			mono_get_int32_class (), len);
 
 	for(i = 0; i < len; i++)
 		mono_array_set (ret, gint32, i, gs [i]);
@@ -105,7 +105,7 @@ create_names_array (const gchar *const *names, int ml)
 		len++;
 	}
 
-	ret = mono_array_new (mono_domain_get (), mono_defaults.string_class, len);
+	ret = mono_array_new (mono_domain_get (), mono_get_string_class (), len);
 
 	for(i = 0; i < len; i++)
 		mono_array_set (ret, MonoString *, i, mono_string_new (domain, names [i]));
@@ -459,7 +459,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 			len++;
 	}
 
-	class = mono_class_from_name (mono_defaults.corlib,
+	class = mono_class_from_name (mono_get_corlib (),
 			"System.Globalization", "CultureInfo");
 	ret = mono_array_new (domain, class, len);
 
@@ -565,7 +565,7 @@ static MonoArray *build_array (const UResourceBundle *bundle,
 	subbundle=open_subbundle (bundle, resname, req_count);
 	if(subbundle!=NULL) {
 		arr=mono_array_new(mono_domain_get (),
-				   mono_defaults.string_class, req_count);
+				   mono_get_string_class (), req_count);
 		
 		for(i=0; i<req_count; i++) {
 			mono_array_set(arr, MonoString *, i, monostring_from_resource_index (subbundle, i));
@@ -584,7 +584,7 @@ static MonoDateTimeFormatInfo *create_DateTimeFormat (const char *locale)
 	UResourceBundle *bundle, *subbundle;
 	UErrorCode ec;
 	
-	class=mono_class_from_name (mono_defaults.corlib,
+	class=mono_class_from_name (mono_get_corlib (),
 				    "System.Globalization",
 				    "DateTimeFormatInfo");
 	new_dtf=(MonoDateTimeFormatInfo *)mono_object_new (mono_domain_get (),
@@ -671,7 +671,7 @@ static MonoNumberFormatInfo *create_NumberFormat (const char *locale)
 	const UChar *res_str;
 	int32_t res_strlen;
 
-	class=mono_class_from_name (mono_defaults.corlib,
+	class=mono_class_from_name (mono_get_corlib (),
 				    "System.Globalization",
 				    "NumberFormatInfo");
 	new_nf=(MonoNumberFormatInfo *)mono_object_new (mono_domain_get (),
@@ -827,7 +827,7 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoC
 	icu_locale=mono_string_to_icu_locale (locale);
 	if(icu_locale==NULL) {
 		/* Something went wrong */
-		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 		return;
 	}
 	
@@ -889,7 +889,7 @@ void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompa
 	icu_locale=mono_string_to_icu_locale (locale);
 	if(icu_locale==NULL) {
 		/* Something went wrong */
-		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 		return;
 	}
 
@@ -1056,7 +1056,7 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 	
 	coll=this->ICU_collator;
 	if(coll==NULL) {
-		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 		return;
 	}
 	
@@ -1071,7 +1071,7 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 
 	mono_monitor_exit ((MonoObject *)this);
 	
-	arr=mono_array_new (mono_domain_get (), mono_defaults.byte_class,
+	arr=mono_array_new (mono_domain_get (), mono_get_byte_class (),
 			    keylen);
 	for(i=0; i<keylen; i++) {
 		mono_array_set (arr, guint8, i, keybuf[i]);
@@ -1519,7 +1519,7 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, Mono
 
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
 		return(NULL);
 	}
 	
@@ -1581,7 +1581,7 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, Mono
 
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
 		return(NULL);
 	}
 	
@@ -1633,7 +1633,7 @@ gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureIn
 
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
 		return(0);
 	}
 	
@@ -1661,7 +1661,7 @@ gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureIn
 
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
-		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
 		return(0);
 	}
 	
@@ -1688,7 +1688,7 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoC
 	/* Always claim "unknown locale" if we don't have ICU (only
 	 * called for non-invariant locales)
 	 */
-	mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "ArgumentException"));
+	mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "ArgumentException"));
 }
 
 void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale)
@@ -1721,7 +1721,7 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 	
 	keylen=mono_string_length (source);
 	
-	arr=mono_array_new (mono_domain_get (), mono_defaults.byte_class,
+	arr=mono_array_new (mono_domain_get (), mono_get_byte_class (),
 			    keylen);
 	for(i=0; i<keylen; i++) {
 		mono_array_set (arr, guint8, i, mono_string_chars (source)[i]);

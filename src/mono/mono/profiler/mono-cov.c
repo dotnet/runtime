@@ -82,14 +82,16 @@ cov_shutdown (MonoProfiler *prof)
 	}
 	image = mono_assembly_get_image (prof->assembly);
 	for (i = 1; i <= mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoClass *klass;
 		method = mono_get_method (image, i | MONO_TOKEN_METHOD_DEF, NULL);
 		if (!method)
 			continue;
-		if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+		if ((mono_method_get_flags (method, NULL) & METHOD_ATTRIBUTE_ABSTRACT))
 			continue;
 		/* FIXME: handle icalls, runtime calls and synchronized methods */
 		if (prof->class_name && *prof->class_name) {
-			if (!strstr (method->klass->name, prof->class_name) && !strstr (method->klass->name_space, prof->class_name))
+			klass = mono_method_get_class (method);
+			if (!strstr (klass->name, prof->class_name) && !strstr (klass->name_space, prof->class_name))
 				continue;
 		}
 		/*g_print ("check %s::%s, %p\n", method->klass->name, method->name, method);*/

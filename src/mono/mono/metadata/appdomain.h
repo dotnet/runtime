@@ -102,4 +102,71 @@ mono_context_get				   (void);
 MonoJitInfo *
 mono_jit_info_table_find   (MonoDomain *domain, char *addr);
 
+MonoImage*
+mono_get_corlib            (void);
+
+MonoClass*
+mono_get_object_class      (void);
+
+MonoClass*
+mono_get_byte_class        (void);
+
+MonoClass*
+mono_get_void_class        (void);
+
+MonoClass*
+mono_get_boolean_class     (void);
+
+MonoClass*
+mono_get_sbyte_class       (void);
+
+MonoClass*
+mono_get_int16_class       (void);
+
+MonoClass*
+mono_get_uint16_class      (void);
+
+MonoClass*
+mono_get_int32_class       (void);
+
+MonoClass*
+mono_get_uint32_class      (void);
+
+MonoClass*
+mono_get_intptr_class         (void);
+
+MonoClass*
+mono_get_uintptr_class        (void);
+
+MonoClass*
+mono_get_int64_class       (void);
+
+MonoClass*
+mono_get_uint64_class      (void);
+
+MonoClass*
+mono_get_single_class      (void);
+
+MonoClass*
+mono_get_double_class      (void);
+
+MonoClass*
+mono_get_char_class        (void);
+
+MonoClass*
+mono_get_string_class      (void);
+
+MonoClass*
+mono_get_enum_class        (void);
+
+MonoClass*
+mono_get_array_class       (void);
+
+MonoClass*
+mono_get_thread_class       (void);
+
+MonoClass*
+mono_get_exception_class    (void);
+
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */
+

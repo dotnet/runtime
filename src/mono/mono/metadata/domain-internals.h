@@ -7,6 +7,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-hash.h>
+#include <mono/io-layer/io-layer.h>
 
 extern CRITICAL_SECTION mono_delegate_section;
 

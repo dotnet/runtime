@@ -17,6 +17,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/cil-coff.h>
@@ -680,7 +681,140 @@ mono_context_set (MonoAppContext * new_context)
 }
 
 MonoAppContext * 
-mono_context_get ()
+mono_context_get (void)
 {
 	return ((MonoAppContext *)TlsGetValue (context_thread_id));
 }
+
+MonoImage*
+mono_get_corlib (void)
+{
+	return mono_defaults.corlib;
+}
+
+MonoClass*
+mono_get_object_class (void)
+{
+	return mono_defaults.object_class;
+}
+
+MonoClass*
+mono_get_byte_class (void)
+{
+	return mono_defaults.byte_class;
+}
+
+MonoClass*
+mono_get_void_class (void)
+{
+	return mono_defaults.void_class;
+}
+
+MonoClass*
+mono_get_boolean_class (void)
+{
+	return mono_defaults.boolean_class;
+}
+
+MonoClass*
+mono_get_sbyte_class (void)
+{
+	return mono_defaults.sbyte_class;
+}
+
+MonoClass*
+mono_get_int16_class (void)
+{
+	return mono_defaults.int16_class;
+}
+
+MonoClass*
+mono_get_uint16_class (void)
+{
+	return mono_defaults.uint16_class;
+}
+
+MonoClass*
+mono_get_int32_class (void)
+{
+	return mono_defaults.int32_class;
+}
+
+MonoClass*
+mono_get_uint32_class (void)
+{
+	return mono_defaults.uint32_class;
+}
+
+MonoClass*
+mono_get_intptr_class (void)
+{
+	return mono_defaults.int_class;
+}
+
+MonoClass*
+mono_get_uintptr_class (void)
+{
+	return mono_defaults.uint_class;
+}
+
+MonoClass*
+mono_get_int64_class (void)
+{
+	return mono_defaults.int64_class;
+}
+
+MonoClass*
+mono_get_uint64_class (void)
+{
+	return mono_defaults.uint64_class;
+}
+
+MonoClass*
+mono_get_single_class (void)
+{
+	return mono_defaults.single_class;
+}
+
+MonoClass*
+mono_get_double_class (void)
+{
+	return mono_defaults.double_class;
+}
+
+MonoClass*
+mono_get_char_class (void)
+{
+	return mono_defaults.char_class;
+}
+
+MonoClass*
+mono_get_string_class (void)
+{
+	return mono_defaults.string_class;
+}
+
+MonoClass*
+mono_get_enum_class (void)
+{
+	return mono_defaults.enum_class;
+}
+
+MonoClass*
+mono_get_array_class (void)
+{
+	return mono_defaults.array_class;
+}
+
+MonoClass*
+mono_get_thread_class (void)
+{
+	return mono_defaults.thread_class;
+}
+
+MonoClass*
+mono_get_exception_class (void)
+{
+	return mono_defaults.exception_class;
+}
+

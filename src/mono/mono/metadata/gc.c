@@ -67,10 +67,11 @@ run_finalize (void *obj, void *data)
 
 	if (finalize_slot < 0) {
 		int i;
-		for (i = 0; i < mono_defaults.object_class->vtable_size; ++i) {
-			MonoMethod *cm = mono_defaults.object_class->vtable [i];
+		MonoClass* obj_class = mono_get_object_class ();
+		for (i = 0; i < obj_class->vtable_size; ++i) {
+			MonoMethod *cm = obj_class->vtable [i];
 	       
-			if (!strcmp (cm->name, "Finalize")) {
+			if (!strcmp (mono_method_get_name (cm), "Finalize")) {
 				finalize_slot = i;
 				break;
 			}
@@ -90,7 +91,7 @@ run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
-	if (o->vtable->klass == mono_defaults.thread_class)
+	if (o->vtable->klass == mono_get_thread_class ())
 		if (mono_gc_is_finalizer_thread ((MonoThread*)o))
 			/* Avoid finalizing ourselves */
 			return;

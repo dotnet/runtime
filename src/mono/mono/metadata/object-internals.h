@@ -3,6 +3,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
+#include <mono/io-layer/io-layer.h>
 
 #if 1
 #ifdef __GNUC__
