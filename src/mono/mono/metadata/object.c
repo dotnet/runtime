@@ -311,6 +311,29 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
+MonoObject*
+mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
+{
+	MonoClass *klass;
+	MonoMethod *im;
+	int i;
+
+	klass = ((MonoObject *)delegate)->vtable->klass;
+	im = NULL;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'I' && 
+		    !strcmp ("Invoke", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == 2) {
+			im = klass->methods [i];
+		}
+	}
+
+	g_assert (im);
+
+	return mono_runtime_invoke (im, delegate, params, exc);
+}
+
 static MonoArray* main_args;
 
 MonoArray*
@@ -359,42 +382,24 @@ mono_unhandled_exception (MonoObject *exc)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoClassField *field;
-	MonoDelegate *d;
+	MonoObject *delegate;
 	
 	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, 
 					     "UnhandledException");
 	g_assert (field);
 
-	d = *(MonoDelegate **)(((char *)domain->domain) + field->offset); 
+	delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
 
-	if (!d) {
+	if (!delegate) {
 		mono_print_unhandled_exception (exc);
 	} else {
 		MonoObject *e = NULL;
-		MonoClass *klass;
-		MonoMethod *im;
 		gpointer pa [2];
-		int i;
-
-		/* FIXME: call the event handler */ 
-
-		klass = ((MonoObject *)d)->vtable->klass;
-		im = NULL;
-
-		for (i = 0; i < klass->method.count; ++i) {
-			if (klass->methods [i]->name[0] == 'I' && 
-			    !strcmp ("Invoke", klass->methods [i]->name) &&
-			    klass->methods [i]->signature->param_count == 2) {
-				im = klass->methods [i];
-			}
-		}
-
-		g_assert (im);
 
 		/* fixme: pass useful arguments */
 		pa [0] = NULL;
 		pa [1] = NULL;
-		mono_runtime_invoke (im, d, pa, &e);
+		mono_runtime_delegate_invoke (delegate, pa, &e);
 		/* fixme: what if an exception occured */
 
 		mono_print_unhandled_exception (exc);

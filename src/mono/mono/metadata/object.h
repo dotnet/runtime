@@ -262,6 +262,10 @@ mono_runtime_invoke         (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
 
 MonoObject*
+mono_runtime_delegate_invoke (MonoObject *delegate, void **params, 
+			      MonoObject **exc);
+
+MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);
 
