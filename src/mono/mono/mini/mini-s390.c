@@ -96,6 +96,38 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 		s390_jcl (code, cond, 0);				\
 	} while (0); 
 
+#define CHECK_SRCDST_COM						\
+	if (ins->dreg == ins->sreg2) {					\
+		src2 = ins->sreg1;					\
+	} else {							\
+		src2 = ins->sreg2;					\
+		if (ins->dreg != ins->sreg1) {				\
+			s390_lr  (code, ins->dreg, ins->sreg1);		\
+		}							\
+	}
+
+#define CHECK_SRCDST_NCOM						\
+	if (ins->dreg == ins->sreg2) {					\
+		src2 = s390_r13;					\
+		s390_lr  (code, s390_r13, ins->sreg2);			\
+	} else {							\
+		src2 = ins->sreg2;					\
+	}								\
+	if (ins->dreg != ins->sreg1) {					\
+		s390_lr  (code, ins->dreg, ins->sreg1);			\
+	}
+
+#define CHECK_SRCDST_NCOM_F						\
+	if (ins->dreg == ins->sreg2) {					\
+		src2 = s390_f15;					\
+		s390_ldr (code, s390_r13, ins->sreg2);			\
+	} else {							\
+		src2 = ins->sreg2;					\
+	}								\
+	if (ins->dreg != ins->sreg1) {					\
+		s390_ldr (code, ins->dreg, ins->sreg1);			\
+	}
+
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
@@ -525,16 +557,16 @@ enum_parmtype:
 				printf ("[INT4:%d], ", *((int *) curParm));
 				break; 
 			case MONO_TYPE_U1 :
-				printf ("[UINT1:%ud], ", *((unsigned int *) curParm));
+				printf ("[UINT1:%u], ", *((unsigned int *) curParm));
 				break; 
 			case MONO_TYPE_U2 :
-				printf ("[UINT2:%ud], ", *((guint16 *) curParm));
+				printf ("[UINT2:%u], ", *((guint16 *) curParm));
 				break; 
 			case MONO_TYPE_U4 :
-				printf ("[UINT4:%ud], ", *((guint32 *) curParm));
+				printf ("[UINT4:%u], ", *((guint32 *) curParm));
 				break; 
 			case MONO_TYPE_U8 :
-				printf ("[UINT8:%ul], ", *((guint64 *) curParm));
+				printf ("[UINT8:%llu], ", *((guint64 *) curParm));
 				break; 
 			case MONO_TYPE_STRING : {
 				MonoString *s = *((MonoString **) curParm);
@@ -863,6 +895,11 @@ handle_enum:
 		printf ("[LONG:%lld]", l);
 		break;
 	}
+	case MONO_TYPE_U8: {
+		guint64 l =  va_arg (ap, guint64);
+		printf ("[ULONG:%llu]", l);
+		break;
+	}
 	case MONO_TYPE_R4: {
 		double f = va_arg (ap, double);
 		printf ("[FLOAT4:%f]\n", (float) f);
@@ -1038,9 +1075,11 @@ GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
+	MonoMethodHeader *header;
 	int i, top = 13;
 
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA) 
+	header = mono_method_get_header (cfg->method);
+	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		cfg->frame_reg = s390_r11;
 
 	for (i = 8; i < top; ++i) {
@@ -3124,8 +3163,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint8 *code = cfg->native_code + cfg->code_len;
 	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
-	int max_len, cpos;
-guint8 cond;
+	int max_len, cpos, src2;
 
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass (cfg, bb);
@@ -3437,24 +3475,18 @@ guint8 cond;
 		}
 			break;
 		case OP_ADDCC: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_alr  (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_COM;
+			s390_alr  (code, ins->dreg, src2);
 		}
 			break;
 		case CEE_ADD: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_ar   (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_COM;
+			s390_ar   (code, ins->dreg, src2);
 		}
 			break;
 		case OP_ADC: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_alcr (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_COM;
+			s390_alcr (code, ins->dreg, src2);
 		}
 			break;
 		case OP_ADDCC_IMM:
@@ -3503,61 +3535,47 @@ guint8 cond;
 		}
 			break;
 		case CEE_ADD_OVF: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_ar   (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_COM;
+			s390_ar   (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;
 		case CEE_ADD_OVF_UN: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_alr  (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_COM;
+			s390_alr  (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
 		}
 			break;
 		case OP_ADD_OVF_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
+			CHECK_SRCDST_COM;
 			s390_lhi  (code, s390_r0, 0);
 			s390_lr   (code, s390_r1, s390_r0);
 			s390_alcr (code, s390_r0, s390_r1);
-			s390_ar   (code, ins->dreg, ins->sreg2);
+			s390_ar   (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 			s390_ar   (code, ins->dreg, s390_r0);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;
 		case OP_ADD_OVF_UN_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_alcr (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_COM;
+			s390_alcr (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
 		}
 			break;
 		case OP_SUBCC: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_slr (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_NCOM;
+			s390_slr (code, ins->dreg, src2);
 		}
 			break;
 		case CEE_SUB: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_sr   (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_NCOM;
+			s390_sr   (code, ins->dreg, src2);
 		}
 			break;
 		case OP_SBB: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_slbr (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_NCOM;
+			s390_slbr (code, ins->dreg, src2);
 		}
 			break;
 		case OP_SUBCC_IMM: {
@@ -3610,39 +3628,31 @@ guint8 cond;
 		}
 			break;
 		case CEE_SUB_OVF: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_sr   (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_NCOM;
+			s390_sr   (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;
 		case CEE_SUB_OVF_UN: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_slr  (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_NCOM;
+			s390_slr  (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
 		}
 			break;
 		case OP_SUB_OVF_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
+			CHECK_SRCDST_NCOM;
 			s390_lhi  (code, s390_r0, 0);
 			s390_lr   (code, s390_r1, s390_r0);
 			s390_slbr (code, s390_r0, s390_r1);
-			s390_sr   (code, ins->dreg, ins->sreg2);
+			s390_sr   (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 			s390_ar   (code, ins->dreg, s390_r0);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;
 		case OP_SUB_OVF_UN_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_slbr (code, ins->dreg, ins->sreg2);
+			CHECK_SRCDST_NCOM;
+			s390_slbr (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
 		}
 			break;
@@ -3805,10 +3815,8 @@ guint8 cond;
 		}
 			break;
 		case CEE_SHL: {
-			if (ins->sreg1 != ins->dreg) {
-				s390_lr   (code, ins->dreg, ins->sreg1);
-			}
-			s390_sll  (code, ins->dreg, ins->sreg2, 0);
+			CHECK_SRCDST_NCOM;
+			s390_sll  (code, ins->dreg, src2, 0);
 		}
 			break;
 		case OP_SHL_IMM: {
@@ -3819,10 +3827,8 @@ guint8 cond;
 		}
 			break;
 		case CEE_SHR: {
-			if (ins->sreg1 != ins->dreg) {
-				s390_lr   (code, ins->dreg, ins->sreg1);
-			}
-			s390_sra  (code, ins->dreg, ins->sreg2, 0);
+			CHECK_SRCDST_NCOM;
+			s390_sra  (code, ins->dreg, src2, 0);
 		}
 			break;
 		case OP_SHR_IMM: {
@@ -3840,10 +3846,8 @@ guint8 cond;
 		}
 			break;
 		case CEE_SHR_UN: {
-			if (ins->sreg1 != ins->dreg) {
-				s390_lr   (code, ins->dreg, ins->sreg1);
-			}
-			s390_srl  (code, ins->dreg, ins->sreg2, 0);
+			CHECK_SRCDST_NCOM;
+			s390_srl  (code, ins->dreg, src2, 0);
 		}
 			break;
 		case CEE_NOT: {
@@ -4475,12 +4479,8 @@ guint8 cond;
 		}
 			break;
 		case OP_FSUB: {
-			if (ins->dreg == ins->sreg1)
-				s390_sdbr (code, ins->dreg, ins->sreg2);
-			else {
-				s390_ldr  (code, ins->dreg, ins->sreg1);
-				s390_sdbr (code, ins->dreg, ins->sreg2);
-			}
+			CHECK_SRCDST_NCOM_F;
+			s390_sdbr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_FMUL: {
@@ -4497,12 +4497,8 @@ guint8 cond;
 		}
 			break;		
 		case OP_FDIV: {
-			if (ins->dreg == ins->sreg1)
-				s390_ddbr (code, ins->dreg, ins->sreg2);
-			else {
-				s390_ldr  (code, ins->dreg, ins->sreg1);
-				s390_ddbr (code, ins->dreg, ins->sreg2);
-			}
+			CHECK_SRCDST_NCOM_F;
+			s390_ddbr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_FNEG: {
@@ -4510,9 +4506,7 @@ guint8 cond;
 		}
 			break;		
 		case OP_FREM: {
-			if (ins->dreg != ins->sreg1) {
-				s390_ldr  (code, ins->dreg, ins->sreg1);
-			}
+			CHECK_SRCDST_NCOM_F;
 			s390_didbr (code, ins->dreg, ins->sreg2, 5, s390_f15);
 		}
 			break;
@@ -5153,8 +5147,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
-			guint8 *ip = patch_info->ip.i + cfg->native_code,
-			       *buf, buf2;
+			guint8 *ip = patch_info->ip.i + cfg->native_code;
 			MonoClass *exc_class;
 			guint32 throw_ip;
 

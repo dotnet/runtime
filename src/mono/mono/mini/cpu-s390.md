@@ -47,14 +47,14 @@
 #
 
 adc: dest:i src1:i src2:i len:6
-adc_imm: dest:i src1:i len:14
+adc_imm: dest:i src1:i len:18
 add.ovf.un: len: 8 dest:i src1:i src2:i
 add.ovf: len: 24 dest:i src1:i src2:i
 add: dest:i src1:i src2:i len:4 clob:1
 add_imm: dest:i src1:i len:18
 addcc_imm: dest:i src1:i len:18
 add_ovf_carry: dest:i src1:1 src2:i len:28
-add_ovf_un_carry: dest:i src1:1 src2:i len:12
+add_ovf_un_carry: dest:i src1:1 src2:i len:28
 addcc: dest:i src1:i src2:i len:6
 and: dest:i src1:i src2:i len:6 clob:1
 and_imm: dest:i src1:i len:16
@@ -453,8 +453,8 @@ retarg:
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4 clob:r
 tls_get: dest:i len:44
-sbb: dest:i src1:i src2:i len:6
-sbb_imm: dest:i src1:i len:14
+sbb: dest:i src1:i src2:i len:8
+sbb_imm: dest:i src1:i len:16
 setfreg: dest:f src1:f len:4 clob:r
 setlret: src1:i src2:i len:12
 setreg: dest:i src1:i len:4 clob:r
@@ -515,7 +515,7 @@ sub: dest:i src1:i src2:i len:4 clob:1
 sub_imm: dest:i src1:i len:18
 subcc_imm: dest:i src1:i len:18
 sub_ovf_carry: dest:i src1:1 src2:i len:28
-sub_ovf_un_carry: dest:i src1:1 src2:i len:12
+sub_ovf_un_carry: dest:i src1:1 src2:i len:28
 subcc: dest:i src1:i src2:i len:6
 switch:
 tail.:
