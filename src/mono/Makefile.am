@@ -10,6 +10,12 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA= mono.pc
 DISTCLEANFILES= mono.pc
 
+#
+# The following target is used to compile and install
+# mono and mcs without running into the out-of-sync
+# problems by doing the compilation in the right order.
+#
+
 fullbuild: remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest install
 
 mcs-tree-safe-build:

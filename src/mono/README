@@ -1,14 +1,28 @@
 
 This is Mono.
 
-Installation:
+1. Installation
+2. Using Mono
+3. Directory Roadmap
 
-	Read doc/download for installation instructions, 
-	or read the HTML version:
+1. Compilation and Installation
+===============================
 
-		http://www.go-mono.com/download.html
+	If you obtained this package as an officially released tarball,
+	this is very simple, use configure and make:
 
-* Using Mono
+		./configure --prefix=/usr/local
+		make
+		make install
+
+	If you obtained this as a snapshot, you will need an existing
+	Mono installation.  To upgrade your installation do:
+
+		./autogen --prefix=/usr/local
+		make fullbuild
+
+2. Using Mono
+=============
 
 	Once you have installed the software, you can run a few programs:
 
@@ -29,7 +43,8 @@ Installation:
 	See the man pages for mono(1), mint(1), monodis(1) and mcs(2)
 	for further details.
 
-* A directory roadmap:
+3. Directory Roadmap
+====================
 
 	doc/
 		Contains documentation and the web site contents.
