@@ -1662,6 +1662,8 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 
 	for (i = 0; i < (sig->param_count + sig->hasthis); ++i) {
 		if (call->args [i]) {
+			if (!call->args [i]->cil_code)
+				call->args [i]->cil_code = ip;
 			if (to_end)
 				mono_add_ins_to_end (bblock, call->args [i]);
 			else
