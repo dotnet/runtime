@@ -789,7 +789,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 
 	while (*tmp) {
 		value = g_strstrip (*tmp);
-		if (!g_strncasecmp (value, "Version=", 8)) {
+		if (!g_ascii_strncasecmp (value, "Version=", 8)) {
 			if (sscanf (value + 8, "%u.%u.%u.%u",
 				    &major, &minor, &build, &revision) != 4) {
 				g_strfreev (parts);
@@ -804,7 +804,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			continue;
 		}
 
-		if (!g_strncasecmp (value, "Culture=", 8)) {
+		if (!g_ascii_strncasecmp (value, "Culture=", 8)) {
 			gchar *t = g_strdup (value + 8);
 			g_strchug (t);
 			aname->culture = g_strdup (g_strchomp (t));
@@ -817,7 +817,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			continue;
 		}
 
-		if (!g_strncasecmp (value, "PublicKeyToken=", 15)) {
+		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
 			tmp++;
 			value += 15;
 			if (*value && strcmp (value, "null")) {
