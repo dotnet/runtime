@@ -5594,7 +5594,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		if (klass == mono_defaults.string_class && !strcmp (m->name, ".ctor"))
 			m->string_ctor = 1;
 
-		m->addr = mono_lookup_internal_call (m);
 		m->signature->pinvoke = 1;
 	} else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		/* TODO */
