@@ -1545,7 +1545,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 
 	image = eclass->image;
 
-	if ((list = g_hash_table_lookup (image->array_cache, element_type))) {
+	if ((list = g_hash_table_lookup (image->array_cache, &eclass->byval_arg))) {
 		for (; list; list = list->next) {
 			class = list->data;
 			if (class->rank == rank)
