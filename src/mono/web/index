@@ -53,7 +53,8 @@
 	      <b>Interpreter</b>
 	    </td>
 	    <td>
-	      Linux/PPC working<br>
+	      Working:<br>
+	      Linux/x86, Linux/PPC<br>
 	      In progress: StrongARM, SPARC.
 	    </td>
 	  </tr>
@@ -129,7 +130,7 @@
 
 	Jason has got an incredible amount of work on the Xml
 	classes during the weekend, and Gaurav is very close to have
-	the complete System.Web namespace implemented.   
+	the complete System.Web.UI.WebControls namespace implemented.   
 
 	Martin and Duco have been killing bugs by using the recently
 	revamped regression test suite.
