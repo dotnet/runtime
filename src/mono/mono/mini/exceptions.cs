@@ -68,6 +68,21 @@ class Tests {
 		return x;
 	}
 
+	static int test_0_nested_finally () {
+		int a;
+
+		try {
+			a = 1;
+		} finally {
+			try {
+				a = 2;
+			} finally {
+				a = 0;
+			}
+		}
+		return a;
+	}		
+
 	static int test_0_byte_cast () {
 		int a;
 		long l;
@@ -1392,6 +1407,22 @@ class Tests {
 		}
 
 		return res;
+	}
+
+	// Test that double[] can't be cast to double (bug #46027)
+	static int test_0_invalid_unbox_arrays () {
+		double[] d1 = { 1.0 };
+		double[][] d2 = { d1 };
+		Array a = d2;
+
+		try {
+			foreach (double d in a) {
+			}
+			return 1;
+		}
+		catch (InvalidCastException e) {
+			return 0;
+		}
 	}
 
 	/* bug# 42190, at least mcs generates a leave for the return that
