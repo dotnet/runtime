@@ -1085,7 +1085,6 @@ case "$host" in
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
-		LIBC="libc.dylib"
 		;;
 	arm-*-linux-* | armv4l-*-linux-*)
 		TARGET=ARM;
@@ -1123,6 +1122,7 @@ libsuffix=".so"
 case "$host" in
      powerpc-*-darwin*)
 	libsuffix=".dylib"
+	LIBC="libc.dylib"
 	;;
 esac
 AC_SUBST(libsuffix)
