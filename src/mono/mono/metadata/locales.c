@@ -1865,19 +1865,28 @@ static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 	gint32 result;
 	GUnicodeType c1type, c2type;
 
+	/* Ordinal can not be mixed with other options, and must return the difference, not only -1, 0, 1 */
+	if (options & CompareOptions_Ordinal) 
+		return (gint32) c1 - c2;
+	
 	c1type = g_unichar_type (c1);
 	c2type = g_unichar_type (c2);
-
+	
 	if (options & CompareOptions_IgnoreCase) {
-		result = (gint32) (c1type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c1) : c1) - (c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
-	} else if (options & CompareOptions_Ordinal) {
-		/*  Rotor/ms return the full value just not -1 and 1 */
-		return (gint32) c1 - c2;
+		result = (gint32) (c1type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c1) : c1) -
+			(c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
 	} else {
-		/* No options. Kana, symbol and spacing options don't
+		/*
+		 * No options. Kana, symbol and spacing options don't
 		 * apply to the invariant culture.
 		 */
-		
+
+		/*
+		 * FIXME: here we must use the information from c1type and c2type
+		 * to find out the proper collation, even on the InvariantCulture, the
+		 * sorting is not done by computing the unicode values, but their
+		 * actual sort order.
+		 */
 		result = (gint32) c1 - c2;
 	}
 
