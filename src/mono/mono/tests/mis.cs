@@ -122,17 +122,26 @@ namespace T {
 			}
 
 			pos=req.LastIndexOf('.');
-			String filetype=req.Substring(pos);
+			String filetype;
+			if (pos != -1)
+				filetype = req.Substring(pos);
+			else
+				filetype = "";
+			
 
 			Console.WriteLine("File is " + req);
 			Console.WriteLine("Mime type is " + mime_types[filetype]);
 
+			string mime_type = (string) mime_types [filetype];
+			if (mime_type == null)
+				mime_type = "text/plain";
+			
 			try {
 				FileStream f=new FileStream(req, FileMode.Open, FileAccess.Read);
 				byte[] fbuf=new byte[256];
 
 				ReplyHeaders(sock, 200, "OK",
-					     mime_types[filetype].ToString(),
+					     mime_type,
 					     null, f.Length);
 
 				int count;
@@ -174,17 +183,24 @@ namespace T {
 			}
 
 			pos=req.LastIndexOf('.');
-			String filetype=req.Substring(pos);
+			string filetype;
+			if (pos != -1)
+				filetype=req.Substring(pos);
+			else
+				filetype = "";
 
 			Console.WriteLine("File is " + req);
 			Console.WriteLine("Mime type is " + mime_types[filetype]);
+			string mime_type = (string) mime_types [filetype];
+			if (mime_type == null)
+				mime_type = "text/plain";
 
 			try {
 				FileStream f=new FileStream(req, FileMode.Open, FileAccess.Read);
 				byte[] fbuf=new byte[256];
 
 				ReplyHeaders(sock, 200, "OK",
-					     mime_types[filetype].ToString(),
+					     mime_type,
 					     null, f.Length);
 
 				f.Close();
@@ -197,13 +213,18 @@ namespace T {
 			}
 		}
 
-		public static int Main () {
+		public static int Main (string [] args) {
 			// Set up mime types
 			mime_types.Add(".html", "text/html");
 			mime_types.Add(".jpeg", "image/jpeg");
 			mime_types.Add(".png", "image/png");
 			mime_types.Add(".cs", "text/plain");
 
+			Console.WriteLine ("Args: " + args [0]);
+			if (args [0] == "--root"){
+				docroot = args [1];
+			}
+			
 			Socket s=NetSetup();
 
 			while(true) {
@@ -221,8 +242,6 @@ namespace T {
 
 				newsock.Close();
 			}
-
-			return(0);
 		}
 	}
 }
