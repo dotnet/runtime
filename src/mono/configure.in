@@ -15,6 +15,7 @@ AC_SUBST(libmono_ldflags)
 
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
+libgc_threads=no
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
@@ -23,6 +24,7 @@ case "$host" in
 		HOST_CC="gcc"
 		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS -DWIN32_THREADS"
 		libdl=
+		libgc_threads=win32
 		;;
 	*-*-*netbsd*)
 		platform_win32=no
@@ -32,6 +34,7 @@ case "$host" in
 		libmono_ldflags="-pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		libdl=
+		libgc_threads=pthreads
 		;;
 	*-*-*freebsd*|*-*-*openbsd*)
 		platform_win32=no
@@ -42,6 +45,7 @@ case "$host" in
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
+		libgc_threads=pthreads
 		;;
 	*-*-linux*)
 		platform_win32=no
@@ -49,12 +53,14 @@ case "$host" in
 		libmono_cflags="-DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT"
 		libmono_ldflags="-lpthread"
 		libdl="-ldl"
+		libgc_threads=pthreads
 		;;
 	*-*-solaris*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		libmono_cflags="-D_REENTRANT"
+		libgc_threads=solaris
 		;;
 	*-*-darwin*)
 		platform_win32=no
@@ -65,6 +71,7 @@ case "$host" in
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
+		libgc_threads=no
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
@@ -221,6 +228,10 @@ esac
 if test "x$gc" = xboehm; then
 	AC_CHECK_FUNCS(GC_gcj_malloc)
 fi
+
+we_are_embedded_in_mono=yes
+export we_are_embedded_in_mono
+export libgc_threads
 
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)

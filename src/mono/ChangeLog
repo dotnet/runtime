@@ -1,5 +1,9 @@
 2003-06-08  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Tell libgc's configure about our threads library.
+
+2003-06-08  Martin Baulig  <martin@ximian.com>
+
 	* libgc/: Integrate the libgc module here.
 
 	[Note: A simple `cvs update' won't work this time; you either need
