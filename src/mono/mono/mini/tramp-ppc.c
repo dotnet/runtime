@@ -68,8 +68,11 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
-/* Stack size for trampoline function */
-#define STACK (144 + 8*8)
+/* Stack size for trampoline function 
+ * PPC_MINIMAL_STACK_SIZE + 16 (args + alignment to ppc_magic_trampoline)
+ * 32 * 4 gregs + 13 * 8 fregs
+ */
+#define STACK (320)
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -352,7 +355,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 		/* Save the FP registers */
 		offset = 124 + 4 + 8;
-		for (i = ppc_f1; i <= ppc_f8; ++i) {
+		for (i = ppc_f1; i <= PPC_LAST_FPARG_REG; ++i) {
 			ppc_stfd  (buf, i, STACK - offset, ppc_r1);
 			offset += 8;
 		}
@@ -435,16 +438,19 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_lwz  (buf, ppc_r8,  STACK - 32,  ppc_r1);
 		ppc_lwz  (buf, ppc_r9,  STACK - 36,  ppc_r1);
 		ppc_lwz  (buf, ppc_r10, STACK - 40,  ppc_r1);
+		ppc_lwz  (buf, ppc_r11, STACK - 44,  ppc_r1);
+		ppc_lwz  (buf, ppc_r12, STACK - 48,  ppc_r1);
+		ppc_stw  (buf, ppc_r13, STACK - 52,  ppc_r1);
 		
 		/* Restore the FP registers */
 		offset = 124 + 4 + 8;
-		for (i = ppc_f1; i <= ppc_f8; ++i) {
+		for (i = ppc_f1; i <= PPC_LAST_FPARG_REG; ++i) {
 			ppc_lfd  (buf, i, STACK - offset, ppc_r1);
 			offset += 8;
 		}
 		/* We haven't touched any of these, so there's no need to
 		restore them */
-		/*
+		
 		ppc_lwz  (buf, ppc_r14, STACK - 56,  ppc_r1);
 		ppc_lwz  (buf, ppc_r15, STACK - 60,  ppc_r1);
 		ppc_lwz  (buf, ppc_r16, STACK - 64,  ppc_r1);
@@ -462,7 +468,8 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_lwz  (buf, ppc_r28, STACK - 112, ppc_r1);
 		ppc_lwz  (buf, ppc_r29, STACK - 116, ppc_r1);
 		ppc_lwz  (buf, ppc_r30, STACK - 120, ppc_r1);
-		*/
+		ppc_lwz  (buf, ppc_r31, STACK - 4, ppc_r1);
+		
 
 		/* Non-standard function epilogue. Instead of doing a proper
 		return, we just call the compiled code, so
@@ -471,7 +478,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 #if 1
 		/* Restore stack pointer, r31, LR and jump to the code */
 		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
-		ppc_lwz  (buf, ppc_r31, -4, ppc_r1);
+		//ppc_lwz  (buf, ppc_r31, -4, ppc_r1);
 		ppc_lwz  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 		ppc_mtlr (buf, ppc_r11);
 		ppc_mtctr (buf, ppc_r0);
