@@ -245,15 +245,16 @@ struct _MonoDebuggerIOLayer
 	void (*EnterCriticalSection) (WapiCriticalSection *section);
 	void (*LeaveCriticalSection) (WapiCriticalSection *section);
 
-	guint32 (*WaitForSingleObject) (gpointer handle, guint32 timeout);
+	guint32 (*WaitForSingleObject) (gpointer handle, guint32 timeout, 
+					gboolean alertable);
 	guint32 (*SignalObjectAndWait) (gpointer signal_handle, gpointer wait,
 					guint32 timeout, gboolean alertable);
 	guint32 (*WaitForMultipleObjects) (guint32 numobjects, gpointer *handles,
-					   gboolean waitall, guint32 timeout);
+				      gboolean waitall, guint32 timeout, gboolean alertable);
 
 	gpointer (*CreateSemaphore) (WapiSecurityAttributes *security,
 				     gint32 initial, gint32 max,
-				     const guchar *name);
+				     const gunichar2 *name);
 	gboolean (*ReleaseSemaphore) (gpointer handle, gint32 count, gint32 *prevcount);
 
 	gpointer (*CreateThread) (WapiSecurityAttributes *security,

@@ -794,33 +794,32 @@ init_events (MonoClass *class)
 
 	class->events = g_new0 (MonoEvent, class->event.count);
 	for (i = class->event.first; i < class->event.last; ++i) {
+		MonoEvent *event = &class->events [i - class->event.first];
+			
 		mono_metadata_decode_row (pt, i, cols, MONO_EVENT_SIZE);
-		class->events [i - class->event.first].parent = class;
-		class->events [i - class->event.first].attrs = cols [MONO_EVENT_FLAGS];
-		class->events [i - class->event.first].name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
+		event->parent = class;
+		event->attrs = cols [MONO_EVENT_FLAGS];
+		event->name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
 
 		startm = mono_metadata_methods_from_event (class->image, i, &endm);
 		for (j = startm; j < endm; ++j) {
 			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
 			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 			case METHOD_SEMANTIC_ADD_ON:
-				class->events [i - class->event.first].add = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->add = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
 			case METHOD_SEMANTIC_REMOVE_ON:
-				class->events [i - class->event.first].remove = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->remove = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
 			case METHOD_SEMANTIC_FIRE:
-				class->events [i - class->event.first].raise = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->raise = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
 			case METHOD_SEMANTIC_OTHER: {
-				MonoEvent *event = &class->events [i - class->event.first];
-				int n;
+				int n = 0;
 
 				if (event->other == NULL) {
 					event->other = g_new0 (MonoMethod*, 1);
-					n = 0;
-				}
-				else {
+				} else {
 					while (event->other [n])
 						n++;
 					event->other = g_realloc (event->other, (n + 1) * sizeof (MonoMethod*));

@@ -54,7 +54,7 @@ void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gui
 } G_STMT_END
 
 #define WRITE_POINTER(ptr,value) G_STMT_START {	\
-	* ((gpointer *) ptr) = value;		\
+	* ((gpointer *) ptr) = (gpointer) (value); \
 	ptr += sizeof (gpointer);		\
 } G_STMT_END
 
@@ -493,7 +493,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 	MonoMethodHeader *header;
 	guint32 size, num_variables, variable_size, variable_offset;
 	guint32 type_size, type_offset, *type_index_table, has_this;
-	guint32 line_size, line_offset, block_offset, block_size;
+	guint32 line_size = 0, line_offset = 0, block_offset, block_size;
 	MonoDebugLexicalBlockEntry *block_table;
 	MonoDebugLineNumberEntry *line_table;
 	guint32 *type_table;

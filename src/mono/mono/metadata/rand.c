@@ -180,7 +180,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (M
 	gint file = -1;
 
 	if (egd)
-		return -1;
+		return (gpointer) -1;
 
 #if defined (NAME_DEV_URANDOM)
 	file = open (NAME_DEV_URANDOM, O_RDONLY);
@@ -194,7 +194,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (M
 	if (file < 0) {
 		const char *socket_path = g_getenv("MONO_EGD_SOCKET");
 		egd = (socket_path != NULL);
-	        return -1;
+	        return (gpointer) -1;
 	}
 
 	/* if required exception will be thrown in managed code */
@@ -214,7 +214,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 		if (socket_path == NULL)
 			return NULL; 
 		get_entropy_from_server (socket_path, mono_array_addr (arry, guchar, 0), mono_array_length (arry));
-		return -1;
+		return (gpointer) -1;
 	}
 	else {
 		/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */

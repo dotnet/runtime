@@ -350,7 +350,6 @@ gchar *
 mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number,
 					 MonoDomain *domain)
 {
-	char *res;
 	MonoDebugMethodInfo *minfo;
 	MonoDebugDomainData *domain_data;
 

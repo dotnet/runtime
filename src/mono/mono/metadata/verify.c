@@ -1145,9 +1145,9 @@ mono_method_verify (MonoMethod *method, int level)
 	ILStackDesc *stack;
 	register const unsigned char *ip;
 	register const unsigned char *end;
-	const unsigned char *target; /* branch target */
+	const unsigned char *target = NULL; /* branch target */
 	int max_args, max_stack, cur_stack, i, n, need_merge, start;
-	guint32 token, ip_offset;
+	guint32 token, ip_offset = 0;
 	char *local_state = NULL;
 	GSList *list = NULL;
 	guint prefix = 0;

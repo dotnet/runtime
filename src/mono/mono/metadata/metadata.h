@@ -187,12 +187,12 @@ typedef struct {
 
 void         mono_metadata_init (void);
 
-void         mono_metadata_decode_row (MonoTableInfo         *t,
+void         mono_metadata_decode_row (const MonoTableInfo   *t,
 				       int                    idx,
 				       guint32               *res,
 				       int                    res_size);
 
-guint32      mono_metadata_decode_row_col (MonoTableInfo *t, 
+guint32      mono_metadata_decode_row_col (const MonoTableInfo *t, 
 					   int            idx, 
 					   guint          col);
 

@@ -414,7 +414,7 @@ int
 mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bitfield)
 {
 	guint32 bitfield = 0;
-	int size = 0, field_size;
+	int size = 0, field_size = 0;
 	int i, n, code;
 	int shift = 0;
 	const MonoMetaTable *table = tables [tableindex].table;
@@ -867,7 +867,7 @@ dword_align (const char *ptr)
  * into the guint32 @res array that has res_size elements
  */
 void
-mono_metadata_decode_row (MonoTableInfo *t, int idx, guint32 *res, int res_size)
+mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
@@ -904,7 +904,7 @@ mono_metadata_decode_row (MonoTableInfo *t, int idx, guint32 *res, int res_size)
  * row in the table @t.
  */
 guint32
-mono_metadata_decode_row_col (MonoTableInfo *t, int idx, guint col)
+mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 {
 	guint32 bitfield = t->size_bitfield;
 	int i;
@@ -1316,7 +1316,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *generic_conta
 				return &type->data.klass->byval_arg;
 		}
 		/* No need to use locking since nobody is modifying the hash table */
-		if (cached = g_hash_table_lookup (type_cache, type))
+		if ((cached = g_hash_table_lookup (type_cache, type)))
 			return cached;
 	}
 	
@@ -3594,7 +3594,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 i, owner, last_num, n;
+	guint32 i, owner = 0, last_num, n;
 	MonoGenericContainer *container;
 	MonoGenericContext *context;
 	MonoGenericParam *params;

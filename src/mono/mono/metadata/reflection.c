@@ -8440,7 +8440,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			gparam->mbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
 		param->owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
-		MonoReflectionTypeBuilder *nesting = gparam->tbuilder->nesting_type;
+		MonoReflectionTypeBuilder *nesting = (MonoReflectionTypeBuilder*) gparam->tbuilder->nesting_type;
 		MonoGenericContainer *container = gparam->tbuilder->generic_container;
 
 		while (nesting) {
@@ -8451,7 +8451,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 				break;
 
 			container = nesting->generic_container;
-			nesting = nesting->nesting_type;
+			nesting = (MonoReflectionTypeBuilder*) nesting->nesting_type;
 		}
 
 		g_assert (container);

@@ -289,7 +289,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context)
 {
-	MonoClass *klass;
+	MonoClass *klass = NULL;
 	MonoMethod *method;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
@@ -429,7 +429,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContainer *generic_container, guint32 idx)
 {
-	MonoMethod *method, *declaring, *inflated;
+	MonoMethod *method, *inflated;
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContext *context;
 	MonoGenericMethod *gmethod;
@@ -579,11 +579,6 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 	}
 
 	mono_loader_unlock ();
-}
-
-static void
-mono_dllmap_free (GHashTable *dll_map)
-{
 }
 
 gpointer

@@ -27,9 +27,6 @@
 static gboolean
 string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr);
 
-static gint32
-string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint32 mode);
-
 MonoString *
 ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
 {
@@ -715,42 +712,4 @@ ves_icall_System_String_InternalCharCopy (gunichar2 *src, gunichar2 *dest, gint3
 	MONO_ARCH_SAVE_REGS;
 
 	memcpy (dest, src, sizeof (gunichar2) * count);
-}
-
-/*
- * @mode:
- * 0 = StringCompareModeDirect
- * 1 = StringCompareModeCaseInsensitive
- * 2 = StringCompareModeOrdinal
- */
-static gint32 
-string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint32 mode)
-{
-	gint32 result;
-	GUnicodeType c1type, c2type;
-
-	c1type = g_unichar_type (c1);
-	c2type = g_unichar_type (c2);
-
-	switch (mode) {
-	case 0:	
-		/* TODO: compare with culture info */
-		if (c1type == G_UNICODE_UPPERCASE_LETTER && c2type == G_UNICODE_LOWERCASE_LETTER)
-			return 1;
-					
-		if (c1type == G_UNICODE_LOWERCASE_LETTER && c2type == G_UNICODE_UPPERCASE_LETTER)
-			return -1;
-	
-		result = (gint32) c1 - c2;
-		break;
-	case 1:	
-		result = (gint32) (c1type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c1) : c1) - 
-				  (c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
-		break;
-	case 2:
-		/* Rotor/ms return the full value just not -1 and 1 */
-		return (gint32) c1 - c2; break;
-	}
-
-	return ((result < 0) ? -1 : (result > 0) ? 1 : 0);
 }

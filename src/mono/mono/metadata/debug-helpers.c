@@ -293,8 +293,8 @@ MonoMethod*
 mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 {
 	MonoClass *klass;
-	MonoTableInfo *tdef;
-	MonoTableInfo *methods;
+	const MonoTableInfo *tdef;
+	const MonoTableInfo *methods;
 	MonoMethod *method;
 	int i;
 
@@ -500,9 +500,7 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 {
 	char *res;
 	char wrapper [64];
-	char *nspace;
-
-	nspace = method->klass->name_space;
+	const char *nspace = method->klass->name_space;
 
 	if (signature) {
 		char *tmpsig = mono_signature_get_desc (method->signature, TRUE);

@@ -23,6 +23,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/rawbuffer.h>
+#include <mono/metadata/class-internals.h>
 #include "mono/utils/mono-digest.h"
 
 gboolean dump_data = TRUE;

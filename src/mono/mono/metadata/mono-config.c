@@ -334,7 +334,7 @@ mono_config_parse (const char *filename) {
 #endif
 }
 
-static char *mono_cfg_dir = NULL;
+static const char *mono_cfg_dir = NULL;
 
 static void    
 mono_install_get_config_dir (void)

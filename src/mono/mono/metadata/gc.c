@@ -714,15 +714,16 @@ void mono_gc_init (void)
 	/* valgrind does not play nicely with the GC,
 	 * so, turn it off when we are under vg.
 	 */
-	/*if (mono_running_on_valgrind ()) {
-		g_warning ("You are running under valgrind. Currently, valgrind does "
+	if (mono_running_on_valgrind ()) {
+		/* valgrind doesnt like g_warning for some reason... */
+		printf ("You are running under valgrind. Currently, valgrind does "
 		           "not support the GC. This program will run with the GC "
 			   "turned off. Your program may take up a fair amount of "
 			   "memory. Also, finalizers will not be run.");
 		
 		gc_disabled = TRUE;
 		return;
-	}*/
+	}
 	
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);

@@ -61,7 +61,7 @@ char*         mono_image_rva_map        (MonoImage *image, guint32 rva);
 
 const MonoTableInfo *mono_image_get_table_info (MonoImage *image, int table_id);
 int                  mono_image_get_table_rows (MonoImage *image, int table_id);
-int                  mono_table_info_get_rows  (MonoTableInfo *table);
+int                  mono_table_info_get_rows  (const MonoTableInfo *table);
 
 /* This actually returns a MonoPEResourceDataEntry *, but declaring it
  * causes an include file loop.

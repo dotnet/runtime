@@ -14,6 +14,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
 #include <fcntl.h>
@@ -102,7 +103,7 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 
 	symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
 
-	if (!g_file_get_contents (symfile->filename, &symfile->raw_contents,
+	if (!g_file_get_contents (symfile->filename, (gchar **) &symfile->raw_contents,
 				  &symfile->raw_contents_size, NULL))
 		symfile->raw_contents = NULL;
 
