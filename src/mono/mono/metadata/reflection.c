@@ -6167,13 +6167,37 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	geninst = g_new0 (MonoType, 1);
 	geninst->type = MONO_TYPE_GENERICINST;
 	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
-	ginst->generic_type = &klass->byval_arg;
 
-	ginst->type_argc = mono_array_length (types);
-	ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
-	for (i = 0; i < ginst->type_argc; ++i) {
-		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
-		ginst->type_argv [i] = garg->type;
+	if (klass->gen_params) {
+		ginst->type_argc = mono_array_length (types);
+		ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
+
+		for (i = 0; i < ginst->type_argc; ++i) {
+			MonoReflectionType *garg = mono_array_get (types, gpointer, i);
+			ginst->type_argv [i] = garg->type;
+		}
+
+		ginst->generic_type = &klass->byval_arg;
+	} else {
+		MonoGenericInst *kginst = klass->generic_inst->data.generic_inst;
+
+		ginst->type_argc = kginst->type_argc;
+		ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
+
+		for (i = 0; i < ginst->type_argc; i++) {
+			MonoType *t = kginst->type_argv [i];
+
+			if (t->type == MONO_TYPE_VAR) {
+				int num = t->data.generic_param->num;
+				MonoReflectionType *garg = mono_array_get (types, gpointer, num);
+
+				t = garg->type;
+			}
+
+			ginst->type_argv [i] = t;
+		}
+
+		ginst->generic_type = kginst->generic_type;
 	}
 
 	iklass = mono_class_from_generic (geninst, FALSE);
