@@ -1252,8 +1252,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int frame_reg = STK_BASE;
 	int sArg, eArg;
 
+	header  = ((MonoMethodNormal *)m->method)->header;
+
 	/* 
-	 * FIXME: we'll use the frame register also for any method that has
+	 * We use the frame register also for any method that has
 	 * filter clauses. This way, when the handlers are called,
 	 * the code will reference local variables using the frame reg instead of
 	 * the stack pointer: if we had to restore the stack pointer, we'd
@@ -1261,11 +1263,14 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 * filters get called before stack unwinding happens) when the filter
 	 * code would call any method.
 	 */ 
-	if (m->flags & MONO_CFG_HAS_ALLOCA)
+//	if ((m->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
+	if (m->flags & MONO_CFG_HAS_ALLOCA) 
 		frame_reg = s390_r11;
+
 	m->frame_reg = frame_reg;
 
-	header  = ((MonoMethodNormal *)m->method)->header;
+	if (frame_reg != STK_BASE) 
+		m->used_int_regs |= 1 << frame_reg;		
 
 	sig     = m->method->signature;
 	
@@ -1304,6 +1309,17 @@ mono_arch_allocate_vars (MonoCompile *m)
 		offset 		  += sizeof(gpointer);
 	}
 
+	if (sig->hasthis) {
+		inst = m->varinfo [0];
+		if (inst->opcode != OP_REGVAR) {
+			inst->opcode 	   = OP_REGOFFSET;
+			inst->inst_basereg = frame_reg;
+			offset 		   = S390_ALIGN(offset, sizeof(gpointer));
+			inst->inst_offset  = offset;
+			offset 		  += sizeof (gpointer);
+		}
+	}
+
 	curinst = m->locals_start;
 	for (iVar = curinst; iVar < m->num_varinfo; ++iVar) {
 		inst = m->varinfo [iVar];
@@ -1322,23 +1338,13 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst->opcode 	   = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
 		offset 		  += size;
-		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
+		//DEBUG (g_print("allocating local %d to %d\n", iVar, inst->inst_offset));
 	}
 
-	curinst = 0;
-	if (sig->hasthis) {
-		inst = m->varinfo [curinst];
-		if (inst->opcode != OP_REGVAR) {
-			inst->opcode 	   = OP_REGOFFSET;
-			inst->inst_basereg = frame_reg;
-			offset 		   = S390_ALIGN(offset, sizeof(gpointer));
-			inst->inst_offset  = offset;
-			offset 		  += sizeof (gpointer);
-		}
-		curinst++;
-		sArg = 1;
-	} else 
-		sArg = 0;
+	if (sig->hasthis) 
+		curinst = sArg = 1;
+	else 
+		curinst = sArg = 0;
 
 	eArg = sig->param_count + sArg;
 
@@ -2994,11 +3000,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_l    (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
-				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_l    (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+				if (s390_is_imm16(ins->inst_offset)) {
+					s390_lhi (code, s390_r13, ins->inst_offset);
+					s390_l   (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+				} else {
+					s390_basr (code, s390_r13, 0);
+					s390_j    (code, 4);
+					s390_word (code, ins->inst_offset);
+					s390_l    (code, s390_r13, 0, s390_r13, 4);
+					s390_l    (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+				}
 			}
 			break;
 		case OP_LOADU1_MEMBASE:
