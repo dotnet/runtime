@@ -1,3 +1,7 @@
+2002-05-01  Rodrigo Moya <rodrigo@ximian.com>
+
+	* doc/ado-net: updated a little bit.
+
 2002-04-30  Jeffrey Stedfast  <fejj@ximian.com>
 
 	* configure.in: Added checks for timezone stuff.

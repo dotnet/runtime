@@ -1,7 +1,9 @@
 * ADO.NET
 
 	The coordinator for the ADO.NET implementation is <a
-	href="mailto:rodrigo@ximian.com">Rodrigo Moya</a>.  
+	href="mailto:rodrigo@ximian.com">Rodrigo Moya</a>, with
+	the collaboration of <a href="mailto:danmorg@sc.rr.com">Daniel
+	Morgan</a>.
 
 * Action plan
 
@@ -21,7 +23,7 @@
 
 	</ul>
 
-	<b>Step 2:</b> OleDBClient:
+	<b>Step 2:</b> OleDB:
 	<ul>
 		* On Unix systems: System.Data.OleDb will use LibGDA as its
 		  engine. 
@@ -42,3 +44,31 @@
 		  Window; Interbase on Unix/Windows). Others are welcomed.
 	</ul>
 
+	<b>Step 4:</b> Other System.Data providers:
+
+	<ul>
+		* The idea in MS .NET System.Data seems to be to have
+		  a managed provider for each supported DBMS. So, apart
+		  from System.Data.OleDb (generic) and System.Data.SqlClient,
+		  we'll need to have System.Data.ODBC, System.Data.MySQL,
+		  System.Data.Oracle, System.Data.PostgreSQL, etc. Others,
+		  of course, are welcomed.
+	</ul>
+	
+* Current Status
+
+	We are able now to run basic commands (INSERT, DELETE) into a
+	PostgreSQL database (see mcs/class/System.Data/Test/TestSqlInsert.cs).
+	To compile that test program, you need:
+
+	<b>On Linux</b>
+
+	<ul>
+		* update your mono sources.
+
+		* get the .dll's and mcs.exe built on windows, and put them on your
+		  linux machine.
+
+		* compile the test program along with the System.Data.Common and
+		  System.Data.SqlClient files.
+	</ul>
