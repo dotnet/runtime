@@ -568,7 +568,7 @@ typedef struct {
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
-int         mini_main                      (int argc, char* argv[]);
+int         mono_main                      (int argc, char* argv[]);
 void        mini_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);

@@ -3,6 +3,6 @@
 int
 main (int argc, char* argv[])
 {
-	return mini_main (argc, argv);
+	return mono_main (argc, argv);
 }
 

@@ -506,7 +506,7 @@ mini_usage (void)
 }
 
 int
-mini_main (int argc, char* argv[]) {
+mono_main (int argc, char* argv[]) {
 	MainThreadArgs main_args;
 	MonoAssembly *assembly;
 	MonoMethodDesc *desc;
