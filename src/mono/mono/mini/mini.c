@@ -76,6 +76,7 @@ static MonoMethodSignature *helper_sig_object_new_specific = NULL;
 static MonoMethodSignature *helper_sig_compile = NULL;
 static MonoMethodSignature *helper_sig_compile_virt = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr = NULL;
+static MonoMethodSignature *helper_sig_obj_void = NULL;
 static MonoMethodSignature *helper_sig_ptr_void = NULL;
 static MonoMethodSignature *helper_sig_void_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_obj = NULL;
@@ -3085,6 +3086,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, CEE_JMP);
 				ins->cil_code = ip;
 				ins->inst_p0 = cmethod;
+				ins->inst_p1 = arg_array [0];
 				MONO_ADD_INS (bblock, ins);
 				start_new_bblock = 1;
 				/* skip CEE_RET as well */
@@ -4656,6 +4658,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, ins);
 			}
 
+			/* 
+			 * If this leave statement is in a catch block, check for a
+			 * pending exception, and rethrow it if necessary.
+			 */
+			for (i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code)) {
+					int temp;
+
+					temp = mono_emit_jit_icall (cfg, bblock, mono_thread_get_pending_exception, NULL, ip);
+					NEW_TEMPLOAD (cfg, *sp, temp);
+
+					MONO_INST_NEW (cfg, ins, OP_THROW_OR_NULL);
+					ins->inst_left = *sp;
+					ins->cil_code = ip;
+					MONO_ADD_INS (bblock, ins);
+				}
+			}
+
 			/* fixme: call fault handler ? */
 
 			if ((handlers = mono_find_final_block (cfg, ip, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
@@ -5541,6 +5562,11 @@ create_helper_signature (void)
 	helper_sig_ptr_void = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	helper_sig_ptr_void->ret = &mono_defaults.int_class->byval_arg;
 	helper_sig_ptr_void->pinvoke = 1;
+
+	/* object amethod (void) */
+	helper_sig_obj_void = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+	helper_sig_obj_void->ret = &mono_defaults.object_class->byval_arg;
+	helper_sig_obj_void->pinvoke = 1;
 
 	/* void  amethod (intptr, intptr) */
 	helper_sig_void_ptr_ptr = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
@@ -7390,8 +7416,8 @@ sigusr1_signal_handler (int _dummy)
 	GET_CONTEXT
 	
 	thread = mono_thread_current ();
-        
-	g_assert (thread->abort_exc);
+
+	thread->abort_exc = mono_get_exception_thread_abort ();        
 
 	mono_arch_handle_exception (ctx, thread->abort_exc, FALSE);
 }
@@ -7406,7 +7432,6 @@ sigquit_signal_handler (int _dummy)
        
        mono_arch_handle_exception (ctx, exc, FALSE);
 }
-
 
 static void
 sigint_signal_handler (int _dummy)
@@ -7580,6 +7605,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
 				 helper_sig_void_ptr, TRUE);
+	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);
 
 	/* 
 	 * NOTE, NOTE, NOTE, NOTE:

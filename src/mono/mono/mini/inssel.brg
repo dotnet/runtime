@@ -1183,6 +1183,20 @@ stmt: CEE_THROW (reg) {
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
 }
 
+stmt: OP_THROW_OR_NULL (reg) {
+	     	MonoClass *klass = tree->inst_newa_class;
+	MonoInst *object_is_null, *end_label, *false_label;
+	int obj_reg = state->left->reg1;
+	int vtable_reg = mono_regstate_next_int (s->rs);
+
+	MONO_NEW_LABEL (s, object_is_null);
+
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, 0, state->left->reg1, 0);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
+	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
+	mono_bblock_add_inst (s->cbb, object_is_null);
+}
+
 stmt: CEE_THROW (CEE_LDIND_REF (OP_REGVAR)) {
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->left->tree->dreg);
 }

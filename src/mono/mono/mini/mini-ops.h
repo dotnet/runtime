@@ -54,6 +54,7 @@ MINI_OP(OP_REGOFFSET,	"regoffset")
 MINI_OP(OP_LABEL,	"label")
 MINI_OP(OP_CHECK_ARRAY_TYPE,	"check_array_type")
 MINI_OP(OP_ARRAY_RANK,	"array_rank")
+MINI_OP(OP_THROW_OR_NULL,	"throw_or_null")
 
 MINI_OP(OP_STORE_MEMBASE_IMM,"store_membase_imm")
 MINI_OP(OP_STORE_MEMBASE_REG,"store_membase_reg")
