@@ -278,7 +278,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			g_free (tmp);
 		}
 
-		if (ctx->SC_EIP < (unsigned)mono_end_of_stack)
+		if (ctx->SC_EBP < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else {
 			g_assert (cleanup);
