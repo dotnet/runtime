@@ -2458,6 +2458,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define CHECK_TYPE(ins) if (!(ins)->type) goto unverified
 #define CHECK_STACK(num) if ((sp - stack_start) < (num)) goto unverified
 #define CHECK_STACK_OVF(num) if (((sp - stack_start) + (num)) > header->max_stack) goto unverified
+#define CHECK_ARG(num) if ((unsigned)(num) >= (unsigned)num_args) goto unverified
+#define CHECK_LOCAL(num) if ((unsigned)(num) >= (unsigned)header->num_locals) goto unverified
 
 #define TYPE_PARAM_TO_TYPE(num) (method->klass->generic_inst->data.generic_inst->type_argv [(num)])
 #define TYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (TYPE_PARAM_TO_TYPE ((num))))
@@ -2596,11 +2598,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	int num_calls = 0, inline_costs = 0;
 	int *filter_lengths = NULL;
 	int breakpoint_id = 0;
-	guint real_offset;
+	guint real_offset, num_args;
 
 	image = method->klass->image;
 	header = ((MonoMethodNormal *)method)->header;
 	sig = method->signature;
+	num_args = sig->hasthis + sig->param_count;
 	ip = (unsigned char*)header->code;
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
@@ -2635,8 +2638,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		end_bblock->block_num = cfg->num_bblocks++;
 		g_assert (cfg->num_bblocks == 2);
 
-		arg_array = alloca (sizeof (MonoInst *) * (sig->hasthis + sig->param_count));
-		for (i = sig->hasthis + sig->param_count - 1; i >= 0; i--)
+		arg_array = alloca (sizeof (MonoInst *) * num_args);
+		for (i = num_args - 1; i >= 0; i--)
 			arg_array [i] = cfg->varinfo [i];
 
 		if (header->num_clauses) {
@@ -2692,7 +2695,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 
 	} else {
-		arg_array = alloca (sizeof (MonoInst *) * (sig->hasthis + sig->param_count));
+		arg_array = alloca (sizeof (MonoInst *) * num_args);
 		mono_save_args (cfg, start_bblock, sig, inline_args, arg_array);
 	}
 
@@ -2731,7 +2734,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	mono_debug_init_method (cfg, bblock, breakpoint_id);
 
-	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * (sig->hasthis + sig->param_count));
+	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * num_args);
 	if (sig->hasthis)
 		param_types [0] = method->klass->valuetype?&method->klass->this_arg:&method->klass->byval_arg;
 	for (n = 0; n < sig->param_count; ++n)
@@ -2837,6 +2840,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDARG_3:
 			CHECK_STACK_OVF (1);
 			n = (*ip)-CEE_LDARG_0;
+			CHECK_ARG (n);
 			NEW_ARGLOAD (cfg, ins, n);
 			ins->cil_code = ip++;
 			*sp++ = ins;
@@ -2847,6 +2851,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDLOC_3:
 			CHECK_STACK_OVF (1);
 			n = (*ip)-CEE_LDLOC_0;
+			CHECK_LOCAL (n);
 			NEW_LOCLOAD (cfg, ins, n);
 			ins->cil_code = ip++;
 			*sp++ = ins;
@@ -2857,6 +2862,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STLOC_3:
 			CHECK_STACK (1);
 			n = (*ip)-CEE_STLOC_0;
+			CHECK_LOCAL (n);
 			--sp;
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			NEW_LOCSTORE (cfg, ins, n, *sp);
@@ -2871,6 +2877,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDARG_S:
 			CHECK_STACK_OVF (1);
+			CHECK_ARG (ip [1]);
 			NEW_ARGLOAD (cfg, ins, ip [1]);
 			ins->cil_code = ip;
 			*sp++ = ins;
@@ -2878,6 +2885,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDARGA_S:
 			CHECK_STACK_OVF (1);
+			CHECK_ARG (ip [1]);
 			NEW_ARGLOADA (cfg, ins, ip [1]);
 			ins->cil_code = ip;
 			*sp++ = ins;
@@ -2886,6 +2894,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STARG_S:
 			CHECK_STACK (1);
 			--sp;
+			CHECK_ARG (ip [1]);
 			NEW_ARGSTORE (cfg, ins, ip [1], *sp);
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			ins->cil_code = ip;
@@ -2898,6 +2907,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDLOC_S:
 			CHECK_STACK_OVF (1);
+			CHECK_LOCAL (ip [1]);
 			NEW_LOCLOAD (cfg, ins, ip [1]);
 			ins->cil_code = ip;
 			*sp++ = ins;
@@ -2905,6 +2915,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDLOCA_S:
 			CHECK_STACK_OVF (1);
+			CHECK_LOCAL (ip [1]);
 			NEW_LOCLOADA (cfg, ins, ip [1]);
 			ins->cil_code = ip;
 			*sp++ = ins;
@@ -2914,6 +2925,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
+			CHECK_LOCAL (ip [1]);
 			NEW_LOCSTORE (cfg, ins, ip [1], *sp);
 			ins->cil_code = ip;
 			if (ins->opcode == CEE_STOBJ) {
@@ -5112,14 +5124,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_LDARG:
 				CHECK_STACK_OVF (1);
-				NEW_ARGLOAD (cfg, ins, read16 (ip + 2));
+				n = read16 (ip + 2);
+				CHECK_ARG (n);
+				NEW_ARGLOAD (cfg, ins, n);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 4;
 				break;
 			case CEE_LDARGA:
 				CHECK_STACK_OVF (1);
-				NEW_ARGLOADA (cfg, ins, read16 (ip + 2));
+				n = read16 (ip + 2);
+				CHECK_ARG (n);
+				NEW_ARGLOADA (cfg, ins, n);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 4;
@@ -5129,6 +5145,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 				n = read16 (ip + 2);
+				CHECK_ARG (n);
 				NEW_ARGSTORE (cfg, ins, n, *sp);
 				ins->cil_code = ip;
 				if (ins->opcode == CEE_STOBJ) {
@@ -5140,14 +5157,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_LDLOC:
 				CHECK_STACK_OVF (1);
-				NEW_LOCLOAD (cfg, ins, read16 (ip + 2));
+				n = read16 (ip + 2);
+				CHECK_LOCAL (n);
+				NEW_LOCLOAD (cfg, ins, n);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 4;
 				break;
 			case CEE_LDLOCA:
 				CHECK_STACK_OVF (1);
-				NEW_LOCLOADA (cfg, ins, read16 (ip + 2));
+				n = read16 (ip + 2);
+				CHECK_LOCAL (n);
+				NEW_LOCLOADA (cfg, ins, n);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 4;
@@ -5156,6 +5177,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				n = read16 (ip + 2);
+				CHECK_LOCAL (n);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 				NEW_LOCSTORE (cfg, ins, n, *sp);
 				ins->cil_code = ip;
