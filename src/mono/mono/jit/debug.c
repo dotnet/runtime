@@ -287,7 +287,7 @@ mono_debug_close (MonoDebugHandle* debug)
 guint32
 mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 {
-	guint index;
+	guint index, i;
 
 	mono_class_init (klass);
 
@@ -295,17 +295,26 @@ mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
 	if (index)
 		return index;
 
-	if (!klass->enumtype && klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
-		int i;
+	index = ++info->next_klass_idx;
+	g_hash_table_insert (info->type_hash, klass, GINT_TO_POINTER (index));
 
+	if (klass->enumtype)
+		return index;
+
+	switch (klass->byval_arg.type) {
+	case MONO_TYPE_CLASS:
+		if (klass->parent)
+			mono_debug_get_type (info, klass->parent);
+		// fall through
+	case MONO_TYPE_VALUETYPE:
 		for (i = 0; i < klass->field.count; i++) {
 			MonoClass *subclass = mono_class_from_mono_type (klass->fields [i].type);
 			mono_debug_get_type (info, subclass);
 		}
+		break;
+	default:
+		break;
 	}
-
-	index = ++info->next_klass_idx;
-	g_hash_table_insert (info->type_hash, klass, GINT_TO_POINTER (index));
 
 	return index;
 }
