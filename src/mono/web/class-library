@@ -106,33 +106,11 @@
 
 ** Licensing
 
-	The class library will be licensed under the terms of the GNU
-	LGPL.  Some people have pointed out that the plain LGPL is
-	troublesome for embedded use of the Mono class libraries.  So
-	we are considering to use the GPL with a special exception
-	(like the <a
-	href="http://www.gnu.org/software/classpath/classpath.html">GNU
-	Classpath</a> project did.
-
-	The exception to the GPL would be:
-
-	<i>The library is distributed under the terms of the GNU General
-   	Public License with the following exception:
-
-   	If you link this library against your own program, then you do not
-   	need to release the source code for that program. However, any
-   	changes that you make to the library itself, or to any native
-   	methods upon which the library relies, must be re-distributed in
-   	accordance with the terms of the GPL.</i>
-
-	If you are going to contribute, please keep in mind that we
-	might require you to agree that Ximian might adjust the
-	license to enable the use of the class libraries on embedded
-	systems or to develop proprietary applications using Mono.
-
-	We suggest that you assign the copyright of your work to the
-	GNOME Foundation or the Free Software Foundation to simplify
-	defending the code in case it is used inappropiately. 
+	The class library is being licensed under the terms of the 
+	<a
+	href="http://www.opensource.org/licenses/mit-license.html">MIT
+	license.</a>  This is the same license used by the X11 window
+	system.
 
 ** Class Library testing
 

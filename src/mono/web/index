@@ -23,6 +23,47 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Dec 18, 2001
+
+	JIT: More work on our IO abstraction layer (Dick). 
+
+	JIT: exception handling for unmanaged code (Dietmar)
+
+	System.Reflection: Support for PropertyInfo and
+	PropertyBuilder as well as the various queries for MethodBase.
+
+	C#: Pre-processor; Rewrite of MemberLookup which fixed many of
+	the outstanding issues.  More bug fixing allows it to compile
+	more programs.
+
+** Dec 14, 2001
+
+	Dietmar has improved the register allocation and now Mono performs
+	two to three times as fast as it did yesterday.  Amazing.
+
+	The compiler keeps moving along, explicit interface
+	implementation is there.
+
+** Dec 11, 2001
+
+	The JIT engine can now run all the compiler regression tests as 
+	well as assorted other programs, many more opcodes added
+	recently.  Currently the JIT engine uses a very simplistic register
+	allocator (just enough to allow us to focus on feature completeness)
+	and that will be the next major task to improve performance and
+	reduce spills and reloads. 
+
+	On the C# compiler front: language features are now pretty
+	much complete.  The big missing tasks are unsafe code support,
+	visibility, explicit interface implementation plus static flow
+	analysis.  There are many small bugs that need to be addressed.
+
+	You can get your copy of the <a href="snapshots">latest Mono</a>
+
+	More work is also required on fixing the foundation class
+	libraries, it is easy to find spots now since Nick got the
+	`make test' going.
+
 ** Dec 1, 2001
 
 	AnonCVS access to Mono is here (updated every hour).  Thanks

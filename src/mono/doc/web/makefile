@@ -1,7 +1,9 @@
+# Until we are ready:
+#	../class-library	\
+
 SOURCES=	\
 	../anoncvs		\
 	../contributing  	\
-	../class-library	\
 	../class-status		\
 	../contact		\
 	../c-sharp		\
