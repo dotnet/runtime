@@ -59,12 +59,43 @@ static void socket_ops_init (void)
 
 static void socket_close_private (gpointer handle)
 {
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
+	int ret;
+
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": closing socket handle %p",
 		  handle);
 #endif
 
-	closesocket(GPOINTER_TO_UINT (handle));
+	if(startup_count==0) {
+		WSASetLastError(WSANOTINITIALISED);
+		return;
+	}
+
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle %p", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return;
+	}
+
+	g_ptr_array_remove_fast(sockets, GUINT_TO_POINTER (handle));
+
+	ret=close(socket_private_handle->fd);
+	if(ret==-1) {
+		gint errnum = errno;
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": close error: %s",
+			  strerror(errno));
+#endif
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
+
+		return;
+	}
 }
 
 int WSAStartup(guint32 requested, WapiWSAData *data)
@@ -153,44 +184,8 @@ int WSAGetLastError(void)
 
 int closesocket(guint32 handle)
 {
-	struct _WapiHandlePrivate_socket *socket_private_handle;
-	gboolean ok;
-	int ret;
-	
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": closing socket handle 0x%x",
-		   handle);
-#endif
-
-	if(startup_count==0) {
-		WSASetLastError(WSANOTINITIALISED);
-		return(SOCKET_ERROR);
-	}
-	
-	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
-				NULL, (gpointer *)&socket_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up socket handle 0x%x", handle);
-		WSASetLastError(WSAENOTSOCK);
-		return(SOCKET_ERROR);
-	}
-	
-	g_ptr_array_remove_fast(sockets, GUINT_TO_POINTER (handle));
-	
-	ret=close(socket_private_handle->fd);
-	if(ret==-1) {
-		gint errnum = errno;
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": close error: %s",
-			  strerror(errno));
-#endif
-		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
-		WSASetLastError (errnum);
-
-		return SOCKET_ERROR;
-	}
-	return(ret);
+	_wapi_handle_unref (GUINT_TO_POINTER (handle));
+	return(0);
 }
 
 guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
