@@ -3,6 +3,8 @@
 
 #ifdef __i386__
 #include "mini-x86.h"
+#elif defined(__x86_64__)
+#include "mini-amd64.h"
 #elif defined(__ppc__) || defined(__powerpc__)
 #include "mini-ppc.h"
 #elif defined(__sparc__) || defined(sparc)
