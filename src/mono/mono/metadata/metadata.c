@@ -2669,23 +2669,19 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 	if (p1->num != p2->num)
 		return FALSE;
 
-	/*
-	 * FIXME: Normally each MonoGenericParam should have a non-NULL owner.
-	 */
-	if (p1->owner && (p1->owner == p2->owner))
+	g_assert (p1->owner && p2->owner);
+	if (p1->owner == p2->owner)
 		return TRUE;
 
-	if (p1->owner && p2->owner) {
-		/*
-		 * This should only happen for dynamic type parameters; we copy them from the
-		 * MonoReflectionGenericParam into the newly created MonoGenericContainer, so their
-		 * addresses may be different.
-		 */
-		if (p1->owner->klass && (p1->owner->klass == p2->owner->klass))
-			return TRUE;
-		if (p1->owner->method && (p1->owner->method == p2->owner->method))
-			return TRUE;
-	}
+	/*
+	 * This should only happen for dynamic type parameters; we copy them from the
+	 * MonoReflectionGenericParam into the newly created MonoGenericContainer, so their
+	 * addresses may be different.
+	 */
+	if (p1->owner->klass && (p1->owner->klass == p2->owner->klass))
+		return TRUE;
+	if (p1->owner->method && (p1->owner->method == p2->owner->method))
+		return TRUE;
 
 	/*
 	 * If `signature_only' is true, we're comparing two (method) signatures.

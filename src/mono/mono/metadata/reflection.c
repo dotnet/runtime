@@ -7284,7 +7284,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
  * mono_reflection_setup_generic_class:
  * @tb: a TypeBuilder object
  *
- * Setup the generic class after all generic parameters have been added.
+ * Setup the generic class before adding the first generic parameter.
  */
 void
 mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
@@ -7296,23 +7296,45 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 	MONO_ARCH_SAVE_REGS;
 
 	klass = my_mono_class_from_mono_type (tb->type.type);
+	if (tb->generic_container)
+		return;
+
+	tb->generic_container = g_new0 (MonoGenericContainer, 1);
+	tb->generic_container->klass = klass;
+}
+
+/*
+ * mono_reflection_create_generic_class:
+ * @tb: a TypeBuilder object
+ *
+ * Creates the generic class after all generic parameters have been added.
+ */
+void
+mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoClass *klass;
+	int count, i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = my_mono_class_from_mono_type (tb->type.type);
 
 	count = tb->generic_params ? mono_array_length (tb->generic_params) : 0;
 
 	if (klass->generic_container || (count == 0))
 		return;
 
-	klass->generic_container = container = g_new0 (MonoGenericContainer, 1);
+	g_assert (tb->generic_container && (tb->generic_container->klass == klass));
 
-	container->klass = klass;
-	container->type_argc = count;
-	container->type_params = g_new0 (MonoGenericParam, count);
+	klass->generic_container = tb->generic_container;
+
+	klass->generic_container->type_argc = count;
+	klass->generic_container->type_params = g_new0 (MonoGenericParam, count);
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
-		container->type_params [i] = *gparam->type.type->data.generic_param;
-		gparam->type.type->data.generic_param->owner = container;
-		container->type_params [i].owner = container;
+		klass->generic_container->type_params [i] = *gparam->type.type->data.generic_param;
+		g_assert (klass->generic_container->type_params [i].owner);
 	}
 }
 
@@ -8400,12 +8422,22 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			gparam->mbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
 		param->owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
-		if (!gparam->tbuilder->generic_container) {
-			MonoClass *klass = my_mono_class_from_mono_type (gparam->tbuilder->type.type);
-			gparam->tbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
-			gparam->tbuilder->generic_container->klass = klass;
+		MonoReflectionTypeBuilder *nesting = gparam->tbuilder->nesting_type;
+		MonoGenericContainer *container = gparam->tbuilder->generic_container;
+
+		while (nesting) {
+			int count;
+
+			count = nesting->generic_params ? mono_array_length (nesting->generic_params) : 0;
+			if (gparam->index >= count)
+				break;
+
+			container = nesting->generic_container;
+			nesting = nesting->nesting_type;
 		}
-		param->owner = gparam->tbuilder->generic_container;
+
+		g_assert (container);
+		param->owner = container;
 	}
 
 	param->method = NULL;

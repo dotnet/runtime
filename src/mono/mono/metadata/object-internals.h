@@ -927,6 +927,8 @@ void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb
 
 void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb);
 
+void        mono_reflection_create_generic_class  (MonoReflectionTypeBuilder *tb);
+
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 
 void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);

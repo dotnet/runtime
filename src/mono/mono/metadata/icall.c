@@ -6114,6 +6114,7 @@ static const IcallEntry signaturehelper_icalls [] = {
 };
 
 static const IcallEntry typebuilder_icalls [] = {
+	{"create_generic_class", mono_reflection_create_generic_class},
 	{"create_internal_class", mono_reflection_create_internal_class},
 	{"create_runtime_class", mono_reflection_create_runtime_class},
 	{"get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter},

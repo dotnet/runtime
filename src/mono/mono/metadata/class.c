@@ -1984,7 +1984,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 			klass->interfaces [i - pos] = param->constraints [i];
 	}
 
-	g_assert (param->name);
+	g_assert (param->name && param->owner);
 
 	klass->name = param->name;
 	klass->name_space = "";
@@ -2009,6 +2009,8 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 
 	if (param->pklass)
 		return param->pklass;
+
+	g_assert (param->owner);
 
 	klass = g_new0 (MonoClass, 1);
 
