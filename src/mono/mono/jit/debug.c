@@ -414,6 +414,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	case MONO_DEBUG_FORMAT_MONO:
 		info->filename = g_strdup_printf ("%s.dbg", info->name);
 		info->mono_symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
+		mono_debugger_internal_symbol_files_changed = TRUE;
 		break;
 
 	default:
@@ -904,6 +905,7 @@ mono_debugger_internal_get_symbol_files (void)
 	mono_debug_make_symbols ();
 
 	g_ptr_array_add (symfiles, GUINT_TO_POINTER (MONO_SYMBOL_FILE_VERSION));
+	g_ptr_array_add (symfiles, symfiles);
 
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
 		GList *tmp;
@@ -929,5 +931,21 @@ mono_debugger_internal_get_symbol_files (void)
 	g_ptr_array_add (symfiles, NULL);
 	g_ptr_array_add (symfiles, NULL);
 
+	mono_debugger_internal_symbol_files_changed = FALSE;
+
 	return symfiles->pdata;
 }
+
+void
+mono_debugger_internal_free_symbol_files (gpointer data)
+{
+	gpointer *ptr = (gpointer *) data;
+
+	if (GPOINTER_TO_UINT (*ptr++ ) != MONO_SYMBOL_FILE_VERSION)
+		g_assert_not_reached ();
+
+	g_ptr_array_free ((GPtrArray *) *ptr, FALSE);
+}
+
+/* This is intentionally a global variable and not a method. */
+int mono_debugger_internal_symbol_files_changed = FALSE;
