@@ -497,8 +497,8 @@ typedef struct {
 	guint32 attrs;
 	guint32 call_conv;
 	MonoReflectionModule *module;
-	gboolean skip_visibility;
-	gboolean init_locals;
+	MonoBoolean skip_visibility;
+	MonoBoolean init_locals;
 	MonoReflectionILGen *ilgen;
 	gint32 nrefs;
 	MonoArray *refs;

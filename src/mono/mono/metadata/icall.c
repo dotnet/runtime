@@ -4391,6 +4391,11 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.TypeBuilder::setup_generic_class", mono_reflection_setup_generic_class,
 
 	/*
+	 * DynamicMethod
+	 */
+	"System.Reflection.Emit.DynamicMethod::create_dynamic_method", mono_reflection_create_dynamic_method,
+
+	/*
 	 * TypeBuilder generics icalls.
 	 */
 	"System.Reflection.Emit.TypeBuilder::get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter,

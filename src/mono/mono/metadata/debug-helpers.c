@@ -27,6 +27,7 @@ static const char *wrapper_type_names [] = {
 	"ldfld",
 	"stfld",
 	"synchronized",
+	"dynamic-method",
 	"unknown"
 };
 
