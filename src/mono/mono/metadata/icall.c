@@ -44,6 +44,7 @@
 #include <mono/metadata/locales.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
+#include <mono/utils/monobitset.h>
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
@@ -1270,6 +1271,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	int ninterf, i;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *parent;
+	MonoBitSet *slots = mono_bitset_new (class->max_interface_id, 0);
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1280,16 +1282,30 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 
 	ninterf = 0;
 	for (parent = class; parent; parent = parent->parent) {
-		ninterf += parent->interface_count;
+		for (i = 0; i < parent->interface_count; ++i) {
+			if (mono_bitset_test (slots, parent->interfaces [i]->interface_id))
+				continue;
+
+			mono_bitset_set (slots, parent->interfaces [i]->interface_id);
+			++ninterf;
+		}
 	}
+
 	intf = mono_array_new (domain, mono_defaults.monotype_class, ninterf);
 	ninterf = 0;
 	for (parent = class; parent; parent = parent->parent) {
 		for (i = 0; i < parent->interface_count; ++i) {
-			mono_array_set (intf, gpointer, ninterf, mono_type_get_object (domain, &parent->interfaces [i]->byval_arg));
+			if (!mono_bitset_test (slots, parent->interfaces [i]->interface_id))
+				continue;
+
+			mono_bitset_clear (slots, parent->interfaces [i]->interface_id);
+			mono_array_set (intf, gpointer, ninterf,
+					mono_type_get_object (domain, &parent->interfaces [i]->byval_arg));
 			++ninterf;
 		}
 	}
+
+	mono_bitset_free (slots);
 	return intf;
 }
 
