@@ -195,28 +195,19 @@ reg: OP_LOCALLOC (reg) {
 }
 
 stmt: OP_SETRET (reg) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = X86_EAX;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, X86_EAX, state->left->reg1);
 }
 
 stmt: OP_SETRET (lreg) {
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EDX, state->left->reg2);
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = X86_EAX;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, X86_EAX, state->left->reg1);
 }
 
 stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)),
 stmt: OP_SETRET (CEE_LDIND_I (OP_REGVAR)),
 stmt: OP_SETRET (CEE_LDIND_I4 (OP_REGVAR)),
 stmt: OP_SETRET (CEE_LDIND_U4 (OP_REGVAR)) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->left->tree->dreg;
-	tree->dreg = X86_EAX;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, X86_EAX, state->left->left->tree->dreg);
 }
 
 stmt: OP_SETRET (freg) {
