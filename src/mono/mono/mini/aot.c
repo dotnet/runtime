@@ -69,7 +69,7 @@ static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
-static guint32 mono_aot_verbose = 1;
+static guint32 mono_aot_verbose = 0;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
