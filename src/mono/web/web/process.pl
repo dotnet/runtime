@@ -50,7 +50,7 @@ while (<COMMANDS>) {
 	  open OUTPUT, ">" . $n || die "Can not create $n";
 	
 	  my $content = "";
-	  open INPUT, $command[3] || die "Can not open $command[3]";
+	  open INPUT, "src/" . $command[3] || die "Can not open $command[3]";
 	  while (<INPUT>) {
 	    $content .= $_;
 	  }
@@ -60,14 +60,30 @@ while (<COMMANDS>) {
 	  my $temp;
 	  my $tit;
 	  my $title;
+	  my $css;
+	  my $script;
 	
 	  $tit = $command[1];
+	  $css = $command[4];
+	  $script = $command[5];
+
 	  foreach $line (@template) {
 	    $temp = $line;
 	    $title = "$tit / Mono";
 	    $temp =~ s/#TITLE#/$title/;
 	    $temp =~ s/#CONTENT#/$content/;
 	    $temp =~ s/#MENU#/$menu/;
+	    if ($css) {
+	      $temp =~ s/#CSS#/<LINK rel="stylesheet" type="text\/css" href="$css">/;
+	    } else {
+	      $temp =~ s/#CSS#//;
+	    }
+		
+	    if ($script) {
+	      $temp =~ s/#SCRIPT#/<SCRIPT src="$script"><\/SCRIPT>/;
+	    } else {
+	      $temp =~ s/#SCRIPT#//;
+	    }
 	    print OUTPUT $temp;
 	  }
  }	

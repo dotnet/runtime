@@ -35,19 +35,20 @@ NON_HTML_SOURCES=	\
 all:
 	-mkdir site
 	for i in $(SOURCES); do \
-		perl htmlify $$i > `basename $$i`.src; \
+		perl htmlify $$i > src/`basename $$i`.src; \
 	done;
 
-	perl process.pl commands template.html.in .
+	perl process.pl commands template.html.in deploy
 
 clean:
 	for i in $(SOURCES); do \
-		rm -f `basename $$i`.src `basename $$i`.html; \
+		rm -f src/`basename $$i`.src deploy/`basename $$i`.html; \
 	done;
 
 push:
-	scp -P 2200 *.html $(NON_HTML_SOURCES) www@www.ximian.com:/web/cvsmodules/mono
-	echo scp *.html migueldeicaza@mononet.sf.net:/home/groups/m/mo/mononet/htdocs
+	cp -f $(NON_HTML_SOURCES) deploy
+	scp -P 2200 -r deploy/* www@www.ximian.com:/web/cvsmodules/mono
 
 push2: 
-	scp *.html primates:public_html/xxx
+	scp -r deploy/* primates:public_html/xxx
+

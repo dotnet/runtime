@@ -71,6 +71,11 @@
 
 ** Feb 27, 2002
 
+	New <a href="class-status.html">class status</a> engine that
+	provides detailed information about missing functionality in
+	our class libraries.  Nick built the cormissing tool and Piers
+	did the XSLT and DHTML magic.
+
 	More compiler progress on Linux: our support runtime now
 	enables the compiler to compile `MIS' on Linux (MIS being
 	Dick's Mono sample HTTP server ;-)
