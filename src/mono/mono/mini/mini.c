@@ -2230,6 +2230,9 @@ mono_emit_native_call (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer f
 
 	call = mono_emit_call_args (cfg, bblock, sig, args, FALSE, FALSE, ip, to_end);
 	call->fptr = func;
+
+	mono_get_got_var (cfg);
+
 	return mono_spill_call (cfg, bblock, call, sig, ret_object, ip, to_end);
 }
 
@@ -6461,6 +6464,11 @@ mono_print_tree (MonoInst *tree) {
 		MonoCallInst *call = (MonoCallInst*)tree;
 		if (call->method)
 			printf ("[%s]", call->method->name);
+		else if (call->fptr) {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
+			if (info)
+				printf ("[%s]", info->name);
+		}
 		break;
 	}
 	case OP_PHI: {
