@@ -375,30 +375,42 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 {
 	MonoJitInfo *ji;
 	guint8 *code, *buf, *tramp;
+	int jump_offset;
 
-	tramp = mono_arch_create_trampoline_code (tramp_type);
+	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
-	mono_domain_unlock (domain);
+	code = buf = g_alloca (TRAMPOLINE_SIZE);
 
 	/* push trampoline address */
 	amd64_lea_membase (code, AMD64_R11, AMD64_RIP, -7);
 	amd64_push_reg (code, AMD64_R11);
 
 	/* push argument */
-	amd64_mov_reg_imm (code, AMD64_R11, arg1);
-	amd64_push_reg (code, AMD64_R11);
+	if (amd64_is_imm32 ((gint64)arg1))
+		amd64_push_imm (code, (gint64)arg1);
+	else {
+		amd64_mov_reg_imm (code, AMD64_R11, arg1);
+		amd64_push_reg (code, AMD64_R11);
+	}
 
-	/* FIXME: Optimize this */
-	amd64_mov_reg_imm (code, AMD64_R11, tramp);
-	amd64_jump_reg (code, AMD64_R11);
+	jump_offset = code - buf;
+	amd64_jump_disp (code, 0xffffffff);
 
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
 
 	ji = g_new0 (MonoJitInfo, 1);
-	ji->code_start = buf;
+
+	mono_domain_lock (domain);
+	ji->code_start = mono_code_manager_reserve (domain->code_mp, code - buf);
 	ji->code_size = code - buf;
+	mono_domain_unlock (domain);
+
+	memcpy (ji->code_start, buf, ji->code_size);
+
+	/* Fix up jump */
+	g_assert ((((gint64)tramp) >> 32) == 0);
+	code = (guint8*)ji->code_start + jump_offset;
+	amd64_jump_disp (code, tramp - code);
 
 	mono_jit_stats.method_trampolines++;
 
