@@ -23,3 +23,6 @@
 	
 	
 * thread does not work with the jit (mcs/tests/test-19.cs)??
+
+* use short jump opcodes where possible (for backward jumps), will give better
+  performance. 
