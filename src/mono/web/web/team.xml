@@ -1222,6 +1222,20 @@
       <task>System.Windows.Forms</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Ville</first-name>
+      <last-name>Palo</last-name>
+    </name>
+    <e-mail>vi64pa - AT - kolumbus.fi</e-mail>
+    <image>none.png</image>
+    <location>Finland</location>
+    <description>Contributor</description>
+    <tasks>
+      <task>System.Data</task>
+      <task>System.IO</task>
+    </tasks>
+  </contributor>
 </contributors>
 
   <contributor>
