@@ -2,9 +2,7 @@ if PLATFORM_WIN32
 export HOST_CC
 endif
 
-bin_PROGRAMS = monosn
-
-noinst_PROGRAMS = pedump
+bin_PROGRAMS = monosn pedump
 
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
