@@ -3627,13 +3627,58 @@ freg: CONST_R8 {
 		x86_fld (s->code, tree->data.p, TRUE);
 }
 
-freg: LDIND_R4 (reg) {
-	x86_fld_membase (s->code, tree->left->reg1, 0, FALSE);
+freg: LDIND_R4 (addr) {
+
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_fld (s->code, tree->left->data.ainfo.offset, FALSE);
+		break;
+
+	case AMBase:
+		x86_fld_membase (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset, FALSE);
+		break;		
+	case AMIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, X86_NOBASEREG, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fld_membase (s->code, tree->left->data.ainfo.indexreg, 0, FALSE);
+		break;		
+	case AMBaseIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, tree->left->data.ainfo.basereg, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fld_membase (s->code, tree->left->data.ainfo.indexreg, 0, FALSE);
+		break;		
+	}
 }
 
-freg: LDIND_R8 (reg) {
-	x86_fld_membase (s->code, tree->left->reg1, 0, TRUE);
+freg: LDIND_R8 (addr) {
+
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_fld (s->code, tree->left->data.ainfo.offset, TRUE);
+		break;
+
+	case AMBase:
+		x86_fld_membase (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset, TRUE);
+		break;		
+	case AMIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, X86_NOBASEREG, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fld_membase (s->code, tree->left->data.ainfo.indexreg, 0, TRUE);
+		break;		
+	case AMBaseIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, tree->left->data.ainfo.basereg, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fld_membase (s->code, tree->left->data.ainfo.indexreg, 0, TRUE);
+		break;		
+	}
 }
+
 
 freg: ADD (freg, freg) {
 	x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
@@ -3676,13 +3721,58 @@ freg: NEG (freg) {
 
 stmt: POP (freg)
 
-stmt: STIND_R4 (ADDR_L, freg) {
-	int offset = VARINFO (s, tree->left->data.i).offset;  
-	x86_fst_membase (s->code, X86_EBP, offset, FALSE, TRUE);
+stmt: STIND_R4 (addr, freg) {
+
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_fst (s->code, tree->left->data.ainfo.offset, FALSE, TRUE);
+		break;
+
+	case AMBase:
+		x86_fst_membase (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset, 
+				 FALSE, TRUE);
+		break;		
+	case AMIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, X86_NOBASEREG, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fst_membase (s->code, tree->left->data.ainfo.indexreg, 0, FALSE, TRUE);
+		break;		
+	case AMBaseIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, tree->left->data.ainfo.basereg, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fst_membase (s->code, tree->left->data.ainfo.indexreg, 0, FALSE, TRUE);
+		break;		
+	}
 }
 
-stmt: STIND_R4 (reg, freg) {
-	x86_fst_membase (s->code, tree->left->reg1, 0, FALSE, TRUE);
+stmt: STIND_R8 (addr, freg) {
+
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_fst (s->code, tree->left->data.ainfo.offset, TRUE, TRUE);
+		break;
+
+	case AMBase:
+		x86_fst_membase (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset, 
+				 TRUE, TRUE);
+		break;		
+	case AMIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, X86_NOBASEREG, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fst_membase (s->code, tree->left->data.ainfo.indexreg, 0, TRUE, TRUE);
+		break;		
+	case AMBaseIndex:
+		x86_lea_memindex (s->code, tree->left->data.ainfo.indexreg, tree->left->data.ainfo.basereg, 
+				  tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				  tree->left->data.ainfo.shift);
+		x86_fst_membase (s->code, tree->left->data.ainfo.indexreg, 0, TRUE, TRUE);
+		break;		
+	}
 }
 
 stmt: REMOTE_STIND_R4 (reg, freg) {
@@ -3720,15 +3810,6 @@ stmt: REMOTE_STIND_R4 (reg, freg) {
 	x86_fst_membase (s->code, lreg, offset, FALSE, TRUE);
 
 	x86_patch (br [1], s->code);
-}
-
-stmt: STIND_R8 (ADDR_L, freg) {
-	int offset = VARINFO (s, tree->left->data.i).offset;  
-	x86_fst_membase (s->code, X86_EBP, offset, TRUE, TRUE);
-}
-
-stmt: STIND_R8 (reg, freg) {
-	x86_fst_membase (s->code, tree->left->reg1, 0, TRUE, TRUE);
 }
 
 stmt: REMOTE_STIND_R8 (reg, freg) {
