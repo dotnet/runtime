@@ -208,6 +208,7 @@ typedef struct {
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
+#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
 
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);

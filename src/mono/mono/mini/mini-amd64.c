@@ -1206,7 +1206,7 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 } while (0);
 
 /* FIXME: Add more instructions */
-#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM))
+#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG))
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -1218,6 +1218,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		switch (ins->opcode) {
 		case OP_ICONST:
+		case OP_I8CONST:
 			/* reg = 0 -> XOR (reg, reg) */
 			/* XOR sets cflags on x86, so we cant do it always */
 			if (ins->inst_c0 == 0 && ins->next && INST_IGNORES_CFLAGS (ins->next)) {
@@ -1243,6 +1244,10 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * --> 
 			 * OP_AMD64_TEST_NULL (reg) 
 			 */
+			if (!ins->inst_imm)
+				ins->opcode = OP_AMD64_TEST_NULL;
+			break;
+		case OP_ICOMPARE_IMM:
 			if (!ins->inst_imm)
 				ins->opcode = OP_X86_TEST_NULL;
 			break;
@@ -2451,23 +2456,27 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		/* handle clobbering of sreg1 */
 		if ((spec [MONO_INST_CLOB] == '1' || spec [MONO_INST_CLOB] == 's') && ins->dreg != ins->sreg1) {
+			MonoInst *sreg2_copy = NULL;
+
 			if (ins->dreg == ins->sreg2) {
 				/* 
 				 * copying sreg1 to dreg could clobber sreg2, so allocate a new
 				 * register for it.
 				 */
 				int reg2 = mono_amd64_alloc_int_reg (cfg, tmp, ins, dest_mask, ins->sreg2, 0);
-				MonoInst *copy;
 
 				DEBUG (g_print ("\tneed to copy sreg2 %s to reg %s\n", mono_arch_regname (ins->sreg2), mono_arch_regname (reg2)));
-				copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL);
-				insert_before_ins (ins, tmp, copy);
+				sreg2_copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL);
 				prev_sreg2 = ins->sreg2 = reg2;
 			}
 
 			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_arch_regname (ins->sreg1), mono_arch_regname (ins->dreg)));
 			insert_before_ins (ins, tmp, copy);
+
+			if (sreg2_copy)
+				insert_before_ins (copy, tmp, sreg2_copy);
+
 			/* we set sreg1 to dest as well */
 			prev_sreg1 = ins->sreg1 = ins->dreg;
 			src2_mask &= ~ (1 << ins->dreg);
@@ -3016,6 +3025,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_membase (code, X86_CMP, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
 		case OP_X86_TEST_NULL:
+			amd64_test_reg_reg_size (code, ins->sreg1, ins->sreg1, 4);
+			break;
+		case OP_AMD64_TEST_NULL:
 			amd64_test_reg_reg (code, ins->sreg1, ins->sreg1);
 			break;
 		case OP_X86_ADD_MEMBASE_IMM:
@@ -3446,11 +3458,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_membase_imm (code, X86_CMP, ins->sreg1, 0, 0);
 			break;
 		case OP_ARGLIST: {
-			int hreg = ins->sreg1 == AMD64_RAX? AMD64_RCX: AMD64_RAX;
-			amd64_push_reg (code, hreg);
-			amd64_lea_membase (code, hreg, AMD64_RBP, cfg->sig_cookie);
-			amd64_mov_membase_reg (code, ins->sreg1, 0, hreg, 8);
-			amd64_pop_reg (code, hreg);
+			amd64_lea_membase (code, AMD64_R11, AMD64_RBP, cfg->sig_cookie);
+			amd64_mov_membase_reg (code, ins->sreg1, 0, AMD64_R11, 8);
 			break;
 		}
 		case OP_FCALL:
