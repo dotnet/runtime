@@ -3126,9 +3126,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int i;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
 				for (i = 0; i < n; ++i) {
+					/* Check if argument is the same */
+					NEW_ARGLOAD (cfg, ins, i);
+					if ((ins->opcode == sp [i]->opcode) && (ins->inst_i0 == sp [i]->inst_i0))
+						continue;
+
 					NEW_ARGSTORE (cfg, ins, i, sp [i]);
 					ins->cil_code = ip;
-					MONO_ADD_INS (bblock, ins);
+					if (ins->opcode == CEE_STOBJ) {
+						NEW_ARGLOADA (cfg, ins, i);
+						handle_stobj (cfg, bblock, ins, sp [i], sp [i]->cil_code, ins->klass, FALSE, FALSE);
+					}
+					else
+						MONO_ADD_INS (bblock, ins);
 				}
 				MONO_INST_NEW (cfg, ins, CEE_JMP);
 				ins->cil_code = ip;
@@ -5187,6 +5197,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 2;
 
 				nearest = NULL;
+				nearest_num = 0;
 				for (cc = 0; cc < header->num_clauses; ++cc) {
 					clause = &header->clauses [cc];
 					if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) &&
