@@ -10,6 +10,19 @@
 
 set -e 
 
+# clear some references to /sw
+ACLOCAL_FLAGS=
+CPPFLAGS=
+DYLD_LIBRARY_PATH=
+INFOPATH=
+LD_LIBRARY_PATH=
+MANPATH=
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+PERL5LIB=
+PKG_CONFIG_PATH=
+SGML_CATALOG_FILES=
+XML_CATALOG_FILES=
+
 INITIALDIR=$PWD
 VERSION=0.95
 PREFIX=/Library/Frameworks/Mono.framework/Versions/$VERSION
@@ -168,6 +181,8 @@ fi
 
 # mono
 
+echo +++ patching libintl to not be statically linked
+perl -pi -e "s/old_library='libintl.a'/old_library=''/" $PREFIX/lib/libintl.la
 echo +++ processing mono run-time libraries
 
 if test ! -f "$PREFIX/bin/mono"; then
