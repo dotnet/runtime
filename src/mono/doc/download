@@ -132,26 +132,35 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 
 	To compile the mono runtime on windows:
 
-	<ul>
+	<ul>	
+		* Warning: We switched over to glib2.0, and we are still searching
+		for a volunteer who is able to provide us with binary packages
+		of glib2.0, pkgconfig and iconv. I was unable to compile
+		glib2.0 myself, so the following is only a rough outline how it
+		should work.
+
 		* Install <a href="http://www.cygwin.com">CygWin</a> first.
 
-		* Once installed, in a terminal window or a cygwin
-		  window (a shortcut should be on your desktop), untar the glib
-		  distribution:
-
+		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
+                  (I had to change line 674 of
+                  <nobr><tt>pkgconfig-0.8.0/glib-1.2.8/gstrfuncs.c</nobr> from 
+		  <nobr><tt>extern char *strsignal (int sig);</nobr> to
+		  <nobr><tt>extern const char *strsignal (int sig);</nobr>.
 <pre>
-tar xzvf glib-1.2.10.tar.gz
-</pre>
-
-		* Configure, compile and install glib, like this:
-
-<pre>
+tar xzvf pkgconfig-0.8.0.tar.gz
+cd pkgconfig-0.8.0
 ./configure --prefix=/usr
 make
 make install
 </pre>
- 	     * You also need a patch found <a 
-		href="http://www.cygwin.com/ml/cygwin/2001-04/msg01792.html">here</a>.
+
+		* Install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a>.
+		  If you dont have MS Visual C/C++ 4.0 or 5.0 or 6.0 you can also try
+		  the binary package available at <a
+		  href="http://www.gimp.org/win32/libiconv-dev-20001007.zip">here</a>.
+ 
+		* Install the newest glib (cvs head version). You can download it
+                  from <a href="glib-1.3.11.tar.gz">here</a>.
 
 		* Unpack the mono distribution:
 
@@ -176,6 +185,16 @@ make install
 	To compile the mono runtime on Unix:
 
 	<ul>
+		
+		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
+
+		* Install newest glib (cvs head version). You can download it
+                  from <a href="glib-1.3.11.tar.gz">here</a>. Maybe you need
+                  to modify your ACLOCAL_FLAGS for pkgconfig, for example if
+                  your install prefix is /usr/local:
+<pre>
+export ACLOCAL_FLAGS="-I /usr/local/share/aclocal"
+</pre>
 
 		* Download the mono distribution
 

@@ -32,6 +32,8 @@ libmetadata_a_SOURCES = \
 	file-io.h	\
 	exception.c	\
 	exception.h	\
+	unicode.c	\
+	unicode.h
 	#
 
 libmetadataincludedir = $(includedir)/mono/metadata

@@ -1918,6 +1918,9 @@ lreg: MUL (lreg, lreg) {
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
 }
 
 lreg: DIV (lreg, lreg) {
@@ -1934,6 +1937,9 @@ lreg: DIV (lreg, lreg) {
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
 }
 
 lreg: REM (lreg, lreg) {
@@ -1950,6 +1956,9 @@ lreg: REM (lreg, lreg) {
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
 }
 
 lreg: DIV_UN (lreg, lreg) {
@@ -1966,6 +1975,9 @@ lreg: DIV_UN (lreg, lreg) {
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
 }
 
 lreg: REM_UN (lreg, lreg) {
@@ -1982,6 +1994,9 @@ lreg: REM_UN (lreg, lreg) {
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
 }
 
 lreg: CALL_I8 (this, LDIND_I4 (ADDR_G)) {
@@ -2660,6 +2675,7 @@ stmt: RET_OBJ (reg) {
 gint64 
 mono_llmult (gint64 a, gint64 b)
 {
+printf ("LLMULT %lld %lld %lld\n", a,b, a*b);
 	return a * b;
 }
 

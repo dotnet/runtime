@@ -220,19 +220,20 @@ mono_string_new_utf16 (const guint16 *text, gint32 len)
 MonoString*
 mono_string_new (const char *text)
 {
-	MonoString *o;
+	GError *error = NULL;
+	MonoString *o = NULL;
 	guint16 *ut;
-	int i, l;
-
-	/* fixme: use some kind of unicode library here */
+	glong items_written;
+	int l;
 
 	l = strlen (text);
-	ut = g_malloc (l*2);
-
-	for (i = 0; i < l; i++)
-		ut [i] = text[i];
 	
-	o = mono_string_new_utf16 (ut, l);
+	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
+
+	if (!error)
+		o = mono_string_new_utf16 (ut, items_written);
+	else 
+		g_error_free (error);
 
 	g_free (ut);
 
@@ -416,7 +417,7 @@ char *
 mono_string_to_utf8 (MonoString *s)
 {
 	char *as, *vector;
-	int i;
+	GError *error = NULL;
 
 	g_assert (s != NULL);
 
@@ -427,14 +428,9 @@ mono_string_to_utf8 (MonoString *s)
 
 	g_assert (vector != NULL);
 
-	as = g_malloc (s->length + 1);
+	as = g_utf16_to_utf8 (vector, s->length, NULL, NULL, &error);
 
-	/* fixme: replace with a real unicode/ansi conversion */
-	for (i = 0; i < s->length; i++) {
-		as [i] = vector [i*2];
-	}
-
-	as [i] = '\0';
+	g_assert (!error);
 
 	return as;
 }
@@ -446,15 +442,15 @@ mono_string_to_utf16 (MonoString *s)
 
 	g_assert (s != NULL);
 
-	as=g_malloc((s->length*2)+2);
-	as[(s->length*2)]='\0';
-	as[(s->length*2)+1]='\0';
+	as = g_malloc ((s->length * 2) + 2);
+	as [(s->length * 2)] = '\0';
+	as [(s->length * 2) + 1] = '\0';
 
 	if (!s->length || !s->c_str) {
 		return (as);
 	}
 	
-	memcpy(as, mono_string_chars(s), s->length*2);
+	memcpy (as, mono_string_chars(s), s->length * 2);
 	
 	return (as);
 }

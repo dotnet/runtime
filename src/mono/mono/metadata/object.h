@@ -46,6 +46,8 @@ typedef struct {
 	gpointer    method_ptr;
 } MonoDelegate;
 
+typedef guchar MonoBoolean;
+
 typedef void  (*MonoRuntimeObjectInit) (MonoObject *o);
 
 extern MonoRuntimeObjectInit mono_runtime_object_init;

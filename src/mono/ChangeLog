@@ -1,3 +1,7 @@
+2001-12-21  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/Makefile.am (TESTSRC): disabled stream-writer test
+
 2001-12-21  Aaron Weber  <aaron@ximian.com>
 
 	* doc/faq (A): added a linebreak that was missing and was causing

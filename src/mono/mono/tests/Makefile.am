@@ -40,7 +40,6 @@ TESTSRC=			\
 	intptrcast.cs		\
 	indexer.cs		\
 	stream.cs		\
-	stream-writer.cs	\
 	console.cs		\
 	jit-int.cs		\
 	jit-uint.cs		\

@@ -523,6 +523,7 @@ tree_preallocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->exclude_mask |= (1 << X86_ECX);
 			tree->left->exclude_mask |= (1 << X86_ECX);
 			break;
+		case MB_TERM_MUL:
 		case MB_TERM_DIV:
 		case MB_TERM_DIV_UN:
 		case MB_TERM_REM:
@@ -821,7 +822,7 @@ arch_compile_method (MonoMethod *method)
 			int i, target, this_pos = 4;
 			guint8 *source;
 
-			method->addr = g_malloc (32);
+			method->addr = g_malloc (64);
 
 			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
 				g_assert (!csig->ret->byref);
@@ -838,16 +839,29 @@ arch_compile_method (MonoMethod *method)
 				x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
 				x86_branch32 (code, X86_CC_EQ, target, TRUE); 
 				source = code;
-				
-				/* virtual call -  we have to replace the this pointer */
+
+				/* virtual delegate methods: we have to replace the this pointer 
+				 * withe the actual target */
 				x86_mov_membase_reg (code, X86_ESP, this_pos, X86_EDX, 4); 
+				/* jump to method_ptr() */
+				x86_jump_membase (code, X86_EAX, method_offset);
+
+				/* static delegate methods: we have to remove the this pointer 
+				 * from the activation frame */
+				target = code - source;
+				if (this_pos == 8) {
+					x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4, 4);
+					x86_mov_membase_reg (code, X86_ESP, 8, X86_EDX, 4);
+				}
+				x86_mov_reg_membase (code, X86_EDX, X86_ESP, 0, 4);
+				x86_mov_membase_reg (code, X86_ESP, 4, X86_EDX, 4);
+				x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 
 				/* jump to method_ptr() */
-				target = code - source;
 				x86_jump_membase (code, X86_EAX, method_offset);
 			}
 
-			g_assert ((code - (guint8*)method->addr) < 32);
+			g_assert ((code - (guint8*)method->addr) < 64);
 
 		} else {
 			if (mono_debug_handle)

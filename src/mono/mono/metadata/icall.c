@@ -23,6 +23,7 @@
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/unicode.h>
 #include "decimal.h"
 
 static MonoObject *
@@ -828,6 +829,33 @@ static gpointer icall_map [] = {
 	"System.PAL.OpSys::ExistsFile", ves_icall_System_PAL_OpSys_ExistsFile,
 	"System.PAL.OpSys::GetFileTime", ves_icall_System_PAL_OpSys_GetFileTime,
 	"System.PAL.OpSys::SetFileTime", ves_icall_System_PAL_OpSys_SetFileTime,
+
+	/*
+	 * System.Char
+	 */
+	"System.Char::GetNumericValue", ves_icall_System_Char_GetNumericValue,
+	"System.Char::GetUnicodeCategory", ves_icall_System_Char_GetUnicodeCategory,
+	"System.Char::IsControl", ves_icall_System_Char_IsControl,
+	"System.Char::IsDigit", ves_icall_System_Char_IsDigit,
+	"System.Char::IsLetter", ves_icall_System_Char_IsLetter,
+	"System.Char::IsLower", ves_icall_System_Char_IsLower,
+	"System.Char::IsUpper", ves_icall_System_Char_IsUpper,
+	"System.Char::IsNumber", ves_icall_System_Char_IsNumber,
+	"System.Char::IsPunctuation", ves_icall_System_Char_IsPunctuation,
+	"System.Char::IsSeparator", ves_icall_System_Char_IsSeparator,
+	"System.Char::IsSurrogate", ves_icall_System_Char_IsSurrogate,
+	"System.Char::IsSymbol", ves_icall_System_Char_IsSymbol,
+	"System.Char::IsWhiteSpace", ves_icall_System_Char_IsWhiteSpace,
+	"System.Char::ToLower", ves_icall_System_Char_ToLower,
+	"System.Char::ToUpper", ves_icall_System_Char_ToUpper,
+
+	"System.Text.Encoding::IConvNewEncoder", ves_icall_iconv_new_encoder,
+	"System.Text.Encoding::IConvNewDecoder", ves_icall_iconv_new_decoder,
+	"System.Text.Encoding::IConvReset", ves_icall_iconv_reset,
+	"System.Text.Encoding::IConvGetByteCount", ves_icall_iconv_get_byte_count,
+	"System.Text.Encoding::IConvGetBytes", ves_icall_iconv_get_bytes,
+	"System.Text.Encoding::IConvGetCharCount", ves_icall_iconv_get_char_count,
+	"System.Text.Encoding::IConvGetChars", ves_icall_iconv_get_chars,
 
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	/*
