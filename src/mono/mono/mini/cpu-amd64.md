@@ -194,7 +194,7 @@ leave:
 leave.s:
 stind.i:
 conv.u: dest:i src1:i len:4
-prefix8:
+prefix7:
 prefix6:
 prefix5:
 prefix4:
