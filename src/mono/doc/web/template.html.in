@@ -6,12 +6,16 @@
    body { font-family: "trebuchet ms", lucida, verdana, helvetica; 
           background-image: url("images/bgsquares.gif"); 
           background-attachment: fixed; }
-   body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; 
-                     font-size: 12px; }
+   body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica;
+			 font-size: 12px; }
 
 	.navi { font-size: 14px; background: #444444; }
 	.subnavi { font-size: 12px; }
         .footnote { font-size: 10px; color: #aaaaaa; }
+
+	a { color: #004499; text-decoration: none; font-weight: normal; }
+	a:visited { color: #003366; }
+	a:hover { color: #ee9900; text-decoration: underline; }
 
 	a.navi { color: #ffffff; text-decoration: none; font-weight: bold; }
 	a.navi:visited { color: #cccccc; }
