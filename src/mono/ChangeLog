@@ -1,3 +1,10 @@
+
+Mon Jun 14 18:38:34 CEST 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: better explain that --with-nptl is not related to
+	NPTL, but to __thread support. Set sigaltstack support to off by
+	default.
+
 2004-06-12  Raja R Harinath  <harinath@acm.org>
 
 	* Makefile.am (populate-runtime-subdir): Add _tmpinst directory
