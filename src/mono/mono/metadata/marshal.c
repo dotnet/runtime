@@ -485,7 +485,21 @@ mono_mb_emit_exception (MonoMethodBuilder *mb)
 {
 	/* fixme: we need a better way to throw exception,
 	 * supporting several exception types and messages */
-	mono_mb_emit_byte (mb, CEE_LDNULL);
+	static MonoMethod *missing_method_ctor = NULL;
+
+	if (!missing_method_ctor) {
+		MonoClass *mme = mono_class_from_name (mono_defaults.corlib, "System", "MissingMethodException");
+		int i;
+		mono_class_init (mme);
+		for (i = 0; i < mme->method.count; ++i) {
+			if (strcmp (mme->methods [i]->name, ".ctor") == 0 && mme->methods [i]->signature->param_count == 0) {
+				missing_method_ctor = mme->methods [i];
+				break;
+			}
+		}
+	}
+	mono_mb_emit_byte (mb, CEE_NEWOBJ);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, missing_method_ctor));
 	mono_mb_emit_byte (mb, CEE_THROW);
 	
 }
