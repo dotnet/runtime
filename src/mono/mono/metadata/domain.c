@@ -260,7 +260,7 @@ mono_string_hash (MonoString *s)
 #if HAVE_BOEHM_GC
 static void
 domain_finalizer (void *obj, void *data) {
-	g_print ("domain finalized\n");
+	/*g_print ("domain finalized\n");*/
 }
 #endif
 
@@ -778,39 +778,78 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	EnterCriticalSection (&appdomains_mutex);
 	mono_g_hash_table_remove (appdomains_list, GINT_TO_POINTER(domain->domain_id));
 	LeaveCriticalSection (&appdomains_mutex);
-	
+
+	/* FIXME: free delegate_hash_table when it's used */
+	if (domain->search_path) {
+		g_strfreev (domain->search_path);
+		domain->search_path = NULL;
+	}
+	domain->create_proxy_for_type_method = NULL;
+	domain->private_invoke_method = NULL;
+	domain->default_context = NULL;
+	domain->out_of_memory_ex = NULL;
+	domain->null_reference_ex = NULL;
+	domain->stack_overflow_ex = NULL;
+	domain->entry_assembly = NULL;
 	g_free (domain->friendly_name);
+	domain->friendly_name = NULL;
 	g_hash_table_foreach (domain->assemblies_by_name, remove_assembly, NULL);
 
 	mono_g_hash_table_destroy (domain->env);
+	domain->env = NULL;
 	g_hash_table_destroy (domain->assemblies_by_name);
+	domain->assemblies_by_name = NULL;
 	g_list_free (domain->assemblies);
+	domain->assemblies = NULL;
 	g_hash_table_destroy (domain->class_vtable_hash);
+	domain->class_vtable_hash = NULL;
 	mono_g_hash_table_destroy (domain->proxy_vtable_hash);
+	domain->proxy_vtable_hash = NULL;
 	mono_g_hash_table_destroy (domain->static_data_hash);
+	domain->static_data_hash = NULL;
 	g_hash_table_destroy (domain->jit_code_hash);
+	domain->jit_code_hash = NULL;
 	if (domain->dynamic_code_hash) {
 		g_hash_table_foreach (domain->dynamic_code_hash, dynamic_method_info_free, NULL);
 		g_hash_table_destroy (domain->dynamic_code_hash);
+		domain->dynamic_code_hash = NULL;
 	}
 	mono_g_hash_table_destroy (domain->ldstr_table);
+	domain->ldstr_table = NULL;
 	mono_jit_info_table_free (domain->jit_info_table);
+	domain->jit_info_table = NULL;
 #ifdef DEBUG_DOMAIN_UNLOAD
 	mono_mempool_invalidate (domain->mp);
 	mono_code_manager_invalidate (domain->code_mp);
 #else
 	mono_mempool_destroy (domain->mp);
+	domain->mp = NULL;
 	mono_code_manager_destroy (domain->code_mp);
+	domain->code_mp = NULL;
 #endif	
 	if (domain->jump_target_hash) {
 		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);
 		g_hash_table_destroy (domain->jump_target_hash);
+		domain->jump_target_hash = NULL;
+	}
+	if (domain->type_hash) {
+		mono_g_hash_table_destroy (domain->type_hash);
+		domain->type_hash = NULL;
+	}
+	if (domain->refobject_hash) {
+		mono_g_hash_table_destroy (domain->refobject_hash);
+		domain->refobject_hash = NULL;
 	}
 	g_hash_table_destroy (domain->class_init_trampoline_hash);
+	domain->class_init_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->jump_trampoline_hash);
+	domain->jump_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->finalizable_objects_hash);
-	if (domain->special_static_fields)
+	domain->finalizable_objects_hash = NULL;
+	if (domain->special_static_fields) {
 		g_hash_table_destroy (domain->special_static_fields);
+		domain->special_static_fields = NULL;
+	}
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;
 

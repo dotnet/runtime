@@ -2006,8 +2006,8 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset)
 		*static_data_ptr = static_data;
 		static_data [0] = static_data;
 	}
-	
-	for (i = 1; i < idx; ++i) {
+
+	for (i = 1; i <= idx; ++i) {
 		if (static_data [i])
 			continue;
 #if HAVE_BOEHM_GC
