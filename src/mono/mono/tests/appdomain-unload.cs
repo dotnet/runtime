@@ -42,12 +42,17 @@ public class AThread {
 	}
 }
 
-[Serializable]
 // A Thread which refuses to die
-public class BThread {
+public class BThread : MarshalByRefObject {
+
+	bool stop;
 
 	public BThread () {
 		new Thread (new ThreadStart (Run)).Start ();
+	}
+
+	public void Stop () {
+		stop = true;
 	}
 
 	public void Run () {
@@ -56,7 +61,8 @@ public class BThread {
 				Thread.Sleep (100);
 		}
 		catch (ThreadAbortException ex) {
-			Thread.Sleep (1000000000);
+			while (!stop)
+				Thread.Sleep (100);
 		}
 	}
 }
@@ -139,13 +145,16 @@ public class Tests
 
 	public static int test_0_unload_with_active_threads_timeout () {
 		AppDomain domain = AppDomain.CreateDomain ("Test4");
-		object o = domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "BThread");
+		BThread o = (BThread)domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "BThread");
 		Thread.Sleep (100);
 
 		try {
 			AppDomain.Unload (domain);
 		}
 		catch (Exception) {
+			// Try again
+			o.Stop ();
+			AppDomain.Unload (domain);
 			return 0;
 		}
 
