@@ -137,7 +137,7 @@
   Lluis Sanchez is the maintainer of this namespace (as well as
   System.Web.Services).
 
-  Well, in fact XmlSerializer is almost finished and is on bugfix phase.
+  XmlSerializer is almost finished and is on bugfix phase.
 
   However, we appliciate more tests. Please try 
   
@@ -152,13 +152,9 @@
   mcs/class/System.Web.Services/Test/standalone.
 
   You might also interested in "genxs", which enables you to create custom
-  XML serializer. This is not included in Microsoft.NET. 
-  See <a 
-  href="http://primates.ximian.com/~lluis/blog/archives/000120.html">here</a>
-  and manpages for details. Code files are in mcs/tools/genxs.
+  XML serializer. See "tools" section discussed later. There is also "sgen"
+  that is introduced in .NET 2.0.
 
-  Lluis also created "sgen", that based on XmlSerializer.GenerateSerializer().
-  Code files are in mcs/tools/sgen.
 
 *** System.Xml.XPath and System.Xml.Xsl
 
@@ -250,12 +246,30 @@
 
 	<ul>
 		* binary content support on XmlReader
-		* IXmlSchemaInfo support for DOM and XmlValidatingReader
-		* XmlSchemaObject.Parent support
 		* XmlValueConverter
-		* possibly XmlSchemaValidator (but no description about this
-		  class right now).
 		* XslCompiledTransform (not available in .NET FX 2.0 as yet)
+	</ul>
+
+  In general, System.Xml 2.0 bits are largely implemented.
+
+  I have some notes on things marked as "missing" in the above class status
+  page:
+
+	<ul>
+		* XmlReader, XmlTextReader and XmlValidatingReader has
+		  many "missing bits", but ReadValueAsXxx() are obsoleted.
+		  They were now taken its place by ReadContentAsXxx() and
+		  ReadElementContentAsXxx() methods (those differences come
+		  from the basis of the methods: ReadElementString() or
+		  ReadString()).
+		* In System.Xml.XPath - first, new features in XPathDocument
+		  are said as reverted. So I just commented out those new
+		  features that had been already implemented in mono.
+		  Other missing classes such as XPathEditableNavigator are
+		  obsolete and will vanish at the time of 2.0 RTM.
+		* There are some security attributes. They are either way
+		  not applicable as yet, and actually currently corcompare
+		  ignores them. (So I already added some, but are ignored.)
 	</ul>
 
 **** XmlReader/XmlWrier Factory methods
@@ -332,6 +346,12 @@
   In .NET 2.0, there is an XML Schema inference implementation. The API (or
   implementation design) is not cool and Microsoft will make changes in
   later version of beta or .NET Framework.
+
+**** XmlSchemaValidator
+
+  It is (somewhat) exposed XML Schema validation functionality. It enables
+  developers to get expected particles and attributes. Actually it is
+  internally used to implement XmlReader.Create() with XmlSchemaSet.
 
 
 *** System.Xml.XPath 2.0
@@ -435,13 +455,19 @@
   - that is, standardization effort is still ongoing (though NVDL looks
   mostly the same as NRL).
 
+  In Mono 2.0, there are some improvements:
+
+	<ul>
+		* RelaxngPattern.Compile() now provides error location.
+
+		* RelaxngValidatingReader now supports "expected label
+		  collector" API; You can get name list of expected element
+		  names and attribute names by simulating validation.
+
   In Mono 2.0, there might be improvements on Commons.Xml.Relaxng.
 
 	<ul>
-		* Currently RelaxngPattern.Compile() provides cheap compilation
-		  error information. At least it can provide error location.
-		  Also, the type of error should be kind of 
-		  RelaxngGrammarException.
+		* The type of error should be kind of RelaxngGrammarException.
 
 		* Right now there is no ambiguity detection implementation that
 		  would be useful for RelaxngPattern based xml serialization (if
@@ -462,6 +488,24 @@
 
   Note that xsd.exe does not support XmlSchemaInference in System.Xml 2.0.
 
+*** genxs.exe
+
+  genxs.exe is a custom XmlSerializer code generator. This is Mono exclusive 
+  advantage. See <a 
+  href="http://primates.ximian.com/~lluis/blog/archives/000120.html">Lluis's
+  description</a> and manpages for details. Code files are in mcs/tools/genxs.
+
+*** sgen.exe
+
+  sgen.exe is an alternative XmlSerializer code generator which is based on
+  XmlSerializer.GenerateSerializer() written by Lluis. Code files are in
+  mcs/tools/sgen.
+
+*** dtd2xsd.exe
+
+  It is a tiny tool that enables conversion from DTD structure to XML Schema.
+  You need an XML instance, not DTD file itself (since basic XmlTextReader has
+  no feature to read external DTD resource itself). It runs only under mono.
 
 ** Miscellaneous
 
@@ -482,5 +526,5 @@
 
 
   Atsushi Eno <atsushi@ximian.com>
-  last updated 11/29/2004
+  last updated 12/16/2004
 
