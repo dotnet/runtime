@@ -45,6 +45,8 @@ libmetadata_a_SOURCES = \
 	appdomain.c	\
 	debug-helpers.h	\
 	debug-helpers.c	\
+	debug-symfile.h	\
+	debug-symfile.c	\
 	rand.h		\
 	rand.c		\
 	sysmath.h	\
