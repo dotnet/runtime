@@ -651,10 +651,12 @@ fi
 
 ICU_CFLAGS=""
 ICU_LIBS=""
+enable_icu=no
 AC_PATH_PROG(ICU_CONFIG, icu-config, no)
-if test "x$ICU_CONFIG" = "xno"; then
+if test "x$ICU_CONFIG" = "xno" -o ! -x "$ICU_CONFIG"; then
 	AC_MSG_WARN([Only invariant locale available; install ICU for I18N support])
 else
+	enable_icu="yes. Version: `$ICU_CONFIG --version`"
 	AC_DEFINE(HAVE_ICU)
 	ICU_CFLAGS=`$ICU_CONFIG --cppflags`
 	ICU_LIBS=`$ICU_CONFIG --ldflags`
@@ -808,5 +810,5 @@ mono.spec
 echo "
 
 	GC:	$gc
-
+	ICU support: $enable_icu
 "
