@@ -424,6 +424,18 @@ mono_fconv_u4 (double v)
 	return (guint32)v;
 }
 
+#ifndef HAVE_TRUNCL
+/* should mostly work */
+static double 
+truncl (double x)
+{
+	if (x < 0)
+		x += 1.0;
+	return floor (x);
+}
+
+#endif
+
 static gint64
 mono_fconv_ovf_i8 (double v)
 {

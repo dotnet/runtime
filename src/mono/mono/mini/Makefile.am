@@ -28,7 +28,10 @@ endif
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
+if NO_VERSION_SCRIPT
+else
 libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
+endif
 
 if JIT_SUPPORTED
 bin_PROGRAMS = mono
