@@ -163,7 +163,7 @@ int             mono_debugger_insert_breakpoint_full  (MonoMethodDesc *desc);
 int             mono_debugger_remove_breakpoint       (int breakpoint_id);
 int             mono_debugger_insert_breakpoint       (const gchar *method_name, gboolean include_namespace);
 int             mono_debugger_method_has_breakpoint   (MonoMethod *method);
-void            mono_debugger_breakpoint_callback     (MonoMethod *method, guint32 index);
+void            mono_debugger_breakpoint_callback     (MonoMethod *method, guint32 idx);
 
 gpointer        mono_debugger_create_notification_function (gpointer *notification_address);
 
