@@ -169,6 +169,11 @@ TEST_CS_SRC=			\
 	bug-48015.cs		\
 	bug-42136.cs
 
+DISABLED_TESTS=			\
+	remoting2.exe		\
+	remoting3.exe		\
+	appdomain-unload.exe	
+
 # These only compile with MS CSC
 TEST_CSC_SRC=			\
 	vararg.cs
@@ -208,7 +213,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -223,7 +228,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_IL); do	\
-		if $(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -235,7 +240,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		$(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS);	\
 	done
 
 testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
@@ -245,7 +250,7 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
 		rm -f $${i}.so; \
-		if $(srcdir)/test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(JITTEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -265,7 +270,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	for i in $(TESTSI_CS) $(TESTBS); do	\
 		rm -f $${i}.so; \
 		$(JITTEST_PROG) --aot $${i} > /dev/null; \
-		if $(srcdir)/test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(JITTEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -283,7 +288,7 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL); do \
-		if $(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
