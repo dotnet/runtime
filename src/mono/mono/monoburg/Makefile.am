@@ -1,4 +1,4 @@
-INCLUDES = $(BUILD_GLIB_CFLAGS) 
+INCLUDES = $(BUILD_GLIB_CFLAGS) -I$(srcdir)
 CC=$(CC_FOR_BUILD)
 
 #noinst_PROGRAMS = sample
