@@ -3,7 +3,7 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
-libmono_la_LDFLAGS=-Wl,-version-script=ldscript
+libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
 if X86
 if PLATFORM_WIN32
@@ -68,5 +68,5 @@ BUILT_SOURCES = codegen-x86.c codegen.h
 
 CLEANFILES = $(BUILT_SOURCES)
 
-EXTRA_DIST = x86.brg
+EXTRA_DIST = x86.brg ldscript
 
