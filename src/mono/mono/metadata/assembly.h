@@ -17,6 +17,7 @@ void          mono_assembly_setrootdir (const char *root_dir);
 void	      mono_assembly_foreach    (GFunc func, gpointer user_data);
 void          mono_assembly_set_main   (MonoAssembly *assembly);
 MonoAssembly *mono_assembly_get_main   (void);
+gboolean      mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname);
 
 /* Installs a function which is called each time a new assembly is loaded. */
 typedef void  (*MonoAssemblyLoadFunc)         (MonoAssembly *assembly, gpointer user_data);

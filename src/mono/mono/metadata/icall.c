@@ -2911,22 +2911,20 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object)
 }
 
 static void
-ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
+fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute)
 {
-	MonoAssemblyName *name = &assembly->assembly->aname;
 	static MonoMethod *create_culture = NULL;
     gpointer args [1];
 	guint32 pkey_len;
 	const char *pkey_ptr;
-	gchar *absolute;
 	gchar *codebase;
 
 	MONO_ARCH_SAVE_REGS;
 
 	if (strcmp (name->name, "corlib") == 0)
-		aname->name = mono_string_new (mono_object_domain (assembly), "mscorlib");
+		aname->name = mono_string_new (domain, "mscorlib");
 	else
-		aname->name = mono_string_new (mono_object_domain (assembly), name->name);
+		aname->name = mono_string_new (domain, name->name);
 
 	aname->major = name->major;
 	aname->minor = name->minor;
@@ -2934,11 +2932,11 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
 
-	absolute = g_build_filename (assembly->assembly->basedir, assembly->assembly->image->module_name, NULL);
 	codebase = g_filename_to_uri (absolute, NULL, NULL);
-	aname->codebase = mono_string_new (mono_object_domain (assembly), codebase);
-	g_free (codebase);
-	g_free (absolute);
+	if (codebase) {
+		aname->codebase = mono_string_new (domain, codebase);
+		g_free (codebase);
+	}
 
 	if (!create_culture) {
 		MonoMethodDesc *desc = mono_method_desc_new ("System.Globalization.CultureInfo:CreateSpecificCulture(string)", TRUE);
@@ -2947,7 +2945,7 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 		mono_method_desc_free (desc);
 	}
 
-	args [0] = mono_string_new (mono_object_domain (assembly), name->culture);
+	args [0] = mono_string_new (domain, name->culture);
 	aname->cultureInfo = 
 		mono_runtime_invoke (create_culture, NULL, args, NULL);
 
@@ -2955,9 +2953,58 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 		pkey_ptr = name->public_key;
 		pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
 
-		aname->publicKey = mono_array_new (mono_object_domain (assembly), mono_defaults.byte_class, pkey_len);
+		aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
 		memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
 	}
+}
+
+static void
+ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
+{
+	gchar *absolute;
+
+	MONO_ARCH_SAVE_REGS;
+
+	absolute = g_build_filename (assembly->assembly->basedir, assembly->assembly->image->module_name, NULL);
+
+	fill_reflection_assembly_name (mono_object_domain (assembly), aname, 
+								   &assembly->assembly->aname, absolute);
+
+	g_free (absolute);
+}
+
+static void
+ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname, MonoReflectionAssemblyName *aname)
+{
+	char *filename;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	gboolean res;
+	MonoImage *image;
+	MonoAssemblyName name;
+
+	MONO_ARCH_SAVE_REGS;
+
+	filename = mono_string_to_utf8 (fname);
+
+	image = mono_image_open (filename, &status);
+	
+	if (!image){
+		g_free (filename);
+		MonoException *exc = mono_get_exception_file_not_found (fname);
+		mono_raise_exception (exc);
+	}
+
+	res = mono_assembly_fill_assembly_name (image, &name);
+	if (!res) {
+		mono_image_close (image);
+		g_free (filename);
+		mono_raise_exception (mono_get_exception_argument ("assemblyFile", "The file does not contain a manifest"));
+	}
+
+	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename);
+
+	g_free (filename);
+	mono_image_close (image);
 }
 
 static MonoArray*
@@ -4431,6 +4478,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType,
 	"System.Reflection.Assembly::GetTypes", ves_icall_System_Reflection_Assembly_GetTypes,
 	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
+	"System.Reflection.Assembly::InternalGetAssemblyName", ves_icall_System_Reflection_Assembly_InternalGetAssemblyName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 	"System.Reflection.Assembly::get_location", ves_icall_System_Reflection_Assembly_get_location,
 	"System.Reflection.Assembly::InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion,

@@ -168,6 +168,35 @@ mono_assemblies_init (void)
 	assemblies_loading = g_hash_table_new (NULL, NULL);
 }
 
+gboolean
+mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
+{
+	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
+	guint32 cols [MONO_ASSEMBLY_SIZE];
+
+	if (!t->rows)
+		return FALSE;
+
+	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
+
+	aname->hash_len = 0;
+	aname->hash_value = NULL;
+	aname->name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
+	aname->culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
+	aname->flags = cols [MONO_ASSEMBLY_FLAGS];
+	aname->major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
+	aname->minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
+	aname->build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
+	aname->revision = cols [MONO_ASSEMBLY_REV_NUMBER];
+	aname->hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
+	if (cols [MONO_ASSEMBLY_PUBLIC_KEY])
+		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+	else
+		aname->public_key = 0;
+
+	return TRUE;
+}
+
 static void
 mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 {
@@ -425,8 +454,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
 	MonoAssembly *ass, *ass2;
 	MonoImage *image;
-	MonoTableInfo *t;
-	guint32 cols [MONO_ASSEMBLY_SIZE];
 	char *base_dir;
 	MonoImageOpenStatus def_status;
 	gchar *fname;
@@ -499,23 +526,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	g_free (fname);
 
-	t = &image->tables [MONO_TABLE_ASSEMBLY];
-	if (t->rows) {
-		mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
-
-		ass->aname.hash_len = 0;
-		ass->aname.hash_value = NULL;
-		ass->aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
-		ass->aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
-		ass->aname.flags = cols [MONO_ASSEMBLY_FLAGS];
-		ass->aname.major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
-		ass->aname.minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
-		ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
-		ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
-		ass->aname.hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
-		if (cols [MONO_ASSEMBLY_PUBLIC_KEY])
-			ass->aname.public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
-	}
+	mono_assembly_fill_assembly_name (image, &ass->aname);
 
 	/* 
 	 * Atomically search the loaded list and add ourselves to it if necessary.
