@@ -4259,6 +4259,7 @@ main (int argc, char *argv [])
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);
 
+	mono_install_compile_method (mono_create_method_pointer);
 	mono_install_runtime_invoke (interp_mono_runtime_invoke);
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 
