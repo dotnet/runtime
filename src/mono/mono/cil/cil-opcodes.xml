@@ -1,3 +1,4 @@
+<opdesc>
 <opcode name="nop" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x00" flow="next"/>
 <opcode name="break" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x01" flow="break"/>
 <opcode name="ldarg.0" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x02" flow="next"/>
@@ -293,4 +294,4 @@
 <opcode name="endmac" input="Pop0" output="Push0" args="InlineNone" o1="0x00" o2="0x00" flow="meta"/>
 
 
-
+</opdesc>

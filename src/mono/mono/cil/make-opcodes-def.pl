@@ -10,47 +10,51 @@
 #
 # We should really be doing this with XSLT, but I know nothing about XSLT
 # ;-)
+# or maybe just an XML::Parser... - lupus
 
+use strict;
+use XML::Parser;
 
-open OPCODES, "cil-opcodes.xml" || die "Can not open cil-opcodes.xml";
-open OUTPUT, ">opcode.def" || die "Can not create opcode.def file";
+my %valid_flow;
+# the XML file also includes "throw"
+@valid_flow{qw(next call return branch meta cond-branch)} = ();
 
-while (<OPCODES>){
-    chop;
-    next if (!/<opcode .*\/>/);
+open OUTPUT, ">opcode.def" || die "Can not create opcode.def file: $!";
 
-    ($name, $input, $output, $args, $o1, $o2, $flow) = $_ =~ /name=\"([\w\.]+)\"\s+input=\"([\w+]+)\"\s+output=\"([\w+]+)\"\s+args=\"(\w+)\"\s+o1=\"0x(\w+)\"\s+o2=\"0x(\w+)\"\s+flow=\"([\w-]+)\"\/>/;
-    print "NAME: $1\n";
-    $name = $1;
-    $input = $2;
-    $output = $3;
-    $args = $4;
-    $o1 = $5;
-    $o2 = $6;
-    $flow = $7;
+my $parser = new XML::Parser (Handlers => {Start => \&handle_opcode});
+$parser->parsefile("cil-opcodes.xml");
+print_trailer();
+close(OUTPUT) || die "Can not close file: $!";
 
-    $uname = $name;
-    $uname =~ s/\./_/g;
-    $uname =~ tr [a-z] [A-Z];
-    if ($o1 =~ /0xff/){
+sub handle_opcode {
+    my ($parser, $elem, %attrs) = @_;
+    my ($name, $input, $output, $args, $o1, $o2, $flow, $uname, $count, $ff);
+	
+    return if ($elem ne 'opcode');
+
+    ($name, $input, $output, $args, $o1, $o2, $flow) = 
+		@attrs{qw(name input output args o1 o2 flow)};
+
+    $uname = uc $name;
+    $uname =~ tr/./_/;
+    if (hex($o1) == 0xff){
 	$count = 1;
     } else {
 	$count = 2;
     }
 
     $ff = "ERROR";
-    $ff = "NEXT" if ($flow =~ /^next$/);
-    $ff = "CALL" if ($flow =~ /^call$/);
-    $ff = "RETURN" if ($flow =~ /^return$/);
-    $ff = "BRANCH" if ($flow =~ /^branch$/);
-    $ff = "COND_BRANCH" if ($flow =~ /^cond-branch$/);
-    $ff = "META" if ($flow =~ /^meta$/);
+    if (exists $valid_flow{$flow}) {
+	$ff = uc $flow;
+	$ff =~ tr/-/_/;
+    }
 
-    print OUTPUT "OPDEF(CEE_$uname, \"$name\", $input, $output, $args, X, $count, 0x$o1, 0x$o2, $ff)\n";
+    print OUTPUT "OPDEF(CEE_$uname, \"$name\", $input, $output, $args, X, $count, $o1, $o2, $ff)\n";
     
 }
 
-print OUTPUT<<EOF
+sub print_trailer {
+print OUTPUT<<EOF;
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)
@@ -72,3 +76,5 @@ OPALIAS(CEE_ENDFAULT,   "endfault",  CEE_ENDFINALLY)
 #undef _MONO_CIL_OPALIAS_DEFINED_
 #endif
 EOF
+}
+

@@ -527,7 +527,7 @@ disassemble_file (const char *file)
 	ass = mono_assembly_open (file, &status);
 	if (ass == NULL){
 		fprintf (stderr, "Error while trying to process %s\n", file);
-		
+		return;
 	}
 
 	ii = ass->image_info;

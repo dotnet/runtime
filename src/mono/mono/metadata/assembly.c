@@ -395,7 +395,7 @@ mono_assembly_close (MonoAssembly *assembly)
 		if (ii->cli_section_tables)
 			g_free (ii->cli_section_tables);
 		if (ii->cli_sections)
-			g_free (ii->cli_section_tables);
+			g_free (ii->cli_sections);
 		g_free (assembly->image_info);
 	}
 	
