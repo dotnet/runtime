@@ -23,6 +23,7 @@
 #include "inssel.h"
 #include "cpu-pentium.h"
 
+/* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
@@ -3962,8 +3963,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET: {
+#ifdef PLATFORM_WIN32
+			/* 
+			 * See the Under the Hood article in the May 1996 issue of Microsoft Systems 
+			 * Journal and/or a disassembly of the TlsGet () function.
+			 */
+			x86_prefix (code, X86_FS_PREFIX);
+			x86_mov_reg_mem (code, ins->dreg, 0x18, 4);
+			/* Dunno what this does but TlsGetValue () contains it */
+			x86_alu_membase_imm (code, X86_AND, ins->dreg, 0x34, 0);
+			x86_mov_reg_membase (code, ins->dreg, ins->dreg, 3600 + (ins->inst_offset * 4), 4);
+#else
 			x86_prefix (code, X86_GS_PREFIX);
 			x86_mov_reg_mem (code, ins->dreg, ins->inst_offset, 4);			
+#endif
 			break;
 		}
 		case OP_ATOMIC_ADD_I4: {
@@ -4179,8 +4192,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (lmf_tls_offset != -1) {
 			guint8 *buf;
 
+#ifdef PLATFORM_WIN32
+			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+			x86_prefix (code, X86_FS_PREFIX);
+			x86_mov_reg_mem (code, X86_EAX, 0x18, 4);
+			/* Dunno what this does but TlsGetValue () contains it */
+			x86_alu_membase_imm (code, X86_AND, X86_EAX, 0x34, 0);
+			x86_mov_reg_membase (code, X86_EAX, X86_EAX, 3600 + (lmf_tls_offset * 4), 4);
+			/* FIXME: Add a separate key for LMF to avoid this */
+			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#else
 			x86_prefix (code, X86_GS_PREFIX);
 			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
+#endif
 			x86_test_reg_reg (code, X86_EAX, X86_EAX);
 			buf = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
@@ -4218,8 +4242,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		 */
 		if (lmf_tls_offset != -1) {
 			/* Load lmf quicky using the GS register */
+#ifdef PLATFORM_WIN32
+			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+			x86_prefix (code, X86_FS_PREFIX);
+			x86_mov_reg_mem (code, X86_EAX, 0x18, 4);
+			/* Dunno what this does but TlsGetValue () contains it */
+			x86_alu_membase_imm (code, X86_AND, X86_EAX, 0x34, 0);
+			x86_mov_reg_membase (code, X86_EAX, X86_EAX, 3600 + (lmf_tls_offset * 4), 4);
+			/* FIXME: Add a separate key for LMF to avoid this */
+			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#else
 			x86_prefix (code, X86_GS_PREFIX);
 			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
+#endif
 		}
 		else {
 			if (cfg->compile_aot) {
@@ -4625,6 +4660,26 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	struct sigaltstack sa;
 #endif
 
+#ifdef PLATFORM_WIN32
+	/* 
+	 * We need to init this multiple times, since when we are first called, the key might not
+	 * be initialized yet.
+	 */
+	if (!getenv ("MONO_NO_TLS")) {
+		appdomain_tls_offset = mono_domain_get_tls_key ();
+		lmf_tls_offset = mono_get_jit_tls_key ();
+		thread_tls_offset = mono_thread_get_tls_key ();
+
+		/* Only 64 tls entries can be accessed using inline code */
+		if (appdomain_tls_offset >= 64)
+			appdomain_tls_offset = -1;
+		if (lmf_tls_offset >= 64)
+			lmf_tls_offset = -1;
+		if (thread_tls_offset >= 64)
+			thread_tls_offset = -1;
+	}
+#endif
+
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
 		if (!getenv ("MONO_NO_TLS")) {
@@ -4814,7 +4869,7 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	
 	if (appdomain_tls_offset == -1)
 		return NULL;
-	
+
 	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = appdomain_tls_offset;
 	return ins;
@@ -4823,10 +4878,10 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
 	MonoInst* ins;
-	
+
 	if (thread_tls_offset == -1)
 		return NULL;
-	
+
 	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = thread_tls_offset;
 	return ins;

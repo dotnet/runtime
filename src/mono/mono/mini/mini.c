@@ -7336,6 +7336,12 @@ mono_destroy_compile (MonoCompile *cfg)
 static __thread gpointer mono_lmf_addr MONO_TLS_FAST;
 #endif
 
+guint32
+mono_get_jit_tls_key (void)
+{
+	return mono_jit_tls_id;
+}
+
 gint32
 mono_get_lmf_tls_offset (void)
 {
