@@ -311,6 +311,13 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 }
 
 #define DEBUG_INTERP 0
+#if DEBUG_INTERP
+#define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
+static char *opcode_names[] = {
+#include "mono/cil/opcode.def"
+	NULL
+};
+#endif
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -347,7 +354,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	ip = mm->header->code;
 
 #if DEBUG_INTERP
+#define INDENT() { int h; for (h=0; h < level; ++h) g_print ("  "); }
 	level++;
+	INDENT();
+	g_print ("Entering %s\n", mh->name);
 #endif
 
 	/*
@@ -373,16 +383,22 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	while (1) {
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
-		{
-			int h;
-			for (h=0; h < level; ++h)
-				g_print ("\t");
-		}
-		g_print ("0x%04x %02x\n", ip-(unsigned char*)mm->header->code, *ip);
 		if (sp != stack){
-			printf ("[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type,
-				sp[-1].data.i, sp[-1].data.f);
+			stackval *s = stack;
+			INDENT(); g_print ("stack: ");
+			while (s < sp) {
+				switch (s->type) {
+				case VAL_I32: g_print ("[%d] ", s->data.i); break;
+				case VAL_I64: g_print ("[%lld] ", s->data.l); break;
+				case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
+				default: g_print ("[%p] ", s->data.p); break;
+				}
+				++s;
+			}
 		}
+		g_print ("\n");
+		INDENT();
+		g_print ("0x%04x: %s\n", ip-(unsigned char*)mm->header->code, *ip == 0xfe ? opcode_names [256 + ip [1]]: opcode_names [*ip]);
 #endif
 		
 		SWITCH (*ip) {
@@ -437,7 +453,13 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			++sp;
 			++ip;
 			BREAK;
-		CASE (CEE_LDLOCA_S) ves_abort(); BREAK;
+		CASE (CEE_LDLOCA_S)
+			++ip;
+			sp->type = VAL_TP;
+			sp->data.p = &locals [*ip];
+			++sp;
+			++ip;
+			BREAK;
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
@@ -518,7 +540,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			--sp;
 			BREAK;
 		CASE (CEE_JMP) ves_abort(); BREAK;
-		CASE (CEE_CALLVIRT)
+		CASE (CEE_CALLVIRT) /* Fall through */
 		CASE (CEE_CALL) {
 			MonoMethod *cmh;
 			guint32 token;
@@ -558,8 +580,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			if (sp > stack)
 				g_warning ("more values on stack: %d", sp-stack);
 
-			/*if (sp->type == VAL_DOUBLE)
-					g_print("%.9f\n", sp->data.f);*/
 			/*g_free (stack);*/
 #if DEBUG_INTERP
 			level--;
@@ -728,24 +748,92 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			}
 			BREAK;
 		}
-		CASE (CEE_LDIND_I1) ves_abort(); BREAK;
-		CASE (CEE_LDIND_U1) ves_abort(); BREAK;
-		CASE (CEE_LDIND_I2) ves_abort(); BREAK;
-		CASE (CEE_LDIND_U2) ves_abort(); BREAK;
-		CASE (CEE_LDIND_I4) ves_abort(); BREAK;
-		CASE (CEE_LDIND_U4) ves_abort(); BREAK;
-		CASE (CEE_LDIND_I8) ves_abort(); BREAK;
-		CASE (CEE_LDIND_I) ves_abort(); BREAK;
-		CASE (CEE_LDIND_R4) ves_abort(); BREAK;
-		CASE (CEE_LDIND_R8) ves_abort(); BREAK;
-		CASE (CEE_LDIND_REF) ves_abort(); BREAK;
-		CASE (CEE_STIND_REF) ves_abort(); BREAK;
-		CASE (CEE_STIND_I1) ves_abort(); BREAK;
-		CASE (CEE_STIND_I2) ves_abort(); BREAK;
-		CASE (CEE_STIND_I4) ves_abort(); BREAK;
-		CASE (CEE_STIND_I8) ves_abort(); BREAK;
-		CASE (CEE_STIND_R4) ves_abort(); BREAK;
-		CASE (CEE_STIND_R8) ves_abort(); BREAK;
+		CASE (CEE_LDIND_I1)
+			++ip;
+			sp[-1].type = VAL_I32;
+			sp[-1].data.i = *(gint8*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_U1)
+			++ip;
+			sp[-1].type = VAL_I32;
+			sp[-1].data.i = *(guint8*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_I2)
+			++ip;
+			sp[-1].type = VAL_I32;
+			sp[-1].data.i = *(gint16*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_U2)
+			++ip;
+			sp[-1].type = VAL_I32;
+			sp[-1].data.i = *(guint16*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_I4) /* Fall through */
+		CASE (CEE_LDIND_U4)
+			++ip;
+			sp[-1].type = VAL_I32;
+			sp[-1].data.i = *(gint32*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_I8)
+			++ip;
+			sp[-1].type = VAL_I64;
+			sp[-1].data.l = *(gint64*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_I)
+			++ip;
+			sp[-1].type = VAL_NATI;
+			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_R4)
+			++ip;
+			sp[-1].type = VAL_DOUBLE;
+			sp[-1].data.i = *(gfloat*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_R8)
+			++ip;
+			sp[-1].type = VAL_DOUBLE;
+			sp[-1].data.i = *(gdouble*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_LDIND_REF)
+			++ip;
+			sp[-1].type = VAL_OBJ;
+			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
+			BREAK;
+		CASE (CEE_STIND_REF)
+			++ip;
+			sp -= 2;
+			*(gpointer*)sp->data.p = sp[1].data.p;
+			BREAK;
+		CASE (CEE_STIND_I1)
+			++ip;
+			sp -= 2;
+			*(gint8*)sp->data.p = (gint8)sp[1].data.i;
+			BREAK;
+		CASE (CEE_STIND_I2)
+			++ip;
+			sp -= 2;
+			*(gint16*)sp->data.p = (gint16)sp[1].data.i;
+			BREAK;
+		CASE (CEE_STIND_I4)
+			++ip;
+			sp -= 2;
+			*(gint32*)sp->data.p = sp[1].data.i;
+			BREAK;
+		CASE (CEE_STIND_I8)
+			++ip;
+			sp -= 2;
+			*(gint64*)sp->data.p = sp[1].data.l;
+			BREAK;
+		CASE (CEE_STIND_R4)
+			++ip;
+			sp -= 2;
+			*(gfloat*)sp->data.p = (gfloat)sp[1].data.f;
+			BREAK;
+		CASE (CEE_STIND_R8)
+			++ip;
+			sp -= 2;
+			*(gdouble*)sp->data.p = sp[1].data.f;
+			BREAK;
 		CASE (CEE_ADD)
 			++ip;
 			--sp;
