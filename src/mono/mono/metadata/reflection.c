@@ -4128,8 +4128,10 @@ handle_type:
 		guint32 i, alen;
 		alen = read32 (p);
 		p += 4;
-		if (alen == 0xffffffff)
-			alen = 0;
+		if (alen == 0xffffffff) {
+			*end = p;
+			return NULL;
+		}
 		arr = mono_array_new (mono_domain_get(), mono_class_from_mono_type (t->data.type), alen);
 		switch (t->data.type->type)
 		{
