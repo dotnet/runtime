@@ -588,6 +588,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
 
+#ifndef PLATFORM_WIN32
 	/*
 	 * If we are P/Invoking a library from System.Windows.Forms, load Wine
 	 */
@@ -595,6 +596,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		mono_loader_wine_init ();
 		wine_test_needed = 0;
 	}
+#endif
 	
 	/*
 	 * Try loading the module using a variety of names
@@ -1104,6 +1106,7 @@ mono_method_get_last_managed (void)
 	return m;
 }
 
+#ifndef PLATFORM_WIN32
 /*
  * This routine exists to load and init Wine due to the special Wine
  * requirements: basically the SharedWineInit must be called before
@@ -1128,3 +1131,5 @@ mono_loader_wine_init ()
 
 	return;
 }
+#endif
+
