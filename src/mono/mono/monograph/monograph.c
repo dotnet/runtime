@@ -14,7 +14,7 @@ static FILE *output;
 static int include_namespace = 0;
 static int max_depth = 6;
 static int verbose = 0;
-static char *graph_properties = "\tnode [fontsize=8.0]\n\tedge [len=2,color=red]\n";
+static const char *graph_properties = "\tnode [fontsize=8.0]\n\tedge [len=2,color=red]\n";
 
 static void
 output_type_edge (MonoClass *first, MonoClass *second) {
@@ -26,7 +26,7 @@ output_type_edge (MonoClass *first, MonoClass *second) {
 
 static void
 print_subtypes (MonoImage *image, MonoClass *class, int depth) {
-	int i, index;
+	int i, token;
 	MonoTableInfo *t;
 	MonoClass *child;
 
@@ -35,13 +35,13 @@ print_subtypes (MonoImage *image, MonoClass *class, int depth) {
 
 	t = &image->tables [MONO_TABLE_TYPEDEF];
 	
-	index = mono_metadata_token_index (class->type_token);
-	index <<= TYPEDEFORREF_BITS;
-	index |= TYPEDEFORREF_TYPEDEF;
+	token = mono_metadata_token_index (class->type_token);
+	token <<= TYPEDEFORREF_BITS;
+	token |= TYPEDEFORREF_TYPEDEF;
 
 	/* use a subgraph? */
 	for (i = 0; i < t->rows; ++i) {
-		if (index == mono_metadata_decode_row_col (t, i, MONO_TYPEDEF_EXTENDS)) {
+		if (token == mono_metadata_decode_row_col (t, i, MONO_TYPEDEF_EXTENDS)) {
 			child = mono_class_get (image, MONO_TOKEN_TYPE_DEF | (i + 1));
 			output_type_edge (class, child);
 			print_subtypes (image, child, depth);
@@ -50,11 +50,11 @@ print_subtypes (MonoImage *image, MonoClass *class, int depth) {
 }
 
 static void
-type_graph (MonoImage *image, char* cname) {
+type_graph (MonoImage *image, const char* cname) {
 	MonoClass *class;
 	MonoClass *parent;
 	MonoClass *child;
-	char *name_space;
+	const char *name_space;
 	char *p;
 	int depth = 0;
 
@@ -85,13 +85,13 @@ type_graph (MonoImage *image, char* cname) {
 }
 
 static void
-interface_graph (MonoImage *image, char* cname) {
+interface_graph (MonoImage *image, const char* cname) {
 	MonoClass *class;
 	MonoClass *child;
-	char *name_space;
+	const char *name_space;
 	char *p;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
-	guint32 index, i, count = 0;
+	guint32 token, i, count = 0;
 	MonoTableInfo *intf = &image->tables [MONO_TABLE_INTERFACEIMPL];
 
 	cname = g_strdup (cname);
@@ -112,13 +112,13 @@ interface_graph (MonoImage *image, char* cname) {
 	fprintf (output, "digraph interface {\n");
 	fprintf (output, "%s", graph_properties);
 	/* TODO: handle inetrface defined in one image and class defined in another. */
-	index = mono_metadata_token_index (class->type_token);
-	index <<= TYPEDEFORREF_BITS;
-	index |= TYPEDEFORREF_TYPEDEF;
+	token = mono_metadata_token_index (class->type_token);
+	token <<= TYPEDEFORREF_BITS;
+	token |= TYPEDEFORREF_TYPEDEF;
 	for (i = 0; i < intf->rows; ++i) {
 		mono_metadata_decode_row (intf, i, cols, MONO_INTERFACEIMPL_SIZE);
 		/*g_print ("index: %d [%d implements %d]\n", index, cols [MONO_INTERFACEIMPL_CLASS], cols [MONO_INTERFACEIMPL_INTERFACE]);*/
-		if (index == cols [MONO_INTERFACEIMPL_INTERFACE]) {
+		if (token == cols [MONO_INTERFACEIMPL_INTERFACE]) {
 			child = mono_class_get (image, MONO_TOKEN_TYPE_DEF | cols [MONO_INTERFACEIMPL_CLASS]);
 			output_type_edge (class, child);
 			count++;
@@ -264,7 +264,7 @@ print_method (MonoMethod *method, int depth) {
 }
 
 static void
-method_graph (MonoImage *image, char *name) {
+method_graph (MonoImage *image, const char *name) {
 	int depth = 0;
 	MonoMethod *method = NULL;
 	
@@ -356,7 +356,8 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 	while (ip < end) {
 		start = ip;
 		if ((target = g_hash_table_lookup (table, ip)) && target != bb) {
-			link_bblock (bb, target);
+			if (!block_end)
+				link_bblock (bb, target);
 			bb = target;
 			block_end = FALSE;
 		}
@@ -444,11 +445,11 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 			break;
 		case MonoInlineSwitch: {
 			gint32 n;
-			char *itarget, *st;
+			const char *itarget, *st;
 			++ip;
 			n = read32 (ip);
 			ip += 4;
-			st = (char*)ip + 4 * n;
+			st = (const char*)ip + 4 * n;
 
 			for (i = 0; i < n; i++) {
 				itarget = st + read32 (ip);
@@ -574,9 +575,9 @@ print_method_cfg (MonoMethod *method) {
  * TODO: change to create the DF tree, dominance relation etc.
  */
 static void
-method_cfg (MonoImage *image, char *name) {
+method_cfg (MonoImage *image, const char *name) {
 	MonoMethod *method = NULL;
-	static char *cfg_graph_properties = "\tnode [fontsize=8.0]\n\tedge [len=1.5,color=red]\n";
+	const static char *cfg_graph_properties = "\tnode [fontsize=8.0]\n\tedge [len=1.5,color=red]\n";
 	
 	if (!name) {
 		guint32 token = ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
@@ -608,7 +609,7 @@ method_cfg (MonoImage *image, char *name) {
 }
 
 static void
-usage () {
+usage (void) {
 	printf ("monograph 0.2 Copyright (c) 2002 Ximian, Inc\n");
 	printf ("Create call graph or type hierarchy information from CIL assemblies.\n");
 	printf ("Usage: monograph [options] [assembly [typename|methodname]]\n");
@@ -657,8 +658,8 @@ enum {
 int
 main (int argc, char *argv[]) {
 	MonoAssembly *assembly;
-	char *cname = NULL;
-	char *aname = NULL;
+	const char *cname = NULL;
+	const char *aname = NULL;
 	char *outputfile = NULL;
 	int graphtype = GRAPH_TYPES;
 	int callneato = 0;
