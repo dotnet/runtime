@@ -604,8 +604,7 @@ MonoReflectionGenericParam *mono_reflection_define_generic_parameter (MonoReflec
 void mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam);
 
 MonoType*
-mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types,
-					 MonoType *nested_in);
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types, MonoType *nested_in);
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 void

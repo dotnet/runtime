@@ -6801,22 +6801,58 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 	return field;
 }
 
+static MonoType*
+bind_nested_generic_parameters (MonoReflectionTypeBuilder *ntype, int type_argc,
+				MonoType **types, MonoType *geninst)
+{
+	MonoType **ntypes;
+	int ntype_argc, j;
+
+	ntype_argc = ntype->generic_params ? mono_array_length (ntype->generic_params) : 0;
+
+	if (ntype_argc > type_argc) {
+		ntypes = g_new0 (MonoType *, ntype_argc);
+
+		for (j = 0; j < type_argc; j++)
+			ntypes [j] = types [j];
+
+		for (j = type_argc; j < ntype_argc; j++) {
+			MonoReflectionGenericParam *ngparam;
+			MonoType *pt = g_new0 (MonoType, 1);
+
+			ngparam = mono_array_get (ntype->generic_params, gpointer, j);
+
+			pt->type = MONO_TYPE_VAR;
+			pt->data.generic_param = ngparam->type.type->data.generic_param;
+
+			ntypes [j] = pt;
+		}
+	} else
+		ntypes = types;
+
+	return mono_reflection_bind_generic_parameters ((MonoReflectionType *) ntype, ntype_argc, ntypes, geninst);
+}
+
 MonoType*
-mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types,
-					 MonoType *nested_in)
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc,
+					 MonoType **types, MonoType *nested_in)
 {
 	MonoClass *klass, *pklass = NULL;
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericInst *ginst;
-	MonoType *geninst, *parent = NULL;
+	MonoReflectionType *parent = NULL;
+	MonoDomain *domain;
+	MonoType *geninst;
 	int icount, i;
 
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type (type->type);
 	if (!klass->gen_params && !klass->generic_inst &&
 	    !(klass->nested_in && klass->nested_in->gen_params))
 		return NULL;
 
 	mono_loader_lock ();
+
+	domain = mono_object_domain (type);
 
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->is_dynamic = 1;
@@ -6859,17 +6895,17 @@ mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType
 		return geninst;
 	}
 
-	if (klass->wastypebuilder && klass->reflection_info) {
-		tb = klass->reflection_info;
+	if (!strcmp (((MonoObject *) type)->vtable->klass->name, "TypeBuilder")) {
+		tb = (MonoReflectionTypeBuilder *) type;
 
 		if (tb->parent) {
-			parent = tb->parent->type;
-			pklass = mono_class_from_mono_type (parent);
+			parent = tb->parent;
+			pklass = mono_class_from_mono_type (parent->type);
 		}
 	} else {
 		pklass = klass->parent;
 		if (pklass)
-			parent = &pklass->byval_arg;
+			parent = mono_type_get_object (domain, &pklass->byval_arg);
 	}
 
 	geninst = g_new0 (MonoType, 1);
@@ -6877,7 +6913,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType
 	geninst->data.generic_inst = ginst;
 
 	if (pklass && pklass->generic_inst)
-		parent = mono_reflection_bind_generic_parameters (parent, type_argc, types, NULL);
+		ginst->parent = mono_reflection_bind_generic_parameters (parent, type_argc, types, NULL);
 
 	if (tb)
 		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
@@ -6886,47 +6922,26 @@ mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType
 	ginst->ifaces = g_new0 (MonoType *, icount);
 
 	for (i = 0; i < icount; i++) {
-		MonoType *itype;
+		MonoReflectionType *itype;
 
 		if (tb)
-			itype = mono_array_get (tb->interfaces, MonoReflectionType *, i)->type;
+			itype = mono_array_get (tb->interfaces, MonoReflectionType *, i);
 		else
-			itype = &klass->interfaces [i]->byval_arg;
+			itype = mono_type_get_object (domain, &klass->interfaces [i]->byval_arg);
 		ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, type_argc, types, NULL);
 		if (!ginst->ifaces [i])
-			ginst->ifaces [i] = itype;
+			ginst->ifaces [i] = itype->type;
 	}
 
-	ginst->parent = parent;
 	ginst->nested_in = nested_in;
 
 	if (tb) {
 		int ncount = tb->subtypes ? mono_array_length (tb->subtypes) : 0;
 		for (i = 0; i < ncount; i++) {
-			MonoType *ntype = mono_array_get (tb->subtypes, MonoReflectionType *, i)->type;
-			MonoClass *nclass = mono_class_from_mono_type (ntype);
+			MonoReflectionTypeBuilder *ntype = mono_array_get (tb->subtypes, gpointer, i);
+			MonoType *nested = bind_nested_generic_parameters (ntype, type_argc, types, geninst);
 
-			if (nclass->num_gen_params > type_argc) {
-				int j, ntype_argc = nclass->num_gen_params;
-				MonoType **ntypes = g_new0 (MonoType *, ntype_argc);
-
-				for (j = 0; j < type_argc; j++)
-					ntypes [j] = types [j];
-
-				for (j = type_argc; j < ntype_argc; j++) {
-					MonoType *pt = g_new0 (MonoType, 1);
-
-					pt->type = MONO_TYPE_VAR;
-					pt->data.generic_param = &nclass->gen_params [j];
-
-					ntypes [j] = pt;
-				}
-
-				ntype = mono_reflection_bind_generic_parameters (ntype, ntype_argc, ntypes, geninst);
-			} else
-				ntype = mono_reflection_bind_generic_parameters (ntype, type_argc, types, geninst);
-
-			ginst->nested = g_list_prepend (ginst->nested, ntype);
+			ginst->nested = g_list_prepend (ginst->nested, nested);
 		}
 	}
 
