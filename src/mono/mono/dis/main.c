@@ -815,6 +815,7 @@ struct {
 	{ "--event",       MONO_TABLE_EVENT,       dump_table_event },
 	{ "--file",        MONO_TABLE_FILE,        dump_table_file },
 	{ "--moduleref",   MONO_TABLE_MODULEREF,   dump_table_moduleref },
+	{ "--module",      MONO_TABLE_MODULE,      dump_table_module },
 	{ "--method",      MONO_TABLE_METHOD,      dump_table_method },
 	{ "--methodsem",   MONO_TABLE_METHODSEMANTICS,      dump_table_methodsem },
 	{ NULL, -1 }

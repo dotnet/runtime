@@ -431,6 +431,27 @@ dump_table_moduleref (MonoImage *m)
 }
 
 void
+dump_table_module (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_MODULE];
+	int i;
+	fprintf (output, "ModuleRef Table (1..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_MODULE_SIZE];
+		const char *name;
+		char *guid;
+		
+		mono_metadata_decode_row (t, i, cols, MONO_MODULE_SIZE);
+
+		name = mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]);
+		guid = get_guid (m, cols [MONO_MODULE_MVID]);
+		fprintf (output, "%d: %s %d %s\n", i + 1, name, cols [MONO_MODULE_MVID], guid);
+	}
+	
+}
+
+void
 dump_table_method (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];

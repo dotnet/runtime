@@ -1206,3 +1206,17 @@ get_token_type (MonoImage *m, guint32 token)
 
 	return s;
 }
+
+char *
+get_guid (MonoImage *m, guint32 guid_index)
+{
+	const unsigned char *guid;
+	char *result;
+
+	guid = mono_metadata_guid_heap (m, guid_index);
+
+	result = g_strdup_printf ("{%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}", 
+			guid [3], guid [2], guid [1], guid [0], guid [5], guid [4], guid [7], guid [6],
+			guid [8], guid [9], guid [10], guid [11], guid [12], guid [13], guid [14], guid [15]);
+	return result;
+}
