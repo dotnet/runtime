@@ -1944,6 +1944,44 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 }
 
 /*
+ * generates IL code for the icall wrapper (the generated method
+ * calls the unamnaged code in func)
+ */
+MonoMethod *
+mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gpointer func)
+{
+	MonoMethodSignature *csig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	int i, sigsize;
+
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+
+	mb->method->save_lmf = 1;
+
+	/* we copy the signature, so that we can modify it */
+	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
+
+	if (sig->hasthis)
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + sig->hasthis);
+
+	csig = g_memdup (sig, sigsize);
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, func);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+	mono_mb_free (mb);
+	
+	return res;
+}
+
+/*
  * generates IL code for the pinvoke wrapper (the generated method
  * calls the unamnage code in method->addr)
  */

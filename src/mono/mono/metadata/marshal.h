@@ -137,6 +137,9 @@ MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this);
 
 MonoMethod *
+mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gpointer func);
+
+MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method);
 
 MonoMethod *
