@@ -158,11 +158,15 @@
 	(which shipped in Mono 0.25).  This works using our ASP.NET
 	runtime, so it works with either XSP or the Apache module. The
 	new Web Services work from Lluis added the missing bits:
-	routing and Soap extensions (Our XSP module contains samples
-	of various Soap extensions being used).
+	<ul>
+		<li> .asmx files.
+		<li> Method calls with complex parameters (whatever XmlSerializer can currently serialize, which is a quite a lot).
+		<li> ref and out parameters.
+		<li> Soap headers (In, Out and InOut).
+		<li> Soap extensions, both global (configured in web.config) and particular to methods (configured using attributes).
+	</ul>
 
-	This missing piece in our ASP.NET implementation is now
-	completed, and we will start testing and debugging.  
+	For more details, see Lluis <a href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001449.html">post</a>
 
 	GUI-wise: Work on <a href="http://xr.xwin.org">Xr</a> to
 	implement System.Drawing continues.  This will provide a full
