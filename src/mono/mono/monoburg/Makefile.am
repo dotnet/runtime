@@ -2,14 +2,14 @@ INCLUDES = $(GLIB_CFLAGS)
 
 noinst_PROGRAMS = monoburg sample
 
-monoburg_SOURCES = parser.c monoburg.c monoburg.h sample.brg
+monoburg_SOURCES = parser.c monoburg.c monoburg.h
 
 sample_SOURCES = sample.c
 
 parser.c:  monoburg.y
 	bison monoburg.y -o parser.c
 
-sample.c: monoburg sample.brg
+sample.c: monoburg$(EXEEXT) sample.brg
 	./monoburg $(srcdir)/sample.brg >sample.c
 
 monoburg_LDADD = $(GLIB_LIBS)
@@ -20,5 +20,5 @@ BUILT_SOURCES = parser.c sample.c
 
 CLEANFILES = $(BUILT_SOURCES)
 
-EXTRA_DIST = ChangeLog monoburg.y
+EXTRA_DIST = ChangeLog monoburg.y sample.brg
 
