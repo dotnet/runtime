@@ -20,15 +20,17 @@
 void
 mono_set_rootdir (void)
 {
-	char moddir[MAXPATHLEN], *dir, *root;
+	char moddir[MAXPATHLEN], *bindir, *installdir, *root;
 
 	GetModuleFileName (NULL, moddir, sizeof(moddir));
-	dir = g_path_get_dirname (moddir);
-	root = g_strconcat (dir, "/../lib", NULL);
+	bindir = g_path_get_dirname (moddir);
+	installdir = g_path_get_dirname (bindir);
+	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
 	mono_assembly_setrootdir (root);
 	g_free (root);
-	g_free (dir);
+	g_free (installdir);
+	g_free (bindir);
 }
 
  
