@@ -368,8 +368,6 @@ guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
-
-	/* no ppc-specific optimizations yet */
 	*exclude_mask = 0;
 	return opts;
 }
@@ -1965,57 +1963,92 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_subx_imm (code, FALSE, ins->sreg2, ins->inst_imm, ins->dreg);
 			break;
 		case CEE_AND:
+			sparc_and (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_AND_IMM:
+			sparc_and_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
 			break;
 		case CEE_DIV:
+			sparc_sdiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case CEE_DIV_UN:
+			sparc_udiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_DIV_IMM:
+			sparc_sdiv_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
 			break;
 		case CEE_REM:
+			sparc_sdiv (code, FALSE, ins->sreg1, ins->sreg2, sparc_o7);
+			sparc_smul (code, FALSE, ins->sreg2, sparc_o7, sparc_o7);
+			sparc_sub (code, FALSE, sparc_o7, ins->sreg1, ins->dreg);
 			break;
 		case CEE_REM_UN:
+			sparc_udiv (code, FALSE, ins->sreg1, ins->sreg2, sparc_o7);
+			sparc_umul (code, FALSE, ins->sreg2, sparc_o7, sparc_o7);
+			sparc_sub (code, FALSE, sparc_o7, ins->sreg1, ins->dreg);
 			break;
 		case OP_REM_IMM:
+			sparc_sdiv_imm (code, FALSE, ins->sreg1, ins->inst_imm, sparc_o7);
+			sparc_smul_imm (code, FALSE, sparc_o7, ins->inst_imm, sparc_o7);
+			sparc_sub (code, FALSE, sparc_o7, ins->sreg1, ins->dreg);
 			break;
 		case CEE_OR:
 			sparc_or (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_OR_IMM:
+			sparc_set (code, ins->inst_imm, sparc_o7);
+			sparc_or (code, FALSE, ins->sreg2, sparc_o7, ins->dreg);
 			break;
 		case CEE_XOR:
 			sparc_xor (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_XOR_IMM:
+			sparc_set (code, ins->inst_imm, sparc_o7);
+			sparc_xor (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			break;
 		case CEE_SHL:
+			sparc_sll (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_SHL_IMM:
+			sparc_sll_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
 			break;
 		case CEE_SHR:
+			sparc_sra (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_SHR_IMM:
+			sparc_sra_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
 			break;
 		case OP_SHR_UN_IMM:
+			sparc_srl_imm (code, ins->sreg1, ins->inst_imm, ins->dreg);
 			break;
 		case CEE_SHR_UN:
+			sparc_srl (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case CEE_NOT:
+			/* can't use sparc_not */
+			sparc_xnor (code, FALSE, ins->sreg1, sparc_g0, ins->dreg);
 			break;
 		case CEE_NEG:
+			/* can't use sparc_neg */
+			sparc_sub (code, FALSE, sparc_g0, ins->sreg1, ins->dreg);
 			break;
 		case CEE_MUL:
+			sparc_smul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_MUL_IMM:
+			sparc_smul_imm (code, FALSE, ins->sreg1, ins->inst_imm, ins->dreg);
 			break;
 		case CEE_MUL_OVF:
+			/* FIXME: this isn't right, I don't think */
+			sparc_smul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case CEE_MUL_OVF_UN:
+			/* FIXME: This isn't right either */
+			sparc_umul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_ICONST:
 		case OP_SETREGIMM:
+			sparc_set (code, ins->inst_c0, ins->dreg);
 			break;
 		/*case OP_CLASS:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_CLASS, (gpointer)ins->inst_c0);
@@ -2027,6 +2060,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_U4:
 		case OP_MOVE:
 		case OP_SETREG:
+			sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
 			break;
 		case CEE_JMP:
 			g_assert_not_reached ();
@@ -2045,7 +2079,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-			//ppc_bl (code, 0);
+			sparc_call_simple (code, 0);
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
