@@ -80,6 +80,10 @@
   </tr>
 </table>
 
+@item Jul 15th, 2002
+
+	More progress on the ASP.NET front: user defined controls are now being rendered. 
+
 @item Jul 9th, 2002
 
 	Ajay was the first to notice <a
