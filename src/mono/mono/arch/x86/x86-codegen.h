@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.9 2001/09/18 07:26:43 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.10 2001/09/21 12:50:46 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -235,6 +235,11 @@ typedef union {
 /* 
  * TODO: memindex_emit 
  */
+
+#define x86_breakpoint(inst) \
+	do {	\
+		*(inst)++ = 0xcc;	\
+	} while (0)
 
 #define x86_prefix(inst,p) do { *(inst)++ =(unsigned char) (p); } while (0)
 

@@ -74,9 +74,9 @@ gint64 mono_lldiv  (gint64 a, gint64 b);
 
 # constatnts
 %term CONST_I4 CONST_R8
-%term LDLOC LDARG STLOC BR RET RETV ARG CALL
+%term LDLOC LDARG STLOC BR RET RETV ARG CALL BREAK
 %term ADD SUB MUL DIV
-%term BLT BEQ BGE BRTRUE BRFALSE BNE_UN
+%term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN  BLE BLE_UN BGT BGT_UN 
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8
 #
 # we start at stmt
@@ -289,6 +289,46 @@ stmt: BLT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	x86_branch32 (s->code, X86_CC_LT, tree->data.i - offset, TRUE); 
 }
 
+stmt: BLT_UN (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LT, tree->data.i - offset, FALSE); 
+}
+
+stmt: BLT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LT, tree->data.i - offset, FALSE); 
+}
+
+stmt: BGT (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GT, tree->data.i - offset, TRUE); 
+}
+
+stmt: BGT (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GT, tree->data.i - offset, TRUE); 
+}
+
 stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	guint8 *start = s->code;
 	gint32 offset;
@@ -349,6 +389,66 @@ stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	x86_branch32 (s->code, X86_CC_GE, tree->data.i - offset, TRUE);
 }
 
+stmt: BGE_UN (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GE, tree->data.i - offset, FALSE);
+}
+
+stmt: BGE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GE, tree->data.i - offset, FALSE);
+}
+
+stmt: BLE (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LE, tree->data.i - offset, TRUE);
+}
+
+stmt: BLE (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LE, tree->data.i - offset, TRUE);
+}
+
+stmt: BLE_UN (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LE, tree->data.i - offset, FALSE);
+}
+
+stmt: BLE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_LE, tree->data.i - offset, FALSE);
+}
+
 stmt: BRTRUE (reg) {
 	guint8 *start = s->code;
 	gint32 offset;
@@ -367,6 +467,10 @@ stmt: BRFALSE (reg) {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
+}
+
+stmt: BREAK {
+	x86_breakpoint (s->code);
 }
 
 stmt: RETV (reg) {

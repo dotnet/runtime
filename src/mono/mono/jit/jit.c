@@ -36,6 +36,25 @@ char *opcode_names [] = {
 };
 #undef OPDEF
 
+#define MAKE_CJUMP(name)                                                      \
+case CEE_##name:                                                              \
+case CEE_##name##_S:                                                          \
+{                                                                             \
+	int near_jump = *ip == CEE_##name##_S;                                \
+	++ip;                                                                 \
+	sp -= 2;                                                              \
+	t1 = ctree_new (MB_TERM_##name, 0, sp [0], sp [1]);                   \
+	if (near_jump)                                                        \
+		t1->data.i = cli_addr + 2 + (signed char) *ip;                \
+	else                                                                  \
+		t1->data.i = cli_addr + 5 + (gint32) read32 (ip);             \
+	t1->cli_addr = sp [0]->cli_addr;                                      \
+	ADD_TREE (t1);                                                        \
+	ip += near_jump ? 1: 4;		                                      \
+	break;                                                                \
+}
+
+
 /* Whether to dump the assembly code after genreating it */
 gboolean dump_asm    = FALSE;
 
@@ -487,6 +506,17 @@ mono_compile_method (MonoMethod *method)
 		guint32 cli_addr = ip - header->code;
 		switch (*ip) {
 
+		case CEE_NOP: 
+			++ip;
+			break;
+
+		case CEE_BREAK: 
+			++ip;
+			t1 = ctree_new_leaf (MB_TERM_BREAK, 0);
+			t1->cli_addr = cli_addr;
+			ADD_TREE (t1);
+			break;
+
 		case CEE_CALL: {
 			MonoMethodSignature *csig;
 			MonoMethod *cm;
@@ -692,70 +722,16 @@ mono_compile_method (MonoMethod *method)
 			ip += 4;
 			break;
 
-		case CEE_BLT:
-		case CEE_BLT_S: {
-			int near_jump = *ip == CEE_BLT_S;
-			++ip;
-			sp -= 2;
-			t1 = ctree_new (MB_TERM_BLT, 0, sp [0], sp [1]);
-			if (near_jump) 
-				t1->data.i = cli_addr + 2 + (signed char) *ip;
-			else 
-				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
-
-			t1->cli_addr = sp [0]->cli_addr;
-			ADD_TREE (t1);
-			ip += near_jump ? 1: 4;		
-			break;
-		}
-		case CEE_BNE_UN:
-		case CEE_BNE_UN_S: {
-			int near_jump = *ip == CEE_BNE_UN_S;
-			++ip;
-			sp -= 2;
-			t1 = ctree_new (MB_TERM_BNE_UN, 0, sp [0], sp [1]);
-			if (near_jump)
-				t1->data.i = cli_addr + 2 + (signed char) *ip;
-			else 
-				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
-
-			t1->cli_addr = sp [0]->cli_addr;
-			ADD_TREE (t1);
-			ip += near_jump ? 1: 4;		
-			break;
-		}
-		case CEE_BEQ:
-		case CEE_BEQ_S: {
-			int near_jump = *ip == CEE_BEQ_S;
-			++ip;
-			sp -= 2;
-			t1 = ctree_new (MB_TERM_BEQ, 0, sp [0], sp [1]);
-			if (near_jump)
-				t1->data.i = cli_addr + 2 + (signed char) *ip;
-			else 
-				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
-
-			t1->cli_addr = sp [0]->cli_addr;
-			ADD_TREE (t1);
-			ip += near_jump ? 1: 4;		
-			break;
-		}
-		case CEE_BGE:
-		case CEE_BGE_S: {
-			int near_jump = *ip == CEE_BGE_S;
-			++ip;
-			sp -= 2;
-			t1 = ctree_new (MB_TERM_BGE, 0, sp [0], sp [1]);
-			if (near_jump)
-				t1->data.i = cli_addr + 2 + (signed char) *ip;
-			else 
-				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
-
-			t1->cli_addr = sp [0]->cli_addr;
-			ADD_TREE (t1);
-			ip += near_jump ? 1: 4;		
-			break;
-		}
+		MAKE_CJUMP(BGT)
+		MAKE_CJUMP(BGT_UN)
+		MAKE_CJUMP(BLT)
+		MAKE_CJUMP(BLT_UN)
+		MAKE_CJUMP(BNE_UN)
+		MAKE_CJUMP(BEQ)
+		MAKE_CJUMP(BGE)
+		MAKE_CJUMP(BGE_UN)
+		MAKE_CJUMP(BLE)
+		MAKE_CJUMP(BLE_UN)
 
 		case CEE_BRTRUE:
 		case CEE_BRTRUE_S: {
