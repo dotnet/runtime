@@ -87,7 +87,7 @@ OBJECTS=									\
 	deploy/class-status-System.DirectoryServices.html			\
 	deploy/class-status-System.EnterpriseServices.html			\
 	deploy/class-status-System.Runtime.Remoting.html			\
-	deploy/class-status-Cscompmgd.html					\
+	deploy/class-status-cscompmgd.html					\
 	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html
 
 HTML_SOURCES = ../mono-roadmap.html
