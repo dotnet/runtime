@@ -16,7 +16,7 @@
 
 <pre>
 	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
-	cvs co -z3 mcs mono gtk-sharp
+	cvs -z3 co mcs mono gtk-sharp
 </pre>
 
 	That will get you the compiler and class libraries (mcs), the
@@ -30,7 +30,7 @@
 
 <pre>
 	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
-	cvs update -dP -z3 mcs mono gtk-sharp
+	cvs -z3 update -dP mcs mono gtk-sharp
 </pre>
 
 ** Thanks
