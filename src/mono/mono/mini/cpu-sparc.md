@@ -315,7 +315,7 @@ oparglist: src1:i len:64
 voidcall: len:64 clob:c
 voidcall_reg: src1:i len:64 clob:c
 voidcall_membase: src1:b len:64 clob:c
-fcall: dest:f len:42 clob:c
+fcall: dest:f len:64 clob:c
 fcall_reg: dest:f src1:i len:64 clob:c
 fcall_membase: dest:f src1:b len:64 clob:c
 lcall: dest:l len:42 clob:c
