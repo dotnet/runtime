@@ -2398,7 +2398,9 @@ handle_enum:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
+	case MONO_TYPE_ARRAY: 
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:   
 		return sizeof (gpointer);
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
