@@ -37,6 +37,8 @@ typedef struct {
 		*__p = (value);	\
 	} while (0)
 
+#define mono_string_chars(s) ((gushort*)(s)->c_str->vector)
+
 MonoObject *
 mono_object_new             (MonoClass *klass);
 

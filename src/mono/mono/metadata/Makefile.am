@@ -39,6 +39,8 @@ libmetadata_a_SOURCES = \
 	class.c		\
 	object.c	\
 	icall.c		\
+	decimal.c	\
+	decimal.h	\
 	threads.h	\
 	threads-types.h	\
 	$(THREAD_SOURCE)	\

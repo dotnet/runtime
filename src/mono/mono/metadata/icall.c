@@ -15,6 +15,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
+#include "decimal.h"
 
 static MonoObject *
 ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
@@ -213,6 +214,24 @@ static gpointer icall_map [] = {
 	 * System.AppDomain
 	 */
 	"System.AppDomain::getCurDomain", ves_icall_app_get_cur_domain,
+
+	/*
+	 * System.Decimal
+	 */
+	"System.Decimal::decimal2UInt64", mono_decimal2UInt64,
+	"System.Decimal::decimal2Int64", mono_decimal2Int64,
+	"System.Decimal::double2decimal", mono_double2decimal, /* FIXME: wrong signature. */
+	"System.Decimal::decimalIncr", mono_decimalIncr,
+	"System.Decimal::decimalSetExponent", mono_decimalSetExponent,
+	"System.Decimal::decimal2double", mono_decimal2double,
+	"System.Decimal::decimalFloorAndTrunc", mono_decimalFloorAndTrunc,
+	"System.Decimal::decimalRound", mono_decimalRound,
+	"System.Decimal::decimalMult", mono_decimalMult,
+	"System.Decimal::decimalDiv", mono_decimalDiv,
+	"System.Decimal::decimalIntDiv", mono_decimalIntDiv,
+	"System.Decimal::decimalCompare", mono_decimalCompare,
+	"System.Decimal::string2decimal", mono_string2decimal,
+	"System.Decimal::decimal2string", mono_decimal2string,
 
 	/*
 	 * ModuleBuilder
