@@ -1238,6 +1238,9 @@ mono_profiler_install_simple (const char *desc)
 
 	MONO_TIMER_STARTUP;
 
+	if (!desc)
+		desc = "alloc,time";
+
 	if (desc) {
 		/* Parse options */
 		if (strstr (desc, ":"))
