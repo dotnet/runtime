@@ -9081,7 +9081,8 @@ print_jit_stats (void)
 		g_print ("VTable data size:       %ld\n", mono_stats.class_vtable_size);
 
 		g_print ("\nGeneric instances:      %ld\n", mono_stats.generic_instance_count);
-		g_print ("Inflated methods:       %ld\n", mono_stats.inflated_method_count);
+		g_print ("Inflated methods:       %ld / %ld\n", mono_stats.inflated_method_count_2,
+			 mono_stats.inflated_method_count);
 		g_print ("Inflated types:         %ld\n", mono_stats.inflated_type_count);
 		g_print ("Generics metadata size: %ld\n", mono_stats.generics_metadata_size);
 	}
