@@ -150,6 +150,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_primitive_byref_delegate")]
 	public static extern int mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate d);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_delegate_delegate")]
+	public static extern int mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d);
+
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
 
 	public delegate SimpleStruct SimpleDelegate2 (SimpleStruct ss);
@@ -167,6 +170,8 @@ public class Tests {
 	public delegate int SimpleDelegate9 (return_int_delegate del);
 
 	public delegate int PrimitiveByrefDelegate (ref int i);
+
+	public delegate return_int_delegate ReturnDelegateDelegate ();
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -278,4 +283,13 @@ public class Tests {
 
 		return mono_test_marshal_primitive_byref_delegate (d);
 	}
+
+	public static return_int_delegate return_delegate () {
+		return new return_int_delegate (return_self);
+	}
+
+	static int test_55_marshal_return_delegate_delegate () {
+		return mono_test_marshal_return_delegate_delegate (new ReturnDelegateDelegate (return_delegate));
+	}
+
 }

@@ -2576,6 +2576,14 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 			klass = sig->ret->data.klass;
 
+			if (klass->delegate) {
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_DEL_FTN);
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+				break;
+			}
+
 			/* FIXME: Raise a MarshalDirectiveException here */
 			g_assert ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT);
 
