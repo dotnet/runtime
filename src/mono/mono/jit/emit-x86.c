@@ -581,6 +581,11 @@ mono_emit_cfg (MonoFlowGraph *cfg)
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
 			tree_emit (1, cfg, t1);
+
+			/* debug infos 
+			if (t1->cli_addr >= 0)
+				printf ("CLIADDR: %IL%05x %p\n", t1->cli_addr, cfg->start + t1->addr);
+			*/
 		}
 	}
 		
@@ -853,6 +858,13 @@ arch_compile_method (MonoMethod *method)
 			method->klass->name, method->name, method, method->addr);
 	}
 
+	/*
+	{
+		static int x = 0;
+		if (!strcmp (method->klass->name, "String") && !strcmp (method->name, "ToCharArray"))
+			if (x++) exit (0);
+	}
+	*/
 	return method->addr;
 }
 

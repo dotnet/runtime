@@ -50,6 +50,7 @@ struct _MBTree {
 	gpointer  emit;
 
 	gint32    addr;
+	gint32    cli_addr;
 
 	unsigned      is_jump:1;
 	unsigned      last_instr:1;
@@ -519,13 +520,18 @@ reg: LDIND_U4 (addr) {
 	PRINT_REG ("LDIND_U4", tree->reg1);
 }
 
+
 locaddr: ADDR_L 10 {
 	tree->data.i = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
 }
 
-reg: ADDR_L 1 {
+reg: ADDR_L 5 {
 	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;  
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
+}
+
+reg: ADDR_G 5 {
+	x86_mov_reg_imm (s->code, tree->reg1, tree->data.p);
 }
 
 reg: CONV_I1 (reg) {
@@ -2268,6 +2274,7 @@ mono_ctree_new (MonoMemPool *mp, int op, MBTree *left, MBTree *right)
 	t->reg1 = -1;
 	t->reg2 = -1;
 	t->svt = VAL_UNKNOWN;
+	t->cli_addr = -1;
 	return t;
 }
 

@@ -67,7 +67,7 @@ case CEE_##name##_S: {                                                        \
 	create_outstack (cfg, bb, stack, sp - stack);                         \
 	mark_reached (cfg, tbb, bb->outstack, bb->outdepth);                  \
 	t1->data.p = tbb;                                                     \
-	ADD_TREE (t1);                                                        \
+	ADD_TREE (t1, cli_addr);                                                        \
 	ip += near_jump ? 1: 4;		                                      \
 	break;                                                                \
 }
@@ -91,7 +91,7 @@ case CEE_##name: {                                                            \
         t1->svt = sp [0]->svt;                                                \
         t1 = mono_store_tree (cfg, -1, t1, &t2);                              \
         g_assert (t1);                                                        \
-        ADD_TREE (t1);                                                        \
+        ADD_TREE (t1, cli_addr);                                                        \
 	PUSH_TREE (t2, t2->svt);                                              \
 	break;                                                                \
 }
@@ -126,7 +126,7 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, op, sp [0], sp [1]);                         \
-	ADD_TREE (t1);                                                        \
+	ADD_TREE (t1, cli_addr);                                                        \
 	break;                                                                \
 }
 
@@ -142,7 +142,7 @@ case CEE_##name: {                                                            \
         t2 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t2);                    \
 	t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);                        \
 	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
-	ADD_TREE (t1);                                                        \
+	ADD_TREE (t1, cli_addr);                                                        \
 	break;                                                                \
 }
 	
@@ -1357,7 +1357,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 	return mono_array_new_full (cm->klass, lengths, lower_bounds);
 }
 
-#define ADD_TREE(t)     do { g_ptr_array_add (forest, (t)); } while (0)
+#define ADD_TREE(t,a)   do { t->cli_addr = a; g_ptr_array_add (forest, (t)); } while (0)
 #define PUSH_TREE(t,k)  do { *sp = t; sp++; t->svt = k; } while (0)
 
 #define LOCAL_POS(n)    (1 + n)
@@ -1390,7 +1390,7 @@ create_outstack (MonoFlowGraph *cfg, MonoBBlock *bb, MBTree **stack, int depth)
 	
 	for (i = 0; i < depth; i++) {
 		if ((t1 = mono_store_tree (cfg, i, c [i], &t2)))
-			ADD_TREE (t1);
+			ADD_TREE (t1, -1);
 		bb->outstack [i] = t2;
 	}
 }
@@ -1579,7 +1579,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip++;
 			
 			t1 = mono_ctree_new (mp, MB_TERM_THROW, *sp, NULL);
-			ADD_TREE (t1);		
+			ADD_TREE (t1, cli_addr);		
 			superblock_end = TRUE;
 			break;
 		}
@@ -1600,7 +1600,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1 = mono_store_tree (cfg, -1, t1, &t3);
 			g_assert (t1);
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 
 			t1 = ctree_create_dup (mp, t3);
 			t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -1608,7 +1608,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);
 
 			t1 = mono_ctree_new (mp, map_stvalue_type (c), t1, *sp);
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 
 			PUSH_TREE (t3, VAL_POINTER);
 
@@ -1771,7 +1771,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
 			t1 = ctree_create_store (mp, MB_TERM_ADDR_G, *sp, field->type, addr);
 
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			break;
 		}
 		case CEE_STFLD: {
@@ -1805,7 +1805,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
 			t1 = mono_ctree_new (mp, map_stind_type (field->type), t1, sp [1]);
 
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			break;
 		}
 		case CEE_LDELEMA: {
@@ -1844,7 +1844,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_BREAK: { 
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BREAK);
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			break;
 		} 
 		case CEE_SWITCH: {
@@ -1880,7 +1880,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				jt [i] = tbb; 
 			}
 
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			break;
 		}
 		case CEE_LDTOKEN: {
@@ -1924,7 +1924,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			sp -= 2;
 
 			t1 = mono_ctree_new (mp, MB_TERM_CPOBJ, sp [0], sp [1]);
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			
 			break;
 		}
@@ -1965,12 +1965,12 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_store_tree (cfg, -1, this, &this);
 				g_assert (t1);
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 			}
 
 			for (i = csig->param_count - 1; i >= 0; i--) {
 				t1 = mono_ctree_new (mp, MB_TERM_ARG, arg_sp [i], NULL);	
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 				size = mono_type_size (cm->signature->params [i], &align);
 				args_size += (size + 3) & ~3;
 			}
@@ -1989,7 +1989,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_store_tree (cfg, -1, t1, &t2);
 				g_assert (t1);
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 				PUSH_TREE (t2, t2->svt);
 
 			} else {
@@ -2005,7 +2005,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.p = ci;
 				t1->svt = svt;
 
-				ADD_TREE (t1);			
+				ADD_TREE (t1, cli_addr);			
 				t1 = ctree_create_dup (mp, this);		
 				PUSH_TREE (t1, t1->svt);
 
@@ -2068,7 +2068,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				} else {
 					t1 = mono_ctree_new (mp, MB_TERM_ARG, arg_sp [i], NULL);
 				}	
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 				size = mono_type_size (cm->signature->params [i], &align);
 				args_size += (size + 3) & ~3;
 
@@ -2110,7 +2110,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new (mp, map_store_svt_type (svt), t2, t1);
 				t1->svt = svt;
 
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 				t1 = ctree_create_dup (mp, t1);
 				PUSH_TREE (t1, t1->svt);
 
@@ -2123,7 +2123,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.p = ci;
 
 				t1 = mono_ctree_new (mp, map_stind_type (csig->params [nargs]), t1, arg_sp [nargs]);
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 			
 			} else {
 
@@ -2155,18 +2155,18 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				if (csig->ret->type != MONO_TYPE_VOID) {
 
 					if (vtype_num) {
-						ADD_TREE (t1);
+						ADD_TREE (t1, cli_addr);
 						t1 = mono_ctree_new_leaf (mp, MB_TERM_VTYPE);
 						t1->data.i = vtype_num;
 						PUSH_TREE (t1, VAL_UNKNOWN); 
 					} else {
 						t1 = mono_store_tree (cfg, -1, t1, &t2);
 						g_assert (t1);
-						ADD_TREE (t1);
+						ADD_TREE (t1, cli_addr);
 						PUSH_TREE (t2, t2->svt);
 					}
 				} else
-					ADD_TREE (t1);
+					ADD_TREE (t1, cli_addr);
    
 			}
 
@@ -2296,7 +2296,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (n), 
 						 (gpointer)LOCAL_POS (n));
 
-			ADD_TREE (t1);			
+			ADD_TREE (t1, cli_addr);			
 			break;
 		}
 		case CEE_STLOC_S: {
@@ -2307,7 +2307,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 						 (gpointer)LOCAL_POS (*ip));
 			++ip;
 
-			ADD_TREE (t1);			
+			ADD_TREE (t1, cli_addr);			
 			break;
 		}
 
@@ -2395,7 +2395,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			++ip;
 
 			superblock_end = TRUE;
@@ -2415,7 +2415,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		      
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			ip += 4;
 
 			superblock_end = TRUE;
@@ -2440,12 +2440,12 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				mark_reached (cfg, hb, NULL, 0);
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_HANDLER);
 				t1->data.p = hb;
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 			}
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.p = tbb;
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			
 			++ip;
 
@@ -2487,7 +2487,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
   
 			t1->data.p = tbb;
 			ip += near_jump ? 1: 4;
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			break;
 		}
 		case CEE_BRFALSE:
@@ -2512,7 +2512,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		    
 			t1->data.p = tbb;
 			ip += near_jump ? 1: 4;
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			break;
 		}
 		case CEE_RET: {
@@ -2527,7 +2527,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1->last_instr = (ip == end);
 
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 
 			if (sp > stack) {
 				g_warning ("more values on stack at IL_%04x: %d",  ip - header->code, sp - stack);
@@ -2541,7 +2541,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip++;
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ENDFINALLY);
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 			t1->last_instr = FALSE;
 
 			g_assert (sp == stack);
@@ -2588,7 +2588,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 						 (gpointer)ARG_POS (*ip));
 			++ip;
 
-			ADD_TREE (t1);			
+			ADD_TREE (t1, cli_addr);			
 			break;
 		}
 		case CEE_DUP: {
@@ -2598,7 +2598,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			 * with the current slot instead of -1 
 			 */
 			if ((t2 = mono_store_tree (cfg, -1, *sp, &t1)) != NULL)
-				ADD_TREE (t2);
+				ADD_TREE (t2, cli_addr);
 
 			PUSH_TREE (t1, t1->svt);
 			t1 = ctree_create_dup (mp, t1);		
@@ -2611,7 +2611,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			--sp;
 
 			t1 = mono_ctree_new (mp, MB_TERM_POP, *sp, NULL);
-			ADD_TREE (t1);
+			ADD_TREE (t1, cli_addr);
 
 			break;
 		}
@@ -2697,7 +2697,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				++ip;
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_RETHROW);
 				t1->data.i = mono_allocate_excvar (cfg);
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 				break;
 			}
 			case CEE_LDFTN: {
@@ -2731,7 +2731,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 				t1 = mono_ctree_new (mp, MB_TERM_INITOBJ, *sp, NULL);
 				t1->data.i = mono_class_value_size (class, NULL);
-				ADD_TREE (t1);
+				ADD_TREE (t1, cli_addr);
 
 				break;
 			}

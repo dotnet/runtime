@@ -4,5 +4,6 @@ Makefile.in
 .libs
 .deps
 testjit
+mono
 codegen-x86.c
 codegen.h
