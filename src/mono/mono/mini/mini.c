@@ -7861,10 +7861,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 }
 
 static gpointer
-mono_jit_compile_method_inner (MonoMethod *method)
+mono_jit_compile_method_inner (MonoMethod *method, MonoDomain** code_domain)
 {
-	/* FIXME: later copy the code from mono */
-	MonoDomain *target_domain, *domain = mono_domain_get ();
+	MonoDomain *target_domain = *code_domain;
 	MonoCompile *cfg;
 	GHashTable *jit_code_hash;
 	gpointer code;
@@ -7872,16 +7871,12 @@ mono_jit_compile_method_inner (MonoMethod *method)
 
 	opt = default_opt;
 
-	if (opt & MONO_OPT_SHARED)
-		target_domain = mono_root_domain;
-	else 
-		target_domain = domain;
-
 	jit_code_hash = target_domain->jit_code_hash;
 
 #ifdef MONO_USE_AOT_COMPILER
 	if (!mono_compile_aot && (opt & MONO_OPT_AOT)) {
 		MonoJitInfo *info;
+		MonoDomain *domain = mono_domain_get ();
 
 		mono_domain_lock (domain);
 
@@ -7892,9 +7887,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 
 			mono_domain_unlock (domain);
 
-			/* make sure runtime_init is called */
-			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
-
+			*code_domain = domain;
 			return info->code_start;
 		}
 
@@ -7970,8 +7963,6 @@ mono_jit_compile_method_inner (MonoMethod *method)
 			mono_arch_patch_code (NULL, target_domain, tmp->data, &patch_info, TRUE);
 		g_slist_free (list);
 	}
-	/* make sure runtime_init is called */
-	mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
 
 	return code;
 }
@@ -7980,7 +7971,7 @@ static gpointer
 mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 {
 	/* FIXME: later copy the code from mono */
-	MonoDomain *target_domain, *domain = mono_domain_get ();
+	MonoDomain *target_domain, *code_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
 	gpointer code;
 
@@ -7996,13 +7987,25 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
+			mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
 			return info->code_start;
 		}
 	}
 
-	code = mono_jit_compile_method_inner (method);
+	code_domain = target_domain;
+	code = mono_jit_compile_method_inner (method, &code_domain);
 
 	mono_domain_unlock (target_domain);
+
+	if (code != NULL) {
+		/* make sure runtime_init is called */
+		/* 
+		 * this should be done outside the domain lock, since it might
+		 * cause an exception, and stack unwinding can't release unmanaged
+		 * locks yet.
+		 */
+		mono_runtime_class_init (mono_class_vtable (code_domain, method->klass));
+	}
 
 	return code;
 }
