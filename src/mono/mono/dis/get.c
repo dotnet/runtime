@@ -879,7 +879,8 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	char *allocated_ret_type, *s;
 	gboolean seen_vararg = 0;
 	int param_count, signature_len;
-	int i;
+	int i, gen_count = 0;
+	int cconv;
 	
 	signature_len = mono_metadata_decode_value (ptr, &ptr);
 
@@ -892,12 +893,18 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 
 	if (*ptr & 0x05)
 		seen_vararg = 1;
-
+	if (*ptr & 0x10)
+		gen_count = 1;
+	cconv = *ptr & 0x0f;
 	ptr++;
+	if (gen_count)
+		gen_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
-	ptr = get_ret_type (m, ptr, &allocated_ret_type);
-
-	g_string_append (res, allocated_ret_type);
+	if (cconv != 0xa) {
+		ptr = get_ret_type (m, ptr, &allocated_ret_type);
+		g_string_append (res, allocated_ret_type);
+		g_free (allocated_ret_type);
+	}
 
 	if (fancy_name){
 		g_string_append_c (res, ' ');
@@ -932,7 +939,6 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	/*
 	 * cleanup and return
 	 */
-	g_free (allocated_ret_type);
 	s = res->str;
 	g_string_free (res, FALSE);
 	return s;
@@ -1048,7 +1054,6 @@ get_method (MonoImage *m, guint32 token)
 		return sig;
 		
 	case MONO_TOKEN_MEMBER_REF: {
-		
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 					  idx - 1, member_cols, MONO_MEMBERREF_SIZE);
 		if (!name)
@@ -1059,7 +1064,17 @@ get_method (MonoImage *m, guint32 token)
 			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
 		return sig;
 	}
-	       
+	case MONO_TOKEN_METHOD_SPEC: {
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC], idx - 1, member_cols, MONO_METHODSPEC_SIZE);
+		token = member_cols [MONO_METHODSPEC_METHOD];
+		if ((token & METHODDEFORREF_MASK) == METHODDEFORREF_METHODDEF)
+			token = MONO_TOKEN_METHOD_DEF | (token >> METHODDEFORREF_BITS);
+		else
+			token = MONO_TOKEN_MEMBER_REF | (token >> METHODDEFORREF_BITS);
+		return get_method (m, token);
+
+	}
+
 	default:
 		g_assert_not_reached ();
 	}

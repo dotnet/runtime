@@ -432,6 +432,8 @@ get_manifest_implementation (MonoImage *m, guint32 idx)
 		table = "assemblyref";
 		break;
 	case IMPLEMENTATION_EXP_TYPE:
+		table = "exportedtype";
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -799,6 +801,11 @@ handle_enum:
 			break;
 		case MONO_TYPE_CLASS: /* It must be a Type: check? */
 		case MONO_TYPE_STRING:
+			if (*p == (char)0xff) {
+				g_string_append (res, "null");
+				p++;
+				break;
+			}
 			slen = mono_metadata_decode_value (p, &p);
 			g_string_append_c (res, '"');
 			g_string_append (res, p);
@@ -892,13 +899,16 @@ dump_table_exported (MonoImage *m)
 	guint32 cols [MONO_EXP_TYPE_SIZE];
 	int i;
 	const char *name, *nspace;
+	char *impl;
 	fprintf (output, "ExportedType Table (1..%d)\n", t->rows);
 
 	for (i = 1; i <= t->rows; i++) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_EXP_TYPE_SIZE);
 		name = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAME]);
 		nspace = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAMESPACE]);
-		fprintf (output, "%d: %s %s\n", i, name, nspace);
+		impl = get_manifest_implementation (m, cols [MONO_EXP_TYPE_IMPLEMENTATION]);
+		fprintf (output, "%d: %s.%s is in %s\n", i, nspace, name, impl);
+		g_free (impl);
 	}
 	
 }
@@ -1014,21 +1024,16 @@ dump_table_methodspec (MonoImage *m)
 	fprintf (output, "MethodSpec (1..%d)\n", t->rows);
 
 	for (i = 1; i <= t->rows; i++) {
-		const char *sigblob;
-		MonoMethodSignature *method_sig;
 		char *sig;
 		char *method;
 		
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODSPEC_SIZE);
 
 		method = get_method (m, method_dor_to_token (cols [MONO_METHODSPEC_METHOD]));
-		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHODSPEC_SIGNATURE]);
-		method_sig = mono_metadata_parse_method_signature (m, i, sigblob, &sigblob);
-		sig = dis_stringify_method_signature (m, method_sig, i);
+		sig = get_methodref_signature (m, cols [MONO_METHODSPEC_SIGNATURE], NULL);
 		fprintf (output, "%d: %s, %s\n", i, method, sig);
 		g_free (sig);
 		g_free (method);
-		mono_metadata_free_method_signature (method_sig);
 	}
 }
 
