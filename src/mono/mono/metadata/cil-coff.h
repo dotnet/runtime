@@ -29,7 +29,10 @@
 
 /* 128 bytes */
 typedef struct {
-	char    msdos_header [60];
+	char    msdos_sig [2];
+	guint16 nlast_page;
+	guint16 npages;
+	char    msdos_header [54];
 	guint32 pe_offset;
 	char    msdos_header2 [64];
 } MonoMSDOSHeader;

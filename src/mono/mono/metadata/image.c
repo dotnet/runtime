@@ -414,7 +414,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	if (fread (&msdos, sizeof (msdos), 1, image->f) != 1)
 		goto invalid_image;
 	
-	if (!(msdos.msdos_header [0] == 'M' && msdos.msdos_header [1] == 'Z'))
+	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z'))
 		goto invalid_image;
 	
 	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);

@@ -217,14 +217,34 @@ typedef struct {
 	MonoBoolean init_locals;
 } MonoReflectionMethodBuilder;
 
+enum {
+	MONO_SECTION_TEXT,
+	MONO_SECTION_RSRC,
+	MONO_SECTION_RELOC,
+	MONO_SECTION_MAX
+};
+
 typedef struct {
 	MonoAssembly assembly;
 	guint32 meta_size;
 	guint32 text_rva;
 	guint32 metadata_rva;
+	guint32 image_base;
+	guint32 cli_header_offset;
+	guint32 iat_offset;
+	guint32 idt_offset;
+	guint32 ilt_offset;
+	guint32 imp_names_offset;
+	struct {
+		guint32 rva;
+		guint32 size;
+		guint32 offset;
+		guint32 attrs;
+	} sections [MONO_SECTION_MAX];
 	GHashTable *typeref;
 	GHashTable *handleref;
 	MonoGHashTable *token_fixups;
+	MonoDynamicStream pefile;
 	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
 	MonoDynamicStream us;
@@ -358,7 +378,7 @@ char*         mono_type_get_name         (MonoType *type);
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
 
-int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
+void          mono_image_create_pefile (MonoReflectionAssemblyBuilder *assembly);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObject *obj);

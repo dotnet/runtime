@@ -31,6 +31,7 @@
 #define TEXT_OFFSET 512
 #define CLI_H_SIZE 136
 #define FILE_ALIGN 512
+#define VIRT_ALIGN 8192
 #define START_TEXT_RVA  0x00002000
 
 typedef struct {
@@ -167,6 +168,20 @@ mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32
 	 * align index? Not without adding an additional param that controls it since
 	 * we may store a blob value in pieces.
 	 */
+	return idx;
+}
+
+static guint32
+mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
+{
+	guint32 idx;
+	if (stream->alloc_size < stream->index + len) {
+		stream->alloc_size += len + 4096;
+		stream->data = g_realloc (stream->data, stream->alloc_size);
+	}
+	memset (stream->data + stream->index, 0, len);
+	idx = stream->index;
+	stream->index += len;
 	return idx;
 }
 
@@ -423,7 +438,7 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 		if (mb->ilgen && mb->ilgen->num_token_fixups)
 			mono_g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 1));
 		mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
-		return assembly->text_rva + idx + CLI_H_SIZE;
+		return assembly->text_rva + idx;
 	} 
 fat_header:
 	if (num_locals)
@@ -496,7 +511,7 @@ fat_header:
 			}
 		}
 	}
-	return assembly->text_rva + idx + CLI_H_SIZE;
+	return assembly->text_rva + idx;
 }
 
 static guint32
@@ -931,7 +946,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 		 * We store it in the code section because it's simpler for now.
 		 */
 		rva_idx = mono_image_add_stream_data (&assembly->code, mono_array_addr (fb->rva_data, char, 0), mono_array_length (fb->rva_data));
-		values [MONO_FIELD_RVA_RVA] = rva_idx + assembly->text_rva + CLI_H_SIZE;
+		values [MONO_FIELD_RVA_RVA] = rva_idx + assembly->text_rva;
 	}
 	mono_image_add_cattrs (assembly, fb->table_idx, CUSTOM_ATTR_FIELDDEF, fb->cattrs);
 }
@@ -1503,7 +1518,12 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
-	const char *version = "mono" VERSION;
+	/*
+	 * We need to use the current ms version or the ms runtime it won't find
+	 * the support dlls. D'oh!
+	 * const char *version = "mono-" VERSION;
+	 */
+	const char *version = "v1.0.3705";
 	struct StreamDesc {
 		const char *name;
 		MonoDynamicStream *stream;
@@ -1563,7 +1583,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	p += 8;
 	/* version string */
 	int32val = (guint32*)p;
-	*int32val = GUINT32_TO_LE (strlen (version));
+	*int32val = GUINT32_TO_LE ((strlen (version) + 3) & (~3)); /* needs to be multiple of 4 */
 	p += 4;
 	memcpy (p, version, GUINT32_FROM_LE (*int32val));
 	p += GUINT32_FROM_LE (*int32val);
@@ -1902,6 +1922,19 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	return 0;
 }
 
+typedef struct {
+	guint32 import_lookup_table;
+	guint32 timestamp;
+	guint32 forwarder;
+	guint32 name_rva;
+	guint32 import_address_table_rva;
+} MonoIDT;
+
+typedef struct {
+	guint32 name_rva;
+	guint32 flags;
+} MonoILT;
+
 /*
  * mono_image_basic_ini:
  * @assembly: an assembly builder object
@@ -1912,6 +1945,7 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 void
 mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
+	static const guchar entrycode [16] = {0xff, 0x25, 0};
 	MonoDynamicAssembly *assembly;
 	MonoImage *image;
 	int i;
@@ -1932,6 +1966,17 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);
 	mono_image_add_stream_data (&assembly->blob, "", 1);
+	/* import tables... */
+	mono_image_add_stream_data (&assembly->code, entrycode, sizeof (entrycode));
+	assembly->iat_offset = mono_image_add_stream_zero (&assembly->code, 8); /* two IAT entries */
+	assembly->idt_offset = mono_image_add_stream_zero (&assembly->code, 2 * sizeof (MonoIDT)); /* two IDT entries */
+	mono_image_add_stream_zero (&assembly->code, 2); /* flags for name entry */
+	assembly->imp_names_offset = mono_image_add_stream_data (&assembly->code, "_CorExeMain", 12);
+	mono_image_add_stream_data (&assembly->code, "mscoree.dll", 12);
+	assembly->ilt_offset = mono_image_add_stream_zero (&assembly->code, 8); /* two ILT entries */
+	stream_data_align (&assembly->code);
+
+	assembly->cli_header_offset = mono_image_add_stream_zero (&assembly->code, sizeof (MonoCLIHeader));
 
 	for (i=0; i < 64; ++i) {
 		assembly->tables [i].next_idx = 1;
@@ -1953,45 +1998,50 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	
 }
 
-typedef struct {
-	guint32 import_lookup_table;
-	guint32 timestamp;
-	guint32 forwarder;
-	guint32 name_rva;
-	guint32 import_address_table_rva;
-} MonoIDT;
+static int
+calc_section_size (MonoDynamicAssembly *assembly)
+{
+	int nsections = 0;
 
-typedef struct {
-	guint32 name_rva;
-	guint32 flags;
-} MonoILT;
+	/* alignment constraints */
+	assembly->code.index += 3;
+	assembly->code.index &= ~3;
+	assembly->meta_size += 3;
+	assembly->meta_size &= ~3;
+
+	assembly->sections [MONO_SECTION_TEXT].size = assembly->meta_size + assembly->code.index;
+	assembly->sections [MONO_SECTION_TEXT].attrs = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
+	nsections++;
+
+	assembly->sections [MONO_SECTION_RELOC].size = 12;
+	assembly->sections [MONO_SECTION_RELOC].attrs = SECT_FLAGS_MEM_READ | SECT_FLAGS_MEM_DISCARDABLE | SECT_FLAGS_HAS_INITIALIZED_DATA;
+	nsections++;
+
+	return nsections;
+}
 
 /*
- * mono_image_get_heade:
+ * mono_image_create_pefile:
  * @assemblyb: an assembly builder object
- * @buffer:
- * @maxsize
  * 
  * When we need to save an assembly, we first call this function that ensures the metadata 
  * tables are built for all the modules in the assembly. This function creates the PE-COFF
- * header, the image sections, the CLI header etc. The header is written in @buffer
- * and the length of the data written is returned.
- * If @buffer is not big enough (@maxsize), -1 is returned.
+ * header, the image sections, the CLI header etc. all the data is written in
+ * assembly->pefile where it can be easily retrieved later in chunks.
  */
-int
-mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, int maxsize)
-{
+void
+mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	MonoMSDOSHeader *msdos;
 	MonoDotNetHeader *header;
-	MonoSectionTable *section, *reloc;
+	MonoSectionTable *section;
 	MonoCLIHeader *cli_header;
-	guint32 header_size =  TEXT_OFFSET + CLI_H_SIZE;
+	guint32 size, image_size, virtual_base;
+	guint32 header_start, section_start, file_offset, virtual_offset;
 	MonoDynamicAssembly *assembly;
-	MonoIDT import_directory;
-	MonoILT import_lookup;
-
-	static const guchar entrycode [16] = {0xff, 0x25, 0};
-	guint32 entry_offset, import_table_offset, import_hint_offset;
+	MonoDynamicStream *pefile;
+	int i, nsections;
+	guint32 *rva;
+	guint16 *data16;
 	static const unsigned char msheader[] = {
 		0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,  0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
 		0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -2003,84 +2053,107 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 		0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,  0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
-	if (maxsize < header_size)
-		return -1;
-
 	mono_image_basic_init (assemblyb);
 	assembly = assemblyb->dynamic_assembly;
 
+	/* already created */
+	if (assembly->pefile.index)
+		return;
+	
 	mono_image_build_metadata (assemblyb);
+	nsections = calc_section_size (assembly);
 
-	memset (&import_directory, 0, sizeof (MonoIDT));
-	assembly->code.index += 3;
-	assembly->code.index &= ~3;
-	import_table_offset = TEXT_OFFSET + CLI_H_SIZE + assembly->code.index;
-	/* calc rva... */
-	import_hint_offset = import_table_offset + 40 + 8;
-	import_hint_offset += 15;
-	import_hint_offset &= ~15;
+	pefile = &assembly->pefile;
 
-	import_directory.import_lookup_table = import_table_offset + 40;
-	import_directory.name_rva = import_hint_offset + 14;
-	import_directory.import_address_table_rva = 0x200; /* FIXME */
+	/* The DOS header and stub */
+	g_assert (sizeof (MonoMSDOSHeader) == sizeof (msheader));
+	mono_image_add_stream_data (pefile, msheader, sizeof (msheader));
 
-	mono_image_add_stream_data (&assembly->code, (char*)&import_directory, sizeof (MonoIDT));
-	/* add an empty item to mark the end */
-	memset (&import_directory, 0, sizeof (MonoIDT));
-	mono_image_add_stream_data (&assembly->code, (char*)&import_directory, sizeof (MonoIDT));
-	
-	memset (&import_lookup, 0, sizeof (MonoILT));
-	import_lookup.name_rva = import_hint_offset;
-	mono_image_add_stream_data (&assembly->code, (char*)&import_lookup, sizeof (MonoILT));
-	assembly->code.index += 15;
-	assembly->code.index &= ~15;
-	mono_image_add_stream_data (&assembly->code, "", 1);
-	mono_image_add_stream_data (&assembly->code, "", 1);
-	mono_image_add_stream_data (&assembly->code, "_CorExeMain", 12);
-	mono_image_add_stream_data (&assembly->code, "mscoree.dll", 12);
-	mono_image_add_stream_data (&assembly->code, "", 1); /* lame */
-	mono_image_add_stream_data (&assembly->code, "", 1);
-	mono_image_add_stream_data (&assembly->code, "", 1);
-	mono_image_add_stream_data (&assembly->code, "", 1);
+	/* the dotnet header */
+	header_start = mono_image_add_stream_zero (pefile, sizeof (MonoDotNetHeader));
 
-	entry_offset = mono_image_add_stream_data (&assembly->code, entrycode, sizeof (entrycode));
-	/*g_print ("ep offset: 0x%08x\n", entry_offset);*/
-	
-	memset (buffer, 0, header_size);
-	memcpy (buffer, msheader, sizeof (MonoMSDOSHeader));
+	/* the section tables */
+	section_start = mono_image_add_stream_zero (pefile, sizeof (MonoSectionTable) * nsections);
 
-	msdos = (MonoMSDOSHeader *)buffer;
-	header = (MonoDotNetHeader *)(buffer + sizeof (MonoMSDOSHeader));
-	section = (MonoSectionTable*) (buffer + sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader));
+	file_offset = section_start + sizeof (MonoSectionTable) * nsections;
+	virtual_offset = VIRT_ALIGN;
+	image_size = 0;
 
+	for (i = 0; i < MONO_SECTION_MAX; ++i) {
+		if (!assembly->sections [i].size)
+			continue;
+		/* align offsets */
+		file_offset += FILE_ALIGN - 1;
+		file_offset &= ~(FILE_ALIGN - 1);
+		virtual_offset += VIRT_ALIGN - 1;
+		virtual_offset &= ~(VIRT_ALIGN - 1);
+
+		assembly->sections [i].offset = file_offset;
+		assembly->sections [i].rva = virtual_offset;
+
+		file_offset += assembly->sections [i].size;
+		virtual_offset += assembly->sections [i].size;
+		image_size += (assembly->sections [i].size + VIRT_ALIGN - 1) & ~(VIRT_ALIGN - 1);
+	}
+
+	file_offset += FILE_ALIGN - 1;
+	file_offset &= ~(FILE_ALIGN - 1);
+	mono_image_add_stream_zero (pefile, file_offset - pefile->index);
+
+	image_size += section_start + sizeof (MonoSectionTable) * nsections;
+
+	/* back-patch info */
+	msdos = (MonoMSDOSHeader*)pefile->data;
+	msdos->nlast_page = GUINT16_FROM_LE (file_offset & (512 - 1));
+	msdos->npages = GUINT16_FROM_LE ((file_offset + (512 - 1)) / 512);
 	msdos->pe_offset = GUINT32_FROM_LE (sizeof (MonoMSDOSHeader));
 
+	header = (MonoDotNetHeader*)(pefile->data + header_start);
 	header->pesig [0] = 'P';
 	header->pesig [1] = 'E';
-	header->pesig [2] = header->pesig [3] = 0;
-
+	
 	header->coff.coff_machine = GUINT16_FROM_LE (0x14c);
-	header->coff.coff_sections = GUINT16_FROM_LE (2); /* only .text and .reloc supported now */
+	header->coff.coff_sections = GUINT16_FROM_LE (nsections);
 	header->coff.coff_time = GUINT32_FROM_LE (time (NULL));
 	header->coff.coff_opt_header_size = GUINT16_FROM_LE (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4);
 	/* it's an exe */
 	header->coff.coff_attributes = GUINT16_FROM_LE (0x010e);
-	/* it's a dll */
+	/* FIXME: it's a dll */
 	/*header->coff.coff_attributes = GUINT16_FROM_LE (0x210e); */
+
+	virtual_base = 0x400000; /* FIXME: 0x10000000 if a DLL */
+
 	header->pe.pe_magic = GUINT16_FROM_LE (0x10B);
 	header->pe.pe_major = 6;
 	header->pe.pe_minor = 0;
-	/* set later: pe_code_size pe_data_size pe_rva_entry_point pe_rva_code_base pe_rva_data_base */
+	size = assembly->sections [MONO_SECTION_TEXT].size;
+	size += FILE_ALIGN - 1;
+	size &= ~(FILE_ALIGN - 1);
+	header->pe.pe_code_size = size;
+	size = assembly->sections [MONO_SECTION_RSRC].size;
+	size += FILE_ALIGN - 1;
+	size &= ~(FILE_ALIGN - 1);
+	header->pe.pe_data_size = size;
+	g_assert (START_TEXT_RVA == assembly->sections [MONO_SECTION_TEXT].rva);
+	header->pe.pe_rva_code_base = assembly->sections [MONO_SECTION_TEXT].rva;
+	header->pe.pe_rva_data_base = assembly->sections [MONO_SECTION_RSRC].rva;
+	/* pe_rva_entry_point always at the beginning of the text section */
+	header->pe.pe_rva_entry_point = assembly->sections [MONO_SECTION_TEXT].rva;
 
-	header->nt.pe_image_base = GUINT32_FROM_LE (0x400000);
-	header->nt.pe_section_align = GUINT32_FROM_LE (8192);
+	header->nt.pe_image_base = GUINT32_FROM_LE (virtual_base);
+	header->nt.pe_section_align = GUINT32_FROM_LE (VIRT_ALIGN);
 	header->nt.pe_file_alignment = GUINT32_FROM_LE (FILE_ALIGN);
 	header->nt.pe_os_major = GUINT16_FROM_LE (4);
 	header->nt.pe_os_minor = GUINT16_FROM_LE (0);
 	header->nt.pe_subsys_major = GUINT16_FROM_LE (4);
-	/* need to set pe_image_size, pe_header_size */
-	header->nt.pe_header_size = GUINT32_FROM_LE (0x200);
-	header->nt.pe_image_size = GUINT32_FROM_LE (0x00008000);
+	size = section_start;
+	size += FILE_ALIGN - 1;
+	size &= ~(FILE_ALIGN - 1);
+	header->nt.pe_header_size = GUINT32_FROM_LE (size);
+	size = image_size;
+	size += VIRT_ALIGN - 1;
+	size &= ~(VIRT_ALIGN - 1);
+	header->nt.pe_image_size = GUINT32_FROM_LE (size);
 	header->nt.pe_subsys_required = GUINT16_FROM_LE (3); /* 3 -> cmdline app, 2 -> GUI app */
 	header->nt.pe_stack_reserve = GUINT32_FROM_LE (0x00100000);
 	header->nt.pe_stack_commit = GUINT32_FROM_LE (0x00001000);
@@ -2089,52 +2162,38 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	header->nt.pe_loader_flags = GUINT32_FROM_LE (0);
 	header->nt.pe_data_dir_count = GUINT32_FROM_LE (16);
 
-#if 0
-	/* set: */
-	header->datadir.pe_import_table
-	pe_resource_table
-	pe_reloc_table
-	pe_iat	
-#endif
+	/* fill data directory entries */
+
+	header->datadir.pe_resource_table.size = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_RSRC].size);
+	header->datadir.pe_resource_table.rva = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_RSRC].rva);
+
+	header->datadir.pe_reloc_table.size = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_RELOC].size);
+	header->datadir.pe_reloc_table.rva = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_RELOC].rva);
+
 	header->datadir.pe_cli_header.size = GUINT32_FROM_LE (72);
-	header->datadir.pe_cli_header.rva = GUINT32_FROM_LE (assembly->text_rva); /* we put it always at the beginning */
+	header->datadir.pe_cli_header.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->cli_header_offset);
+	header->datadir.pe_iat.size = GUINT32_FROM_LE (8);
+	header->datadir.pe_iat.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->iat_offset);
+	/* patch imported function RVA name */
+	rva = (guint32*)(assembly->code.data + assembly->iat_offset);
+	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset);
 
-	/* Write section tables */
-	strcpy (section->st_name, ".text");
-	section->st_virtual_address = GUINT32_FROM_LE (assembly->text_rva);
-	section->st_virtual_size = GUINT32_FROM_LE (assembly->meta_size + assembly->code.index);
-	section->st_raw_data_size = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_virtual_size) + (FILE_ALIGN - 1));
-	section->st_raw_data_size &= GUINT32_FROM_LE (~(FILE_ALIGN - 1));
-	section->st_raw_data_ptr = GUINT32_FROM_LE (TEXT_OFFSET);
-	section->st_flags = GUINT32_FROM_LE (SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ);
+	/* the import table */
+	header->datadir.pe_import_table.size = GUINT32_FROM_LE (79); /* FIXME: magic number? */
+	header->datadir.pe_import_table.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->idt_offset);
+	/* patch imported dll RVA name and other entries in the dir */
+	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, name_rva));
+	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset + 12); /* 12 is strlen+1 of func name */
+	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, import_address_table_rva));
+	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->iat_offset);
+	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, import_lookup_table));
+	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->ilt_offset);
 
-	reloc = section + 1;
-	strcpy (reloc->st_name, ".reloc");
-	reloc->st_virtual_address = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_virtual_address)
-						     + GUINT32_TO_LE (section->st_raw_data_size));
-	reloc->st_virtual_size = GUINT32_FROM_LE (12);
-	reloc->st_raw_data_size = GUINT32_FROM_LE (GUINT32_TO_LE (reloc->st_virtual_size) + (FILE_ALIGN - 1));
-	reloc->st_raw_data_size &= GUINT32_FROM_LE (~(FILE_ALIGN - 1));
-	reloc->st_raw_data_ptr = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_raw_data_ptr)
-						  + GUINT32_TO_LE (section->st_raw_data_size));
-	reloc->st_flags = GUINT32_FROM_LE (SECT_FLAGS_MEM_DISCARDABLE | SECT_FLAGS_HAS_INITIALIZED_DATA | SECT_FLAGS_MEM_READ);
-	
+	rva = (guint32*)(assembly->code.data + assembly->ilt_offset);
+	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset - 2);
 
-	header->pe.pe_code_size = section->st_raw_data_size; /* already in native */
-	header->pe.pe_rva_entry_point = GUINT32_FROM_LE (TEXT_OFFSET + CLI_H_SIZE + entry_offset);
-
-	/* 
-	 * align: build_compressed_metadata () assumes metadata is aligned 
-	 * see below:
-	 * cli_header->ch_metadata.rva = assembly->text_rva + assembly->code.index + CLI_H_SIZE;
-	 */
-	assembly->code.index += 3;
-	assembly->code.index &= ~3;
-
-	/*
-	 * Write the MonoCLIHeader header 
-	 */
-	cli_header = (MonoCLIHeader*)(buffer + TEXT_OFFSET);
+	/* the CLI header info */
+	cli_header = (MonoCLIHeader*)(assembly->code.data + assembly->cli_header_offset);
 	cli_header->ch_size = GUINT32_FROM_LE (72);
 	cli_header->ch_runtime_major = GUINT16_FROM_LE (2);
 	cli_header->ch_flags = GUINT32_FROM_LE (CLI_FLAGS_ILONLY);
@@ -2142,10 +2201,64 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 		cli_header->ch_entry_point = GUINT32_FROM_LE (assemblyb->entry_point->table_idx | MONO_TOKEN_METHOD_DEF);
 	else
 		cli_header->ch_entry_point = GUINT32_FROM_LE (0);
-	cli_header->ch_metadata.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->code.index + CLI_H_SIZE);
+	cli_header->ch_metadata.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->code.index);
 	cli_header->ch_metadata.size = GUINT32_FROM_LE (assembly->meta_size);
+
+	/* write the section tables and section content */
+	section = (MonoSectionTable*)(pefile->data + section_start);
+	for (i = 0; i < MONO_SECTION_MAX; ++i) {
+		static const char *section_names [] = {
+			".text", ".rsrc", ".reloc"
+		};
+		if (!assembly->sections [i].size)
+			continue;
+		strcpy (section->st_name, section_names [i]);
+		/*g_print ("output section %s (%d), size: %d\n", section->st_name, i, assembly->sections [i].size);*/
+		section->st_virtual_address = GUINT32_FROM_LE (assembly->sections [i].rva);
+		section->st_virtual_size = GUINT32_FROM_LE (assembly->sections [i].size);
+		section->st_raw_data_size = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_virtual_size) + (FILE_ALIGN - 1));
+		section->st_raw_data_size &= GUINT32_FROM_LE (~(FILE_ALIGN - 1));
+		section->st_raw_data_ptr = GUINT32_FROM_LE (assembly->sections [i].offset);
+		section->st_flags = GUINT32_FROM_LE (assembly->sections [i].attrs);
+		switch (i) {
+		case MONO_SECTION_TEXT:
+			/* patch entry point */
+			rva = (guint32*)(assembly->code.data + 2);
+			*rva = GUINT32_FROM_LE (virtual_base + assembly->text_rva);
+			memcpy (pefile->data + assembly->sections [i].offset, assembly->code.data, assembly->code.index);
+			memcpy (pefile->data + assembly->sections [i].offset + assembly->code.index, assembly->assembly.image->raw_metadata, assembly->meta_size);
+			break;
+		case MONO_SECTION_RELOC:
+			rva = (guint32*)(pefile->data + assembly->sections [i].offset);
+			*rva = GUINT32_FROM_LE (assembly->text_rva);
+			++rva;
+			*rva = GUINT32_FROM_LE (12);
+			++rva;
+			data16 = (guint16*)rva;
+			/* 
+			 * the entrypoint is always at the start of the text section 
+			 * 3 is IMAGE_REL_BASED_HIGHLOW
+			 * 2 is patch_size_rva - text_rva
+			 */
+			*data16 = GUINT16_FROM_LE ((3 << 12) + (2));
+			data16++;
+			*data16 = 0; /* terminate */
+			break;
+		case MONO_SECTION_RSRC:
+		default:
+			g_assert_not_reached ();
+		}
+		section++;
+	}
 	
-	return header_size;
+	/* check that the file is properly padded */
+#if 0
+	{
+		FILE *f = fopen ("mypetest.exe", "w");
+		fwrite (pefile->data, pefile->index, 1, f);
+		fclose (f);
+	}
+#endif
 }
 
 /*

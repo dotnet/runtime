@@ -652,44 +652,22 @@ ves_icall_AssemblyBuilder_getToken (MonoReflectionAssemblyBuilder *assb, MonoObj
 }
 
 static gint32
-ves_icall_AssemblyBuilder_getPEHeader (MonoReflectionAssemblyBuilder *assb, MonoArray *buf, gint32 *data_size)
+ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, MonoArray *buf, gint32 offset)
 {
-	int count, hsize;
-	MonoDynamicAssembly *ass = assb->dynamic_assembly;
-
-	hsize = mono_image_get_header (assb, (char*)buf->vector, mono_array_length (buf));
-	if (hsize < 0)
-		return hsize;
-	count = ass->code.index + ass->meta_size;
-	count += 512 - 1;
-	count &= ~(512 - 1);
-	*data_size = count;
-
-	return hsize;
-}
-
-static gint32
-ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, MonoArray *buf)
-{
-	int count, real_data;
+	int count;
 	MonoDynamicAssembly *ass = assb->dynamic_assembly;
 	char *p = mono_array_addr (buf, char, 0);
-	
-	count = real_data = ass->code.index + ass->meta_size;
-	count += 512 - 1;
-	count &= ~(512 - 1);
-	if (count > mono_array_length (buf))
-		return -1;
-	count -= real_data;
-	
-	memcpy (p, ass->code.data, ass->code.index);
-	p += ass->code.index;
-	memcpy (p, ass->assembly.image->raw_metadata, ass->meta_size);
-	p += ass->meta_size;
-	/* null-pad section */
-	memset (p, 0, count);
 
-	return real_data + count;
+	mono_image_create_pefile (assb);
+
+	if (offset >= ass->pefile.index)
+		return 0;
+	count = mono_array_length (buf);
+	count = MIN (count, ass->pefile.index - offset);
+	
+	memcpy (p, ass->pefile.data + offset, count);
+
+	return count;
 }
 
 static MonoReflectionType*
@@ -2318,7 +2296,6 @@ static gconstpointer icall_map [] = {
 	 * AssemblyBuilder
 	 */
 	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_AssemblyBuilder_getDataChunk,
-	"System.Reflection.Emit.AssemblyBuilder::getPEHeader", ves_icall_AssemblyBuilder_getPEHeader,
 	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
 	"System.Reflection.Emit.AssemblyBuilder::getToken", ves_icall_AssemblyBuilder_getToken,
 	"System.Reflection.Emit.AssemblyBuilder::basic_init", mono_image_basic_init,
