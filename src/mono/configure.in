@@ -42,7 +42,7 @@ case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
 		AC_DEFINE(PLATFORM_WIN32,1,[Platform is Win32])
-		CC="gcc -mno-cygwin"
+		CC="gcc -mno-cygwin -g"
 		HOST_CC="gcc"
 		# So libgc configure gets -mno-cygwin
 		export CC
@@ -51,8 +51,8 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DWIN32_THREADS"
 		libdl=
 		libgc_threads=win32
-		gc_default=boehm 
-		with_nptl=no
+		gc_default=included
+		with_nptl=default
 		with_sigaltstack=no
 		LN_S=cp
 
