@@ -1068,9 +1068,9 @@
 
     <class name="System.Diagnostics.StackFrame">
         <last-activity>Aug-29-2001</last-activity>
-        <implementation>10</implementation>
+        <implementation>yes</implementation>
         <test-suite>yes</test-suite>
-        <completion>?</completion>
+        <completion>10</completion>
         <maintainers>
             <maintainer>klyubin@aqris.com</maintainer>
         </maintainers>
@@ -1078,9 +1078,9 @@
 
     <class name="System.Diagnostics.StackTrace">
         <last-activity>Aug-29-2001</last-activity>
-        <implementation>10</implementation>
+        <implementation>yes</implementation>
         <test-suite>yes</test-suite>
-        <completion>?</completion>
+        <completion>10</completion>
         <maintainers>
             <maintainer>klyubin@aqris.com</maintainer>
         </maintainers>
