@@ -136,7 +136,10 @@ compute_branches (MBCodeGenStatus *s)
 	GPtrArray *forest = s->forest;
 	const int top = forest->len;
 	gint32 addr;
+	guint8 *end;
 	int i;
+
+	end = s->code;
 
 	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
@@ -162,6 +165,8 @@ compute_branches (MBCodeGenStatus *s)
 			((MBEmitFunc)t1->emit) (t1, s);
 		}
 	}
+
+	s->code = end;
 }
 
 static MBTree *
@@ -310,6 +315,7 @@ emit_method (MonoMethod *method, MBCodeGenStatus *s)
 	arch_emit_prologue (s);
 	forest_emit (s);
 	arch_emit_epilogue (s);
+
 	compute_branches (s);
 
 	if (dump_forest)
@@ -746,6 +752,16 @@ mono_compile_method (MonoMethod *method)
 			} else 
 				g_assert_not_reached ();
 
+			break;
+
+		case CEE_POP:
+			++ip;
+			--sp;
+			/*
+			 * all side effects are already on the forest,
+			 * so we can simply ignore this tree
+			 */
+			g_free (*sp);
 			break;
 
 		case CEE_CONV_U1: 
