@@ -1,3 +1,8 @@
+2003-11-19  Jackson Harper <jackson@ximian.com>
+
+	* doc/web/team.xml: New email address and job description
+	* doc/web/team/jackson.png: Picture of me debugging...seems appropriate
+	
 2003-11-14  Jackson Harper <jackson@ximian.com>
 
 	* Makefile.am: delete mscorlib.dll

@@ -648,7 +648,7 @@
 
     </name>
 
-    <e-mail>jackson@latitudegeo.com</e-mail>
+    <e-mail>jackson@ximian.com</e-mail>
 
     <image>jackson.png</image>
 
@@ -658,11 +658,11 @@
 
     <tasks>
 
-      <task>Misc Bug fixes</task>
-
-      <task>Cscompmgd</task>
-
       <task>IL Assembler</task>
+
+      <task>System.Web</task>
+
+      <task>Bug Fix0r</task>
 
     </tasks>
 
