@@ -8037,6 +8037,7 @@ SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
+#ifndef PLATFORM_WIN32
 static void
 add_signal_handler (int signo, gpointer handler)
 {
@@ -8053,6 +8054,7 @@ add_signal_handler (int signo, gpointer handler)
 #endif
 	g_assert (sigaction (signo, &sa, NULL) != -1);
 }
+#endif
 
 static void
 mono_runtime_install_handlers (void)
