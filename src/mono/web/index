@@ -22,7 +22,8 @@
 	    <td>
 	      Linux/x86<br>
 	      Solaris/SPARC<br>
-	      PowerPC: MacOS and Linux.
+	      PowerPC: MacOS and Linux.<br>
+	      S390: Linux.
 	    </td>
 	  </tr>
 	  <tr>
@@ -161,11 +162,50 @@
 	
 @item Apr 21st, 2004: XSP 0.11 and mod_mono 0.8 released.
 
-	Gonzalo has made new releases of XSP and mod_mono (The ASP.NET hosting
-	service for Mono).
+	Gonzalo has made new releases of XSP and mod_mono (The ASP.NET
+	hosting service for Mono).
 
-	Check the XSP/mod_mono <a href="/archive/xsp-0.11.html"> Release
-	Notes</a> to see what is new and to obtain the source packages.
+	Check the XSP/mod_mono <a href="archive/xsp-0.10.html">
+	Release Notes</a> to see what is new and to obtain the source
+	packages.
+
+@item Apr 20, 2004: S390 port; Interpreted Updated;  Identity classes;  System.Drawing; Mono Debugger.
+
+	Neale who originally wrote the S390 interpreter support for
+	Mono has checked into CVS his port of the S390 JIT engine.
+	Now, if we could only have one of those in our living room.
+
+	Bernie has checked into CVS a new interpreter for the Mono
+	runtime.  This new interpreter translates the CIL opcodes into
+	a new intermediate representation.  The new IL representation
+	avoids doing costly lookups during interpretation which means that the
+	interpreter is a lot faster now.
+
+	Performance wise, the new interpreter is three times faster
+	than the old one when doing a compiler bootstrap.
+
+	Sebastien has recently completed the identity classes in the
+	Mono Runtime, you can see more details on his <a
+	href="http://pages.infinit.net/ctech/poupou.html">blog</a>
+
+	New progress on the GDI+ front: Jordi has completed the region
+	code; Ravindra the various brushes that we must support;
+	Sanjay the Icon and BMP loaders (with Mark) and Vladimir has
+	contributed various codecs and a new fresh implementation of
+	Image.LockBits.
+
+	Lluis and Atsushi in the meantime has been in charge of
+	completing various pending items from our class libraries:
+	basically an API audit of the things missing for the Mono 1.0
+	release, small but important things.
+
+	Martin has replaced the old command-line language in the
+	debugger with our home-grown "Command Line" language, a
+	TCL-like command line language that we built for it (its a
+	tiny .NETized Tcl-like language).  The interaction process is
+	a lot smoother than it used to be and we are focusing on the
+	usability of the command line language to improve the
+	debugging experience.
 
 @item Apr 02, 2004: Mono C# Compiler gets CLS support;   Basic Runtime Contribution from Mainsoft.
 
