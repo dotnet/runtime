@@ -3479,43 +3479,15 @@ static MonoArray*
 ves_icall_System_Reflection_Assembly_GetNamespaces (MonoReflectionAssembly *assembly) 
 {
 	MonoImage *img = assembly->assembly->image;
-	int n;
 	MonoArray *res;
 	NameSpaceInfo info;
-	MonoTableInfo  *t = &img->tables [MONO_TABLE_EXPORTEDTYPE];
-	int i;
 
 	MONO_ARCH_SAVE_REGS;
-
-	n = g_hash_table_size (img->name_cache);
-	res = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, n);
+	
+	res = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, g_hash_table_size (img->name_cache));
 	info.res = res;
 	info.idx = 0;
 	g_hash_table_foreach (img->name_cache, (GHFunc)foreach_namespace, &info);
-
-	/* Add namespaces from the EXPORTEDTYPES table as well */
-	if (t->rows) {
-		MonoArray *res2;
-		GPtrArray *nspaces = g_ptr_array_new ();
-		for (i = 0; i < t->rows; ++i) {
-			const char *nspace = mono_metadata_string_heap (img, mono_metadata_decode_row_col (t, i, MONO_EXP_TYPE_NAMESPACE));
-			if (!g_hash_table_lookup (img->name_cache, nspace)) {
-				g_ptr_array_add (nspaces, (char*)nspace);
-			}
-		}
-		if (nspaces->len > 0) {
-			res2 = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, n + nspaces->len);
-			memcpy (mono_array_addr (res2, MonoString*, 0),
-					mono_array_addr (res, MonoString*, 0),
-					n * sizeof (MonoString*));
-			for (i = 0; i < nspaces->len; ++i)
-				mono_array_set (res2, MonoString*, n + i, 
-								mono_string_new (mono_object_domain (assembly),
-												 g_ptr_array_index (nspaces, i)));
-			res = res2;
-		}
-		g_ptr_array_free (nspaces, TRUE);
-	}
 
 	return res;
 }
