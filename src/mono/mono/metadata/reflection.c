@@ -2706,6 +2706,31 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 	return res;
 }
 
+
+MonoReflectionModule*   
+mono_module_get_object   (MonoDomain *domain, MonoImage *image)
+{
+	static MonoClass *System_Reflection_Module;
+	MonoReflectionModule *res;
+	
+	CHECK_OBJECT (MonoReflectionModule *, image, NULL);
+	if (!System_Reflection_Module)
+		System_Reflection_Module = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "Module");
+	res = (MonoReflectionModule *)mono_object_new (domain, System_Reflection_Module);
+
+	res->image = image;
+	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
+
+	res->fqname    = mono_string_new (domain, image->name);
+	res->name      = mono_string_new (domain, image->name);
+	res->scopename = mono_string_new (domain, image->module_name);
+
+	CACHE_OBJECT (image, res, NULL);
+	return res;
+}
+
+
 static gboolean
 mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {

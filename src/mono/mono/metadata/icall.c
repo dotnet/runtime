@@ -1104,6 +1104,13 @@ ves_icall_type_isbyref (MonoReflectionType *type)
 	return type->type->byref;
 }
 
+static MonoReflectionModule*
+ves_icall_MonoType_get_Module (MonoReflectionType *type)
+{
+	MonoClass *class = mono_class_from_mono_type (type->type);
+	return mono_module_get_object (mono_object_domain (type), class->image);
+}
+
 static void
 ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 {
@@ -2877,6 +2884,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::GetElementType", ves_icall_MonoType_GetElementType,
 	"System.MonoType::get_type_info", ves_icall_get_type_info,
 	"System.MonoType::get_BaseType", ves_icall_get_type_parent,
+	"System.MonoType::get_Module", ves_icall_MonoType_get_Module,
 	"System.MonoType::IsPointerImpl", ves_icall_type_ispointer,
 	"System.MonoType::IsByRefImpl", ves_icall_type_isbyref,
 	"System.MonoType::GetField", ves_icall_Type_GetField,

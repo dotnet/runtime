@@ -324,7 +324,7 @@ typedef struct {
 typedef struct {
 	MonoObject	obj;
 	MonoImage  *image;
-	MonoObject *assembly;
+	MonoReflectionAssembly *assembly;
 	MonoString *fqname;
 	MonoString *name;
 	MonoString *scopename;
@@ -366,6 +366,16 @@ typedef struct {
 	MonoString *codebase;
 	gint32 major, minor, build, revision;
 	/* FIXME: add missing stuff */
+/*	CultureInfo cultureinfo;
+	AssemblyNameFlags flags;
+	AssemblyHashAlgorithm hashalg;
+	StrongNameKeyPair keypair;
+	AssemblyVersionCompatibility versioncompat;*/
+	MonoObject  *cultureInfo;
+	MonoObject  *flags;
+	MonoObject  *hashalg;
+	MonoObject  *keypair;
+	MonoObject  *versioncompat;
 } MonoReflectionAssemblyName;
 
 typedef struct {
@@ -418,6 +428,7 @@ guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly,
 guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObject *obj);
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
+MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);
 MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
 MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
 MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
