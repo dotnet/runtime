@@ -1897,6 +1897,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LEAVE_S)
 			++ip;
 			ip += (signed char) *ip;
+			++ip;
 			/*
 			 * We may be either inside a try block or inside an handler.
 			 * In the first case there was no exception and we go on
