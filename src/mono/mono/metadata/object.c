@@ -2850,6 +2850,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 			case MONO_TYPE_CLASS: 
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_OBJECT:
 				**((MonoObject ***)params [i]) = (MonoObject *)arg;
 				break;
 			default:
