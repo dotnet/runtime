@@ -769,8 +769,12 @@ write_type (MonoType *type)
 	if (kind == MONO_TYPE_OBJECT) {
 		klass = mono_defaults.object_class;
 		kind = MONO_TYPE_CLASS;
-	} else if ((kind == MONO_TYPE_VALUETYPE) || (kind == MONO_TYPE_CLASS))
+	} else if ((kind == MONO_TYPE_VALUETYPE) || (kind == MONO_TYPE_CLASS)) {
 		klass = type->data.klass;
+		retval = g_hash_table_lookup (class_table, klass);
+		if (retval)
+			return retval;
+	}
 
 	switch (kind) {
 	case MONO_TYPE_SZARRAY:
@@ -785,6 +789,11 @@ write_type (MonoType *type)
 	case MONO_TYPE_CLASS: {
 		GHashTable *method_slots = NULL;
 		int i;
+
+		if (klass->init_pending) {
+			size = sizeof (int);
+			break;
+		}
 
 		mono_class_init (klass);
 
@@ -892,6 +901,11 @@ write_type (MonoType *type)
 	case MONO_TYPE_CLASS: {
 		int base_offset = kind == MONO_TYPE_CLASS ? 0 : - sizeof (MonoObject);
 		int i, j;
+
+		if (klass->init_pending) {
+			*((int *) ptr)++ = -1;
+			break;
+		}
 
 		g_hash_table_insert (class_table, klass, retval);
 
