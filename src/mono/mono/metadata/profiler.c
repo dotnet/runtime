@@ -1081,7 +1081,7 @@ struct Addr2LineData {
 	FILE *pipein;
 	FILE *pipeout;
 	char *binary;
-	GPid child_pid;
+	int child_pid;
 };
 
 static Addr2LineData *addr2line_pipes = NULL;
@@ -1099,7 +1099,7 @@ try_addr2line (const char* binary, gpointer ip)
 	}
 	if (!addr2line) {
 		const char *addr_argv[] = {"addr2line", "-f", "-e", binary, NULL};
-		GPid child_pid;
+		int child_pid;
 		int ch_in, ch_out;
 		if (!g_spawn_async_with_pipes (NULL, (char**)addr_argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
 				&child_pid, &ch_in, &ch_out, NULL, NULL)) {
