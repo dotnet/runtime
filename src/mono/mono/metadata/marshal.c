@@ -183,7 +183,6 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 void
 mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 {
-	const gunichar2 *s;
 	guint32 len;
 
 	if (!sb || !text)
@@ -604,7 +603,7 @@ mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char 
 	if (msg != NULL) {
 		mono_mb_emit_byte (mb, CEE_DUP);
 		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoException, message));
-		mono_mb_emit_ldstr (mb, msg);
+		mono_mb_emit_ldstr (mb, (char*)msg);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 	}
 	mono_mb_emit_byte (mb, CEE_THROW);
@@ -3033,7 +3032,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			}
 			continue;
 		}
-		
+
+		if (spec && spec->native == MONO_NATIVE_ASANY) {
+			char *msg = g_strdup_printf ("marshalling conversion UnmanagedType.AsAny not implemented");
+			MonoException *exc = mono_get_exception_not_implemented (msg);
+			g_warning (msg);
+			g_free (msg);
+			mono_raise_exception (exc);
+		}
 
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:			
