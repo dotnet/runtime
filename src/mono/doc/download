@@ -12,6 +12,109 @@
 	href="http://www.go-mono.org/mono-beginning.html">Resources/Beginning
 	section</a>, the <a
 	href="http://www.go-mono.org/faq.html">FAQ</a>.
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
+	      <b>Release 0.28</b><br>
+	      <a href="archive/mono-0.28.html">Release notes</a><br>
+	       Oct 1st, 2003
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	 	      <li><a href="archive/mcs-0.28.tar.gz">Mono Class Libraries and C# Compiler.</a>
+	              <li><a href="archive/mono-0.28.tar.gz">Mono Runtime</a>
+ 		      <li><a href="archive/xsp-0.6.tar.gz">XSP web server (0.5)</a>
+ 		      <li><a href="archive/mod_mono-0.5.tar.gz">Apache Mono module (mod_mono)</a>                        
+	            </ul>
+		  </td>
+	        </tr>
+	        <tr bgcolor="#BBBBBB">
+		  <td>
+		     <b>Source RPMs</b><br>
+		     (No RPMS for XSP).
+	          </td>
+		  <td>
+		    <ul>
+			<li><a href="archive/redhat-90-i386/mono-0.28-1.ximian.6.1.src.rpm">mono-0.28-1.src.rpm (RH9)</a>
+			<li><a href="archive/redhat-90-i386/mono-0.28-1.ximian.5.1.src.rpm">mono-0.28-1.src.rpm (RH8)</a>
+		    </ul>
+		  </td>
+	        </tr>
+		<tr>
+		 <td></td>
+	 	</tr>
+		<tr>
+                  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b>
+                    <ul>
+                      <li><a href="archive/redhat-90-i386/mono-0.28-1.ximian.6.1.i386.rpm">mono-0.28-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-devel-0.28-1.ximian.6.1.i386.rpm">mono-devel-0.28-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-debuginfo-0.28-1.ximian.6.1.i386.rpm">mono-debuginfo-0.28-1.i386.rpm</a>
+	 	      <br>
+                      <li><a href="archive/redhat-90-i386/libpixregion-0.1.0-1.ximian.6.1.i386.rpm">libpixregion-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/libpixregion-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">libpixregion-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/libic-0.1.0-1.ximian.6.1.i386.rpm">libic-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/libic-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">libic-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xc-0.1.0-1.ximian.6.1.i386.rpm">xc-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xc-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">xc-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xr-0.1.0-1.ximian.6.1.i386.rpm">xr-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xr-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">xr-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <br>
+		      <li><a href="archive/redhat-90-i386/monodoc-0.6-1.ximian.6.1.i386.rpm">monodoc-0.6-1.ximian.6.1.i386.rpm</a> (To be used only with CVS gtk-sharp)                        
+                      <li><a href="archive/redhat-90-i386/monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm">monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-wine-20030318-1.ximian.6.3.i386.rpm">mono-wine-20030318-1.ximian.6.3.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-wine-debuginfo-20030318-1.ximian.6.2.i386.rpm">mono-wine-debuginfo-20030318-1.ximian.6.3.i386.rpm</a>
+                    </ul>
+                  </td>
+                  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 8.0/x86</b>
+                    <ul>
+                      <li><a href="archive/redhat-80-i386/mono-0.28-2.ximian.5.1.i386.rpm">mono-0.28-2.ximian.5.1.i386.rpm</a>
+                      <li><a href="archive/redhat-80-i386/mono-devel-0.28-2.ximian.5.1.i386.rpm">mono-devel-0.28-2.ximian.5.1.i386.rpm</a>
+	 	      <br>
+                      <li><a href="archive/redhat-80-i386/monodoc-0.5-1.ximian.5.1.i386.rpm">monodoc-0.5-1.ximian.5.1.i386.rpm</a> (To be used only with CVS gtk-sharp)
+                      <li><a href="archive/redhat-80-i386/mono-wine-20030318-1.ximian.5.3.i386.rpm">mono-wine-20030318-1.ximian.5.3.i386.rpm</a>
+                    </ul>
+                  </td>
+		</tr>
+
+  		<tr> 
+		  <td bgcolor="#999999">
+		    <img src="images/mandrake-36.gif"><b>Mandrake 9.1/x86</b>
+                    <ul>
+		      <li><a href="archive/mandrake-91-i586/mono-0.28-1.ximian.6.1.i586.rpm">mono-0.28-1.ximian.6.1.i586.rpm</a>
+		      <li><a href="archive/mandrake-91-i586/mono-devel-0.28-1.ximian.6.1.i586.rpm">mono-devel-0.28-1.ximian.6.1.i586.rpm</a>
+<!-- 		      <li><a href="archive/mandrake-91-i586/monodoc-0.5-1.ximian.6.1.i586.rpm">monodoc-0.5-1.ximian.6.1.i586.rpm</a> -->
+		    </ul>
+		  </td>
+  		</tr>
+                <tr>
+                  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SuSE 8.2</b>
+                      <ul>
+                        <li><a href="archive/suse-82-i586/mono-0.28-2.ximian.7.1.i586.rpm">mono-0.28-2.ximian.7.1.i586.rpm</a>
+                        <li><a href="archive/suse-82-i586/mono-devel-0.28-2.ximian.7.1.i586.rpm">mono-devel-0.28-2.ximian.7.1.i586.rpm</a>
+                     </ul>
+                   </td>
+                  <td bgcolor="#999999">
+                    <img src="images/windows-36.gif"><b>Windows installer</b>
+                      <ul>
+                        <li><a href="archive/mono-0.28-win32-1.exe">mono-0.28-win32-1.exe</a>
+                     </ul>
+                   </td>
+                 </tr>
+             </table>
+            </td>
+	</table>
+                    
 	<table>
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
@@ -118,7 +221,8 @@
                    </td>
                  </tr>
              </table>
-            </td>                    
+            </td>
+	</table>
 	<table>
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
