@@ -212,5 +212,15 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 MonoObject *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type);
 
+int
+ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name);
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string);
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString *string);
+
+
 #endif /* __MONO_MARSHAL_H__ */
 

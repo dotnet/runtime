@@ -2510,6 +2510,10 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr,
 	"System.Runtime.InteropServices.Marshal::PtrToStructure(intptr,object)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure,
 	"System.Runtime.InteropServices.Marshal::PtrToStructure(intptr,System.Type)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type,
+	"System.Runtime.InteropServices.Marshal::OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf,
+	"System.Runtime.InteropServices.Marshal::StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi,
+	"System.Runtime.InteropServices.Marshal::StringToHGlobalAuto", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi,
+	"System.Runtime.InteropServices.Marshal::StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni,
 
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,

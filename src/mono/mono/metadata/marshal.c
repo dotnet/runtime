@@ -1374,15 +1374,13 @@ handle_enum:
 		case MONO_TYPE_CHAR:
 			mono_mb_emit_byte (mb, CEE_LDIND_U2);
 			break;
-#if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I:
-#endif
+		case MONO_TYPE_U:
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			break;
 		case MONO_TYPE_I4:
 			mono_mb_emit_byte (mb, CEE_LDIND_I4);
 			break;
-#if SIZEOF_VOID_P == 4
-		case MONO_TYPE_U:
-#endif
 		case MONO_TYPE_U4:
 			mono_mb_emit_byte (mb, CEE_LDIND_U4);
 			break;
@@ -1392,10 +1390,6 @@ handle_enum:
 		case MONO_TYPE_R8:
 			mono_mb_emit_byte (mb, CEE_LDIND_R8);
 			break;
-#if SIZEOF_VOID_P == 8
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-#endif
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			mono_mb_emit_byte (mb, CEE_LDIND_I8);
@@ -2347,7 +2341,6 @@ MonoObject *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoMethod *method;
 	MonoObject *res;
 
 	MONO_CHECK_ARG_NULL (src);
@@ -2358,4 +2351,44 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 	ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (src, res);
 
 	return res;
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name)
+{
+	MonoMarshalType *info;
+	MonoClass *klass;
+	char *fname;
+	int i;
+
+	MONO_CHECK_ARG_NULL (type);
+	MONO_CHECK_ARG_NULL (field_name);
+
+	fname = mono_string_to_utf8 (field_name);
+	klass = mono_class_from_mono_type (type->type);
+
+	info = mono_marshal_load_type_info (klass);	
+	
+	for (i = 0; i < klass->field.count; ++i) {
+		if (*fname == *klass->fields [i].name && 
+		    strcmp (fname, klass->fields [i].name) == 0)
+			break;
+	}
+	g_free (fname);
+
+	mono_assert (i < klass->field.count);
+
+	return info->fields [i].offset;
+}
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
+{
+	return mono_string_to_utf8 (string);
+}
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString *string)
+{
+	return g_memdup (mono_string_chars (string), mono_string_length (string)*2);
 }

@@ -45,13 +45,15 @@ public class Test {
 		ss.s2 = "just a test";
 		
 		Marshal.StructureToPtr (ss, p, false);
-		if (Marshal.ReadInt32 (p, 0) != 1)
+		Type t = ss.GetType ();
+		
+		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "a")) != 1)
 			return 1;
-		if (Marshal.ReadInt32 (p, 4) != 1)
+		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "bool1")) != 1)
 			return 1;
-		if (Marshal.ReadInt32 (p, 8) != 0)
+		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "bool2")) != 0)
 			return 1;
-		if (Marshal.ReadInt32 (p, 12) != 2)
+		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "b")) != 2)
 			return 1;
 		if (Marshal.ReadInt16 (p, 16) != 6)
 			return 1;
@@ -69,7 +71,7 @@ public class Test {
 			return 1;
 		if (Marshal.ReadInt32 (p, 28) != 4)
 			return 1;
-		if (Marshal.ReadInt32 (p, 32) == 0)
+		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "s2")) == 0)
 			return 1;
 
 		SimpleStruct cp = (SimpleStruct)Marshal.PtrToStructure (p, ss.GetType ());
