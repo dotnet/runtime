@@ -649,7 +649,9 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 			free_method = 1;
 		} else if (context)
 			container = context->container;
-                gen_param = get_generic_param (m, container);
+
+		if (container && container->is_method)
+			gen_param = get_generic_param (m, container);
 	}
 	
 	retval = dis_stringify_param (m, method->ret);
