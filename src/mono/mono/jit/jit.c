@@ -2139,9 +2139,23 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 			}
 			
-			if (!calli)
-				csig = cm->signature;
-
+			if (!calli) {
+				MonoMethod *wrapper;
+				if (cm->signature->pinvoke) {
+#ifdef MONO_USE_EXC_TABLES
+					if (mono_method_blittable (cm)) {
+						csig = cm->signature;
+					} else {
+#endif
+						wrapper = mono_marshal_get_native_wrapper (cm);
+						csig = wrapper->signature;
+#ifdef MONO_USE_EXC_TABLES
+					}
+#endif
+				} else {
+					csig = cm->signature;
+				}
+			}
 			nargs = csig->param_count;
 
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
