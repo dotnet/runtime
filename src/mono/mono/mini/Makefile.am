@@ -32,6 +32,9 @@ mono_SOURCES = \
 mono_LDADD = \
 	libmono.la
 
+mono_LDFLAGS = \
+	-export-dynamic
+
 genmdesc_SOURCES = \
 	mini.h		\
 	genmdesc.c	\
