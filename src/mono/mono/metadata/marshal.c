@@ -2773,8 +2773,9 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	
 		j = 0;
 		for (i = 0; i < sig->param_count; i++) {
+			MonoClass *pclass;
 			if (marshal_types [i] != MONO_MARSHAL_SERIALIZE) continue;
-			MonoClass *pclass = mono_class_from_mono_type (sig->params[i]);
+			pclass = mono_class_from_mono_type (sig->params[i]);
 			mono_mb_emit_byte (mb, CEE_DUP);
 			mono_mb_emit_icon (mb, j);
 			mono_mb_emit_ldarg (mb, i + 1);		/* 0=this */

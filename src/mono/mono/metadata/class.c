@@ -1714,12 +1714,12 @@ mono_class_init (MonoClass *class)
 	 * cached info from the runtime.
 	 */
 	if (mono_class_get_cached_class_info (class, &cached_info)) {
+		guint32 cur_slot = 0;
+
 		class->vtable_size = cached_info.vtable_size;
 		class->has_finalize = cached_info.has_finalize;
 		class->ghcimpl = cached_info.ghcimpl;
 		class->has_cctor = cached_info.has_cctor;
-
-		guint32 cur_slot = 0;
 
 		if (class->parent) {
 			mono_class_init (class->parent);

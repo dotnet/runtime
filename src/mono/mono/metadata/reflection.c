@@ -9120,10 +9120,12 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 
 	/* First we look for method-level attributes */
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
+		guint32 idx;
+
 		mono_class_init (method->klass);
 		memset (demands, 0, sizeof (MonoDeclSecurityActions));
 
-		guint32 idx = mono_method_get_index (method);
+		idx = mono_method_get_index (method);
 		idx <<= MONO_HAS_DECL_SECURITY_BITS;
 		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
 		result = fill_actions_from_index (image, idx, demands);
@@ -9133,11 +9135,12 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 	/* Here we use (or create) the class declarative cache to look for demands */
 	flags = mono_declsec_flags_from_class (method->klass);
 	if (flags & (MONO_DECLSEC_FLAG_DEMAND | MONO_DECLSEC_FLAG_NONCAS_DEMAND | MONO_DECLSEC_FLAG_DEMAND_CHOICE)) {
+		guint32 idx;
 		if (!result) {
 			mono_class_init (method->klass);
 			memset (demands, 0, sizeof (MonoDeclSecurityActions));
 		}
-		guint32 idx = mono_metadata_token_index (method->klass->type_token);
+		idx = mono_metadata_token_index (method->klass->type_token);
 		idx <<= MONO_HAS_DECL_SECURITY_BITS;
 		idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
 		result |= fill_actions_from_index (image, idx, demands);

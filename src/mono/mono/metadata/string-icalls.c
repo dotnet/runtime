@@ -182,13 +182,14 @@ MonoString *
 ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex, 
 				    gint32 length, MonoObject *enc)
 {
-	MONO_ARCH_SAVE_REGS;
 	MonoArray *arr;
 	MonoString *s;
 	MonoObject *exc;
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethod *get_string;
 	gpointer args [1];
+
+	MONO_ARCH_SAVE_REGS;
 
 	if ((value == NULL) || (length == 0))
 		return mono_string_new_size (mono_domain_get (), 0);
