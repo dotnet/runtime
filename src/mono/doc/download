@@ -12,7 +12,7 @@
 
 	In order to make mcs and the class libraries you will need the
 	GNU make tools.  These may be obtained for the Windows
-	environment from <a href="www.cygwin.com">cygwin.com</a>.
+	environment from <a href="http://www.cygwin.com">cygwin.com</a>.
 
 	You will also need to get GLIB, from: <a
 href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz</a>
