@@ -3172,7 +3172,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 }
 
 void
-mono_arch_flush_icache (guint8 *code, guint size)
+mono_arch_flush_icache (guint8 *code, gint size)
 {
 	/* not needed */
 }
