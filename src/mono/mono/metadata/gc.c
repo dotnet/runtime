@@ -167,7 +167,6 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	
 #if HAVE_BOEHM_GC
 	GC_gcollect ();
-#endif
 
 	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 
@@ -191,6 +190,10 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		return FALSE;
 	else
 		return TRUE;
+#else
+	/* We don't support domain finalization without a GC */
+	return FALSE;
+#endif
 }
 
 void
