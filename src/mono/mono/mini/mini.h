@@ -612,6 +612,12 @@ typedef struct {
 	gulong inlined_methods;
 	gulong basic_blocks;
 	gulong max_basic_blocks;
+	gulong cas_declsec_check;
+	gulong cas_linkdemand_icall;
+	gulong cas_linkdemand_pinvoke;
+	gulong cas_linkdemand_aptc;
+	gulong cas_linkdemand;
+	gulong cas_demand_generation;
 	MonoMethod *max_ratio_method;
 	MonoMethod *biggest_method;
 	gboolean enabled;
@@ -922,7 +928,6 @@ extern void
 mono_perform_ssapre (MonoCompile *cfg);
 
 /* CAS - stack walk */
-//MonoBoolean ves_icall_System_Security_SecurityFrame_GetSecurityFrameInformation (gint32 skip, MonoReflectionMethod **method, gint32 *flags);
 MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip);
 MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip);
 

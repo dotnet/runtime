@@ -8,6 +8,7 @@
  */
 
 #include "declsec.h"
+#include "mini.h"
 
 /*
  * Does the methods (or it's class) as any declarative security attribute ?
@@ -16,6 +17,8 @@
 MonoBoolean
 mono_method_has_declsec (MonoMethod *method)
 {
+	mono_jit_stats.cas_declsec_check++;
+
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		method = mono_marshal_method_from_wrapper (method);
 		if (!method)
@@ -112,6 +115,8 @@ mono_declsec_linkdemand_standard (MonoDomain *domain, MonoMethod *caller, MonoMe
 {
 	MonoDeclSecurityActions linkclass, linkmethod;
 
+	mono_jit_stats.cas_linkdemand++;
+
 	if (mono_declsec_get_linkdemands (callee, &linkclass, &linkmethod)) {
 		MonoAssembly *assembly = mono_image_get_assembly (caller->klass->image);
 		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (domain, assembly);
@@ -146,9 +151,11 @@ mono_declsec_linkdemand_standard (MonoDomain *domain, MonoMethod *caller, MonoMe
 static gboolean
 mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee)
 {
-	MonoSecurityManager* secman;
+	MonoSecurityManager* secman = NULL;
 	MonoAssembly *assembly;
 	guint32 size = 0;
+
+	mono_jit_stats.cas_linkdemand_aptc++;
 
 	/* A - Applicable only if we're calling into *another* assembly */
 	if (caller->klass->image == callee->klass->image)
@@ -228,6 +235,8 @@ mono_declsec_linkdemand_ecma (MonoMethod *caller, MonoMethod *icall)
 {
 	MonoAssembly *assembly;
 
+	mono_jit_stats.cas_linkdemand_icall++;
+
 	/* some icall are public (i.e. they CAN be called by any code) */
 	if (((icall->klass->flags & TYPE_ATTRIBUTE_PUBLIC) == TYPE_ATTRIBUTE_PUBLIC) &&
 		((icall->flags & FIELD_ATTRIBUTE_PUBLIC) == FIELD_ATTRIBUTE_PUBLIC)) {
@@ -278,6 +287,8 @@ static gboolean
 mono_declsec_linkdemand_pinvoke (MonoDomain *domain, MonoMethod *caller, MonoMethod *native)
 {
 	MonoAssembly *assembly = mono_image_get_assembly (caller->klass->image);
+
+	mono_jit_stats.cas_linkdemand_pinvoke++;
 
 	/* Check for P/Invoke flag for the assembly */
 	if (!MONO_SECMAN_FLAG_INIT (assembly->unmanaged)) {

@@ -3281,6 +3281,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MonoInst *args [2];
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
 
+		mono_jit_stats.cas_demand_generation++;
+
 		if (actions.demand.blob) {
 			/* Add code for SecurityAction.Demand */
 			NEW_DECLSECCONST (cfg, args[0], image, actions.demand);
@@ -9861,6 +9863,15 @@ print_jit_stats (void)
 			 mono_stats.inflated_method_count);
 		g_print ("Inflated types:         %ld\n", mono_stats.inflated_type_count);
 		g_print ("Generics metadata size: %ld\n", mono_stats.generics_metadata_size);
+
+		if (mono_use_security_manager) {
+			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
+			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
+			g_print ("LinkDemand (icall)    : %ld\n", mono_jit_stats.cas_linkdemand_icall);
+			g_print ("LinkDemand (pinvoke)  : %ld\n", mono_jit_stats.cas_linkdemand_pinvoke);
+			g_print ("LinkDemand (aptc)     : %ld\n", mono_jit_stats.cas_linkdemand_aptc);
+			g_print ("Demand (code gen)     : %ld\n", mono_jit_stats.cas_demand_generation);
+		}
 	}
 }
 
