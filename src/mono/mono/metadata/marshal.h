@@ -46,8 +46,14 @@ mono_array_to_lparray (MonoArray *array);
 void
 mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
 
+void
+mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
+
 gpointer
 mono_string_builder_to_utf8 (MonoStringBuilder *sb);
+
+gpointer
+mono_string_builder_to_utf16 (MonoStringBuilder *sb);
 
 gpointer
 mono_string_to_ansibstr (MonoString *string_obj);
