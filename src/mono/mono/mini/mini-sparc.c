@@ -22,6 +22,9 @@
 #include <thread.h>
 #endif
 
+#include <unistd.h>
+#include <sys/mman.h>
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/tokentype.h>
@@ -3537,6 +3540,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOCALLOC: {
 			guint32 size_reg;
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+			/* Perform stack touching */
+			NOT_IMPLEMENTED;
+#endif
+
 			/* Keep alignment */
 			sparc_add_imm (code, FALSE, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->dreg);
 			sparc_set (code, ~(MONO_ARCH_FRAME_ALIGNMENT - 1), sparc_o7);
@@ -3586,6 +3594,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_SPARC_LOCALLOC_IMM: {
 			gint32 offset = ins->inst_c0;
+
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+			/* Perform stack touching */
+			NOT_IMPLEMENTED;
+#endif
+
 			offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 			if (sparc_is_imm13 (offset))
 				sparc_sub_imm (code, FALSE, sparc_sp, offset, sparc_sp);
@@ -4433,6 +4447,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->stack_offset = offset;
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+			/* Perform stack touching */
+			NOT_IMPLEMENTED;
+#endif
+
 	if (!sparc_is_imm13 (- cfg->stack_offset)) {
 		/* Can't use sparc_o7 here, since we're still in the caller's frame */
 		sparc_set (code, (- cfg->stack_offset), GP_SCRATCH_REG);
@@ -4834,19 +4853,26 @@ mono_arch_get_lmf_addr (void)
 #endif
 }
 
-void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
-{
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+/*
+ * There seems to be no way to determine stack boundaries under solaris,
+ * so it's not possible to determine whenever a SIGSEGV is caused by stack
+ * overflow or not.
+ */
+#error "--with-sigaltstack=yes not supported on solaris"
+
+static void
+setup_stack (MonoJitTlsData *tls)
+{
 #ifdef __linux__
 	struct sigaltstack sa;
 #else
 	stack_t         sigstk;
 #endif
  
-	printf ("SIGALT!\n");
 	/* Setup an alternate signal stack */
-	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE);
+	tls->signal_stack = mmap (0, SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	tls->signal_stack_size = SIGNAL_STACK_SIZE;
 
 #ifdef __linux__
@@ -4860,8 +4886,13 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	sigstk.ss_flags = 0;
 	g_assert (sigaltstack (&sigstk, NULL) == 0);
 #endif
+}
+
 #endif
 
+void
+mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+{
 	if (!lmf_addr_key_inited) {
 		int res;
 
@@ -4880,6 +4911,10 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	thr_setspecific (lmf_addr_key, &tls->lmf);
 #else
 	pthread_setspecific (lmf_addr_key, &tls->lmf);
+#endif
+
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	setup_stack (tls);
 #endif
 }
 
