@@ -1736,7 +1736,14 @@ reg: OP_CHECK_ARRAY_TYPE (reg) {
 				       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, elclass_reg, 
 				       class_reg, G_STRUCT_OFFSET (MonoClass, element_class));
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, elclass_reg, tree->klass);
+	if (mono_compile_aot) {
+		int klass_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_CLASSCONST (s, klass_reg, tree->klass);
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, elclass_reg, klass_reg);
+	} else {
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, elclass_reg, tree->klass);
+	}
+	
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "ArrayTypeMismatchException");
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
