@@ -74,8 +74,25 @@
 
 ** Apr 20, 2002
 
-	A number of optimizations in the runtime made the compiler
-	twice as fast this week:
+	Some updates from the hacking lines:
+
+	<b>The web:</b> Patrik Torstensson last week contributed the
+	http runtime support and started work on thread pools.  This
+	is part of the ASP.NET support.
+
+	<b>Docs:</b> John Barnette, John Sohn and Adam Treat have been
+	hacking on MonoDoc.
+
+	<b>ADO.NET:</b> Daniel Morgan and Rodrigo Moya have been
+	working on the <a href="ado-net">ADO.NET</a> support, and got
+	the first signs of life this week (we can connect, insert
+	rows; do transactions: commit/rollback; SQL errors and
+	exceptions work).  Check <a
+	href="mailing-lists.html">mono-patches</a> for all the
+	goodies.
+
+	<b>Optimizations:</b> A number of optimizations in the runtime
+	made the compiler twice as fast this week:
 
 	Early this week Patrik started the string
 	rewrite in the runtime.  Today Dietmar finished the
@@ -84,13 +101,18 @@
 	Paolo got the JIT engine to generate profiles, which were in
 	turn used to find hot spots in Reflection, which he improved.
 
-	Dan (of Regex fame) noticed the performance issues with our
-	current array layout, and contributed a new array
+	Daniel Lewis (of Regex fame) noticed the performance issues
+	with our current array layout, and contributed a new array
 	representation.
 
 	At the same time Dietmar started the the JIT inline code and
 	implemented constant propagation.  These two optimizations
 	together are very powerful.
+
+	<b>Bug fixing:</b> And of course everyone has been helping out
+	with the bug fixing (Duncan, Gonzalo, Jonathan, Miguel, Nick,
+	Ravi, Sergey)
+
 
 ** Apr 18, 2002
 

@@ -27,7 +27,7 @@
 	Using existing libraries to implement some of the functionality required
 
 	<ul>
- 		* gdk-pixbuf is a generic image loader that loads an image
+		* gdk-pixbuf is a generic image loader that loads an image
 		  and leaves it into an RGB buffer.  It hides all the details
 		  about what image file format is being loaded.
 
@@ -50,12 +50,12 @@
 	
 	<ul>
 	
-	        * gdk-pixbuf can be used to load images for Gtk+,
+		* gdk-pixbuf can be used to load images for Gtk+,
 		  MacOS X and Windows, it should be pretty portable,
 		  although we might need in the future to back-port
 		  some new features from Gtk head. 
 
-	        * Libart is probably only going to be used with X11,
+		* Libart is probably only going to be used with X11,
 		  as the MacOS X provides the same features in Quartz,
 		  and Win32 *probably* has that in GDI+.  If not, we
 		  should use libart in Win32 as well (or for older
