@@ -1552,7 +1552,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 	
 	switch (t){
 	case MONO_TYPE_BOOLEAN:
-		return g_strdup_printf ("%s", *ptr ? "true" : "false");
+		return g_strdup_printf ("%s", *ptr ? "bool(true)" : "bool(false)");
 		
 	case MONO_TYPE_CHAR:
 		return g_strdup_printf ("%c", *ptr); /* FIXME: unicode char */
