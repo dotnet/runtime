@@ -461,6 +461,26 @@ pinvoke_info (MonoImage *m, guint32 mindex)
 	return NULL;
 }
 
+static void
+cattrs_for_method (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
+	MonoTableInfo *methodt;
+	MonoTableInfo *paramt;
+	guint param_index, lastp, i, pid;
+
+	methodt = &m->tables [MONO_TABLE_METHOD];
+	paramt = &m->tables [MONO_TABLE_PARAM];
+	param_index = mono_metadata_decode_row_col (methodt, midx, MONO_METHOD_PARAMLIST);
+	if (midx + 1 < methodt->rows)
+		lastp = mono_metadata_decode_row_col (methodt, midx + 1, MONO_METHOD_PARAMLIST);
+	else
+		lastp = paramt->rows + 1;
+	for (i = param_index; i < lastp; ++i) {
+		pid = mono_metadata_decode_row_col (paramt, i - 1, MONO_PARAM_SEQUENCE);
+		fprintf (output, "\t.param [%d]\n", pid);
+		dump_cattrs (m, MONO_TOKEN_PARAM_DEF | i, "\t");
+	}
+}
+
 /**
  * dis_method_list:
  * @m: metadata context
@@ -511,6 +531,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		
 		fprintf (output, "    {\n");
 		dump_cattrs (m, MONO_TOKEN_METHOD_DEF | (i + 1), "        ");
+		cattrs_for_method (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dis_code (m, cols [MONO_METHOD_RVA]);
