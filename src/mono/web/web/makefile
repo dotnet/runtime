@@ -1,5 +1,5 @@
 CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
-
+CSC=csc
 CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=	\
@@ -55,8 +55,14 @@ NON_HTML_SOURCES=	\
 	../mono-build-w32.sh
 
 
-all: $(OBJECTS)
+all: $(OBJECTS) index.rss
 	perl process.pl commands template.html.in deploy
+
+index.rss: mono-rss.exe ../index
+	mono-rss.exe ../index deploy/index.rss
+
+mono-rss.exe: mono-rss.cs rss.cs 
+	$(CSC) mono-rss.cs rss.cs
 
 clean:
 	rm -f $(OBJECTS) $(patsubst deploy/%.html,src/%.src, $(OBJECTS)) src/*.xml src/*.html.in ../class-status-* ../class-status
