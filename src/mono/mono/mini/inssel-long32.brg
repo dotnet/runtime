@@ -244,6 +244,27 @@ lreg: OP_LONG_SHRUN_32 (lreg) {
      	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
 }
 
+reg: OP_LCONV_TO_I4 (OP_LONG_SHRUN_32 (lreg)),
+reg: OP_LCONV_TO_U4 (OP_LONG_SHRUN_32 (lreg)) {
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->left->reg2);
+}
+
+
+lreg: OP_LONG_SHRUN_32 (CEE_LDIND_I8 (base)) {
+	/* just move the upper half to the lower and zero the high word */
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
+	                               state->left->left->tree->inst_basereg, state->left->left->tree->inst_offset + MINI_MS_WORD_OFFSET);
+     	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
+}
+
+reg: OP_LCONV_TO_I4 (OP_LONG_SHRUN_32 (CEE_LDIND_I8 (base))),
+reg: OP_LCONV_TO_U4 (OP_LONG_SHRUN_32 (CEE_LDIND_I8 (base))) {
+	/* just move the upper half to the lower and zero the high word */
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
+	                               state->left->left->left->tree->inst_basereg,
+				       state->left->left->left->tree->inst_offset + MINI_MS_WORD_OFFSET);
+}
+
 lreg: OP_LADD (lreg, lreg) {
 	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_BIALU (s, tree, OP_ADC, state->reg2, state->left->reg2, state->right->reg2);
@@ -677,28 +698,25 @@ reg: OP_LCONV_TO_I4 (i8con) {
      	MONO_EMIT_NEW_ICONST (s, state->reg1, state->left->tree->inst_ls_word);
 }
 
-reg: OP_LCONV_TO_I4 (lreg) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-}
-
+reg: OP_LCONV_TO_I4 (lreg),
 reg: OP_LCONV_TO_U4 (lreg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
-lreg: OP_LCONV_TO_U8 (lreg) {
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg1);
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg2, state->left->reg2);
+reg: OP_LCONV_TO_I4 (CEE_LDIND_I8 (base)),
+reg: OP_LCONV_TO_U4 (CEE_LDIND_I8 (base)) {
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, state->reg1, 
+				   state->left->left->tree->inst_basereg, 
+				   state->left->left->tree->inst_offset + MINI_LS_WORD_OFFSET);
 }
 
+lreg: OP_LCONV_TO_U8 (lreg),
 lreg: OP_LCONV_TO_I8 (lreg) {
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg1);
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg2, state->left->reg2);
 }
 
-reg: OP_LCONV_TO_U (lreg) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-}
-
+reg: OP_LCONV_TO_U (lreg),
 reg: OP_LCONV_TO_I (lreg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
