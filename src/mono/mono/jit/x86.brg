@@ -4819,7 +4819,7 @@ mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh) {
 
 	gint64 res, t1;
 	gint32 sign;
-
+G_BREAKPOINT ();
 	/* need to work with absoulte values, so find out what the
 	   resulting sign will be and convert any negative numbers
 	   from two's complement
