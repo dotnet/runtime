@@ -69,8 +69,7 @@ struct _MonoSymbolTable {
 	 * Data table.
 	 * This is intentionally not a GPtrArray to make it more easy to
 	 * read for the debugger.  The `data_tables' field contains
-	 * `num_data_tables' pointers to continuous memory areas of
-	 * `data_table_chunk_size' bytes each.
+	 * `num_data_tables' pointers to continuous memory areas.
 	 *
 	 * The data table is basically a big continuous blob, but we need
 	 * to split it up into pieces because we don't know the total size
@@ -78,26 +77,18 @@ struct _MonoSymbolTable {
 	 * reallocate the block to a different address.
 	 */
 	guint32 num_data_tables;
-	guint32 data_table_chunk_size;
 	gpointer *data_tables;
 	/*
 	 * Current data table.
-	 * The `current_data_table' points to a blob of `data_table_chunk_size'
+	 * The `current_data_table' points to a blob of `current_data_table_size'
 	 * bytes.
 	 */
 	gpointer current_data_table;
+	guint32 current_data_table_size;
 	/*
-	 * This is the total size of the data table, including all the tables
-	 * in the `data_tables' vector.
+	 * The offset in the `current_data_table'.
 	 */
-	guint32 data_table_size;
-	/*
-	 * These are global offsets - the `current_data_table' starts at global
-	 * offset `data_table_start' and we've already allocated stuff in it
-	 * until offset `data_table_offset'.
-	 */
-	guint32 data_table_offset;
-	guint32 data_table_start;
+	guint32 current_data_table_offset;
 };
 
 typedef enum {

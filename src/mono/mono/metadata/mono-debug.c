@@ -11,7 +11,7 @@
 
 #define SYMFILE_TABLE_CHUNK_SIZE	16
 #define DATA_TABLE_PTR_CHUNK_SIZE	256
-#define DATA_TABLE_CHUNK_SIZE		131072
+#define DATA_TABLE_CHUNK_SIZE		32768
 
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
@@ -154,6 +154,9 @@ mono_debug_open_image (MonoImage *image)
 {
 	MonoDebugHandle *handle;
 
+	if (mono_image_is_dynamic (image))
+		return NULL;
+
 	handle = _mono_debug_get_image (image);
 	if (handle != NULL)
 		return handle;
@@ -201,56 +204,61 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
  * Returns the global offset which is to be used to reference this data item and
  * a pointer (in the `ptr' argument) which is to be used to write it.
  */
-static guint32
-allocate_data_item (MonoSymbolTable *table, MonoDebugDataItemType type, guint32 size, guint8 **ptr)
+static guint8 *
+allocate_data_item (MonoDebugDataItemType type, guint32 size)
 {
-	guint32 retval;
+	guint32 chunk_size;
 	guint8 *data;
 
-	g_assert (size + 8 < DATA_TABLE_CHUNK_SIZE);
-	g_assert (ptr != NULL);
+	g_assert (mono_symbol_table);
+
+	if (size + 12 < DATA_TABLE_CHUNK_SIZE)
+		chunk_size = DATA_TABLE_CHUNK_SIZE;
+	else
+		chunk_size = size + 12;
 
 	/* Initialize things if necessary. */
-	if (!table->current_data_table) {
-		table->current_data_table = g_malloc0 (DATA_TABLE_CHUNK_SIZE);
-		table->data_table_size = DATA_TABLE_CHUNK_SIZE;
-		table->data_table_chunk_size = DATA_TABLE_CHUNK_SIZE;
-		table->data_table_offset = 0;
+	if (!mono_symbol_table->current_data_table) {
+		mono_symbol_table->current_data_table = g_malloc0 (chunk_size);
+		mono_symbol_table->current_data_table_size = chunk_size;
+		mono_symbol_table->current_data_table_offset = 4;
+
+		* ((guint32 *) mono_symbol_table->current_data_table) = chunk_size;
 	}
 
  again:
 	/* First let's check whether there's still enough room in the current_data_table. */
-	if (table->data_table_offset + size + 8 < table->data_table_size) {
-		retval = table->data_table_offset;
-		table->data_table_offset += size + 8;
-		data = ((guint8 *) table->current_data_table) + retval - table->data_table_start;
+	if (mono_symbol_table->current_data_table_offset + size + 8 < mono_symbol_table->current_data_table_size) {
+		data = ((guint8 *) mono_symbol_table->current_data_table) + mono_symbol_table->current_data_table_offset;
+		mono_symbol_table->current_data_table_offset += size + 8;
+
 		* ((guint32 *) data) = size;
 		data += 4;
 		* ((guint32 *) data) = type;
 		data += 4;
-		*ptr = data;
-		return retval;
+		return data;
 	}
 
 	/* Add the current_data_table to the data_tables vector and ... */
-	if (!table->data_tables) {
+	if (!mono_symbol_table->data_tables) {
 		guint32 tsize = sizeof (gpointer) * DATA_TABLE_PTR_CHUNK_SIZE;
-		table->data_tables = g_malloc0 (tsize);
+		mono_symbol_table->data_tables = g_malloc0 (tsize);
 	}
 
-	if (!((table->num_data_tables + 1) % DATA_TABLE_PTR_CHUNK_SIZE)) {
-		guint32 chunks = (table->num_data_tables + 1) / DATA_TABLE_PTR_CHUNK_SIZE;
+	if (!((mono_symbol_table->num_data_tables + 1) % DATA_TABLE_PTR_CHUNK_SIZE)) {
+		guint32 chunks = (mono_symbol_table->num_data_tables + 1) / DATA_TABLE_PTR_CHUNK_SIZE;
 		guint32 tsize = sizeof (gpointer) * DATA_TABLE_PTR_CHUNK_SIZE * (chunks + 1);
 
-		table->data_tables = g_realloc (table->data_tables, tsize);
+		mono_symbol_table->data_tables = g_realloc (mono_symbol_table->data_tables, tsize);
 	}
 
-	table->data_tables [table->num_data_tables++] = table->current_data_table;
+	mono_symbol_table->data_tables [mono_symbol_table->num_data_tables++] = mono_symbol_table->current_data_table;
 
 	/* .... allocate a new current_data_table. */
-	table->current_data_table = g_malloc0 (DATA_TABLE_CHUNK_SIZE);
-	table->data_table_start = table->data_table_offset = table->data_table_size;
-	table->data_table_size += DATA_TABLE_CHUNK_SIZE;
+	mono_symbol_table->current_data_table = g_malloc0 (chunk_size);
+	mono_symbol_table->current_data_table_size = chunk_size;
+	mono_symbol_table->current_data_table_offset = 4;
+	* ((guint32 *) mono_symbol_table->current_data_table) = chunk_size;
 
 	goto again;
 }
@@ -416,7 +424,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		return NULL;
 	}
 
-	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_METHOD, total_size, (guint8 **) &address);
+	address = (MonoDebugMethodAddress *) allocate_data_item (MONO_DEBUG_DATA_ITEM_METHOD, total_size);
 
 	address->size = total_size;
 	address->symfile_id = handle->index;
@@ -620,7 +628,7 @@ mono_debug_add_type (MonoClass *klass)
 		return;
 	}
 
-	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size, (guint8 **) &entry);
+	entry = (MonoDebugClassEntry *) allocate_data_item (MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
 	entry->size = total_size;
 	entry->symfile_id = handle->index;
