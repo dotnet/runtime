@@ -42,6 +42,8 @@ case "$host" in
 		AC_DEFINE(PLATFORM_WIN32,1,[Platform is Win32])
 		CC="gcc -mno-cygwin"
 		HOST_CC="gcc"
+		# So libgc configure gets -mno-cygwin
+		export CC
 # latest libgc already defines GC_WIN32_THREADS
 #		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS -DWIN32_THREADS"
 		CPPFLAGS="$CPPFLAGS -DWIN32_THREADS"
@@ -317,7 +319,7 @@ esac
 
 
 # tell libgc/configure about what we want
-ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads CC=$CC"
+ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads"
 
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)
