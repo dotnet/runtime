@@ -71,5 +71,21 @@ class Tests {
 		return 0;
 	}
 
+	unsafe static float GetFloat (byte *ptr) {
+		return *(float*)ptr;
+	}
+
+	unsafe public static float GetFloat(float value)
+		{
+			return GetFloat((byte *)&value);
+		}
+
+	/* bug #42134 */
+	static int test_2_inline_saved_arg_type () {
+		float f = 100.0f;
+		return GetFloat (f) == f? 2: 1;
+	}
+
+
 }
 

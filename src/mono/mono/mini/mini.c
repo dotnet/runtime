@@ -1991,7 +1991,7 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 		if (sp [0]->opcode == OP_ICONST) {
 			*args++ = sp [0];
 		} else {
-			temp = mono_compile_create_var (cfg, type_from_stack_type (*sp), OP_LOCAL);
+			temp = mono_compile_create_var (cfg, sig->params [i], OP_LOCAL);
 			*args++ = temp;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, *sp);
 			store->cil_code = sp [0]->cil_code;
