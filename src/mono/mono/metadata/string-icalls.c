@@ -288,7 +288,7 @@ ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValu
 	srclen = mono_string_length(me);
 
 	if (oldstrlen != newstrlen) {
-		for (i = 0; i != srclen - oldstrlen + 1; i++)
+		for (i = 0; i < srclen - oldstrlen; i++)
 			if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2)))
 				occurr++;
 
