@@ -145,6 +145,12 @@ mono_test_many_double_arguments (double a, double b, double c, double d, double 
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
+double
+mono_test_split_double_arguments (double a, double b, float c, double d, double e)
+{
+	return a + b + c + d + e;
+}
+
 int
 mono_test_puts_static (char *s)
 {

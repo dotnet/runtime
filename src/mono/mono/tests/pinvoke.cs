@@ -21,6 +21,8 @@ public class Test {
 	[DllImport ("libtest", EntryPoint="mono_test_many_double_arguments")]
 	public static extern double mono_test_many_double_arguments (double a, double b, double c, double d, double e,
 								double f, double g, double h, double i, double j);
+	[DllImport ("libtest", EntryPoint="mono_test_split_double_arguments")]
+	public static extern double mono_test_split_double_arguments (double a, double b, float c, double d, double e);
 
 	public static int Main () {
 		try {
@@ -43,6 +45,10 @@ public class Test {
 			return 6;
 		if (mono_test_many_double_arguments (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0) != 55.0)
 			return 7;
+
+		/* Test Sparc V8 split register/stack double parameter passing */
+		if (mono_test_split_double_arguments (1.0, 2.0, 3.0f, 4.0, 5.0) != 15.0)
+			return 8;
 		
 		return 0;
 	}
