@@ -22,6 +22,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <math.h>
+#include <locale.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -5111,7 +5112,8 @@ mono_main (int argc, char *argv [])
 	int enable_debugging = FALSE;
 	MainThreadArgs main_args;
 	const char *error;
-	
+
+	setlocale (LC_ALL, "");
 	if (argc < 2)
 		usage ();
 
