@@ -21,11 +21,7 @@
  * all memory when the pool is destroyed.
  */
 
-#if SIZEOF_VOID_P > SIZEOF_LONG
-#define MEM_ALIGN     SIZEOF_VOID_P
-#else
-#define MEM_ALIGN     SIZEOF_LONG
-#endif
+#define MEM_ALIGN 8
 
 #define MONO_MEMPOOL_PAGESIZE 8192
 
@@ -33,6 +29,7 @@ struct _MonoMemPool {
 	MonoMemPool *next;
 	gint rest;
 	gpointer pos;
+	double pad; /* to assure proper alignment */
 };
 
 /**
@@ -43,8 +40,8 @@ struct _MonoMemPool {
 MonoMemPool *
 mono_mempool_new ()
 {
-
 	MonoMemPool *pool = g_malloc (MONO_MEMPOOL_PAGESIZE);
+
 	pool->next = NULL;
 	pool->pos = (char *)pool + sizeof (MonoMemPool);
 	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
