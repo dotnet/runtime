@@ -238,6 +238,16 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (type->type, p, &p);
 		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, type), p, &p);
 		break;
+#if 0
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS: {
+		MonoClass *k = mono_class_from_mono_type (type);
+		mono_metadata_encode_value (type->type, p, &p);
+		/* ensure only non-byref gets passed to mono_image_typedef_or_ref() */
+		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, &k->byval_arg), p, &p);
+		break;
+	}
+#endif
 	case MONO_TYPE_ARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, type->data.array->type, p, &p);
@@ -737,9 +747,7 @@ fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoClassField *field)
 	
 	p = buf = g_malloc (64);
 	
-	/* No start code with field refs...
-	 * mono_metadata_encode_value (0x06, p, &p);
-	 */
+	mono_metadata_encode_value (0x06, p, &p);
 	/* encode custom attributes before the type */
 	encode_type (assembly, field->type, p, &p);
 	g_assert (p-buf < 64);
