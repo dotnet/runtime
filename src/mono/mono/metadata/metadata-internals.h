@@ -3,17 +3,18 @@
 #define __MONO_METADATA_INTERNALS_H__
 
 #include "mono/metadata/image.h"
+#include "mono/metadata/blob.h"
 #include "mono/utils/mono-hash.h"
 
 struct _MonoAssembly {
 	int   ref_count;
 	char *basedir;
-	gboolean in_gac;
 	MonoAssemblyName aname;
 	GModule *aot_module;
 	MonoImage *image;
-	gboolean dynamic;
-	gboolean corlib_internal;
+	guint8 in_gac;
+	guint8 dynamic;
+	guint8 corlib_internal;
 };
 
 typedef struct {
@@ -22,8 +23,9 @@ typedef struct {
 } MonoStreamHeader;
 
 struct _MonoTableInfo {
-	guint32   rows, row_size;
 	const char *base;
+	guint       rows     : 24;
+	guint       row_size : 8;
 
 	/*
 	 * Tables contain up to 9 columns and the possible sizes of the
@@ -44,7 +46,11 @@ struct _MonoImage {
 	/* if f is NULL the image was loaded from raw data */
 	char *raw_data;
 	guint32 raw_data_len;
-	gboolean raw_data_allocated;
+	guint8 raw_data_allocated;
+
+	/* Whenever this is a dynamically emitted module */
+	guint8 dynamic;
+
 	char *name;
 	const char *assembly_name;
 	const char *module_name;
@@ -54,7 +60,7 @@ struct _MonoImage {
 
 	char                *raw_metadata;
 			    
-	gboolean             idx_string_wide, idx_guid_wide, idx_blob_wide;
+	guint8               idx_string_wide, idx_guid_wide, idx_blob_wide;
 			    
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;
@@ -64,7 +70,8 @@ struct _MonoImage {
 			    
 	const char          *tables_base;
 
-	MonoTableInfo        tables [64];
+	/**/
+	MonoTableInfo        tables [MONO_TABLE_NUM];
 
 	/*
 	 * references is initialized only by using the mono_assembly_open
@@ -138,9 +145,6 @@ struct _MonoImage {
 
 	/* dll map entries */
 	GHashTable *dll_map;
-
-	/* Whenever this is a dynamically emitted module */
-	gboolean dynamic;
 };
 
 enum {
@@ -161,19 +165,18 @@ typedef struct {
 typedef struct {
 	guint32 alloc_rows;
 	guint32 rows;
-	guint32 row_size; /*  calculated later with column_sizes */
-	guint32 columns;
-	guint32 column_sizes [9]; 
-	guint32 *values; /* rows * columns */
+	guint8  row_size; /*  calculated later with column_sizes */
+	guint8  columns;
 	guint32 next_idx;
+	guint32 *values; /* rows * columns */
 } MonoDynamicTable;
 
 struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
-	gboolean run;
-	gboolean save;
 	char *strong_name;
 	guint32 strong_name_size;
+	guint8 run;
+	guint8 save;
 };
 
 struct _MonoDynamicImage {
@@ -219,7 +222,7 @@ struct _MonoDynamicImage {
 	MonoDynamicStream blob;
 	MonoDynamicStream tstream;
 	MonoDynamicStream guid;
-	MonoDynamicTable tables [64];
+	MonoDynamicTable tables [MONO_TABLE_NUM];
 };
 
 MonoClass**

@@ -423,16 +423,19 @@ load_tables (MonoImage *image)
 	
 	for (table = 0; table < 64; table++){
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
+			if (table > MONO_TABLE_LAST)
+				continue;
 			image->tables [table].rows = 0;
 			continue;
 		}
 		if (table > MONO_TABLE_LAST) {
 			g_warning("bits in valid must be zero above 0x2d (II - 23.1.6)");
+		} else {
+			image->tables [table].rows = read32 (rows);
 		}
 		/*if ((sorted_mask & ((guint64) 1 << table)) == 0){
 			g_print ("table %s (0x%02x) is sorted\n", mono_meta_table_name (table), table);
 		}*/
-		image->tables [table].rows = read32 (rows);
 		rows++;
 		valid++;
 	}
@@ -1375,7 +1378,7 @@ mono_image_get_filename (MonoImage *image)
 const MonoTableInfo*
 mono_image_get_table_info (MonoImage *image, int table_id)
 {
-	if (table_id < 0 || table_id >= 64)
+	if (table_id < 0 || table_id >= MONO_TABLE_NUM)
 		return NULL;
 	return &image->tables [table_id];
 }
@@ -1383,7 +1386,7 @@ mono_image_get_table_info (MonoImage *image, int table_id)
 int
 mono_image_get_table_rows (MonoImage *image, int table_id)
 {
-	if (table_id < 0 || table_id >= 64)
+	if (table_id < 0 || table_id >= MONO_TABLE_NUM)
 		return 0;
 	return image->tables [table_id].rows;
 }

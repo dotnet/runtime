@@ -742,7 +742,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 	int i;
 	const char *base = meta->tables_base;
 	
-	for (i = 0; i < 64; i++){
+	for (i = 0; i < MONO_TABLE_NUM; i++){
 		if (meta->tables [i].rows == 0)
 			continue;
 

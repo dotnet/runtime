@@ -72,7 +72,7 @@ typedef struct {
 	MonoReflectionGenericParam *gparam;
 } GenericParamTableEntry;
 
-const unsigned char table_sizes [64] = {
+const unsigned char table_sizes [MONO_TABLE_NUM] = {
 	MONO_MODULE_SIZE,
 	MONO_TYPEREF_SIZE,
 	MONO_TYPEDEF_SIZE,
@@ -118,9 +118,8 @@ const unsigned char table_sizes [64] = {
 
 	MONO_GENERICPARAM_SIZE,	/* 0x2A */
 	MONO_METHODSPEC_SIZE,
-	MONO_GENPARCONSTRAINT_SIZE,
+	MONO_GENPARCONSTRAINT_SIZE
 
-	0	/* 0x2D */
 };
 
 static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
@@ -3345,10 +3344,10 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	meta_size += assembly->sheap.index;
 	meta_size += assembly->us.index;
 
-	for (i=0; i < 64; ++i)
+	for (i=0; i < MONO_TABLE_NUM; ++i)
 		meta->tables [i].rows = assembly->tables [i].rows;
 	
-	for (i = 0; i < 64; i++){
+	for (i = 0; i < MONO_TABLE_NUM; i++){
 		if (meta->tables [i].rows == 0)
 			continue;
 		valid_mask |= (guint64)1 << i;
@@ -3435,7 +3434,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	*int64val++ = GUINT64_TO_LE (valid_mask & sorted_mask); /* bitvector of sorted tables  */
 	p += 16;
 	int32val = (guint32*)p;
-	for (i = 0; i < 64; i++){
+	for (i = 0; i < MONO_TABLE_NUM; i++){
 		if (meta->tables [i].rows == 0)
 			continue;
 		*int32val++ = GUINT32_TO_LE (meta->tables [i].rows);
@@ -3464,7 +3463,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 		qsort (table->values + MONO_DECL_SECURITY_SIZE, table->rows, sizeof (guint32) * MONO_DECL_SECURITY_SIZE, compare_declsecurity_attrs);
 
 	/* compress the tables */
-	for (i = 0; i < 64; i++){
+	for (i = 0; i < MONO_TABLE_NUM; i++){
 		int row, col;
 		guint32 *values;
 		guint32 bitfield = meta->tables [i].size_bitfield;
@@ -4259,7 +4258,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 
 	image->cli_header_offset = mono_image_add_stream_zero (&image->code, sizeof (MonoCLIHeader));
 
-	for (i=0; i < 64; ++i) {
+	for (i=0; i < MONO_TABLE_NUM; ++i) {
 		image->tables [i].next_idx = 1;
 		image->tables [i].columns = table_sizes [i];
 	}

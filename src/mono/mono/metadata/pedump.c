@@ -281,7 +281,7 @@ dump_metadata (MonoImage *meta)
 	dump_metadata_ptrs (meta);
 
 	printf ("Rows:\n");
-	for (table = 0; table < 64; table++){
+	for (table = 0; table < MONO_TABLE_NUM; table++){
 		if (meta->tables [table].rows == 0)
 			continue;
 		printf ("Table %s: %d records (%d bytes, at %p)\n",
