@@ -2750,9 +2750,17 @@ stmt: BLE_UN (lreg, lreg) {
 #} 
 
 reg: CONV_I4 (freg) {
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+	x86_fnstcw_membase(s->code, X86_ESP, 0);
+	x86_mov_reg_membase (s->code, tree->reg1, X86_ESP, 0, 2);
+	x86_alu_reg_imm (s->code, X86_OR, tree->reg1, 0xc00);
+	x86_mov_membase_reg (s->code, X86_ESP, 2, tree->reg1, 2);
+	x86_fldcw_membase (s->code, X86_ESP, 2);
 	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
 	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
 	x86_pop_reg (s->code, tree->reg1);
+	x86_fldcw_membase (s->code, X86_ESP, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 }
 
 reg: CEQ (freg, freg) {
