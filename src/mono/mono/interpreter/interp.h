@@ -28,6 +28,7 @@ typedef struct {
 		double f;
 		/* native size integer and pointer types */
 		gpointer p;
+		guint nati; /* FIXME: not 64 bit clean */
 		struct {
 			gpointer vt;
 			MonoClass *klass;

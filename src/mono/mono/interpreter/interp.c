@@ -527,6 +527,26 @@ ves_pinvoke_method (MonoInvocation *frame)
 		stackval_from_data (sig->ret, frame->retval, res);
 }
 
+static void
+dump_stack (stackval *stack, stackval *sp)
+{
+	stackval *s = stack;
+	
+	if (sp == stack)
+		return;
+	
+	while (s < sp) {
+		switch (s->type) {
+		case VAL_I32: g_print ("[%d] ", s->data.i); break;
+		case VAL_I64: g_print ("[%lld] ", s->data.l); break;
+		case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
+		case VAL_VALUET: g_print ("[vt: %p] ", s->data.vt.vt); break;
+		default: g_print ("[%p] ", s->data.p); break;
+		}
+		++s;
+	}
+}
+
 #define DEBUG_INTERP 0
 #if DEBUG_INTERP
 #define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
@@ -543,29 +563,6 @@ output_indent (void)
 
 	for (h = 0; h < debug_indent_level; h++)
 		g_print ("  ");
-}
-
-static void
-dump_stack (stackval *stack, stackval *sp)
-{
-	stackval *s = stack;
-	
-	if (sp == stack)
-		return;
-	
-	output_indent ();
-	g_print ("stack: ");
-		
-	while (s < sp) {
-		switch (s->type) {
-		case VAL_I32: g_print ("[%d] ", s->data.i); break;
-		case VAL_I64: g_print ("[%lld] ", s->data.l); break;
-		case VAL_DOUBLE: g_print ("[%0.5f] ", s->data.f); break;
-		case VAL_VALUET: g_print ("[vt: %p] ", s->data.vt.vt); break;
-		default: g_print ("[%p] ", s->data.p); break;
-		}
-		++s;
-	}
 }
 
 #define DEBUG_ENTER()	\
@@ -749,6 +746,8 @@ ves_exec_method (MonoInvocation *frame)
 	main_loop:
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
+		output_indent ();
+		g_print ("stack: ");
 		dump_stack (frame->stack, sp);
 		g_print ("\n");
 		output_indent ();
@@ -815,7 +814,7 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				sp->type = VAL_TP;
 				sp->data.p = ARG_POS (*ip);
-				sp->data.vt.klass = t->data.klass;
+				sp->data.vt.klass = mono_class_from_mono_type (t);
 			}
 			++sp;
 			++ip;
@@ -1594,46 +1593,92 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_NATI)
 				sp->data.p = (gpointer)(~ (int)sp->data.p);
 			BREAK;
-		CASE (CEE_CONV_I1) ves_abort(); BREAK;
-		CASE (CEE_CONV_I2) ves_abort(); BREAK;
+		CASE (CEE_CONV_I1) {
+			++ip;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.i = (gint8)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				sp [-1].data.i = (gint8)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.i = (gint8)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.i = (gint8)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I32;
+			BREAK;
+		}
+		CASE (CEE_CONV_I2) {
+			++ip;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.i = (gint16)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				sp [-1].data.i = (gint16)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.i = (gint16)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.i = (gint16)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I32;
+			BREAK;
+		}
+		CASE (CEE_CONV_U4) /* Fall through */
 		CASE (CEE_CONV_I4) {
 			++ip;
-			/* FIXME: handle other cases. what about sign? */
-
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
 				sp [-1].data.i = (gint32)sp [-1].data.f;
-				sp [-1].type = VAL_I32;
 				break;
+			case VAL_I64:
+				sp [-1].data.i = (gint32)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
 			case VAL_I32:
 				break;
 			default:
-				ves_abort();
+				sp [-1].data.i = (gint32)sp [-1].data.p;
+				break;
 			}
+			sp [-1].type = VAL_I32;
 			BREAK;
 		}
 		CASE (CEE_CONV_I8) ves_abort(); BREAK;
-		CASE (CEE_CONV_R4) ves_abort(); BREAK;
-		CASE (CEE_CONV_R8)
+		CASE (CEE_CONV_R4) /* Fall through */
+		CASE (CEE_CONV_R8) {
 			++ip;
-			/* FIXME: handle other cases. what about sign? */
-			if (sp [-1].type == VAL_I32) {
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.f = (double)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				sp [-1].data.f = (double)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
 				sp [-1].data.f = (double)sp [-1].data.i;
-				sp [-1].type = VAL_DOUBLE;
-			} else {
-				ves_abort();
+				break;
+			default:
+				sp [-1].data.f = (double)sp [-1].data.nati;
+				break;
 			}
+			sp [-1].type = VAL_DOUBLE;
 			BREAK;
-		CASE (CEE_CONV_U4)
-			++ip;
-			/* FIXME: handle other cases. what about sign? */
-			if (sp [-1].type == VAL_DOUBLE) {
-				sp [-1].data.i = (guint32)sp [-1].data.f;
-				sp [-1].type = VAL_I32;
-			} else {
-				ves_abort();
-			}
-			BREAK;
+		}
 		CASE (CEE_CONV_U) 
 			++ip;
 			/* FIXME: handle other cases */
@@ -2474,15 +2519,17 @@ ves_exec_method (MonoInvocation *frame)
 		/*
 		 * If we get here, no handler was found: print a stack trace.
 		 */
-		g_print ("Unhandled exception.\n");
+		g_print ("Unhandled exception %s.%s.\n", frame->ex->klass->name_space, frame->ex->klass->name);
 		for (inv = frame, i = 0; inv; inv = inv->parent, ++i) {
 			MonoClass *k = inv->method->klass;
 			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
 			/*
 			 * FIXME: print out also the arguments passed to the func.
 			 */
-			g_print ("#%d: 0x%05x in %s.%s::%s ()\n", i, inv->ip - hd->code, 
+			g_print ("#%d: 0x%05x in %s.%s::%s (", i, inv->ip - hd->code, 
 							k->name_space, k->name, inv->method->name);
+			dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
+			g_print (")\n");
 		}
 		exit (1);
 	}
