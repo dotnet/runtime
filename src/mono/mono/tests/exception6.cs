@@ -193,17 +193,25 @@ public class Ex {
 			if (ocount != 1)
 				return 19;
 
-			/*
 			ocount = 0;
 			try {
-				uint a = 0xffffffff;
-				uint t = a*2;
+				ulong a = 0xffffffffff;
+				ulong t = a*0x0ffffff;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 20;
+
+			ocount = 0;
+			try {
+				ulong a = 0xffffffffff;
+				ulong t = a*0x0fffffff;
 			} catch {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 20;
-			*/
+				return 21;
 		}
 		
 		return 0;

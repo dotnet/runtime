@@ -70,7 +70,10 @@ enter_method (MonoMethod *method, gpointer ebp)
 		int size, align;
 		size = mono_type_size (type, &align);
 
-		switch (type->type) {
+		if (type->byref) {
+			printf ("[BYREF:%p], ", *((gpointer *)ebp)); 
+		} else switch (type->type) {
+			
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
@@ -181,17 +184,17 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 	}
 	case MONO_TYPE_OBJECT: {
 		MonoObject *o = (MonoObject *)eax;
-		
-		if (o->klass == mono_defaults.boolean_class) {
-			printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
-		} else if  (o->klass == mono_defaults.int32_class) {
-			printf ("[INT32:%p:%d]", o, *((gint32 *)((gpointer)o + sizeof (MonoObject))));	
-		} else {
-			if (o)
+
+		if (o) {
+			if (o->klass == mono_defaults.boolean_class) {
+				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
+			} else if  (o->klass == mono_defaults.int32_class) {
+				printf ("[INT32:%p:%d]", o, *((gint32 *)((gpointer)o + sizeof (MonoObject))));	
+			} else
 				printf ("[%s.%s:%p]", o->klass->name_space, o->klass->name, o);
-			else
-				printf ("[OBJECT:%p]", (gpointer)eax);
-		}
+		} else
+			printf ("[OBJECT:%p]", o);
+	       
 		break;
 	}
 	case MONO_TYPE_CLASS:
@@ -524,6 +527,8 @@ tree_preallocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->left->exclude_mask |= (1 << X86_ECX);
 			break;
 		case MB_TERM_MUL:
+		case MB_TERM_MUL_OVF:
+		case MB_TERM_MUL_OVF_UN:
 		case MB_TERM_DIV:
 		case MB_TERM_DIV_UN:
 		case MB_TERM_REM:
@@ -1098,7 +1103,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 	if (ji) { /* we are inside managed code */
 		MonoMethod *m = ji->method;
-		unsigned next_bp, next_ip;
+		unsigned next_bp;
 		int offset = 2;
 
 		if (ji->num_clauses) {

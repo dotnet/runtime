@@ -1369,7 +1369,9 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 				break;
 			case CEE_CEQ:
 			case CEE_CLT:
+			case CEE_CLT_UN:
 			case CEE_CGT:
+			case CEE_CGT_UN:
 			case CEE_UNALIGNED_:
 			case CEE_VOLATILE_:
 				ip++;
@@ -3013,7 +3015,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			MAKE_CMP (CEQ)
 			MAKE_CMP (CLT)
+			MAKE_CMP (CLT_UN)
 			MAKE_CMP (CGT)
+			MAKE_CMP (CGT_UN)
 
 			case CEE_RETHROW: {
 				++ip;
@@ -3351,17 +3355,12 @@ main (int argc, char *argv [])
 	lmf_thread_id = TlsAlloc ();
 	TlsSetValue (lmf_thread_id, NULL);
 
+	mono_install_trampoline (arch_create_jit_trampoline);
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_handler (arch_get_throw_exception ());
 	mono_init ();
 
-	/*
-	 * This doesn't seem to work... :-(
-	if (mono_debug_handle)
-		mono_install_trampoline (arch_compile_method);
-	else*/
-		mono_install_trampoline (arch_create_jit_trampoline);
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){
