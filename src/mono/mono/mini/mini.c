@@ -5050,10 +5050,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
 			
 			/* we need to make sure that this array is exactly the type it needs
-			 * to be for correctness. the stelemref wrapper is lax with its usage
-			 * so we need to ignore it there
+			 * to be for correctness. the wrappers are lax with their usage
+			 * so we need to ignore them here
 			 */
-			if (!klass->valuetype && method->wrapper_type != MONO_WRAPPER_STELEMREF) {
+			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE) {
 				MonoInst* check;
 				MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
 				check->cil_code = ip;
