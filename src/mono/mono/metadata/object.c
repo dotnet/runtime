@@ -27,6 +27,12 @@
 #include <gc/gc.h>
 #endif
 
+/* 
+ * enable to get a good speedup: we still need to figure out
+ * how the sync structure is freed.
+ */
+#define CREATION_SPEEDUP 0
+
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -725,6 +731,8 @@ mono_object_allocate (size_t size)
 	void *o = calloc (1, size);
 #endif
 
+	mono_stats.new_object_count++;
+
 	return o;
 }
 
@@ -771,8 +779,6 @@ MonoObject *
 mono_object_new_specific (MonoVTable *vtable)
 {
 	MonoObject *o;
-
-	mono_stats.new_object_count++;
 
 	o = mono_object_allocate (vtable->klass->instance_size);
 	o->vtable = vtable;
@@ -961,7 +967,17 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	gsize byte_len;
 
 	byte_len = n * mono_array_element_size (vtable->klass);
+#if CREATION_SPEEDUP
+	if (vtable->klass->element_class->byval_arg.type >= MONO_TYPE_BOOLEAN && vtable->klass->element_class->byval_arg.type <= MONO_TYPE_R4) {
+		o = GC_malloc_atomic (sizeof (MonoArray) + byte_len);
+		o->synchronisation = 0;
+		memset (((MonoArray*)o)->vector, 0, byte_len);
+	} else {
+		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	}
+#else
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+#endif
 	if (!o)
 		G_BREAKPOINT ();
 	o->vtable = vtable;
@@ -1005,11 +1021,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
 
-	/* 
-	 * enable to get a good speedup: we still need to figure out
-	 * how the sync structure is freed.
-	 */
-#if 0
+#if CREATION_SPEEDUP
 	s = GC_malloc_atomic (sizeof (MonoString) + ((len + 1) * 2));
 	s->object.synchronisation = 0;
 	mono_string_chars (s) [len] = 0;
