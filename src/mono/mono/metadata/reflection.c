@@ -440,11 +440,11 @@ fat_header:
 	fat_header [0] = fat_flags;
 	fat_header [1] = (header_size / 4 ) << 4;
 	shortp = (guint16*)(fat_header + 2);
-	*shortp = max_stack;
+	*shortp = GUINT16_TO_LE (max_stack);
 	intp = (guint32*)(fat_header + 4);
-	*intp = code_size;
+	*intp = GUINT32_TO_LE (code_size);
 	intp = (guint32*)(fat_header + 8);
-	*intp = local_sig;
+	*intp = GUINT32_TO_LE (local_sig);
 	idx = mono_image_add_stream_data (&assembly->code, fat_header, 12);
 	/* add to the fixup todo list */
 	if (mb->ilgen && mb->ilgen->num_token_fixups)
@@ -794,6 +794,8 @@ swap_with_size (char *dest, const char* val, int len, int nelem) {
 		default:
 			g_assert_not_reached ();
 		}
+		dest += len;
+		val += len;
 	}
 #else
 	memcpy (dest, val, len * nelem);
@@ -1553,19 +1555,19 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	*p++ = 'B'; *p++ = 'S'; *p++ = 'J'; *p++ = 'B';
 	/* version numbers and 4 bytes reserved */
 	int16val = (guint16*)p;
-	*int16val++ = 1;
-	*int16val = 1;
+	*int16val++ = GUINT16_TO_LE (1);
+	*int16val = GUINT16_TO_LE (1);
 	p += 8;
 	/* version string */
 	int32val = (guint32*)p;
-	*int32val = strlen (version);
+	*int32val = GUINT32_TO_LE (strlen (version));
 	p += 4;
-	memcpy (p, version, *int32val);
-	p += *int32val;
+	memcpy (p, version, GUINT32_FROM_LE (*int32val));
+	p += GUINT32_FROM_LE (*int32val);
 	align_pointer (meta->raw_metadata, p);
 	int16val = (guint16*)p;
-	*int16val++ = 0; /* flags must be 0 */
-	*int16val = 5; /* number of streams */
+	*int16val++ = GUINT16_TO_LE (0); /* flags must be 0 */
+	*int16val = GUINT16_TO_LE (5); /* number of streams */
 	p += 4;
 
 	/*
@@ -1577,9 +1579,10 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	assembly->tstream.index = heapt_size;
 	for (i = 0; i < 5; ++i) {
 		int32val = (guint32*)p;
-		*int32val++ = stream_desc [i].stream->offset = table_offset;
-		*int32val = stream_desc [i].stream->index;
-		table_offset += *int32val;
+		stream_desc [i].stream->offset = table_offset;
+		*int32val++ = GUINT32_TO_LE (table_offset);
+		*int32val = GUINT32_TO_LE (stream_desc [i].stream->index);
+		table_offset += GUINT32_FROM_LE (*int32val);
 		table_offset += 3; table_offset &= ~3;
 		p += 8;
 		strcpy (p, stream_desc [i].name);
@@ -1592,7 +1595,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	g_assert ((p - (unsigned char*)meta->raw_metadata) < assembly->tstream.offset);
 	p = meta->raw_metadata + assembly->tstream.offset;
 	int32val = (guint32*)p;
-	*int32val = 0; /* reserved */
+	*int32val = GUINT32_TO_LE (0); /* reserved */
 	p += 4;
 	*p++ = 1; /* version */
 	*p++ = 0;
@@ -1605,14 +1608,14 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	++p;
 	*p++ = 0; /* reserved */
 	int64val = (guint64*)p;
-	*int64val++ = valid_mask;
-	*int64val++ = valid_mask & sorted_mask; /* bitvector of sorted tables  */
+	*int64val++ = GUINT64_TO_LE (valid_mask);
+	*int64val++ = GUINT64_TO_LE (valid_mask & sorted_mask); /* bitvector of sorted tables  */
 	p += 16;
 	int32val = (guint32*)p;
 	for (i = 0; i < 64; i++){
 		if (meta->tables [i].rows == 0)
 			continue;
-		*int32val++ = meta->tables [i].rows;
+		*int32val++ = GUINT32_TO_LE (meta->tables [i].rows);
 	}
 	p = (unsigned char*)int32val;
 
@@ -1640,12 +1643,12 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 					break;
 				case 2:
 					int16val = (guint16*)p;
-					*int16val = values [col];
+					*int16val = GUINT16_TO_LE (values [col]);
 					p += 2;
 					break;
 				case 4:
 					int32val = (guint32*)p;
-					*int32val = values [col];
+					*int32val = GUINT32_TO_LE (values [col]);
 					p += 4;
 					break;
 				default:
@@ -2044,42 +2047,41 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	header = (MonoDotNetHeader *)(buffer + sizeof (MonoMSDOSHeader));
 	section = (MonoSectionTable*) (buffer + sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader));
 
-	/* FIXME: ENDIAN problem: byteswap as needed */
-	msdos->pe_offset = sizeof (MonoMSDOSHeader);
+	msdos->pe_offset = GUINT32_FROM_LE (sizeof (MonoMSDOSHeader));
 
 	header->pesig [0] = 'P';
 	header->pesig [1] = 'E';
 	header->pesig [2] = header->pesig [3] = 0;
 
-	header->coff.coff_machine = 0x14c;
-	header->coff.coff_sections = 2; /* only .text and .reloc supported now */
-	header->coff.coff_time = time (NULL);
-	header->coff.coff_opt_header_size = sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4;
+	header->coff.coff_machine = GUINT16_FROM_LE (0x14c);
+	header->coff.coff_sections = GUINT16_FROM_LE (2); /* only .text and .reloc supported now */
+	header->coff.coff_time = GUINT32_FROM_LE (time (NULL));
+	header->coff.coff_opt_header_size = GUINT16_FROM_LE (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4);
 	/* it's an exe */
-	header->coff.coff_attributes = 0x010e;
+	header->coff.coff_attributes = GUINT16_FROM_LE (0x010e);
 	/* it's a dll */
-	//header->coff.coff_attributes = 0x210e;
-	header->pe.pe_magic = 0x10B;
+	//header->coff.coff_attributes = GUINT16_FROM_LE (0x210e);
+	header->pe.pe_magic = GUINT16_FROM_LE (0x10B);
 	header->pe.pe_major = 6;
 	header->pe.pe_minor = 0;
 	/* set later: pe_code_size pe_data_size pe_rva_entry_point pe_rva_code_base pe_rva_data_base */
 
-	header->nt.pe_image_base = 0x400000;
-	header->nt.pe_section_align = 8192;
-	header->nt.pe_file_alignment = FILE_ALIGN;
-	header->nt.pe_os_major = 4;
-	header->nt.pe_os_minor = 0;
-	header->nt.pe_subsys_major = 4;
+	header->nt.pe_image_base = GUINT32_FROM_LE (0x400000);
+	header->nt.pe_section_align = GUINT32_FROM_LE (8192);
+	header->nt.pe_file_alignment = GUINT32_FROM_LE (FILE_ALIGN);
+	header->nt.pe_os_major = GUINT16_FROM_LE (4);
+	header->nt.pe_os_minor = GUINT16_FROM_LE (0);
+	header->nt.pe_subsys_major = GUINT16_FROM_LE (4);
 	/* need to set pe_image_size, pe_header_size */
-	header->nt.pe_header_size = 0x200;
-	header->nt.pe_image_size = 0x00008000;
-	header->nt.pe_subsys_required = 3; /* 3 -> cmdline app, 2 -> GUI app */
-	header->nt.pe_stack_reserve = 0x00100000;
-	header->nt.pe_stack_commit = 0x00001000;
-	header->nt.pe_heap_reserve = 0x00100000;
-	header->nt.pe_heap_commit = 0x00001000;
-	header->nt.pe_loader_flags = 0;
-	header->nt.pe_data_dir_count = 16;
+	header->nt.pe_header_size = GUINT32_FROM_LE (0x200);
+	header->nt.pe_image_size = GUINT32_FROM_LE (0x00008000);
+	header->nt.pe_subsys_required = GUINT16_FROM_LE (3); /* 3 -> cmdline app, 2 -> GUI app */
+	header->nt.pe_stack_reserve = GUINT32_FROM_LE (0x00100000);
+	header->nt.pe_stack_commit = GUINT32_FROM_LE (0x00001000);
+	header->nt.pe_heap_reserve = GUINT32_FROM_LE (0x00100000);
+	header->nt.pe_heap_commit = GUINT32_FROM_LE (0x00001000);
+	header->nt.pe_loader_flags = GUINT32_FROM_LE (0);
+	header->nt.pe_data_dir_count = GUINT32_FROM_LE (16);
 
 #if 0
 	/* set: */
@@ -2088,30 +2090,32 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	pe_reloc_table
 	pe_iat	
 #endif
-	header->datadir.pe_cli_header.size = 72;
-	header->datadir.pe_cli_header.rva = assembly->text_rva; /* we put it always at the beginning */
+	header->datadir.pe_cli_header.size = GUINT32_FROM_LE (72);
+	header->datadir.pe_cli_header.rva = GUINT32_FROM_LE (assembly->text_rva); /* we put it always at the beginning */
 
 	/* Write section tables */
 	strcpy (section->st_name, ".text");
-	section->st_virtual_address = assembly->text_rva;
-	section->st_virtual_size = assembly->meta_size + assembly->code.index;
-	section->st_raw_data_size = section->st_virtual_size + (FILE_ALIGN - 1);
-	section->st_raw_data_size &= ~(FILE_ALIGN - 1);
-	section->st_raw_data_ptr = TEXT_OFFSET;
-	section->st_flags = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
+	section->st_virtual_address = GUINT32_FROM_LE (assembly->text_rva);
+	section->st_virtual_size = GUINT32_FROM_LE (assembly->meta_size + assembly->code.index);
+	section->st_raw_data_size = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_virtual_size) + (FILE_ALIGN - 1));
+	section->st_raw_data_size &= GUINT32_FROM_LE (~(FILE_ALIGN - 1));
+	section->st_raw_data_ptr = GUINT32_FROM_LE (TEXT_OFFSET);
+	section->st_flags = GUINT32_FROM_LE (SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ);
 
 	reloc = section + 1;
 	strcpy (reloc->st_name, ".reloc");
-	reloc->st_virtual_address = section->st_virtual_address + section->st_raw_data_size;
-	reloc->st_virtual_size = 12;
-	reloc->st_raw_data_size = reloc->st_virtual_size + (FILE_ALIGN - 1);
-	reloc->st_raw_data_size &= ~(FILE_ALIGN - 1);
-	reloc->st_raw_data_ptr = section->st_raw_data_ptr + section->st_raw_data_size;
-	reloc->st_flags = SECT_FLAGS_MEM_DISCARDABLE | SECT_FLAGS_HAS_INITIALIZED_DATA | SECT_FLAGS_MEM_READ;
+	reloc->st_virtual_address = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_virtual_address)
+						     + GUINT32_TO_LE (section->st_raw_data_size));
+	reloc->st_virtual_size = GUINT32_FROM_LE (12);
+	reloc->st_raw_data_size = GUINT32_FROM_LE (GUINT32_TO_LE (reloc->st_virtual_size) + (FILE_ALIGN - 1));
+	reloc->st_raw_data_size &= GUINT32_FROM_LE (~(FILE_ALIGN - 1));
+	reloc->st_raw_data_ptr = GUINT32_FROM_LE (GUINT32_TO_LE (section->st_raw_data_ptr)
+						  + GUINT32_TO_LE (section->st_raw_data_size));
+	reloc->st_flags = GUINT32_FROM_LE (SECT_FLAGS_MEM_DISCARDABLE | SECT_FLAGS_HAS_INITIALIZED_DATA | SECT_FLAGS_MEM_READ);
 	
 
-	header->pe.pe_code_size = section->st_raw_data_size;
-	header->pe.pe_rva_entry_point = TEXT_OFFSET + CLI_H_SIZE + entry_offset;
+	header->pe.pe_code_size = section->st_raw_data_size; /* already in native */
+	header->pe.pe_rva_entry_point = GUINT32_FROM_LE (TEXT_OFFSET + CLI_H_SIZE + entry_offset);
 
 	/* 
 	 * align: build_compressed_metadata () assumes metadata is aligned 
@@ -2125,15 +2129,15 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	 * Write the MonoCLIHeader header 
 	 */
 	cli_header = (MonoCLIHeader*)(buffer + TEXT_OFFSET);
-	cli_header->ch_size = 72;
-	cli_header->ch_runtime_major = 2;
-	cli_header->ch_flags = CLI_FLAGS_ILONLY;
+	cli_header->ch_size = GUINT32_FROM_LE (72);
+	cli_header->ch_runtime_major = GUINT16_FROM_LE (2);
+	cli_header->ch_flags = GUINT32_FROM_LE (CLI_FLAGS_ILONLY);
 	if (assemblyb->entry_point) 
-		cli_header->ch_entry_point = assemblyb->entry_point->table_idx | MONO_TOKEN_METHOD_DEF;
+		cli_header->ch_entry_point = GUINT32_FROM_LE (assemblyb->entry_point->table_idx | MONO_TOKEN_METHOD_DEF);
 	else
-		cli_header->ch_entry_point = 0;
-	cli_header->ch_metadata.rva = assembly->text_rva + assembly->code.index + CLI_H_SIZE;
-	cli_header->ch_metadata.size = assembly->meta_size;
+		cli_header->ch_entry_point = GUINT32_FROM_LE (0);
+	cli_header->ch_metadata.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->code.index + CLI_H_SIZE);
+	cli_header->ch_metadata.size = GUINT32_FROM_LE (assembly->meta_size);
 	
 	return header_size;
 }

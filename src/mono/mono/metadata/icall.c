@@ -538,7 +538,7 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	} \
 }
 
-	printf ("Initialize array with elements of %s type\n", klass->element_class->name);
+	/* printf ("Initialize array with elements of %s type\n", klass->element_class->name); */
 
 	switch (klass->element_class->byval_arg.type) {
 	case MONO_TYPE_CHAR:
