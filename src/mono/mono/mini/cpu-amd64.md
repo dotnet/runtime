@@ -280,7 +280,7 @@ reg:
 regoffset:
 label:
 store_membase_imm: dest:b len:15
-store_membase_reg: dest:b src1:i len:8
+store_membase_reg: dest:b src1:i len:9
 storei8_membase_reg: dest:b src1:i len:9
 storei1_membase_imm: dest:b len:11
 storei1_membase_reg: dest:b src1:i len:9
@@ -300,7 +300,7 @@ loadi4_membase: dest:i src1:b len:9
 loadu4_membase: dest:i src1:b len:9
 loadi8_membase: dest:i src1:b len:17
 loadr4_membase: dest:f src1:b len:12
-loadr8_membase: dest:f src1:b len:8
+loadr8_membase: dest:f src1:b len:9
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 move: dest:i src1:i len:4
@@ -477,7 +477,7 @@ fmove: dest:f src1:f len:8
 call_handler: len:14
 aot_const: dest:i len:10
 x86_test_null: src1:i len:5
-x86_compare_membase_reg: src1:b src2:i len:7
+x86_compare_membase_reg: src1:b src2:i len:9
 x86_compare_membase_imm: src1:b len:12
 x86_compare_reg_membase: src1:i src2:b len:7
 x86_inc_reg: dest:i src1:i clob:1 len:3
@@ -496,7 +496,7 @@ x86_xchg: src1:i src2:i clob:x len:2
 x86_fpop: src1:f len:3
 x86_fp_load_i8: dest:f src1:b len:8
 x86_fp_load_i4: dest:f src1:b len:8
-x86_seteq_membase: src1:b len:8
+x86_seteq_membase: src1:b len:9
 x86_add_membase: dest:i src1:i src2:b clob:1 len:12
 x86_sub_membase: dest:i src1:i src2:b clob:1 len:12
 x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
