@@ -3129,6 +3129,7 @@ array_constructed:
 				/* defined as NOP */
 			} else if(sp [-1].type == VAL_I64) {
 				sp [-1].data.i = (gint32)sp [-1].data.l;
+				sp [-1].type = VAL_I32;
 			} else {
 				ves_abort();
 			}
@@ -3140,6 +3141,7 @@ array_constructed:
 				/* defined as NOP */
 			} else if(sp [-1].type == VAL_I64) {
 				sp [-1].data.i = (guint32)sp [-1].data.l;
+				sp [-1].type = VAL_I32;
 			} else {
 				ves_abort();
 			}
@@ -3149,6 +3151,7 @@ array_constructed:
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
 				sp [-1].data.l = (guint64)sp [-1].data.l;
+				sp [-1].type = VAL_I64;
 			} else if(sp [-1].type == VAL_I64) {
 				/* defined as NOP */
 			} else {
@@ -3160,6 +3163,7 @@ array_constructed:
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
 				sp [-1].data.l = (guint64) sp [-1].data.i;
+				sp [-1].type = VAL_I64;
 			} else if(sp [-1].type == VAL_I64) {
 				/* defined as NOP */
 			} else {
