@@ -919,13 +919,21 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 
 	case MONO_TYPE_ARRAY: {
 		MonoArray array;
+		MonoArrayBounds bounds;
 
-		*((guint32 *) ptr)++ = -5 - sizeof (gpointer);
+		*((guint32 *) ptr)++ = -13 - sizeof (gpointer);
 		*ptr++ = 3;
 		*ptr++ = sizeof (MonoArray);
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
+		*ptr++ = type->data.array->rank;
+		*ptr++ = (guint8*)&array.bounds - (guint8*)&array;
+		*ptr++ = sizeof (MonoArrayBounds);
+		*ptr++ = (guint8*)&bounds.lower_bound - (guint8*)&bounds;
+		*ptr++ = sizeof (bounds.lower_bound);
+		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
+		*ptr++ = sizeof (bounds.length);
 		*((gpointer *) ptr)++ = write_type (symfile, type->data.array->type);
 		break;
 	}
