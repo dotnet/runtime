@@ -3094,6 +3094,21 @@ ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoS
 #endif
 }
 
+/* Only used for value types */
+static MonoObject *
+ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MonoDomain *domain;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_object_domain (type);
+	klass = mono_class_from_mono_type (type->type);
+
+	return mono_object_new (domain, klass);
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3631,6 +3646,12 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Diagnostics.DefaultTraceListener::WriteWindowsDebugString",
 	ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString,
+	/*
+	 * System.Activator
+	 */
+	"System.Activator::CreateInstanceInternal",
+	ves_icall_System_Activator_CreateInstanceInternal,
+
 	/*
 	 * add other internal calls here
 	 */
