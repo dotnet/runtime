@@ -3296,7 +3296,7 @@ lreg: CONV_I8 (freg) {
 	x86_pop_reg (s->code, tree->reg1);
 	x86_pop_reg (s->code, tree->reg2);
 	x86_fldcw_membase (s->code, X86_ESP, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 }
 
 reg: CEQ (freg, freg) {
