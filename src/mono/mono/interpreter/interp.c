@@ -3038,7 +3038,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			token = read32 (ip);
 			ip += 4;
 
-			if (!(child_frame.method = mono_get_method (image, token, NULL)))
+			if (frame->method->wrapper_type != MONO_WRAPPER_NONE)
+				child_frame.method = (MonoMethod *)mono_method_get_wrapper_data (frame->method, token);
+			else 
+				child_frame.method = mono_get_method (image, token, NULL);
+			if (!child_frame.method)
 				THROW_EX (mono_get_exception_missing_method (), ip -5);
 
 			csig = child_frame.method->signature;
