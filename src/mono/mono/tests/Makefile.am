@@ -71,6 +71,7 @@ TESTSRC=			\
 	pop.cs			\
 	time.cs			\
 	appdomain.cs		\
+	appdomain-client.cs	\
 	pointer.cs
 
 

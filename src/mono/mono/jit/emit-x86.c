@@ -778,11 +778,17 @@ arch_compile_method (MonoMethod *method)
 	MonoFlowGraph *cfg;
 	MonoMemPool *mp = mono_mempool_new ();
 	guint8 *addr;
+	GHashTable *jit_code_hash;
 
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
-	if ((addr = g_hash_table_lookup (domain->jit_code_hash, method)))
+	if (mono_jit_share_code)
+		jit_code_hash = mono_root_domain->jit_code_hash;
+	else
+		jit_code_hash = domain->jit_code_hash;
+
+	if ((addr = g_hash_table_lookup (jit_code_hash, method)))
 		return addr;
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
@@ -1014,7 +1020,7 @@ arch_compile_method (MonoMethod *method)
 			method->klass->name, method->name, method, addr);
 	}
 
-	g_hash_table_insert (domain->jit_code_hash, method, addr);
+	g_hash_table_insert (jit_code_hash, method, addr);
 
 	return addr;
 }

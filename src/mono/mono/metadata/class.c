@@ -540,8 +540,6 @@ mono_class_init (MonoClass *class)
 		++i;
 	}
 
-	mono_runtime_class_init (class);
-
 	/*
 	printf ("VTABLE %s.%s\n", class->name_space, class->name); 
 
@@ -616,6 +614,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	g_hash_table_insert (domain->class_vtable_hash, class, vt);
+
+	mono_runtime_class_init (class);
 
 	return vt;
 }

@@ -5,8 +5,18 @@ using System.Threading;
 class Container {
 
 	[LoaderOptimization (LoaderOptimization.SingleDomain)]
-	static void Main ()
+	static int arg_sum (string[] args) {
+		int res = 0;
+		foreach (string s in args) {
+			res += Convert.ToInt32 (s);
+		}
+		return res;
+	}
+	
+	static int Main ()
 	{
+		int res;
+		
 		AppDomainSetup setup = new AppDomainSetup ();
 		setup.ApplicationBase = ".";
 
@@ -14,10 +24,13 @@ class Container {
 			
 		AppDomain newDomain = AppDomain.CreateDomain ("NewDomain", new Evidence (), setup);
 
-		string[] args = { "test0", "test1" };
+		string[] args = { "1", "2", "3"};		
+		res = newDomain.ExecuteAssembly ("appdomain-client.exe", null, args);
+		if (res != arg_sum (args))
+			return 1;
 		
-		newDomain.ExecuteAssembly ("jit-int.exe", null, args);
-
 		Console.WriteLine ("Ready");
+
+		return 0;
 	}
 }
