@@ -23,6 +23,17 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Oct 4, 2001
+
+	Our System.Reflection.Emit implementation created its first
+	executable today.  This means that a very simple .NET program
+	that was compiled on Windows was able to generate a .NET program
+	while running on Linux using the Mono runtime.
+
+	The various piece of the puzzle are starting to get together:
+	the compiler can compile simple programs now and we are
+	basically focusing on completeness now.  
+
 ** Sep 28, 2001
 
 	<a
