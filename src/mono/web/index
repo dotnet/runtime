@@ -23,6 +23,17 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Oct 5, 2001
+
+	Sergey has released his first version of the <b>ildasm</b>
+	assembler written in C#.  You can get it from his web page:
+	<a
+	href="http://mono.eurosoft.od.ua">http://mono.eurosoft.od.ua</a>.
+
+	The plan is to integrate ildasm into the Mono CVS soon.  This
+	component should in theory also be reusable for SharpDevelop
+	eventually.
+
 ** Oct 4, 2001
 
 	Our System.Reflection.Emit implementation created its first
