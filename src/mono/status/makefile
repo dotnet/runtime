@@ -15,16 +15,16 @@ push:
 	scp *.html *.xml www@www:/web/cvsmodules/mono/class-status
 
 clean:
-	rm -f compare.exe compare.pdb corlib.xml ByMaintainer.exe ByNamespace.exe *~ .*~
-	rm -rf bn
-	rm -rf bm
+	-rm -f compare.exe compare.pdb corlib.xml ByMaintainer.exe ByNamespace.exe *~ .*~
+	-rm -rf bn
+	-rm -rf bm
 
 ByNamespace:
 	$(CSC) ByNamespace.cs
-	mkdir bn
+	-mkdir bn
 	./ByNamespace
 
 ByMaintainer:
 	$(CSC) ByMaintainer.cs
-	mkdir bm
+	-mkdir bm
 	./ByMaintainer
