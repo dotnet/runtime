@@ -5049,6 +5049,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
 	static MonoClass *System_Reflection_Module;
 	MonoReflectionModule *res;
+	char* basename;
 	
 	CHECK_OBJECT (MonoReflectionModule *, image, NULL);
 	if (!System_Reflection_Module)
@@ -5060,8 +5061,10 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
 
 	res->fqname    = mono_string_new (domain, image->name);
-	res->name      = mono_string_new (domain, g_path_get_basename (image->name));
+	res->name      = mono_string_new (domain, basename = g_path_get_basename (image->name));
 	res->scopename = mono_string_new (domain, image->module_name);
+	
+	g_free (basename);
 
 	if (image->assembly->image == image) {
 		res->token = mono_metadata_make_token (MONO_TABLE_MODULE, 1);
