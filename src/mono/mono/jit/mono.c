@@ -4,7 +4,7 @@
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)
  *
- * (C) 2002 Ximian, Inc (http://www.ximian.com)
+ * (C) 2001, 2002 Ximian, Inc (http://www.ximian.com)
  */
 #include "jit.h"
 #include "regset.h"
@@ -51,10 +51,9 @@ static void
 usage (char *name)
 {
 	fprintf (stderr,
-		 "%s %s, the Mono ECMA CLI JIT Compiler, (C) 2001 Ximian, Inc.\n\n"
-		 "Usage is: %s [options] executable args...\n", name,  VERSION, name);
+		 "%s %s, the Mono ECMA CLI JIT Compiler, (C) 2001, 2002 Ximian, Inc.\n\n"
+		 "Usage is: %s [options] executable args...\n\n", name,  VERSION, name);
 	fprintf (stderr,
-		 "Valid Options are:\n"
 		 "Runtime Debugging:\n"
 		 "    -d               debug the jit, show disassembler output.\n"
 		 "    --dump-asm       dumps the assembly code generated\n"

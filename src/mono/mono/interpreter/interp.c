@@ -9,7 +9,7 @@
  *   Miguel de Icaza (miguel@ximian.com)
  *   Dietmar Maurer (dietmar@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001, 2002 Ximian, Inc.
  */
 #ifndef __USE_ISOC99
 #define __USE_ISOC99
@@ -3911,23 +3911,25 @@ static void
 usage (void)
 {
 	fprintf (stderr,
-		 "mint %s, the Mono ECMA CLI interpreter, (C) 2001 Ximian, Inc.\n\n"
-		 "Usage is: mint [options] executable args...\n", VERSION);
+		 "mint %s, the Mono ECMA CLI interpreter, (C) 2001, 2002 Ximian, Inc.\n\n"
+		 "Usage is: mint [options] executable args...\n\n", VERSION);
 	fprintf (stderr,
-		 "Valid Options are:\n"
+		 "Runtime Debugging:\n"
 #ifdef DEBUG_INTERP
-		 "--debug\n"
+		 "   --debug\n"
 #endif
-		 "--help\n"
-		 "--trace\n"
-		 "--traceops\n"
-		 "--traceclassinit\n"
-		 "--noptr\t\t\tdon't print pointer addresses in trace output\n"
-		 "--dieonex\n"
-		 "--profile\n"
-		 "--debug method_name\n"
-		 "--print-vtable\n"
-		 "--opcode-count\n");
+		 "   --dieonex\n"
+		 "   --noptr\t\t\tdon't print pointer addresses in trace output\n"
+		 "   --opcode-count\n"
+		 "   --print-vtable\n"
+		 "   --traceclassinit\n"
+		 "\n"
+		 "Development:\n"
+		 "   --debug method_name\n"
+		 "   --profile\n"
+		 "   --trace\n"
+		 "   --traceops\n"
+		);
 	exit (1);
 }
 
