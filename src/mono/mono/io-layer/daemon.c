@@ -40,6 +40,8 @@ static void signal_handler (int unused)
 static void startup (void)
 {
 	struct sigaction sa;
+	gboolean success;
+	int shm_id;
 	
 	sa.sa_handler=signal_handler;
 	sigemptyset (&sa.sa_mask);
@@ -47,7 +49,11 @@ static void startup (void)
 	sigaction (SIGINT, &sa, NULL);
 	sigaction (SIGTERM, &sa, NULL);
 	
-	_wapi_shared_data=_wapi_shm_attach (TRUE);
+	_wapi_shared_data=_wapi_shm_attach (TRUE, &success, &shm_id);
+	if(success==FALSE) {
+		g_error ("Failed to attach shared memory! (tried shared memory ID 0x%x)", shm_id);
+		exit (-1);
+	}
 
 	/* Leave the first byte NULL so we create the socket in the
 	 * abstrace namespace, not on the filesystem.  (Lets see how
@@ -65,6 +71,10 @@ static void ref_handle (guint32 idx, guint32 handle)
 {
 	guint32 *open_handles=handle_refs[idx];
 	
+	if(handle==0) {
+		return;
+	}
+	
 	_wapi_shared_data->handles[handle].ref++;
 	open_handles[handle]++;
 	
@@ -80,6 +90,10 @@ static gboolean unref_handle (guint32 idx, guint32 handle)
 {
 	guint32 *open_handles=handle_refs[idx];
 	gboolean destroy=FALSE;
+	
+	if(handle==0) {
+		return(FALSE);
+	}
 	
 	_wapi_shared_data->handles[handle].ref--;
 	open_handles[handle]--;
@@ -213,7 +227,7 @@ static void process_open (guint32 idx, guint32 handle)
 	WapiHandleResponse resp;
 	struct _WapiHandleShared *shared=&_wapi_shared_data->handles[handle];
 		
-	if(shared->type!=WAPI_HANDLE_UNUSED) {
+	if(shared->type!=WAPI_HANDLE_UNUSED && handle!=0) {
 		ref_handle (idx, handle);
 
 #ifdef DEBUG

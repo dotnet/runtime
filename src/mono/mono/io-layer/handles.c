@@ -45,7 +45,7 @@ static pthread_condattr_t cond_shared_attr;
 struct _WapiHandleShared_list *_wapi_shared_data=NULL;
 struct _WapiHandlePrivate_list *_wapi_private_data=NULL;
 
-int disable_shm = 1;
+int disable_shm = 0;
 static void shared_init (void)
 {
 	struct sockaddr_un sun;
@@ -58,36 +58,47 @@ static void shared_init (void)
 	if(getenv ("MONO_DISABLE_SHM") || disable_shm)
 #endif
 	{
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": Using process-private handles");
-#endif
 		shared=FALSE;
-
-		_wapi_shared_data=
-			g_malloc0 (sizeof(struct _WapiHandleShared_list)+
-				   _WAPI_SHM_SCRATCH_SIZE);
-		_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
 #ifndef DISABLE_SHARED_HANDLES
 	} else {
-		shared=TRUE;
+		int shm_id;
 		
-		_wapi_shared_data=_wapi_shm_attach (FALSE);
-		_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
+		_wapi_shared_data=_wapi_shm_attach (FALSE, &shared, &shm_id);
+		if(shared==FALSE) {
+			g_warning ("Failed to attach shared memory! "
+				   "(tried shared memory ID 0x%x). "
+				   "Falling back to non-shared handles",
+				   shm_id);
+		}
+#endif /* DISABLE_SHARED_HANDLES */
+	}
+	
 
+	if(shared==TRUE) {
 		daemon_sock=socket (PF_UNIX, SOCK_STREAM, 0);
 		sun.sun_family=AF_UNIX;
 		memcpy (sun.sun_path, _wapi_shared_data->daemon, 108);
 		ret=connect (daemon_sock, (struct sockaddr *)&sun,
 			     sizeof(struct sockaddr_un));
 		if(ret==-1) {
-			g_error (G_GNUC_PRETTY_FUNCTION
-				 "connect to daemon failed: %s",
-				 strerror (errno));
-			g_assert_not_reached ();
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   "connect to daemon failed: %s",
+				   strerror (errno));
+			/* Fall back to private handles */
+			shared=FALSE;
 		}
-#endif /* DISABLE_SHARED_HANDLES */
 	}
+
+	if(shared==FALSE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Using process-private handles");
+#endif
+		_wapi_shared_data=
+			g_malloc0 (sizeof(struct _WapiHandleShared_list)+
+				   _WAPI_SHM_SCRATCH_SIZE);
+	}
+	_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list, 1);
 
 	pthread_mutexattr_init (&mutex_shared_attr);
 	pthread_condattr_init (&cond_shared_attr);
@@ -119,14 +130,18 @@ void _wapi_handle_init (void)
 guint32 _wapi_handle_new_internal (WapiHandleType type)
 {
 	guint32 i;
+	static guint32 last=1;
 	
-	/* A linear scan should be fast enough.  Start from 1, leaving
-	 * 0 (NULL) as a guard
+	/* A linear scan should be fast enough.  Start from the last
+	 * allocation, assuming that handles are allocated more often
+	 * than they're freed. Leave 0 (NULL) as a guard
 	 */
-	for(i=1; i<_WAPI_MAX_HANDLES; i++) {
+again:
+	for(i=last; i<_WAPI_MAX_HANDLES; i++) {
 		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
 		
 		if(shared->type==WAPI_HANDLE_UNUSED) {
+			last=i;
 			shared->type=type;
 			shared->signalled=FALSE;
 			mono_mutex_init (&_wapi_shared_data->handles[i].signal_mutex, &mutex_shared_attr);
@@ -135,6 +150,13 @@ guint32 _wapi_handle_new_internal (WapiHandleType type)
 			return(i);
 		}
 	}
+
+	if(last>1) {
+		/* Try again from the beginning */
+		last=1;
+		goto again;
+	}
+	
 
 	return(0);
 }
@@ -415,6 +437,9 @@ guint32 _wapi_handle_scratch_store_internal (guint32 bytes)
 
 			/* must be used, try next chunk */
 			idx+=(hdr->length+HDRSIZE);
+
+			/* Don't let the coalescing blow away this block */
+			last_was_free=FALSE;
 		}
 	}
 	
@@ -425,6 +450,11 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 {
 	static pthread_mutex_t scratch_mutex=PTHREAD_MUTEX_INITIALIZER;
 	guint32 idx;
+	
+	/* No point storing no data */
+	if(bytes==0) {
+		return(0);
+	}
 	
 	if(shared==TRUE) {
 		WapiHandleRequest scratch;

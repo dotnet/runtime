@@ -125,7 +125,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Recording thread handle %p id %ld status as %d",
-		  handle, thread_handle->thread->id, exitstatus);
+		  handle, thread_private_handle->thread->id, exitstatus);
 #endif
 
 	/* Remove this thread from the hash */
@@ -267,10 +267,12 @@ void ExitThread(guint32 exitcode)
 gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode)
 {
 	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				(gpointer *)&thread_handle, NULL);
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
@@ -280,7 +282,7 @@ gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode)
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Finding exit status for thread handle %p id %ld", handle,
-		  thread_handle->thread->id);
+		  thread_private_handle->thread->id);
 #endif
 
 	if(exitcode==NULL) {

@@ -35,8 +35,14 @@ int main (int argc, char **argv)
 {
 	guint32 idx=0;
 	struct _WapiScratchHeader *hdr;
+	gboolean success;
+	int shm_id;
 	
-	_wapi_shared_data=_wapi_shm_attach (FALSE);
+	_wapi_shared_data=_wapi_shm_attach (FALSE, &success, &shm_id);
+	if(success==FALSE) {
+		g_error ("Failed to attach shared memory! (tried shared memory ID 0x%x)", shm_id);
+		exit (-1);
+	}
 
 	hdr=(struct _WapiScratchHeader *)&_wapi_shared_data->scratch_base[0];
 	if(hdr->flags==0 && hdr->length==0) {

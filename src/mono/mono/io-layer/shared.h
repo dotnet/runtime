@@ -14,7 +14,8 @@ enum {
 
 #define _WAPI_SHM_SCRATCH_SIZE 409600
 
-extern gpointer _wapi_shm_attach (gboolean daemon);
+extern gpointer _wapi_shm_attach (gboolean daemon, gboolean *success,
+				  int *shm_id);
 extern void _wapi_shm_destroy (void);
 
 #endif /* _WAPI_SHARED_H_ */

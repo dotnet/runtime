@@ -47,14 +47,14 @@
 
 #undef DEBUG
 
-gpointer _wapi_shm_attach (gboolean daemon)
+gpointer _wapi_shm_attach (gboolean daemon, gboolean *success, int *shm_id)
 {
 	gpointer shm_seg;
-	int shm_id;
 	key_t key;
 	gboolean fork_daemon=FALSE;
 	struct _WapiHandleShared_list *data;
-
+	int tries;
+	
 	/*
 	 * This is an attempt to get a unique key id.  The first arg
 	 * to ftok is a path, so when the config file support is done
@@ -63,23 +63,23 @@ gpointer _wapi_shm_attach (gboolean daemon)
 	key=ftok (g_get_home_dir (), _WAPI_HANDLE_VERSION);
 	
 try_again:
-	shm_id=shmget (key, sizeof(struct _WapiHandleShared_list)+
-		       _WAPI_SHM_SCRATCH_SIZE, IPC_CREAT | IPC_EXCL | 0600);
-	if(shm_id==-1 && errno==EEXIST) {
+	*shm_id=shmget (key, sizeof(struct _WapiHandleShared_list)+
+			_WAPI_SHM_SCRATCH_SIZE, IPC_CREAT | IPC_EXCL | 0600);
+	if(*shm_id==-1 && errno==EEXIST) {
 		/* Cool, we dont have to fork the handle daemon, but
 		 * we still need to try and get the shm_id.
 		 */
-		shm_id=shmget (key, 0, 0600);
+		*shm_id=shmget (key, 0, 0600);
 			
 		/* it's possible that the shared memory segment was
 		 * deleted in between seeing if it exists, and
 		 * attaching it.  If we got an error here, just try
 		 * attaching it again.
 		 */
-		if(shm_id==-1) {
+		if(*shm_id==-1) {
 			goto try_again;
 		}
-	} else if (shm_id!=-1) {
+	} else if (*shm_id!=-1) {
 		/* We created the shared memory segment, so we need to
 		 * fork the handle daemon too
 		 */
@@ -99,7 +99,7 @@ try_again:
 	 * exiting on error if we created it (ie, if
 	 * fork_daemon==TRUE)
 	 */
-	shm_seg=shmat (shm_id, NULL, 0);
+	shm_seg=shmat (*shm_id, NULL, 0);
 	if(shm_seg==(gpointer)-1) {
 		g_message (G_GNUC_PRETTY_FUNCTION ": shmat error: %s",
 			   strerror (errno));
@@ -111,6 +111,7 @@ try_again:
 
 	if(daemon==TRUE) {
 		/* No more to do in the daemon */
+		*success=TRUE;
 		return(shm_seg);
 	}
 		
@@ -130,17 +131,26 @@ try_again:
 			setsid ();
 			execl (MONO_BINDIR "/mono-handle-d", "mono-handle-d",
 			       NULL);
-			g_message (G_GNUC_PRETTY_FUNCTION ": exec error: %s",
-				   strerror (errno));
+			g_warning (": exec of %s/mono-handle-d failed: %s",
+				   MONO_BINDIR, strerror (errno));
 			data->daemon_running=2;
 			exit (-1);
 		}
 		/* parent carries on */
+	} else {
+		/* Do some sanity checking on the shared memory we
+		 * attached
+		 */
+		if(!(data->daemon_running==0 || data->daemon_running==1 ||
+		     data->daemon_running==2) ||
+		   (strncmp (data->daemon+1, "mono-handle-daemon-", 19)!=0)) {
+			g_warning ("Shared memory sanity check failed.");
+			*success=FALSE;
+			return(NULL);
+		}
 	}
 		
-	/* Set up the handle daemon connection */
-
-	while(data->daemon_running==0) {
+	for(tries=0; data->daemon_running==0 && tries < 100; tries++) {
 		/* wait for the daemon to sort itself out.  To be
 		 * completely safe, we should have a timeout before
 		 * giving up.
@@ -152,18 +162,31 @@ try_again:
 			
 		nanosleep (&sleepytime, NULL);
 	}
+	if(tries==100 && data->daemon_running==0) {
+		/* Daemon didnt get going */
+		if(fork_daemon==TRUE) {
+			_wapi_shm_destroy ();
+		}
+		g_warning ("The handle daemon didnt start up properly");
+		*success=FALSE;
+		return(NULL);
+	}
+	
 	if(data->daemon_running==2) {
 		/* Oh dear, the daemon had an error starting up */
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
 		}
-		g_error ("Handle daemon failed to start");
+		g_warning ("Handle daemon failed to start");
+		*success=FALSE;
+		return(NULL);
 	}
 		
 	/* From now on, it's up to the daemon to delete the shared
 	 * memory segment
 	 */
-
+	
+	*success=TRUE;
 	return(shm_seg);
 }
 
