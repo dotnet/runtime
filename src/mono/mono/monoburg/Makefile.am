@@ -1,22 +1,20 @@
 INCLUDES = $(BUILD_GLIB_CFLAGS) 
 CC=$(CC_FOR_BUILD)
-LD=ld
 
-noinst_PROGRAMS = monoburg sample
+#noinst_PROGRAMS = sample
 
-monoburg_SOURCES = parser.c monoburg.c monoburg.h
-
-sample_SOURCES = sample.c
+#sample_SOURCES = sample.c
 
 parser.c:  monoburg.y
 	bison monoburg.y -o parser.c
 
+monoburg$(BUILD_EXEEXT): monoburg.c monoburg.h parser.c
+	$(CC_FOR_BUILD) -o $@ monoburg.c parser.c $(INCLUDES) $(BUILD_GLIB_LIBS)
+
 sample.c: monoburg$(BUILD_EXEEXT) sample.brg
 	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg >sample.c
 
-monoburg_LDADD = $(BUILD_GLIB_LIBS)
-
-sample_LDADD = $(BUILD_GLIB_LIBS)
+#sample_LDADD = $(BUILD_GLIB_LIBS)
 
 BUILT_SOURCES = parser.c sample.c
 
