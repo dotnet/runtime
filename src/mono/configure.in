@@ -78,7 +78,7 @@ AC_SUBST(GMODULE_LIBS)
 
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes")
 
-AC_ARG_WITH(gc, [  --with-gc=bohem,none],
+AC_ARG_WITH(gc, [  --with-gc=boehm,none],
 	if test x$with_gc = "xyes"; then
 		with_gc="boehm"
 	fi
