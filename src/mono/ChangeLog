@@ -1,3 +1,10 @@
+2004-10-08  Zoltan Varga  <vargaz@freemail.hu>
+
+	* support/Makefile.am (libMonoPosixHelper_la_SOURCES): Do not build
+	zlib_macros if zlib.h is not found.
+
+	* configure.in: Add check for zlib.h.
+
 2004-09-28  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
 
 	* mini-s390.c: Fix AND_IMM/OR_IMM/DIV_IMM/REM_IMM

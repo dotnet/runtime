@@ -231,6 +231,10 @@ AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h)
 
+AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
+
+AM_CONDITIONAL(HAVE_ZLIB, test x$have_zlib = xyes)
+
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
