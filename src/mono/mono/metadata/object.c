@@ -1568,8 +1568,11 @@ mono_print_unhandled_exception (MonoObject *exc)
 		}
 	}				
 
-	g_warning ("unhandled exception %s.%s: %s\n", exc->vtable->klass->name_space, 
-		   exc->vtable->klass->name, message);
+	/*
+	 * g_printerr ("\nUnhandled Exception: %s.%s: %s\n", exc->vtable->klass->name_space, 
+	 *	   exc->vtable->klass->name, message);
+	 */
+	g_printerr ("\nUnhandled Exception: %s\n", message);
 	
 	if (free_message)
 		g_free (message);
