@@ -98,12 +98,12 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
 	 * needed.
 	 */
 	if (mono_sparc_is_virtual_call (code)) {
-		if (m->klass->valuetype)
-			addr = get_unbox_trampoline (m, addr);
-
 		/* Compute address of vtable slot */
 		vtable_slot = mono_sparc_get_vcall_slot_addr (code, fp);
-		*vtable_slot = addr;
+		if (m->klass->valuetype && !mono_aot_is_got_entry (code, vtable_slot))
+			addr = get_unbox_trampoline (m, addr);
+		if (mono_aot_is_got_entry (code, vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+			*vtable_slot = addr;
 	}
 	else {
 		/* Patch calling code */

@@ -192,11 +192,12 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	   we won't have an object, but the actual pointer to the 
 	   valuetype as the this argument
 	 */
-	if (method->klass->valuetype)
+	if (method->klass->valuetype && !mono_aot_is_got_entry (code, o))
 		addr = get_unbox_trampoline (method, addr);
 
 	o += offset;
-	*((gpointer *)o) = addr;
+	if (mono_aot_is_got_entry (code, o) || mono_domain_owns_vtable_slot (mono_domain_get (), o))
+		*((gpointer *)o) = addr;
 	return addr;
 }
 

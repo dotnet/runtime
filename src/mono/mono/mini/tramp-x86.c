@@ -93,6 +93,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	gint32 disp = 0;
 	char *o = NULL;
 	gpointer addr;
+	MonoDomain *domain = mono_domain_get ();
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
@@ -176,7 +177,8 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	if (m->klass->valuetype && !mono_aot_is_got_entry (code, o))
 		addr = get_unbox_trampoline (m, addr);
 
-	*((gpointer *)o) = addr;
+	if (mono_aot_is_got_entry (code, o) || mono_domain_owns_vtable_slot (mono_domain_get (), o))
+		*((gpointer *)o) = addr;
 
 	return addr;
 }

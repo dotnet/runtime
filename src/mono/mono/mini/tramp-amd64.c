@@ -102,7 +102,8 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 		g_assert (*vtable_slot);
 
-		*vtable_slot = addr;
+		if (mono_aot_is_got_entry (code, vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+			*vtable_slot = addr;
 	}
 	else {
 		/* Patch calling code */
