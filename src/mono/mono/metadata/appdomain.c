@@ -58,6 +58,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
+	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
@@ -92,6 +93,30 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_gc_cleanup ();
 	
 	mono_network_cleanup ();
+}
+
+MonoReflectionAssembly *
+mono_domain_try_type_resolve (MonoDomain *domain, MonoObject *name_or_tb)
+{
+	MonoClass *klass;
+	void *params [1];
+	static MonoMethod *method = NULL;
+
+	g_assert (domain != NULL && name_or_tb != NULL);
+
+	if (method == NULL) {
+		klass = domain->domain->object.vtable->klass;
+		g_assert (klass);
+
+		method = look_for_method_by_name (klass, "DoTypeResolve");
+		if (method == NULL) {
+			g_warning ("Method AppDomain.DoTypeResolve not found.\n");
+			return NULL;
+		}
+	}
+
+	*params = name_or_tb;
+	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 
 void

@@ -130,6 +130,9 @@ mono_domain_finalize       (MonoDomain *domain);
 void
 mono_domain_unload         (MonoDomain *domain, gboolean force);
 
+MonoReflectionAssembly *
+mono_domain_try_type_resolve (MonoDomain *domain, MonoObject *name_or_tb);
+
 void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
 

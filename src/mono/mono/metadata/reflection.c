@@ -497,9 +497,9 @@ method_encode_clauses (MonoDynamicAssembly *assembly,
 			clause->token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
 				mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
 			if (ex_block->extype) {
-				g_hash_table_insert (assembly->tokens,
-									 GUINT_TO_POINTER (clause->token_or_filter),
-									 ex_block->extype);
+				mono_g_hash_table_insert (assembly->tokens,
+										  GUINT_TO_POINTER (clause->token_or_filter),
+										  ex_block->extype);
 			}
 			finally_start = ex_block->start + ex_block->len;
 
@@ -763,9 +763,13 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 			if ((pb = mono_array_get (mb->pinfo, MonoReflectionParamBuilder*, i))) {
 				values [MONO_PARAM_FLAGS] = pb->attrs;
 				values [MONO_PARAM_SEQUENCE] = i;
-				name = mono_string_to_utf8 (pb->name);
-				values [MONO_PARAM_NAME] = string_heap_insert (&assembly->sheap, name);
-				g_free (name);
+				if (pb->name != NULL) {
+					name = mono_string_to_utf8 (pb->name);
+					values [MONO_PARAM_NAME] = string_heap_insert (&assembly->sheap, name);
+					g_free (name);
+				}
+				else
+					values [MONO_PARAM_NAME] = 0;
 				values += MONO_PARAM_SIZE;
 				if (pb->marshal_info) {
 					mtable->rows++;
@@ -1341,7 +1345,7 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	token <<= RESOLTION_SCOPE_BITS;
 	token |= RESOLTION_SCOPE_ASSEMBLYREF;
 	g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
-	g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), image);
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), image);
 	return token;
 }
 
@@ -1414,7 +1418,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	if (klass->image == assembly->assembly.image) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 		token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
-		g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
+		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
 		return token;
 	}
 
@@ -1435,7 +1439,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	token = TYPEDEFORREF_TYPEREF | (table->next_idx << TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
-	g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
 	return token;
 }
 
@@ -2414,8 +2418,8 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 #endif
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, "", 1);
 
-	g_hash_table_insert (assembly->dynamic_assembly->tokens, 
-						 GUINT_TO_POINTER (MONO_TOKEN_STRING | idx), str);
+	mono_g_hash_table_insert (assembly->dynamic_assembly->tokens, 
+							  GUINT_TO_POINTER (MONO_TOKEN_STRING | idx), str);
 
 	return MONO_TOKEN_STRING | idx;
 }
@@ -2487,8 +2491,8 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	else
 		g_print ("requested token for %s\n", klass->name);
 
-	g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token),
-						 obj);
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token),
+							  obj);
 
 	return token;
 }
@@ -2536,7 +2540,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
 	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->tokens = g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->tokens = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	assembly->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 
@@ -4832,7 +4836,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	/* with enums res == tb: need to fix that. */
 	if (!klass->enumtype)
-		g_assert (res != tb);
+		g_assert (res != (MonoReflectionType*)tb);
 	return res;
 }
 
@@ -4893,3 +4897,97 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 	return result;
 }
 
+gpointer
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
+{
+	MonoDynamicAssembly *assembly = image->assembly->dynamic;
+	MonoObject *obj;
+	gpointer result;
+
+	obj = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+	g_assert (obj);
+
+	if (strcmp (obj->vtable->klass->name, "String") == 0) {
+		result = obj;
+		g_assert (result);
+	}
+	else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
+		MonoReflectionType *tb = (MonoReflectionType*)obj;
+		result = mono_class_from_mono_type (tb->type);
+		g_assert (result);
+	}
+	else if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0) {
+		result = ((MonoReflectionMethod*)obj)->method;
+		g_assert (result);
+	}
+	else if (strcmp (obj->vtable->klass->name, "MonoCMethod") == 0) {
+		result = ((MonoReflectionMethod*)obj)->method;
+		g_assert (result);
+	}
+	else if (strcmp (obj->vtable->klass->name, "MethodBuilder") == 0) {
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder*)obj;
+		result = mb->mhandle;
+		if (!result) {
+			/* Type is not yet created */
+			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
+
+			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+
+			/*
+			 * Hopefully this has been filled in by calling CreateType() on the
+			 * TypeBuilder.
+			 */
+			/**
+			 * TODO: This won't work if the application finishes another 
+			 * TypeBuilder instance instead of this one.
+			 */
+			result = mb->mhandle;
+		}
+	}
+	else if (strcmp (obj->vtable->klass->name, "ConstructorBuilder") == 0) {
+		MonoReflectionCtorBuilder *cb = (MonoReflectionCtorBuilder*)obj;
+
+		result = cb->mhandle;
+		if (!result) {
+			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)cb->type;
+
+			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			result = cb->mhandle;
+		}
+	}
+	else if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
+		result = ((MonoReflectionField*)obj)->field;
+		g_assert (result);
+	}
+	else if (strcmp (obj->vtable->klass->name, "FieldBuilder") == 0) {
+		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder*)obj;
+		result = fb->handle;
+
+		if (!result) {
+			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)fb->typeb;
+
+			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			result = fb->handle;
+		}
+	}
+	else if (strcmp (obj->vtable->klass->name, "TypeBuilder") == 0) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)obj;
+		MonoClass *klass;
+
+		klass = tb->type.type->data.klass;
+		if (klass->wastypebuilder) {
+			/* Already created */
+			result = klass;
+		}
+		else {
+			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			result = tb->type.type->data.klass;
+			g_assert (result);
+		}
+	}
+	else {
+		g_print (obj->vtable->klass->name);
+		g_assert_not_reached ();
+	}
+	return result;
+}

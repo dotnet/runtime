@@ -625,7 +625,8 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	MONO_CHECK_ARG (handle, klass);
 
 	/* This will call the type constructor */
-	mono_class_vtable (mono_domain_get (), klass);
+	if (! (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+		mono_class_vtable (mono_domain_get (), klass);
 }
 
 static MonoObject *
@@ -793,6 +794,24 @@ ves_icall_type_from_name (MonoString *name,
 	
 	if (!info.assembly.name && !type) /* try mscorlib */
 		type = mono_reflection_get_type (NULL, &info, ignoreCase);
+
+	if (!type) {
+		MonoReflectionAssembly *assembly;
+		char *fullName;
+
+		if (info.name_space)
+			fullName = g_strdup_printf ("%s.%s", info.name_space, info.name);
+		else
+			fullName = g_strdup (info.name);
+		assembly = 
+			mono_domain_try_type_resolve (
+				mono_domain_get (),
+				(MonoObject*)mono_string_new (mono_domain_get (), fullName));
+		if (assembly)
+			type = mono_reflection_get_type (assembly->assembly->image, 
+											 &info, ignoreCase);
+		g_free (fullName);
+	}
 
 	g_free (str);
 	g_list_free (info.modifiers);

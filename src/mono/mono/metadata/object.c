@@ -1385,14 +1385,8 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	MonoString *o;
 	size_t len2;
 
-	if (image->assembly->dynamic) {
-		MonoDynamicAssembly *assembly = image->assembly->dynamic;
-
-		o = g_hash_table_lookup (assembly->tokens, 
-								 GUINT_TO_POINTER (MONO_TOKEN_STRING | idx));
-		g_assert (o);
-		return o;
-	}
+	if (image->assembly->dynamic)
+		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx);
 	else
 		sig = str = mono_metadata_user_string (image, idx);
 

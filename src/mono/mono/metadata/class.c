@@ -1620,22 +1620,8 @@ mono_class_get (MonoImage *image, guint32 type_token)
 {
 	MonoClass *class;
 
-	if (image->assembly->dynamic) {
-		MonoDynamicAssembly *assembly = image->assembly->dynamic;
-		MonoObject *obj;
-
-		obj = g_hash_table_lookup (assembly->tokens, 
-								  GUINT_TO_POINTER (type_token));
-		g_assert (obj);
-		if (obj->vtable->klass == mono_defaults.monotype_class) {
-			MonoReflectionType *tb = (MonoReflectionType*)obj;
-			class = tb->type->data.klass;
-			g_assert (class);
-			return class;
-		}
-		else
-			printf("KLASS: %s.\n", obj->vtable->klass->name);
-	}
+	if (image->assembly->dynamic)
+		return mono_lookup_dynamic_token (image, type_token);
 
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
@@ -1803,3 +1789,20 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 	return NULL;
 }
 
+/**
+ * This function might need to call runtime functions so it can't be part
+ * of the metadata library.
+ */
+static MonoLookupDynamicToken lookup_dynamic = NULL;
+
+void
+mono_install_lookup_dynamic_token (MonoLookupDynamicToken func)
+{
+	lookup_dynamic = func;
+}
+
+gpointer
+mono_lookup_dynamic_token (MonoImage *image, guint32 token)
+{
+	return lookup_dynamic (image, token);
+}

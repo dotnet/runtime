@@ -263,7 +263,7 @@ typedef struct {
 	} sections [MONO_SECTION_MAX];
 	GHashTable *typeref;
 	GHashTable *handleref;
-	GHashTable *tokens;
+	MonoGHashTable *tokens;
 	GHashTable *blob_cache;
 	GList *array_methods;
 	MonoGHashTable *token_fixups;
@@ -465,6 +465,9 @@ MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBui
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig);
+
+gpointer
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

@@ -59,7 +59,6 @@ search_loaded (MonoAssemblyName* aname)
 {
 	GList *tmp;
 	MonoAssembly *ass;
-	guint32 size;
 	
 	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
@@ -193,8 +192,8 @@ struct AssemblyLoadHook {
 
 AssemblyLoadHook *assembly_load_hook = NULL;
 
-static void
-invoke_assembly_load_hook (MonoAssembly *ass)
+void
+mono_assembly_invoke_load_hook (MonoAssembly *ass)
 {
 	AssemblyLoadHook *hook;
 
@@ -441,7 +440,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		g_free (module_ref);
 	}
 
-	invoke_assembly_load_hook (ass);
+	mono_assembly_invoke_load_hook (ass);
 
 	return ass;
 }

@@ -32,4 +32,7 @@ typedef MonoAssembly * (*MonoAssemblyPreLoadFunc) (MonoAssemblyName *aname,
 void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func,
 						  gpointer user_data);
 
+void          mono_assembly_invoke_load_hook (MonoAssembly *ass);
+
 #endif
+

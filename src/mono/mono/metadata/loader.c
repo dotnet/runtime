@@ -123,18 +123,7 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 	guint32 idx = mono_metadata_token_index (token);
 
 	if (image->assembly->dynamic) {
-		MonoClassField *result;
-		MonoDynamicAssembly *assembly = image->assembly->dynamic;
-		MonoObject *obj;
-
-		obj = g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-		g_assert (obj);
-		if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
-			result = ((MonoReflectionField*)obj)->field;
-			g_assert (result);
-		}
-		else
-			g_assert_not_reached ();
+		MonoClassField *result = mono_lookup_dynamic_token (image, token);
 		*retklass = result->parent;
 		return result;
 	}
@@ -172,25 +161,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 	guint32 type;
 
 	if (image->assembly->dynamic) {
-		MonoClassField *result;
-		MonoDynamicAssembly *assembly = image->assembly->dynamic;
-		MonoObject *obj;
-
-		obj = g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-		g_assert (obj);
-		if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
-			result = ((MonoReflectionField*)obj)->field;
-			g_assert (result);
-		}
-		else if (strcmp (obj->vtable->klass->name, "FieldBuilder") == 0) {
-			MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
-			result = fb->handle;
-			g_assert (result);
-		}
-		else {
-			g_print (obj->vtable->klass->name);
-			g_assert_not_reached ();
-		}
+		MonoClassField *result = mono_lookup_dynamic_token (image, token);
 		*retklass = result->parent;
 		return result;
 	}
@@ -465,25 +436,8 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	if ((result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
 			return result;
 
-	if (image->assembly->dynamic) {
-		MonoDynamicAssembly *assembly = image->assembly->dynamic;
-		MonoObject *obj;
-
-		obj = g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-		g_assert (obj);
-		if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0) {
-			result = ((MonoReflectionMethod*)obj)->method;
-		}
-		else if (strcmp (obj->vtable->klass->name, "MethodBuilder") == 0) {
-			result = ((MonoReflectionMethodBuilder*)obj)->mhandle;
-		}
-		else {
-			g_print (obj->vtable->klass->name);
-			g_assert_not_reached ();
-		}
-		g_assert (result);
-		return result;
-	}
+	if (image->assembly->dynamic)
+		return mono_lookup_dynamic_token (image, token);
 
 	if (table != MONO_TABLE_METHOD) {
 		if (table != MONO_TABLE_MEMBERREF)
