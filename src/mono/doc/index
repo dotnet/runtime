@@ -151,7 +151,7 @@
   </tr>
 </table>
 
-@item Aug 9th, 2003: Python for .NET Preview 2 available
+@item Aug 9th, 2003: Python for .NET Preview 2 available;  Mono Documentation site up.
 
 	Brian Lloyd has <a
 	href="http://lists.ximian.com/archives/public/mono-list/2003-August/015313.html">announced</a>
@@ -159,6 +159,12 @@
 	with .NET and Mono.  For more information about it, see
 	Brian's site at <a href="
 	http://zope.org/Members/Brian/PythonNet/">http://zope.org/Members/Brian/PythonNet/</a>
+
+	We have uploaded the current Mono Documentation (core
+	libraries and Gtk#) to <a
+	href="http://mono.ximian.com:8080"/>http://mono.ximian.com:8080</a>.
+	The site is running the ASP.NET edition of <a
+	href="archive/monodoc-0.6.tar.gz">MonoDoc 0.6</a> on XSP.
 
 @item Aug 6th, 2003: Winforms samples
 
