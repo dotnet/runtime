@@ -5,6 +5,14 @@
 #include <errno.h>
 #include <time.h>
 
+#ifdef WIN32
+#define STDCALL __stdcall
+#else
+#define STDCALL
+#endif
+
+typedef int (STDCALL *SimpleDelegate) (int a);
+
 unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
 {
@@ -159,7 +167,7 @@ mono_test_puts_static (char *s)
 	return 1;
 }
 
-typedef int (*SimpleDelegate3) (int a, int b);
+typedef int (STDCALL *SimpleDelegate3) (int a, int b);
 
 int
 mono_invoke_delegate (SimpleDelegate3 delegate)
@@ -277,7 +285,7 @@ mono_test_delegate_struct (void)
 	// printf ("TEST\n");
 }
 
-typedef char* (*ReturnStringDelegate) (const char *s);
+typedef char* (STDCALL *ReturnStringDelegate) (const char *s);
 
 char *
 mono_test_return_string (ReturnStringDelegate func)
@@ -292,7 +300,7 @@ mono_test_return_string (ReturnStringDelegate func)
 	return res;
 }
 
-typedef int (*RefVTypeDelegate) (int a, simplestruct *ss, int b);
+typedef int (STDCALL *RefVTypeDelegate) (int a, simplestruct *ss, int b);
 
 int
 mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
@@ -310,7 +318,7 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 	return 1;
 }
 
-typedef int (*OutVTypeDelegate) (int a, simplestruct *ss, int b);
+typedef int (STDCALL *OutVTypeDelegate) (int a, simplestruct *ss, int b);
 
 int
 mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate func)
@@ -330,8 +338,7 @@ mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate f
 
 typedef struct {
 	int a;
-	int (*func) (int);
-	int (*func2) (int);
+	SimpleDelegate func, func2;
 } DelegateStruct;
 
 int 
@@ -454,12 +461,6 @@ mono_test_marshal_byref_class (simplestruct2 **ssp)
 	return 0;
 }
 
-#ifdef WIN32
-typedef int (__stdcall *SimpleDelegate) (int a);
-#else
-typedef int (*SimpleDelegate) (int a);
-#endif
-
 static void *
 get_sp (void)
 {
@@ -485,7 +486,7 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	return delegate (2);
 }
 
-typedef simplestruct (*SimpleDelegate2) (simplestruct ss);
+typedef simplestruct (STDCALL *SimpleDelegate2) (simplestruct ss);
 
 int
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
@@ -504,7 +505,7 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 	return 0;
 }
 
-typedef simplestruct* (*SimpleDelegate4) (simplestruct *ss);
+typedef simplestruct* (STDCALL *SimpleDelegate4) (simplestruct *ss);
 
 int
 mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
@@ -534,7 +535,7 @@ mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 	return 0;
 }
 
-typedef int (*SimpleDelegate5) (simplestruct **ss);
+typedef int (STDCALL *SimpleDelegate5) (simplestruct **ss);
 
 int
 mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
@@ -570,7 +571,7 @@ mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 	return 0;
 }
 
-typedef int (*SimpleDelegate7) (simplestruct **ss);
+typedef int (STDCALL *SimpleDelegate7) (simplestruct **ss);
 
 int
 mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
@@ -591,7 +592,7 @@ mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 	return 0;
 }
 
-typedef int (*SimpleDelegate8) (gunichar2 *s);
+typedef int (STDCALL *SimpleDelegate8) (gunichar2 *s);
 
 int
 mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
@@ -599,8 +600,8 @@ mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 	return delegate (s);
 }
 
-typedef int (*return_int_fnt) (int i);
-typedef int (*SimpleDelegate9) (return_int_fnt *d);
+typedef int (STDCALL *return_int_fnt) (int i);
+typedef int (STDCALL *SimpleDelegate9) (return_int_fnt *d);
 
 int
 mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
@@ -620,7 +621,7 @@ mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 	return delegate (return_self);
 }
 
-typedef int (*PrimitiveByrefDelegate) (int *i);
+typedef int (STDCALL *PrimitiveByrefDelegate) (int *i);
 
 int
 mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
@@ -637,9 +638,9 @@ mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
 	return 0;
 }
 
-typedef int (*return_int_delegate) (int i);
+typedef int (STDCALL *return_int_delegate) (int i);
 
-typedef return_int_delegate (*ReturnDelegateDelegate) ();
+typedef return_int_delegate (STDCALL *ReturnDelegateDelegate) ();
 
 int
 mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
@@ -859,7 +860,7 @@ HexDump1W(char *data)
 	return res + 1000000;
 }
 
-typedef int (*intcharFunc)(const char*);
+typedef int (STDCALL *intcharFunc)(const char*);
 
 void 
 callFunction (intcharFunc f)
@@ -1217,7 +1218,7 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 	return &custom_res;
 }
 
-typedef void *(*PassReturnPtrDelegate) (void *ptr);
+typedef void *(STDCALL *PassReturnPtrDelegate) (void *ptr);
 
 int
 mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
