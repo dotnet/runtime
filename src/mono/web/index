@@ -73,12 +73,13 @@
 ** May 5, 2002
 
 	We are able to retrieve simple data from the database 
-	using our ADO.NET like functionality.  
+	using our ADO.NET like functionality.  Only string and integer data
+	types are supported right now but more are in the works.
 	
 	You can find more information 
 	at <a href="http://www.go-mono.com/ado-net.html">The Mono ADO-NET Page</a>
 	
-	Thanks goes to Chris, Daniel, Gonzalo, Miguel, Rodrigo, Tim, 
+	Thanks goes to Chris, Daniel, Duncan, Gonzalo, Miguel, Rodrigo, Tim, 
 	and others for these bits.
 
 ** May 4th, 2002

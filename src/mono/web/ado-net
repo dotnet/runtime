@@ -32,7 +32,7 @@
 		  Gnome-Db (only libgda, not libgnomedb at all).
 
 		* On Windows systems: System.Data.OleDb will use OLE-DB as
-		  its engine.
+		  its engine.  It may have the option of using libgda too.
 	</ul>
 
 	<b>Step 3:</b> System.Data.SqlClient Providers:
@@ -41,7 +41,8 @@
 		* System.Data.SqlClient will then become a generic
 		  proxy for binding to other SQL implementations other
 		  than PostgreSQL (MySQL on Unix/Windows; MS SQL on
-		  Window; Interbase on Unix/Windows). Others are welcomed.
+		  Windows; Interbase on Unix/Windows, Oracle on
+		  Unix/Windows). Others are welcomed.
 	</ul>
 
 	<b>Step 4:</b> Other System.Data providers:
@@ -60,22 +61,23 @@
 	<p>We are able to do simple CREATE TABLE, DROP TABLE, INSERT, and
 	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
 	
-	<p>We are also	able to do simple aggregate functions, 
+	<p>We are also able to do simple aggregate functions, 
 	ie, count(), sum(), avg(), min(), and
 	max() in a simple SELECT SQL query using ExecuteSecalar() now.  
 	
 	<p>We are also able to retrieve data with a simple SELECT SQL query 
 	using ExecuteReader() which returns a SqlDataReader.  We are able to
-	GetSchemaTable() get the meta data about the table columns.  We are able
-	to Read() to get each row from the result set.  We are able to get 
+	use GetSchemaTable() to get the meta data about the table columns.  
+	We are able	to Read() to get each row from the result set.  We are able to get 
 	String data (char, bpchar (character), text, varchar), Int16 (int2 or smallint),
-	and Int32 (int4 or integer), Int64 (int8 or bigint).  More data types will
+	and Int32 (int4 or integer), and Int64 (int8 or bigint).  More data types will
 	follow later on.
 		
-	<p>Parameters are not working nor has stored procedures been tested - but they will be.
+	<p>Parameters are not working nor has stored procedures 
+	been tested - but they will be.
 	
-	<p>A lot of functionality in System.Data is missing, but the infrastructure is
-	starting to come together.
+	<p>A lot of functionality in System.Data is missing, but the 
+	infrastructure is starting to come together.
 	
 	<p>To compile that test program, you need:
 
@@ -84,11 +86,13 @@
 	<ul>
 		* update your mono sources.
 
-		* get the .dll's and mcs.exe built on windows, and put them on your
+		* get the files from mcs/class/lib/*.dll and mcs/mcs/mcs* 
+		  built on windows, and put them on your
 		  linux machine.
 
-		* compile the test program along with the System.Data.Common and
-		  System.Data.SqlClient files.
+		* compile the test program along with the System.Data,
+		  System.Data.Common, System.Data.SqlClient, and
+		  System.Data.SqlTypes.
 	</ul>
 
 * Testing
@@ -147,7 +151,7 @@
 			  available at
 			  http://www.neuro.gatech.edu/users/cwilson/cygutils/V1.1/cygipc/
 			  
-			  The cygipc package contains the ipc-daemon you will need 
+			  <p>The cygipc package contains the ipc-daemon you will need 
 			  to run before you can
 			  run the PostgreSQL DBMS Server daemon (postmaster) or run
 			  initdb which initializes the PostgreSQL database.
@@ -161,19 +165,20 @@
 			  /usr/bin, and /bin.  I also set my LD_LIBRARY_PATH to 
 			  /usr/local/lib and /usr/lib.  For example:
 			  
-			  <p><pre>
-			  PATH=c:\cygwin\usr\local\bin;c:\cygwin\usr\bin;c:\cygwin\bin;
-			  LD_LIBRARY_PATH=c:\cygwin\usr\local\lib;c:\cygwin\usr\lib;
-			  </pre>
+			* <p>
+<pre>
+PATH=c:\cygwin\usr\local\bin;c:\cygwin\usr\bin;c:\cygwin\bin;
+LD_LIBRARY_PATH=c:\cygwin\usr\local\lib;c:\cygwin\usr\lib;
+</pre>
 			  
 			  </p>
 			* <p>Point 4. Start the ipc-daemon that came with the cygipc package.  There
 			  are two ways to do this: run it from the command line as:
 			  
 			  <p>
-			  <pre>
-				ipc-daemon &
-			  </pre>
+<pre>
+ipc-daemon &
+</pre>
 			  			  
 			  <p>or you can set it up as a Windows service.  See the 
 			  file cygrunsrv.README at /usr/doc/Cygwin on how to do this
@@ -185,46 +190,47 @@
 			  you just have to run
 			  
 			  <p>
-			  <pre>
-			  ipc-daemon --install-as-service' (--remove-as-service) 
-			  </pre>
+<pre>
+ipc-daemon --install-as-service' (--remove-as-service) 
+</pre>
 			  
 			  <p>
 			  and then run
 			  
-			  <pre>
-			  net start ipc-daemon
-			  </pre>
+<pre>
+net start ipc-daemon
+</pre>
 			  </ul>
 			  
 		* <p>Read the installation.html file 
 		  at /usr/doc/postgresql-x.x/html/installation.html
 		
-		  <p>In this file, you will run the following commands:
+		  <p>You will see in this file that you will need to 
+		  run the following commands:
 		  
-		  <pre>
-			mkdir /usr/local/pgsql/data
-			initdb -D /usr/local/pgsql/data
-			postmaster -D /usr/local/pgsql/data >logfile 2>&1 &
-			createdb test
-			psql test  		
-		  </pre>
+<pre>
+mkdir /usr/local/pgsql/data
+initdb -D /usr/local/pgsql/data
+postmaster -D /usr/local/pgsql/data >logfile 2>&1 &
+createdb test
+psql test  		
+</pre>
 		  
-		  <p>When you need to connect to the database, 
+		* <p>When you need to connect to the database, 
 		  you will need ipc-daemon and postmaster running.  Start ipc-daemon
 		  before any of the command above.  
 		  
-		  <p>psql is a command-line PostgreSQL client tool to 
+		* <p>psql is a command-line PostgreSQL client tool to 
 		  enter and run SQL commands and queries.
 		  
-		  <p>If there is no database user named postgres, create a user named
+		* <p>If there is no database user named postgres, create a user named
 		  postgres with the following SQL command in the client tool psql:
 		  
 		  <p>
-		  <pre>
-			plsql test
-			create user postgres with password 'fun2db';
-		  </pre>
+<pre>
+plsql test
+create user postgres with password 'fun2db';
+</pre>
 		  
 		  <p>The only reason I say this is so you can easily use the System.Data tests
 		  without having to change the database, userid, etc.
@@ -240,21 +246,21 @@
 	connection requirements:
 	
 	<p>
-	<pre>	
-	dbname is the database, ie, test
-	host is the hostname of the PostgreSQL DBMS Server to connect to
-	user is the username, ie, someuser
-	password is the password, ie, mypass1234
-	</pre>
+<pre>	
+dbname is the database, ie, test
+host is the hostname of the PostgreSQL DBMS Server to connect to
+user is the username, ie, someuser
+password is the password, ie, mypass1234
+</pre>
 	
 	<p>The connection string is in OLE-DB connection string format.  Internally,
 	SqlConnection converts this to the PostgreSQL connection string format.
 	
 	<p>
-	<pre>
-	    OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
-	PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
-	</pre>
+<pre>
+OLE-DB: "host=localhost;dbname=test;user=joe;password=smoe"
+PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
+</pre>
 
 	<p>
 	Note that OLE-DB includes the semicolons while PostgreSQL's connection
@@ -264,71 +270,72 @@
     To compile the PostgresTest.cs program, do:
     
     <p>
-    <pre>
-    mcs PostgresTest.cs -r System.Data
-    </pre>
+<pre>
+mcs PostgresTest.cs -r System.Data
+</pre>
     
     <p>
     To run using mint, do:
     
     <p>
-    <pre>
-    mint PostgresTest.exe
-    </pre>
+<pre>
+mint PostgresTest.exe
+</pre>
     
     <p>
     To run using mono, do:
-    <pre>
-    mono PostgresTest.exe
-    </pre>
+<pre>
+mono PostgresTest.exe
+</pre>
     
     <p>You should get something like:
 
 <p>
 <pre>   
-Administrator@DANPC ~/mono/mcs/class/System.Data/Test
-$ mcs PostgresTest.cs -r System.Data
+ Administrator@DANPC ~/mono/mcs/class/System.Data/Test
+ $ mcs PostgresTest.cs -r System.Data
 
-Administrator@DANPC ~/mono/mcs/class/System.Data/Test
-$ mint PostgresTest.exe
-        Postgres provider specific tests...
+ Administrator@DANPC ~/mono/mcs/class/System.Data/Test
+ $ mint PostgresTest.exe
+         Postgres provider specific tests...
 
-                Drop table:
-Error (don't worry about this one)
-                Create table with all supported types:
-OK
-                Insert values for all known types:
-OK
-                Select values from the database:
-                Get Schema.
-dt.Columns.Count: 6
-* Column Name: int2_value
-         MaxLength: 2
-         Type: System.Int16
-* Column Name: int4_value
-         MaxLength: 4
-         Type: System.Int32
-* Column Name: bigint_value
-         MaxLength: 8
-         Type: System.Int64
-* Column Name: char_value
-         MaxLength: -1
-         Type: System.String
-* Column Name: varchar_value
-         MaxLength: -1
-         Type: System.String
-* Column Name: text_value
-         MaxLength: -1
-         Type: System.String
-Row 0:
-    Col 0: int2_value - -22
-    Col 1: int4_value - 1048000
-    Col 2: bigint_value - 123456789012345
-    Col 3: char_value - This is a char
-    Col 4: varchar_value - This is a varchar
-    Col 5: text_value - This is a text
-Rows: 1
-Clean up...
-                Drop table...
-OK
+                 Drop table:
+ Error (don't worry about this one)
+                 Create table with all supported types:
+ OK
+                 Insert values for all known types:
+ OK
+                 Select values from the database:
+                 Get Schema.
+ dt.Columns.Count: 6
+ * Column Name: int2_value
+          MaxLength: 2
+          Type: System.Int16
+ * Column Name: int4_value
+          MaxLength: 4
+          Type: System.Int32
+ * Column Name: bigint_value
+          MaxLength: 8
+          Type: System.Int64
+ * Column Name: char_value
+          MaxLength: -1
+          Type: System.String
+ * Column Name: varchar_value
+          MaxLength: -1
+          Type: System.String
+ * Column Name: text_value
+          MaxLength: -1
+          Type: System.String
+ Row 0:
+     Col 0: int2_value - -22
+     Col 1: int4_value - 1048000
+     Col 2: bigint_value - 123456789012345
+     Col 3: char_value - This is a char
+     Col 4: varchar_value - This is a varchar
+     Col 5: text_value - This is a text
+ Rows: 1
+ Clean up...
+                 Drop table...
+ OK
 </pre>
+
