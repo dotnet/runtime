@@ -1153,6 +1153,9 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
 
+	if (type->type->byref)
+		return klassc == mono_defaults.object_class;
+
 	return mono_class_is_subclass_of (klass, klassc, check_interfaces);
 }
 
@@ -1171,6 +1174,9 @@ ves_icall_type_is_assignable_from (MonoReflectionType *type, MonoReflectionType 
 
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
+
+	if (type->type->byref && !c->type->byref)
+		return FALSE;
 
 	return mono_class_is_assignable_from (klass, klassc);
 }
