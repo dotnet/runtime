@@ -266,23 +266,29 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	MonoDebugHandle *handle;
 	MonoDebugMethodInfo *minfo;
 
+	mono_debugger_lock ();
+
 	mono_class_init (klass);
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+		mono_debugger_unlock ();
 		return;
+	}
 
 	handle = _mono_debug_get_image (klass->image);
-	if (!handle)
+	if (!handle) {
+		mono_debugger_unlock ();
 		return;
+	}
 
 	minfo = _mono_debug_lookup_method (method);
-	if (!minfo)
+	if (!minfo) {
+		mono_debugger_unlock ();
 		return;
-
-	mono_debugger_lock ();
+	}
 
 	domain_data = mono_debug_get_domain_data (handle, domain);
 	if (domain_data->jit [minfo->index]) {
