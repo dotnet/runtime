@@ -539,7 +539,7 @@ main() {
 		return error;
 	error++;
 
-	//g_print("should be 33: %d\n", mono_bitset_find_first (set1, 0));
+	/* g_print("should be 33: %d\n", mono_bitset_find_first (set1, 0)); */
 	
 	if (mono_bitset_find_first (set1, 0) != 33)
 		return error;
@@ -635,7 +635,7 @@ main() {
 		    return error;
 		  break;
 		}
-		//g_print ("count got: %d at %d\n", count, i);
+		/* g_print ("count got: %d at %d\n", count, i); */
 	}
 	if (count != 3)
 		return error;

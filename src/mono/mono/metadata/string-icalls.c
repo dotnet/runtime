@@ -724,7 +724,7 @@ string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint32 mode)
 				  (c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
 		break;
 	case 2:
-		// Rotor/ms return the full value just not -1 and 1
+		/* Rotor/ms return the full value just not -1 and 1 */
 		return (gint32) c1 - c2; break;
 	}
 

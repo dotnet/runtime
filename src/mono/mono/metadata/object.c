@@ -357,7 +357,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 		/* GC 6.1 has trouble handling 64 bit descriptors... */
 		if ((class->instance_size / sizeof (gpointer)) > 30) {
-//			printf ("TOO LARGE: %s %d.\n", class->name, class->instance_size / sizeof (gpointer));
+/*			printf ("TOO LARGE: %s %d.\n", class->name, class->instance_size / sizeof (gpointer)); */
 			return;
 		}
 
@@ -365,10 +365,10 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 		count ++;
 
-//		if (count > 442)
-//			return;
+/*		if (count > 442) */
+/*			return;  */
 
-//		printf("KLASS: %s.\n", class->name);
+/*		printf("KLASS: %s.\n", class->name); */
 
 		for (p = class; p != NULL; p = p->parent) {
 		for (i = 0; i < p->field.count; ++i) {
@@ -396,7 +396,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 			case MONO_TYPE_U8:
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
-//				printf ("F: %s %s %d %lld %llx.\n", class->name, field->name, field->offset, ((guint64)1) << pos, bitmap);
+/*				printf ("F: %s %s %d %lld %llx.\n", class->name, field->name, field->offset, ((guint64)1) << pos, bitmap); */
 				break;
 			case MONO_TYPE_I:
 			case MONO_TYPE_STRING:
@@ -408,7 +408,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 				g_assert ((field->offset % sizeof(gpointer)) == 0);
 
 				bitmap |= ((guint64)1) << pos;
-//				printf ("F: %s %s %d %d %lld %llx.\n", class->name, field->name, field->offset, pos, ((guint64)(1)) << pos, bitmap);
+/*				printf ("F: %s %s %d %d %lld %llx.\n", class->name, field->name, field->offset, pos, ((guint64)(1)) << pos, bitmap); */
 				break;
 			case MONO_TYPE_VALUETYPE: {
 				MonoClass *fclass = field->type->data.klass;
@@ -424,7 +424,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		}
 		}
 
-//		printf("CLASS: %s.%s -> %d %llx.\n", class->name_space, class->name, class->instance_size / sizeof (gpointer), bitmap);
+/*		printf("CLASS: %s.%s -> %d %llx.\n", class->name_space, class->name, class->instance_size / sizeof (gpointer), bitmap); */
 		class->gc_bitmap = bitmap;
 		/* Convert to the format expected by GC_make_descriptor */
 		bm [0] = (guint32)bitmap;
@@ -1753,7 +1753,7 @@ mono_object_new_fast (MonoVTable *vtable)
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		o = mono_object_allocate_spec (vtable->klass->instance_size, vtable);
 	} else {
-//		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
+/*		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
 		o = mono_object_allocate (vtable->klass->instance_size);
 		o->vtable = vtable;
 	}
@@ -1773,7 +1773,7 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		o = mono_object_allocate_spec (vtable->klass->instance_size, vtable);
 	} else {
-//		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
+/*		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
 		o = mono_object_allocate (vtable->klass->instance_size);
 		o->vtable = vtable;
 	}
@@ -2010,7 +2010,7 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		o = mono_object_allocate_spec (byte_len, vtable);
 	} else {
-//		printf("ARRAY: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
+/*		printf("ARRAY: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
 		o = mono_object_allocate (byte_len);
 		o->vtable = vtable;
 	}

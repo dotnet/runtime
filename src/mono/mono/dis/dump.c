@@ -1085,7 +1085,7 @@ dump_table_methodspec (MonoImage *m)
                 
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODSPEC_SIZE);
 
-                // build a methodspec token to get the method
+                /* build a methodspec token to get the method */
                 token = MONO_TOKEN_METHOD_SPEC | i;
                 method = get_method (m, token);
                 

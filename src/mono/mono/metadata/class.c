@@ -2016,7 +2016,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->name_space = "MonoFNPtrFakeClass";
 	result->image = NULL; /* need to fix... */
 	result->inited = TRUE;
-	result->flags = TYPE_ATTRIBUTE_CLASS; // | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+	result->flags = TYPE_ATTRIBUTE_CLASS; /* | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK); */
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
 	result->cast_class = result->element_class = result;

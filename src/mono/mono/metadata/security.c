@@ -98,7 +98,7 @@ GetSidName (gunichar2 *server, PSID sid, gint32 *size)
 			}
 		}
 		else {
-			// nothing -> return NULL
+			/* nothing -> return NULL */
 			g_free (user);
 		}
 
@@ -383,8 +383,9 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 }
 
 
-// http://www.dotnet247.com/247reference/msgs/39/195403.aspx
+/* http://www.dotnet247.com/247reference/msgs/39/195403.aspx
 // internal static string[] WindowsIdentity._GetRoles (IntPtr token)
+*/
 MonoArray*
 ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token) 
 {
@@ -676,7 +677,7 @@ IsMachineProtected (gunichar2 *path)
 	pEveryoneSid = GetEveryoneSid ();
 	if (pEveryoneSid) {
 		ACCESS_MASK rights = GetRightsFromSid (pEveryoneSid, pDACL);
-		// http://msdn.microsoft.com/library/en-us/security/security/generic_access_rights.asp?frame=true
+		/* http://msdn.microsoft.com/library/en-us/security/security/generic_access_rights.asp?frame=true */
 		success = (rights == (READ_CONTROL | SYNCHRONIZE | FILE_READ_DATA | FILE_READ_EA | FILE_READ_ATTRIBUTES));
 		FreeSid (pEveryoneSid);
 	}
@@ -734,7 +735,7 @@ ProtectMachine (gunichar2 *path)
 		EXPLICIT_ACCESS ea [2];
 		ZeroMemory (&ea, 2 * sizeof (EXPLICIT_ACCESS));
 
-		// grant all access to the BUILTIN\Administrators group
+		/* grant all access to the BUILTIN\Administrators group */
 		BuildTrusteeWithSidW (&ea [0].Trustee, pAdminsSid);
 		ea [0].grfAccessPermissions = GENERIC_ALL;
 		ea [0].grfAccessMode = SET_ACCESS;
@@ -742,7 +743,7 @@ ProtectMachine (gunichar2 *path)
 		ea [0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea [0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
 
-		// read-only access everyone
+		/* read-only access everyone */
 		BuildTrusteeWithSidW (&ea [1].Trustee, pEveryoneSid);
 		ea [1].grfAccessPermissions = GENERIC_READ;
 		ea [1].grfAccessMode = SET_ACCESS;
@@ -752,8 +753,8 @@ ProtectMachine (gunichar2 *path)
 
 		retval = SetEntriesInAcl (2, ea, NULL, &pDACL);
 		if (retval == ERROR_SUCCESS) {
-			// with PROTECTED_DACL_SECURITY_INFORMATION we
-			// remove any existing ACL (like inherited ones)
+			/* with PROTECTED_DACL_SECURITY_INFORMATION we */
+			/* remove any existing ACL (like inherited ones) */
 			retval = SetNamedSecurityInfo (path, SE_FILE_OBJECT, 
 				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
 				NULL, NULL, pDACL, NULL);
@@ -781,7 +782,7 @@ ProtectUser (gunichar2 *path)
 		EXPLICIT_ACCESS ea;
 		ZeroMemory (&ea, sizeof (EXPLICIT_ACCESS));
 
-		// grant exclusive access to the current user
+		/* grant exclusive access to the current user */
 		BuildTrusteeWithSidW (&ea.Trustee, pCurrentSid);
 		ea.grfAccessPermissions = GENERIC_ALL;
 		ea.grfAccessMode = SET_ACCESS;
@@ -791,8 +792,8 @@ ProtectUser (gunichar2 *path)
 
 		retval = SetEntriesInAcl (1, &ea, NULL, &pDACL);
 		if (retval == ERROR_SUCCESS) {
-			// with PROTECTED_DACL_SECURITY_INFORMATION we
-			// remove any existing ACL (like inherited ones)
+			/* with PROTECTED_DACL_SECURITY_INFORMATION we
+			   remove any existing ACL (like inherited ones) */
 			retval = SetNamedSecurityInfo (path, SE_FILE_OBJECT, 
 				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
 				NULL, NULL, pDACL, NULL);

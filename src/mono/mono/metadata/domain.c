@@ -23,7 +23,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/rawbuffer.h>
 
-//#define DEBUG_DOMAIN_UNLOAD
+/* #define DEBUG_DOMAIN_UNLOAD */
 
 static guint32 appdomain_thread_id = -1;
 static guint32 context_thread_id = -1;
@@ -251,7 +251,7 @@ mono_init (const char *filename)
 	mono_assemblies_init ();
 	mono_loader_init ();
 
-	// FIXME: When should we release this memory?
+	/* FIXME: When should we release this memory? */
 	appdomains_list = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	domain = mono_domain_create ();

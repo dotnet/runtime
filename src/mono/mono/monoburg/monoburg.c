@@ -100,7 +100,7 @@ create_tree (char *id, Tree *left, Tree *right)
 	if (term_hash)
 		term = g_hash_table_lookup (term_hash, id);
 
-	// try if id has termprefix
+	/* try if id has termprefix */
 	if (!term) {
 		GList *pl;
 		for (pl = prefix_list; pl; pl = pl->next) {

@@ -667,7 +667,7 @@ static MonoNumberFormatInfo *create_NumberFormat (const char *locale)
 	UResourceBundle *bundle, *subbundle, *table_entries;
 	UErrorCode ec;
 	int32_t count;
-	static char country [7]; //FIXME
+	static char country [7]; /* FIXME */
 	const UChar *res_str;
 	int32_t res_strlen;
 
@@ -1859,7 +1859,7 @@ static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 	if (options & CompareOptions_IgnoreCase) {
 		result = (gint32) (c1type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c1) : c1) - (c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
 	} else if (options & CompareOptions_Ordinal) {
-		// Rotor/ms return the full value just not -1 and 1
+		/*  Rotor/ms return the full value just not -1 and 1 */
 		return (gint32) c1 - c2;
 	} else {
 		/* No options. Kana, symbol and spacing options don't

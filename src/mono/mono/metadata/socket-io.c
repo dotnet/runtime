@@ -474,7 +474,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 			return(-1);
 		}
 
-		break;	/// SocketOptionLevel_IPv6
+		break;	/* SocketOptionLevel_IPv6 */
 #endif
 		
 	case SocketOptionLevel_Tcp:
@@ -857,7 +857,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock, gint32 *error)
 {
-	gchar sa[32];	/// sockaddr in not big enough for sockaddr_in6
+	gchar sa[32];	/* sockaddr in not big enough for sockaddr_in6 */
 	int salen;
 	int ret;
 	
@@ -883,7 +883,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock, gint32 *error)
 {
-	gchar sa[32];	/// sockaddr in not big enough for sockaddr_in6
+	gchar sa[32];	/* sockaddr in not big enough for sockaddr_in6 */
 	int salen;
 	int ret;
 	

@@ -401,7 +401,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		*p = val->data.p;
 		return;
 	}
-	//printf ("TODAT0 %p\n", data);
+	/* printf ("TODAT0 %p\n", data); */
 	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {

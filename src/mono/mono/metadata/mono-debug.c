@@ -234,8 +234,9 @@ mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method, MonoDoma
 
 	domain_data = mono_debug_get_domain_data (handle, domain);
 	if (domain_data->jit [minfo->index]) {
-		// FIXME FIXME FIXME
+		/* FIXME FIXME FIXME
 		// This is bug #48591.
+		*/
 		return;
 	}
 
@@ -285,8 +286,9 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	domain_data = mono_debug_get_domain_data (handle, domain);
 	if (domain_data->jit [minfo->index]) {
-		// FIXME FIXME FIXME
+		/* FIXME FIXME FIXME
 		// This is bug #48591.
+		*/
 		mono_debugger_unlock ();
 		return;
 	}

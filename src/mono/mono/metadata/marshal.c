@@ -23,7 +23,7 @@
 #include <string.h>
 #include <errno.h>
 
-//#define DEBUG_RUNTIME_CODE
+/* #define DEBUG_RUNTIME_CODE */
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -768,8 +768,9 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		break;
 	}
 	case MONO_MARSHAL_CONV_DEL_FTN: {
-		// fixme: we never convert functions back to delegates, dont 
+		/* fixme: we never convert functions back to delegates, dont 
 		// know if thats the correct behaviour
+		*/
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
@@ -1129,9 +1130,9 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
 		if (!tp->remote_class->proxy_class->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
 
-			// If the target is a proxy, make a direct call. Is proxy's work
+			/* If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
-
+			*/
 			MonoAsyncResult *ares;
 			MonoObject *exc;
 			MonoArray *out_args;
@@ -2713,7 +2714,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
 
-	//printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size));
+	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */
 
 	return res;
 }
@@ -4207,7 +4208,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		g_free (mspecs [i]);
 	g_free (mspecs);
 
-	//printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size));
+	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */
 
 	return res;
 }
@@ -4720,7 +4721,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 
 	/* Call Monitor::Exit() */
 	mono_mb_emit_ldloc (mb, this_local);
-//	mono_mb_emit_native_call (mb, exit_sig, mono_monitor_exit);
+/*	mono_mb_emit_native_call (mb, exit_sig, mono_monitor_exit); */
 	mono_mb_emit_managed_call (mb, exit_method, NULL);
 	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
 

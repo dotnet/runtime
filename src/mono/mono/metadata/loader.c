@@ -173,9 +173,9 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 		MonoType *p1 = sig1->params[i];
 		MonoType *p2 = sig2->params[i];
 		
-		//if (p1->attrs != p2->attrs)
-		//	return FALSE;
-		
+		/*if (p1->attrs != p2->attrs)
+			return FALSE;
+		*/
 		if (!mono_metadata_type_equal (p1, p2))
 			return FALSE;
 	}

@@ -1474,7 +1474,7 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 	MonoThread *thread = mono_thread_current ();
 
 	if (thread) {
-		//printf ("PUSH REF: %p -> %s.\n", thread, domain->friendly_name);
+		/* printf ("PUSH REF: %p -> %s.\n", thread, domain->friendly_name); */
 		EnterCriticalSection (&threads_mutex);
 		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
 		LeaveCriticalSection (&threads_mutex);
@@ -1487,9 +1487,9 @@ mono_thread_pop_appdomain_ref (void)
 	MonoThread *thread = mono_thread_current ();
 
 	if (thread) {
-		//printf ("POP REF: %p -> %s.\n", thread, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name);
+		/* printf ("POP REF: %p -> %s.\n", thread, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
 		EnterCriticalSection (&threads_mutex);
-		// FIXME: How can the list be empty ?
+		/* FIXME: How can the list be empty ? */
 		if (thread->appdomain_refs)
 			thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
 		LeaveCriticalSection (&threads_mutex);
@@ -1743,7 +1743,7 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 		EnterCriticalSection (&contexts_mutex);
 		offset = mono_alloc_static_data_slot (&context_static_info, size, align);
 		LeaveCriticalSection (&contexts_mutex);
-		offset |= 0x80000000;	// Set the high bit to indicate context static data
+		offset |= 0x80000000;	/* Set the high bit to indicate context static data */
 	}
 	return offset;
 }
@@ -1751,7 +1751,7 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 gpointer
 mono_get_special_static_data (guint32 offset)
 {
-	// The high bit means either thread (0) or static (1) data.
+	/* The high bit means either thread (0) or static (1) data. */
 
 	guint32 static_type = (offset & 0x80000000);
 	int idx;
@@ -1766,8 +1766,9 @@ mono_get_special_static_data (guint32 offset)
 	}
 	else
 	{
-		// Allocate static data block under demand, since we don't have a list
+		/* Allocate static data block under demand, since we don't have a list
 		// of contexts
+		*/
 		MonoAppContext *context = mono_context_get ();
 		if (!context->static_data || !context->static_data [idx]) {
 			EnterCriticalSection (&contexts_mutex);

@@ -2354,7 +2354,7 @@ encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericMethod *gmetho
 	/*
 	 * FIXME: vararg, explicit_this, differenc call_conv values...
 	 */
-	mono_metadata_encode_value (0xa, p, &p); /// FIXME FIXME FIXME
+	mono_metadata_encode_value (0xa, p, &p); /* FIXME FIXME FIXME */
 	mono_metadata_encode_value (nparams, p, &p);
 
 	for (i = 0; i < nparams; i++)
@@ -4582,13 +4582,13 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	size &= ~(VIRT_ALIGN - 1);
 	header->nt.pe_image_size = GUINT32_FROM_LE (size);
 
-	//
+	/*
 	// Translate the PEFileKind value to the value expected by the Windows loader
-	//
+	*/
 	{
 		short kind;
 
-		//
+		/*
 		// PEFileKinds.Dll == 1
 		// PEFileKinds.ConsoleApplication == 2
 		// PEFileKinds.WindowApplication == 3
@@ -4596,6 +4596,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 		// need to get:
 		//     IMAGE_SUBSYSTEM_WINDOWS_GUI 2 // Image runs in the Windows GUI subsystem.
                 //     IMAGE_SUBSYSTEM_WINDOWS_CUI 3 // Image runs in the Windows character subsystem.
+		*/
 		if (assemblyb->pekind == 3)
 			kind = 2;
 		else
@@ -4871,7 +4872,7 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 		 * we don't know which module it belongs to, since that is only 
 		 * determined at assembly save time.
 		 */
-		//image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image;
+		/*image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image; */
 		image = create_dynamic_mono_image (ab->dynamic_assembly, mono_string_to_utf8 (ab->name), mono_string_to_utf8 (moduleb->module.fqname));
 
 		moduleb->module.image = &image->image;
@@ -4954,7 +4955,7 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
 	name = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
 
-	// Check whenever the row has a corresponding row in the moduleref table
+	/* Check whenever the row has a corresponding row in the moduleref table */
 	table = &image->tables [MONO_TABLE_MODULEREF];
 	for (i = 0; i < table->rows; ++i) {
 		name_idx = mono_metadata_decode_row_col (table, i, MONO_MODULEREF_NAME);
@@ -5109,7 +5110,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		return res;
 	}
 	if (klass->reflection_info && !klass->wastypebuilder) {
-		//g_assert_not_reached ();
+		/* g_assert_not_reached (); */
 		/* should this be considered an error condition? */
 		if (!type->byref) {
 			mono_domain_unlock (domain);
@@ -5583,7 +5584,7 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
 		return NULL;
 	
-	// Reconstruct the type name
+	/* Reconstruct the type name */
 	fullName = g_string_new ("");
 	if (info->name_space && (info->name_space [0] != '\0'))
 		g_string_printf (fullName, "%s.%s", info->name_space, info->name);
@@ -6248,7 +6249,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 
 	if (method->klass->generic_inst || method->klass->gen_params ||
 	    method->signature->generic_param_count) {
-		// FIXME FIXME FIXME
+		/* FIXME FIXME FIXME */
 		return NULL;
 	}
 

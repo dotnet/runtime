@@ -40,7 +40,7 @@ struct _MonoDebugMethodJitInfo {
 	guint32 prologue_end;
 	guint32 epilogue_begin;
 	const guint8 *wrapper_addr;
-	// Array of MonoDebugLineNumberEntry
+	/* Array of MonoDebugLineNumberEntry */
 	GArray *line_numbers;
 	guint32 num_params;
 	MonoDebugVarInfo *this_var;

@@ -1186,7 +1186,7 @@ unload_thread_main (void *arg)
 
 	domain->state = MONO_APPDOMAIN_UNLOADED;
 
-	//printf ("UNLOADED %s.\n", domain->friendly_name);
+	/* printf ("UNLOADED %s.\n", domain->friendly_name); */
 
 	mono_domain_free (domain, FALSE);
 
@@ -1216,7 +1216,7 @@ mono_domain_unload (MonoDomain *domain)
 	MonoObject *exc;
 	unload_data thread_data;
 
-	//printf ("UNLOAD STARTING FOR %s.\n", domain->friendly_name);
+	/* printf ("UNLOAD STARTING FOR %s.\n", domain->friendly_name); */
 
 	/* Atomically change our state to UNLOADING */
 	prev_state = InterlockedCompareExchange (&domain->state,

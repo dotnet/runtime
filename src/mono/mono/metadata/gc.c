@@ -504,7 +504,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		objs = g_ptr_array_new ();
 		g_hash_table_foreach (domain->finalizable_objects_hash, 
 							  collect_objects, objs);
-		//printf ("FINALIZING %d OBJECTS.\n", objs->len);
+		/* printf ("FINALIZING %d OBJECTS.\n", objs->len); */
 
 		for (i = 0; i < objs->len; ++i) {
 			MonoObject *o = (MonoObject*)g_ptr_array_index (objs, i);

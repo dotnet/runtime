@@ -149,8 +149,8 @@ StringFromUTF8 (const char* psz)
 	/* TODO: */
 	return mono_string_new (mono_domain_get (), psz);
 #if 0
-	// Sun's modified UTF8 encoding is not compatible with System::Text::Encoding::UTF8, so
-	// we need to roll our own
+	/* Sun's modified UTF8 encoding is not compatible with System::Text::Encoding::UTF8, so */
+	/* we need to roll our own */
 	int len, res_len, i;
 	int *res;
 
@@ -163,16 +163,16 @@ StringFromUTF8 (const char* psz)
 		switch (c >> 4)
 		{
 		case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-			// 0xxxxxxx
+			/* 0xxxxxxx */
 			break;
 		case 12: case 13:
-			// 110x xxxx   10xx xxxx
+			/* 110x xxxx   10xx xxxx */
 			char2 = *psz++;
 			i++;
 			c = (((c & 0x1F) << 6) | (char2 & 0x3F));
 			break;
 		case 14:
-			// 1110 xxxx  10xx xxxx  10xx xxxx
+			/* 1110 xxxx  10xx xxxx  10xx xxxx */
 			char2 = *psz++;
 			char3 = *psz++;
 			i++;
@@ -327,7 +327,7 @@ InvokeHelper (JNIEnv *env, jobject object, jmethodID methodID, jvalue* args)
 	MonoObject **argarray;
 	MonoArray *args2;
 
-//	assert(!pLocalRefs->PendingException);
+/* assert(!pLocalRefs->PendingException); */
 	g_assert(methodID);
 
 	argc = GetMethodArgs(methodID, sig);
@@ -475,7 +475,7 @@ METHOD_IMPL(Double,jdouble)
 
 
 
-// TODO: These should be put into the macros above... 
+/* TODO: These should be put into the macros above...  */
 static void JNICALL CallVoidMethodA (JNIEnv *env, jobject obj, jmethodID methodID, jvalue * args) { 
 	InvokeHelper(env, obj, methodID, args);
 }
@@ -581,7 +581,7 @@ static type JNICALL GetStatic##Type##Field(JNIEnv *env, jclass clazz, jfieldID f
 
 
 
-//    return *(cpptype*)BOXED_VALUE (jniFuncs.GetFieldValue (fieldID, jniFuncs.UnwrapRef (obj))); 
+/*    return *(cpptype*)BOXED_VALUE (jniFuncs.GetFieldValue (fieldID, jniFuncs.UnwrapRef (obj)));  */
 
 GET_SET_FIELD(Boolean,jboolean,gboolean)
 GET_SET_FIELD(Byte,jbyte, gchar)
