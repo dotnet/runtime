@@ -1,3 +1,9 @@
+2002-12-10  Daniel Morgan <danmorg@sc.rr.com>
+
+	* man/Makefile.am: changed sqlsharpcli.1 to sqlsharp.1
+	
+	* man/sqlsharpcli.1: renamed to sqlsharp.1
+
 2002-12-09  Tim Haynes  <thaynes@openlinksw.co.uk>
 
 	* mono/jit/jit.c
