@@ -86,6 +86,11 @@ public class Tests {
 		return 0;
 	}
 
+	public static int delegate_test_string_marshalling (string s)
+	{
+		return s == "ABC" ? 0 : 1;
+	}
+
 	[DllImport ("libtest", EntryPoint="mono_test_ref_vtype")]
 	public static extern int mono_test_ref_vtype (int a, ref SimpleStruct ss, int b, TestDelegate d);
 	
@@ -104,6 +109,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate7")]
 	public static extern int mono_test_marshal_delegate7 (SimpleDelegate7 d);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate8", CharSet=CharSet.Unicode)]
+	public static extern int mono_test_marshal_delegate8 (SimpleDelegate8 d, string s);
+
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
 
 	public delegate SimpleStruct SimpleDelegate2 (SimpleStruct ss);
@@ -113,6 +121,8 @@ public class Tests {
 	public delegate int SimpleDelegate5 (ref SimpleClass ss);
 
 	public delegate int SimpleDelegate7 (out SimpleClass ss);
+
+	public delegate int SimpleDelegate8 ([MarshalAs (UnmanagedType.LPWStr)] string s1);
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -161,6 +171,13 @@ public class Tests {
 		SimpleDelegate7 d = new SimpleDelegate7 (delegate_test_class_out);
 
 		return mono_test_marshal_delegate7 (d);
+	}
+
+	/* Test string marshalling with delegates */
+	static int test_0_marshal_string_delegate () {
+		SimpleDelegate8 d = new SimpleDelegate8 (delegate_test_string_marshalling);
+
+		return mono_test_marshal_delegate8 (d, "ABC");
 	}
 
 	/* Test that the delegate wrapper correctly catches null byref arguments */

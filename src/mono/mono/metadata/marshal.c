@@ -1195,6 +1195,9 @@ mono_marshal_get_string_encoding (MonoMethodPInvoke *piinfo, MonoMarshalSpec *sp
 			return spec->native;
 	}
 
+	if (!piinfo)
+		return MONO_NATIVE_LPSTR;
+
 	/* Then try the method level marshal info */
 	switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
 	case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
@@ -2273,7 +2276,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			if (t->byref)
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			break;
-		case MONO_TYPE_STRING:
+		case MONO_TYPE_STRING: {
+			MonoMarshalNative encoding = mono_marshal_get_string_encoding (NULL, spec);
+
 			if (t->byref)
 				continue;
 
@@ -2283,9 +2288,26 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_ldarg (mb, i);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+
+			switch (encoding) {
+			case MONO_NATIVE_LPWSTR:
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_STR);
+				break;
+			case MONO_NATIVE_LPSTR:
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+				break;
+			default: {
+					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
+					MonoException *exc = mono_get_exception_not_implemented (msg);
+					g_warning (msg);
+					g_free (msg);
+					mono_raise_exception (exc);
+				}
+			}
+
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;	
+		}
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 			if (t->byref)

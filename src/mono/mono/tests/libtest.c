@@ -560,6 +560,14 @@ mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 	return 0;
 }
 
+typedef int (*SimpleDelegate8) (gunichar2 *s);
+
+int
+mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
+{
+	return delegate (s);
+}
+
 int 
 mono_test_marshal_stringbuilder (char *s, int n)
 {
