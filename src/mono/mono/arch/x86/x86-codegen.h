@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.28 2002/05/06 16:33:54 serge Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.29 2002/05/10 07:24:08 lupus Exp $
 */
 
 #ifndef X86_H
@@ -285,9 +285,9 @@ typedef union {
 	do {	\
 		unsigned char* pos = (ins) + 1;	\
 		int disp, size = 0;	\
-		switch (*(ins)) {	\
+		switch (*(unsigned char*)(ins)) {	\
 		case 0xe8: case 0xe9: ++size; break; /* call, jump32 */	\
-		case 0x0f: if (!(*pos >= 0x70 && *pos <= 0x7f)) assert (0);	\
+		case 0x0f: if (!(*pos >= 0x70 && *pos <= 0x8f)) assert (0);	\
 		   ++size; ++pos; break; /* prefix for 32-bit disp */	\
 		case 0xe0: case 0xe1: case 0xe2: /* loop */	\
 		case 0xeb: /* jump8 */	\
@@ -301,7 +301,7 @@ typedef union {
 		}	\
 		disp = (target) - pos;	\
 		if (size) x86_imm_emit32 (pos, disp - 4);	\
-		else if (x86_is_imm8 (disp)) x86_imm_emit8 (pos, disp - 1);	\
+		else if (x86_is_imm8 (disp - 1)) x86_imm_emit8 (pos, disp - 1);	\
 		else assert (0);	\
 	} while (0)
 
