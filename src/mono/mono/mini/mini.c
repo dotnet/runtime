@@ -8151,7 +8151,6 @@ optimize_branches (MonoCompile *cfg)
 					}
 				}
 
-#ifdef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
 				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
 					if (bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region)) {
 						/* Reverse the branch */
@@ -8166,7 +8165,6 @@ optimize_branches (MonoCompile *cfg)
 									 bb->block_num);
 					}
 				}
-#endif
 			}
 		}
 	} while (changed && (niterations > 0));
@@ -8428,7 +8426,6 @@ mono_codegen (MonoCompile *cfg)
 		bb->native_offset = cfg->code_len;
 		mono_arch_output_basic_block (cfg, bb);
 
-#ifdef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
 		if (bb == cfg->bb_exit) {
 			cfg->epilog_begin = cfg->code_len;
 
@@ -8440,17 +8437,11 @@ mono_codegen (MonoCompile *cfg)
 
 			mono_arch_emit_epilog (cfg);
 		}
-#endif
 	}
 
-#ifndef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
-	cfg->bb_exit->native_offset = cfg->code_len;
-	max_epilog_size = mono_arch_max_epilog_size (cfg);
-#else
 	mono_arch_emit_exceptions (cfg);
 
 	max_epilog_size = 0;
-#endif
 
 	code = cfg->native_code + cfg->code_len;
 
@@ -8479,18 +8470,6 @@ mono_codegen (MonoCompile *cfg)
 	code = cfg->native_code + cfg->code_len;
   
 	/* g_assert (((int)cfg->native_code & (MONO_ARCH_CODE_ALIGNMENT - 1)) == 0); */
-
-#ifndef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
-	cfg->epilog_begin = cfg->code_len;
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
-
-	cfg->code_len = code - cfg->native_code;
-
-	mono_arch_emit_epilog (cfg);
-#endif
-
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_ABS: {
