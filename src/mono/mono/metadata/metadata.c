@@ -1201,6 +1201,21 @@ MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
 {
 	MonoType *type, *cached;
+	gboolean byref = FALSE;
+
+	/*
+	 * According to the spec, custom modifiers should come before the byref
+	 * flag, but the IL produced by ilasm from the following signature:
+	 *   object modopt(...) &
+	 * starts with a byref flag, followed by the modifiers. (bug #49802)
+	 * Also, this type seems to be different from 'object & modopt(...)'. Maybe
+	 * it would be better to treat byref as real type constructor instead of
+	 * a modifier...
+	 */
+	if (*ptr == MONO_TYPE_BYREF) {
+		byref = TRUE;
+		++ptr;
+	}
 
 	switch (mode) {
 	case MONO_PARSE_MOD_TYPE:
@@ -1236,6 +1251,7 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 	}
 	
 	type->attrs = opt_attrs;
+	type->byref = byref;
 	if (mode == MONO_PARSE_LOCAL) {
 		/*
 		 * check for pinned flag
