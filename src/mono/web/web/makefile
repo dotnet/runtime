@@ -1,4 +1,4 @@
-ROOT=C:/WINNT
+OOT=C:/WINNT
 CSCRIPT = $(ROOT)/system32/cscript.exe
 CSC=csc
 
@@ -55,6 +55,7 @@ OBJECTS=									\
 	deploy/runtime.html							\
 	deploy/screenshots.html							\
 	deploy/status.html							\
+	deploy/team.html							\
 	deploy/testing.html							\
 	deploy/tools.html							\
 	deploy/winforms.html							\
@@ -108,7 +109,7 @@ mono-rss.exe: mono-rss.cs rss.cs
 	$(CSC) mono-rss.cs rss.cs
 
 ../team: render-team-page.exe team.xml
-	./render-team-page.exe team.xml "deploy\team\team.html"
+	./render-team-page.exe team.xml "../team"
 
 render-team-page.exe: render-team-page.cs
 	$(CSC) render-team-page.cs

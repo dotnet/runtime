@@ -252,17 +252,9 @@ class Page {
         public Page ()
         {
                 document = new XmlDocument ();
-                XmlElement html = document.CreateElement ("HTML");
-                document.AppendChild (html);
-
-                XmlElement head = document.CreateElement ("HEAD");
-                html.AppendChild (head);
-
-                XmlElement body = document.CreateElement ("BODY");
-                html.AppendChild (body);
 
                 XmlElement table = document.CreateElement ("TABLE");
-                body.AppendChild (table);
+                document.AppendChild (table);
 
                 tbody = document.CreateElement ("TBODY");
                 table.AppendChild (tbody);
