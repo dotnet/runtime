@@ -24,55 +24,51 @@
 #define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
 
 typedef enum {
-	AMInvalid         = 0,
-	AMBase            = 1,  // [REG]  
-	AMIndex           = 2,  // [REG*X] 
-	AMBaseIndex       = 3,  // [REG*X][REG] 
-	AMImmediate       = 4,  // ptr
-	AMBaseOffset      = 5,  // V[REG] 
-	AMIndexOffset     = 6,  // V[REG*X] 
-	AMBaseIndexOffset = 7,  // V[REG*X][REG] 
+	AMImmediate       = 0,  // ptr
+	AMBase            = 1,  // V[REG]  
+	AMIndex           = 2,  // V[REG*X] 
+	AMBaseIndex       = 3,  // V[REG*X][REG] 
 } X86AddMode;
 
 typedef	struct {
-	int offset;
-	X86AddMode amode:3;
-	unsigned int shift:2;
-	gint8 basereg;
-	gint8 indexreg;
+	int           offset;
+	X86AddMode    amode:2;
+	unsigned int  shift:2;
+	gint8         basereg;
+	gint8         indexreg;
 } X86AddressInfo;
 
 typedef struct {
 	MonoMemPool *mp;
-	guint8 *start;
-	guint8 *code;
-	gint32 locals_size;
-	GPtrArray *forest;
-	MonoRegSet *rs;
-	guint32 epilog;
+	guint8      *start;
+	guint8      *code;
+	gint32       locals_size;
+	GPtrArray   *forest;
+	MonoRegSet  *rs;
+	guint32      epilog;
 } MBCodeGenStatus;
 
 typedef struct _MBTree MBTree;
 struct _MBTree {
-	guint16 op;
-	MBTree *left, *right;
-	gpointer state;
-	gpointer emit;
+	guint16   op;
+	MBTree   *left, *right;
+	gpointer  state;
+	gpointer  emit;
 
-	guint is_jump:1;
-	guint last_instr:1;
-	guint jump_target:1;
+	guint     is_jump:1;
+	guint     last_instr:1;
+	guint     jump_target:1;
 
-	guint8 exclude_mask;
+	guint8    exclude_mask;
 
-	gint32 cli_addr;   /* virtual cli address */
-	gint32 addr;       /* address of emitted instruction */
-	gint32 first_addr; /* first code address of a tree */ 
+	gint32    cli_addr;   /* virtual cli address */
+	gint32    addr;       /* address of emitted instruction */
+	gint32    first_addr; /* first code address of a tree */ 
 
-	gint8 reg1;
-	gint8 reg2;
+	gint8     reg1;
+	gint8     reg2;
 	
-	gint32 size;
+	gint32    size;
 
 	union {
 		gint32 i;
@@ -135,12 +131,12 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 
 acon: CONST_I4 {
 	tree->data.ainfo.offset = tree->data.i;
-	tree->data.ainfo.amode = 4;
+	tree->data.ainfo.amode = AMImmediate;
 }
 
 acon: ADDR_G {
 	tree->data.ainfo.offset = tree->data.i;
-	tree->data.ainfo.amode = 4;
+	tree->data.ainfo.amode = AMImmediate;
 }
 
 base: acon
@@ -148,37 +144,37 @@ base: acon
 base: reg {
 	tree->data.ainfo.offset = 0;
 	tree->data.ainfo.basereg = tree->reg1;
-	tree->data.ainfo.amode = 1;
+	tree->data.ainfo.amode = AMBase;
 }
 
 base: ADD (reg, acon) {
 	tree->data.ainfo.offset = tree->right->data.i;
 	tree->data.ainfo.basereg = tree->left->reg1;
-	tree->data.ainfo.amode = 5;
+	tree->data.ainfo.amode = AMBase;
 }
 
 base: ADDR_L {
 	tree->data.ainfo.offset = tree->data.i;
 	tree->data.ainfo.basereg = X86_EBP;
-	tree->data.ainfo.amode = 5;
+	tree->data.ainfo.amode = AMBase;
 }
 
 base: ADDR_A {
 	tree->data.ainfo.offset = tree->data.i + 8;
 	tree->data.ainfo.basereg = X86_EBP;
-	tree->data.ainfo.amode = 5;
+	tree->data.ainfo.amode = AMBase;
 }
 
 index: reg {
 	tree->data.ainfo.offset = 0;
 	tree->data.ainfo.indexreg = tree->left->reg1;
 	tree->data.ainfo.shift = 0;
-	tree->data.ainfo.amode = 2;
+	tree->data.ainfo.amode = AMIndex;
 }
 
 index: SHL (reg, CONST_I4) {
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.amode = 2;
+	tree->data.ainfo.amode = AMIndex;
 	tree->data.ainfo.indexreg = tree->left->reg1;
 	tree->data.ainfo.shift = tree->right->data.i;
 } cost {
@@ -194,7 +190,7 @@ index: MUL (reg, CONST_I4) {
 	static int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
   
 	tree->data.ainfo.offset = 0;
-	tree->data.ainfo.amode = 2;
+	tree->data.ainfo.amode = AMIndex;
 	tree->data.ainfo.indexreg = tree->left->reg1;
 	tree->data.ainfo.shift = fast_log2 [tree->right->data.i];
 } cost {
@@ -222,79 +218,47 @@ addr: ADD (index, base) {
 stmt: STIND_I4 (addr, reg) {
 	switch (tree->left->data.ainfo.amode) {
 
-	case AMBase:
-		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg, 0, tree->right->reg1, 4);
-		break;		
-	case AMIndex:
-		x86_mov_memindex_reg (s->code, X86_NOBASEREG, 0,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-				      tree->right->reg1, 4);
-		break;		
-	case AMBaseIndex:
-		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, 0,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-				      tree->right->reg1, 4);
-		break;		
 	case AMImmediate:
 		x86_mov_mem_reg (s->code, tree->left->data.ainfo.offset, tree->right->reg1, 4);
 		break;
 		
-	case AMBaseOffset:
-		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg,
+	case AMBase:
+		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg, 
 				     tree->left->data.ainfo.offset, tree->right->reg1, 4);
 		break;		
-	case AMIndexOffset:
+	case AMIndex:
 		x86_mov_memindex_reg (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
 				      tree->right->reg1, 4);
 		break;		
-	case AMBaseIndexOffset:
+	case AMBaseIndex:
 		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
 				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
 				      tree->right->reg1, 4);
-
 		break;		
-	default:
-		g_assert_not_reached ();
-		break;
 	}
 }
 
 reg: LDIND_I4 (addr) {
 	switch (tree->left->data.ainfo.amode) {
 
-	case AMBase:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 0, 4);
-		break;		
-	case AMIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, 0, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 4);
-		break;		
-	case AMBaseIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 0,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
-		break;		
 	case AMImmediate:
 		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
 		break;
-		
-	case AMBaseOffset:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg,
+
+	case AMBase:
+		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
 				     tree->left->data.ainfo.offset, 4);
 		break;		
-	case AMIndexOffset:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, 
-				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 4);
+	case AMIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
 		break;		
-	case AMBaseIndexOffset:
+	case AMBaseIndex:
 		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
 				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
 				      tree->left->data.ainfo.shift, 4);
 		break;		
-	default:
-		g_assert_not_reached ();
-		break;
 	}
 }
 
