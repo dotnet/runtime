@@ -2616,6 +2616,15 @@ ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_
 	return obj;
 }
 
+static MonoString *
+ves_icall_System_IO_get_temp_path ()
+{
+	gchar *path;
+
+	path = g_strdup (g_get_tmp_dir ());
+	return mono_string_new (mono_domain_get (), path);
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3108,6 +3117,12 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Runtime.Serialization.FormatterServices::GetUninitializedObjectInternal",
 	ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_Internal,
+
+	/*
+	 * System.IO.Path
+	 */
+	"System.IO.Path::get_temp_path", ves_icall_System_IO_get_temp_path,
+
 	/*
 	 * add other internal calls here
 	 */
