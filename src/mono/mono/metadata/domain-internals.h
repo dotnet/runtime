@@ -121,6 +121,9 @@ MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain            (void);
 
 MonoAppDomain *
+ves_icall_System_AppDomain_getDomainByID           (gint32 domain_id);
+
+MonoAppDomain *
 ves_icall_System_AppDomain_createDomain            (MonoString         *friendly_name,
 						    MonoAppDomainSetup *setup);
 

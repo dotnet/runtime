@@ -27,7 +27,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 22
+#define MONO_CORLIB_VERSION 23
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -351,6 +351,16 @@ MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain ()
 {
 	MonoDomain *add = mono_domain_get ();
+
+	MONO_ARCH_SAVE_REGS;
+
+	return add->domain;
+}
+
+MonoAppDomain *
+ves_icall_System_AppDomain_getDomainByID (gint32 domain_id)
+{
+	MonoDomain *add = mono_domain_get_by_id (domain_id);
 
 	MONO_ARCH_SAVE_REGS;
 

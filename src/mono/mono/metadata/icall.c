@@ -5080,6 +5080,7 @@ static const IcallEntry appdomain_icalls [] = {
 	{"SetData", ves_icall_System_AppDomain_SetData},
 	{"createDomain", ves_icall_System_AppDomain_createDomain},
 	{"getCurDomain", ves_icall_System_AppDomain_getCurDomain},
+	{"getDomainByID", ves_icall_System_AppDomain_getDomainByID},
 	{"getFriendlyName", ves_icall_System_AppDomain_getFriendlyName},
 	{"getSetup", ves_icall_System_AppDomain_getSetup}
 };
