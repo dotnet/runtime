@@ -1418,6 +1418,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (in_any_block (header, ip_offset))
 				ADD_INVALID (list, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ip_offset));
 			++ip;
+			start = 1;
 			break;
 		case CEE_BR_S:
 			target = ip + (signed char)ip [1] + 2;
@@ -2125,8 +2126,11 @@ mono_method_verify (MonoMethod *method, int level)
 		}
 	}
 	/*
-	 * FIXME: if ip != end we overflowed: mark as error.
+	 * if ip != end we overflowed: mark as error.
 	 */
+	if (ip != end || !start) {
+		ADD_INVALID (list, g_strdup_printf ("Run ahead of method code at 0x%04x", ip_offset));
+	}
 invalid_cil:
 
 	g_free (local_state);

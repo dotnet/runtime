@@ -402,8 +402,9 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 	}
 	vtable = klass->vtable;
 
+	/* check method->slot is a valid index: perform isinstance? */
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		res = vtable [method->klass->interface_id + method->slot];
+		res = vtable [klass->interface_offsets [method->klass->interface_id] + method->slot];
 	} else {
 		res = vtable [method->slot];
 	}

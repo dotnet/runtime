@@ -299,7 +299,21 @@ method_from_memberref (MonoImage *image, guint32 idx)
 		g_assert_not_reached ();
 		break;
 	}
+	case MEMBERREF_PARENT_TYPEDEF:
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | nindex);
+		if (!klass) {
+			g_warning ("Missing method %s in assembly %s typedef index %d", mname, image->name, nindex);
+			mono_metadata_free_method_signature (sig);
+			return NULL;
+		}
+		mono_class_init (klass);
+		method = find_method (klass, mname, sig);
+		if (!method)
+			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+		mono_metadata_free_method_signature (sig);
+		return method;
 	default:
+		g_error ("Memberref parent unknown: class: %d, index %d", class, nindex);
 		g_assert_not_reached ();
 	}
 

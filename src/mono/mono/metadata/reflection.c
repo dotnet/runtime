@@ -3191,6 +3191,7 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_TYPEDBYREF:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
