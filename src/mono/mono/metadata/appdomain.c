@@ -19,28 +19,191 @@
 
 static guint32 appdomain_thread_id = 0;
 
-void
-mono_appdomain_init (char *friendly_name)
+static int
+ldstr_hash (const char* str)
 {
-	static gboolean initialized = FALSE;
+	guint len, h;
+	const char *end;
+	len = mono_metadata_decode_blob_size (str, &str);
+	end = str + len;
+	h = *str;
+	/*
+	 * FIXME: The distribution may not be so nice with lots of
+	 * null chars in the string.
+	 */
+	for (str += 1; str < end; str++)
+		h = (h << 5) - h + *str;
+	return h;
+}
+
+static gboolean
+ldstr_equal (const char *str1, const char *str2) {
+	int len;
+	if ((len=mono_metadata_decode_blob_size (str1, &str1)) !=
+				mono_metadata_decode_blob_size (str2, &str2))
+		return 0;
+	return memcmp (str1, str2, len) == 0;
+}
+
+MonoDomain *
+mono_create_domain ()
+{
+	MonoDomain *domain;
+
+	domain = g_new0 (MonoDomain, 1);
+	domain->domain = NULL;
+	domain->setup = NULL;
+	domain->friendly_name = NULL;
+
+	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
+	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
+	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
+	domain->ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
+
+	return domain;
+}
+
+MonoDomain *
+mono_init (const char *file)
+{
+	static MonoDomain *domain = NULL;
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
+	MonoAssembly *ass;
 	MonoClass *class;
 	MonoString *name;
+	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
 
-	if (initialized)
-		return;
+	if (domain)
+		g_assert_not_reached ();
 
 	appdomain_thread_id = TlsAlloc ();
 
+	domain = mono_create_domain ();
+
+	TlsSetValue (appdomain_thread_id, domain);
+
+	/* find the corlib */
+	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
+	g_assert (status == MONO_IMAGE_OK);
+	g_assert (ass != NULL);
+	mono_defaults.corlib = ass->image;
+
+	mono_defaults.object_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Object");
+	g_assert (mono_defaults.object_class != 0);
+
+	mono_defaults.void_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Void");
+	g_assert (mono_defaults.void_class != 0);
+
+	mono_defaults.boolean_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Boolean");
+	g_assert (mono_defaults.boolean_class != 0);
+
+	mono_defaults.byte_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Byte");
+	g_assert (mono_defaults.byte_class != 0);
+
+	mono_defaults.sbyte_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "SByte");
+	g_assert (mono_defaults.sbyte_class != 0);
+
+	mono_defaults.int16_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Int16");
+	g_assert (mono_defaults.int16_class != 0);
+
+	mono_defaults.uint16_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UInt16");
+	g_assert (mono_defaults.uint16_class != 0);
+
+	mono_defaults.int32_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Int32");
+	g_assert (mono_defaults.int32_class != 0);
+
+	mono_defaults.uint32_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UInt32");
+	g_assert (mono_defaults.uint32_class != 0);
+
+	mono_defaults.uint_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UIntPtr");
+	g_assert (mono_defaults.uint_class != 0);
+
+	mono_defaults.int_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "IntPtr");
+	g_assert (mono_defaults.int_class != 0);
+
+	mono_defaults.int64_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Int64");
+	g_assert (mono_defaults.int64_class != 0);
+
+	mono_defaults.uint64_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UInt64");
+	g_assert (mono_defaults.uint64_class != 0);
+
+	mono_defaults.single_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Single");
+	g_assert (mono_defaults.single_class != 0);
+
+	mono_defaults.double_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Double");
+	g_assert (mono_defaults.double_class != 0);
+
+	mono_defaults.char_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Char");
+	g_assert (mono_defaults.char_class != 0);
+
+	mono_defaults.string_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "String");
+	g_assert (mono_defaults.string_class != 0);
+
+	mono_defaults.enum_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Enum");
+	g_assert (mono_defaults.enum_class != 0);
+
+	mono_defaults.array_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Array");
+	g_assert (mono_defaults.array_class != 0);
+
+	mono_defaults.delegate_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Delegate");
+	g_assert (mono_defaults.delegate_class != 0);
+
+	mono_defaults.typehandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeTypeHandle");
+	g_assert (mono_defaults.typehandle_class != 0);
+
+	mono_defaults.methodhandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeMethodHandle");
+	g_assert (mono_defaults.methodhandle_class != 0);
+
+	mono_defaults.fieldhandle_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeFieldHandle");
+	g_assert (mono_defaults.fieldhandle_class != 0);
+
+	mono_defaults.monotype_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "MonoType");
+	g_assert (mono_defaults.monotype_class != 0);
+
+	mono_defaults.exception_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Exception");
+	g_assert (mono_defaults.exception_class != 0);
+
+
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new (class);
+	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
 	ves_icall_System_AppDomainSetup_InitAppDomainSetup (setup);
 
-	name = mono_string_new (friendly_name);
-	ad = ves_icall_System_AppDomain_createDomain (name, setup);
+	name = mono_string_new (domain, "Default Domain");
 
-	TlsSetValue (appdomain_thread_id, ad->data);
+	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+	ad = (MonoAppDomain *) mono_object_new (domain, class);
+	ad->data = domain;
+	domain->domain = ad;
+	domain->setup = setup;
+	domain->friendly_name = name;
+
+	return domain;
 }
 
 void
@@ -50,7 +213,7 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 }
 
 static MonoObject *
-mono_appdomain_transfer_object (MonoAppDomainData *src, MonoAppDomainData *dst, MonoObject *obj)
+mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 {
 	/* fixme: transfer an object from one domain into another */
 	g_assert_not_reached ();
@@ -60,8 +223,8 @@ mono_appdomain_transfer_object (MonoAppDomainData *src, MonoAppDomainData *dst, 
 MonoObject *
 ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 {
-	MonoAppDomainData *add = ad->data;
-	MonoAppDomainData *cur = mono_appdomain_get ();
+	MonoDomain *add = ad->data;
+	MonoDomain *cur = mono_domain_get ();
 	MonoObject *o;
 	char *str;
 
@@ -96,21 +259,21 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	if (!o)
 		return NULL;
 
-	return mono_appdomain_transfer_object (add, cur, o);
+	return mono_domain_transfer_object (add, cur, o);
 }
 
 void
 ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObject *data)
 {
-	MonoAppDomainData *add = ad->data;
-	MonoAppDomainData *cur = mono_appdomain_get ();
+	MonoDomain *add = ad->data;
+	MonoDomain *cur = mono_domain_get ();
 	MonoObject *o;
 	char *str;
 
 	g_assert (ad != NULL);
 	g_assert (name != NULL);
 
-	o = mono_appdomain_transfer_object (cur, add, data);
+	o = mono_domain_transfer_object (cur, add, data);
 
 	/* fixme: need a hash func for MonoString */
 	str = mono_string_to_utf8 (name);
@@ -136,14 +299,14 @@ ves_icall_System_AppDomain_getFriendlyName (MonoAppDomain *ad)
 	return ad->data->friendly_name;
 }
 
-inline MonoAppDomainData *
-mono_appdomain_get ()
+inline MonoDomain *
+mono_domain_get ()
 {
-	return ((MonoAppDomainData *)TlsGetValue (appdomain_thread_id));
+	return ((MonoDomain *)TlsGetValue (appdomain_thread_id));
 }
 
 inline void
-mono_appdomain_set (MonoAppDomainData *domain)
+mono_domain_set (MonoDomain *domain)
 {
 	TlsSetValue (appdomain_thread_id, domain);
 }
@@ -151,28 +314,26 @@ mono_appdomain_set (MonoAppDomainData *domain)
 MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain ()
 {
-	MonoAppDomainData *add = mono_appdomain_get ();
+	MonoDomain *add = mono_domain_get ();
 	return add->domain;
 }
 
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
+	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *adclass;
 	MonoAppDomain *ad;
-	MonoAppDomainData *data;
+	MonoDomain *data;
 	
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 	
 	// fixme: pin all those objects
-	ad = (MonoAppDomain *) mono_object_new (adclass);
-	ad->data = data = g_new0 (MonoAppDomainData, 1);
+	ad = (MonoAppDomain *) mono_object_new (domain, adclass);
+	ad->data = data = mono_create_domain ();
 	data->domain = ad;
 	data->setup = setup;
 	data->friendly_name = friendly_name;
-
-	data->env = g_hash_table_new (g_str_hash, g_str_equal);
-	data->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 
 	// fixme: what to do next ?
 
@@ -181,6 +342,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 
 typedef struct {
 	MonoArray *res;
+	MonoDomain *domain;
 	int idx;
 } add_assembly_helper_t;
 
@@ -189,7 +351,7 @@ add_assembly (gpointer key, gpointer value, gpointer user_data)
 {
 	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
 
-	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (value));
+	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (ah->domain, value));
 }
 
 //
@@ -199,8 +361,8 @@ add_assembly (gpointer key, gpointer value, gpointer user_data)
 MonoArray *
 ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 {
+	MonoDomain *domain = ad->data; 
 	static MonoClass *System_Reflection_Assembly;
-	GHashTable *assemblies = mono_get_assemblies ();
 	MonoArray *res;
 	add_assembly_helper_t ah;
 	
@@ -208,11 +370,12 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
 
-	res = mono_array_new (System_Reflection_Assembly, g_hash_table_size (assemblies));
+	res = mono_array_new (domain, System_Reflection_Assembly, g_hash_table_size (domain->assemblies));
 
+	ah.domain = domain;
 	ah.res = res;
 	ah.idx = 0;
-	g_hash_table_foreach (assemblies, add_assembly, &ah);
+	g_hash_table_foreach (domain->assemblies, add_assembly, &ah);
 
 	return res;
 }
@@ -221,6 +384,7 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssemblyName *assRef, MonoObject *evidence)
 {
+	MonoDomain *domain = ad->data; 
 	char *name, *filename;
 	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
@@ -242,23 +406,50 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 	g_free (name);
 
 	if (!ass)
-		mono_raise_exception ((MonoException *)mono_exception_from_name (
-		        mono_defaults.corlib, "System.IO", "FileNotFoundException"));
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System.IO", "FileNotFoundException"));
 
-	return mono_assembly_get_object (ass);
+	return mono_assembly_get_object (domain, ass);
 }
 
 void
 ves_icall_System_AppDomain_Unload (MonoAppDomain *ad)
 {
-	g_warning ("AppDomain_Unload not implemented");
+	mono_domain_unload (ad->data);
+}
+
+MonoAssembly *
+mono_domain_assembly_open (MonoDomain *domain, char *name)
+{
+	MonoAssembly *ass, *tmp;
+	int i;
+
+	if ((ass = g_hash_table_lookup (domain->assemblies, name)))
+		return ass;
+
+	if (!(ass = mono_assembly_open (name, NULL, NULL)))
+		return NULL;
+
+	g_hash_table_insert (domain->assemblies, ass->name, ass);
+
+	for (i = 0; tmp = ass->image->references [i]; i++) {
+		if (!g_hash_table_lookup (domain->assemblies, tmp->name))
+			g_hash_table_insert (domain->assemblies, tmp->name, tmp);
+	}
+
+	return ass;
+}
+
+void
+mono_domain_unload (MonoDomain *domain)
+{
+	g_warning ("Domain unloading not yet implemented");
 }
 
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file, 
 					    MonoObject *evidence, MonoArray *args)
 {
-	MonoAppDomainData *cdom = mono_appdomain_get ();
+	MonoDomain *cdom = mono_domain_get ();
 	MonoAssembly *assembly;
 	MonoImage *image;
 	MonoCLIImageInfo *iinfo;
@@ -266,7 +457,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	char *filename;
 	gint32 res;
 
-	mono_appdomain_set (ad->data);
+	mono_domain_set (ad->data);
 
 	filename = mono_string_to_utf8 (file);
 	assembly = mono_assembly_open (filename, NULL, NULL);
@@ -274,7 +465,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	if (!assembly) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (
-                         mono_defaults.corlib, "System.IO", "FileNotFoundException"));
+		        mono_defaults.corlib, "System.IO", "FileNotFoundException"));
 	}
 
 	image = assembly->image;
@@ -286,7 +477,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	res = mono_runtime_exec_main (method, args);
 
-	mono_appdomain_set (cdom);
+	mono_domain_set (cdom);
 
 	return res;
 }

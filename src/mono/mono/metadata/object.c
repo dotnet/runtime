@@ -14,6 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #include <sys/mman.h>
 #include <limits.h>    /* for PAGESIZE */
@@ -69,7 +70,7 @@ mono_object_allocate (size_t size)
 void
 mono_object_free (MonoObject *o)
 {
-	MonoClass *c = o->klass;
+	MonoClass *c = o->vtable->klass;
 	
 	memset (o, 0, c->instance_size);
 	free (o);
@@ -83,7 +84,7 @@ mono_object_free (MonoObject *o)
  * looked up using @klass
  */
 MonoObject *
-mono_object_new (MonoClass *klass)
+mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
 	MonoObject *o;
 
@@ -91,7 +92,7 @@ mono_object_new (MonoClass *klass)
 		mono_class_init (klass);
 
 	o = mono_object_allocate (klass->instance_size);
-	o->klass = klass;
+	o->vtable = mono_class_vtable (domain, klass);
 
 	return o;
 }
@@ -105,13 +106,13 @@ mono_object_new (MonoClass *klass)
  * looked up using @token in the @image image
  */
 MonoObject *
-mono_object_new_from_token  (MonoImage *image, guint32 token)
+mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token)
 {
 	MonoClass *class;
 
 	class = mono_class_get (image, token);
 
-	return mono_object_new (class);
+	return mono_object_new (domain, class);
 }
 
 
@@ -127,7 +128,7 @@ mono_object_clone (MonoObject *obj)
 	MonoObject *o;
 	int size;
 
-	size = obj->klass->instance_size;
+	size = obj->vtable->klass->instance_size;
 	o = mono_object_allocate (size);
 
 	memcpy (o, obj, size);
@@ -147,7 +148,7 @@ mono_array_clone (MonoArray *array)
 	MonoArray *o;
 	int size, i;
 	guint32 *sizes;
-	MonoClass *klass = array->obj.klass;
+	MonoClass *klass = array->obj.vtable->klass;
 	
 	sizes = g_malloc (klass->rank * sizeof(guint32) * 2);
 	size = mono_array_element_size (klass);
@@ -156,14 +157,16 @@ mono_array_clone (MonoArray *array)
 		size *= array->bounds [i].length;
 		sizes [i + klass->rank] = array->bounds [i].lower_bound;
 	}
-	o = mono_array_new_full (klass, sizes, sizes + klass->rank);
+	o = mono_array_new_full (((MonoObject *)array)->vtable->domain, 
+				 klass, sizes, sizes + klass->rank);
 	memcpy (o, array, sizeof(MonoArray) + size);
 
 	return o;
 }
 
 MonoArray*
-mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bounds)
+mono_array_new_full (MonoDomain *domain, MonoClass *array_class, 
+		     guint32 *lengths, guint32 *lower_bounds)
 {
 	guint32 byte_len;
 	MonoObject *o;
@@ -173,6 +176,7 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
 
 	if (!array_class->inited)
 		mono_class_init (array_class);
+
 	byte_len = mono_array_element_size (array_class);
 
 	bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
@@ -191,7 +195,7 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
 	if (!o)
 		G_BREAKPOINT ();
-	o->klass = array_class;
+	o->vtable = mono_class_vtable (domain, array_class);
 
 	array = (MonoArray*)o;
 
@@ -210,14 +214,14 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
  * This routine creates a new szarray with @n elements of type @token
  */
 MonoArray *
-mono_array_new (MonoClass *eclass, guint32 n)
+mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
 {
 	MonoClass *ac;
 
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac != NULL);
 
-	return mono_array_new_full (ac, &n, NULL);
+	return mono_array_new_full (domain, ac, &n, NULL);
 }
 
 /**
@@ -228,15 +232,15 @@ mono_array_new (MonoClass *eclass, guint32 n)
  * Returns: A newly created string object which contains @text.
  */
 MonoString *
-mono_string_new_utf16 (const guint16 *text, gint32 len)
+mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 {
 	MonoString *s;
 	MonoArray *ca;
 
-	s = (MonoString*)mono_object_new (mono_defaults.string_class);
+	s = (MonoString*)mono_object_new (domain, mono_defaults.string_class);
 	g_assert (s != NULL);
 
-	ca = (MonoArray *)mono_array_new (mono_defaults.string_class, len);
+	ca = (MonoArray *)mono_array_new (domain, mono_defaults.string_class, len);
 	g_assert (ca != NULL);
 	
 	s->c_str = ca;
@@ -254,7 +258,7 @@ mono_string_new_utf16 (const guint16 *text, gint32 len)
  * Returns: A newly created string object which contains @text.
  */
 MonoString*
-mono_string_new (const char *text)
+mono_string_new (MonoDomain *domain, const char *text)
 {
 	GError *error = NULL;
 	MonoString *o = NULL;
@@ -267,7 +271,7 @@ mono_string_new (const char *text)
 	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
 
 	if (!error)
-		o = mono_string_new_utf16 (ut, items_written);
+		o = mono_string_new_utf16 (domain, ut, items_written);
 	else 
 		g_error_free (error);
 
@@ -284,7 +288,7 @@ mono_string_new (const char *text)
  * Returns: A newly created object which contains @value.
  */
 MonoObject *
-mono_value_box (MonoClass *class, gpointer value)
+mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 {
 	MonoObject *res;
 	int size;
@@ -293,7 +297,7 @@ mono_value_box (MonoClass *class, gpointer value)
 
 	size = mono_class_instance_size (class);
 	res = mono_object_allocate (size);
-	res->klass = class;
+	res->vtable = mono_class_vtable (domain, class);
 
 	size = size - sizeof (MonoObject);
 
@@ -312,19 +316,21 @@ mono_value_box (MonoClass *class, gpointer value)
 MonoObject *
 mono_object_isinst (MonoObject *obj, MonoClass *klass)
 {
+	MonoVTable *vt;
 	MonoClass *oklass;
 
 	if (!obj)
 		return NULL;
 
-	oklass = obj->klass;
+	vt = obj->vtable;
+	oklass = vt->klass;
 
 	if (!klass->inited)
 		mono_class_init (klass);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		if ((klass->interface_id <= oklass->max_interface_id) &&
-		    oklass->interface_offsets [klass->interface_id])
+		    vt->interface_offsets [klass->interface_id])
 			return obj;
 	} else {
 		if ((oklass->baseval - klass->baseval) <= klass->diffval)
@@ -334,33 +340,6 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	return NULL;
 }
 
-static GHashTable *ldstr_table = NULL;
-
-static int
-ldstr_hash (const char* str)
-{
-	guint len, h;
-	const char *end;
-	len = mono_metadata_decode_blob_size (str, &str);
-	end = str + len;
-	h = *str;
-	/*
-	 * FIXME: The distribution may not be so nice with lots of
-	 * null chars in the string.
-	 */
-	for (str += 1; str < end; str++)
-		h = (h << 5) - h + *str;
-	return h;
-}
-
-static gboolean
-ldstr_equal (const char *str1, const char *str2) {
-	int len;
-	if ((len=mono_metadata_decode_blob_size (str1, &str1)) !=
-				mono_metadata_decode_blob_size (str2, &str2))
-		return 0;
-	return memcmp (str1, str2, len) == 0;
-}
 
 typedef struct {
 	MonoString *obj;
@@ -380,17 +359,19 @@ mono_string_is_interned (MonoString *o)
 	InternCheck check;
 	check.obj = o;
 	check.found = NULL;
+
 	/*
 	 * Yes, this is slow. Our System.String implementation needs to be redone.
 	 * And GLib needs foreach() methods that can be stopped halfway.
 	 */
-	g_hash_table_foreach (ldstr_table, (GHFunc)check_interned, &check);
+	g_hash_table_foreach (((MonoObject *)o)->vtable->domain->ldstr_table, (GHFunc)check_interned, &check);
 	return check.found;
 }
 
 MonoString*
 mono_string_intern (MonoString *str)
 {
+	GHashTable *ldstr_table;
 	MonoString *res;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
@@ -399,7 +380,7 @@ mono_string_intern (MonoString *str)
 	p = ins;
 	mono_metadata_encode_value (str->length, p, &p);
 	memcpy (p, str->c_str->vector, str->length * 2);
-	
+	ldstr_table = ((MonoObject *)str)->vtable->domain->ldstr_table;
 	if ((res = g_hash_table_lookup (ldstr_table, str))) {
 		g_free (ins);
 		return res;
@@ -409,18 +390,15 @@ mono_string_intern (MonoString *str)
 }
 
 MonoString*
-mono_ldstr (MonoImage *image, guint32 index)
+mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
 {
 	const char *str, *sig;
 	MonoString *o;
 	size_t len2;
-	
-	if (!ldstr_table)
-		ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
-	
+		
 	sig = str = mono_metadata_user_string (image, index);
 	
-	if ((o = g_hash_table_lookup (ldstr_table, str)))
+	if ((o = g_hash_table_lookup (domain->ldstr_table, str)))
 		return o;
 	
 	len2 = mono_metadata_decode_blob_size (str, &str);
@@ -444,8 +422,8 @@ mono_ldstr (MonoImage *image, guint32 index)
 		len2 >>= 1;
 #endif
 
-	o = mono_string_new_utf16 ((guint16*)str, len2);
-	g_hash_table_insert (ldstr_table, (gpointer)sig, o);
+	o = mono_string_new_utf16 (domain, (guint16*)str, len2);
+	g_hash_table_insert (domain->ldstr_table, (gpointer)sig, o);
 
 	return o;
 }
@@ -496,7 +474,7 @@ static void
 default_ex_handler (MonoException *ex)
 {
 	MonoObject *o = (MonoObject*)ex;
-	g_error ("Exception %s.%s raised in C code", o->klass->name_space, o->klass->name);
+	g_error ("Exception %s.%s raised in C code", o->vtable->klass->name_space, o->vtable->klass->name);
 }
 
 static MonoExceptionFunc ex_handler = default_ex_handler;

@@ -7,6 +7,7 @@ public class Test {
 	{
 		int i = 123;
 		object o = i;
+
 		int j = (int) o;
 
 		if (i != j)

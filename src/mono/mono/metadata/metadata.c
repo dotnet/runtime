@@ -19,7 +19,7 @@
 #include "private.h"
 #include "class.h"
 
-static void do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, const char **rptr);
+static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, const char **rptr);
 
 /*
  * Encoding of the "description" argument:
@@ -367,7 +367,7 @@ inverse of this mapping.
 
 /* Reference: Partition II - 23.2.6 */
 int
-mono_metadata_compute_size (MonoMetadata *meta, int tableindex, guint32 *result_bitfield)
+mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bitfield)
 {
 	guint32 bitfield = 0;
 	int size = 0, field_size;
@@ -666,7 +666,7 @@ mono_metadata_compute_size (MonoMetadata *meta, int tableindex, guint32 *result_
  * This is an internal function used by the image loader code.
  */
 void
-mono_metadata_compute_table_bases (MonoMetadata *meta)
+mono_metadata_compute_table_bases (MonoImage *meta)
 {
 	int i;
 	char *base = meta->tables_base;
@@ -692,7 +692,7 @@ mono_metadata_compute_table_bases (MonoMetadata *meta)
  * whose code is @table.
  */
 char *
-mono_metadata_locate (MonoMetadata *meta, int table, int idx)
+mono_metadata_locate (MonoImage *meta, int table, int idx)
 {
 	/* idx == 0 refers always to NULL */
 	g_return_val_if_fail (idx > 0 && idx <= meta->tables [table].rows, "");
@@ -701,7 +701,7 @@ mono_metadata_locate (MonoMetadata *meta, int table, int idx)
 }
 
 char *
-mono_metadata_locate_token (MonoMetadata *meta, guint32 token)
+mono_metadata_locate_token (MonoImage *meta, guint32 token)
 {
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
 }
@@ -730,14 +730,14 @@ mono_metadata_get_table (MonoMetaTableEnum table)
  * Returns: an in-memory pointer to the @index in the string heap.
  */
 const char *
-mono_metadata_string_heap (MonoMetadata *meta, guint32 index)
+mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
 	return meta->raw_metadata + meta->heap_strings.offset + index;
 }
 
 const char *
-mono_metadata_user_string (MonoMetadata *meta, guint32 index)
+mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
 	g_return_val_if_fail (index < meta->heap_us.size, "");
 	return meta->raw_metadata + meta->heap_us.offset + index;
@@ -751,7 +751,7 @@ mono_metadata_user_string (MonoMetadata *meta, guint32 index)
  * Returns: an in-memory pointer to the @index in the Blob heap.
  */
 const char *
-mono_metadata_blob_heap (MonoMetadata *meta, guint32 index)
+mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
 	g_return_val_if_fail (index < meta->heap_blob.size, "");
 	return meta->raw_metadata + meta->heap_blob.offset + index;
@@ -907,7 +907,7 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
 }
 
 guint32
-mono_metadata_parse_typedef_or_ref (MonoMetadata *m, const char *ptr, const char **rptr)
+mono_metadata_parse_typedef_or_ref (MonoImage *m, const char *ptr, const char **rptr)
 {
 	guint32 token;
 	token = mono_metadata_decode_value (ptr, &ptr);
@@ -917,7 +917,7 @@ mono_metadata_parse_typedef_or_ref (MonoMetadata *m, const char *ptr, const char
 }
 
 int
-mono_metadata_parse_custom_mod (MonoMetadata *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
+mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
 {
 	MonoCustomMod local;
 	if ((*ptr == MONO_TYPE_CMOD_OPT) ||
@@ -932,7 +932,7 @@ mono_metadata_parse_custom_mod (MonoMetadata *m, MonoCustomMod *dest, const char
 }
 
 MonoArrayType *
-mono_metadata_parse_array (MonoMetadata *m, const char *ptr, const char **rptr)
+mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
 	int i;
 	MonoArrayType *array = g_new0 (MonoArrayType, 1);
@@ -1041,7 +1041,7 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 }
 
 MonoType*
-mono_metadata_parse_type (MonoMetadata *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
+mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
 {
 	MonoType *type, *cached;
 
@@ -1121,7 +1121,7 @@ mono_metadata_parse_type (MonoMetadata *m, MonoParseTypeMode mode, short opt_att
 }
 
 MonoMethodSignature *
-mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr, const char **rptr)
+mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
 	int i;
@@ -1190,7 +1190,7 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
  * This extracts a Type as specified in Partition II (22.2.12) 
  */
 static void
-do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, const char **rptr)
+do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, const char **rptr)
 {
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
@@ -1250,7 +1250,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
  * from the type stored at @ptr in the metadata table @m.
  */
 MonoType *
-mono_metadata_parse_type (MonoMetadata *m, const char *ptr, const char **rptr)
+mono_metadata_parse_type (MonoImage *m, const char *ptr, const char **rptr)
 {
 	/* should probably be allocated in a memchunk */
 	MonoType *type = g_new0(MonoType, 1);
@@ -1386,7 +1386,7 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 }
 
 MonoMethodHeader *
-mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
+mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
 	MonoMethodHeader *mh;
 	unsigned char flags = *(unsigned char *) ptr;
@@ -1501,13 +1501,13 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
  * Returns: The MonoType that was extracted from @ptr.
  */
 MonoType *
-mono_metadata_parse_field_type (MonoMetadata *m, short field_flags, const char *ptr, const char **rptr)
+mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr, const char **rptr)
 {
 	return mono_metadata_parse_type (m, MONO_PARSE_FIELD, field_flags, ptr, rptr);
 }
 
 MonoType *
-mono_metadata_parse_param (MonoMetadata *m, const char *ptr, const char **rptr)
+mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
 {
 	return mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, rptr);
 }
@@ -1642,7 +1642,7 @@ table_locator (const void *a, const void *b)
 }
 
 guint32
-mono_metadata_typedef_from_field (MonoMetadata *meta, guint32 index)
+mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
 	locator_t loc;
@@ -1662,7 +1662,7 @@ mono_metadata_typedef_from_field (MonoMetadata *meta, guint32 index)
 }
 
 guint32
-mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
+mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
 	locator_t loc;
@@ -1682,7 +1682,7 @@ mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 }
 
 MonoClass**
-mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint *count)
+mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
 	locator_t loc;
@@ -1731,7 +1731,7 @@ mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint 
  * Return 0 if the index represents a toplevel type.
  */
 guint32
-mono_metadata_nested_in_typedef (MonoMetadata *meta, guint32 index)
+mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
 	locator_t loc;
@@ -1751,7 +1751,7 @@ mono_metadata_nested_in_typedef (MonoMetadata *meta, guint32 index)
 }
 
 guint32
-mono_metadata_nesting_typedef (MonoMetadata *meta, guint32 index)
+mono_metadata_nesting_typedef (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
 	locator_t loc;
@@ -2044,7 +2044,7 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
  * in the data.
  */
 void
-mono_metadata_field_info (MonoMetadata *meta, guint32 index, guint32 *offset, const char **rva, const char **marshal_info)
+mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, const char **rva, const char **marshal_info)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;
@@ -2090,7 +2090,7 @@ mono_metadata_field_info (MonoMetadata *meta, guint32 index, guint32 *offset, co
  * Returns: the index into the Constsnts table or 0 if not found.
  */
 guint32
-mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token)
+mono_metadata_get_constant_index (MonoImage *meta, guint32 token)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;
@@ -2123,7 +2123,7 @@ mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token)
 }
 
 guint32
-mono_metadata_properties_from_typedef (MonoMetadata *meta, guint32 index, guint *end_idx)
+mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
 {
 	locator_t loc;
 	guint32 start, end;
@@ -2153,7 +2153,7 @@ mono_metadata_properties_from_typedef (MonoMetadata *meta, guint32 index, guint 
 }
 
 guint32
-mono_metadata_methods_from_property   (MonoMetadata *meta, guint32 index, guint *end_idx)
+mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end_idx)
 {
 	locator_t loc;
 	guint start, end;

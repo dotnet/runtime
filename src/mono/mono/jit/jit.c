@@ -1049,6 +1049,7 @@ mono_cfg_new (MonoMethod *method, MonoMemPool *mp)
 
 	cfg = mono_mempool_alloc0 (mp, sizeof (MonoFlowGraph));
 
+	cfg->domain = mono_domain_get ();
 	cfg->method = method;
 	cfg->mp = mp;
 
@@ -1084,7 +1085,7 @@ mono_cfg_free (MonoFlowGraph *cfg)
 static void
 runtime_object_init (MonoObject *obj)
 {
-	MonoClass *klass = obj->klass;
+	MonoClass *klass = obj->vtable->klass;
 	MonoMethod *method = NULL;
 	void (*ctor) (gpointer this);
 	int i;
@@ -1299,7 +1300,7 @@ ves_array_element_address (MonoArray *this, ...)
 
 	va_start(ap, this);
 
-	class = this->obj.klass;
+	class = this->obj.vtable->klass;
 
 	ind = va_arg(ap, int) - this->bounds [0].lower_bound;
 	for (i = 1; i < class->rank; i++) {
@@ -1319,6 +1320,7 @@ ves_array_element_address (MonoArray *this, ...)
 static MonoArray *
 mono_array_new_va (MonoMethod *cm, ...)
 {
+	MonoDomain *domain = mono_domain_get ();
 	va_list ap;
 	guint32 *lengths;
 	guint32 *lower_bounds;
@@ -1343,7 +1345,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 	}
 	va_end(ap);
 
-	return mono_array_new_full (cm->klass, lengths, lower_bounds);
+	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
 }
 
 #define ADD_TREE(t,a)   do { t->cli_addr = a; g_ptr_array_add (forest, (t)); } while (0)
@@ -1665,7 +1667,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = (MonoObject *) mono_ldstr (image, index);
+			o = (MonoObject *) mono_ldstr (cfg->domain, image, index);
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.p = o;
 
@@ -1678,7 +1680,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			MonoClassField *field;
 			guint32 token;
 			int load_addr = *ip == CEE_LDSFLDA;
-			gpointer addr;
 
 			++ip;
 			token = read32 (ip);
@@ -1697,17 +1698,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			g_assert (field);
 
-			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
-
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.i = field->offset;
+			t1 = mono_ctree_new (mp, MB_TERM_LDSFLDA, t1, NULL);
+			t1->data.klass = klass;
+			
 			if (load_addr) {
-				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t1->data.p = addr;
 				svt = VAL_POINTER;
 			} else {
-				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t1->data.p = addr;
 				t1 = ctree_create_load (cfg, field->type, t1, &svt, FALSE);
-
 			}
 
 			PUSH_TREE (t1, svt);
@@ -1777,8 +1776,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 			g_assert (field);
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-			t1->data.p = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.i = field->offset;
+			t1 = mono_ctree_new (mp, MB_TERM_LDSFLDA, t1, NULL);
+			t1->data.klass = klass;
 			t1 = ctree_create_store (cfg, field->type, t1, *sp, FALSE);
 
 			ADD_TREE (t1, cli_addr);
@@ -2157,7 +2158,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				if (virtual) {
 					mono_class_init (cm->klass);
-
+					
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 						t2 = mono_ctree_new_leaf (mp, MB_TERM_INTF_ADDR);
 					else 
@@ -3120,7 +3121,7 @@ jit_exec_main (MonoMethod *method, MonoArray *args)
  * Start execution of a program.
  */
 static int 
-mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
+mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoArray *args = NULL;
 	MonoImage *image = assembly->image;
@@ -3135,9 +3136,9 @@ mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
 
 	if (method->signature->param_count) {
 		int i;
-		args = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
+		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i)
-			mono_array_set (args, gpointer, i, mono_string_new (argv [i]));
+			mono_array_set (args, gpointer, i, mono_string_new (domain, argv [i]));
 	}
 	
 	return mono_runtime_exec_main (method, args);
@@ -3211,8 +3212,8 @@ mono_jit_abort (MonoObject *obj)
 			trace = mono_string_to_utf8 (str);
 	}				
 	
-	g_warning ("unhandled exception %s.%s: \"%s\"", obj->klass->name_space, 
-		   obj->klass->name, message);
+	g_warning ("unhandled exception %s.%s: \"%s\"", obj->vtable->klass->name_space, 
+		   obj->vtable->klass->name, message);
        
 	if (trace) {
 		g_printerr (trace);
@@ -3225,6 +3226,7 @@ mono_jit_abort (MonoObject *obj)
 int 
 main (int argc, char *argv [])
 {
+	MonoDomain *domain;
 	struct sigaction sa;
 	MonoAssembly *assembly;
 	int retval = 0, i;
@@ -3289,12 +3291,11 @@ main (int argc, char *argv [])
 	mono_install_runtime_exec_main (jit_exec_main);
 	mono_install_handler (arch_get_throw_exception ());
 
-	mono_init ();
-	mono_appdomain_init (file);
-	mono_thread_init();
-	mono_network_init();
+	domain = mono_init (file);
+	mono_thread_init (domain);
+	mono_network_init ();
 
-	assembly = mono_assembly_open (file, NULL, NULL);
+	assembly = mono_domain_assembly_open (domain, file);
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
@@ -3307,14 +3308,14 @@ main (int argc, char *argv [])
 		 * skip the program name from the args.
 		 */
 		++i;
-		retval = mono_jit_exec (assembly, argc - i, argv + i);
+		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 		printf ("RESULT: %d\n", retval);
 	}
 
 	mono_network_cleanup();
 	mono_thread_cleanup();
 
-	mono_assembly_close (assembly);
+	mono_domain_unload (domain);
 
 	return retval;
 }

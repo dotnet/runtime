@@ -213,7 +213,7 @@ dsh (char *label, MonoStreamHeader *sh)
 }
 
 static void
-dump_metadata_ptrs (MonoMetadata *meta)
+dump_metadata_ptrs (MonoImage *meta)
 {
 	printf ("\nMetadata pointers:\n");
 	dsh ("\tTables (#~)", &meta->heap_tables);
@@ -224,7 +224,7 @@ dump_metadata_ptrs (MonoMetadata *meta)
 }
 
 static void
-dump_metadata (MonoMetadata *meta)
+dump_metadata (MonoImage *meta)
 {
 	int table;
 	
@@ -244,7 +244,7 @@ dump_metadata (MonoMetadata *meta)
 }
 
 static void
-dump_methoddef (MonoMetadata *metadata, guint32 token)
+dump_methoddef (MonoImage *metadata, guint32 token)
 {
 	char *loc;
 

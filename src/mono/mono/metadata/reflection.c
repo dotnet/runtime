@@ -603,12 +603,12 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 }
 
 static void
-mono_image_get_ctor_info (MonoReflectionCtorBuilder *mb, MonoDynamicAssembly *assembly)
+mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, MonoDynamicAssembly *assembly)
 {
 	ReflectionMethodBuilder rmb;
 
 	rmb.ilgen = mb->ilgen;
-	rmb.rtype = mono_type_get_object (&mono_defaults.void_class->byval_arg);
+	rmb.rtype = mono_type_get_object (domain, &mono_defaults.void_class->byval_arg);
 	rmb.parameters = mb->parameters;
 	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs;
@@ -680,7 +680,7 @@ encode_constant (MonoDynamicAssembly *assembly, MonoObject *val, guint32 *ret_ty
 	p = buf = g_malloc (64);
 
 	box_val = ((char*)val) + sizeof (MonoObject);
-	*ret_type = val->klass->byval_arg.type;
+	*ret_type = val->vtable->klass->byval_arg.type;
 	switch (*ret_type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
@@ -931,7 +931,7 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 }
 
 static void
-mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *assembly)
+mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *assembly)
 {
 	MonoDynamicTable *table;
 	guint *values;
@@ -971,7 +971,7 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 		table->rows += mono_array_length (tb->ctors);
 		alloc_table (table, table->rows);
 		for (i = 0; i < mono_array_length (tb->ctors); ++i)
-			mono_image_get_ctor_info (
+			mono_image_get_ctor_info (domain,
 				mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i), assembly);
 	}
 
@@ -1025,7 +1025,7 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
 			MonoReflectionTypeBuilder *subtype = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
 
-			mono_image_get_type_info (subtype, assembly);
+			mono_image_get_type_info (domain, subtype, assembly);
 			values [MONO_NESTED_CLASS_NESTED] = subtype->table_idx;
 			values [MONO_NESTED_CLASS_ENCLOSING] = tb->table_idx;
 			/*g_print ("nesting %s (%d) in %s (%d) (rows %d/%d)\n",
@@ -1039,7 +1039,7 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 }
 
 static void
-mono_image_fill_module_table (MonoReflectionModuleBuilder *mb, MonoDynamicAssembly *assembly)
+mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *mb, MonoDynamicAssembly *assembly)
 {
 	MonoDynamicTable *table;
 	int i;
@@ -1059,7 +1059,7 @@ mono_image_fill_module_table (MonoReflectionModuleBuilder *mb, MonoDynamicAssemb
 	table->rows += mono_array_length (mb->types);
 	alloc_table (table, table->rows);
 	for (i = 0; i < mono_array_length (mb->types); ++i)
-		mono_image_get_type_info (mono_array_get (mb->types, MonoReflectionTypeBuilder*, i), assembly);
+		mono_image_get_type_info (domain, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i), assembly);
 }
 
 #define align_pointer(base,p)\
@@ -1268,6 +1268,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	MonoDynamicTable *table;
 	MonoDynamicAssembly *assembly = assemblyb->dynamic_assembly;
+	MonoDomain *domain = ((MonoObject *)assemblyb)->vtable->domain;
 	guint32 len;
 	guint32 *values;
 	char *name;
@@ -1296,7 +1297,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	table = &assembly->tables [MONO_TABLE_MODULE];
 	alloc_table (table, len);
 	for (i = 0; i < len; ++i)
-		mono_image_fill_module_table (mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i), assembly);
+		mono_image_fill_module_table (domain, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i), assembly);
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	/* 
@@ -1363,7 +1364,7 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 guint32
 mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *obj)
 {
-	MonoClass *klass = obj->klass;
+	MonoClass *klass = obj->vtable->klass;
 	guint32 token;
 
 	mono_image_basic_init (assembly);
@@ -1566,7 +1567,7 @@ static GHashTable *object_cache = NULL;
 	} while (0)
 	
 MonoReflectionAssembly*
-mono_assembly_get_object (MonoAssembly *assembly)
+mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
 	static MonoClass *System_Reflection_Assembly;
 	MonoReflectionAssembly *res;
@@ -1575,14 +1576,14 @@ mono_assembly_get_object (MonoAssembly *assembly)
 	if (!System_Reflection_Assembly)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
-	res = (MonoReflectionAssembly *)mono_object_new (System_Reflection_Assembly);
+	res = (MonoReflectionAssembly *)mono_object_new (domain, System_Reflection_Assembly);
 	res->assembly = assembly;
 	CACHE_OBJECT (assembly, res);
 	return res;
 }
 
 MonoReflectionType*
-mono_type_get_object (MonoType *type)
+mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
 	MonoReflectionType *res;
 	MonoClass *klass;
@@ -1602,14 +1603,14 @@ mono_type_get_object (MonoType *type)
 			type = &klass->byval_arg;
 	}
 	CHECK_OBJECT (MonoReflectionType *, type);
-	res = (MonoReflectionType *)mono_object_new (mono_defaults.monotype_class);
+	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
 	res->type = type;
 	CACHE_OBJECT (type, res);
 	return res;
 }
 
 MonoReflectionMethod*
-mono_method_get_object (MonoMethod *method)
+mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	/*
 	 * We use the same C representation for methods and constructors, but the type 
@@ -1626,21 +1627,21 @@ mono_method_get_object (MonoMethod *method)
 		cname = "MonoMethod";
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", cname);
 
-	ret = (MonoReflectionMethod*)mono_object_new (klass);
+	ret = (MonoReflectionMethod*)mono_object_new (domain, klass);
 	ret->method = method;
 	CACHE_OBJECT (method, ret);
 	return ret;
 }
 
 MonoReflectionField*
-mono_field_get_object (MonoClass *klass, MonoClassField *field)
+mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
 {
 	MonoReflectionField *res;
 	MonoClass *oklass;
 
 	CHECK_OBJECT (MonoReflectionField *, field);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
-	res = (MonoReflectionField *)mono_object_new (oklass);
+	res = (MonoReflectionField *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->field = field;
 	CACHE_OBJECT (field, res);
@@ -1648,14 +1649,14 @@ mono_field_get_object (MonoClass *klass, MonoClassField *field)
 }
 
 MonoReflectionProperty*
-mono_property_get_object (MonoClass *klass, MonoProperty *property)
+mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
 	MonoReflectionProperty *res;
 	MonoClass *oklass;
 
 	CHECK_OBJECT (MonoReflectionProperty *, property);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
-	res = (MonoReflectionProperty *)mono_object_new (oklass);
+	res = (MonoReflectionProperty *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->property = property;
 	CACHE_OBJECT (property, res);
@@ -1663,7 +1664,7 @@ mono_property_get_object (MonoClass *klass, MonoProperty *property)
 }
 
 MonoReflectionParameter**
-mono_param_get_objects (MonoMethod *method)
+mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
 	MonoReflectionParameter **res;
 	MonoReflectionMethod *member;
@@ -1674,7 +1675,7 @@ mono_param_get_objects (MonoMethod *method)
 	if (!method->signature->param_count)
 		return NULL;
 
-	member = mono_method_get_object (method);
+	member = mono_method_get_object (domain, method);
 	names = g_new (char*, method->signature->param_count);
 	mono_method_get_param_names (method, names);
 	
@@ -1685,11 +1686,11 @@ mono_param_get_objects (MonoMethod *method)
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
 	res = g_new0 (MonoReflectionParameter*, method->signature->param_count);
 	for (i = 0; i < method->signature->param_count; ++i) {
-		res [i] = (MonoReflectionParameter *)mono_object_new (oklass);
-		res [i]->ClassImpl = mono_type_get_object (method->signature->params [i]);
+		res [i] = (MonoReflectionParameter *)mono_object_new (domain, oklass);
+		res [i]->ClassImpl = mono_type_get_object (domain, method->signature->params [i]);
 		res [i]->DefaultValueImpl = NULL; /* FIXME */
 		res [i]->MemberImpl = (MonoObject*)member;
-		res [i]->NameImpl = mono_string_new (names [i]);
+		res [i]->NameImpl = mono_string_new (domain, names [i]);
 		res [i]->PositionImpl = i + 1;
 		res [i]->AttrsImpl = method->signature->params [i]->attrs;
 	}

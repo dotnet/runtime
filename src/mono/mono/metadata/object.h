@@ -4,30 +4,30 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/threads-types.h>
 
-#define MONO_CHECK_ARG(arg, expr) 	G_STMT_START{			  \
+#define MONO_CHECK_ARG(domain, arg, expr) 	G_STMT_START{		  \
      if (!(expr))							  \
        {								  \
               	MonoException *ex;                                        \
                 char *msg = g_strdup_printf ("assertion `%s' failed",     \
 		#expr);							  \
                 if (arg) {} /* check if the name exists */                \
-		ex = mono_get_exception_argument (#arg, msg);             \
+		ex = mono_get_exception_argument (domain, #arg, msg);     \
 		g_free (msg);                                             \
                 mono_raise_exception (ex);                                \
        };				}G_STMT_END
 
-#define MONO_CHECK_ARG_NULL(arg) 	 G_STMT_START{			  \
+#define MONO_CHECK_ARG_NULL(domain, arg) 	 G_STMT_START{		  \
      if (arg == NULL)							  \
        {								  \
               	MonoException *ex;                                        \
-		ex = mono_get_exception_argument_null (#arg);             \
+		ex = mono_get_exception_argument_null (domain, #arg);     \
                 mono_raise_exception (ex);                                \
        };				}G_STMT_END
 
 typedef guchar MonoBoolean;
 
 typedef struct {
-	MonoClass *klass;
+	MonoVTable *vtable;
 	MonoThreadsSync *synchronisation;
 } MonoObject;
 
@@ -101,25 +101,26 @@ void *
 mono_object_allocate        (size_t size);
 
 MonoObject *
-mono_object_new             (MonoClass *klass);
+mono_object_new             (MonoDomain *domain, MonoClass *klass);
 
 MonoObject *
-mono_object_new_from_token  (MonoImage *image, guint32 token);
+mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
+
+MonoArray*
+mono_array_new              (MonoDomain *domain, MonoClass *eclass, guint32 n);
+
+MonoArray*
+mono_array_new_full         (MonoDomain *domain, MonoClass *array_class,
+			     guint32 *lengths, guint32 *lower_bounds);
 
 MonoArray*
 mono_array_clone            (MonoArray *array);
 
-MonoArray*
-mono_array_new              (MonoClass *eclass, guint32 n);
-
-MonoArray*
-mono_array_new_full         (MonoClass *array_class, guint32 *lengths, guint32 *lower_bounds);
+MonoString*
+mono_string_new_utf16       (MonoDomain *domain, const guint16 *text, gint32 len);
 
 MonoString*
-mono_string_new_utf16       (const guint16 *text, gint32 len);
-
-MonoString*
-mono_ldstr                  (MonoImage *image, guint32 index);
+mono_ldstr                  (MonoDomain *domain, MonoImage *image, guint32 index);
 
 MonoString*
 mono_string_is_interned     (MonoString *str);
@@ -128,7 +129,7 @@ MonoString*
 mono_string_intern          (MonoString *str);
 
 MonoString*
-mono_string_new             (const char *text);
+mono_string_new             (MonoDomain *domain, const char *text);
 
 char *
 mono_string_to_utf8         (MonoString *string_obj);
@@ -140,7 +141,7 @@ void
 mono_object_free            (MonoObject *o);
 
 MonoObject *
-mono_value_box              (MonoClass *klass, gpointer val);
+mono_value_box              (MonoDomain *domain, MonoClass *klass, gpointer val);
 		      
 MonoObject *
 mono_object_clone           (MonoObject *obj);

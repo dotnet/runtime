@@ -59,7 +59,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 
 			g_assert (o);
 
-			class = o->klass;
+			class = o->vtable->klass;
 
 			if (class == mono_defaults.string_class) {
 				printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
@@ -94,7 +94,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 		case MONO_TYPE_STRING: {
 			MonoString *s = *((MonoString **)ebp);
 			if (s) {
-				g_assert (((MonoObject *)s)->klass == mono_defaults.string_class);
+				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
 				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
 			} else 
 				printf ("[STRING:null], ");
@@ -104,7 +104,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 		case MONO_TYPE_OBJECT: {
 			o = *((MonoObject **)ebp);
 			if (o) {
-				class = o->klass;
+				class = o->vtable->klass;
 		    
 				if (class == mono_defaults.string_class) {
 					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
@@ -183,7 +183,7 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 		MonoString *s = (MonoString *)eax;
 
 		if (s) {
-			g_assert (((MonoObject *)s)->klass == mono_defaults.string_class);
+			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
 			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
 		} else 
 			printf ("[STRING:null], ");
@@ -193,12 +193,12 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 		MonoObject *o = (MonoObject *)eax;
 
 		if (o) {
-			if (o->klass == mono_defaults.boolean_class) {
+			if (o->vtable->klass == mono_defaults.boolean_class) {
 				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
-			} else if  (o->klass == mono_defaults.int32_class) {
+			} else if  (o->vtable->klass == mono_defaults.int32_class) {
 				printf ("[INT32:%p:%d]", o, *((gint32 *)((gpointer)o + sizeof (MonoObject))));	
 			} else
-				printf ("[%s.%s:%p]", o->klass->name_space, o->klass->name, o);
+				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
 		} else
 			printf ("[OBJECT:%p]", o);
 	       
@@ -347,7 +347,7 @@ static gpointer
 x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
 		      int ebx, const guint8 *code, MonoMethod *m)
 {
-	guint8 ab, reg;
+	guint8 reg;
 	gint32 disp;
 	gpointer o;
 
@@ -1097,6 +1097,7 @@ arch_get_call_finally ()
 void
 arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 {
+	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji;
 	gpointer ip = (gpointer)ctx->eip;
 	static void (*restore_context) (struct sigcontext *);
@@ -1164,7 +1165,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 			g_free (strace);
 
-			((MonoException*)obj)->stack_trace = mono_string_new (tmp);
+			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
 			g_free (tmp);
 		}
 
@@ -1226,7 +1227,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 			g_free (strace);
 
-			((MonoException*)obj)->stack_trace = mono_string_new (tmp);
+			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
 			g_free (tmp);
 		}
 

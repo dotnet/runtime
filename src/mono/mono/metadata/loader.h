@@ -58,9 +58,6 @@ typedef struct {
 
 extern MonoDefaults mono_defaults;
 
-void
-mono_init                  (void);
-
 void 
 mono_init_icall            (void);
 

@@ -15,6 +15,7 @@
 #endif
 
 typedef struct _MonoClass MonoClass;
+typedef struct _MonoDomain MonoDomain;
 
 typedef enum {
 	MONO_TABLE_MODULE,
@@ -95,37 +96,37 @@ guint32      mono_metadata_decode_row_col (MonoTableInfo *t,
 #define mono_metadata_table_size(bitfield,table) ((((bitfield) >> ((table)*2)) & 0x3) + 1)
 #define mono_metadata_table_count(bitfield) ((bitfield) >> 24)
 
-int mono_metadata_compute_size (MonoMetadata   *meta,
+int mono_metadata_compute_size (MonoImage   *meta,
                                 int             tableindex,
                                 guint32        *result_bitfield);
 
 /*
  *
  */
-char          *mono_metadata_locate        (MonoMetadata *meta, int table, int idx);
-char          *mono_metadata_locate_token  (MonoMetadata *meta, guint32 token);
+char          *mono_metadata_locate        (MonoImage *meta, int table, int idx);
+char          *mono_metadata_locate_token  (MonoImage *meta, guint32 token);
 					   
-const char    *mono_metadata_string_heap   (MonoMetadata *meta, guint32 index);
-const char    *mono_metadata_blob_heap     (MonoMetadata *meta, guint32 index);
-const char    *mono_metadata_user_string   (MonoMetadata *meta, guint32 index);
+const char    *mono_metadata_string_heap   (MonoImage *meta, guint32 index);
+const char    *mono_metadata_blob_heap     (MonoImage *meta, guint32 index);
+const char    *mono_metadata_user_string   (MonoImage *meta, guint32 index);
 
-guint32 mono_metadata_typedef_from_field  (MonoMetadata *meta, guint32 index);
-guint32 mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index);
-guint32 mono_metadata_nested_in_typedef   (MonoMetadata *meta, guint32 index);
-guint32 mono_metadata_nesting_typedef     (MonoMetadata *meta, guint32 index);
+guint32 mono_metadata_typedef_from_field  (MonoImage *meta, guint32 index);
+guint32 mono_metadata_typedef_from_method (MonoImage *meta, guint32 index);
+guint32 mono_metadata_nested_in_typedef   (MonoImage *meta, guint32 index);
+guint32 mono_metadata_nesting_typedef     (MonoImage *meta, guint32 index);
 
-MonoClass** mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint *count);
+MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count);
 
-guint32     mono_metadata_properties_from_typedef (MonoMetadata *meta, guint32 index, guint *end);
-guint32     mono_metadata_methods_from_property   (MonoMetadata *meta, guint32 index, guint *end);
+guint32     mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end);
+guint32     mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end);
 
-void        mono_metadata_field_info (MonoMetadata *meta, 
+void        mono_metadata_field_info (MonoImage *meta, 
 				      guint32       index,
 				      guint32      *offset,
 				      const char  **rva,
 				      const char  **marshal_info);
 
-guint32     mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token);
+guint32     mono_metadata_get_constant_index (MonoImage *meta, guint32 token);
 
 /*
  * Functions to extract information from the Blobs
@@ -216,29 +217,29 @@ typedef enum {
 	MONO_PARSE_FIELD
 } MonoParseTypeMode;
 
-guint32     mono_metadata_parse_typedef_or_ref (MonoMetadata      *m,
+guint32     mono_metadata_parse_typedef_or_ref (MonoImage      *m,
                                                 const char      *ptr,
                                                 const char     **rptr);
-int            mono_metadata_parse_custom_mod  (MonoMetadata      *m,
+int            mono_metadata_parse_custom_mod  (MonoImage      *m,
 						MonoCustomMod   *dest,
 						const char      *ptr,
 						const char     **rptr);
-MonoArrayType *mono_metadata_parse_array       (MonoMetadata      *m,
+MonoArrayType *mono_metadata_parse_array       (MonoImage      *m,
 						const char      *ptr,
 						const char     **rptr);
 void           mono_metadata_free_array        (MonoArrayType     *array);
-MonoType      *mono_metadata_parse_type        (MonoMetadata      *m,
+MonoType      *mono_metadata_parse_type        (MonoImage      *m,
 						MonoParseTypeMode  mode,
 						short              opt_attrs,
 						const char        *ptr,
 						const char       **rptr);
-MonoType      *mono_metadata_parse_param       (MonoMetadata      *m,
+MonoType      *mono_metadata_parse_param       (MonoImage      *m,
 						const char      *ptr,
 						const char      **rptr);
-MonoType      *mono_metadata_parse_ret_type    (MonoMetadata      *m,
+MonoType      *mono_metadata_parse_ret_type    (MonoImage      *m,
 						const char      *ptr,
 						const char      **rptr);
-MonoType      *mono_metadata_parse_field_type  (MonoMetadata      *m,
+MonoType      *mono_metadata_parse_field_type  (MonoImage      *m,
 		                                short            field_flags,
 						const char      *ptr,
 						const char      **rptr);
@@ -250,7 +251,7 @@ int            mono_type_stack_size            (MonoType        *type,
 
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
 
-MonoMethodSignature  *mono_metadata_parse_method_signature (MonoMetadata            *m,
+MonoMethodSignature  *mono_metadata_parse_method_signature (MonoImage            *m,
                                                             int                    def,
                                                             const char            *ptr,
                                                             const char           **rptr);
@@ -259,7 +260,7 @@ void                  mono_metadata_free_method_signature  (MonoMethodSignature 
 gboolean          mono_metadata_signature_equal (MonoMethodSignature *sig1, 
 						 MonoMethodSignature *sig2);
 
-MonoMethodHeader *mono_metadata_parse_mh (MonoMetadata *m, const char *ptr);
+MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
 void              mono_metadata_free_mh  (MonoMethodHeader *mh);
 
 /*

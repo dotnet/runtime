@@ -14,6 +14,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 
 #define DEBUG
 
@@ -156,8 +157,7 @@ HANDLE ves_icall_System_PAL_OpSys_GetStdHandle(MonoObject *this,
 	HANDLE handle;
 
 	if(fd!=0 && fd!=1 && fd!=2) {
-		mono_raise_exception(
-			mono_get_exception_io("Invalid file descriptor"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid file descriptor"));
 	}
 	
 	handle=GetStdHandle(convert_stdhandle(fd));
@@ -173,7 +173,7 @@ gint32 ves_icall_System_PAL_OpSys_ReadFile(MonoObject *this, HANDLE handle, Mono
 	gint32 alen;
 
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid handle"));
 	}
 
 	alen=mono_array_length(buffer);
@@ -196,7 +196,7 @@ gint32 ves_icall_System_PAL_OpSys_WriteFile(MonoObject *this, HANDLE handle,  Mo
 	gint32 alen;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid handle"));
 	}
 
 	alen=mono_array_length(buffer);
@@ -222,7 +222,7 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 	gint32 lenlo, lenhi, retlo;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid handle"));
 	}
 
 	lenlo=length & 0xFFFFFFFF;
@@ -232,7 +232,7 @@ gint32 ves_icall_System_PAL_OpSys_SetLengthFile(MonoObject *this, HANDLE handle,
 	ret=SetEndOfFile(handle);
 	
 	if(ret==FALSE) {
-		mono_raise_exception(mono_get_exception_io("IO Exception"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "IO Exception"));
 	}
 	
 	return(0);
@@ -253,7 +253,7 @@ HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, g
 	
 	/* fixme: raise mor appropriate exceptions (errno) */
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid handle"));
 	}
 
 	return(handle);
@@ -262,7 +262,7 @@ HANDLE ves_icall_System_PAL_OpSys_OpenFile(MonoObject *this, MonoString *path, g
 void ves_icall_System_PAL_OpSys_CloseFile(MonoObject *this, HANDLE handle)
 {
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid handle"));
 	}
 
 	CloseHandle(handle);
@@ -275,7 +275,7 @@ gint64 ves_icall_System_PAL_OpSys_SeekFile(MonoObject *this, HANDLE handle,
 	gint32 offsetlo, offsethi, retlo;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		mono_raise_exception(mono_get_exception_io(this->vtable->domain, "Invalid handle"));
 	}
 
 	offsetlo=offset & 0xFFFFFFFF;
@@ -311,7 +311,8 @@ gboolean ves_icall_System_PAL_OpSys_GetFileTime(HANDLE handle, gint64 *createtim
 	FILETIME cr, ac, wr;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		MonoDomain *domain = mono_domain_get (); 
+		mono_raise_exception(mono_get_exception_io(domain, "Invalid handle"));
 	}
 
 	ret=GetFileTime(handle, &cr, &ac, &wr);
@@ -337,7 +338,8 @@ gboolean ves_icall_System_PAL_OpSys_SetFileTime(HANDLE handle, gint64 createtime
 	FILETIME cr, ac, wr;
 	
 	if(handle == INVALID_HANDLE_VALUE) {
-		mono_raise_exception(mono_get_exception_io("Invalid handle"));
+		MonoDomain *domain = mono_domain_get (); 
+		mono_raise_exception(mono_get_exception_io(domain, "Invalid handle"));
 	}
 
 	cr.dwLowDateTime= createtime & 0xFFFFFFFF;

@@ -12,7 +12,9 @@ mono_exception_install_handlers (MonoExceptionClassInitFunc class_init,
 				 MonoExceptionObjectInitFunc obj_init);
 
 extern MonoException *
-mono_exception_from_name   (MonoImage *image, const char* name_space, const char *name);
+mono_exception_from_name               (MonoImage *image, 
+					const char* name_space, 
+					const char *name);
 
 MonoException *
 mono_get_exception_divide_by_zero      (void);
@@ -48,12 +50,12 @@ MonoException *
 mono_get_exception_missing_method      (void);
 
 MonoException*
-mono_get_exception_argument_null       (const guchar *arg);
+mono_get_exception_argument_null       (MonoDomain *domain, const guchar *arg);
 
 MonoException *
-mono_get_exception_argument            (const guchar *arg, const guchar *msg);
+mono_get_exception_argument            (MonoDomain *domain, const guchar *arg, const guchar *msg);
 
 MonoException *
-mono_get_exception_io                  (const guchar *msg);
+mono_get_exception_io                  (MonoDomain *domain, const guchar *msg);
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

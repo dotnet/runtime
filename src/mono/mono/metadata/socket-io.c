@@ -14,6 +14,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 
 #undef DEBUG
 
@@ -207,7 +208,7 @@ static gint32 convert_proto(MonoProtocolType mono_proto)
 
 #define STASH_SYS_ASS(this) \
 	if(system_assembly==NULL) { \
-		system_assembly=this->klass->image; \
+		system_assembly=this->vtable->klass->image; \
 	}
 
 static MonoImage *system_assembly=NULL;
@@ -329,6 +330,7 @@ void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 					       int sa_size)
 {
+	MonoDomain *domain = mono_domain_get ();
 	MonoObject *sockaddr_obj;
 	MonoClass *sockaddr_class;
 	MonoClassField *field;
@@ -337,13 +339,13 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 
 	/* Build a System.Net.SocketAddress object instance */
 	sockaddr_class=mono_class_from_name(system_assembly, "System.Net", "SocketAddress");
-	sockaddr_obj=mono_object_new(sockaddr_class);
+	sockaddr_obj=mono_object_new(domain, sockaddr_class);
 	
 	/* Locate the SocketAddress data buffer in the object */
 	field=mono_class_get_field_from_name(sockaddr_class, "data");
 
 	/* Make sure there is space for the family and size bytes */
-	data=mono_array_new(mono_defaults.byte_class, sa_size+2);
+	data=mono_array_new(domain, mono_defaults.byte_class, sa_size+2);
 
 	/* The data buffer is laid out as follows:
 	 * byte 0 is the address family
@@ -435,7 +437,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 	int len;
 
 	/* Dig the SocketAddress data buffer out of the object */
-	field=mono_class_get_field_from_name(saddr_obj->klass, "data");
+	field=mono_class_get_field_from_name(saddr_obj->vtable->klass, "data");
 	data=*(MonoArray **)(((char *)saddr_obj) + field->offset);
 
 	/* The data buffer is laid out as follows:
@@ -633,25 +635,26 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 				       MonoArray **h_aliases,
 				       MonoArray **h_addr_list)
 {
+	MonoDomain *domain = mono_domain_get ();
 	int i;
 
 	if(he->h_length!=4 || he->h_addrtype!=AF_INET) {
 		return(FALSE);
 	}
 
-	*h_name=mono_string_new(he->h_name);
+	*h_name=mono_string_new(domain, he->h_name);
 
 	i=0;
 	while(he->h_aliases[i]!=NULL) {
 		i++;
 	}
 	
-	*h_aliases=mono_array_new(mono_defaults.string_class, i);
+	*h_aliases=mono_array_new(domain, mono_defaults.string_class, i);
 	i=0;
 	while(he->h_aliases[i]!=NULL) {
 		MonoString *alias;
 		
-		alias=mono_string_new(he->h_aliases[i]);
+		alias=mono_string_new(domain, he->h_aliases[i]);
 		mono_array_set(*h_aliases, MonoString *, i, alias);
 		i++;
 	}
@@ -661,7 +664,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 		i++;
 	}
 	
-	*h_addr_list=mono_array_new(mono_defaults.string_class, i);
+	*h_addr_list=mono_array_new(domain, mono_defaults.string_class, i);
 	i=0;
 	while(he->h_addr_list[i]!=NULL) {
 		MonoString *addr_string;
@@ -673,7 +676,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 			 (unsigned char)he->h_addr_list[i][2],
 			 (unsigned char)he->h_addr_list[i][3]);
 		
-		addr_string=mono_string_new(addr);
+		addr_string=mono_string_new(domain, addr);
 		mono_array_set(*h_addr_list, MonoString *, i, addr_string);
 		i++;
 	}

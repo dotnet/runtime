@@ -44,7 +44,7 @@ dump_header_data (MonoImage *img)
 }
 
 static void
-dis_directive_assembly (MonoMetadata *m)
+dis_directive_assembly (MonoImage *m)
 {
 	MonoTableInfo *t  = &m->tables [MONO_TABLE_ASSEMBLY];
 	guint32 cols [MONO_ASSEMBLY_SIZE];
@@ -74,7 +74,7 @@ dis_directive_assembly (MonoMetadata *m)
 }
 
 static void
-dis_directive_assemblyref (MonoMetadata *m)
+dis_directive_assemblyref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_ASSEMBLYREF];
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
@@ -163,7 +163,7 @@ typedef_flags (guint32 flags)
  * This routine displays all the decoded fields from @start to @end
  */
 static void
-dis_field_list (MonoMetadata *m, guint32 start, guint32 end)
+dis_field_list (MonoImage *m, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	guint32 cols [MONO_FIELD_SIZE];
@@ -342,7 +342,7 @@ method_impl_flags (guint32 f)
 }
 
 static void
-dis_locals (MonoMetadata *m, MonoMethodHeader *mh) 
+dis_locals (MonoImage *m, MonoMethodHeader *mh) 
 {
 	int i;
 
@@ -360,7 +360,7 @@ dis_locals (MonoMetadata *m, MonoMethodHeader *mh)
 }
 
 static void
-dis_code (MonoMetadata *m, guint32 rva)
+dis_code (MonoImage *m, guint32 rva)
 {
 	MonoMethodHeader *mh;
 	MonoCLIImageInfo *ii = m->image_info;
@@ -392,7 +392,7 @@ dis_code (MonoMetadata *m, guint32 rva)
 }
 
 static char *
-pinvoke_info (MonoMetadata *m, guint32 mindex)
+pinvoke_info (MonoImage *m, guint32 mindex)
 {
 	MonoTableInfo *im = &m->tables [MONO_TABLE_IMPLMAP];
 	MonoTableInfo *mr = &m->tables [MONO_TABLE_MODULEREF];
@@ -435,7 +435,7 @@ pinvoke_info (MonoMetadata *m, guint32 mindex)
  * This routine displays the methods in the Method Table from @start to @end
  */
 static void
-dis_method_list (MonoMetadata *m, guint32 start, guint32 end)
+dis_method_list (MonoImage *m, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_METHOD_SIZE];
@@ -511,7 +511,7 @@ table_locator (const void *a, const void *b)
 }
 
 static void
-dis_property_methods (MonoMetadata *m, guint32 prop)
+dis_property_methods (MonoImage *m, guint32 prop)
 {
 	guint start, end;
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
@@ -530,7 +530,7 @@ dis_property_methods (MonoMetadata *m, guint32 prop)
 }
 
 static char*
-dis_property_signature (MonoMetadata *m, guint32 prop_idx)
+dis_property_signature (MonoImage *m, guint32 prop_idx)
 {
 	MonoTableInfo *propt = &m->tables [MONO_TABLE_PROPERTY];
 	const char *ptr;
@@ -581,7 +581,7 @@ dis_property_signature (MonoMetadata *m, guint32 prop_idx)
 }
 
 static void
-dis_property_list (MonoMetadata *m, guint32 typedef_row)
+dis_property_list (MonoImage *m, guint32 typedef_row)
 {
 	guint start, end, i;
 	start = mono_metadata_properties_from_typedef (m, typedef_row, &end);
@@ -596,7 +596,7 @@ dis_property_list (MonoMetadata *m, guint32 typedef_row)
 }
 
 static void
-dis_interfaces (MonoMetadata *m, guint32 typedef_row)
+dis_interfaces (MonoImage *m, guint32 typedef_row)
 {
 	plocator_t loc;
 	guint start;
@@ -643,7 +643,7 @@ dis_interfaces (MonoMetadata *m, guint32 typedef_row)
  * Disassembles the type whose index in the TypeDef table is @n.
  */
 static void
-dis_type (MonoMetadata *m, int n)
+dis_type (MonoImage *m, int n)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
@@ -712,7 +712,7 @@ dis_type (MonoMetadata *m, int n)
  * disassembles all types in the @m context
  */
 static void
-dis_types (MonoMetadata *m)
+dis_types (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	int i;
@@ -724,7 +724,7 @@ dis_types (MonoMetadata *m)
 struct {
 	char *name;
 	int table;
-	void (*dumper) (MonoMetadata *m);
+	void (*dumper) (MonoImage *m);
 } table_list [] = {
 	{ "--assembly",    MONO_TABLE_ASSEMBLY,    dump_table_assembly },
 	{ "--assemblyref", MONO_TABLE_ASSEMBLYREF, dump_table_assemblyref },
@@ -828,7 +828,7 @@ main (int argc, char *argv [])
 	if (input_files == NULL)
 		usage ();
 	
-	mono_init ();
+	mono_init (argv [0]);
 
 	for (l = input_files; l; l = l->next)
 		disassemble_file (l->data);

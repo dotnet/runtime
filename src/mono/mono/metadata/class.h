@@ -7,8 +7,6 @@
 
 #define MONO_CLASS_IS_ARRAY(c) (c->type_token == 0)
 
-#define MONO_CLASS_STATIC_FIELDS_BASE(c) (c->data)
-
 typedef struct {
 	MonoType *type;
 	int       offset;
@@ -42,10 +40,10 @@ struct _MonoClass {
 	const char *name;
 	const char *name_space;
 	
-	guint       interface_id; /* unique inderface id (for interfaces) */
-	guint       max_interface_id;
-	gpointer   *interface_offsets;
 	guint       interface_count;
+	guint       interface_id;        /* unique inderface id (for interfaces) */
+	guint       max_interface_id;
+        gint       *interface_offsets;   
 	MonoClass **interfaces;
 
 	/*
@@ -89,11 +87,18 @@ struct _MonoClass {
 	/* used as the type of the this argument and when passing the arg by value */
 	MonoType this_arg;
 	MonoType byval_arg;
-	
-	gpointer data;
 
-	gpointer vtable [0];
+        MonoMethod *vtable [0];	
 };
+
+typedef struct {
+	MonoClass  *klass;
+	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
+        gpointer   *interface_offsets;   
+        gpointer    data;
+        gpointer    vtable [0];	
+} MonoVTable;
+
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 typedef void     (*MonoRuntimeClassInit) (MonoClass *klass);
@@ -103,6 +108,9 @@ mono_class_get             (MonoImage *image, guint32 type_token);
 
 void
 mono_class_init            (MonoClass *klass);
+
+MonoVTable *
+mono_class_vtable          (MonoDomain *domain, MonoClass *class);
 
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);

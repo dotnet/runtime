@@ -5,7 +5,6 @@
 #include <glib.h>
 
 typedef struct _MonoImage MonoImage;
-typedef struct _MonoImage MonoMetadata;
 
 typedef struct {
 	int   ref_count;

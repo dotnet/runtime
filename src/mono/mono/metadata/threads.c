@@ -680,7 +680,7 @@ gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
 	return (ResetEvent(handle));
 }
 
-void mono_thread_init(void)
+void mono_thread_init(MonoDomain *domain)
 {
 	MonoClass *thread_class;
 	
@@ -693,7 +693,7 @@ void mono_thread_init(void)
 	 * object? In theory, I guess the whole program should act as
 	 * though exit() were called :-)
 	 */
-	main_thread = mono_object_new (thread_class);
+	main_thread = mono_object_new (domain, thread_class);
 
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&monitor_mutex);

@@ -14,7 +14,7 @@
 
 #include <mono/metadata/object.h>
 
-extern void mono_thread_init(void);
+extern void mono_thread_init (MonoDomain *domain);
 extern void mono_thread_cleanup(void);
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this, MonoObject *start);

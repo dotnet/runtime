@@ -26,6 +26,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 
 #define CSIZE(x) (sizeof (x) / 4)
 
@@ -240,11 +241,39 @@ init_properties (MonoClass *class)
 	}
 }
 
+static guint
+mono_get_unique_iid (MonoClass *class)
+{
+	static GHashTable *iid_hash = NULL;
+	static guint iid = 0;
+
+	char *str;
+	gpointer value;
+	
+	g_assert (class->flags & TYPE_ATTRIBUTE_INTERFACE);
+
+	if (!iid_hash)
+		iid_hash = g_hash_table_new (g_str_hash, g_str_equal);
+
+	str = g_strdup_printf ("%s|%s.%s\n", class->image->name, class->name_space, class->name);
+
+	if (g_hash_table_lookup_extended (iid_hash, str, NULL, &value)) {
+		g_free (str);
+		return (guint)value;
+	} else {
+		g_hash_table_insert (iid_hash, str, (gpointer)iid);
+		++iid;
+	}
+
+	g_free (str);
+	return iid - 1;
+}
+
 void
 mono_class_init (MonoClass *class)
 {
 	MonoClass *k, *ic;
-	MonoMethod **tmp_vtable, **vtable = (MonoMethod **)class->vtable;
+	MonoMethod **vtable = class->vtable;
 	int i, max_iid, cur_slot = 0;
 
 	g_assert (class);
@@ -270,9 +299,6 @@ mono_class_init (MonoClass *class)
 		class->fields = g_new0 (MonoClassField, class->field.count);
 		class_compute_field_layout (class);
 	}
-
-	if (class->class_size)
-		class->data = g_malloc0 (class->class_size);
 
 	/* initialize method pointers */
 	class->methods = g_new (MonoMethod*, class->method.count);
@@ -307,24 +333,24 @@ mono_class_init (MonoClass *class)
 	class->interface_offsets = g_malloc (sizeof (gpointer) * (max_iid + 1));
 
 	for (i = 0; i <= max_iid; i++)
-		class->interface_offsets [i] = NULL;
+		class->interface_offsets [i] = -1;
 
 	for (i = 0; i < class->interface_count; i++) {
 		ic = class->interfaces [i];
-		class->interface_offsets [ic->interface_id] = &class->vtable [cur_slot];
+		class->interface_offsets [ic->interface_id] = cur_slot;
 		cur_slot += ic->method.count;
 	}
 
 	for (k = class->parent; k ; k = k->parent) {
 		for (i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i]; 
-			if (class->interface_offsets [ic->interface_id] == NULL) {
-				int io = (k->interface_offsets [ic->interface_id] - (gpointer)k->vtable)>>2;
+			if (class->interface_offsets [ic->interface_id] == -1) {
+				int io = k->interface_offsets [ic->interface_id];
 
 				g_assert (io >= 0);
 				g_assert (io <= class->vtable_size);
 
-				class->interface_offsets [ic->interface_id] = &class->vtable [io];
+				class->interface_offsets [ic->interface_id] = io;
 			}
 		}
 	}
@@ -332,15 +358,12 @@ mono_class_init (MonoClass *class)
 	if (class->parent && class->parent->vtable_size)
 		memcpy (class->vtable, class->parent->vtable,  sizeof (gpointer) * class->parent->vtable_size);
  
-	tmp_vtable = alloca (class->vtable_size * sizeof (gpointer));
-	memset (tmp_vtable, 0, class->vtable_size * sizeof (gpointer));
-
 	for (k = class; k ; k = k->parent) {
 		for (i = 0; i < k->interface_count; i++) {
 			int j, l, io;
-			ic = k->interfaces [i];
 
-			io = (k->interface_offsets [ic->interface_id] - (gpointer)k->vtable)>>2;
+			ic = k->interfaces [i];
+			io = k->interface_offsets [ic->interface_id];
 			
 			g_assert (io >= 0);
 			g_assert (io <= class->vtable_size);
@@ -357,7 +380,7 @@ mono_class_init (MonoClass *class)
 						if (!strcmp(cm->name, im->name) && 
 						    mono_metadata_signature_equal (cm->signature, im->signature)) {
 							g_assert (io + l <= class->vtable_size);
-							tmp_vtable [io + l] = cm;
+							vtable [io + l] = cm;
 						}
 					}
 				}
@@ -373,7 +396,7 @@ mono_class_init (MonoClass *class)
 
 				g_assert (io + l <= class->vtable_size);
 
-				if (tmp_vtable [io + l] || vtable [io + l])
+				if (vtable [io + l])
 					continue;
 					
 				for (k1 = class; k1; k1 = k1->parent) {
@@ -387,13 +410,13 @@ mono_class_init (MonoClass *class)
 						if (!strcmp(cm->name, im->name) && 
 						    mono_metadata_signature_equal (cm->signature, im->signature)) {
 							g_assert (io + l <= class->vtable_size);
-							tmp_vtable [io + l] = cm;
+							vtable [io + l] = cm;
 							break;
 						}
 						
 					}
 					g_assert (io + l <= class->vtable_size);
-					if (tmp_vtable [io + l])
+					if (vtable [io + l])
 						break;
 				}
 			}
@@ -415,7 +438,7 @@ mono_class_init (MonoClass *class)
 					if (!strcmp (cm->name, qname) &&
 					    mono_metadata_signature_equal (cm->signature, im->signature)) {
 						g_assert (io + l <= class->vtable_size);
-						tmp_vtable [io + l] = cm;
+						vtable [io + l] = cm;
 						break;
 					}
 				}
@@ -427,7 +450,7 @@ mono_class_init (MonoClass *class)
 				for (l = 0; l < ic->method.count; l++) {
 					MonoMethod *im = ic->methods [l];						
 					g_assert (io + l <= class->vtable_size);
-					if (!(tmp_vtable [io + l] || vtable [io + l])) {
+					if (!(vtable [io + l])) {
 						printf ("no implementation for interface method %s.%s::%s in class %s.%s\n",
 							ic->name_space, ic->name, im->name, class->name_space, class->name);
 						
@@ -442,16 +465,14 @@ mono_class_init (MonoClass *class)
 			}
 		
 			for (l = 0; l < ic->method.count; l++) {
-				MonoMethod *im = tmp_vtable [io + l];
+				MonoMethod *im = vtable [io + l];
 
 				if (im) {
 					g_assert (io + l <= class->vtable_size);
-					if (im->slot < 0)
+					if (im->slot < 0) {
+						// fixme: why do we need this ?
 						im->slot = io + l;
-					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
-						//printf ("  ASLOT%d %s.%s:%s %s.%s:%s\n", io + l, ic->name_space, ic->name, 
-						// im->name, im->klass->name_space,  im->klass->name, im->name);
-						vtable [io + l] = arch_create_jit_trampoline (im);
+						// g_assert_not_reached ();
 					}
 				}
 			}
@@ -490,7 +511,7 @@ mono_class_init (MonoClass *class)
 			cm->slot = cur_slot++;
 
 		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT))
-			vtable [cm->slot] = arch_create_jit_trampoline (cm);
+			vtable [cm->slot] = cm;
 	}
 
 	init_properties (class);
@@ -523,6 +544,56 @@ mono_class_init (MonoClass *class)
 	
 	printf ("METAEND %s.%s\n", class->name_space, class->name); 
 	*/
+}
+
+MonoVTable *
+mono_class_vtable (MonoDomain *domain, MonoClass *class)
+{
+	MonoClass *k;
+	MonoVTable *vt;
+	int i;
+
+	g_assert (class);
+
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+		g_assert_not_reached ();
+
+	if ((vt = g_hash_table_lookup (domain->class_vtable_hash, class)))
+		return vt;
+	
+	if (!class->inited)
+		mono_class_init (class);
+		
+	vt = g_malloc0 (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+	vt->klass = class;
+	vt->domain = domain;
+
+	if (class->class_size)
+		vt->data = g_malloc0 (class->class_size);
+
+	vt->interface_offsets = g_malloc0 (sizeof (gpointer) * (class->max_interface_id + 1));
+
+	/* initialize interface offsets */
+	for (k = class; k ; k = k->parent) {
+		for (i = 0; i < k->interface_count; i++) {
+			int slot;
+			MonoClass *ic = k->interfaces [i];
+			slot = class->interface_offsets [ic->interface_id];
+			vt->interface_offsets [ic->interface_id] = &vt->vtable [slot];
+		}
+	}
+
+	/* initialize vtable */
+	for (i = 0; i < class->vtable_size; ++i) {
+		MonoMethod *cm;
+	       
+		if ((cm = class->vtable [i]))
+			vt->vtable [i] = arch_create_jit_trampoline (cm);
+	}
+
+	g_hash_table_insert (domain->class_vtable_hash, class, vt);
+
+	return vt;
 }
 
 /*
@@ -558,7 +629,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint tidx = mono_metadata_token_index (type_token);
 	const char *name, *nspace;
 	guint vtsize = 0, icount = 0; 
-	static guint interface_id = 0;
 	MonoClass **interfaces;
 	int i;
 
@@ -749,7 +819,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
-		class->interface_id = interface_id++;
+		class->interface_id = mono_get_unique_iid (class);
 
 	//class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count);
 

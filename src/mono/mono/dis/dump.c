@@ -18,7 +18,7 @@
 #include "mono/metadata/class.h"
 
 void
-dump_table_assembly (MonoMetadata *m)
+dump_table_assembly (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_ASSEMBLY];
 	guint32 cols [MONO_ASSEMBLY_SIZE];
@@ -51,7 +51,7 @@ dump_table_assembly (MonoMetadata *m)
 }
 
 void
-dump_table_typeref (MonoMetadata *m)
+dump_table_typeref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEREF];
 	int i;
@@ -68,7 +68,7 @@ dump_table_typeref (MonoMetadata *m)
 }
 
 void
-dump_table_typedef (MonoMetadata *m)
+dump_table_typedef (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	int i;
@@ -90,7 +90,7 @@ dump_table_typedef (MonoMetadata *m)
 }
 
 void
-dump_table_assemblyref (MonoMetadata *m)
+dump_table_assemblyref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_ASSEMBLYREF];
 	int i;
@@ -123,7 +123,7 @@ dump_table_assemblyref (MonoMetadata *m)
 }
 
 void
-dump_table_param (MonoMetadata *m)
+dump_table_param (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_PARAM];
 	int i;
@@ -143,7 +143,7 @@ dump_table_param (MonoMetadata *m)
 }
 
 void
-dump_table_field (MonoMetadata *m)
+dump_table_field (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
@@ -195,7 +195,7 @@ dump_table_field (MonoMetadata *m)
 }
 
 void
-dump_table_memberref (MonoMetadata *m)
+dump_table_memberref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_MEMBERREF];
 	int i, kind, idx;
@@ -254,7 +254,7 @@ dump_table_memberref (MonoMetadata *m)
 }
 
 void
-dump_table_class_layout (MonoMetadata *m)
+dump_table_class_layout (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_CLASSLAYOUT];
 	int i;
@@ -273,7 +273,7 @@ dump_table_class_layout (MonoMetadata *m)
 }
 
 void
-dump_table_constant (MonoMetadata *m)
+dump_table_constant (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_CONSTANT];
 	int i;
@@ -299,7 +299,7 @@ dump_table_constant (MonoMetadata *m)
 }
 
 void
-dump_table_property_map (MonoMetadata *m)
+dump_table_property_map (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_PROPERTYMAP];
 	int i;
@@ -318,7 +318,7 @@ dump_table_property_map (MonoMetadata *m)
 }
 
 void
-dump_table_property (MonoMetadata *m)
+dump_table_property (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_PROPERTY];
 	int i, j, pcount;
@@ -365,7 +365,7 @@ dump_table_property (MonoMetadata *m)
 }
 
 void
-dump_table_event (MonoMetadata *m)
+dump_table_event (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_EVENT];
 	int i;
@@ -388,7 +388,7 @@ dump_table_event (MonoMetadata *m)
 }
 
 void
-dump_table_file (MonoMetadata *m)
+dump_table_file (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FILE];
 	int i;
@@ -408,7 +408,7 @@ dump_table_file (MonoMetadata *m)
 }
 
 void
-dump_table_moduleref (MonoMetadata *m)
+dump_table_moduleref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_MODULEREF];
 	int i;
@@ -427,7 +427,7 @@ dump_table_moduleref (MonoMetadata *m)
 }
 
 void
-dump_table_method (MonoMetadata *m)
+dump_table_method (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
@@ -478,7 +478,7 @@ static map_t semantics_map [] = {
 };
 
 void
-dump_table_methodsem (MonoMetadata *m)
+dump_table_methodsem (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODSEMANTICS];
 	int i, is_property, index;
@@ -500,7 +500,7 @@ dump_table_methodsem (MonoMetadata *m)
 }
 
 void 
-dump_table_interfaceimpl (MonoMetadata *m)
+dump_table_interfaceimpl (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_INTERFACEIMPL];
 	int i;
@@ -517,7 +517,7 @@ dump_table_interfaceimpl (MonoMetadata *m)
 }
 
 static char*
-has_cattr_get_table (MonoMetadata *m, guint32 val)
+has_cattr_get_table (MonoImage *m, guint32 val)
 {
 	guint32 t = val & CUSTOM_ATTR_MASK;
 	guint32 index = val >> CUSTOM_ATTR_BITS;
@@ -592,7 +592,7 @@ has_cattr_get_table (MonoMetadata *m, guint32 val)
 }
 
 static char*
-custom_attr_params (MonoMetadata *m, MonoMethodSignature* sig, const char* value)
+custom_attr_params (MonoImage *m, MonoMethodSignature* sig, const char* value)
 {
 	int len, i, slen;
 	GString *res;
@@ -646,7 +646,7 @@ custom_attr_params (MonoMetadata *m, MonoMethodSignature* sig, const char* value
 }
 
 void
-dump_table_customattr (MonoMetadata *m)
+dump_table_customattr (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	int i;
@@ -685,7 +685,7 @@ dump_table_customattr (MonoMetadata *m)
 }
 
 void
-dump_table_nestedclass (MonoMetadata *m)
+dump_table_nestedclass (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_NESTEDCLASS];
 	guint32 cols [MONO_NESTED_CLASS_SIZE];

@@ -18,7 +18,7 @@
 #include <mono/metadata/class.h>
 
 char *
-get_typedef (MonoMetadata *m, int idx)
+get_typedef (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
@@ -31,7 +31,7 @@ get_typedef (MonoMetadata *m, int idx)
 }
 
 char *
-get_module (MonoMetadata *m, int idx)
+get_module (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_MODULE_SIZE];
 	
@@ -46,7 +46,7 @@ get_module (MonoMetadata *m, int idx)
 }
 
 char *
-get_assemblyref (MonoMetadata *m, int idx)
+get_assemblyref (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	
@@ -60,7 +60,7 @@ get_assemblyref (MonoMetadata *m, int idx)
  * Returns a string representing the ArrayShape (22.2.16).
  */
 static const char *
-get_array_shape (MonoMetadata *m, const char *ptr, char **result)
+get_array_shape (MonoImage *m, const char *ptr, char **result)
 {
 	GString *res = g_string_new ("[");
 	guint32 rank, num_sizes, num_lo_bounds;
@@ -120,7 +120,7 @@ get_array_shape (MonoMetadata *m, const char *ptr, char **result)
  * Returns the stringified representation of a TypeSpec signature (22.2.17)
  */
 char *
-get_typespec (MonoMetadata *m, guint32 idx)
+get_typespec (MonoImage *m, guint32 idx)
 {
 	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
@@ -191,7 +191,7 @@ get_typespec (MonoMetadata *m, guint32 idx)
 }
 
 char *
-get_typeref (MonoMetadata *m, int idx)
+get_typeref (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEREF_SIZE];
 	const char *s, *t;
@@ -253,7 +253,7 @@ get_typeref (MonoMetadata *m, int idx)
  * at (dor_token >> 2) 
  */
 char *
-get_typedef_or_ref (MonoMetadata *m, guint32 dor_token)
+get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 {
 	char *temp = NULL, *s;
 	int table, idx;
@@ -301,7 +301,7 @@ get_typedef_or_ref (MonoMetadata *m, guint32 dor_token)
  * Returns: the new ptr to continue decoding
  */
 const char *
-get_encoded_typedef_or_ref (MonoMetadata *m, const char *ptr, char **result)
+get_encoded_typedef_or_ref (MonoImage *m, const char *ptr, char **result)
 {
 	guint32 token;
 	
@@ -320,7 +320,7 @@ get_encoded_typedef_or_ref (MonoMetadata *m, const char *ptr, char **result)
  * Returns: updated pointer location
  */
 const char *
-get_custom_mod (MonoMetadata *m, const char *ptr, char **return_value)
+get_custom_mod (MonoImage *m, const char *ptr, char **return_value)
 {
 	char *s;
 	
@@ -371,7 +371,7 @@ static map_t call_conv_type_map [] = {
 };
 
 char*
-dis_stringify_token (MonoMetadata *m, guint32 token)
+dis_stringify_token (MonoImage *m, guint32 token)
 {
 	guint idx = token & 0xffffff;
 	switch (token >> 24) {
@@ -385,7 +385,7 @@ dis_stringify_token (MonoMetadata *m, guint32 token)
 }
 
 char*
-dis_stringify_array (MonoMetadata *m, MonoArrayType *array) 
+dis_stringify_array (MonoImage *m, MonoArrayType *array) 
 {
 	char *type;
 	GString *s = g_string_new("");
@@ -412,7 +412,7 @@ dis_stringify_array (MonoMetadata *m, MonoArrayType *array)
 }
 
 char*
-dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod)
+dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod)
 {
 	GString *s = g_string_new("");
 	char *result;
@@ -429,7 +429,7 @@ dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod)
 }
 
 char*
-dis_stringify_param (MonoMetadata *m, MonoType *param) 
+dis_stringify_param (MonoImage *m, MonoType *param) 
 {
 	char *t;
 	char *result;
@@ -441,7 +441,7 @@ dis_stringify_param (MonoMetadata *m, MonoType *param)
 }
 
 char*
-dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, int methoddef_row)
+dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row)
 {
 	guint32 cols [MONO_METHOD_SIZE];
 	guint32 pcols [MONO_PARAM_SIZE];
@@ -498,7 +498,7 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 }
 
 static char *
-dis_stringify_object (MonoMetadata *m, MonoType *type)
+dis_stringify_object (MonoImage *m, MonoType *type)
 {
 	char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
 	char *assemblyref = NULL;
@@ -519,7 +519,7 @@ dis_stringify_object (MonoMetadata *m, MonoType *type)
 }
 
 char*
-dis_stringify_type (MonoMetadata *m, MonoType *type)
+dis_stringify_type (MonoImage *m, MonoType *type)
 {
 	char *bare = NULL, *pinned = "", *byref = "";
 	char *mods = NULL;
@@ -601,7 +601,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
  * Returns: the new ptr to continue decoding
  */
 const char *
-get_type (MonoMetadata *m, const char *ptr, char **result)
+get_type (MonoImage *m, const char *ptr, char **result)
 {
 	MonoType *type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	*result = dis_stringify_type (m, type);
@@ -614,7 +614,7 @@ get_type (MonoMetadata *m, const char *ptr, char **result)
  * Returns a stringified representation of a FieldSig (22.2.4)
  */
 char *
-get_field_signature (MonoMetadata *m, guint32 blob_signature)
+get_field_signature (MonoImage *m, guint32 blob_signature)
 {
 	char *allocated_modifier_string, *allocated_type_string;
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -646,7 +646,7 @@ get_field_signature (MonoMetadata *m, guint32 blob_signature)
 }
 
 MonoTypeEnum
-get_field_literal_type (MonoMetadata *m, guint32 blob_signature)
+get_field_literal_type (MonoImage *m, guint32 blob_signature)
 {
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	int len;
@@ -674,7 +674,7 @@ get_field_literal_type (MonoMetadata *m, guint32 blob_signature)
  * decodes the literal indexed by @token.
  */
 char *
-decode_literal (MonoMetadata *m, guint32 token)
+decode_literal (MonoImage *m, guint32 token)
 {
 	return g_strdup ("LITERAL_VALUE");
 }
@@ -690,7 +690,7 @@ decode_literal (MonoMetadata *m, guint32 token)
  * Returns: the new ptr to continue decoding.
  */
 const char *
-get_ret_type (MonoMetadata *m, const char *ptr, char **ret_type)
+get_ret_type (MonoImage *m, const char *ptr, char **ret_type)
 {
 	GString *str = g_string_new ("");
 	char *mod = NULL;
@@ -738,7 +738,7 @@ get_ret_type (MonoMetadata *m, const char *ptr, char **ret_type)
  * Returns: the new ptr to continue decoding.
  */
 const char *
-get_param (MonoMetadata *m, const char *ptr, char **retval)
+get_param (MonoImage *m, const char *ptr, char **retval)
 {
 	GString *str = g_string_new ("");
 	char *allocated_mod_string, *allocated_type_string;
@@ -830,7 +830,7 @@ field_flags (guint32 f)
  * Returns a stringifed representation of a MethodRefSig (22.2.2)
  */
 char *
-get_methodref_signature (MonoMetadata *m, guint32 blob_signature, const char *fancy_name)
+get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy_name)
 {
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -906,7 +906,7 @@ get_methodref_signature (MonoMetadata *m, guint32 blob_signature, const char *fa
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_field (MonoMetadata *m, guint32 token)
+get_field (MonoImage *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 cols [MONO_FIELD_SIZE];
@@ -942,7 +942,7 @@ get_field (MonoMetadata *m, guint32 token)
 }
 
 static char *
-get_memberref_parent (MonoMetadata *m, guint32 mrp_token)
+get_memberref_parent (MonoImage *m, guint32 mrp_token)
 {
 	/*
 	 * mrp_index is a MemberRefParent coded index
@@ -980,7 +980,7 @@ get_memberref_parent (MonoMetadata *m, guint32 mrp_token)
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_method (MonoMetadata *m, guint32 token)
+get_method (MonoImage *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
@@ -1033,7 +1033,7 @@ get_method (MonoMetadata *m, guint32 token)
  * constant.
  */
 char *
-get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
+get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 {
 	const char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
@@ -1135,7 +1135,7 @@ get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
  * constant.
  */
 char *
-get_token (MonoMetadata *m, guint32 token)
+get_token (MonoImage *m, guint32 token)
 {
 	guint32 idx = mono_metadata_token_index (token);
 
@@ -1166,7 +1166,7 @@ get_token (MonoMetadata *m, guint32 token)
  * at (token & 0xffffff) 
  */
 char *
-get_token_type (MonoMetadata *m, guint32 token)
+get_token_type (MonoImage *m, guint32 token)
 {
 	char *temp = NULL, *s;
 	int idx;

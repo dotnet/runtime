@@ -70,7 +70,7 @@ typedef struct {
 const char *mono_meta_table_name (int table);
 
 /* Internal functions */
-void           mono_metadata_compute_table_bases (MonoMetadata *meta);
+void           mono_metadata_compute_table_bases (MonoImage *meta);
 
 MonoMetaTable *mono_metadata_get_table    (MonoMetaTableEnum table);
 

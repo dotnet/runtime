@@ -34,28 +34,39 @@ typedef struct {
 
 typedef struct _MonoAppDomain MonoAppDomain;
 
-typedef struct {
+struct _MonoDomain {
 	MonoAppDomain *domain;
 	GHashTable *env;
 	GHashTable *assemblies;
 	MonoAppDomainSetup *setup;
 	MonoString *friendly_name;
-} MonoAppDomainData;
+	GHashTable *ldstr_table;
+	GHashTable *class_vtable_hash;
+};
 
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
-	MonoObject object;
-	MonoAppDomainData *data;
+	MonoObject  object;
+	MonoDomain *data;
 };
 
-void
-mono_appdomain_init (char *friendly_name);
+MonoDomain *
+mono_init (const char *file);
 
-inline MonoAppDomainData *
-mono_appdomain_get (void);
+MonoDomain *
+mono_create_domain (void);
+
+inline MonoDomain *
+mono_domain_get (void);
 
 inline void
-mono_appdomain_set (MonoAppDomainData *domain);
+mono_domain_set (MonoDomain *domain);
+
+MonoAssembly *
+mono_domain_assembly_open (MonoDomain *domain, char *name);
+
+void
+mono_domain_unload (MonoDomain *domain);
 
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup);

@@ -112,7 +112,7 @@ runtime_object_init (MonoObject *obj)
 	int i;
 	MonoInvocation call;
 	MonoMethod *method = NULL;
-	MonoClass *klass = obj->klass;
+	MonoClass *klass = obj->vtable->klass;
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
@@ -172,7 +172,7 @@ runtime_class_init (MonoClass *klass)
 }
 
 static MonoMethod*
-get_virtual_method (MonoMethod *m, stackval *objs)
+get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 {
 	MonoObject *obj;
 	MonoClass *klass;
@@ -184,11 +184,12 @@ get_virtual_method (MonoMethod *m, stackval *objs)
 	g_assert (m->klass->inited);
 
 	obj = objs->data.p;
-	klass = obj->klass;
-	vtable = (MonoMethod **)klass->vtable;
+	klass = obj->vtable->klass;
+	vtable = (MonoMethod **)obj->vtable->vtable;
 
-	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-		return *(MonoMethod**)(klass->interface_offsets [m->klass->interface_id] + (m->slot<<2));
+	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		return *(MonoMethod**)(obj->vtable->interface_offsets [m->klass->interface_id] + (m->slot<<2));
+	}
 
 	g_assert (vtable [m->slot]);
 
@@ -368,7 +369,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 }
 
 static MonoObject*
-ves_array_create (MonoClass *klass, MonoMethodSignature *sig, stackval *values)
+ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
 {
 	guint32 *lengths;
 	guint32 *lower_bounds;
@@ -387,7 +388,7 @@ ves_array_create (MonoClass *klass, MonoMethodSignature *sig, stackval *values)
 		lower_bounds = lengths;
 		lengths += klass->rank;
 	}
-	return (MonoObject*)mono_array_new_full (klass, lengths, lower_bounds);
+	return (MonoObject*)mono_array_new_full (domain, klass, lengths, lower_bounds);
 }
 
 static void 
@@ -403,7 +404,7 @@ ves_array_set (MonoInvocation *frame)
 
 	o = frame->obj;
 	ao = (MonoArray *)o;
-	ac = o->klass;
+	ac = o->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -438,7 +439,7 @@ ves_array_get (MonoInvocation *frame)
 
 	o = frame->obj;
 	ao = (MonoArray *)o;
-	ac = o->klass;
+	ac = o->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -466,7 +467,7 @@ ves_array_element_address (MonoInvocation *frame)
 
 	o = frame->obj;
 	ao = (MonoArray *)o;
-	ac = o->klass;
+	ac = o->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -814,6 +815,7 @@ verify_method (MonoMethod *m)
 void 
 ves_exec_method (MonoInvocation *frame)
 {
+	MonoDomain *domain = mono_domain_get (); 	
 	MonoInvocation child_frame;
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
@@ -1184,7 +1186,7 @@ ves_exec_method (MonoInvocation *frame)
 					stackval *this_arg = &sp [-csignature->param_count-1];
 					if (!this_arg->data.p)
 						THROW_EX (mono_get_exception_null_reference(), ip - 5);
-					child_frame.method = get_virtual_method (child_frame.method, this_arg);
+					child_frame.method = get_virtual_method (domain, child_frame.method, this_arg);
 					if (!child_frame.method)
 						THROW_EX (mono_get_exception_missing_method (), ip -5);
 				}
@@ -2062,7 +2064,7 @@ ves_exec_method (MonoInvocation *frame)
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = (MonoObject*)mono_ldstr (image, index);
+			o = (MonoObject*)mono_ldstr (domain, image, index);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = NULL;
@@ -2089,12 +2091,11 @@ ves_exec_method (MonoInvocation *frame)
 
 			if (child_frame.method->klass->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
-				o = ves_array_create (child_frame.method->klass, csig, sp);
+				o = ves_array_create (domain, child_frame.method->klass, csig, sp);
 				goto array_constructed;
 			}
 
-			o = mono_object_new (child_frame.method->klass);
-
+			o = mono_object_new (domain, child_frame.method->klass);
 			/*
 			 * First arg is the object.
 			 */
@@ -2132,13 +2133,14 @@ ves_exec_method (MonoInvocation *frame)
 array_constructed:
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
-			sp->data.vt.klass = o->klass;
+			sp->data.vt.klass = o->vtable->klass;
 			++sp;
 			BREAK;
 		}
 		CASE (CEE_CASTCLASS) /* Fall through */
 		CASE (CEE_ISINST) {
 			MonoObject *o;
+			MonoVTable *vt;
 			MonoClass *c , *oclass;
 			guint32 token;
 			int do_isinst = *ip == CEE_ISINST;
@@ -2154,11 +2156,12 @@ array_constructed:
 
 			if ((o = sp [-1].data.p)) {
 
-				oclass = o->klass;
+				vt = o->vtable;
+				oclass = vt->klass;
 
 				if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
 					if ((c->interface_id <= oclass->max_interface_id) &&
-					    oclass->interface_offsets [c->interface_id])
+					    vt->interface_offsets [c->interface_id])
 						found = TRUE;
 				} else {
 					if ((oclass->baseval - c->baseval) <= c->diffval) {
@@ -2212,7 +2215,7 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference(), ip - 1);
 
-			if (o->klass->element_class->type_token != c->element_class->type_token)
+			if (o->vtable->klass->element_class->type_token != c->element_class->type_token)
 				THROW_EX (mono_get_exception_invalid_cast (), ip - 1);
 
 			sp [-1].type = VAL_MP;
@@ -2241,7 +2244,7 @@ array_constructed:
 
 			if (sp [-1].type == VAL_OBJ) {
 				obj = sp [-1].data.p;
-				field = mono_class_get_field (obj->klass, token);
+				field = mono_class_get_field (obj->vtable->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
 				/*g_assert (sp [-1].type == VAL_VALUETA); */
@@ -2273,7 +2276,7 @@ array_constructed:
 			
 			if (sp [0].type == VAL_OBJ) {
 				obj = sp [0].data.p;
-				field = mono_class_get_field (obj->klass, token);
+				field = mono_class_get_field (obj->vtable->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
 				/*g_assert (sp->type == VAL_VALUETA); */
@@ -2288,10 +2291,12 @@ array_constructed:
 		}
 		CASE (CEE_LDSFLD) /* Fall through */
 		CASE (CEE_LDSFLDA) {
+			MonoVTable *vt;
 			MonoClass *klass;
 			MonoClassField *field;
 			guint32 token;
 			int load_addr = *ip == CEE_LDSFLDA;
+			gpointer addr;
 
 			++ip;
 			token = read32 (ip);
@@ -2308,21 +2313,27 @@ array_constructed:
 				field = mono_class_get_field (klass, token);
 			}
 			g_assert (field);
+			
+			vt = mono_class_vtable (domain, klass);
+			addr = (char*)(vt->data) + field->offset;
+
 			if (load_addr) {
 				sp->type = VAL_TP;
-				sp->data.p = (char*)MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
+				sp->data.p = addr;
 				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, sp);
-				stackval_from_data (field->type, sp, (char*)MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+				stackval_from_data (field->type, sp, addr);
 			}
 			++sp;
 			BREAK;
 		}
 		CASE (CEE_STSFLD) {
+			MonoVTable *vt;
 			MonoClass *klass;
 			MonoClassField *field;
 			guint32 token;
+			gpointer addr;
 
 			++ip;
 			token = read32 (ip);
@@ -2340,7 +2351,11 @@ array_constructed:
 				field = mono_class_get_field (klass, token);
 			}
 			g_assert (field);
-			stackval_to_data (field->type, sp, (char*)MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
+
+			vt = mono_class_vtable (domain, klass);
+			addr = (char*)(vt->data) + field->offset;
+
+			stackval_to_data (field->type, sp, addr);
 			vt_free (sp);
 			BREAK;
 		}
@@ -2499,9 +2514,9 @@ array_constructed:
 
 			sp [-1].type = VAL_OBJ;
 			if (class->byval_arg.type == MONO_TYPE_VALUETYPE && !class->enumtype) 
-				sp [-1].data.p = mono_value_box (class, sp [-1].data.p);
+				sp [-1].data.p = mono_value_box (domain, class, sp [-1].data.p);
 			else
-				sp [-1].data.p = mono_value_box (class, &sp [-1]);
+				sp [-1].data.p = mono_value_box (domain, class, &sp [-1]);
 			/* need to vt_free (sp); */
 
 			ip += 4;
@@ -2516,7 +2531,7 @@ array_constructed:
 			ip++;
 			token = read32 (ip);
 			class = mono_class_get (image, token);
-			o = (MonoObject*) mono_array_new (class, sp [-1].data.i);
+			o = (MonoObject*) mono_array_new (domain, class, sp [-1].data.i);
 			ip += 4;
 
 			sp [-1].type = VAL_OBJ;
@@ -2535,7 +2550,7 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip - 1);
 			
-			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.vtable->klass));
 
 			sp [-1].type = VAL_I32;
 			sp [-1].data.i = mono_array_length (o);
@@ -2554,17 +2569,17 @@ array_constructed:
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
 
-			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.vtable->klass));
 			
 			if (sp [1].data.nati >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip - 5);
 
 			/* check the array element corresponds to token */
-			esize = mono_array_element_size (o->obj.klass);
+			esize = mono_array_element_size (o->obj.vtable->klass);
 			
 			sp->type = VAL_MP;
 			sp->data.p = mono_array_addr_with_size (o, esize, sp [1].data.i);
-			sp->data.vt.klass = o->obj.klass->element_class;
+			sp->data.vt.klass = o->obj.vtable->klass->element_class;
 
 			++sp;
 			BREAK;
@@ -2590,12 +2605,12 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
-			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.vtable->klass));
 			
 			aindex = sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
-			
+      		
 			/*
 			 * FIXME: throw mono_get_exception_array_type_mismatch () if needed 
 			 */
@@ -2672,8 +2687,8 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
-			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
-			ac = o->obj.klass;
+			ac = o->obj.vtable->klass;
+			g_assert (MONO_CLASS_IS_ARRAY (ac));
 		    
 			aindex = sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
@@ -3071,7 +3086,7 @@ array_constructed:
 					--sp;
 					if (!sp->data.p)
 						THROW_EX (mono_get_exception_null_reference (), ip - 5);
-					m = get_virtual_method (m, sp);
+					m = get_virtual_method (domain, m, sp);
 				}
 				sp->type = VAL_NATI;
 				sp->data.p = mono_create_method_pointer (m);
@@ -3313,7 +3328,7 @@ array_constructed:
 die_on_ex:
 		ex_obj = (MonoObject*)frame->ex;
 		message = frame->ex->message? mono_string_to_utf8 (frame->ex->message): NULL;
-		g_print ("Unhandled exception %s.%s %s.\n", ex_obj->klass->name_space, ex_obj->klass->name,
+		g_print ("Unhandled exception %s.%s %s.\n", ex_obj->vtable->klass->name_space, ex_obj->vtable->klass->name,
 				message?message:"");
 		g_free (message);
 		dump_frame (frame);
@@ -3409,7 +3424,7 @@ runtime_exec_main (MonoMethod *method, MonoArray *args)
 }
 
 static int 
-ves_exec (MonoAssembly *assembly, int argc, char *argv[])
+ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoArray *args = NULL;
 	MonoImage *image = assembly->image;
@@ -3423,9 +3438,9 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 		g_error ("No entry point method found in %s", image->name);
 
 	if (method->signature->param_count) {
-		args = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
+		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i=0; i < argc; ++i) {
-			mono_array_set (args, gpointer, i, mono_string_new (argv [i]));
+			mono_array_set (args, gpointer, i, mono_string_new (domain, argv [i]));
 		}
 	}
 	
@@ -3680,6 +3695,7 @@ segv_handler (int signum)
 int 
 main (int argc, char *argv [])
 {
+	MonoDomain *domain;
 	MonoAssembly *assembly;
 	GList *profile = NULL;
 	int retval = 0, i, ocount = 0;
@@ -3726,12 +3742,12 @@ main (int argc, char *argv [])
 
 	mono_install_handler (interp_ex_handler);
 
-	mono_init ();
-	mono_appdomain_init (file);
-	mono_thread_init();
-	mono_network_init();
+	domain = mono_init (file);
+	mono_thread_init (domain);
+	mono_network_init ();
 
-	assembly = mono_assembly_open (file, NULL, NULL);
+	assembly = mono_domain_assembly_open (domain, file);
+
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
@@ -3743,22 +3759,22 @@ main (int argc, char *argv [])
 #else
 	check_corlib (mono_defaults.corlib);
 	segv_exception = mono_get_exception_null_reference ();
-	segv_exception->message = mono_string_new ("Segmentation fault");
+	segv_exception->message = mono_string_new (domain, "Segmentation fault");
 	signal (SIGSEGV, segv_handler);
 	/*
 	 * skip the program name from the args.
 	 */
 	++i;
-	retval = ves_exec (assembly, argc - i, argv + i);
+	retval = ves_exec (domain, assembly, argc - i, argv + i);
 #endif
 	if (profiling)
 		g_hash_table_foreach (profiling, (GHFunc)build_profile, &profile);
 	output_profile (profile);
 	
-	mono_network_cleanup();
-	mono_thread_cleanup();
+	mono_network_cleanup ();
+	mono_thread_cleanup ();
 
-	mono_assembly_close (assembly);
+	mono_domain_unload (domain);
 
 #if DEBUG_INTERP
 	if (ocount) {

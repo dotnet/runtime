@@ -286,13 +286,13 @@ void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);
 guint32       mono_image_create_token  (MonoReflectionAssemblyBuilder *assembly, MonoObject *obj);
 
-MonoReflectionAssembly* mono_assembly_get_object (MonoAssembly *assembly);
-MonoReflectionType*     mono_type_get_object     (MonoType *type);
-MonoReflectionMethod*   mono_method_get_object   (MonoMethod *method);
-MonoReflectionField*    mono_field_get_object    (MonoClass *klass, MonoClassField *field);
-MonoReflectionProperty* mono_property_get_object (MonoClass *klass, MonoProperty *property);
+MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
+MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
+MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method);
+MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
+MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
 /* note: this one is slightly different: we keep the whole array of params in the cache */
-MonoReflectionParameter** mono_param_get_objects  (MonoMethod *method);
+MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 
 #endif /* __METADATA_REFLECTION_H__ */
 
