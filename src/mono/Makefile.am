@@ -1,4 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
+ACLOCAL_AMFLAGS = -I .
 
 SUBDIRS = @libgc_dir@ mono @ikvm_jni_dir@ docs runtime scripts man data samples support web 
 
@@ -62,6 +63,7 @@ faststrap: tmpinst-mcs-short-build
 ## *** warning ***: tested only with GNU make
 populate-runtime-subdir:
 	srcdir=`cd $(srcdir) && pwd`; tmpinst=`pwd`/$(tmpinst) ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) \
 	&& $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime LIBRARY_INSTALL_DIR=$$srcdir/runtime/net_1_1 prefix=$$tmpinst/prefix PROFILE=default install \
 	&& $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime LIBRARY_INSTALL_DIR=$$srcdir/runtime/net_2_0 prefix=$$tmpinst/prefix PROFILE=net_2_0 install

@@ -1,3 +1,8 @@
+2004-06-12  Raja R Harinath  <harinath@acm.org>
+
+	* Makefile.am (populate-runtime-subdir): Add _tmpinst directory
+	to the PATH.
+
 2004-06-11  Jackson Harper  <jackson@ximian.com>
 
 	* runtime/net_2_0/Makefile.am:
