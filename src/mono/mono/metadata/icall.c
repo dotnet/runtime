@@ -3561,6 +3561,34 @@ mono_TypedReference_ToObject (MonoTypedRef tref)
 	return mono_value_box (mono_domain_get (), klass, tref.value);
 }
 
+static void
+prelink_method (MonoMethod *method)
+{
+	if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		return;
+	mono_lookup_pinvoke_call (method);
+	/* create the wrapper, too? */
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethod *method)
+{
+	MONO_ARCH_SAVE_REGS;
+	prelink_method (method->method);
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType *type)
+{
+	MonoClass *klass = mono_class_from_mono_type (type->type);
+	int i;
+	MONO_ARCH_SAVE_REGS;
+
+	mono_class_init (klass);
+	for (i = 0; i < klass->method.count; ++i)
+		prelink_method (klass->methods [i]);
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3841,6 +3869,8 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::StringToHGlobalAuto", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi,
 	"System.Runtime.InteropServices.Marshal::StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni,
 	"System.Runtime.InteropServices.Marshal::DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure,
+	"System.Runtime.InteropServices.Marshal::Prelink", ves_icall_System_Runtime_InteropServices_Marshal_Prelink,
+	"System.Runtime.InteropServices.Marshal::PrelinkAll", ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll,
 
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
