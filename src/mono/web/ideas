@@ -19,11 +19,9 @@
 ** Classes
 
 	<ul>
-TODO=jxta,The JXTA Peer to Peer foundation
 		* Implement a JXTA protocol implementation:
 		<a href="http://www.jxta.org">http://www.jxta.org</a>
 
-TODO=camel,Mail API
 		* Implement a Mail API, similar to Camel or JavaMail (Camel has
 		  significant architecture features that are required on a real
 		  mailer).
@@ -35,7 +33,6 @@ TODO=camel,Mail API
 		  Such an implementation could be used both with
 		  Microsoft .NET and Mono.
 
-TODO=multimedia
 		* Interfacing to Multimedia systems.  You might want
 		  to look into the Quicktime API.  I know <a
 		  href="mailto:vladimir@ximian.com">Vladimir</a> has
@@ -48,23 +45,10 @@ TODO=multimedia
 
 	This list of projects ideas is outdated
 
-TODO=guavac,Java compiler for .NET
-		* You could take one of the existing Java compilers
-		  (Guavac comes to mind as it is so nice) and modify
-		  it to generate .NET code rather than JVM byte
-		  codes. 
-
-		  This should be a pretty straightforward task.
-		  Guavac has the advantage of being written in C++ and
-		  it could be compiled with the Microsoft Managed C++
-		  compiler and produce a .NET executable with it.
-
-TODO=Bonobo,Bonobo for Mono
 		* Once <a href="http://remoting-corba.sourceforge.net/">CORBA</a> is done, implement the Bonobo interfaces
 		  to allow people to use Bonobo components in Mono and
 		  Mono components with Bonobo.  The best of both worlds!
 
-TODO=moniker,Object Naming System with Monikers
 		* A naming space for Mono.  An object naming space is
 		  a very powerful tool.  Bonobo implements a moniker
 		  system that is more powerful than the original
