@@ -4,8 +4,8 @@
    for testing do the following: ./test | as -o test.o
 */
 
-#ifndef PPC_H
-#define PPC_H
+#ifndef __MONO_PPC_CODEGEN_H__
+#define __MONO_PPC_CODEGEN_H__
 #include <glib.h>
 #include <assert.h>
 
@@ -111,14 +111,14 @@ enum {
 	PPC_TRAP_GE_UN = 16 + PPC_TRAP_EQ
 };
 
-#define ppc_emit32(c,x) do { *((guint32 *) c) = x; c = (char *)(c) + sizeof (guint32);} while (0)
+#define ppc_emit32(c,x) do { *((guint32 *) (c)) = x; (c) = (char *)(c) + sizeof (guint32);} while (0)
 
 #define ppc_is_imm16(val) ((gint)(val) >= (gint)-(1<<15) && (gint)(val) <= (gint)((1<<15)-1))
 #define ppc_is_uimm16(val) ((gint)(val) >= 0 && (gint)(val) <= 65535)
 
 #define ppc_load(c,D,v) do {	\
 		if (ppc_is_imm16 ((v)))	{	\
-			ppc_li ((c), (D), (v));	\
+			ppc_li ((c), (D), (guint16)(v));	\
 		} else {	\
 			ppc_lis ((c), (D), (guint32)(v) >> 16);	\
 			ppc_ori ((c), (D), (D), (guint32)(v) & 0xffff);	\
@@ -128,8 +128,8 @@ enum {
 #define ppc_break(c) ppc_tw((c),31,0,0)
 #define  ppc_addi(c,D,A,d) ppc_emit32 (c, (14 << 26) | ((D) << 21) | ((A) << 16) | (guint16)(d))
 #define ppc_addis(c,D,A,d) ppc_emit32 (c, (15 << 26) | ((D) << 21) | ((A) << 16) | (guint16)(d))
-#define    ppc_li(c,D,v)   ppc_addi   (c, D, 0, v);
-#define   ppc_lis(c,D,v)   ppc_addis  (c, D, 0, v);
+#define    ppc_li(c,D,v)   ppc_addi   (c, D, 0, (guint16)(v));
+#define   ppc_lis(c,D,v)   ppc_addis  (c, D, 0, (guint16)(v));
 #define   ppc_lwz(c,D,d,a) ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
 #define   ppc_lhz(c,D,d,a) ppc_emit32 (c, (40 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
 #define   ppc_lbz(c,D,d,a) ppc_emit32 (c, (34 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
@@ -246,9 +246,9 @@ my and Ximian's copyright to this code. ;)
 #define ppc_bnelrlp(c,BO,BI) ppc_bclr(c,BO,BI)
 
 #define ppc_cmp(c,cfrD,L,A,B) ppc_emit32(c, (31 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (B << 11) | (0x00000 << 1) | 0 )
-#define ppc_cmpi(c,cfrD,L,A,B) ppc_emit32(c, (11 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | B)
+#define ppc_cmpi(c,cfrD,L,A,B) ppc_emit32(c, (11 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (guint16)(B))
 #define ppc_cmpl(c,cfrD,L,A,B) ppc_emit32(c, (31 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (B << 11) | (32 << 1) | 0 )
-#define ppc_cmpli(c,cfrD,L,A,B) ppc_emit32(c, (10 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | B)
+#define ppc_cmpli(c,cfrD,L,A,B) ppc_emit32(c, (10 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (guint16)(B))
 
 #define ppc_cntlzwx(c,S,A,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (0 << 11) | (26 << 1) | Rc)
 #define ppc_cntlzw(c,S,A) ppc_cntlzwx(c,S,A,0)
@@ -530,15 +530,15 @@ my and Ximian's copyright to this code. ;)
 
 #define ppc_rfi(c) ppc_emit32(c, (19 << 26) | (0 << 11) | (50 << 1) | 0)
 
-#define ppc_rlwimix(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (20 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 5) | (ME << 1) | Rc)
+#define ppc_rlwimix(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (20 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 6) | (ME << 1) | Rc)
 #define ppc_rlwimi(c,A,S,SH,MB,ME) ppc_rlwimix(c,A,S,SH,MB,ME,0)
 #define ppc_rlwimid(c,A,S,SH,MB,ME) ppc_rlwimix(c,A,S,SH,MB,ME,1)
 
-#define ppc_rlwinmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (21 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 5) | (ME << 1) | Rc)
+#define ppc_rlwinmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (21 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 6) | (ME << 1) | Rc)
 #define ppc_rlwinm(c,A,S,SH,MB,ME) ppc_rlwinmx(c,A,S,SH,MB,ME,0)
 #define ppc_rlwinmd(c,A,S,SH,MB,ME) ppc_rlwinmx(c,A,S,SH,MB,ME,1)
 
-#define ppc_rlwnmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (23 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 5) | (ME << 1) | Rc)
+#define ppc_rlwnmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (23 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 6) | (ME << 1) | Rc)
 #define ppc_rlwnm(c,A,S,SH,MB,ME) ppc_rlwnmx(c,A,S,SH,MB,ME,0)
 #define ppc_rlwnmd(c,A,S,SH,MB,ME) ppc_rlwnmx(c,A,S,SH,MB,ME,1)
 
@@ -560,21 +560,21 @@ my and Ximian's copyright to this code. ;)
 #define ppc_srw(c,A,S,B) ppc_srwx(c,A,S,B,0)
 #define ppc_srwd(c,A,S,B) ppc_srwx(c,A,S,B,1)
 
-#define ppc_stbu(c,S,A,D) ppc_emit32(c, (39 << 26) | (S << 21) | (A << 16) | D)
+#define ppc_stbu(c,S,A,D) ppc_emit32(c, (39 << 26) | (S << 21) | (A << 16) | (guint16)(D))
 
 #define ppc_stbux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (247 << 1) | 0)
 #define ppc_stbx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (215 << 1) | 0)
 
-#define ppc_stfdu(c,S,A,D) ppc_emit32(c, (55 << 26) | (S << 21) | (A << 16) | D)
+#define ppc_stfdu(c,S,A,D) ppc_emit32(c, (55 << 26) | (S << 21) | (A << 16) | (guint16)(D))
 
 #define ppc_stfdx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (727 << 1) | 0)
 #define ppc_stfiwx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (983 << 1) | 0)
 
-#define ppc_stfsu(c,S,A,D) ppc_emit32(c, (53 << 26) | (S << 21) | (A << 16) | D)  
+#define ppc_stfsu(c,S,A,D) ppc_emit32(c, (53 << 26) | (S << 21) | (A << 16) | (guint16)(D))
 #define ppc_stfsux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (695 << 1) | 0)  
 #define ppc_stfsx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (663 << 1) | 0)  
 #define ppc_sthbrx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (918 << 1) | 0)  
-#define ppc_sthu(c,S,A,D) ppc_emit32(c, (45 << 26) | (S << 21) | (A << 16) | D)
+#define ppc_sthu(c,S,A,D) ppc_emit32(c, (45 << 26) | (S << 21) | (A << 16) | (guint16)(D))
 #define ppc_sthux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (439 << 1) | 0)
 #define ppc_sthx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (407 << 1) | 0)
 #define ppc_stmw(c,S,A,D) ppc_emit32(c, (47 << 26) | (S << 21) | (A << 16) | (guint16)D)
