@@ -417,7 +417,7 @@ gboolean
 mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller);
 
 gpointer
-mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
+mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass, MonoGenericContext *context);
 
 char*         
 mono_type_get_name         (MonoType *type);

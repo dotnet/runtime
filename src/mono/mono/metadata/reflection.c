@@ -7736,6 +7736,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	image = (MonoImage*)tb->module->dynamic_image;
 
 	param->pklass = mono_class_from_generic_parameter (param, image, mb != NULL);
+	param->pklass->reflection_info = gparam;
 
 	gparam->initialized = TRUE;
 }

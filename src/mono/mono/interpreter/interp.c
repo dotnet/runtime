@@ -3927,7 +3927,7 @@ array_constructed:
 			gpointer handle;
 			MonoClass *handle_class;
 			++ip;
-			handle = mono_ldtoken (image, read32 (ip), &handle_class);
+			handle = mono_ldtoken (image, read32 (ip), &handle_class, generic_context);
 			ip += 4;
 			vt_alloc (&handle_class->byval_arg, sp, FALSE);
 			stackval_from_data (&handle_class->byval_arg, sp, (char*)&handle, FALSE);

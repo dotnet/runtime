@@ -409,7 +409,7 @@ mono_ldtoken_wrapper (MonoImage *image, int token)
 	gpointer res;
 
 	MONO_ARCH_SAVE_REGS;
-	res = mono_ldtoken (image, token, &handle_class);	
+	res = mono_ldtoken (image, token, &handle_class, NULL);	
 	mono_class_init (handle_class);
 
 	return res;

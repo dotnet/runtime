@@ -2094,9 +2094,10 @@ mono_class_from_mono_type (MonoType *type)
  * @type_spec:  typespec token
  */
 static MonoClass *
-mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
+mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
+				 MonoGenericContext *context)
 {
-	MonoType *type;
+	MonoType *type, *inflated;
 	MonoClass *class;
 
 	type = mono_type_create_from_typespec (image, type_spec);
@@ -2113,7 +2114,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		break;
 	case MONO_TYPE_GENERICINST:
 		g_assert (type->data.generic_inst->klass);
-		return type->data.generic_inst->klass;
+		class = type->data.generic_inst->klass;
 		break;
 	default:
 		/* it seems any type can be stored in TypeSpec as well */
@@ -2121,7 +2122,12 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		break;
 	}
 
-	return class;
+	if (!class || !context)
+		return class;
+
+	inflated = mono_class_inflate_generic_type (&class->byval_arg, context);
+
+	return mono_class_from_mono_type (inflated);
 }
 
 /**
@@ -2409,7 +2415,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		class = mono_class_from_typeref (image, type_token);
 		break;
 	case MONO_TOKEN_TYPE_SPEC:
-		class = mono_class_create_from_typespec (image, type_token);
+		class = mono_class_create_from_typespec (image, type_token, NULL);
 		break;
 	default:
 		g_warning ("unknown token type %x", type_token & 0xff000000);
@@ -2723,7 +2729,8 @@ mono_array_element_size (MonoClass *ac)
 }
 
 gpointer
-mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
+mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
+	      MonoGenericContext *context)
 {
 	if (image->dynamic) {
 		gpointer obj = mono_lookup_dynamic_token (image, token);
@@ -2754,7 +2761,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		MonoClass *class;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		class = mono_class_get (image, token);
+		class = mono_class_get_full (image, token, context);
 		mono_class_init (class);
 		/* We return a MonoType* as handle */
 		return &class->byval_arg;
@@ -2763,14 +2770,14 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		MonoClass *class;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		class = mono_class_create_from_typespec (image, token);
+		class = mono_class_create_from_typespec (image, token, context);
 		mono_class_init (class);
 		return &class->byval_arg;
 	}
 	case MONO_TOKEN_FIELD_DEF: {
 		MonoClass *class;
 		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
-		class = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+		class = mono_class_get_full (image, MONO_TOKEN_TYPE_DEF | type, context);
 		mono_class_init (class);
 		if (handle_class)
 			*handle_class = mono_defaults.fieldhandle_class;
@@ -2778,7 +2785,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 	}
 	case MONO_TOKEN_METHOD_DEF: {
 		MonoMethod *meth;
-		meth = mono_get_method (image, token, NULL);
+		meth = mono_get_method_full (image, token, NULL, context);
 		if (handle_class)
 			*handle_class = mono_defaults.methodhandle_class;
 		return meth;
@@ -2792,13 +2799,13 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		if (*sig == 0x6) { /* it's a field */
 			MonoClass *klass;
 			MonoClassField *field;
-			field = mono_field_from_token (image, token, &klass, NULL);
+			field = mono_field_from_token (image, token, &klass, context);
 			if (handle_class)
 				*handle_class = mono_defaults.fieldhandle_class;
 			return field;
 		} else {
 			MonoMethod *meth;
-			meth = mono_get_method (image, token, NULL);
+			meth = mono_get_method_full (image, token, NULL, context);
 			if (handle_class)
 				*handle_class = mono_defaults.methodhandle_class;
 			return meth;
