@@ -411,7 +411,7 @@ mono_get_method (MonoImage *image, guint32 token)
 	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
 				   index - 1);
-	} if (!(result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+	} else if (!(result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
 		g_assert (loc);
