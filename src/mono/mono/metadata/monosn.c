@@ -82,7 +82,7 @@ show_token (const char *file, int is_assembly, int show_pubkey) {
 		}
 		pubkey = mono_image_get_public_key (image, &len);
 		if (!pubkey) {
-			printf ("%s does not represent a strongly named assembly\n", image->name);
+			printf ("%s does not represent a strongly named assembly\n", mono_image_get_name(image));
 			mono_image_close (image);
 			return 2;
 		}
@@ -115,7 +115,7 @@ extract_data_to_file (int pubk, const char *assembly, const char *outfile) {
 	else
 		pubkey = mono_image_get_strong_name (image, &len);
 	if (!pubkey) {
-		printf ("%s does not represent a strongly named assembly\n", image->name);
+		printf ("%s does not represent a strongly named assembly\n", mono_image_get_name(image));
 		mono_image_close (image);
 		return 2;
 	}
