@@ -1,3 +1,5 @@
 Makefile
 Makefile.in
 util.o
+.libs
+*.la

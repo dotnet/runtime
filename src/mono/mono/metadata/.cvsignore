@@ -3,3 +3,5 @@ Makefile.in
 pedump
 .libs
 .deps
+*.lo
+*.la

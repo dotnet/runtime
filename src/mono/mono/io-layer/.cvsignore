@@ -3,3 +3,5 @@
 Makefile
 Makefile.in
 mono-handle-d
+*.lo
+*.la
