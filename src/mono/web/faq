@@ -489,6 +489,36 @@ A: The CIL is better suited to be JITed than JVM byte codes, but you
    can interpret them as trivially as you can interpret JVM byte
    codes. 
 
+Q: Isn't it a little bit confusing to have the name of "XSP" (the same 
+   as in the Apache Project) for the ASP.NET support in Mono?.
+
+A: In Mono, xsp is just the name of the C# code generator for ASP.NET 
+   pages. In the Apache Project, it is a term for the "eXtensible Server 
+   Pages" technology so as they are very different things, they don't 
+   conflict.
+
+Q: What about using something like Jabber instead of the System.Messaging 
+   namespace?.
+
+A: In short, MSMQ is not something like Jabber, but asynchronous messaging 
+   through queues. Usefull queues do more than serialize messages, they are 
+   also platform bridges.
+
+Q: Are you supporting XMLDocument and relatives?.
+
+A: Currently, we aren't implementing them yet. It would require updates to 
+   most of the XmlNode derivatives so it's not a trivial task. We are 
+   currently focusing on getting XPath support working. 
+
+Q: Is there any plan to develop an aspx server for Mono?.
+
+A: The webserver turned out to be very simple compared to the rest of the 
+   work. Gonzalo has got the page generator mostly done (a module called 
+   xsp, who has nothing to do with the XSP term used in the Apache Project).
+   Patrik has done a lot of the work to get the ProcessRequest to work.
+   You can try to help in the final touches to the System.Web classes and
+   writing regression tests for the widgets we have.
+
 <a name="java">
 ** Mono and Java
    
@@ -539,6 +569,18 @@ A: Yes, it is possible.  Here are a few starting point:
         	* Each "forest of trees" has a meaning.  This meaning can now
           	  be translated into the equivalent "meaning" in CLR-land.
 	</ul>
+
+Q: Could mono become a hybrid cil/java platform?
+
+A: No. It is quite far from the phylosophy of the project. The idea of Mono 
+   is, to have only _one_ VM, on which all can run. And if there existing a 
+   binary-converter from Java-.class to IL and if there existing something 
+   like J-Sharp on Mono, you can write programs in Java, which than can run 
+   on Mono. You do not need two bindings (like your example: GTK-Sharp _and_ 
+   Java-Gnome). You need only _one_ of it (GTK-Sharp). Thats the idea of Mono.
+   An other point is, that there are no people, who use OpenSource-JVMs. They 
+   all prefer Suns original. But for Unix there don't exist a .NET-Framework. 
+   So it is possible, that in the future Mono is the standard .NET for unixes.
 
 <a name="extending"></a>
 ** Extending Mono
@@ -597,6 +639,12 @@ A: Mono currently runs on Linux, Windows, Solaris and FreeBSD.
 Q: Does Mono run on Windows?
 
 A: Yes.   The Compiler and the runtime both run on Windows.
+
+Q: When will mono and mcs compile on Linux?.
+
+A: That happend a long time ago. Know you can download and compile 
+   them or even install them from already made binary packages for 
+   Windows and for Linux (RPM/DEB).
 
 Q: Will I require Cygwin to run mono?
 
