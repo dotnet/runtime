@@ -48,6 +48,7 @@ TEST_CS_SRC=			\
 	pinvoke6.cs		\
 	pinvoke7.cs		\
 	pinvoke8.cs		\
+	pinvoke9.cs		\
 	invoke.cs		\
 	box.cs			\
 	array.cs		\
@@ -183,7 +184,7 @@ testjit: $(JITTEST_PROG) $(TESTSI) $(TESTBS)
 	@failed=0; \
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
-	for i in $(TESTSI) $(TESTBS); do	\
+	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
 		if ./test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \

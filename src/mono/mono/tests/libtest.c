@@ -113,7 +113,20 @@ mono_test_return_vtype2 (ReturnVTypeDelegate func)
 	return res1;
 }
 
+typedef char* (*ReturnStringDelegate) (char *s);
 
+char *
+mono_test_return_string (ReturnStringDelegate func)
+{
+	char *res;
+
+	printf ("mono_test_return_string\n");
+
+	res = func ("TEST");
+
+	printf ("got string: %s\n", res);
+	return res;
+}
 
 typedef int (*RefVTypeDelegate) (int a, simplestruct *ss, int b);
 

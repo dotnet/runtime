@@ -1846,61 +1846,67 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 
 	mono_mb_emit_managed_call (mb, method, NULL);
 
-	switch (sig->ret->type) {
-	case MONO_TYPE_VOID:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		/* do nothing */
-		break;
-	case MONO_TYPE_STRING:
-		g_assert_not_reached ();
-		break;
-	case MONO_TYPE_VALUETYPE: {
-		int tmp;
-		klass = sig->ret->data.klass;
-		if (klass->blittable || klass->enumtype)
+	if (!sig->ret->byref) { 
+		switch (sig->ret->type) {
+		case MONO_TYPE_VOID:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			/* do nothing */
 			break;
-		
-		/* load pointer to returned value type */
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+		case MONO_TYPE_STRING:		
+			csig->ret = &mono_defaults.int_class->byval_arg;
 
-		/* store the address of the source into local variable 0 */
-		mono_mb_emit_byte (mb, CEE_STLOC_0);
-		/* allocate space for the native struct and
-		 * store the address into dst_ptr */
-		tmp = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		g_assert (tmp);
-		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
-		mono_mb_emit_byte (mb, CEE_PREFIX1);
-		mono_mb_emit_byte (mb, CEE_LOCALLOC);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
-		mono_mb_emit_byte (mb, CEE_LDLOC_1);
-		mono_mb_emit_stloc (mb, tmp);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+			break;
+		case MONO_TYPE_VALUETYPE: {
+			int tmp;
+			klass = sig->ret->data.klass;
+			if (klass->blittable || klass->enumtype)
+				break;
+			
+			/* load pointer to returned value type */
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+			
+			/* store the address of the source into local variable 0 */
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+			/* allocate space for the native struct and
+			 * store the address into dst_ptr */
+			tmp = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			g_assert (tmp);
+			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+			mono_mb_emit_byte (mb, CEE_PREFIX1);
+			mono_mb_emit_byte (mb, CEE_LOCALLOC);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_byte (mb, CEE_LDLOC_1);
+			mono_mb_emit_stloc (mb, tmp);
 
-		/* emit valuetype conversion code */
-		emit_struct_conv (mb, klass, FALSE);
-		mono_mb_emit_ldloc (mb, tmp);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_RETOBJ);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-		break;
-	}
-	default:
-		g_warning ("return type 0x%02x unknown", sig->ret->type);	
-		g_assert_not_reached ();
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, klass, FALSE);
+			mono_mb_emit_ldloc (mb, tmp);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_RETOBJ);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			break;
+		}
+		default:
+			g_warning ("return type 0x%02x unknown", sig->ret->type);	
+			g_assert_not_reached ();
+		}
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
