@@ -373,7 +373,7 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	MonoString *s;
 	MonoArray *ca;
 	
-	s = mono_string_new_utf16_len(domain, len);
+	s = mono_string_new_size (domain, len);
 	g_assert (s != NULL);
 
 	memcpy (s->c_str->vector, text, len * 2);

@@ -51,6 +51,8 @@ libmetadata_a_SOURCES = \
 	profiler-private.h	\
 	rand.h		\
 	rand.c		\
+	string-icalls.c \
+	string-icalls.h \
 	sysmath.h	\
 	sysmath.c
 
