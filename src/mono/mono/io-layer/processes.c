@@ -155,13 +155,6 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			SetLastError(ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
-
-		/* Turn all the slashes round the right way */
-		for(i=0; i<strlen (args); i++) {
-			if(args[i]=='\\') {
-				args[i]='/';
-			}
-		}
 	}
 
 	if(cwd!=NULL) {
@@ -185,7 +178,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	} else {
 		dir=g_get_current_dir ();
 	}
-	stored_dir=_wapi_handle_scratch_store (dir, strlen (dir));
+	stored_dir=_wapi_handle_scratch_store (dir, strlen (dir) + 1);
 	
 	
 	/* new_environ is a block of NULL-terminated strings, which
@@ -307,7 +300,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			for(i=0; args[i]!='\0'; i++) {
 				if(g_ascii_isspace (args[i])) {
 					token=g_strndup (args, i);
-					args_after_prog=args+i;
+					args_after_prog=args+i+1;
 					break;
 				}
 			}
@@ -330,6 +323,13 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			goto cleanup;
 		}
 		
+		/* Turn all the slashes round the right way. Only for the prg. name */
+		for(i=0; i < strlen (token); i++) {
+			if (token[i]=='\\') {
+				token[i]='/';
+			}
+		}
+
 		if(g_ascii_isalpha (token[0]) && (token[1]==':')) {
 			/* Strip off the drive letter.  I can't
 			 * believe that CP/M holdover is still
@@ -398,7 +398,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		full_prog=g_strdup (prog);
 	}
 	
-	stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog));
+	stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog) + 1);
 
 	if(startup!=NULL && startup->dwFlags & STARTF_USESTDHANDLES) {
 		stdin_handle=startup->hStdInput;
@@ -467,9 +467,9 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 	if(progname!=NULL) {
 		slash=strrchr (progname, '/');
 		if(slash!=NULL) {
-			process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
+			process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1) + 1);
 		} else {
-			process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname));
+			process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname) + 1);
 		}
 	}
 }

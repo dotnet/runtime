@@ -854,7 +854,7 @@ guint32 _wapi_handle_scratch_store_string_array (gchar **data)
 	
 	strings=data;
 	for(i=0; i<count; i++) {
-		stored_strings[i+1]=_wapi_handle_scratch_store (strings[i], strlen (strings[i]));
+		stored_strings[i+1]=_wapi_handle_scratch_store (strings[i], strlen (strings[i]) + 1);
 	}
 
 	idx=_wapi_handle_scratch_store (stored_strings,
