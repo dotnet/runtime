@@ -164,6 +164,9 @@ static guint32 start_wrapper(void *data)
 	
 	mono_domain_set (start_info->domain);
 
+	start_func = start_info->func;
+	this = start_info->this;
+
 	/* This MUST be called before any managed code can be
 	 * executed, as it calls the callback function that (for the
 	 * jit) sets the lmf marker.
@@ -179,9 +182,6 @@ static guint32 start_wrapper(void *data)
 		thread=start_info->obj;
 	}
 	
-	start_func = start_info->func;
-	this = start_info->this;
-
 	TlsSetValue (current_object_key, thread);
 
 	handle_store(thread);
