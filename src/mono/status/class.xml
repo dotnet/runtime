@@ -1027,7 +1027,7 @@
     </class>
 
     <class name="System.Uri">
-        <last-activity>Jun-16-2001</last-activity>
+        <last-activity>Jun-17-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
@@ -1058,7 +1058,7 @@
 
     <class name="System.Boolean">
         <last-activity>Jun-16-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -1067,7 +1067,7 @@
     </class>
     <class name="System.Convert">
         <last-activity>Jun-16-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
