@@ -8659,15 +8659,3 @@ void mono_precompile_assemblies ()
 {
 	mono_assembly_foreach ((GFunc)mono_precompile_assembly, NULL);
 }
-
-gpointer
-mini_compile_generic_method (MonoMethod *method, MonoGenericContext *context)
-{
-	MonoMethod *inflated;
-	gpointer addr;
-
-	inflated = mono_class_inflate_generic_method (method, context, NULL);
-	addr = mono_compile_method (inflated);
-
-	return addr;
-}

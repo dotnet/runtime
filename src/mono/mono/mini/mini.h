@@ -742,8 +742,6 @@ gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 gpointer          mono_create_jit_trampoline (MonoMethod *method);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gboolean          mono_running_on_valgrind (void);
-gpointer          mini_compile_generic_method (MonoMethod *method, MonoGenericContext *context);
-
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);
@@ -799,7 +797,6 @@ MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg);
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg);
 guint32  mono_arch_get_aot_patch_offset         (void);
-void     mono_arch_emit_generic_call            (MonoCompile *cfg, int slot_reg, int offset, MonoMethod *method);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,

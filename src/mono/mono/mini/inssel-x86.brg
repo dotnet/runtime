@@ -1,5 +1,3 @@
-#define MONO_HAVE_EMIT_GENERIC_METHOD 1
-
 #define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\

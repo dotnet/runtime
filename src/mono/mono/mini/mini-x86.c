@@ -3873,33 +3873,6 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	}
 }
 
-void
-mono_arch_emit_generic_call (MonoCompile *cfg, int slot_reg, int offset, MonoMethod *method)
-{
-	MonoInst *inst;
-	MonoCallInst *call;
-
-	g_assert (method->signature->is_inflated);
-
-	MONO_INST_NEW (cfg, inst, OP_X86_PUSH_IMM);
-	inst->inst_imm = ((MonoMethodInflated *) method)->context;
-	mono_bblock_add_inst (cfg->cbb, inst);
-
-	MONO_INST_NEW (cfg, inst, OP_X86_PUSH_MEMBASE);
-	inst->inst_offset = offset;
-	mono_bblock_add_inst (cfg->cbb, inst);
-
-	MONO_INST_NEW_CALL (cfg, call, CEE_CALL);
-	call->inst.dreg = slot_reg;
-	call->fptr = mini_compile_generic_method;
-	mono_bblock_add_inst (cfg->cbb, call);
-
-	MONO_INST_NEW (cfg, inst, OP_ADD_IMM);
-	inst->sreg1 = X86_ESP;
-	inst->dreg = X86_ESP;
-	inst->inst_imm = 8;
-	mono_bblock_add_inst (cfg->cbb, inst);
-}
 
 gint
 mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
