@@ -1166,7 +1166,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 #ifdef THREAD_DEBUG
 		g_print ("Aborting id: %d\n", thread->tid);
 #endif
-		ves_icall_System_Threading_Thread_Abort (thread, (MonoDomain *) thread->obj.vtable->domain);
+		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 		return TRUE;
 	}
 
@@ -1310,7 +1310,7 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
 		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name); */
-		ves_icall_System_Threading_Thread_Abort (thread, (MonoObject*)domain->domain);
+		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 
 		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
 			data->wait.handles [data->wait.num] = thread->handle;
