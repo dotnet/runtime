@@ -59,6 +59,7 @@ TEST_CS_SRC=			\
 	pinvoke13.cs		\
 	pinvoke14.cs		\
 	pinvoke15.cs		\
+	pinvoke16.cs		\
 	invoke.cs		\
 	invoke2.cs		\
 	reinit.cs		\

@@ -461,3 +461,19 @@ functionReturningString (void)
     return "ABC";
 }
 
+typedef struct {
+	int a;
+	int b;
+} VectorList;
+
+
+VectorList* TestVectorList (VectorList *vl)
+{
+	printf ("TestVectorList %d %d\n", vl->a, vl->b);
+
+	vl->a++;
+	vl->b++;
+
+	return vl;
+}
+

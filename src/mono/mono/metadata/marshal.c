@@ -2599,6 +2599,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
+
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
 		MonoMarshalSpec *spec = mspecs [i + 1];
@@ -3041,10 +3042,45 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, CEE_MONO_FREE);
 #endif
 				break;
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
+				klass = sig->ret->data.klass;
+
+				/* set src */
+				mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+				mono_mb_emit_byte (mb, CEE_LDNULL);
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+
+				mono_mb_emit_byte (mb, CEE_LDLOC_0);
+				mono_mb_emit_byte (mb, CEE_BRFALSE);
+				pos = mb->pos;
+				mono_mb_emit_i4 (mb, 0);
+
+				/* allocate result object */
+
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+				
+				/* set dst  */
+
+				mono_mb_emit_byte (mb, CEE_LDLOC_3);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+				mono_mb_emit_icon (mb, sizeof (MonoObject));
+				mono_mb_emit_byte (mb, CEE_ADD);
+				mono_mb_emit_byte (mb, CEE_STLOC_1);
+							
+				/* emit conversion code */
+				emit_struct_conv (mb, klass, TRUE);
+
+				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+				break;
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
 				/* fixme: we need conversions here */
 				mono_mb_emit_byte (mb, CEE_STLOC_3);
 				break;
