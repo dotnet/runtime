@@ -14,8 +14,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define RANGE_TABLE_CHUNK_SIZE	256
-#define CLASS_TABLE_CHUNK_SIZE	256
+#define RANGE_TABLE_CHUNK_SIZE		256
+#define CLASS_TABLE_CHUNK_SIZE		256
+#define TYPE_TABLE_PTR_CHUNK_SIZE	256
+#define TYPE_TABLE_CHUNK_SIZE		65536
 
 struct MonoSymbolFilePriv
 {
@@ -45,12 +47,15 @@ typedef struct
 static GHashTable *type_table;
 static GHashTable *class_table;
 
+MonoGlobalSymbolFile *mono_debugger_global_symbol_file = NULL;
+
 static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
 static MonoDebugRangeInfo *allocate_range_entry (MonoSymbolFile *symfile);
 static MonoDebugClassInfo *allocate_class_entry (MonoSymbolFile *symfile);
-static gpointer write_type (MonoType *type);
+static guint32 allocate_type_entry (MonoGlobalSymbolFile *global_symfile, guint32 size, guint8 **ptr);
+static guint32 write_type (MonoGlobalSymbolFile *global_symfile, MonoType *type);
 
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
@@ -93,6 +98,10 @@ load_symfile (MonoSymbolFile *symfile)
 	guint64 magic;
 	long version;
 	int i;
+
+	if (!mono_debugger_global_symbol_file)
+		mono_debugger_global_symbol_file = g_new0 (MonoGlobalSymbolFile, 1);
+	symfile->global = mono_debugger_global_symbol_file;
 
 	ptr = start = symfile->raw_contents;
 
@@ -353,7 +362,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	guint32 type_size, type_offset, *type_index_table;
 	guint32 line_size, line_offset;
 	MonoDebugLineNumberEntry *line_table;
-	gpointer *type_table;
+	guint32 *type_table;
 	guint8 *ptr;
 	int i;
 
@@ -429,7 +438,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	range->dynamic_size = size;
 
 	var_table = (MonoDebugVarInfo *) (ptr + variable_offset);
-	type_table = (gpointer *) (ptr + type_offset);
+	type_table = (guint32 *) (ptr + type_offset);
 
 	type_index_table = (guint32 *)
 		(symfile->raw_contents + mep->entry->type_index_table_offset);
@@ -441,7 +450,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 			var_table++;
 		} else {
 			*var_table++ = *mep->minfo->jit->this_var;
-			*type_table++ = write_type (&method->klass->this_arg);
+			*type_table++ = write_type (symfile->global, &method->klass->this_arg);
 		}
 	}
 
@@ -454,7 +463,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	} else {
 		for (i = 0; i < mep->minfo->jit->num_params; i++) {
 			*var_table++ = mep->minfo->jit->params [i];
-			*type_table++ = write_type (method->signature->params [i]);
+			*type_table++ = write_type (symfile->global, method->signature->params [i]);
 		}
 	}
 
@@ -469,7 +478,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 		for (i = 0; i < mep->entry->num_locals; i++) {
 			MonoDebugVarInfo *var = &mep->minfo->jit->locals [i];
 			*var_table++ = mep->minfo->jit->locals [i];
-			*type_table++ = write_type (header->locals [i]);
+			*type_table++ = write_type (symfile->global, header->locals [i]);
 		}
 	}
 }
@@ -495,7 +504,7 @@ mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
 		info->rank = klass->rank;
 	} else
 		info->token = klass->type_token;
-	info->type_info = write_type (&klass->this_arg);
+	info->type_info = write_type (symfile->global, &klass->this_arg);
 }
 
 static int
@@ -506,6 +515,10 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 	guint64 magic;
 	long version;
 	off_t offset;
+
+	if (!mono_debugger_global_symbol_file)
+		mono_debugger_global_symbol_file = g_new0 (MonoGlobalSymbolFile, 1);
+	symfile->global = mono_debugger_global_symbol_file;
 
 	priv->fd = g_file_open_tmp (NULL, &priv->file_name, NULL);
 	if (priv->fd == -1) {
@@ -722,57 +735,113 @@ allocate_class_entry (MonoSymbolFile *symfile)
 	return retval;
 }
 
-static gpointer
-write_simple_type (MonoType *type)
+/*
+ * Allocate a new entry of size `size' in the type table.
+ * Returns the global offset which is to be used to reference this type and
+ * a pointer (in the `ptr' argument) which is to be used to write the type.
+ */
+static guint32
+allocate_type_entry (MonoGlobalSymbolFile *global, guint32 size, guint8 **ptr)
 {
-	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
-	guint32 size;
+	guint32 retval;
+	guint8 *data;
+
+	g_assert (size + 4 < TYPE_TABLE_CHUNK_SIZE);
+	g_assert (ptr != NULL);
+
+	/* Initialize things if necessary. */
+	if (!global->current_type_table) {
+		global->current_type_table = g_malloc0 (TYPE_TABLE_CHUNK_SIZE);
+		global->type_table_size = TYPE_TABLE_CHUNK_SIZE;
+		global->type_table_chunk_size = TYPE_TABLE_CHUNK_SIZE;
+		global->type_table_offset = 1;
+	}
+
+ again:
+	/* First let's check whether there's still enough room in the current_type_table. */
+	if (global->type_table_offset + size + 4 < global->type_table_size) {
+		retval = global->type_table_offset;
+		global->type_table_offset += size + 4;
+		data = ((guint8 *) global->current_type_table) + retval - global->type_table_start;
+		*((gint32 *) data)++ = size;
+		*ptr = data;
+		return retval;
+	}
+
+	/* Add the current_type_table to the type_tables vector and ... */
+	if (!global->type_tables) {
+		guint32 tsize = sizeof (gpointer) * TYPE_TABLE_PTR_CHUNK_SIZE;
+		global->type_tables = g_malloc0 (tsize);
+	}
+
+	if (!((global->num_type_tables + 1) % TYPE_TABLE_PTR_CHUNK_SIZE)) {
+		guint32 chunks = (global->num_type_tables + 1) / TYPE_TABLE_PTR_CHUNK_SIZE;
+		guint32 tsize = sizeof (gpointer) * TYPE_TABLE_PTR_CHUNK_SIZE * (chunks + 1);
+
+		global->type_tables = g_realloc (global->type_tables, tsize);
+	}
+
+	global->type_tables [global->num_type_tables++] = global->current_type_table;
+
+	/* .... allocate a new current_type_table. */
+	global->current_type_table = g_malloc0 (TYPE_TABLE_CHUNK_SIZE);
+	global->type_table_start = global->type_table_offset = global->type_table_size;
+	global->type_table_size += TYPE_TABLE_CHUNK_SIZE;
+
+	goto again;
+}
+
+static guint32
+write_simple_type (MonoGlobalSymbolFile *global, MonoType *type)
+{
+	guint8 buffer [BUFSIZ], *ptr = buffer;
+	guint32 size, offset;
 
 	if (!type_table)
 		type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	retval = g_hash_table_lookup (type_table, type);
-	if (retval)
-		return retval;
+	offset = GPOINTER_TO_UINT (g_hash_table_lookup (type_table, type));
+	if (offset)
+		return offset;
 
 	switch (type->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		*((int *) ptr)++ = 1;
+		*((gint32 *) ptr)++ = 1;
 		break;
 
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		*((int *) ptr)++ = 2;
+		*((gint32 *) ptr)++ = 2;
 		break;
 
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_R4:
-		*((int *) ptr)++ = 4;
+		*((gint32 *) ptr)++ = 4;
 		break;
 
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R8:
-		*((int *) ptr)++ = 8;
+		*((gint32 *) ptr)++ = 8;
 		break;
 
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		*((int *) ptr)++ = sizeof (void *);
+		*((gint32 *) ptr)++ = sizeof (void *);
 		break;
 
 	case MONO_TYPE_VOID:
-		*((int *) ptr)++ = 0;
+		*((gint32 *) ptr)++ = 0;
 		break;
 
 	case MONO_TYPE_STRING: {
 		MonoString string;
 
-		*((int *) ptr)++ = -8;
+		*((gint32 *) ptr)++ = -8;
 		*((guint32 *) ptr)++ = sizeof (MonoString);
 		*ptr++ = 1;
 		*ptr++ = (guint8*)&string.length - (guint8*)&string;
@@ -782,42 +851,43 @@ write_simple_type (MonoType *type)
 	}
 
 	default:
-		return NULL;
+		return 0;
 	}
 
 	size = ptr - buffer;
+	offset = allocate_type_entry (global, size, &ptr);
+	memcpy (ptr, buffer, size);
 
-	retval = g_malloc0 (size + 4);
-	memcpy (retval + 4, buffer, size);
-	*((int *) retval) = size;
+	g_hash_table_insert (type_table, type, GUINT_TO_POINTER (offset));
 
-	g_hash_table_insert (type_table, type, retval);
-
-	return retval;
+	return offset;
 }
 
-static gpointer
-write_type (MonoType *type)
+/*
+ * Adds type `type' to the type table and returns its offset.
+ */
+static guint32
+write_type (MonoGlobalSymbolFile *global, MonoType *type)
 {
-	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
+	guint8 buffer [BUFSIZ], *ptr = buffer, *old_ptr;
 	GPtrArray *methods = NULL;
 	int num_fields = 0, num_properties = 0, num_methods = 0;
 	int num_params = 0, kind;
-	guint32 size, data_size;
-	MonoClass *klass;
+	guint32 size, data_size, offset;
+	MonoClass *klass = NULL;
 
 	if (!type_table)
 		type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 	if (!class_table)
 		class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	retval = g_hash_table_lookup (type_table, type);
-	if (retval)
-		return retval;
+	offset = GPOINTER_TO_UINT (g_hash_table_lookup (type_table, type));
+	if (offset)
+		return offset;
 
-	retval = write_simple_type (type);
-	if (retval)
-		return retval;
+	offset = write_simple_type (global, type);
+	if (offset)
+		return offset;
 
 	kind = type->type;
 	if (kind == MONO_TYPE_OBJECT) {
@@ -825,18 +895,18 @@ write_type (MonoType *type)
 		kind = MONO_TYPE_CLASS;
 	} else if ((kind == MONO_TYPE_VALUETYPE) || (kind == MONO_TYPE_CLASS)) {
 		klass = type->data.klass;
-		retval = g_hash_table_lookup (class_table, klass);
-		if (retval)
-			return retval;
+		offset = GPOINTER_TO_UINT (g_hash_table_lookup (class_table, klass));
+		if (offset)
+			return offset;
 	}
 
 	switch (kind) {
 	case MONO_TYPE_SZARRAY:
-		size = 8 + sizeof (int) + sizeof (gpointer);
+		size = 16;
 		break;
 
 	case MONO_TYPE_ARRAY:
-		size = 15 + sizeof (int) + sizeof (gpointer);
+		size = 23;
 		break;
 
 	case MONO_TYPE_VALUETYPE:
@@ -845,18 +915,18 @@ write_type (MonoType *type)
 		int i;
 
 		if (klass->init_pending) {
-			size = sizeof (int);
+			size = 4;
 			break;
 		}
 
 		mono_class_init (klass);
 
-		retval = g_hash_table_lookup (class_table, klass);
-		if (retval)
-			return retval;
+		offset = GPOINTER_TO_UINT (g_hash_table_lookup (class_table, klass));
+		if (offset)
+			return offset;
 
 		if (klass->enumtype) {
-			size = 5 + sizeof (int) + sizeof (gpointer);
+			size = 13;
 			break;
 		}
 
@@ -892,12 +962,12 @@ write_type (MonoType *type)
 
 		g_hash_table_destroy (method_slots);
 
-		size = 30 + sizeof (int) + num_fields * (4 + sizeof (gpointer)) +
-			num_properties * 3 * sizeof (gpointer) + num_methods * (4 + 2 * sizeof (gpointer)) +
-			num_params * sizeof (gpointer);
+		size = 34 + num_fields * 8 + num_properties * (4 + 2 * sizeof (gpointer)) +
+			num_methods * (8 + sizeof (gpointer)) + num_params * 4;
 
 		if (kind == MONO_TYPE_CLASS)
-			size += sizeof (gpointer);
+			size += 4;
+
 		break;
 	}
 
@@ -908,25 +978,22 @@ write_type (MonoType *type)
 
 	data_size = size;
 
-	retval = g_malloc0 (data_size + 4);
-	memcpy (retval + 4, buffer, data_size);
-	*((int *) retval) = data_size;
+	offset = allocate_type_entry (global, data_size, &ptr);
+	old_ptr = ptr;
 
-	g_hash_table_insert (type_table, type, retval);
-
-	ptr = retval + 4;
+	g_hash_table_insert (type_table, type, GUINT_TO_POINTER (offset));
 
 	switch (kind) {
 	case MONO_TYPE_SZARRAY: {
 		MonoArray array;
 
-		*((int *) ptr)++ = -size;
+		*((gint32 *) ptr)++ = -size;
 		*((guint32 *) ptr)++ = sizeof (MonoArray);
 		*ptr++ = 2;
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
-		*((gpointer *) ptr)++ = write_type (type->data.type);
+		*((guint32 *) ptr)++ = write_type (global, type->data.type);
 		break;
 	}
 
@@ -934,7 +1001,7 @@ write_type (MonoType *type)
 		MonoArray array;
 		MonoArrayBounds bounds;
 
-		*((int *) ptr)++ = -size;
+		*((gint32 *) ptr)++ = -size;
 		*((guint32 *) ptr)++ = sizeof (MonoArray);
 		*ptr++ = 3;
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
@@ -947,7 +1014,7 @@ write_type (MonoType *type)
 		*ptr++ = sizeof (bounds.lower_bound);
 		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.length);
-		*((gpointer *) ptr)++ = write_type (type->data.array->type);
+		*((guint32 *) ptr)++ = write_type (global, type->data.array->type);
 		break;
 	}
 
@@ -957,21 +1024,21 @@ write_type (MonoType *type)
 		int i, j;
 
 		if (klass->init_pending) {
-			*((int *) ptr)++ = -1;
+			*((gint32 *) ptr)++ = -1;
 			break;
 		}
 
-		g_hash_table_insert (class_table, klass, retval);
+		g_hash_table_insert (class_table, klass, GUINT_TO_POINTER (offset));
 
 		if (klass->enumtype) {
-			*((int *) ptr)++ = -size;
+			*((gint32 *) ptr)++ = -size;
 			*((guint32 *) ptr)++ = sizeof (MonoObject);
 			*ptr++ = 4;
-			*((gpointer *) ptr)++ = write_type (klass->enum_basetype);
+			*((guint32 *) ptr)++ = write_type (global, klass->enum_basetype);
 			break;
 		}
 
-		*((int *) ptr)++ = -size;
+		*((gint32 *) ptr)++ = -size;
 
 		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
 		if (type->type == MONO_TYPE_OBJECT)
@@ -991,7 +1058,7 @@ write_type (MonoType *type)
 				continue;
 
 			*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
-			*((gpointer *) ptr)++ = write_type (klass->fields [i].type);
+			*((guint32 *) ptr)++ = write_type (global, klass->fields [i].type);
 		}
 
 		for (i = 0; i < klass->property.count; i++) {
@@ -999,9 +1066,10 @@ write_type (MonoType *type)
 				continue;
 
 			if (klass->properties [i].get)
-				*((gpointer *) ptr)++ = write_type (klass->properties [i].get->signature->ret);
+				*((guint32 *) ptr)++ = write_type
+					(global, klass->properties [i].get->signature->ret);
 			else
-				*((gpointer *) ptr)++ = NULL;
+				*((guint32 *) ptr)++ = 0;
 			*((gpointer *) ptr)++ = klass->properties [i].get;
 			*((gpointer *) ptr)++ = klass->properties [i].set;
 		}
@@ -1011,21 +1079,21 @@ write_type (MonoType *type)
 
 			*((gpointer *) ptr)++ = method;
 			if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
-				*((gpointer *) ptr)++ = write_type (method->signature->ret);
+				*((guint32 *) ptr)++ = write_type (global, method->signature->ret);
 			else
-				*((gpointer *) ptr)++ = NULL;
+				*((guint32 *) ptr)++ = 0;
 			*((guint32 *) ptr)++ = method->signature->param_count;
 			for (j = 0; j < method->signature->param_count; j++)
-				*((gpointer *) ptr)++ = write_type (method->signature->params [j]);
+				*((guint32 *) ptr)++ = write_type (global, method->signature->params [j]);
 		}
 
 		g_ptr_array_free (methods, FALSE);
 
 		if (kind == MONO_TYPE_CLASS) {
 			if (klass->parent)
-				*((gpointer *) ptr)++ = write_type (&klass->parent->this_arg);
+				*((guint32 *) ptr)++ = write_type (global, &klass->parent->this_arg);
 			else
-				*((gpointer *) ptr)++ = NULL;
+				*((guint32 *) ptr)++ = 0;
 		}
 
 		break;
@@ -1034,9 +1102,16 @@ write_type (MonoType *type)
 	default:
 		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, kind, type->byref);
 
-		*((int *) ptr)++ = -1;
+		*((gint32 *) ptr)++ = -1;
 		break;
 	}
 
-	return retval;
+	if (ptr - old_ptr != data_size) {
+		g_warning (G_STRLOC ": %d,%d - %d", ptr - old_ptr, data_size, kind);
+		if (klass)
+			g_warning (G_STRLOC ": %s.%s", klass->name_space, klass->name);
+		g_assert_not_reached ();
+	}
+
+	return offset;
 }

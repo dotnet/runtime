@@ -6,6 +6,7 @@
 #include <mono/metadata/reflection.h>
 
 typedef struct MonoSymbolFile			MonoSymbolFile;
+typedef struct MonoGlobalSymbolFile		MonoGlobalSymbolFile;
 typedef struct MonoSymbolFilePriv		MonoSymbolFilePriv;
 typedef struct MonoSymbolFileOffsetTable	MonoSymbolFileOffsetTable;
 typedef struct MonoSymbolFileLineNumberEntry	MonoSymbolFileLineNumberEntry;
@@ -145,7 +146,46 @@ struct MonoDebugClassInfo {
 	MonoClass *klass;
 	guint32 rank;
 	guint32 token;
-	gpointer type_info;
+	guint32 type_info;
+};
+
+/*
+ * This is shared between all symbol files.
+ */
+struct MonoGlobalSymbolFile {
+	/*
+	 * Type table.
+	 * This is intentionally not a GPtrArray to make it more easy to
+	 * read for the debugger.  The `type_tables' field contains
+	 * `num_type_tables' pointers to continuous memory areas of
+	 * `type_table_chunk_size' bytes each.
+	 *
+	 * The type table is basically a big continuous blob, but we need
+	 * to split it up into pieces because we don't know the total size
+	 * in advance and using g_realloc() doesn't work because that may
+	 * reallocate the block to a different address.
+	 */
+	guint32 num_type_tables;
+	guint32 type_table_chunk_size;
+	gpointer *type_tables;
+	/*
+	 * Current type table.
+	 * The `current_type_table' points to a blob of `type_table_chunk_size'
+	 * bytes.
+	 */
+	gpointer current_type_table;
+	/*
+	 * This is the total size of the type table, including all the tables
+	 * in the `type_tables' vector.
+	 */
+	guint32 type_table_size;
+	/*
+	 * These are global offsets - the `current_type_table' starts at global
+	 * offset `type_table_start' and we've already allocated stuff in it
+	 * until offset `type_table_offset'.
+	 */
+	guint32 type_table_offset;
+	guint32 type_table_start;
 };
 
 struct MonoSymbolFile {
@@ -156,6 +196,7 @@ struct MonoSymbolFile {
 	guint32 is_dynamic;
 	char *image_file;
 	char *symbol_file;
+	MonoGlobalSymbolFile *global;
 	/* Pointer to the mmap()ed contents of the file. */
 	guint8 *raw_contents;
 	guint32 raw_contents_size;
@@ -179,8 +220,10 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		28
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	16
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	18
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
+
+extern MonoGlobalSymbolFile *mono_debugger_global_symbol_file;
 
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file   (MonoImage                 *image,
