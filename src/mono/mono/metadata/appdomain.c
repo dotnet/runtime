@@ -28,7 +28,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 28
+#define MONO_CORLIB_VERSION 29
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -432,15 +432,29 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 typedef struct {
 	MonoArray *res;
 	MonoDomain *domain;
-	int idx;
+	int idx, len;
 } add_assembly_helper_t;
+
+static void
+filter_assembly (gpointer key, gpointer value, gpointer user_data)
+{
+	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
+	MonoReflectionAssembly *ass;
+
+	ass = mono_assembly_get_object (ah->domain, value);
+	if (!ass->corlib_internal)
+		ah->len ++;
+}
 
 static void
 add_assembly (gpointer key, gpointer value, gpointer user_data)
 {
 	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
+	MonoReflectionAssembly *ass;
 
-	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (ah->domain, value));
+	ass = mono_assembly_get_object (ah->domain, value);
+	if (!ass->corlib_internal)
+		mono_array_set (ah->res, gpointer, ah->idx++, ass);
 }
 
 MonoArray *
@@ -457,11 +471,18 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
 
-	res = mono_array_new (domain, System_Reflection_Assembly, g_hash_table_size (domain->assemblies_by_name));
-
 	ah.domain = domain;
-	ah.res = res;
 	ah.idx = 0;
+	ah.len = 0;
+
+	/* Need to skip internal assembly builders created by remoting */
+	mono_domain_lock (domain);
+	g_hash_table_foreach (domain->assemblies_by_name, filter_assembly, &ah);
+	mono_domain_unlock (domain);
+
+	res = mono_array_new (domain, System_Reflection_Assembly, ah.len);
+	ah.res = res;
+
 	mono_domain_lock (domain);
 	g_hash_table_foreach (domain->assemblies_by_name, add_assembly, &ah);
 	mono_domain_unlock (domain);
