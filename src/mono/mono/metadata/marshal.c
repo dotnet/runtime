@@ -1716,6 +1716,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	int i, pos, sigsize, *tmp_locals;
 
 	g_assert (method != NULL);
+	g_assert (!method->signature->pinvoke);
 
 	cache = method->klass->image->managed_wrapper_cache;
 	if (!this && (res = (MonoMethod *)g_hash_table_lookup (cache, method)))
@@ -1974,6 +1975,8 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gpoi
 	MonoMethod *res;
 	int i, sigsize;
 
+	g_assert (sig->pinvoke);
+
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
@@ -1987,12 +1990,12 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gpoi
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-	csig = g_memdup (sig, sigsize);
-	csig->pinvoke = 1;
-
-	mono_mb_emit_native_call (mb, csig, func);
+	mono_mb_emit_native_call (mb, sig, func);
 
 	mono_mb_emit_byte (mb, CEE_RET);
+
+	csig = g_memdup (sig, sigsize);
+	csig->pinvoke = 0;
 
 	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
@@ -2018,12 +2021,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	int type, sigsize;
 
 	g_assert (method != NULL);
+	g_assert (method->signature->pinvoke);
 
 	cache = method->klass->image->native_wrapper_cache;
 	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
 		return res;
 
 	sig = method->signature;
+	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
 
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
@@ -2038,14 +2043,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	if (!method->addr) {
 		mono_mb_emit_exception (mb);
-		res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+		csig = g_memdup (sig, sigsize);
+		csig->pinvoke = 0;
+		res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
 		g_hash_table_insert (cache, method, res);
 		return res;
 	}
-
-	/* we copy the signature, so that we can modify it */
-	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -2065,15 +2069,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		for (i = 0; i < sig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-		call_sig = g_memdup (csig, sigsize);
-		call_sig->pinvoke = 1;
-
 		g_assert (method->addr);
-		mono_mb_emit_native_call (mb, call_sig, method->addr);
+		mono_mb_emit_native_call (mb, csig, method->addr);
 
 		mono_mb_emit_byte (mb, CEE_RET);
 
-		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
+		csig = g_memdup (csig, sigsize);
+		csig->pinvoke = 0;
+		res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
 		g_hash_table_insert (cache, method, res);
 		return res;
@@ -2086,6 +2089,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* pinvoke: we need to convert the arguments if necessary */
 
+	/* we copy the signature, so that we can set pinvoke to 0 */
 	csig = g_memdup (sig, sigsize);
 	csig->pinvoke = 1;
 
@@ -2493,7 +2497,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	csig = g_memdup (sig, sigsize);
+	csig->pinvoke = 0;
+	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
 
 	g_hash_table_insert (cache, method, res);
@@ -2666,12 +2672,8 @@ mono_marshal_string_array (MonoArray *array)
 	char **result;
 	int i, len;
 
-	printf ("TEST %p\n", array);
-
 	if (!array)
 		return NULL;
-
-	printf ("TEST1 %p\n", array);
 
 	len = mono_array_length (array);
 
