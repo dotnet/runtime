@@ -1,0 +1,79 @@
+Summary: The mono CIL runtime, suitable for running .NET code
+Name: mono
+Version: @VERSION@
+Release: 1
+License: LGPL
+Group: System Environment/Base
+# the original file is in .gz format but I want to save a few bytes
+Source0: http://go-mono.com/archive/mono-0.14.tar.gz
+URL: http://go-mono.com/
+BuildRoot: %{_tmppath}/%{name}-root
+Requires: /sbin/ldconfig
+BuildRequires: libgc-devel
+BuildRequires: bison
+Packager: Miguel de Icaza <miguel@ximian.com>
+Requires: mono-classes
+
+%description
+The Mono runtime implements a JIT engine for the ECMA CLI virtual machine (as
+well as a byte code interpreter, the class loader, the garbage collector, threading system and
+metadata access libraries.
+
+%package devel
+Summary: Files and programs needed for mono development
+Group: Development/Tools
+PreReq: %{name} = %{version}-%{release}
+
+%description devel
+Header files, programs and documentation needed to develop programs with
+the Mono .NET implementation
+
+%prep
+%setup -q
+
+%build
+./configure
+make
+
+%install
+rm -rf %{buildroot}
+%makeinstall
+
+%clean
+rm -rf %{buildroot}
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(-, root, root)
+%doc AUTHORS COPYING.LIB ChangeLog NEWS README
+%{_bindir}/mono
+%{_bindir}/mint
+%{_libdir}/*.so.*
+%{_mandir}/man1/mono.*
+%{_mandir}/man1/mint.*
+%{_mandir}/man5/*
+
+%files devel
+%defattr(-, root, root)
+%{_bindir}/monodis
+%{_bindir}/monograph
+%{_libdir}/*.a
+%{_libdir}/*.la
+%{_libdir}/*.so
+%{_libdir}/pkgconfig/*
+%{_includedir}/*
+%{_mandir}/man1/monodis.*
+%{_mandir}/man1/monostyle.*
+%{_mandir}/man1/monoburg.*
+%{_mandir}/man1/mcs.*
+%{_datadir}/%{name}/*
+
+%changelog
+* Wed Aug 21 2002 Miguel de Icaza <miguel@ximian.com>
+Few touches, check into cvs
+
+* Mon Aug 19 2002 Daniel Resare <noa@resare.com>
+- Initial RPM release.

@@ -1,4 +1,3 @@
-
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
@@ -299,7 +298,7 @@ if test x$platform_win32 = xno; then
 	dnl *****************************
 	dnl *** Checks for libpthread ***
 	dnl *****************************
-	AC_SEARCH_LIBS(pthread_create, pthread, [
+	AC_SEARCH_LIBS(pthread_create, pthread c_r, [
 		AM_CONDITIONAL(THREADS_PTHREAD, true)
 		AC_DEFINE(HAVE_PTHREAD)
 
@@ -576,6 +575,8 @@ scripts/Makefile
 man/Makefile
 doc/Makefile
 docs/Makefile
+data/Makefile
+mono.spec
 ])
 
 echo "
