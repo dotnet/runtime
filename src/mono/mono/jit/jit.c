@@ -2095,38 +2095,48 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			if (!calli && mono_jit_inline_code && !virtual && cm->inline_count != -1 &&
-			    (cm->inline_info || check_inlining (cm) >= 0)) {
+			    cm != method && (cm->inline_info || check_inlining (cm) >= 0)) {
 				MonoInlineInfo *ii = alloca (sizeof (MonoInlineInfo));
 				int args;
+				GList *l;
 
-				mono_jit_stats.inlined_methods++;
-				
-				if (cm->signature->hasthis)
-					sp--;
-
-				args = cm->signature->param_count + cm->signature->hasthis;
-
-				ii->method = cm;
-				ii->saved_ip = ip;
-				ii->saved_image = image;
-				ii->arg_map = alloca (args * sizeof (MBTree *));
-				memcpy (ii->arg_map, sp, args * sizeof (MBTree *));
-
-				if (cm->signature->hasthis && !cm->uses_this && 
-				    (ii->arg_map [0]->op != MB_TERM_CHECKTHIS)) {
-					ii->arg_map [0] = mono_ctree_new (mp, MB_TERM_CHECKTHIS, 
-									  ii->arg_map [0], NULL);
-					ADD_TREE (ii->arg_map [0], cli_addr);
+				/* avoid recursive inlining */
+				for (l = inline_list; l; l = l->next) {
+					if (((MonoInlineInfo *)l->data)->method == cm)
+						break;
 				}
 				
-				if (cm->inline_count) {
-					inline_list = g_list_prepend (inline_list, ii);
-					ip = ((MonoMethodNormal *)cm)->header->code;
-					ii->end = ip + cm->inline_count;
-					arg_map = ii->arg_map;
-					image = cm->klass->image;
+				if (!l) {
+
+					mono_jit_stats.inlined_methods++;
+				
+					if (cm->signature->hasthis)
+						sp--;
+
+					args = cm->signature->param_count + cm->signature->hasthis;
+
+					ii->method = cm;
+					ii->saved_ip = ip;
+					ii->saved_image = image;
+					ii->arg_map = alloca (args * sizeof (MBTree *));
+					memcpy (ii->arg_map, sp, args * sizeof (MBTree *));
+
+					if (cm->signature->hasthis && !cm->uses_this && 
+					    (ii->arg_map [0]->op != MB_TERM_CHECKTHIS)) {
+						ii->arg_map [0] = mono_ctree_new (mp, MB_TERM_CHECKTHIS, 
+										  ii->arg_map [0], NULL);
+						ADD_TREE (ii->arg_map [0], cli_addr);
+					}
+				
+					if (cm->inline_count) {
+						inline_list = g_list_prepend (inline_list, ii);
+						ip = ((MonoMethodNormal *)cm)->header->code;
+						ii->end = ip + cm->inline_count;
+						arg_map = ii->arg_map;
+						image = cm->klass->image;
+					}
+					continue;
 				}
-				continue;
 			}
 			
 			if (!calli)
