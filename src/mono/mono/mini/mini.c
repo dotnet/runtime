@@ -6202,9 +6202,24 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 
 	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
 	if (cfg->num_bblocks != dfn + 1) {
-		if (cfg->verbose_level > 1)
-			g_print ("unreachable code?\n");
+		MonoBasicBlock *bb;
+
 		cfg->num_bblocks = dfn + 1;
+
+		/* we always remove unreachable code, because the code in them may be 
+		 * inconsistent  (access to dead variables for example) */
+		for (bb = cfg->bb_entry; bb;) {
+			MonoBasicBlock *bbn = bb->next_bb;
+
+			if (bbn && bbn->region == -1 && !bbn->dfn) {
+				if (cfg->verbose_level > 1)
+					g_print ("found unreachabel code in BB%d\n", bbn->block_num);
+				bb->next_bb = bbn->next_bb;
+				nullify_basic_block (bbn);			
+			} else {
+				bb = bb->next_bb;
+			}
+		}
 	}
 
 	if (cfg->opt & MONO_OPT_LOOP) {
