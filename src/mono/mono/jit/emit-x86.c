@@ -1796,7 +1796,6 @@ arch_create_native_wrapper (MonoMethod *method)
 		
 	for (i = 0; i < csig->param_count; ++i) {
 		arg_size += mono_type_stack_size (csig->params [i], &align);
-		g_assert (align == 4);
 		if (pinvoke && (csig->params [i]->type == MONO_TYPE_STRING))
 			locals++;
 	}
