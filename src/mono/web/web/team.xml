@@ -1297,4 +1297,33 @@
     </tasks>
 
   </contributor>
+  <contributor>
+
+    <name>
+
+      <first-name>Vladimir</first-name>
+
+      <last-name>Kaluzhny</last-name>
+
+    </name>
+
+    <e-mail>vkaluzhny@openlinksw.co.uk</e-mail>
+
+    <image>none.png</image>
+
+    <location>Novosibirsk, Russia</location>
+
+    <organization>Openlink Software</organization>
+
+    <description>External Contributor</description>
+
+    <tasks>
+
+      <task>System.Windows.Forms</task>
+
+      <task>WineLib</task>
+
+    </tasks>
+
+  </contributor>
 </contributors>
