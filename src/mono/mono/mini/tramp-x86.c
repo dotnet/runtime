@@ -111,12 +111,13 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 				mono_jit_info_table_find (mono_domain_get (), code);
 			MonoJitInfo *target_ji = 
 				mono_jit_info_table_find (mono_domain_get (), addr);
+
 			/*
 			 * If the call was made from domain-neutral to domain-specific 
 			 * code, we can't patch the call site.
 			 */
-			if (! (ji && ji->domain_neutral && target_ji && !target_ji->domain_neutral))
-				*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
+			if (ji && target_ji && ! (ji->domain_neutral && !target_ji->domain_neutral))
+				*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5;
 			return addr;
 		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
 			/*
