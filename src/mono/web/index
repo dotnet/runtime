@@ -23,6 +23,14 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Jan 8, 2002
+
+	Our compiler has been self-supporting since January 3rd.  In
+	the meantime, we have been busy working on making it run on
+	Linux.  Today Paolo got more work done on Reflection.Emit and
+	the compiler compiled `console.cs' (a sample Mono program) on
+	Linux.
+
 ** Jan 4, 2002
 
 	Dietmar landed the Unicode support patch.  Class libraries and
