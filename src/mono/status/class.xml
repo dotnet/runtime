@@ -742,12 +742,30 @@
         <last-activity>Jul-20-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>yes</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>develop@wtfo-guru.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.OperatingSystem">
+        <last-activity>Aug-13-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>develop@wtfo-guru.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.IO.Directory">
+        <last-activity>Aug-13-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
-  
+
     <class name="System.Text.UnicodeEncoding">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
