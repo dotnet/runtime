@@ -1,3 +1,7 @@
+2003-02-13  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* data/machine.config: added default sessionState section and handler.
+
 2003-02-17  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/provider-factory: add new web page 
