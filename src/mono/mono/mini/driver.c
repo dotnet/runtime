@@ -505,7 +505,7 @@ mini_usage (void)
 {
 	int i;
 
-	fprintf (stderr,
+	fprintf (stdout,
 		"Usage is: mono [options] assembly\n\n"
 		"Runtime and JIT debugging:\n"
 		"    --compile METHOD       Just compile METHOD in assembly\n"
@@ -526,10 +526,10 @@ mini_usage (void)
 		"    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
 	
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
-		fprintf (stderr, "                           %-10s %s\n", graph_names [i].name, graph_names [i].desc);
+		fprintf (stdout, "                           %-10s %s\n", graph_names [i].name, graph_names [i].desc);
 	}
 
-	fprintf (stderr,
+	fprintf (stdout,
 		"\n"
 		"Runtime:\n"
 		"    --config FILE          Loads FILE as the Mono config\n"
@@ -539,13 +539,13 @@ mini_usage (void)
 		"    --optimize=OPT         Turns on a specific optimization:\n");
 
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
-		fprintf (stderr, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
+		fprintf (stdout, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
 }
 
 static void
 mini_trace_usage (void)
 {
-	fprintf (stderr,
+	fprintf (stdout,
 		 "Tracing options:\n"
 		 "   --trace[=EXPR]        Trace every call, optional EXPR controls the scope\n"
 		 "\n"
@@ -571,7 +571,11 @@ static const char *info = ""
 #ifdef USE_INCLUDED_LIBGC
 	"\tGC:            Included Boehm (with typed GC)\n"
 #else
+#if HAVE_GC_GCJ_MALLOC
+	"\tGC:            System Boehm (with typed GC)\n"
+#else
 	"\tGC:            System Boehm (no typed GC available)\n"
+#endif
 #endif
 #else
 	"\tGC:            none\n"
