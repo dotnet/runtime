@@ -9,3 +9,69 @@
 	are interested in helping the effort please contact the
 	mono-list mailing list.
 
+	There are a couple of components to the puzzle:
+
+	<ul>
+		* .aspx page parser (converts .aspx to C# code).
+	
+		* System.Web.HttpRuntime support.
+	
+		* Web controls (System.Web.UI.HtmlControls and
+		  System.Web.UI.WebControls).
+	
+		* Underlying infrastrcture for the controls (System.Web.UI).
+	
+		* HttpRuntime.ProcessRequest is the core of the ASP.NET
+		  implementation.
+	</ul>
+
+
+	Gonzalo has been working on an ASP.NET parser that takes .aspx
+	files and generated the code required to run them (the code lives in
+	module `xsp').
+
+	Most of the runtime support was mostly written by Patrik Torstensson
+	(now at Intel).  This was interesting, because in order to implement
+	some of its features, Patrik had to go into the runtime/JIT engine and
+	he spent a few weeks doing work there.
+
+	Duncan last week got our System.Web assembly to compile, and he is in
+	the process of getting the generated output to compile and link with our
+	System.Web classes, but so far, most of the work has been in stubbing
+	out the classes, just so we can get a clean compilation of the
+	code.
+
+** HttpRuntime
+
+	Patrik has authored most of the HttpRuntime support (both on
+	the System.Web and on the foundation) but it is still not
+	ready to run.
+
+** XSP
+
+	Currently XSP provides the .aspx compiler to C#.  It would be
+	interesting to see if it makes sense to extend the ASP.NET
+	syntax to make it simpler to develop applications.
+
+	Gonzalo is in charge of the compil.er
+
+** Controls
+
+	A lot of work has been put in the various classes that
+	implement the controls (UI.HtmlControls and UI.WebControls),
+	but they have been coded mostly in the dark, and without being
+	able to test them in real life: Gaurav and Leen worked very
+	hard on this namespace, but needs to be finished.
+
+** Extending ASP.NET
+
+	Currently you have to reference in your ASP.NET the control
+	and all of its properties, which works fine if you have a GUI
+	designer, but is harder for people used to develop using text
+	editors.
+
+	Since we have a parser, we could extend this parser to allow
+	people to still use ASP.NET controls, using a simpler syntax.
+	For example people doing blogs and editing their templates
+	over the web probably do not want to use direct ASP.NET but a
+	wrapper around it.
