@@ -410,6 +410,27 @@ get_field_signature (metadata_t *m, guint32 blob_signature)
 	return res;
 }
 
+ElementTypeEnum
+get_field_literal_type (metadata_t *m, guint32 blob_signature)
+{
+	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
+	int len;
+	char *allocated_modifier_string;
+	
+	ptr = get_encoded_value (ptr, &len);
+
+	/* FIELD is 0x06 */
+	g_assert (*ptr == 0x06);
+	ptr++; len--;
+	
+	ptr = get_custom_mod (m, ptr, &allocated_modifier_string);
+	if (allocated_modifier_string)
+		g_free (allocated_modifier_string);
+
+	return (ElementTypeEnum) *ptr;
+	
+}
+
 /**
  * decode_literal:
  * @m: metadata context
@@ -596,4 +617,142 @@ get_blob_encoded_size (const char *xptr, int *size)
 	}
 
 	return (char *) ptr;
+}
+
+/**
+ * Returns a stringifed representation of a MethodRefSig (22.2.2)
+ */
+char *
+get_methodref_signature (metadata_t *m, guint32 blob_signature)
+{
+	GString *res = g_string_new ("");
+	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
+	char *allocated_ret_type, *s;
+	gboolean seen_vararg = 0;
+	int param_count, signature_len;
+	int i;
+	
+	ptr = get_encoded_value (ptr, &signature_len);
+
+	if (*ptr & 0x20){
+		if (*ptr & 0x40)
+			g_string_append (res, "explicit-this ");
+		else
+			g_string_append (res, "has-this ");
+	}
+
+	if (*ptr & 0x05)
+		seen_vararg = 1;
+
+	ptr++;
+	ptr = get_encoded_value (ptr, &param_count);
+	ptr = get_ret_type (m, ptr, &allocated_ret_type);
+
+	g_string_append (res, allocated_ret_type);
+	g_string_append (res, " (");
+	
+	/*
+	 * param_count describes parameters *before* and *after*
+	 * the vararg sentinel
+	 */
+	for (i = 0; i < param_count; i++){
+		char *param = NULL;
+		
+		/*
+		 * If ptr is a SENTINEL
+		 */
+		if (*ptr == 0x41){
+			g_string_append (res, " varargs ");
+			continue;
+		}
+
+		ptr = get_param (m, ptr, &param);
+		g_string_append (res, param);
+		if (i+1 != param_count)
+			g_string_append (res, ", ");
+		g_free (param);
+	}
+	g_string_append (res, ")");
+	
+	/*
+	 * cleanup and return
+	 */
+	g_free (allocated_ret_type);
+	s = res->str;
+	g_string_free (res, FALSE);
+	return s;
+}
+
+/**
+ * get_constant:
+ * @m: metadata context
+ * @blob_index: index into the blob where the constant is stored
+ *
+ * Returns: An allocated value representing a stringified version of the
+ * constant.
+ */
+char *
+get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
+{
+	const char *ptr = mono_metadata_blob_heap (m, blob_index);
+	int len;
+	
+	ptr = get_encoded_value (ptr, &len);
+	
+	switch (t){
+	case ELEMENT_TYPE_BOOLEAN:
+		return g_strdup_printf ("%s", *ptr ? "true" : "false");
+		
+	case ELEMENT_TYPE_CHAR:
+		return g_strdup_printf ("%c", *ptr);
+		
+	case ELEMENT_TYPE_U1:
+		return g_strdup_printf ("0x%02x", (int) (*ptr));
+		break;
+		
+	case ELEMENT_TYPE_I2:
+		return g_strdup_printf ("%d", (int) (*(gint16 *) ptr));
+		
+	case ELEMENT_TYPE_I4:
+		return g_strdup_printf ("%d", *(gint32 *) ptr);
+		
+	case ELEMENT_TYPE_I8:
+		/*
+		 * FIXME: This is not endian portable, does only 
+		 * matter for debugging, but still.
+		 */
+		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));
+		
+	case ELEMENT_TYPE_U8:
+		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));		
+	case ELEMENT_TYPE_R4:
+		return g_strdup_printf ("%g", (double) (* (float *) ptr));
+		
+	case ELEMENT_TYPE_R8:
+		return g_strdup_printf ("%g", * (double *) ptr);
+		
+	case ELEMENT_TYPE_STRING:
+		return "FIXME: Decode string constants!";
+		
+	case ELEMENT_TYPE_CLASS:
+		return g_strdup ("CLASS CONSTANT.  MUST BE ZERO");
+		
+		/*
+		 * These are non CLS compliant:
+		 */
+	case ELEMENT_TYPE_I1:
+		return g_strdup_printf ("%d", (int) *ptr);
+
+	case ELEMENT_TYPE_U2:
+		return g_strdup_printf ("0x%04x", (unsigned int) (*(guint16 *) ptr));
+		
+	case ELEMENT_TYPE_U4:
+		return g_strdup_printf ("0x%04x", (unsigned int) (*(guint32 *) ptr));
+		
+	default:
+		g_error ("Unknown ELEMENT_TYPE (%d) on constant at Blob index (0x%08x)\n",
+			 (int) *ptr, blob_index);
+		return g_strdup_printf ("Unknown");
+	}
+
 }

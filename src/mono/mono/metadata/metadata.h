@@ -202,3 +202,26 @@ typedef struct {
 
 MonoMetaMethodHeader *mono_metadata_parse_mh (const char *ptr);
 void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
+
+/*
+ * Makes a token based on a table and an index
+ */
+#define mono_metadata_make_token(table,idx) (((table) << 24)| idx)
+
+/*
+ * Returns the table index that this token encodes.
+ */
+#define mono_metadata_token_table(token) ((token) >> 24)
+
+/*
+ * Returns the index that a token refers to
+ */
+#define mono_metadata_token_index(token) ((token & 0xffffff))
+
+
+/*
+ * FIXME: put all of the table codes here
+ */
+enum {
+	TOKEN_TABLE_XXX = 0
+} MonoMetadataTableCodes;

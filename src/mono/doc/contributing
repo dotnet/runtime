@@ -3,3 +3,11 @@
 	Links to Documentation.
 	Links to Class Library.
 	Links to ...
+
+* Special note
+
+	If you have looked at Microsoft's implementation of .NET or
+	their shared source code, you will not be able to contribute
+	to Mono.
+
+	Please, follow care when reading code

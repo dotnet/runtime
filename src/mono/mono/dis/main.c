@@ -9,8 +9,8 @@
  * TODO:
  *   Investigate how interface inheritance works and how it should be dumped.
  *   Structs are not being labeled as `valuetype' classes
- *   Support CustomMods.
- *
+ *   
+ *   How are fields with literals mapped to constants?
  */
 #include <config.h>
 #include <stdio.h>
@@ -175,7 +175,12 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 		flags = field_flags (cols [0]);
 		
 		if (cols [0] & FIELD_ATTRIBUTE_LITERAL){
-			char *lit = decode_literal (m, cols [2]);
+			ElementTypeEnum type;
+			char *lit;
+			
+			type = get_field_literal_type (m, cols [2]);
+			lit = g_strdup ("FIXME:Do-not-know-how-to-get-this-from-the-constants-table");
+			/* get_constant (m, type, cols [2]); */
 			
 			fprintf (output, "    .field %s %s %s = ",
 				 flags, sig,
@@ -509,6 +514,23 @@ dis_types (metadata_t *m, cli_image_info_t *ii)
 		dis_type (m, ii, i);
 }
 
+struct {
+	char *name;
+	int table;
+	void (*dumper) (metadata_t *m);
+} table_list [] = {
+	{ "--assembly",    META_TABLE_ASSEMBLY,    dump_table_assembly },
+	{ "--assemblyref", META_TABLE_ASSEMBLYREF, dump_table_assemblyref },
+	{ "--fields",      META_TABLE_FIELD,       dump_table_field },
+	{ "--memberref",   META_TABLE_MEMBERREF,   dump_table_memberref },
+	{ "--param",       META_TABLE_PARAM,       dump_table_param },
+	{ "--typedef",     META_TABLE_TYPEDEF,     dump_table_typedef },
+	{ "--typeref",     META_TABLE_TYPEREF,     dump_table_typeref },
+	{ "--classlayout", META_TABLE_CLASSLAYOUT, dump_table_class_layout },
+	{ "--constant",    META_TABLE_CONSTANT,    dump_table_constant },
+	{ NULL, -1 }
+};
+
 /**
  * disassemble_file:
  * @file: file containing CIL code.
@@ -534,25 +556,7 @@ disassemble_file (const char *file)
 	m = &ii->cli_metadata;
 	
 	if (dump_table != -1){
-		switch (dump_table){
-		case META_TABLE_TYPEDEF:
-			dump_table_typedef (m);
-			break;
-		case META_TABLE_TYPEREF:
-			dump_table_typeref (m);
-			break;
-		case META_TABLE_ASSEMBLYREF:
-			dump_table_assemblyref (m);
-			break;
-		case META_TABLE_PARAM:
-			dump_table_param (m);
-			break;
-		case META_TABLE_FIELD:
-			dump_table_field (m);
-			break;
-		default:
-			g_error ("Internal error");
-		}
+		(*table_list [dump_table].dumper) (m);
 	} else {
 		dump_header_data (ass);
 		
@@ -567,7 +571,7 @@ disassemble_file (const char *file)
 static void
 usage (void)
 {
-	fprintf (stderr, "Usage is: monodis [--typeref][--typedef][--assemblyref] file ..\n");
+	fprintf (stderr, "Usage is: monodis [--typeref][--typedef][--assemblyref][--param][--fields][--memberref] file ..\n");
 	exit (1);
 }
 
@@ -575,7 +579,7 @@ int
 main (int argc, char *argv [])
 {
 	GList *input_files = NULL, *l;
-	int i;
+	int i, j;
 
 	output = stdout;
 	for (i = 1; i < argc; i++){
@@ -586,16 +590,9 @@ main (int argc, char *argv [])
 				dump_header_data_p = TRUE;
 			else if (strcmp (argv [i], "--help") == 0)
 				usage ();
-			else if (strcmp (argv [i], "--typeref") == 0)
-				dump_table = META_TABLE_TYPEREF;
-			else if (strcmp (argv [i], "--typedef") == 0)
-				dump_table = META_TABLE_TYPEDEF;
-			else if (strcmp (argv [i], "--assemblyref") == 0)
-				dump_table = META_TABLE_ASSEMBLYREF;
-			else if (strcmp (argv [i], "--param") == 0)
-				dump_table = META_TABLE_PARAM;
-			else if (strcmp (argv [i], "--fields") == 0)
-				dump_table = META_TABLE_FIELD;
+			for (j = 0; table_list [j].name != NULL; j++)
+				if (strcmp (argv [i], table_list [j].name) == 0)
+					dump_table = j;
 		} else
 			input_files = g_list_append (input_files, argv [i]);
 	}
