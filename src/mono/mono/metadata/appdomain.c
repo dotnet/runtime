@@ -112,6 +112,8 @@ mono_runtime_invoke_in_domain (MonoDomain *domain, MonoMethod *method, void *obj
 	res = mono_runtime_invoke (method, obj, params, real_exc);
 	mono_domain_set (cur);
 
+	/* fixme: transfer Exception to the right domain */
+
 	if (*real_exc && !exc)
 		mono_raise_exception ((MonoException *)*real_exc);
 
