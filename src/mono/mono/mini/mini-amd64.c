@@ -3740,6 +3740,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke))
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+			else if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (cfg->method->klass->image != mono_defaults.corlib)) {
+				/* 
+				 * Since the unmanaged calling convention doesn't contain a 
+				 * 'vararg' entry, we have to treat every pinvoke call as a
+				 * potential vararg call.
+				 */
+				guint32 nregs, i;
+				for (i = 0; i < AMD64_XMM_NREG; ++i)
+					if (call->used_fregs & (1 << i))
+						nregs ++;
+				if (!nregs)
+					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+				else
+					amd64_mov_reg_imm (code, AMD64_RAX, nregs);
+			}
 
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
