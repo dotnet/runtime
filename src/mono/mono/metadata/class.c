@@ -1762,22 +1762,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	g_assert (mono_metadata_token_table (type_token) == MONO_TABLE_TYPEDEF);
-	
+
 	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
 	
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-	if (cols [MONO_TYPEDEF_EXTENDS])
-		parent = mono_class_get (image, mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]));
-	interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &icount);
-
 	class = g_malloc0 (sizeof (MonoClass));
-			   
-	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
-
-	class->interfaces = interfaces;
-	class->interface_count = icount;
 
 	class->name = name;
 	class->name_space = nspace;
@@ -1785,6 +1776,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->image = image;
 	class->type_token = type_token;
 	class->flags = cols [MONO_TYPEDEF_FLAGS];
+
+	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
+
+	if (cols [MONO_TYPEDEF_EXTENDS])
+		parent = mono_class_get (image, mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]));
+	interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &icount);
+
+	class->interfaces = interfaces;
+	class->interface_count = icount;
 
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
 		class->unicode = 1;
