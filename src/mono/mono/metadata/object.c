@@ -2423,7 +2423,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 		/* align */
 		if (CHECK_ADD_OVERFLOW_UN (byte_len, 3))
 			mono_gc_out_of_memory (MYGUINT32_MAX);
-		byte_len &= ~3;
+		byte_len = (byte_len + 3) & ~3;
 		if (CHECK_ADD_OVERFLOW_UN (byte_len, bounds_size))
 			mono_gc_out_of_memory (MYGUINT32_MAX);
 		byte_len += bounds_size;
