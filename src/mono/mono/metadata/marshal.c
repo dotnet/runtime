@@ -3802,8 +3802,10 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPSTR_STR));
 			mono_mb_emit_byte (mb, CEE_STIND_I);		
 		} else {
-			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_icall (mb, g_free);
+			if (mono_marshal_need_free (t, m->piinfo, spec)) {
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_icall (mb, g_free);
+			}
 		}
 		break;
 
