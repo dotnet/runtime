@@ -90,6 +90,7 @@ static MonoMethodSignature *helper_sig_memcpy = NULL;
 static MonoMethodSignature *helper_sig_memset = NULL;
 static MonoMethodSignature *helper_sig_ulong_double = NULL;
 static MonoMethodSignature *helper_sig_long_double = NULL;
+static MonoMethodSignature *helper_sig_double_long = NULL;
 static MonoMethodSignature *helper_sig_uint_double = NULL;
 static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
@@ -5703,6 +5704,12 @@ create_helper_signature (void)
 	helper_sig_long_double->ret = &mono_defaults.int64_class->byval_arg;
 	helper_sig_long_double->pinvoke = 1;
 
+	/* double amethod (long) */
+	helper_sig_double_long = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+	helper_sig_double_long->params [0] = &mono_defaults.int64_class->byval_arg;
+	helper_sig_double_long->ret = &mono_defaults.double_class->byval_arg;
+	helper_sig_double_long->pinvoke = 1;
+
 	/* uint amethod (double) */
 	helper_sig_uint_double = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 	helper_sig_uint_double->params [0] = &mono_defaults.double_class->byval_arg;
@@ -6237,6 +6244,7 @@ dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 
 		break;
 	case 2:
+#ifdef MONO_ARCH_BIGMUL_INTRINS
 	       	if (tree->opcode == OP_LMUL
 				&& (cfg->opt & MONO_OPT_INTRINS)
 				&& (tree->inst_left->opcode == CEE_CONV_I8 
@@ -6249,7 +6257,9 @@ dec_foreach (MonoInst *tree, MonoCompile *cfg) {
 			tree->inst_left = tree->inst_left->inst_left;
 			tree->inst_right = tree->inst_right->inst_left;
 			dec_foreach (tree, cfg);
-		} else if ((info = mono_find_jit_opcode_emulation (tree->opcode))) {
+		} else 
+#endif
+			if ((info = mono_find_jit_opcode_emulation (tree->opcode))) {
 			MonoInst *iargs [2];
 		
 			iargs [0] = tree->inst_i0;
@@ -7723,6 +7733,13 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8, TRUE);
 	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8, TRUE);
+
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
+	mono_register_opcode_emulation (OP_FCONV_TO_I8, "__emul_fconv_to_i8", helper_sig_long_double, mono_fconv_i8, FALSE);
+#endif
+#ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
+	mono_register_opcode_emulation (OP_LCONV_TO_R8, "__emul_lconv_to_r8", helper_sig_double_long, mono_lconv_to_r8, FALSE);
+#endif
 
 #if SIZEOF_VOID_P == 4
 	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4, TRUE);

@@ -1,7 +1,7 @@
 %%
 
 #
-# inssel-x86.brg: burg file for special x86 instructions
+# inssel-ppc.brg: burg file for special ppc instructions
 #
 # Author:
 #   Dietmar Maurer (dietmar@ximian.com)
@@ -93,6 +93,7 @@ stmt: OP_OUTARG (lreg) {
 	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
 	tree->opcode = OP_SETREG;
 	tree->dreg = tree->unused + 1;
+	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -251,5 +252,34 @@ stmt: CEE_BLE_UN (fpcflags) {
 stmt: CEE_POP (freg) "0" {
 	/* nothing to do */
 }     
+
+freg: OP_LCONV_TO_R8 (lreg) {
+	/* nothing to do - emulated */
+}
+
+reg: OP_CEQ (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCEQ, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CLT (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCLT, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CLT_UN (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCLT_UN, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CGT (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCGT, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCGT_UN, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
 
 %%

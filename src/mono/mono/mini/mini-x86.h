@@ -36,4 +36,6 @@ struct MonoLMF {
 	guint32     eip;
 };
 
+#define MONO_ARCH_BIGMUL_INTRINS 1
+
 #endif /* __MONO_MINI_X86_H__ */  

@@ -25,4 +25,7 @@ struct MonoLMF {
 	guint32     eip;
 };
 
+#define MONO_ARCH_EMULATE_FCONV_TO_I8 1
+#define MONO_ARCH_EMULATE_LCONV_TO_R8 1
+
 #endif /* __MONO_MINI_PPC_H__ */  

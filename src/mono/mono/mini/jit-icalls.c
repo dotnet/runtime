@@ -80,8 +80,12 @@ mono_llmult (gint64 a, gint64 b)
 }
 
 static guint64  
-mono_llmult_ovf_un (guint32 al, guint32 ah, guint32 bl, guint32 bh)
+mono_llmult_ovf_un (guint64 a, guint64 b)
 {
+	guint32 al = a;
+	guint32 ah = a >> 32;
+	guint32 bl = b;
+	guint32 bh = b >> 32; 
 	guint64 res, t1;
 
 	MONO_ARCH_SAVE_REGS;
@@ -109,8 +113,12 @@ mono_llmult_ovf_un (guint32 al, guint32 ah, guint32 bl, guint32 bh)
 
 
 static guint64  
-mono_llmult_ovf (guint32 al, gint32 ah, guint32 bl, gint32 bh) 
+mono_llmult_ovf (gint64 a, gint64 b) 
 {
+	guint32 al = a;
+	gint32 ah = a >> 32;
+	guint32 bl = b;
+	gint32 bh = b >> 32; 
 	/*
 	Use Karatsuba algorithm where:
 		a*b is: AhBh(R^2+R)+(Ah-Al)(Bl-Bh)R+AlBl(R+1)
@@ -391,6 +399,15 @@ mono_fconv_u8 (double v)
 	return (guint64)v;
 }
 
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
+static gint64
+mono_fconv_i8 (double v)
+{
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	return (gint64)v;
+}
+#endif
+
 static guint32
 mono_fconv_u4 (double v)
 {
@@ -427,3 +444,12 @@ mono_fconv_ovf_u8 (double v)
 	}
 	return res;
 }
+
+#ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
+static double
+mono_lconv_to_r8 (gint64 a)
+{
+	return (double)a;
+}
+#endif
+
