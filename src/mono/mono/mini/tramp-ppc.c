@@ -537,6 +537,7 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 	if (notification_address)
 		*notification_address = buf;
 	ppc_blr (buf);
+	mono_arch_flush_icache (ptr, buf - ptr);
 
 	return ptr;
 }

@@ -199,6 +199,7 @@ arch_get_restore_context (void)
 	ppc_break (code);
 
 	g_assert ((code - start) < sizeof(start));
+	mono_arch_flush_icache (start, code - start);
 	return start;
 }
 
@@ -268,6 +269,7 @@ arch_get_call_filter (void)
 	ppc_blr (code);
 
 	g_assert ((code - start) < sizeof(start));
+	mono_arch_flush_icache (start, code - start);
 	return start;
 }
 
@@ -371,6 +373,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	/* we should never reach this breakpoint */
 	ppc_break (code);
 	g_assert ((code - start) < size);
+	mono_arch_flush_icache (start, code - start);
 	return start;
 }
 
