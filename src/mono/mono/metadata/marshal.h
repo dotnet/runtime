@@ -207,6 +207,12 @@ MonoMethod *
 mono_marshal_get_ldfld_wrapper (MonoType *type);
 
 MonoMethod *
+mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass);
+
+MonoMethod *
+mono_marshal_get_stfld_remote_wrapper (MonoClass *klass);
+
+MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method);
 
 MonoMethod *

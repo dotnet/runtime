@@ -820,6 +820,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	pvt->klass = mono_defaults.transparent_proxy_class;
 
 	/* initialize vtable */
+	mono_class_setup_vtable (class);
 	for (i = 0; i < class->vtable_size; ++i) {
 		MonoMethod *cm;
 		    
@@ -1031,6 +1032,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 	if (!is_proxy && ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 			return method;
 
+	mono_class_setup_vtable (klass);
 	vtable = klass->vtable;
 
 	/* check method->slot is a valid index: perform isinstance? */
