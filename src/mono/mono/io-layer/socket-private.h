@@ -20,9 +20,4 @@ struct _WapiHandle_socket
 	int dummy;
 };
 
-struct _WapiHandlePrivate_socket
-{
-	WapiFDMapped fd_mapped;
-};
-
 #endif /* _WAPI_SOCKET_PRIVATE_H_ */

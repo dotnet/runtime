@@ -17,16 +17,6 @@
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/daemon-private.h>
 
-/* for non-GCC compilers where Glib gives an empty pretty function 
- * macro create one that gives file & line number instead
- */
-#ifndef __GNUC__
-#undef G_GNUC_PRETTY_FUNCTION
-#define STRINGIZE_HELPER(exp) #exp
-#define STRINGIZE(exp) STRINGIZE_HELPER(exp)
-#define G_GNUC_PRETTY_FUNCTION __FILE__ "(" STRINGIZE(__LINE__) ")"
-#endif
-
 /* Catch this here rather than corrupt the shared data at runtime */
 #if MONO_SIZEOF_SUNPATH==0
 #error configure failed to discover size of unix socket path
@@ -35,7 +25,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-#define _WAPI_HANDLE_VERSION 3
+#define _WAPI_HANDLE_VERSION 4
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -49,28 +39,27 @@ typedef enum {
 	WAPI_HANDLE_FIND,
 	WAPI_HANDLE_PROCESS,
 	WAPI_HANDLE_PIPE,
+	WAPI_HANDLE_NAMEDMUTEX,
 	WAPI_HANDLE_COUNT
 } WapiHandleType;
 
-#define _WAPI_SHARED_NAMESPACE(type) (type==WAPI_HANDLE_MUTEX)
+extern const char *_wapi_handle_typename[];
+
+#define _WAPI_SHARED_HANDLE(type) (type == WAPI_HANDLE_THREAD || \
+				   type == WAPI_HANDLE_PROCESS || \
+				   type == WAPI_HANDLE_NAMEDMUTEX)
+
+#define _WAPI_FD_HANDLE(type) (type == WAPI_HANDLE_FILE || \
+			       type == WAPI_HANDLE_CONSOLE || \
+			       type == WAPI_HANDLE_SOCKET || \
+			       type == WAPI_HANDLE_PIPE)
+
+#define _WAPI_SHARED_NAMESPACE(type) (type == WAPI_HANDLE_NAMEDMUTEX)
 
 typedef struct 
 {
-	guint32 name;
+	gchar name[MAX_PATH + 1];
 } WapiSharedNamespace;
-
-/* The boolean is for distinguishing between a zeroed struct being not
- * as yet assigned, and one containing a valid fd 0.  It's also used
- * to signal that a previously-good fd has been reused behind our
- * back, so we need to invalidate the handle that thought it owned the
- * fd.
- */
-typedef struct 
-{
-	int fd;
-	gboolean assigned;
-} WapiFDMapped;
-
 
 typedef enum {
 	WAPI_HANDLE_CAP_WAIT=0x01,
@@ -80,16 +69,16 @@ typedef enum {
 
 struct _WapiHandleOps 
 {
-	void (*close_shared)(gpointer handle);
-	void (*close_private)(gpointer handle);
+	void (*close)(gpointer handle);
 
 	/* SignalObjectAndWait */
 	void (*signal)(gpointer signal);
 
 	/* Called by WaitForSingleObject and WaitForMultipleObjects,
-	 * with the handle locked
+	 * with the handle locked (shared handles aren't locked.)
+	 * Returns TRUE if ownership was established, false otherwise.
 	 */
-	void (*own_handle)(gpointer handle);
+	gboolean (*own_handle)(gpointer handle);
 
 	/* Called by WaitForSingleObject and WaitForMultipleObjects, if the
 	 * handle in question is "ownable" (ie mutexes), to see if the current
@@ -106,10 +95,17 @@ struct _WapiHandleOps
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/process-private.h>
 
-/* Shared threads don't seem to work yet */
-#undef _POSIX_THREAD_PROCESS_SHARED
+struct _WapiHandle_shared_ref
+{
+	/* This will be split 16:16 with the shared file segment in
+	 * the top half, when I implement space increases
+	 */
+	guint32 offset;
+};
 
-struct _WapiHandleShared
+#define _WAPI_HANDLE_INITIAL_COUNT 4096
+
+struct _WapiHandleUnshared
 {
 	WapiHandleType type;
 	guint ref;
@@ -125,90 +121,64 @@ struct _WapiHandleShared
 		struct _WapiHandle_mutex mutex;
 		struct _WapiHandle_sem sem;
 		struct _WapiHandle_socket sock;
-		struct _WapiHandle_thread thread;
-		struct _WapiHandle_process process;
+		struct _WapiHandle_shared_ref shared;
 	} u;
 };
 
-#define _WAPI_HANDLES_PER_SEGMENT 4096
-#define _WAPI_HANDLE_INVALID (gpointer)-1
-
-#define _WAPI_SHM_SCRATCH_SIZE 512000
-
-/*
- * This is the layout of the shared scratch data.  When the data array
- * is filled, it will be expanded by _WAPI_SHM_SCRATCH_SIZE
- * bytes. (scratch data is always copied out of the shared memory, so
- * it doesn't matter that the mapping will move around.)
- */
-struct _WapiHandleScratch
+struct _WapiHandleSharedMetadata
 {
-	guint32 data_len;
-
-	/* This is set to TRUE by the daemon.  It determines whether a
-	 * resize will go via mremap() or just realloc().
-	 */
-	gboolean is_shared;
-	guchar scratch_data[MONO_ZERO_ARRAY_LENGTH];
+	volatile guint32 offset;
+	guint32 ref;
+	volatile gboolean signalled;
+	volatile guint32 checking;
 };
 
-/*
- * This is the layout of the shared memory segments.  When the handles
- * array is filled, another shared memory segment will be allocated
- * with the same structure.  This is to avoid having the shared memory
- * potentially move if it is resized and remapped.
- *
- * Note that the additional segments have the same structure, but only
- * the handle array is used.
- */
-struct _WapiHandleShared_list
-{
-	guchar daemon[MONO_SIZEOF_SUNPATH];
-	_wapi_daemon_status daemon_running;
-	guint32 fd_offset_table_size;
-	
-#if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-	mono_mutex_t signal_mutex;
-	pthread_cond_t signal_cond;
-#endif
-
-	/* This holds the number of segments */
-	guint32 num_segments;
-	struct _WapiHandleShared handles[_WAPI_HANDLES_PER_SEGMENT];
-};
-
-struct _WapiHandlePrivate
+struct _WapiHandleShared
 {
 	WapiHandleType type;
-
-	union 
+	gboolean stale;
+	
+	union
 	{
-		struct _WapiHandlePrivate_event event;
-		struct _WapiHandlePrivate_file file;
-		struct _WapiHandlePrivate_find find;
-		struct _WapiHandlePrivate_mutex mutex;
-		struct _WapiHandlePrivate_sem sem;
-		struct _WapiHandlePrivate_socket sock;
-		struct _WapiHandlePrivate_thread thread;
-		struct _WapiHandlePrivate_process process;
+		struct _WapiHandle_thread thread;
+		struct _WapiHandle_process process;
+		struct _WapiHandle_namedmutex namedmutex;
 	} u;
 };
 
-/* Per-process handle info. For lookup convenience, each segment and
- * index matches the corresponding shared data.
- *
- * Note that the additional segments have the same structure, but only
- * the handle array is used.
- */
-struct _WapiHandlePrivate_list
+struct _WapiHandleSharedLayout
 {
-#if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
-	mono_mutex_t signal_mutex;
-	pthread_cond_t signal_cond;
-#endif
+	guint32 master;
+	guint32 namespace_check;
+	volatile guint32 signal_count;
+	volatile guint32 collection_signal_done;
+	volatile guint32 collection_count;
 	
-	struct _WapiHandlePrivate handles[_WAPI_HANDLES_PER_SEGMENT];
+	struct _WapiHandleSharedMetadata metadata[_WAPI_HANDLE_INITIAL_COUNT];
+	struct _WapiHandleShared handles[_WAPI_HANDLE_INITIAL_COUNT];
 };
 
+#define _WAPI_FILESHARE_SIZE 102400
+
+struct _WapiFileShare
+{
+	dev_t device;
+	ino_t inode;
+	guint32 sharemode;
+	guint32 access;
+	guint32 handle_refs;
+};
+
+struct _WapiFileShareLayout
+{
+	guint32 share_check;
+	guint32 hwm;
+	
+	struct _WapiFileShare share_info[_WAPI_FILESHARE_SIZE];
+};
+
+
+
+#define _WAPI_HANDLE_INVALID (gpointer)-1
 
 #endif /* _WAPI_PRIVATE_H_ */

@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libwapi.la
 
 INCLUDES = \
+	-Werror			\
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
 	$(LIBGC_CFLAGS)		\
@@ -12,6 +13,7 @@ libwapiincludedir = $(includedir)/mono/io-layer
 OTHER_H = \
 	access.h	\
 	atomic.h	\
+	collection.h	\
 	context.h	\
 	critical-sections.h	\
 	error.h		\
@@ -40,14 +42,12 @@ OTHER_SRC = \
 	access.h		\
 	atomic.c		\
 	atomic.h		\
+	collection.c		\
+	collection.h		\
 	context.c		\
 	context.h		\
 	critical-sections.c	\
 	critical-sections.h	\
-	daemon.c		\
-	daemon-private.h	\
-	daemon-messages.c	\
-	daemon-messages.h	\
 	error.c			\
 	error.h			\
 	events.c		\

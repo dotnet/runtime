@@ -25,7 +25,7 @@ static mono_once_t spin_once=MONO_ONCE_INIT;
 
 static void spin_init(void)
 {
-	g_warning("Using non-atomic functions!");
+	g_warning("Using non-atomic functions!  Expect race conditions when using process-shared handles!");
 }
 
 gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch,

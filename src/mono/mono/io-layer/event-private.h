@@ -18,15 +18,12 @@
 
 extern struct _WapiHandleOps _wapi_event_ops;
 
+extern void _wapi_event_details (gpointer handle_info);
+
 struct _WapiHandle_event
 {
 	gboolean manual;
 	guint32 set_count;
-};
-
-struct _WapiHandlePrivate_event
-{
-	int dummy;
 };
 
 #endif /* _WAPI_EVENT_PRIVATE_H_ */

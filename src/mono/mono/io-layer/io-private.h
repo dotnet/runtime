@@ -14,39 +14,33 @@
 #include <glib.h>
 #include <dirent.h>
 #include <mono/io-layer/io.h>
+#include <mono/io-layer/wapi-private.h>
 
 extern struct _WapiHandleOps _wapi_file_ops;
 extern struct _WapiHandleOps _wapi_console_ops;
 extern struct _WapiHandleOps _wapi_find_ops;
 extern struct _WapiHandleOps _wapi_pipe_ops;
 
+extern void _wapi_file_details (gpointer handle_info);
+extern void _wapi_console_details (gpointer handle_info);
+extern void _wapi_pipe_details (gpointer handle_info);
+
 /* Currently used for both FILE, CONSOLE and PIPE handle types.  This may
  * have to change in future.
  */
 struct _WapiHandle_file
 {
-	guint32 filename;
+	gchar *filename;
+	struct _WapiFileShare *share_info;	/* Pointer into shared mem */
 	guint32 security_attributes;
 	guint32 fileaccess;
 	guint32 sharemode;
 	guint32 attrs;
-	dev_t device;
-	ino_t inode;
-};
-
-struct _WapiHandlePrivate_file
-{
-	WapiFDMapped fd_mapped;
 	gboolean async;
 	WapiOverlappedCB callback;
 };
 
 struct _WapiHandle_find
-{
-	int dummy;
-};
-
-struct _WapiHandlePrivate_find
 {
 	gchar **namelist;
 	gchar *dir_part;
@@ -55,10 +49,9 @@ struct _WapiHandlePrivate_find
 };
 
 G_BEGIN_DECLS
-int _wapi_file_handle_to_fd (gpointer handle);
-gboolean _wapi_io_add_callback (gpointer handle,
-				WapiOverlappedCB callback,
-				guint64 flags);
+extern gboolean _wapi_io_add_callback (gpointer handle,
+				       WapiOverlappedCB callback,
+				       guint64 flags);
 G_END_DECLS
 
 #endif /* _WAPI_IO_PRIVATE_H_ */

@@ -24,14 +24,9 @@ struct _WapiHandle_process
 	guint32 env;
 	WapiFileTime create_time;
 	WapiFileTime exit_time;
-	guint32 proc_name;
+	gchar proc_name[_POSIX_PATH_MAX];
 	size_t min_working_set;
 	size_t max_working_set;
-};
-
-struct _WapiHandlePrivate_process
-{
-	int dummy;
 };
 
 #endif /* _WAPI_PROCESS_PRIVATE_H_ */

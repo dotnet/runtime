@@ -23,17 +23,22 @@
 
 #undef DEBUG
 
-static void event_close_shared (gpointer handle);
 static void event_signal(gpointer handle);
-static void event_own (gpointer handle);
+static gboolean event_own (gpointer handle);
 
 struct _WapiHandleOps _wapi_event_ops = {
-	event_close_shared,	/* close_shared */
-	NULL,			/* close_private */
+	NULL,			/* close */
 	event_signal,		/* signal */
 	event_own,		/* own */
 	NULL,			/* is_owned */
 };
+
+void _wapi_event_details (gpointer handle_info)
+{
+	struct _WapiHandle_event *event = (struct _WapiHandle_event *)handle_info;
+	
+	g_print ("manual: %s", event->manual?"TRUE":"FALSE");
+}
 
 static mono_once_t event_ops_once=MONO_ONCE_INIT;
 
@@ -44,44 +49,26 @@ static void event_ops_init (void)
 					    WAPI_HANDLE_CAP_SIGNAL);
 }
 
-static void event_close_shared(gpointer handle)
-{
-	struct _WapiHandle_event *event_handle;
-	gboolean ok;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_EVENT,
-				(gpointer *)&event_handle, NULL);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up event handle %p", handle);
-		return;
-	}
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": closing event handle %p", handle);
-#endif
-}
-
 static void event_signal(gpointer handle)
 {
 	ResetEvent(handle);
 }
 
-static void event_own (gpointer handle)
+static gboolean event_own (gpointer handle)
 {
 	struct _WapiHandle_event *event_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_EVENT,
-				(gpointer *)&event_handle, NULL);
+				(gpointer *)&event_handle);
 	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up event handle %p", handle);
-		return;
+		g_warning ("%s: error looking up event handle %p", __func__,
+			   handle);
+		return (FALSE);
 	}
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": owning event handle %p", handle);
+	g_message("%s: owning event handle %p", __func__, handle);
 #endif
 
 	if(event_handle->manual==FALSE) {
@@ -91,6 +78,8 @@ static void event_own (gpointer handle)
 			_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 		}
 	}
+
+	return(TRUE);
 }
 
 /**
@@ -116,58 +105,46 @@ static void event_own (gpointer handle)
 gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean manual,
 		     gboolean initial, const gunichar2 *name G_GNUC_UNUSED)
 {
-	struct _WapiHandle_event *event_handle;
+	struct _WapiHandle_event event_handle = {0};
 	gpointer handle;
-	gboolean ok;
-	gpointer ret = NULL;
 	int thr_ret;
 	
 	mono_once (&event_ops_once, event_ops_init);
+	
+	event_handle.manual = manual;
+	event_handle.set_count = 0;
 
-	handle=_wapi_handle_new (WAPI_HANDLE_EVENT);
-	if(handle==_WAPI_HANDLE_INVALID) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error creating event handle");
-		return(NULL);
+	if (initial == TRUE) {
+		if (manual == FALSE) {
+			event_handle.set_count = 1;
+		}
 	}
 	
+	handle = _wapi_handle_new (WAPI_HANDLE_EVENT, &event_handle);
+	if (handle == _WAPI_HANDLE_INVALID) {
+		g_warning ("%s: error creating event handle", __func__);
+		SetLastError (ERROR_GEN_FAILURE);
+		return(NULL);
+	}
+
 	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
 			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_EVENT,
-				(gpointer *)&event_handle, NULL);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up event handle %p", handle);
-		goto cleanup;
-	}
-	ret = handle;
-	
-	event_handle->manual=manual;
-	event_handle->set_count = 0;
-
-	if(initial==TRUE) {
-		if (manual == FALSE) {
-			event_handle->set_count = 1;
-		}
-		
+	if (initial == TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": created new event handle %p",
-		  handle);
+	g_message("%s: created new event handle %p", __func__, handle);
 #endif
 
-cleanup:
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	
 	pthread_cleanup_pop (0);
 
-	return(ret);
+	return(handle);
 }
 
 /**
@@ -192,10 +169,10 @@ gboolean PulseEvent(gpointer handle)
 	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_EVENT,
-				(gpointer *)&event_handle, NULL);
+				(gpointer *)&event_handle);
 	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up event handle %p", handle);
+		g_warning ("%s: error looking up event handle %p", __func__,
+			   handle);
 		return(FALSE);
 	}
 	
@@ -205,7 +182,7 @@ gboolean PulseEvent(gpointer handle)
 	g_assert (thr_ret == 0);
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Pulsing event handle %p", handle);
+	g_message("%s: Pulsing event handle %p", __func__, handle);
 #endif
 
 	if(event_handle->manual==TRUE) {
@@ -234,8 +211,8 @@ gboolean PulseEvent(gpointer handle)
 		 * a condition.
 		 */
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Obtained write lock on event handle %p", handle);
+		g_message("%s: Obtained write lock on event handle %p",
+			  __func__, handle);
 #endif
 
 		pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle, handle);
@@ -268,16 +245,15 @@ gboolean ResetEvent(gpointer handle)
 	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_EVENT,
-				(gpointer *)&event_handle, NULL);
+				(gpointer *)&event_handle);
 	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up event handle %p", handle);
+		g_warning ("%s: error looking up event handle %p",
+			   __func__, handle);
 		return(FALSE);
 	}
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Resetting event handle %p",
-		  handle);
+	g_message("%s: Resetting event handle %p", __func__, handle);
 #endif
 
 	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
@@ -287,13 +263,13 @@ gboolean ResetEvent(gpointer handle)
 	
 	if(_wapi_handle_issignalled (handle)==FALSE) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": No need to reset event handle %p", handle);
+		g_message("%s: No need to reset event handle %p", __func__,
+			  handle);
 #endif
 	} else {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Obtained write lock on event handle %p", handle);
+		g_message("%s: Obtained write lock on event handle %p",
+			  __func__, handle);
 #endif
 
 		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
@@ -330,10 +306,10 @@ gboolean SetEvent(gpointer handle)
 	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_EVENT,
-				(gpointer *)&event_handle, NULL);
+				(gpointer *)&event_handle);
 	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up event handle %p", handle);
+		g_warning ("%s: error looking up event handle %p", __func__,
+			   handle);
 		return(FALSE);
 	}
 	
@@ -343,7 +319,7 @@ gboolean SetEvent(gpointer handle)
 	g_assert (thr_ret == 0);
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Setting event handle %p", handle);
+	g_message("%s: Setting event handle %p", __func__, handle);
 #endif
 
 	if(event_handle->manual==TRUE) {
