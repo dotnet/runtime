@@ -2377,6 +2377,10 @@ mono_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 
 	dir = g_dir_open (dirname, 0, &error);
 	if (dir == NULL) {
+		/* g_dir_open returns ENOENT on directories on which we don't
+		 * have read/x permission */
+		if (error->code == ENOENT && g_file_test (dirname, G_FILE_TEST_IS_DIR))
+			error->code = EPERM;
 		errno = error->code;
 		g_error_free (error);
 		return -1;
@@ -2511,9 +2515,12 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	
 	if (result < 0) {
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": scandir error: %s", g_strerror (errno));
+		gint errnum = errno;
 #endif
-		SetLastError (ERROR_INVALID_PARAMETER);
+		_wapi_set_last_error_from_errno ();
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": scandir error: %s", g_strerror (errnum));
+#endif
 		g_free (dir_part);
 		unref = TRUE;
 		goto cleanup;
