@@ -782,8 +782,6 @@ mono_compute_branches (MonoFlowGraph *cfg)
 		} else {
 			/* special case - jump to epilog */
 			target = cfg->epilog + cfg->start;
-			/* check if the above is correct */
-			g_assert_not_reached ();
 		}
 		*ip = target - GPOINTER_TO_UINT(ip) - 4;
 	}
