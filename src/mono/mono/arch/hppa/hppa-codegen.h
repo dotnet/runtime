@@ -127,7 +127,7 @@ typedef enum {
 #define hppa_fldd_with_flags(p, disp, base, dest, m, a) \
 	do { \
 		int neg = (disp) < 0; \
-		int im10a = (disp) >> 2; \
+		int im10a = (disp) >> 3; \
 		*(p) = (0x50000002 | (((im10a) & 0x3ff) << 4) | ((base) << 21) | ((dest) << 16) | neg | (m ? 0x8 : 0) | (a ? 0x4 : 0)); \
 		p++; \
 	} while (0)
@@ -138,7 +138,7 @@ typedef enum {
 #define hppa_fstd_with_flags(p, src, disp, base, m, a) \
 	do { \
 		int neg = (disp) < 0; \
-		int im10a = (disp) >> 2; \
+		int im10a = (disp) >> 3; \
 		*(p) = (0x70000002 | (((im10a) & 0x3ff) << 4) | ((base) << 21) | ((src) << 16) | neg | (m ? 0x8 : 0) | (a ? 0x4 : 0)); \
 		p++; \
 	} while (0)
