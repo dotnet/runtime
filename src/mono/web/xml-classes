@@ -1,0 +1,215 @@
+* XML Classes
+
+** Abstract
+
+  XML library is used by several field of Mono such as ADO.NET and XML 
+  Digital Signature (xmldsig). Here I write about System.Xml.dll and 
+  related tools. This page won't include any classes which are in other 
+  assemblies such as XmlDataDocument.
+
+  Note that current corlib has its own XML parser class named Mono.Xml.MiniParser.
+
+  Basically System.XML.dll feature has finished, or almost finished, so
+  I write this page mainly for bugs and improvement hints.
+
+
+** System.Xml namespace
+
+
+*** Document Object Model (Core)
+
+  DOM feature has already implemented. There is still missing feature.
+
+	<ul>
+	* ID constraint support is problematic because W3C DOM does not specify
+	  handling of ID attributes into non-adapted element. (MS.NET also 
+	  looks incomplete in this area).
+
+	* I think, event feature is not fully tested. There are no concrete
+	  desctiption on which events are risen, so we have to do some
+	  experiment on MS.NET.
+	</ul>
+
+*** Xml Writer
+
+  Here XmlWriter almost equals to XmlTextWriter. If you want to see
+  another implementation, check XmlNodeWriter.cs used in monodoc.
+
+  XmlTextWriter is completed. However, it looks nearly twice as slow as 
+  MS.NET (I tried 1.1)
+
+*** XmlResolver
+
+  Currently XmlTextReader uses specified XmlResolver. If nothing was supplied,
+  then it uses XmlUrlResolver. XmlResolver is used to parse external DTD,
+  importing XSL stylesheets and schemas etc.
+
+  However, XmlUrlResolver is still buggy (mainly because System.Uri is also
+  incomplete yet) and this results in several loading error.
+
+  XmlSecureResolver, which is introduced in MS .NET Framework 1.1 is basically
+  implemented, but it requires CAS (code access security) feature. We need to
+  fixup this class after ongoing CAS effort works.
+
+
+*** XmlNameTable
+
+  XmlNameTable itself is implemented. However, it should be actually used in
+  several classes. Currently it makes sense if compared names are both in
+  the table, but if it is obvious that compared names are both in this table,
+  it should be simply compared using ReferenceEquals() (if these names are
+  different, the comparison is still inefficient yet).
+
+
+*** Xml Stream Reader
+
+  When we are using ASCII document, we don't care which encoding we are using.
+  However, XmlTextReader must be aware of the specified encoding in XML
+  declaration. So we have internal XmlStreamReader class (and currently
+  XmlInputStream class. This may disappear since XmlStreamReader is enough to
+  handle this problem).
+
+  However, there are some problems lies in these classes on reading network
+  stream (especially on Linux). This should be fixed soon.
+
+
+*** XML Reader
+
+  XmlTextReader, XmlNodeReader and XmlValidatingReader are almost finished.
+
+	- Most of the OASIS conformance test passes as Microsoft does, but
+	  about W3C tests, it is not perfect.
+
+	- I won't add any XDR support on XmlValidatingReader. (I haven't
+	  ever seen XDR used other than Microsoft's BizTalk Server 2000,
+	  and Now they have 2003 with XML Schema support)
+
+  XmlTextReader and XmlValidatingReader should be faster than now. Currently
+  XmlTextReader looks nearly twice as slow as MS.NET, and XmlValidatingReader
+  (which uses this slow XmlTextReader) looks nearly three times slower. (Note
+  that XmlValidatingReader won't be slow as itself. It uses schema validating
+  reader and dtd validating reader.)
+
+
+**** Some Advantages
+
+  The design of Mono's XmlValidatingReader is radically different from
+  that of Microsoft's implementation. Under MS.NET, DTD content validation
+  engine is in fact simple replacement of XML Schema validation engine.
+  Mono's DTD validation is designed fully separate and does validation
+  as normal XML parser does. For example, Mono allows non-deterministic DTD.
+
+  Another advantage of this XmlValidatingReader is support for *any* XmlReader.
+  Microsoft supports only XmlTextReader.
+
+  I added extra support interface named "IHasXmlParserContext", which is
+  considered in XmlValidatingReader.ResolveEntity(). Microsoft failed to 
+  design XmlReader to support pluggable use of XmlReader (i.e. wrapping use
+  of other XmlReader) since XmlParserContext is required to support both
+  entity resolution and namespace manager. (In .NET 1.2, Microsoft also 
+  supported similar to IHasXmlParserContext, named IXmlNamespaceResolver,
+  but it still does not provide any DTD information.)
+
+  We also have RELAX NG validating reader. See mcs/class/Commons.Xml.Relaxng.
+
+
+** System.Xml.Schema
+
+*** Schema Object Model
+
+  Basically it is implemented. Some features still needs to fix:
+
+	- Complete facet support. Currently some of them is missing. Recently
+	  David Sheldon is doing several fixes on them.
+
+	- Complete derivation by restriction (DBR) support. Especially
+	  substitution group won't work with it (However, I won't recommend
+	  both substitution group and DBR, regardless of this incompleteness.)
+
+  Some bugs are remaining, but as far as I tried W3C XML Schema test suite 
+  with bugfixes (of test suite), only 69 out of 7581 has failed. With my test
+  suite fix, MS.NET failed 48 cases.
+
+*** Validating Reader
+
+  XML Schema validation feature is (currently) implemented on
+  Mono.Xml.Schema.XsdValidatingReader, which is internally used in
+  XmlValidatingReader. 
+  
+  Basically this is implemented and actually its feature is almost complete,
+  but I have only did validation feature testing. So we have to write more 
+  tests on properties, methods, and events (validation errors).
+
+
+** System.Xml.Serialization
+
+  Lluis rules ;-)
+
+  Well, in fact XmlSerializer is almost finished and is on bugfix phase.
+  However, more tests are required especially schema import and export
+  feature. Please try xsd.exe to create classes from schema, or schema
+  from class. And if any problems were found, please file it to bugzilla.
+
+
+** System.Xml.XPath and System.Xml.Xsl
+
+  There are two implementations for XSLT. One (and historical) implementation
+  is based on libxslt. Now we uses fully implemented managed XSLT.
+
+  Putting aside bug fixes, we have to support:
+
+ 	- embedded script (such as VB, C#, JScript). So some packages like 
+	  latest NAnt (for MS.NET) won't be compiled.
+
+  It would be nice if we can support <a href="http://www.exslt.org/">EXSLT</a>.
+  <a href="http://msdn.microsoft.com/WebServices/default.aspx?pull=/library/en-us/dnexxml/html/xml05192003.asp">Microsoft has already done it</a>, but it
+  is not good code since it depends on internal concrete derivatives of
+  XPathNodeIterator classes. In general, .NET's "extension objects" is not
+  usable to return node-sets, so if we support EXSLT, it has to be done
+  internally inside our System.XML.dll. Volunteers are welcome.
+
+  Our managed XSLT implementation is still inefficient. XslTransform.Load()
+  and .Transform() looks three times slower (However it depends on 
+  XmlTextReader which is also slow, so we are starting optimization from 
+  that class, not XSLT itself). These number are only for specific cases,
+  and there might be more critical point on XSLT engine (mainly
+  XPathNodeIterator).
+
+
+** Miscellaneous Class Libraries
+
+*** RELAX NG
+
+  I implemented an experimental RelaxngValidatingReader. It is far from
+  complete, especially simplification stuff (see RELAX NG spec chapter 4),
+  some constraints (in chapter 7), and datatype handling.
+
+  I am planning improvements (starts with renaming classes, giving more
+  kind error messages, supporting compact syntax and even object mapping),
+  but it is still my wishlist.
+
+
+** Tools
+
+*** xsd.exe
+
+  xsd.exe is used to:
+
+	1) generate classes source code from schema
+	2) generate DataSet classes source code from schema
+	3) generate schema documents from assembly (classes)
+	4) infer schema documents from XML instance
+	5) convert XDR into XSD
+
+  As descrived above, I won't work on 5) XDR stuff.
+
+  Current xsd.exe supports 1) and 3) 
+
+  As for 2) and 4), Currently there is no works on them. (This inference
+  feature is rather DataSet specific than general purpose use.)
+
+  Microsoft has another inference class from XmlReader to XmlSchemaCollection.
+  It may be useful, but it won't be so easy.
+
+  any volunteers?
+
