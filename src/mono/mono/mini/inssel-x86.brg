@@ -574,4 +574,14 @@ stmt: CEE_POP (freg) "0" {
 	MONO_EMIT_UNALU (s, tree, OP_X86_FPOP, -1, state->left->reg1);	
 }     
 
+# override the rules in inssel-float.brg that work for machines with FP registers 
+
+freg: OP_FCONV_TO_R8 (freg) "0" {
+	/* nothing to do */
+}
+
+freg: OP_FCONV_TO_R4 (freg) "0" {
+	/* fixme: nothing to do ??*/
+}
+
 %%

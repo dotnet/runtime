@@ -80,6 +80,7 @@ MINI_OP(OP_LOADR4_MEMBASE,"loadr4_membase")
 MINI_OP(OP_LOADR8_MEMBASE,"loadr8_membase")
 MINI_OP(OP_LOADU4_MEM,"loadu4_mem")
 MINI_OP(OP_MOVE,	"move")
+MINI_OP(OP_FMOVE,	"fmove")
 
 MINI_OP(OP_ADD_IMM,    "add_imm")
 MINI_OP(OP_SUB_IMM,    "sub_imm")
