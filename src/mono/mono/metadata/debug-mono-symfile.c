@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/param.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/rawbuffer.h>
