@@ -9,7 +9,9 @@
 #include <config.h>
 #include <glib.h>
 #include <stdio.h>
+#ifdef	HAVE_WCHAR_H
 #include <wchar.h>
+#endif
 #include "meta.h"
 #include "get.h"
 #include "dump.h"

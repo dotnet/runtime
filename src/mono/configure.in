@@ -58,6 +58,9 @@ AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h)
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
+# for mono/dis
+AC_CHECK_HEADERS(wchar.h)
+
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
