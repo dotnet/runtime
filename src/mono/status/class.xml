@@ -813,28 +813,28 @@
         </maintainers>
     </class>
     <class name="System.IO.FileSystemInfo">
-        <last-activity>Aug-22-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Sep-10-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>80</completion>
+        <completion>85</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
     <class name="System.IO.DirectoryInfo">
-        <last-activity>Aug-22-2001</last-activity>
+        <last-activity>Sep-10-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
-        <completion>20</completion>
+        <completion>50</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
     <class name="System.IO.FileInfo">
-        <last-activity>Aug-22-2001</last-activity>
+        <last-activity>Sep-10-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
-        <completion>20</completion>
+        <completion>80</completion>
         <maintainers>
             <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
