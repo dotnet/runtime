@@ -209,7 +209,7 @@ namespace Mapper
 			if (args.Length > 0) {
 				foreach (string s in args){
 					try {
-						m = new Mapper (basedir + s);
+						m = new Mapper (s);
 						m.Map ();
 					} catch (Exception e) {
 						Console.WriteLine("Error: "+e.ToString());

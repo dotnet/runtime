@@ -1,3 +1,10 @@
+2001-07-15  Sean MacIsaac  <macisaac@ximian.com>
+
+	* status/compare-assembly.cs: basedir should be there if
+	parameters are provided.
+
+	* status/makefile: made targets to dump info.
+	
 2001-07-15  Joe Shaw  <joe@ximian.com>
 
 	* configure.in: Don't create doc/Makefile as there's nothing there
