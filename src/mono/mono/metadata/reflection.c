@@ -7401,6 +7401,8 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		gmethod->mtype_argv [i] = garg->type;
 	}
 
+	gmethod->reflection_info = rmethod;
+
 	context = g_new0 (MonoGenericContext, 1);
 	context->ginst = method->klass->generic_inst;
 	context->gmethod = gmethod;
