@@ -165,6 +165,12 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_last_error", SetLastError=true)]
 	public static extern void mono_test_last_error (int err);
 
+	[DllImport ("libtest", EntryPoint="mono_test_asany")]
+	public static extern int mono_test_asany ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
+
+	[DllImport ("libtest", EntryPoint="mono_test_asany", CharSet=CharSet.Unicode)]
+	public static extern int mono_test_asany_unicode ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
+
 	public delegate int SimpleDelegate (int a);
 
 	public static int Main () {
@@ -475,6 +481,50 @@ public class Tests {
 	static int test_0_trim_dll_from_name () {
 
 		mono_test_marshal_char_2 ('A');
+
+		return 0;
+	}
+
+	class C {
+		public int i;
+	}
+
+	static int test_0_asany () {
+		if (mono_test_asany (5, 1) != 0)
+			return 1;
+
+		if (mono_test_asany ("ABC", 2) != 0)
+			return 2;
+
+		SimpleStruct2 ss2 = new  SimpleStruct2 ();
+		ss2.b = true;
+		ss2.d = "TEST";
+		ss2.e = 99;
+		ss2.f = 1.5;
+		ss2.g = 42;
+		ss2.h = 123L;
+
+		if (mono_test_asany (ss2, 3) != 0)
+			return 3;
+
+		if (mono_test_asany_unicode ("ABC", 4) != 0)
+			return 4;
+
+		try {
+			C c = new C ();
+			c.i = 5;
+			mono_test_asany (c, 0);
+			return 5;
+		}
+		catch (ArgumentException) {
+		}
+
+		try {
+			mono_test_asany (new Object (), 0);
+			return 6;
+		}
+		catch (ArgumentException) {
+		}
 
 		return 0;
 	}

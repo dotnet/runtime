@@ -1010,5 +1010,40 @@ mono_test_last_error (int err)
 #endif
 }
 
+int
+mono_test_asany (void *ptr, int what)
+{
+	switch (what) {
+	case 1:
+		return (*(int*)ptr == 5) ? 0 : 1;
+	case 2:
+		return strcmp (ptr, "ABC") == 0 ? 0 : 1;
+	case 3: {
+		simplestruct2 ss = *(simplestruct2*)ptr;
+
+		if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST") && 
+	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
+			return 0;
+		else
+			return 1;
+	}
+	case 4: {
+		GError *error = NULL;
+		char *s;
+
+		s = g_utf16_to_utf8 (ptr, -1, NULL, NULL, &error);
+		if (!strcmp (s, "ABC"))
+			return 0;
+		else
+			return 1;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	return 1;
+}
+
 
 
