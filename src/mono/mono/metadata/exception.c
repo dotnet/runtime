@@ -372,3 +372,9 @@ mono_get_exception_bad_image_format (const guchar *msg)
 {
 	return mono_exception_from_name_msg (mono_defaults.corlib, "System", "BadImageFormatException", msg);
 }	
+
+MonoException *
+mono_get_exception_stack_overflow (void)
+{
+	return mono_exception_from_name (mono_defaults.corlib, "System", "StackOverflowException");	
+}
