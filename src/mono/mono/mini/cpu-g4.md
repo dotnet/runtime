@@ -551,3 +551,4 @@ ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4
 op_bigmul: len:8 dest:l src1:i src2:i
 op_bigmul_un: len:8 dest:l src1:i src2:i
+tls_get: len:8 dest:i

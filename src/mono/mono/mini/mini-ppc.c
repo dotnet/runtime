@@ -18,7 +18,60 @@
 #include "cpu-g4.h"
 #include "trace.h"
 
+enum {
+	TLS_MODE_DETECT,
+	TLS_MODE_FAILED,
+	TLS_MODE_LTHREADS,
+	TLS_MODE_NPTL,
+	TLS_MODE_DARWIN_G4,
+	TLS_MODE_DARWIN_G5
+};
+
 int mono_exc_esp_offset = 0;
+static int tls_mode = TLS_MODE_DETECT;
+static int lmf_pthread_key = -1;
+static int monothread_key = -1;
+
+static int
+offsets_from_pthread_key (guint32 key, int *offset2)
+{
+	int idx1 = key / 32;
+	int idx2 = key % 32;
+	*offset2 = idx2 * sizeof (gpointer);
+	return 284 + idx1 * sizeof (gpointer);
+}
+
+#define emit_linuxthreads_tls(code,dreg,key) do {\
+		int off1, off2;	\
+		off1 = offsets_from_pthread_key ((key), &off2);	\
+		ppc_lwz ((code), (dreg), off1, ppc_r2);	\
+		ppc_lwz ((code), (dreg), off2, (dreg));	\
+	} while (0);
+
+#define emit_darwing5_tls(code,dreg,key) do {\
+		int off1 = 0x48 + key * sizeof (gpointer);	\
+		ppc_mfspr ((code), (dreg), 104);	\
+		ppc_lwz ((code), (dreg), off1, (dreg));	\
+	} while (0);
+
+/* FIXME: ensure the sc call preserves all but r3 */
+#define emit_darwing4_tls(code,dreg,key) do {\
+		int off1 = 0x48 + key * sizeof (gpointer);	\
+		if ((dreg) != ppc_r3) ppc_mr ((code), ppc_r11, ppc_r3);	\
+		ppc_li ((code), ppc_r0, 0x7FF2);	\
+		ppc_sc ((code));	\
+		ppc_lwz ((code), (dreg), off1, ppc_r3);	\
+		if ((dreg) != ppc_r3) ppc_mr ((code), ppc_r3, ppc_r11);	\
+	} while (0);
+
+#define emit_tls_access(code,dreg,key) do {	\
+		switch (tls_mode) {	\
+		case TLS_MODE_LTHREADS: emit_linuxthreads_tls(code,dreg,key); break;	\
+		case TLS_MODE_DARWIN_G5: emit_darwing5_tls(code,dreg,key); break;	\
+		case TLS_MODE_DARWIN_G4: emit_darwing4_tls(code,dreg,key); break;	\
+		default: g_assert_not_reached ();	\
+		}	\
+	} while (0)
 
 const char*
 mono_arch_regname (int reg) {
@@ -2328,6 +2381,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
+		case OP_TLS_GET:
+			emit_tls_access (code, ins->dreg, ins->inst_offset);
+			break;
 		case OP_BIGMUL:
 			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
 			ppc_mulhw (code, ppc_r3, ins->sreg1, ins->sreg2);
@@ -3696,9 +3752,15 @@ register.  Should this case include linux/ppc?
 
 	if (method->save_lmf) {
 
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+		if (lmf_pthread_key != -1) {
+			emit_tls_access (code, ppc_r3, lmf_pthread_key);
+			if (G_STRUCT_OFFSET (MonoJitTlsData, lmf))
+				ppc_addi (code, ppc_r3, ppc_r3, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+		} else {
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");
-		ppc_bl (code, 0);
+			ppc_bl (code, 0);
+		}
 		/* we build the MonoLMF structure on the stack - see mini-ppc.h */
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
@@ -3870,9 +3932,136 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 }
 
+static int
+try_offset_access (void *value, guint32 idx)
+{
+	register void* me __asm__ ("r2");
+	void ***p = (void***)((char*)me + 284);
+	int idx1 = idx / 32;
+	int idx2 = idx % 32;
+	if (!p [idx1])
+		return 0;
+	if (value != p[idx1][idx2])
+		return 0;
+	return 1;
+}
+
+static void
+setup_tls_access (void)
+{
+	guint32 ptk;
+	guint32 *ins, *code;
+	guint32 cmplwi_1023, li_0x48, blr_ins;
+	if (tls_mode == TLS_MODE_FAILED)
+		return;
+
+	if (g_getenv ("MONO_NO_TLS")) {
+		tls_mode = TLS_MODE_FAILED;
+		return;
+	}
+
+	if (tls_mode == TLS_MODE_DETECT) {
+		ins = (guint32*)pthread_getspecific;
+		/* uncond branch to the real method */
+		if ((*ins >> 26) == 18) {
+			gint32 val;
+			val = (*ins & ~3) << 6;
+			val >>= 6;
+			if (*ins & 2) {
+				/* absolute */
+				ins = (guint32*)val;
+			} else {
+				ins = (guint32*) ((char*)ins + val);
+			}
+		}
+		code = &cmplwi_1023;
+		ppc_cmpli (code, 0, 0, ppc_r3, 1023);
+		code = &li_0x48;
+		ppc_li (code, ppc_r4, 0x48);
+		code = &blr_ins;
+		ppc_blr (code);
+		if (*ins == cmplwi_1023) {
+			int found_lwz_284 = 0;
+			for (ptk = 0; ptk < 20; ++ptk) {
+				++ins;
+				if (!*ins || *ins == blr_ins)
+					break;
+				if ((guint16)*ins == 284 && (*ins >> 26) == 32) {
+					found_lwz_284 = 1;
+					break;
+				}
+			}
+			if (!found_lwz_284) {
+				tls_mode = TLS_MODE_FAILED;
+				return;
+			}
+			tls_mode = TLS_MODE_LTHREADS;
+		} else if (*ins == li_0x48) {
+			++ins;
+			/* uncond branch to the real method */
+			if ((*ins >> 26) == 18) {
+				gint32 val;
+				val = (*ins & ~3) << 6;
+				val >>= 6;
+				if (*ins & 2) {
+					/* absolute */
+					ins = (guint32*)val;
+				} else {
+					ins = (guint32*) ((char*)ins + val);
+				}
+				code = &val;
+				ppc_li (code, ppc_r0, 0x7FF2);
+				if (ins [1] == val) {
+					/* Darwin on G4, implement */
+					tls_mode = TLS_MODE_FAILED;
+					return;
+				} else {
+					code = &val;
+					ppc_mfspr (code, ppc_r3, 104);
+					if (ins [1] != val) {
+						tls_mode = TLS_MODE_FAILED;
+						return;
+					}
+					tls_mode = TLS_MODE_DARWIN_G5;
+				}
+			} else {
+				tls_mode = TLS_MODE_FAILED;
+				return;
+			}
+		} else {
+			tls_mode = TLS_MODE_FAILED;
+			return;
+		}
+	}
+	if (lmf_pthread_key == -1) {
+		ptk = mono_pthread_key_for_tls (mono_jit_tls_id);
+		if (ptk < 1024) {
+			/*g_print ("MonoLMF at: %d\n", ptk);*/
+			/*if (!try_offset_access (mono_get_lmf_addr (), ptk)) {
+				init_tls_failed = 1;
+				return;
+			}*/
+			lmf_pthread_key = ptk;
+		}
+	}
+	if (monothread_key == -1) {
+		ptk = mono_thread_get_tls_key ();
+		if (ptk < 1024) {
+			ptk = mono_pthread_key_for_tls (ptk);
+			if (ptk < 1024) {
+				monothread_key = ptk;
+				/*g_print ("thread inited: %d\n", ptk);*/
+			}
+		} else {
+			/*g_print ("thread not inited yet %d\n", ptk);*/
+		}
+	}
+}
+
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
+	setup_tls_access ();
 }
 
 void
@@ -3936,7 +4125,17 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return NULL;
 }
 
-MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
+MonoInst* 
+mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
-	return NULL;
+	MonoInst* ins;
+
+	setup_tls_access ();
+	if (monothread_key == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->inst_offset = monothread_key;
+	return ins;
 }
+
