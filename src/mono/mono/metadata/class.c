@@ -1887,7 +1887,10 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 
 	klass = g_new0 (MonoClass, 1);
 
-	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
+	if (param->name)
+		klass->name = param->name;
+	else
+		klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
 	klass->name_space = "";
 	klass->image = mono_defaults.corlib;
 	klass->cast_class = klass->element_class = klass;
