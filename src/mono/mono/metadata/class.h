@@ -17,6 +17,13 @@ typedef struct {
 	/* add marshal data, too */
 } MonoClassField;
 
+typedef struct {
+	const char *name;
+	MonoMethod *get;
+	MonoMethod *set;
+	guint32 attrs;
+} MonoProperty;
+
 struct _MonoClass {
 	MonoImage *image;
 	guint32    type_token;
@@ -60,12 +67,14 @@ struct _MonoClass {
 	struct {
 		guint32 first, last;
 		int count;
-	} field, method;
+	} field, method, property;
 
 	/*
 	 * Field information: Type and location from object base
 	 */
 	MonoClassField *fields;
+
+	MonoProperty *properties;
 
 	MonoMethod **methods;
 

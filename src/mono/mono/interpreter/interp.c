@@ -558,7 +558,8 @@ dump_frame (MonoInvocation *inv)
 	for (i = 0; inv; inv = inv->parent, ++i) {
 		MonoClass *k = inv->method->klass;
 		int codep;
-		if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL ||
+				inv->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
 			codep = 0;
 		} else {
 			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
@@ -3500,7 +3501,7 @@ output_profile (GList *funcs)
 	}
 }
 
-void
+static void
 segv_handler (int signum)
 {
 	signal (signum, segv_handler);

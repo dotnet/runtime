@@ -115,6 +115,9 @@ guint32 mono_metadata_nested_in_typedef   (MonoMetadata *meta, guint32 index);
 
 MonoClass** mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint *count);
 
+guint32     mono_metadata_properties_from_typedef (MonoMetadata *meta, guint32 index, guint *end);
+guint32     mono_metadata_methods_from_property   (MonoMetadata *meta, guint32 index, guint *end);
+
 void        mono_metadata_field_info (MonoMetadata *meta, 
 				      guint32       index,
 				      guint32      *offset,

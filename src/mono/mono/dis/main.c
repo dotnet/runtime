@@ -513,37 +513,15 @@ table_locator (const void *a, const void *b)
 static void
 dis_property_methods (MonoMetadata *m, guint32 prop)
 {
-	plocator_t loc;
-	guint start;
-	guint32 cols [MONO_METHOD_SEMA_SIZE];
+	guint start, end;
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
+	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	char *sig;
 	char *type[] = {NULL, ".set", ".get", NULL, ".other"};
 
-	if (!msemt->base)
-		return;
-
-	loc.t = msemt;
-	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
-	loc.idx = (prop << 1) | 1; /* Method association coded index */
-
-	if (!bsearch (&loc, msemt->base, msemt->rows, msemt->row_size, table_locator))
-		return;
-
-	start = loc.result;
-	/*
-	 * We may end up in the middle of the rows... 
-	 */
-	while (start > 0) {
-		if (loc.idx == mono_metadata_decode_row_col (msemt, start - 1, MONO_METHOD_SEMA_ASSOCIATION))
-			start--;
-		else
-			break;
-	}
-	while (start < msemt->rows) {
+	start = mono_metadata_methods_from_property (m, prop, &end);
+	while (start < end) {
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
-		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
-			break;
 		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD]);
 		fprintf (output, "\t\t%s %s\n", type [cols [MONO_METHOD_SEMA_SEMANTICS]], sig);
 		g_free (sig);
@@ -605,31 +583,13 @@ dis_property_signature (MonoMetadata *m, guint32 prop_idx)
 static void
 dis_property_list (MonoMetadata *m, guint32 typedef_row)
 {
-	plocator_t loc;
-	guint32 start, end, i;
-	MonoTableInfo *tdef  = &m->tables [MONO_TABLE_PROPERTYMAP];
+	guint start, end, i;
+	start = mono_metadata_properties_from_typedef (m, typedef_row, &end);
 
-	if (!tdef->base)
-		return;
-
-	loc.t = tdef;
-	loc.col_idx = MONO_PROPERTY_MAP_PARENT;
-	loc.idx = typedef_row + 1;
-
-	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return;
-	
-	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
-	if (loc.result + 1 < tdef->rows) {
-		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
-	} else {
-		end = m->tables [MONO_TABLE_PROPERTY].rows;
-	}
-
-	for (i = start - 1; i < end; ++i) {
+	for (i = start; i < end; ++i) {
 		char *sig = dis_property_signature (m, i);
 		fprintf (output, "\t.property %s\n\t{\n", sig);
-		dis_property_methods (m, i + 1);
+		dis_property_methods (m, i);
 		fprintf (output, "\t}\n");
 		g_free (sig);
 	}

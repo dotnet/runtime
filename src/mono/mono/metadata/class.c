@@ -198,6 +198,40 @@ class_compute_field_layout (MonoClass *class)
 	}
 }
 
+static void
+init_properties (MonoClass *class)
+{
+	guint startm, endm, i, j;
+	guint32 cols [MONO_PROPERTY_SIZE];
+	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_PROPERTY];
+	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
+
+	class->property.first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &class->property.last);
+	class->property.count = class->property.last - class->property.first;
+
+	class->properties = g_new0 (MonoProperty, class->property.count);
+	for (i = class->property.first; i < class->property.last; ++i) {
+		mono_metadata_decode_row (pt, i, cols, MONO_PROPERTY_SIZE);
+		class->properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
+		class->properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
+
+		startm = mono_metadata_methods_from_property (class->image, i, &endm);
+		for (j = startm; j < endm; ++j) {
+			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+			case 1: /* set */
+				class->properties [i - class->property.first].set = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				break;
+			case 2: /* get */
+				class->properties [i - class->property.first].get = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
 void
 mono_class_init (MonoClass *class)
 {
@@ -438,6 +472,8 @@ mono_class_init (MonoClass *class)
 		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT))
 			vtable [cm->slot] = arch_create_jit_trampoline (cm);
 	}
+
+	init_properties (class);
 
 	mono_runtime_class_init (class);
 
@@ -1026,14 +1062,10 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 gint32
 mono_array_element_size (MonoClass *ac)
 {
-	gint32 esize;
-
-	esize = mono_class_instance_size (ac->element_class);
-	
 	if (ac->element_class->valuetype)
-		esize -= sizeof (MonoObject);
-	
-	return esize;
+		return mono_class_instance_size (ac->element_class) - sizeof (MonoObject);
+	else
+		return sizeof (gpointer);
 }
 
 gpointer

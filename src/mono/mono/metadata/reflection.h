@@ -52,12 +52,42 @@ typedef struct {
 } MonoReflectionField;
 
 typedef struct {
+	MonoObject object;
+	MonoClass *klass;
+	MonoProperty *property;
+} MonoReflectionProperty;
+
+typedef struct {
+	MonoObject object;
+	MonoReflectionType *ClassImpl;
+	MonoObject *DefaultValueImpl;
+	MonoObject *MemberImpl;
+	MonoString *NameImpl;
+	gint32 PositionImpl;
+	guint32 AttrsImpl;
+} MonoReflectionParameter;
+
+typedef struct {
+	MonoReflectionType *utype;
+	MonoArray *values;
+	MonoArray *names;
+} MonoEnumInfo;
+
+typedef struct {
 	MonoReflectionType *parent;
 	MonoReflectionType *ret;
 	MonoString *name;
 	guint32 attrs;
 	guint32 implattrs;
 } MonoMethodInfo;
+
+typedef struct {
+	MonoReflectionType *parent;
+	MonoString *name;
+	MonoReflectionMethod *get;
+	MonoReflectionMethod *set;
+	guint32 attrs;
+} MonoPropertyInfo;
 
 typedef struct {
 	MonoReflectionType *parent;
@@ -212,6 +242,9 @@ MonoReflectionAssembly* mono_assembly_get_object (MonoAssembly *assembly);
 MonoReflectionType*     mono_type_get_object     (MonoType *type);
 MonoReflectionMethod*   mono_method_get_object   (MonoMethod *method);
 MonoReflectionField*    mono_field_get_object    (MonoClass *klass, MonoClassField *field);
+MonoReflectionProperty* mono_property_get_object (MonoClass *klass, MonoProperty *property);
+/* note: this one is slightly different: we keep the whole array of params in the cache */
+MonoReflectionParameter** mono_param_get_objects  (MonoMethod *method);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

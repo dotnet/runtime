@@ -1224,3 +1224,53 @@ mono_field_get_object (MonoClass *klass, MonoClassField *field)
 	return res;
 }
 
+MonoReflectionProperty*
+mono_property_get_object (MonoClass *klass, MonoProperty *property)
+{
+	MonoReflectionProperty *res;
+	MonoClass *oklass;
+
+	CHECK_OBJECT (MonoReflectionProperty *, property);
+	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
+	res = (MonoReflectionProperty *)mono_object_new (oklass);
+	res->klass = klass;
+	res->property = property;
+	CACHE_OBJECT (property, res);
+	return res;
+}
+
+MonoReflectionParameter**
+mono_param_get_objects (MonoMethod *method)
+{
+	MonoReflectionParameter **res;
+	MonoReflectionMethod *member;
+	MonoClass *oklass;
+	char **names;
+	int i;
+
+	if (!method->signature->param_count)
+		return NULL;
+
+	member = mono_method_get_object (method);
+	names = g_new (char*, method->signature->param_count);
+	
+	/* Note: the cache is based on the address of the signature into the method
+	 * since we already cache MethodInfos with the method as keys.
+	 */
+	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature));
+	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+	res = g_new0 (MonoReflectionParameter*, method->signature->param_count);
+	for (i = 0; i < method->signature->param_count; ++i) {
+		res [i] = (MonoReflectionParameter *)mono_object_new (oklass);
+		res [i]->ClassImpl = mono_type_get_object (method->signature->params [i]);
+		res [i]->DefaultValueImpl = NULL; /* FIXME */
+		res [i]->MemberImpl = member;
+		res [i]->NameImpl = mono_string_new (names [i]);
+		res [i]->PositionImpl = i + 1;
+		res [i]->AttrsImpl = method->signature->params [i]->attrs;
+	}
+	g_free (names);
+	CACHE_OBJECT (&(method->signature), res);
+	return res;
+}
+
