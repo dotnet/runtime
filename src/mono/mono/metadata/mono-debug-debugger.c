@@ -820,6 +820,11 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	int ctor_info_size = 0, cctor_info_size = 0, iface_info_size = 0;
 	guint32 size, data_size, offset, data_offset;
 	GHashTable *method_slots = NULL;
+	MonoMethod *method;
+	MonoClassField* field;
+	MonoProperty* property;
+	MonoEvent* event;
+	gpointer iter;
 	int i;
 
 	if (klass->init_pending)
@@ -844,20 +849,23 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 		return offset;
 	}
 
-	for (i = 0; i < klass->field.count; i++)
-		if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter)))
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			++num_fields;
 		else
 			++num_static_fields;
 
-	for (i = 0; i < klass->property.count; i++)
-		if (!property_is_static (&klass->properties [i]))
+	iter = NULL;
+	while ((property = mono_class_get_properties (klass, &iter)))
+		if (!property_is_static (property))
 			++num_properties;
 		else
 			++num_static_properties;
 
-	for (i = 0; i < klass->event.count; i++)
-		if (!event_is_static (&klass->events [i]))
+	iter = NULL;
+	while ((event = mono_class_get_events (klass, &iter)))
+		if (!event_is_static (event))
 			++num_events;
 		else
 			++num_static_events;
@@ -868,9 +876,8 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	ctors = g_ptr_array_new ();
 	cctors = g_ptr_array_new ();
 
-	for (i = 0; i < klass->method.count; i++) {
-		MonoMethod *method = klass->methods [i];
-
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (method->name, ".cctor")) {
 			++num_cctors;
 			g_ptr_array_add (cctors, method);
@@ -982,39 +989,41 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	else
 		WRITE_UINT32 (ptr, 0);
 
-	for (i = 0; i < klass->field.count; i++) {
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 
-		WRITE_UINT32 (ptr, klass->fields [i].offset + base_offset);
-		WRITE_UINT32 (ptr, write_type (table, klass->fields [i].type));
+		WRITE_UINT32 (ptr, field->offset + base_offset);
+		WRITE_UINT32 (ptr, write_type (table, field->type));
 	}
 
-	for (i = 0; i < klass->property.count; i++) {
-		if (property_is_static (&klass->properties [i]))
+	iter = NULL;
+	while ((property = mono_class_get_properties (klass, &iter))) {
+		if (property_is_static (property))
 			continue;
 
-		if (klass->properties [i].get)
-			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->properties [i].get)->ret));
+		if (property->get)
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (property->get)->ret));
 		else
 			WRITE_UINT32 (ptr, 0);
-		WRITE_POINTER (ptr, klass->properties [i].get);
-		WRITE_POINTER (ptr, klass->properties [i].set);
+		WRITE_POINTER (ptr, property->get);
+		WRITE_POINTER (ptr, property->set);
 	}
 
-	for (i = 0; i < klass->event.count; i++) {
-		if (event_is_static (&klass->events[i]))
+	iter = NULL;
+	while ((event = mono_class_get_events (klass, &iter))) {
+		if (event_is_static (event))
 			continue;
 
-		if (klass->events [i].add) {
-			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->events [i].add)->params[0]));
-		}
-		else {
+		if (event->add) {
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (event->add)->params[0]));
+		} else {
 			g_warning ("event add method not defined");
 			WRITE_UINT32 (ptr, 0);
 		}
-		WRITE_POINTER (ptr, klass->events [i].add);
-		WRITE_POINTER (ptr, klass->events [i].remove);
+		WRITE_POINTER (ptr, event->add);
+		WRITE_POINTER (ptr, event->remove);
 		/* raise?  other? */
 	}
 
@@ -1034,39 +1043,41 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 
 	g_ptr_array_free (methods, FALSE);
 
-	for (i = 0; i < klass->field.count; i++) {
-		if (!(klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 
-		WRITE_UINT32 (ptr, klass->fields [i].offset);
-		WRITE_UINT32 (ptr, write_type (table, klass->fields [i].type));
+		WRITE_UINT32 (ptr, field->offset);
+		WRITE_UINT32 (ptr, write_type (table, field->type));
 	}
 
-	for (i = 0; i < klass->property.count; i++) {
-		if (!property_is_static (&klass->properties [i]))
+	iter = NULL;
+	while ((property = mono_class_get_properties (klass, &iter))) {
+		if (!property_is_static (property))
 			continue;
 
-		if (klass->properties [i].get)
-			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->properties [i].get)->ret));
+		if (property->get)
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (property->get)->ret));
 		else
 			WRITE_UINT32 (ptr, 0);
-		WRITE_POINTER (ptr, klass->properties [i].get);
-		WRITE_POINTER (ptr, klass->properties [i].set);
+		WRITE_POINTER (ptr, property->get);
+		WRITE_POINTER (ptr, property->set);
 	}
 
-	for (i = 0; i < klass->event.count; i++) {
-		if (!event_is_static (&klass->events[i]))
+	iter = NULL;
+	while ((event = mono_class_get_events (klass, &iter))) {
+		if (!event_is_static (event))
 			continue;
 
-		if (klass->events [i].add) {
-			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->events [i].add)->params[0]));
-		}
-		else {
+		if (event->add) {
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (event->add)->params[0]));
+		} else {
 			g_warning ("event add method not defined");
 			WRITE_UINT32 (ptr, 0);
 		}
-		WRITE_POINTER (ptr, klass->events [i].add);
-		WRITE_POINTER (ptr, klass->events [i].remove);
+		WRITE_POINTER (ptr, event->add);
+		WRITE_POINTER (ptr, event->remove);
 		/* raise?  other? */
 	}
 
