@@ -195,6 +195,15 @@ debug_memcopy (void *dest, const void *src, size_t n);
 	        x86_call_code (s->code, 0);                    \
 	} while (0); 
 
+#define X86_ARG_PAD(pad) do {                                               \
+	if (pad) {                                                          \
+		if (pad == 4)                                               \
+			x86_push_reg (s->code, X86_EAX);                    \
+		else                                                        \
+			x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, pad);   \
+	}                                                                   \
+} while (0)
+
 #define X86_CALL_END    do {                                       \
         int size = tree->data.call_info.frame_size;                \
         if (size)                                                  \
@@ -202,6 +211,8 @@ debug_memcopy (void *dest, const void *src, size_t n);
 } while (0)
 
 #define X86_CALL_BEGIN  do {                                                     \
+        int pad = tree->data.call_info.pad;                                      \
+        X86_ARG_PAD (pad);                                                       \
 	if (tree->left->op != MB_TERM_NOP) {                                     \
 		mono_assert (lreg >= 0);                                         \
 		x86_push_reg (s->code, lreg);                                    \
@@ -212,15 +223,6 @@ debug_memcopy (void *dest, const void *src, size_t n);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);                \
 		x86_push_reg (s->code, treg);                                    \
 	}                                                                        \
-} while (0)
-
-#define X86_ARG_PAD(pad) do {                                               \
-	if (pad) {                                                          \
-		if (pad == 4)                                               \
-			x86_push_reg (s->code, X86_EAX);                    \
-		else                                                        \
-			x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, pad);   \
-	}                                                                   \
 } while (0)
 
 /* we use this macro to move one lreg to another - source and

@@ -2142,7 +2142,6 @@ mono_type_stack_size (MonoType *t, gint *align)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		*align = __alignof__(gint64);
-		*align = 4;
 		return sizeof (gint64);		
 	case MONO_TYPE_R8:
 		*align = __alignof__(double);

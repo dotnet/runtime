@@ -668,15 +668,18 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoVarType vartype,
 	}
 	case MONO_ARGVAR: {
 		int arg_start = 8 + cfg->has_vtarg*4;
+		int pad;
 
 		g_assert ((align & 3) == 0);
 
-		SET_VARINFO (vi, type, vartype, cfg->args_size + arg_start, size);
+		pad = (align - ((arg_start + cfg->args_size) & (align - 1))) & (align - 1);	
+		cfg->args_size += pad;
+
+		SET_VARINFO (vi, type, vartype, arg_start + cfg->args_size, size);
 		g_array_append_val (cfg->varinfo, vi);
 		
 		cfg->args_size += size;
-		cfg->args_size += 3;
-		cfg->args_size &= ~3;
+
 		break;
 	}
 	default:
