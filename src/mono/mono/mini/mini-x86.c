@@ -246,10 +246,9 @@ mono_arch_is_int_overflow (void *sigctx)
 
 static gboolean
 is_regsize_var (MonoType *t) {
- again:
 	if (t->byref)
 		return TRUE;
-	switch (t->type) {
+	switch (mono_type_get_underlying_type (t)->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
@@ -263,13 +262,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_ARRAY:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype)
-			return is_regsize_var (t->data.klass->enum_basetype);
 		return FALSE;
-	case MONO_TYPE_GENERICINST:
-		t = t->data.generic_inst->generic_type;
-		goto again;
-	}
 	return FALSE;
 }
 
@@ -506,7 +499,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->next = call->out_args;
 			call->out_args = arg;
 			if (i >= sig->hasthis) {
-				ptype = sig->params [i - sig->hasthis];
+				ptype = mono_type_get_underlying_type (sig->params [i - sig->hasthis]);
 				if (ptype->byref)
 					type = MONO_TYPE_U;
 				else
@@ -545,25 +538,20 @@ handle_enum:
 					stack_size += 8;
 					arg->opcode = OP_OUTARG_R8;
 					break;
-				case MONO_TYPE_VALUETYPE:
-					if (MONO_TYPE_ISSTRUCT (ptype)) {
-						int size;
-						if (sig->pinvoke) 
-							size = mono_type_native_stack_size (&in->klass->byval_arg, NULL);
-						else 
-							size = mono_type_stack_size (&in->klass->byval_arg, NULL);
+				case MONO_TYPE_VALUETYPE: {
+					int size;
+					if (sig->pinvoke) 
+						size = mono_type_native_stack_size (&in->klass->byval_arg, NULL);
+					else 
+						size = mono_type_stack_size (&in->klass->byval_arg, NULL);
 
-						stack_size += size;
-						arg->opcode = OP_OUTARG_VT;
-						arg->klass = in->klass;
-						arg->unused = sig->pinvoke;
-						arg->inst_imm = size; 
-					} else {
-						ptype = ptype->data.klass->enum_basetype;
-						type = ptype->type;
-						goto handle_enum;
-					}
+					stack_size += size;
+					arg->opcode = OP_OUTARG_VT;
+					arg->klass = in->klass;
+					arg->unused = sig->pinvoke;
+					arg->inst_imm = size; 
 					break;
+				}
 				case MONO_TYPE_TYPEDBYREF:
 					stack_size += sizeof (MonoTypedRef);
 					arg->opcode = OP_OUTARG_VT;
@@ -571,11 +559,6 @@ handle_enum:
 					arg->unused = sig->pinvoke;
 					arg->inst_imm = sizeof (MonoTypedRef); 
 					break;
-				case MONO_TYPE_GENERICINST:
-					ptype = ptype->data.generic_inst->generic_type;
-					type = ptype->type;
-					goto handle_enum;
-
 				default:
 					g_error ("unknown type 0x%02x in mono_arch_call_opcode\n", type);
 				}
@@ -643,10 +626,8 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guchar *code = p;
 	int arg_size = 0, save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	MonoType *rtype = method->signature->ret;
 	
-handle_enum:
-	switch (rtype->type) {
+	switch (mono_type_get_underlying_type (method->signature->ret)->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
@@ -663,15 +644,8 @@ handle_enum:
 		save_mode = SAVE_FP;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (rtype->data.klass->enumtype) {
-			rtype = rtype->data.klass->enum_basetype;
-			goto handle_enum;
-		}
 		save_mode = SAVE_STRUCT;
 		break;
-	case MONO_TYPE_GENERICINST:
-		rtype = rtype->data.generic_inst->generic_type;
-		goto handle_enum;
 	default:
 		save_mode = SAVE_EAX;
 		break;

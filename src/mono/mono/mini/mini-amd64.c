@@ -228,8 +228,7 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 	ArgumentClass class2;
 	MonoType *ptype;
 
-	ptype = type;
- handle_enum:
+	ptype = mono_type_get_underlying_type (type);
 	switch (ptype->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
@@ -260,25 +259,16 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 	case MONO_TYPE_TYPEDBYREF:
 		g_assert_not_reached ();
 
-	case MONO_TYPE_VALUETYPE:
-		if (ptype->data.klass->enumtype)
-			class2 = ARG_CLASS_INTEGER;
-		else {
-			MonoMarshalType *info = mono_marshal_load_type_info (ptype->data.klass);
-			int i;
+	case MONO_TYPE_VALUETYPE: {
+		MonoMarshalType *info = mono_marshal_load_type_info (ptype->data.klass);
+		int i;
 
-			for (i = 0; i < info->num_fields; ++i) {
-				class2 = class1;
-				class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
-			}
+		for (i = 0; i < info->num_fields; ++i) {
+			class2 = class1;
+			class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
 		}
 		break;
-
-	case MONO_TYPE_GENERICINST:
-		ptype = ptype->data.generic_inst->generic_type;
-		goto handle_enum;
-		break;
-
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -437,7 +427,7 @@ static CallInfo*
 get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
-	MonoType *ret_type, *original_ret_type;
+	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
@@ -449,8 +439,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	/* return value */
 	{
-		original_ret_type = ret_type = sig->ret;
-enum_retvalue:
+		ret_type = mono_type_get_underlying_type (sig->ret);
 		switch (ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -487,13 +476,7 @@ enum_retvalue:
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			if (ret_type->data.klass->enumtype) {
-				ret_type = ret_type->data.klass->enum_basetype;
-				original_ret_type = ret_type;
-				goto enum_retvalue;
-			}
-
-			add_valuetype (sig, &cinfo->ret, original_ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack)
 				/* The caller passes the address where the value is stored */
 				add_general (&gr, &stack_size, &cinfo->ret);
@@ -504,9 +487,6 @@ enum_retvalue:
 			add_general (&gr, &stack_size, &cinfo->ret);
 			;
 			break;
-		case MONO_TYPE_GENERICINST:
-			ret_type = ret_type->data.generic_inst->generic_type;
-			goto enum_retvalue;
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -528,7 +508,7 @@ enum_retvalue:
 
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
-		MonoType *ptype, *original_ptype;
+		MonoType *ptype;
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
@@ -547,8 +527,7 @@ enum_retvalue:
 			add_general (&gr, &stack_size, ainfo);
 			continue;
 		}
-		original_ptype = ptype = sig->params [i];
-	handle_enum:
+		ptype = mono_type_get_underlying_type (sig->params [i]);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -575,20 +554,12 @@ enum_retvalue:
 			add_general (&gr, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (ptype->data.klass->enumtype) {
-				original_ptype = ptype = ptype->data.klass->enum_basetype;
-				goto handle_enum;
-			}
-
-			add_valuetype (sig, ainfo, original_ptype, FALSE, &gr, &fr, &stack_size);
+			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
 			stack_size += sizeof (MonoTypedRef);
 			ainfo->storage = ArgOnStack;
 			break;
-		case MONO_TYPE_GENERICINST:
-			ptype = ptype->data.generic_inst->generic_type;
-			goto handle_enum;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
 			add_general (&gr, &stack_size, ainfo);
@@ -709,7 +680,7 @@ static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
- again:
+	t = mono_type_get_underlying_type (t);
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -724,12 +695,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_ARRAY:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype)
-			return is_regsize_var (t->data.klass->enum_basetype);
 		return FALSE;
-	case MONO_TYPE_GENERICINST:
-		t = t->data.generic_inst->generic_type;
-		goto again;
 	}
 	return FALSE;
 }
@@ -5149,9 +5115,8 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	int rtype = method->signature->ret->type;
-
-handle_enum:
+	int rtype = mono_type_get_underlying_type (method->signature->ret)->type;
+	
 	switch (rtype) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
@@ -5169,10 +5134,6 @@ handle_enum:
 		save_mode = SAVE_XMM;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (method->signature->ret->data.klass->enumtype) {
-			rtype = method->signature->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		}
 		save_mode = SAVE_STRUCT;
 		break;
 	default:

@@ -448,7 +448,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean single)
 static CallInfo*
 get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint32 i, gr, fr, simpletype;
+	guint32 i, gr, fr;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
@@ -459,7 +459,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	fr = 0;
 
 #ifdef SPARCV9
-	if (((sig->ret->type == MONO_TYPE_VALUETYPE) && !sig->ret->data.klass->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
+	if (MONO_TYPE_ISSTRUCT ((sig->ret))) {
 		/* The address of the return value is passed in %o0 */
 		add_general (&gr, &stack_size, &cinfo->ret, FALSE);
 		cinfo->ret.reg += sparc_i0;
@@ -487,9 +487,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			continue;
 		}
-		simpletype = sig->params [i]->type;
-	enum_calc_size:
-		switch (simpletype) {
+		switch (mono_type_get_underlying_type (sig->params [i])->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -521,11 +519,6 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				simpletype = sig->params [i]->data.klass->enum_basetype->type;
-				goto enum_calc_size;
-			}
-
 #ifdef SPARCV9
 			if (sig->pinvoke)
 				NOT_IMPLEMENTED;
@@ -568,9 +561,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	/* return value */
 	{
-		simpletype = sig->ret->type;
-enum_retvalue:
-		switch (simpletype) {
+		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -612,10 +603,6 @@ enum_retvalue:
 			cinfo->ret.reg = sparc_f0;
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (sig->ret->data.klass->enumtype) {
-				simpletype = sig->ret->data.klass->enum_basetype->type;
-				goto enum_retvalue;
-			}
 			if (v64) {
 				if (sig->pinvoke)
 					NOT_IMPLEMENTED;
@@ -654,7 +641,7 @@ static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
-	switch (t->type) {
+	switch (mono_type_get_underlying_type (t)->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
@@ -673,8 +660,6 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_ARRAY:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype)
-			return is_regsize_var (t->data.klass->enum_basetype);
 		return FALSE;
 #ifdef SPARCV9
 	case MONO_TYPE_I8:
@@ -4204,10 +4189,8 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guint32 *code = (guint32*)p;
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	int rtype = method->signature->ret->type;
 
-handle_enum:
-	switch (rtype) {
+	switch (mono_type_get_underlying_type (method->signature->ret)->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
@@ -4228,10 +4211,6 @@ handle_enum:
 		save_mode = SAVE_FP;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (method->signature->ret->data.klass->enumtype) {
-			rtype = method->signature->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		}
 		save_mode = SAVE_STRUCT;
 		break;
 	default:
