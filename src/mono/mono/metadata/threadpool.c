@@ -54,10 +54,10 @@ mono_async_invoke (MonoAsyncResult *ares)
 				       &ac->msg->exc, &ac->out_args);
 
 	ares->completed = 1;
-		
+
 	/* notify listeners */
 	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
-
+		
 	/* call async callback if cb_method != null*/
 	if (ac->cb_method) {
 		MonoObject *exc = NULL;
@@ -77,6 +77,8 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
 	ASyncCall *ac;
+	gboolean do_create = FALSE;
+	int busy;
 
 #ifdef HAVE_BOEHM_GC
 	ac = GC_MALLOC (sizeof (ASyncCall));
@@ -93,24 +95,27 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		ac->cb_target = async_callback;
 	}
 
-	if (!ares_htable)
-		ares_htable = mono_g_hash_table_new (NULL, NULL);
-
 	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
 	ares->async_delegate = target;
 
+	EnterCriticalSection (&mono_delegate_section);	
+	if (!ares_htable)
+		ares_htable = mono_g_hash_table_new (NULL, NULL);
+
 	mono_g_hash_table_insert (ares_htable, ares, ares);
 
-	EnterCriticalSection (&mono_delegate_section);	
 	async_call_queue = g_list_append (async_call_queue, ares); 
-	ReleaseSemaphore (mono_delegate_semaphore, 1, NULL);
 
-	if (mono_worker_threads <= busy_worker_threads &&
+	busy = (int) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
+	if (mono_worker_threads <= ++busy &&
 	    mono_worker_threads < mono_max_worker_threads) {
 		mono_worker_threads++;
-		mono_thread_create (domain, async_invoke_thread, NULL);
+		do_create = TRUE;
 	}
 	LeaveCriticalSection (&mono_delegate_section);
+
+	if (do_create)
+		mono_thread_create (domain, async_invoke_thread, NULL);
 
 	return ares;
 }
@@ -119,7 +124,6 @@ MonoObject *
 mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
 {
 	ASyncCall *ac;
-	GList *l;
 
 	*exc = NULL;
 	*out_args = NULL;
@@ -137,25 +141,13 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	ac = (ASyncCall *)ares->data;
 
 	g_assert (ac != NULL);
-
-	if ((l = g_list_find (async_call_queue, ares))) {
-		async_call_queue = g_list_remove_link (async_call_queue, l);
-	}	
-	
 	LeaveCriticalSection (&mono_delegate_section);
 
-	if (l) {
-		g_list_free_1 (l);
-		mono_async_invoke (ares);
-	}
-		
-	
 	/* wait until we are really finished */
 	WaitForSingleObject (ac->wait_semaphore, INFINITE);
 
 	*exc = ac->msg->exc;
 	*out_args = ac->out_args;
-
 
 	return ac->res;
 }
@@ -170,16 +162,11 @@ async_invoke_thread ()
 	thread->threadpool_thread = TRUE;
 	thread->state |= ThreadState_Background;
 	for (;;) {
+		gboolean cont;
 		MonoAsyncResult *ar;
 
-		if (WaitForSingleObject (mono_delegate_semaphore, 500) == WAIT_TIMEOUT) {
-			EnterCriticalSection (&mono_delegate_section);
-			mono_worker_threads--;
-			LeaveCriticalSection (&mono_delegate_section);
-			ExitThread (0);
-		}
-		
 		ar = NULL;
+		InterlockedIncrement (&busy_worker_threads);
 		EnterCriticalSection (&mono_delegate_section);
 		
 		if (async_call_queue) {
@@ -191,26 +178,35 @@ async_invoke_thread ()
 			g_list_free_1 (tmp);
 		}
 
-		if (!ar) {
-			LeaveCriticalSection (&mono_delegate_section);
-			continue;
-		}
-		
-		busy_worker_threads++;
-
 		LeaveCriticalSection (&mono_delegate_section);
-		/* worker threads invokes methods in different domains,
-		 * so we need to set the right domain here */
-		domain = ((MonoObject *)ar)->vtable->domain;
-		mono_domain_set (domain);
 
-		mono_async_invoke (ar);
+		if (ar) {
+			/* worker threads invokes methods in different domains,
+			 * so we need to set the right domain here */
+			domain = ((MonoObject *)ar)->vtable->domain;
+			mono_domain_set (domain);
+
+			mono_async_invoke (ar);
+		}
+
+		InterlockedDecrement (&busy_worker_threads);
 
 		EnterCriticalSection (&mono_delegate_section);
-		busy_worker_threads--;
+		cont = (async_call_queue != NULL);
 		LeaveCriticalSection (&mono_delegate_section);
+		if (cont)
+			continue;
 
+		Sleep (500);
+		EnterCriticalSection (&mono_delegate_section);
+		if (!async_call_queue) {
+			mono_worker_threads--;
+			LeaveCriticalSection (&mono_delegate_section);
+			ExitThread (0);
+		}
+		LeaveCriticalSection (&mono_delegate_section);
 	}
 
 	g_assert_not_reached ();
 }
+

@@ -25,7 +25,6 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 
-HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
 
 static gunichar2 process_guid [36];
@@ -77,8 +76,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	domain->domain = ad;
 	domain->setup = setup;
 
-	mono_delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-	g_assert (mono_delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&mono_delegate_section);
 
 	mono_context_init (domain);
