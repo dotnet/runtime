@@ -41,7 +41,7 @@ run_finalize (void *obj, void *data)
 		}
 	}
 	/* speedup later... and use a timeout */
-	/*g_print ("Finalize run on %s\n", mono_object_class (o)->name);*/
+	/*g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name);*/
 	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
 	if (exc) {
@@ -71,6 +71,7 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 void
 mono_object_register_finalizer (MonoObject *obj)
 {
+	/*g_print ("Registered finalizer on %p %s.%s\n", obj, mono_object_class (obj)->name_space, mono_object_class (obj)->name);*/
 	object_register_finalizer (obj, run_finalize);
 }
 
@@ -230,6 +231,13 @@ ves_icall_System_GCHandle_GetTarget (guint32 handle)
 	return NULL;
 }
 
+typedef enum {
+	HANDLE_WEAK,
+	HANDLE_WEAK_TRACK,
+	HANDLE_NORMAL,
+	HANDLE_PINNED
+} HandleType;
+
 guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
 {
@@ -264,12 +272,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 	if (type == -1)
 		type =  handle & 0x3;
 	switch (type) {
-	case 0:
-	case 1:
-		h |= type;
-		gc_handles [idx] = val;
-		break;
-	default:
+	case HANDLE_WEAK:
+	case HANDLE_WEAK_TRACK:
 		h |= 2;
 		val = (gpointer)HIDE_POINTER (val);
 		gc_handles [idx] = val;
@@ -278,6 +282,10 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 #else
 		g_error ("No weakref support");
 #endif
+		break;
+	default:
+		h |= type;
+		gc_handles [idx] = val;
 		break;
 	}
 	return h;
